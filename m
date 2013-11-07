@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab3KGBoG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 20:44:06 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35734 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753139Ab3KGBn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 20:43:58 -0500
+	id S1753351Ab3KGBo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 20:44:29 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:36933 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189Ab3KGBny (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 20:43:54 -0500
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         EXT4 <linux-ext4@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        rostedt@goodmis.org, Andreas Dilger <adilger.kernel@dilger.ca>
+        rostedt@goodmis.org, David Woodhouse <dwmw2@infradead.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH v2 09/11] fs/ext3: use rbtree postorder iteration helper instead of opencoding
-Date: Wed,  6 Nov 2013 17:42:38 -0800
-Message-Id: <1383788572-25938-10-git-send-email-cody@linux.vnet.ibm.com>
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        linux-mtd@lists.infradead.org
+Subject: [PATCH v2 08/11] fs/jffs2: use rbtree postorder iteration helper instead of opencoding
+Date: Wed,  6 Nov 2013 17:42:37 -0800
+Message-Id: <1383788572-25938-9-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110701-0320-0000-0000-000001A5D26A
+x-cbid: 13110701-1344-0000-0000-0000030FD83B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,62 +32,101 @@ of opencoding an alternate postorder iteration that modifies the tree
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- fs/ext3/dir.c | 36 +++++-------------------------------
- 1 file changed, 5 insertions(+), 31 deletions(-)
+ fs/jffs2/nodelist.c  | 28 ++--------------------------
+ fs/jffs2/readinode.c | 26 +++-----------------------
+ 2 files changed, 5 insertions(+), 49 deletions(-)
 
-diff --git a/fs/ext3/dir.c b/fs/ext3/dir.c
-index bafdd48..a331ad1 100644
---- a/fs/ext3/dir.c
-+++ b/fs/ext3/dir.c
-@@ -309,43 +309,17 @@ struct fname {
-  */
- static void free_rb_tree_fname(struct rb_root *root)
+diff --git a/fs/jffs2/nodelist.c b/fs/jffs2/nodelist.c
+index 975a1f5..9a5449b 100644
+--- a/fs/jffs2/nodelist.c
++++ b/fs/jffs2/nodelist.c
+@@ -564,25 +564,10 @@ struct jffs2_node_frag *jffs2_lookup_node_frag(struct rb_root *fragtree, uint32_
+    they're killed. */
+ void jffs2_kill_fragtree(struct rb_root *root, struct jffs2_sb_info *c)
  {
--	struct rb_node	*n = root->rb_node;
--	struct rb_node	*parent;
--	struct fname	*fname;
+-	struct jffs2_node_frag *frag;
+-	struct jffs2_node_frag *parent;
 -
--	while (n) {
--		/* Do the node's children first */
--		if (n->rb_left) {
--			n = n->rb_left;
+-	if (!root->rb_node)
+-		return;
++	struct jffs2_node_frag *frag, *next;
+ 
+ 	dbg_fragtree("killing\n");
+-
+-	frag = (rb_entry(root->rb_node, struct jffs2_node_frag, rb));
+-	while(frag) {
+-		if (frag->rb.rb_left) {
+-			frag = frag_left(frag);
 -			continue;
 -		}
--		if (n->rb_right) {
--			n = n->rb_right;
+-		if (frag->rb.rb_right) {
+-			frag = frag_right(frag);
 -			continue;
 -		}
--		/*
--		 * The node has no children; free it, and then zero
--		 * out parent's link to it.  Finally go to the
--		 * beginning of the loop and try to free the parent
--		 * node.
--		 */
--		parent = rb_parent(n);
--		fname = rb_entry(n, struct fname, rb_hash);
-+	struct fname *fname, *next;
-+
-+	rbtree_postorder_for_each_entry_safe(fname, next, root, rb_hash)
- 		while (fname) {
- 			struct fname * old = fname;
- 			fname = fname->next;
- 			kfree (old);
+-
++	rbtree_postorder_for_each_entry_safe(frag, next, root, rb) {
+ 		if (frag->node && !(--frag->node->frags)) {
+ 			/* Not a hole, and it's the final remaining frag
+ 			   of this node. Free the node */
+@@ -591,17 +576,8 @@ void jffs2_kill_fragtree(struct rb_root *root, struct jffs2_sb_info *c)
+ 
+ 			jffs2_free_full_dnode(frag->node);
  		}
--		if (!parent)
--			*root = RB_ROOT;
--		else if (parent->rb_left == n)
--			parent->rb_left = NULL;
--		else if (parent->rb_right == n)
--			parent->rb_right = NULL;
--		n = parent;
--	}
--}
+-		parent = frag_parent(frag);
+-		if (parent) {
+-			if (frag_left(parent) == frag)
+-				parent->rb.rb_left = NULL;
+-			else
+-				parent->rb.rb_right = NULL;
+-		}
  
-+	*root = RB_ROOT;
-+}
+ 		jffs2_free_node_frag(frag);
+-		frag = parent;
+-
+ 		cond_resched();
+ 	}
+ }
+diff --git a/fs/jffs2/readinode.c b/fs/jffs2/readinode.c
+index ae81b01..386303d 100644
+--- a/fs/jffs2/readinode.c
++++ b/fs/jffs2/readinode.c
+@@ -543,33 +543,13 @@ static int jffs2_build_inode_fragtree(struct jffs2_sb_info *c,
  
- static struct dir_private_info *ext3_htree_create_dir_info(struct file *filp,
- 							   loff_t pos)
+ static void jffs2_free_tmp_dnode_info_list(struct rb_root *list)
+ {
+-	struct rb_node *this;
+-	struct jffs2_tmp_dnode_info *tn;
+-
+-	this = list->rb_node;
++	struct jffs2_tmp_dnode_info *tn, *next;
+ 
+-	/* Now at bottom of tree */
+-	while (this) {
+-		if (this->rb_left)
+-			this = this->rb_left;
+-		else if (this->rb_right)
+-			this = this->rb_right;
+-		else {
+-			tn = rb_entry(this, struct jffs2_tmp_dnode_info, rb);
++	rbtree_postorder_for_each_entry_safe(tn, next, list, rb) {
+ 			jffs2_free_full_dnode(tn->fn);
+ 			jffs2_free_tmp_dnode_info(tn);
+-
+-			this = rb_parent(this);
+-			if (!this)
+-				break;
+-
+-			if (this->rb_left == &tn->rb)
+-				this->rb_left = NULL;
+-			else if (this->rb_right == &tn->rb)
+-				this->rb_right = NULL;
+-			else BUG();
+-		}
+ 	}
++
+ 	*list = RB_ROOT;
+ }
+ 
 -- 
 1.8.4.2
 
