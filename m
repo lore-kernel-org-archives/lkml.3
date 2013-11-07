@@ -1,85 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab3KGNXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 08:23:15 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:54311 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab3KGNXN (ORCPT
+	id S1753343Ab3KGNYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 08:24:09 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:48970 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab3KGNYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 08:23:13 -0500
-Message-ID: <527B943E.9050603@gmail.com>
-Date: Thu, 07 Nov 2013 07:23:10 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 7 Nov 2013 08:24:06 -0500
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Robert Richter <rric@kernel.org>, linux-edac@vger.kernel.org
-Subject: Re: [PATCH] edac, highbank: remove dependency on ARCH_HIGHBANK
-References: <1383708352-19527-1-git-send-email-robherring2@gmail.com> <20131106142025.GB16072@x1.alien8.de> <527A6B08.5020302@gmail.com> <20131106165437.GA21870@x1.alien8.de> <527A79B5.4070507@gmail.com> <20131107122716.GC27116@x1.alien8.de>
-In-Reply-To: <20131107122716.GC27116@x1.alien8.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1383830523-1767-1-git-send-email-ch.naveen@samsung.com>
+References: <1383830523-1767-1-git-send-email-ch.naveen@samsung.com>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Thu, 7 Nov 2013 18:53:44 +0530
+Message-ID: <CAHfPSqBpPoLqF+8+qjtL_zRA2+tdeqt=+zA+VfTOcvv2kq+5bg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: dts: Exynos5420: Add device nodes for HSI2C blocks
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2013 06:27 AM, Borislav Petkov wrote:
-> On Wed, Nov 06, 2013 at 11:17:41AM -0600, Rob Herring wrote:
->> Using some interface which is arch specific and should not be used in a
->> driver.
-> 
-> Well, sorry, but this is not something which justifies enabling building
-> of compilation units on arches for which they don't apply. Rather, this
-> should be caught during review.
-> 
-> I find it highly unfair to waste cycles building stuff on an arch for
-> which the drivers aren't meant for. And it doesn't make any sense anyway
-> - I'd like all*config to get finished at some point soonish and not
-> build the whole world.
-> 
-> And, btw, highbank triggers the following on AMD64:
-> 
->   CC [M]  drivers/edac/edac_pci.o
->   CC [M]  drivers/edac/highbank_mc_edac.o
->   CC [M]  drivers/edac/highbank_l2_edac.o
-> drivers/edac/highbank_mc_edac.c: In function ‘highbank_mc_probe’:
-> drivers/edac/highbank_mc_edac.c:210:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
->   dimm->nr_pages = (~0UL >> PAGE_SHIFT) + 1;
->   ^
+On 7 November 2013 18:52, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> Exynos5420 SoC has 7 High speed I2C channels, This patch adds
+> the device tree nodes to the DT device list.
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> ---
+>  arch/arm/boot/dts/exynos5420.dtsi |   98 +++++++++++++++++++++++++++++++++++++
+>  1 file changed, 98 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+> index 6ffefd1..12f612d 100644
+> --- a/arch/arm/boot/dts/exynos5420.dtsi
+> +++ b/arch/arm/boot/dts/exynos5420.dtsi
+> @@ -34,6 +34,13 @@
+>                 i2c1 = &i2c_1;
+>                 i2c2 = &i2c_2;
+>                 i2c3 = &i2c_3;
+> +               i2c4 = &hsi2c_4;
+> +               i2c5 = &hsi2c_5;
+> +               i2c6 = &hsi2c_6;
+> +               i2c7 = &hsi2c_7;
+> +               i2c8 = &hsi2c_8;
+> +               i2c9 = &hsi2c_9;
+> +               i2c10 = &hsi2c_10;
+>                 gsc0 = &gsc_0;
+>                 gsc1 = &gsc_1;
+>         };
+> @@ -333,6 +340,97 @@
+>                 status = "disabled";
+>         };
+>
+> +       hsi2c_4: hsi2c@12CA0000 {
+> +               compatible = "samsung,exynos5-hsi2c";
+> +               reg = <0x12CA0000 0x1000>;
+> +               interrupts = <0 60 0>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               pinctrl-names = "default";
+> +               pinctrl-0 = <&i2c4_hs_bus>;
+> +               clocks = <&clock 265>;
+> +               clock-names = "hsi2c";
+> +               status = "disabled";
+> +       };
+> +
+> +       hsi2c_5: hsi2c@12CB0000 {
+> +               compatible = "samsung,exynos5-hsi2c";
+> +               reg = <0x12CB0000 0x1000>;
+> +               interrupts = <0 61 0>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               pinctrl-names = "default";
+> +               pinctrl-0 = <&i2c5_hs_bus>;
+> +               clocks = <&clock 266>;
+> +               clock-names = "hsi2c";
+> +               status = "disabled";
+> +       };
+> +
+> +       hsi2c_6: hsi2c@12CC0000 {
+> +               compatible = "samsung,exynos5-hsi2c";
+> +               reg = <0x12CC0000 0x1000>;
+> +               interrupts = <0 62 0>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               pinctrl-names = "default";
+> +               pinctrl-0 = <&i2c6_hs_bus>;
+> +               clocks = <&clock 267>;
+> +               clock-names = "hsi2c";
+> +               status = "disabled";
+> +       };
+> +
+> +       hsi2c_7: hsi2c@12CD0000 {
+> +               compatible = "samsung,exynos5-hsi2c";
+> +               reg = <0x12CD0000 0x1000>;
+> +               interrupts = <0 63 0>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               pinctrl-names = "default";
+> +               pinctrl-0 = <&i2c7_hs_bus>;
+> +               clocks = <&clock 268>;
+> +               clock-names = "hsi2c";
+> +               status = "disabled";
+> +       };
+> +
+> +       hsi2c_8: hsi2c@12E00000 {
+> +               compatible = "samsung,exynos5-hsi2c";
+> +               reg = <0x12E00000 0x1000>;
+> +               interrupts = <0 87 0>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               pinctrl-names = "default";
+> +               pinctrl-0 = <&i2c8_hs_bus>;
+> +               clocks = <&clock 281>;
+> +               clock-names = "hsi2c";
+> +               status = "disabled";
+> +       };
+> +
+> +       hsi2c_9: hsi2c@12E10000 {
+> +               compatible = "samsung,exynos5-hsi2c";
+> +               reg = <0x12E10000 0x1000>;
+> +               interrupts = <0 88 0>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               pinctrl-names = "default";
+> +               pinctrl-0 = <&i2c9_hs_bus>;
+> +               clocks = <&clock 282>;
+> +               clock-names = "hsi2c";
+> +               status = "disabled";
+> +       };
+> +
+> +       hsi2c_10: hsi2c@12E20000 {
+> +               compatible = "samsung,exynos5-hsi2c";
+> +               reg = <0x12E20000 0x1000>;
+> +               interrupts = <0 203 0>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               pinctrl-names = "default";
+> +               pinctrl-0 = <&i2c10_hs_bus>;
+> +               clocks = <&clock 283>;
+> +               clock-names = "hsi2c";
+> +               status = "disabled";
+> +       };
+> +
+>         hdmi@14530000 {
+>                 compatible = "samsung,exynos4212-hdmi";
+>                 reg = <0x14530000 0x70000>;
+> --
+> 1.7.10.4
+>
+Just found that Sachin Kamat already tried to post a similar patch.
+http://permalink.gmane.org/gmane.linux.kernel.samsung-soc/24581
 
-See, we are benefiting already. I already found this thanks to the 0-day
-builder (which doesn't build arm64). This is a 64-bit vs. 32-bit bug and
-I need this driver enabled for arm64, so this needs to be fixed.
+I was actually waiting for the High speed I2C driver to get merged
+before adding the device tree nodes.
 
-> which is clearly a bug since ->nr_pages becomes 0.
-> 
-> BUT(!), this bug doesn't make any sense on x86 since highbank won't load
-> there and yours is a 32-bit arm. (it'll probably make some sense on
-> arm64 assuming the native long type is 8 bytes there).
-> 
-> And people would start reporting those bugs and we're going to start
-> asking on which arch are you compiling just to realize that a bug like
-> that doesn't make any sense on an N/A arch.
-> 
-> Oh, and then other edac drivers would simply fail building:
-> 
->   CC [M]  drivers/edac/octeon_edac-pc.o
-> drivers/edac/octeon_edac-pc.c:21:29: fatal error: asm/octeon/cvmx.h: No such file or directory
->  #include <asm/octeon/cvmx.h>
->                              ^
-> compilation terminated.
-> make[1]: *** [drivers/edac/octeon_edac-pc.o] Error 1
-> 
-> simply because x86/include doesn't have that header.
+The High speed I2C driver was accepted only a couple of days ago.
 
-Exactly the mess of arch or mach headers in drivers I referred to.
-
-> So let's not waste any more time with this topic. I think there are a
-> numerous other ways for achieving build coverage which make *way* *more*
-> sense than this.
-
-
-
+-- 
+Shine bright,
+(: Nav :)
