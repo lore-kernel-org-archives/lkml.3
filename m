@@ -1,50 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab3KHAZC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 19:25:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23097 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753720Ab3KHAZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 19:25:00 -0500
-Date: Thu, 7 Nov 2013 19:24:51 -0500
-From: Dave Jones <davej@redhat.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: linux-usb@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: usb-serial lockdep trace in linus' current tree.
-Message-ID: <20131108002451.GA28672@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Johan Hovold <jhovold@gmail.com>, linux-usb@vger.kernel.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20131107223728.GA18157@redhat.com>
- <20131108000903.GD8555@localhost>
+	id S1755827Ab3KHAZO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 19:25:14 -0500
+Received: from [216.244.165.45] ([216.244.165.45]:42478 "EHLO
+	mail.municomas.gob.pe" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753806Ab3KHAZK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 19:25:10 -0500
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131108000903.GD8555@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Congratulation!!! Confirm Mail Receipt!!
+To: Recipients <info@info.com>
+From: "Qatar Foundation" <info@info.com>
+Date: Thu, 07 Nov 2013 16:19:51 -0500
+Reply-To: qatarfoundations@yahoo.com.hk
+Message-Id: <20131107204435.4392C40AA1AA@mail.municomas.gob.pe>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 01:09:03AM +0100, Johan Hovold wrote:
- 
- > A recent change in usb-serial used the wrong memory-allocation flag in
- > write(), which results in a
- > 
- > 	[    5.979005] BUG: sleeping function called from invalid context at /home/johan/src/linux/linux-nu/mm/dmapool.c:310
- > 
- > with usb-next when using a usb-serial console as you seem to do be doing
- > as well.
- > 
- > Could be related. Care to give the fix below a try?
+This is to inform you that you were among the lucky beneficiary selected to receive this donations award sum of $ 1Million US DOLLAR each as charity donations/aid from the Qatar Foundation to promote your business and personal Interest. Kindly revert back for claims processing via email: qatarfoundations@yahoo.com.hk
 
-Seems to work. Feel free to add
+On behalf of the foundation, we say congratulations to you.
 
-Tested-by: Dave Jones <davej@fedoraproject.org>
+Yours Sincerely,
+President of Qatar Foundation:
+Dr. Mohammad Fathy Saoud
 
-if this is the agreed upon fix for this.
 
-thanks,
-
-	Dave
-
+IMPORTANT: If you receive this message in your spam or junk its due to your network provider.
