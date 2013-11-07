@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab3KGIll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 03:41:41 -0500
-Received: from smtp81.iad3a.emailsrvr.com ([173.203.187.81]:46113 "EHLO
-	smtp81.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751293Ab3KGIld (ORCPT
+	id S1753048Ab3KGInY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 03:43:24 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:60545 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab3KGInP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 03:41:33 -0500
-Date: Thu, 7 Nov 2013 09:41:29 +0100
-From: Andreas Herrmann <andreas.herrmann@calxeda.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/slub: Switch slub_debug kernel option to early_param
- to avoid boot panic
-Message-ID: <20131107084129.GP5661@alberich>
-References: <20131106184529.GB5661@alberich>
- <000001422ed8406b-14bef091-eee0-4e0e-bcdd-a8909c605910-000000@email.amazonses.com>
- <20131106195417.GK5661@alberich>
- <20131106203429.GL5661@alberich>
- <20131106211604.GM5661@alberich>
- <000001422f59e79e-ba0d30e2-fe7d-4e6f-9029-65dc5978fe60-000000@email.amazonses.com>
- <20131107082732.GN5661@alberich>
+	Thu, 7 Nov 2013 03:43:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131107082732.GN5661@alberich>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 7 Nov 2013 17:42:54 +0900
+Message-ID: <CAAVeFuJWKwAQ338R86O3WMarFDP2ZJDayLddGio9uXiXPsuyFA@mail.gmail.com>
+Subject: Is there a notification mechanism for enabled/disabled trace events?
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 09:27:32AM +0100, Andreas Herrmann wrote:
-> On Wed, Nov 06, 2013 at 04:38:10PM -0500, Christoph Lameter wrote:
-> > On Wed, 6 Nov 2013, Andreas Herrmann wrote:
-> > 
-> > > Would be nice, if your patch is pushed upstream asap.
-> > 
-> > Ok so this is a
-> > 
-> > Tested-by: Andreas Herrmann <andreas.herrmann@calxeda.com>
-> > 
-> > I think?
-> 
-> Yes.
+Hi everyone,
 
-And for sake of completeness. Here is some debug output with a kernel
-that had your "slub: Handle NULL parameter in kmem_cache_flags" patch
-applied. And of course there were a couple of unnamed slabs:
+Trace events can be enabled through debugfs by e.g. writing '1' into
+their enable node. This is a very useful feature as some tracing
+functions can introduce overhead and we only want them active when
+needed.
 
-  ...
-         .bss : 0xc089fd80 - 0xc094cc4c   ( 692 kB)
-  slub_debug_slabs (c2956a08): skbuff_fclone_cache, name (c06fc90c): kmem_cache_node
-  slub_debug_slabs (c2956a08): skbuff_fclone_cache, name (c06fc91c): kmem_cache
-→ slub_debug_slabs (c2956a08): skbuff_fclone_cache, name (  (null)): (null)
-  slub_debug_slabs (c2956a08): skbuff_fclone_cache, name (  (null)): (null)
-  slub_debug_slabs (c2956a08): skbuff_fclone_cache, name (  (null)): (null)
-  slub_debug_slabs (c2956a08): skbuff_fclone_cache, name (  (null)): (null)
-  slub_debug_slabs (c2956a08): skbuff_fclone_cache, name (  (null)): (null)
-  slub_debug_slabs (c2956a08): skbuff_fclone_cache, name (  (null)): (null)
-  slub_debug_slabs (c2956a08): skbuff_fclone_cache, name (  (null)): (null)
-  slub_debug_slabs (c2956a08): skbuff_fclone_cache, name (  (null)): (null)
-  slub_debug_slabs (c2956a08): skbuff_fclone_cache, name (  (null)): (null)
-  SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
-  ...
+There is one additional thing that I would need though, which is to be
+notified when a given trace event is enabled or disabled.
 
-The third one is wheree the panic happened w/o the fix.
+Here is why: I have a power monitoring hardware that can report how
+much power is currently used by the system. Having this information
+correlated with other traces (cpufreq, cpuidle, ...) is very useful ;
+it can be done by repeatedly scheduling a work that probes the power
+usage and traces it. The job should only be running when the power
+monitoring trace event is enabled, but AFAIK there is no way to be
+notified when it is enabled or disabled. So here are a few questions:
 
+1) Is there such a notification mechanism for trace events that I have missed?
 
-Andreas
+2) If not, is there any objection to having one? I'd say my use-case
+is not so uncommon and others would certainly benefit from it.
+
+3) What would be the right place to have it? ftrace_event_reg() looks
+like a good place to call a notifier chain, however I'm not sure where
+the notifier head should be stored, due to my poor understanding of
+ftrace.
+
+Any answer/comments greatly appreciated!
+
+Thanks,
+Alex.
