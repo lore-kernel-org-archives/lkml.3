@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200Ab3KGK6y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 05:58:54 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:51251 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737Ab3KGK6w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 05:58:52 -0500
+	id S1754489Ab3KGLAm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 06:00:42 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:31264 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783Ab3KGLAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 06:00:39 -0500
+Message-ID: <527B72AF.50002@imgtec.com>
+Date: Thu, 7 Nov 2013 10:59:59 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1864683.tCrpAXuim8@amdc1032>
-References: <1381979473-7079-1-git-send-email-ch.naveen@samsung.com>
- <1383803562-31752-1-git-send-email-ch.naveen@samsung.com> <1864683.tCrpAXuim8@amdc1032>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Thu, 7 Nov 2013 16:28:31 +0530
-Message-ID: <CAHfPSqBjTpCyKaR03t_cd3JrhX_6tfwsBFuHEG1v1=qn1OqyrQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v8] thermal: samsung: add intclr_fall_shift bit in
- exynos_tmu_register struct
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>, linux-pm@vger.kernel.org,
-        rui.zhang@intel.com, eduardo.valentin@ti.com,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
-        Kukjin Kim <kgene.kim@samsung.com>, devicetree@vger.kernel.org,
-        cpgs@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kees Cook <keescook@chromium.org>
+CC: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Eric Paris <eparis@redhat.com>,
+        <libseccomp-discuss@lists.sourceforge.net>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Will Drewry <wad@chromium.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] seccomp: not compatible with ARM OABI
+References: <20131106233117.GA24545@www.outflux.net>
+In-Reply-To: <20131106233117.GA24545@www.outflux.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_11_07_11_00_01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bartlomiej,
+Hi,
 
-On 7 November 2013 16:18, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
->
-> Hi,
->
-> On Thursday, November 07, 2013 11:22:42 AM Naveen Krishna Chatradhi wrote:
->> On Exynos5250, the FALL interrupt related en, status and clear bits are
->> available at an offset of
->> 16 in INTEN, INTSTAT registers and at an offset of
->> 12 in INTCLEAR register.
->>
->> On Exynos5420, the FALL interrupt related en, status and clear bits are
->> available at an offset of
->> 16 in INTEN, INTSTAT and INTCLEAR registers.
->>
->> On Exynos5440,
->> the FALL_IRQEN bits are at an offset of 4
->> and the RISE_IRQEN bits are at an offset of 0
->>
->> This patch introduces a new bit field intclr_fall_shift to handle the
->> offset for exyns5250 and exynos5440
->> Also removes the unused macros EXYNOS_TMU_FALL_INT_SHIFT and
->> EXYNOS5440_TMU_FALL_INT_SHIFT, inten_fall_shift field
->
-> Thanks for fixing this.  All three patches look good to me now.
->
-> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+On 06/11/13 23:31, Kees Cook wrote:
+> diff --git a/arch/Kconfig b/arch/Kconfig
+> index af2cc6eabcc7..6eaca7d92399 100644
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@ -331,12 +331,15 @@ config HAVE_ARCH_SECCOMP_FILTER
+>  
+>  config SECCOMP_FILTER
+>  	def_bool y
+> -	depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET
+> +	depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET && !OABI_COMPAT
 
-Thanks for all the following up.
->
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->
+Isn't this the whole point of HAVE_ARCH_SECCOMP_FILTER?
 
+Just change the select in arch/arm/Kconfig to this:
 
+	select HAVE_ARCH_SECCOMP_FILTER if !OABI_COMPAT
 
--- 
-Shine bright,
-(: Nav :)
+Cheers
+James
+
