@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab3KGUMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 15:12:54 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:44673 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249Ab3KGUMr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 15:12:47 -0500
+	id S1754223Ab3KGUNu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 15:13:50 -0500
+Received: from sauhun.de ([89.238.76.85]:57225 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753414Ab3KGUNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 15:13:44 -0500
+Date: Thu, 7 Nov 2013 21:13:32 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Christian Daudt <bcm@fixthebug.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-i2c@vger.kernel.org,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RESEND PATCH 2/4] i2c: i2c-bcm-kona: Add support for high-speed
+ mode
+Message-ID: <20131107201332.GA7119@katana>
+References: <1381960909-1735-1-git-send-email-tim.kryger@linaro.org>
+ <1381960909-1735-3-git-send-email-tim.kryger@linaro.org>
+ <20131101130835.GC6734@katana>
+ <CAAYSxhrrkSvOJpYPz7txVsot1you3fFzkXJ6fqaS4OgRM0Z2gA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <21115.20118.72541.74924@gargle.gargle.HOWL>
-References: <21114.2315.610902.200164@gargle.gargle.HOWL>
-	<CAE9FiQX3mGLmzFCyaHYPBA2QgvxBYr9zarXcUKa5DC0ZtiiWZw@mail.gmail.com>
-	<21115.20118.72541.74924@gargle.gargle.HOWL>
-Date: Thu, 7 Nov 2013 12:12:46 -0800
-X-Google-Sender-Auth: BtdoJMGGxMrsg7QR9BsY0-_8YfM
-Message-ID: <CAE9FiQWPBBug_TWOnQRsSbTpaNPL9v5SsU33Akg2D47c6stHSw@mail.gmail.com>
-Subject: Re: [BUG?] mtrr sanitizer fails on Latitude E6230
-From: Yinghai Lu <yinghai@kernel.org>
-To: Mikael Pettersson <mikpelinux@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Qxx1br4bt0+wmkIi"
+Content-Disposition: inline
+In-Reply-To: <CAAYSxhrrkSvOJpYPz7txVsot1you3fFzkXJ6fqaS4OgRM0Z2gA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 7, 2013 at 12:25 AM, Mikael Pettersson <mikpelinux@gmail.com> wrote:
-> Yinghai Lu writes:
->  > On Wed, Nov 6, 2013 at 1:16 AM, Mikael Pettersson <mikpelinux@gmail.com> wrote:
->  > > I recently got a Dell Latitude E6230 (Ivy Bridge i7-3540M) and noticed that
->  > > the mtrr sanitizer failed on it:
->  > >
->  > > === snip ===
->  > > Linux version 3.12.0 (mikpe@barley) (gcc version 4.8.3 20131017 (prerelease) (GCC) ) #1 SMP Wed Nov 6 09:46:02 CET 2013
->  > > Command line: ro root=LABEL=/ resume=/dev/sda2 rd_NO_LUKS rd_NO_LVM rd_NO_MD rd_NO_DM LANG=en_US.UTF-8 SYSFONT=latarcyrheb-sun16 KEYTABLE=sv-latin1
->  > ...
->  > gran_size: 8M  chunk_size: 64M         num_reg: 9      lose cover RAM: 6M
->  > ...
->  > > mtrr_cleanup: can not find optimal value
->  > > please specify mtrr_gran_size/mtrr_chunk_size
->  > > === snip ===
->  > >
->  > > For now I'm disabling the mtrr sanitizer in this machine's kernel.
->  >
->  > Can you try to boot with "mtrr_gran_size=8m mtrr_chunk_size=64m" ?
->
-> That results in:
->
-> reg 0, base: 0GB, range: 8GB, type WB
-> reg 1, base: 8GB, range: 512MB, type WB
-> reg 2, base: 3584MB, range: 512MB, type UC
-> reg 3, base: 3520MB, range: 64MB, type UC
-> reg 4, base: 3512MB, range: 8MB, type UC
-> reg 5, base: 8688MB, range: 16MB, type UC
-> reg 6, base: 8680MB, range: 8MB, type UC
-> reg 7, base: 8678MB, range: 2MB, type UC
-> total RAM covered: 8094M
->  gran_size: 8M  chunk_size: 64M         num_reg: 9      lose cover RAM: 6M
-> New variable MTRRs
-> reg 0, base: 0GB, range: 2GB, type WB
-> reg 1, base: 2GB, range: 1GB, type WB
-> reg 2, base: 3GB, range: 256MB, type WB
-> reg 3, base: 3328MB, range: 128MB, type WB
-> reg 4, base: 3456MB, range: 64MB, type WB
-> reg 5, base: 3512MB, range: 8MB, type UC
-> reg 6, base: 4GB, range: 4GB, type WB
-> reg 7, base: 8GB, range: 512MB, type WB
-> reg 8, base: 8672MB, range: 32MB, type UC
-> e820: update [mem 0xdb800000-0xffffffff] usable ==> reserved
-> e820: update [mem 0x21e000000-0x21e5fffff] usable ==> reserved
-...
->> modified: [mem 0x000000021e000000-0x000000021e5fffff] reserved
 
-that is right, it throw 6M away.
+--Qxx1br4bt0+wmkIi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Did you notice any slowness or speeding for x window?
 
-What does /proc/mtrr look like after xwindow is started?
+> While the bus speed property is really a configuration parameter (and
+> not a true description of of the hardware) it seems improper to put
+> driver specific details into the binding document.
 
-Thanks
+OK. Then please change the error message for unsupported bus speeds to
+contain the supported ones. I don't think it is good practice to force
+users to look into the sourcecode to find this information.
 
-Yinghai
+Regards,
+
+   Wolfram
+
+
+--Qxx1br4bt0+wmkIi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSe/RsAAoJEBQN5MwUoCm27S8P/R9Qb0Ohol9Kl7vSPYcZ1kNZ
++I5P1jmHZkVFSzuJT+k8Brm40krLMmTOP+r9yVvhFVVF7kc9Ul0/UNOjPCJITxTf
+xd6xl3UAkBc65Wc27Ox584QOVRlIKAZ+rTkCXGXNYnKQi4asRSr076dX4Cy+sfxV
+bqTPMk1p8qFO8d9iUTe9DYhMAktzDXmSrC9eIKB11TB6YA1k0txyjpGNnM1oxGTQ
+D9DPk0ZBpSH9bBdMOxH+QZeukcLECrsjSm283+BmjZlulWYDe/lir+T8w5FHQ6A+
+LvUmLPhX+W3dBMR0dVDfaPHiaft75qQGIgUSu8b9XitDxHchNfPSKt6USKShnES0
+s80MKbIh/U/9zreBXqZOPTap3318Bp7D3rqoZMN8q53uPdyjYoGyEXXEHlX25IKx
+7kc/lOZ/3tlLs760Kt0W52CP9M7iha7J6CS8AEKLewsMw2/KswMft7CTJM6vbftt
+Uw8fHuv1XXRa90pHPp+coPR+VZvtJMr4wWnvdbESpjxF2caGvwnaE1X5rO9qhjgD
+ROyPw7gx6625Rn2w1WzFlMyPQQxfTnjDGdlsFlRhoKuDRT685Yw3LeGixP8GF2i0
+yEXhsRijtasrvvwqemgqvjZ5pXNpt3nijg1sfTW2Q3juXW7/KBtHGxfXzEPqDk81
+0e7TKB+70pUIYT0KtcG9
+=s0Qd
+-----END PGP SIGNATURE-----
+
+--Qxx1br4bt0+wmkIi--
