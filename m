@@ -1,96 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab3KGXWE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 18:22:04 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:45772 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab3KGXVy (ORCPT
+	id S1755586Ab3KGXWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 18:22:12 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:52701 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755174Ab3KGXV7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 18:21:54 -0500
-Date: Fri, 8 Nov 2013 00:21:51 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
- too much
-Message-ID: <20131107232148.GE28130@localhost.localdomain>
-References: <1383860919-1883-1-git-send-email-jack@suse.cz>
- <1383860919-1883-4-git-send-email-jack@suse.cz>
- <CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
- <20131107225733.GE2054@quack.suse.cz>
-MIME-Version: 1.0
+	Thu, 7 Nov 2013 18:21:59 -0500
+From: Kumar Gala <galak@codeaurora.org>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131107225733.GE2054@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Subject: common location for devicetree files
+Date: Thu, 7 Nov 2013 17:21:58 -0600
+Message-Id: <1438803E-C904-428B-B042-891978BC15DF@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>
+To: devicetree@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1283)
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 11:57:33PM +0100, Jan Kara wrote:
-> On Thu 07-11-13 23:43:52, Frederic Weisbecker wrote:
-> > 2013/11/7 Jan Kara <jack@suse.cz>:
-> > > A CPU can be caught in console_unlock() for a long time (tens of seconds
-> > > are reported by our customers) when other CPUs are using printk heavily
-> > > and serial console makes printing slow. Despite serial console drivers
-> > > are calling touch_nmi_watchdog() this triggers softlockup warnings
-> > > because interrupts are disabled for the whole time console_unlock() runs
-> > > (e.g. vprintk() calls console_unlock() with interrupts disabled). Thus
-> > > IPIs cannot be processed and other CPUs get stuck spinning in calls like
-> > > smp_call_function_many(). Also RCU eventually starts reporting lockups.
-> > >
-> > > In my artifical testing I can also easily trigger a situation when disk
-> > > disappears from the system apparently because interrupt from it wasn't
-> > > served for too long. This is why just silencing watchdogs isn't a
-> > > reliable solution to the problem and we simply have to avoid spending
-> > > too long in console_unlock() with interrupts disabled.
-> > >
-> > > The solution this patch works toward is to postpone printing to a later
-> > > moment / different CPU when we already printed over X characters in
-> > > current console_unlock() invocation. This is a crude heuristic but
-> > > measuring time we spent printing doesn't seem to be really viable - we
-> > > cannot rely on high resolution time being available and with interrupts
-> > > disabled jiffies are not updated. User can tune the value X via
-> > > printk.offload_chars kernel parameter.
-> > >
-> > > Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-> > > Signed-off-by: Jan Kara <jack@suse.cz>
-> > 
-> > When a message takes tens of seconds to be printed, it usually means
-> > we are in trouble somehow :)
-> > I wonder what printk source can trigger such a high volume.
->   Machines with tens of processors and thousands of scsi devices. When
-> device discovery happens on boot, all processors are busily reporting new
-> scsi devices and one poor looser is bound to do the printing for ever and
-> ever until the machine dies...
-> 
-> Or try running sysrq-t on a large machine with serial console connected. The
-> machine will die because of lockups (although in this case I agree it is more
-> of a problem of sysrq-t doing lots of printing in interrupt-disabled
-> context).
-> 
-> > May be cutting some huge message into smaller chunks could help? That
-> > would re enable interrupts between each call.
-> > 
-> > It's hard to tell without the context, but using other CPUs for
-> > rescuing doesn't look like a good solution. What if the issue happens
-> > in UP to begin with?
->   The real trouble in practice is that while one cpu is doing printing,
-> other cpus are appending to the printk buffer. So the cpu can be printing
-> for a *long* time. So offloading the work to other cpus which are also
-> appending messages seems as a fair thing to do.
+As we start having more sharing of device trees between architectures (arm & arm64, arm & powerpc, guessing maybe mips & arm) we need dts to live in location that 
 
-Ok I see now.
+I was wondering what people felt about doing:
 
-But then this irq_work based solution won't work if, say, you run in full dynticks
-mode. Also the hook on the timer interrupt is something that I wish we get rid
-of on archs that can trigger self-IPIs.
+	arch/dts/<VENDOR>/
 
-Notwithstanding it's going to have scalibility issues as irq work then converges
-to a single list for unbound works.
+as a common location that could be shared.  I'm up for other suggestions.
 
-Offloading to a workqueue would be perhaps better, and writing to the serial
-console could then be done with interrupts enabled, preemptible context, etc...
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
