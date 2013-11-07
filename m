@@ -1,34 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab3KGP5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 10:57:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38375 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862Ab3KGP5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 10:57:54 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <527B2A76.2000501@infradead.org>
-References: <527B2A76.2000501@infradead.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: dhowells@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, lailavrazda1979@gmail.com
-Subject: Re: [PATCH] kcore: add Kconfig help text
-Date: Thu, 07 Nov 2013 15:57:28 +0000
-Message-ID: <15490.1383839848@warthog.procyon.org.uk>
+	id S1754579Ab3KGP7s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:59:48 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:53908 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab3KGP7q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 10:59:46 -0500
+Message-ID: <527BB8EF.6050704@gmail.com>
+Date: Thu, 07 Nov 2013 08:59:43 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, mingo@kernel.org
+Subject: Re: [PATCH 0/4] perf record: Cleanups and mmap-based output
+References: <1383763297-27066-1-git-send-email-dsahern@gmail.com> <20131107132118.GD1251@krava.brq.redhat.com>
+In-Reply-To: <20131107132118.GD1251@krava.brq.redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy Dunlap <rdunlap@infradead.org> wrote:
+On 11/7/13, 6:21 AM, Jiri Olsa wrote:
+>
+>    CC       builtin-record.o
+> builtin-record.c: In function ‘do_mmap_output’:
+> builtin-record.c:118:13: error: ignoring return value of ‘ftruncate’, declared with attribute warn_unused_result [-Werror=unused-result]
+>      ftruncate(file->fd, offset);
+>               ^
+> cc1: all warnings being treated as errors
+>
 
-> +	  Exports kernel core in ELF format.
+oops, fixed that and forgot to fold into the patch. Will take care of it 
+on next round.
 
-"Provides a virtual ELF core file of the live kernel.  This can be read with
-gdb and other ELF tools.  No modifications can be made using this mechanism."
+David
 
-maybe?
