@@ -1,171 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab3KGNhL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 08:37:11 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53515 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab3KGNhG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 08:37:06 -0500
-Date: Thu, 7 Nov 2013 14:36:25 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [RFC] arch: Introduce new TSO memory barrier smp_tmb()
-Message-ID: <20131107133625.GU10651@twins.programming.kicks-ass.net>
-References: <CA+55aFyD_kCkAHQwHCUBrumO-pH6LaZikTNvyWDW_tWsHdqk6Q@mail.gmail.com>
- <20131104105059.GL3947@linux.vnet.ibm.com>
- <20131104112254.GK28601@twins.programming.kicks-ass.net>
- <20131104162732.GN3947@linux.vnet.ibm.com>
- <20131104191127.GW16117@laptop.programming.kicks-ass.net>
- <20131104205344.GW3947@linux.vnet.ibm.com>
- <20131106123946.GJ10651@twins.programming.kicks-ass.net>
- <CAMuHMdXZjQJvT7R4ODbDNBgAVwPUBPjB6UoR66_sNuFx7opUDw@mail.gmail.com>
- <20131106135736.GK10651@twins.programming.kicks-ass.net>
- <20131107111741.GD13139@mudshark.cambridge.arm.com>
+	id S1753525Ab3KGNhk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 08:37:40 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:53290 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753311Ab3KGNhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 08:37:37 -0500
+From: George Cherian <george.cherian@ti.com>
+To: <balbi@ti.com>, <stern@rowland.harvard.edu>, <bigeasy@linutronix.de>
+CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, George Cherian <george.cherian@ti.com>
+Subject: [PATCH] usb: gadget: f_mass_storage: call try_to_freeze only when its safe
+Date: Thu, 7 Nov 2013 19:07:19 +0530
+Message-ID: <1383831439-25558-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131107111741.GD13139@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 11:17:41AM +0000, Will Deacon wrote:
-> Hi Peter,
-> 
-> Couple of minor fixes on the arm64 side...
-> 
-> On Wed, Nov 06, 2013 at 01:57:36PM +0000, Peter Zijlstra wrote:
-> > --- a/arch/arm64/include/asm/barrier.h
-> > +++ b/arch/arm64/include/asm/barrier.h
-> > @@ -35,11 +35,59 @@
-> >  #define smp_mb()       barrier()
-> >  #define smp_rmb()      barrier()
-> >  #define smp_wmb()      barrier()
-> > +
-> > +#define smp_store_release(p, v)                                                \
-> > +do {                                                                   \
-> > +       compiletime_assert_atomic_type(*p);                             \
-> > +       smp_mb();                                                       \
-> > +       ACCESS_ONCE(*p) = (v);                                          \
-> > +} while (0)
-> > +
-> > +#define smp_load_acquire(p)                                            \
-> > +({                                                                     \
-> > +       typeof(*p) ___p1 = ACCESS_ONCE(*p);                             \
-> > +       compiletime_assert_atomic_type(*p);                             \
-> > +       smp_mb();                                                       \
-> > +       ___p1;                                                          \
-> > +})
-> > +
-> >  #else
-> > +
-> >  #define smp_mb()       asm volatile("dmb ish" : : : "memory")
-> >  #define smp_rmb()      asm volatile("dmb ishld" : : : "memory")
-> >  #define smp_wmb()      asm volatile("dmb ishst" : : : "memory")
-> > -#endif
-> 
-> Why are you getting rid of this #endif?
+Call try_to_freeze() in sleep_thread() only when its safe to sleep.
+do_read() and do_write() calls sleep_thread with lock held.
+Make sure these wont call try_to_freeze() by passing can_freeze flag
+to sleep_thread.
 
-oops..
-
-> > +#define smp_store_release(p, v)                                                \
-> > +do {                                                                   \
-> > +       compiletime_assert_atomic_type(*p);                             \
-> > +       switch (sizeof(*p)) {                                           \
-> > +       case 4:                                                         \
-> > +               asm volatile ("stlr %w1, [%0]"                          \
-> > +                               : "=Q" (*p) : "r" (v) : "memory");      \
-> > +               break;                                                  \
-> > +       case 8:                                                         \
-> > +               asm volatile ("stlr %1, [%0]"                           \
-> > +                               : "=Q" (*p) : "r" (v) : "memory");      \
-> > +               break;                                                  \
-> > +       }                                                               \
-> > +} while (0)
-> > +
-> > +#define smp_load_acquire(p)                                            \
-> > +({                                                                     \
-> > +       typeof(*p) ___p1;                                               \
-> > +       compiletime_assert_atomic_type(*p);                             \
-> > +       switch (sizeof(*p)) {                                           \
-> > +       case 4:                                                         \
-> > +               asm volatile ("ldar %w0, [%1]"                          \
-> > +                       : "=r" (___p1) : "Q" (*p) : "memory");          \
-> > +               break;                                                  \
-> > +       case 8:                                                         \
-> > +               asm volatile ("ldar %0, [%1]"                           \
-> > +                       : "=r" (___p1) : "Q" (*p) : "memory");          \
-> > +               break;                                                  \
-> > +       }                                                               \
-> > +       ___p1;                                                          \
-> > +})
-> 
-> You don't need the square brackets when using the "Q" constraint (otherwise
-> it will expand to something like [[x0]], which gas won't accept).
-> 
-> With those changes, for the general idea and arm/arm64 parts:
-> 
->   Acked-by: Will Deacon <will.deacon@arm.com>
-
-Thanks, I did that split-up I talked about yesterday, I was going to
-compile them for all archs I have a compiler for before posting again.
-
-
-
+Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
---- a/arch/arm64/include/asm/barrier.h
-+++ b/arch/arm64/include/asm/barrier.h
-@@ -62,11 +62,11 @@ do {									\
- 	compiletime_assert_atomic_type(*p);				\
- 	switch (sizeof(*p)) {						\
- 	case 4:								\
--		asm volatile ("stlr %w1, [%0]"				\
-+		asm volatile ("stlr %w1, %0"				\
- 				: "=Q" (*p) : "r" (v) : "memory");	\
- 		break;							\
- 	case 8:								\
--		asm volatile ("stlr %1, [%0]"				\
-+		asm volatile ("stlr %1, %0"				\
- 				: "=Q" (*p) : "r" (v) : "memory");	\
- 		break;							\
- 	}								\
-@@ -78,17 +78,19 @@ do {									\
- 	compiletime_assert_atomic_type(*p);				\
- 	switch (sizeof(*p)) {						\
- 	case 4:								\
--		asm volatile ("ldar %w0, [%1]"				\
-+		asm volatile ("ldar %w0, %1"				\
- 			: "=r" (___p1) : "Q" (*p) : "memory");		\
- 		break;							\
- 	case 8:								\
--		asm volatile ("ldar %0, [%1]"				\
-+		asm volatile ("ldar %0, %1"				\
- 			: "=r" (___p1) : "Q" (*p) : "memory");		\
- 		break;							\
- 	}								\
- 	___p1;								\
- })
+ drivers/usb/gadget/f_mass_storage.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index a03ba2c..f2d0d4b 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -602,13 +602,14 @@ static bool start_out_transfer(struct fsg_common *common, struct fsg_buffhd *bh)
+ 	return true;
+ }
  
-+#endif
-+
- #define read_barrier_depends()		do { } while(0)
- #define smp_read_barrier_depends()	do { } while(0)
+-static int sleep_thread(struct fsg_common *common)
++static int sleep_thread(struct fsg_common *common, bool can_freeze)
+ {
+ 	int	rc = 0;
  
+ 	/* Wait until a signal arrives or we are woken up */
+ 	for (;;) {
+-		try_to_freeze();
++		if (can_freeze)
++			try_to_freeze();
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 		if (signal_pending(current)) {
+ 			rc = -EINTR;
+@@ -682,7 +683,7 @@ static int do_read(struct fsg_common *common)
+ 		/* Wait for the next buffer to become available */
+ 		bh = common->next_buffhd_to_fill;
+ 		while (bh->state != BUF_STATE_EMPTY) {
+-			rc = sleep_thread(common);
++			rc = sleep_thread(common, false);
+ 			if (rc)
+ 				return rc;
+ 		}
+@@ -937,7 +938,7 @@ static int do_write(struct fsg_common *common)
+ 		}
+ 
+ 		/* Wait for something to happen */
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, false);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -1504,7 +1505,7 @@ static int throw_away_data(struct fsg_common *common)
+ 		}
+ 
+ 		/* Otherwise wait for something to happen */
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -1625,7 +1626,7 @@ static int send_status(struct fsg_common *common)
+ 	/* Wait for the next buffer to become available */
+ 	bh = common->next_buffhd_to_fill;
+ 	while (bh->state != BUF_STATE_EMPTY) {
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -1828,7 +1829,7 @@ static int do_scsi_command(struct fsg_common *common)
+ 	bh = common->next_buffhd_to_fill;
+ 	common->next_buffhd_to_drain = bh;
+ 	while (bh->state != BUF_STATE_EMPTY) {
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -2174,7 +2175,7 @@ static int get_next_command(struct fsg_common *common)
+ 	/* Wait for the next buffer to become available */
+ 	bh = common->next_buffhd_to_fill;
+ 	while (bh->state != BUF_STATE_EMPTY) {
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -2193,7 +2194,7 @@ static int get_next_command(struct fsg_common *common)
+ 
+ 	/* Wait for the CBW to arrive */
+ 	while (bh->state != BUF_STATE_FULL) {
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -2379,7 +2380,7 @@ static void handle_exception(struct fsg_common *common)
+ 			}
+ 			if (num_active == 0)
+ 				break;
+-			if (sleep_thread(common))
++			if (sleep_thread(common, true))
+ 				return;
+ 		}
+ 
+@@ -2516,7 +2517,7 @@ static int fsg_main_thread(void *common_)
+ 		}
+ 
+ 		if (!common->running) {
+-			sleep_thread(common);
++			sleep_thread(common, true);
+ 			continue;
+ 		}
+ 
+-- 
+1.8.1
+
