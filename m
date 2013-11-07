@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab3KGJzp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 04:55:45 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:56271 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399Ab3KGJzj (ORCPT
+	id S1753751Ab3KGKF5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 05:05:57 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:24255 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909Ab3KGKFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 04:55:39 -0500
+	Thu, 7 Nov 2013 05:05:55 -0500
+Message-ID: <527B6637.4000809@oracle.com>
+Date: Thu, 07 Nov 2013 18:06:47 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyNX=5i0hmk-KuD+Vk+yBD-kkAiywx1Lx_JJmHVPx=1wA@mail.gmail.com>
-References: <cover.1383771175.git.tim.c.chen@linux.intel.com>
-	<1383773827.11046.355.camel@schen9-DESK>
-	<CA+55aFyNX=5i0hmk-KuD+Vk+yBD-kkAiywx1Lx_JJmHVPx=1wA@mail.gmail.com>
-Date: Thu, 7 Nov 2013 01:55:37 -0800
-Message-ID: <CANN689HkNP-UZOu+vDCFPG5_k=BNZG6a+oP+Ope16vLc2ShFzw@mail.gmail.com>
-Subject: Re: [PATCH v3 3/5] MCS Lock: Barrier corrections
-From: Michel Lespinasse <walken@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        "Figo. zhang" <figo1802@gmail.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Rik van Riel <riel@redhat.com>, Waiman Long <waiman.long@hp.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-arch@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        George Spelvin <linux@horizon.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Alex Shi <alex.shi@linaro.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Stephan Mueller <stephan.mueller@atsec.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Andreas Dilger <aedilger@gmail.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>, "Ted Ts'o" <tytso@mit.edu>,
+        jakub@redhat.com, drepper@redhat.com,
+        James Morris <james.l.morris@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] binfmt_elf.c: use get_random_int() to fix entropy
+ depleting
+References: <50A46BBD.3060701@oracle.com> <527B1399.8090805@oracle.com> <2161006.F8akiOkWYa@tauon>
+In-Reply-To: <2161006.F8akiOkWYa@tauon>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 6, 2013 at 5:39 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Sorry about the HTML crap, the internet connection is too slow for my normal
-> email habits, so I'm using my phone.
->
-> I think the barriers are still totally wrong for the locking functions.
->
-> Adding an smp_rmb after waiting for the lock is pure BS. Writes in the
-> locked region could percolate out of the locked region.
->
-> The thing is, you cannot do the memory ordering for locks in any same
-> generic way. Not using our current barrier system. On x86 (and many others)
-> the smp_rmb will work fine, because writes are never moved earlier. But on
-> other architectures you really need an acquire to get a lock efficiently. No
-> separate barriers. An acquire needs to be on the instruction that does the
-> lock.
->
-> Same goes for unlock. On x86 any store is a fine unlock, but on other
-> architectures you need a store with a release marker.
->
-> So no amount of barriers will ever do this correctly. Sure, you can add full
-> memory barriers and it will be "correct" but it will be unbearably slow, and
-> add totally unnecessary serialization. So *correct* locking will require
-> architecture support.
+Thanks for your prompt response!
 
-Rather than writing arch-specific locking code, would you agree to
-introduce acquire and release memory operations ?
+On 11/07/2013 01:13 PM, Stephan Mueller wrote:
 
-The semantics of an acquire memory operation would be: the specified
-memory operation occurs, and any reads or writes after that operation
-are guaranteed not to be reordered before it (useful to implement lock
-acquisitions).
-The semantics of a release memory operation would be: the specified
-memory operation occurs, and any reads or writes before that operation
-are guaranteed not to be reordered after it (useful to implement lock
-releases).
+> Am Donnerstag, 7. November 2013, 12:14:17 schrieb Jeff Liu:
+> 
+> Hi Jeff,
+> 
+>> Hi Stephan,
+>>
+>> As per your previous comments for this fix, you have promised another
+>> approach which is promising to avoid entropy starvation, I got this
+>> info from the following thread: [PATCH] avoid entropy starvation due
+>> to stack protection
+>> https://lkml.org/lkml/2012/12/14/267
+> 
+> There are several solutions:
+> 
+> - Ted is trying to prevent a constant reseeding of the nonblocking_pool 
+> from the input_pool with a set of patches. I am unsure whether these 
+> patches find their way into the kernel. With those patches, we can 
+> happily keep get_random_bytes without too much strain on the input_pool 
+> entropy -- i.e. drop the conversion to get_random_int.
 
-Now each arch would still need to define several acquire and release
-operations, but this is a quite useful model to build generic code on.
-For example, the fast path for the x86 spinlock implementation could
-be expressed generically as an acquire fetch-and-add (for
-__ticket_spin_lock) and a release add (for __ticket_spin_unlock).
+Yup, that's would be great if we can solve this problem without that.
 
-Would you think this is a useful direction to move to ?
+> 
+> - The begin of the email thread contains a patch that adds a new pool 
+> which I called the kernel_pool that is just just for kernel internal 
+> purposes. With Teds proposed changes to nonblocking_pool, 
+> nonblocking_pool would behave almost like my kernel_pool and thus my 
+> kernel_pool patch would not be needed.
+> 
+> - Lastly I am trying to add a new seed source to random.c and kernel 
+> crypto API which could also be used as a stand-alone noise source. That 
+> proposed noise source would effectively alleviate a lot of entropy 
+> problems. The discussion for inclusion is raging at 
+> http://lkml.org/lkml/2013/10/11/582. Ted is having concerns and we are 
+> in a discussion to address those.
 
-Thanks,
+I spent a few hours reading through the thread through some contents are
+beyond my understanding.  Looks the proposed approach has already been
+widely tested on various platforms, but there still have concerns like
+the random numbers which are generated via the jitter "entropy collector"
+probably can not be convinced to be more secure.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Thanks for your efforts and I'll keep a close eye on it's progress.
+
+Regards,
+-Jeff
