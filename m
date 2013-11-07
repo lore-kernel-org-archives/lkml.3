@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab3KGMwx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 07:52:53 -0500
-Received: from mga11.intel.com ([192.55.52.93]:25331 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948Ab3KGMww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 07:52:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,652,1378882800"; 
-   d="scan'208";a="429392428"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
-CC: "Usyskin, Alexander" <alexander.usyskin@intel.com>,
-        Nicol? Costanza <abitrules@yahoo.it>,
-        Alex Burmashev <alex.burmashev@rosalab.ru>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: mei: cancel stall timers in mei_reset
-Thread-Topic: mei: cancel stall timers in mei_reset
-Thread-Index: AQHO1v25eHT6rrwZAkeTBc+srO32QJoTJVWQgAH12wCAARFxgIAAHv+AgAAeFACAACHsAIABJEKAgAD0PACAAJQjAIAAQ7VA
-Date: Thu, 7 Nov 2013 12:52:47 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AF07452@HASMSX106.ger.corp.intel.com>
-References: <5B8DA87D05A7694D9FA63FD143655C1B1AF0656E@HASMSX106.ger.corp.intel.com>
- <1046189209.5373.1383806272671.JavaMail.root@collab.rosalab.ru>
-In-Reply-To: <1046189209.5373.1383806272671.JavaMail.root@collab.rosalab.ru>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.12]
-Content-Type: text/plain; charset="utf-8"
+	id S1752404Ab3KGMzh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 07:55:37 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:41927 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750956Ab3KGMzg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 07:55:36 -0500
+X-Sasl-enc: uSQUVXHcsX1Z7345CnPoiuUsRnsdXyTzsXgqGckJwlfA 1383828935
+Date: Thu, 7 Nov 2013 10:55:32 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>, Paul Moore <paul@paul-moore.com>,
+        Richard Weinberger <richard@nod.at>,
+        libseccomp-discuss@lists.sourceforge.net,
+        Will Drewry <wad@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: ARM audit, seccomp, etc are broken wrt OABI syscalls
+Message-ID: <20131107125532.GB3355@khazad-dum.debian.net>
+References: <CALCETrUt7Ojh5Yy4KYgBPj_wBr=fzKKJ=OOgGP9BtXoKrr9QnA@mail.gmail.com>
+ <CAGXu5jJreo001uBLV8oAgR_Z2WZK2qtH8YfvriQJVAQ4SgdRzw@mail.gmail.com>
+ <20131106004058.GU16735@n2100.arm.linux.org.uk>
+ <CALCETrXd7SknNCptTTojBzOo+RNzPwGrgjigVdVeOkGMAtajWg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXd7SknNCptTTojBzOo+RNzPwGrgjigVdVeOkGMAtajWg@mail.gmail.com>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA7CquYh031894
 
+On Tue, 05 Nov 2013, Andy Lutomirski wrote:
+> Maybe the thing to do is to put a warning in the config text for
+> CONFIG_OABI_COMPAT that describes the problems (malicious userspace
+> can confuse syscall auditors, strace, etc.), change the "if in doubt"
+> part to N, and disable seccomp filters if CONFIG_OABI_COMPAT.  That
+> might even get Debian to change their default.
 
+Bug reported to the Debian BTS: #728975
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=728975
 
-> -----Original Message-----
-> From: Eugene Shatokhin [mailto:eugene.shatokhin@rosalab.ru]
-> Sent: Thursday, November 07, 2013 08:38
-> To: Winkler, Tomas
-> Cc: Usyskin, Alexander; Nicol? Costanza; Alex Burmashev; LKML
-> Subject: RE: mei: cancel stall timers in mei_reset
-> 
-> Hi,
-> 
-> > You can safely comment out all of the timer_work.
-> 
-> Well, I rebuilt the kernel with the schedule_... commented out (in
-> mei_me_pci_resume(), for the present). The errors are no longer visible in the
-> log. The full log is attached.
-> 
-
-Looks like there is a hiccup in scheduling during resume and timer work is kicked before its time and starts unnecessary  the reset flow.
-Can you check  that the device is in good state (<debugfs>/mei/devastate , it should be ENABLED).
-
-We will work on some solution. 
-
-Thanks
-Tomas
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
