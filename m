@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab3KGOTK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 09:19:10 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:25791 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab3KGOTF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 09:19:05 -0500
-X-AuditID: cbfec7f5-b7ef66d00000795a-ad-527ba157a6e1
-From: Tomasz Figa <t.figa@samsung.com>
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: linux-pm@vger.kernel.org, naveenkrishna.ch@gmail.com, rui.zhang@intel.com,
-        eduardo.valentin@ti.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
-        kgene.kim@samsung.com, devicetree@vger.kernel.org,
-        b.zolnierkie@samsung.com, cpgs@samsung.com
-Subject: Re: [PATCH] thermal: exynos: handle gate clock for misplaced TRIMINFO
- register
-Date: Thu, 07 Nov 2013 15:18:57 +0100
-Message-id: <1695605.pk9l7dqkqm@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11.2 (Linux/3.11.5-gentoo; KDE/4.11.2; x86_64; ; )
-In-reply-to: <1383828154-428-1-git-send-email-ch.naveen@samsung.com>
-References: <1383828154-428-1-git-send-email-ch.naveen@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t/xy7rhC6uDDFYv0LFouBpisXHGelaL
-	u88PM1q8PKRpMf/IOVaLNft/Mln0LrjKZnF51xw2i8+9RxgtZpzfx2SxaNt/ZosnD/vYHHg8
-	ds66y+6xeM9LJo++LasYPY7f2M7k8XmTXABrFJdNSmpOZllqkb5dAlfG5HdHmQq+8FV8unqe
-	sYFxGU8XIyeHhICJxJ0di1khbDGJC/fWs4HYQgJLGSUOPw/sYuQCsruYJDrv/QMrYhNQk/jc
-	8AisSASo+firM+wgRcwCS5kk5i9bxAySEBaIlNiz9yQTiM0ioCrx9dgGsAZeAU2Ju/MPMoLY
-	/ALqEu+2PQWrERVwk5j+4yBYL6eAi0TPh0ZmiCucJTbsOcIE0Sso8WPyPRYQm1lAXmLf/qms
-	ELaWxPqdx5kmMArOQlI2C0nZLCRlCxiZVzGKppYmFxQnpeca6RUn5haX5qXrJefnbmKERMvX
-	HYxLj1kdYhTgYFTi4Z1RUxUkxJpYVlyZe4hRgoNZSYTXdl51kBBvSmJlVWpRfnxRaU5q8SFG
-	Jg5OqQbGBu3AIE+7zWLrE3emem9quMJY8Ff//4ez7MYis7zSv00X2vNvwhFv450T+HinXT6q
-	0BAXPfWMo+x5PzVPMe/1Hd82fFJdeKCC/93+qJutn19pb1DMeqBrVLf5++OYI+4exjKSVvdM
-	Dk4Ql2/iMl5vFVtek9uTI313auGs0r/vm/mVGFQzj2xRYinOSDTUYi4qTgQAWTNWPXQCAAA=
+	id S1753222Ab3KGOWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 09:22:06 -0500
+Received: from vps0.lunn.ch ([178.209.37.122]:49652 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750964Ab3KGOWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 09:22:04 -0500
+Date: Thu, 7 Nov 2013 15:16:43 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jisheng Zhang <jszhang@marvell.com>, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, rob@landley.net, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] ARM: l2x0: add prefetch and power ctrl registers
+ configuration support
+Message-ID: <20131107141643.GB4440@lunn.ch>
+References: <1383800872-7982-1-git-send-email-jszhang@marvell.com>
+ <527B8BB4.3050200@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527B8BB4.3050200@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
-
-On Thursday 07 of November 2013 18:12:34 Naveen Krishna Chatradhi wrote:
-> On Exynos5420 the TMU(4) for GPU has a seperate clock enable bit from
-> the other TMU channels(0 ~ 3). Hence, accessing TRIMINFO for base_second
-> should be acompanied by enabling the respective clock.
+On Thu, Nov 07, 2013 at 01:46:44PM +0100, Sebastian Hesselbarth wrote:
+> On 11/07/13 06:07, Jisheng Zhang wrote:
+> >PL310 supports Prefetch offset/control register from r2p0 and Power
+> >control register from r3p0. This patch adds the support to configure
+> >these two registers if there are. The dt binding document is also updated.
+> >
+> >Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> >---
+> >  Documentation/devicetree/bindings/arm/l2cc.txt |  4 ++++
+> >  arch/arm/mm/cache-l2x0.c                       | 19 +++++++++++++++++++
+> >  2 files changed, 23 insertions(+)
+> >
+> >diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
+> >index c0c7626..32cd08c 100644
+> >--- a/Documentation/devicetree/bindings/arm/l2cc.txt
+> >+++ b/Documentation/devicetree/bindings/arm/l2cc.txt
+> >@@ -39,6 +39,10 @@ Optional properties:
+> >  - arm,filter-ranges : <start length> Starting address and length of window to
+> >    filter. Addresses in the filter window are directed to the M1 port. Other
+> >    addresses will go to the M0 port.
+> >+- arm,prefetch-ctrl : The value for Prefetch Offset/Control Register if there
+> >+  is. This is a single cell.
+> >+- arm,pwr-ctrl : The value for Power Control Register if there is. This is a
+> >+  single cell.
 > 
-> This patch which allow for a "clk_sec" clock to be specified in the
-> device-tree which will be ungated when accessing the TRIMINFO register.
+> Jisheng,
 > 
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> ---
->  drivers/thermal/samsung/exynos_tmu.c |   24 +++++++++++++++++++++++-
->  1 file changed, 23 insertions(+), 1 deletion(-)
+> I did some research over L2x0/L310 aux-ctrl registers and possible
+> properties for them. Both properties introduced here, just allow you
+> to put in a magic number, while IMHO properties should better reflect
+> the actual function rather than hard-coded values.
+> 
+> A quick look at L310 TRM for Power Control Register gives:
+> 
+> Bit 1: dynamic_clk_gating_en (1=enabled, 0=masked)
+> Bit 0: standby mode en (1=enabled, 0=masked)
+> 
+> So, properties should one of:
+> 
+> (a) arm,dynamic-clock-gating = <0/1>
+>     arm,standby-mode = <0/1>
+> (b) arm,dynamic-clock-gating-enable/-disable;
+>     arm,standby-mode-enable/-disable
+> 
+> If we want to have set/clear/don't touch behavior, I'd prefer (a) as
+> it is easier to deal with in code. Moreover, -enable/-disable of (b)
+> may not always fit the property name, so there will also be
+> arm,no-feature-foo or arm,force-feature-bar.
 
-This patch modifies the device binding, but fails to mention anything
-about the modification in respective documentation. Please do not do that.
+Hi Sebastian
 
-In addition, since the series adding support for Exynos 5420 has not been
-merged yet, I would rather make this patch a part of that series.
+There have been some comments about properties with Boolean
+values. Rather than having a Boolean, you simply don't list the
+property.
 
-Also please see my comment below.
+What you have here is slightly different, since you have
+set/clear/don't touch. How to represent this should be decided once by
+the DT folks, and used consistently in all bindings.
 
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-> index b54825a..33edd1a 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-[snip]
-> @@ -641,6 +650,15 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->  	if (ret)
->  		return ret;
->  
-> +	data->clk_sec = devm_clk_get(&pdev->dev, "tmu_apbif_sec");
-> +	if (!IS_ERR(data->clk_sec)) {
-
-This code does not check if the clock was specified for TMU channels that
-require it, i.e. the driver will not fail if you don't specify this clock.
-
-Instead, it would be better create a separate compatible value for such
-channels, like "samsung,exynos5420-tmu-broken-triminfo", for which this
-clock would be mandatory and for which, if this clock is not specified,
-the driver would fail.
-
-Best regards,
-Tomasz
-
+    Andrew
