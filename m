@@ -1,112 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab3KGLvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 06:51:10 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:46728 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab3KGLvF (ORCPT
+	id S1751663Ab3KGLwD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 06:52:03 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:53213 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869Ab3KGLwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 06:51:05 -0500
+	Thu, 7 Nov 2013 06:52:01 -0500
 MIME-Version: 1.0
-In-Reply-To: <1383788572-25938-2-git-send-email-cody@linux.vnet.ibm.com>
-References: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com>
-	<1383788572-25938-2-git-send-email-cody@linux.vnet.ibm.com>
-Date: Thu, 7 Nov 2013 03:51:04 -0800
-Message-ID: <CANN689EhajVC4cq_oz2zaxOmMyYBZvGrKVsYYwkGH_C9jPGKag@mail.gmail.com>
-Subject: Re: [PATCH v2 01/11] rbtree: Fix rbtree_postorder_for_each_entry_safe()
- iterator
-From: Michel Lespinasse <walken@google.com>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        EXT4 <linux-ext4@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        rostedt@goodmis.org, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4908982.5yt51ejnyk@amdc1227>
+References: <CAK9yfHz+H4FQpo_J0ycJP_rvRPMyDgXpZFvx+GvRjyywECUoCw@mail.gmail.com>
+	<4908982.5yt51ejnyk@amdc1227>
+Date: Thu, 7 Nov 2013 17:22:00 +0530
+Message-ID: <CAK9yfHz-ZhR-k59SDmoUO8L57XjBp24A25AMKzXbpkNzLDpQEQ@mail.gmail.com>
+Subject: Re: Boot failure on Origen with next-20131107
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 6, 2013 at 5:42 PM, Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
-> From: Jan Kara <jack@suse.cz>
->
-> The iterator rbtree_postorder_for_each_entry_safe() relies on pointer
-> underflow behavior when testing for loop termination. In particular
-> it expects that
->   &rb_entry(NULL, type, field)->field
-> is NULL. But the result of this expression is not defined by a C standard
-> and some gcc versions (e.g. 4.3.4) assume the above expression can never
-> be equal to NULL. The net result is an oops because the iteration is not
-> properly terminated.
->
-> Fix the problem by modifying the iterator to avoid pointer underflows.
->
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-> ---
->  include/linux/rbtree.h | 16 +++++++++-------
->  1 file changed, 9 insertions(+), 7 deletions(-)
->
-> diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-> index aa870a4..57e75ae 100644
-> --- a/include/linux/rbtree.h
-> +++ b/include/linux/rbtree.h
-> @@ -85,6 +85,11 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
->         *rb_link = node;
->  }
->
-> +#define rb_entry_safe(ptr, type, member) \
-> +       ({ typeof(ptr) ____ptr = (ptr); \
-> +          ____ptr ? rb_entry(____ptr, type, member) : NULL; \
-> +       })
-> +
->  /**
->   * rbtree_postorder_for_each_entry_safe - iterate over rb_root in post order of
->   * given type safe against removal of rb_node entry
-> @@ -95,12 +100,9 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
->   * @field:     the name of the rb_node field within 'type'.
->   */
->  #define rbtree_postorder_for_each_entry_safe(pos, n, root, field) \
-> -       for (pos = rb_entry(rb_first_postorder(root), typeof(*pos), field),\
-> -               n = rb_entry(rb_next_postorder(&pos->field), \
-> -                       typeof(*pos), field); \
-> -            &pos->field; \
-> -            pos = n, \
-> -               n = rb_entry(rb_next_postorder(&pos->field), \
-> -                       typeof(*pos), field))
-> +       for (pos = rb_entry_safe(rb_first_postorder(root), typeof(*pos), field); \
-> +            pos && ({ n = rb_entry_safe(rb_next_postorder(&pos->field), \
-> +                       typeof(*pos), field); 1; }); \
-> +            pos = n)
->
->  #endif /* _LINUX_RBTREE_H */
-> --
-> 1.8.4.2
+Hi Tomasz,
 
-Well, this really isn't pretty, and I'm not sure that
-rbtree_postorder_for_each_entry_safe() is a good idea in the first
-place. Note that we have never had or needed such a macro for the
-common case of in-order iteration; why would we need it for the
-less-common case of postorder iteration ?
+On 7 November 2013 16:59, Tomasz Figa <t.figa@samsung.com> wrote:
+> Hi Sachin,
+>
+> On Thursday 07 of November 2013 16:25:15 Sachin Kamat wrote:
+>> Hi,
+>>
+>> Today's linux next fails to boot Origen (Exynos4210) board. However,
+>> Arndale (Exynos5250) board boots fine. Git bisect points to the
+>> following as bad commit:
+>>
+>> 2361613206e66ce59cc0e08efa8d98ec15b84ed1 is the first bad commit
+>> commit 2361613206e66ce59cc0e08efa8d98ec15b84ed1
+>> Author: Grant Likely <grant.likely@linaro.org>
+>> Date:   Sun Sep 15 22:32:39 2013 +0100
+>>
+>>     of/irq: Refactor interrupt-map parsing
+>>
+>> Reverting gave several conflicts which I could not resolve with certainty.
+>
+> This issue has been already fixed, but the fix has not yet been merged.
+>
+> See: https://lkml.org/lkml/2013/11/5/255
 
-I think it's just as well to have clients write something like
-struct rb_node *rb_node = rb_first_postorder(root);
-while (rb_node) {
-    struct rb_node *rb_next_node = rb_next_postorder(rb_node);
-    struct mystruct node = rb_entry(rb_node, struct mystruct,
-mystruct_rb_field);
-    .... do whatever, possibly destroying node ...
-    rb_node = rb_next_node;
-}
-
-That said, there is some precedent for this kind of API in
-hlist_for_each_entry_safe, so I guess that's acceptable if there will
-be enough users of this macro - but it seems very strange to me that
-we would need it for the postorder traversal while we don't for the
-in-order traversal. I would prefer keeping rbtree.h minimal if that is
-possible.
-
-Thanks,
+Thanks for the pointer. With your patch I am able to boot Origen using
+the latest next tree.
+I have replied to your patch with my tested-by.
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+With warm regards,
+Sachin
