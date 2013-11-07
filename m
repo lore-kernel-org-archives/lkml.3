@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab3KGRSm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 12:18:42 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:36206 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492Ab3KGRRq (ORCPT
+	id S1753427Ab3KGRYK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 12:24:10 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:36584 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab3KGRYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 12:17:46 -0500
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        steve.capper@linaro.org, Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: [RFC PATCH 1/4] x86: move arch_cpu_uevent() to generic code
-Date: Thu,  7 Nov 2013 18:17:34 +0100
-Message-Id: <1383844657-17487-2-git-send-email-ard.biesheuvel@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1383844657-17487-1-git-send-email-ard.biesheuvel@linaro.org>
-References: <1383844657-17487-1-git-send-email-ard.biesheuvel@linaro.org>
+	Thu, 7 Nov 2013 12:24:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131106105258.GH10651@twins.programming.kicks-ass.net>
+References: <1383670886-30827-1-git-send-email-eranian@google.com>
+	<1383670886-30827-4-git-send-email-eranian@google.com>
+	<20131106105258.GH10651@twins.programming.kicks-ass.net>
+Date: Thu, 7 Nov 2013 18:24:06 +0100
+Message-ID: <CABPqkBQg6wdW-1ijL61fmOJAiSNix6mmN-+2GUztim2VN1C1Ew@mail.gmail.com>
+Subject: Re: [PATCH v5 3/4] perf,x86: add Intel RAPL PMU support
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only x86 implements arch_cpu_uevent(), and there is nothing arch
-specific about it, so move it to drivers/base/cpu.c.
+Peter,
 
-Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
----
- arch/x86/kernel/cpu/match.c | 11 -----------
- drivers/base/cpu.c          | 15 ++++++++++++++-
- include/linux/cpu.h         |  1 -
- 3 files changed, 14 insertions(+), 13 deletions(-)
+Working on it. Found other bugs and cleanups, so I will respin the
+entire series.
+It will be easier that way.
 
-diff --git a/arch/x86/kernel/cpu/match.c b/arch/x86/kernel/cpu/match.c
-index 3656537..ab6082a 100644
---- a/arch/x86/kernel/cpu/match.c
-+++ b/arch/x86/kernel/cpu/match.c
-@@ -78,14 +78,3 @@ ssize_t arch_print_cpu_modalias(struct device *dev,
- 	*buf++ = '\n';
- 	return buf - bufptr;
- }
--
--int arch_cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
--{
--	char *buf = kzalloc(PAGE_SIZE, GFP_KERNEL);
--	if (buf) {
--		arch_print_cpu_modalias(NULL, NULL, buf);
--		add_uevent_var(env, "MODALIAS=%s", buf);
--		kfree(buf);
--	}
--	return 0;
--}
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 848ebbd..49c6f4b 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -275,6 +275,19 @@ static void cpu_device_release(struct device *dev)
- 	 */
- }
- 
-+#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
-+static int cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
-+{
-+	char *buf = kzalloc(PAGE_SIZE, GFP_KERNEL);
-+	if (buf) {
-+		arch_print_cpu_modalias(NULL, NULL, buf);
-+		add_uevent_var(env, "MODALIAS=%s", buf);
-+		kfree(buf);
-+	}
-+	return 0;
-+}
-+#endif
-+
- /*
-  * register_cpu - Setup a sysfs device for a CPU.
-  * @cpu - cpu->hotpluggable field set to 1 will generate a control file in
-@@ -296,7 +309,7 @@ int register_cpu(struct cpu *cpu, int num)
- 	cpu->dev.offline = !cpu_online(num);
- 	cpu->dev.of_node = of_get_cpu_node(num, NULL);
- #ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
--	cpu->dev.bus->uevent = arch_cpu_uevent;
-+	cpu->dev.bus->uevent = cpu_uevent;
- #endif
- 	cpu->dev.groups = common_cpu_attr_groups;
- 	if (cpu->hotpluggable)
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index 801ff9e..c12ddd1 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -44,7 +44,6 @@ extern ssize_t arch_cpu_release(const char *, size_t);
- struct notifier_block;
- 
- #ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
--extern int arch_cpu_uevent(struct device *dev, struct kobj_uevent_env *env);
- extern ssize_t arch_print_cpu_modalias(struct device *dev,
- 				       struct device_attribute *attr,
- 				       char *bufptr);
--- 
-1.8.3.2
 
+On Wed, Nov 6, 2013 at 11:52 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Nov 05, 2013 at 06:01:25PM +0100, Stephane Eranian wrote:
+>> +static void rapl_exit_cpu(int cpu)
+>> +{
+>> +     int i, phys_id = topology_physical_package_id(cpu);
+>> +
+>> +     spin_lock(&rapl_hotplug_lock);
+>> +
+>> +     /* if CPU not in RAPL mask, nothing to do */
+>> +     if (!cpumask_test_and_clear_cpu(cpu, &rapl_cpu_mask))
+>> +             goto skip;
+>> +
+>> +     /* find a new cpu on same package */
+>> +     for_each_online_cpu(i) {
+>> +             if (i == cpu || i == 0)
+>> +                     continue;
+>> +             if (phys_id == topology_physical_package_id(i)) {
+>> +                     cpumask_set_cpu(i, &rapl_cpu_mask);
+>> +                     break;
+>> +             }
+>> +     }
+>> +
+>> +     WARN_ON(cpumask_empty(&rapl_cpu_mask));
+>> +skip:
+>> +     spin_unlock(&rapl_hotplug_lock);
+>> +}
+>
+>> +static int rapl_cpu_notifier(struct notifier_block *self,
+>> +                          unsigned long action, void *hcpu)
+>> +{
+>
+>> +     /* select the cpu that collects uncore events */
+>> +     switch (action & ~CPU_TASKS_FROZEN) {
+>> +     case CPU_DOWN_FAILED:
+>> +     case CPU_STARTING:
+>> +             rapl_init_cpu(cpu);
+>> +             break;
+>> +     case CPU_DOWN_PREPARE:
+>> +             rapl_exit_cpu(cpu);
+>> +             break;
+>> +     default:
+>> +             break;
+>> +     }
+>> +
+>> +     return NOTIFY_OK;
+>> +}
+>
+> All other uncore drivers call perf_pmu_migrate_context() when the CPU
+> the events are registered on goes away.. ?
