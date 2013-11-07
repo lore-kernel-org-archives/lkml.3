@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab3KGCP5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 21:15:57 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:21886 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286Ab3KGCPz (ORCPT
+	id S1753527Ab3KGCTA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 21:19:00 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:37986 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab3KGCS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 21:15:55 -0500
-X-AuditID: cbfee61a-b7f836d0000025d7-34-527af7da9d1f
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
-Subject: [f2fs-dev] [PATCH] f2fs: fix memory leak after kobject init failed in
- fill_super
-Date: Thu, 07 Nov 2013 10:14:51 +0800
-Message-id: <000001cedb5f$497b8190$dc7284b0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7bXRj/7AHcFqG9TyWAia3DvMwubw==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd1b36uCDGaekLe4vusvk8WlRe4W
-	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujLYDyxgL
-	VnJWnF15ia2BcT97FyMHh4SAicTic2ZdjJxAppjEhXvr2boYuTiEBBYxSpz4OJsdwvnBKHHt
-	x152kCo2ARWJ5R3/mUBsEQFFiQ3vN4AVMQvMYJQ4PPcfK0hCWCBa4n5HJxuIzSKgKvHm7Qtm
-	EJtXwFJi0cSXTBC2oMSPyfdYQGxmAQ2J/kUb2CBseYnNa94yQ5ykILHj7GtGiGV6Ek/eLWSH
-	qBGX2HjkFssERoFZSEbNQjJqFpJRs5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kR
-	HNTPpHYwrmywOMQowMGoxMM7o6YqSIg1say4MvcQowQHs5II771nQCHelMTKqtSi/Pii0pzU
-	4kOM0hwsSuK8B1qtA4UE0hNLUrNTUwtSi2CyTBycUg2MplaPXotVRH+dc/jdwU2Zv2be97z5
-	S8mW6d8P5Zb6c4ekDFXTb5tJPv947+mMObILzseEBPh1r2AU+DZlhcHuaef1nofKSbdz23UV
-	GAbLvT3iIvX0xr5/nPNdNns5LZnHtWhLqqo7U6/+YfVf2rMDP1RteJpals1/ZnGucDXb26aO
-	zVYZT/OtlViKMxINtZiLihMBsLGXZ2YCAAA=
+	Wed, 6 Nov 2013 21:18:59 -0500
+MIME-Version: 1.0
+X-Originating-IP: [111.240.52.201]
+In-Reply-To: <CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
+References: <1383789208.5970.1.camel@phoenix>
+	<CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
+Date: Thu, 7 Nov 2013 10:18:58 +0800
+Message-ID: <CAFRkauAEt-YhBt11opj_GVCLrxGsTSd2LowWGmukTSmGuJkd3A@mail.gmail.com>
+Subject: Re: kernel BUG at kernel/kallsyms.c:222!
+From: Axel Lin <axel.lin@ingics.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we failed to init&add kobject when fill_super, stats info and proc object of f2fs will not be released.
-We should free them before we finish fill_super.
+2013/11/7 Ming Lei <tom.leiming@gmail.com>:
+> Hi,
+>
+> On Thu, Nov 7, 2013 at 9:53 AM, Axel Lin <axel.lin@ingics.com> wrote:
+>> Hi,
+>> I got below oops while debugging a sd controller driver:
+>>
+>> [    4.032026] ------------[ cut here ]------------
+>> [    4.036730] kernel BUG at kernel/kallsyms.c:222!
+>> [    4.041501] Internal error: Oops - BUG: 0 [#1] ARM
+>> [    4.046847] CPU: 0 PID: 6 Comm: kworker/u2:0 Not tainted 3.12.0-00061-g0835d93-dirty #1657
+>>
+>> I can avoid the oops by either revert commit f6537f2f0eba4eba
+>> "scripts/kallsyms: filter symbols not in kernel address space",
+>> or comment out below line in drivers/mmc/core/sdio.c.
+>>         dev_dbg(&card->dev, "calling %pF\n", f->vendor_fixup);
+>>
+>> The f->vendor_fixup points to add_quirk_for_sdio_devices.
+>> It looks like the symbol add_quirk_for_sdio_devices is missing.
+>>
+>> So I revert commit f6537f2f and check /proc/kallsyms:
+>> ~ # grep add_quirk_for_sdio_devices /proc/kallsyms
+>> 00157bf8 t add_quirk_for_sdio_devices
+>>
+>> If I don't revert commit f6537f2f and just comment out above dev_dbg line,
+>> Checking /proc/kallsyms then I got:
+>> ~ # grep add_quirk_for_sdio_devices /proc/kallsyms
+>> [sched_delayed] sched: RT throttling activated
+>> BUG: soft lockup - CPU#0 stuck for 21s! [grep:59]
+>>
+>> CPU: 0 PID: 59 Comm: grep Not tainted 3.12.0-00061-g0835d93-dirty #1675
+>> task: 01d36320 ti: 008be000 task.ti: 008be000
+>>
+>> BTW, I'm testing it on a noMMU platform (arm7tdmi).
+>
+> Could you share what is the value of CONFIG_PAGE_OFFSET
+> on your noMMU platform?
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/super.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+$ grep  CONFIG_PAGE_OFFSET .config
+CONFIG_PAGE_OFFSET=0xC0000000
 
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index e42351c..a754d14 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -974,12 +974,12 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 		/* After POR, we can run background GC thread.*/
- 		err = start_gc_thread(sbi);
- 		if (err)
--			goto fail;
-+			goto free_gc;
- 	}
- 
- 	err = f2fs_build_stats(sbi);
- 	if (err)
--		goto fail;
-+		goto free_gc;
- 
- 	if (f2fs_proc_root)
- 		sbi->s_proc = proc_mkdir(sb->s_id, f2fs_proc_root);
-@@ -1005,6 +1005,12 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	return 0;
- fail:
-+	if (sbi->s_proc) {
-+		remove_proc_entry("segment_info", sbi->s_proc);
-+		remove_proc_entry(sb->s_id, f2fs_proc_root);
-+	}
-+	f2fs_destroy_stats(sbi);
-+free_gc:
- 	stop_gc_thread(sbi);
- free_root_inode:
- 	dput(sb->s_root);
--- 
-1.7.9.5
-
+>
+>
+> Thanks,
+> --
+> Ming Lei
