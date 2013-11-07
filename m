@@ -1,146 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab3KGOHD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 09:07:03 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:56957 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab3KGOG7 (ORCPT
+	id S1753170Ab3KGOM0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 09:12:26 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:55377 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab3KGOMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 09:06:59 -0500
-From: George Cherian <george.cherian@ti.com>
-To: <balbi@ti.com>, <stern@rowland.harvard.edu>, <bigeasy@linutronix.de>
-CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH v2] usb: gadget: f_mass_storage: call try_to_freeze only when its safe
-Date: Thu, 7 Nov 2013 19:36:50 +0530
-Message-ID: <1383833210-26656-1-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.1
+	Thu, 7 Nov 2013 09:12:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <alpine.DEB.2.02.1311061237430.23353@ionos.tec.linutronix.de>
+References: <20130917082838.218329307@infradead.org>
+	<20130917182350.449685712@linutronix.de>
+	<20130917183628.534494408@linutronix.de>
+	<CAMuHMdWgrQf+ULDrZyY5R+vT3GtiWEgpsWxmfk0b5pivN7wBmg@mail.gmail.com>
+	<alpine.DEB.2.02.1309172315550.4089@ionos.tec.linutronix.de>
+	<alpine.DEB.2.02.1309181159520.4089@ionos.tec.linutronix.de>
+	<alpine.DEB.2.02.1309191652480.4089@ionos.tec.linutronix.de>
+	<87txhg3ftx.fsf@igel.home>
+	<CAMuHMdW-YBroi6GezUP-KQBVRAcmYtUQERvBC=ekmemopDhVow@mail.gmail.com>
+	<alpine.DEB.2.02.1311041305540.28335@ionos.tec.linutronix.de>
+	<alpine.DEB.2.02.1311042032130.16975@ayla.of.borg>
+	<alpine.DEB.2.02.1311061237430.23353@ionos.tec.linutronix.de>
+Date: Thu, 7 Nov 2013 15:12:23 +0100
+X-Google-Sender-Auth: NoH4JwpNSVzPCsCShufVEstrDX8
+Message-ID: <CAMuHMdXDA2MRbR3GmD3KWC-iE6jnWX4uvbf1qeMd7RYX3O8f_g@mail.gmail.com>
+Subject: Re: [patch 1/6] hardirq: Make hardirq bits generic
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andreas Schwab <schwab@linux-m68k.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call try_to_freeze() in sleep_thread() only when its safe to sleep.
-do_read() and do_write() calls sleep_thread with lock held.
-Make sure these wont call try_to_freeze() by passing can_freeze flag
-to sleep_thread.
+Hi Thomas,
 
-Calling try_to_freeze() with a lock hold was done since day one in
-f_mass_storage but since commit 0f9548ca1 ("lockdep: check that no
-locks held at freeze time") lockdep complains about it.
+On Wed, Nov 6, 2013 at 6:23 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> Also note that the value of "nested" doesn't match the indentation level,
+>> which depends on my own bookkeeping using "nesting".
+>
+> Well, nested is just an indicator. It's not the nest level.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
-Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
-change from v1 -> v2
-	amend the commit log
+I know, the only thing that matters is whether it's zero or not.
+But it should always be zero if there's no nesting, and non-zero if there
+is, right?
 
- drivers/usb/gadget/f_mass_storage.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+So:
 
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index a03ba2c..f2d0d4b 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -602,13 +602,14 @@ static bool start_out_transfer(struct fsg_common *common, struct fsg_buffhd *bh)
- 	return true;
- }
- 
--static int sleep_thread(struct fsg_common *common)
-+static int sleep_thread(struct fsg_common *common, bool can_freeze)
- {
- 	int	rc = 0;
- 
- 	/* Wait until a signal arrives or we are woken up */
- 	for (;;) {
--		try_to_freeze();
-+		if (can_freeze)
-+			try_to_freeze();
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		if (signal_pending(current)) {
- 			rc = -EINTR;
-@@ -682,7 +683,7 @@ static int do_read(struct fsg_common *common)
- 		/* Wait for the next buffer to become available */
- 		bh = common->next_buffhd_to_fill;
- 		while (bh->state != BUF_STATE_EMPTY) {
--			rc = sleep_thread(common);
-+			rc = sleep_thread(common, false);
- 			if (rc)
- 				return rc;
- 		}
-@@ -937,7 +938,7 @@ static int do_write(struct fsg_common *common)
- 		}
- 
- 		/* Wait for something to happen */
--		rc = sleep_thread(common);
-+		rc = sleep_thread(common, false);
- 		if (rc)
- 			return rc;
- 	}
-@@ -1504,7 +1505,7 @@ static int throw_away_data(struct fsg_common *common)
- 		}
- 
- 		/* Otherwise wait for something to happen */
--		rc = sleep_thread(common);
-+		rc = sleep_thread(common, true);
- 		if (rc)
- 			return rc;
- 	}
-@@ -1625,7 +1626,7 @@ static int send_status(struct fsg_common *common)
- 	/* Wait for the next buffer to become available */
- 	bh = common->next_buffhd_to_fill;
- 	while (bh->state != BUF_STATE_EMPTY) {
--		rc = sleep_thread(common);
-+		rc = sleep_thread(common, true);
- 		if (rc)
- 			return rc;
- 	}
-@@ -1828,7 +1829,7 @@ static int do_scsi_command(struct fsg_common *common)
- 	bh = common->next_buffhd_to_fill;
- 	common->next_buffhd_to_drain = bh;
- 	while (bh->state != BUF_STATE_EMPTY) {
--		rc = sleep_thread(common);
-+		rc = sleep_thread(common, true);
- 		if (rc)
- 			return rc;
- 	}
-@@ -2174,7 +2175,7 @@ static int get_next_command(struct fsg_common *common)
- 	/* Wait for the next buffer to become available */
- 	bh = common->next_buffhd_to_fill;
- 	while (bh->state != BUF_STATE_EMPTY) {
--		rc = sleep_thread(common);
-+		rc = sleep_thread(common, true);
- 		if (rc)
- 			return rc;
- 	}
-@@ -2193,7 +2194,7 @@ static int get_next_command(struct fsg_common *common)
- 
- 	/* Wait for the CBW to arrive */
- 	while (bh->state != BUF_STATE_FULL) {
--		rc = sleep_thread(common);
-+		rc = sleep_thread(common, true);
- 		if (rc)
- 			return rc;
- 	}
-@@ -2379,7 +2380,7 @@ static void handle_exception(struct fsg_common *common)
- 			}
- 			if (num_active == 0)
- 				break;
--			if (sleep_thread(common))
-+			if (sleep_thread(common, true))
- 				return;
- 		}
- 
-@@ -2516,7 +2517,7 @@ static int fsg_main_thread(void *common_)
- 		}
- 
- 		if (!common->running) {
--			sleep_thread(common);
-+			sleep_thread(common, true);
- 			continue;
- 		}
- 
--- 
-1.8.1
+#   irq 13 nested 1024
 
+nested should be 0 here.
+
+#   irq 4 nested 0
+
+ok
+
+#     irq 13 nested 1024
+
+ok (two extra spaces in front of "irq").
+
+#     irq 4 nested 0
+
+nested should be non-zero here.
+
+>       nested = pt->sr & ~ALLOWINT;
+> i.e.:
+>       nested = pt->sr & 0x0700;
+>
+> So in the case above nested is 0x400
+>
+>> Anyone with an idea where it's going wrong?
+>
+> The original code does:
+>
+>     add_preempt_count(HARDIRQ_OFFSET);
+>
+>     do_IRQ()
+>         irq_enter();
+>           add_preempt_count(HARDIRQ_OFFSET);
+>
+>         handle_irq();
+>
+>         irq_exit();
+>             local_irq_disable();
+>             sub_preempt_count(HARDIRQ_OFFSET);
+>
+>     sub_preempt_count(HARDIRQ_OFFSET);
+>
+>     /* Check for nested irq */
+>     if (in_hardirq())
+>        reti();
+>
+>     /* Check for nested irq again */
+>     if (pt->sr & ~ALLOWINT != 0)
+>        reti();
+>
+>     do_softirq();
+>        ....
+>     ret_from_exception();
+>
+> With the patches in place it looks like this:
+>
+>      do_IRQ()
+>         nested = pt->sr & ~ALLOWINT;
+>
+>         irq_enter();
+>           add_preempt_count(HARDIRQ_OFFSET);
+>
+>         handle_irq();
+>
+>         irq_exit_nested(nested);
+>             local_irq_disable();
+>             sub_preempt_count(HARDIRQ_OFFSET);
+>             if (!nested && !in_hardirq())
+>                do_softirq()
+>
+>         return nested;
+>
+>       if (nested)
+>          reti();
+>
+>       ret_from_exception();
+>
+> So all it does essentially is to move the softirq invocation in the
+> non nested case a tad earlier. I'm really puzzled as I can't spot the
+> point where this change makes a real difference.
+
+Yes, that's also my understanding.
+But I can't spot it neither :-(
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
