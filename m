@@ -1,61 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab3KGPci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 10:32:38 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:40398 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754599Ab3KGPce (ORCPT
+	id S1754805Ab3KGPcw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:32:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57047 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327Ab3KGPcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 10:32:34 -0500
-Date: Thu, 7 Nov 2013 10:32:33 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Julius Werner <jwerner@chromium.org>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Benson Leung <bleung@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>
-Subject: Re: [PATCH] usb: hub: Use correct reset for wedged USB3 devices that
- are NOTATTACHED
-In-Reply-To: <CAODwPW8j2wGGgH_HjuXuH=95jd_B1iqWeifoT89xgJoEZRvphw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1311071026480.1401-100000@iolanthe.rowland.org>
+	Thu, 7 Nov 2013 10:32:48 -0500
+Message-ID: <527BB1EE.9070405@kernel.dk>
+Date: Thu, 07 Nov 2013 08:29:50 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Duan Jiong <duanj.fnst@cn.fujitsu.com>, kernel@pengutronix.de,
+        linux@arm.linux.org.uk, a.zummo@towertech.it, airlied@linux.ie,
+        dmitry.torokhov@gmail.com
+CC: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-input@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] block: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
+References: <1383724599-15754-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+In-Reply-To: <1383724599-15754-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013, Julius Werner wrote:
+On 11/06/2013 12:56 AM, Duan Jiong wrote:
+> This patch fixes coccinelle error regarding usage of IS_ERR and
+> PTR_ERR instead of PTR_ERR_OR_ZERO.
 
-> > What if the device is in USB_STATE_SUSPENDED?
-> 
-> I'm not sure that is possible at that point in hub_events(), I don't
-> know of a way that could lead to this situation. I could still add the
-> check just to be sure if you want it, though.
+Applied, thanks.
 
-I don't know either.  But Sarah has said that ports can spontaneously
-go into Compliance Mode for no apparent reason.  If that can happen,
-maybe it can happen while the port is in U3 and the device is
-suspended.  In such cases, though, you'd need to do a reset-resume
-rather than a simple reset.
-
-> > Not at all.  If a device is unplugged, its state changes to NOTATTACHED
-> > before the driver is unbound.  During that time, the driver will see
-> > all its URBs failing, so it may very well try to reset the device.
-> > (For example, usbhid behaves like this.)  That isn't a bug.
-> 
-> Oh, okay, I wasn't quite sure how that plays together. Would you think
-> it's still valuable to print it out (maybe as dev_info() instead of
-> dev_warn()) instead of just silently ignoring the reset request? It
-> would have certainly been useful for me to find this problem faster,
-> but I can take it out again if you think it would result in too much
-> noise.
-
-I think keeping dev_dbg() is best.  If you're searching for the
-solution to a problem, you should have debugging enabled and so you
-ought to see the message.
-
-Alan Stern
+-- 
+Jens Axboe
 
