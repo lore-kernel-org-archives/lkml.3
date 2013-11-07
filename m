@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab3KGJJB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 04:09:01 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:44320 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540Ab3KGJIs (ORCPT
+	id S1753762Ab3KGJL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 04:11:27 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:50211 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752249Ab3KGJLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 04:08:48 -0500
-Date: Thu, 7 Nov 2013 10:08:44 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <andi@firstfloor.org>, Jason Baron <jbaron@akamai.com>
-Subject: Re: [PATCH net-next v4 3/9] static_key: WARN on usage before
- jump_label_init was called
-Message-ID: <20131107090844.GA719@gmail.com>
-References: <1382212139-20301-1-git-send-email-hannes@stressinduktion.org>
- <1382212139-20301-4-git-send-email-hannes@stressinduktion.org>
- <20131106161649.2bb1dbb0@gandalf.local.home>
- <20131107005027.GC8144@order.stressinduktion.org>
- <20131106200200.7847535d@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131106200200.7847535d@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 7 Nov 2013 04:11:21 -0500
+Date: Thu, 7 Nov 2013 10:11:18 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: <bhelgaas@google.com>, <jason@lakedaemon.net>,
+        <ezequiel.garcia@free-electrons.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI: mvebu: staticize mvebu_pcie_align_resource
+Message-ID: <20131107101118.72f2c0e3@skate>
+In-Reply-To: <1383815155-5318-1-git-send-email-jszhang@marvell.com>
+References: <1383815155-5318-1-git-send-email-jszhang@marvell.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Jisheng Zhang,
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Thu, 7 Nov 2013 01:50:27 +0100
-> Hannes Frederic Sowa <hannes@stressinduktion.org> wrote:
+On Thu, 7 Nov 2013 17:05:55 +0800, Jisheng Zhang wrote:
+> This patch fixes the following sparse warning:
+> drivers/pci/host/pci-mvebu.c:676:17: warning: symbol
+> 'mvebu_pcie_align_resource' was not declared. Should it be static?
 > 
-> > On Wed, Nov 06, 2013 at 04:16:49PM -0500, Steven Rostedt wrote:
-> > > Sorry for the late reply, but this was sent while I was getting ready
-> > > for my two week conference trip.
-> > > 
-> > > Note, this should not go through the net tree, but instead should go
-> > > through tip, as it deals with jump labels and not networking.
-> > > 
-> > > Otherwise, this patch looks good.
-> > > 
-> > > Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-> > 
-> > Thanks for the review!
-> > 
-> > The patch already got queued up in net-next. Is this ok or what do you
-> > suggest to resolve this?
-> > 
-> 
-> I'm fine, but really. Changes need to go through the trees they are 
-> maintained by. Would Dave Miller like it if I pushed patches that 
-> touched the net directory without a single Ack?
+> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
 
-I second that concern.
+Thanks, but a similar patch was already merged:
 
-Thanks,
+https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/drivers/pci/host/pci-mvebu.c?id=f5072dfbac053200c8865c4fb15e4f020b7b5d1d
 
-	Ingo
+Thanks!
+
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
