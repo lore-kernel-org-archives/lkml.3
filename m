@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab3KGViL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 16:38:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49130 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164Ab3KGViC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 16:38:02 -0500
-Date: Thu, 7 Nov 2013 13:38:00 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: EXT4 <linux-ext4@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        rostedt@goodmis.org, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 01/11] rbtree: Fix
- rbtree_postorder_for_each_entry_safe() iterator
-Message-Id: <20131107133800.c779b2f2b2ec73c91cd25f47@linux-foundation.org>
-In-Reply-To: <1383788572-25938-2-git-send-email-cody@linux.vnet.ibm.com>
-References: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com>
-	<1383788572-25938-2-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754885Ab3KGVjw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 16:39:52 -0500
+Received: from mga11.intel.com ([192.55.52.93]:20147 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754688Ab3KGVjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 16:39:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,654,1378882800"; 
+   d="scan'208";a="429674796"
+Date: Thu, 7 Nov 2013 13:39:44 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, catalin.marinas@arm.com,
+        will.deacon@arm.com, tglx@linutronix.de,
+        Ingo Molnar <mingo@kernel.org>, steve.capper@linaro.org
+Subject: Re: [RFC PATCH 0/4] wire up CPU features to udev based module loading
+Message-ID: <20131107213944.GJ1962@tassilo.jf.intel.com>
+References: <1383844657-17487-1-git-send-email-ard.biesheuvel@linaro.org>
+ <527C0195.50008@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527C0195.50008@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  6 Nov 2013 17:42:30 -0800 Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
-
-> The iterator rbtree_postorder_for_each_entry_safe() relies on pointer
-> underflow behavior when testing for loop termination. In particular
-> it expects that
->   &rb_entry(NULL, type, field)->field
-> is NULL. But the result of this expression is not defined by a C standard
-> and some gcc versions (e.g. 4.3.4) assume the above expression can never
-> be equal to NULL. The net result is an oops because the iteration is not
-> properly terminated.
+On Thu, Nov 07, 2013 at 01:09:41PM -0800, H. Peter Anvin wrote:
+> On 11/07/2013 09:17 AM, Ard Biesheuvel wrote:
+> > This series implements automatic module loading based on optional CPU features,
+> > and tries to do so in a generic way. Currently, 32 feature bits are supported,
+> > and how they map to actual CPU features is entirely up to the architecture.
 > 
-> Fix the problem by modifying the iterator to avoid pointer underflows.
+> NAK.
+> 
+> We in the x86 world already left 32 bits way behind; we currently have
+> 320 bit feature masks.
+> 
+> If you're aiming at doing this in a generic way, it needs to be able to
+> accommodate the current x86cpu feature stuff as a subset, which this
+> doesn't.
 
-So the sole caller is in zswap.c.  Is that code actually generating oopses?
+They can just use the exact same code/macros as x86cpu, just need a different 
+prefix and use wildcards if they miss something (e.g. family)
 
-IOW, is there any need to fix this in 3.12 or earlier?
+-Andi
