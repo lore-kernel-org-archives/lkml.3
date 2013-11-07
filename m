@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab3KGSpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 13:45:25 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57493 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750940Ab3KGSpV (ORCPT
+	id S1751835Ab3KGSvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 13:51:14 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:60361 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123Ab3KGSvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 13:45:21 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Xiaoguang Chen <chenxg@marvell.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Xiaoguang Chen <chenxg.marvell@gmail.com>
-Subject: Re: [PATCH] cpufreq: conservative: fix requested_freq reduction issue
-Date: Thu, 07 Nov 2013 19:57:41 +0100
-Message-ID: <4433736.xh14GOaN7a@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAKohpo=2xjR=nr5hyMg9bve5_uVbV79R2FTxks0bLmL7kNV9Mg@mail.gmail.com>
-References: <1383791330-8289-1-git-send-email-chenxg@marvell.com> <CAKohpo=2xjR=nr5hyMg9bve5_uVbV79R2FTxks0bLmL7kNV9Mg@mail.gmail.com>
+	Thu, 7 Nov 2013 13:51:12 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <Pine.LNX.4.44L0.1311071026480.1401-100000@iolanthe.rowland.org>
+References: <CAODwPW8j2wGGgH_HjuXuH=95jd_B1iqWeifoT89xgJoEZRvphw@mail.gmail.com>
+	<Pine.LNX.4.44L0.1311071026480.1401-100000@iolanthe.rowland.org>
+Date: Thu, 7 Nov 2013 10:51:11 -0800
+X-Google-Sender-Auth: b5_LpdUkY8x-mtXx8HHxyLFAOhA
+Message-ID: <CAODwPW_bCirtddPssYQ8MFE8_6M47Fcs-sYH8Xb7TuuGysGL=Q@mail.gmail.com>
+Subject: Re: [PATCH] usb: hub: Use correct reset for wedged USB3 devices that
+ are NOTATTACHED
+From: Julius Werner <jwerner@chromium.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Julius Werner <jwerner@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Benson Leung <bleung@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 07, 2013 10:39:38 AM Viresh Kumar wrote:
-> On 7 November 2013 07:58, Xiaoguang Chen <chenxg@marvell.com> wrote:
-> > When decreasing frequency, requested_freq may be less than
-> > freq_target, So requested_freq minus freq_target may be negative,
-> > But reqested_freq's unit is unsigned int, then the negative result
-> > will be one larger interger which may be even higher than
-> > requested_freq.
-> >
-> > This patch is to fix such issue. when result becomes negative,
-> > set requested_freq as the min value of policy.
-> >
-> > Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
-> > ---
-> >  drivers/cpufreq/cpufreq_conservative.c | 7 ++++++-
-> >  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> Good Catch.
-> 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> I don't know either.  But Sarah has said that ports can spontaneously
+> go into Compliance Mode for no apparent reason.  If that can happen,
+> maybe it can happen while the port is in U3 and the device is
+> suspended.  In such cases, though, you'd need to do a reset-resume
+> rather than a simple reset.
 
-Applied, thanks!
+Okay. Looks like this is a more complicated question so let's keep it
+out of this patch. We could always add another check to handle
+USB_STATE_SUSPENDED later.
 
-> We need another patch for fixing the other part of code where we
-> increase freq..
-> We need to replace:
-> 
-> if (dbs_info->requested_freq == policy->max)
->     return;
-> 
-> with
-> 
-> if (dbs_info->requested_freq >= policy->max)
->     return;
-> 
-> So, that we don't run unnecessary code :)
+> I think keeping dev_dbg() is best.  If you're searching for the
+> solution to a problem, you should have debugging enabled and so you
+> ought to see the message.
 
-Care to prepare a patch?
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Sure, I'll submit a second version in a moment.
