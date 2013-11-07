@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab3KGUGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 15:06:47 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:40612 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752191Ab3KGUGk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 15:06:40 -0500
-Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=windows-1252
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20131107192558.GA11453@breakpoint.cc>
-Date: Thu, 7 Nov 2013 22:06:31 +0200
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4F47D5F8-F3C7-45CA-9D88-2D814BDC1BC7@antoniou-consulting.com>
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com> <20131106190152.GA8662@breakpoint.cc> <20131106193041.GA26796@roeck-us.net> <20131106203821.GC8662@breakpoint.cc> <20131106211754.GA29300@roeck-us.net> <20131107192558.GA11453@breakpoint.cc>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-X-Mailer: Apple Mail (2.1085)
+	id S1753230Ab3KGUMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 15:12:54 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:44673 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752249Ab3KGUMr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 15:12:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <21115.20118.72541.74924@gargle.gargle.HOWL>
+References: <21114.2315.610902.200164@gargle.gargle.HOWL>
+	<CAE9FiQX3mGLmzFCyaHYPBA2QgvxBYr9zarXcUKa5DC0ZtiiWZw@mail.gmail.com>
+	<21115.20118.72541.74924@gargle.gargle.HOWL>
+Date: Thu, 7 Nov 2013 12:12:46 -0800
+X-Google-Sender-Auth: BtdoJMGGxMrsg7QR9BsY0-_8YfM
+Message-ID: <CAE9FiQWPBBug_TWOnQRsSbTpaNPL9v5SsU33Akg2D47c6stHSw@mail.gmail.com>
+Subject: Re: [BUG?] mtrr sanitizer fails on Latitude E6230
+From: Yinghai Lu <yinghai@kernel.org>
+To: Mikael Pettersson <mikpelinux@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+On Thu, Nov 7, 2013 at 12:25 AM, Mikael Pettersson <mikpelinux@gmail.com> wrote:
+> Yinghai Lu writes:
+>  > On Wed, Nov 6, 2013 at 1:16 AM, Mikael Pettersson <mikpelinux@gmail.com> wrote:
+>  > > I recently got a Dell Latitude E6230 (Ivy Bridge i7-3540M) and noticed that
+>  > > the mtrr sanitizer failed on it:
+>  > >
+>  > > === snip ===
+>  > > Linux version 3.12.0 (mikpe@barley) (gcc version 4.8.3 20131017 (prerelease) (GCC) ) #1 SMP Wed Nov 6 09:46:02 CET 2013
+>  > > Command line: ro root=LABEL=/ resume=/dev/sda2 rd_NO_LUKS rd_NO_LVM rd_NO_MD rd_NO_DM LANG=en_US.UTF-8 SYSFONT=latarcyrheb-sun16 KEYTABLE=sv-latin1
+>  > ...
+>  > gran_size: 8M  chunk_size: 64M         num_reg: 9      lose cover RAM: 6M
+>  > ...
+>  > > mtrr_cleanup: can not find optimal value
+>  > > please specify mtrr_gran_size/mtrr_chunk_size
+>  > > === snip ===
+>  > >
+>  > > For now I'm disabling the mtrr sanitizer in this machine's kernel.
+>  >
+>  > Can you try to boot with "mtrr_gran_size=8m mtrr_chunk_size=64m" ?
+>
+> That results in:
+>
+> reg 0, base: 0GB, range: 8GB, type WB
+> reg 1, base: 8GB, range: 512MB, type WB
+> reg 2, base: 3584MB, range: 512MB, type UC
+> reg 3, base: 3520MB, range: 64MB, type UC
+> reg 4, base: 3512MB, range: 8MB, type UC
+> reg 5, base: 8688MB, range: 16MB, type UC
+> reg 6, base: 8680MB, range: 8MB, type UC
+> reg 7, base: 8678MB, range: 2MB, type UC
+> total RAM covered: 8094M
+>  gran_size: 8M  chunk_size: 64M         num_reg: 9      lose cover RAM: 6M
+> New variable MTRRs
+> reg 0, base: 0GB, range: 2GB, type WB
+> reg 1, base: 2GB, range: 1GB, type WB
+> reg 2, base: 3GB, range: 256MB, type WB
+> reg 3, base: 3328MB, range: 128MB, type WB
+> reg 4, base: 3456MB, range: 64MB, type WB
+> reg 5, base: 3512MB, range: 8MB, type UC
+> reg 6, base: 4GB, range: 4GB, type WB
+> reg 7, base: 8GB, range: 512MB, type WB
+> reg 8, base: 8672MB, range: 32MB, type UC
+> e820: update [mem 0xdb800000-0xffffffff] usable ==> reserved
+> e820: update [mem 0x21e000000-0x21e5fffff] usable ==> reserved
+...
+>> modified: [mem 0x000000021e000000-0x000000021e5fffff] reserved
 
-On Nov 7, 2013, at 9:25 PM, Sebastian Andrzej Siewior wrote:
+that is right, it throw 6M away.
 
-> On 06.11.13, Guenter Roeck wrote:
-> |…
-> thanks for the explanation.
-> 
->> We use DT overlays to describe the hardware on those boards and, if necessary,
->> its configuration. For example, if there is a PCIe switch, the overlay would
->> describe its memory and bus number configuration.
-> 
-> So have your "fix" configuration and a few overlays you switch at
-> runtime. The problem you have is that you want to switch a specific part
-> if your configuration at runtime. I assume you run DT on ARM. What
-> happens if you swtich from ARM to x86 and you "keep" your FPGA
-> configuration requirement? You can't use both, DT and ACPI, right? So
-> what happens then?
-> 
+Did you notice any slowness or speeding for x window?
 
-FWIW DT has been ported to x86. And is present on arm/powerpc/mips/arc and possibly
-others.
+What does /proc/mtrr look like after xwindow is started?
 
-So what are we talking about again? If you care about the non-DT case, why
-don't you make a patch about how you could support Guenter's use case on
-the x86.
+Thanks
 
-His use case is not uncommon, believe it or not, and x86 would benefit from
-something this flexible.
-
->> 
->> Guenter
-> 
-> Sebastian
-
-Regards
-
--- Pantelis
+Yinghai
