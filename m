@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab3KGXh2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 18:37:28 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:11869 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751010Ab3KGXhT (ORCPT
+	id S1755264Ab3KGXiy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 18:38:54 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:33498 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752648Ab3KGXiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 18:37:19 -0500
-Date: Thu, 7 Nov 2013 18:37:17 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
- too much
-Message-ID: <20131107183717.0fc9eb6e@gandalf.local.home>
-In-Reply-To: <20131107232148.GE28130@localhost.localdomain>
-References: <1383860919-1883-1-git-send-email-jack@suse.cz>
-	<1383860919-1883-4-git-send-email-jack@suse.cz>
-	<CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
-	<20131107225733.GE2054@quack.suse.cz>
-	<20131107232148.GE28130@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Thu, 7 Nov 2013 18:38:46 -0500
+Date: Fri, 8 Nov 2013 10:38:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Subject: Re: linux-next: manual merge of the gpio tree with the arm-soc and
+ cortex trees
+Message-Id: <20131108103829.0f485201de58f423c8dd3e7d@canb.auug.org.au>
+In-Reply-To: <20131106084117.GT14892@pengutronix.de>
+References: <20131106191454.5f45b0b5300f03e74a6a09eb@canb.auug.org.au>
+	<20131106084117.GT14892@pengutronix.de>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__8_Nov_2013_10_38_29_+1100_4ui.E0uy5K7IEDsQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Nov 2013 00:21:51 +0100
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
- 
-> Ok I see now.
-> 
-> But then this irq_work based solution won't work if, say, you run in full dynticks
-> mode. Also the hook on the timer interrupt is something that I wish we get rid
-> of on archs that can trigger self-IPIs.
+--Signature=_Fri__8_Nov_2013_10_38_29_+1100_4ui.E0uy5K7IEDsQ
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Do we really want that? What about users that use LAZY? That is, the
-work isn't that important to trigger right now (added interrupt
-expense).
+Hi Uwe,
 
-> 
-> Notwithstanding it's going to have scalibility issues as irq work then converges
-> to a single list for unbound works.
+On Wed, 6 Nov 2013 09:41:17 +0100 Uwe Kleine-K=C3=B6nig <u.kleine-koenig@pe=
+ngutronix.de> wrote:
+>
+> BTW, "cortex" is a bit too general. My tree is only about Cortex-M. Also
+> you can drop -2.6 from the URL.
 
-Well, it doesn't seem to be something that would be called often. All
-CPUs checking a variable that is seldom changed should not have any
-scalability issues. Unless of course it happens to share a cache line
-with a variable that does change often.
+Updated both, thanks.
 
-> 
-> Offloading to a workqueue would be perhaps better, and writing to the serial
-> console could then be done with interrupts enabled, preemptible context, etc...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Oh God no ;-)  Adding workqueue logic into printk just spells a
-nightmare of much more complexity for a critical kernel infrastructure.
+--Signature=_Fri__8_Nov_2013_10_38_29_+1100_4ui.E0uy5K7IEDsQ
+Content-Type: application/pgp-signature
 
--- Steve
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSfCR9AAoJEMDTa8Ir7ZwVZdIQAIUBAMDilemPCxPxe0Sx0EUu
+R/YrIWLWD0SfxUpCeunszQwo8o7xt4I2i8y0ASzi3hJA/YgCJKCZR7J30ErGdsWr
+VQyQtSsxPQ6ctmZtlfVdDMjKazkmHW0q/cLDlZh4bAv/R53SnXBYoOnQI6V7FlIH
+vjdF1Z4KNOFaIbycN3yme2v1OJKbrxHZsZDuL7MYau1xrDAljozJW19PsIaVG39r
+oDpsnlw8qG6U47F90aYlGZ4cHBq0MnsobX3QwqgDe/fNyU0jLqRq9TSRgcPH1Dvh
+g2aMs4B3gPbGHsjc0t1Ih6/MZ57UmTGR5FjMMH+uBMNDeC52sujHsxFNBRfaejQA
+xE5H+Ctw8RFSA8HO2wGa5h+ZFT9nK0vUaG36l2Y9uEKZjsJ2kAd0NhbVD6qvIesj
+zL9Vyq3JkWjGKhHSXorhqm8/reT4dmWP50xavU/DcGDxib/8/t61tY6FqjTZ+LrK
+3mNcAr/s7LmZueHuNmYXmnR0Iub/5dWmkNiaxwF5pgZ8okD3XjsgHzeOiWF0hO4T
+7Wre4WYA4U/uLPioBk6S147Y04w0puYIoRkKacUC9DO2OUfmpLDtsIQZXsya6Pq9
+ohkFJJDpxKCuXeHKxrbMANLUWIc6Y+HpAEERwQbJmQ9vrBq3+v4qb1a4Mc7AIWyd
+K5sjNZnLVz4b1EInrUZ8
+=Swhw
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__8_Nov_2013_10_38_29_+1100_4ui.E0uy5K7IEDsQ--
