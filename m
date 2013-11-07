@@ -1,63 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab3KGT6C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 14:58:02 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:54427 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab3KGT56 (ORCPT
+	id S1754091Ab3KGT76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 14:59:58 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:41309 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752674Ab3KGT7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 14:57:58 -0500
+	Thu, 7 Nov 2013 14:59:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131101130835.GC6734@katana>
-References: <1381960909-1735-1-git-send-email-tim.kryger@linaro.org>
-	<1381960909-1735-3-git-send-email-tim.kryger@linaro.org>
-	<20131101130835.GC6734@katana>
-Date: Thu, 7 Nov 2013 11:57:57 -0800
-Message-ID: <CAAYSxhrrkSvOJpYPz7txVsot1you3fFzkXJ6fqaS4OgRM0Z2gA@mail.gmail.com>
-Subject: Re: [RESEND PATCH 2/4] i2c: i2c-bcm-kona: Add support for high-speed mode
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Christian Daudt <bcm@fixthebug.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-i2c@vger.kernel.org,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20131107143139.GT18245@linux.vnet.ibm.com>
+References: <cover.1383771175.git.tim.c.chen@linux.intel.com>
+	<1383773827.11046.355.camel@schen9-DESK>
+	<CA+55aFyNX=5i0hmk-KuD+Vk+yBD-kkAiywx1Lx_JJmHVPx=1wA@mail.gmail.com>
+	<CANN689HkNP-UZOu+vDCFPG5_k=BNZG6a+oP+Ope16vLc2ShFzw@mail.gmail.com>
+	<CA+55aFwn1HUt3iXo6Zz8j1HUJi+qJ1NfcnUz-P+XCYLL7gjCMQ@mail.gmail.com>
+	<CANN689EgdDQV=srsLELUpiTGOSF0SLUZ=BC2LnMxNrYTv3H=Wg@mail.gmail.com>
+	<20131107143139.GT18245@linux.vnet.ibm.com>
+Date: Thu, 7 Nov 2013 11:59:49 -0800
+Message-ID: <CANN689FqUSnr=Prum0Kt6+0gr9dWKD8GT9Gbrtiyyg+PTyFkyA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/5] MCS Lock: Barrier corrections
+From: Michel Lespinasse <walken@google.com>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rik van Riel <riel@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "Figo. zhang" <figo1802@gmail.com>, linux-arch@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Alex Shi <alex.shi@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 1, 2013 at 6:08 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> On Wed, Oct 16, 2013 at 03:01:47PM -0700, Tim Kryger wrote:
->> Add support for I2C high-speed mode (3.4 MHz).
+On Thu, Nov 7, 2013 at 6:31 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Thu, Nov 07, 2013 at 04:50:23AM -0800, Michel Lespinasse wrote:
+>> On Thu, Nov 7, 2013 at 4:06 AM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>> >
+>> > On Nov 7, 2013 6:55 PM, "Michel Lespinasse" <walken@google.com> wrote:
+>> >>
+>> >> Rather than writing arch-specific locking code, would you agree to
+>> >> introduce acquire and release memory operations ?
+>> >
+>> > Yes, that's probably the right thing to do. What ops do we need? Store with
+>> > release, cmpxchg and load with acquire? Anything else?
 >>
->> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
->> Reviewed-by: Matt Porter <matt.porter@linaro.org>
->> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+>> Depends on what lock types we want to implement on top; for MCS we would need:
+>> - xchg acquire (common case) and load acquire (for spinning on our
+>> locker's wait word)
+>> - cmpxchg release (when there is no next locker) and store release
+>> (when writing to the next locker's wait word)
+>>
+>> One downside of the proposal is that using a load acquire for spinning
+>> puts the memory barrier within the spin loop. So this model is very
+>> intuitive and does not add unnecessary barriers on x86, but it my
+>> place the barriers in a suboptimal place for architectures that need
+>> them.
 >
-> Mostly good as well:
->
->> +enum hs_bus_speed_index {
->> +     BCM_SPD_3P4MHZ = 0,
->> +};
->
-> I just realized that you should update both patches to add the supported
-> bus speeds to the binding documentation.
+> OK, I will bite...  Why is a barrier in the spinloop suboptimal?
 
-While the bus speed property is really a configuration parameter (and
-not a true description of of the hardware) it seems improper to put
-driver specific details into the binding document.
+It's probably not a big deal - all I meant to say is that if you were
+manually placing barriers, you would probably put one after the loop
+instead. I don't deal much with architectures where such barriers are
+needed, so I don't know for sure if the difference means much.
 
-Please let me know how you would like me to proceed.
+> Can't say that I have tried measuring it, but the barrier should not
+> normally result in interconnect traffic.  Given that the barrier is
+> required anyway, it should not affect lock-acquisition latency.
 
-I should mention that I plan to break out the binding into its own
-patch as this seems to be the latest best practice just in case that
-influences your decision.
+Agree
 
-Thanks,
-Tim Kryger
+> So what am I missing here?
+
+I think you read my second email as me trying to shoot down a proposal
+- I wasn't, as I really like the acquire/release model and find it
+easy to program with, which is why I'm proposing it in the first
+place. I just wanted to be upfront about all potential downsides, so
+we can consider them and see if they are significant - I don't think
+they are, but I'm not the best person to judge that as I mostly just
+deal with x86 stuff.
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
