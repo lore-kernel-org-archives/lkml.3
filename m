@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab3KGDMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 22:12:23 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:32054 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab3KGDMW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 22:12:22 -0500
-X-Spam-Score: -100.8
-Message-ID: <527B0595.5030108@asianux.com>
-Date: Thu, 07 Nov 2013 11:14:29 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753878Ab3KGDMo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 22:12:44 -0500
+Received: from ozlabs.org ([203.10.76.45]:35583 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753796Ab3KGDMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 22:12:40 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        James Solner <solner@alcatel-lucent.com>, dhowells@redhat.com,
+        jwboyer@fedoraproject.org
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v3] Add Documentation/module-signing.txt file
+In-Reply-To: <527AA748.7070008@infradead.org>
+References: <2816992.xgHeIJfXWn@cmlinux10.ih.lucent.com> <527AA748.7070008@infradead.org>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 07 Nov 2013 13:32:16 +1030
+Message-ID: <87r4as6hjb.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>, perex@perex.cz,
-        "dhowells@redhat.com" <dhowells@redhat.com>
-CC: alsa-devel@alsa-project.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] include/uapi/sound/firewire.h: use "_UAPI" instead of "UAPI"
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When installing, "scripts/headers_install.sh" will strip guard macro'
-"_UAPI" to prevent from appearing it to users. And also, all another
-files which need uapi prefix always use "_UAPI", not "UAPI".
+Randy Dunlap <rdunlap@infradead.org> writes:
+> On 11/06/13 10:53, James Solner wrote:
+>> This patch adds the Documentation/module-signing.txt file that is
+>> currently missing from the Documentation directory. The init/Kconfig
+>> file references the Documentation/module-signing.txt file to explain
+>> how kernel module signing works. This patch supplies this documentation. 
+>> 
+>> The initial version of this patch provided old documentation
+>> that was a mixture of the old RHEL style GPG signing. 
+>> Version 1 updated the documentation to described the current
+>> implementation using x509 certificate signing. 
+>> Version 2, fixes grammar/spelling mistakes and removes
+>> trailing whitespaces. Version 3, fixes grammar/spelling mistakes. 
+>> 
+>> Signed-off-by: James Solner <solner@alcatel-lucent.com>
+>> 
+>
+> Looks good to me.  I'll let David, Josh, Rusty, et al, comment
+> on the real content.
 
-So use "_UAPI" instead of "UAPI" on the guard macro, and also give a
-comment for "#endif".
+Once David Acks, I'll take it.
 
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- include/uapi/sound/firewire.h |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/include/uapi/sound/firewire.h b/include/uapi/sound/firewire.h
-index e86131c..59f5961 100644
---- a/include/uapi/sound/firewire.h
-+++ b/include/uapi/sound/firewire.h
-@@ -1,5 +1,5 @@
--#ifndef UAPI_SOUND_FIREWIRE_H_INCLUDED
--#define UAPI_SOUND_FIREWIRE_H_INCLUDED
-+#ifndef _UAPI_SOUND_FIREWIRE_H_INCLUDED
-+#define _UAPI_SOUND_FIREWIRE_H_INCLUDED
- 
- #include <linux/ioctl.h>
- 
-@@ -48,4 +48,4 @@ struct snd_firewire_get_info {
-  * Returns -EBUSY if the driver is already streaming.
-  */
- 
--#endif
-+#endif /* _UAPI_SOUND_FIREWIRE_H_INCLUDED */
--- 
-1.7.7.6
+Thanks,
+Rusty.
