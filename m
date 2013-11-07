@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab3KGDTc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 22:19:32 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:40337 "EHLO
+	id S1754187Ab3KGDUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 22:20:39 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:13155 "EHLO
 	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753902Ab3KGDS7 (ORCPT
+	by vger.kernel.org with ESMTP id S1753577Ab3KGDUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 22:18:59 -0500
+	Wed, 6 Nov 2013 22:20:37 -0500
 From: Jisheng Zhang <jszhang@marvell.com>
 To: <rob.herring@calxeda.com>, <linux@arm.linux.org.uk>,
         <kernel@pengutronix.de>, <baohua@kernel.org>, <dinguyen@altera.com>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Jisheng Zhang <jszhang@marvell.com>
-Subject: [PATCH V2 4/4] arm: socfgpa: make use of common scu_a9_get_base() interface
-Date: Thu, 7 Nov 2013 11:16:44 +0800
-Message-ID: <1383794204-4714-5-git-send-email-jszhang@marvell.com>
+Subject: [PATCH V2 3/4] arm: prima2: make use of common scu_a9_get_base() interface
+Date: Thu, 7 Nov 2013 11:16:43 +0800
+Message-ID: <1383794204-4714-4-git-send-email-jszhang@marvell.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1383794204-4714-1-git-send-email-jszhang@marvell.com>
 References: <1383794204-4714-1-git-send-email-jszhang@marvell.com>
@@ -34,22 +34,14 @@ interface is self commented.
 
 Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
 ---
- arch/arm/mach-socfpga/socfpga.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mach-prima2/platsmp.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
-index bfce964..b695887 100644
---- a/arch/arm/mach-socfpga/socfpga.c
-+++ b/arch/arm/mach-socfpga/socfpga.c
-@@ -24,6 +24,7 @@
- #include <asm/hardware/cache-l2x0.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-+#include <asm/smp_scu.h>
- 
- #include "core.h"
- 
-@@ -51,8 +52,7 @@ static void __init socfpga_scu_map_io(void)
+diff --git a/arch/arm/mach-prima2/platsmp.c b/arch/arm/mach-prima2/platsmp.c
+index 3dbcb1a..2d5bcc9 100644
+--- a/arch/arm/mach-prima2/platsmp.c
++++ b/arch/arm/mach-prima2/platsmp.c
+@@ -34,8 +34,7 @@ void __init sirfsoc_map_scu(void)
  {
  	unsigned long base;
  
@@ -57,8 +49,8 @@ index bfce964..b695887 100644
 -	asm("mrc p15, 4, %0, c15, c0, 0" : "=r" (base));
 +	base = scu_a9_get_base();
  
+ 	scu_io_desc.virtual = SIRFSOC_VA(base);
  	scu_io_desc.pfn = __phys_to_pfn(base);
- 	iotable_init(&scu_io_desc, 1);
 -- 
 1.8.4.2
 
