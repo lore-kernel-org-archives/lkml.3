@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab3KGNpr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 08:45:47 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:41388 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab3KGNoo (ORCPT
+	id S1754088Ab3KGNom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 08:44:42 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:63017 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870Ab3KGNof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 08:44:44 -0500
+	Thu, 7 Nov 2013 08:44:35 -0500
 From: Juri Lelli <juri.lelli@gmail.com>
 To: peterz@infradead.org, tglx@linutronix.de
 Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
@@ -19,9 +19,9 @@ Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
         raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
         vincent.guittot@linaro.org, bruce.ashfield@windriver.com
-Subject: [PATCH 10/14] sched: drafted deadline inheritance logic.
-Date: Thu,  7 Nov 2013 14:43:44 +0100
-Message-Id: <1383831828-15501-11-git-send-email-juri.lelli@gmail.com>
+Subject: [PATCH 07/14] sched: add schedstats for -deadline tasks.
+Date: Thu,  7 Nov 2013 14:43:41 +0100
+Message-Id: <1383831828-15501-8-git-send-email-juri.lelli@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
 References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
@@ -31,482 +31,233 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dario Faggioli <raistlin@linux.it>
 
-Some method to deal with rt-mutexes and make sched_dl interact with
-the current PI-coded is needed, raising all but trivial issues, that
-needs (according to us) to be solved with some restructuring of
-the pi-code (i.e., going toward a proxy execution-ish implementation).
-
-This is under development, in the meanwhile, as a temporary solution,
-what this commits does is:
- - ensure a pi-lock owner with waiters is never throttled down. Instead,
-   when it runs out of runtime, it immediately gets replenished and it's
-   deadline is postponed;
- - the scheduling parameters (relative deadline and default runtime)
-   used for that replenishments --during the whole period it holds the
-   pi-lock-- are the ones of the waiting task with earliest deadline.
-
-Acting this way, we provide some kind of boosting to the lock-owner,
-still by using the existing (actually, slightly modified by the previous
-commit) pi-architecture.
-
-We would stress the fact that this is only a surely needed, all but
-clean solution to the problem. In the end it's only a way to re-start
-discussion within the community. So, as always, comments, ideas, rants,
-etc.. are welcome! :-)
+Add some typical sched-debug output to dl_rq(s) and some
+schedstats to -deadline tasks. This helps spotting problems
+with queue and dequeue operations (incorrect ordering) and
+gives hints about system status (one can have an idea if the
+system is overloaded, if tasks are missing their deadlines
+and the entity of such anomalies).
 
 Signed-off-by: Dario Faggioli <raistlin@linux.it>
 Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- include/linux/sched.h             |    8 +++-
- include/linux/sched/rt.h          |    1 +
- kernel/fork.c                     |    1 +
- kernel/rtmutex.c                  |   14 +++++-
- kernel/sched/core.c               |   36 ++++++++++++---
- kernel/sched/deadline.c           |   91 +++++++++++++++++++++----------------
- kernel/sched/sched.h              |   14 ++++++
- kernel/trace/trace_sched_wakeup.c |    1 +
- 8 files changed, 119 insertions(+), 47 deletions(-)
+ include/linux/sched.h   |   13 +++++++++++++
+ kernel/sched/deadline.c |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/debug.c    |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/sched.h    |    9 ++++++++-
+ 4 files changed, 114 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f95bafd..9dad4f3 100644
+index 90517bc..3064319 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1099,8 +1099,12 @@ struct sched_dl_entity {
- 	 * @dl_new tells if a new instance arrived. If so we must
- 	 * start executing it with full runtime and reset its absolute
- 	 * deadline;
-+	 *
-+	 * @dl_boosted tells if we are boosted due to DI. If so we are
-+	 * outside bandwidth enforcement mechanism (but only until we
-+	 * exit the critical section).
+@@ -1058,6 +1058,15 @@ struct sched_rt_entity {
+ #endif
+ };
+ 
++#ifdef CONFIG_SCHEDSTATS
++struct sched_stats_dl {
++	u64			last_dmiss;
++	u64			last_rorun;
++	u64			dmiss_max;
++	u64			rorun_max;
++};
++#endif
++
+ struct sched_dl_entity {
+ 	struct rb_node	rb_node;
+ 
+@@ -1097,6 +1106,10 @@ struct sched_dl_entity {
+ 	 * own bandwidth to be enforced, thus we need one timer per task.
  	 */
--	int dl_throttled, dl_new;
-+	int dl_throttled, dl_new, dl_boosted;
- 
- 	/*
- 	 * Bandwidth enforcement timer. Each -deadline task has its
-@@ -1345,6 +1349,8 @@ struct task_struct {
- 	struct rb_node *pi_waiters_leftmost;
- 	/* Deadlock detection and priority inheritance handling */
- 	struct rt_mutex_waiter *pi_blocked_on;
-+	/* Top pi_waiters task */
-+	struct task_struct *pi_top_task;
- #endif
- 
- #ifdef CONFIG_DEBUG_MUTEXES
-diff --git a/include/linux/sched/rt.h b/include/linux/sched/rt.h
-index a157797..1fa88a2c 100644
---- a/include/linux/sched/rt.h
-+++ b/include/linux/sched/rt.h
-@@ -35,6 +35,7 @@ static inline int rt_task(struct task_struct *p)
- #ifdef CONFIG_RT_MUTEXES
- extern int rt_mutex_getprio(struct task_struct *p);
- extern void rt_mutex_setprio(struct task_struct *p, int prio);
-+extern struct task_struct *rt_mutex_get_top_task(struct task_struct *task);
- extern void rt_mutex_adjust_pi(struct task_struct *p);
- static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
- {
-diff --git a/kernel/fork.c b/kernel/fork.c
-index aa6e18d..7247105 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1092,6 +1092,7 @@ static void rt_mutex_init_task(struct task_struct *p)
- 	p->pi_waiters = RB_ROOT;
- 	p->pi_waiters_leftmost = NULL;
- 	p->pi_blocked_on = NULL;
-+	p->pi_top_task = NULL;
- #endif
- }
- 
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index 4ea7eaa..f7f667e 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -14,6 +14,7 @@
- #include <linux/export.h>
- #include <linux/sched.h>
- #include <linux/sched/rt.h>
-+#include <linux/sched/deadline.h>
- #include <linux/timer.h>
- 
- #include "rtmutex_common.h"
-@@ -200,6 +201,14 @@ int rt_mutex_getprio(struct task_struct *task)
- 		   task->normal_prio);
- }
- 
-+struct task_struct *rt_mutex_get_top_task(struct task_struct *task)
-+{
-+	if (likely(!task_has_pi_waiters(task)))
-+		return NULL;
+ 	struct hrtimer dl_timer;
 +
-+	return task_top_pi_waiter(task)->task;
-+}
-+
- /*
-  * Adjust the priority of a task, after its pi_waiters got modified.
-  *
-@@ -209,7 +218,7 @@ static void __rt_mutex_adjust_prio(struct task_struct *task)
- {
- 	int prio = rt_mutex_getprio(task);
++#ifdef CONFIG_SCHEDSTATS
++	struct sched_stats_dl stats;
++#endif
+ };
  
--	if (task->prio != prio)
-+	if (task->prio != prio || dl_prio(prio))
- 		rt_mutex_setprio(task, prio);
- }
- 
-@@ -652,7 +661,8 @@ void rt_mutex_adjust_pi(struct task_struct *task)
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
- 
- 	waiter = task->pi_blocked_on;
--	if (!waiter || waiter->task->prio == task->prio) {
-+	if (!waiter || (waiter->task->prio == task->prio &&
-+			!dl_prio(task->prio))) {
- 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 		return;
- 	}
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 6a3ab87..d9dca90 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -951,7 +951,7 @@ static inline void check_class_changed(struct rq *rq, struct task_struct *p,
- 		if (prev_class->switched_from)
- 			prev_class->switched_from(rq, p);
- 		p->sched_class->switched_to(rq, p);
--	} else if (oldprio != p->prio)
-+	} else if (oldprio != p->prio || dl_task(p))
- 		p->sched_class->prio_changed(rq, p, oldprio);
- }
- 
-@@ -3042,7 +3042,7 @@ EXPORT_SYMBOL(sleep_on_timeout);
-  */
- void rt_mutex_setprio(struct task_struct *p, int prio)
- {
--	int oldprio, on_rq, running;
-+	int oldprio, on_rq, running, enqueue_flag = 0;
- 	struct rq *rq;
- 	const struct sched_class *prev_class;
- 
-@@ -3069,6 +3069,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
- 	}
- 
- 	trace_sched_pi_setprio(p, prio);
-+	p->pi_top_task = rt_mutex_get_top_task(p);
- 	oldprio = p->prio;
- 	prev_class = p->sched_class;
- 	on_rq = p->on_rq;
-@@ -3078,19 +3079,42 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
- 	if (running)
- 		p->sched_class->put_prev_task(rq, p);
- 
--	if (dl_prio(prio))
-+	/*
-+	 * Boosting condition are:
-+	 * 1. -rt task is running and holds mutex A
-+	 *      --> -dl task blocks on mutex A
-+	 *
-+	 * 2. -dl task is running and holds mutex A
-+	 *      --> -dl task blocks on mutex A and could preempt the
-+	 *          running task
-+	 */
-+	if (dl_prio(prio)) {
-+		if (!dl_prio(p->normal_prio) || (p->pi_top_task &&
-+			dl_entity_preempt(&p->pi_top_task->dl, &p->dl))) {
-+			p->dl.dl_boosted = 1;
-+			p->dl.dl_throttled = 0;
-+			enqueue_flag = ENQUEUE_REPLENISH;
-+		} else
-+			p->dl.dl_boosted = 0;
- 		p->sched_class = &dl_sched_class;
--	else if (rt_prio(prio))
-+	} else if (rt_prio(prio)) {
-+		if (dl_prio(oldprio))
-+			p->dl.dl_boosted = 0;
-+		if (oldprio < prio)
-+			enqueue_flag = ENQUEUE_HEAD;
- 		p->sched_class = &rt_sched_class;
--	else
-+	} else {
-+		if (dl_prio(oldprio))
-+			p->dl.dl_boosted = 0;
- 		p->sched_class = &fair_sched_class;
-+	}
- 
- 	p->prio = prio;
- 
- 	if (running)
- 		p->sched_class->set_curr_task(rq);
- 	if (on_rq)
--		enqueue_task(rq, p, oldprio < prio ? ENQUEUE_HEAD : 0);
-+		enqueue_task(rq, p, enqueue_flag);
- 
- 	check_class_changed(rq, p, prev_class, oldprio);
- out_unlock:
+ struct rcu_node;
 diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index a4b86b0..3b251b0 100644
+index 3e0e6e3..a4b86b0 100644
 --- a/kernel/sched/deadline.c
 +++ b/kernel/sched/deadline.c
-@@ -16,20 +16,6 @@
-  */
- #include "sched.h"
+@@ -518,6 +518,27 @@ int dl_runtime_exceeded(struct rq *rq, struct sched_dl_entity *dl_se)
+ 	if (!rorun && !dmiss)
+ 		return 0;
  
--static inline int dl_time_before(u64 a, u64 b)
--{
--	return (s64)(a - b) < 0;
--}
--
--/*
-- * Tells if entity @a should preempt entity @b.
-- */
--static inline
--int dl_entity_preempt(struct sched_dl_entity *a, struct sched_dl_entity *b)
--{
--	return dl_time_before(a->deadline, b->deadline);
--}
--
- static inline struct task_struct *dl_task_of(struct sched_dl_entity *dl_se)
- {
- 	return container_of(dl_se, struct task_struct, dl);
-@@ -242,7 +228,8 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
-  * one, and to (try to!) reconcile itself with its own scheduling
-  * parameters.
-  */
--static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
-+static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se,
-+				       struct sched_dl_entity *pi_se)
- {
- 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
- 	struct rq *rq = rq_of_dl_rq(dl_rq);
-@@ -254,8 +241,8 @@ static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
- 	 * future; in fact, we must consider execution overheads (time
- 	 * spent on hardirq context, etc.).
- 	 */
--	dl_se->deadline = rq_clock(rq) + dl_se->dl_deadline;
--	dl_se->runtime = dl_se->dl_runtime;
-+	dl_se->deadline = rq_clock(rq) + pi_se->dl_deadline;
-+	dl_se->runtime = pi_se->dl_runtime;
- 	dl_se->dl_new = 0;
- }
- 
-@@ -277,11 +264,23 @@ static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
-  * could happen are, typically, a entity voluntarily trying to overcome its
-  * runtime, or it just underestimated it during sched_setscheduler_ex().
-  */
--static void replenish_dl_entity(struct sched_dl_entity *dl_se)
-+static void replenish_dl_entity(struct sched_dl_entity *dl_se,
-+				struct sched_dl_entity *pi_se)
- {
- 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
- 	struct rq *rq = rq_of_dl_rq(dl_rq);
- 
-+	BUG_ON(pi_se->dl_runtime <= 0);
-+
++#ifdef CONFIG_SCHEDSTATS
 +	/*
-+	 * This could be the case for a !-dl task that is boosted.
-+	 * Just go with full inherited parameters.
++	 * Record statistics about last and maximum deadline
++	 * misses and runtime overruns.
 +	 */
-+	if (dl_se->dl_deadline == 0) {
-+		dl_se->deadline = rq_clock(rq) + pi_se->dl_deadline;
-+		dl_se->runtime = pi_se->dl_runtime;
++	if (dmiss) {
++		u64 damount = rq_clock(rq) - dl_se->deadline;
++
++		schedstat_set(dl_se->stats.last_dmiss, damount);
++		schedstat_set(dl_se->stats.dmiss_max,
++			      max(dl_se->stats.dmiss_max, damount));
 +	}
++	if (rorun) {
++		u64 ramount = -dl_se->runtime;
++
++		schedstat_set(dl_se->stats.last_rorun, ramount);
++		schedstat_set(dl_se->stats.rorun_max,
++			      max(dl_se->stats.rorun_max, ramount));
++	}
++#endif
 +
  	/*
- 	 * We keep moving the deadline away until we get some
- 	 * available runtime for the entity. This ensures correct
-@@ -289,8 +288,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
- 	 * arbitrary large.
- 	 */
- 	while (dl_se->runtime <= 0) {
--		dl_se->deadline += dl_se->dl_period;
--		dl_se->runtime += dl_se->dl_runtime;
-+		dl_se->deadline += pi_se->dl_period;
-+		dl_se->runtime += pi_se->dl_runtime;
- 	}
+ 	 * If we are beyond our current deadline and we are still
+ 	 * executing, then we have already used some of the runtime of
+@@ -561,6 +582,7 @@ static void update_curr_dl(struct rq *rq)
+ 		      max(curr->se.statistics.exec_max, delta_exec));
  
- 	/*
-@@ -309,8 +308,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
- 			lag_once = true;
- 			printk_sched("sched: DL replenish lagged to much\n");
- 		}
--		dl_se->deadline = rq_clock(rq) + dl_se->dl_deadline;
--		dl_se->runtime = dl_se->dl_runtime;
-+		dl_se->deadline = rq_clock(rq) + pi_se->dl_deadline;
-+		dl_se->runtime = pi_se->dl_runtime;
- 	}
+ 	curr->se.sum_exec_runtime += delta_exec;
++	schedstat_add(&rq->dl, exec_clock, delta_exec);
+ 	account_group_exec_runtime(curr, delta_exec);
+ 
+ 	curr->se.exec_start = rq_clock_task(rq);
+@@ -912,6 +934,18 @@ static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
  }
+ #endif
  
-@@ -337,7 +336,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
-  * task with deadline equal to period this is the same of using
-  * dl_deadline instead of dl_period in the equation above.
-  */
--static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
-+static bool dl_entity_overflow(struct sched_dl_entity *dl_se,
-+			       struct sched_dl_entity *pi_se, u64 t)
- {
- 	u64 left, right;
- 
-@@ -359,8 +359,8 @@ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
- 	 * of anything below microseconds resolution is actually fiction
- 	 * (but still we want to give the user that illusion >;).
- 	 */
--	left = (dl_se->dl_period >> 10) * (dl_se->runtime >> 10);
--	right = ((dl_se->deadline - t) >> 10) * (dl_se->dl_runtime >> 10);
-+	left = (pi_se->dl_period >> 10) * (dl_se->runtime >> 10);
-+	right = ((dl_se->deadline - t) >> 10) * (pi_se->dl_runtime >> 10);
- 
- 	return dl_time_before(right, left);
- }
-@@ -374,7 +374,8 @@ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
-  *  - using the remaining runtime with the current deadline would make
-  *    the entity exceed its bandwidth.
-  */
--static void update_dl_entity(struct sched_dl_entity *dl_se)
-+static void update_dl_entity(struct sched_dl_entity *dl_se,
-+			     struct sched_dl_entity *pi_se)
- {
- 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
- 	struct rq *rq = rq_of_dl_rq(dl_rq);
-@@ -384,14 +385,14 @@ static void update_dl_entity(struct sched_dl_entity *dl_se)
- 	 * the actual scheduling parameters have to be "renewed".
- 	 */
- 	if (dl_se->dl_new) {
--		setup_new_dl_entity(dl_se);
-+		setup_new_dl_entity(dl_se, pi_se);
- 		return;
- 	}
- 
- 	if (dl_time_before(dl_se->deadline, rq_clock(rq)) ||
--	    dl_entity_overflow(dl_se, rq_clock(rq))) {
--		dl_se->deadline = rq_clock(rq) + dl_se->dl_deadline;
--		dl_se->runtime = dl_se->dl_runtime;
-+	    dl_entity_overflow(dl_se, pi_se, rq_clock(rq))) {
-+		dl_se->deadline = rq_clock(rq) + pi_se->dl_deadline;
-+		dl_se->runtime = pi_se->dl_runtime;
- 	}
- }
- 
-@@ -405,7 +406,7 @@ static void update_dl_entity(struct sched_dl_entity *dl_se)
-  * actually started or not (i.e., the replenishment instant is in
-  * the future or in the past).
-  */
--static int start_dl_timer(struct sched_dl_entity *dl_se)
-+static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
- {
- 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
- 	struct rq *rq = rq_of_dl_rq(dl_rq);
-@@ -414,6 +415,8 @@ static int start_dl_timer(struct sched_dl_entity *dl_se)
- 	unsigned long range;
- 	s64 delta;
- 
-+	if (boosted)
-+		return 0;
- 	/*
- 	 * We want the timer to fire at the deadline, but considering
- 	 * that it is actually coming from rq->clock and not from
-@@ -593,7 +596,7 @@ static void update_curr_dl(struct rq *rq)
- 	dl_se->runtime -= delta_exec;
- 	if (dl_runtime_exceeded(rq, dl_se)) {
- 		__dequeue_task_dl(rq, curr, 0);
--		if (likely(start_dl_timer(dl_se)))
-+		if (likely(start_dl_timer(dl_se, curr->dl.dl_boosted)))
- 			dl_se->dl_throttled = 1;
- 		else
- 			enqueue_task_dl(rq, curr, ENQUEUE_REPLENISH);
-@@ -748,7 +751,8 @@ static void __dequeue_dl_entity(struct sched_dl_entity *dl_se)
- }
- 
- static void
--enqueue_dl_entity(struct sched_dl_entity *dl_se, int flags)
-+enqueue_dl_entity(struct sched_dl_entity *dl_se,
-+		  struct sched_dl_entity *pi_se, int flags)
- {
- 	BUG_ON(on_dl_rq(dl_se));
- 
-@@ -758,9 +762,9 @@ enqueue_dl_entity(struct sched_dl_entity *dl_se, int flags)
- 	 * we want a replenishment of its runtime.
- 	 */
- 	if (!dl_se->dl_new && flags & ENQUEUE_REPLENISH)
--		replenish_dl_entity(dl_se);
-+		replenish_dl_entity(dl_se, pi_se);
- 	else
--		update_dl_entity(dl_se);
-+		update_dl_entity(dl_se, pi_se);
- 
- 	__enqueue_dl_entity(dl_se);
- }
-@@ -772,6 +776,18 @@ static void dequeue_dl_entity(struct sched_dl_entity *dl_se)
- 
- static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
- {
-+	struct task_struct *pi_task = p->pi_top_task;
-+	struct sched_dl_entity *pi_se = &p->dl;
++#ifdef CONFIG_SCHED_DEBUG
++struct sched_dl_entity *__pick_dl_last_entity(struct dl_rq *dl_rq)
++{
++	struct rb_node *last = rb_last(&dl_rq->rb_root);
 +
-+	/*
-+	 * Use the scheduling parameters of the top pi-waiter
-+	 * task if we have one and its (relative) deadline is
-+	 * smaller than our one... OTW we keep our runtime and
-+	 * deadline.
-+	 */
-+	if (pi_task && p->dl.dl_boosted && dl_prio(pi_task->normal_prio))
-+		pi_se = &pi_task->dl;
++	if (!last)
++		return NULL;
 +
- 	/*
- 	 * If p is throttled, we do nothing. In fact, if it exhausted
- 	 * its budget it needs a replenishment and, since it now is on
-@@ -781,7 +797,7 @@ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
- 	if (p->dl.dl_throttled)
- 		return;
- 
--	enqueue_dl_entity(&p->dl, flags);
-+	enqueue_dl_entity(&p->dl, pi_se, flags);
- 
- 	if (!task_current(rq, p) && p->nr_cpus_allowed > 1)
- 		enqueue_pushable_dl_task(rq, p);
-@@ -1020,8 +1036,7 @@ static void task_dead_dl(struct task_struct *p)
++	return rb_entry(last, struct sched_dl_entity, rb_node);
++}
++#endif /* CONFIG_SCHED_DEBUG */
++
+ static struct sched_dl_entity *pick_next_dl_entity(struct rq *rq,
+ 						   struct dl_rq *dl_rq)
  {
- 	struct hrtimer *timer = &p->dl.dl_timer;
- 
--	if (hrtimer_active(timer))
--		hrtimer_try_to_cancel(timer);
-+	hrtimer_cancel(timer);
+@@ -1593,3 +1627,16 @@ const struct sched_class dl_sched_class = {
+ 	.switched_from		= switched_from_dl,
+ 	.switched_to		= switched_to_dl,
+ };
++
++#ifdef CONFIG_SCHED_DEBUG
++extern void print_dl_rq(struct seq_file *m, int cpu, struct dl_rq *dl_rq);
++
++void print_dl_stats(struct seq_file *m, int cpu)
++{
++	struct dl_rq *dl_rq = &cpu_rq(cpu)->dl;
++
++	rcu_read_lock();
++	print_dl_rq(m, cpu, dl_rq);
++	rcu_read_unlock();
++}
++#endif /* CONFIG_SCHED_DEBUG */
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 1965599..811b025 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -253,6 +253,45 @@ void print_rt_rq(struct seq_file *m, int cpu, struct rt_rq *rt_rq)
+ #undef P
  }
  
- static void set_curr_task_dl(struct rq *rq)
++extern struct sched_dl_entity *__pick_dl_last_entity(struct dl_rq *dl_rq);
++extern void print_dl_stats(struct seq_file *m, int cpu);
++
++void print_dl_rq(struct seq_file *m, int cpu, struct dl_rq *dl_rq)
++{
++	s64 min_deadline = -1, max_deadline = -1;
++	struct rq *rq = cpu_rq(cpu);
++	struct sched_dl_entity *last;
++	unsigned long flags;
++
++	SEQ_printf(m, "\ndl_rq[%d]:\n", cpu);
++
++	raw_spin_lock_irqsave(&rq->lock, flags);
++	if (dl_rq->rb_leftmost)
++		min_deadline = (rb_entry(dl_rq->rb_leftmost,
++					 struct sched_dl_entity,
++					 rb_node))->deadline;
++	last = __pick_dl_last_entity(dl_rq);
++	if (last)
++		max_deadline = last->deadline;
++	raw_spin_unlock_irqrestore(&rq->lock, flags);
++
++#define P(x) \
++	SEQ_printf(m, "  .%-30s: %Ld\n", #x, (long long)(dl_rq->x))
++#define __PN(x) \
++	SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", #x, SPLIT_NS(x))
++#define PN(x) \
++	SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", #x, SPLIT_NS(dl_rq->x))
++
++	P(dl_nr_running);
++	PN(exec_clock);
++	__PN(min_deadline);
++	__PN(max_deadline);
++
++#undef PN
++#undef __PN
++#undef P
++}
++
+ extern __read_mostly int sched_clock_running;
+ 
+ static void print_cpu(struct seq_file *m, int cpu)
+@@ -320,6 +359,7 @@ do {									\
+ 	spin_lock_irqsave(&sched_debug_lock, flags);
+ 	print_cfs_stats(m, cpu);
+ 	print_rt_stats(m, cpu);
++	print_dl_stats(m, cpu);
+ 
+ 	rcu_read_lock();
+ 	print_rq(m, rq, cpu);
+@@ -540,6 +580,12 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
+ 	P(se.statistics.nr_wakeups_affine_attempts);
+ 	P(se.statistics.nr_wakeups_passive);
+ 	P(se.statistics.nr_wakeups_idle);
++	if (dl_task(p)) {
++		PN(dl.stats.last_dmiss);
++		PN(dl.stats.dmiss_max);
++		PN(dl.stats.last_rorun);
++		PN(dl.stats.rorun_max);
++	}
+ 
+ 	{
+ 		u64 avg_atom, avg_per_cpu;
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index b04aeed..4da50db 100644
+index 70d0030..b04aeed 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -105,6 +105,20 @@ static inline int task_has_dl_policy(struct task_struct *p)
- 	return dl_policy(p->policy);
- }
+@@ -384,6 +384,8 @@ struct dl_rq {
  
-+static inline int dl_time_before(u64 a, u64 b)
-+{
-+	return (s64)(a - b) < 0;
-+}
+ 	unsigned long dl_nr_running;
+ 
++	u64 exec_clock;
 +
-+/*
-+ * Tells if entity @a should preempt entity @b.
-+ */
-+static inline
-+int dl_entity_preempt(struct sched_dl_entity *a, struct sched_dl_entity *b)
-+{
-+	return dl_time_before(a->deadline, b->deadline);
-+}
+ #ifdef CONFIG_SMP
+ 	/*
+ 	 * Deadline values of the currently executing and the
+@@ -410,6 +412,11 @@ struct dl_rq {
+ #endif
+ };
+ 
++#ifdef CONFIG_SCHED_DEBUG
++struct sched_dl_entity *__pick_dl_last_entity(struct dl_rq *dl_rq);
++void print_dl_stats(struct seq_file *m, int cpu);
++#endif
 +
+ #ifdef CONFIG_SMP
+ 
  /*
-  * This is the priority-queue data structure of the RT scheduling class:
-  */
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index 1457fb1..b5a9f02 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -16,6 +16,7 @@
- #include <linux/uaccess.h>
- #include <linux/ftrace.h>
- #include <linux/sched/rt.h>
-+#include <linux/sched/deadline.h>
- #include <trace/events/sched.h>
- #include "trace.h"
+@@ -1366,7 +1373,7 @@ extern void print_rt_stats(struct seq_file *m, int cpu);
+ 
+ extern void init_cfs_rq(struct cfs_rq *cfs_rq);
+ extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
+-extern void init_dl_rq(struct dl_rq *rt_rq, struct rq *rq);
++extern void init_dl_rq(struct dl_rq *dl_rq, struct rq *rq);
+ 
+ extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
  
 -- 
 1.7.9.5
