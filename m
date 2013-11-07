@@ -1,112 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab3KGVIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 16:08:46 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35762 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab3KGVIi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 16:08:38 -0500
-Message-ID: <527C0149.6020902@infradead.org>
-Date: Thu, 07 Nov 2013 13:08:25 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754822Ab3KGVLC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 16:11:02 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45045 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752784Ab3KGVK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 16:10:56 -0500
+Message-ID: <527C0195.50008@zytor.com>
+Date: Thu, 07 Nov 2013 13:09:41 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>
-CC: Jerome Marchand <jmarchan@redhat.com>, kbuild-all@01.org,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        fengguang.wu@intel.com
-Subject: Re: [memcg:since-3.12 75/75] fs/proc/meminfo.c:undefined reference
- to `vm_commit_limit'
-References: <527b74a0.xBELNKuc6Ws8XONb%fengguang.wu@intel.com>	<20131107132505.GA16393@dhcp22.suse.cz> <20131107125103.c81016a87bfd72b0acf4058c@linux-foundation.org>
-In-Reply-To: <20131107125103.c81016a87bfd72b0acf4058c@linux-foundation.org>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+CC: gregkh@linuxfoundation.org, catalin.marinas@arm.com, will.deacon@arm.com,
+        tglx@linutronix.de, Ingo Molnar <mingo@kernel.org>,
+        steve.capper@linaro.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC PATCH 0/4] wire up CPU features to udev based module loading
+References: <1383844657-17487-1-git-send-email-ard.biesheuvel@linaro.org>
+In-Reply-To: <1383844657-17487-1-git-send-email-ard.biesheuvel@linaro.org>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/13 12:51, Andrew Morton wrote:
-> On Thu, 7 Nov 2013 14:25:05 +0100 Michal Hocko <mhocko@suse.cz> wrote:
-> 
->> On Thu 07-11-13 19:08:16, Wu Fengguang wrote:
->>> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git since-3.12
->>> head:   2f11d7af8df66cb4f217b6293ad8189aa101d601
->>> commit: 2f11d7af8df66cb4f217b6293ad8189aa101d601 [75/75] mm-factor-commit-limit-calculation-fix
->>> config: make ARCH=blackfin BF526-EZBRD_defconfig
->>>
->>> All error/warnings:
->>>
->>>    mm/built-in.o: In function `__vm_enough_memory':
->>>    (.text+0x11b4c): undefined reference to `vm_commit_limit'
->>>    fs/built-in.o: In function `meminfo_proc_show':
->>>>> fs/proc/meminfo.c:(.text+0x37ef0): undefined reference to `vm_commit_limit'
->>
->> Andrew, it seems that moving vm_commit_limit out of mman.h is not that
->> easy because it breaks NOMMU configurations. mm/mmap.o is not part of
->> the nommu build apparently.
->>
->> So either we move it back to mman.h or put it somewhere else. I do not
->> have a good idea where, though.
->>
-> 
-> util.c?
-> 
-> diff -puN mm/mmap.c~mm-factor-commit-limit-calculation-fix-fix mm/mmap.c
-> --- a/mm/mmap.c~mm-factor-commit-limit-calculation-fix-fix
-> +++ a/mm/mmap.c
-> @@ -110,15 +110,6 @@ unsigned long vm_memory_committed(void)
->  EXPORT_SYMBOL_GPL(vm_memory_committed);
->  
->  /*
-> - * Commited memory limit enforced when OVERCOMMIT_NEVER policy is used
-> - */
-> -unsigned long vm_commit_limit(void)
-> -{
-> -	return ((totalram_pages - hugetlb_total_pages())
-> -		* sysctl_overcommit_ratio / 100) + total_swap_pages;
-> -}
-> -
-> -/*
->   * Check that a process has enough memory to allocate a new virtual
->   * mapping. 0 means there is enough memory for the allocation to
->   * succeed and -ENOMEM implies there is not.
-> --- a/mm/util.c~mm-factor-commit-limit-calculation-fix-fix
-> +++ a/mm/util.c
-> @@ -7,6 +7,9 @@
->  #include <linux/security.h>
->  #include <linux/swap.h>
->  #include <linux/swapops.h>
-> +#include <linux/mman.h>
-> +#include <linux/hugetlb.h>
-> +
->  #include <asm/uaccess.h>
->  
->  #include "internal.h"
-> @@ -398,6 +401,16 @@ struct address_space *page_mapping(struc
->  	return mapping;
->  }
->  
-> +/*
-> + * Commited memory limit enforced when OVERCOMMIT_NEVER policy is used
+On 11/07/2013 09:17 AM, Ard Biesheuvel wrote:
+> This series implements automatic module loading based on optional CPU features,
+> and tries to do so in a generic way. Currently, 32 feature bits are supported,
+> and how they map to actual CPU features is entirely up to the architecture.
 
-      Committed
+NAK.
 
-> + */
-> +unsigned long vm_commit_limit(void)
-> +{
-> +	return ((totalram_pages - hugetlb_total_pages())
-> +		* sysctl_overcommit_ratio / 100) + total_swap_pages;
-> +}
-> +
-> +
->  /* Tracepoints definitions. */
->  EXPORT_TRACEPOINT_SYMBOL(kmalloc);
->  EXPORT_TRACEPOINT_SYMBOL(kmem_cache_alloc);
-> _
-> 
-> --
+We in the x86 world already left 32 bits way behind; we currently have
+320 bit feature masks.
 
+If you're aiming at doing this in a generic way, it needs to be able to
+accommodate the current x86cpu feature stuff as a subset, which this
+doesn't.
 
--- 
-~Randy
+	-hpa
+
