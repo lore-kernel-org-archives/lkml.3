@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab3KGGoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 01:44:25 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54788 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab3KGGoT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 01:44:19 -0500
-X-AuditID: 9c930197-b7c0bae0000007bd-43-527b36c16a4d
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 01/10] perf hists: Consolidate __hists__add_*entry()
-References: <1383682201-19399-1-git-send-email-acme@infradead.org>
-	<1383682201-19399-2-git-send-email-acme@infradead.org>
-	<20131105215243.GA8303@sdfg.com.ar>
-	<20131106134210.GA2711@ghostprotocols.net>
-Date: Thu, 07 Nov 2013 15:44:17 +0900
-In-Reply-To: <20131106134210.GA2711@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Wed, 6 Nov 2013 10:42:10 -0300")
-Message-ID: <87mwlgww1q.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1751936Ab3KGGuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 01:50:15 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:56320 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751106Ab3KGGuH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 01:50:07 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(z579ehz148cI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2184h21a6h2216hbe9i1155h)
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Jisheng Zhang <jszhang@marvell.com>, "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
+Subject: RE: [PATCH v2] usb: phy: phy-mxs-usb: set the correct platform
+ drvdata
+Thread-Topic: [PATCH v2] usb: phy: phy-mxs-usb: set the correct platform
+ drvdata
+Thread-Index: AQHO22Usj80q91ZVF0C58F4kQXg+OJoZU4sQ
+Date: Thu, 7 Nov 2013 06:49:58 +0000
+Message-ID: <F281D0F91ED19E4D8E63A7504E8A6498040EB5EF@039-SN2MPN1-021.039d.mgd.msft.net>
+References: <1383792949-4521-1-git-send-email-jszhang@marvell.com>
+In-Reply-To: <1383792949-4521-1-git-send-email-jszhang@marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.175]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+ 
+> 
+> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> ---
+>  drivers/usb/phy/phy-mxs-usb.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/phy/phy-mxs-usb.c b/drivers/usb/phy/phy-mxs-
+> usb.c
+> index fdd33b4..545844b 100644
+> --- a/drivers/usb/phy/phy-mxs-usb.c
+> +++ b/drivers/usb/phy/phy-mxs-usb.c
+> @@ -164,7 +164,7 @@ static int mxs_phy_probe(struct platform_device *pdev)
+> 
+>  	mxs_phy->clk = clk;
+> 
+> -	platform_set_drvdata(pdev, &mxs_phy->phy);
+> +	platform_set_drvdata(pdev, mxs_phy);
+> 
+>  	ret = usb_add_phy_dev(&mxs_phy->phy);
+>  	if (ret)
+> --
 
-On Wed, 6 Nov 2013 10:42:10 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Nov 05, 2013 at 09:52:43PM +0000, Rodrigo Campos escreveu:
->> On Tue, Nov 05, 2013 at 05:09:52PM -0300, Arnaldo Carvalho de Melo wrote:
->> > @@ -486,15 +425,15 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
->> >  		.stat = {
->> > -			.period	= period,
->> >  			.nr_events = 1,
->> > +			.period	= period,
->> >  			.weight = weight,
->> >  		},
->
->> Isn't this seems unrelated and unneeded ?
->
->> The "period" field is before the "nr_events" field in the struct, so maybe is
->> more clear to leave it as it was ?  The actual relative order (it has some more
->> fields) in the struct is: period, weigth, nr_events. Might be better if they
->> match that order here ? Although not sure since we are using the fields with
->> name and is clear enough.
->
-> Yeah, this shouldn't be there, I thought about fixing this up to reduce
-> the patch size, but ended up being lenient.
->
-> Namhyung, please avoid such unneeded patch churn :-)
+It is so unlucky the struct usb_phy phy is the first element
+of struct mxs_phy, so we haven't run any problems.
 
-Okay, I'll keep it in mind.
+Jisheng, thanks for fixing it.
 
-Thanks,
-Namhyung
+Acked-by: Peter Chen <peter.chen@freescale.com> 
+
+
