@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab3KGRzl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 12:55:41 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:53090 "EHLO
+	id S1754755Ab3KGR4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 12:56:30 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:53107 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753180Ab3KGRzi (ORCPT
+	with ESMTP id S1752230Ab3KGR41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 12:55:38 -0500
-Message-ID: <527BD418.8000306@free-electrons.com>
-Date: Thu, 07 Nov 2013 18:55:36 +0100
+	Thu, 7 Nov 2013 12:56:27 -0500
+Message-ID: <527BD449.4070809@free-electrons.com>
+Date: Thu, 07 Nov 2013 18:56:25 +0100
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
@@ -16,10 +16,10 @@ To: Jisheng Zhang <jszhang@marvell.com>, rob.herring@calxeda.com,
         linux@arm.linux.org.uk, kernel@pengutronix.de, baohua@kernel.org,
         dinguyen@altera.com
 CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 1/3] arm: mvebu: add missing of_node_put() to fix reference
+Subject: Re: [PATCH v5 2/3] bus: mvebu: add missing of_node_put() to fix reference
  leak
-References: <1383793720-4643-1-git-send-email-jszhang@marvell.com> <1383793720-4643-3-git-send-email-jszhang@marvell.com>
-In-Reply-To: <1383793720-4643-3-git-send-email-jszhang@marvell.com>
+References: <1383793720-4643-1-git-send-email-jszhang@marvell.com> <1383793720-4643-5-git-send-email-jszhang@marvell.com>
+In-Reply-To: <1383793720-4643-5-git-send-email-jszhang@marvell.com>
 X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -33,8 +33,6 @@ On 07/11/2013 04:08, Jisheng Zhang wrote:
 > 
 > Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
 > Reviewed-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Seems ok for me too
-
 
 Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
@@ -43,91 +41,35 @@ Thanks,
 
 Gregory
 
-
 > ---
->  arch/arm/mach-mvebu/armada-370-xp.c     | 1 +
->  arch/arm/mach-mvebu/coherency.c         | 8 +++++++-
->  arch/arm/mach-mvebu/platsmp.c           | 1 +
->  arch/arm/mach-mvebu/pmsu.c              | 1 +
->  arch/arm/mach-mvebu/system-controller.c | 1 +
->  5 files changed, 11 insertions(+), 1 deletion(-)
+>  drivers/bus/mvebu-mbus.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
 > 
-> diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
-> index 97cbb80..8a1ae83 100644
-> --- a/arch/arm/mach-mvebu/armada-370-xp.c
-> +++ b/arch/arm/mach-mvebu/armada-370-xp.c
-> @@ -64,6 +64,7 @@ static void __init armada_370_xp_mbus_init(void)
->  			ARMADA_370_XP_MBUS_WINS_SIZE,
->  			of_translate_address(dn, &sdram_wins_offs),
->  			ARMADA_370_XP_SDRAM_WINS_SIZE);
-> +	of_node_put(dn);
->  }
+> diff --git a/drivers/bus/mvebu-mbus.c b/drivers/bus/mvebu-mbus.c
+> index 33c6947..20da90f 100644
+> --- a/drivers/bus/mvebu-mbus.c
+> +++ b/drivers/bus/mvebu-mbus.c
+> @@ -837,6 +837,7 @@ int __init mvebu_mbus_init(const char *soc, phys_addr_t mbuswins_phys_base,
+>  {
+>  	struct mvebu_mbus_state *mbus = &mbus_state;
+>  	const struct of_device_id *of_id;
+> +	struct device_node *np;
+>  	int win;
 >  
->  static void __init armada_370_xp_timer_and_clk_init(void)
-> diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
-> index 4c24303..58adf2f 100644
-> --- a/arch/arm/mach-mvebu/coherency.c
-> +++ b/arch/arm/mach-mvebu/coherency.c
-> @@ -140,6 +140,7 @@ int __init coherency_init(void)
->  		coherency_base = of_iomap(np, 0);
->  		coherency_cpu_base = of_iomap(np, 1);
->  		set_cpu_coherent(cpu_logical_map(smp_processor_id()), 0);
-> +		of_node_put(np);
+>  	for (of_id = of_mvebu_mbus_ids; of_id->compatible; of_id++)
+> @@ -860,8 +861,11 @@ int __init mvebu_mbus_init(const char *soc, phys_addr_t mbuswins_phys_base,
+>  		return -ENOMEM;
 >  	}
 >  
->  	return 0;
-> @@ -147,9 +148,14 @@ int __init coherency_init(void)
->  
->  static int __init coherency_late_init(void)
->  {
-> -	if (of_find_matching_node(NULL, of_coherency_table))
-> +	struct device_node *np;
-> +
-> +	np = of_find_matching_node(NULL, of_coherency_table);
+> -	if (of_find_compatible_node(NULL, NULL, "marvell,coherency-fabric"))
+> +	np = of_find_compatible_node(NULL, NULL, "marvell,coherency-fabric");
 > +	if (np) {
->  		bus_register_notifier(&platform_bus_type,
->  				      &mvebu_hwcc_platform_nb);
+>  		mbus->hw_io_coherency = 1;
 > +		of_node_put(np);
 > +	}
->  	return 0;
->  }
 >  
-> diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
-> index ce81d30..e7edb82 100644
-> --- a/arch/arm/mach-mvebu/platsmp.c
-> +++ b/arch/arm/mach-mvebu/platsmp.c
-> @@ -95,6 +95,7 @@ static void __init armada_xp_smp_init_cpus(void)
->  		panic("No 'cpus' node found\n");
->  
->  	ncores = of_get_child_count(np);
-> +	of_node_put(np);
->  	if (ncores == 0 || ncores > ARMADA_XP_MAX_CPUS)
->  		panic("Invalid number of CPUs in DT\n");
->  
-> diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
-> index 3cc4bef..27fc4f0 100644
-> --- a/arch/arm/mach-mvebu/pmsu.c
-> +++ b/arch/arm/mach-mvebu/pmsu.c
-> @@ -67,6 +67,7 @@ int __init armada_370_xp_pmsu_init(void)
->  		pr_info("Initializing Power Management Service Unit\n");
->  		pmsu_mp_base = of_iomap(np, 0);
->  		pmsu_reset_base = of_iomap(np, 1);
-> +		of_node_put(np);
->  	}
->  
->  	return 0;
-> diff --git a/arch/arm/mach-mvebu/system-controller.c b/arch/arm/mach-mvebu/system-controller.c
-> index f875124..5175083c 100644
-> --- a/arch/arm/mach-mvebu/system-controller.c
-> +++ b/arch/arm/mach-mvebu/system-controller.c
-> @@ -98,6 +98,7 @@ static int __init mvebu_system_controller_init(void)
->  		BUG_ON(!match);
->  		system_controller_base = of_iomap(np, 0);
->  		mvebu_sc = (struct mvebu_system_controller *)match->data;
-> +		of_node_put(np);
->  	}
->  
->  	return 0;
+>  	for (win = 0; win < mbus->soc->num_wins; win++)
+>  		mvebu_mbus_disable_window(mbus, win);
 > 
 
 
