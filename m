@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab3KGL1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 06:27:14 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:52999 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab3KGL1K (ORCPT
+	id S1754666Ab3KGL36 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 06:29:58 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:43188 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab3KGL3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 06:27:10 -0500
-Message-ID: <527B790B.4040200@linaro.org>
-Date: Thu, 07 Nov 2013 12:27:07 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org
-CC: khilman@linaro.org, arnd@arndb.de, linux-sh@vger.kernel.org,
-        horms@verge.net.au, olof@lixom.net, tglx@linutronix.de,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH v2 01/03] clocksource: Add Kconfig entries for CMT, MTU2,
- TMU and STI
-References: <20131106110508.6806.48070.sendpatchset@w520> <20131106110518.6806.79333.sendpatchset@w520>
-In-Reply-To: <20131106110518.6806.79333.sendpatchset@w520>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 7 Nov 2013 06:29:54 -0500
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-b4-527b79b056ba
+From: Tomasz Figa <t.figa@samsung.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: Boot failure on Origen with next-20131107
+Date: Thu, 07 Nov 2013 12:29:46 +0100
+Message-id: <4908982.5yt51ejnyk@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11.2 (Linux/3.11.5-gentoo; KDE/4.11.2; x86_64; ; )
+In-reply-to: <CAK9yfHz+H4FQpo_J0ycJP_rvRPMyDgXpZFvx+GvRjyywECUoCw@mail.gmail.com>
+References: <CAK9yfHz+H4FQpo_J0ycJP_rvRPMyDgXpZFvx+GvRjyywECUoCw@mail.gmail.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t/xy7obKquDDN4eUrA48GcHo8XlXXPY
+	LA4ubGO0OPmnl9GBxePOtT1sHp83yQUwRXHZpKTmZJalFunbJXBl7Nz7gqXgNWvFm1nPmBsY
+	b7N0MXJySAiYSEydtIsNwhaTuHBvPZDNxSEksJRRYsrqNewQTheTxPPH59lBqtgE1CQ+NzwC
+	6xAR0JJ42b2cCcRmFsiVOPbgDJgtLGAm8bp/EtgGFgFViY6edWBxXgFNiac/ZoLZ/ALqEu+2
+	PQWzRQXcJKb/OMgMYnMKBEs82jsbLC4kECCx8PVJRoheQYkfk++xQOySl9i3fyorhK0lsX7n
+	caYJjIKzkJTNQlI2C0nZAkbmVYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxghIfxlB+PiY1aH
+	GAU4GJV4eGfUVAUJsSaWFVfmHmKU4GBWEuFtDqkOEuJNSaysSi3Kjy8qzUktPsTIxMEp1cAY
+	7hy/h+GN3tTovDpnw7AfX9IS1Dn2v12Wzr7nYlFoo92/OafMy3/5Rnat7tt2eI23TL4x/4Ka
+	CazH488/2B108oGD7d+ojJb8ip7a+cX75vkkOTUWnfT5KbxpTce9gp+9R1ovxWTfXMZV8sz0
+	o/0MvpXvurxiuzobV+ecEQ65H7bw/ipbKzMlluKMREMt5qLiRACosj5oPwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2013 12:05 PM, Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
->
-> Add Kconfig entries for CMT, MTU2, TMU and STI to
-> drivers/clocksource/Kconfig. This will allow us to
-> get rid of duplicated entires in architecture code
-> such as arch/sh and arch/arm/mach-shmobile.
->
-> Signed-off-by: Magnus Damm <damm@opensource.se>
+Hi Sachin,
 
-Hi Magnus,
+On Thursday 07 of November 2013 16:25:15 Sachin Kamat wrote:
+> Hi,
+> 
+> Today's linux next fails to boot Origen (Exynos4210) board. However,
+> Arndale (Exynos5250) board boots fine. Git bisect points to the
+> following as bad commit:
+> 
+> 2361613206e66ce59cc0e08efa8d98ec15b84ed1 is the first bad commit
+> commit 2361613206e66ce59cc0e08efa8d98ec15b84ed1
+> Author: Grant Likely <grant.likely@linaro.org>
+> Date:   Sun Sep 15 22:32:39 2013 +0100
+> 
+>     of/irq: Refactor interrupt-map parsing
+> 
+> Reverting gave several conflicts which I could not resolve with certainty.
 
-we are preventing to have selectable timer from this Kconfig.
+This issue has been already fixed, but the fix has not yet been merged.
 
-You should select the timers from the arch Kconfig option.
+See: https://lkml.org/lkml/2013/11/5/255
 
-Regards
-   -- Daniel
-
-> ---
->
->   drivers/clocksource/Kconfig |   30 ++++++++++++++++++++++++++++++
->   1 file changed, 30 insertions(+)
->
-> --- 0001/drivers/clocksource/Kconfig
-> +++ work/drivers/clocksource/Kconfig	2013-11-05 19:49:47.000000000 +0900
-> @@ -110,3 +110,33 @@ config VF_PIT_TIMER
->   	bool
->   	help
->   	  Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
-> +
-> +if COMPILE_TEST || ARM || SUPERH
-> +menu "Timer drivers"
-> +
-> +config SH_TIMER_CMT
-> +	bool "CMT timer driver"
-> +	default y if ARM || (SUPERH && SYS_SUPPORTS_CMT)
-> +	help
-> +	  This enables build of the CMT timer driver.
-> +
-> +config SH_TIMER_MTU2
-> +	bool "MTU2 timer driver"
-> +	default y if ARM || (SUPERH && SYS_SUPPORTS_MTU2)
-> +	help
-> +	  This enables build of the MTU2 timer driver.
-> +
-> +config SH_TIMER_TMU
-> +	bool "TMU timer driver"
-> +	default y if ARM || (SUPERH && SYS_SUPPORTS_TMU)
-> +	help
-> +	  This enables build of the TMU timer driver.
-> +
-> +config EM_TIMER_STI
-> +	bool "STI timer driver"
-> +	default y if ARM
-> +	help
-> +	  This enables build of the STI timer driver.
-> +
-> +endmenu
-> +endif
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Best regards,
+Tomasz
 
