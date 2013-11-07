@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3KGNqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 08:46:19 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:55189 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab3KGNoh (ORCPT
+	id S1754687Ab3KGNqf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 08:46:35 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:44998 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753905Ab3KGNoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 08:44:37 -0500
+	Thu, 7 Nov 2013 08:44:32 -0500
 From: Juri Lelli <juri.lelli@gmail.com>
 To: peterz@infradead.org, tglx@linutronix.de
 Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
@@ -19,9 +19,9 @@ Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
         raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
         vincent.guittot@linaro.org, bruce.ashfield@windriver.com
-Subject: [PATCH 08/14] sched: add latency tracing for -deadline tasks.
-Date: Thu,  7 Nov 2013 14:43:42 +0100
-Message-Id: <1383831828-15501-9-git-send-email-juri.lelli@gmail.com>
+Subject: [PATCH 06/14] sched: add period support for -deadline tasks.
+Date: Thu,  7 Nov 2013 14:43:40 +0100
+Message-Id: <1383831828-15501-7-git-send-email-juri.lelli@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
 References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
@@ -29,192 +29,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dario Faggioli <raistlin@linux.it>
+From: Harald Gustafsson <harald.gustafsson@ericsson.com>
 
-It is very likely that systems that wants/needs to use the new
-SCHED_DEADLINE policy also want to have the scheduling latency of
-the -deadline tasks under control.
+Make it possible to specify a period (different or equal than deadline) for
+-deadline tasks. Relative deadlines (D_i) are used on task arrivals to generate
+new scheduling (absolute) deadlines as "d = t + D_i", and periods (P_i) to
+postpone the scheduling deadlines as "d = d + P_i" when the budget is zero.
+This is in general useful to model (and schedule) tasks that have slow
+activation rates (long periods), but have to be scheduled soon once activated
+(short deadlines).
 
-For this reason a new version of the scheduling wakeup latency,
-called "wakeup_dl", is introduced.
-
-As a consequence of applying this patch there will be three wakeup
-latency tracer:
- * "wakeup", that deals with all tasks in the system;
- * "wakeup_rt", that deals with -rt and -deadline tasks only;
- * "wakeup_dl", that deals with -deadline tasks only.
-
+Signed-off-by: Harald Gustafsson <harald.gustafsson@ericsson.com>
 Signed-off-by: Dario Faggioli <raistlin@linux.it>
 Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- kernel/trace/trace_sched_wakeup.c |   44 +++++++++++++++++++++++++++++++++----
- kernel/trace/trace_selftest.c     |   28 +++++++++++++----------
- 2 files changed, 57 insertions(+), 15 deletions(-)
+ include/linux/sched.h   |    1 +
+ kernel/sched/core.c     |   15 ++++++++++++---
+ kernel/sched/deadline.c |   10 +++++++---
+ 3 files changed, 20 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index fee77e1..1457fb1 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -27,6 +27,7 @@ static int			wakeup_cpu;
- static int			wakeup_current_cpu;
- static unsigned			wakeup_prio = -1;
- static int			wakeup_rt;
-+static int			wakeup_dl;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 59ea0da..90517bc 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1068,6 +1068,7 @@ struct sched_dl_entity {
+ 	 */
+ 	u64 dl_runtime;		/* maximum runtime for each instance	*/
+ 	u64 dl_deadline;	/* relative deadline of each instance	*/
++	u64 dl_period;		/* separation of two instances (period) */
  
- static arch_spinlock_t wakeup_lock =
- 	(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
-@@ -472,9 +473,17 @@ probe_wakeup(void *ignore, struct task_struct *p, int success)
- 	tracing_record_cmdline(p);
- 	tracing_record_cmdline(current);
+ 	/*
+ 	 * Actual scheduling parameters. Initialized with the values above,
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2077aae..7838eca 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1617,6 +1617,7 @@ static void __sched_fork(struct task_struct *p)
+ 	hrtimer_init(&p->dl.dl_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	p->dl.dl_runtime = p->dl.runtime = 0;
+ 	p->dl.dl_deadline = p->dl.deadline = 0;
++	p->dl.dl_period = 0;
+ 	p->dl.flags = 0;
  
--	if ((wakeup_rt && !rt_task(p)) ||
--			p->prio >= wakeup_prio ||
--			p->prio >= current->prio)
-+	/*
-+	 * Semantic is like this:
-+	 *  - wakeup tracer handles all tasks in the system, independently
-+	 *    from their scheduling class;
-+	 *  - wakeup_rt tracer handles tasks belonging to sched_dl and
-+	 *    sched_rt class;
-+	 *  - wakeup_dl handles tasks belonging to sched_dl class only.
-+	 */
-+	if ((wakeup_dl && !dl_task(p)) ||
-+	    (wakeup_rt && !dl_task(p) && !rt_task(p)) ||
-+	    (p->prio >= wakeup_prio || p->prio >= current->prio))
- 		return;
- 
- 	pc = preempt_count();
-@@ -486,7 +495,7 @@ probe_wakeup(void *ignore, struct task_struct *p, int success)
- 	arch_spin_lock(&wakeup_lock);
- 
- 	/* check for races. */
--	if (!tracer_enabled || p->prio >= wakeup_prio)
-+	if (!tracer_enabled || (!dl_task(p) && p->prio >= wakeup_prio))
- 		goto out_locked;
- 
- 	/* reset the trace */
-@@ -597,16 +606,25 @@ static int __wakeup_tracer_init(struct trace_array *tr)
- 
- static int wakeup_tracer_init(struct trace_array *tr)
- {
-+	wakeup_dl = 0;
- 	wakeup_rt = 0;
- 	return __wakeup_tracer_init(tr);
+ 	INIT_LIST_HEAD(&p->rt.run_list);
+@@ -3304,6 +3305,10 @@ __setparam_dl(struct task_struct *p, const struct sched_param2 *param2)
+ 	init_dl_task_timer(dl_se);
+ 	dl_se->dl_runtime = param2->sched_runtime;
+ 	dl_se->dl_deadline = param2->sched_deadline;
++	if (param2->sched_period != 0)
++		dl_se->dl_period = param2->sched_period;
++	else
++		dl_se->dl_period = dl_se->dl_deadline;
+ 	dl_se->flags = param2->sched_flags;
+ 	dl_se->dl_throttled = 0;
+ 	dl_se->dl_new = 1;
+@@ -3317,19 +3322,23 @@ __getparam_dl(struct task_struct *p, struct sched_param2 *param2)
+ 	param2->sched_priority = p->rt_priority;
+ 	param2->sched_runtime = dl_se->dl_runtime;
+ 	param2->sched_deadline = dl_se->dl_deadline;
++	param2->sched_period = dl_se->dl_period;
+ 	param2->sched_flags = dl_se->flags;
  }
  
- static int wakeup_rt_tracer_init(struct trace_array *tr)
+ /*
+  * This function validates the new parameters of a -deadline task.
+  * We ask for the deadline not being zero, and greater or equal
+- * than the runtime.
++ * than the runtime, as well as the period of being zero or
++ * greater than deadline.
+  */
+ static bool
+ __checkparam_dl(const struct sched_param2 *prm)
  {
-+	wakeup_dl = 0;
- 	wakeup_rt = 1;
- 	return __wakeup_tracer_init(tr);
+-	return prm && (&prm->sched_deadline) != 0 &&
+-	       (s64)(&prm->sched_deadline - &prm->sched_runtime) >= 0;
++	return prm && prm->sched_deadline != 0 &&
++	       (prm->sched_period == 0 ||
++		(s64)(prm->sched_period - prm->sched_deadline) >= 0) &&
++	       (s64)(prm->sched_deadline - prm->sched_runtime) >= 0;
  }
  
-+static int wakeup_dl_tracer_init(struct trace_array *tr)
-+{
-+	wakeup_dl = 1;
-+	wakeup_rt = 0;
-+	return __wakeup_tracer_init(tr);
-+}
-+
- static void wakeup_tracer_reset(struct trace_array *tr)
- {
- 	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
-@@ -674,6 +692,20 @@ static struct tracer wakeup_rt_tracer __read_mostly =
- 	.use_max_tr	= true,
- };
- 
-+static struct tracer wakeup_dl_tracer __read_mostly =
-+{
-+	.name		= "wakeup_dl",
-+	.init		= wakeup_dl_tracer_init,
-+	.reset		= wakeup_tracer_reset,
-+	.start		= wakeup_tracer_start,
-+	.stop		= wakeup_tracer_stop,
-+	.wait_pipe	= poll_wait_pipe,
-+	.print_max	= 1,
-+#ifdef CONFIG_FTRACE_SELFTEST
-+	.selftest    = trace_selftest_startup_wakeup,
-+#endif
-+};
-+
- __init static int init_wakeup_tracer(void)
- {
- 	int ret;
-@@ -686,6 +718,10 @@ __init static int init_wakeup_tracer(void)
- 	if (ret)
- 		return ret;
- 
-+	ret = register_tracer(&wakeup_dl_tracer);
-+	if (ret)
-+		return ret;
-+
- 	return 0;
- }
- core_initcall(init_wakeup_tracer);
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index a7329b7..f76f8d6 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -1022,11 +1022,17 @@ trace_selftest_startup_nop(struct tracer *trace, struct trace_array *tr)
- #ifdef CONFIG_SCHED_TRACER
- static int trace_wakeup_test_thread(void *data)
- {
--	/* Make this a RT thread, doesn't need to be too high */
--	static const struct sched_param param = { .sched_priority = 5 };
-+	/* Make this a -deadline thread */
-+	struct sched_param2 paramx = {
-+		.sched_priority = 0,
-+		.sched_runtime = 100000ULL,
-+		.sched_deadline = 10000000ULL,
-+		.sched_period = 10000000ULL
-+		.sched_flags = 0
-+	};
- 	struct completion *x = data;
- 
--	sched_setscheduler(current, SCHED_FIFO, &param);
-+	sched_setscheduler2(current, SCHED_DEADLINE, &paramx);
- 
- 	/* Make it know we have a new prio */
- 	complete(x);
-@@ -1040,8 +1046,8 @@ static int trace_wakeup_test_thread(void *data)
- 	/* we are awake, now wait to disappear */
- 	while (!kthread_should_stop()) {
- 		/*
--		 * This is an RT task, do short sleeps to let
--		 * others run.
-+		 * This will likely be the system top priority
-+		 * task, do short sleeps to let others run.
- 		 */
- 		msleep(100);
- 	}
-@@ -1054,21 +1060,21 @@ trace_selftest_startup_wakeup(struct tracer *trace, struct trace_array *tr)
- {
- 	unsigned long save_max = tracing_max_latency;
- 	struct task_struct *p;
--	struct completion isrt;
-+	struct completion is_ready;
- 	unsigned long count;
- 	int ret;
- 
--	init_completion(&isrt);
-+	init_completion(&is_ready);
- 
--	/* create a high prio thread */
--	p = kthread_run(trace_wakeup_test_thread, &isrt, "ftrace-test");
-+	/* create a -deadline thread */
-+	p = kthread_run(trace_wakeup_test_thread, &is_ready, "ftrace-test");
- 	if (IS_ERR(p)) {
- 		printk(KERN_CONT "Failed to create ftrace wakeup test thread ");
- 		return -1;
+ /*
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 2cd5a22..3e0e6e3 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -289,7 +289,7 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
+ 	 * arbitrary large.
+ 	 */
+ 	while (dl_se->runtime <= 0) {
+-		dl_se->deadline += dl_se->dl_deadline;
++		dl_se->deadline += dl_se->dl_period;
+ 		dl_se->runtime += dl_se->dl_runtime;
  	}
  
--	/* make sure the thread is running at an RT prio */
--	wait_for_completion(&isrt);
-+	/* make sure the thread is running at -deadline policy */
-+	wait_for_completion(&is_ready);
+@@ -329,9 +329,13 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
+  *
+  * This function returns true if:
+  *
+- *   runtime / (deadline - t) > dl_runtime / dl_deadline ,
++ *   runtime / (deadline - t) > dl_runtime / dl_period ,
+  *
+  * IOW we can't recycle current parameters.
++ *
++ * Notice that the bandwidth check is done against the period. For
++ * task with deadline equal to period this is the same of using
++ * dl_deadline instead of dl_period in the equation above.
+  */
+ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
+ {
+@@ -355,7 +359,7 @@ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
+ 	 * of anything below microseconds resolution is actually fiction
+ 	 * (but still we want to give the user that illusion >;).
+ 	 */
+-	left = (dl_se->dl_deadline >> 10) * (dl_se->runtime >> 10);
++	left = (dl_se->dl_period >> 10) * (dl_se->runtime >> 10);
+ 	right = ((dl_se->deadline - t) >> 10) * (dl_se->dl_runtime >> 10);
  
- 	/* start the tracing */
- 	ret = tracer_init(trace, tr);
+ 	return dl_time_before(right, left);
 -- 
 1.7.9.5
 
