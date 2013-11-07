@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab3KGPc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 10:32:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40835 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599Ab3KGPcY (ORCPT
+	id S1754742Ab3KGPci (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:32:38 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:40398 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754599Ab3KGPce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 10:32:24 -0500
-Date: Thu, 7 Nov 2013 07:31:21 -0800
-From: tip-bot for Rodrigo Campos <tipbot@zytor.com>
-Message-ID: <tip-8ce000e83848578a621d64eccdc88bd34c2fc70c@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, rodrigo@sdfg.com.ar, namhyung@kernel.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        rodrigo@sdfg.com.ar, namhyung@kernel.org, tglx@linutronix.de
-In-Reply-To: <1383776454-10595-1-git-send-email-rodrigo@sdfg.com.ar>
-References: <1383776454-10595-1-git-send-email-rodrigo@sdfg.com.ar>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Remove unneeded include
-Git-Commit-ID: 8ce000e83848578a621d64eccdc88bd34c2fc70c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 7 Nov 2013 10:32:34 -0500
+Date: Thu, 7 Nov 2013 10:32:33 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Julius Werner <jwerner@chromium.org>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Benson Leung <bleung@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>
+Subject: Re: [PATCH] usb: hub: Use correct reset for wedged USB3 devices that
+ are NOTATTACHED
+In-Reply-To: <CAODwPW8j2wGGgH_HjuXuH=95jd_B1iqWeifoT89xgJoEZRvphw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1311071026480.1401-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 07 Nov 2013 07:31:27 -0800 (PST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8ce000e83848578a621d64eccdc88bd34c2fc70c
-Gitweb:     http://git.kernel.org/tip/8ce000e83848578a621d64eccdc88bd34c2fc70c
-Author:     Rodrigo Campos <rodrigo@sdfg.com.ar>
-AuthorDate: Wed, 6 Nov 2013 22:20:54 +0000
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 7 Nov 2013 11:51:19 -0300
+On Wed, 6 Nov 2013, Julius Werner wrote:
 
-perf tools: Remove unneeded include
+> > What if the device is in USB_STATE_SUSPENDED?
+> 
+> I'm not sure that is possible at that point in hub_events(), I don't
+> know of a way that could lead to this situation. I could still add the
+> check just to be sure if you want it, though.
 
-There is no point in sort.h including itself.
+I don't know either.  But Sarah has said that ports can spontaneously
+go into Compliance Mode for no apparent reason.  If that can happen,
+maybe it can happen while the port is in U3 and the device is
+suspended.  In such cases, though, you'd need to do a reset-resume
+rather than a simple reset.
 
-The include was added when the file was created, in commit "perf tools:
-Create util/sort.and use it" (dd68ada2d) and added a include to "sort.h"
-in lot of files (all the files that started using the file). It was
-probably added by mistake on sort.h too.
+> > Not at all.  If a device is unplugged, its state changes to NOTATTACHED
+> > before the driver is unbound.  During that time, the driver will see
+> > all its URBs failing, so it may very well try to reset the device.
+> > (For example, usbhid behaves like this.)  That isn't a bug.
+> 
+> Oh, okay, I wasn't quite sure how that plays together. Would you think
+> it's still valuable to print it out (maybe as dev_info() instead of
+> dev_warn()) instead of just silently ignoring the reset request? It
+> would have certainly been useful for me to find this problem faster,
+> but I can take it out again if you think it would result in too much
+> noise.
 
-Signed-off-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1383776454-10595-1-git-send-email-rodrigo@sdfg.com.ar
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/sort.h | 1 -
- 1 file changed, 1 deletion(-)
+I think keeping dev_dbg() is best.  If you're searching for the
+solution to a problem, you should have debugging enabled and so you
+ought to see the message.
 
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index f4cc147..43e5ff4 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -22,7 +22,6 @@
- #include "parse-events.h"
- 
- #include "thread.h"
--#include "sort.h"
- 
- extern regex_t parent_regex;
- extern const char *sort_order;
+Alan Stern
+
