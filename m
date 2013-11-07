@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab3KGLd2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 06:33:28 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50763 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754543Ab3KGLd0 (ORCPT
+	id S1754760Ab3KGLdi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 06:33:38 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:45525 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754543Ab3KGLde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 06:33:26 -0500
-Date: Thu, 7 Nov 2013 11:32:26 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Alex Shi <alex.shi@linaro.org>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Turner <pjt@google.com>, Ingo Molnar <mingo@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Paul Walmsley <paul@pwsan.com>, Mel Gorman <mgorman@suse.de>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "markgross@thegnar.org" <markgross@thegnar.org>,
+	Thu, 7 Nov 2013 06:33:34 -0500
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-8d-527b7a8c2018
+From: Tomasz Figa <t.figa@samsung.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Kevin Hilman <khilman@linaro.org>,
-        "Frank.Rowand@sonymobile.com" <Frank.Rowand@sonymobile.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Bench for testing scheduler
-Message-ID: <20131107113226.GE13674@arm.com>
-References: <CAKfTPtCh+f1FZxkWqU5=2PjGtfRaN8jVV3WdTCzLDAWSjMP7yw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKfTPtCh+f1FZxkWqU5=2PjGtfRaN8jVV3WdTCzLDAWSjMP7yw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 2/2] of: irq: Check for reg property presence only when
+ parsing interrupt-map
+Date: Thu, 07 Nov 2013 12:33:26 +0100
+Message-id: <1489788.4u43h9g5sZ@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11.2 (Linux/3.11.5-gentoo; KDE/4.11.2; x86_64; ; )
+In-reply-to: <11085147.qYFvaZYATK@amdc1227>
+References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
+ <2177804.l4VGDTRFDu@amdc1227> <11085147.qYFvaZYATK@amdc1227>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xK7o9VdVBBreecFl8aGpltph/5Byr
+	xYE/Oxgtvh5ewWhxedccNotT1z+zObB59LxpYfW4c20Pm8eVE02sHp83yQWwRHHZpKTmZJal
+	FunbJXBl3Hh+i6lgH0vF4R37WBsYzzN3MXJySAiYSNzqv8kCYYtJXLi3nq2LkYtDSGApo8Si
+	bXugnC4mia7ee2BVbAJqEp8bHrGB2CICyhJP2i6BTWIWuMMoseBwFogtLJAs8e7lZ0YQm0VA
+	VeLQ2S6geg4OXgFNic8rskHC/ALqEu+2PWUCsUUF3CSm/zgINoZTQFti6fUGRoi9bYwST859
+	BZvDKyAo8WMyxA3MAvIS+/ZPZYWwtSTW7zzONIFRcBaSsllIymYhKVvAyLyKUTS1NLmgOCk9
+	11CvODG3uDQvXS85P3cTIyTUv+xgXHzM6hCjAAejEg/vjJqqICHWxLLiytxDjBIczEoivM0h
+	1UFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGEMnFhauuemzIl425fyGxASjSRanzUWiV4aVvWSx
+	Dquc5Pv1iOXsJpklStmOuWYnT1tv3OOxk+vdvsJ8gffJMb+2/JiksvqIYtpxwaDc4xze9frO
+	kQpyKy0zP7OetO97IJLeqjdDnTtxmbS3itkSIY5lGUyXbvOftHd50c8/icVONsFgnflVJZbi
+	jERDLeai4kQA+BpKZ1MCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
+Hi,
 
-(for whatever reason, the text is wrapped and results hard to read)
+On Tuesday 05 of November 2013 16:21:36 Tomasz Figa wrote:
+> This patch fixes the of_irq_parse_raw() function to check for reg
+> property only when really parsing interrupt map property, as it is not
+> required otherwise and breaks existing device trees.
+> 
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> ---
+>  drivers/of/irq.c | 21 +++++++++++----------
+>  1 file changed, 11 insertions(+), 10 deletions(-)
 
-On Thu, Nov 07, 2013 at 10:54:30AM +0000, Vincent Guittot wrote:
-> During the Energy-aware scheduling mini-summit, we spoke about benches
-> that should be used to evaluate the modifications of the scheduler.
-> I’d like to propose a bench that uses cyclictest to measure the wake
-> up latency and the power consumption. The goal of this bench is to
-> exercise the scheduler with various sleeping period and get the
-> average wakeup latency. The range of the sleeping period must cover
-> all residency times of the idle state table of the platform. I have
-> run such tests on a tc2 platform with the packing tasks patchset.
-> I have use the following command:
-> #cyclictest -t <number of cores> -q -e 10000000 -i <500-12000> -d 150 -l 2000
+Please disregard this patch. It seems like Grant's fix that has been
+already merged also fixes the same problem.
 
-cyclictest could be a good starting point but we need to improve it to
-allow threads of different loads, possibly starting multiple processes
-(can be done with a script), randomly varying load threads. These
-parameters should be loaded from a file so that we can have multiple
-configurations (per SoC and per use-case). But the big risk is that we
-try to optimise the scheduler for something which is not realistic.
+Best regards,
+Tomasz
 
-We are working on describing some basic scenarios (plain English for
-now) and one of them could be video playing with threads for audio and
-video decoding with random change in the workload.
-
-So I think the first step should be a set of tools/scripts to analyse
-the scheduler behaviour, both in terms of latency and power, and these
-can use perf sched. We can then run some real life scenarios (e.g.
-Android video playback) and build a benchmark that matches such
-behaviour as close as possible. We can probably use (or improve) perf
-sched replay to also simulate such workload (we may need additional
-features like thread dependencies).
-
-> The figures below give the average wakeup latency and power
-> consumption for default scheduler behavior, packing tasks at cluster
-> level and packing tasks at core level. We can see both wakeup latency
-> and power consumption variation. The detailed result is not a simple
-> single value which makes comparison not so easy but the average of all
-> measurements should give us a usable “score”.
-
-How did you assess the power/energy?
-
-Thanks.
-
--- 
-Catalin
