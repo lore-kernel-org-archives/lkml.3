@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab3KGQDl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 11:03:41 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:58635 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752106Ab3KGQDj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 11:03:39 -0500
+	id S1754311Ab3KGQDs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 11:03:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59355 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753945Ab3KGQDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 11:03:44 -0500
+Date: Thu, 7 Nov 2013 17:03:41 +0100
+From: Jan Kara <jack@suse.cz>
+To: David Turner <novalis@novalis.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] ext4: Fix reading of extended tv_sec (bug 23732)
+Message-ID: <20131107160341.GA3850@quack.suse.cz>
+References: <1383808590.23882.13.camel@chiang>
 MIME-Version: 1.0
-In-Reply-To: <1383419089-31248-1-git-send-email-matthew@incomplete.io>
-References: <1383419089-31248-1-git-send-email-matthew@incomplete.io>
-Date: Thu, 7 Nov 2013 10:03:38 -0600
-Message-ID: <CAGzDe_ZSVEkH0BaU1oZjPWjKuR02ibs=r+jQEU7hF-R68q7rfA@mail.gmail.com>
-Subject: Re: [PATCH] INPUT: wacom: Added definition for Wacom CTH680 The Wacom
- Creative Pen & Touch Tablet M (CTH680, 056A:0303) is a newer revision of the
- Bamboo series. This patch adds product 0303 to wacom.ko.
-From: Chris Bagwell <chris@cnpbagwell.com>
-To: matthew@incomplete.io
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383808590.23882.13.camel@chiang>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 2, 2013 at 2:04 PM,  <matthew@incomplete.io> wrote:
-> From: Matthew Geddes <matthew@incomplete.io>
->
-
-Your whole commit message appears to be crammed into first summary
-line.  Could you please align with git conventions: put a line break
-after "CTH680", a blank line, and then the remaining description
-afterwards.
-
-> Signed-off-by: Matthew Geddes <matthew@incomplete.io>
+On Thu 07-11-13 02:16:30, David Turner wrote:
+> In ext4, the bottom two bits of {a,c,m}time_extra are used to extend
+> the {a,c,m}time fields, deferring the year 2038 problem to the year
+> 2446.  The representation (which this patch does not alter) is a bit
+> hackish, in that the most-significant bit is no longer (alone)
+> sufficient to indicate the sign.  That's because we're representing an
+> asymmetric range, with seven times as many positive values as
+> negative.
+> 
+> When decoding these extended fields, for times whose bottom 32 bits
+> would represent a negative number, sign extension causes the 64-bit
+> extended timestamp to be negative as well, which is not what's
+> intended.  This patch corrects that issue, so that the only negative
+> {a,c,m}times are those between 1901 and 1970 (as per 32-bit signed
+> timestamps).
+> 
+> Signed-off-by: David Turner <novalis@novalis.org>
+> Reported-by: Mark Harris <mh8928@yahoo.com>
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=23732
 > ---
->  drivers/input/tablet/wacom_wac.c | 4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
-> index c59b797..5015269 100644
-> --- a/drivers/input/tablet/wacom_wac.c
-> +++ b/drivers/input/tablet/wacom_wac.c
-> @@ -2128,6 +2128,9 @@ static const struct wacom_features wacom_features_0x300 =
->  static const struct wacom_features wacom_features_0x301 =
->         { "Wacom Bamboo One M",    WACOM_PKGLEN_BBPEN,    21648, 13530, 1023,
->           31, BAMBOO_PT, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
-> +static const struct wacom_features wacom_features_0x303 =
-> +       { "Wacom Creative Touch & Pen M", WACOM_PKGLEN_BBPEN, 21648, 13530,
+>  fs/ext4/ext4.h | 13 +++++++++----
+>  1 file changed, 9 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index af815ea..7b73c26 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -722,10 +722,15 @@ static inline __le32 ext4_encode_extra_time(struct timespec *time)
+>  
+>  static inline void ext4_decode_extra_time(struct timespec *time, __le32 extra)
+>  {
+> -       if (sizeof(time->tv_sec) > 4)
+> -	       time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
+> -			       << 32;
+> -       time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
+> +	if (sizeof(time->tv_sec) > 4) {
+> +		u64 extra_bits = (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK);
+  The extra cast to (__u64) looks useless here.
 
-A search for model CTH680 shows this device is the newly released
-"Intuos Pen & Touch Medium"; which is also the new name for Bamboo's
-and with new form factor.  I do see occasional site that added
-Creative in there: "Intuos Creative Pen & Touch Medium".  Can you
-confirm if this is the model you have?
+> +		if (time->tv_sec > 0 || extra_bits != EXT4_EPOCH_MASK) {
+> +			time->tv_sec &= 0xFFFFFFFF;
+> +			time->tv_sec |= extra_bits << 32;
+> +		}
+> +		time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >>
+> +			EXT4_EPOCH_BITS;
+> +	}
+>  }
+  So I'm somewhat wondering: Previously we decoded tv_nsec regardless of
+tv_sec size. After your patch we do it only if sizeof(time->tv_sec) > 4. Is
+this an intended change? Why is it OK?
 
-I'd suggest using Wacom's terms closer (add in Intuos and swap Pen &
-Touch to their order; maybe drop phrase Creative).
-
-Also, the 21648/13530 values look copy&pasted from previous line.  Can
-you use "evtest" or similar to find real maximum values.  Previous
-"Bamboo Touch" models had 13700 as second number.  Since your tablet
-has different shape from previous Bamboo and the "Bamboo One" then
-there is good change you need unique values to get full usable area of
-tablet.
-
-> +         1023, 31, BAMBOO_PT, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
-
-Can you update patch to exactly follow form of structures surrounding
-it?  Namely, put the "1023" value on first line like rest of lines do.
-
-Thanks!
-Chris
-
-
->  static const struct wacom_features wacom_features_0x6004 =
->         { "ISD-V4",               WACOM_PKGLEN_GRAPHIRE,  12800,  8000,  255,
->           0, TABLETPC, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
-> @@ -2258,6 +2261,7 @@ const struct usb_device_id wacom_ids[] = {
->         { USB_DEVICE_WACOM(0x10F) },
->         { USB_DEVICE_WACOM(0x300) },
->         { USB_DEVICE_WACOM(0x301) },
-> +       { USB_DEVICE_WACOM(0x303) },
->         { USB_DEVICE_WACOM(0x304) },
->         { USB_DEVICE_WACOM(0x4001) },
->         { USB_DEVICE_WACOM(0x47) },
-> --
-> 1.8.3.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
