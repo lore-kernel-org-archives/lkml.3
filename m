@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab3KGW5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:57:12 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51484 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab3KGW5G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 17:57:06 -0500
-Message-ID: <527C1AC0.2040206@codeaurora.org>
-Date: Thu, 07 Nov 2013 14:57:04 -0800
-From: Olav Haugan <ohaugan@codeaurora.org>
-Organization: Qualcomm Innovation Center, Inc.
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1756053Ab3KGW5o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:57:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45794 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755479Ab3KGW5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 17:57:36 -0500
+Date: Thu, 7 Nov 2013 23:57:33 +0100
+From: Jan Kara <jack@suse.cz>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
+ too much
+Message-ID: <20131107225733.GE2054@quack.suse.cz>
+References: <1383860919-1883-1-git-send-email-jack@suse.cz>
+ <1383860919-1883-4-git-send-email-jack@suse.cz>
+ <CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: ngupta@vflare.org, sjenning@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, minchan@kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] staging: zsmalloc: Ensure handle is never 0 on success
-References: <1383699252-8898-1-git-send-email-ohaugan@codeaurora.org> <20131106015645.GA28769@kroah.com> <527AD802.6020902@codeaurora.org> <20131107030640.GD8482@kroah.com>
-In-Reply-To: <20131107030640.GD8482@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/6/2013 7:06 PM, Greg KH wrote:
-> On Wed, Nov 06, 2013 at 04:00:02PM -0800, Olav Haugan wrote:
->> On 11/5/2013 5:56 PM, Greg KH wrote:
->>> On Tue, Nov 05, 2013 at 04:54:12PM -0800, Olav Haugan wrote:
->>>> zsmalloc encodes a handle using the page pfn and an object
->>>> index. On some hardware platforms the pfn could be 0 and this
->>>> causes the encoded handle to be 0 which is interpreted as an
->>>> allocation failure.
->>>
->>> What platforms specifically have this issue?
->>
->> Currently some of Qualcomm SoC's have physical memory that starts at
->> address 0x0 which causes this problem.
+On Thu 07-11-13 23:43:52, Frederic Weisbecker wrote:
+> 2013/11/7 Jan Kara <jack@suse.cz>:
+> > A CPU can be caught in console_unlock() for a long time (tens of seconds
+> > are reported by our customers) when other CPUs are using printk heavily
+> > and serial console makes printing slow. Despite serial console drivers
+> > are calling touch_nmi_watchdog() this triggers softlockup warnings
+> > because interrupts are disabled for the whole time console_unlock() runs
+> > (e.g. vprintk() calls console_unlock() with interrupts disabled). Thus
+> > IPIs cannot be processed and other CPUs get stuck spinning in calls like
+> > smp_call_function_many(). Also RCU eventually starts reporting lockups.
+> >
+> > In my artifical testing I can also easily trigger a situation when disk
+> > disappears from the system apparently because interrupt from it wasn't
+> > served for too long. This is why just silencing watchdogs isn't a
+> > reliable solution to the problem and we simply have to avoid spending
+> > too long in console_unlock() with interrupts disabled.
+> >
+> > The solution this patch works toward is to postpone printing to a later
+> > moment / different CPU when we already printed over X characters in
+> > current console_unlock() invocation. This is a crude heuristic but
+> > measuring time we spent printing doesn't seem to be really viable - we
+> > cannot rely on high resolution time being available and with interrupts
+> > disabled jiffies are not updated. User can tune the value X via
+> > printk.offload_chars kernel parameter.
+> >
+> > Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+> > Signed-off-by: Jan Kara <jack@suse.cz>
 > 
-> Then say this, and list the exact SoC's that can have this problem so
-> people know how to evaluate the bugfix and see if it is relevant for
-> their systems.
+> When a message takes tens of seconds to be printed, it usually means
+> we are in trouble somehow :)
+> I wonder what printk source can trigger such a high volume.
+  Machines with tens of processors and thousands of scsi devices. When
+device discovery happens on boot, all processors are busily reporting new
+scsi devices and one poor looser is bound to do the printing for ever and
+ever until the machine dies...
+
+Or try running sysrq-t on a large machine with serial console connected. The
+machine will die because of lockups (although in this case I agree it is more
+of a problem of sysrq-t doing lots of printing in interrupt-disabled
+context).
+
+> May be cutting some huge message into smaller chunks could help? That
+> would re enable interrupts between each call.
 > 
->> I believe this could be a problem
->> on any platforms if memory is configured to be starting at physical
->> address 0x0 for these platforms.
-> 
-> Have you seen this be a problem?  So it's just a theoretical issue at
-> this point in time?
+> It's hard to tell without the context, but using other CPUs for
+> rescuing doesn't look like a good solution. What if the issue happens
+> in UP to begin with?
+  The real trouble in practice is that while one cpu is doing printing,
+other cpus are appending to the printk buffer. So the cpu can be printing
+for a *long* time. So offloading the work to other cpus which are also
+appending messages seems as a fair thing to do.
 
-Yes, I can consistently reproduce it. It is not just theoretical.
-
-Thanks,
-
-Olav Haugan
-
+								Honza
 -- 
-The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
