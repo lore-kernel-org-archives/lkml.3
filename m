@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab3KGL36 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 06:29:58 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:43188 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab3KGL3y (ORCPT
+	id S1754697Ab3KGLcg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 06:32:36 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:17533 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801Ab3KGLcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 06:29:54 -0500
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-b4-527b79b056ba
+	Thu, 7 Nov 2013 06:32:32 -0500
+X-AuditID: cbfec7f5-b7ef66d00000795a-73-527b7a4e98d7
 From: Tomasz Figa <t.figa@samsung.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: Boot failure on Origen with next-20131107
-Date: Thu, 07 Nov 2013 12:29:46 +0100
-Message-id: <4908982.5yt51ejnyk@amdc1227>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>, devicetree@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 1/2] of: irq: Fix interrupt-map entry matching
+Date: Thu, 07 Nov 2013 12:32:25 +0100
+Message-id: <1773667.KXPxL5WsyI@amdc1227>
 Organization: Samsung Poland R&D Center
 User-Agent: KMail/4.11.2 (Linux/3.11.5-gentoo; KDE/4.11.2; x86_64; ; )
-In-reply-to: <CAK9yfHz+H4FQpo_J0ycJP_rvRPMyDgXpZFvx+GvRjyywECUoCw@mail.gmail.com>
-References: <CAK9yfHz+H4FQpo_J0ycJP_rvRPMyDgXpZFvx+GvRjyywECUoCw@mail.gmail.com>
+In-reply-to: <2713030.RoDxNQo0oz@amdc1227>
+References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
+ <2177804.l4VGDTRFDu@amdc1227> <2713030.RoDxNQo0oz@amdc1227>
 MIME-version: 1.0
 Content-transfer-encoding: 7Bit
 Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t/xy7obKquDDN4eUrA48GcHo8XlXXPY
-	LA4ubGO0OPmnl9GBxePOtT1sHp83yQUwRXHZpKTmZJalFunbJXBl7Nz7gqXgNWvFm1nPmBsY
-	b7N0MXJySAiYSEydtIsNwhaTuHBvPZDNxSEksJRRYsrqNewQTheTxPPH59lBqtgE1CQ+NzwC
-	6xAR0JJ42b2cCcRmFsiVOPbgDJgtLGAm8bp/EtgGFgFViY6edWBxXgFNiac/ZoLZ/ALqEu+2
-	PQWzRQXcJKb/OMgMYnMKBEs82jsbLC4kECCx8PVJRoheQYkfk++xQOySl9i3fyorhK0lsX7n
-	caYJjIKzkJTNQlI2C0nZAkbmVYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxghIfxlB+PiY1aH
-	GAU4GJV4eGfUVAUJsSaWFVfmHmKU4GBWEuFtDqkOEuJNSaysSi3Kjy8qzUktPsTIxMEp1cAY
-	7hy/h+GN3tTovDpnw7AfX9IS1Dn2v12Wzr7nYlFoo92/OafMy3/5Rnat7tt2eI23TL4x/4Ka
-	CazH488/2B108oGD7d+ojJb8ip7a+cX75vkkOTUWnfT5KbxpTce9gp+9R1ovxWTfXMZV8sz0
-	o/0MvpXvurxiuzobV+ecEQ65H7bw/ipbKzMlluKMREMt5qLiRACosj5oPwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xy7r+VdVBBqcjLD40tTJbzD9yjtXi
+	wJ8djBZfD69gtLi8aw6bxanrn9kc2Dx63rSwety5tofN48qJJlaPz5vkAliiuGxSUnMyy1KL
+	9O0SuDJ2be5kKWjjrJj6/DlbA+NE9i5GTg4JAROJzz82QNliEhfurWfrYuTiEBJYyihxa9oe
+	Zgini0mie9s/FpAqNgE1ic8Nj9hAbBEBLYkncz6DdTALXGWUuLK8nxkkISzgJPG7ZQpYEYuA
+	qsTdBZfBmnkFNCX+fZ8Pto5fQF3i3banTCC2qICbxPQfB8F6OYGG/jyymB1icyujxPK1i9kg
+	mgUlfky+BzaIWUBeYt/+qawQtpbE+p3HmSYwCs5CUjYLSdksJGULGJlXMYqmliYXFCel5xrp
+	FSfmFpfmpesl5+duYoQE+9cdjEuPWR1iFOBgVOLhnVFTFSTEmlhWXJl7iFGCg1lJhLc5pDpI
+	iDclsbIqtSg/vqg0J7X4ECMTB6dUAyNj+Mej7w/53b+5aJr5Q2ZdycTcch8tofcr5Y3WSq8s
+	3HO5cp57VPSdHd3mT7s19RoK3bP8r/81UUo/ytkg6a6yfELBHPl6tbhtL9h1Kk8IBsbcFlsi
+	WhFxpuJrsrJb3/bD0w32fiwPviRlN6eOcS+j5Vql1Q/vmLOWNEwMuZ0yMeO8ShPbXCWW4oxE
+	Qy3mouJEALizmvBUAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sachin,
+Hi Grant,
 
-On Thursday 07 of November 2013 16:25:15 Sachin Kamat wrote:
-> Hi,
-> 
-> Today's linux next fails to boot Origen (Exynos4210) board. However,
-> Arndale (Exynos5250) board boots fine. Git bisect points to the
-> following as bad commit:
-> 
-> 2361613206e66ce59cc0e08efa8d98ec15b84ed1 is the first bad commit
-> commit 2361613206e66ce59cc0e08efa8d98ec15b84ed1
-> Author: Grant Likely <grant.likely@linaro.org>
-> Date:   Sun Sep 15 22:32:39 2013 +0100
-> 
->     of/irq: Refactor interrupt-map parsing
-> 
-> Reverting gave several conflicts which I could not resolve with certainty.
+Could you pick this patch up? It fixes boot-up at least on several Exynos
+based platforms, which use interrupt-map nodes with #interrupt-cells
+higher than 1.
 
-This issue has been already fixed, but the fix has not yet been merged.
-
-See: https://lkml.org/lkml/2013/11/5/255
+Also please disregard patch 2/2, as your fix that has been merged seems
+to be fine.
 
 Best regards,
 Tomasz
+
+On Tuesday 05 of November 2013 16:21:18 Tomasz Figa wrote:
+> This patch fixes interrupt-map entry matching code to properly match all
+> specifier cells with interrupt map entries.
+> 
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> ---
+>  drivers/of/irq.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+> index 0ed5ed4..717eed4 100644
+> --- a/drivers/of/irq.c
+> +++ b/drivers/of/irq.c
+> @@ -195,7 +195,7 @@ int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
+>  			/* Compare specifiers */
+>  			match = 1;
+>  			for (i = 0; i < (addrsize + intsize); i++, imaplen--)
+> -				match = !((match_array[i] ^ *imap++) & imask[i]);
+> +				match &= !((match_array[i] ^ *imap++) & imask[i]);
+>  
+>  			pr_debug(" -> match=%d (imaplen=%d)\n", match, imaplen);
+>  
+> 
 
