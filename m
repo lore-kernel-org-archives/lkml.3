@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab3KGWoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:44:10 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:36939 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079Ab3KGWny (ORCPT
+	id S1755484Ab3KGWpk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:45:40 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:48075 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab3KGWpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 17:43:54 -0500
+	Thu, 7 Nov 2013 17:45:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <1383860919-1883-4-git-send-email-jack@suse.cz>
-References: <1383860919-1883-1-git-send-email-jack@suse.cz>
-	<1383860919-1883-4-git-send-email-jack@suse.cz>
-Date: Thu, 7 Nov 2013 23:43:52 +0100
-Message-ID: <CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
- too much
-From: Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <20131107222042.GC2054@quack.suse.cz>
+References: <CAOvWMLZ-ezykR6TkFAoZ1UW20QF6XMOKeZH8R-FdFJkXjAP9nA@mail.gmail.com>
+	<20131105003733.GA24531@quack.suse.cz>
+	<CAOvWMLZ6_boRgQi2L9kqR_bWcnLDHY+uFo9g4DP=zxeGtT+dag@mail.gmail.com>
+	<20131105143221.GA30006@quack.suse.cz>
+	<CAOvWMLY9HAeQTsEwCchKNjL+1=-grBQrDO6-KCYcS-mxMYyRpw@mail.gmail.com>
+	<20131106211858.GB20477@quack.suse.cz>
+	<CAOvWMLa38zOigzVkcF78ivtszd6F02aNKsB28=Sd58OMeqb9sQ@mail.gmail.com>
+	<20131107210715.GA20104@quack.suse.cz>
+	<CAOvWMLYXUcYUnnzPzMTJZF8iZ73a+BuC+YRePjRZhY_WtL5Jfw@mail.gmail.com>
+	<20131107222042.GC2054@quack.suse.cz>
+Date: Thu, 7 Nov 2013 14:45:31 -0800
+Message-ID: <CAOvWMLbZF41QrY32AxMPRAJ2mSTKP3xMNZA=q7P5zj_saMNhag@mail.gmail.com>
+Subject: Re: [BUG][ext2] XIP does not work on ext2
+From: Andiry Xu <andiry@gmail.com>
 To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>
+Cc: Wang Shilong <wangsl-fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Andiry Xu <andiry.xu@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/7 Jan Kara <jack@suse.cz>:
-> A CPU can be caught in console_unlock() for a long time (tens of seconds
-> are reported by our customers) when other CPUs are using printk heavily
-> and serial console makes printing slow. Despite serial console drivers
-> are calling touch_nmi_watchdog() this triggers softlockup warnings
-> because interrupts are disabled for the whole time console_unlock() runs
-> (e.g. vprintk() calls console_unlock() with interrupts disabled). Thus
-> IPIs cannot be processed and other CPUs get stuck spinning in calls like
-> smp_call_function_many(). Also RCU eventually starts reporting lockups.
+On Thu, Nov 7, 2013 at 2:20 PM, Jan Kara <jack@suse.cz> wrote:
+> On Thu 07-11-13 13:50:09, Andiry Xu wrote:
+>> On Thu, Nov 7, 2013 at 1:07 PM, Jan Kara <jack@suse.cz> wrote:
+>> > On Thu 07-11-13 12:14:13, Andiry Xu wrote:
+>> >> On Wed, Nov 6, 2013 at 1:18 PM, Jan Kara <jack@suse.cz> wrote:
+>> >> > On Tue 05-11-13 17:28:35, Andiry Xu wrote:
+>> >> >> >> Do you know the reason why write() outperforms mmap() in some cases? I
+>> >> >> >> know it's not related the thread but I really appreciate if you can
+>> >> >> >> answer my question.
+>> >> >> >   Well, I'm not completely sure. mmap()ed memory always works on page-by-page
+>> >> >> > basis - you first access the page, it gets faulted in and you can further
+>> >> >> > access it. So for small (sub page size) accesses this is a win because you
+>> >> >> > don't have an overhead of syscall and fs write path. For accesses larger
+>> >> >> > than page size the overhead of syscall and some initial checks is well
+>> >> >> > hidden by other things. I guess write() ends up being more efficient
+>> >> >> > because write path taken for each page is somewhat lighter than full page
+>> >> >> > fault. But you'd need to look into perf data to get some hard numbers on
+>> >> >> > where the time is spent.
+>> >> >> >
+>> >> >>
+>> >> >> Thanks for the reply. However I have filled up the whole RAM disk
+>> >> >> before doing the test, i.e. asked the brd driver to allocate all the
+>> >> >> pages initially.
+>> >> >   Well, pages in ramdisk are always present, that's not an issue. But you
+>> >> > will get a page fault to map a particular physical page in process'
+>> >> > virtual address space when you first access that virtual address in the
+>> >> > mapping from the process. The cost of setting up this virtual->physical
+>> >> > mapping is what I'm talking about.
+>> >> >
+>> >>
+>> >> Yes, you are right, there are page faults observed with perf. I
+>> >> misunderstood page fault as copying pages between backing store and
+>> >> physical memory.
+>> >>
+>> >> > If you had a process which first mmaps the file and writes to all pages in
+>> >> > the mapping and *then* measure the cost of another round of writing to the
+>> >> > mapping, I would expect you should see speeds close to those of memory bus.
+>> >> >
+>> >>
+>> >> I've tried this as well. mmap() performance improves but still not as
+>> >> good as write().
+>> >> I used the perf report to compare write() and mmap() applications. For
+>> >> write() version, top of perf report shows as:
+>> >> 33.33%  __copy_user_nocache
+>> >> 4.72%    ext2_get_blocks
+>> >> 4.42%    mutex_unlock
+>> >> 3.59%    __find_get_block
+>> >>
+>> >> which looks reasonable.
+>> >>
+>> >> However, for mmap() version, the perf report looks strange:
+>> >> 94.98% libc-2.15.so       [.] 0x000000000014698d
+>> >> 2.25%   page_fault
+>> >> 0.18%   handle_mm_fault
+>> >>
+>> >> I don't know what the first item is but it took the majority of cycles.
+>> >   The first item means that it's some userspace code in libc. My guess
+>> > would be that it's libc's memcpy() function (or whatever you use to write
+>> > to mmap). How do you access the mmap?
+>> >
+>>
+>> Like this:
+>>
+>> fd = open(file_name, O_CREAT | O_RDWR | O_DIRECT, 0755);
+>> dest = (char *)mmap(NULL, FILE_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
+>> for (i = 0; i < count; i++)
+>> {
+>>        memcpy(dest, src, request_size);
+>>        dest += request_size;
+>> }
+>   OK, maybe libc memcpy isn't very well optimized for you cpu? Not sure how
+> to tune that though...
 >
-> In my artifical testing I can also easily trigger a situation when disk
-> disappears from the system apparently because interrupt from it wasn't
-> served for too long. This is why just silencing watchdogs isn't a
-> reliable solution to the problem and we simply have to avoid spending
-> too long in console_unlock() with interrupts disabled.
->
-> The solution this patch works toward is to postpone printing to a later
-> moment / different CPU when we already printed over X characters in
-> current console_unlock() invocation. This is a crude heuristic but
-> measuring time we spent printing doesn't seem to be really viable - we
-> cannot rely on high resolution time being available and with interrupts
-> disabled jiffies are not updated. User can tune the value X via
-> printk.offload_chars kernel parameter.
->
-> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Jan Kara <jack@suse.cz>
 
-When a message takes tens of seconds to be printed, it usually means
-we are in trouble somehow :)
-I wonder what printk source can trigger such a high volume.
+Hmm, I will try some different kinds of memcpy to see if there is a
+difference. Just want to make sure I do not make some stupid mistakes
+before trying that.
+Thanks a lot for your help!
 
-May be cutting some huge message into smaller chunks could help? That
-would re enable interrupts between each call.
-
-It's hard to tell without the context, but using other CPUs for
-rescuing doesn't look like a good solution. What if the issue happens
-in UP to begin with?
+Thanks,
+Andiry
