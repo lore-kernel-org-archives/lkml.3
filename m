@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab3KGICy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 03:02:54 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:47563 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab3KGICj (ORCPT
+	id S1753853Ab3KGID0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 03:03:26 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:52024 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753236Ab3KGIDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 03:02:39 -0500
-Date: Thu, 07 Nov 2013 03:02:37 -0500 (EST)
-Message-Id: <20131107.030237.589434363047224407.davem@davemloft.net>
-To: duanj.fnst@cn.fujitsu.com
-Cc: kernel@pengutronix.de, linux@arm.linux.org.uk, a.zummo@towertech.it,
-        airlied@linux.ie, dmitry.torokhov@gmail.com, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-input@vger.kernel.org, devel@driverdev.osuosl.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] net:drivers/net: replace IS_ERR and PTR_ERR with
- PTR_ERR_OR_ZERO
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1383724693-16220-1-git-send-email-duanj.fnst@cn.fujitsu.com>
-References: <1383724693-16220-1-git-send-email-duanj.fnst@cn.fujitsu.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 7 Nov 2013 03:03:14 -0500
+X-Greylist: delayed 470 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Nov 2013 03:03:14 EST
+X-Sasl-enc: 7ctnQ+gt1xz49rPKHK2Woxudd75TW95TVn07551caENn 1383810920
+Message-ID: <527B4746.90009@ladisch.de>
+Date: Thu, 07 Nov 2013 08:54:46 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Chen Gang <gang.chen@asianux.com>, alsa-devel@alsa-project.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH] include/uapi/sound/firewire.h: use "_UAPI"
+ instead of "UAPI"
+References: <527B0595.5030108@asianux.com>
+In-Reply-To: <527B0595.5030108@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 07 Nov 2013 00:02:39 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-Date: Wed, 6 Nov 2013 15:58:13 +0800
+Chen Gang wrote:
+> When installing, "scripts/headers_install.sh" will strip guard macro'
+> "_UAPI" to prevent from appearing it to users. And also, all another
+> files which need uapi prefix always use "_UAPI", not "UAPI".
+>
+> So use "_UAPI" instead of "UAPI" on the guard macro, and also give a
+> comment for "#endif".
+>
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-> This patch fixes coccinelle error regarding usage of IS_ERR and
-> PTR_ERR instead of PTR_ERR_OR_ZERO.
-> 
-> Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
 
-Applied.
+> ---
+>  include/uapi/sound/firewire.h |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/include/uapi/sound/firewire.h b/include/uapi/sound/firewire.h
+> index e86131c..59f5961 100644
+> --- a/include/uapi/sound/firewire.h
+> +++ b/include/uapi/sound/firewire.h
+> @@ -1,5 +1,5 @@
+> -#ifndef UAPI_SOUND_FIREWIRE_H_INCLUDED
+> -#define UAPI_SOUND_FIREWIRE_H_INCLUDED
+> +#ifndef _UAPI_SOUND_FIREWIRE_H_INCLUDED
+> +#define _UAPI_SOUND_FIREWIRE_H_INCLUDED
+>
+>  #include <linux/ioctl.h>
+>
+> @@ -48,4 +48,4 @@ struct snd_firewire_get_info {
+>   * Returns -EBUSY if the driver is already streaming.
+>   */
+>
+> -#endif
+> +#endif /* _UAPI_SOUND_FIREWIRE_H_INCLUDED */
