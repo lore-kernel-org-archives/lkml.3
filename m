@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab3KGGiQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 01:38:16 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:39158 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756562Ab3KGGiF (ORCPT
+	id S1757303Ab3KGGoZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 01:44:25 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54788 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab3KGGoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 01:38:05 -0500
-Date: Thu, 7 Nov 2013 17:37:49 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Michal Marek <mmarek@suse.cz>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: linux-next: manual merge of the akpm-current tree with the kbuild
- tree
-Message-Id: <20131107173749.020fb3e03248c6b3227fe642@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__7_Nov_2013_17_37_49_+1100_9QJrpe6Fu+tfypGu"
+	Thu, 7 Nov 2013 01:44:19 -0500
+X-AuditID: 9c930197-b7c0bae0000007bd-43-527b36c16a4d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 01/10] perf hists: Consolidate __hists__add_*entry()
+References: <1383682201-19399-1-git-send-email-acme@infradead.org>
+	<1383682201-19399-2-git-send-email-acme@infradead.org>
+	<20131105215243.GA8303@sdfg.com.ar>
+	<20131106134210.GA2711@ghostprotocols.net>
+Date: Thu, 07 Nov 2013 15:44:17 +0900
+In-Reply-To: <20131106134210.GA2711@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Wed, 6 Nov 2013 10:42:10 -0300")
+Message-ID: <87mwlgww1q.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Nov_2013_17_37_49_+1100_9QJrpe6Fu+tfypGu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Arnaldo,
 
-Hi Andrew,
+On Wed, 6 Nov 2013 10:42:10 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Nov 05, 2013 at 09:52:43PM +0000, Rodrigo Campos escreveu:
+>> On Tue, Nov 05, 2013 at 05:09:52PM -0300, Arnaldo Carvalho de Melo wrote:
+>> > @@ -486,15 +425,15 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+>> >  		.stat = {
+>> > -			.period	= period,
+>> >  			.nr_events = 1,
+>> > +			.period	= period,
+>> >  			.weight = weight,
+>> >  		},
+>
+>> Isn't this seems unrelated and unneeded ?
+>
+>> The "period" field is before the "nr_events" field in the struct, so maybe is
+>> more clear to leave it as it was ?  The actual relative order (it has some more
+>> fields) in the struct is: period, weigth, nr_events. Might be better if they
+>> match that order here ? Although not sure since we are using the fields with
+>> name and is clear enough.
+>
+> Yeah, this shouldn't be there, I thought about fixing this up to reduce
+> the patch size, but ended up being lenient.
+>
+> Namhyung, please avoid such unneeded patch churn :-)
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-scripts/bloat-o-meter between commit 21cf6e584ce3 ("kbuild,
-bloat-o-meter: fix static detection") from the kbuild tree and commit
-372dd3b27736 ("scripts/bloat-o-meter: ignore changes in the size of
-linux_banner") from the akpm-current tree.
+Okay, I'll keep it in mind.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc scripts/bloat-o-meter
-index 855198c9dedb,31c953195b52..000000000000
---- a/scripts/bloat-o-meter
-+++ b/scripts/bloat-o-meter
-@@@ -19,9 -19,10 +19,10 @@@ def getsizes(file)
-          size, type, name =3D l[:-1].split()
-          if type in "tTdDbBrR":
-              # strip generated symbols
--             if name[:6] =3D=3D "__mod_": continue
-+             if name.startswith("__mod_"): continue
-+             if name =3D=3D "linux_banner": continue
- -            # function names begin with '.' on 64-bit powerpc
- -            if "." in name[1:]: name =3D "static." + name.split(".")[0]
- +            # statics and some other optimizations adds random .NUMBER
- +            name =3D re.sub(r'\.[0-9]+', '', name)
-              sym[name] =3D sym.get(name, 0) + int(size, 16)
-      return sym
- =20
-
---Signature=_Thu__7_Nov_2013_17_37_49_+1100_9QJrpe6Fu+tfypGu
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIbBAEBCAAGBQJSezVBAAoJEMDTa8Ir7ZwVhksP+KaKynS/clEI8GY33lzrI6WV
-qN4UtCzFWv2Gcib2/LkJEatTf9k+AZQ27ZTBe3QHYPqkZ0i/0I1ks9Y2GwwP0BjF
-Bv7YGEbVJg4NK9h/DWF21+LvOsojR1csRKLztJqmhyY5AxT+EwGme6Qa8VPGwUGU
-r4NzOC27T9oGjAXFJAFA00s39ZAcN6Q4rqD4Ub3XBxKZ2Sti/bvLavZ5lFeTlOKT
-o6G/XZOpynwisWpz0T+ilbAi9jYwbzk/LE65mwrWvSBlEmMxocI5mFQPP09I/3JV
-iMLCcy4qwpk5sYCSxPtKZsG2nlcoH2mR98g/hcZyzqjqeTMCb10W/xXdKa4aZq4+
-PsFxm9ZVWghBoGUxI0p6wrACg1UEBAP+n6LgQd4cklx/iS6IAqE5yJ+TmYsTSVuA
-dJ6hPrLeP/8K2NpTxKMKhvEte8g8d03nbZA5bCJfT7yQfBGgDUWDgH9srGjE6HwZ
-u6lGAJIBIcawuPi6l587nxd/y3rMYrWwKO7PU8CfT4YU4U5jl5WuyBnPOWTvUVhW
-3RvPwHbcayP7xdn525ZJgzo94Z/ANhwsJEU9FCdu3EqLMdhBVtndsT+wHQdiR8fi
-zQ/EMxpthR4JQFNcWOZyWsBYExyCuYyfalOIp7LRxJbqc3QCiZ0emYdM2tvfCtNm
-8IaT18pLtIqEgN3ecMw=
-=IYTK
------END PGP SIGNATURE-----
-
---Signature=_Thu__7_Nov_2013_17_37_49_+1100_9QJrpe6Fu+tfypGu--
+Thanks,
+Namhyung
