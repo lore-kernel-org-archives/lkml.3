@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab3KGDUj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 22:20:39 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:13155 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753577Ab3KGDUh (ORCPT
+	id S1752975Ab3KGD0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 22:26:19 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:43104 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab3KGD0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 22:20:37 -0500
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <rob.herring@calxeda.com>, <linux@arm.linux.org.uk>,
-        <kernel@pengutronix.de>, <baohua@kernel.org>, <dinguyen@altera.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Jisheng Zhang <jszhang@marvell.com>
-Subject: [PATCH V2 3/4] arm: prima2: make use of common scu_a9_get_base() interface
-Date: Thu, 7 Nov 2013 11:16:43 +0800
-Message-ID: <1383794204-4714-4-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1383794204-4714-1-git-send-email-jszhang@marvell.com>
-References: <1383794204-4714-1-git-send-email-jszhang@marvell.com>
+	Wed, 6 Nov 2013 22:26:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-11-07_01:2013-11-06,2013-11-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1311060262
+In-Reply-To: <20131106233117.GA24545@www.outflux.net>
+References: <20131106233117.GA24545@www.outflux.net>
+Date: Wed, 6 Nov 2013 21:26:15 -0600
+Message-ID: <CABqD9hYPYei4O5gcOdAQvsSqUCY7=HhAVQ78uPHNwtTz0SbiFQ@mail.gmail.com>
+Subject: Re: [PATCH] seccomp: not compatible with ARM OABI
+From: Will Drewry <wad@chromium.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Eric Paris <eparis@redhat.com>,
+        libseccomp-discuss@lists.sourceforge.net,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        James Hogan <james.hogan@imgtec.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of common scu_a9_get_base() and delete the comment since the
-interface is self commented.
+Thanks!
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
----
- arch/arm/mach-prima2/platsmp.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Reviewed-By: Will Drewry <wad@chromium.org>
 
-diff --git a/arch/arm/mach-prima2/platsmp.c b/arch/arm/mach-prima2/platsmp.c
-index 3dbcb1a..2d5bcc9 100644
---- a/arch/arm/mach-prima2/platsmp.c
-+++ b/arch/arm/mach-prima2/platsmp.c
-@@ -34,8 +34,7 @@ void __init sirfsoc_map_scu(void)
- {
- 	unsigned long base;
- 
--	/* Get SCU base */
--	asm("mrc p15, 4, %0, c15, c0, 0" : "=r" (base));
-+	base = scu_a9_get_base();
- 
- 	scu_io_desc.virtual = SIRFSOC_VA(base);
- 	scu_io_desc.pfn = __phys_to_pfn(base);
--- 
-1.8.4.2
-
+On Wed, Nov 6, 2013 at 5:31 PM, Kees Cook <keescook@chromium.org> wrote:
+> Make sure that seccomp filter won't be built when ARM OABI is in use,
+> since there is work needed to distinguish calling conventions. Until
+> that is done (which is likely never since OABI is deprecated), make
+> sure seccomp filter is unavailable in the OABI compat world.
+>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  arch/Kconfig |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/Kconfig b/arch/Kconfig
+> index af2cc6eabcc7..6eaca7d92399 100644
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@ -331,12 +331,15 @@ config HAVE_ARCH_SECCOMP_FILTER
+>
+>  config SECCOMP_FILTER
+>         def_bool y
+> -       depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET
+> +       depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET && !OABI_COMPAT
+>         help
+>           Enable tasks to build secure computing environments defined
+>           in terms of Berkeley Packet Filter programs which implement
+>           task-defined system call filtering polices.
+>
+> +         Not available on ARM when built with OABI compatibility due to
+> +         lack of a sensible way to distinguish the calling conventions.
+> +
+>           See Documentation/prctl/seccomp_filter.txt for details.
+>
+>  config HAVE_CONTEXT_TRACKING
+> --
+> 1.7.9.5
+>
+>
+> --
+> Kees Cook
+> Chrome OS Security
