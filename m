@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab3KGXBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 18:01:04 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:38584 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752Ab3KGXAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 18:00:54 -0500
-Date: Thu, 7 Nov 2013 15:00:52 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
-Message-ID: <20131107230052.GC24450@roeck-us.net>
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
- <20131106190152.GA8662@breakpoint.cc>
- <20131106193041.GA26796@roeck-us.net>
- <20131106203821.GC8662@breakpoint.cc>
- <20131106211754.GA29300@roeck-us.net>
- <20131107192558.GA11453@breakpoint.cc>
- <4F47D5F8-F3C7-45CA-9D88-2D814BDC1BC7@antoniou-consulting.com>
- <20131107204626.GA11746@breakpoint.cc>
+	id S1756070Ab3KGXBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 18:01:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45919 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753752Ab3KGXBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 18:01:14 -0500
+Date: Fri, 8 Nov 2013 00:01:11 +0100
+From: Jan Kara <jack@suse.cz>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/4] irq_work: Provide a irq work that can be processed
+ on any cpu
+Message-ID: <20131107230111.GF2054@quack.suse.cz>
+References: <1383860919-1883-1-git-send-email-jack@suse.cz>
+ <1383860919-1883-3-git-send-email-jack@suse.cz>
+ <CAFTL4hxLXb3hZacx_EdHeKZVfrpuyGoNqpGbX997XJx0UJSwyg@mail.gmail.com>
+ <20131107221904.GB2054@quack.suse.cz>
+ <20131107222311.GA28130@localhost.localdomain>
+ <20131107225034.GD2054@quack.suse.cz>
+ <20131107225408.GD28130@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131107204626.GA11746@breakpoint.cc>
+In-Reply-To: <20131107225408.GD28130@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 09:46:26PM +0100, Sebastian Andrzej Siewior wrote:
-> On 07.11.13, Pantelis Antoniou wrote:
-> > Hi Sebastian,
-> Hi Pantelis,
+On Thu 07-11-13 23:54:10, Frederic Weisbecker wrote:
+> On Thu, Nov 07, 2013 at 11:50:34PM +0100, Jan Kara wrote:
+> > On Thu 07-11-13 23:23:14, Frederic Weisbecker wrote:
+> > > On Thu, Nov 07, 2013 at 11:19:04PM +0100, Jan Kara wrote:
+> > > > On Thu 07-11-13 23:13:39, Frederic Weisbecker wrote:
+> > > > > But then, who's going to process that work if every CPUs is idle?
+> > > >   Have a look into irq_work_queue(). There is:
+> > > >         /*
+> > > >          * If the work is not "lazy" or the tick is stopped, raise the irq
+> > > >          * work interrupt (if supported by the arch), otherwise, just wait
+> > > >          * for the next tick. We do this even for unbound work to make sure
+> > > >          * *some* CPU will be doing the work.
+> > > >          */
+> > > >         if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
+> > > >                 if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
+> > > >                         arch_irq_work_raise();
+> > > >         }
+> > > > 
+> > > >   So we raise an interrupt if there would be no timer ticking (which is
+> > > > what I suppose you mean by "CPU is idle"). That is nothing changed by my
+> > > > patches...
+> > > 
+> > > Ok but we raise that interrupt locally, not to the other CPUs.
+> >   True, but that doesn't really matter in this case. Any CPU (including the
+> > local one) can handle the unbound work. So from the definition of the
+> > unbound work things are OK.
 > 
-> > FWIW DT has been ported to x86. And is present on arm/powerpc/mips/arc and possibly
-> > others.
+> I don't see how that can be ok. You want to offline a work because the
+> local CPU can't handle it, right? If the local CPU can handle it you can
+> just use local irq works.
 > 
-> Yes, I know. I am the one that did the work for CE4100, the first one
-> that boots with DT on x86.
+> > Regarding my use for printk - if all (other) CPUs are idle then we can
+> > easily afford making the current cpu busy printing, that's not a problem.
+> > There's nothing else to do than to print what's remaining in the printk
+> > buffer...
 > 
-> > So what are we talking about again? If you care about the non-DT case, why
-> > don't you make a patch about how you could support Guenter's use case on
-> > the x86.
-> 
-> I am only saying that this "hot-plug a device at a non hot-plugagle bus at
-> runtime" is not limited to DT but this solution is. X86 + ACPI is not
-> the only limitation. ARM is (forced) going to ACPI as well as far I
-> know. And this solution is limited to DT. This is what I am pointing
-> out.
-> 
-I can't tell about ARM, but I am not entirely sure how ACPI support on ARM
-is going to help us on powerpc.
+> So if the current CPU can handle it, what is the problem?
+  I hope this gets cleared out in my other email. But to make sure: If
+other CPUs are idle (i.e. not appending to the printk buffer), we can well
+handle the printing on the current CPU (with some breaks to allow
+interrupts to be served etc.). If other CPUs are also appending to printk
+buffer, that's where we really want to push the work to other CPUs.
 
-> > His use case is not uncommon, believe it or not, and x86 would benefit from
-> > something this flexible.
-> 
-> I *think* a more flexible solution would be something like bus_type which is
-> exposed via configfs. It would be attached behind a certain device/bus where
-> the "physical" hotplug interface is. The user would then be able to read the
-> configuration based on whatever information he has and could then create
-> devices he likes at runtime. This wouldn't depend much on the firmware that is
-> used but would require a little more work I think.
-> 
-Quite frankly, I am interested at a solution that works and solves our problems.
-I am not looking for something that is 100% perfect and may never be delivered.
-
-Fortunately, the Linux kernel was willing to adopt multiple different file
-systems, and still accepts new ones on a regular basis. If a new file system
-is better, it will start getting used, and old file systems are being phased out
-as fewer people use them. I would hope the same should be possible with DT
-overlays and possible other future solutions for the same problem, and that
-we won't have to wait for the perfect solution from day 1.
-
-Guenter
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
