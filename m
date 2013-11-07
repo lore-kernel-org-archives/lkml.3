@@ -1,88 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab3KGPQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 10:16:07 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:58329 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab3KGPQF (ORCPT
+	id S1753578Ab3KGPQm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:16:42 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:53238 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab3KGPQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 10:16:05 -0500
-Date: Thu, 7 Nov 2013 16:16:01 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] uprobes: preparations for arm port
-Message-ID: <20131107151601.GA5163@gmail.com>
-References: <20131106191913.GA18661@redhat.com>
- <20131107075151.GB31560@gmail.com>
- <20131107143432.GA6240@redhat.com>
+	Thu, 7 Nov 2013 10:16:40 -0500
+Date: Thu, 7 Nov 2013 07:16:34 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [vfs] BUG: spinlock trylock failure on UP on CPU#0, swapper/0
+Message-ID: <20131107151634.GA15577@infradead.org>
+References: <20131107121042.GB10868@localhost>
+ <20131107123031.GA27852@infradead.org>
+ <20131107151439.GO13318@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131107143432.GA6240@redhat.com>
+In-Reply-To: <20131107151439.GO13318@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Oleg Nesterov <oleg@redhat.com> wrote:
-
-> On 11/07, Ingo Molnar wrote:
-> >
-> > * Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > > --- a/arch/powerpc/include/asm/uprobes.h
-> > > +++ b/arch/powerpc/include/asm/uprobes.h
-> > > @@ -37,6 +37,7 @@ typedef ppc_opcode_t uprobe_opcode_t;
-> > >  struct arch_uprobe {
-> > >  	union {
-> > >  		u8	insn[MAX_UINSN_BYTES];
-> > > +		u8	ixol[MAX_UINSN_BYTES];
-> > >  		u32	ainsn;
-> > >  	};
-> > >  };
-> >
-> > > --- a/arch/x86/include/asm/uprobes.h
-> > > +++ b/arch/x86/include/asm/uprobes.h
-> > > @@ -35,7 +35,10 @@ typedef u8 uprobe_opcode_t;
-> > >
-> > >  struct arch_uprobe {
-> > >  	u16				fixups;
-> > > -	u8				insn[MAX_UINSN_BYTES];
-> > > +	union {
-> > > +		u8			insn[MAX_UINSN_BYTES];
-> > > +		u8			ixol[MAX_UINSN_BYTES];
-> > > +	};
-> > >  #ifdef CONFIG_X86_64
-> > >  	unsigned long			rip_rela_target_address;
-> > >  #endif
-> >
-> > Btw., at least on the surface, the powerpc and x86 definitions seem rather
-> > similar, barring senseless variations. Would it make sense to generalize
-> > the data structure a bit more?
+On Thu, Nov 07, 2013 at 03:14:39PM +0000, Al Viro wrote:
+> It's vfs.git#for-next and it's messed up on cherry-picks; will put the
+> saner branch in a few.
 > 
-> Heh. You know, I have another patch, see below. It was not tested yet, 
-> it should be splitted into 3 changes, and we need to cleanup copy_insn() 
-> first. I didn't sent it now because I wanted to merge the minimal 
-> changes which allow us to avoid the new arm arch_upobe_* hooks. And of 
-> course it needs the review.
-> 
-> But in short, I do not think we should try to unify/generalize 
-> insn/ixol.
+> Al, starting to share Linus' distaste for cherry-picks - crap like that
+> happens too easily ;-/
 
-That's OK.
-
-> For the moment, please ignore the patch which adds the new ->ixol 
-> member.
-
-I didn't actually disagree with it so I pulled it - I was just wondering 
-about those cleanliness details.
-
-Thanks,
-
-	Ingo
+I still haven't seen it on any mainlinglist..
