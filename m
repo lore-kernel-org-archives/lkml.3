@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786Ab3KGPFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 10:05:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55633 "EHLO
+	id S1754013Ab3KGPFy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:05:54 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55628 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153Ab3KGPEn (ORCPT
+	with ESMTP id S1753101Ab3KGPEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 10:04:43 -0500
+	Thu, 7 Nov 2013 10:04:41 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 5/7] perf record: Remove advance_output function
-Date: Thu,  7 Nov 2013 12:04:16 -0300
-Message-Id: <1383836658-10518-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 6/7] perf record: Remove post_processing_offset variable
+Date: Thu,  7 Nov 2013 12:04:17 -0300
+Message-Id: <1383836658-10518-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1383836658-10518-1-git-send-email-acme@infradead.org>
 References: <1383836658-10518-1-git-send-email-acme@infradead.org>
@@ -29,48 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
-1 line function with only 1 user; might as well embed directly.
+Duplicates the data_offset from header in the session.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
-Suggested-by: Ingo Molnar <mingo@kernel.org>
 Acked-by: Ingo Molnar <mingo@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1383763297-27066-3-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1383763297-27066-4-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ tools/perf/builtin-record.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 2932069ad7a8..19c4db6bdd6f 100644
+index 19c4db6bdd6f..15280b5e5574 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -77,11 +77,6 @@ struct perf_record {
- 	off_t			post_processing_offset;
+@@ -74,7 +74,6 @@ struct perf_record {
+ 	bool			no_buildid;
+ 	bool			no_buildid_cache;
+ 	long			samples;
+-	off_t			post_processing_offset;
  };
  
--static void advance_output(struct perf_record *rec, size_t size)
--{
--	rec->bytes_written += size;
--}
--
  static int write_output(struct perf_record *rec, void *buf, size_t size)
+@@ -247,13 +246,14 @@ static int process_buildids(struct perf_record *rec)
  {
- 	struct perf_data_file *file = &rec->file;
-@@ -461,7 +456,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 				pr_err("Couldn't record tracing data.\n");
- 				goto out_delete_session;
- 			}
--			advance_output(rec, err);
-+			rec->bytes_written += err;
- 		}
+ 	struct perf_data_file *file  = &rec->file;
+ 	struct perf_session *session = rec->session;
++	u64 start = session->header.data_offset;
+ 
+ 	u64 size = lseek(file->fd, 0, SEEK_CUR);
+ 	if (size == 0)
+ 		return 0;
+ 
+-	return __perf_session__process_events(session, rec->post_processing_offset,
+-					      size - rec->post_processing_offset,
++	return __perf_session__process_events(session, start,
++					      size - start,
+ 					      size, &build_id__mark_dso_hit_ops);
+ }
+ 
+@@ -429,8 +429,6 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		goto out_delete_session;
  	}
  
+-	rec->post_processing_offset = lseek(file->fd, 0, SEEK_CUR);
+-
+ 	machine = &session->machines.host;
+ 
+ 	if (file->is_pipe) {
 -- 
 1.8.1.4
 
