@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab3KHAEL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 19:04:11 -0500
-Received: from dmz-mailsec-scanner-8.mit.edu ([18.7.68.37]:46263 "EHLO
-	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756037Ab3KHADq (ORCPT
+	id S1756195Ab3KHAET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 19:04:19 -0500
+Received: from dmz-mailsec-scanner-6.mit.edu ([18.7.68.35]:46401 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756116Ab3KHAEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 19:03:46 -0500
-X-AuditID: 12074425-b7fc88e000004601-f7-527c292d2363
-Date: Thu, 7 Nov 2013 18:58:35 -0500
+	Thu, 7 Nov 2013 19:04:04 -0500
+X-AuditID: 12074423-b7fac8e00000539e-00-527c2946bd2d
+Date: Thu, 7 Nov 2013 18:58:59 -0500
 From: Greg Price <price@MIT.EDU>
 To: "Theodore Ts'o" <tytso@MIT.EDU>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 03/11] random: fix description of get_random_bytes
-Message-ID: <20131107235834.GF16018@ringworld.MIT.EDU>
+Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 07/11] random: simplify accounting code slightly
+Message-ID: <20131107235859.GJ16018@ringworld.MIT.EDU>
 References: <cover.1383868558.git.price@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <cover.1383868558.git.price@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsUixCmqraurWRNkMPkyq8XlXXPYHBg9Pm+S
-	C2CM4rJJSc3JLEst0rdL4Mp4ev4EU0ErZ8XshaeYGhh3sncxcnJICJhIvJz4jxHCFpO4cG89
-	G4gtJDCbSeLM9YouRi4gewOjxNrG+ywQzk9GiYYJfcwgVSwCKhILHy8Gm8QmoCDxY/46sLiI
-	gLLEqpmbmEBsZqD4r3ubWEFsYQEnib4/R8HivAJmEs/ar7NCbDOQ+Dn9LQtEXFDi5MwnLBC9
-	WhI3/r0EqucAsqUllv/jAAlzChhKtDdfAWsVBTphysltbBMYBWch6Z6FpHsWQvcCRuZVjLIp
-	uVW6uYmZOcWpybrFyYl5ealFuhZ6uZkleqkppZsYQWHK7qK6g3HCIaVDjAIcjEo8vAUXqoOE
-	WBPLiitzDzFKcjApifJOVK8JEuJLyk+pzEgszogvKs1JLT7EKMHBrCTC+0wRKMebklhZlVqU
-	D5OS5mBREue9xWEfJCSQnliSmp2aWpBaBJOV4eBQkuD9ADJUsCg1PbUiLTOnBCHNxMEJMpwH
-	aLisBsjw4oLE3OLMdIj8KUZFKXHe7yDNAiCJjNI8uF5YGnnFKA70ijCvCkg7DzAFwXW/AhrM
-	BDQ45FclyOCSRISUVANjyLWAvWK/uCZrF5ycOOfqxl7Bj5tuqP68yTyRI9Ff89wZgYkJpf1u
-	zBwXf8xz/Le55WNh5J3Yvrgvkga8E3X/9b54vcp98nyd3U51Jas3FF+6Y3Uub739i8c7mT9a
-	PzCsveAcyvFfTlnuWMok0cKvBbfSdrxZM3vTp6lsQtIHv+h6vz5633i9uRJLcUaioRZzUXEi
-	AN8WPf7+AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsUixCmqrOumWRNksPaDusXuOYtZLC7vmsPm
+	wORxZsERdo/Pm+QCmKK4bFJSczLLUov07RK4Ms5c/8le0MZdcXLSd/YGxnccXYycHBICJhK/
+	325ng7DFJC7cWw9kc3EICcxmkjjScI0FwtnAKHHg0zYo5yejxL6LV1lBWlgEVCSmPZwG1s4m
+	oCDxY/46ZhBbREBZYtXMTUwgNrOAvcTvqZPZQWxhAQeJKwdmAg3i4OAVMJO40RsIEhYSMJD4
+	Of0tC4jNKyAocXLmExaIVi2JG/9eMoGUMwtISyz/B3Y0p4ChRHvzFbALRIEumHJyG9sERsFZ
+	SLpnIemehdC9gJF5FaNsSm6Vbm5iZk5xarJucXJiXl5qka6ZXm5miV5qSukmRlDosrso72D8
+	c1DpEKMAB6MSD++JS9VBQqyJZcWVuYcYJTmYlER5J6rXBAnxJeWnVGYkFmfEF5XmpBYfYpTg
+	YFYS4X2mCJTjTUmsrEotyodJSXOwKInz3uKwDxISSE8sSc1OTS1ILYLJynBwKEnwfgAZKliU
+	mp5akZaZU4KQZuLgBBnOAzT8CUgNb3FBYm5xZjpE/hSjopQ47xyQhABIIqM0D64XllpeMYoD
+	vSLM+wKkigeYluC6XwENZgIaHPKrEmRwSSJCSqqBUZPvj7z5jSj5B7rL67QndTjNZV4Tln52
+	VpTRodNHJwgvf/+A+5jODE+ZJEtNjcqYVbb//nb2XAnrKAiwrk7/McH1Rep/H0Nzv5bm/PJ9
+	D0K/irrtlSxysxD8p3d64mr+91cW720K4lxmLy8ly3W95fyE5X2r9cLsrNdIHbmk9Or+fJk5
+	v5JMlViKMxINtZiLihMB0ePwdQgDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After this remark was written, commit d2e7c96af added a use of
-arch_get_random_long() inside the get_random_bytes codepath.
-The main point stands, but it needs to be reworded.
+This commit makes the very boring simplifications so that the next
+commit, which is a little trickier, is isolated and easy to review.
+No change in behavior here at all.
 
 Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Price <price@mit.edu>
 ---
- drivers/char/random.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/char/random.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index a89ba74..d1466c9 100644
+index 8ec4a9a..8824e8d 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -1048,8 +1048,9 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
- /*
-  * This function is the exported kernel interface.  It returns some
-  * number of good random numbers, suitable for key generation, seeding
-- * TCP sequence numbers, etc.  It does not use the hw random number
-- * generator, if available; use get_random_bytes_arch() for that.
-+ * TCP sequence numbers, etc.  It does not rely on the hardware random
-+ * number generator.  For random bytes direct from the hardware RNG
-+ * (when available), use get_random_bytes_arch().
-  */
- void get_random_bytes(void *buf, int nbytes)
- {
+@@ -858,18 +858,16 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ retry:
+ 		entropy_count = orig = ACCESS_ONCE(r->entropy_count);
+ 		/* If limited, never pull more than available */
+-		if (r->limit && nbytes + reserved >= entropy_count / 8)
+-			nbytes = entropy_count/8 - reserved;
++		if (r->limit)
++			nbytes = min_t(size_t, nbytes, entropy_count/8 - reserved);
+ 
+ 		if (entropy_count / 8 >= nbytes + reserved) {
+ 			entropy_count -= nbytes*8;
+-			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
+-				goto retry;
+ 		} else {
+ 			entropy_count = reserved;
+-			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
+-				goto retry;
+ 		}
++		if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
++			goto retry;
+ 
+ 		if (entropy_count < random_write_wakeup_thresh)
+ 			wakeup_write = 1;
 -- 
 1.8.3.2
 
