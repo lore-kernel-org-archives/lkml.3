@@ -1,81 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab3KGUqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 15:46:55 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:57899 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751010Ab3KGUqq (ORCPT
+	id S1754045Ab3KGUvJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 15:51:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48910 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab3KGUvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 15:46:46 -0500
-Date: Thu, 7 Nov 2013 21:46:26 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
-Message-ID: <20131107204626.GA11746@breakpoint.cc>
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
- <20131106190152.GA8662@breakpoint.cc>
- <20131106193041.GA26796@roeck-us.net>
- <20131106203821.GC8662@breakpoint.cc>
- <20131106211754.GA29300@roeck-us.net>
- <20131107192558.GA11453@breakpoint.cc>
- <4F47D5F8-F3C7-45CA-9D88-2D814BDC1BC7@antoniou-consulting.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F47D5F8-F3C7-45CA-9D88-2D814BDC1BC7@antoniou-consulting.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 7 Nov 2013 15:51:05 -0500
+Date: Thu, 7 Nov 2013 12:51:03 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Jerome Marchand <jmarchan@redhat.com>, kbuild-all@01.org,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        fengguang.wu@intel.com
+Subject: Re: [memcg:since-3.12 75/75] fs/proc/meminfo.c:undefined reference
+ to `vm_commit_limit'
+Message-Id: <20131107125103.c81016a87bfd72b0acf4058c@linux-foundation.org>
+In-Reply-To: <20131107132505.GA16393@dhcp22.suse.cz>
+References: <527b74a0.xBELNKuc6Ws8XONb%fengguang.wu@intel.com>
+	<20131107132505.GA16393@dhcp22.suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.11.13, Pantelis Antoniou wrote:
-> Hi Sebastian,
-Hi Pantelis,
+On Thu, 7 Nov 2013 14:25:05 +0100 Michal Hocko <mhocko@suse.cz> wrote:
 
-> FWIW DT has been ported to x86. And is present on arm/powerpc/mips/arc and possibly
-> others.
-
-Yes, I know. I am the one that did the work for CE4100, the first one
-that boots with DT on x86.
-
-> So what are we talking about again? If you care about the non-DT case, why
-> don't you make a patch about how you could support Guenter's use case on
-> the x86.
-
-I am only saying that this "hot-plug a device at a non hot-plugagle bus at
-runtime" is not limited to DT but this solution is. X86 + ACPI is not
-the only limitation. ARM is (forced) going to ACPI as well as far I
-know. And this solution is limited to DT. This is what I am pointing
-out.
-
-> His use case is not uncommon, believe it or not, and x86 would benefit from
-> something this flexible.
-
-I *think* a more flexible solution would be something like bus_type which is
-exposed via configfs. It would be attached behind a certain device/bus where
-the "physical" hotplug interface is. The user would then be able to read the
-configuration based on whatever information he has and could then create
-devices he likes at runtime. This wouldn't depend much on the firmware that is
-used but would require a little more work I think.
-
-> Regards
+> On Thu 07-11-13 19:08:16, Wu Fengguang wrote:
+> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git since-3.12
+> > head:   2f11d7af8df66cb4f217b6293ad8189aa101d601
+> > commit: 2f11d7af8df66cb4f217b6293ad8189aa101d601 [75/75] mm-factor-commit-limit-calculation-fix
+> > config: make ARCH=blackfin BF526-EZBRD_defconfig
+> > 
+> > All error/warnings:
+> > 
+> >    mm/built-in.o: In function `__vm_enough_memory':
+> >    (.text+0x11b4c): undefined reference to `vm_commit_limit'
+> >    fs/built-in.o: In function `meminfo_proc_show':
+> > >> fs/proc/meminfo.c:(.text+0x37ef0): undefined reference to `vm_commit_limit'
 > 
-> -- Pantelis
+> Andrew, it seems that moving vm_commit_limit out of mman.h is not that
+> easy because it breaks NOMMU configurations. mm/mmap.o is not part of
+> the nommu build apparently.
+> 
+> So either we move it back to mman.h or put it somewhere else. I do not
+> have a good idea where, though.
+> 
 
-Sebastian
+util.c?
+
+diff -puN mm/mmap.c~mm-factor-commit-limit-calculation-fix-fix mm/mmap.c
+--- a/mm/mmap.c~mm-factor-commit-limit-calculation-fix-fix
++++ a/mm/mmap.c
+@@ -110,15 +110,6 @@ unsigned long vm_memory_committed(void)
+ EXPORT_SYMBOL_GPL(vm_memory_committed);
+ 
+ /*
+- * Commited memory limit enforced when OVERCOMMIT_NEVER policy is used
+- */
+-unsigned long vm_commit_limit(void)
+-{
+-	return ((totalram_pages - hugetlb_total_pages())
+-		* sysctl_overcommit_ratio / 100) + total_swap_pages;
+-}
+-
+-/*
+  * Check that a process has enough memory to allocate a new virtual
+  * mapping. 0 means there is enough memory for the allocation to
+  * succeed and -ENOMEM implies there is not.
+--- a/mm/util.c~mm-factor-commit-limit-calculation-fix-fix
++++ a/mm/util.c
+@@ -7,6 +7,9 @@
+ #include <linux/security.h>
+ #include <linux/swap.h>
+ #include <linux/swapops.h>
++#include <linux/mman.h>
++#include <linux/hugetlb.h>
++
+ #include <asm/uaccess.h>
+ 
+ #include "internal.h"
+@@ -398,6 +401,16 @@ struct address_space *page_mapping(struc
+ 	return mapping;
+ }
+ 
++/*
++ * Commited memory limit enforced when OVERCOMMIT_NEVER policy is used
++ */
++unsigned long vm_commit_limit(void)
++{
++	return ((totalram_pages - hugetlb_total_pages())
++		* sysctl_overcommit_ratio / 100) + total_swap_pages;
++}
++
++
+ /* Tracepoints definitions. */
+ EXPORT_TRACEPOINT_SYMBOL(kmalloc);
+ EXPORT_TRACEPOINT_SYMBOL(kmem_cache_alloc);
+_
+
