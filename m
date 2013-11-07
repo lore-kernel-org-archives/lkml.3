@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab3KGOCo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 09:02:44 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:46157 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab3KGOCm (ORCPT
+	id S1753436Ab3KGOCx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 09:02:53 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:37346 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab3KGOCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 09:02:42 -0500
+	Thu, 7 Nov 2013 09:02:48 -0500
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
         zohar@us.ibm.com, d.kasatkin@samsung.com, james.l.morris@oracle.com,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [RFC][PATCH 0/4] ima: add support for custom template formats
-Date: Thu,  7 Nov 2013 15:00:41 +0100
-Message-Id: <1383832849-17125-1-git-send-email-roberto.sassu@polito.it>
+Subject: [RFC][PATCH 1/4] ima: added error messages to template-related functions
+Date: Thu,  7 Nov 2013 15:00:42 +0100
+Message-Id: <1383832849-17125-2-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1383832849-17125-1-git-send-email-roberto.sassu@polito.it>
+References: <1383832849-17125-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----6D302F5C2315391DBA7A43406747BDC0"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----7FBBBFCA0B8489FF78112C2EA086C802"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------6D302F5C2315391DBA7A43406747BDC0
+------7FBBBFCA0B8489FF78112C2EA086C802
 
-Hi everyone
+This patch adds some error messages to inform users about the following
+events: template descriptor not found, template field not found, and
+template initialization failed.
 
-currently accepted patches for the new template management mechanism allow to
-choose among a list of supported templates, statically defined in the code.
-This functionality is not flexible enough as users may want to include
-in their measurements list only information needed and not use predefined
-combinations.
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+---
+ security/integrity/ima/ima_template.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-For this reason, this patch set introduce the new kernel command line parameter
-'ima_template_fmt' to specify a custom template format at boot time,
-i.e. a string of template fields identifiers concatenated with the '|'
-separator character. The complete list of defined template fields can be
-found in Documentation/security/IMA-templates.txt.
-
-The format string is checked at the very beginning in the setup function
-ima_template_fmt_setup() so that, if it is wrong, IMA can go back to the
-default template, selected through a kernel configuration option.
-
-To allow userspace tools parse a measurements list with a custom format, IMA
-provides as template name the same format string provided by users at boot
-time, so that tools know which information are included in a entry and extract
-them if they can handle listed template fields.
-
-Roberto Sassu
-
-
-Roberto Sassu (4):
-  ima: added error messages to template-related functions
-  ima: make a copy of template_fmt in template_desc_init_fields()
-  ima: display template format in meas. list if template name length is
-    zero
-  ima: added support for new kernel cmdline parameter ima_template_fmt
-
- Documentation/kernel-parameters.txt      |  4 ++
- Documentation/security/IMA-templates.txt | 29 +++++++------
- security/integrity/ima/ima_fs.c          | 18 ++++++--
- security/integrity/ima/ima_template.c    | 71 ++++++++++++++++++++++++++++++--
- 4 files changed, 100 insertions(+), 22 deletions(-)
-
+diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+index 4e5da99..7bcff5c 100644
+--- a/security/integrity/ima/ima_template.c
++++ b/security/integrity/ima/ima_template.c
+@@ -49,8 +49,11 @@ static int __init ima_template_setup(char *str)
+ 	 * If not, use CONFIG_IMA_DEFAULT_TEMPLATE.
+ 	 */
+ 	template_desc = lookup_template_desc(str);
+-	if (!template_desc)
++	if (!template_desc) {
++		pr_err("IMA: template %s not found, using %s\n",
++		       str, CONFIG_IMA_DEFAULT_TEMPLATE);
+ 		return 1;
++	}
+ 
+ 	/*
+ 	 * Verify whether the current hash algorithm is supported
+@@ -127,6 +130,7 @@ static int template_desc_init_fields(char *template_fmt,
+ 		struct ima_template_field *f = lookup_template_field(c);
+ 
+ 		if (!f) {
++			pr_err("IMA: field '%s' not found\n", c);
+ 			result = -ENOENT;
+ 			goto out;
+ 		}
+@@ -152,8 +156,12 @@ static int init_defined_templates(void)
+ 		result = template_desc_init_fields(template->fmt,
+ 						   &(template->fields),
+ 						   &(template->num_fields));
+-		if (result < 0)
++		if (result < 0) {
++			pr_err("IMA: template %s init failed, result: %d\n",
++			       (strlen(template->name) ?
++			       template->name : template->fmt), result);
+ 			return result;
++		}
+ 	}
+ 	return result;
+ }
 -- 
 1.8.1.4
 
 
-------6D302F5C2315391DBA7A43406747BDC0
+------7FBBBFCA0B8489FF78112C2EA086C802
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -107,17 +118,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMDcxNDAwNDlaMCMGCSqG
-SIb3DQEJBDEWBBSpuM7V9BRpNXuV40e+qK6J95CZUjB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMDcxNDAxMjJaMCMGCSqG
+SIb3DQEJBDEWBBQXwSI064zuBQ8s5AElBMEkyJefezB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBKkZvapKuiZDDCvlTJ+nq7zbat
-7TLfsROWpJKCWdNlbOfdPjmNFX/p/Dv2a3L4xJc3JYepU6mxSyia7lxMoOl0wZtm
-X2s9V+gb0sYQGJEQMcVXaHpfQKVpGakIa5izYGxchLefcASYrVPOmuw4PbfVY9SD
-SCNQBfgEYhI3rwEFx9mV6QoD3C9flEBLKuaqT6WHeZ9HPBDJS0CExWfJj7Yojh8A
-1hygtD+mFW0jZw4kEbNTTQuUrh6NKCbyUj7HJgjZtIVCmymmPqgEJaQrC+t40PQ3
-C8gRtdkKoA8G3mItIJxVMGKXskEjxRXZjwYwb7Iv5Bo6GF7txNRueUp5FxLi
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCjAOxP9YSbnRhBNs81TOJavNaw
+xuaPf+7kz1DYUFvcY/+dfXStq+beFAh1ye8NZCPdpVs+wxpOD6X/MhrT10oKB0ud
+8uxuR/hfhdsmm2cKPB4EBOWFAClT0ESac4/RYjVvERBbBUFKrQvIdu06I7MYbgBL
+sVgez8QWh0KNtgUqvUXUP3rsP7KX6eUreJpQXSJeFql7myzRG4HmR9hu2nArG1c/
+AuAb2eMyDiAvJGuq+CloiJQYXygRVuuL0CBnYtb4kEx7kUpTJqdwysY8t/enUckI
+4Vt0fwaAbAdHKpELJ8yiLf+iq+ftncPHvNnYVLIdhdN3Dk5XTnsSo44Gxwnh
 
-------6D302F5C2315391DBA7A43406747BDC0--
+------7FBBBFCA0B8489FF78112C2EA086C802--
 
 
