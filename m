@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007Ab3KGXbv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 18:31:51 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:37275 "EHLO
+	id S1754670Ab3KGXh2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 18:37:28 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:11869 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753899Ab3KGXbo (ORCPT
+	by vger.kernel.org with ESMTP id S1751010Ab3KGXhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 18:31:44 -0500
-Date: Thu, 7 Nov 2013 18:31:42 -0500
+	Thu, 7 Nov 2013 18:37:19 -0500
+Date: Thu, 7 Nov 2013 18:37:17 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH 2/4] irq_work: Provide a irq work that can be processed
- on any cpu
-Message-ID: <20131107183142.4ae4345e@gandalf.local.home>
-In-Reply-To: <20131107230111.GF2054@quack.suse.cz>
+Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
+ too much
+Message-ID: <20131107183717.0fc9eb6e@gandalf.local.home>
+In-Reply-To: <20131107232148.GE28130@localhost.localdomain>
 References: <1383860919-1883-1-git-send-email-jack@suse.cz>
-	<1383860919-1883-3-git-send-email-jack@suse.cz>
-	<CAFTL4hxLXb3hZacx_EdHeKZVfrpuyGoNqpGbX997XJx0UJSwyg@mail.gmail.com>
-	<20131107221904.GB2054@quack.suse.cz>
-	<20131107222311.GA28130@localhost.localdomain>
-	<20131107225034.GD2054@quack.suse.cz>
-	<20131107225408.GD28130@localhost.localdomain>
-	<20131107230111.GF2054@quack.suse.cz>
+	<1383860919-1883-4-git-send-email-jack@suse.cz>
+	<CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
+	<20131107225733.GE2054@quack.suse.cz>
+	<20131107232148.GE28130@localhost.localdomain>
 X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -35,21 +31,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Nov 2013 00:01:11 +0100
-Jan Kara <jack@suse.cz> wrote:
+On Fri, 8 Nov 2013 00:21:51 +0100
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
+ 
+> Ok I see now.
+> 
+> But then this irq_work based solution won't work if, say, you run in full dynticks
+> mode. Also the hook on the timer interrupt is something that I wish we get rid
+> of on archs that can trigger self-IPIs.
 
-> On Thu 07-11-13 23:54:10, Frederic Weisbecker wrote:
+Do we really want that? What about users that use LAZY? That is, the
+work isn't that important to trigger right now (added interrupt
+expense).
 
-> > So if the current CPU can handle it, what is the problem?
->   I hope this gets cleared out in my other email. But to make sure: If
-> other CPUs are idle (i.e. not appending to the printk buffer), we can well
-> handle the printing on the current CPU (with some breaks to allow
-> interrupts to be served etc.). If other CPUs are also appending to printk
-> buffer, that's where we really want to push the work to other CPUs.
+> 
+> Notwithstanding it's going to have scalibility issues as irq work then converges
+> to a single list for unbound works.
 
-I guess the question is, how does it migrate? I guess that's not so
-clear. Or do you just hope that the timer tick on another CPU will come
-in first and finish the job for you? As the list is global and all CPUs
-get to see it.
+Well, it doesn't seem to be something that would be called often. All
+CPUs checking a variable that is seldom changed should not have any
+scalability issues. Unless of course it happens to share a cache line
+with a variable that does change often.
+
+> 
+> Offloading to a workqueue would be perhaps better, and writing to the serial
+> console could then be done with interrupts enabled, preemptible context, etc...
+
+Oh God no ;-)  Adding workqueue logic into printk just spells a
+nightmare of much more complexity for a critical kernel infrastructure.
 
 -- Steve
