@@ -1,107 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab3KGVoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 16:44:25 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:54554 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab3KGVoR (ORCPT
+	id S1754492Ab3KGVsB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 16:48:01 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35514 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009Ab3KGVrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 16:44:17 -0500
-Date: Thu, 7 Nov 2013 13:44:17 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Douglas Gilbert <dgilbert@interlog.com>
-Cc: SCSI development list <linux-scsi@vger.kernel.org>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        vaughan <vaughan.cao@oracle.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] sg: O_EXCL and other lock handling
-Message-ID: <20131107214417.GB31244@infradead.org>
-References: <52718713.7050906@interlog.com>
- <20131031155653.GA16944@infradead.org>
- <5272AD80.90203@interlog.com>
- <20131106155044.GA9323@infradead.org>
- <527A98E0.20601@interlog.com>
+	Thu, 7 Nov 2013 16:47:53 -0500
+Date: Thu, 7 Nov 2013 14:47:50 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        xen-devel@lists.xenproject.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH] PCI: Introduce two new MSI infrastructure
+ calls for masking/unmasking.
+Message-ID: <20131107214750.GB2955@google.com>
+References: <1383772616-23060-1-git-send-email-konrad.wilk@oracle.com>
+ <CAErSpo4rdHwhuF=SM6WT3EP3TGoUFnwxVdx5919qxea3On7MRw@mail.gmail.com>
+ <20131107014215.GA27725@andromeda.dapyr.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <527A98E0.20601@interlog.com>
+In-Reply-To: <20131107014215.GA27725@andromeda.dapyr.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 02:30:40PM -0500, Douglas Gilbert wrote:
-> >during sg_open and sg_release, which are guranteed not to migrate
-> >to a different process during their run time.
+On Wed, Nov 06, 2013 at 09:42:15PM -0400, Konrad Rzeszutek Wilk wrote:
+> On Wed, Nov 06, 2013 at 04:51:52PM -0700, Bjorn Helgaas wrote:
+> > [+cc Thomas, Ingo, Peter, x86 list]
+> > 
+> > On Wed, Nov 6, 2013 at 2:16 PM, Konrad Rzeszutek Wilk
+> > <konrad.wilk@oracle.com> wrote:
+> > > Certain platforms do not allow writes in the MSI-X bars
+> > > to setup or tear down vector values. To combat against
+> > > the generic code trying to write to that and either silently
+> > > being ignored or crashing due to the pagetables being marked r/o
+> > > this patch introduces a platform over-write.
+> > >
+> > > Note that we keep two separate, non-weak, functions
+> > > default_mask_msi_irqs() and default_mask_msix_irqs() for the
+> > > behavior of the arch_mask_msi_irqs() and arch_mask_msix_irqs(),
+> > > as the default behavior is needed by x86 PCI code.
+> > >
+> > > For Xen, which does not allow the guest to write to MSI-X
+> > > tables - as the hypervisor is solely responsible for setting
+> > > the vector values - we implement two nops.
+> > >
+> > > CC: Bjorn Helgaas <bhelgaas@google.com>
+> > > CC: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+> > > CC: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > 
+> > I think this is safe, and I'd like to squeeze it into the v3.13 merge
+> > window next week, since it supersedes three patches Zhenzhong has been
+> > trying to get in since July [1], and this patch is much simpler to
+> > understand.
+> > 
+> > I *think* this also fixes an actual bug on Xen.  Konrad, is there a
+> > bugzilla or any kind of email problem description that we can include
+> > here as a reference?  I think there's a lost interrupt with qlcnic,
+> > but I don't know the details or what the failure looks like to a user.
 > 
-> True. What I stated would be a problem if a mutex tried
-> to do something similar to Vaughan's patch that was
-> reverted just before lk 3.12.0. That held a read or write
-> semaphore between a sg_open() and sg_release().
-> 
-> But your point begs the question why should any driver
-> pay the extra cost and usability restrictions of a kernel
-> mutex over a semaphore without good reason:
+> It is pretty catastrophic. Here is the console log when I pass in
+> a PCI device (with MSI-X) to the guest:
 
-It allows features like spinning before going to sleep, as well
-as helping with RT patches.  But this really isn't the place to
-discuss this - the ship has sailed and just about any semaphore
-used for basic mutal exclusion has been converted to a mutex.
+Perfect, thanks!  I put the log info in
+https://bugzilla.kernel.org/show_bug.cgi?id=64581 and put this in
+my pci/misc branch for v3.13.  I added the following to the changelog:
 
-Complaints about that should be directed to Linus and/or the locking
-primitive maintainers.
+    This fixes a Xen guest crash when passing a PCI device with MSI-X to the
+    guest.  See the bugzilla for more details.
 
-> So what contexts can mutexes be used in?
+    [bhelgaas: add bugzilla info]
+    Reference: https://bugzilla.kernel.org/show_bug.cgi?id=64581
 
-They can be used in process context only.  Please make sure to also
-run any patches changing locking behaviour with CONFIG_PROVE_LOCKING
-enabled, as that will verify all this.
+Let me know if this needs any tweaking.
 
-> Also, which one in the above list tells me that sg_open()
-> cannot return to the caller with a mutex held? Given
-> the special relationship guaranteed by the OS (POSIX)
-> between sg_open() and sg_release() *** for the same file
-> handle, if this is not allowed, why?
-
-Because you always release it before returning.  Note that the
-sparse static checker can verify that for you, if the functions
-get to big, which sg_open might get close to.  Sparse is another
-tool that I wish every patch author would run before submission.
-
-Read Documentation/sparse.txt for details.
-
-> >It always is called through the class interface remove_dev
-> >method, which always is called under a lock.
-> 
-> This is an important piece of extra information. Does that
-> mean sg_add() and sg_remove() can't wait on anything? I note
-> that sg_add() calls sg_alloc() which immediately does:
->   sdp = kzalloc(sizeof(Sg_device), GFP_KERNEL);
-
-You can sleep under mutexes just fine, although in general it
-is preferable to sleep too long with mutexes held.
-
-> Where are the preconditions from the scsi subsystem to a ULD
-> stating:
->   - that sg_remove() and sg_add() are called from a non-interrupt,
->     non tasklet and non timer context?
-
-The driver core uses sleeping calls like mutexes in all these code
-pathes, so a call from these contexts will blow up immediately.
-
->   - invocations of sg_add() and sg_remove() are paired in a
->     similar fashion as sg_open() and sg_release()
-
-That's how the class_interfaces work, easily verified by code
-inspection.  Unfortunately these interfaces aren't really documented,
-but a patch to Greg who is in Cc now will take care of that.
-
-> By the second point I mean, for example, that sg_remove()
-> cannot be called twice for the same device without a sg_add()
-> between them to add (back) that device.
-
-That is correct.
-
+Bjorn
