@@ -1,74 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab3KGDPR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 22:15:17 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:63186 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753797Ab3KGDNs (ORCPT
+	id S1753715Ab3KGDRf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 22:17:35 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:55300 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833Ab3KGDRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 22:13:48 -0500
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <rob.herring@calxeda.com>, <linux@arm.linux.org.uk>,
-        <kernel@pengutronix.de>, <baohua@kernel.org>, <dinguyen@altera.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Jisheng Zhang <jszhang@marvell.com>
-Subject: [PATCH v5 3/3] pinctrl: mvebu: Convert to use devm_ioremap_resource
-Date: Thu, 7 Nov 2013 11:08:39 +0800
-Message-ID: <1383793720-4643-7-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1383793720-4643-1-git-send-email-jszhang@marvell.com>
-References: <1383793720-4643-1-git-send-email-jszhang@marvell.com>
+	Wed, 6 Nov 2013 22:17:32 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID rA73GiYi019235, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>
+CC: <sameo@linux.intel.com>, <maximlevitsky@gmail.com>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        <oakad@yahoo.com>, <wei_wang@realsil.com.cn>,
+        Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH] memstick: rtsx: fix ms card data transfer bug
+Date: Thu, 7 Nov 2013 11:18:23 +0800
+Message-ID: <1383794303-9447-1-git-send-email-micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-11-07_01:2013-11-06,2013-11-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1311060260
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The resource mapped by of_iomap() isn't unmapped in error path. This
-patch fix the resource leakage by using devm_ioremap_resource() instead
-of of_iomap().
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-Reviewed-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+This patch is used to add support for ms card. The main difference
+between ms card and mspro card is long data transfer mode. mspro card
+can use auto mode DMA for long data transfer, but ms can not use this
+mode, it should use normal mode DMA.
+
+The memstick core add support for ms card, but the original driver will
+make ms card fail at initialize, because it use auto mode DMA. This
+patch can make ms card work properly.
+
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
 ---
- drivers/pinctrl/mvebu/pinctrl-mvebu.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/memstick/host/rtsx_pci_ms.c |   30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/pinctrl/mvebu/pinctrl-mvebu.c b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-index bb7ddb1..1caa45f 100644
---- a/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-@@ -579,7 +579,7 @@ static int mvebu_pinctrl_build_functions(struct platform_device *pdev,
- int mvebu_pinctrl_probe(struct platform_device *pdev)
- {
- 	struct mvebu_pinctrl_soc_info *soc = dev_get_platdata(&pdev->dev);
--	struct device_node *np = pdev->dev.of_node;
-+	struct resource *res;
- 	struct mvebu_pinctrl *pctl;
- 	void __iomem *base;
- 	struct pinctrl_pin_desc *pdesc;
-@@ -591,11 +591,10 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
- 		return -EINVAL;
+diff --git a/drivers/memstick/host/rtsx_pci_ms.c b/drivers/memstick/host/rtsx_pci_ms.c
+index 25f8f93..2a635b6 100644
+--- a/drivers/memstick/host/rtsx_pci_ms.c
++++ b/drivers/memstick/host/rtsx_pci_ms.c
+@@ -145,6 +145,8 @@ static int ms_transfer_data(struct realtek_pci_ms *host, unsigned char data_dir,
+ 	unsigned int length = sg->length;
+ 	u16 sec_cnt = (u16)(length / 512);
+ 	u8 val, trans_mode, dma_dir;
++	struct memstick_dev *card = host->msh->card;
++	bool pro_card = card->id.type == MEMSTICK_TYPE_PRO;
+ 
+ 	dev_dbg(ms_dev(host), "%s: tpc = 0x%02x, data_dir = %s, length = %d\n",
+ 			__func__, tpc, (data_dir == READ) ? "READ" : "WRITE",
+@@ -152,19 +154,21 @@ static int ms_transfer_data(struct realtek_pci_ms *host, unsigned char data_dir,
+ 
+ 	if (data_dir == READ) {
+ 		dma_dir = DMA_DIR_FROM_CARD;
+-		trans_mode = MS_TM_AUTO_READ;
++		trans_mode = pro_card ? MS_TM_AUTO_READ : MS_TM_NORMAL_READ;
+ 	} else {
+ 		dma_dir = DMA_DIR_TO_CARD;
+-		trans_mode = MS_TM_AUTO_WRITE;
++		trans_mode = pro_card ? MS_TM_AUTO_WRITE : MS_TM_NORMAL_WRITE;
  	}
  
--	base = of_iomap(np, 0);
--	if (!base) {
--		dev_err(&pdev->dev, "unable to get base address\n");
--		return -ENODEV;
--	}
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
+ 	rtsx_pci_init_cmd(pcr);
  
- 	pctl = devm_kzalloc(&pdev->dev, sizeof(struct mvebu_pinctrl),
- 			GFP_KERNEL);
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TPC, 0xFF, tpc);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_SECTOR_CNT_H,
+-			0xFF, (u8)(sec_cnt >> 8));
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_SECTOR_CNT_L,
+-			0xFF, (u8)sec_cnt);
++	if (pro_card) {
++		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_SECTOR_CNT_H,
++				0xFF, (u8)(sec_cnt >> 8));
++		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_SECTOR_CNT_L,
++				0xFF, (u8)sec_cnt);
++	}
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TRANS_CFG, 0xFF, cfg);
+ 
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, IRQSTAT0,
+@@ -192,8 +196,14 @@ static int ms_transfer_data(struct realtek_pci_ms *host, unsigned char data_dir,
+ 	}
+ 
+ 	rtsx_pci_read_register(pcr, MS_TRANS_CFG, &val);
+-	if (val & (MS_INT_CMDNK | MS_INT_ERR | MS_CRC16_ERR | MS_RDY_TIMEOUT))
+-		return -EIO;
++	if (pro_card) {
++		if (val & (MS_INT_CMDNK | MS_INT_ERR |
++				MS_CRC16_ERR | MS_RDY_TIMEOUT))
++			return -EIO;
++	} else {
++		if (val & (MS_CRC16_ERR | MS_RDY_TIMEOUT))
++			return -EIO;
++	}
+ 
+ 	return 0;
+ }
+@@ -462,8 +472,8 @@ static int rtsx_pci_ms_set_param(struct memstick_host *msh,
+ 			clock = 19000000;
+ 			ssc_depth = RTSX_SSC_DEPTH_500K;
+ 
+-			err = rtsx_pci_write_register(pcr, MS_CFG,
+-					0x18, MS_BUS_WIDTH_1);
++			err = rtsx_pci_write_register(pcr, MS_CFG, 0x58,
++					MS_BUS_WIDTH_1 | PUSH_TIME_DEFAULT);
+ 			if (err < 0)
+ 				return err;
+ 		} else if (value == MEMSTICK_PAR4) {
 -- 
-1.8.4.rc3
+1.7.9.5
 
