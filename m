@@ -1,101 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab3KGT76 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 14:59:58 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:41309 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752674Ab3KGT7v (ORCPT
+	id S1754246Ab3KGUAV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 15:00:21 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:59061 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753952Ab3KGUAQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 14:59:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131107143139.GT18245@linux.vnet.ibm.com>
-References: <cover.1383771175.git.tim.c.chen@linux.intel.com>
-	<1383773827.11046.355.camel@schen9-DESK>
-	<CA+55aFyNX=5i0hmk-KuD+Vk+yBD-kkAiywx1Lx_JJmHVPx=1wA@mail.gmail.com>
-	<CANN689HkNP-UZOu+vDCFPG5_k=BNZG6a+oP+Ope16vLc2ShFzw@mail.gmail.com>
-	<CA+55aFwn1HUt3iXo6Zz8j1HUJi+qJ1NfcnUz-P+XCYLL7gjCMQ@mail.gmail.com>
-	<CANN689EgdDQV=srsLELUpiTGOSF0SLUZ=BC2LnMxNrYTv3H=Wg@mail.gmail.com>
-	<20131107143139.GT18245@linux.vnet.ibm.com>
-Date: Thu, 7 Nov 2013 11:59:49 -0800
-Message-ID: <CANN689FqUSnr=Prum0Kt6+0gr9dWKD8GT9Gbrtiyyg+PTyFkyA@mail.gmail.com>
-Subject: Re: [PATCH v3 3/5] MCS Lock: Barrier corrections
-From: Michel Lespinasse <walken@google.com>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rik van Riel <riel@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "Figo. zhang" <figo1802@gmail.com>, linux-arch@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Alex Shi <alex.shi@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Nov 2013 15:00:16 -0500
+References: <1383844657-17487-1-git-send-email-ard.biesheuvel@linaro.org> <1383844657-17487-3-git-send-email-ard.biesheuvel@linaro.org> <20131107193339.GB3129@localhost.localdomain>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <20131107193339.GB3129@localhost.localdomain>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FB91D852-4790-4481-846C-0D3C20CD9048@linaro.org>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+X-Mailer: iPad Mail (11B511)
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: Re: [RFC PATCH 2/4] cpu: advertise CPU features over udev in a generic way
+Date: Thu, 7 Nov 2013 21:00:14 +0100
+To: Dave Martin <Dave.Martin@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 7, 2013 at 6:31 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Thu, Nov 07, 2013 at 04:50:23AM -0800, Michel Lespinasse wrote:
->> On Thu, Nov 7, 2013 at 4:06 AM, Linus Torvalds
->> <torvalds@linux-foundation.org> wrote:
->> >
->> > On Nov 7, 2013 6:55 PM, "Michel Lespinasse" <walken@google.com> wrote:
->> >>
->> >> Rather than writing arch-specific locking code, would you agree to
->> >> introduce acquire and release memory operations ?
->> >
->> > Yes, that's probably the right thing to do. What ops do we need? Store with
->> > release, cmpxchg and load with acquire? Anything else?
->>
->> Depends on what lock types we want to implement on top; for MCS we would need:
->> - xchg acquire (common case) and load acquire (for spinning on our
->> locker's wait word)
->> - cmpxchg release (when there is no next locker) and store release
->> (when writing to the next locker's wait word)
->>
->> One downside of the proposal is that using a load acquire for spinning
->> puts the memory barrier within the spin loop. So this model is very
->> intuitive and does not add unnecessary barriers on x86, but it my
->> place the barriers in a suboptimal place for architectures that need
->> them.
->
-> OK, I will bite...  Why is a barrier in the spinloop suboptimal?
+> On 7 nov. 2013, at 20:33, Dave Martin <Dave.Martin@arm.com> wrote:
+> 
+>> On Thu, Nov 07, 2013 at 06:17:35PM +0100, Ard Biesheuvel wrote:
+>> This patch implements a generic modalias 'cpu:feature:...' which
+>> enables CPU feature flag based module loading in a generic way.
+>> All the arch needs to do is enable CONFIG_ARCH_HAS_CPU_AUTOPROBE
+>> and export a u32 called 'cpu_features'. (What each bit actually
+>> means is irrelevant on this level.)
+> 
+> There seems to be an assumption here that a module is either a pure CPU
+> accelerator, or it is completely independent of CPU features.
+> 
+> I'm not sure that this is true.  A CPU feature isn't a "device".
+> Rather, it's a property of code (which might be a driver for something
+> different -- maybe we have a hardware crypto accelerator where key
+> scheduling must be done in software.  It's still a driver for the
+> crypto engine, but we might have different implementations of the key
+> scheduling, based on the CPU features avaiable).
+> 
 
-It's probably not a big deal - all I meant to say is that if you were
-manually placing barriers, you would probably put one after the loop
-instead. I don't deal much with architectures where such barriers are
-needed, so I don't know for sure if the difference means much.
+The use case I am targeting is dedicated instructions for AES, CRC, SHA1, SHA2, etc, all of which -on arm64- can be independently enabled by the implementer.  A single distro image should run as closely to optimal as possible right out of the box, especially in these cases.
 
-> Can't say that I have tried measuring it, but the barrier should not
-> normally result in interconnect traffic.  Given that the barrier is
-> required anyway, it should not affect lock-acquisition latency.
+> It's also not obvious why we should blindly load all CPU-feature-
+> dependent helper modules on bgoot, regardless of whether the module(s)
+> that use them are being loaded.
+> 
+> Maybe the amount of CPU feature dependent code is small enough that
+> we don't really care about such subtleties, though.
+> 
+> It's also not clear how different optimised modules for the same
+> thing would get prioritised.  Suppose there we have v5E and NEON
+> optimised AES helper modules?  Both those CPU features are avaiable,
+> but which module should we load?
+> 
+> If all candidate modules get loaded, which one actually gets used?
+> Does the load order matter?
+> 
 
-Agree
-
-> So what am I missing here?
-
-I think you read my second email as me trying to shoot down a proposal
-- I wasn't, as I really like the acquire/release model and find it
-easy to program with, which is why I'm proposing it in the first
-place. I just wanted to be upfront about all potential downsides, so
-we can consider them and see if they are significant - I don't think
-they are, but I'm not the best person to judge that as I mostly just
-deal with x86 stuff.
+In the cryptoapi case, each algorithm also has a priority assigned to it, which should be sufficient to break these kinds of ties. Other code exists (xor, raid6) that does a quick boot time benchmark of all available options. In general, though, this is undefined, so I agree that associating random bits of NEON or FP code with the CPU feature bit may make little sense, especially on v8 (which has feature bits for mandatory extensions like FP and ASIMD)
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Ard.
+
+>> Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+>> ---
+>> drivers/base/cpu.c | 24 ++++++++++++++++++++++++
+>> 1 file changed, 24 insertions(+)
+>> 
+>> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+>> index 49c6f4b..a661d31 100644
+>> --- a/drivers/base/cpu.c
+>> +++ b/drivers/base/cpu.c
+>> @@ -276,6 +276,30 @@ static void cpu_device_release(struct device *dev)
+>> }
+>> 
+>> #ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+>> +ssize_t print_cpu_modalias(struct device *dev,
+>> +               struct device_attribute *attr,
+>> +               char *buf)
+>> +{
+>> +    extern u32 __weak cpu_features;
+> 
+> Why is this __weak?  Surely CONFIG_ARCH_HAS_CPU_AUTOPROBE=y makes no
+> sense if the arch code does not define either cpu_features or
+> arch_print_cpu_modalias()?  The build should be made to fail in that
+> case...
+> 
+>> +    ssize_t n;
+>> +    int i;
+>> +    u32 f;
+>> +
+>> +    /*
+>> +     * With 32 features maximum (taking 3 bytes each to print), we don't
+>> +     * need to worry about overrunning the PAGE_SIZE sized buffer.
+>> +     */
+>> +    n = sprintf(buf, "cpu:feature:");
+>> +    for (f = cpu_features, i = 0; f; f >>= 1, i++)
+>> +        if (f & 1)
+>> +            n += sprintf(&buf[n], ",%02X", i);
+> 
+> Why can't this overflow buf?
+> 
+> modalias matching is pretty much based on string matching, so I wonder
+> whether we could use the human-readable feature strings instead.
+> Those are already a stable ABI.  Relying on numbers unnecessarily
+> encrypts the udev/modprobe config.
+> 
+> Otherwise, "%02X" seems to place an arbitrary limit of 256 features.
+> I'm not sure that padding these numbers to a particular width is
+> advantageous for the parser.
+> 
+>> +    buf[n++] = '\n';
+>> +    return n;
+>> +}
+>> +
+>> +ssize_t __attribute__((weak, alias("print_cpu_modalias")))
+>> +arch_print_cpu_modalias(struct device *, struct device_attribute *, char *);
+>> +
+> 
+> If an implementation of arch_print_cpu_modalias() is linked with this,
+> won't that result in the print_cpu_modalias() defined here just being
+> included as dead code?
+> 
+> i.e., we knowingly link into the kernel some code that the build-time
+> configuration tells us is dead.
+> 
+> Maybe I'm misunderstanding things here, but I think this weak-symbol
+> stuff is mainly useful when shipping a binary blob in which people can
+> override certain symbols at link time.
+> 
+> We build vmlinux in one go, so I'm not sure that's appropriate here (?)
+> 
+>> static int cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
+>> {
+>>    char *buf = kzalloc(PAGE_SIZE, GFP_KERNEL);
+>> -- 
+>> 1.8.3.2
+>> 
+>> 
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
