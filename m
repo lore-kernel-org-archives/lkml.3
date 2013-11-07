@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab3KGQ26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 11:28:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58172 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab3KGQ24 (ORCPT
+	id S1754270Ab3KGQ3V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 11:29:21 -0500
+Received: from a10-51.smtp-out.amazonses.com ([54.240.10.51]:41821 "EHLO
+	a10-51.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753512Ab3KGQ3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 11:28:56 -0500
-Message-ID: <527BBFC4.4020307@infradead.org>
-Date: Thu, 07 Nov 2013 08:28:52 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 7 Nov 2013 11:29:17 -0500
+Date: Thu, 7 Nov 2013 16:29:15 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Andreas Herrmann <andreas.herrmann@calxeda.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/slub: Switch slub_debug kernel option to early_param
+ to avoid boot panic
+In-Reply-To: <alpine.DEB.2.02.1311071008010.22533@gentwo.org>
+Message-ID: <000001423365730f-486d720c-11cd-4f7d-939b-8ff2860c60b7-000000@email.amazonses.com>
+References: <20131106184529.GB5661@alberich> <000001422ed8406b-14bef091-eee0-4e0e-bcdd-a8909c605910-000000@email.amazonses.com> <20131106195417.GK5661@alberich> <20131106203429.GL5661@alberich> <20131106211604.GM5661@alberich>
+ <000001422f59e79e-ba0d30e2-fe7d-4e6f-9029-65dc5978fe60-000000@email.amazonses.com> <20131107082732.GN5661@alberich> <20131107084129.GP5661@alberich> <alpine.DEB.2.02.1311071008010.22533@gentwo.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, lailavrazda1979@gmail.com
-Subject: [PATCH v2] kcore: add Kconfig help text
-References: <527B2A76.2000501@infradead.org> <15490.1383839848@warthog.procyon.org.uk>
-In-Reply-To: <15490.1383839848@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
+Content-ID: <alpine.DEB.2.02.1311071028282.22533@gentwo.org>
+X-SES-Outgoing: 2013.11.07-54.240.10.51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+There is still something not optimal with the patch since it would disable
+debuggin on the kmalloc stack. Ccheck name for NULL only if
+slub_debug_slabs.
 
-Under Pseudo filesystems, /proc/kcore support has no help.
 
-Fixes a portion of kernel bugzilla #52671:
-  https://bugzilla.kernel.org/show_bug.cgi?id=52671
+Subject: slub: Handle NULL parameter in kmem_cache_flags V2
 
-Thanks for David Howells for the help text.
+V1->V2
+ - flags need to be applied regardless if !slub_debug_slabs
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Reported-by: lailavrazda1979@gmail.com
----
- fs/proc/Kconfig |    4 ++++
- 1 file changed, 4 insertions(+)
+kmem_cache_flags may be called with NULL parameter during early boot.
+Skip the test in that case.
 
---- lnx-312.orig/fs/proc/Kconfig
-+++ lnx-312/fs/proc/Kconfig
-@@ -31,6 +31,10 @@ config PROC_FS
- config PROC_KCORE
- 	bool "/proc/kcore support" if !ARM
- 	depends on PROC_FS && MMU
-+	help
-+	  Provides a virtual ELF core file of the live kernel.  This can
-+	  be read with gdb and other ELF tools.  No modifications can be
-+	  made using this mechanism.
- 
- config PROC_VMCORE
- 	bool "/proc/vmcore support"
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/mm/slub.c
+===================================================================
+--- linux.orig/mm/slub.c	2013-11-07 10:25:49.669706521 -0600
++++ linux/mm/slub.c	2013-11-07 10:27:49.130394661 -0600
+@@ -1217,8 +1217,8 @@ static unsigned long kmem_cache_flags(un
+ 	/*
+ 	 * Enable debugging if selected on the kernel commandline.
+ 	 */
+-	if (slub_debug && (!slub_debug_slabs ||
+-		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs))))
++	if (slub_debug && (!slub_debug_slabs || (name &&
++		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs)))))
+ 		flags |= slub_debug;
+
+ 	return flags;
