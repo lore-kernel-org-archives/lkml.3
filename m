@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab3KGNoe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 08:44:34 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:64045 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753870Ab3KGNo1 (ORCPT
+	id S1754194Ab3KGNor (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 08:44:47 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:45511 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073Ab3KGNok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 08:44:27 -0500
+	Thu, 7 Nov 2013 08:44:40 -0500
 From: Juri Lelli <juri.lelli@gmail.com>
 To: peterz@infradead.org, tglx@linutronix.de
 Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
@@ -19,9 +19,9 @@ Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
         raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
         vincent.guittot@linaro.org, bruce.ashfield@windriver.com
-Subject: [PATCH 04/14] sched: SCHED_DEADLINE SMP-related data structures & logic.
-Date: Thu,  7 Nov 2013 14:43:38 +0100
-Message-Id: <1383831828-15501-5-git-send-email-juri.lelli@gmail.com>
+Subject: [PATCH 09/14] rtmutex: turn the plist into an rb-tree.
+Date: Thu,  7 Nov 2013 14:43:43 +0100
+Message-Id: <1383831828-15501-10-git-send-email-juri.lelli@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
 References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
@@ -29,1266 +29,590 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduces data structures relevant for implementing dynamic
-migration of -deadline tasks and the logic for checking if
-runqueues are overloaded with -deadline tasks and for choosing
-where a task should migrate, when it is the case.
+From: Peter Zijlstra <peterz@infradead.org>
 
-Adds also dynamic migrations to SCHED_DEADLINE, so that tasks can
-be moved among CPUs when necessary. It is also possible to bind a
-task to a (set of) CPU(s), thus restricting its capability of
-migrating, or forbidding migrations at all.
+Turn the pi-chains from plist to rb-tree, in the rt_mutex code,
+and provide a proper comparison function for -deadline and
+-priority tasks.
 
-The very same approach used in sched_rt is utilised:
- - -deadline tasks are kept into CPU-specific runqueues,
- - -deadline tasks are migrated among runqueues to achieve the
-   following:
-    * on an M-CPU system the M earliest deadline ready tasks
-      are always running;
-    * affinity/cpusets settings of all the -deadline tasks is
-      always respected.
+This is done mainly because:
+ - classical prio field of the plist is just an int, which might
+   not be enough for representing a deadline;
+ - manipulating such a list would become O(nr_deadline_tasks),
+   which might be to much, as the number of -deadline task increases.
 
-Therefore, this very special form of "load balancing" is done with
-an active method, i.e., the scheduler pushes or pulls tasks between
-runqueues when they are woken up and/or (de)scheduled.
-IOW, every time a preemption occurs, the descheduled task might be sent
-to some other CPU (depending on its deadline) to continue executing
-(push). On the other hand, every time a CPU becomes idle, it might pull
-the second earliest deadline ready task from some other CPU.
+Therefore, an rb-tree is used, and tasks are queued in it according
+to the following logic:
+ - among two -priority (i.e., SCHED_BATCH/OTHER/RR/FIFO) tasks, the
+   one with the higher (lower, actually!) prio wins;
+ - among a -priority and a -deadline task, the latter always wins;
+ - among two -deadline tasks, the one with the earliest deadline
+   wins.
 
-To enforce this, a pull operation is always attempted before taking any
-scheduling decision (pre_schedule()), as well as a push one after each
-scheduling decision (post_schedule()). In addition, when a task arrives
-or wakes up, the best CPU where to resume it is selected taking into
-account its affinity mask, the system topology, but also its deadline.
-E.g., from the scheduling point of view, the best CPU where to wake
-up (and also where to push) a task is the one which is running the task
-with the latest deadline among the M executing ones.
+Queueing and dequeueing functions are changed accordingly, for both
+the list of a task's pi-waiters and the list of tasks blocked on
+a pi-lock.
 
-In order to facilitate these decisions, per-runqueue "caching" of the
-deadlines of the currently running and of the first ready task is used.
-Queued but not running tasks are also parked in another rb-tree to
-speed-up pushes.
-
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Dario Faggioli <raistlin@linux.it>
+Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- include/linux/sched.h   |    1 +
- kernel/sched/core.c     |    9 +-
- kernel/sched/deadline.c |  937 ++++++++++++++++++++++++++++++++++++++++++++++-
- kernel/sched/rt.c       |    2 +-
- kernel/sched/sched.h    |   34 ++
- 5 files changed, 966 insertions(+), 17 deletions(-)
+ include/linux/init_task.h |   10 +++
+ include/linux/rtmutex.h   |   18 ++----
+ include/linux/sched.h     |    4 +-
+ kernel/fork.c             |    3 +-
+ kernel/futex.c            |    2 +
+ kernel/rtmutex-debug.c    |    8 +--
+ kernel/rtmutex.c          |  152 ++++++++++++++++++++++++++++++++++++---------
+ kernel/rtmutex_common.h   |   22 +++----
+ kernel/sched/core.c       |    4 --
+ 9 files changed, 157 insertions(+), 66 deletions(-)
 
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 5cd0f09..69b97ea 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -11,6 +11,7 @@
+ #include <linux/user_namespace.h>
+ #include <linux/securebits.h>
+ #include <linux/seqlock.h>
++#include <linux/rbtree.h>
+ #include <net/net_namespace.h>
+ #include <linux/sched/rt.h>
+ 
+@@ -154,6 +155,14 @@ extern struct task_group root_task_group;
+ 
+ #define INIT_TASK_COMM "swapper"
+ 
++#ifdef CONFIG_RT_MUTEXES
++# define INIT_RT_MUTEXES(tsk)						\
++	.pi_waiters = RB_ROOT,						\
++	.pi_waiters_leftmost = NULL,
++#else
++# define INIT_RT_MUTEXES(tsk)
++#endif
++
+ /*
+  *  INIT_TASK is used to set up the first task table, touch at
+  * your own risk!. Base=0, limit=0x1fffff (=2MB)
+@@ -221,6 +230,7 @@ extern struct task_group root_task_group;
+ 	INIT_TRACE_RECURSION						\
+ 	INIT_TASK_RCU_PREEMPT(tsk)					\
+ 	INIT_CPUSET_SEQ							\
++	INIT_RT_MUTEXES(tsk)						\
+ 	INIT_VTIME(tsk)							\
+ }
+ 
+diff --git a/include/linux/rtmutex.h b/include/linux/rtmutex.h
+index de17134..3aed8d7 100644
+--- a/include/linux/rtmutex.h
++++ b/include/linux/rtmutex.h
+@@ -13,7 +13,7 @@
+ #define __LINUX_RT_MUTEX_H
+ 
+ #include <linux/linkage.h>
+-#include <linux/plist.h>
++#include <linux/rbtree.h>
+ #include <linux/spinlock_types.h>
+ 
+ extern int max_lock_depth; /* for sysctl */
+@@ -22,12 +22,14 @@ extern int max_lock_depth; /* for sysctl */
+  * The rt_mutex structure
+  *
+  * @wait_lock:	spinlock to protect the structure
+- * @wait_list:	pilist head to enqueue waiters in priority order
++ * @waiters:	rbtree root to enqueue waiters in priority order
++ * @waiters_leftmost: top waiter
+  * @owner:	the mutex owner
+  */
+ struct rt_mutex {
+ 	raw_spinlock_t		wait_lock;
+-	struct plist_head	wait_list;
++	struct rb_root          waiters;
++	struct rb_node          *waiters_leftmost;
+ 	struct task_struct	*owner;
+ #ifdef CONFIG_DEBUG_RT_MUTEXES
+ 	int			save_state;
+@@ -66,7 +68,7 @@ struct hrtimer_sleeper;
+ 
+ #define __RT_MUTEX_INITIALIZER(mutexname) \
+ 	{ .wait_lock = __RAW_SPIN_LOCK_UNLOCKED(mutexname.wait_lock) \
+-	, .wait_list = PLIST_HEAD_INIT(mutexname.wait_list) \
++	, .waiters = RB_ROOT \
+ 	, .owner = NULL \
+ 	__DEBUG_RT_MUTEX_INITIALIZER(mutexname)}
+ 
+@@ -98,12 +100,4 @@ extern int rt_mutex_trylock(struct rt_mutex *lock);
+ 
+ extern void rt_mutex_unlock(struct rt_mutex *lock);
+ 
+-#ifdef CONFIG_RT_MUTEXES
+-# define INIT_RT_MUTEXES(tsk)						\
+-	.pi_waiters	= PLIST_HEAD_INIT(tsk.pi_waiters),	\
+-	INIT_RT_MUTEX_DEBUG(tsk)
+-#else
+-# define INIT_RT_MUTEXES(tsk)
+-#endif
+-
+ #endif
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index fdf957c..59ea0da 100644
+index 3064319..f95bafd 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1174,6 +1174,7 @@ struct task_struct {
- 	struct list_head tasks;
- #ifdef CONFIG_SMP
- 	struct plist_node pushable_tasks;
-+	struct rb_node pushable_dl_tasks;
+@@ -16,6 +16,7 @@ struct sched_param {
+ #include <linux/types.h>
+ #include <linux/timex.h>
+ #include <linux/jiffies.h>
++#include <linux/plist.h>
+ #include <linux/rbtree.h>
+ #include <linux/thread_info.h>
+ #include <linux/cpumask.h>
+@@ -1340,7 +1341,8 @@ struct task_struct {
+ 
+ #ifdef CONFIG_RT_MUTEXES
+ 	/* PI waiters blocked on a rt_mutex held by this task */
+-	struct plist_head pi_waiters;
++	struct rb_root pi_waiters;
++	struct rb_node *pi_waiters_leftmost;
+ 	/* Deadlock detection and priority inheritance handling */
+ 	struct rt_mutex_waiter *pi_blocked_on;
  #endif
- 
- 	struct mm_struct *mm, *active_mm;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index cfe15bfc..2077aae 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1737,6 +1737,7 @@ int sched_fork(struct task_struct *p)
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 55fc95f..aa6e18d 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1089,7 +1089,8 @@ static void rt_mutex_init_task(struct task_struct *p)
+ {
+ 	raw_spin_lock_init(&p->pi_lock);
+ #ifdef CONFIG_RT_MUTEXES
+-	plist_head_init(&p->pi_waiters);
++	p->pi_waiters = RB_ROOT;
++	p->pi_waiters_leftmost = NULL;
+ 	p->pi_blocked_on = NULL;
  #endif
- #ifdef CONFIG_SMP
- 	plist_node_init(&p->pushable_tasks, MAX_PRIO);
-+	RB_CLEAR_NODE(&p->pushable_dl_tasks);
- #endif
- 
- 	put_cpu();
-@@ -5148,6 +5149,7 @@ static void free_rootdomain(struct rcu_head *rcu)
- 	struct root_domain *rd = container_of(rcu, struct root_domain, rcu);
- 
- 	cpupri_cleanup(&rd->cpupri);
-+	free_cpumask_var(rd->dlo_mask);
- 	free_cpumask_var(rd->rto_mask);
- 	free_cpumask_var(rd->online);
- 	free_cpumask_var(rd->span);
-@@ -5199,8 +5201,10 @@ static int init_rootdomain(struct root_domain *rd)
- 		goto out;
- 	if (!alloc_cpumask_var(&rd->online, GFP_KERNEL))
- 		goto free_span;
--	if (!alloc_cpumask_var(&rd->rto_mask, GFP_KERNEL))
-+	if (!alloc_cpumask_var(&rd->dlo_mask, GFP_KERNEL))
- 		goto free_online;
-+	if (!alloc_cpumask_var(&rd->rto_mask, GFP_KERNEL))
-+		goto free_dlo_mask;
- 
- 	if (cpupri_init(&rd->cpupri) != 0)
- 		goto free_rto_mask;
-@@ -5208,6 +5212,8 @@ static int init_rootdomain(struct root_domain *rd)
- 
- free_rto_mask:
- 	free_cpumask_var(rd->rto_mask);
-+free_dlo_mask:
-+	free_cpumask_var(rd->dlo_mask);
- free_online:
- 	free_cpumask_var(rd->online);
- free_span:
-@@ -6542,6 +6548,7 @@ void __init sched_init_smp(void)
- 	free_cpumask_var(non_isolated_cpus);
- 
- 	init_sched_rt_class();
-+	init_sched_dl_class();
  }
- #else
- void __init sched_init_smp(void)
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index cb93f2e..18a73b4 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -10,6 +10,7 @@
-  * miss some of their deadlines), and won't affect any other task.
-  *
-  * Copyright (C) 2012 Dario Faggioli <raistlin@linux.it>,
-+ *                    Juri Lelli <juri.lelli@gmail.com>,
-  *                    Michael Trimarchi <michael@amarulasolutions.com>,
-  *                    Fabio Checconi <fchecconi@gmail.com>
-  */
-@@ -20,6 +21,15 @@ static inline int dl_time_before(u64 a, u64 b)
- 	return (s64)(a - b) < 0;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index c3a1a55..ff7141e 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2315,6 +2315,8 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	 * code while we sleep on uaddr.
+ 	 */
+ 	debug_rt_mutex_init_waiter(&rt_waiter);
++	RB_CLEAR_NODE(&rt_waiter.pi_tree_entry);
++	RB_CLEAR_NODE(&rt_waiter.tree_entry);
+ 	rt_waiter.task = NULL;
+ 
+ 	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
+diff --git a/kernel/rtmutex-debug.c b/kernel/rtmutex-debug.c
+index 13b243a..49b2ed3 100644
+--- a/kernel/rtmutex-debug.c
++++ b/kernel/rtmutex-debug.c
+@@ -24,7 +24,7 @@
+ #include <linux/kallsyms.h>
+ #include <linux/syscalls.h>
+ #include <linux/interrupt.h>
+-#include <linux/plist.h>
++#include <linux/rbtree.h>
+ #include <linux/fs.h>
+ #include <linux/debug_locks.h>
+ 
+@@ -57,7 +57,7 @@ static void printk_lock(struct rt_mutex *lock, int print_owner)
+ 
+ void rt_mutex_debug_task_free(struct task_struct *task)
+ {
+-	DEBUG_LOCKS_WARN_ON(!plist_head_empty(&task->pi_waiters));
++	DEBUG_LOCKS_WARN_ON(!RB_EMPTY_ROOT(&task->pi_waiters));
+ 	DEBUG_LOCKS_WARN_ON(task->pi_blocked_on);
  }
  
-+/*
-+ * Tells if entity @a should preempt entity @b.
-+ */
-+static inline
-+int dl_entity_preempt(struct sched_dl_entity *a, struct sched_dl_entity *b)
-+{
-+	return dl_time_before(a->deadline, b->deadline);
-+}
-+
- static inline struct task_struct *dl_task_of(struct sched_dl_entity *dl_se)
+@@ -154,16 +154,12 @@ void debug_rt_mutex_proxy_unlock(struct rt_mutex *lock)
+ void debug_rt_mutex_init_waiter(struct rt_mutex_waiter *waiter)
  {
- 	return container_of(dl_se, struct task_struct, dl);
-@@ -53,8 +63,168 @@ static inline int is_leftmost(struct task_struct *p, struct dl_rq *dl_rq)
- void init_dl_rq(struct dl_rq *dl_rq, struct rq *rq)
+ 	memset(waiter, 0x11, sizeof(*waiter));
+-	plist_node_init(&waiter->list_entry, MAX_PRIO);
+-	plist_node_init(&waiter->pi_list_entry, MAX_PRIO);
+ 	waiter->deadlock_task_pid = NULL;
+ }
+ 
+ void debug_rt_mutex_free_waiter(struct rt_mutex_waiter *waiter)
  {
- 	dl_rq->rb_root = RB_ROOT;
-+
-+#ifdef CONFIG_SMP
-+	/* zero means no -deadline tasks */
-+	dl_rq->earliest_dl.curr = dl_rq->earliest_dl.next = 0;
-+
-+	dl_rq->dl_nr_migratory = 0;
-+	dl_rq->overloaded = 0;
-+	dl_rq->pushable_dl_tasks_root = RB_ROOT;
-+#endif
-+}
-+
-+#ifdef CONFIG_SMP
-+
-+static inline int dl_overloaded(struct rq *rq)
+ 	put_pid(waiter->deadlock_task_pid);
+-	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->list_entry));
+-	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+ 	memset(waiter, 0x22, sizeof(*waiter));
+ }
+ 
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index 0dd6aec..4ea7eaa 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -91,10 +91,104 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+ }
+ #endif
+ 
++static inline int
++rt_mutex_waiter_less(struct rt_mutex_waiter *left,
++		     struct rt_mutex_waiter *right)
 +{
-+	return atomic_read(&rq->rd->dlo_count);
-+}
++	if (left->task->prio < right->task->prio)
++		return 1;
 +
-+static inline void dl_set_overload(struct rq *rq)
-+{
-+	if (!rq->online)
-+		return;
-+
-+	cpumask_set_cpu(rq->cpu, rq->rd->dlo_mask);
 +	/*
-+	 * Must be visible before the overload count is
-+	 * set (as in sched_rt.c).
-+	 *
-+	 * Matched by the barrier in pull_dl_task().
++	 * If both tasks are dl_task(), we check their deadlines.
 +	 */
-+	smp_wmb();
-+	atomic_inc(&rq->rd->dlo_count);
++	if (dl_prio(left->task->prio) && dl_prio(right->task->prio))
++		return (left->task->dl.deadline < right->task->dl.deadline);
++
++	return 0;
 +}
 +
-+static inline void dl_clear_overload(struct rq *rq)
++static void
++rt_mutex_enqueue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
 +{
-+	if (!rq->online)
-+		return;
-+
-+	atomic_dec(&rq->rd->dlo_count);
-+	cpumask_clear_cpu(rq->cpu, rq->rd->dlo_mask);
-+}
-+
-+static void update_dl_migration(struct dl_rq *dl_rq)
-+{
-+	if (dl_rq->dl_nr_migratory && dl_rq->dl_nr_total > 1) {
-+		if (!dl_rq->overloaded) {
-+			dl_set_overload(rq_of_dl_rq(dl_rq));
-+			dl_rq->overloaded = 1;
-+		}
-+	} else if (dl_rq->overloaded) {
-+		dl_clear_overload(rq_of_dl_rq(dl_rq));
-+		dl_rq->overloaded = 0;
-+	}
-+}
-+
-+static void inc_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
-+{
-+	struct task_struct *p = dl_task_of(dl_se);
-+	dl_rq = &rq_of_dl_rq(dl_rq)->dl;
-+
-+	dl_rq->dl_nr_total++;
-+	if (p->nr_cpus_allowed > 1)
-+		dl_rq->dl_nr_migratory++;
-+
-+	update_dl_migration(dl_rq);
-+}
-+
-+static void dec_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
-+{
-+	struct task_struct *p = dl_task_of(dl_se);
-+	dl_rq = &rq_of_dl_rq(dl_rq)->dl;
-+
-+	dl_rq->dl_nr_total--;
-+	if (p->nr_cpus_allowed > 1)
-+		dl_rq->dl_nr_migratory--;
-+
-+	update_dl_migration(dl_rq);
-+}
-+
-+/*
-+ * The list of pushable -deadline task is not a plist, like in
-+ * sched_rt.c, it is an rb-tree with tasks ordered by deadline.
-+ */
-+static void enqueue_pushable_dl_task(struct rq *rq, struct task_struct *p)
-+{
-+	struct dl_rq *dl_rq = &rq->dl;
-+	struct rb_node **link = &dl_rq->pushable_dl_tasks_root.rb_node;
++	struct rb_node **link = &lock->waiters.rb_node;
 +	struct rb_node *parent = NULL;
-+	struct task_struct *entry;
++	struct rt_mutex_waiter *entry;
 +	int leftmost = 1;
-+
-+	BUG_ON(!RB_EMPTY_NODE(&p->pushable_dl_tasks));
 +
 +	while (*link) {
 +		parent = *link;
-+		entry = rb_entry(parent, struct task_struct,
-+				 pushable_dl_tasks);
-+		if (dl_entity_preempt(&p->dl, &entry->dl))
++		entry = rb_entry(parent, struct rt_mutex_waiter, tree_entry);
++		if (rt_mutex_waiter_less(waiter, entry)) {
 +			link = &parent->rb_left;
-+		else {
++		} else {
 +			link = &parent->rb_right;
 +			leftmost = 0;
 +		}
 +	}
 +
 +	if (leftmost)
-+		dl_rq->pushable_dl_tasks_leftmost = &p->pushable_dl_tasks;
++		lock->waiters_leftmost = &waiter->tree_entry;
 +
-+	rb_link_node(&p->pushable_dl_tasks, parent, link);
-+	rb_insert_color(&p->pushable_dl_tasks, &dl_rq->pushable_dl_tasks_root);
++	rb_link_node(&waiter->tree_entry, parent, link);
++	rb_insert_color(&waiter->tree_entry, &lock->waiters);
 +}
 +
-+static void dequeue_pushable_dl_task(struct rq *rq, struct task_struct *p)
++static void
++rt_mutex_dequeue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
 +{
-+	struct dl_rq *dl_rq = &rq->dl;
-+
-+	if (RB_EMPTY_NODE(&p->pushable_dl_tasks))
++	if (RB_EMPTY_NODE(&waiter->tree_entry))
 +		return;
 +
-+	if (dl_rq->pushable_dl_tasks_leftmost == &p->pushable_dl_tasks) {
-+		struct rb_node *next_node;
++	if (lock->waiters_leftmost == &waiter->tree_entry)
++		lock->waiters_leftmost = rb_next(&waiter->tree_entry);
 +
-+		next_node = rb_next(&p->pushable_dl_tasks);
-+		dl_rq->pushable_dl_tasks_leftmost = next_node;
++	rb_erase(&waiter->tree_entry, &lock->waiters);
++	RB_CLEAR_NODE(&waiter->tree_entry);
++}
++
++static void
++rt_mutex_enqueue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
++{
++	struct rb_node **link = &task->pi_waiters.rb_node;
++	struct rb_node *parent = NULL;
++	struct rt_mutex_waiter *entry;
++	int leftmost = 1;
++
++	while (*link) {
++		parent = *link;
++		entry = rb_entry(parent, struct rt_mutex_waiter, pi_tree_entry);
++		if (rt_mutex_waiter_less(waiter, entry)) {
++			link = &parent->rb_left;
++		} else {
++			link = &parent->rb_right;
++			leftmost = 0;
++		}
 +	}
 +
-+	rb_erase(&p->pushable_dl_tasks, &dl_rq->pushable_dl_tasks_root);
-+	RB_CLEAR_NODE(&p->pushable_dl_tasks);
++	if (leftmost)
++		task->pi_waiters_leftmost = &waiter->pi_tree_entry;
++
++	rb_link_node(&waiter->pi_tree_entry, parent, link);
++	rb_insert_color(&waiter->pi_tree_entry, &task->pi_waiters);
 +}
 +
-+static inline int has_pushable_dl_tasks(struct rq *rq)
++static void
++rt_mutex_dequeue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
 +{
-+	return !RB_EMPTY_ROOT(&rq->dl.pushable_dl_tasks_root);
-+}
-+
-+static int push_dl_task(struct rq *rq);
-+
-+#else
-+
-+static inline
-+void enqueue_pushable_dl_task(struct rq *rq, struct task_struct *p)
-+{
-+}
-+
-+static inline
-+void dequeue_pushable_dl_task(struct rq *rq, struct task_struct *p)
-+{
-+}
-+
-+static inline
-+void inc_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
-+{
-+}
-+
-+static inline
-+void dec_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
-+{
- }
- 
-+#endif /* CONFIG_SMP */
-+
- static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags);
- static void __dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags);
- static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
-@@ -307,6 +477,14 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
- 			check_preempt_curr_dl(rq, p, 0);
- 		else
- 			resched_task(rq->curr);
-+#ifdef CONFIG_SMP
-+		/*
-+		 * Queueing this task back might have overloaded rq,
-+		 * check if we need to kick someone away.
-+		 */
-+		if (has_pushable_dl_tasks(rq))
-+			push_dl_task(rq);
-+#endif
- 	}
- unlock:
- 	raw_spin_unlock(&rq->lock);
-@@ -397,6 +575,100 @@ static void update_curr_dl(struct rq *rq)
- 	}
- }
- 
-+#ifdef CONFIG_SMP
-+
-+static struct task_struct *pick_next_earliest_dl_task(struct rq *rq, int cpu);
-+
-+static inline u64 next_deadline(struct rq *rq)
-+{
-+	struct task_struct *next = pick_next_earliest_dl_task(rq, rq->cpu);
-+
-+	if (next && dl_prio(next->prio))
-+		return next->dl.deadline;
-+	else
-+		return 0;
-+}
-+
-+static void inc_dl_deadline(struct dl_rq *dl_rq, u64 deadline)
-+{
-+	struct rq *rq = rq_of_dl_rq(dl_rq);
-+
-+	if (dl_rq->earliest_dl.curr == 0 ||
-+	    dl_time_before(deadline, dl_rq->earliest_dl.curr)) {
-+		/*
-+		 * If the dl_rq had no -deadline tasks, or if the new task
-+		 * has shorter deadline than the current one on dl_rq, we
-+		 * know that the previous earliest becomes our next earliest,
-+		 * as the new task becomes the earliest itself.
-+		 */
-+		dl_rq->earliest_dl.next = dl_rq->earliest_dl.curr;
-+		dl_rq->earliest_dl.curr = deadline;
-+	} else if (dl_rq->earliest_dl.next == 0 ||
-+		   dl_time_before(deadline, dl_rq->earliest_dl.next)) {
-+		/*
-+		 * On the other hand, if the new -deadline task has a
-+		 * a later deadline than the earliest one on dl_rq, but
-+		 * it is earlier than the next (if any), we must
-+		 * recompute the next-earliest.
-+		 */
-+		dl_rq->earliest_dl.next = next_deadline(rq);
-+	}
-+}
-+
-+static void dec_dl_deadline(struct dl_rq *dl_rq, u64 deadline)
-+{
-+	struct rq *rq = rq_of_dl_rq(dl_rq);
-+
-+	/*
-+	 * Since we may have removed our earliest (and/or next earliest)
-+	 * task we must recompute them.
-+	 */
-+	if (!dl_rq->dl_nr_running) {
-+		dl_rq->earliest_dl.curr = 0;
-+		dl_rq->earliest_dl.next = 0;
-+	} else {
-+		struct rb_node *leftmost = dl_rq->rb_leftmost;
-+		struct sched_dl_entity *entry;
-+
-+		entry = rb_entry(leftmost, struct sched_dl_entity, rb_node);
-+		dl_rq->earliest_dl.curr = entry->deadline;
-+		dl_rq->earliest_dl.next = next_deadline(rq);
-+	}
-+}
-+
-+#else
-+
-+static inline void inc_dl_deadline(struct dl_rq *dl_rq, u64 deadline) {}
-+static inline void dec_dl_deadline(struct dl_rq *dl_rq, u64 deadline) {}
-+
-+#endif /* CONFIG_SMP */
-+
-+static inline
-+void inc_dl_tasks(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
-+{
-+	int prio = dl_task_of(dl_se)->prio;
-+	u64 deadline = dl_se->deadline;
-+
-+	WARN_ON(!dl_prio(prio));
-+	dl_rq->dl_nr_running++;
-+
-+	inc_dl_deadline(dl_rq, deadline);
-+	inc_dl_migration(dl_se, dl_rq);
-+}
-+
-+static inline
-+void dec_dl_tasks(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
-+{
-+	int prio = dl_task_of(dl_se)->prio;
-+
-+	WARN_ON(!dl_prio(prio));
-+	WARN_ON(!dl_rq->dl_nr_running);
-+	dl_rq->dl_nr_running--;
-+
-+	dec_dl_deadline(dl_rq, dl_se->deadline);
-+	dec_dl_migration(dl_se, dl_rq);
-+}
-+
- static void __enqueue_dl_entity(struct sched_dl_entity *dl_se)
- {
- 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
-@@ -424,7 +696,7 @@ static void __enqueue_dl_entity(struct sched_dl_entity *dl_se)
- 	rb_link_node(&dl_se->rb_node, parent, link);
- 	rb_insert_color(&dl_se->rb_node, &dl_rq->rb_root);
- 
--	dl_rq->dl_nr_running++;
-+	inc_dl_tasks(dl_se, dl_rq);
- }
- 
- static void __dequeue_dl_entity(struct sched_dl_entity *dl_se)
-@@ -444,7 +716,7 @@ static void __dequeue_dl_entity(struct sched_dl_entity *dl_se)
- 	rb_erase(&dl_se->rb_node, &dl_rq->rb_root);
- 	RB_CLEAR_NODE(&dl_se->rb_node);
- 
--	dl_rq->dl_nr_running--;
-+	dec_dl_tasks(dl_se, dl_rq);
- }
- 
- static void
-@@ -482,12 +754,17 @@ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
- 		return;
- 
- 	enqueue_dl_entity(&p->dl, flags);
-+
-+	if (!task_current(rq, p) && p->nr_cpus_allowed > 1)
-+		enqueue_pushable_dl_task(rq, p);
-+
- 	inc_nr_running(rq);
- }
- 
- static void __dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
- {
- 	dequeue_dl_entity(&p->dl);
-+	dequeue_pushable_dl_task(rq, p);
- }
- 
- static void dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
-@@ -525,6 +802,77 @@ static void yield_task_dl(struct rq *rq)
- 	update_curr_dl(rq);
- }
- 
-+#ifdef CONFIG_SMP
-+
-+static int find_later_rq(struct task_struct *task);
-+static int latest_cpu_find(struct cpumask *span,
-+			   struct task_struct *task,
-+			   struct cpumask *later_mask);
-+
-+static int
-+select_task_rq_dl(struct task_struct *p, int sd_flag, int flags)
-+{
-+	struct task_struct *curr;
-+	struct rq *rq;
-+	int cpu;
-+
-+	cpu = task_cpu(p);
-+
-+	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
-+		goto out;
-+
-+	rq = cpu_rq(cpu);
-+
-+	rcu_read_lock();
-+	curr = ACCESS_ONCE(rq->curr); /* unlocked access */
-+
-+	/*
-+	 * If we are dealing with a -deadline task, we must
-+	 * decide where to wake it up.
-+	 * If it has a later deadline and the current task
-+	 * on this rq can't move (provided the waking task
-+	 * can!) we prefer to send it somewhere else. On the
-+	 * other hand, if it has a shorter deadline, we
-+	 * try to make it stay here, it might be important.
-+	 */
-+	if (unlikely(dl_task(curr)) &&
-+	    (curr->nr_cpus_allowed < 2 ||
-+	     !dl_entity_preempt(&p->dl, &curr->dl)) &&
-+	    (p->nr_cpus_allowed > 1)) {
-+		int target = find_later_rq(p);
-+
-+		if (target != -1)
-+			cpu = target;
-+	}
-+	rcu_read_unlock();
-+
-+out:
-+	return cpu;
-+}
-+
-+static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
-+{
-+	/*
-+	 * Current can't be migrated, useless to reschedule,
-+	 * let's hope p can move out.
-+	 */
-+	if (rq->curr->nr_cpus_allowed == 1 ||
-+	    latest_cpu_find(rq->rd->span, rq->curr, NULL) == -1)
++	if (RB_EMPTY_NODE(&waiter->pi_tree_entry))
 +		return;
 +
-+	/*
-+	 * p is migratable, so let's not schedule it and
-+	 * see if it is pushed or pulled somewhere else.
-+	 */
-+	if (p->nr_cpus_allowed != 1 &&
-+	    latest_cpu_find(rq->rd->span, p, NULL) != -1)
-+		return;
++	if (task->pi_waiters_leftmost == &waiter->pi_tree_entry)
++		task->pi_waiters_leftmost = rb_next(&waiter->pi_tree_entry);
 +
-+	resched_task(rq->curr);
++	rb_erase(&waiter->pi_tree_entry, &task->pi_waiters);
++	RB_CLEAR_NODE(&waiter->pi_tree_entry);
 +}
-+
-+#endif /* CONFIG_SMP */
 +
  /*
-  * Only called when both the current and waking task are -deadline
-  * tasks.
-@@ -532,8 +880,20 @@ static void yield_task_dl(struct rq *rq)
- static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
- 				  int flags)
- {
--	if (dl_time_before(p->dl.deadline, rq->curr->dl.deadline))
-+	if (dl_entity_preempt(&p->dl, &rq->curr->dl)) {
- 		resched_task(rq->curr);
-+		return;
-+	}
-+
-+#ifdef CONFIG_SMP
-+	/*
-+	 * In the unlikely case current and p have the same deadline
-+	 * let us try to decide what's the best thing to do...
-+	 */
-+	if ((s64)(p->dl.deadline - rq->curr->dl.deadline) == 0 &&
-+	    !need_resched())
-+		check_preempt_equal_dl(rq, p);
-+#endif /* CONFIG_SMP */
+- * Calculate task priority from the waiter list priority
++ * Calculate task priority from the waiter tree priority
+  *
+- * Return task->normal_prio when the waiter list is empty or when
++ * Return task->normal_prio when the waiter tree is empty or when
+  * the waiter is not allowed to do priority boosting
+  */
+ int rt_mutex_getprio(struct task_struct *task)
+@@ -102,7 +196,7 @@ int rt_mutex_getprio(struct task_struct *task)
+ 	if (likely(!task_has_pi_waiters(task)))
+ 		return task->normal_prio;
+ 
+-	return min(task_top_pi_waiter(task)->pi_list_entry.prio,
++	return min(task_top_pi_waiter(task)->task->prio,
+ 		   task->normal_prio);
  }
  
- #ifdef CONFIG_SCHED_HRTICK
-@@ -573,16 +933,29 @@ struct task_struct *pick_next_task_dl(struct rq *rq)
+@@ -233,7 +327,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 	 * When deadlock detection is off then we check, if further
+ 	 * priority adjustment is necessary.
+ 	 */
+-	if (!detect_deadlock && waiter->list_entry.prio == task->prio)
++	if (!detect_deadlock && waiter->task->prio == task->prio)
+ 		goto out_unlock_pi;
  
- 	p = dl_task_of(dl_se);
- 	p->se.exec_start = rq_clock_task(rq);
-+
-+	/* Running task will never be pushed. */
-+	if (p)
-+		dequeue_pushable_dl_task(rq, p);
-+
- #ifdef CONFIG_SCHED_HRTICK
- 	if (hrtick_enabled(rq))
- 		start_hrtick_dl(rq, p);
- #endif
-+
-+#ifdef CONFIG_SMP
-+	rq->post_schedule = has_pushable_dl_tasks(rq);
-+#endif /* CONFIG_SMP */
-+
- 	return p;
- }
+ 	lock = waiter->lock;
+@@ -254,9 +348,9 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 	top_waiter = rt_mutex_top_waiter(lock);
  
- static void put_prev_task_dl(struct rq *rq, struct task_struct *p)
- {
- 	update_curr_dl(rq);
-+
-+	if (on_dl_rq(&p->dl) && p->nr_cpus_allowed > 1)
-+		enqueue_pushable_dl_task(rq, p);
- }
+ 	/* Requeue the waiter */
+-	plist_del(&waiter->list_entry, &lock->wait_list);
+-	waiter->list_entry.prio = task->prio;
+-	plist_add(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_dequeue(lock, waiter);
++	waiter->task->prio = task->prio;
++	rt_mutex_enqueue(lock, waiter);
  
- static void task_tick_dl(struct rq *rq, struct task_struct *p, int queued)
-@@ -616,16 +989,517 @@ static void set_curr_task_dl(struct rq *rq)
- 	struct task_struct *p = rq->curr;
+ 	/* Release the task */
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+@@ -280,17 +374,15 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
  
- 	p->se.exec_start = rq_clock_task(rq);
-+
-+	/* You can't push away the running task */
-+	dequeue_pushable_dl_task(rq, p);
-+}
-+
-+#ifdef CONFIG_SMP
-+
-+/* Only try algorithms three times */
-+#define DL_MAX_TRIES 3
-+
-+static int pick_dl_task(struct rq *rq, struct task_struct *p, int cpu)
-+{
-+	if (!task_running(rq, p) &&
-+	    (cpu < 0 || cpumask_test_cpu(cpu, &p->cpus_allowed)) &&
-+	    (p->nr_cpus_allowed > 1))
-+		return 1;
-+
-+	return 0;
-+}
-+
-+/* Returns the second earliest -deadline task, NULL otherwise */
-+static struct task_struct *pick_next_earliest_dl_task(struct rq *rq, int cpu)
-+{
-+	struct rb_node *next_node = rq->dl.rb_leftmost;
-+	struct sched_dl_entity *dl_se;
-+	struct task_struct *p = NULL;
-+
-+next_node:
-+	next_node = rb_next(next_node);
-+	if (next_node) {
-+		dl_se = rb_entry(next_node, struct sched_dl_entity, rb_node);
-+		p = dl_task_of(dl_se);
-+
-+		if (pick_dl_task(rq, p, cpu))
-+			return p;
-+
-+		goto next_node;
-+	}
-+
-+	return NULL;
-+}
-+
-+static int latest_cpu_find(struct cpumask *span,
-+			   struct task_struct *task,
-+			   struct cpumask *later_mask)
-+{
-+	const struct sched_dl_entity *dl_se = &task->dl;
-+	int cpu, found = -1, best = 0;
-+	u64 max_dl = 0;
-+
-+	for_each_cpu(cpu, span) {
-+		struct rq *rq = cpu_rq(cpu);
-+		struct dl_rq *dl_rq = &rq->dl;
-+
-+		if (cpumask_test_cpu(cpu, &task->cpus_allowed) &&
-+		    (!dl_rq->dl_nr_running || dl_time_before(dl_se->deadline,
-+		     dl_rq->earliest_dl.curr))) {
-+			if (later_mask)
-+				cpumask_set_cpu(cpu, later_mask);
-+			if (!best && !dl_rq->dl_nr_running) {
-+				best = 1;
-+				found = cpu;
-+			} else if (!best &&
-+				   dl_time_before(max_dl,
-+						  dl_rq->earliest_dl.curr)) {
-+				max_dl = dl_rq->earliest_dl.curr;
-+				found = cpu;
-+			}
-+		} else if (later_mask)
-+			cpumask_clear_cpu(cpu, later_mask);
-+	}
-+
-+	return found;
-+}
-+
-+static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask_dl);
-+
-+static int find_later_rq(struct task_struct *task)
-+{
-+	struct sched_domain *sd;
-+	struct cpumask *later_mask = __get_cpu_var(local_cpu_mask_dl);
-+	int this_cpu = smp_processor_id();
-+	int best_cpu, cpu = task_cpu(task);
-+
-+	/* Make sure the mask is initialized first */
-+	if (unlikely(!later_mask))
-+		return -1;
-+
-+	if (task->nr_cpus_allowed == 1)
-+		return -1;
-+
-+	best_cpu = latest_cpu_find(task_rq(task)->rd->span, task, later_mask);
-+	if (best_cpu == -1)
-+		return -1;
-+
-+	/*
-+	 * If we are here, some target has been found,
-+	 * the most suitable of which is cached in best_cpu.
-+	 * This is, among the runqueues where the current tasks
-+	 * have later deadlines than the task's one, the rq
-+	 * with the latest possible one.
-+	 *
-+	 * Now we check how well this matches with task's
-+	 * affinity and system topology.
-+	 *
-+	 * The last cpu where the task run is our first
-+	 * guess, since it is most likely cache-hot there.
-+	 */
-+	if (cpumask_test_cpu(cpu, later_mask))
-+		return cpu;
-+	/*
-+	 * Check if this_cpu is to be skipped (i.e., it is
-+	 * not in the mask) or not.
-+	 */
-+	if (!cpumask_test_cpu(this_cpu, later_mask))
-+		this_cpu = -1;
-+
-+	rcu_read_lock();
-+	for_each_domain(cpu, sd) {
-+		if (sd->flags & SD_WAKE_AFFINE) {
-+
-+			/*
-+			 * If possible, preempting this_cpu is
-+			 * cheaper than migrating.
-+			 */
-+			if (this_cpu != -1 &&
-+			    cpumask_test_cpu(this_cpu, sched_domain_span(sd))) {
-+				rcu_read_unlock();
-+				return this_cpu;
-+			}
-+
-+			/*
-+			 * Last chance: if best_cpu is valid and is
-+			 * in the mask, that becomes our choice.
-+			 */
-+			if (best_cpu < nr_cpu_ids &&
-+			    cpumask_test_cpu(best_cpu, sched_domain_span(sd))) {
-+				rcu_read_unlock();
-+				return best_cpu;
-+			}
-+		}
-+	}
-+	rcu_read_unlock();
-+
-+	/*
-+	 * At this point, all our guesses failed, we just return
-+	 * 'something', and let the caller sort the things out.
-+	 */
-+	if (this_cpu != -1)
-+		return this_cpu;
-+
-+	cpu = cpumask_any(later_mask);
-+	if (cpu < nr_cpu_ids)
-+		return cpu;
-+
-+	return -1;
-+}
-+
-+/* Locks the rq it finds */
-+static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq)
-+{
-+	struct rq *later_rq = NULL;
-+	int tries;
-+	int cpu;
-+
-+	for (tries = 0; tries < DL_MAX_TRIES; tries++) {
-+		cpu = find_later_rq(task);
-+
-+		if ((cpu == -1) || (cpu == rq->cpu))
-+			break;
-+
-+		later_rq = cpu_rq(cpu);
-+
-+		/* Retry if something changed. */
-+		if (double_lock_balance(rq, later_rq)) {
-+			if (unlikely(task_rq(task) != rq ||
-+				     !cpumask_test_cpu(later_rq->cpu,
-+				                       &task->cpus_allowed) ||
-+				     task_running(rq, task) || !task->on_rq)) {
-+				double_unlock_balance(rq, later_rq);
-+				later_rq = NULL;
-+				break;
-+			}
-+		}
-+
-+		/*
-+		 * If the rq we found has no -deadline task, or
-+		 * its earliest one has a later deadline than our
-+		 * task, the rq is a good one.
-+		 */
-+		if (!later_rq->dl.dl_nr_running ||
-+		    dl_time_before(task->dl.deadline,
-+				   later_rq->dl.earliest_dl.curr))
-+			break;
-+
-+		/* Otherwise we try again. */
-+		double_unlock_balance(rq, later_rq);
-+		later_rq = NULL;
-+	}
-+
-+	return later_rq;
- }
+ 	if (waiter == rt_mutex_top_waiter(lock)) {
+ 		/* Boost the owner */
+-		plist_del(&top_waiter->pi_list_entry, &task->pi_waiters);
+-		waiter->pi_list_entry.prio = waiter->list_entry.prio;
+-		plist_add(&waiter->pi_list_entry, &task->pi_waiters);
++		rt_mutex_dequeue_pi(task, top_waiter);
++		rt_mutex_enqueue_pi(task, waiter);
+ 		__rt_mutex_adjust_prio(task);
  
-+static struct task_struct *pick_next_pushable_dl_task(struct rq *rq)
-+{
-+	struct task_struct *p;
-+
-+	if (!has_pushable_dl_tasks(rq))
-+		return NULL;
-+
-+	p = rb_entry(rq->dl.pushable_dl_tasks_leftmost,
-+		     struct task_struct, pushable_dl_tasks);
-+
-+	BUG_ON(rq->cpu != task_cpu(p));
-+	BUG_ON(task_current(rq, p));
-+	BUG_ON(p->nr_cpus_allowed <= 1);
-+
-+	BUG_ON(!p->se.on_rq);
-+	BUG_ON(!dl_task(p));
-+
-+	return p;
-+}
-+
-+/*
-+ * See if the non running -deadline tasks on this rq
-+ * can be sent to some other CPU where they can preempt
-+ * and start executing.
-+ */
-+static int push_dl_task(struct rq *rq)
-+{
-+	struct task_struct *next_task;
-+	struct rq *later_rq;
-+
-+	if (!rq->dl.overloaded)
-+		return 0;
-+
-+	next_task = pick_next_pushable_dl_task(rq);
-+	if (!next_task)
-+		return 0;
-+
-+retry:
-+	if (unlikely(next_task == rq->curr)) {
-+		WARN_ON(1);
-+		return 0;
-+	}
-+
-+	/*
-+	 * If next_task preempts rq->curr, and rq->curr
-+	 * can move away, it makes sense to just reschedule
-+	 * without going further in pushing next_task.
-+	 */
-+	if (dl_task(rq->curr) &&
-+	    dl_time_before(next_task->dl.deadline, rq->curr->dl.deadline) &&
-+	    rq->curr->nr_cpus_allowed > 1) {
-+		resched_task(rq->curr);
-+		return 0;
-+	}
-+
-+	/* We might release rq lock */
-+	get_task_struct(next_task);
-+
-+	/* Will lock the rq it'll find */
-+	later_rq = find_lock_later_rq(next_task, rq);
-+	if (!later_rq) {
-+		struct task_struct *task;
-+
-+		/*
-+		 * We must check all this again, since
-+		 * find_lock_later_rq releases rq->lock and it is
-+		 * then possible that next_task has migrated.
-+		 */
-+		task = pick_next_pushable_dl_task(rq);
-+		if (task_cpu(next_task) == rq->cpu && task == next_task) {
-+			/*
-+			 * The task is still there. We don't try
-+			 * again, some other cpu will pull it when ready.
-+			 */
-+			dequeue_pushable_dl_task(rq, next_task);
-+			goto out;
-+		}
-+
-+		if (!task)
-+			/* No more tasks */
-+			goto out;
-+
-+		put_task_struct(next_task);
-+		next_task = task;
-+		goto retry;
-+	}
-+
-+	deactivate_task(rq, next_task, 0);
-+	set_task_cpu(next_task, later_rq->cpu);
-+	activate_task(later_rq, next_task, 0);
-+
-+	resched_task(later_rq->curr);
-+
-+	double_unlock_balance(rq, later_rq);
-+
-+out:
-+	put_task_struct(next_task);
-+
-+	return 1;
-+}
-+
-+static void push_dl_tasks(struct rq *rq)
-+{
-+	/* Terminates as it moves a -deadline task */
-+	while (push_dl_task(rq))
-+		;
-+}
-+
-+static int pull_dl_task(struct rq *this_rq)
-+{
-+	int this_cpu = this_rq->cpu, ret = 0, cpu;
-+	struct task_struct *p;
-+	struct rq *src_rq;
-+	u64 dmin = LONG_MAX;
-+
-+	if (likely(!dl_overloaded(this_rq)))
-+		return 0;
-+
-+	/*
-+	 * Match the barrier from dl_set_overloaded; this guarantees that if we
-+	 * see overloaded we must also see the dlo_mask bit.
-+	 */
-+	smp_rmb();
-+
-+	for_each_cpu(cpu, this_rq->rd->dlo_mask) {
-+		if (this_cpu == cpu)
-+			continue;
-+
-+		src_rq = cpu_rq(cpu);
-+
-+		/*
-+		 * It looks racy, abd it is! However, as in sched_rt.c,
-+		 * we are fine with this.
-+		 */
-+		if (this_rq->dl.dl_nr_running &&
-+		    dl_time_before(this_rq->dl.earliest_dl.curr,
-+				   src_rq->dl.earliest_dl.next))
-+			continue;
-+
-+		/* Might drop this_rq->lock */
-+		double_lock_balance(this_rq, src_rq);
-+
-+		/*
-+		 * If there are no more pullable tasks on the
-+		 * rq, we're done with it.
-+		 */
-+		if (src_rq->dl.dl_nr_running <= 1)
-+			goto skip;
-+
-+		p = pick_next_earliest_dl_task(src_rq, this_cpu);
-+
-+		/*
-+		 * We found a task to be pulled if:
-+		 *  - it preempts our current (if there's one),
-+		 *  - it will preempt the last one we pulled (if any).
-+		 */
-+		if (p && dl_time_before(p->dl.deadline, dmin) &&
-+		    (!this_rq->dl.dl_nr_running ||
-+		     dl_time_before(p->dl.deadline,
-+				    this_rq->dl.earliest_dl.curr))) {
-+			WARN_ON(p == src_rq->curr);
-+			WARN_ON(!p->se.on_rq);
-+
-+			/*
-+			 * Then we pull iff p has actually an earlier
-+			 * deadline than the current task of its runqueue.
-+			 */
-+			if (dl_time_before(p->dl.deadline,
-+					   src_rq->curr->dl.deadline))
-+				goto skip;
-+
-+			ret = 1;
-+
-+			deactivate_task(src_rq, p, 0);
-+			set_task_cpu(p, this_cpu);
-+			activate_task(this_rq, p, 0);
-+			dmin = p->dl.deadline;
-+
-+			/* Is there any other task even earlier? */
-+		}
-+skip:
-+		double_unlock_balance(this_rq, src_rq);
-+	}
-+
-+	return ret;
-+}
-+
-+static void pre_schedule_dl(struct rq *rq, struct task_struct *prev)
-+{
-+	/* Try to pull other tasks here */
-+	if (dl_task(prev))
-+		pull_dl_task(rq);
-+}
-+
-+static void post_schedule_dl(struct rq *rq)
-+{
-+	push_dl_tasks(rq);
-+}
-+
-+/*
-+ * Since the task is not running and a reschedule is not going to happen
-+ * anytime soon on its runqueue, we try pushing it away now.
-+ */
-+static void task_woken_dl(struct rq *rq, struct task_struct *p)
-+{
-+	if (!task_running(rq, p) &&
-+	    !test_tsk_need_resched(rq->curr) &&
-+	    has_pushable_dl_tasks(rq) &&
-+	    p->nr_cpus_allowed > 1 &&
-+	    dl_task(rq->curr) &&
-+	    (rq->curr->nr_cpus_allowed < 2 ||
-+	     dl_entity_preempt(&rq->curr->dl, &p->dl))) {
-+		push_dl_tasks(rq);
-+	}
-+}
-+
-+static void set_cpus_allowed_dl(struct task_struct *p,
-+				const struct cpumask *new_mask)
-+{
-+	struct rq *rq;
-+	int weight;
-+
-+	BUG_ON(!dl_task(p));
-+
-+	/*
-+	 * Update only if the task is actually running (i.e.,
-+	 * it is on the rq AND it is not throttled).
-+	 */
-+	if (!on_dl_rq(&p->dl))
-+		return;
-+
-+	weight = cpumask_weight(new_mask);
-+
-+	/*
-+	 * Only update if the process changes its state from whether it
-+	 * can migrate or not.
-+	 */
-+	if ((p->nr_cpus_allowed > 1) == (weight > 1))
-+		return;
-+
-+	rq = task_rq(p);
-+
-+	/*
-+	 * The process used to be able to migrate OR it can now migrate
-+	 */
-+	if (weight <= 1) {
-+		if (!task_current(rq, p))
-+			dequeue_pushable_dl_task(rq, p);
-+		BUG_ON(!rq->dl.dl_nr_migratory);
-+		rq->dl.dl_nr_migratory--;
-+	} else {
-+		if (!task_current(rq, p))
-+			enqueue_pushable_dl_task(rq, p);
-+		rq->dl.dl_nr_migratory++;
-+	}
+ 	} else if (top_waiter == waiter) {
+ 		/* Deboost the owner */
+-		plist_del(&waiter->pi_list_entry, &task->pi_waiters);
++		rt_mutex_dequeue_pi(task, waiter);
+ 		waiter = rt_mutex_top_waiter(lock);
+-		waiter->pi_list_entry.prio = waiter->list_entry.prio;
+-		plist_add(&waiter->pi_list_entry, &task->pi_waiters);
++		rt_mutex_enqueue_pi(task, waiter);
+ 		__rt_mutex_adjust_prio(task);
+ 	}
+ 
+@@ -355,7 +447,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
+ 	 * 3) it is top waiter
+ 	 */
+ 	if (rt_mutex_has_waiters(lock)) {
+-		if (task->prio >= rt_mutex_top_waiter(lock)->list_entry.prio) {
++		if (task->prio >= rt_mutex_top_waiter(lock)->task->prio) {
+ 			if (!waiter || waiter != rt_mutex_top_waiter(lock))
+ 				return 0;
+ 		}
+@@ -369,7 +461,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
+ 
+ 		/* remove the queued waiter. */
+ 		if (waiter) {
+-			plist_del(&waiter->list_entry, &lock->wait_list);
++			rt_mutex_dequeue(lock, waiter);
+ 			task->pi_blocked_on = NULL;
+ 		}
+ 
+@@ -379,8 +471,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
+ 		 */
+ 		if (rt_mutex_has_waiters(lock)) {
+ 			top = rt_mutex_top_waiter(lock);
+-			top->pi_list_entry.prio = top->list_entry.prio;
+-			plist_add(&top->pi_list_entry, &task->pi_waiters);
++			rt_mutex_enqueue_pi(task, top);
+ 		}
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 	}
+@@ -416,13 +507,11 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 	__rt_mutex_adjust_prio(task);
+ 	waiter->task = task;
+ 	waiter->lock = lock;
+-	plist_node_init(&waiter->list_entry, task->prio);
+-	plist_node_init(&waiter->pi_list_entry, task->prio);
+-
 +	
-+	update_dl_migration(&rq->dl);
-+}
-+
-+/* Assumes rq->lock is held */
-+static void rq_online_dl(struct rq *rq)
-+{
-+	if (rq->dl.overloaded)
-+		dl_set_overload(rq);
-+}
-+
-+/* Assumes rq->lock is held */
-+static void rq_offline_dl(struct rq *rq)
-+{
-+	if (rq->dl.overloaded)
-+		dl_clear_overload(rq);
-+}
-+
-+void init_sched_dl_class(void)
-+{
-+	unsigned int i;
-+
-+	for_each_possible_cpu(i)
-+		zalloc_cpumask_var_node(&per_cpu(local_cpu_mask_dl, i),
-+					GFP_KERNEL, cpu_to_node(i));
-+}
-+
-+#endif /* CONFIG_SMP */
-+
- static void switched_from_dl(struct rq *rq, struct task_struct *p)
- {
--	if (hrtimer_active(&p->dl.dl_timer))
-+	if (hrtimer_active(&p->dl.dl_timer) && !dl_policy(p->policy))
- 		hrtimer_try_to_cancel(&p->dl.dl_timer);
-+
-+#ifdef CONFIG_SMP
-+	/*
-+	 * Since this might be the only -deadline task on the rq,
-+	 * this is the right place to try to pull some other one
-+	 * from an overloaded cpu, if any.
-+	 */
-+	if (!rq->dl.dl_nr_running)
-+		pull_dl_task(rq);
-+#endif
- }
+ 	/* Get the top priority waiter on the lock */
+ 	if (rt_mutex_has_waiters(lock))
+ 		top_waiter = rt_mutex_top_waiter(lock);
+-	plist_add(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_enqueue(lock, waiter);
  
-+/*
-+ * When switching to -deadline, we may overload the rq, then
-+ * we try to push someone off, if possible.
-+ */
- static void switched_to_dl(struct rq *rq, struct task_struct *p)
- {
-+	int check_resched = 1;
-+
- 	/*
- 	 * If p is throttled, don't consider the possibility
- 	 * of preempting rq->curr, the check will be done right
-@@ -635,26 +1509,53 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
+ 	task->pi_blocked_on = waiter;
+ 
+@@ -433,8 +522,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 
+ 	if (waiter == rt_mutex_top_waiter(lock)) {
+ 		raw_spin_lock_irqsave(&owner->pi_lock, flags);
+-		plist_del(&top_waiter->pi_list_entry, &owner->pi_waiters);
+-		plist_add(&waiter->pi_list_entry, &owner->pi_waiters);
++		rt_mutex_dequeue_pi(owner, top_waiter);
++		rt_mutex_enqueue_pi(owner, waiter);
+ 
+ 		__rt_mutex_adjust_prio(owner);
+ 		if (owner->pi_blocked_on)
+@@ -486,7 +575,7 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
+ 	 * boosted mode and go back to normal after releasing
+ 	 * lock->wait_lock.
+ 	 */
+-	plist_del(&waiter->pi_list_entry, &current->pi_waiters);
++	rt_mutex_dequeue_pi(current, waiter);
+ 
+ 	rt_mutex_set_owner(lock, NULL);
+ 
+@@ -510,7 +599,7 @@ static void remove_waiter(struct rt_mutex *lock,
+ 	int chain_walk = 0;
+ 
+ 	raw_spin_lock_irqsave(&current->pi_lock, flags);
+-	plist_del(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_dequeue(lock, waiter);
+ 	current->pi_blocked_on = NULL;
+ 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
+ 
+@@ -521,13 +610,13 @@ static void remove_waiter(struct rt_mutex *lock,
+ 
+ 		raw_spin_lock_irqsave(&owner->pi_lock, flags);
+ 
+-		plist_del(&waiter->pi_list_entry, &owner->pi_waiters);
++		rt_mutex_dequeue_pi(owner, waiter);
+ 
+ 		if (rt_mutex_has_waiters(lock)) {
+ 			struct rt_mutex_waiter *next;
+ 
+ 			next = rt_mutex_top_waiter(lock);
+-			plist_add(&next->pi_list_entry, &owner->pi_waiters);
++			rt_mutex_enqueue_pi(owner, next);
+ 		}
+ 		__rt_mutex_adjust_prio(owner);
+ 
+@@ -537,8 +626,6 @@ static void remove_waiter(struct rt_mutex *lock,
+ 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+ 	}
+ 
+-	WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+-
+ 	if (!chain_walk)
  		return;
  
- 	if (!p->on_rq || rq->curr != p) {
--		if (task_has_dl_policy(rq->curr))
-+#ifdef CONFIG_SMP
-+		if (rq->dl.overloaded && push_dl_task(rq) && rq != task_rq(p))
-+			/* Only reschedule if pushing failed */
-+			check_resched = 0;
-+#endif /* CONFIG_SMP */
-+		if (check_resched && task_has_dl_policy(rq->curr))
- 			check_preempt_curr_dl(rq, p, 0);
--		else
--			resched_task(rq->curr);
+@@ -565,7 +652,7 @@ void rt_mutex_adjust_pi(struct task_struct *task)
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+ 
+ 	waiter = task->pi_blocked_on;
+-	if (!waiter || waiter->list_entry.prio == task->prio) {
++	if (!waiter || waiter->task->prio == task->prio) {
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 		return;
  	}
- }
+@@ -638,6 +725,8 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ 	int ret = 0;
  
-+/*
-+ * If the scheduling parameters of a -deadline task changed,
-+ * a push or pull operation might be needed.
-+ */
- static void prio_changed_dl(struct rq *rq, struct task_struct *p,
- 			    int oldprio)
+ 	debug_rt_mutex_init_waiter(&waiter);
++	RB_CLEAR_NODE(&waiter.pi_tree_entry);
++	RB_CLEAR_NODE(&waiter.tree_entry);
+ 
+ 	raw_spin_lock(&lock->wait_lock);
+ 
+@@ -904,7 +993,8 @@ void __rt_mutex_init(struct rt_mutex *lock, const char *name)
  {
--	switched_to_dl(rq, p);
--}
--
-+	if (p->on_rq || rq->curr == p) {
- #ifdef CONFIG_SMP
--static int
--select_task_rq_dl(struct task_struct *p, int sd_flag, int flags)
--{
--	return task_cpu(p);
-+		/*
-+		 * This might be too much, but unfortunately
-+		 * we don't have the old deadline value, and
-+		 * we can't argue if the task is increasing
-+		 * or lowering its prio, so...
-+		 */
-+		if (!rq->dl.overloaded)
-+			pull_dl_task(rq);
-+
-+		/*
-+		 * If we now have a earlier deadline task than p,
-+		 * then reschedule, provided p is still on this
-+		 * runqueue.
-+		 */
-+		if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
-+		    rq->curr == p)
-+			resched_task(p);
-+#else
-+		/*
-+		 * Again, we don't know if p has a earlier
-+		 * or later deadline, so let's blindly set a
-+		 * (maybe not needed) rescheduling point.
-+		 */
-+		resched_task(p);
-+#endif /* CONFIG_SMP */
-+	} else
-+		switched_to_dl(rq, p);
+ 	lock->owner = NULL;
+ 	raw_spin_lock_init(&lock->wait_lock);
+-	plist_head_init(&lock->wait_list);
++	lock->waiters = RB_ROOT;
++	lock->waiters_leftmost = NULL;
+ 
+ 	debug_rt_mutex_init(lock, name);
  }
--#endif
- 
- const struct sched_class dl_sched_class = {
- 	.next			= &rt_sched_class,
-@@ -669,6 +1570,12 @@ const struct sched_class dl_sched_class = {
- 
- #ifdef CONFIG_SMP
- 	.select_task_rq		= select_task_rq_dl,
-+	.set_cpus_allowed       = set_cpus_allowed_dl,
-+	.rq_online              = rq_online_dl,
-+	.rq_offline             = rq_offline_dl,
-+	.pre_schedule		= pre_schedule_dl,
-+	.post_schedule		= post_schedule_dl,
-+	.task_woken		= task_woken_dl,
- #endif
- 
- 	.set_curr_task		= set_curr_task_dl,
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 01970c8..f7c4881 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1720,7 +1720,7 @@ static void task_woken_rt(struct rq *rq, struct task_struct *p)
- 	    !test_tsk_need_resched(rq->curr) &&
- 	    has_pushable_tasks(rq) &&
- 	    p->nr_cpus_allowed > 1 &&
--	    rt_task(rq->curr) &&
-+	    (dl_task(rq->curr) || rt_task(rq->curr)) &&
- 	    (rq->curr->nr_cpus_allowed < 2 ||
- 	     rq->curr->prio <= p->prio))
- 		push_rt_tasks(rq);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index ba97476..70d0030 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -383,6 +383,31 @@ struct dl_rq {
- 	struct rb_node *rb_leftmost;
- 
- 	unsigned long dl_nr_running;
-+
-+#ifdef CONFIG_SMP
-+	/*
-+	 * Deadline values of the currently executing and the
-+	 * earliest ready task on this rq. Caching these facilitates
-+	 * the decision wether or not a ready but not running task
-+	 * should migrate somewhere else.
-+	 */
-+	struct {
-+		u64 curr;
-+		u64 next;
-+	} earliest_dl;
-+
-+	unsigned long dl_nr_migratory;
-+	unsigned long dl_nr_total;
-+	int overloaded;
-+
-+	/*
-+	 * Tasks on this rq that can be pushed away. They are kept in
-+	 * an rb-tree, ordered by tasks' deadlines, with caching
-+	 * of the leftmost (earliest deadline) element.
-+	 */
-+	struct rb_root pushable_dl_tasks_root;
-+	struct rb_node *pushable_dl_tasks_leftmost;
-+#endif
+diff --git a/kernel/rtmutex_common.h b/kernel/rtmutex_common.h
+index 53a66c8..b65442f 100644
+--- a/kernel/rtmutex_common.h
++++ b/kernel/rtmutex_common.h
+@@ -40,13 +40,13 @@ extern void schedule_rt_mutex_test(struct rt_mutex *lock);
+  * This is the control structure for tasks blocked on a rt_mutex,
+  * which is allocated on the kernel stack on of the blocked task.
+  *
+- * @list_entry:		pi node to enqueue into the mutex waiters list
+- * @pi_list_entry:	pi node to enqueue into the mutex owner waiters list
++ * @tree_entry:		pi node to enqueue into the mutex waiters tree
++ * @pi_tree_entry:	pi node to enqueue into the mutex owner waiters tree
+  * @task:		task reference to the blocked task
+  */
+ struct rt_mutex_waiter {
+-	struct plist_node	list_entry;
+-	struct plist_node	pi_list_entry;
++	struct rb_node          tree_entry;
++	struct rb_node          pi_tree_entry;
+ 	struct task_struct	*task;
+ 	struct rt_mutex		*lock;
+ #ifdef CONFIG_DEBUG_RT_MUTEXES
+@@ -57,11 +57,11 @@ struct rt_mutex_waiter {
  };
  
- #ifdef CONFIG_SMP
-@@ -403,6 +428,13 @@ struct root_domain {
- 	cpumask_var_t online;
+ /*
+- * Various helpers to access the waiters-plist:
++ * Various helpers to access the waiters-tree:
+  */
+ static inline int rt_mutex_has_waiters(struct rt_mutex *lock)
+ {
+-	return !plist_head_empty(&lock->wait_list);
++	return !RB_EMPTY_ROOT(&lock->waiters);
+ }
  
+ static inline struct rt_mutex_waiter *
+@@ -69,8 +69,8 @@ rt_mutex_top_waiter(struct rt_mutex *lock)
+ {
+ 	struct rt_mutex_waiter *w;
+ 
+-	w = plist_first_entry(&lock->wait_list, struct rt_mutex_waiter,
+-			       list_entry);
++	w = rb_entry(lock->waiters_leftmost, struct rt_mutex_waiter,
++		     tree_entry);
+ 	BUG_ON(w->lock != lock);
+ 
+ 	return w;
+@@ -78,14 +78,14 @@ rt_mutex_top_waiter(struct rt_mutex *lock)
+ 
+ static inline int task_has_pi_waiters(struct task_struct *p)
+ {
+-	return !plist_head_empty(&p->pi_waiters);
++	return !RB_EMPTY_ROOT(&p->pi_waiters);
+ }
+ 
+ static inline struct rt_mutex_waiter *
+ task_top_pi_waiter(struct task_struct *p)
+ {
+-	return plist_first_entry(&p->pi_waiters, struct rt_mutex_waiter,
+-				  pi_list_entry);
++	return rb_entry(p->pi_waiters_leftmost, struct rt_mutex_waiter,
++			pi_tree_entry);
+ }
+ 
+ /*
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 7838eca..6a3ab87 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6728,10 +6728,6 @@ void __init sched_init(void)
+ 	INIT_HLIST_HEAD(&init_task.preempt_notifiers);
+ #endif
+ 
+-#ifdef CONFIG_RT_MUTEXES
+-	plist_head_init(&init_task.pi_waiters);
+-#endif
+-
  	/*
-+	 * The bit corresponding to a CPU gets set here if such CPU has more
-+	 * than one runnable -deadline task (as it is below for RT tasks).
-+	 */
-+	cpumask_var_t dlo_mask;
-+	atomic_t dlo_count;
-+
-+	/*
- 	 * The "RT overload" flag: it gets set if a CPU has more than
- 	 * one runnable RT task.
+ 	 * The boot idle thread does lazy MMU switching as well:
  	 */
-@@ -1063,6 +1095,8 @@ static inline void idle_balance(int cpu, struct rq *rq)
- extern void sysrq_sched_debug_show(void);
- extern void sched_init_granularity(void);
- extern void update_max_interval(void);
-+
-+extern void init_sched_dl_class(void);
- extern void init_sched_rt_class(void);
- extern void init_sched_fair_class(void);
- 
 -- 
 1.7.9.5
 
