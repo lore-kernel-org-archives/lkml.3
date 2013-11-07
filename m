@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab3KGWO7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:14:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44519 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755367Ab3KGWOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 17:14:50 -0500
-Date: Thu, 7 Nov 2013 23:14:46 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>,
-        EXT4 <linux-ext4@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        rostedt@goodmis.org, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 01/11] rbtree: Fix
- rbtree_postorder_for_each_entry_safe() iterator
-Message-ID: <20131107221446.GA2054@quack.suse.cz>
-References: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com>
- <1383788572-25938-2-git-send-email-cody@linux.vnet.ibm.com>
- <20131107133800.c779b2f2b2ec73c91cd25f47@linux-foundation.org>
+	id S1755654Ab3KGWPM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:15:12 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:65472 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755538Ab3KGWPH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 17:15:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131107133800.c779b2f2b2ec73c91cd25f47@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131107213944.GJ1962@tassilo.jf.intel.com>
+References: <1383844657-17487-1-git-send-email-ard.biesheuvel@linaro.org>
+	<527C0195.50008@zytor.com>
+	<20131107213944.GJ1962@tassilo.jf.intel.com>
+Date: Thu, 7 Nov 2013 23:15:05 +0100
+Message-ID: <CAKv+Gu9W-Pu4DGgB-85A3D4Ps9_FLSQgyK3EM7=k7KE1=xsnwg@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/4] wire up CPU features to udev based module loading
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, tglx@linutronix.de,
+        Ingo Molnar <mingo@kernel.org>, Steve Capper <steve.capper@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 07-11-13 13:38:00, Andrew Morton wrote:
-> On Wed,  6 Nov 2013 17:42:30 -0800 Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
-> 
-> > The iterator rbtree_postorder_for_each_entry_safe() relies on pointer
-> > underflow behavior when testing for loop termination. In particular
-> > it expects that
-> >   &rb_entry(NULL, type, field)->field
-> > is NULL. But the result of this expression is not defined by a C standard
-> > and some gcc versions (e.g. 4.3.4) assume the above expression can never
-> > be equal to NULL. The net result is an oops because the iteration is not
-> > properly terminated.
-> > 
-> > Fix the problem by modifying the iterator to avoid pointer underflows.
-> 
-> So the sole caller is in zswap.c.  Is that code actually generating oopses?
-  Oh, I didn't know there is any user of that iterator already in tree. Let
-me check... Umm, looking at the disassembly of
-zswap_frontswap_invalidate_aread:
-   0xffffffff8112c9a5 <+37>:	mov    %r13,%rdi
-   0xffffffff8112c9a8 <+40>:	callq  0xffffffff81227620 <rb_first_postorder>
-   0xffffffff8112c9ad <+45>:	mov    %rax,%rdi
-   0xffffffff8112c9b0 <+48>:	mov    %rax,%rbx
-   0xffffffff8112c9b3 <+51>:	callq  0xffffffff812275d0 <rb_next_postorder>
-   0xffffffff8112c9b8 <+56>:	mov    %rax,%r12
-   0xffffffff8112c9bb <+59>:	nopl   0x0(%rax,%rax,1)
-   0xffffffff8112c9c0 <+64>:	mov    0x28(%rbx),%rsi
-   0xffffffff8112c9c4 <+68>:	mov    0x40(%r13),%rdi
-   0xffffffff8112c9c8 <+72>:	callq  0xffffffff811352b0 <zbud_free>
-   0xffffffff8112c9cd <+77>:	mov    0x1105504(%rip),%rdi
-   0xffffffff8112c9d4 <+84>:	mov    %rbx,%rsi
-   0xffffffff8112c9d7 <+87>:	callq  0xffffffff81130b80 <kmem_cache_free>
-   0xffffffff8112c9dc <+92>:	lock decl 0x110539d(%rip)
-   0xffffffff8112c9e3 <+99>:	mov    %r12,%rdi
-   0xffffffff8112c9e6 <+102>:	mov    %r12,%rbx
-   0xffffffff8112c9e9 <+105>:	callq  0xffffffff812275d0 <rb_next_postorder>
-   0xffffffff8112c9ee <+110>:	mov    %rax,%r12
-   0xffffffff8112c9f1 <+113>:	jmp 0xffffffff8112c9c0 <zswap_frontswap_invalidate_area+64>
+On 7 November 2013 22:39, Andi Kleen <ak@linux.intel.com> wrote:
+> On Thu, Nov 07, 2013 at 01:09:41PM -0800, H. Peter Anvin wrote:
+>> On 11/07/2013 09:17 AM, Ard Biesheuvel wrote:
+>> > This series implements automatic module loading based on optional CPU features,
+>> > and tries to do so in a generic way. Currently, 32 feature bits are supported,
+>> > and how they map to actual CPU features is entirely up to the architecture.
+>>
+>> NAK.
+>>
+>> We in the x86 world already left 32 bits way behind; we currently have
+>> 320 bit feature masks.
+>>
+>> If you're aiming at doing this in a generic way, it needs to be able to
+>> accommodate the current x86cpu feature stuff as a subset, which this
+>> doesn't.
+>
+> They can just use the exact same code/macros as x86cpu, just need a different
+> prefix and use wildcards if they miss something (e.g. family)
+>
 
-So my gcc helpfully compiled that iterator into an endless loop as well,
-although now it is a perfectly valid C code.  According to our gcc guys
-that was a bug in some gcc versions which is already fixed.  But anyway
-pushing my patch to 3.12 or anything that actually uses that iterator will
-probably save us some bug reports.
+That would involve repurposing/generalizing a bit more of the existing
+x86-only code than I did the first time around, but if you (as x86
+maintainers) are happy with that, I'm all for it.
 
-								Honza
+I do have a couple of questions then
+- the module aliases host tool has no arch specific dependencies at
+all except having x86cpu as one of the entries: would you mind
+dropping the x86 prefix there? Or rather add dependencies on $ARCH?
+(If we drop it there, we basically end up with 'cpu:' everywhere)
+- in the vendor/family/model case, it may be preferable to drop these
+fields entirely from certain modules' aliases if they match on 'any'
+(provided that the module tools permit this) rather than add
+architecture, variant, revision, etc  fields for all architectures if
+they can only ever match on one
+- some of the X86_ macros would probable be redefined in terms of the
+generic macros rather than the other way around, which would result in
+some changes under arch/x86 as well, is that acceptable for you?
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks,
+Ard.
