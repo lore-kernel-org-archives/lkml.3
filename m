@@ -1,177 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab3KGXlT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 18:41:19 -0500
-Received: from mail.tpi.com ([74.45.170.26]:45571 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753085Ab3KGXlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 18:41:10 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@samba.org>
-Subject: [PATCH linux-next] cifs: Use data structures to compute NTLMv2 response offsets
-Date: Thu,  7 Nov 2013 16:40:57 -0700
-Message-Id: <1383867657-110399-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756307Ab3KGXo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 18:44:56 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:39147 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524Ab3KGXoh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 18:44:37 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, <paul@pwsan.com>, <rnayak@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: OMAP2+: omap_device: maintain sane runtime pm status around suspend/resume
+References: <1383857942-23630-1-git-send-email-nm@ti.com>
+Date: Thu, 07 Nov 2013 15:44:33 -0800
+In-Reply-To: <1383857942-23630-1-git-send-email-nm@ti.com> (Nishanth Menon's
+	message of "Thu, 7 Nov 2013 14:59:01 -0600")
+Message-ID: <87iow3rd3y.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bit of cleanup plus some gratuitous variable renaming. I think using
-structures instead of numeric offsets makes this code much more
-understandable.
+Nishanth Menon <nm@ti.com> writes:
 
-Also added a comment about current time range expected by
-the server.
+> OMAP device hooks around suspend|resume_noirq ensures that hwmod
+> devices are forced to idle using omap_device_idle/enable as part of
+> the last stage of suspend activity.
+>
+> For a device such as i2c who uses autosuspend, it is possible to enter
+> the suspend path with dev->power.runtime_status = RPM_ACTIVE.
+>
+> As part of the suspend flow, the generic runtime logic would increment
+> it's dev->power.disable_depth to 1. This should prevent further
+> pm_runtime_get_sync from succeeding once the runtime_status has been
+> set to RPM_SUSPENDED.
+>
+> Now, as part of the suspend_noirq handler in omap_device, we force the
+> following: if the device status is !suspended, we force the device
+> to idle using omap_device_idle (clocks are cut etc..). This ensures
+> that from a hardware perspective, the device is "suspended". However,
+> runtime_status is left to be active.
+>
+> *if* an operation is attempted after this point to
+> pm_runtime_get_sync, runtime framework depends on runtime_status to
+> indicate accurately the device status, and since it sees it to be
+> ACTIVE, it assumes the module is functional and returns a non-error
+> value. As a result the user will see pm_runtime_get succeed, however a
+> register access will crash due to the lack of clocks.
 
-Cc: Jeff Layton <jlayton@redhat.com>
-Cc: Steve French <sfrench@samba.org>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
+Ouch.
 
-The comment about time of day needing to be within 5 minutes is important (to me
-at least). I spent the best part of a week thinking I had endian issues on powerpc
-when in truth I was just too stupid to notice that the clock
-was not updated. Danged embedded platforms...
+Dumb Q: who is requesting an i2c transaction after ->suspend_noirq().
+The i2c driver itself should be able to detect that it's being accessed
+after this point and return an error.
 
-checkpatch has some problems with this patch regarding attribute packed, but I chose
-to remain consistent with existing code.
+That being said, I agree that omap_device should still be catching this
+case in order to find/fix driver races like this.
 
-WARNING: __packed is preferred over __attribute__((packed))
-#141: FILE: fs/cifs/cifspdu.h:705:
-+	    } __attribute__((packed)) challenge;
+> To prevent this from happening, we should ensure that runtime_status
+> exactly indicates the device status. As a result of this change
+> any further calls to pm_runtime_get* would return -EACCES (since
+> disable_depth is 1). On resume, we restore the clocks and runtime
+> status exactly as we suspended with.
+>
+> Reported-by: J Keerthy <j-keerthy@ti.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> Acked-by: Rajendra Nayak <rnayak@ti.com>
+> ---
+> patch baseline: V3.12 tag (also applies on linux-next next-20131107 tag)
+>
+> Logs from 3.12 based vendor kernel:
+> Before: http://pastebin.com/m5KxnB7a
+> After: http://pastebin.com/8AfX4e7r
+>
+> The discussion on cpufreq side of the story which triggered this scenario:
+> 	http://marc.info/?l=linux-pm&m=138263811321921&w=2
+>
+> Tested on TI vendor kernel (with dt boot):
+> 	AM335x: evm, BBB, sk, BBW
+> 	OMAP5uEVM, DRA7-evm
+>
+>  arch/arm/mach-omap2/omap_device.c |   16 ++++++++++++++--
+>  arch/arm/mach-omap2/omap_device.h |    1 +
+>  2 files changed, 15 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+> index b69dd9a..87ecbb0 100644
+> --- a/arch/arm/mach-omap2/omap_device.c
+> +++ b/arch/arm/mach-omap2/omap_device.c
+> @@ -621,6 +621,13 @@ static int _od_suspend_noirq(struct device *dev)
+>  
+>  	if (!ret && !pm_runtime_status_suspended(dev)) {
+>  		if (pm_generic_runtime_suspend(dev) == 0) {
+> +			if (!pm_runtime_suspended(dev)) {
 
-WARNING: __packed is preferred over __attribute__((packed))
-#142: FILE: fs/cifs/cifspdu.h:706:
-+	} __attribute__((packed));
+Why the addition check for supended here?
 
-total: 0 errors, 2 warnings, 99 lines checked
+This version (as opposed to the _status_suspended() version above will
+fail if runtime PM has been disabled from userspace (via
+/sys/devices/.../power/control), and will thus prevent low power states
+from being hit in suspend if runtime suspend has been disabled from
+userspace.  That's a bug.
 
-Tested on cifs-2.6 for-linus (c481e9feee78c6ce1ba0a1c8c892049f6514f6cf) by mounting
-to iOS 10.8 and Win 8.0 Pro.
+> +				/* NOTE: *might* indicate driver race */
 
-rtg
+Yes, a driver race which should then be fixed in the driver.
 
- fs/cifs/cifsencrypt.c |   40 ++++++++++++++++++++++++----------------
- fs/cifs/cifspdu.h     |    8 +++++++-
- 2 files changed, 31 insertions(+), 17 deletions(-)
+> +				dev_dbg(dev, "%s: Force suspending\n",
+> +					__func__);
+> +				pm_runtime_set_suspended(dev);
+> +				od->flags |= OMAP_DEVICE_SUSPEND_FORCED;
 
-diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
-index fc6f4f3..4934347 100644
---- a/fs/cifs/cifsencrypt.c
-+++ b/fs/cifs/cifsencrypt.c
-@@ -548,7 +548,13 @@ static int
- CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
- {
- 	int rc;
--	unsigned int offset = CIFS_SESS_KEY_SIZE + 8;
-+	struct ntlmv2_resp *ntlmv2 = (struct ntlmv2_resp *)
-+	    (ses->auth_key.response + CIFS_SESS_KEY_SIZE);
-+	unsigned int hash_len;
-+
-+	/* The MD5 hash starts at challenge_key.key */
-+	hash_len = ses->auth_key.len - (CIFS_SESS_KEY_SIZE +
-+		offsetof(struct ntlmv2_resp, challenge.key[0]));
- 
- 	if (!ses->server->secmech.sdeschmacmd5) {
- 		cifs_dbg(VFS, "%s: can't generate ntlmv2 hash\n", __func__);
-@@ -556,7 +562,7 @@ CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
- 	}
- 
- 	rc = crypto_shash_setkey(ses->server->secmech.hmacmd5,
--				ntlmv2_hash, CIFS_HMAC_MD5_HASH_SIZE);
-+				 ntlmv2_hash, CIFS_HMAC_MD5_HASH_SIZE);
- 	if (rc) {
- 		cifs_dbg(VFS, "%s: Could not set NTLMV2 Hash as a key\n",
- 			 __func__);
-@@ -570,20 +576,21 @@ CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
- 	}
- 
- 	if (ses->server->negflavor == CIFS_NEGFLAVOR_EXTENDED)
--		memcpy(ses->auth_key.response + offset,
--			ses->ntlmssp->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
-+		memcpy(ntlmv2->challenge.key,
-+		       ses->ntlmssp->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
- 	else
--		memcpy(ses->auth_key.response + offset,
--			ses->server->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
-+		memcpy(ntlmv2->challenge.key,
-+		       ses->server->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
- 	rc = crypto_shash_update(&ses->server->secmech.sdeschmacmd5->shash,
--		ses->auth_key.response + offset, ses->auth_key.len - offset);
-+				 ntlmv2->challenge.key, hash_len);
- 	if (rc) {
- 		cifs_dbg(VFS, "%s: Could not update with response\n", __func__);
- 		return rc;
- 	}
- 
-+	/* Note that the MD5 digest over writes anon.challenge_key.key */
- 	rc = crypto_shash_final(&ses->server->secmech.sdeschmacmd5->shash,
--		ses->auth_key.response + CIFS_SESS_KEY_SIZE);
-+				ntlmv2->ntlmv2_hash);
- 	if (rc)
- 		cifs_dbg(VFS, "%s: Could not generate md5 hash\n", __func__);
- 
-@@ -627,7 +634,7 @@ setup_ntlmv2_rsp(struct cifs_ses *ses, const struct nls_table *nls_cp)
- 	int rc;
- 	int baselen;
- 	unsigned int tilen;
--	struct ntlmv2_resp *buf;
-+	struct ntlmv2_resp *ntlmv2;
- 	char ntlmv2_hash[16];
- 	unsigned char *tiblob = NULL; /* target info blob */
- 
-@@ -660,13 +667,14 @@ setup_ntlmv2_rsp(struct cifs_ses *ses, const struct nls_table *nls_cp)
- 	}
- 	ses->auth_key.len += baselen;
- 
--	buf = (struct ntlmv2_resp *)
-+	ntlmv2 = (struct ntlmv2_resp *)
- 			(ses->auth_key.response + CIFS_SESS_KEY_SIZE);
--	buf->blob_signature = cpu_to_le32(0x00000101);
--	buf->reserved = 0;
--	buf->time = cpu_to_le64(cifs_UnixTimeToNT(CURRENT_TIME));
--	get_random_bytes(&buf->client_chal, sizeof(buf->client_chal));
--	buf->reserved2 = 0;
-+	ntlmv2->blob_signature = cpu_to_le32(0x00000101);
-+	ntlmv2->reserved = 0;
-+	/* Must be within 5 minutes of the server */
-+	ntlmv2->time = cpu_to_le64(cifs_UnixTimeToNT(CURRENT_TIME));
-+	get_random_bytes(&ntlmv2->client_chal, sizeof(ntlmv2->client_chal));
-+	ntlmv2->reserved2 = 0;
- 
- 	memcpy(ses->auth_key.response + baselen, tiblob, tilen);
- 
-@@ -706,7 +714,7 @@ setup_ntlmv2_rsp(struct cifs_ses *ses, const struct nls_table *nls_cp)
- 	}
- 
- 	rc = crypto_shash_update(&ses->server->secmech.sdeschmacmd5->shash,
--		ses->auth_key.response + CIFS_SESS_KEY_SIZE,
-+		ntlmv2->ntlmv2_hash,
- 		CIFS_HMAC_MD5_HASH_SIZE);
- 	if (rc) {
- 		cifs_dbg(VFS, "%s: Could not update with response\n", __func__);
-diff --git a/fs/cifs/cifspdu.h b/fs/cifs/cifspdu.h
-index 9e5ee34..33df36e 100644
---- a/fs/cifs/cifspdu.h
-+++ b/fs/cifs/cifspdu.h
-@@ -697,7 +697,13 @@ struct ntlmssp2_name {
- } __attribute__((packed));
- 
- struct ntlmv2_resp {
--	char ntlmv2_hash[CIFS_ENCPWD_SIZE];
-+	union {
-+	    char ntlmv2_hash[CIFS_ENCPWD_SIZE];
-+	    struct {
-+		__u8 reserved[8];
-+		__u8 key[CIFS_SERVER_CHALLENGE_SIZE];
-+	    } __attribute__((packed)) challenge;
-+	} __attribute__((packed));
- 	__le32 blob_signature;
- 	__u32  reserved;
- 	__le64  time;
--- 
-1.7.9.5
+Not sure why you need an additonal flag.  Why not just always do this
+and use the existin OMAP_DEVICE_SUSPENDED flag.
 
+Kevin
+
+> +			}
+>  			omap_device_idle(pdev);
+>  			od->flags |= OMAP_DEVICE_SUSPENDED;
+>  		}
+> @@ -634,10 +641,15 @@ static int _od_resume_noirq(struct device *dev)
+>  	struct platform_device *pdev = to_platform_device(dev);
+>  	struct omap_device *od = to_omap_device(pdev);
+>  
+> -	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+> -	    !pm_runtime_status_suspended(dev)) {
+> +	if (od->flags & OMAP_DEVICE_SUSPENDED) {
+>  		od->flags &= ~OMAP_DEVICE_SUSPENDED;
+>  		omap_device_enable(pdev);
+> +
+> +		if (od->flags & OMAP_DEVICE_SUSPEND_FORCED) {
+> +			pm_runtime_set_active(dev);
+> +			od->flags &= ~OMAP_DEVICE_SUSPEND_FORCED;
+> +		}
+> +
+>  		pm_generic_runtime_resume(dev);
+>  	}
+>  
+> diff --git a/arch/arm/mach-omap2/omap_device.h b/arch/arm/mach-omap2/omap_device.h
+> index 17ca1ae..45885b0 100644
+> --- a/arch/arm/mach-omap2/omap_device.h
+> +++ b/arch/arm/mach-omap2/omap_device.h
+> @@ -38,6 +38,7 @@ extern struct dev_pm_domain omap_device_pm_domain;
+>  
+>  /* omap_device.flags values */
+>  #define OMAP_DEVICE_SUSPENDED		BIT(0)
+> +#define OMAP_DEVICE_SUSPEND_FORCED	BIT(1)
+>  
+>  /**
+>   * struct omap_device - omap_device wrapper for platform_devices
