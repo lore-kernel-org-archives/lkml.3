@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab3KGLdi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 06:33:38 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:45525 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab3KGLde (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 06:33:34 -0500
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-8d-527b7a8c2018
-From: Tomasz Figa <t.figa@samsung.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 2/2] of: irq: Check for reg property presence only when
- parsing interrupt-map
-Date: Thu, 07 Nov 2013 12:33:26 +0100
-Message-id: <1489788.4u43h9g5sZ@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11.2 (Linux/3.11.5-gentoo; KDE/4.11.2; x86_64; ; )
-In-reply-to: <11085147.qYFvaZYATK@amdc1227>
-References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
- <2177804.l4VGDTRFDu@amdc1227> <11085147.qYFvaZYATK@amdc1227>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xK7o9VdVBBreecFl8aGpltph/5Byr
-	xYE/Oxgtvh5ewWhxedccNotT1z+zObB59LxpYfW4c20Pm8eVE02sHp83yQWwRHHZpKTmZJal
-	FunbJXBl3Hh+i6lgH0vF4R37WBsYzzN3MXJySAiYSNzqv8kCYYtJXLi3nq2LkYtDSGApo8Si
-	bXugnC4mia7ee2BVbAJqEp8bHrGB2CICyhJP2i6BTWIWuMMoseBwFogtLJAs8e7lZ0YQm0VA
-	VeLQ2S6geg4OXgFNic8rskHC/ALqEu+2PWUCsUUF3CSm/zgINoZTQFti6fUGRoi9bYwST859
-	BZvDKyAo8WMyxA3MAvIS+/ZPZYWwtSTW7zzONIFRcBaSsllIymYhKVvAyLyKUTS1NLmgOCk9
-	11CvODG3uDQvXS85P3cTIyTUv+xgXHzM6hCjAAejEg/vjJqqICHWxLLiytxDjBIczEoivM0h
-	1UFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGEMnFhauuemzIl425fyGxASjSRanzUWiV4aVvWSx
-	Dquc5Pv1iOXsJpklStmOuWYnT1tv3OOxk+vdvsJ8gffJMb+2/JiksvqIYtpxwaDc4xze9frO
-	kQpyKy0zP7OetO97IJLeqjdDnTtxmbS3itkSIY5lGUyXbvOftHd50c8/icVONsFgnflVJZbi
-	jERDLeai4kQA+BpKZ1MCAAA=
+	id S1754813Ab3KGLfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 06:35:48 -0500
+Received: from ozlabs.org ([203.10.76.45]:37248 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783Ab3KGLfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 06:35:46 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "LKML" <linux-kernel@vger.kernel.org>
+Cc: Aaron Lu <aaron.lu@intel.com>
+Cc: Amit Shah <amit.shah@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Christoph Paasch <christoph.paasch@uclouvain.be>
+Cc: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+Cc: Marc Zyngier <marc.zyngier@arm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Subject: [PULL] virtio-next
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 07 Nov 2013 21:57:17 +1030
+Message-ID: <87eh6s5u5m.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The following changes since commit d8524ae9d6f492a9c6db9f4d89c5f9b8782fa2d5:
 
-On Tuesday 05 of November 2013 16:21:36 Tomasz Figa wrote:
-> This patch fixes the of_irq_parse_raw() function to check for reg
-> property only when really parsing interrupt map property, as it is not
-> required otherwise and breaks existing device trees.
-> 
-> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> ---
->  drivers/of/irq.c | 21 +++++++++++----------
->  1 file changed, 11 insertions(+), 10 deletions(-)
+  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2013-09-22 19:51:49 -0700)
 
-Please disregard this patch. It seems like Grant's fix that has been
-already merged also fixes the same problem.
+are available in the git repository at:
 
-Best regards,
-Tomasz
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/virtio-next-for-linus
+
+for you to fetch changes up to cdd77e87eae52b7251acc5990207a1c4500a84ce:
+
+  x86, asmlinkage, lguest: Pass in globals into assembler statement (2013-11-07 12:13:05 +1030)
+
+----------------------------------------------------------------
+Nothing really exciting: some groundwork for changing virtio endian, and
+some robustness fixes for broken virtio devices, plus minor tweaks.
+
+Cheers,
+Rusty.
+
+----------------------------------------------------------------
+Aaron Lu (1):
+      virtio: pm: use CONFIG_PM_SLEEP instead of CONFIG_PM
+
+Andi Kleen (1):
+      x86, asmlinkage, lguest: Pass in globals into assembler statement
+
+Heinz Graalfs (9):
+      virtio_ring: change host notification API
+      virtio_ring: let virtqueue_{kick()/notify()} return a bool
+      virtio_net: verify if virtqueue_kick() succeeded
+      virtio_test: verify if virtqueue_kick() succeeded
+      virtio_ring: add new function virtqueue_is_broken()
+      virtio_blk: verify if queue is broken after virtqueue_get_buf()
+      virtio_console: verify if queue is broken after virtqueue_get_buf()
+      virtio_net: verify if queue is broken after virtqueue_get_buf()
+      virtio_ring: adapt to notify() returning bool
+
+Marc Zyngier (1):
+      virtio: mmio: fix signature checking for BE guests
+
+Rusty Russell (4):
+      virtio_ring: plug kmemleak false positive.
+      virtio_config: introduce size-based accessors.
+      virtio: use size-based config accessors.
+      virtio_config: remove virtio_config_val
+
+ drivers/block/virtio_blk.c             |  83 ++++++++---------
+ drivers/char/hw_random/virtio-rng.c    |   4 +-
+ drivers/char/virtio_console.c          |  25 +++--
+ drivers/lguest/lguest_device.c         |   3 +-
+ drivers/lguest/x86/core.c              |   6 +-
+ drivers/net/caif/caif_virtio.c         |  23 ++---
+ drivers/net/virtio_net.c               |  44 +++++----
+ drivers/remoteproc/remoteproc_virtio.c |   3 +-
+ drivers/s390/kvm/kvm_virtio.c          |   8 +-
+ drivers/s390/kvm/virtio_ccw.c          |   5 +-
+ drivers/scsi/virtio_scsi.c             |  16 ++--
+ drivers/virtio/virtio_balloon.c        |  14 ++-
+ drivers/virtio/virtio_mmio.c           |   5 +-
+ drivers/virtio/virtio_pci.c            |   3 +-
+ drivers/virtio/virtio_ring.c           |  34 +++++--
+ include/linux/virtio.h                 |   6 +-
+ include/linux/virtio_config.h          | 161 +++++++++++++++++++++++++++------
+ include/linux/virtio_ring.h            |   2 +-
+ net/9p/trans_virtio.c                  |   9 +-
+ tools/virtio/virtio_test.c             |   6 +-
+ tools/virtio/vringh_test.c             |  13 ++-
+ 21 files changed, 307 insertions(+), 166 deletions(-)
