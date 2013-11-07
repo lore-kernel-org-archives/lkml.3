@@ -1,94 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab3KGKMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 05:12:48 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:6470 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899Ab3KGKMl (ORCPT
+	id S1754304Ab3KGKNA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 05:13:00 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:34581 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754209Ab3KGKMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 05:12:41 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 07 Nov 2013 02:07:18 -0800
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>
-CC: Olof Johansson <olof@lixom.net>, Dave Martin <Dave.Martin@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v10 6/7] ARM: tegra: set CPU reset handler with firmware op
-Date: Thu, 7 Nov 2013 19:11:45 +0900
-Message-ID: <1383819106-1400-7-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1383819106-1400-1-git-send-email-acourbot@nvidia.com>
-References: <1383819106-1400-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 7 Nov 2013 05:12:53 -0500
+Message-ID: <527B67A1.3020803@gmail.com>
+Date: Thu, 07 Nov 2013 11:12:49 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+To: Jisheng Zhang <jszhang@marvell.com>
+CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 9/9] ARM: add initial support for Marvell Berlin SoCs
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com> <1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com> <1383661723-17956-10-git-send-email-sebastian.hesselbarth@gmail.com> <20131107134033.59bd127a@xhacker>
+In-Reply-To: <20131107134033.59bd127a@xhacker>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a firmware operation to set the CPU reset handler and only resort to
-doing it ourselves if there is none defined.
+On 11/07/13 06:40, Jisheng Zhang wrote:
+> On Tue, 5 Nov 2013 06:28:43 -0800
+> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+>
+>> This adds initial support for the Marvell Berlin SoC family with
+>> Armada 1500 (88DE3100) and Armada 1500-mini (88DE3005) SoCs.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> Reviewed-by: Jason Cooper <jason@lakedaemon.net>
+>> Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+>> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+>> ---
+[...]
+>> diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
+>> new file mode 100644
+>> index 0000000..c5b39b1
+>> --- /dev/null
+>> +++ b/arch/arm/mach-berlin/Kconfig
+>> @@ -0,0 +1,30 @@
+>> +config ARCH_BERLIN
+>> +	bool "Marvell Berlin SoCs" if ARCH_MULTI_V7
+>> +	select GENERIC_CLOCKEVENTS
+>> +	select GENERIC_IRQ_CHIP
+>> +	select COMMON_CLK
+>> +	select DW_APB_ICTL
+>> +	select DW_APB_TIMER_OF
+>> +
+>> +if ARCH_BERLIN
+>> +
+>> +menu "Marvell Berlin SoC variants"
+>> +
+>> +config MACH_BERLIN_BG2
+>> +	bool "Marvell Armada 1500 (BG2)"
+>> +	select ARM_GIC
+> ARM_GIC is common on berlin SoCs. we can put it below ARCH_BERLIN?
 
-This supports the booting of secondary CPUs on devices using a TrustZone
-secure monitor.
+Sure, I guess BG3 is also using GIC?
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
----
- arch/arm/mach-tegra/reset.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+>> +	select CACHE_L2X0
+> ditto
 
-diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
-index e282395b071c..368af0afde46 100644
---- a/arch/arm/mach-tegra/reset.c
-+++ b/arch/arm/mach-tegra/reset.c
-@@ -21,6 +21,7 @@
- 
- #include <asm/cacheflush.h>
- #include <asm/hardware/cache-l2x0.h>
-+#include <asm/firmware.h>
- 
- #include "iomap.h"
- #include "irammap.h"
-@@ -65,6 +66,7 @@ static void __init tegra_cpu_reset_handler_enable(void)
- 	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
- 	const u32 reset_address = TEGRA_IRAM_RESET_BASE +
- 						tegra_cpu_reset_handler_offset;
-+	int err;
- 
- 	BUG_ON(is_enabled);
- 	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
-@@ -72,9 +74,18 @@ static void __init tegra_cpu_reset_handler_enable(void)
- 	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
- 			tegra_cpu_reset_handler_size);
- 
--	tegra_cpu_reset_handler_set(reset_address);
--
--	is_enabled = true;
-+	err = call_firmware_op(set_cpu_boot_addr, 0, reset_address);
-+	switch (err) {
-+	case -ENOSYS:
-+		tegra_cpu_reset_handler_set(reset_address);
-+		/* pass-through */
-+	case 0:
-+		is_enabled = true;
-+		break;
-+	default:
-+		pr_crit("Cannot set CPU reset handler: %d\n", err);
-+		BUG();
-+	}
- }
- 
- void __init tegra_cpu_reset_handler_init(void)
--- 
-1.8.4.2
+You already re-replied to that. I leave L2X0 here, BG3 will be
+different, as you stated.
+
+>> +	select CPU_PJ4B
+>> +	select HAVE_ARM_TWD
+>> +	select HAVE_SMP
+>> +
+>> +config MACH_BERLIN_BG2CD
+>> +	bool "Marvell Armada 1500-mini (BG2CD)"
+>> +	select ARM_GIC
+>> +	select CACHE_L2X0
+>> +	select CPU_V7
+>> +	select HAVE_ARM_TWD
+> BG2CD is single core, I'm not sure it have twd. I will check with SoC people.
+> But can twd be really used in single CA9 system?
+
+ From a quick view into Cortex-A9 MPCore TRM, I cannot see why it
+shouldn't be there even for single-core. If you can get more info,
+that would be great.
+
+Actually, IIRC smp_twd does not compile without SMP set, so the above
+should at least be 'HAVE_ARM_TWD if SMP'. If you shrink MULTI_V7 down
+to non-SMP cores, you can disable it and it will fail to compile.
+
+>> +
+>> +endmenu
+>> +
+>> +endif
+>> diff --git a/arch/arm/mach-berlin/Makefile b/arch/arm/mach-berlin/Makefile
+>> new file mode 100644
+>> index 0000000..ab69fe9
+>> --- /dev/null
+>> +++ b/arch/arm/mach-berlin/Makefile
+>> @@ -0,0 +1 @@
+>> +obj-y += berlin.o
+>> diff --git a/arch/arm/mach-berlin/berlin.c b/arch/arm/mach-berlin/berlin.c
+>> new file mode 100644
+>> index 0000000..16c2942
+>> --- /dev/null
+>> +++ b/arch/arm/mach-berlin/berlin.c
+>> @@ -0,0 +1,39 @@
+>> +/*
+>> + * Device Tree support for Marvell Berlin SoCs.
+>> + *
+>> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> + *
+>> + * based on GPL'ed 2.6 kernel sources
+>> + *  (c) Marvell International Ltd.
+>> + *
+>> + * This file is licensed under the terms of the GNU General Public
+>> + * License version 2.  This program is licensed "as is" without any
+>> + * warranty of any kind, whether express or implied.
+>> + */
+>> +
+>> +#include <linux/init.h>
+>> +#include <linux/io.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/of_platform.h>
+>> +#include <asm/hardware/cache-l2x0.h>
+>> +#include <asm/mach/arch.h>
+>> +
+>> +static void __init berlin_init_machine(void)
+>> +{
+>> +	/*
+>> +	 * with DT probing for L2CCs, berlin_init_machine can be removed.
+>> +	 * Note: 88DE3005 (Armada 1500-mini) uses pl310 l2cc
+>> +	 */
+>> +	l2x0_of_init(0x70c00000, 0xfeffffff);
+> Per my experience, put l2x0 initialization in init_machine is too late. It
+> did cause some boot stability problems during our product massive bootup test.
+> In our internal 3.10.y tree, we put it in init_early, I also suggest we do
+> this too in mainline.
+
+Ok.
+
+>> +	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> If l2 initialization is put in init_early, this is not needed any more.
+
+Right, that's already in the comment right above l2x0_of_init ;)
+
+>> +}
+>> +
+>> +static const char * const berlin_dt_compat[] = {
+>> +	"marvell,berlin",
+>> +	NULL,
+>> +};
+>> +
+>> +DT_MACHINE_START(BERLIN_DT, "Marvell Berlin")
+>> +	.dt_compat      = berlin_dt_compat,
+>> +	.init_machine   = berlin_init_machine,
+>> +MACHINE_END
+>
 
