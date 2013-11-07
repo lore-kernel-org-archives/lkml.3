@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab3KGPEm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 10:04:42 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55624 "EHLO
+	id S1753786Ab3KGPFg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:05:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55633 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab3KGPEh (ORCPT
+	with ESMTP id S1753153Ab3KGPEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 10:04:37 -0500
+	Thu, 7 Nov 2013 10:04:43 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/7] perf tools: Fix version when building out of tree
-Date: Thu,  7 Nov 2013 12:04:13 -0300
-Message-Id: <1383836658-10518-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 5/7] perf record: Remove advance_output function
+Date: Thu,  7 Nov 2013 12:04:16 -0300
+Message-Id: <1383836658-10518-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1383836658-10518-1-git-send-email-acme@infradead.org>
 References: <1383836658-10518-1-git-send-email-acme@infradead.org>
@@ -26,62 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
-When building perf out of tree:
-
-  $ make perf-tar-src-pkg
-  $ tar -xf perf-<ver>.tar -C /tmp
-  $ cd /tmp/perf<ver>
-  $ make -C tools/perf
-
-you get this warning message:
-    make[1]: *** No rule to make target `kernelversion'.  Stop.
-
-Fix it by saving the perf version in the tar file and using that for the
-out of tree builds.
-
-v2: removed short form request and fixed up version string from usual output.
+1 line function with only 1 user; might as well embed directly.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Suggested-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1383753335-25782-1-git-send-email-dsahern@gmail.com
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1383763297-27066-3-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- scripts/package/Makefile         | 4 +++-
- tools/perf/util/PERF-VERSION-GEN | 3 +++
- 2 files changed, 6 insertions(+), 1 deletion(-)
+ tools/perf/builtin-record.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/scripts/package/Makefile b/scripts/package/Makefile
-index a4f31c900fa6..c5d473393816 100644
---- a/scripts/package/Makefile
-+++ b/scripts/package/Makefile
-@@ -115,7 +115,9 @@ git --git-dir=$(srctree)/.git archive --prefix=$(perf-tar)/         \
- 	-o $(perf-tar).tar;                                         \
- mkdir -p $(perf-tar);                                               \
- git --git-dir=$(srctree)/.git rev-parse HEAD > $(perf-tar)/HEAD;    \
--tar rf $(perf-tar).tar $(perf-tar)/HEAD;                            \
-+(cd $(srctree)/tools/perf;                                          \
-+util/PERF-VERSION-GEN ../../$(perf-tar)/ 2>/dev/null);              \
-+tar rf $(perf-tar).tar $(perf-tar)/HEAD $(perf-tar)/PERF-VERSION-FILE; \
- rm -r $(perf-tar);                                                  \
- $(if $(findstring tar-src,$@),,                                     \
- $(if $(findstring bz2,$@),bzip2,                                    \
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index ce7a804b2951..39f17507578d 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -19,6 +19,9 @@ if test -d ../../.git -o -f ../../.git
- then
- 	TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
- 	CID=$(git log -1 --abbrev=4 --pretty=format:"%h" 2>/dev/null) && CID="-g$CID"
-+elif test -f ../../PERF-VERSION-FILE
-+then
-+	TAG=$(cut -d' ' -f3 ../../PERF-VERSION-FILE | sed -e 's/\"//g')
- fi
- if test -z "$TAG"
- then
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 2932069ad7a8..19c4db6bdd6f 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -77,11 +77,6 @@ struct perf_record {
+ 	off_t			post_processing_offset;
+ };
+ 
+-static void advance_output(struct perf_record *rec, size_t size)
+-{
+-	rec->bytes_written += size;
+-}
+-
+ static int write_output(struct perf_record *rec, void *buf, size_t size)
+ {
+ 	struct perf_data_file *file = &rec->file;
+@@ -461,7 +456,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 				pr_err("Couldn't record tracing data.\n");
+ 				goto out_delete_session;
+ 			}
+-			advance_output(rec, err);
++			rec->bytes_written += err;
+ 		}
+ 	}
+ 
 -- 
 1.8.1.4
 
