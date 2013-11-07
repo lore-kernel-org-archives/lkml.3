@@ -1,95 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab3KGHzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 02:55:00 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:59106 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab3KGHyx (ORCPT
+	id S1753028Ab3KGIAN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 03:00:13 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:60790 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751824Ab3KGIAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 02:54:53 -0500
-Date: Thu, 7 Nov 2013 08:54:48 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Marek Majkowski <marek@cloudflare.com>, Jiri Slaby <jslaby@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Wrong symbol resolved for RIP on OOPS/BUG
-Message-ID: <20131107075448.GA31926@gmail.com>
-References: <1383767997-20765-1-git-send-email-marek@cloudflare.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383767997-20765-1-git-send-email-marek@cloudflare.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 7 Nov 2013 03:00:01 -0500
+In-Reply-To: <alpine.DEB.2.02.1311061149250.23353@ionos.tec.linutronix.de>
+References: <20130131002344.1161E360095@xplor.waratah.dyndns.org> <CAMuHMdUFuNpiZzTr=86Yi2yx73xh_qv8S6PnT0hp9U8x86vskw@mail.gmail.com> <CAMuHMdXB1LNGXkz=_eCQ+i+tu18ffbCA9dP_LRrF1CUBv-q-uQ@mail.gmail.com> <alpine.DEB.2.02.1311061149250.23353@ionos.tec.linutronix.de>
+Mime-Version: 1.0 (Apple Message framework v624)
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+Message-Id: <65b9e5f265b02af3b316e59e55450385@gmail.com>
+Content-Transfer-Encoding: 7bit
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+From: Michael Schmitz <schmitzmic@gmail.com>
+Subject: Re: [PATCH 09/17] [m68k] IRQ: add handle_polled_irq() for timer based soft interrupts
+Date: Thu, 7 Nov 2013 20:59:40 +1300
+To: Thomas Gleixner <tglx@linutronix.de>
+X-Mailer: Apple Mail (2.624)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thomas,
 
-* Marek Majkowski <marek@cloudflare.com> wrote:
+>>>> This is a temporary hack to allow timer based polling of the
+>>>> Atari ROM port network and USB cards only. Suggestions on how to
+>>>> properly handle this in the normal interrupt framework are most
+>>>> welcome.
+>
+> So you're polling devices which have no hardware interrupt from the
+> timer interrupt. Of course if there is no interrupt pending on one of
+> these devices, this will trigger the spurious detector. By setting the
+> POLL_INPROGRESS flag, you're preventing that.
 
-> "%pB" is intended for return addresses, and actually resolves the
-> address - 1.  So it should only be used for backtraces.  Plain
-> instruction addresses should use "%pS", which resolves the given
-> address.
-> 
-> show_regs was using "%pB" to resolve the RIP symbol. This resolved the
-> wrong symbol if the first instruction after a symbol created the
-> OOPS/BUG. For example:
-> 
-> 0000000000000049 <before>:
->   49:   90                      nop
->   4a:   90                      nop
->   4b:   90                      nop
->   4c:   90                      nop
-> 000000000000004d <suicide>:
->   4d:   ff 14 25 00 00 00 00    callq  *0x0
->   54:   c3                      retq
-> 
-> Will produce a message saying it's "before" that crashed, not "suicide".
-> 
-> This problem only happens when the crash occurs in the first instruction
-> after a symbol. Therefore it's unlikely to occur on kernels with frame
-> pointers (CONFIG_FRAME_POINTER=y).
-> 
-> Signed-off-by: Marek Majkowski <marek@cloudflare.com>
-> 
-> diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-> index deb6421..4c90013 100644
-> --- a/arch/x86/kernel/dumpstack.c
-> +++ b/arch/x86/kernel/dumpstack.c
-> @@ -27,6 +27,12 @@ static int die_counter;
->  
->  void printk_address(unsigned long address, int reliable)
+That's the general idea, yes. I am aware I abuse the flag somewhat. 
+This was
+the least invasive fix I came up with (i.e. no risk to cause 
+regressions elsewhere).
+Adding a new IRQ flag would have been my preference, but that seemed a 
+bit
+bold at the time.
+
+> Reading the demultiplex handler it seems you have no way to figure out
+> which of the sub interrupts actually triggered the mfptimer_handler,
+> right?
+
+Correct.
+
+> I'm not too happy about the POLL flag "abuse". I'd rather have such
+
+Precisely why I asked for this to be reviewed, thanks,
+
+> interrupts explicitely marked as polled by some other interrupt. That
+> also excludes such interrupts from the spurious mechanism completely.
+>
+> Does the following patch solve the problem? You need to call
+>
+>      irq_set_status_flags(irq, IRQ_IS_POLLED);
+>
+> when setting up the interrupt controller for those polled interrupt
+> lines.
+
+This should do the trick, from what I can see. I have tried to test it, 
+but recent changes
+to the m68k vmlinux.lds have thrown a monkey wrench in the works, it 
+seems (kernels
+just won't boot at all). I'll sort that out with Geert and report back.
+
+Much obliged,
+
+	Michael
+
+
+>
+> Thanks,
+>
+> 	tglx
+> -----------------
+> diff --git a/include/linux/irq.h b/include/linux/irq.h
+> index 56bb0dc..7dc1003 100644
+> --- a/include/linux/irq.h
+> +++ b/include/linux/irq.h
+> @@ -70,6 +70,9 @@ typedef	void (*irq_preflow_handler_t)(struct 
+> irq_data *data);
+>   * IRQ_MOVE_PCNTXT		- Interrupt can be migrated from process context
+>   * IRQ_NESTED_TRHEAD		- Interrupt nests into another thread
+>   * IRQ_PER_CPU_DEVID		- Dev_id is a per-cpu variable
+> + * IRQ_IS_POLLED		- Always polled by another interrupt. Exclude
+> + *				  it from the spurious interrupt detection
+> + *				  mechanism and from core side polling.
+>   */
+>  enum {
+>  	IRQ_TYPE_NONE		= 0x00000000,
+> @@ -94,12 +97,14 @@ enum {
+>  	IRQ_NESTED_THREAD	= (1 << 15),
+>  	IRQ_NOTHREAD		= (1 << 16),
+>  	IRQ_PER_CPU_DEVID	= (1 << 17),
+> +	IRQ_IS_POLLED		= (1 << 18),
+>  };
+>
+>  #define IRQF_MODIFY_MASK	\
+>  	(IRQ_TYPE_SENSE_MASK | IRQ_NOPROBE | IRQ_NOREQUEST | \
+>  	 IRQ_NOAUTOEN | IRQ_MOVE_PCNTXT | IRQ_LEVEL | IRQ_NO_BALANCING | \
+> -	 IRQ_PER_CPU | IRQ_NESTED_THREAD | IRQ_NOTHREAD | IRQ_PER_CPU_DEVID)
+> +	 IRQ_PER_CPU | IRQ_NESTED_THREAD | IRQ_NOTHREAD | IRQ_PER_CPU_DEVID 
+> | \
+> +	 IRQ_IS_POLLED)
+>
+>  #define IRQ_NO_BALANCING_MASK	(IRQ_PER_CPU | IRQ_NO_BALANCING)
+>
+> diff --git a/kernel/irq/settings.h b/kernel/irq/settings.h
+> index 1162f10..3320b84 100644
+> --- a/kernel/irq/settings.h
+> +++ b/kernel/irq/settings.h
+> @@ -14,6 +14,7 @@ enum {
+>  	_IRQ_NO_BALANCING	= IRQ_NO_BALANCING,
+>  	_IRQ_NESTED_THREAD	= IRQ_NESTED_THREAD,
+>  	_IRQ_PER_CPU_DEVID	= IRQ_PER_CPU_DEVID,
+> +	_IRQ_IS_POLLED		= IRQ_IS_POLLED,
+>  	_IRQF_MODIFY_MASK	= IRQF_MODIFY_MASK,
+>  };
+>
+> @@ -26,6 +27,7 @@ enum {
+>  #define IRQ_NOAUTOEN		GOT_YOU_MORON
+>  #define IRQ_NESTED_THREAD	GOT_YOU_MORON
+>  #define IRQ_PER_CPU_DEVID	GOT_YOU_MORON
+> +#define IRQ_IS_POLLED		GOT_YOU_MORON
+>  #undef IRQF_MODIFY_MASK
+>  #define IRQF_MODIFY_MASK	GOT_YOU_MORON
+>
+> @@ -147,3 +149,8 @@ static inline bool 
+> irq_settings_is_nested_thread(struct irq_desc *desc)
 >  {
-> +	pr_cont(" [<%p>] %s%pS\n",
-> +		(void *)address, reliable ? "" : "? ", (void *)address);
-> +}
+>  	return desc->status_use_accessors & _IRQ_NESTED_THREAD;
+>  }
 > +
-> +static void printk_trace_address(unsigned long address, int reliable)
+> +static inline bool irq_settings_is_polled(struct irq_desc *desc)
 > +{
->  	pr_cont(" [<%p>] %s%pB\n",
->  		(void *)address, reliable ? "" : "? ", (void *)address);
->  }
-> @@ -151,7 +157,7 @@ static void print_trace_address(void *data, unsigned long addr, int reliable)
+> +	return desc->status_use_accessors & _IRQ_IS_POLLED;
+> +}
+> diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
+> index 7b5f012..a1d8cc6 100644
+> --- a/kernel/irq/spurious.c
+> +++ b/kernel/irq/spurious.c
+> @@ -67,8 +67,13 @@ static int try_one_irq(int irq, struct irq_desc 
+> *desc, bool force)
+>
+>  	raw_spin_lock(&desc->lock);
+>
+> -	/* PER_CPU and nested thread interrupts are never polled */
+> -	if (irq_settings_is_per_cpu(desc) || 
+> irq_settings_is_nested_thread(desc))
+> +	/*
+> +	 * PER_CPU, nested thread interrupts and interrupts explicitely
+> +	 * marked polled are excluded from polling.
+> +	 */
+> +	if (irq_settings_is_per_cpu(desc) ||
+> +	    irq_settings_is_nested_thread(desc) ||
+> +	    irq_settings_is_polled(desc))
+>  		goto out;
+>
+>  	/*
+> @@ -268,7 +273,8 @@ try_misrouted_irq(unsigned int irq, struct 
+> irq_desc *desc,
+>  void note_interrupt(unsigned int irq, struct irq_desc *desc,
+>  		    irqreturn_t action_ret)
 >  {
->  	touch_nmi_watchdog();
->  	printk(data);
-> -	printk_address(addr, reliable);
-> +	printk_trace_address(addr, reliable);
->  }
->  
->  static const struct stacktrace_ops print_trace_ops = {
+> -	if (desc->istate & IRQS_POLL_INPROGRESS)
+> +	if (desc->istate & IRQS_POLL_INPROGRESS ||
+> +	    irq_settings_is_polled(desc))
+>  		return;
+>
+>  	/* we get here again via the threaded handler */
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-m68k" 
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-There's a recent commit from Jiri Slaby that I think tries to address the 
-same problem:
-
-  8d4c812a3e5f x86/dumpstack: Fix printk_address for direct addresses
-
-You can find it in the -tip tree:
-
-  git remote add tip git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
-
-Thanks,
-
-	Ingo
