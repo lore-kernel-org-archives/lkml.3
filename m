@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab3KGWn7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:43:59 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:52932 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205Ab3KGWnu (ORCPT
+	id S1755144Ab3KGWoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:44:10 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:36939 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab3KGWny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 17:43:50 -0500
+	Thu, 7 Nov 2013 17:43:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131107222144.GC19203@twins.programming.kicks-ass.net>
-References: <cover.1383771175.git.tim.c.chen@linux.intel.com>
-	<1383773827.11046.355.camel@schen9-DESK>
-	<CA+55aFyNX=5i0hmk-KuD+Vk+yBD-kkAiywx1Lx_JJmHVPx=1wA@mail.gmail.com>
-	<CANN689HkNP-UZOu+vDCFPG5_k=BNZG6a+oP+Ope16vLc2ShFzw@mail.gmail.com>
-	<CA+55aFwn1HUt3iXo6Zz8j1HUJi+qJ1NfcnUz-P+XCYLL7gjCMQ@mail.gmail.com>
-	<CANN689EgdDQV=srsLELUpiTGOSF0SLUZ=BC2LnMxNrYTv3H=Wg@mail.gmail.com>
-	<20131107143139.GT18245@linux.vnet.ibm.com>
-	<CANN689FqUSnr=Prum0Kt6+0gr9dWKD8GT9Gbrtiyyg+PTyFkyA@mail.gmail.com>
-	<1383858951.11046.399.camel@schen9-DESK>
-	<20131107222144.GC19203@twins.programming.kicks-ass.net>
-Date: Thu, 7 Nov 2013 14:43:49 -0800
-Message-ID: <CANN689G2H3goDO3KyO5=CzV7RkTukU-B=KsZpLWV_0=pwzZWpw@mail.gmail.com>
-Subject: Re: [PATCH v3 3/5] MCS Lock: Barrier corrections
-From: Michel Lespinasse <walken@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rik van Riel <riel@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "Figo. zhang" <figo1802@gmail.com>, linux-arch@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, George Spelvin <linux@horizon.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Hurley <peter@hurleysoftware.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Alex Shi <alex.shi@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>
+In-Reply-To: <1383860919-1883-4-git-send-email-jack@suse.cz>
+References: <1383860919-1883-1-git-send-email-jack@suse.cz>
+	<1383860919-1883-4-git-send-email-jack@suse.cz>
+Date: Thu, 7 Nov 2013 23:43:52 +0100
+Message-ID: <CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
+Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
+ too much
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 7, 2013 at 2:21 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Nov 07, 2013 at 01:15:51PM -0800, Tim Chen wrote:
->> Michel, are you planning to do an implementation of
->> load-acquire/store-release functions of various architectures?
+2013/11/7 Jan Kara <jack@suse.cz>:
+> A CPU can be caught in console_unlock() for a long time (tens of seconds
+> are reported by our customers) when other CPUs are using printk heavily
+> and serial console makes printing slow. Despite serial console drivers
+> are calling touch_nmi_watchdog() this triggers softlockup warnings
+> because interrupts are disabled for the whole time console_unlock() runs
+> (e.g. vprintk() calls console_unlock() with interrupts disabled). Thus
+> IPIs cannot be processed and other CPUs get stuck spinning in calls like
+> smp_call_function_many(). Also RCU eventually starts reporting lockups.
 >
-> A little something like this:
-> http://marc.info/?l=linux-arch&m=138386254111507
+> In my artifical testing I can also easily trigger a situation when disk
+> disappears from the system apparently because interrupt from it wasn't
+> served for too long. This is why just silencing watchdogs isn't a
+> reliable solution to the problem and we simply have to avoid spending
+> too long in console_unlock() with interrupts disabled.
 >
-> It so happens we were working on that the past week or so due to another
-> issue ;-)
+> The solution this patch works toward is to postpone printing to a later
+> moment / different CPU when we already printed over X characters in
+> current console_unlock() invocation. This is a crude heuristic but
+> measuring time we spent printing doesn't seem to be really viable - we
+> cannot rely on high resolution time being available and with interrupts
+> disabled jiffies are not updated. User can tune the value X via
+> printk.offload_chars kernel parameter.
+>
+> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Jan Kara <jack@suse.cz>
 
-Haha, awesome, I wasn't aware of this effort.
+When a message takes tens of seconds to be printed, it usually means
+we are in trouble somehow :)
+I wonder what printk source can trigger such a high volume.
 
-Tim: my approach would be to provide the acquire/release operations in
-arch-specific include files, and have a default implementation using
-barriers for arches who don't provide these new ops. That way you make
-it work on all arches at once (using the default implementation) and
-make it fast on any arch that cares.
+May be cutting some huge message into smaller chunks could help? That
+would re enable interrupts between each call.
 
->> Or is the approach of arch specific memory barrier for MCS
->> an acceptable one before load-acquire and store-release
->> are available?  Are there any technical issues remaining with
->> the patchset after including including Waiman's arch specific barrier?
-
-I don't want to stand in the way of Waiman's change, and I had
-actually taken the same approach with arch-specific barriers when
-proposing some queue spinlocks in the past; however I do feel that
-this comes back regularly enough that having acquire/release
-primitives available would help, hence my proposal.
-
-That said, earlier in the thread Linus said we should probably get all
-our ducks in a row before going forward with this, so...
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+It's hard to tell without the context, but using other CPUs for
+rescuing doesn't look like a good solution. What if the issue happens
+in UP to begin with?
