@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab3KGRm4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 12:42:56 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52569 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753887Ab3KGRmx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 12:42:53 -0500
-Date: Thu, 7 Nov 2013 17:42:14 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Alex Shi <alex.shi@linaro.org>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Turner <pjt@google.com>, Ingo Molnar <mingo@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Paul Walmsley <paul@pwsan.com>, Mel Gorman <mgorman@suse.de>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "markgross@thegnar.org" <markgross@thegnar.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Frank.Rowand@sonymobile.com" <Frank.Rowand@sonymobile.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Bench for testing scheduler
-Message-ID: <20131107174214.GB25590@e103034-lin>
-References: <CAKfTPtCh+f1FZxkWqU5=2PjGtfRaN8jVV3WdTCzLDAWSjMP7yw@mail.gmail.com>
+	id S1753769Ab3KGRsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 12:48:32 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:53692 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751010Ab3KGRsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 12:48:30 -0500
+Date: Thu, 7 Nov 2013 09:47:46 -0800
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
+        libseccomp-discuss@lists.sourceforge.net,
+        Will Drewry <wad@chromium.org>, James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH v2] seccomp: not compatible with ARM OABI
+Message-ID: <20131107174746.GA22344@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKfTPtCh+f1FZxkWqU5=2PjGtfRaN8jVV3WdTCzLDAWSjMP7yw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
+Make sure that seccomp filter won't be built when ARM OABI is in use,
+since there is work needed to distinguish calling conventions. Until
+that is done (which is likely never since OABI is deprecated), make
+sure seccomp filter is unavailable in the OABI world.
 
-On Thu, Nov 07, 2013 at 10:54:30AM +0000, Vincent Guittot wrote:
-> Hi,
-> 
-> During the Energy-aware scheduling mini-summit, we spoke about benches
-> that should be used to evaluate the modifications of the scheduler.
-> I’d like to propose a bench that uses cyclictest to measure the wake
-> up latency and the power consumption. The goal of this bench is to
-> exercise the scheduler with various sleeping period and get the
-> average wakeup latency. The range of the sleeping period must cover
-> all residency times of the idle state table of the platform. I have
-> run such tests on a tc2 platform with the packing tasks patchset.
-> I have use the following command:
-> #cyclictest -t <number of cores> -q -e 10000000 -i <500-12000> -d 150 -l 2000
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+v2:
+ - toggle availability via HAVE_ARCH_SECCOMP_FILTER; James Hogan.
+---
+ arch/arm/Kconfig |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-I think cyclictest is a useful model small(er) periodic tasks for
-benchmarking energy related patches. However, it doesn't have a
-good-enough-performance criteria as it is. I think that is a strict
-requirement for all energy related benchmarks.
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 0a1dc697333c..a0a8590f3609 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -23,7 +23,7 @@ config ARM
+ 	select HARDIRQS_SW_RESEND
+ 	select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL
+ 	select HAVE_ARCH_KGDB
+-	select HAVE_ARCH_SECCOMP_FILTER
++	select HAVE_ARCH_SECCOMP_FILTER if (AEABI && !OABI_COMPAT)
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_BPF_JIT
+ 	select HAVE_CONTEXT_TRACKING
+@@ -1735,6 +1735,11 @@ config OABI_COMPAT
+ 	  in memory differs between the legacy ABI and the new ARM EABI
+ 	  (only for non "thumb" binaries). This option adds a tiny
+ 	  overhead to all syscalls and produces a slightly larger kernel.
++
++	  The seccomp filter system will not be available when this is
++	  selected, since there is no way yet to sensibly distinguish
++	  between calling conventions during filtering.
++
+ 	  If you know you'll be using only pure EABI user space then you
+ 	  can say N here. If this option is not selected and you attempt
+ 	  to execute a legacy ABI binary then the result will be
+-- 
+1.7.9.5
 
-Measuring latency gives us a performance metric while the energy tells
-us how energy efficient we are. But without a latency requirement we
-can't really say if a patch helps energy-awareness unless it improves
-both energy _and_ performance. That is the case for your packing patches
-for this particular benchmark with this specific configuration. That is
-a really good result. However, in the general case patches may trade a
-bit of performance to get better energy, which is also good if
-performance still meets the requirement of the application/user. So we
-need a performance criteria to tells us when we sacrifice too much
-performance when trying to save power. Without it it is just a
-performance benchmark where we measure power.
 
-Coming up with a performance criteria for cyclictest is not so easy as
-it doesn't really model any specific application. I guess sacrificing a
-bit of latency is acceptable if it comes with significant energy
-savings. But a huge performance impact might not be, even if it comes
-with massive energy savings. So maybe the criteria would consist of both
-a minimum latency requirement (e.g. up to 10% increase) and a
-requirement for improved energy per work.
-
-As I see it, it the only way we can validate energy efficiency of
-patches that trade performance for improved energy.
-
-Morten
-
+-- 
+Kees Cook
+Chrome OS Security
