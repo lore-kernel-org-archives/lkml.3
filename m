@@ -1,53 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab3KGC2K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 21:28:10 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:44783 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753222Ab3KGC2I (ORCPT
+	id S1753606Ab3KGC2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 21:28:22 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:19341 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753362Ab3KGC2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 21:28:08 -0500
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <shawn.guo@linaro.org>, Jisheng Zhang <jszhang@marvell.com>
-Subject: [PATCH] usb: phy: phy-mxs-usb: set the correct platform drvdata
-Date: Thu, 7 Nov 2013 10:26:20 +0800
-Message-ID: <1383791180-3579-1-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 1.8.4.2
+	Wed, 6 Nov 2013 21:28:18 -0500
+X-Spam-Score: -100.8
+Message-ID: <527AFB41.5050803@asianux.com>
+Date: Thu, 07 Nov 2013 10:30:25 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-11-06_06:2013-11-06,2013-11-06,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1311060250
+To: paulmck@linux.vnet.ibm.com
+CC: josh@freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] kernel/rcutorture.c: be sure of enough memory for result
+ printing
+References: <525BAD9F.6060406@asianux.com> <20131014112839.GO5790@linux.vnet.ibm.com> <525C9256.5010002@asianux.com> <525C9FAE.4090209@asianux.com> <20131015082613.GG5790@linux.vnet.ibm.com> <525D35E9.3000604@asianux.com> <20131015144732.GG9150@linux.vnet.ibm.com> <525DF4F0.3070901@asianux.com> <525F3830.2060001@asianux.com> <5264C0DD.9060006@asianux.com> <20131106203859.GO18245@linux.vnet.ibm.com>
+In-Reply-To: <20131106203859.GO18245@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to set mxs_phy rather as the platform drvdata so that we can get
-the correct mxs_phy in mxs_phy_remove().
+If the contents is more than 4096 bytes (e.g. if have 1K cpus), current
+sprintf() will cause memory overflow. And this fix patch is to be sure
+of memory large enough.
 
-Change-Id: I6e1753cc978e2ed3fbb3d1865be0c54031d337d2
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+Benefit:
+
+ - do not truncate printing contents.
+ - extensible, it is large enough for printing various related contents.
+ - simple and clear enough for both source code readers and writers.
+
+Shortcoming:
+
+ - It will waste some memory:
+
+    1 cpu now comsumes 50 - 60 bytes, and this patch provides 200 bytes.
+    global printing now comsumes a few KB, and this patch provide 8KB,
+    so for 1K cpus, it may waste 100 - 200 KB memory.
+
+   after finish printing, it will free the related memory, quickly.
+   it is a test module, so wast a little memory for extensible is OK.
+
+Related  test (Fedora16 2 CPUs, 2GB RAM x86_64)
+
+ - as module, with/without "torture_type=srcu".
+ - build-in not boot runnable, with/without "torture_type=srcu".
+ - build-in let boot runnable, with/without "torture_type=srcu".
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- drivers/usb/phy/phy-mxs-usb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/rcu/torture.c |   68 +++++++++++++++++++++++++------------------------
+ 1 files changed, 35 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/usb/phy/phy-mxs-usb.c b/drivers/usb/phy/phy-mxs-usb.c
-index fdd33b4..545844b 100644
---- a/drivers/usb/phy/phy-mxs-usb.c
-+++ b/drivers/usb/phy/phy-mxs-usb.c
-@@ -164,7 +164,7 @@ static int mxs_phy_probe(struct platform_device *pdev)
+diff --git a/kernel/rcu/torture.c b/kernel/rcu/torture.c
+index 3929cd4..a60874c 100644
+--- a/kernel/rcu/torture.c
++++ b/kernel/rcu/torture.c
+@@ -139,8 +139,6 @@ MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
+ #define VERBOSE_PRINTK_ERRSTRING(s) \
+ 	do { if (verbose) pr_alert("%s" TORTURE_FLAG "!!! " s "\n", torture_type); } while (0)
  
- 	mxs_phy->clk = clk;
+-static char printk_buf[4096];
+-
+ static int nrealreaders;
+ static struct task_struct *writer_task;
+ static struct task_struct **fakewriter_tasks;
+@@ -376,7 +374,7 @@ struct rcu_torture_ops {
+ 	void (*call)(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
+ 	void (*cb_barrier)(void);
+ 	void (*fqs)(void);
+-	int (*stats)(char *page);
++	void (*stats)(char *page);
+ 	int irq_capable;
+ 	int can_boost;
+ 	const char *name;
+@@ -578,21 +576,19 @@ static void srcu_torture_barrier(void)
+ 	srcu_barrier(&srcu_ctl);
+ }
  
--	platform_set_drvdata(pdev, &mxs_phy->phy);
-+	platform_set_drvdata(pdev, mxs_phy);
+-static int srcu_torture_stats(char *page)
++static void srcu_torture_stats(char *page)
+ {
+-	int cnt = 0;
+ 	int cpu;
+ 	int idx = srcu_ctl.completed & 0x1;
  
- 	ret = usb_add_phy_dev(&mxs_phy->phy);
- 	if (ret)
+-	cnt += sprintf(&page[cnt], "%s%s per-CPU(idx=%d):",
++	page += sprintf(page, "%s%s per-CPU(idx=%d):",
+ 		       torture_type, TORTURE_FLAG, idx);
+ 	for_each_possible_cpu(cpu) {
+-		cnt += sprintf(&page[cnt], " %d(%lu,%lu)", cpu,
++		page += sprintf(page, " %d(%lu,%lu)", cpu,
+ 			       per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[!idx],
+ 			       per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[idx]);
+ 	}
+-	cnt += sprintf(&page[cnt], "\n");
+-	return cnt;
++	sprintf(page, "\n");
+ }
+ 
+ static void srcu_torture_synchronize_expedited(void)
+@@ -1052,10 +1048,9 @@ rcu_torture_reader(void *arg)
+ /*
+  * Create an RCU-torture statistics message in the specified buffer.
+  */
+-static int
++static void
+ rcu_torture_printk(char *page)
+ {
+-	int cnt = 0;
+ 	int cpu;
+ 	int i;
+ 	long pipesummary[RCU_TORTURE_PIPE_LEN + 1] = { 0 };
+@@ -1071,8 +1066,8 @@ rcu_torture_printk(char *page)
+ 		if (pipesummary[i] != 0)
+ 			break;
+ 	}
+-	cnt += sprintf(&page[cnt], "%s%s ", torture_type, TORTURE_FLAG);
+-	cnt += sprintf(&page[cnt],
++	page += sprintf(page, "%s%s ", torture_type, TORTURE_FLAG);
++	page += sprintf(page,
+ 		       "rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
+ 		       rcu_torture_current,
+ 		       rcu_torture_current_version,
+@@ -1080,53 +1075,52 @@ rcu_torture_printk(char *page)
+ 		       atomic_read(&n_rcu_torture_alloc),
+ 		       atomic_read(&n_rcu_torture_alloc_fail),
+ 		       atomic_read(&n_rcu_torture_free));
+-	cnt += sprintf(&page[cnt], "rtmbe: %d rtbke: %ld rtbre: %ld ",
++	page += sprintf(page, "rtmbe: %d rtbke: %ld rtbre: %ld ",
+ 		       atomic_read(&n_rcu_torture_mberror),
+ 		       n_rcu_torture_boost_ktrerror,
+ 		       n_rcu_torture_boost_rterror);
+-	cnt += sprintf(&page[cnt], "rtbf: %ld rtb: %ld nt: %ld ",
++	page += sprintf(page, "rtbf: %ld rtb: %ld nt: %ld ",
+ 		       n_rcu_torture_boost_failure,
+ 		       n_rcu_torture_boosts,
+ 		       n_rcu_torture_timers);
+-	cnt += sprintf(&page[cnt],
++	page += sprintf(page,
+ 		       "onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
+ 		       n_online_successes, n_online_attempts,
+ 		       n_offline_successes, n_offline_attempts,
+ 		       min_online, max_online,
+ 		       min_offline, max_offline,
+ 		       sum_online, sum_offline, HZ);
+-	cnt += sprintf(&page[cnt], "barrier: %ld/%ld:%ld",
++	page += sprintf(page, "barrier: %ld/%ld:%ld",
+ 		       n_barrier_successes,
+ 		       n_barrier_attempts,
+ 		       n_rcu_torture_barrier_error);
+-	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
++	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
+ 	if (atomic_read(&n_rcu_torture_mberror) != 0 ||
+ 	    n_rcu_torture_barrier_error != 0 ||
+ 	    n_rcu_torture_boost_ktrerror != 0 ||
+ 	    n_rcu_torture_boost_rterror != 0 ||
+ 	    n_rcu_torture_boost_failure != 0 ||
+ 	    i > 1) {
+-		cnt += sprintf(&page[cnt], "!!! ");
++		page += sprintf(page, "!!! ");
+ 		atomic_inc(&n_rcu_torture_error);
+ 		WARN_ON_ONCE(1);
+ 	}
+-	cnt += sprintf(&page[cnt], "Reader Pipe: ");
++	page += sprintf(page, "Reader Pipe: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
+-		cnt += sprintf(&page[cnt], " %ld", pipesummary[i]);
+-	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
+-	cnt += sprintf(&page[cnt], "Reader Batch: ");
++		page += sprintf(page, " %ld", pipesummary[i]);
++	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
++	page += sprintf(page, "Reader Batch: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
+-		cnt += sprintf(&page[cnt], " %ld", batchsummary[i]);
+-	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
+-	cnt += sprintf(&page[cnt], "Free-Block Circulation: ");
++		page += sprintf(page, " %ld", batchsummary[i]);
++	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
++	page += sprintf(page, "Free-Block Circulation: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++) {
+-		cnt += sprintf(&page[cnt], " %d",
++		page += sprintf(page, " %d",
+ 			       atomic_read(&rcu_torture_wcount[i]));
+ 	}
+-	cnt += sprintf(&page[cnt], "\n");
++	page += sprintf(page, "\n");
+ 	if (cur_ops->stats)
+-		cnt += cur_ops->stats(&page[cnt]);
+-	return cnt;
++		cur_ops->stats(page);
+ }
+ 
+ /*
+@@ -1140,10 +1134,18 @@ rcu_torture_printk(char *page)
+ static void
+ rcu_torture_stats_print(void)
+ {
+-	int cnt;
++	int size = nr_cpu_ids * 200 + 8192; /* be sure of large enough */
++	char *buf;
+ 
+-	cnt = rcu_torture_printk(printk_buf);
+-	pr_alert("%s", printk_buf);
++	buf = kmalloc(size, GFP_KERNEL);
++	if (!buf) {
++		pr_err("rcu-torture: no enough memory for printing, requre: %d",
++			size);
++		return;
++	}
++	rcu_torture_printk(buf);
++	pr_alert("%s", buf);
++	kfree(buf);
+ }
+ 
+ /*
 -- 
-1.8.4.2
-
+1.7.7.6
