@@ -1,71 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab3KGWPM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:15:12 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:65472 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755538Ab3KGWPH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 17:15:07 -0500
+	id S1755392Ab3KGWTQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:19:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44609 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751228Ab3KGWTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 17:19:06 -0500
+Date: Thu, 7 Nov 2013 23:19:04 +0100
+From: Jan Kara <jack@suse.cz>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/4] irq_work: Provide a irq work that can be processed
+ on any cpu
+Message-ID: <20131107221904.GB2054@quack.suse.cz>
+References: <1383860919-1883-1-git-send-email-jack@suse.cz>
+ <1383860919-1883-3-git-send-email-jack@suse.cz>
+ <CAFTL4hxLXb3hZacx_EdHeKZVfrpuyGoNqpGbX997XJx0UJSwyg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131107213944.GJ1962@tassilo.jf.intel.com>
-References: <1383844657-17487-1-git-send-email-ard.biesheuvel@linaro.org>
-	<527C0195.50008@zytor.com>
-	<20131107213944.GJ1962@tassilo.jf.intel.com>
-Date: Thu, 7 Nov 2013 23:15:05 +0100
-Message-ID: <CAKv+Gu9W-Pu4DGgB-85A3D4Ps9_FLSQgyK3EM7=k7KE1=xsnwg@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/4] wire up CPU features to udev based module loading
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, tglx@linutronix.de,
-        Ingo Molnar <mingo@kernel.org>, Steve Capper <steve.capper@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hxLXb3hZacx_EdHeKZVfrpuyGoNqpGbX997XJx0UJSwyg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 November 2013 22:39, Andi Kleen <ak@linux.intel.com> wrote:
-> On Thu, Nov 07, 2013 at 01:09:41PM -0800, H. Peter Anvin wrote:
->> On 11/07/2013 09:17 AM, Ard Biesheuvel wrote:
->> > This series implements automatic module loading based on optional CPU features,
->> > and tries to do so in a generic way. Currently, 32 feature bits are supported,
->> > and how they map to actual CPU features is entirely up to the architecture.
->>
->> NAK.
->>
->> We in the x86 world already left 32 bits way behind; we currently have
->> 320 bit feature masks.
->>
->> If you're aiming at doing this in a generic way, it needs to be able to
->> accommodate the current x86cpu feature stuff as a subset, which this
->> doesn't.
->
-> They can just use the exact same code/macros as x86cpu, just need a different
-> prefix and use wildcards if they miss something (e.g. family)
->
+On Thu 07-11-13 23:13:39, Frederic Weisbecker wrote:
+> 2013/11/7 Jan Kara <jack@suse.cz>:
+> > Provide new irq work flag - IRQ_WORK_UNBOUND - meaning that can be
+> > processed on any cpu. This flag implies IRQ_WORK_LAZY so that things are
+> > simple and we don't have to pick any particular cpu to do the work. We
+> > just do the work from a timer tick on whichever cpu it happens first.
+> > This is useful as a lightweight and simple code path without locking or
+> > other dependencies to offload work to other cpu if possible.
+> >
+> > We will use this type of irq work to make a guarantee of forward
+> > progress of printing to a (serial) console when printing on one cpu
+> > would cause interrupts to be disabled for too long.
+> >
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> > ---
+> >  include/linux/irq_work.h |  2 ++
+> >  kernel/irq_work.c        | 41 +++++++++++++++++++++++++----------------
+> >  2 files changed, 27 insertions(+), 16 deletions(-)
+> >
+> > diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
+> > index 66017028dcb3..ca07a16355ed 100644
+> > --- a/include/linux/irq_work.h
+> > +++ b/include/linux/irq_work.h
+> > @@ -16,6 +16,8 @@
+> >  #define IRQ_WORK_BUSY          2UL
+> >  #define IRQ_WORK_FLAGS         3UL
+> >  #define IRQ_WORK_LAZY          4UL /* Doesn't want IPI, wait for tick */
+> > +#define __IRQ_WORK_UNBOUND      8UL /* Use IRQ_WORK_UNBOUND instead! */
+> > +#define IRQ_WORK_UNBOUND       (__IRQ_WORK_UNBOUND | IRQ_WORK_LAZY) /* Any cpu can process this work */
+> >
+> >  struct irq_work {
+> >         unsigned long flags;
+> > diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+> > index 55fcce6065cf..b06350b63c67 100644
+> > --- a/kernel/irq_work.c
+> > +++ b/kernel/irq_work.c
+> > @@ -22,6 +22,9 @@
+> >  static DEFINE_PER_CPU(struct llist_head, irq_work_list);
+> >  static DEFINE_PER_CPU(int, irq_work_raised);
+> >
+> > +/* List of irq-work any CPU can pick up */
+> > +static LLIST_HEAD(unbound_irq_work_list);
+> > +
+> >  /*
+> >   * Claim the entry so that no one else will poke at it.
+> >   */
+> > @@ -70,12 +73,16 @@ void irq_work_queue(struct irq_work *work)
+> >         /* Queue the entry and raise the IPI if needed. */
+> >         preempt_disable();
+> >
+> > -       llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+> > +       if (work->flags & __IRQ_WORK_UNBOUND)
+> > +               llist_add(&work->llnode, &unbound_irq_work_list);
+> > +       else
+> > +               llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+> >
+> >         /*
+> >          * If the work is not "lazy" or the tick is stopped, raise the irq
+> >          * work interrupt (if supported by the arch), otherwise, just wait
+> > -        * for the next tick.
+> > +        * for the next tick. We do this even for unbound work to make sure
+> > +        * *some* CPU will be doing the work.
+> >          */
+> >         if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
+> >                 if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
+> > @@ -100,28 +107,17 @@ bool irq_work_needs_cpu(void)
+> >         return true;
+> >  }
+> >
+> > -static void __irq_work_run(void)
+> > +static void process_irq_work_list(struct llist_head *llhead)
+> >  {
+> >         unsigned long flags;
+> >         struct irq_work *work;
+> > -       struct llist_head *this_list;
+> >         struct llist_node *llnode;
+> >
+> > -
+> > -       /*
+> > -        * Reset the "raised" state right before we check the list because
+> > -        * an NMI may enqueue after we find the list empty from the runner.
+> > -        */
+> > -       __this_cpu_write(irq_work_raised, 0);
+> > -       barrier();
+> > -
+> > -       this_list = &__get_cpu_var(irq_work_list);
+> > -       if (llist_empty(this_list))
+> > +       if (llist_empty(llhead))
+> >                 return;
+> >
+> >         BUG_ON(!irqs_disabled());
+> > -
+> > -       llnode = llist_del_all(this_list);
+> > +       llnode = llist_del_all(llhead);
+> >         while (llnode != NULL) {
+> >                 work = llist_entry(llnode, struct irq_work, llnode);
+> >
+> > @@ -146,6 +142,19 @@ static void __irq_work_run(void)
+> >         }
+> >  }
+> >
+> > +static void __irq_work_run(void)
+> > +{
+> > +       /*
+> > +        * Reset the "raised" state right before we check the list because
+> > +        * an NMI may enqueue after we find the list empty from the runner.
+> > +        */
+> > +       __this_cpu_write(irq_work_raised, 0);
+> > +       barrier();
+> > +
+> > +       process_irq_work_list(&__get_cpu_var(irq_work_list));
+> > +       process_irq_work_list(&unbound_irq_work_list);
+> > +}
+> > +
+> 
+> But then, who's going to process that work if every CPUs is idle?
+  Have a look into irq_work_queue(). There is:
+        /*
+         * If the work is not "lazy" or the tick is stopped, raise the irq
+         * work interrupt (if supported by the arch), otherwise, just wait
+         * for the next tick. We do this even for unbound work to make sure
+         * *some* CPU will be doing the work.
+         */
+        if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
+                if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
+                        arch_irq_work_raise();
+        }
 
-That would involve repurposing/generalizing a bit more of the existing
-x86-only code than I did the first time around, but if you (as x86
-maintainers) are happy with that, I'm all for it.
-
-I do have a couple of questions then
-- the module aliases host tool has no arch specific dependencies at
-all except having x86cpu as one of the entries: would you mind
-dropping the x86 prefix there? Or rather add dependencies on $ARCH?
-(If we drop it there, we basically end up with 'cpu:' everywhere)
-- in the vendor/family/model case, it may be preferable to drop these
-fields entirely from certain modules' aliases if they match on 'any'
-(provided that the module tools permit this) rather than add
-architecture, variant, revision, etc  fields for all architectures if
-they can only ever match on one
-- some of the X86_ macros would probable be redefined in terms of the
-generic macros rather than the other way around, which would result in
-some changes under arch/x86 as well, is that acceptable for you?
-
-Thanks,
-Ard.
+  So we raise an interrupt if there would be no timer ticking (which is
+what I suppose you mean by "CPU is idle"). That is nothing changed by my
+patches...
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
