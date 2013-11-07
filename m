@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab3KGQ3V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 11:29:21 -0500
-Received: from a10-51.smtp-out.amazonses.com ([54.240.10.51]:41821 "EHLO
-	a10-51.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753512Ab3KGQ3R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 11:29:17 -0500
-Date: Thu, 7 Nov 2013 16:29:15 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Andreas Herrmann <andreas.herrmann@calxeda.com>
-cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/slub: Switch slub_debug kernel option to early_param
- to avoid boot panic
-In-Reply-To: <alpine.DEB.2.02.1311071008010.22533@gentwo.org>
-Message-ID: <000001423365730f-486d720c-11cd-4f7d-939b-8ff2860c60b7-000000@email.amazonses.com>
-References: <20131106184529.GB5661@alberich> <000001422ed8406b-14bef091-eee0-4e0e-bcdd-a8909c605910-000000@email.amazonses.com> <20131106195417.GK5661@alberich> <20131106203429.GL5661@alberich> <20131106211604.GM5661@alberich>
- <000001422f59e79e-ba0d30e2-fe7d-4e6f-9029-65dc5978fe60-000000@email.amazonses.com> <20131107082732.GN5661@alberich> <20131107084129.GP5661@alberich> <alpine.DEB.2.02.1311071008010.22533@gentwo.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754524Ab3KGQdb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 11:33:31 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33447 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751701Ab3KGQd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 11:33:29 -0500
+Message-ID: <527BC0CF.70003@ti.com>
+Date: Thu, 7 Nov 2013 22:03:19 +0530
+From: Mugunthan V N <mugunthanvnm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
-Content-ID: <alpine.DEB.2.02.1311071028282.22533@gentwo.org>
-X-SES-Outgoing: 2013.11.07-54.240.10.51
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
+Subject: Re: [patch] net: make ndev->irq signed for error handling
+References: <20131107074849.GF21844@elgon.mountain> <527B842E.2060909@ti.com> <20131107122249.GN20521@mwanda>
+In-Reply-To: <20131107122249.GN20521@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is still something not optimal with the patch since it would disable
-debuggin on the kmalloc stack. Ccheck name for NULL only if
-slub_debug_slabs.
+On Thursday 07 November 2013 05:52 PM, Dan Carpenter wrote:
+> On Thu, Nov 07, 2013 at 05:44:38PM +0530, Mugunthan V N wrote:
+>> On Thursday 07 November 2013 01:18 PM, Dan Carpenter wrote:
+>>> There is a bug in cpsw_probe() where we do:
+>>>
+>>> 	ndev->irq = platform_get_irq(pdev, 0);
+>>> 	if (ndev->irq < 0) {
+>>>
+>>> The problem is that "ndev->irq" is unsigned so the error handling
+>>> doesn't work.  I have changed it to a regular int.
+>>>
+>>> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>> ndev->irq is never used any where in the driver, I think its better to
+>> remove this part of code from probe. If every one is ok, I can send a
+>> patch to remove the code.
+> It seems like cpsw_ndo_poll_controller() uses it.
+>
+>
 
+That can be changed to pass one of the interrupt numbers from priv as
+the irq number is not used in interrupt service routine.
 
-Subject: slub: Handle NULL parameter in kmem_cache_flags V2
-
-V1->V2
- - flags need to be applied regardless if !slub_debug_slabs
-
-kmem_cache_flags may be called with NULL parameter during early boot.
-Skip the test in that case.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/mm/slub.c
-===================================================================
---- linux.orig/mm/slub.c	2013-11-07 10:25:49.669706521 -0600
-+++ linux/mm/slub.c	2013-11-07 10:27:49.130394661 -0600
-@@ -1217,8 +1217,8 @@ static unsigned long kmem_cache_flags(un
- 	/*
- 	 * Enable debugging if selected on the kernel commandline.
- 	 */
--	if (slub_debug && (!slub_debug_slabs ||
--		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs))))
-+	if (slub_debug && (!slub_debug_slabs || (name &&
-+		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs)))))
- 		flags |= slub_debug;
-
- 	return flags;
+Regards
+Mugunthan V N
