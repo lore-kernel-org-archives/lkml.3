@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab3KGWun (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:50:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45468 "EHLO mx2.suse.de"
+	id S1755562Ab3KGWvD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:51:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46350 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228Ab3KGWuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 17:50:37 -0500
-Date: Thu, 7 Nov 2013 23:50:34 +0100
-From: Jan Kara <jack@suse.cz>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 2/4] irq_work: Provide a irq work that can be processed
- on any cpu
-Message-ID: <20131107225034.GD2054@quack.suse.cz>
-References: <1383860919-1883-1-git-send-email-jack@suse.cz>
- <1383860919-1883-3-git-send-email-jack@suse.cz>
- <CAFTL4hxLXb3hZacx_EdHeKZVfrpuyGoNqpGbX997XJx0UJSwyg@mail.gmail.com>
- <20131107221904.GB2054@quack.suse.cz>
- <20131107222311.GA28130@localhost.localdomain>
+	id S1754793Ab3KGWuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 17:50:54 -0500
+Message-ID: <527C1911.9030900@zytor.com>
+Date: Thu, 07 Nov 2013 14:49:53 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131107222311.GA28130@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Andi Kleen <ak@linux.intel.com>
+CC: x86@kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, tglx@linutronix.de,
+        Ingo Molnar <mingo@kernel.org>, Steve Capper <steve.capper@linaro.org>
+Subject: Re: [RFC PATCH 0/4] wire up CPU features to udev based module loading
+References: <1383844657-17487-1-git-send-email-ard.biesheuvel@linaro.org>	<527C0195.50008@zytor.com>	<20131107213944.GJ1962@tassilo.jf.intel.com> <CAKv+Gu9W-Pu4DGgB-85A3D4Ps9_FLSQgyK3EM7=k7KE1=xsnwg@mail.gmail.com>
+In-Reply-To: <CAKv+Gu9W-Pu4DGgB-85A3D4Ps9_FLSQgyK3EM7=k7KE1=xsnwg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 07-11-13 23:23:14, Frederic Weisbecker wrote:
-> On Thu, Nov 07, 2013 at 11:19:04PM +0100, Jan Kara wrote:
-> > On Thu 07-11-13 23:13:39, Frederic Weisbecker wrote:
-> > > But then, who's going to process that work if every CPUs is idle?
-> >   Have a look into irq_work_queue(). There is:
-> >         /*
-> >          * If the work is not "lazy" or the tick is stopped, raise the irq
-> >          * work interrupt (if supported by the arch), otherwise, just wait
-> >          * for the next tick. We do this even for unbound work to make sure
-> >          * *some* CPU will be doing the work.
-> >          */
-> >         if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
-> >                 if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
-> >                         arch_irq_work_raise();
-> >         }
-> > 
-> >   So we raise an interrupt if there would be no timer ticking (which is
-> > what I suppose you mean by "CPU is idle"). That is nothing changed by my
-> > patches...
+On 11/07/2013 02:15 PM, Ard Biesheuvel wrote:
 > 
-> Ok but we raise that interrupt locally, not to the other CPUs.
-  True, but that doesn't really matter in this case. Any CPU (including the
-local one) can handle the unbound work. So from the definition of the
-unbound work things are OK.
+> That would involve repurposing/generalizing a bit more of the existing
+> x86-only code than I did the first time around, but if you (as x86
+> maintainers) are happy with that, I'm all for it.
+> 
+> I do have a couple of questions then
+> - the module aliases host tool has no arch specific dependencies at
+> all except having x86cpu as one of the entries: would you mind
+> dropping the x86 prefix there? Or rather add dependencies on $ARCH?
+> (If we drop it there, we basically end up with 'cpu:' everywhere)
 
-Regarding my use for printk - if all (other) CPUs are idle then we can
-easily afford making the current cpu busy printing, that's not a problem.
-There's nothing else to do than to print what's remaining in the printk
-buffer...
+I think it makes sense to indicate what kind of CPU the string refers
+to, as the top-level indicator of what is going on.  This might be
+possible to macroize the generation of this prefix, though.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> - in the vendor/family/model case, it may be preferable to drop these
+> fields entirely from certain modules' aliases if they match on 'any'
+> (provided that the module tools permit this) rather than add
+> architecture, variant, revision, etc  fields for all architectures if
+> they can only ever match on one
+
+I think that can be CPU dependent.
+
+> - some of the X86_ macros would probable be redefined in terms of the
+> generic macros rather than the other way around, which would result in
+> some changes under arch/x86 as well, is that acceptable for you?
+
+If you are talking about X86_FEATURE_* then almost certainly no,
+although I'm willing to listen to what you have in mind.
+
+	-hpa
+
+
