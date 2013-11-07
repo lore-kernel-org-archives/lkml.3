@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab3KGAfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 19:35:21 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:48533 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab3KGAfT (ORCPT
+	id S1752915Ab3KGAhD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 19:37:03 -0500
+Received: from mga03.intel.com ([143.182.124.21]:58755 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752524Ab3KGAhB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 19:35:19 -0500
-Date: Wed, 6 Nov 2013 16:35:16 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sameer Nanda <snanda@chromium.org>
-cc: Luigi Semenzato <semenzato@google.com>, msb@facebook.com,
-        Andrew Morton <akpm@linux-foundation.org>, mhocko@suse.cz,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, oleg@redhat.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm, oom: Fix race when selecting process to kill
-In-Reply-To: <CANMivWZhNRGW6DPcqpYiUBjOX23LRZ_kJ9DzzfS7VdRpm075ZA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1311061631280.22318@chino.kir.corp.google.com>
-References: <1383693987-14171-1-git-send-email-snanda@chromium.org> <alpine.DEB.2.02.1311051715090.29471@chino.kir.corp.google.com> <CAA25o9SFZW7JxDQGv+h43EMSS3xH0eXy=LoHO_Psmk_n3dxqoA@mail.gmail.com> <alpine.DEB.2.02.1311051727090.29471@chino.kir.corp.google.com>
- <CANMivWZrefY1bbgpJgABqcUwKfqOR9HQtGNY6cWdutcMASeo2A@mail.gmail.com> <CAA25o9QG2BOmV5MoXCH73sadKoRD6wPivKq6TLvEem8GhZeXGg@mail.gmail.com> <CAA25o9Q-HvjQ_5pFJgYNeutaCoYgPu=e=k7EHq=6-+jeEuhzoA@mail.gmail.com>
- <CANMivWZhNRGW6DPcqpYiUBjOX23LRZ_kJ9DzzfS7VdRpm075ZA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 6 Nov 2013 19:37:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="317984489"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "tj@kernel.org" <tj@kernel.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] devres: Freeing the drs after all release() are called
+Thread-Topic: [PATCH] devres: Freeing the drs after all release() are called
+Thread-Index: AQHO21DJG9qpfyZgDEOCvuaDoE+mA5oY6wLw
+Date: Thu, 7 Nov 2013 00:36:56 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01B866C7@SHSMSX101.ccr.corp.intel.com>
+References: <1383720018.3650.37.camel@cliu38-desktop-build>
+ <20131106085859.GB9487@kroah.com>
+ <27240C0AC20F114CBF8149A2696CBE4A01B86696@SHSMSX101.ccr.corp.intel.com>
+ <20131107002959.GA32200@mtj.dyndns.org>
+In-Reply-To: <20131107002959.GA32200@mtj.dyndns.org>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013, Sameer Nanda wrote:
 
-> David -- I think we can make the duration that the tasklist_lock is
-> held smaller by consolidating the process selection logic that is
-> currently split across select_bad_process and oom_kill_process into
-> one place in select_bad_process.  The tasklist_lock would then need to
-> be held only when the thread lists are being traversed.  Would you be
-> ok with that?  I can re-spin the patch if that sounds like a workable
-> option.
+
+> -----Original Message-----
+> From: Tejun Heo [mailto:htejun@gmail.com] On Behalf Of tj@kernel.org
+> Sent: Thursday, November 07, 2013 8:30 AM
+> To: Liu, Chuansheng
+> Cc: Greg KH; dmitry.torokhov@gmail.com; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] devres: Freeing the drs after all release() are called
 > 
+> Hello, Liu.
+> 
+> On Thu, Nov 07, 2013 at 12:27:56AM +0000, Liu, Chuansheng wrote:
+> > The driver code is as below:
+> > _INIT() {
+> >
+> > A = devm_kzalloc();
+> > B= devm_request_threaded_irq(isr_handler);
+> > C = devm_kzalloc();
+> > }
+> >
+> > When driver _EXIT, the devres_release_all () will be called.
+> > The C will be kfreed before B, but when freeing irq B, the pending isr_handler()
+> possibly
+> > will access the memory B which has been freed.
+> > Then the memory corruption occurred.
+> >
+> > This patch can solve this scenario.
+> 
+> Isn't the bug there IRQ being requested before all its resources are
+> allocated?  The proposed change just masks the underlying issue or
+> incorrectly ordered operations.
+Yes, I knew I can put the code always like below:
+A = devm_kzalloc();
+C = devm_kzalloc();
+...
+B= devm_request_threaded_irq(isr_handler);
 
-No, this caused hundreds of machines to hit soft lockups for Google 
-because there's no synchronization that prevents dozens of cpus to take 
-tasklist_lock in the oom killer during parallel memcg oom conditions and 
-never allow the write_lock_irq() on fork() or exit() to make progress.  We 
-absolutely must hold tasklist_lock for as little time as possible in the 
-oom killer.
+But, the above is just one simple coding prototype, if there are many calling:
+E -- > F -- > D -- >... then to devm_kzalloc().
 
-That said, I've never actually seen your reported bug manifest in our 
-production environment so let's see if Oleg has any ideas.
+To be honest, it will make code too hard to always adapt the rule?
+And I trying to find out every potential devm_kzalloc() before irq requesting.
