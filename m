@@ -1,120 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319Ab3KGF6g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 00:58:36 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:36807 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750867Ab3KGF6e (ORCPT
+	id S1751171Ab3KGGMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 01:12:40 -0500
+Received: from smtprelay0066.hostedemail.com ([216.40.44.66]:41978 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750867Ab3KGGMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 00:58:34 -0500
-Date: Thu, 7 Nov 2013 13:56:32 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v3 4/9] ARM: add Marvell Berlin SoC familiy to Marvell
- doc
-Message-ID: <20131107135632.6384d705@xhacker>
-In-Reply-To: <1383661723-17956-5-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1383661723-17956-5-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Thu, 7 Nov 2013 01:12:39 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3870:3872:3874:4321:4384:4389:4395:5007:7514:7652:10004:10400:10848:10967:11232:11658:11914:12043:12296:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: tent13_6e42969cb9200
+X-Filterd-Recvd-Size: 2334
+Message-ID: <1383804763.7940.59.camel@joe-AO722>
+Subject: Re: [PATCH v2] dynamic_debug: add wildcard support to filter
+ files/functions/modules
+From: Joe Perches <joe@perches.com>
+To: Changbin Du <changbin.du@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jason Baron <jbaron@akamai.com>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>
+Date: Wed, 06 Nov 2013 22:12:43 -0800
+In-Reply-To: <CABgQ-Tgzbhy=vrofs2jYpwySzOw5mU7GZPDax2ueEYSA8iHh3w@mail.gmail.com>
+References: <51F73A17.2090208@akamai.com>
+	 <1382974150-7392-1-git-send-email-changbin.du@gmail.com>
+	 <20131031155253.79a21d6a126be11a64153d8b@linux-foundation.org>
+	 <1383262255.2769.11.camel@joe-AO722>
+	 <CABgQ-Tgzbhy=vrofs2jYpwySzOw5mU7GZPDax2ueEYSA8iHh3w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-11-07_03:2013-11-06,2013-11-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1311060301
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sebastian,
-
-I have some permission to comment this patch now ;)
-
-On Tue, 5 Nov 2013 06:28:38 -0800
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
-
-> This adds known facts and rumors about the Marvell Berlin (88DE3xxx) SoC
-> family to the Marvell SoC documentation.
+On Thu, 2013-11-07 at 11:11 +0800, Changbin Du wrote:
+> 2013/11/1 Joe Perches <joe@perches.com>:
+> > On Thu, 2013-10-31 at 15:52 -0700, Andrew Morton wrote:
+> >> On Mon, 28 Oct 2013 23:29:10 +0800 "Du, Changbin" <changbin.du@gmail.com> wrote:
+> > []
+> >> > +/* check if the string matches given pattern which includes wildcards */
+> >> > +static int match_pattern(const char *pattern, const char *string)
+> > []
+> >> No, something like this should be in lib/ so that other callers can use
+> >> it.  We already have at least one copy handy in
+> >> drivers/ata/libata-core.c:glob_match().  A better approach would be to
+> >> move that glob_match() into lib/glob_match.c then teach dynamic_debug
+> >> to use it.
+> >>
+> >> There are probably other private globbing functions lying around the
+> >> kernel, but it's rather a hard thing to grep for...
+> >
+> > Maybe use lib/parser.c where the other match_<foo> functions
+> > are already.
 > 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Reviewed-by: Jason Cooper <jason@lakedaemon.net>
-> Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-> Changelog:
-> v2->v3:
-> - add stepping Z1 to Armada 1000 (88DE3010)
-> RFCv2->v1:
-> - move Berlin below PXA/MMP[23] where it belongs to
-> - add note about IP (re-)used in Berlin SoCs
-> RFCv1->RFCv2:
-> - initial patch
-> 
-> Cc: Rob Landley <rob@landley.net>
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  Documentation/arm/Marvell/README |   29 +++++++++++++++++++++++++++++
->  1 file changed, 29 insertions(+)
-> 
-> diff --git a/Documentation/arm/Marvell/README
-> b/Documentation/arm/Marvell/README index 8f08a86..53ecf08 100644
-> --- a/Documentation/arm/Marvell/README
-> +++ b/Documentation/arm/Marvell/README
-> @@ -210,6 +210,35 @@ MMP/MMP2 family (communication processor)
->     Linux kernel mach directory: arch/arm/mach-mmp
->     Linux kernel plat directory: arch/arm/plat-pxa
->  
-> +Berlin family (Digital Entertainment)
-> +-------------------------------------
-> +
-> +  Flavors:
-> +	88DE3005, Armada 1500-mini
-> +		Design name:	BG2CD(A0)
-> +		Core:		ARM Cortex-A9, PL310 L2CC
-> +		Homepage:
-> http://www.marvell.com/digital-entertainment/armada-1500-mini/
-> +	88DE3010, Armada 1000
-> +		Design name:	BG2(Z1)
-> +		Core:		Marvell PJ4B (ARMv7), Tauros3 L2CC
-> +		Product Brief:
-> http://www.marvell.com/digital-entertainment/assets/armada_1000_pb.pdf
-88DE3010 is based on ARMv5 and is too old, I bet there are no real users now. Can we
-remove it?
-> +	88DE3100, Armada 1500
-> +		Design name:	BG2(A0)
-BG2(B0), BG2(A0) and BG2(Z1) are both called 88DE3100, Armada 1500. They are
-just different Step versions. And BG2(Zx) BG2(Ax) are rarely used outside marvell
-Mostly used version is BG2(B0)
-> +		Core:		Marvell PJ4B (ARMv7), Tauros3 L2CC
-> +		Homepage:
-> http://www.marvell.com/digital-entertainment/armada-1500/
-> +		Product Brief:
-> http://www.marvell.com/digital-entertainment/armada-1500/assets/Marvell-ARMADA-1500-Product-Brief.pdf
-> +	88DE????
-> +		Design name:	BG3
-> +		Core:		ARM Cortex-A15, CA15 integrated L2CC
-> +
-> +  Homepage: http://www.marvell.com/digital-entertainment/
-> +  Directory: arch/arm/mach-berlin
-> +
-> +  Comments:
-> +   * This line of SoCs is based on Marvell Sheeva or ARM Cortex CPUs
-> +     with Synopsys DesignWare (IRQ, GPIO, Timers, ...) and PXA IP (SDHCI,
-> USB, ETH, ...).
-> +   * Currently known design names are: C2, BG2(Z1), BG2(A0), BG2CD(A0),
-> BG2CT(A0) +
->  Long-term plans
->  ---------------
->  
+> match_<foo> functions in lib/parser.c just do simple match, they
+> doesn't support wildcards.
+> So it's not useful for us.
+
+It's not meant to be useful so much as be a possible
+generic location for your match_regex function.
+
 
