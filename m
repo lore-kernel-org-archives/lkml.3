@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab3KGO5g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 09:57:36 -0500
-Received: from mga03.intel.com ([143.182.124.21]:34441 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752683Ab3KGO5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 09:57:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="318270121"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH] lockref: Use BLOATED_SPINLOCKS to avoid explicit config dependencies
-Date: Thu,  7 Nov 2013 16:57:23 +0200
-Message-Id: <1383836243-8987-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.2
+	id S1751964Ab3KGPCw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:02:52 -0500
+Received: from omr-d08.mx.aol.com ([205.188.109.207]:61671 "EHLO
+	omr-d08.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab3KGPCt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 10:02:49 -0500
+X-Greylist: delayed 478 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Nov 2013 10:02:49 EST
+To: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Subject: IPIP6 Linux Kernel Implementation
+X-MB-Message-Source: WebUI
+X-MB-Message-Type: User
+MIME-Version: 1.0
+From: Pietro Paolini <pulsarpietro@aol.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+X-Mailer: AOL Webmail 38172-STANDARD
+Message-Id: <8D0A9E071C6D495-108C-DE6F@webmail-m208.sysops.aol.com>
+X-Originating-IP: [185.15.248.65]
+Date: Thu, 7 Nov 2013 09:54:50 -0500 (EST)
+x-aol-global-disposition: G
+x-aol-sid: 3039ac1d338a527ba9ba5e30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+Hello everyone,
 
-Avoid the fragile Kconfig construct guestimating spinlock_t sizes; use a
-friendly compile-time test to determine this.
+I am writing you regarding the implementation of the IPIP6 tunnel
+contained in the Linux Kernel which I am trying to configure in order
+to obtain a DS-Lite (IPIP6) compliant tunnel on a router running a
+linux OS kernel version 2.6.33.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-[kirill.shutemov@linux.intel.com: drop CONFIG_CMPXCHG_LOCKREF]
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- include/linux/lockref.h | 7 ++++++-
- lib/Kconfig             | 7 -------
- lib/lockref.c           | 2 +-
- 3 files changed, 7 insertions(+), 9 deletions(-)
+This my network topology :
 
-diff --git a/include/linux/lockref.h b/include/linux/lockref.h
-index 13dfd36a3294..c8929c3832db 100644
---- a/include/linux/lockref.h
-+++ b/include/linux/lockref.h
-@@ -15,10 +15,15 @@
-  */
- 
- #include <linux/spinlock.h>
-+#include <generated/bounds.h>
-+
-+#define USE_CMPXCHG_LOCKREF \
-+	(IS_ENABLED(CONFIG_ARCH_USE_CMPXCHG_LOCKREF) && \
-+	 IS_ENABLED(CONFIG_SMP) && !BLOATED_SPINLOCKS)
- 
- struct lockref {
- 	union {
--#ifdef CONFIG_CMPXCHG_LOCKREF
-+#if USE_CMPXCHG_LOCKREF
- 		aligned_u64 lock_count;
- #endif
- 		struct {
-diff --git a/lib/Kconfig b/lib/Kconfig
-index a16fdb50c252..7c1721ec4909 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -51,13 +51,6 @@ config PERCPU_RWSEM
- config ARCH_USE_CMPXCHG_LOCKREF
- 	bool
- 
--config CMPXCHG_LOCKREF
--	def_bool y if ARCH_USE_CMPXCHG_LOCKREF
--	depends on SMP
--	depends on !GENERIC_LOCKBREAK
--	depends on !DEBUG_SPINLOCK
--	depends on !DEBUG_LOCK_ALLOC
--
- config CRC_CCITT
- 	tristate "CRC-CCITT functions"
- 	help
-diff --git a/lib/lockref.c b/lib/lockref.c
-index af6e95d0bed6..d2b123f8456b 100644
---- a/lib/lockref.c
-+++ b/lib/lockref.c
-@@ -1,7 +1,7 @@
- #include <linux/export.h>
- #include <linux/lockref.h>
- 
--#ifdef CONFIG_CMPXCHG_LOCKREF
-+#if USE_CMPXCHG_LOCKREF
- 
- /*
-  * Allow weakly-ordered memory architectures to provide barrier-less
--- 
-1.8.4.2
+lan --> tun1 --> eth0
 
+where the MTU of all links is 1500.
+
+My problem comes up when the packet size of the incoming IPv4 datagram
+on my LAN interface is close to the MTU (1496 byte) : then the packet
+is "lost" in the file ip6_tunnel.c module at this point :
+
+linux-2.6.33.5/net/ipv6/ip6_tunnel.c
+function ip6_tnl_xmit2()
+{
+....
+        mtu = dst_mtu(dst) - sizeof (*ipv6h);
+        if (skb->len > mtu) {              --> 1496 > 1460 <--
+                *pmtu = mtu;
+                err = -EMSGSIZE;
+                goto tx_err_dst_release;
+        }
+....
+}
+
+As I understand, I could be wrong of course,  IPv6 fragmentation is not
+handled in that module and packets bigger then the mtu - sizeof(IPv6)
+are discarded; I am wondering if I can find a workaround in order to
+solve this problem as in some way use the IPv6 stack which I assume
+handles fragmentation - I could be again wrong - or implement it in the
+ip6_tunnel.c module.
+
+I am not an experienced kernel developer then is important for me
+understand if I am in the right direction and Linux kernel really does
+not provide this feature in a IPIP6 tunnel or if I am wrong; I need to
+have that for the implementation of a DS-Lite tunnel which as defined
+in the RFC6333 Section 5.3 requires IPv6 packet fragmentation.
+
+Thanks a lot,
+Pietro.
