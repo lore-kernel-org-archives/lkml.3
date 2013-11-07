@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab3KGNpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 08:45:13 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:64243 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754269Ab3KGNow (ORCPT
+	id S1754563Ab3KGNpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 08:45:47 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:41388 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754086Ab3KGNoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 08:44:52 -0500
+	Thu, 7 Nov 2013 08:44:44 -0500
 From: Juri Lelli <juri.lelli@gmail.com>
 To: peterz@infradead.org, tglx@linutronix.de
 Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
@@ -19,9 +19,9 @@ Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
         raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
         vincent.guittot@linaro.org, bruce.ashfield@windriver.com
-Subject: [PATCH 13/14] sched: speed up -dl pushes with a push-heap.
-Date: Thu,  7 Nov 2013 14:43:47 +0100
-Message-Id: <1383831828-15501-14-git-send-email-juri.lelli@gmail.com>
+Subject: [PATCH 10/14] sched: drafted deadline inheritance logic.
+Date: Thu,  7 Nov 2013 14:43:44 +0100
+Message-Id: <1383831828-15501-11-git-send-email-juri.lelli@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
 References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
@@ -29,489 +29,485 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Data from tests confirmed that the original active load balancing
-logic didn't scale neither in the number of CPU nor in the number of
-tasks (as sched_rt does).
+From: Dario Faggioli <raistlin@linux.it>
 
-Here we provide a global data structure to keep track of deadlines
-of the running tasks in the system. The structure is composed by
-a bitmask showing the free CPUs and a max-heap, needed when the system
-is heavily loaded.
+Some method to deal with rt-mutexes and make sched_dl interact with
+the current PI-coded is needed, raising all but trivial issues, that
+needs (according to us) to be solved with some restructuring of
+the pi-code (i.e., going toward a proxy execution-ish implementation).
 
-The implementation and concurrent access scheme are kept simple by
-design. However, our measurements show that we can compete with sched_rt
-on large multi-CPUs machines [1].
+This is under development, in the meanwhile, as a temporary solution,
+what this commits does is:
+ - ensure a pi-lock owner with waiters is never throttled down. Instead,
+   when it runs out of runtime, it immediately gets replenished and it's
+   deadline is postponed;
+ - the scheduling parameters (relative deadline and default runtime)
+   used for that replenishments --during the whole period it holds the
+   pi-lock-- are the ones of the waiting task with earliest deadline.
 
-Only the push path is addressed, the extension to use this structure
-also for pull decisions is straightforward. However, we are currently
-evaluating different (in order to decrease/avoid contention) data
-structures to solve possibly both problems. We are also going to re-run
-tests considering recent changes inside cpupri [2].
+Acting this way, we provide some kind of boosting to the lock-owner,
+still by using the existing (actually, slightly modified by the previous
+commit) pi-architecture.
 
-[1] http://retis.sssup.it/~jlelli/papers/Ospert11Lelli.pdf
-[2] http://www.spinics.net/lists/linux-rt-users/msg06778.html
+We would stress the fact that this is only a surely needed, all but
+clean solution to the problem. In the end it's only a way to re-start
+discussion within the community. So, as always, comments, ideas, rants,
+etc.. are welcome! :-)
 
+Signed-off-by: Dario Faggioli <raistlin@linux.it>
 Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- kernel/sched/Makefile      |    2 +-
- kernel/sched/core.c        |    3 +
- kernel/sched/cpudeadline.c |  216 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/cpudeadline.h |   33 +++++++
- kernel/sched/deadline.c    |   53 +++--------
- kernel/sched/sched.h       |    2 +
- 6 files changed, 269 insertions(+), 40 deletions(-)
- create mode 100644 kernel/sched/cpudeadline.c
- create mode 100644 kernel/sched/cpudeadline.h
+ include/linux/sched.h             |    8 +++-
+ include/linux/sched/rt.h          |    1 +
+ kernel/fork.c                     |    1 +
+ kernel/rtmutex.c                  |   14 +++++-
+ kernel/sched/core.c               |   36 ++++++++++++---
+ kernel/sched/deadline.c           |   91 +++++++++++++++++++++----------------
+ kernel/sched/sched.h              |   14 ++++++
+ kernel/trace/trace_sched_wakeup.c |    1 +
+ 8 files changed, 119 insertions(+), 47 deletions(-)
 
-diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
-index d77282f..ba43447 100644
---- a/kernel/sched/Makefile
-+++ b/kernel/sched/Makefile
-@@ -12,7 +12,7 @@ CFLAGS_core.o := $(PROFILING) -fno-omit-frame-pointer
- endif
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f95bafd..9dad4f3 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1099,8 +1099,12 @@ struct sched_dl_entity {
+ 	 * @dl_new tells if a new instance arrived. If so we must
+ 	 * start executing it with full runtime and reset its absolute
+ 	 * deadline;
++	 *
++	 * @dl_boosted tells if we are boosted due to DI. If so we are
++	 * outside bandwidth enforcement mechanism (but only until we
++	 * exit the critical section).
+ 	 */
+-	int dl_throttled, dl_new;
++	int dl_throttled, dl_new, dl_boosted;
  
- obj-y += core.o proc.o clock.o cputime.o idle_task.o fair.o rt.o deadline.o stop_task.o
--obj-$(CONFIG_SMP) += cpupri.o
-+obj-$(CONFIG_SMP) += cpupri.o cpudeadline.o
- obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
- obj-$(CONFIG_SCHEDSTATS) += stats.o
- obj-$(CONFIG_SCHED_DEBUG) += debug.o
+ 	/*
+ 	 * Bandwidth enforcement timer. Each -deadline task has its
+@@ -1345,6 +1349,8 @@ struct task_struct {
+ 	struct rb_node *pi_waiters_leftmost;
+ 	/* Deadlock detection and priority inheritance handling */
+ 	struct rt_mutex_waiter *pi_blocked_on;
++	/* Top pi_waiters task */
++	struct task_struct *pi_top_task;
+ #endif
+ 
+ #ifdef CONFIG_DEBUG_MUTEXES
+diff --git a/include/linux/sched/rt.h b/include/linux/sched/rt.h
+index a157797..1fa88a2c 100644
+--- a/include/linux/sched/rt.h
++++ b/include/linux/sched/rt.h
+@@ -35,6 +35,7 @@ static inline int rt_task(struct task_struct *p)
+ #ifdef CONFIG_RT_MUTEXES
+ extern int rt_mutex_getprio(struct task_struct *p);
+ extern void rt_mutex_setprio(struct task_struct *p, int prio);
++extern struct task_struct *rt_mutex_get_top_task(struct task_struct *task);
+ extern void rt_mutex_adjust_pi(struct task_struct *p);
+ static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
+ {
+diff --git a/kernel/fork.c b/kernel/fork.c
+index aa6e18d..7247105 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1092,6 +1092,7 @@ static void rt_mutex_init_task(struct task_struct *p)
+ 	p->pi_waiters = RB_ROOT;
+ 	p->pi_waiters_leftmost = NULL;
+ 	p->pi_blocked_on = NULL;
++	p->pi_top_task = NULL;
+ #endif
+ }
+ 
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index 4ea7eaa..f7f667e 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -14,6 +14,7 @@
+ #include <linux/export.h>
+ #include <linux/sched.h>
+ #include <linux/sched/rt.h>
++#include <linux/sched/deadline.h>
+ #include <linux/timer.h>
+ 
+ #include "rtmutex_common.h"
+@@ -200,6 +201,14 @@ int rt_mutex_getprio(struct task_struct *task)
+ 		   task->normal_prio);
+ }
+ 
++struct task_struct *rt_mutex_get_top_task(struct task_struct *task)
++{
++	if (likely(!task_has_pi_waiters(task)))
++		return NULL;
++
++	return task_top_pi_waiter(task)->task;
++}
++
+ /*
+  * Adjust the priority of a task, after its pi_waiters got modified.
+  *
+@@ -209,7 +218,7 @@ static void __rt_mutex_adjust_prio(struct task_struct *task)
+ {
+ 	int prio = rt_mutex_getprio(task);
+ 
+-	if (task->prio != prio)
++	if (task->prio != prio || dl_prio(prio))
+ 		rt_mutex_setprio(task, prio);
+ }
+ 
+@@ -652,7 +661,8 @@ void rt_mutex_adjust_pi(struct task_struct *task)
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+ 
+ 	waiter = task->pi_blocked_on;
+-	if (!waiter || waiter->task->prio == task->prio) {
++	if (!waiter || (waiter->task->prio == task->prio &&
++			!dl_prio(task->prio))) {
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 		return;
+ 	}
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 08500e0..6531760 100644
+index 6a3ab87..d9dca90 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -5398,6 +5398,7 @@ static void free_rootdomain(struct rcu_head *rcu)
- 	struct root_domain *rd = container_of(rcu, struct root_domain, rcu);
+@@ -951,7 +951,7 @@ static inline void check_class_changed(struct rq *rq, struct task_struct *p,
+ 		if (prev_class->switched_from)
+ 			prev_class->switched_from(rq, p);
+ 		p->sched_class->switched_to(rq, p);
+-	} else if (oldprio != p->prio)
++	} else if (oldprio != p->prio || dl_task(p))
+ 		p->sched_class->prio_changed(rq, p, oldprio);
+ }
  
- 	cpupri_cleanup(&rd->cpupri);
-+	cpudl_cleanup(&rd->cpudl);
- 	free_cpumask_var(rd->dlo_mask);
- 	free_cpumask_var(rd->rto_mask);
- 	free_cpumask_var(rd->online);
-@@ -5456,6 +5457,8 @@ static int init_rootdomain(struct root_domain *rd)
- 		goto free_dlo_mask;
+@@ -3042,7 +3042,7 @@ EXPORT_SYMBOL(sleep_on_timeout);
+  */
+ void rt_mutex_setprio(struct task_struct *p, int prio)
+ {
+-	int oldprio, on_rq, running;
++	int oldprio, on_rq, running, enqueue_flag = 0;
+ 	struct rq *rq;
+ 	const struct sched_class *prev_class;
  
- 	init_dl_bw(&rd->dl_bw);
-+	if (cpudl_init(&rd->cpudl) != 0)
-+		goto free_dlo_mask;
+@@ -3069,6 +3069,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
+ 	}
  
- 	if (cpupri_init(&rd->cpupri) != 0)
- 		goto free_rto_mask;
-diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
-new file mode 100644
-index 0000000..13a31a9
---- /dev/null
-+++ b/kernel/sched/cpudeadline.c
-@@ -0,0 +1,216 @@
-+/*
-+ *  kernel/sched/cpudl.c
-+ *
-+ *  Global CPU deadline management
-+ *
-+ *  Author: Juri Lelli <j.lelli@sssup.it>
-+ *
-+ *  This program is free software; you can redistribute it and/or
-+ *  modify it under the terms of the GNU General Public License
-+ *  as published by the Free Software Foundation; version 2
-+ *  of the License.
-+ */
+ 	trace_sched_pi_setprio(p, prio);
++	p->pi_top_task = rt_mutex_get_top_task(p);
+ 	oldprio = p->prio;
+ 	prev_class = p->sched_class;
+ 	on_rq = p->on_rq;
+@@ -3078,19 +3079,42 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
+ 	if (running)
+ 		p->sched_class->put_prev_task(rq, p);
+ 
+-	if (dl_prio(prio))
++	/*
++	 * Boosting condition are:
++	 * 1. -rt task is running and holds mutex A
++	 *      --> -dl task blocks on mutex A
++	 *
++	 * 2. -dl task is running and holds mutex A
++	 *      --> -dl task blocks on mutex A and could preempt the
++	 *          running task
++	 */
++	if (dl_prio(prio)) {
++		if (!dl_prio(p->normal_prio) || (p->pi_top_task &&
++			dl_entity_preempt(&p->pi_top_task->dl, &p->dl))) {
++			p->dl.dl_boosted = 1;
++			p->dl.dl_throttled = 0;
++			enqueue_flag = ENQUEUE_REPLENISH;
++		} else
++			p->dl.dl_boosted = 0;
+ 		p->sched_class = &dl_sched_class;
+-	else if (rt_prio(prio))
++	} else if (rt_prio(prio)) {
++		if (dl_prio(oldprio))
++			p->dl.dl_boosted = 0;
++		if (oldprio < prio)
++			enqueue_flag = ENQUEUE_HEAD;
+ 		p->sched_class = &rt_sched_class;
+-	else
++	} else {
++		if (dl_prio(oldprio))
++			p->dl.dl_boosted = 0;
+ 		p->sched_class = &fair_sched_class;
++	}
+ 
+ 	p->prio = prio;
+ 
+ 	if (running)
+ 		p->sched_class->set_curr_task(rq);
+ 	if (on_rq)
+-		enqueue_task(rq, p, oldprio < prio ? ENQUEUE_HEAD : 0);
++		enqueue_task(rq, p, enqueue_flag);
+ 
+ 	check_class_changed(rq, p, prev_class, oldprio);
+ out_unlock:
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index a4b86b0..3b251b0 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -16,20 +16,6 @@
+  */
+ #include "sched.h"
+ 
+-static inline int dl_time_before(u64 a, u64 b)
+-{
+-	return (s64)(a - b) < 0;
+-}
+-
+-/*
+- * Tells if entity @a should preempt entity @b.
+- */
+-static inline
+-int dl_entity_preempt(struct sched_dl_entity *a, struct sched_dl_entity *b)
+-{
+-	return dl_time_before(a->deadline, b->deadline);
+-}
+-
+ static inline struct task_struct *dl_task_of(struct sched_dl_entity *dl_se)
+ {
+ 	return container_of(dl_se, struct task_struct, dl);
+@@ -242,7 +228,8 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
+  * one, and to (try to!) reconcile itself with its own scheduling
+  * parameters.
+  */
+-static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
++static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se,
++				       struct sched_dl_entity *pi_se)
+ {
+ 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
+ 	struct rq *rq = rq_of_dl_rq(dl_rq);
+@@ -254,8 +241,8 @@ static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
+ 	 * future; in fact, we must consider execution overheads (time
+ 	 * spent on hardirq context, etc.).
+ 	 */
+-	dl_se->deadline = rq_clock(rq) + dl_se->dl_deadline;
+-	dl_se->runtime = dl_se->dl_runtime;
++	dl_se->deadline = rq_clock(rq) + pi_se->dl_deadline;
++	dl_se->runtime = pi_se->dl_runtime;
+ 	dl_se->dl_new = 0;
+ }
+ 
+@@ -277,11 +264,23 @@ static inline void setup_new_dl_entity(struct sched_dl_entity *dl_se)
+  * could happen are, typically, a entity voluntarily trying to overcome its
+  * runtime, or it just underestimated it during sched_setscheduler_ex().
+  */
+-static void replenish_dl_entity(struct sched_dl_entity *dl_se)
++static void replenish_dl_entity(struct sched_dl_entity *dl_se,
++				struct sched_dl_entity *pi_se)
+ {
+ 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
+ 	struct rq *rq = rq_of_dl_rq(dl_rq);
+ 
++	BUG_ON(pi_se->dl_runtime <= 0);
 +
-+#include <linux/gfp.h>
-+#include <linux/kernel.h>
-+#include "cpudeadline.h"
++	/*
++	 * This could be the case for a !-dl task that is boosted.
++	 * Just go with full inherited parameters.
++	 */
++	if (dl_se->dl_deadline == 0) {
++		dl_se->deadline = rq_clock(rq) + pi_se->dl_deadline;
++		dl_se->runtime = pi_se->dl_runtime;
++	}
 +
-+static inline int parent(int i)
-+{
-+	return (i - 1) >> 1;
-+}
+ 	/*
+ 	 * We keep moving the deadline away until we get some
+ 	 * available runtime for the entity. This ensures correct
+@@ -289,8 +288,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
+ 	 * arbitrary large.
+ 	 */
+ 	while (dl_se->runtime <= 0) {
+-		dl_se->deadline += dl_se->dl_period;
+-		dl_se->runtime += dl_se->dl_runtime;
++		dl_se->deadline += pi_se->dl_period;
++		dl_se->runtime += pi_se->dl_runtime;
+ 	}
+ 
+ 	/*
+@@ -309,8 +308,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
+ 			lag_once = true;
+ 			printk_sched("sched: DL replenish lagged to much\n");
+ 		}
+-		dl_se->deadline = rq_clock(rq) + dl_se->dl_deadline;
+-		dl_se->runtime = dl_se->dl_runtime;
++		dl_se->deadline = rq_clock(rq) + pi_se->dl_deadline;
++		dl_se->runtime = pi_se->dl_runtime;
+ 	}
+ }
+ 
+@@ -337,7 +336,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se)
+  * task with deadline equal to period this is the same of using
+  * dl_deadline instead of dl_period in the equation above.
+  */
+-static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
++static bool dl_entity_overflow(struct sched_dl_entity *dl_se,
++			       struct sched_dl_entity *pi_se, u64 t)
+ {
+ 	u64 left, right;
+ 
+@@ -359,8 +359,8 @@ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
+ 	 * of anything below microseconds resolution is actually fiction
+ 	 * (but still we want to give the user that illusion >;).
+ 	 */
+-	left = (dl_se->dl_period >> 10) * (dl_se->runtime >> 10);
+-	right = ((dl_se->deadline - t) >> 10) * (dl_se->dl_runtime >> 10);
++	left = (pi_se->dl_period >> 10) * (dl_se->runtime >> 10);
++	right = ((dl_se->deadline - t) >> 10) * (pi_se->dl_runtime >> 10);
+ 
+ 	return dl_time_before(right, left);
+ }
+@@ -374,7 +374,8 @@ static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
+  *  - using the remaining runtime with the current deadline would make
+  *    the entity exceed its bandwidth.
+  */
+-static void update_dl_entity(struct sched_dl_entity *dl_se)
++static void update_dl_entity(struct sched_dl_entity *dl_se,
++			     struct sched_dl_entity *pi_se)
+ {
+ 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
+ 	struct rq *rq = rq_of_dl_rq(dl_rq);
+@@ -384,14 +385,14 @@ static void update_dl_entity(struct sched_dl_entity *dl_se)
+ 	 * the actual scheduling parameters have to be "renewed".
+ 	 */
+ 	if (dl_se->dl_new) {
+-		setup_new_dl_entity(dl_se);
++		setup_new_dl_entity(dl_se, pi_se);
+ 		return;
+ 	}
+ 
+ 	if (dl_time_before(dl_se->deadline, rq_clock(rq)) ||
+-	    dl_entity_overflow(dl_se, rq_clock(rq))) {
+-		dl_se->deadline = rq_clock(rq) + dl_se->dl_deadline;
+-		dl_se->runtime = dl_se->dl_runtime;
++	    dl_entity_overflow(dl_se, pi_se, rq_clock(rq))) {
++		dl_se->deadline = rq_clock(rq) + pi_se->dl_deadline;
++		dl_se->runtime = pi_se->dl_runtime;
+ 	}
+ }
+ 
+@@ -405,7 +406,7 @@ static void update_dl_entity(struct sched_dl_entity *dl_se)
+  * actually started or not (i.e., the replenishment instant is in
+  * the future or in the past).
+  */
+-static int start_dl_timer(struct sched_dl_entity *dl_se)
++static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+ {
+ 	struct dl_rq *dl_rq = dl_rq_of_se(dl_se);
+ 	struct rq *rq = rq_of_dl_rq(dl_rq);
+@@ -414,6 +415,8 @@ static int start_dl_timer(struct sched_dl_entity *dl_se)
+ 	unsigned long range;
+ 	s64 delta;
+ 
++	if (boosted)
++		return 0;
+ 	/*
+ 	 * We want the timer to fire at the deadline, but considering
+ 	 * that it is actually coming from rq->clock and not from
+@@ -593,7 +596,7 @@ static void update_curr_dl(struct rq *rq)
+ 	dl_se->runtime -= delta_exec;
+ 	if (dl_runtime_exceeded(rq, dl_se)) {
+ 		__dequeue_task_dl(rq, curr, 0);
+-		if (likely(start_dl_timer(dl_se)))
++		if (likely(start_dl_timer(dl_se, curr->dl.dl_boosted)))
+ 			dl_se->dl_throttled = 1;
+ 		else
+ 			enqueue_task_dl(rq, curr, ENQUEUE_REPLENISH);
+@@ -748,7 +751,8 @@ static void __dequeue_dl_entity(struct sched_dl_entity *dl_se)
+ }
+ 
+ static void
+-enqueue_dl_entity(struct sched_dl_entity *dl_se, int flags)
++enqueue_dl_entity(struct sched_dl_entity *dl_se,
++		  struct sched_dl_entity *pi_se, int flags)
+ {
+ 	BUG_ON(on_dl_rq(dl_se));
+ 
+@@ -758,9 +762,9 @@ enqueue_dl_entity(struct sched_dl_entity *dl_se, int flags)
+ 	 * we want a replenishment of its runtime.
+ 	 */
+ 	if (!dl_se->dl_new && flags & ENQUEUE_REPLENISH)
+-		replenish_dl_entity(dl_se);
++		replenish_dl_entity(dl_se, pi_se);
+ 	else
+-		update_dl_entity(dl_se);
++		update_dl_entity(dl_se, pi_se);
+ 
+ 	__enqueue_dl_entity(dl_se);
+ }
+@@ -772,6 +776,18 @@ static void dequeue_dl_entity(struct sched_dl_entity *dl_se)
+ 
+ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
+ {
++	struct task_struct *pi_task = p->pi_top_task;
++	struct sched_dl_entity *pi_se = &p->dl;
 +
-+static inline int left_child(int i)
-+{
-+	return (i << 1) + 1;
-+}
++	/*
++	 * Use the scheduling parameters of the top pi-waiter
++	 * task if we have one and its (relative) deadline is
++	 * smaller than our one... OTW we keep our runtime and
++	 * deadline.
++	 */
++	if (pi_task && p->dl.dl_boosted && dl_prio(pi_task->normal_prio))
++		pi_se = &pi_task->dl;
 +
-+static inline int right_child(int i)
-+{
-+	return (i << 1) + 2;
-+}
-+
+ 	/*
+ 	 * If p is throttled, we do nothing. In fact, if it exhausted
+ 	 * its budget it needs a replenishment and, since it now is on
+@@ -781,7 +797,7 @@ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
+ 	if (p->dl.dl_throttled)
+ 		return;
+ 
+-	enqueue_dl_entity(&p->dl, flags);
++	enqueue_dl_entity(&p->dl, pi_se, flags);
+ 
+ 	if (!task_current(rq, p) && p->nr_cpus_allowed > 1)
+ 		enqueue_pushable_dl_task(rq, p);
+@@ -1020,8 +1036,7 @@ static void task_dead_dl(struct task_struct *p)
+ {
+ 	struct hrtimer *timer = &p->dl.dl_timer;
+ 
+-	if (hrtimer_active(timer))
+-		hrtimer_try_to_cancel(timer);
++	hrtimer_cancel(timer);
+ }
+ 
+ static void set_curr_task_dl(struct rq *rq)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index b04aeed..4da50db 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -105,6 +105,20 @@ static inline int task_has_dl_policy(struct task_struct *p)
+ 	return dl_policy(p->policy);
+ }
+ 
 +static inline int dl_time_before(u64 a, u64 b)
 +{
 +	return (s64)(a - b) < 0;
 +}
 +
-+void cpudl_exchange(struct cpudl *cp, int a, int b)
-+{
-+	int cpu_a = cp->elements[a].cpu, cpu_b = cp->elements[b].cpu;
-+
-+	swap(cp->elements[a], cp->elements[b]);
-+	swap(cp->cpu_to_idx[cpu_a], cp->cpu_to_idx[cpu_b]);
-+}
-+
-+void cpudl_heapify(struct cpudl *cp, int idx)
-+{
-+	int l, r, largest;
-+
-+	/* adapted from lib/prio_heap.c */
-+	while(1) {
-+		l = left_child(idx);
-+		r = right_child(idx);
-+		largest = idx;
-+
-+		if ((l < cp->size) && dl_time_before(cp->elements[idx].dl,
-+							cp->elements[l].dl))
-+			largest = l;
-+		if ((r < cp->size) && dl_time_before(cp->elements[largest].dl,
-+							cp->elements[r].dl))
-+			largest = r;
-+		if (largest == idx)
-+			break;
-+
-+		/* Push idx down the heap one level and bump one up */
-+		cpudl_exchange(cp, largest, idx);
-+		idx = largest;
-+	}
-+}
-+
-+void cpudl_change_key(struct cpudl *cp, int idx, u64 new_dl)
-+{
-+	WARN_ON(idx > num_present_cpus() || idx == IDX_INVALID);
-+
-+	if (dl_time_before(new_dl, cp->elements[idx].dl)) {
-+		cp->elements[idx].dl = new_dl;
-+		cpudl_heapify(cp, idx);
-+	} else {
-+		cp->elements[idx].dl = new_dl;
-+		while (idx > 0 && dl_time_before(cp->elements[parent(idx)].dl,
-+					cp->elements[idx].dl)) {
-+			cpudl_exchange(cp, idx, parent(idx));
-+			idx = parent(idx);
-+		}
-+	}
-+}
-+
-+static inline int cpudl_maximum(struct cpudl *cp)
-+{
-+	return cp->elements[0].cpu;
-+}
-+
 +/*
-+ * cpudl_find - find the best (later-dl) CPU in the system
-+ * @cp: the cpudl max-heap context
-+ * @p: the task
-+ * @later_mask: a mask to fill in with the selected CPUs (or NULL)
-+ *
-+ * Returns: int - best CPU (heap maximum if suitable)
++ * Tells if entity @a should preempt entity @b.
 + */
-+int cpudl_find(struct cpudl *cp, struct task_struct *p,
-+	       struct cpumask *later_mask)
++static inline
++int dl_entity_preempt(struct sched_dl_entity *a, struct sched_dl_entity *b)
 +{
-+	int best_cpu = -1;
-+	const struct sched_dl_entity *dl_se = &p->dl;
-+
-+	if (later_mask && cpumask_and(later_mask, cp->free_cpus,
-+			&p->cpus_allowed) && cpumask_and(later_mask,
-+			later_mask, cpu_active_mask)) {
-+		best_cpu = cpumask_any(later_mask);
-+		goto out;
-+	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
-+			dl_time_before(dl_se->deadline, cp->elements[0].dl)) {
-+		best_cpu = cpudl_maximum(cp);
-+		if (later_mask)
-+			cpumask_set_cpu(best_cpu, later_mask);
-+	}
-+
-+out:
-+	WARN_ON(best_cpu > num_present_cpus() && best_cpu != -1);
-+
-+	return best_cpu;
++	return dl_time_before(a->deadline, b->deadline);
 +}
 +
-+/*
-+ * cpudl_set - update the cpudl max-heap
-+ * @cp: the cpudl max-heap context
-+ * @cpu: the target cpu
-+ * @dl: the new earliest deadline for this cpu
-+ *
-+ * Notes: assumes cpu_rq(cpu)->lock is locked
-+ *
-+ * Returns: (void)
-+ */
-+void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid)
-+{
-+	int old_idx, new_cpu;
-+	unsigned long flags;
-+
-+	WARN_ON(cpu > num_present_cpus());
-+
-+	raw_spin_lock_irqsave(&cp->lock, flags);
-+	old_idx = cp->cpu_to_idx[cpu];
-+	if (!is_valid) {
-+		/* remove item */
-+		if (old_idx == IDX_INVALID) {
-+			/* 
-+			 * Nothing to remove if old_idx was invalid.
-+			 * This could happen if a rq_offline_dl is
-+			 * called for a CPU without -dl tasks running.
-+			 */
-+			goto out;
-+		}
-+		new_cpu = cp->elements[cp->size - 1].cpu;
-+		cp->elements[old_idx].dl = cp->elements[cp->size - 1].dl;
-+		cp->elements[old_idx].cpu = new_cpu;
-+		cp->size--;
-+		cp->cpu_to_idx[new_cpu] = old_idx;
-+		cp->cpu_to_idx[cpu] = IDX_INVALID;
-+		while (old_idx > 0 && dl_time_before(
-+				cp->elements[parent(old_idx)].dl,
-+				cp->elements[old_idx].dl)) {
-+			cpudl_exchange(cp, old_idx, parent(old_idx));
-+			old_idx = parent(old_idx);
-+		}
-+		cpumask_set_cpu(cpu, cp->free_cpus);
-+                cpudl_heapify(cp, old_idx);
-+
-+		goto out;
-+	}
-+
-+	if (old_idx == IDX_INVALID) {
-+		cp->size++;
-+		cp->elements[cp->size - 1].dl = 0;
-+		cp->elements[cp->size - 1].cpu = cpu;
-+		cp->cpu_to_idx[cpu] = cp->size - 1;
-+		cpudl_change_key(cp, cp->size - 1, dl);
-+		cpumask_clear_cpu(cpu, cp->free_cpus);
-+	} else {
-+		cpudl_change_key(cp, old_idx, dl);
-+	}
-+
-+out:
-+	raw_spin_unlock_irqrestore(&cp->lock, flags);
-+}
-+
-+/*
-+ * cpudl_init - initialize the cpudl structure
-+ * @cp: the cpudl max-heap context
-+ */
-+int cpudl_init(struct cpudl *cp)
-+{
-+	int i;
-+
-+	memset(cp, 0, sizeof(*cp));
-+	raw_spin_lock_init(&cp->lock);
-+	cp->size = 0;
-+	for (i = 0; i < NR_CPUS; i++)
-+		cp->cpu_to_idx[i] = IDX_INVALID;
-+	if (!alloc_cpumask_var(&cp->free_cpus, GFP_KERNEL))
-+		return -ENOMEM;
-+	cpumask_setall(cp->free_cpus);
-+
-+	return 0;
-+}
-+
-+/*
-+ * cpudl_cleanup - clean up the cpudl structure
-+ * @cp: the cpudl max-heap context
-+ */
-+void cpudl_cleanup(struct cpudl *cp)
-+{
-+	/*
-+	 * nothing to do for the moment
-+	 */
-+}
-diff --git a/kernel/sched/cpudeadline.h b/kernel/sched/cpudeadline.h
-new file mode 100644
-index 0000000..a202789
---- /dev/null
-+++ b/kernel/sched/cpudeadline.h
-@@ -0,0 +1,33 @@
-+#ifndef _LINUX_CPUDL_H
-+#define _LINUX_CPUDL_H
-+
-+#include <linux/sched.h>
-+
-+#define IDX_INVALID     -1
-+
-+struct array_item {
-+	u64 dl;
-+	int cpu;
-+};
-+
-+struct cpudl {
-+	raw_spinlock_t lock;
-+	int size;
-+	int cpu_to_idx[NR_CPUS];
-+	struct array_item elements[NR_CPUS];
-+	cpumask_var_t free_cpus;
-+};
-+
-+
-+#ifdef CONFIG_SMP
-+int cpudl_find(struct cpudl *cp, struct task_struct *p,
-+	       struct cpumask *later_mask);
-+void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid);
-+int cpudl_init(struct cpudl *cp);
-+void cpudl_cleanup(struct cpudl *cp);
-+#else
-+#define cpudl_set(cp, cpu, dl) do { } while (0)
-+#define cpudl_init() do { } while (0)
-+#endif /* CONFIG_SMP */
-+
-+#endif /* _LINUX_CPUDL_H */
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index be84cb3..9c1fd55 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -16,6 +16,8 @@
+ /*
+  * This is the priority-queue data structure of the RT scheduling class:
   */
- #include "sched.h"
+diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
+index 1457fb1..b5a9f02 100644
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -16,6 +16,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/ftrace.h>
+ #include <linux/sched/rt.h>
++#include <linux/sched/deadline.h>
+ #include <trace/events/sched.h>
+ #include "trace.h"
  
-+#include <linux/slab.h>
-+
- struct dl_bandwidth def_dl_bandwidth;
- 
- static inline struct task_struct *dl_task_of(struct sched_dl_entity *dl_se)
-@@ -659,6 +661,7 @@ static void inc_dl_deadline(struct dl_rq *dl_rq, u64 deadline)
- 		 */
- 		dl_rq->earliest_dl.next = dl_rq->earliest_dl.curr;
- 		dl_rq->earliest_dl.curr = deadline;
-+		cpudl_set(&rq->rd->cpudl, rq->cpu, deadline, 1);
- 	} else if (dl_rq->earliest_dl.next == 0 ||
- 		   dl_time_before(deadline, dl_rq->earliest_dl.next)) {
- 		/*
-@@ -682,6 +685,7 @@ static void dec_dl_deadline(struct dl_rq *dl_rq, u64 deadline)
- 	if (!dl_rq->dl_nr_running) {
- 		dl_rq->earliest_dl.curr = 0;
- 		dl_rq->earliest_dl.next = 0;
-+		cpudl_set(&rq->rd->cpudl, rq->cpu, 0, 0);
- 	} else {
- 		struct rb_node *leftmost = dl_rq->rb_leftmost;
- 		struct sched_dl_entity *entry;
-@@ -689,6 +693,7 @@ static void dec_dl_deadline(struct dl_rq *dl_rq, u64 deadline)
- 		entry = rb_entry(leftmost, struct sched_dl_entity, rb_node);
- 		dl_rq->earliest_dl.curr = entry->deadline;
- 		dl_rq->earliest_dl.next = next_deadline(rq);
-+		cpudl_set(&rq->rd->cpudl, rq->cpu, entry->deadline, 1);
- 	}
- }
- 
-@@ -874,9 +879,6 @@ static void yield_task_dl(struct rq *rq)
- #ifdef CONFIG_SMP
- 
- static int find_later_rq(struct task_struct *task);
--static int latest_cpu_find(struct cpumask *span,
--			   struct task_struct *task,
--			   struct cpumask *later_mask);
- 
- static int
- select_task_rq_dl(struct task_struct *p, int sd_flag, int flags)
-@@ -926,7 +928,7 @@ static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
- 	 * let's hope p can move out.
- 	 */
- 	if (rq->curr->nr_cpus_allowed == 1 ||
--	    latest_cpu_find(rq->rd->span, rq->curr, NULL) == -1)
-+	    cpudl_find(&rq->rd->cpudl, rq->curr, NULL) == -1)
- 		return;
- 
- 	/*
-@@ -934,7 +936,7 @@ static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
- 	 * see if it is pushed or pulled somewhere else.
- 	 */
- 	if (p->nr_cpus_allowed != 1 &&
--	    latest_cpu_find(rq->rd->span, p, NULL) != -1)
-+	    cpudl_find(&rq->rd->cpudl, p, NULL) != -1)
- 		return;
- 
- 	resched_task(rq->curr);
-@@ -1119,39 +1121,6 @@ next_node:
- 	return NULL;
- }
- 
--static int latest_cpu_find(struct cpumask *span,
--			   struct task_struct *task,
--			   struct cpumask *later_mask)
--{
--	const struct sched_dl_entity *dl_se = &task->dl;
--	int cpu, found = -1, best = 0;
--	u64 max_dl = 0;
--
--	for_each_cpu(cpu, span) {
--		struct rq *rq = cpu_rq(cpu);
--		struct dl_rq *dl_rq = &rq->dl;
--
--		if (cpumask_test_cpu(cpu, &task->cpus_allowed) &&
--		    (!dl_rq->dl_nr_running || dl_time_before(dl_se->deadline,
--		     dl_rq->earliest_dl.curr))) {
--			if (later_mask)
--				cpumask_set_cpu(cpu, later_mask);
--			if (!best && !dl_rq->dl_nr_running) {
--				best = 1;
--				found = cpu;
--			} else if (!best &&
--				   dl_time_before(max_dl,
--						  dl_rq->earliest_dl.curr)) {
--				max_dl = dl_rq->earliest_dl.curr;
--				found = cpu;
--			}
--		} else if (later_mask)
--			cpumask_clear_cpu(cpu, later_mask);
--	}
--
--	return found;
--}
--
- static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask_dl);
- 
- static int find_later_rq(struct task_struct *task)
-@@ -1168,7 +1137,8 @@ static int find_later_rq(struct task_struct *task)
- 	if (task->nr_cpus_allowed == 1)
- 		return -1;
- 
--	best_cpu = latest_cpu_find(task_rq(task)->rd->span, task, later_mask);
-+	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
-+			task, later_mask);
- 	if (best_cpu == -1)
- 		return -1;
- 
-@@ -1544,6 +1514,9 @@ static void rq_online_dl(struct rq *rq)
- {
- 	if (rq->dl.overloaded)
- 		dl_set_overload(rq);
-+
-+	if (rq->dl.dl_nr_running > 0)
-+		cpudl_set(&rq->rd->cpudl, rq->cpu, rq->dl.earliest_dl.curr, 1);
- }
- 
- /* Assumes rq->lock is held */
-@@ -1551,6 +1524,8 @@ static void rq_offline_dl(struct rq *rq)
- {
- 	if (rq->dl.overloaded)
- 		dl_clear_overload(rq);
-+
-+	cpudl_set(&rq->rd->cpudl, rq->cpu, 0, 0);
- }
- 
- void init_sched_dl_class(void)
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index bf4acf8..596e290 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -9,6 +9,7 @@
- #include <linux/tick.h>
- 
- #include "cpupri.h"
-+#include "cpudeadline.h"
- #include "cpuacct.h"
- 
- struct rq;
-@@ -507,6 +508,7 @@ struct root_domain {
- 	cpumask_var_t dlo_mask;
- 	atomic_t dlo_count;
- 	struct dl_bw dl_bw;
-+	struct cpudl cpudl;
- 
- 	/*
- 	 * The "RT overload" flag: it gets set if a CPU has more than
 -- 
 1.7.9.5
 
