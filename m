@@ -1,216 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab3KGITB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 03:19:01 -0500
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:33444 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab3KGISx (ORCPT
+	id S1754224Ab3KGITX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 03:19:23 -0500
+Received: from mailout.micron.com ([137.201.242.129]:20646 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab3KGITK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 03:18:53 -0500
+	Thu, 7 Nov 2013 03:19:10 -0500
+From: =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>
+To: "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+CC: Adrian Hunter <adrian.hunter@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1]  MTD: UBI:  try to avoid program data to NOR flash
+ after erasure interrupted
+Thread-Topic: Re: [PATCH 1/1]  MTD: UBI:  try to avoid program data to NOR
+ flash after erasure interrupted
+Thread-Index: Ac7bkfL3+Un6Pi2jSbO3yZA9UtDETw==
+Date: Thu, 7 Nov 2013 08:18:34 +0000
+Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A770B3733@NTXXIAMBX02.xacn.micron.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20274.003
+X-TM-AS-Result: No--23.620100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-In-Reply-To: <1492779.QFdev7puUr@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1311061656450.1220-100000@iolanthe.rowland.org>
-	<5303847.vEYmuQ7tHR@vostro.rjw.lan>
-	<CAGa+x84096yRRU4PvV4jte28_YtXXNECgtp8N6gm9-GT+BjRvw@mail.gmail.com>
-	<1492779.QFdev7puUr@vostro.rjw.lan>
-Date: Thu, 7 Nov 2013 09:18:52 +0100
-Message-ID: <CAPDyKFoZTMKEcGRLAgR8y1=_iuocrwgXJDADhMgK_MeZAnAuPg@mail.gmail.com>
-Subject: Re: Async runtime put in __device_release_driver()
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Kevin Hilman <khilman@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Archit Taneja <archit@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA78JQQk030303
 
-On 7 November 2013 02:05, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Wednesday, November 06, 2013 04:21:48 PM Kevin Hilman wrote:
->> On Wed, Nov 6, 2013 at 4:16 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> > On Wednesday, November 06, 2013 11:48:24 PM Ulf Hansson wrote:
->> >>
->> >> "Rafael J. Wysocki" <rjw@rjwysocki.net> skrev:
->> >> >On Wednesday, November 06, 2013 05:02:12 PM Alan Stern wrote:
->> >> >> On Wed, 6 Nov 2013, Rafael J. Wysocki wrote:
->> >> >>
->> >> >> > On Wednesday, November 06, 2013 09:51:42 AM Tomi Valkeinen wrote:
->> >> >> > > On 2013-11-05 23:29, Ulf Hansson wrote:
->> >> >> > > > On 23 October 2013 12:11, Tomi Valkeinen
->> >> ><tomi.valkeinen@ti.com> wrote:
->> >> >> > > >> Hi,
->> >> >> > > >>
->> >> >> > > >> I was debugging why clocks were left enabled after removing
->> >> >omapdss
->> >> >> > > >> driver, and I found this commit:
->> >> >> > > >>
->> >> >> > > >> fa180eb448fa263cf18dd930143b515d27d70d7b (PM / Runtime: Idle
->> >> >devices
->> >> >> > > >> asynchronously after probe|release)
->> >> >> > > >>
->> >> >> > > >> I don't understand how that is supposed to work.
->> >> >> > > >>
->> >> >> > > >> When a driver is removed, instead of using
->> >> >pm_runtime_put_sync() the
->> >> >> > > >> commit uses pm_runtime_put(), so the runtime_suspend call is
->> >> >queued. But
->> >> >> > > >> who is going to handle the queued suspend call, as the driver
->> >> >is already
->> >> >> > > >> removed? At least in my case, obviously nobody, as I only get
->> >> >> > > >> runtime_resume call in my driver, never the runtime_suspend.
->> >> >> > > >>
->> >> >> > > >> Is there something I need to add to my driver to make this
->> >> >work, or
->> >> >> > > >> should that part of the patch be reverted?
->> >> >> > > >
->> >> >> > > > I believe it is quite common that a device driver calls
->> >> >> > > > pm_runtime_get_sync as a part of it's remove callback, then it
->> >> >> > > > explicitly returns it's resources that has been fetched during
->> >> >probe.
->> >> >> > > > Like a clk_disable_unprepare for example.
->> >> >> > >
->> >> >> > > I guess you mean the driver calls pm_runtime_get_sync _and_
->> >> >> > > pm_runtime_put_sync as part of its remove callback?
->> >> >> > >
->> >> >> > > Probably bus drivers need to do that, but for memory mapped
->> >> >devices in a
->> >> >> > > SoC, I don't think there's normally any need to do
->> >> >> > > pm_runtime_get/put_sync during the remove callback.
->> >> >> > >
->> >> >> > > > The idea behind the change in __device_release_driver, was to
->> >> >try to
->> >> >> > > > prevent  devices from going active->idle->active and instead
->> >> >just
->> >> >> > > > remain active (if possible).
->> >> >> > > >
->> >> >> > > > In your case, which seems like a more modern way of
->> >> >implementing
->> >> >> > > > "remove", you shall call "pm_runtime_suspend" to make sure the
->> >> >> > > > runtime_suspend callbacks gets called.
->> >> >> > >
->> >> >> > > And as far as I understand, the change creates an explicit
->> >> >requirement
->> >> >> > > to do either pm_runtime_get/put_sync or pm_runtime_suspend inside
->> >> >> > > driver's remove callback. If so, that should be mentioned in big
->> >> >red
->> >> >> > > letters in the pm-runtime documentation.
->> >> >> > >
->> >> >> > > The runtime_pm.txt doc does mention something related to this
->> >> >(and btw,
->> >> >> > > the doc says pm_runtime_put_sync is being called, which is no
->> >> >longer
->> >> >> > > true), but nothing clear about how the driver remove callback
->> >> >must be
->> >> >> > > implemented.
->> >> >> >
->> >> >> > That's correct.
->> >> >> >
->> >> >> > > I tried grepping the kernel sources to find out if
->> >> >pm_runtime_suspend is
->> >> >> > > widely used to get SoC platform devices to suspend, but it
->> >> >doesn't seem
->> >> >> > > like it is. I didn't see pm_runtime_get/put_sync being used in
->> >> >remove
->> >> >> > > callbacks widely either, but that was more difficult one to grep.
->> >> >> >
->> >> >> > I think your observations are valid, which unfortunately means that
->> >> >we'll
->> >> >> > need to revert the commit in question, because it has changed the
->> >> >behavior
->> >> >> > that drivers are perfectly fine to expect given the existing
->> >> >documentation
->> >> >> > etc.  It looks like the change was premature at least.
->> >> >> >
->> >> >> > Greg, I wonder if you can queue up a revert of fa180eb448fa for
->> >> >3.13, or
->> >> >> > do you want me to do that?
->> >> >>
->> >> >> Would it be better to leave the runtime-idle callbacks (invoked
->> >> >during
->> >> >> probe) async and revert only the change to __device_release_driver()?
->> >> >>
->> >> >> Having an async callback after probe shouldn't cause problems,
->> >> >because
->> >> >> the driver will then be bound (assuming the probe succeeded).
->> >> >
->> >> >Right.  OK, I'll prepare a patch.
->> >>
->> >> That seems like a good way forward.
->> >
->> > There you go.
->> >
->> > ---
->> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> > Subject: PM / runtime: Use pm_runtime_put_sync() in __device_release_driver()
->> >
->> > Commit fa180eb448fa (PM / Runtime: Idle devices asynchronously after
->> > probe|release) modified __device_release_driver() to call
->> > pm_runtime_put(dev) instead of pm_runtime_put_sync(dev) before
->> > detaching the driver from the device.  However, that was a mistake,
->> > because pm_runtime_put(dev) causes rpm_idle() to be queued up and
->> > the driver may be gone already when that function is executed.
->> > That breaks the assumptions the drivers have the right to make
->> > about the core's behavior on the basis of the existing documentation
->> > and actually causes problems to happen, so revert that part of
->> > commit fa180eb448fa and restore the previous behavior of
->> > __device_release_driver().
->> >
->> > Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
->> > Fixes: fa180eb448fa (PM / Runtime: Idle devices asynchronously after probe|release)
->> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> > Cc: 3.10+ <stable@vger.kernel.org> # 3.10+
->>
->> Acked-by: Kevin Hilman <khilman@linaro.org>
->>
->> I like this fix since I don't want to add any more requirements to drivers.
+Hi:
+As we talked in mail before, please check my patch as below:
 
-Agree!
+From: Qi Wang <qiwang@micron.com>
 
->
-> OK, I've queued this up for 3.13.
+nor_erase_prepare() will be called before erase a NOR flash, it will program '0'
+into a block to mark this block. But program data into a erasure interrupted block
+can cause program timtout(several minutes at most) error, could impact other 
+operation on NOR flash. So UBIFS can read this block first to avoid unneeded 
+program operation. 
 
-If not to late:
+This patch try to put read operation at head of write operation in 
+nor_erase_prepare(), read out the data. 
+If the data is already corrupt, then no need to program any data into this block, 
+just go to erase this block.
 
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Qi Wang <qiwang@qiwang@micron.com>
+---
+diff --git a/drivers/mtd/ubi/io.c b/drivers/mtd/ubi/io.c
+index bf79def..0a6343d 100644
+--- a/drivers/mtd/ubi/io.c
++++ b/drivers/mtd/ubi/io.c
+@@ -499,6 +499,7 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
+ 	size_t written;
+ 	loff_t addr;
+ 	uint32_t data = 0;
++	struct ubi_ec_hdr ec_hdr;
+ 	/*
+ 	 * Note, we cannot generally define VID header buffers on stack,
+ 	 * because of the way we deal with these buffers (see the header
+@@ -509,49 +510,38 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
+ 	struct ubi_vid_hdr vid_hdr;
+ 
+ 	/*
++	 * If VID or EC is valid, need to corrupt it before erase operation.  
+ 	 * It is important to first invalidate the EC header, and then the VID
+ 	 * header. Otherwise a power cut may lead to valid EC header and
+ 	 * invalid VID header, in which case UBI will treat this PEB as
+ 	 * corrupted and will try to preserve it, and print scary warnings.
+ 	 */
+ 	addr = (loff_t)pnum * ubi->peb_size;
+-	err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
+-	if (!err) {
+-		addr += ubi->vid_hdr_aloffset;
+-		err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
+-		if (!err)
+-			return 0;
++	err = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
++	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
++	    err != UBI_IO_FF){
++		err1 = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
++		if(err1)
++			goto error;
+ 	}
+ 
+-	/*
+-	 * We failed to write to the media. This was observed with Spansion
+-	 * S29GL512N NOR flash. Most probably the previously eraseblock erasure
+-	 * was interrupted at a very inappropriate moment, so it became
+-	 * unwritable. In this case we probably anyway have garbage in this
+-	 * PEB.
+-	 */
+-	err1 = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
+-	if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
+-	    err1 == UBI_IO_FF) {
+-		struct ubi_ec_hdr ec_hdr;
+-
+-		err1 = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
+-		if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
+-		    err1 == UBI_IO_FF)
+-			/*
+-			 * Both VID and EC headers are corrupted, so we can
+-			 * safely erase this PEB and not afraid that it will be
+-			 * treated as a valid PEB in case of an unclean reboot.
+-			 */
+-			return 0;
++	err = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
++	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
++	    err != UBI_IO_FF){
++	    	addr += ubi->vid_hdr_aloffset;
++		err1 = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
++		if (err1)
++			goto error;	
+ 	}
++	return 0;
+ 
++error:
+ 	/*
+-	 * The PEB contains a valid VID header, but we cannot invalidate it.
++	 * The PEB contains a valid VID or EC header, but we cannot invalidate it.
+ 	 * Supposedly the flash media or the driver is screwed up, so return an
+ 	 * error.
+ 	 */
+-	ubi_err("cannot invalidate PEB %d, write returned %d read returned %d",
++	ubi_err("cannot invalidate PEB %d, read returned %d write returned %d",
+ 		pnum, err, err1);
+ 	ubi_dump_flash(ubi, pnum, 0, ubi->peb_size);
+ 	return -EIO;
+---
 
-BTW, I start creating a patch on the doc to align it to the changes
-that the "async" patches made.
+I have tested this patch on Micron NOR flash, part number is£ºJS28F512M29EWHA.
+If have any questions, please let me know. 
+Thank you
 
-Kind regards
-Ulf Hansson
-
->
-> Thanks!
->
->
->> > ---
->> >  drivers/base/dd.c |    2 +-
->> >  1 file changed, 1 insertion(+), 1 deletion(-)
->> >
->> > Index: linux-pm/drivers/base/dd.c
->> > ===================================================================
->> > --- linux-pm.orig/drivers/base/dd.c
->> > +++ linux-pm/drivers/base/dd.c
->> > @@ -499,7 +499,7 @@ static void __device_release_driver(stru
->> >                                                      BUS_NOTIFY_UNBIND_DRIVER,
->> >                                                      dev);
->> >
->> > -               pm_runtime_put(dev);
->> > +               pm_runtime_put_sync(dev);
->> >
->> >                 if (dev->bus && dev->bus->remove)
->> >                         dev->bus->remove(dev);
->> >
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+Best Regards, 
+Qi Wang ÍõÆğ
+ESG APAC AE 
+Tel: 86-021-38997158
+Mobile: 86-15201958202
+Email: qiwang@micron.com
+Address: No 601 Fasai Rd, Pudong, Shanghai, China, 200131
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
