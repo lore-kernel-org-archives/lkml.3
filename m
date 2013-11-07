@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab3KGB1G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 20:27:06 -0500
-Received: from mga09.intel.com ([134.134.136.24]:42037 "EHLO mga09.intel.com"
+	id S1753292Ab3KGB1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 20:27:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:18320 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753112Ab3KGB05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 20:26:57 -0500
+	id S1753217Ab3KGB1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 20:27:06 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="431033215"
-Subject: [PATCH v4 3/5] MCS Lock: Barrier corrections
+   d="scan'208";a="431033284"
+Subject: [PATCH v4 5/5] MCS Lock: Allow architecture specific memory
+ barrier in lock/unlock
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>
@@ -37,8 +38,8 @@ Cc: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
 In-Reply-To: <cover.1383783691.git.tim.c.chen@linux.intel.com>
 References: <cover.1383783691.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Nov 2013 17:26:52 -0800
-Message-ID: <1383787612.11046.366.camel@schen9-DESK>
+Date: Wed, 06 Nov 2013 17:27:00 -0800
+Message-ID: <1383787620.11046.368.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -46,66 +47,237 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch corrects the way memory barriers are used in the MCS lock
-and removes ones that are not needed. Also add comments on all barriers.
+This patch moves the decision of what kind of memory barriers to be
+used in the MCS lock and unlock functions to the architecture specific
+layer. It also moves the actual lock/unlock code to mcs_spinlock.c
+file.
 
-Reviewed-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
+A full memory barrier will be used if the following macros are not
+defined:
+ 1) smp_mb__before_critical_section()
+ 2) smp_mb__after_critical_section()
+
+For the x86 architecture, only compiler barrier will be needed.
+
+Acked-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- include/linux/mcs_spinlock.h |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/barrier.h |    6 +++
+ include/linux/mcs_spinlock.h   |   78 +-------------------------------------
+ kernel/locking/mcs_spinlock.c  |   81 ++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 86 insertions(+), 79 deletions(-)
 
+diff --git a/arch/x86/include/asm/barrier.h b/arch/x86/include/asm/barrier.h
+index c6cd358..6d0172c 100644
+--- a/arch/x86/include/asm/barrier.h
++++ b/arch/x86/include/asm/barrier.h
+@@ -92,6 +92,12 @@
+ #endif
+ #define smp_read_barrier_depends()	read_barrier_depends()
+ #define set_mb(var, value) do { (void)xchg(&var, value); } while (0)
++
++#if !defined(CONFIG_X86_PPRO_FENCE) && !defined(CONFIG_X86_OOSTORE)
++# define smp_mb__before_critical_section()	barrier()
++# define smp_mb__after_critical_section()	barrier()
++#endif
++
+ #else
+ #define smp_mb()	barrier()
+ #define smp_rmb()	barrier()
 diff --git a/include/linux/mcs_spinlock.h b/include/linux/mcs_spinlock.h
-index 96f14299..93d445d 100644
+index f2c71e8..d54bb23 100644
 --- a/include/linux/mcs_spinlock.h
 +++ b/include/linux/mcs_spinlock.h
-@@ -36,16 +36,19 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- 	node->locked = 0;
- 	node->next   = NULL;
+@@ -12,19 +12,6 @@
+ #ifndef __LINUX_MCS_SPINLOCK_H
+ #define __LINUX_MCS_SPINLOCK_H
  
+-/*
+- * asm/processor.h may define arch_mutex_cpu_relax().
+- * If it is not defined, cpu_relax() will be used.
+- */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/processor.h>
+-#include <linux/compiler.h>
+-
+-#ifndef arch_mutex_cpu_relax
+-# define arch_mutex_cpu_relax() cpu_relax()
+-#endif
+-
+ struct mcs_spinlock {
+ 	struct mcs_spinlock *next;
+ 	int locked; /* 1 if lock acquired */
+@@ -32,68 +19,7 @@ struct mcs_spinlock {
+ 
+ extern
+ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node);
+-
+-/*
+- * In order to acquire the lock, the caller should declare a local node and
+- * pass a reference of the node to this function in addition to the lock.
+- * If the lock has already been acquired, then this will proceed to spin
+- * on this node->locked until the previous lock holder sets the node->locked
+- * in mcs_spin_unlock().
+- *
+- * The _raw_mcs_spin_lock() function should not be called directly. Instead,
+- * users should call mcs_spin_lock().
+- */
+-static inline
+-void _raw_mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+-{
+-	struct mcs_spinlock *prev;
+-
+-	/* Init node */
+-	node->locked = 0;
+-	node->next   = NULL;
+-
+-	/* xchg() provides a memory barrier */
+-	prev = xchg(lock, node);
+-	if (likely(prev == NULL)) {
+-		/* Lock acquired */
+-		return;
+-	}
+-	ACCESS_ONCE(prev->next) = node;
+-	/* Wait until the lock holder passes the lock down */
+-	while (!ACCESS_ONCE(node->locked))
+-		arch_mutex_cpu_relax();
+-
+-	/* Make sure subsequent operations happen after the lock is acquired */
+-	smp_rmb();
+-}
+-
+-/*
+- * Releases the lock. The caller should pass in the corresponding node that
+- * was used to acquire the lock.
+- */
+-static inline
+-void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+-{
+-	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
+-
+-	if (likely(!next)) {
+-		/*
+-		 * cmpxchg() provides a memory barrier.
+-		 * Release the lock by setting it to NULL
+-		 */
+-		if (likely(cmpxchg(lock, node, NULL) == node))
+-			return;
+-		/* Wait until the next pointer is set */
+-		while (!(next = ACCESS_ONCE(node->next)))
+-			arch_mutex_cpu_relax();
+-	} else {
+-		/*
+-		 * Make sure all operations within the critical section
+-		 * happen before the lock is released.
+-		 */
+-		smp_wmb();
+-	}
+-	ACCESS_ONCE(next->locked) = 1;
+-}
++extern
++void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node);
+ 
+ #endif /* __LINUX_MCS_SPINLOCK_H */
+diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
+index 3c55626..2dfd207 100644
+--- a/kernel/locking/mcs_spinlock.c
++++ b/kernel/locking/mcs_spinlock.c
+@@ -7,15 +7,90 @@
+  * It avoids expensive cache bouncings that common test-and-set spin-lock
+  * implementations incur.
+  */
++/*
++ * asm/processor.h may define arch_mutex_cpu_relax().
++ * If it is not defined, cpu_relax() will be used.
++ */
++#include <asm/barrier.h>
++#include <asm/cmpxchg.h>
++#include <asm/processor.h>
++#include <linux/compiler.h>
+ #include <linux/mcs_spinlock.h>
+ #include <linux/export.h>
+ 
++#ifndef arch_mutex_cpu_relax
++# define arch_mutex_cpu_relax() cpu_relax()
++#endif
++
+ /*
+- * We don't inline mcs_spin_lock() so that perf can correctly account for the
+- * time spent in this lock function.
++ * Fall back to use full memory barrier if those macros are not defined
++ * in a architecture specific header file.
++ */
++#ifndef smp_mb__before_critical_section
++#define	smp_mb__before_critical_section()	smp_mb()
++#endif
++
++#ifndef smp_mb__after_critical_section
++#define	smp_mb__after_critical_section()	smp_mb()
++#endif
++
++
++/*
++ * In order to acquire the lock, the caller should declare a local node and
++ * pass a reference of the node to this function in addition to the lock.
++ * If the lock has already been acquired, then this will proceed to spin
++ * on this node->locked until the previous lock holder sets the node->locked
++ * in mcs_spin_unlock().
+  */
+ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+ {
+-	_raw_mcs_spin_lock(lock, node);
++	struct mcs_spinlock *prev;
++
++	/* Init node */
++	node->locked = 0;
++	node->next   = NULL;
++
 +	/* xchg() provides a memory barrier */
- 	prev = xchg(lock, node);
- 	if (likely(prev == NULL)) {
- 		/* Lock acquired */
- 		return;
- 	}
- 	ACCESS_ONCE(prev->next) = node;
--	smp_wmb();
- 	/* Wait until the lock holder passes the lock down */
- 	while (!ACCESS_ONCE(node->locked))
- 		arch_mutex_cpu_relax();
++	prev = xchg(lock, node);
++	if (likely(prev == NULL)) {
++		/* Lock acquired */
++		return;
++	}
++	ACCESS_ONCE(prev->next) = node;
++	/* Wait until the lock holder passes the lock down */
++	while (!ACCESS_ONCE(node->locked))
++		arch_mutex_cpu_relax();
 +
 +	/* Make sure subsequent operations happen after the lock is acquired */
-+	smp_rmb();
++	smp_mb__before_critical_section();
  }
- 
- /*
-@@ -58,6 +61,7 @@ static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *nod
- 
- 	if (likely(!next)) {
- 		/*
+ EXPORT_SYMBOL_GPL(mcs_spin_lock);
++
++/*
++ * Releases the lock. The caller should pass in the corresponding node that
++ * was used to acquire the lock.
++ */
++void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
++{
++	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
++
++	if (likely(!next)) {
++		/*
 +		 * cmpxchg() provides a memory barrier.
- 		 * Release the lock by setting it to NULL
- 		 */
- 		if (likely(cmpxchg(lock, node, NULL) == node))
-@@ -65,9 +69,14 @@ static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *nod
- 		/* Wait until the next pointer is set */
- 		while (!(next = ACCESS_ONCE(node->next)))
- 			arch_mutex_cpu_relax();
++		 * Release the lock by setting it to NULL
++		 */
++		if (likely(cmpxchg(lock, node, NULL) == node))
++			return;
++		/* Wait until the next pointer is set */
++		while (!(next = ACCESS_ONCE(node->next)))
++			arch_mutex_cpu_relax();
 +	} else {
 +		/*
 +		 * Make sure all operations within the critical section
 +		 * happen before the lock is released.
 +		 */
-+		smp_wmb();
- 	}
- 	ACCESS_ONCE(next->locked) = 1;
--	smp_wmb();
- }
- 
- #endif /* __LINUX_MCS_SPINLOCK_H */
++		smp_mb__after_critical_section();
++	}
++	ACCESS_ONCE(next->locked) = 1;
++}
++EXPORT_SYMBOL_GPL(mcs_spin_unlock);
 -- 
 1.7.4.4
-
 
 
