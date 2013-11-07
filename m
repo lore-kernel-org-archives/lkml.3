@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab3KGLyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 06:54:10 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:49981 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab3KGLyH (ORCPT
+	id S1752727Ab3KGLy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 06:54:58 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:39223 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958Ab3KGLyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 06:54:07 -0500
+	Thu, 7 Nov 2013 06:54:55 -0500
+Date: Thu, 7 Nov 2013 11:54:48 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org
+Subject: Re: [PATCH 3/7] ARM: ux500: Remove ATAG support for SDI (MMC)
+Message-ID: <20131107115448.GO30901@lee--X1>
+References: <1383732348-18576-1-git-send-email-lee.jones@linaro.org>
+ <1383732348-18576-4-git-send-email-lee.jones@linaro.org>
+ <20131107114654.GF16735@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1383788572-25938-4-git-send-email-cody@linux.vnet.ibm.com>
-References: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com>
-	<1383788572-25938-4-git-send-email-cody@linux.vnet.ibm.com>
-Date: Thu, 7 Nov 2013 03:54:05 -0800
-Message-ID: <CANN689FAXMHtBpcXJ2ATuG66Q5BihQJu=hW-Lm14GC7OtSChLw@mail.gmail.com>
-Subject: Re: [PATCH v2 03/11] rbtree/test: test rbtree_postorder_for_each_entry_safe()
-From: Michel Lespinasse <walken@google.com>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        EXT4 <linux-ext4@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        rostedt@goodmis.org, Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131107114654.GF16735@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 6, 2013 at 5:42 PM, Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
-> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-> ---
->  lib/rbtree_test.c | 11 +++++++++++
->  1 file changed, 11 insertions(+)
->
-> diff --git a/lib/rbtree_test.c b/lib/rbtree_test.c
-> index df6c125..8b3c9dc 100644
-> --- a/lib/rbtree_test.c
-> +++ b/lib/rbtree_test.c
-> @@ -114,6 +114,16 @@ static int black_path_count(struct rb_node *rb)
->         return count;
->  }
->
-> +static void check_postorder_foreach(int nr_nodes)
-> +{
-> +       struct test_node *cur, *n;
-> +       int count = 0;
-> +       rbtree_postorder_for_each_entry_safe(cur, n, &root, rb)
-> +               count++;
-> +
-> +       WARN_ON_ONCE(count != nr_nodes);
-> +}
-> +
->  static void check_postorder(int nr_nodes)
->  {
->         struct rb_node *rb;
-> @@ -148,6 +158,7 @@ static void check(int nr_nodes)
->         WARN_ON_ONCE(count < (1 << black_path_count(rb_last(&root))) - 1);
->
->         check_postorder(nr_nodes);
-> +       check_postorder_foreach(nr_nodes);
->  }
->
->  static void check_augmented(int nr_nodes)
-> --
-> 1.8.4.2
+On Thu, 07 Nov 2013, Russell King - ARM Linux wrote:
 
-Looks reasonable if we need the rbtree_postorder_for_each_entry_safe
-macro - but as I mentioned in 01/11, I would prefer if we could do
-without that API.
+> On Wed, Nov 06, 2013 at 10:05:44AM +0000, Lee Jones wrote:
+> > This hasn't been used since we moved over to a Device Tree only platform.
+> 
+> The patch summary line is slightly off.  There's nothing here to do with
+> ATAGs.
 
-Acked-by: Michel Lespinasse <walken@google.com>
+Oh I see. Yes you're right, it was just what Arnd, myself and a few
+others called non-DT 'cos it was easier.
+
+Linus are you happy to fixup the subject lines of these two commits or
+would you like me to re-submit?
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
