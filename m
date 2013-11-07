@@ -1,118 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab3KGOr4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 09:47:56 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:55906 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab3KGOrx (ORCPT
+	id S1751657Ab3KGOzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 09:55:40 -0500
+Received: from router-fw.net-space.pl ([89.174.63.77]:51027 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab3KGOzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 09:47:53 -0500
-X-AuditID: cbfec7f5-b7ef66d00000795a-cc-527ba817faa8
-From: Tomasz Figa <t.figa@samsung.com>
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: linux-pm@vger.kernel.org, naveenkrishna.ch@gmail.com, rui.zhang@intel.com,
-        eduardo.valentin@ti.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
-        kgene.kim@samsung.com, devicetree@vger.kernel.org,
-        b.zolnierkie@samsung.com, cpgs@samsung.com
-Subject: Re: [PATCH 1/3 v8] thermal: samsung: add intclr_fall_shift bit in
- exynos_tmu_register struct
-Date: Thu, 07 Nov 2013 15:47:45 +0100
-Message-id: <1458475.5nSWLtVcXi@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11.2 (Linux/3.11.5-gentoo; KDE/4.11.2; x86_64; ; )
-In-reply-to: <1383803562-31752-1-git-send-email-ch.naveen@samsung.com>
-References: <1381979473-7079-1-git-send-email-ch.naveen@samsung.com>
- <1383803562-31752-1-git-send-email-ch.naveen@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t/xK7riK6qDDL7e5rRouBpisXHGelaL
-	u88PM1q8PKRpMf/IOVaLNft/Mln0LrjKZnF51xw2i8+9RxgtZpzfx2SxaNt/ZosnD/vYHHg8
-	ds66y+6xeM9LJo++LasYPY7f2M7k8XmTXABrFJdNSmpOZllqkb5dAlfGwY83mQu6xSo+rPvM
-	1sD4R7CLkZNDQsBEon33AkYIW0ziwr31bF2MXBxCAksZJTo/9rFCOF1MEtOOXmUCqWITUJP4
-	3PCIDcQWAeo+/uoMO0gRs8BSJon5yxYxgySEBdIlzvRfA7NZBFQl7r1cBraCV0BTYv7uJ2CD
-	+AXUJd5tewpmiwq4SUz/cRConoODE8g++bMaYnEDo8SWdweZIXoFJX5MvscCYjMLyEvs2z+V
-	FcLWkli/8zjTBEbBWUjKZiEpm4WkbAEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkHj5
-	uoNx6TGrQ4wCHIxKPLwzaqqChFgTy4orcw8xSnAwK4nwHllYHSTEm5JYWZValB9fVJqTWnyI
-	kYmDU6qBUSyufG/Pr7SyNcJ6a4/dnPD3EHOIEreL75V0BX+VDQYt8QK+d8skhcy7/uq9D9ig
-	f3wHm98iXUuG18pO7a1PHLxlNyRyPGa1m9Z6NW42u9PSqZcepFgrLpJ/KGrjHK37IcorM9NK
-	JvfXj38OxV/PVt5/P8d9qd7rKdlrkmZdC1ENW2zjtqpMiaU4I9FQi7moOBEAicwTR3UCAAA=
+	Thu, 7 Nov 2013 09:55:37 -0500
+X-Greylist: delayed 1008 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Nov 2013 09:55:37 EST
+Date: Thu, 7 Nov 2013 15:38:32 +0100
+From: Daniel Kiper <dkiper@net-space.pl>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Bob Liu <bob.liu@oracle.com>, Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
+        linux-kernel@vger.kernel.org, daniel.kiper@oracle.com
+Subject: Re: [Xen-devel] [PATCH] xen/balloon: Set balloon's initial state to number of existing RAM pages
+Message-ID: <20131107143832.GA27283@router-fw-old.local.net-space.pl>
+References: <1383770260-15395-1-git-send-email-boris.ostrovsky@oracle.com> <527AE1CA.7030703@oracle.com> <7ae8615f-36f4-4c28-a147-c522335ba8f7@email.android.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7ae8615f-36f4-4c28-a147-c522335ba8f7@email.android.com>
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
+On Wed, Nov 06, 2013 at 08:25:04PM -0500, Konrad Rzeszutek Wilk wrote:
+> Bob Liu <bob.liu@oracle.com> wrote:
+> >
+> >On 11/07/2013 04:37 AM, Boris Ostrovsky wrote:
+> >> Currently balloon's initial value is set to max_pfn which includes
+> >> non-RAM ranges such as MMIO hole. As result, initial memory target
+> >> (specified by guest's configuration file) will appear smaller than
+> >> what balloon driver perceives to be the current number of available
+> >> pages. Thus it will balloon down "extra" pages, decreasing amount of
+> >> available memory for no good reason.
+> >>
+> >
+> >This fix the strange behavior I mentioned yesterday, every time after
+> >guest started balloon driver will be triggered unreasonably.
+> >
+> >> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> >> ---
+> >>  drivers/xen/balloon.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+> >> index b232908..1b62304 100644
+> >> --- a/drivers/xen/balloon.c
+> >> +++ b/drivers/xen/balloon.c
+> >> @@ -641,7 +641,7 @@ static int __init balloon_init(void)
+> >>
+> >>  	balloon_stats.current_pages = xen_pv_domain()
+> >>  		? min(xen_start_info->nr_pages - xen_released_pages, max_pfn)
+> >> -		: max_pfn;
+> >> +		: get_num_physpages();
+> >
+> >By the way, should the other places using max_pfn also be changed with
+> >get_num_physpages()?
+>
+> No. In PV that calculation is correct as it gets the amount of RAM pages - which is a exactly what you need.
 
-On Thursday 07 of November 2013 11:22:42 Naveen Krishna Chatradhi wrote:
-> On Exynos5250, the FALL interrupt related en, status and clear bits are
-> available at an offset of
-> 16 in INTEN, INTSTAT registers and at an offset of
-> 12 in INTCLEAR register.
-> 
-> On Exynos5420, the FALL interrupt related en, status and clear bits are
-> available at an offset of
-> 16 in INTEN, INTSTAT and INTCLEAR registers.
-> 
-> On Exynos5440,
-> the FALL_IRQEN bits are at an offset of 4
-> and the RISE_IRQEN bits are at an offset of 0
-> 
-> This patch introduces a new bit field intclr_fall_shift to handle the
-> offset for exyns5250 and exynos5440
-> Also removes the unused macros EXYNOS_TMU_FALL_INT_SHIFT and
-> EXYNOS5440_TMU_FALL_INT_SHIFT, inten_fall_shift field
+What about PCI passthrough case?
 
->From what I can see in this patch, the field intclr_fall_shift is not
-really introduced, but rather inten_fall_shift is renamed to it. Please
-match patch description with what the patch actually does.
-
-I believe this patch is also touches code and data related to Exynos 4x12
-SoCs, but the description only covers Exynos 5 SoCs.
-
-In addition, if this patch does not introduce any functional changes,
-but only refactors some code, the description should say so.
-
-Also, please see my comment below.
-
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> ---
-> Changes since v1:
-> Changes since v2:
-> Changes since v3:
->   None
-> Changes since v4:
->  Correct the CLEAR_FALL_INT_SHIFT for Exynos5250/Exynos5440
-> Changes since v5:
->  Modify the commit message
-> Changes since v6:
->  - Use EXYNOS_TMU_CLEAR_FALL_INT_SHIFT instead of EXYNOS5250_TMU_CLEAR_FALL_INT_SHIFT
->  as the same is being used for Exynos4412
-> Changes since v7:
->  - also removes the unused macros EXYNOS_TMU_FALL_INT_SHIFT and
->  EXYNOS5440_TMU_FALL_INT_SHIFT, inten_fall_shift field
-> 
->  
->  drivers/thermal/samsung/exynos_tmu.c      |    2 +-
->  drivers/thermal/samsung/exynos_tmu.h      |    4 ++--
->  drivers/thermal/samsung/exynos_tmu_data.c |    4 ++--
->  drivers/thermal/samsung/exynos_tmu_data.h |    4 ++--
->  4 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-> index 32f38b9..b2202fa 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -265,7 +265,7 @@ skip_calib_data:
->  				data->base + reg->threshold_th1);
->  
->  		writel((reg->inten_rise_mask << reg->inten_rise_shift) |
-> -			(reg->inten_fall_mask << reg->inten_fall_shift),
-> +			(reg->inten_fall_mask << reg->intclr_fall_shift),
-
-Shouldn't also the mask values be called intclr_*_mask? They seem to
-be used only with tmu_intclear register. Same goes for inten_fall_shift,
-
-Best regards,
-Tomasz
-
+Daniel
