@@ -1,93 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab3KGVHW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 16:07:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42630 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939Ab3KGVHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 16:07:17 -0500
-Date: Thu, 7 Nov 2013 22:07:15 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andiry Xu <andiry@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Wang Shilong <wangsl-fnst@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Andiry Xu <andiry.xu@gmail.com>
-Subject: Re: [BUG][ext2] XIP does not work on ext2
-Message-ID: <20131107210715.GA20104@quack.suse.cz>
-References: <CAOvWMLZ-ezykR6TkFAoZ1UW20QF6XMOKeZH8R-FdFJkXjAP9nA@mail.gmail.com>
- <20131105003733.GA24531@quack.suse.cz>
- <CAOvWMLZ6_boRgQi2L9kqR_bWcnLDHY+uFo9g4DP=zxeGtT+dag@mail.gmail.com>
- <20131105143221.GA30006@quack.suse.cz>
- <CAOvWMLY9HAeQTsEwCchKNjL+1=-grBQrDO6-KCYcS-mxMYyRpw@mail.gmail.com>
- <20131106211858.GB20477@quack.suse.cz>
- <CAOvWMLa38zOigzVkcF78ivtszd6F02aNKsB28=Sd58OMeqb9sQ@mail.gmail.com>
+	id S1754814Ab3KGVIq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 16:08:46 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35762 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691Ab3KGVIi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 16:08:38 -0500
+Message-ID: <527C0149.6020902@infradead.org>
+Date: Thu, 07 Nov 2013 13:08:25 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOvWMLa38zOigzVkcF78ivtszd6F02aNKsB28=Sd58OMeqb9sQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>
+CC: Jerome Marchand <jmarchan@redhat.com>, kbuild-all@01.org,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        fengguang.wu@intel.com
+Subject: Re: [memcg:since-3.12 75/75] fs/proc/meminfo.c:undefined reference
+ to `vm_commit_limit'
+References: <527b74a0.xBELNKuc6Ws8XONb%fengguang.wu@intel.com>	<20131107132505.GA16393@dhcp22.suse.cz> <20131107125103.c81016a87bfd72b0acf4058c@linux-foundation.org>
+In-Reply-To: <20131107125103.c81016a87bfd72b0acf4058c@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 07-11-13 12:14:13, Andiry Xu wrote:
-> On Wed, Nov 6, 2013 at 1:18 PM, Jan Kara <jack@suse.cz> wrote:
-> > On Tue 05-11-13 17:28:35, Andiry Xu wrote:
-> >> >> Do you know the reason why write() outperforms mmap() in some cases? I
-> >> >> know it's not related the thread but I really appreciate if you can
-> >> >> answer my question.
-> >> >   Well, I'm not completely sure. mmap()ed memory always works on page-by-page
-> >> > basis - you first access the page, it gets faulted in and you can further
-> >> > access it. So for small (sub page size) accesses this is a win because you
-> >> > don't have an overhead of syscall and fs write path. For accesses larger
-> >> > than page size the overhead of syscall and some initial checks is well
-> >> > hidden by other things. I guess write() ends up being more efficient
-> >> > because write path taken for each page is somewhat lighter than full page
-> >> > fault. But you'd need to look into perf data to get some hard numbers on
-> >> > where the time is spent.
-> >> >
-> >>
-> >> Thanks for the reply. However I have filled up the whole RAM disk
-> >> before doing the test, i.e. asked the brd driver to allocate all the
-> >> pages initially.
-> >   Well, pages in ramdisk are always present, that's not an issue. But you
-> > will get a page fault to map a particular physical page in process'
-> > virtual address space when you first access that virtual address in the
-> > mapping from the process. The cost of setting up this virtual->physical
-> > mapping is what I'm talking about.
-> >
+On 11/07/13 12:51, Andrew Morton wrote:
+> On Thu, 7 Nov 2013 14:25:05 +0100 Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> Yes, you are right, there are page faults observed with perf. I
-> misunderstood page fault as copying pages between backing store and
-> physical memory.
+>> On Thu 07-11-13 19:08:16, Wu Fengguang wrote:
+>>> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git since-3.12
+>>> head:   2f11d7af8df66cb4f217b6293ad8189aa101d601
+>>> commit: 2f11d7af8df66cb4f217b6293ad8189aa101d601 [75/75] mm-factor-commit-limit-calculation-fix
+>>> config: make ARCH=blackfin BF526-EZBRD_defconfig
+>>>
+>>> All error/warnings:
+>>>
+>>>    mm/built-in.o: In function `__vm_enough_memory':
+>>>    (.text+0x11b4c): undefined reference to `vm_commit_limit'
+>>>    fs/built-in.o: In function `meminfo_proc_show':
+>>>>> fs/proc/meminfo.c:(.text+0x37ef0): undefined reference to `vm_commit_limit'
+>>
+>> Andrew, it seems that moving vm_commit_limit out of mman.h is not that
+>> easy because it breaks NOMMU configurations. mm/mmap.o is not part of
+>> the nommu build apparently.
+>>
+>> So either we move it back to mman.h or put it somewhere else. I do not
+>> have a good idea where, though.
+>>
 > 
-> > If you had a process which first mmaps the file and writes to all pages in
-> > the mapping and *then* measure the cost of another round of writing to the
-> > mapping, I would expect you should see speeds close to those of memory bus.
-> >
+> util.c?
 > 
-> I've tried this as well. mmap() performance improves but still not as
-> good as write().
-> I used the perf report to compare write() and mmap() applications. For
-> write() version, top of perf report shows as:
-> 33.33%  __copy_user_nocache
-> 4.72%    ext2_get_blocks
-> 4.42%    mutex_unlock
-> 3.59%    __find_get_block
-> 
-> which looks reasonable.
-> 
-> However, for mmap() version, the perf report looks strange:
-> 94.98% libc-2.15.so       [.] 0x000000000014698d
-> 2.25%   page_fault
-> 0.18%   handle_mm_fault
-> 
-> I don't know what the first item is but it took the majority of cycles.
-  The first item means that it's some userspace code in libc. My guess
-would be that it's libc's memcpy() function (or whatever you use to write
-to mmap). How do you access the mmap?
+> diff -puN mm/mmap.c~mm-factor-commit-limit-calculation-fix-fix mm/mmap.c
+> --- a/mm/mmap.c~mm-factor-commit-limit-calculation-fix-fix
+> +++ a/mm/mmap.c
+> @@ -110,15 +110,6 @@ unsigned long vm_memory_committed(void)
+>  EXPORT_SYMBOL_GPL(vm_memory_committed);
+>  
+>  /*
+> - * Commited memory limit enforced when OVERCOMMIT_NEVER policy is used
+> - */
+> -unsigned long vm_commit_limit(void)
+> -{
+> -	return ((totalram_pages - hugetlb_total_pages())
+> -		* sysctl_overcommit_ratio / 100) + total_swap_pages;
+> -}
+> -
+> -/*
+>   * Check that a process has enough memory to allocate a new virtual
+>   * mapping. 0 means there is enough memory for the allocation to
+>   * succeed and -ENOMEM implies there is not.
+> --- a/mm/util.c~mm-factor-commit-limit-calculation-fix-fix
+> +++ a/mm/util.c
+> @@ -7,6 +7,9 @@
+>  #include <linux/security.h>
+>  #include <linux/swap.h>
+>  #include <linux/swapops.h>
+> +#include <linux/mman.h>
+> +#include <linux/hugetlb.h>
+> +
+>  #include <asm/uaccess.h>
+>  
+>  #include "internal.h"
+> @@ -398,6 +401,16 @@ struct address_space *page_mapping(struc
+>  	return mapping;
+>  }
+>  
+> +/*
+> + * Commited memory limit enforced when OVERCOMMIT_NEVER policy is used
 
-								Honza
+      Committed
+
+> + */
+> +unsigned long vm_commit_limit(void)
+> +{
+> +	return ((totalram_pages - hugetlb_total_pages())
+> +		* sysctl_overcommit_ratio / 100) + total_swap_pages;
+> +}
+> +
+> +
+>  /* Tracepoints definitions. */
+>  EXPORT_TRACEPOINT_SYMBOL(kmalloc);
+>  EXPORT_TRACEPOINT_SYMBOL(kmem_cache_alloc);
+> _
+> 
+> --
+
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+~Randy
