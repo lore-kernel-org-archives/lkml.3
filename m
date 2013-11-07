@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab3KGWWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:22:34 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37233 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755266Ab3KGWW0 (ORCPT
+	id S1755862Ab3KGWX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:23:27 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:50538 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753682Ab3KGWXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 17:22:26 -0500
-Date: Thu, 7 Nov 2013 23:21:44 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Michel Lespinasse <walken@google.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rik van Riel <riel@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "Figo. zhang" <figo1802@gmail.com>, linux-arch@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, George Spelvin <linux@horizon.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Hurley <peter@hurleysoftware.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Alex Shi <alex.shi@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>
-Subject: Re: [PATCH v3 3/5] MCS Lock: Barrier corrections
-Message-ID: <20131107222144.GC19203@twins.programming.kicks-ass.net>
-References: <cover.1383771175.git.tim.c.chen@linux.intel.com>
- <1383773827.11046.355.camel@schen9-DESK>
- <CA+55aFyNX=5i0hmk-KuD+Vk+yBD-kkAiywx1Lx_JJmHVPx=1wA@mail.gmail.com>
- <CANN689HkNP-UZOu+vDCFPG5_k=BNZG6a+oP+Ope16vLc2ShFzw@mail.gmail.com>
- <CA+55aFwn1HUt3iXo6Zz8j1HUJi+qJ1NfcnUz-P+XCYLL7gjCMQ@mail.gmail.com>
- <CANN689EgdDQV=srsLELUpiTGOSF0SLUZ=BC2LnMxNrYTv3H=Wg@mail.gmail.com>
- <20131107143139.GT18245@linux.vnet.ibm.com>
- <CANN689FqUSnr=Prum0Kt6+0gr9dWKD8GT9Gbrtiyyg+PTyFkyA@mail.gmail.com>
- <1383858951.11046.399.camel@schen9-DESK>
+	Thu, 7 Nov 2013 17:23:18 -0500
+Date: Thu, 7 Nov 2013 23:23:14 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/4] irq_work: Provide a irq work that can be processed
+ on any cpu
+Message-ID: <20131107222311.GA28130@localhost.localdomain>
+References: <1383860919-1883-1-git-send-email-jack@suse.cz>
+ <1383860919-1883-3-git-send-email-jack@suse.cz>
+ <CAFTL4hxLXb3hZacx_EdHeKZVfrpuyGoNqpGbX997XJx0UJSwyg@mail.gmail.com>
+ <20131107221904.GB2054@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383858951.11046.399.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131107221904.GB2054@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 01:15:51PM -0800, Tim Chen wrote:
-> Michel, are you planning to do an implementation of
-> load-acquire/store-release functions of various architectures?
+On Thu, Nov 07, 2013 at 11:19:04PM +0100, Jan Kara wrote:
+> On Thu 07-11-13 23:13:39, Frederic Weisbecker wrote:
+> > But then, who's going to process that work if every CPUs is idle?
+>   Have a look into irq_work_queue(). There is:
+>         /*
+>          * If the work is not "lazy" or the tick is stopped, raise the irq
+>          * work interrupt (if supported by the arch), otherwise, just wait
+>          * for the next tick. We do this even for unbound work to make sure
+>          * *some* CPU will be doing the work.
+>          */
+>         if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
+>                 if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
+>                         arch_irq_work_raise();
+>         }
+> 
+>   So we raise an interrupt if there would be no timer ticking (which is
+> what I suppose you mean by "CPU is idle"). That is nothing changed by my
+> patches...
 
-A little something like this:
-http://marc.info/?l=linux-arch&m=138386254111507
-
-It so happens we were working on that the past week or so due to another
-issue ;-)
+Ok but we raise that interrupt locally, not to the other CPUs.
