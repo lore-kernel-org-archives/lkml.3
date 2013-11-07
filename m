@@ -1,88 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab3KGAXA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 19:23:00 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56958 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752797Ab3KGAW6 (ORCPT
+	id S1752789Ab3KGA2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 19:28:04 -0500
+Received: from mga14.intel.com ([143.182.124.37]:13254 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750709Ab3KGA2A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 19:22:58 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [Update][PATCH 4/6] ACPI / hotplug: Simplify device ejection routines
-Date: Thu, 07 Nov 2013 01:35:18 +0100
-Message-ID: <1857488.d8ScZB2yjC@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1383783425.1847.52.camel@misato.fc.hp.com>
-References: <5839747.7HXXGHmMBd@vostro.rjw.lan> <1642586.5aH3MlB2GZ@vostro.rjw.lan> <1383783425.1847.52.camel@misato.fc.hp.com>
+	Wed, 6 Nov 2013 19:28:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="385728415"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] devres: Freeing the drs after all release() are called
+Thread-Topic: [PATCH] devres: Freeing the drs after all release() are called
+Thread-Index: AQHO2s4lTOXnnAQ4LEmnFlwPKmbOgZoY56Sg
+Date: Thu, 7 Nov 2013 00:27:56 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01B86696@SHSMSX101.ccr.corp.intel.com>
+References: <1383720018.3650.37.camel@cliu38-desktop-build>
+ <20131106085859.GB9487@kroah.com>
+In-Reply-To: <20131106085859.GB9487@kroah.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 06, 2013 05:17:05 PM Toshi Kani wrote:
-> On Thu, 2013-11-07 at 01:14 +0100, Rafael J. Wysocki wrote:
-> > On Wednesday, November 06, 2013 04:27:01 PM Toshi Kani wrote:
-> > > On Mon, 2013-11-04 at 14:36 +0100, Rafael J. Wysocki wrote:
-> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > 
-> > > > Simplify handle_root_bridge_removal() and acpi_eject_store() by
-> > > > getting rid of struct acpi_eject_event and passing device objects
-> > > > directly to async routines executed via acpi_os_hotplug_execute().
-> > >  :
-> > > >  static ssize_t
-> > > >  acpi_eject_store(struct device *d, struct device_attribute *attr,
-> > > >  		const char *buf, size_t count)
-> > > >  {
-> > > >  	struct acpi_device *acpi_device = to_acpi_device(d);
-> > > > -	struct acpi_eject_event *ej_event;
-> > > >  	acpi_object_type not_used;
-> > > >  	acpi_status status;
-> > > > -	int ret;
-> > > >  
-> > > >  	if (!count || buf[0] != '1')
-> > > >  		return -EINVAL;
-> > > > @@ -518,28 +519,17 @@ acpi_eject_store(struct device *d, struc
-> > > >  	if (ACPI_FAILURE(status) || !acpi_device->flags.ejectable)
-> > > >  		return -ENODEV;
-> > > >  
-> > > > -	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
-> > > > -	if (!ej_event) {
-> > > > -		ret = -ENOMEM;
-> > > > -		goto err_out;
-> > > > -	}
-> > > >  	acpi_evaluate_hotplug_ost(acpi_device->handle, ACPI_OST_EC_OSPM_EJECT,
-> > > >  				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-> > > > -	ej_event->device = acpi_device;
-> > > > -	ej_event->event = ACPI_OST_EC_OSPM_EJECT;
-> > > >  	get_device(&acpi_device->dev);
-> > > > -	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
-> > > > +	status = acpi_os_hotplug_execute(acpi_eject_store_work, acpi_device);
-> > > >  	if (ACPI_SUCCESS(status))
-> > > >  		return count;
-> > > >  
-> > > >  	put_device(&acpi_device->dev);
-> > > > -	kfree(ej_event);
-> > > > -	ret = status == AE_NO_MEMORY ? -ENOMEM : -EAGAIN;
-> > > 
-> > > Why are you deleting the above line as part of this change?
-> > 
-> > Ah, because I forgot that acpi_os_hotplug_execute() can also return AE_NO_MEMORY. :-)
-> > 
-> > Good catch, updated pach follows.
-> 
-> Looks good.  The rest of the patches also look good.  For patch 4-6:
-> 
-> Acked-by: Toshi Kani <toshi.kani@hp.com>
+Hello Greg,
 
-Awesome, thanks! :-)
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Wednesday, November 06, 2013 4:59 PM
+> To: Liu, Chuansheng
+> Cc: dmitry.torokhov@gmail.com; tj@kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] devres: Freeing the drs after all release() are called
+> 
+> On Wed, Nov 06, 2013 at 02:40:18PM +0800, Chuansheng Liu wrote:
+> >
+> > In release_nodes(), it will call dr->node.release() and kfree
+> > dr one by one.
+> >
+> > But sometimes the previous dr maybe be used by next .release(),
+> > such as:
+> > [50314.855534]  [<c12b172f>] ? synchronize_irq+0x3f/0xb0
+> > [50314.861193]  [<c12b18e9>] __free_irq+0x149/0x200
+> > [50314.866367]  [<c12b19e3>] free_irq+0x43/0xa0
+> > [50314.871152]  [<c12b4864>] devm_irq_release+0x14/0x20
+> > [50314.876713]  [<c169e806>] release_nodes+0x136/0x1b0
+> > [50314.882178]  [<c169ee79>] devres_release_all+0x39/0x60
+> > [50314.887935]  [<c169b411>] __device_release_driver+0x71/0xd0
+> >
+> > the free_irq() will sync the last irq handling, which maybe use
+> > freed dr, then it will cause memory corruption.
+> >
+> > Here split the dr kfreeing actions after all dr->node.release().
+> 
+> But you aren't really solving any problems here, how is dr being used
+> after the release function is called?  Who is doing it in such a way
+> that this change would really fix anything?
+> 
+The driver code is as below:
+_INIT() {
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+A = devm_kzalloc();
+B= devm_request_threaded_irq(isr_handler);
+C = devm_kzalloc();
+}
+
+When driver _EXIT, the devres_release_all () will be called.
+The C will be kfreed before B, but when freeing irq B, the pending isr_handler() possibly
+will access the memory B which has been freed.
+Then the memory corruption occurred.
+
+This patch can solve this scenario.
+Thanks.
+
+
+
