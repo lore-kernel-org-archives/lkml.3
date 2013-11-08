@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246Ab3KHM5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 07:57:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41864 "EHLO mx1.redhat.com"
+	id S1757294Ab3KHM6y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 07:58:54 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:44034 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753144Ab3KHM5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 07:57:47 -0500
-Date: Fri, 8 Nov 2013 13:59:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: linux-next: manual merge of the akpm-current tree with the vfs
-	tree
-Message-ID: <20131108125915.GA1000@redhat.com>
-References: <20131108183001.2564151a619f8f6df3db543a@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131108183001.2564151a619f8f6df3db543a@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753126Ab3KHM6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 07:58:53 -0500
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH 2/3] mm, slub: fix the typo in mm/slub.c
+Date: Fri,  8 Nov 2013 20:47:37 +0800
+Message-Id: <1383914858-14533-2-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1383914858-14533-1-git-send-email-zwu.kernel@gmail.com>
+References: <1383914858-14533-1-git-send-email-zwu.kernel@gmail.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110812-7182-0000-0000-0000090BD0FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08, Stephen Rothwell wrote:
->
-> Hi Andrew,
->
-> Today's linux-next merge of the akpm-current tree got a conflict in
-> fs/anon_inodes.c between commit 24b0303e9532 ("take anon inode allocation
-> to libfs.c") from the vfs tree and commit 02f3ac4386d9 ("anon_inodefs:
-> forbid open via /proc") from the akpm-current tree.
->
-> I just dropped the akpm-current changes for today - they should probably
-> be applied to fs/libfs.c.
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Well, this probably means that
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+---
+ mm/slub.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-	anon_inodefs-forbid-open-via-proc.patch
-
-should be dropped. I'll rediff this patch against vfs.git
-
-Oleg.
+diff --git a/mm/slub.c b/mm/slub.c
+index c3eb3d3..7a64327 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -155,7 +155,7 @@ static inline bool kmem_cache_has_cpu_partial(struct kmem_cache *s)
+ /*
+  * Maximum number of desirable partial slabs.
+  * The existence of more partial slabs makes kmem_cache_shrink
+- * sort the partial list by the number of objects in the.
++ * sort the partial list by the number of objects in use.
+  */
+ #define MAX_PARTIAL 10
+ 
+@@ -2829,8 +2829,8 @@ static struct kmem_cache *kmem_cache_node;
+  * slab on the node for this slabcache. There are no concurrent accesses
+  * possible.
+  *
+- * Note that this function only works on the kmalloc_node_cache
+- * when allocating for the kmalloc_node_cache. This is used for bootstrapping
++ * Note that this function only works on the kmem_cache_node
++ * when allocating for the kmem_cache_node. This is used for bootstrapping
+  * memory on a fresh node that has no slab structures yet.
+  */
+ static void early_kmem_cache_node_alloc(int node)
+-- 
+1.7.6.5
 
