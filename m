@@ -1,57 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932852Ab3KHCjT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:39:19 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41044 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932406Ab3KHCjO (ORCPT
+	id S932134Ab3KHCRC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:17:02 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34488 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756326Ab3KHCQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:39:14 -0500
-Date: Thu, 7 Nov 2013 19:39:01 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Kent Overstreet <kmo@daterainc.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        Olof Johansson <olof@lixom.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the block tree with the  tree
-Message-ID: <20131108023901.GE10212@kernel.dk>
-References: <5273C473.5070803@kernel.dk>
- <20131102072252.88d2380fa392705b912dbfad@canb.auug.org.au>
- <52740EB1.2070901@kernel.dk>
- <527411DD.7050008@oracle.com>
- <527414DE.9090704@kernel.dk>
- <52756583.2030808@oracle.com>
- <527BE7FA.90904@oracle.com>
- <20131107192545.GA20624@moria.home.lan>
- <527C2AA9.9040608@oracle.com>
- <20131108125307.613427c04a7527c4359e6443@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131108125307.613427c04a7527c4359e6443@canb.auug.org.au>
+	Thu, 7 Nov 2013 21:16:13 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 02/91] ACPICA: DeRefOf operator: Update to fully resolve FieldUnit and BufferField refs.
+Date: Thu,  7 Nov 2013 18:14:17 -0800
+Message-Id: <1383876946-2396-3-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
+References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08 2013, Stephen Rothwell wrote:
-> Hi all,
-> 
-> On Thu, 07 Nov 2013 18:04:57 -0600 Dave Kleikamp <dave.kleikamp@oracle.com> wrote:
-> >
-> > Can you please drop the aio-direct tree for the time being?
-> 
-> OK, I was afraid of this, but, yes, I can drop it.  I am not quite sure
-> what affect this will have on Andrew's tree, though (hopefully not too
-> much).
-> 
-> This is a bit disappointing.  Dave's stuff have been sitting in
-> linux-next for quite some time (probably too long) so it is not as if
-> Kent and Jens (should) have been unaware of it.
+3.8.13.13 -stable review patch.  If anyone has any objections, please let me know.
 
-If it doesn't throw merge errors for you, I am not aware of it.
+------------------
 
+From: Bob Moore <robert.moore@intel.com>
+
+commit 63660e05ec719613b518547b40a1c501c10f0bc4 upstream.
+
+Previously, references to these objects were resolved only to the actual
+FieldUnit or BufferField object. The correct behavior is to resolve these
+references to an actual value.
+The problem is that DerefOf did not resolve these objects to actual
+values.  An "Integer" object is simple, return the value.  But a field in
+an operation region will require a read operation.  For a BufferField, the
+appropriate data must be extracted from the parent buffer.
+
+NOTE: It appears that this issues is present in Windows7 but not
+Windows8.
+
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/acpi/acpica/exoparg1.c | 35 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 32 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/acpi/acpica/exoparg1.c b/drivers/acpi/acpica/exoparg1.c
+index bbf01e9..1fa1ad6 100644
+--- a/drivers/acpi/acpica/exoparg1.c
++++ b/drivers/acpi/acpica/exoparg1.c
+@@ -997,11 +997,40 @@ acpi_status acpi_ex_opcode_1A_0T_1R(struct acpi_walk_state *walk_state)
+ 									 acpi_namespace_node
+ 									 *)
+ 									return_desc);
+-				}
++					if (!return_desc) {
++						break;
++					}
++
++					/*
++					 * June 2013:
++					 * buffer_fields/field_units require additional resolution
++					 */
++					switch (return_desc->common.type) {
++					case ACPI_TYPE_BUFFER_FIELD:
++					case ACPI_TYPE_LOCAL_REGION_FIELD:
++					case ACPI_TYPE_LOCAL_BANK_FIELD:
++					case ACPI_TYPE_LOCAL_INDEX_FIELD:
++
++						status =
++						    acpi_ex_read_data_from_field
++						    (walk_state, return_desc,
++						     &temp_desc);
++						if (ACPI_FAILURE(status)) {
++							goto cleanup;
++						}
+ 
+-				/* Add another reference to the object! */
++						return_desc = temp_desc;
++						break;
+ 
+-				acpi_ut_add_reference(return_desc);
++					default:
++
++						/* Add another reference to the object */
++
++						acpi_ut_add_reference
++						    (return_desc);
++						break;
++					}
++				}
+ 				break;
+ 
+ 			default:
 -- 
-Jens Axboe
+1.8.1.2
 
