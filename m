@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192Ab3KHCVQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:21:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34796 "EHLO
+	id S1757552Ab3KHC3c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:29:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34813 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757139Ab3KHCVL (ORCPT
+	with ESMTP id S1757139Ab3KHCVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:21:11 -0500
+	Thu, 7 Nov 2013 21:21:16 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Cornel Panceac <cpanceac@gmail.com>, Greg KH <greg@kroah.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        Paul Stewart <pstew@chromium.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 71/91] drm/i915: quirk away phantom LVDS on Intel's D510MO mainboard
-Date: Thu,  7 Nov 2013 18:15:26 -0800
-Message-Id: <1383876946-2396-72-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 45/91] mwifiex: fix SDIO interrupt lost issue
+Date: Thu,  7 Nov 2013 18:15:00 -0800
+Message-Id: <1383876946-2396-46-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -31,48 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit e5614f0c2d0f4d7f0b8ef745d34593baf2c5dbf8 upstream.
+commit 453b0c3f6910672f79da354077af728d92f95c5b upstream.
 
-This replaceable mainboard only has a VGA-out, yet it claims to also have
-a connected LVDS header.
+601216e "mwifiex: process RX packets in SDIO IRQ thread directly"
+introduced a command timeout issue which can be reproduced easily on
+an AM33xx platform using a test application written by Daniel Mack:
 
-Addresses https://bugs.freedesktop.org/show_bug.cgi?id=63860
+https://gist.github.com/zonque/6579314
 
-[jani.nikula@intel.com: use DMI_EXACT_MATCH for board name.]
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Reported-by: <annndddrr@gmail.com>
-Cc: Cornel Panceac <cpanceac@gmail.com>
-Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Greg KH <greg@kroah.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+mwifiex_main_process() is called from both the SDIO handler and
+the workqueue. In case an interrupt occurs right after the
+int_status check, but before updating the mwifiex_processing flag,
+this interrupt gets lost, resulting in a command timeout and
+consequently a card reset.
+
+Let main_proc_lock protect both int_status and mwifiex_processing
+flag. This fixes the interrupt lost issue.
+
+Reported-by: Sven Neumann <s.neumann@raumfeld.com>
+Reported-by: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+Tested-by: Daniel Mack <zonque@gmail.com>
+Reviewed-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Paul Stewart <pstew@chromium.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_lvds.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/net/wireless/mwifiex/main.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 2f0364d..5cfd10e 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -797,6 +797,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "ESPRIMO Q900"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Intel D510MO",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
-+			DMI_EXACT_MATCH(DMI_BOARD_NAME, "D510MO"),
-+		},
-+	},
+diff --git a/drivers/net/wireless/mwifiex/main.c b/drivers/net/wireless/mwifiex/main.c
+index 6d9bc63..a3d1a89 100644
+--- a/drivers/net/wireless/mwifiex/main.c
++++ b/drivers/net/wireless/mwifiex/main.c
+@@ -270,10 +270,12 @@ process_start:
+ 		}
+ 	} while (true);
  
- 	{ }	/* terminating entry */
- };
+-	if ((adapter->int_status) || IS_CARD_RX_RCVD(adapter))
++	spin_lock_irqsave(&adapter->main_proc_lock, flags);
++	if ((adapter->int_status) || IS_CARD_RX_RCVD(adapter)) {
++		spin_unlock_irqrestore(&adapter->main_proc_lock, flags);
+ 		goto process_start;
++	}
+ 
+-	spin_lock_irqsave(&adapter->main_proc_lock, flags);
+ 	adapter->mwifiex_processing = false;
+ 	spin_unlock_irqrestore(&adapter->main_proc_lock, flags);
+ 
 -- 
 1.8.1.2
 
