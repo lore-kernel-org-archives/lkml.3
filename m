@@ -1,106 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab3KHJau (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 04:30:50 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:57450 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab3KHJap convert rfc822-to-8bit (ORCPT
+	id S1753726Ab3KHJfA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 04:35:00 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34409 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab3KHJe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 04:30:45 -0500
+	Fri, 8 Nov 2013 04:34:57 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <527CB013.30200@jp.fujitsu.com>
+Date: Fri, 8 Nov 2013 18:34:11 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20131107140421.GF13674@arm.com>
-References: <CAKfTPtCh+f1FZxkWqU5=2PjGtfRaN8jVV3WdTCzLDAWSjMP7yw@mail.gmail.com>
-	<1383831224-26134-1-git-send-email-vincent.guittot@linaro.org>
-	<20131107140421.GF13674@arm.com>
-Date: Fri, 8 Nov 2013 10:30:43 +0100
-Message-ID: <CAKfTPtCcMx1edpN0-3ghK3jiGSjOOtJpAoDegxm7Jg2x+oAJzA@mail.gmail.com>
-Subject: Re: Bench for testing scheduler
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "paul@pwsan.com" <paul@pwsan.com>, "mgorman@suse.de" <mgorman@suse.de>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "markgross@thegnar.org" <markgross@thegnar.org>,
-        "khilman@linaro.org" <khilman@linaro.org>,
-        "Frank.Rowand@sonymobile.com" <Frank.Rowand@sonymobile.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Richard Weinberger <richard@nod.at>
+CC: <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <matt.fleming@intel.com>, <matthew.garrett@nebula.com>,
+        <jlee@suse.com>
+Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia parameter
+ to efi_storage_paranoia
+References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at>
+In-Reply-To: <527C9B5C.6040509@nod.at>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 November 2013 15:04, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> On Thu, Nov 07, 2013 at 01:33:43PM +0000, Vincent Guittot wrote:
->> On 7 November 2013 12:32, Catalin Marinas <catalin.marinas@arm.com> wrote:
->> > On Thu, Nov 07, 2013 at 10:54:30AM +0000, Vincent Guittot wrote:
->> >> During the Energy-aware scheduling mini-summit, we spoke about benches
->> >> that should be used to evaluate the modifications of the scheduler.
->> >> I’d like to propose a bench that uses cyclictest to measure the wake
->> >> up latency and the power consumption. The goal of this bench is to
->> >> exercise the scheduler with various sleeping period and get the
->> >> average wakeup latency. The range of the sleeping period must cover
->> >> all residency times of the idle state table of the platform. I have
->> >> run such tests on a tc2 platform with the packing tasks patchset.
->> >> I have use the following command:
->> >> #cyclictest -t <number of cores> -q -e 10000000 -i <500-12000> -d 150 -l 2000
->> >
->> > cyclictest could be a good starting point but we need to improve it to
->> > allow threads of different loads, possibly starting multiple processes
->> > (can be done with a script), randomly varying load threads. These
->> > parameters should be loaded from a file so that we can have multiple
->> > configurations (per SoC and per use-case). But the big risk is that we
->> > try to optimise the scheduler for something which is not realistic.
+(2013/11/08 17:05), Richard Weinberger wrote:
+> Am 08.11.2013 08:33, schrieb Yasuaki Ishimatsu:
+>> By following works, my system very often fails set_variable() to set new
+>> variable to efi variable storage and shows "efivars: set_variable() failed:
+>> status=-28" message.
 >>
->> The goal of this simple bench is to measure the wake up latency and
->> the reachable value of the scheduler on a platform but not to emulate
->> a "real" use case. In the same way than sched-pipe tests a specific
->> behavior of the scheduler, this bench tests the wake up latency of a
->> system.
->
-> These figures are indeed useful to make sure we don't have any
-> regression in terms of latency but I would not use cyclictest (as it is)
-> to assess power improvements since the test is too artificial.
->
->> Starting multi processes and adding some loads can also be useful but
->> the target will be a bit different from wake up latency. I have one
->> concern with randomness because it prevents from having repeatable and
->> comparable tests and results.
->
-> We can avoid randomness but still make it varying by some predictable
-> function.
->
->> I agree that we have to test "real" use cases but it doesn't prevent
->> from testing the limit of a characteristic on a system
->
-> I agree. My point is not to use this as "the benchmark".
+>> - commit 31ff2f20d9003e74991d135f56e503fe776c127c
+>>      efi: Distinguish between "remaining space" and actually used space
+>> - commit 8c58bf3eec3b8fc8162fe557e9361891c20758f2
+>>      x86,efi: Implement efi_no_storage_paranoia parameter
+>> - commit f8b8404337de4e2466e2e1139ea68b1f8295974f
+>>      Modify UEFI anti-bricking code
+>>
+>> When booting my system, remaining space of efi variable storage is about
+>> 5KB. So there is no room that sets a new variable to the storage.
+>>
+>> According to above works, efi_no_storage_paranoia parameter was prepared
+>> for sane UEFI which can do gc and fulfills spec. But why need a system
+>> with a sane UEFI set the parameter? It is wrong. A system with a broken
+>> UEFI should set the parameter.
+> 
+> And how does one know that his UEFI is broken?
 
-ok, so i don't plan to make cyclictest "the" benchmark but "a"
-benchmark among others because i'm not sure that we can cover all
-needs with only one benchmark.
+I have no idea. But at least, bricked board is broken UEFI.
+Do you know the issue occurs on several boards or specific board?
 
-As an example, cyclictest gives information of the wake up latency
-that can't be collected with trace
+Thanks,
+Yasuaki Ishimatsu
 
->
-> I would prefer to assess the impact on latency (and power) using a tool
-> independent from benchmarks like cyclictest (e.g. use the reports from
-> power sched). The reason is that once we have those tools/scripts in the
-> kernel, a third party can run it on real workloads and provide the
-> kernel developers with real numbers on performance vs power scheduling,
-> regressions between kernel versions etc. We can't create a power model
-> that you can run on an x86 for example and give you an indication of the
-> power saving on ARM, you need to run the benchmarks on the actual
-> hardware (that's why I don't think linsched is of much use from a power
-> perspective).
->
-> --
-> Catalin
+> "Oh my board is briked because I wrote too much into a variable, maybe setting
+> efi_storage_paranoia would have saved me. Let's try with the next board..." ;)
+> 
+> Thanks,
+> //richard
+> 
+
+
