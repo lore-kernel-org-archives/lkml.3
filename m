@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab3KHJ1B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 04:27:01 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:38830 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab3KHJ05 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 04:26:57 -0500
-Date: Fri, 8 Nov 2013 09:26:51 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7] ARM: ux500: Remove ATAG support for SDI (MMC)
-Message-ID: <20131108092651.GT30901@lee--X1>
-References: <1383732348-18576-1-git-send-email-lee.jones@linaro.org>
- <1383732348-18576-4-git-send-email-lee.jones@linaro.org>
- <CAPDyKFrd+UHYjZw7=8sf=gmATQ8rPubAVrjWYpbhODak+hOhZQ@mail.gmail.com>
- <20131107120742.GP30901@lee--X1>
- <CACRpkdYuBL58Pj8EZmVGGxXk8mrOY=YkVwWC1Ho7SH01442z0Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1756857Ab3KHJ1U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 04:27:20 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:50677 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756665Ab3KHJ1O convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Fri, 8 Nov 2013 04:27:14 -0500
+Message-Id: <527CBC7D020000780010117C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Fri, 08 Nov 2013 09:27:09 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: "Matthew Daley" <mattjd@gmail.com>, <kyungsik.lee@lge.com>,
+        <akpm@linux-foundation.org>
+Subject: [PATCH] unlz4: always set an error return code on failures
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdYuBL58Pj8EZmVGGxXk8mrOY=YkVwWC1Ho7SH01442z0Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 08 Nov 2013, Linus Walleij wrote:
+"ret", being set to -1 early on, gets cleared by the first invocation
+of lz4_decompress()/lz4_decompress_unknownoutputsize(), and hence
+subsequent failures wouldn't be noticed by the caller without setting
+it back to -1 right after those calls.
 
-> On Thu, Nov 7, 2013 at 1:07 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> >> > -struct mmci_platform_data mop500_sdi0_data = {
-> >> > -       .f_max          = 100000000,
-> >> > -       .capabilities   = MMC_CAP_4_BIT_DATA |
-> >> > -                               MMC_CAP_SD_HIGHSPEED |
-> >> > -                               MMC_CAP_MMC_HIGHSPEED |
-> >> > -                               MMC_CAP_ERASE |
-> >> > -                               MMC_CAP_UHS_SDR12 |
-> >> > -                               MMC_CAP_UHS_SDR25,
-> >>
-> >> I guess all the above caps is having binders in DT then?
-> >
-> > They're not there yet, no. But this stuff is not used anymore in
-> > Mainline hence the patch. I attempted to supply bindings for them, but
-> > they were rejected. Would you like to have a stab at that?
-> 
-> Yeah but we basically regressed the ux500 with the patch now
-> queued for v3.13:
-> commit 49c129519a7a8840767321c38d2eaf84a263529b
-> "ARM: ux500: Stop passing MMC's platform data for Device Tree boots"
-> 
-> Which deleted the passing of this non-yet-DT:ed platform
-> data.
-> 
-> Since it's a regression we need to do a fixup patch for the
-> v3.13 series adding it back.
+Reported-by: Matthew Daley <mattjd@gmail.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Kyungsik Lee <kyungsik.lee@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 
-Okay, do you want me to do that?
+--- a/lib/decompress_unlz4.c
++++ b/lib/decompress_unlz4.c
+@@ -141,6 +141,7 @@ STATIC inline int INIT unlz4(u8 *input, 
+ 			goto exit_2;
+ 		}
+ 
++		ret = -1;
+ 		if (flush && flush(outp, dest_len) != dest_len)
+ 			goto exit_2;
+ 		if (output)
 
-> Since this patch probably needs to be rewritten on top of
-> that I don't merge this patch as of now.
 
-Sure.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
