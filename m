@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607Ab3KHCUA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:20:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34734 "EHLO
+	id S932590Ab3KHCTy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:19:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34699 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932453Ab3KHCT4 (ORCPT
+	with ESMTP id S932453Ab3KHCTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:19:56 -0500
+	Thu, 7 Nov 2013 21:19:03 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rob Pearce <rob@flitspace.org.uk>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Jani Nikula <jani.nikula@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>, <annndddrr@gmail.com>,
+        Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 73/91] drm/i915: No LVDS hardware on Intel D410PT and D425KT
-Date: Thu,  7 Nov 2013 18:15:28 -0800
-Message-Id: <1383876946-2396-74-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 72/91] drm/i915: quirk away phantom LVDS on Intel's D525MW mainboard
+Date: Thu,  7 Nov 2013 18:15:27 -0800
+Message-Id: <1383876946-2396-73-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -27,53 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rob Pearce <rob@flitspace.org.uk>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 645378d85ee524e429aa4cf52806047b56cdc596 upstream.
+commit dcf6d294830d46b0e6901477fb4bf455281d90c8 upstream.
 
-The Intel D410PT(LW) and D425KT Mini-ITX desktop boards both show up as
-having LVDS but the hardware is not populated. This patch adds them to
-the list of such systems. Patch is against 3.11.4
+This replaceable mainboard only has a VGA-out, yet it claims to also have
+a connected LVDS header.
 
-v2: Patch revised to match the D425KT exactly as the D425KTW does have
-LVDS.  According to Intel's documentation, the D410PTL and D410PLTW
-don't.
+Addresses https://bugs.freedesktop.org/show_bug.cgi?id=65256
 
-Signed-off-by: Rob Pearce <rob@flitspace.org.uk>
-[danvet: Pimp commit message to my liking and add cc: stable.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reported-by: Cornel Panceac <cpanceac@gmail.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: <annndddrr@gmail.com>
+Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_lvds.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/gpu/drm/i915/intel_lvds.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
 diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index a4f9f68..db4e9e6 100644
+index 5cfd10e..a4f9f68 100644
 --- a/drivers/gpu/drm/i915/intel_lvds.c
 +++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -799,6 +799,22 @@ static const struct dmi_system_id intel_no_lvds[] = {
+@@ -805,6 +805,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
+ 			DMI_EXACT_MATCH(DMI_BOARD_NAME, "D510MO"),
+ 		},
  	},
- 	{
- 		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Intel D410PT",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
-+			DMI_MATCH(DMI_BOARD_NAME, "D410PT"),
-+		},
-+	},
 +	{
 +		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Intel D425KT",
++		.ident = "Intel D525MW",
 +		.matches = {
 +			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
-+			DMI_EXACT_MATCH(DMI_BOARD_NAME, "D425KT"),
++			DMI_EXACT_MATCH(DMI_BOARD_NAME, "D525MW"),
 +		},
 +	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
- 		.ident = "Intel D510MO",
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
+ 
+ 	{ }	/* terminating entry */
+ };
 -- 
 1.8.1.2
 
