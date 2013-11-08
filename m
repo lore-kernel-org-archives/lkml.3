@@ -1,57 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab3KHHdf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 02:33:35 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:56498 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab3KHHdd (ORCPT
+	id S1756476Ab3KHHe2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 02:34:28 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46964 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab3KHHeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 02:33:33 -0500
-Date: Thu, 7 Nov 2013 23:33:24 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Kent Overstreet <kmo@daterainc.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>, Olof Johansson <olof@lixom.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the block tree with the  tree
-Message-ID: <20131108073324.GA31662@infradead.org>
-References: <52740EB1.2070901@kernel.dk>
- <527411DD.7050008@oracle.com>
- <527414DE.9090704@kernel.dk>
- <52756583.2030808@oracle.com>
- <527BE7FA.90904@oracle.com>
- <20131107192545.GA20624@moria.home.lan>
- <527C2AA9.9040608@oracle.com>
- <20131108125307.613427c04a7527c4359e6443@canb.auug.org.au>
- <20131108020805.GI3842@kmo>
- <527C4D35.8000907@oracle.com>
+	Fri, 8 Nov 2013 02:34:24 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <527C93B5.7010407@jp.fujitsu.com>
+Date: Fri, 8 Nov 2013 16:33:09 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <527C4D35.8000907@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <matt.fleming@intel.com>, <matthew.garrett@nebula.com>, <richard@nod.at>,
+        <jlee@suse.com>
+Subject: [PATCH] x86, efi: change name of efi_no_storage_paranoia parameter
+ to efi_storage_paranoia
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw, I have to state that I very much disagree with dropping the
-direct I/O kernel changes, and I also very much disagree with keeping
-the immutable iovecs in.
+By following works, my system very often fails set_variable() to set new
+variable to efi variable storage and shows "efivars: set_variable() failed:
+status=-28" message.
 
-For the latter I think the immutable iovecs are useful and do want to
-see them eventually, but they were merged at the latest possible point
-in the merge window and cause breakage all over the tree, so they very
-clearly are not ready at this point, and I fear even more breakage if
-they do get merged.
+- commit 31ff2f20d9003e74991d135f56e503fe776c127c
+    efi: Distinguish between "remaining space" and actually used space
+- commit 8c58bf3eec3b8fc8162fe557e9361891c20758f2
+    x86,efi: Implement efi_no_storage_paranoia parameter
+- commit f8b8404337de4e2466e2e1139ea68b1f8295974f
+    Modify UEFI anti-bricking code
 
-The changes for direct I/O from kernel space have been in for a long
-time, and they are blocking multiple consumers of the interface from
-getting submitted for about a year now.  Even if the guts of the
-direct-io code will get a write based on another patchset from Kent
-that will go on top of the immutable iovec changes we need the
-interfaces now and not another year down the road.
+When booting my system, remaining space of efi variable storage is about
+5KB. So there is no room that sets a new variable to the storage.
+
+According to above works, efi_no_storage_paranoia parameter was prepared
+for sane UEFI which can do gc and fulfills spec. But why need a system
+with a sane UEFI set the parameter? It is wrong. A system with a broken
+UEFI should set the parameter.
+
+This patch changes name of the parameter to efi_storage_paranoia and uses
+all efi variable storage with no parameter.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: Matthew Garrett <matthew.garrett@nebula.com>
+CC: Richard Weinberger <richard@nod.at>
+CC: Lee, Chun-Y <jlee@suse.com>
+CC: Matt Fleming <matt.fleming@intel.com>
+---
+ Documentation/kernel-parameters.txt | 10 +++++-----
+ arch/x86/platform/efi/efi.c         |  8 ++++----
+ 2 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index fcbb736..2157c8e 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -888,11 +888,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	edd=		[EDD]
+ 			Format: {"off" | "on" | "skip[mbr]"}
+
+-	efi_no_storage_paranoia [EFI; X86]
+-			Using this parameter you can use more than 50% of
+-			your efi variable storage. Use this parameter only if
+-			you are really sure that your UEFI does sane gc and
+-			fulfills the spec otherwise your board may brick.
++	efi_storage_paranoia [EFI; X86]
++			Using this parameter you cannot use your efi variable
++			storage when the remaining space of the storage becomes
++			less than 5KB. Use this parameter if your UEFI does
++			not sane gc and fulfills the spec.
+
+ 	eisa_irq_edge=	[PARISC,HW]
+ 			See header of drivers/parisc/eisa.c.
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index c7e22ab..010a0eb 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -107,14 +107,14 @@ static int __init setup_add_efi_memmap(char *arg)
+ }
+ early_param("add_efi_memmap", setup_add_efi_memmap);
+
+-static bool efi_no_storage_paranoia;
++static bool efi_storage_paranoia;
+
+ static int __init setup_storage_paranoia(char *arg)
+ {
+-	efi_no_storage_paranoia = true;
++	efi_storage_paranoia = true;
+ 	return 0;
+ }
+-early_param("efi_no_storage_paranoia", setup_storage_paranoia);
++early_param("efi_storage_paranoia", setup_storage_paranoia);
+
+
+ static efi_status_t virt_efi_get_time(efi_time_t *tm, efi_time_cap_t *tc)
+@@ -1066,7 +1066,7 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
+ 	 * 5KB. This figure was provided by Samsung, so should be safe.
+ 	 */
+ 	if ((remaining_size - size < EFI_MIN_RESERVE) &&
+-		!efi_no_storage_paranoia) {
++		efi_storage_paranoia) {
+
+ 		/*
+ 		 * Triggering garbage collection may require that the firmware
 
