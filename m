@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab3KHCRi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:17:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34524 "EHLO
+	id S932204Ab3KHCRU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:17:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34518 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756447Ab3KHCQP (ORCPT
+	with ESMTP id S1756436Ab3KHCQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Nov 2013 21:16:15 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Krause <minipli@googlemail.com>,
+Cc: =?UTF-8?q?Fran=C3=A7ois=20CACHEREUL?= <f.cachereul@alphalink.fr>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 19/91] proc connector: fix info leaks
-Date: Thu,  7 Nov 2013 18:14:34 -0800
-Message-Id: <1383876946-2396-20-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 14/91] l2tp: fix kernel panic when using IPv4-mapped IPv6 addresses
+Date: Thu,  7 Nov 2013 18:14:29 -0800
+Message-Id: <1383876946-2396-15-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,156 +31,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: =?UTF-8?q?Fran=C3=A7ois=20Cachereul?= <f.cachereul@alphalink.fr>
 
-[ Upstream commit e727ca82e0e9616ab4844301e6bae60ca7327682 ]
+[ Upstream commit e18503f41f9b12132c95d7c31ca6ee5155e44e5c ]
 
-Initialize event_data for all possible message types to prevent leaking
-kernel stack contents to userland (up to 20 bytes). Also set the flags
-member of the connector message to 0 to prevent leaking two more stack
-bytes this way.
+IPv4 mapped addresses cause kernel panic.
+The patch juste check whether the IPv6 address is an IPv4 mapped
+address. If so, use IPv4 API instead of IPv6.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+[  940.026915] general protection fault: 0000 [#1]
+[  940.026915] Modules linked in: l2tp_ppp l2tp_netlink l2tp_core pppox ppp_generic slhc loop psmouse
+[  940.026915] CPU: 0 PID: 3184 Comm: memcheck-amd64- Not tainted 3.11.0+ #1
+[  940.026915] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[  940.026915] task: ffff880007130e20 ti: ffff88000737e000 task.ti: ffff88000737e000
+[  940.026915] RIP: 0010:[<ffffffff81333780>]  [<ffffffff81333780>] ip6_xmit+0x276/0x326
+[  940.026915] RSP: 0018:ffff88000737fd28  EFLAGS: 00010286
+[  940.026915] RAX: c748521a75ceff48 RBX: ffff880000c30800 RCX: 0000000000000000
+[  940.026915] RDX: ffff88000075cc4e RSI: 0000000000000028 RDI: ffff8800060e5a40
+[  940.026915] RBP: ffff8800060e5a40 R08: 0000000000000000 R09: ffff88000075cc90
+[  940.026915] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88000737fda0
+[  940.026915] R13: 0000000000000000 R14: 0000000000002000 R15: ffff880005d3b580
+[  940.026915] FS:  00007f163dc5e800(0000) GS:ffffffff81623000(0000) knlGS:0000000000000000
+[  940.026915] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  940.026915] CR2: 00000004032dc940 CR3: 0000000005c25000 CR4: 00000000000006f0
+[  940.026915] Stack:
+[  940.026915]  ffff88000075cc4e ffffffff81694e90 ffff880000c30b38 0000000000000020
+[  940.026915]  11000000523c4bac ffff88000737fdb4 0000000000000000 ffff880000c30800
+[  940.026915]  ffff880005d3b580 ffff880000c30b38 ffff8800060e5a40 0000000000000020
+[  940.026915] Call Trace:
+[  940.026915]  [<ffffffff81356cc3>] ? inet6_csk_xmit+0xa4/0xc4
+[  940.026915]  [<ffffffffa0038535>] ? l2tp_xmit_skb+0x503/0x55a [l2tp_core]
+[  940.026915]  [<ffffffff812b8d3b>] ? pskb_expand_head+0x161/0x214
+[  940.026915]  [<ffffffffa003e91d>] ? pppol2tp_xmit+0xf2/0x143 [l2tp_ppp]
+[  940.026915]  [<ffffffffa00292e0>] ? ppp_channel_push+0x36/0x8b [ppp_generic]
+[  940.026915]  [<ffffffffa00293fe>] ? ppp_write+0xaf/0xc5 [ppp_generic]
+[  940.026915]  [<ffffffff8110ead4>] ? vfs_write+0xa2/0x106
+[  940.026915]  [<ffffffff8110edd6>] ? SyS_write+0x56/0x8a
+[  940.026915]  [<ffffffff81378ac0>] ? system_call_fastpath+0x16/0x1b
+[  940.026915] Code: 00 49 8b 8f d8 00 00 00 66 83 7c 11 02 00 74 60 49
+8b 47 58 48 83 e0 fe 48 8b 80 18 01 00 00 48 85 c0 74 13 48 8b 80 78 02
+00 00 <48> ff 40 28 41 8b 57 68 48 01 50 30 48 8b 54 24 08 49 c7 c1 51
+[  940.026915] RIP  [<ffffffff81333780>] ip6_xmit+0x276/0x326
+[  940.026915]  RSP <ffff88000737fd28>
+[  940.057945] ---[ end trace be8aba9a61c8b7f3 ]---
+[  940.058583] Kernel panic - not syncing: Fatal exception in interrupt
+
+Signed-off-by: François CACHEREUL <f.cachereul@alphalink.fr>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/connector/cn_proc.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ net/l2tp/l2tp_core.c | 27 +++++++++++++++++++++++----
+ net/l2tp/l2tp_core.h |  3 +++
+ 2 files changed, 26 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/connector/cn_proc.c b/drivers/connector/cn_proc.c
-index 1110478..1b1d255 100644
---- a/drivers/connector/cn_proc.c
-+++ b/drivers/connector/cn_proc.c
-@@ -65,6 +65,7 @@ void proc_fork_connector(struct task_struct *task)
+diff --git a/net/l2tp/l2tp_core.c b/net/l2tp/l2tp_core.c
+index 2ac884d..8861e9f 100644
+--- a/net/l2tp/l2tp_core.c
++++ b/net/l2tp/l2tp_core.c
+@@ -517,6 +517,7 @@ out:
+ static inline int l2tp_verify_udp_checksum(struct sock *sk,
+ 					   struct sk_buff *skb)
+ {
++	struct l2tp_tunnel *tunnel = (struct l2tp_tunnel *)sk->sk_user_data;
+ 	struct udphdr *uh = udp_hdr(skb);
+ 	u16 ulen = ntohs(uh->len);
+ 	__wsum psum;
+@@ -525,7 +526,7 @@ static inline int l2tp_verify_udp_checksum(struct sock *sk,
+ 		return 0;
  
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -80,6 +81,7 @@ void proc_fork_connector(struct task_struct *task)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	/*  If cn_netlink_send() failed, the data is not sent */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
-@@ -96,6 +98,7 @@ void proc_exec_connector(struct task_struct *task)
+ #if IS_ENABLED(CONFIG_IPV6)
+-	if (sk->sk_family == PF_INET6) {
++	if (sk->sk_family == PF_INET6 && !tunnel->v4mapped) {
+ 		if (!uh->check) {
+ 			LIMIT_NETDEBUG(KERN_INFO "L2TP: IPv6: checksum is 0\n");
+ 			return 1;
+@@ -1088,7 +1089,7 @@ static int l2tp_xmit_core(struct l2tp_session *session, struct sk_buff *skb,
+ 	/* Queue the packet to IP for output */
+ 	skb->local_df = 1;
+ #if IS_ENABLED(CONFIG_IPV6)
+-	if (skb->sk->sk_family == PF_INET6)
++	if (skb->sk->sk_family == PF_INET6 && !tunnel->v4mapped)
+ 		error = inet6_csk_xmit(skb, NULL);
+ 	else
+ #endif
+@@ -1221,7 +1222,7 @@ int l2tp_xmit_skb(struct l2tp_session *session, struct sk_buff *skb, int hdr_len
  
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -106,6 +109,7 @@ void proc_exec_connector(struct task_struct *task)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
+ 		/* Calculate UDP checksum if configured to do so */
+ #if IS_ENABLED(CONFIG_IPV6)
+-		if (sk->sk_family == PF_INET6)
++		if (sk->sk_family == PF_INET6 && !tunnel->v4mapped)
+ 			l2tp_xmit_ipv6_csum(sk, skb, udp_len);
+ 		else
+ #endif
+@@ -1624,6 +1625,24 @@ int l2tp_tunnel_create(struct net *net, int fd, int version, u32 tunnel_id, u32
+ 	if (cfg != NULL)
+ 		tunnel->debug = cfg->debug;
  
-@@ -122,6 +126,7 @@ void proc_id_connector(struct task_struct *task, int which_id)
++#if IS_ENABLED(CONFIG_IPV6)
++	if (sk->sk_family == PF_INET6) {
++		struct ipv6_pinfo *np = inet6_sk(sk);
++
++		if (ipv6_addr_v4mapped(&np->saddr) &&
++		    ipv6_addr_v4mapped(&np->daddr)) {
++			struct inet_sock *inet = inet_sk(sk);
++
++			tunnel->v4mapped = true;
++			inet->inet_saddr = np->saddr.s6_addr32[3];
++			inet->inet_rcv_saddr = np->rcv_saddr.s6_addr32[3];
++			inet->inet_daddr = np->daddr.s6_addr32[3];
++		} else {
++			tunnel->v4mapped = false;
++		}
++	}
++#endif
++
+ 	/* Mark socket as an encapsulation socket. See net/ipv4/udp.c */
+ 	tunnel->encap = encap;
+ 	if (encap == L2TP_ENCAPTYPE_UDP) {
+@@ -1631,7 +1650,7 @@ int l2tp_tunnel_create(struct net *net, int fd, int version, u32 tunnel_id, u32
+ 		udp_sk(sk)->encap_type = UDP_ENCAP_L2TPINUDP;
+ 		udp_sk(sk)->encap_rcv = l2tp_udp_encap_recv;
+ #if IS_ENABLED(CONFIG_IPV6)
+-		if (sk->sk_family == PF_INET6)
++		if (sk->sk_family == PF_INET6 && !tunnel->v4mapped)
+ 			udpv6_encap_enable();
+ 		else
+ #endif
+diff --git a/net/l2tp/l2tp_core.h b/net/l2tp/l2tp_core.h
+index e62204c..8d6a048 100644
+--- a/net/l2tp/l2tp_core.h
++++ b/net/l2tp/l2tp_core.h
+@@ -190,6 +190,9 @@ struct l2tp_tunnel {
+ 	struct sock		*sock;		/* Parent socket */
+ 	int			fd;		/* Parent fd, if tunnel socket
+ 						 * was created by userspace */
++#if IS_ENABLED(CONFIG_IPV6)
++	bool			v4mapped;
++#endif
  
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	ev->what = which_id;
- 	ev->event_data.id.process_pid = task->pid;
- 	ev->event_data.id.process_tgid = task->tgid;
-@@ -145,6 +150,7 @@ void proc_id_connector(struct task_struct *task, int which_id)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -160,6 +166,7 @@ void proc_sid_connector(struct task_struct *task)
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -170,6 +177,7 @@ void proc_sid_connector(struct task_struct *task)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -185,6 +193,7 @@ void proc_ptrace_connector(struct task_struct *task, int ptrace_id)
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -203,6 +212,7 @@ void proc_ptrace_connector(struct task_struct *task, int ptrace_id)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -218,6 +228,7 @@ void proc_comm_connector(struct task_struct *task)
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -229,6 +240,7 @@ void proc_comm_connector(struct task_struct *task)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -244,6 +256,7 @@ void proc_exit_connector(struct task_struct *task)
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -256,6 +269,8 @@ void proc_exit_connector(struct task_struct *task)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -279,6 +294,7 @@ static void cn_proc_ack(int err, int rcvd_seq, int rcvd_ack)
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	msg->seq = rcvd_seq;
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -288,6 +304,7 @@ static void cn_proc_ack(int err, int rcvd_seq, int rcvd_ack)
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = rcvd_ack + 1;
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
+ 	uint8_t			priv[0];	/* private data */
+ };
 -- 
 1.8.1.2
 
