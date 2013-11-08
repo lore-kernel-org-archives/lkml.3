@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758565Ab3KHXNN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 18:13:13 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:14237 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758059Ab3KHXNM (ORCPT
+	id S1758501Ab3KHXPc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 18:15:32 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:46069 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757800Ab3KHXP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 18:13:12 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Fri, 08 Nov 2013 18:13:02 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: make OABI default to off
-In-reply-to: <20131106211352.GA24006@www.outflux.net>
-Message-id: <alpine.LFD.2.03.1311081809050.15571@syhkavp.arg>
-References: <20131106211352.GA24006@www.outflux.net>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Fri, 8 Nov 2013 18:15:29 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20131108180759.12dab53816900b1b58c1ea1b@canb.auug.org.au>
+Date: Fri, 08 Nov 2013 15:15:17 -0800
+In-Reply-To: <20131108180759.12dab53816900b1b58c1ea1b@canb.auug.org.au>
+	(Stephen Rothwell's message of "Fri, 8 Nov 2013 18:07:59 +1100")
+Message-ID: <87r4aqscxm.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18oM2caBJ1fObDi4DcOxImU5ldn+0Axrzc=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.2029]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Stephen Rothwell <sfr@canb.auug.org.au>
+X-Spam-Relay-Country: 
+Subject: Re: linux-next: build failure after merge of the userns tree
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013, Kees Cook wrote:
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-> Given recent discussions about the lack of OABI in the wild, switch
-> CONFIG_OABI_COMPAT to off-by-default to encourage more system builders
-> to avoid it.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Hi Eric,
+>
+> After merging the userns tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>
+> fs/namespace.c: In function 'detach_mounts':
+> fs/namespace.c:1340:2: error: implicit declaration of function 'br_write_lock' [-Werror=implicit-function-declaration]
+>   br_write_lock(&vfsmount_lock);
+>   ^
+> fs/namespace.c:1340:17: error: 'vfsmount_lock' undeclared (first use in this function)
+>   br_write_lock(&vfsmount_lock);
+>                  ^
+> fs/namespace.c:1340:17: note: each undeclared identifier is reported only once for each function it appears in
+> fs/namespace.c:1345:2: error: implicit declaration of function 'br_write_unlock' [-Werror=implicit-function-declaration]
+>   br_write_unlock(&vfsmount_lock);
+>   ^
+>
+> Caused by the interaction between commit d7e58b8abc4f ("vfs: Add a
+> function to lazily unmount all mounts from any dentry. v3") from the
+> userns tree and commit 84550b9356af ("RCU'd vfsmounts") from the vfs tree.
+>
+> I don't know how to fix this up, so I have just dropped the userns tree
+> for today.  I only dropped that tree because it was the latter of the two
+> conflicting trees.
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
+Yeah.  Al has somethng cooking where he renamed the lock.
 
-> ---
->  arch/arm/Kconfig |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 1ad6fb6c094d..4ace7f33e8a1 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1728,7 +1728,7 @@ config AEABI
->  config OABI_COMPAT
->  	bool "Allow old ABI binaries to run with this kernel (EXPERIMENTAL)"
->  	depends on AEABI && !THUMB2_KERNEL
-> -	default y
-> +	default n
->  	help
->  	  This option preserves the old syscall interface along with the
->  	  new (ARM EABI) one. It also provides a compatibility layer to
-> @@ -1740,7 +1740,7 @@ config OABI_COMPAT
->  	  can say N here. If this option is not selected and you attempt
->  	  to execute a legacy ABI binary then the result will be
->  	  UNPREDICTABLE (in fact it can be predicted that it won't work
-> -	  at all). If in doubt say Y.
-> +	  at all). If in doubt say N.
->  
->  config ARCH_HAS_HOLES_MEMORYMODEL
->  	bool
-> -- 
-> 1.7.9.5
-> 
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+It looks like this just needs the trivial change:
+s/br_write_lock(&vfsmount_lock)/lock_mount_hash()/
+s/br_write_unlock(&vfsmount_lock)/unlock_mount_hash()/
+
+Certainly that is all it needed when I closely inspected an earlier
+version of Al's changes.  He changed the name of the lock and I just
+happen to be using it.  In this case I don't think any of the semantics
+have changed.
+
+Eric
