@@ -1,79 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758572Ab3KHXVO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 18:21:14 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:45650 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758109Ab3KHXVM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 18:21:12 -0500
-Date: Sat, 9 Nov 2013 10:20:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the akpm-current tree with the tip
- tree
-Message-Id: <20131109102058.4edc71a4a367d3d6c92844aa@canb.auug.org.au>
-In-Reply-To: <20131108185812.GB11311@jtriplet-mobl1>
-References: <20131108184805.ec16e3b5cc08834cb5d4f812@canb.auug.org.au>
-	<20131108185812.GB11311@jtriplet-mobl1>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__9_Nov_2013_10_20_58_+1100_TY82v=Oi2_KN6HV9"
+	id S1758191Ab3KHXdR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 18:33:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13990 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758138Ab3KHXdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 18:33:05 -0500
+Message-ID: <527D7491.2030006@redhat.com>
+Date: Fri, 08 Nov 2013 18:32:33 -0500
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Ben Myers <bpm@sgi.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, xfs@oss.sgi.com,
+        elder@kernel.org, Mark Tinguely <tinguely@sgi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] update xfs maintainers
+References: <20131107220208.GY1935@sgi.com> <527C0F64.3010906@sgi.com> <527C4B27.6020205@redhat.com> <527CC50D.4060905@redhat.com> <20131108180337.GO10553@sgi.com> <20131108193424.GA11052@infradead.org> <20131108204605.GA1935@sgi.com> <527D4E8D.3000109@redhat.com> <20131108220309.GB1935@sgi.com> <527D60B1.7000901@redhat.com> <20131108221744.GQ10553@sgi.com>
+In-Reply-To: <20131108221744.GQ10553@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__9_Nov_2013_10_20_58_+1100_TY82v=Oi2_KN6HV9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Josh,
-
-On Fri, 8 Nov 2013 10:58:12 -0800 Josh Triplett <josh@joshtriplett.org> wro=
-te:
+On 11/08/2013 05:17 PM, Ben Myers wrote:
+> Hey Ric,
 >
-> Won't splitting the Makefile change into a separate commit break
-> bisection, in particular if you have the changes adding inlines but you
-> also compile in lglock.o?  Shouldn't this be squashed into the merge
-> itself, keeping the kernel/Makefile section of my original patch?
+> On Fri, Nov 08, 2013 at 05:07:45PM -0500, Ric Wheeler wrote:
+>> On 11/08/2013 05:03 PM, Ben Myers wrote:
+>>> Hey Ric,
+>>>
+>>> On Fri, Nov 08, 2013 at 03:50:21PM -0500, Ric Wheeler wrote:
+>>>> On 11/08/2013 03:46 PM, Ben Myers wrote:
+>>>>> Hey Christoph,
+>>>>>
+>>>>> On Fri, Nov 08, 2013 at 11:34:24AM -0800, Christoph Hellwig wrote:
+>>>>>> On Fri, Nov 08, 2013 at 12:03:37PM -0600, Ben Myers wrote:
+>>>>>>> Mark is replacing Alex as my backup because Alex is really busy at
+>>>>>>> Linaro and asked to be taken off awhile ago.  The holiday season is
+>>>>>>> coming up and I fully intend to go off my meds, turn in to Fonzy the
+>>>>>>> bear, and eat my hat.  I need someone to watch the shop while I'm off
+>>>>>>> exploring on Mars.  I trust Mark to do that because he is totally
+>>>>>>> awesome.
+>>>>>> Doing this as an unilateral decisions is not something that will win you
+>>>>>> a fan base.
+>>>>> It's posted for review.
+>>>>>
+>>>>>> While we never had anything reassembling a democracy in Linux Kernel
+>>>>>> development making decisions without even contacting the major
+>>>>>> contributor is wrong, twice so if the maintainer is a relatively minor
+>>>>>> contributor to start with.
+>>>>>>
+>>>>>> Just because it recent came up elsewhere I'd like to recite the
+>>>>>> definition from Trond here again:
+>>>>>>
+>>>>>> 	http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-June/000066.html
+>>>>>>
+>>>>>> By many of the creative roles enlisted there it's clear that Dave should
+>>>>>> be the maintainer.  He's been the main contributor and chief architect
+>>>>>> for XFS for many year, while the maintainers came and went at the mercy
+>>>>>> of SGI.  This is not meant to bad mouth either of you as I think you're
+>>>>>> doing a reasonably good job compared to other maintainers, but at the
+>>>>>> same time the direction is set by other people that have a much longer
+>>>>>> involvement with the project, and having them officially in control
+>>>>>> would help us forward a lot.  It would also avoid having to spend
+>>>>>> considerable resources to train every new generation of SGI maintainer.
+>>>>>>
+>>>>>> Coming to and end I would like to maintain Dave Chinner as the primary
+>>>>>> XFS maintainer for all the work he has done as biggest contributor and
+>>>>>> architect of XFS since longer than I can remember, and I would love to
+>>>>>> retain Ben Myers as a co-maintainer for all the good work he has done
+>>>>>> maintaining and reviewing patches since November 2011.
+>>>>> I think we're doing a decent job too.  So thanks for that much at least.  ;)
+>>>>>> I would also like to use this post as a public venue to condemn the
+>>>>>> unilateral smokey backroom decisions about XFS maintainership that SGI is
+>>>>>> trying to enforce on the community.
+>>>>> That really didn't happen Christoph.  It's not in my tree or in a pull request.
+>>>>>
+>>>>> Linus, let me know what you want to do.  I do think we're doing a fair job over
+>>>>> here, and (geez) I'm just trying to add Mark as my backup since Alex is too
+>>>>> busy.  I know the RH people want more control, and that's understandable, but
+>>>>> they really don't need to replace me to get their code in.  Ouch.
+>>>>>
+>>>>> Thanks,
+>>>>> 	Ben
+>>>> Christoph is not a Red Hat person.
+>>>>
+>>>> Jeff is from Oracle.
+>>>>
+>>>> This is not a Red Hat vs SGI thing,
+>>> Sorry if my read on that was wrong.
+>> I do appreciate the work and effort you and the SGI team put in but
+>> think that this will be a good way to keep the community happier and
+>> even more productive going forward.
+>>
+>>>> Dave simply has earned the right
+>>>> to take on the formal leadership role of maintainer.
+>>> Then we're gonna need some Reviewed-bys.  ;)
+>> Those should come from the developers, thanks!
+> I actually do need your Reviewed-by.   We'll try and get this one in 3.13.  ;)
+>
+> Thanks,
+> 	Ben
 
-Actually it is not a problem because that fix patch was applied to the
-merge commit between the part of Andrew's tree that depends only on
-Linus' tree and the rest of linux-next.  So each side of the merge is ok
-and the merge commit itself fixes up the conflict.
+Happy to do that - I do think that Dave mostly posts from his redhat.com 
+account, but he can comment once he gets back online.
 
-I just split it this way for my work flow purposes.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Reviewed-by: Ric Wheeler <rwheeler@redhat.com>
+>
+>>> From: Ben Myers <bpm@sgi.com>
+>>>
+>>> xfs: update maintainers
+>>>
+>>> Add Dave as maintainer of XFS.
+>>>
+>>> Signed-off-by: Ben Myers <bpm@sgi.com>
+>>> ---
+>>>   MAINTAINERS |    2 +-
+>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> Index: b/MAINTAINERS
+>>> ===================================================================
+>>> --- a/MAINTAINERS	2013-11-08 15:20:18.935186245 -0600
+>>> +++ b/MAINTAINERS	2013-11-08 15:22:50.685245977 -0600
+>>> @@ -9387,8 +9387,8 @@ F:	drivers/xen/*swiotlb*
+>>>   XFS FILESYSTEM
+>>>   P:	Silicon Graphics Inc
+>>> +M:	Dave Chinner <dchinner@fromorbit.com>
+>>>   M:	Ben Myers <bpm@sgi.com>
+>>> -M:	Alex Elder <elder@kernel.org>
+>>>   M:	xfs@oss.sgi.com
+>>>   L:	xfs@oss.sgi.com
+>>>   W:	http://oss.sgi.com/projects/xfs
 
---Signature=_Sat__9_Nov_2013_10_20_58_+1100_TY82v=Oi2_KN6HV9
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSfXHgAAoJEMDTa8Ir7ZwVyU0QAJI9CWTgr+1ImfZ67ik2EaXX
-9085Ofn8i+1txU4NmXdGfjtJ8gMLyJ5cy0gZm/PSn9WkgsWZ73a+r2VABgH43k1E
-8V9cx8S5G105MNTWgklyYwJn2R0c3vaeTWore7G9dcVg8i/4YMrhpSWNJAxfzBm8
-BtBFJNH93tqpYfk35vaPlyVG29g5Wo1gXymvVA4hg86vvIb9NkmWUeY6kU+ae8a3
-3s9Es1N+51A+tHgVtCUCeq1R6Kb9EDJ+B6nLgG599Gz5PU2SSm2XPMsInGFa2lHF
-FgzRY4WQpsOxGO1tEdrmhCSKY1P+eT6ppmqu8f1k1G7GZa/urlmzQZy8SDA5Q2In
-h+6XyKjw6LbWV1xZNikMiAnMdz4VDAwUtEhPn117sasT1460wbPKSZbZf0fFFhbs
-PAeUmtD0JAxgYp3ymJnEVUNHb6xaiW8o+4N7GTlqSyVVfeyCSRmc4fODMWFJFoq1
-+jqfkgJreG4BuJv3rpT8CkxgOeiRRTV3ET1Ea0VrJjEtulCKO54NURF+JR/qEA6q
-y/7LAQSW+aZBsgrDKg5HwsU6BFfwrXhvlObXYi5Y1Mo3opMc6BCoJumamRam1fUE
-YCzIDUIa59Kjr7TeQQqJipTbPzoH6JjW58QOXIlgB22mPDBxZ5gX9kduAXGP2nYn
-MomD4T13x+7g7ImzdCAq
-=w9Aq
------END PGP SIGNATURE-----
-
---Signature=_Sat__9_Nov_2013_10_20_58_+1100_TY82v=Oi2_KN6HV9--
