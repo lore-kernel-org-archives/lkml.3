@@ -1,48 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757369Ab3KHOkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 09:40:36 -0500
-Received: from mout.web.de ([212.227.17.12]:54066 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254Ab3KHOkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 09:40:35 -0500
-Message-ID: <527CF7DA.6010709@web.de>
-Date: Fri, 08 Nov 2013 15:40:26 +0100
-From: Markus Elfring <Markus.Elfring@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1757416Ab3KHOlc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 09:41:32 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:55941 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab3KHOla (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 09:41:30 -0500
+Message-ID: <527CF7FF.7060001@gmail.com>
+Date: Fri, 08 Nov 2013 07:41:03 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: reserved identifier violation
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ySP9mTTqlFSGeDRVGLa7PQt7ETlulgrbkvo76+HoSjfdl2Ac20g
- ZX+HOtdyOljLmv4YAE+Qg7Qr3kjNtSihGhOMAihyWQCxCil9UYF0bxMwfFCivVI8YUPJzc3
- ME2J+ssxOMIIfb1oBDu0fldILR4K8EN5LkjdtlygvGdk0G2TOX37eqNjTaM6uhXOF0k3Zdb
- flEFgCroPn9K9gaFBQd0Q==
+To: Adrian Hunter <adrian.hunter@intel.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] perf tool: Round mmap pages to power 2
+References: <1383885392-31082-1-git-send-email-dsahern@gmail.com> <527CAAAB.3000900@intel.com>
+In-Reply-To: <527CAAAB.3000900@intel.com>
+Content-Type: multipart/mixed;
+ boundary="------------040201090007020100010108"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This is a multi-part message in MIME format.
+--------------040201090007020100010108
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-I find that identifiers like the following do not fit to the expected naming
-convention of the C language standard.
-- _ALPHA_BUG_H
+On 11/8/13, 2:11 AM, Adrian Hunter wrote:
+> This prevents:
+>
+>      --out-pages=0
+>
+> from working e.g.
+>
+>      tools/perf/perf record -vv --out-pages=0 uname
+>      rounding mmap pages size to 4096 (1 pages)
+>
+> Although without this patch:
+>
+>      tools/perf/perf record -vv --out-pages=0 uname
+>      --mmap_pages/-m value must be a power of two.
+>       usage: perf record [<options>] [<command>]
+>          or: perf record [<options>] -- <command> [<options>]
+>
+>              --out-pages <pages>
+>                            Number of pages or size with units to use for
+> output (default 64M)
+>
+> Also there is:
+>
+>      tools/perf/perf record -vv --no-out-pages uname
+>      Segmentation fault (core dumped)
 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/alpha/include/asm/bug.h?id=acadbfb90a54673d6c8b05aa4e93218433890411#n1
+This is problem with perf_evlist__parse_mmap_pages(); same thing happens 
+with --no-map-pages.
 
-- __BARRIER_H
+With the attached both round a 0 up to 1 page:
 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/alpha/include/asm/barrier.h?id=77b4cf5cb0c9d6010a18030a0e0a8d2aaf6b43ec#n1
+[daahern@nxos-vdc-dev3 perf]$ perf record --out-pages 0 uname
+rounding mmap pages size to 4096 (1 pages)
+Linux
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.008 MB perf.data (~339 samples) ]
 
-- _UAPI__ALPHA_COMPILER_H
+[daahern@nxos-vdc-dev3 perf]$ perf record --mmap-pages 0 uname
+rounding mmap pages size to 4096 (1 pages)
+Linux
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.008 MB perf.data (~339 samples) ]
 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/alpha/include/uapi/asm/compiler.h?id=96433f6ee49032d7a8bda76de2b05cfde2914354#n1
+[daahern@nxos-vdc-dev3 perf]$ perf record --no-mmap-pages uname
+
+  usage: perf record [<options>] [<command>]
+     or: perf record [<options>] -- <command> [<options>]
+
+     -m, --mmap-pages <pages>
+                           number of mmap data pages
+David
 
 
-Would you like to adjust the selection for unique names?
-https://www.securecoding.cert.org/confluence/display/seccode/DCL37-C.+Do+not+declare+or+define+a+reserved+identifier#DCL37-C.Donotdeclareordefineareservedidentifier-NoncompliantCodeExample%28HeaderGuard%29
+--------------040201090007020100010108
+Content-Type: text/plain; charset=UTF-8; x-mac-type="0"; x-mac-creator="0";
+ name="0001-perf-record-Fix-segfault-with-no-mmap-pages.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-perf-record-Fix-segfault-with-no-mmap-pages.patch"
 
-Regards,
-Markus
+>From fc7c5a6b2b47a2e7a04613b4e82e478a0dcabf42 Mon Sep 17 00:00:00 2001
+From: David Ahern <dsahern@gmail.com>
+Date: Fri, 8 Nov 2013 07:37:43 -0700
+Subject: [PATCH] perf record: Fix segfault with --no-mmap-pages
+
+Adrian reported a segfault when using --no-out-pages
+$ tools/perf/perf record -vv --no-out-pages uname
+Segmentation fault (core dumped)
+
+The same occurs with --no-mmap-pages. Fix by checking that str is non-NULL
+before parsing it.
+
+Reported-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/evlist.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 9ec3a5a45f22..1f103616d906 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -718,6 +718,9 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+ 		{ .tag  = 0 },
+ 	};
+ 
++	if (str == NULL)
++		return -1;
++
+ 	val = parse_tag_value(str, tags);
+ 	if (val != (unsigned long) -1) {
+ 		/* we got file size value */
+-- 
+1.8.3.4 (Apple Git-47)
+
+
+--------------040201090007020100010108--
