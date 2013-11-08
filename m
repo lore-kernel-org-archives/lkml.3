@@ -1,174 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263Ab3KHVfq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 16:35:46 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:65115 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758140Ab3KHVfW convert rfc822-to-8bit (ORCPT
+	id S1758301Ab3KHVgF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 16:36:05 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36283 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758268Ab3KHVgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 16:35:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=TC6GVHdivknOzdZ/MFx
-	j3gFY+xfEXU8TQ+LDqZceHuKAgu46cIy5at/WpdqDOgCDDJqY5PEUr5TZfjRoOE6
-	OzdkcojYKUo/OoBctL1JC+qYFVHuRi54FfeTYr/3c4zQsmUyU1loBBFBkLoQL5kk
-	/D0xv14UlXjoKsHc7e+Cx/Rw=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.8.4.3
-Date: Fri, 08 Nov 2013 13:35:16 -0800
-Message-ID: <xmqq61s2o9uz.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 8 Nov 2013 16:36:02 -0500
+Date: Fri, 8 Nov 2013 21:35:51 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Andy Lutomirski <luto@amacapital.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthias Schniedermeyer <ms@citd.de>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Subject: Re: [REVIEW][PATCH 1/4] vfs: Don't allow overwriting mounts in the
+ current mount namespace
+Message-ID: <20131108213551.GR13318@ZenIV.linux.org.uk>
+References: <87li23trll.fsf@tw-ebiederman.twitter.com>
+ <CAJfpegv+h7xh_2e-X7is9dq1Fp06A0eKwsyWFMPX=azbbDCX5Q@mail.gmail.com>
+ <87vc15mjuw.fsf@xmission.com>
+ <CAJfpegvF89LzAvNB0h0otv7sKoS3rewZzQKAauQx3P+rCkCcSg@mail.gmail.com>
+ <87iox38fkv.fsf@xmission.com>
+ <87d2nb8dxy.fsf@xmission.com>
+ <87iowyxpci.fsf_-_@xmission.com>
+ <87d2n6xpan.fsf_-_@xmission.com>
+ <20131103035406.GA8537@ZenIV.linux.org.uk>
+ <87bo1u8vmf.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: A9B5EDB8-48BD-11E3-AC7A-D331802839F8-77302942!b-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bo1u8vmf.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v1.8.4.3 is now available at
-the usual places.
+On Fri, Nov 08, 2013 at 12:51:52PM -0800, Eric W. Biederman wrote:
 
-The release tarballs are found at:
+> The return value of d_mountpoint can be obsolete as soon as it returns
+> as well, so I don't see this as being significantly different.
 
-    http://code.google.com/p/git-core/downloads/list
+Not if the ->i_mutex of that sucker is held.  And it *is* held in
+vfs_unlink/vfs_rmdir/vfs_rename.  Note that we only care about a mountpoint
+being falsely assumed to be a non-mountpoint - in the other direction we
+can just shrug and say that we'd won the race and got EBUSY for that.
 
-and their SHA-1 checksums are:
+> In 3.12 vfs_rmdir checks d_mountpoint with the
+> dentry->d_inode->i_mutex and
+> dentry->d_parent->d_inode->i_mutex held.
+> 
+> In 3.12 vfs_unlink checks d_mountpoint with the
+> dentry->d_inode->i_mutex and
+> dentry->d_parent->d_inode->i_mutex hel.d
+> 
+> In 3.12 vfs_rename_dir and vfs_rename_other checks d_mountpint with the
+> target->i_mutex, new_dir->i_mutex, and old_dir->i_mutex held.
+> 
+> 
+> Therefore the guarantees in 3.12 are:
+> - unlink versus mount races are prevented by the
+>   dentry->d_inode->i_mutex of the dentry being removed.
+> - unlink versus umount races are uninteresting.
+> - mount versus rename races in testing of d_mountpoint are ignored.
 
-43b1edc95b3ab77f9739d789b906ded0585fe7a2  git-1.8.4.3.tar.gz
-eb4eb4991464f44deda19d1435d9721146587661  git-htmldocs-1.8.4.3.tar.gz
-3a7e9322a95e0743b902152083366fe97f322ab1  git-manpages-1.8.4.3.tar.gz
+Read what you've written a few lines above.  The part about target->i_mutex
+being held.
 
-The following public repositories all have a copy of the v1.8.4.3
-tag and the maint branch that the tag points at:
+> So comparing this to how I have implemented covered the test is at a
+> slightly different location in the call path so there may be a slightly
+> larger race in rename.
 
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
+You've got a race in unlink.  You've got a race in rename.  You've got a race
+in rmdir.  And none of those had that race in 3.12 (including rename()).
 
-Also, http://www.kernel.org/pub/software/scm/git/ has copies of the
-release tarballs.
-
-Git v1.8.4.3 Release Notes
-========================
-
-Fixes since v1.8.4.2
---------------------
-
- * The interaction between use of Perl in our test suite and NO_PERL
-   has been clarified a bit.
-
- * A fast-import stream expresses a pathname with funny characters by
-   quoting them in C style; remote-hg remote helper (in contrib/)
-   forgot to unquote such a path.
-
- * One long-standing flaw in the pack transfer protocol used by "git
-   clone" was that there was no way to tell the other end which branch
-   "HEAD" points at, and the receiving end needed to guess.  A new
-   capability has been defined in the pack protocol to convey this
-   information so that cloning from a repository with more than one
-   branches pointing at the same commit where the HEAD is at now
-   reliably sets the initial branch in the resulting repository.
-
- * We did not handle cases where http transport gets redirected during
-   the authorization request (e.g. from http:// to https://).
-
- * "git rev-list --objects ^v1.0^ v1.0" gave v1.0 tag itself in the
-   output, but "git rev-list --objects v1.0^..v1.0" did not.
-
- * The fall-back parsing of commit objects with broken author or
-   committer lines were less robust than ideal in picking up the
-   timestamps.
-
- * Bash prompting code to deal with an SVN remote as an upstream
-   were coded in a way not supported by older Bash versions (3.x).
-
- * "git checkout topic", when there is not yet a local "topic" branch
-   but there is a unique remote-tracking branch for a remote "topic"
-   branch, pretended as if "git checkout -t -b topic remote/$r/topic"
-   (for that unique remote $r) was run. This hack however was not
-   implemented for "git checkout topic --".
-
- * Coloring around octopus merges in "log --graph" output was screwy.
-
- * We did not generate HTML version of documentation to "git subtree"
-   in contrib/.
-
- * The synopsis section of "git unpack-objects" documentation has been
-   clarified a bit.
-
- * An ancient How-To on serving Git repositories on an HTTP server
-   lacked a warning that it has been mostly superseded with more
-   modern way.
-
-Also contains a handful of trivial code clean-ups, documentation
-updates, updates to the test suite, etc.
-
-----------------------------------------------------------------
-
-Changes since v1.8.4.2 are as follows:
-
-Antoine Pelisse (1):
-      remote-hg: unquote C-style paths when exporting
-
-Brian Gernhardt (3):
-      t5570: Update for symref capability
-      t5570: Update for clone-progress-to-stderr branch
-      t5570: Update for clone-progress-to-stderr branch
-
-Hemmo Nieminen (1):
-      graph: fix coloring around octopus merges
-
-Jeff King (11):
-      http_get_file: style fixes
-      http_request: factor out curlinfo_strbuf
-      http: refactor options to http_get_*
-      http: hoist credential request out of handle_curl_result
-      http: provide effective url to callers
-      http: update base URLs when we see redirects
-      remote-curl: make refs_url a strbuf
-      remote-curl: store url as a strbuf
-      remote-curl: rewrite base url from info/refs redirects
-      split_ident: parse timestamp from end of line
-      subtree: add makefile target for html docs
-
-Jonathan Nieder (1):
-      t/README: tests can use perl even with NO_PERL
-
-Junio C Hamano (10):
-      t5505: fix "set-head --auto with ambiguous HEAD" test
-      upload-pack.c: do not pass confusing cb_data to mark_our_ref()
-      upload-pack: send symbolic ref information as capability
-      upload-pack: send non-HEAD symbolic refs
-      connect.c: make parse_feature_value() static
-      connect: annotate refs with their symref information in get_remote_head()
-      clone: test the new HEAD detection logic
-      revision: do not peel tags used in range notation
-      Start preparing for 1.8.4.3
-      Git 1.8.4.3
-
-Karsten Blees (1):
-      gitignore.txt: fix documentation of "**" patterns
-
-Matthieu Moy (2):
-      checkout: allow dwim for branch creation for "git checkout $branch --"
-      checkout: proper error message on 'git checkout foo bar --'
-
-Ramsay Allan Jones (1):
-      http.c: Spell the null pointer as NULL
-
-SZEDER Gábor (1):
-      bash prompt: don't use '+=' operator in show upstream code path
-
-Sitaram Chamarty (1):
-      doc/howto: warn about (dumb)http server document being too old
-
-Vivien Didelot (2):
-      Documentation: restore a space in unpack-objects usage
-      Documentation: "pack-file" is not literal in unpack-objects
-
+BTW, could you describe the races with umount in a bit more details?  Races
+with mount are simple - rmdir() sees that victim isn't a mountpoint and
+proceeds, mount() sees that victim is still alive and proceeds, despite
+the fact that victim is irretrievably on the way to removal.  And that's
+what ->i_mutex on victim prevents, making "check for d_mountpoint / remove /
+call dont_mount()" atomic wrt mount().  What is the problem you are seeing
+with umount()?  rmdir() getting EBUSY because it hasn't noticed umount()
+happening in parallel with it?  Legitimate behaviour, as far I can see...
+Or is it about something different?
