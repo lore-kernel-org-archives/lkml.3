@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab3KHC0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:26:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34914 "EHLO
+	id S1757501Ab3KHC00 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:26:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34910 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932704Ab3KHCWA (ORCPT
+	with ESMTP id S932695Ab3KHCV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:22:00 -0500
+	Thu, 7 Nov 2013 21:21:59 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Geyslan G. Bem" <geyslan@gmail.com>, Tyler Hicks <tyhicks@canonical.com>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 55/91] ecryptfs: Fix memory leakage in keystore.c
-Date: Thu,  7 Nov 2013 18:15:10 -0800
-Message-Id: <1383876946-2396-56-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 48/91] mac80211: correctly close cancelled scans
+Date: Thu,  7 Nov 2013 18:15:03 -0800
+Message-Id: <1383876946-2396-49-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -27,48 +28,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Geyslan G. Bem" <geyslan@gmail.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 3edc8376c06133e3386265a824869cad03a4efd4 upstream.
+commit a754055a1296fcbe6f32de3a5eaca6efb2fd1865 upstream.
 
-In 'decrypt_pki_encrypted_session_key' function:
+__ieee80211_scan_completed is called from a worker. This
+means that the following flow is possible.
 
-Initializes 'payload' pointer and releases it on exit.
+ * driver calls ieee80211_scan_completed
+ * mac80211 cancels the scan (that is already complete)
+ * __ieee80211_scan_completed runs
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-[ kamal: backport to 3.8 (context) ]
+When scan_work will finally run, it will see that the scan
+hasn't been aborted and might even trigger another scan on
+another band. This leads to a situation where cfg80211's
+scan is not done and no further scan can be issued.
+
+Fix this by setting a new flag when a HW scan is being
+cancelled so that no other scan will be triggered.
+
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ecryptfs/keystore.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/mac80211/ieee80211_i.h |  3 +++
+ net/mac80211/scan.c        | 19 +++++++++++++++++++
+ 2 files changed, 22 insertions(+)
 
-diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-index 2333203..a26bb46 100644
---- a/fs/ecryptfs/keystore.c
-+++ b/fs/ecryptfs/keystore.c
-@@ -1149,8 +1149,8 @@ decrypt_pki_encrypted_session_key(struct ecryptfs_auth_tok *auth_tok,
- 	struct ecryptfs_msg_ctx *msg_ctx;
- 	struct ecryptfs_message *msg = NULL;
- 	char *auth_tok_sig;
--	char *payload;
--	size_t payload_len;
-+	char *payload = NULL;
-+	size_t payload_len = 0;
- 	int rc;
+diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
+index 55d8f89..abe9359 100644
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -861,6 +861,8 @@ struct tpt_led_trigger {
+  *	that the scan completed.
+  * @SCAN_ABORTED: Set for our scan work function when the driver reported
+  *	a scan complete for an aborted scan.
++ * @SCAN_HW_CANCELLED: Set for our scan work function when the scan is being
++ *	cancelled.
+  */
+ enum {
+ 	SCAN_SW_SCANNING,
+@@ -868,6 +870,7 @@ enum {
+ 	SCAN_ONCHANNEL_SCANNING,
+ 	SCAN_COMPLETED,
+ 	SCAN_ABORTED,
++	SCAN_HW_CANCELLED,
+ };
  
- 	rc = ecryptfs_get_auth_tok_sig(&auth_tok_sig, auth_tok);
-@@ -1202,8 +1202,8 @@ decrypt_pki_encrypted_session_key(struct ecryptfs_auth_tok *auth_tok,
- 				  crypt_stat->key_size);
- 	}
- out:
--	if (msg)
--		kfree(msg);
-+	kfree(msg);
-+	kfree(payload);
- 	return rc;
- }
+ /**
+diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
+index bf82e69..8d6ba43 100644
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -215,6 +215,9 @@ static bool ieee80211_prep_hw_scan(struct ieee80211_local *local)
+ 	enum ieee80211_band band;
+ 	int i, ielen, n_chans;
  
++	if (test_bit(SCAN_HW_CANCELLED, &local->scanning))
++		return false;
++
+ 	do {
+ 		if (local->hw_scan_band == IEEE80211_NUM_BANDS)
+ 			return false;
+@@ -903,7 +906,23 @@ void ieee80211_scan_cancel(struct ieee80211_local *local)
+ 	if (!local->scan_req)
+ 		goto out;
+ 
++	/*
++	 * We have a scan running and the driver already reported completion,
++	 * but the worker hasn't run yet or is stuck on the mutex - mark it as
++	 * cancelled.
++	 */
++	if (test_bit(SCAN_HW_SCANNING, &local->scanning) &&
++	    test_bit(SCAN_COMPLETED, &local->scanning)) {
++		set_bit(SCAN_HW_CANCELLED, &local->scanning);
++		goto out;
++	}
++
+ 	if (test_bit(SCAN_HW_SCANNING, &local->scanning)) {
++		/*
++		 * Make sure that __ieee80211_scan_completed doesn't trigger a
++		 * scan on another band.
++		 */
++		set_bit(SCAN_HW_CANCELLED, &local->scanning);
+ 		if (local->ops->cancel_hw_scan)
+ 			drv_cancel_hw_scan(local,
+ 				rcu_dereference_protected(local->scan_sdata,
 -- 
 1.8.1.2
 
