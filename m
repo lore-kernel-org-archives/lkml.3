@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932752Ab3KHXrw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 18:47:52 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:52868 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352Ab3KHXns (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 18:43:48 -0500
+	id S1758530Ab3KHXsp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 18:48:45 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:53208 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932309Ab3KHXnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 18:43:45 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <tj@kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Yinghai Lu <yinghai@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 15/24] mm/lib/cpumask: Use memblock apis for early memory allocations
-Date: Fri, 8 Nov 2013 18:41:51 -0500
-Message-ID: <1383954120-24368-16-git-send-email-santosh.shilimkar@ti.com>
+Subject: [PATCH 10/24] mm/init: Use memblock apis for early memory allocations
+Date: Fri, 8 Nov 2013 18:41:46 -0500
+Message-ID: <1383954120-24368-11-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
@@ -40,30 +39,24 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- lib/cpumask.c |    4 ++--
+ init/main.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/lib/cpumask.c b/lib/cpumask.c
-index d327b87..44e492e 100644
---- a/lib/cpumask.c
-+++ b/lib/cpumask.c
-@@ -140,7 +140,7 @@ EXPORT_SYMBOL(zalloc_cpumask_var);
+diff --git a/init/main.c b/init/main.c
+index af310af..1a95ea2 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -346,8 +346,8 @@ static inline void smp_prepare_cpus(unsigned int maxcpus) { }
   */
- void __init alloc_bootmem_cpumask_var(cpumask_var_t *mask)
+ static void __init setup_command_line(char *command_line)
  {
--	*mask = alloc_bootmem(cpumask_size());
-+	*mask = memblock_virt_alloc(cpumask_size());
+-	saved_command_line = alloc_bootmem(strlen (boot_command_line)+1);
+-	static_command_line = alloc_bootmem(strlen (command_line)+1);
++	saved_command_line = memblock_virt_alloc(strlen(boot_command_line)+1);
++	static_command_line = memblock_virt_alloc(strlen(command_line)+1);
+ 	strcpy (saved_command_line, boot_command_line);
+ 	strcpy (static_command_line, command_line);
  }
- 
- /**
-@@ -161,6 +161,6 @@ EXPORT_SYMBOL(free_cpumask_var);
-  */
- void __init free_bootmem_cpumask_var(cpumask_var_t mask)
- {
--	free_bootmem(__pa(mask), cpumask_size());
-+	memblock_free_early(__pa(mask), cpumask_size());
- }
- #endif
 -- 
 1.7.9.5
 
