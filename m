@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab3KHNhc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 08:37:32 -0500
-Received: from smtprelay0202.b.hostedemail.com ([64.98.42.202]:52044 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752626Ab3KHNhb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 08:37:31 -0500
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:,RULES_HIT:41:152:355:379:582:973:988:989:1152:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2692:2741:3138:3139:3140:3141:3142:3352:3421:3622:3865:3866:3867:3870:3871:3872:3874:4250:4361:5007:6119:6120:6261:6691:7901:7903:7996:9108:10004:10400:10450:10455:10848:11658:11914:12517:12519:12679:13069:13071:13161:13229:13311:13357:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: men44_7ba66bc786919
-X-Filterd-Recvd-Size: 1667
-Date: Fri, 8 Nov 2013 13:37:29 +0000 (UTC)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <1600311353.38386.1383917849694.JavaMail.mail@webmail14>
-Subject: Not being able to reread the partition table - why is Linux so 90x?
+	id S1756933Ab3KHNrg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 08:47:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53952 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753533Ab3KHNrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 08:47:35 -0500
+Date: Fri, 8 Nov 2013 14:48:59 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: linux-next: manual merge of the akpm-current tree with the vfs
+	tree
+Message-ID: <20131108134859.GA4461@redhat.com>
+References: <20131108183001.2564151a619f8f6df3db543a@canb.auug.org.au> <20131108125915.GA1000@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [46.146.168.227]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131108125915.GA1000@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 11/08, Oleg Nesterov wrote:
+>
+> On 11/08, Stephen Rothwell wrote:
+> >
+> > Hi Andrew,
+> >
+> > Today's linux-next merge of the akpm-current tree got a conflict in
+> > fs/anon_inodes.c between commit 24b0303e9532 ("take anon inode allocation
+> > to libfs.c") from the vfs tree and commit 02f3ac4386d9 ("anon_inodefs:
+> > forbid open via /proc") from the akpm-current tree.
+> >
+> > I just dropped the akpm-current changes for today - they should probably
+> > be applied to fs/libfs.c.
+>
+> Well, this probably means that
+>
+> 	anon_inodefs-forbid-open-via-proc.patch
+>
+> should be dropped. I'll rediff this patch against vfs.git
 
-I wonder why in 2013 I still cannot modify _unused_ partitions on the fly,
-yeah, the Internet is full of:
+24b0303e9532 also removes anon_inode_fops. It seems that it was not really
+needed anyway, inode_init_always() does inode->i_fop = empty_fops...
 
-# hdparm -z /dev/sda
+So probably we can simply change empty_fops but I need to recheck.
 
-/dev/sda:
- re-reading partition table
- BLKRRPART failed: Device or resource busy
+Oleg.
 
-# fdisk (after adding a new partition using unused space on my hdd)
-...
-Command (m for help): w
+--- x/fs/inode.c
++++ x/fs/inode.c
+@@ -114,6 +114,11 @@ int proc_nr_inodes(ctl_table *table, int
+ }
+ #endif
+ 
++static int empty_open(struct inode *inode, struct file *file)
++{
++	return -ENXIO;
++}
++
+ /**
+  * inode_init_always - perform inode structure intialisation
+  * @sb: superblock inode belongs to
+@@ -125,7 +130,9 @@ int proc_nr_inodes(ctl_table *table, int
+ int inode_init_always(struct super_block *sb, struct inode *inode)
+ {
+ 	static const struct inode_operations empty_iops;
+-	static const struct file_operations empty_fops;
++	static const struct file_operations empty_fops = {
++		.open = empty_open,
++	};
+ 	struct address_space *const mapping = &inode->i_data;
+ 
+ 	inode->i_sb = sb;
 
-The partition table has been altered.
-Calling ioctl() to re-read partition table.
-Re-reading the partition table failed.: Device or resource busy
-
-SCSI rescan command doesn't work too.
-
-I do understand that the Linux kernel doesn't have any form of invoke() but
-then it prevents me from altering the partitions which are not used - it's
-100% counter intuitive. Windows, for instance, allows to modify even a
-system partition on the fly since 2006, Linux doesn't allow to add partitions
-without rebooting the system.
-
-Could anyone elaborate, please?
-
-Best regards,
-
-Artem
