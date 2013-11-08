@@ -1,119 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096Ab3KHA1d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 19:27:33 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60851 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717Ab3KHA1b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 19:27:31 -0500
-X-AuditID: 9c93016f-b7bb9ae000001e30-96-527c2ff2f931
-Date: Fri, 8 Nov 2013 09:27:36 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ron van der Wees <rvdwees@redhat.com>, Erik Mouw <erik.mouw_2@nxp.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        walken@google.com, Shaohua Li <shli@kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC PATCH v2 -mm] provide estimated available memory in
- /proc/meminfo
-Message-ID: <20131108002736.GB10645@bbox>
-References: <ECFC0369-0745-44AB-9858-E689F41CCB4D@nxp.com>
- <5256D4C7.90301@redhat.com>
- <DB649DE8-5595-4370-912B-BDC6BD5FF8C3@nxp.com>
- <20131025120752.GB2415@rh0004426.ams.redhat.com>
- <20131105173852.709a103b@annuminas.surriel.com>
- <20131105144526.49a233ca19298808e54ff900@linux-foundation.org>
- <20131107101345.14d7be90@annuminas.surriel.com>
- <20131107212132.GA1092@cmpxchg.org>
+	id S1755946Ab3KHAbI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 19:31:08 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:2158 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753652Ab3KHAbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 19:31:06 -0500
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <527C3080.5050202@broadcom.com>
+Date: Thu, 7 Nov 2013 16:29:52 -0800
+From: "Sherman Yin" <syin@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131107212132.GA1092@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: "Linus Walleij" <linus.walleij@linaro.org>
+cc: "Stephen Warren" <swarren@wwwdotorg.org>,
+        "=?ISO-8859-1?Q?Heiko_St=FCb?= =?ISO-8859-1?Q?ner?=" 
+	<heiko@sntech.de>,
+        "Laxman Dewangan" <ldewangan@nvidia.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Christian Daudt" <bcm@fixthebug.org>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Pawel Moll" <pawel.moll@arm.com>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "Rob Landley" <rob@landley.net>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        "Matt Porter" <matt.porter@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
+References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
+ <051069C10411E24D9749790C498526FA1BE0B7D7@SJEXCHMB12.corp.ad.broadcom.com>
+ <CACRpkdYSLxp2M4HghcUdjEYGh-UQ+DaiCGp6yee+Qds6DR9poA@mail.gmail.com>
+ <201311050026.56321.heiko@sntech.de> <527835FE.2030102@wwwdotorg.org>
+ <5279A319.5060701@broadcom.com>
+ <CACRpkdaxPv6CLMjab_4umyUvbBVYcazjmwx_LGRK76vxT4VUqA@mail.gmail.com>
+In-Reply-To: <CACRpkdaxPv6CLMjab_4umyUvbBVYcazjmwx_LGRK76vxT4VUqA@mail.gmail.com>
+X-WSS-ID: 7E62EF2E4RS6005700-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hannes, Rik.
+On 13-11-06 01:40 AM, Linus Walleij wrote:
+> On Wed, Nov 6, 2013 at 3:02 AM, Sherman Yin <syin@broadcom.com> wrote:
+>> When Linus asked me to try using generic pinconf instead, I ran into
+>> problems with this feature due to how the generic pinconf properties are
+>> defined differently than my properties - perhaps this feature just doesn't
+>> work for generic pinconf-based drivers with the (Unless we are ok with using
+>> 1/0 for boolean properties, but it has already been pointed out that these
+>> should be valueless.).
+>
+> Well it seems you would need a way to pass an array of the same
+> boolean property and that seems a bit more complex and hard to
+> read than the generic boolean bindings.
+>
+> You would have to patch the OF core to do something like that:
+>
+> bias-pull-up = <true true false>;
+>
+> 1/0 isn't so good I think, what should the parser do with e.g. 2?
+> This is more to the point.
 
-On Thu, Nov 07, 2013 at 04:21:32PM -0500, Johannes Weiner wrote:
-> On Thu, Nov 07, 2013 at 10:13:45AM -0500, Rik van Riel wrote:
-> > 
-> > > >  fs/proc/meminfo.c | 36 ++++++++++++++++++++++++++++++++++++
-> > > >  1 file changed, 36 insertions(+)
-> > > 
-> > > Documentation/filesystems/proc.txt told me it's feeling all offended.
-> > 
-> > You're right, of course.  Here is version 2 :)
-> > 
-> > ---8<---
-> > 
-> > Subject: provide estimated available memory in /proc/meminfo
-> > 
-> > Many load balancing and workload placing programs check /proc/meminfo
-> > to estimate how much free memory is available. They generally do this
-> > by adding up "free" and "cached", which was fine ten years ago, but
-> > is pretty much guaranteed to be wrong today.
-> > 
-> > It is wrong because Cached includes memory that is not freeable as
-> > page cache, for example shared memory segments, tmpfs, and ramfs,
-> > and it does not include reclaimable slab memory, which can take up
-> > a large fraction of system memory on mostly idle systems with lots
-> > of files.
-> > 
-> > Currently, the amount of memory that is available for a new workload,
-> > without pushing the system into swap, can be estimated from MemFree,
-> > Active(file), Inactive(file), and SReclaimable, as well as the "low"
-> > watermarks from /proc/zoneinfo.
-> > 
-> > However, this may change in the future, and user space really should
-> > not be expected to know kernel internals to come up with an estimate
-> > for the amount of free memory.
-> > 
-> > It is more convenient to provide such an estimate in /proc/meminfo.
-> > If things change in the future, we only have to change it in one place.
-> > 
-> > Signed-off-by: Rik van Riel <riel@redhat.com>
-> > Reported-by: Erik Mouw <erik.mouw_2@nxp.com>
-> 
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> 
-> I have a suspicion that people will end up relying on this number to
-> start new workloads in situations where lots of the page cache is
-> actually heavily used.  We might not swap, but there will still be IO
-> from thrashing cache.
-> 
-> Maybe we'll have to subtract mapped cache pages in the future to
-> mitigate this risk somehow...
+I would imagine that the platform-specific device tree bindings would 
+need to clearly explain what the valid values are, as they should.  If 
+we're using integers, we could either have a) !0 and 0, or b) just 1 and 
+0, and everything else is an error.  Or c) the platform could decide 
+that the value provides addition info like pull-up-strength, so 0 = no 
+pull up, >0 = pull up enabled and the number is the pull up strength in 
+Ohm (bindings should indicate which values are valid), and everything 
+else is an error.
 
-It might be huge false positive if there was mmaped used-once stream so
-that userlevel could free some objects or kill someone to get a free memory.
+>> While I'd love to be able define my pin config nodes this way, if I have to
+>> use generic pinconf for the driver to be upstreamed, then I'm fine with it.
+>
+> Well you need to use generic pin config because all the custom
+> stuff - i.MX comes to mind - is creating a mess. I prefer that we
+> share bindings and code, as any programmer would...
 
-And shouldn't we consider dirty + writeback, either?
+Ok
 
-Anyway, this feature is very handy. Swapping/LMK/OOM is very sensivie
-subject for embedded people these days so we have been used some matrix
-to get a ballpark estimate like
+> That said, if you can patch the OF core and the generic pin config
+> parser to do what you want with lists like that, it's your pick.
+> It may take some time though.
 
-        "buffers + cached + Sreclaimable - (SHMEM + dirty + writeback +
-         workingset)"
+I don't mind patching the generic pin config, and I don't think the core 
+needs to change, but first there needs to be an agreement on the changes 
+since other drivers will need to use pinconf-generic. Am I the only one 
+who would like to see this feature, or do others see value in being able 
+to group more pins together - resulting in fewer sub-nodes?  Do the pros 
+out-weight the cons?
 
-We included workingset to prevent thrashing page cache.
-So, my point is we could include some tunable value in the expression
-like workingset and default might be half of page cache like this patch
-but admin can control it if the platform is aware of his workingset size.
+>>> "input disable"
+>>> This setting disconnects the input (DIN) to the internal logic from >the
+>>> pin pad. However, the output (DOUT) can still drive the pad.  It
+>>> seems to match PIN_CONFIG_OUTPUT, but the current generic option is
+>>> either "output-low" or "output-high" - are these referring to a static
+>>> output of 0 and 1?
+>>
+>> What's the best property to use in this case?
+>
+> Seems like a new case.
+>
+> What about you patch include/linux/pinctrl/pinconf-generic.h
+> to add PIN_CONFIG_INPUT_DISABLE with this semantic
+> and also patch the generic pinconf parser in drivers/pinctrl/pinconf-generic.c
+> to handle this?
 
-> 
-> Anyway, we can defer this to when it's proven to be an actual problem.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Sure, I can add PIN_CONFIG_INPUT_DISABLE.  However I suspect people 
+might be confused by this and PIN_CONFIG_OUTPUT.
 
--- 
-Kind regards,
-Minchan Kim
+>>> "mode"
+>>> This controls several aspect of the pin (slew rate, pull up strength,
+>>> etc) to meet I2C specs for Standard/Fast mode vs High Speed mode.  I
+>>> think the best way is to map this to slew rate, which would require
+>>> some explanation because the meaning of slew rate differs depending on
+>>> what pin function is selected:
+>>> - When I2C (*_SCL or *_SDA) function is selected for the pin: 0:
+>>>   Standard (100kbps)
+>>>   & Fast mode (400kbps), 1: High Speed mode (3.4Mbps)
+>>> - When IC_DM or IC_DP function is selected, 0: normal slew rate, 1:
+>>>   fast slew rate
+>>> - Else: 0: fast slew rate, 1: normal slew rate
+>>
+>> Do we agree that the "slew rate" is the best property to use for "mode"?
+>
+> It seems to be indeed mostly related to slew rate.
+>
+> However if you want a custom brcm,mode binding that should
+> be possible too, as well as augmenting the driver to use
+> *both* generic pinconf *and* some custom config options
+> on top. That has not been done so far though I think, so you
+> might need a bit of hacking to do that.
+
+I think I'll stick with slew rate.  :)
+
+Regards,
+Sherman
+
+
