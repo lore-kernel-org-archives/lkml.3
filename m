@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab3KHOin (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 09:38:43 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:54321 "EHLO mail.skyhub.de"
+	id S1757369Ab3KHOkg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 09:40:36 -0500
+Received: from mout.web.de ([212.227.17.12]:54066 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751118Ab3KHOil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 09:38:41 -0500
-Date: Fri, 8 Nov 2013 15:40:50 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Borislav Petkov <bp@suse.de>,
-        mingo@kernel.org, mingo@redhat.com, jacob.w.shin@gmail.com,
-        oleg@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, sherry.hurwitz@amd.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/3] perf/x86/amd: AMD support for bp_len >
- HW_BREAKPOINT_LEN_8
-Message-ID: <20131108144050.GA7044@x1.alien8.de>
-References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1380730268-25807-2-git-send-email-suravee.suthikulpanit@amd.com>
- <20131031095829.GE2253@localhost.localdomain>
- <20131031104836.GC10544@pd.tnic>
- <527D5630.3000906@amd.com>
+	id S1751254Ab3KHOkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 09:40:35 -0500
+Message-ID: <527CF7DA.6010709@web.de>
+Date: Fri, 08 Nov 2013 15:40:26 +0100
+From: Markus Elfring <Markus.Elfring@web.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <527D5630.3000906@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: reserved identifier violation
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:ySP9mTTqlFSGeDRVGLa7PQt7ETlulgrbkvo76+HoSjfdl2Ac20g
+ ZX+HOtdyOljLmv4YAE+Qg7Qr3kjNtSihGhOMAihyWQCxCil9UYF0bxMwfFCivVI8YUPJzc3
+ ME2J+ssxOMIIfb1oBDu0fldILR4K8EN5LkjdtlygvGdk0G2TOX37eqNjTaM6uhXOF0k3Zdb
+ flEFgCroPn9K9gaFBQd0Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 09, 2013 at 06:22:56AM +0900, Suravee Suthikulpanit wrote:
-> Sorry for late reply. And yes, the BDKG called it "Breakpoint
-> Extension". Keeping the name consistent with the documentation might
-> be best for now to avoid confusion.
->
-> So, would you like me to send in a new patch to add this comment?
+Hello,
 
-No need, the X86_FEATURE_BPEXT define has a comment already.
+I find that identifiers like the following do not fit to the expected naming
+convention of the C language standard.
+- _ALPHA_BUG_H
 
--- 
-Regards/Gruss,
-Boris.
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/alpha/include/asm/bug.h?id=acadbfb90a54673d6c8b05aa4e93218433890411#n1
+
+- __BARRIER_H
+
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/alpha/include/asm/barrier.h?id=77b4cf5cb0c9d6010a18030a0e0a8d2aaf6b43ec#n1
+
+- _UAPI__ALPHA_COMPILER_H
+
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/alpha/include/uapi/asm/compiler.h?id=96433f6ee49032d7a8bda76de2b05cfde2914354#n1
+
+
+Would you like to adjust the selection for unique names?
+https://www.securecoding.cert.org/confluence/display/seccode/DCL37-C.+Do+not+declare+or+define+a+reserved+identifier#DCL37-C.Donotdeclareordefineareservedidentifier-NoncompliantCodeExample%28HeaderGuard%29
+
+Regards,
+Markus
