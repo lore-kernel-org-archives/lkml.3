@@ -1,73 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757122Ab3KHOt4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 09:49:56 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:31764 "EHLO
+	id S1757365Ab3KHOx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 09:53:26 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:32887 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751254Ab3KHOtz (ORCPT
+	by vger.kernel.org with ESMTP id S1757187Ab3KHOxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 09:49:55 -0500
-Date: Fri, 8 Nov 2013 09:49:51 -0500
+	Fri, 8 Nov 2013 09:53:24 -0500
+Date: Fri, 8 Nov 2013 09:53:23 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Petr Mladek <pmladek@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
         x86@kernel.org
-Subject: Re: [PATCH v2 1/8] x86: speed up int3-based patching using less
- paranoid write
-Message-ID: <20131108094951.5b26ea65@gandalf.local.home>
-In-Reply-To: <527CD34A.30406@hitachi.com>
+Subject: Re: [PATCH v2 2/8] x86: return error code in text_poke_bp
+Message-ID: <20131108095323.57cb4993@gandalf.local.home>
+In-Reply-To: <1383901932-1945-4-git-send-email-pmladek@suse.cz>
 References: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
-	<1383901932-1945-3-git-send-email-pmladek@suse.cz>
-	<527CD34A.30406@hitachi.com>
+	<1383901932-1945-4-git-send-email-pmladek@suse.cz>
 X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 08 Nov 2013 21:04:26 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+On Fri,  8 Nov 2013 10:12:06 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
 
-
-> >  static void do_sync_core(void *info)
-> >  {
-> >  	sync_core();
-> > @@ -648,15 +687,15 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
-> >  	 */
-> >  	smp_wmb();
-> >  
-> > -	text_poke(addr, &int3, sizeof(int3));
-> > +	text_poke_part(addr, &int3, sizeof(int3));
+> We would like to use text_poke_bp in the dynamic ftrace which want to
+> know about errors. For example, it informs about them in the ftrace log.
 > 
-> Anyway, text_poke itself will cause a BUG if it hits an error, but text_poke_part() seems
-> silently failing. It should handle the error correctly (or call BUG()).
+> Let's return the error code instead of the address. The address was just copied
+> from the first parameter, so it was no extra information. The return value
+> has not been used anywhere yet.
 > 
+> There is a question whether we should recover the original opcode when
+> the second or third text_poke_part fails in text_poke_bp. Well, the errors
+> were ignored until now. It did not cause any real life problems. There is
+> really small chance that the first byte (int3) can be written and the other
+> parts of the code can not be modified. It is probably not worth the extra
+> complexity.
 
-text_poke_part() shouldn't do a bug on error, but this code probably
-should.
+I agree with Masami. If the first part succeeds, still check the other
+parts, and if they don't succeed, then just do a BUG().
 
-	if (text_poke_part(addr, &int3, sizeof(int3)))
-		BUG();
 
-Note, I would avoid doing:
+> 
+> Signed-off-by: Petr Mladek <pmladek@suse.cz>
+> ---
+>  arch/x86/include/asm/alternative.h |  3 ++-
+>  arch/x86/kernel/alternative.c      | 18 +++++++++++++-----
+>  2 files changed, 15 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+> index 0a3f9c9..f2343d8 100644
+> --- a/arch/x86/include/asm/alternative.h
+> +++ b/arch/x86/include/asm/alternative.h
+> @@ -226,6 +226,7 @@ extern void *text_poke_early(void *addr, const void *opcode, size_t len);
+>   */
+>  extern void *text_poke(void *addr, const void *opcode, size_t len);
+>  extern int poke_int3_handler(struct pt_regs *regs);
+> -extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
+> +extern int text_poke_bp(void *addr, const void *opcode, size_t len,
+> +			void *handler);
+>  
+>  #endif /* _ASM_X86_ALTERNATIVE_H */
+> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> index 0586dc1..c459e62 100644
+> --- a/arch/x86/kernel/alternative.c
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -673,9 +673,10 @@ int poke_int3_handler(struct pt_regs *regs)
+>   *
+>   * Note: must be called under text_mutex.
+>   */
+> -void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+> +int text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+>  {
+>  	unsigned char int3 = 0xcc;
+> +	int ret;
+>  
+>  	bp_int3_handler = handler;
+>  	bp_int3_addr = (u8 *)addr + sizeof(int3);
+> @@ -687,15 +688,19 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+>  	 */
+>  	smp_wmb();
+>  
+> -	text_poke_part(addr, &int3, sizeof(int3));
+> +	ret = text_poke_part(addr, &int3, sizeof(int3));
+> +	if (unlikely(ret))
+> +		goto fail;
 
-	BUG_ON(text_poke_part(...));
-
-as we don't want "side effects" in the BUG() macros. You may do:
-
-	ret = text_poke_part(...);
-	BUG_ON(ret);
-
-Which has the added benefit of the implicit "unlikely" in the BUG_ON()
-macro.
-
-Or we can have do_sync_core() be able to handle errors and have their
-callers handle them too.
+Ah! you have it return an error code. May need to do that for all users
+of text_poke_part().
 
 -- Steve
+
+>  
+>  	on_each_cpu(do_sync_core, NULL, 1);
+>  
+>  	if (len - sizeof(int3) > 0) {
+>  		/* patch all but the first byte */
+> -		text_poke_part((char *)addr + sizeof(int3),
+> +		ret = text_poke_part((char *)addr + sizeof(int3),
+>  			       (const char *) opcode + sizeof(int3),
+>  			       len - sizeof(int3));
+> +		if (unlikely(ret))
+> +			goto fail;
+>  		/*
+>  		 * According to Intel, this core syncing is very likely
+>  		 * not necessary and we'd be safe even without it. But
+> @@ -705,13 +710,16 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+>  	}
+>  
+>  	/* patch the first byte */
+> -	text_poke_part(addr, opcode, sizeof(int3));
+> +	ret = text_poke_part(addr, opcode, sizeof(int3));
+> +	if (unlikely(ret))
+> +		goto fail;
+>  
+>  	on_each_cpu(do_sync_core, NULL, 1);
+>  
+> +fail:
+>  	bp_patching_in_progress = false;
+>  	smp_wmb();
+>  
+> -	return addr;
+> +	return ret;
+>  }
+>  
+
