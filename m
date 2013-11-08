@@ -1,49 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758479Ab3KHXjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 18:39:16 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51349 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757752Ab3KHXjO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 18:39:14 -0500
-Message-ID: <527D7621.2000105@codeaurora.org>
-Date: Fri, 08 Nov 2013 15:39:13 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1758306Ab3KHXnP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 18:43:15 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:53163 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757954Ab3KHXnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 18:43:14 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH 00/24] mm: Use memblock interface instead of bootmem
+Date: Fri, 8 Nov 2013 18:41:36 -0500
+Message-ID: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Kevin Hilman <khilman@linaro.org>, Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH] ARM: Support arch_irq_work_raise() via self IPIs
-References: <526DBEAA.4030707@linaro.org>	<1382984701-2371-1-git-send-email-sboyd@codeaurora.org>	<878uxcq1m7.fsf@linaro.org>	<20131029060058.GD21983@codeaurora.org>	<CAOesGMhjC=NDn4YiY4tQ3ZcW_rK9_qOY03CVD1eyVFC74ucdrA@mail.gmail.com>	<CAOesGMhB2Akf_B2_J3LVdt1bDvcsTE7+8Kq=NvsXmkf3EwGsiw@mail.gmail.com>	<527D5D5C.2080409@codeaurora.org> <CAOesGMhyPaMUs3XJshqZ-KYhtWhenttq7qDpF0+4dQ9PvBYVGA@mail.gmail.com>
-In-Reply-To: <CAOesGMhyPaMUs3XJshqZ-KYhtWhenttq7qDpF0+4dQ9PvBYVGA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/13 15:35, Olof Johansson wrote:
-> On Fri, Nov 8, 2013 at 1:53 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>
->> Ah yes. We don't have IPI support on UP kernels but SMP_ON_UP exposes
->> arch_irq_work_raise(). How about this? We should just skip this function
->> if we're running on UP.
-> Yep.
->
-> Tested-by: Olof Johansson <olof@lixom.net>
->
-> Send it to Russell's tracker, plz.
->
+Tejun and others,
 
-Thanks. 7887/1.
+Following up with the earlier RFC [1] comments, here is the updated
+patch series based on the discussion. This series is the last bottleneck
+now for me to enable the coherency on keystone ARM LPAE architecture on which
+the physical memory starts after 4BG. I would like to get these patches
+in next merge window(3.14), so any help in terms of testing/comments is
+appreciated.
+
+To recap on the original issue, current memblock APIs don't work on
+32 PAE or LPAE extension arches where the physical memory start
+address beyond 4GB. The problem was discussed here [2] where
+Tejun, Yinghai(thanks) proposed a way forward with memblock interfaces.
+Based on the proposal, this series adds necessary memblock interfaces
+and convert the core kernel code to use them. Architectures already
+converted to NO_BOOTMEM use these new interfaces and other which still
+uses bootmem, these new interfaces just fallback to exiting bootmem APIs.
+
+So no functional change in behavior. In long run, once all the architectures
+moves to NO_BOOTMEM, we can get rid of bootmem layer completely. This is
+one step to remove the core code dependency with bootmem and also
+gives path for architectures to move away from bootmem.
+
+Testing is done on ARM architecture with 32 bit ARM LAPE machines
+with normal as well sparse(faked) memory model. To convert ARM to
+NO_BOOTMEM, we have used Russell's work [3] and couple of patches
+on top of that. I will be posting those patches as well after 3.13-rc1
+
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>
+
+Grygorii Strashko (10):
+  mm/memblock: debug: correct displaying of upper memory boundary
+  mm/memblock: debug: don't free reserved array if
+    !ARCH_DISCARD_MEMBLOCK
+  mm/bootmem: remove duplicated declaration of __free_pages_bootmem()
+  mm/block: remove unnecessary inclusion of bootmem.h
+  mm/memory_hotplug: remove unnecessary inclusion of bootmem.h
+  mm/staging: remove unnecessary inclusion of bootmem.h
+  mm/char: remove unnecessary inclusion of bootmem.h
+  mm/memblock: drop WARN and use SMP_CACHE_BYTES as a default alignment
+  mm/hugetlb: Use memblock apis for early memory allocations
+  mm/page_cgroup: Use memblock apis for early memory allocations
+
+Santosh Shilimkar (14):
+  mm/memblock: Add memblock memory allocation apis
+  mm/init: Use memblock apis for early memory allocations
+  mm/printk: Use memblock apis for early memory allocations
+  mm/page_alloc: Use memblock apis for early memory allocations
+  mm/power: Use memblock apis for early memory allocations
+  mm/lib/swiotlb: Use memblock apis for early memory allocations
+  mm/lib/cpumask: Use memblock apis for early memory allocations
+  mm/sparse: Use memblock apis for early memory allocations
+  mm/percpu: Use memblock apis for early memory allocations
+  mm/memory_hotplug: Use memblock apis for early memory allocations
+  mm/firmware: Use memblock apis for early memory allocations
+  mm/ARM: kernel: Use memblock apis for early memory allocations
+  mm/ARM: mm: Use memblock apis for early memory allocations
+  mm/ARM: OMAP: Use memblock apis for early memory allocations
+
+ arch/arm/kernel/devtree.c        |    2 +-
+ arch/arm/kernel/setup.c          |    2 +-
+ arch/arm/mach-omap2/omap_hwmod.c |    8 +-
+ arch/arm/mm/init.c               |    2 +-
+ block/blk-ioc.c                  |    1 -
+ drivers/char/mem.c               |    1 -
+ drivers/firmware/memmap.c        |    2 +-
+ drivers/staging/speakup/main.c   |    2 -
+ include/linux/bootmem.h          |   84 ++++++++++++++-
+ init/main.c                      |    4 +-
+ kernel/power/snapshot.c          |    2 +-
+ kernel/printk/printk.c           |   10 +-
+ lib/cpumask.c                    |    4 +-
+ lib/swiotlb.c                    |   36 ++++---
+ mm/hugetlb.c                     |   10 +-
+ mm/memblock.c                    |  215 +++++++++++++++++++++++++++++++++++++-
+ mm/memory_hotplug.c              |    3 +-
+ mm/page_alloc.c                  |   27 ++---
+ mm/page_cgroup.c                 |    5 +-
+ mm/percpu.c                      |   41 +++++---
+ mm/sparse-vmemmap.c              |    6 +-
+ mm/sparse.c                      |   27 ++---
+ 22 files changed, 397 insertions(+), 97 deletions(-)
+
+Regards,
+Santosh
+
+[1] https://lkml.org/lkml/2013/10/12/147
+[2] https://lkml.org/lkml/2013/6/29/77
+[3] http://lwn.net/Articles/561854/
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.9.5
 
