@@ -1,276 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758296Ab3KHVNu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 16:13:50 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8428 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757806Ab3KHVNt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 16:13:49 -0500
-From: "Rowand, Frank" <Frank.Rowand@sonymobile.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "Morten.Rasmussen@arm.com" <Morten.Rasmussen@arm.com>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "paul@pwsan.com" <paul@pwsan.com>, "mgorman@suse.de" <mgorman@suse.de>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "markgross@thegnar.org" <markgross@thegnar.org>,
-        "khilman@linaro.org" <khilman@linaro.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 8 Nov 2013 22:12:27 +0100
-Subject: RE: Bench for testing scheduler
-Thread-Topic: Bench for testing scheduler
-Thread-Index: Ac7cZNnufNC0c3yaSS2a5sCZ9xNHDgAYmBcB
-Message-ID: <8251B150E4DF5041A62C3EA9F0AB2E060255308A9E7D@SELDMBX99.corpusers.net>
-References: <CAKfTPtCh+f1FZxkWqU5=2PjGtfRaN8jVV3WdTCzLDAWSjMP7yw@mail.gmail.com>
-	<1383831224-26134-1-git-send-email-vincent.guittot@linaro.org>
-	<8251B150E4DF5041A62C3EA9F0AB2E060255308A9E7B@SELDMBX99.corpusers.net>,<CAKfTPtChCfWzyPUZt0VX5odMne79A+0wuzGOm+SK_pY2uKVA4A@mail.gmail.com>
-In-Reply-To: <CAKfTPtChCfWzyPUZt0VX5odMne79A+0wuzGOm+SK_pY2uKVA4A@mail.gmail.com>
-Accept-Language: en-US, sv-SE
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, sv-SE
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1758337Ab3KHVQn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 16:16:43 -0500
+Received: from [77.240.181.54] ([77.240.181.54]:46723 "EHLO
+	dhcp-27-189.brq.redhat.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757794Ab3KHVQk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 16:16:40 -0500
+X-Greylist: delayed 3589 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Nov 2013 16:16:39 EST
+From: Maurizio Lombardi <mlombard@redhat.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] kobject: fix memory leak in kobject_set_name_vargs
+Date: Fri,  8 Nov 2013 15:28:25 +0100
+Message-Id: <1383920905-13281-1-git-send-email-mlombard@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If the call to kvasprintf fails then the old name of the object will be leaked,
+this patch fixes the bug by restoring the old name before returning ENOMEM.
 
-On Friday, November 08, 2013 1:28 AM, Vincent Guittot [vincent.guittot@linaro.org] wrote:
-> 
-> On 8 November 2013 01:04, Rowand, Frank <Frank.Rowand@sonymobile.com> wrote:
-> > Hi Vincent,
-> >
-> > Thanks for creating some benchmark numbers!
-> 
-> you're welcome
-> 
-> >
-> >
-> > On Thursday, November 07, 2013 5:33 AM, Vincent Guittot [vincent.guittot@linaro.org] wrote:
-> >>
-> >> On 7 November 2013 12:32, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> >> > Hi Vincent,
-> >> >
-> >> > (for whatever reason, the text is wrapped and results hard to read)
-> >>
-> >> Yes, i have just seen that. It looks like gmail has wrapped the lines.
-> >> I have added the results which should not be wrapped, at the end of this email
-> >>
-> >> >
-> >> >
-> >> > On Thu, Nov 07, 2013 at 10:54:30AM +0000, Vincent Guittot wrote:
-> >> >> During the Energy-aware scheduling mini-summit, we spoke about benches
-> >> >> that should be used to evaluate the modifications of the scheduler.
-> >> >> I’d like to propose a bench that uses cyclictest to measure the wake
-> >> >> up latency and the power consumption. The goal of this bench is to
-> >> >> exercise the scheduler with various sleeping period and get the
-> >> >> average wakeup latency. The range of the sleeping period must cover
-> >> >> all residency times of the idle state table of the platform. I have
-> >> >> run such tests on a tc2 platform with the packing tasks patchset.
-> >> >> I have use the following command:
-> >> >> #cyclictest -t <number of cores> -q -e 10000000 -i <500-12000> -d 150 -l 2000
-> >
-> > The number of loops ("-l 2000") should be much larger to create useful
-> > results.  I don't have a specific number that is large enough, I just
-> > know from experience that 2000 is way too small.  For example, running
-> > cyclictest several times with the same values on my laptop gives values
-> > that are not consistent:
-> 
-> The Avg figures look almost stable IMO. Are you speaking about the Max
-> value for the inconsistency ?
+Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
+---
+ lib/kobject.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-The values on my laptop for "-l 2000" are not stable.
+diff --git a/lib/kobject.c b/lib/kobject.c
+index 5b4b888..c2cb934 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -247,8 +247,10 @@ int kobject_set_name_vargs(struct kobject *kobj, const char *fmt,
+ 		return 0;
+ 
+ 	kobj->name = kvasprintf(GFP_KERNEL, fmt, vargs);
+-	if (!kobj->name)
++	if (!kobj->name) {
++		kobj->name = old_name;
+ 		return -ENOMEM;
++	}
+ 
+ 	/* ewww... some of these buggers have '/' in the name ... */
+ 	while ((s = strchr(kobj->name, '/')))
+-- 
+Maurizio Lombardi
 
-If I collapse all of the threads in each of the following tests to a
-single value I get the following table.  Note that each thread completes
-a different number of cycles, so I calculate the average as:
-
-  total count = T0_count + T1_count + T2_count + T3_count
-
-  avg = ( (T0_count * T0_avg) + (T1_count * T1_avg) + ... + (T3_count * T3_avg) ) / total count
-
-  min is the smallest min for any of the threads
-
-  max is the largest max for any of the threads
-
-            total
-test   T    count  min     avg   max
----- --- -------- ---- ------- -----
-   1   4     5886    2    76.0  1017
-   2   4     5881    2    71.5   810
-   3   4     5885    2    74.2  1143
-   4   4     5884    2    68.9  1279
-
-test 1 average is 10% larger than test 4.
-
-test 4 maximum is 50% larger than test2.
-
-But all of this is just a minor detail of how to run cyclictest.  The more
-important question is whether to use cyclictest results as a valid workload
-or metric, so for the moment I won't comment further on the cyclictest
-parameters you used to collect the example data you provided.
-
-
-> 
-> >
-> >    $ sudo ./cyclictest -t -q -e 10000000 -i 500 -d 150 -l 2000
-> >    # /dev/cpu_dma_latency set to 10000000us
-> >    T: 0 ( 9703) P: 0 I:500 C:   2000 Min:      2 Act:   90 Avg:   77 Max:     243
-> >    T: 1 ( 9704) P: 0 I:650 C:   1557 Min:      2 Act:   58 Avg:   68 Max:     226
-> >    T: 2 ( 9705) P: 0 I:800 C:   1264 Min:      2 Act:   54 Avg:   81 Max:    1017
-> >    T: 3 ( 9706) P: 0 I:950 C:   1065 Min:      2 Act:   11 Avg:   80 Max:     260
-> >
-> >    $ sudo ./cyclictest -t -q -e 10000000 -i 500 -d 150 -l 2000
-> >    # /dev/cpu_dma_latency set to 10000000us
-> >    T: 0 ( 9709) P: 0 I:500 C:   2000 Min:      2 Act:   45 Avg:   74 Max:     390
-> >    T: 1 ( 9710) P: 0 I:650 C:   1554 Min:      2 Act:   82 Avg:   61 Max:     810
-> >    T: 2 ( 9711) P: 0 I:800 C:   1263 Min:      2 Act:   83 Avg:   74 Max:     287
-> >    T: 3 ( 9712) P: 0 I:950 C:   1064 Min:      2 Act:  103 Avg:   79 Max:     551
-> >
-> >    $ sudo ./cyclictest -t -q -e 10000000 -i 500 -d 150 -l 2000
-> >    # /dev/cpu_dma_latency set to 10000000us
-> >    T: 0 ( 9716) P: 0 I:500 C:   2000 Min:      2 Act:   82 Avg:   72 Max:     252
-> >    T: 1 ( 9717) P: 0 I:650 C:   1556 Min:      2 Act:  115 Avg:   77 Max:     354
-> >    T: 2 ( 9718) P: 0 I:800 C:   1264 Min:      2 Act:   59 Avg:   78 Max:    1143
-> >    T: 3 ( 9719) P: 0 I:950 C:   1065 Min:      2 Act:  104 Avg:   70 Max:     238
-> >
-> >    $ sudo ./cyclictest -t -q -e 10000000 -i 500 -d 150 -l 2000
-> >    # /dev/cpu_dma_latency set to 10000000us
-> >    T: 0 ( 9722) P: 0 I:500 C:   2000 Min:      2 Act:   82 Avg:   68 Max:     213
-> >    T: 1 ( 9723) P: 0 I:650 C:   1555 Min:      2 Act:   65 Avg:   65 Max:    1279
-> >    T: 2 ( 9724) P: 0 I:800 C:   1264 Min:      2 Act:   91 Avg:   69 Max:     244
-> >    T: 3 ( 9725) P: 0 I:950 C:   1065 Min:      2 Act:   58 Avg:   76 Max:     242
-> >
-> >
-> >> >
-> >> > cyclictest could be a good starting point but we need to improve it to
-> >> > allow threads of different loads, possibly starting multiple processes
-> >> > (can be done with a script), randomly varying load threads. These
-> >> > parameters should be loaded from a file so that we can have multiple
-> >> > configurations (per SoC and per use-case). But the big risk is that we
-> >> > try to optimise the scheduler for something which is not realistic.
-> >>
-> >> The goal of this simple bench is to measure the wake up latency and the reachable value of the scheduler on a platform but not to emulate a "real" use case. In the same way than sched-pipe tests a specific behavior of the scheduler, this bench tests the wake up latency of a system.
-> >>
-> >> Starting multi processes and adding some loads can also be useful but the target will be a bit different from wake up latency. I have one concern with randomness because it prevents from having repeatable and comparable tests and results.
-> >>
-> >> I agree that we have to test "real" use cases but it doesn't prevent from testing the limit of a characteristic on a system
-> >>
-> >> >
-> >> >
-> >> > We are working on describing some basic scenarios (plain English for
-> >> > now) and one of them could be video playing with threads for audio and
-> >> > video decoding with random change in the workload.
-> >> >
-> >> > So I think the first step should be a set of tools/scripts to analyse
-> >> > the scheduler behaviour, both in terms of latency and power, and these
-> >> > can use perf sched. We can then run some real life scenarios (e.g.
-> >> > Android video playback) and build a benchmark that matches such
-> >> > behaviour as close as possible. We can probably use (or improve) perf
-> >> > sched replay to also simulate such workload (we may need additional
-> >> > features like thread dependencies).
-> >> >
-> >> >> The figures below give the average wakeup latency and power
-> >> >> consumption for default scheduler behavior, packing tasks at cluster
-> >> >> level and packing tasks at core level. We can see both wakeup latency
-> >> >> and power consumption variation. The detailed result is not a simple
-> >> >> single value which makes comparison not so easy but the average of all
-> >> >> measurements should give us a usable “score”.
-> >> >
-> >> > How did you assess the power/energy?
-> >>
-> >> I have use the embedded joule meter of the tc2.
-> >>
-> >> >
-> >> > Thanks.
-> >> >
-> >> > --
-> >> > Catalin
-> >>
-> >>             |  Default average results                  |  Cluster Packing average results          |  Core Packing average results
-> >>             |  Latency     stddev  A7 energy A15 energy |  Latency     stddev  A7 energy A15 energy |  Latency     stddev  A7 energy A15 energy
-> >>             |     (us)                   (J)        (J) |     (us)                   (J)        (J) |     (us)                   (J)        (J)
-> >>             |      879                794890    2364175 |      416                879688      12750 |      189                897452      30052
-> >>
-> >>  Cyclictest |  Default                                  |  Packing at Cluster level                 |  Packing at Core level
-> >>    Interval |  Latency     stddev  A7 energy A15 energy |  Latency     stddev  A7 energy A15 energy |  Latency     stddev  A7 energy A15 energy
-> >>        (us) |     (us)                   (J)        (J) |     (us)                   (J)        (J) |     (us)                   (J)        (J)
-> >>         500         24          1    1147477    2479576         21          1    1136768      11693         22          1    1126062      30138
-> >>         700         22          1    1136084    3058419         21          0    1125280      11761         21          1    1109950      23503
-> >
-> > < snip >
-> >
-
-Thanks for clarifying how the data was calculated (below).  Again, I don't think
-this level of detail is the most important issue at this point, but I'm going
-to comment on it while it is still fresh in my mind.
-
-> > Some questions about what these metrics are:
-> >
-> > The cyclictest data is reported per thread.  How did you combine the per thread data
-> > to get a single latency and stddev value?
-> >
-> > Is "Latency" the average latency?
-> 
-> Yes. I have described below the procedure i have followed to get my results:
-> 
-> I run the same test (same parameters) several times ( i have tried
-> between 5 and 10 runs and the results were similar).
-> For each run, i compute the average of per thread average figure and i
-> compute the stddev between per thread results.
-
-So the test run stddev is the standard deviation of the values for average
-latency of the 8 (???) cyclictest threads in a test run?
-
-If so, I don't think that the calculated stddev has much actual meaning for
-comparing the algorithms (I do find it useful to get a loose sense of how
-consistent multiple test runs with the same parameters).
-
-> The results that i sent is an average of all runs with the same parameters.
-
-Then the stddev in the table is the average of the stddev in several test runs?
-
-The stddev later on in the table is often in the range of 10%, 20%, 50%, and 100%
-of the average latency.  That is rather large.
-
-> 
-> >
-> > stddev is not reported by cyclictest.  How did you create this value?  Did you
-> > use the "-v" cyclictest option to report detailed data, then calculate stddev from
-> > the detailed data?
-> 
-> No i haven't used the -v because it generates too much spurious wake
-> up that makes the results irrelevant
-
-Yes, I agree about not using -v.  It was just a wild guess on my part since
-I did not know how stddev was calculated.  And I was incorrectly guessing
-that stdev was describing the frequency distribution of the latencies
-from a single test run.
-
-As a general comment on cyclictest, I don't find average latency
-(in isolation) sufficient to compare different runs of cyclictest.
-And stddev of the frequency distribution of the latencies (which
-can be calculated from the -h data, with fairly low cyclictest
-overhead) is usually interesting but should be viewed with a healthy
-skepticism since that frequency distribution is often not a normal
-distribution.  In addition to average latency, I normally look at
-maximum latency and the frequency distribution of latence (in table
-or graph form).
-
-(One side effect of specifying -h is that the -d option is then
-ignored.)
-
-Thanks,
-
--Frank
