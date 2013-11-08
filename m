@@ -1,89 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757667Ab3KHQlw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 11:41:52 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:42588 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757335Ab3KHQlv (ORCPT
+	id S1757736Ab3KHQsn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 11:48:43 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:53661 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757454Ab3KHQsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 11:41:51 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH] perf record: Delete file if a failure occurs writing the perf data file
-Date: Fri,  8 Nov 2013 09:41:46 -0700
-Message-Id: <1383928906-31470-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
+	Fri, 8 Nov 2013 11:48:42 -0500
+Message-ID: <527D15E8.6070802@codeaurora.org>
+Date: Fri, 08 Nov 2013 11:48:40 -0500
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Use udiv/sdiv for __aeabi_{u}idiv library functions
+References: <1383852042-10780-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1383852042-10780-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If perf fails to write data to the data file (e.g., ENOSPC error) it fails
-with the message:
-  failed to write perf data, error: No space left on device
+Hi Stephen,
 
-and stops — killing the workload too. The file is an unknown state. Trying
-to read it (e.g., perf report) fails with a SIGBUS error.
+On 11/07/2013 02:20 PM, Stephen Boyd wrote:
+> If we're running on a v7 ARM CPU, detect if the CPU supports the
+> sdiv/udiv instructions and replace the signed and unsigned
+> division library functions with an sdiv/udiv instruction.
 
-Fix by deleting the file on a failure.
+[...]
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/builtin-record.c | 1 +
- tools/perf/util/data.c      | 5 +++++
- tools/perf/util/data.h      | 1 +
- 3 files changed, 7 insertions(+)
+> +++ b/arch/arm/lib/div-v7.c
+> @@ -0,0 +1,58 @@
+> +/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/static_key.h>
+> +
+> +extern int ___aeabi_idiv(int, int);
+> +extern unsigned ___aeabi_uidiv(int, int);
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 15280b5e5574..8b8944d8ffea 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -562,6 +562,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 
- out_delete_session:
- 	perf_session__delete(session);
-+	perf_data_file__unlink(session->file);
- 	return err;
- }
- 
-diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
-index 7d09faf85cf1..a0315a694fa2 100644
---- a/tools/perf/util/data.c
-+++ b/tools/perf/util/data.c
-@@ -118,3 +118,8 @@ void perf_data_file__close(struct perf_data_file *file)
- {
- 	close(file->fd);
- }
-+
-+void perf_data_file__unlink(struct perf_data_file *file)
-+{
-+	unlink(file->path);
-+}
-diff --git a/tools/perf/util/data.h b/tools/perf/util/data.h
-index 8c2df80152a5..f55a04295ab6 100644
---- a/tools/perf/util/data.h
-+++ b/tools/perf/util/data.h
-@@ -44,5 +44,6 @@ static inline unsigned long perf_data_file__size(struct perf_data_file *file)
- 
- int perf_data_file__open(struct perf_data_file *file);
- void perf_data_file__close(struct perf_data_file *file);
-+void perf_data_file__unlink(struct perf_data_file *file);
- 
- #endif /* __PERF_DATA_H */
+Why are the input parameters signed?
+
+> +extern struct static_key cpu_has_idiv;
+> +
+> +int __aeabi_idiv(int numerator, int denominator)
+> +{
+> +	if (static_key_false(&cpu_has_idiv)) {
+> +		int ret;
+> +
+> +		asm volatile (
+> +		".arch_extension idiv\n"
+> +		"sdiv %0, %1, %2"
+> +		: "=&r" (ret)
+> +		: "r" (numerator), "r" (denominator));
+> +
+> +		return ret;
+> +	}
+> +
+> +	return ___aeabi_idiv(numerator, denominator);
+> +}
+> +
+> +int __divsi3(int numerator, int denominator)
+> +	__attribute__((alias("__aeabi_idiv")));
+> +
+> +unsigned __aeabi_uidiv(int numerator, int denominator)
+
+Unsigned inputs?
+
+> +{
+> +	if (static_key_false(&cpu_has_idiv)) {
+> +		int ret;
+> +
+> +		asm volatile (
+> +		".arch_extension idiv\n"
+> +		"udiv %0, %1, %2"
+> +		: "=&r" (ret)
+> +		: "r" (numerator), "r" (denominator));
+> +
+> +		return ret;
+> +	}
+> +
+> +	return ___aeabi_uidiv(numerator, denominator);
+> +}
+> +
+> +unsigned __udivsi3(int numerator, int denominator)
+> +	__attribute__((alias("__aeabi_uidiv")));
+
+Unsigned inputs?
+
+[...]
+
+Thanks,
+Christopher
+
 -- 
-1.8.3.4 (Apple Git-47)
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
