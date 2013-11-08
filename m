@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab3KHINV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 03:13:21 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:24689 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab3KHINT (ORCPT
+	id S1753734Ab3KHIRZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 03:17:25 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:48028 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662Ab3KHIRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 03:13:19 -0500
-X-Spam-Score: -100.8
-Message-ID: <527C9D9B.8090802@asianux.com>
-Date: Fri, 08 Nov 2013 16:15:23 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 8 Nov 2013 03:17:23 -0500
+Date: Fri, 8 Nov 2013 00:17:37 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>, Olof Johansson <olof@lixom.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the block tree with the  tree
+Message-ID: <20131108081737.GA27885@kmo-pixel>
+References: <20131107192545.GA20624@moria.home.lan>
+ <527C2AA9.9040608@oracle.com>
+ <20131108125307.613427c04a7527c4359e6443@canb.auug.org.au>
+ <20131108020805.GI3842@kmo>
+ <527C4D35.8000907@oracle.com>
+ <20131108073324.GA31662@infradead.org>
+ <20131108073959.GA17807@kmo-pixel>
+ <20131108074445.GA11595@infradead.org>
+ <20131108075617.GB17807@kmo-pixel>
+ <20131108080221.GA31866@infradead.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
-CC: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Suggestion] kernel: cgroup: mount failure in LTP cgroup_regression_test.sh
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131108080221.GA31866@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
+On Fri, Nov 08, 2013 at 12:02:21AM -0800, Christoph Hellwig wrote:
+> On Thu, Nov 07, 2013 at 11:56:17PM -0800, Kent Overstreet wrote:
+> > So, I don't think the iov_iter stuff is the right approach for solving
+> > the loop issue; it's an ugly hack and after immutable biovecs we're
+> > pretty close to a better solution and some major cleanups too.
+> 
+> All the consumers aren't limited to a block-based filesystem backing,
+> including loop.  So we need a file-ops based approach for in-kernel
+> dio/aio.  If you have a counter proposal please at least describe it.
 
-On Fedora16 with defconfig for next-20131107 kernel, use latest LTP
-(Linux Test Project) version, test_5() in cgroup_regression_test.sh
-will be fail. The related LTP output:
+The core issue isn't whether the IO is going to a block based filesystem
+(but thanks for pointing out that that's not necessarily true!) but
+whether we want to work with pinned pages or not. If pinned pages are ok
+for everything, then bios as a common interface work - likely evolving
+them a bit to be more general (it's just bi_bdev and bi_sector that's
+actually block specific) - and IMO that would be far preferable to this
+abstraction layer.
 
-  <<<test_start>>>
-  tag=cgroup stime=1383562810
-  cmdline="       cgroup_regression_test.sh"
-  contacts=""
-  analysis=exit
-  <<<test_output>>>
-  cgroup_regression_test    1  TPASS  :  no kernel bug was found
-  /opt/ltp/testcases/bin/cgroup_regression_test.sh: line 118: 13283 Terminated              ./fork_processes
-  cgroup_regression_test    2  TPASS  :  notify_on_release is inherited
-  cgroup_regression_test    3  TCONF  :  CONFIG_SCHED_DEBUG is not enabled
-  cgroup_regression_test    4  TCONF  :  CONFIG_LOCKDEP is not enabled
-  mount: xxx already mounted or cgroup/ busy
-  cgroup_regression_test    5  TFAIL  :  mount freezer and cpuacct failed
-  cgroup_regression_test    6  TCONF  :  CONFIG_CGROUP_NS
-  /opt/ltp/testcases/bin/cgroup_regression_test.sh: line 360: 24428 Terminated              sleep 100 < cgroup/0
-  /opt/ltp/testcases/bin/cgroup_regression_test.sh: line 381: 24447 Terminated              sleep 100 < cgroup/0
-  cgroup_regression_test    7  TPASS  :  no kernel bug was found
-  cgroup_regression_test    8  TPASS  :  no kernel bug was found
-  cgroup_regression_test    9  TPASS  :  no kernel warning was found
-  rmdir: failed to remove `cgroup/0': No such file or directory
-  umount: /sys/fs/cgroup/systemd: device is busy.
-          (In some cases useful info about processes that use
-           the device is found by lsof(8) or fuser(1))
-  cgroup_regression_test   10  TPASS  :  no kernel warning was found
-  <<<execution_status>>>
-  initiation_status="ok"
-  duration=62 termination_type=exited termination_id=1 corefile=no
-  cutime=3341 cstime=6353
-  <<<test_end>>>
+If OTOH we need a common interface that's also for places where we can't
+afford the overhead of pinning user pages - that's a different story,
+and maybe we do need all this infrastructure then. That's why I'm asking
+about the stuff you meantioned, I'm honestly not sure.
 
-After simplify, the related operation, environments and output are:
+What I'm working towards though is a clean separation between buffered
+and direct code paths, so that buffered IO can continue work with iovs
+and for O_DIRECT the first thing you do is fill out a bio with pinned
+pages and send it down to filesystem code or wherever it's going to go.
 
-  [root@gchenlinux tmp]# df -Th | grep cgroup
-  tmpfs                             tmpfs    1001M     0 1001M   0% /sys/fs/cgroup
-  [root@gchenlinux tmp]# lsof | grep cgroup | grep -v grep
-  systemd       1          root    6r      DIR               0,18         0       5998 /sys/fs/cgroup/systemd/system
-  [root@gchenlinux tmp]# cat /proc/cgroups 
-  #subsys_name	hierarchy	num_cgroups	enabled
-  cpuset	3	4	1
-  cpu	4	35	1
-  cpuacct	4	35	1
-  freezer	5	4	1
-  [root@gchenlinux tmp]# mkdir cgroup
-  [root@gchenlinux tmp]# mount -t cgroup -o freezer,cpuacct xxx cgroup/
-  mount: xxx already mounted or cgroup/ busy
-
-Is it real issue of cgroup? If it is, I will/should continue analyzing.
-
-
-Welcome any additional suggestions and completions.
-
-Thanks.
---
-Chen Gang
+That make sense? I can show you more concretely what I'm working on if
+you want. Or if I'm full of crap and this is useless for what you guys
+want I'm sure you'll let me know :)
