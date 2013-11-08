@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960Ab3KHCRs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:17:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34545 "EHLO
+	id S1756995Ab3KHCR4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:17:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34579 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756582Ab3KHCQW (ORCPT
+	with ESMTP id S1756604Ab3KHCQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:16:22 -0500
+	Thu, 7 Nov 2013 21:16:23 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 81/91] ALSA: hda - Add a fixup for ASUS N76VZ
-Date: Thu,  7 Nov 2013 18:15:36 -0800
-Message-Id: <1383876946-2396-82-git-send-email-kamal@canonical.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 83/91] uml: check length in exitcode_proc_write()
+Date: Thu,  7 Nov 2013 18:15:38 -0800
+Message-Id: <1383876946-2396-84-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -26,32 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 6fc16e58adf50c0f1e4478538983fb5ff6f453d4 upstream.
+commit 201f99f170df14ba52ea4c52847779042b7a623b upstream.
 
-ASUS N76VZ needs the same fixup as N56VZ for supporting the boost
-speaker.
+We don't cap the size of buffer from the user so we could write past the
+end of the array here.  Only root can write to this file.
 
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=846529
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/um/kernel/exitcode.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 73d3c8f..d8c539b 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6946,6 +6946,7 @@ static const struct snd_pci_quirk alc662_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
- 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
- 	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_ASUS_MODE4),
-+	SND_PCI_QUIRK(0x1043, 0x1bf3, "ASUS N76VZ", ALC662_FIXUP_ASUS_MODE4),
- 	SND_PCI_QUIRK(0x1043, 0x8469, "ASUS mobo", ALC662_FIXUP_NO_JACK_DETECT),
- 	SND_PCI_QUIRK(0x105b, 0x0cd6, "Foxconn", ALC662_FIXUP_ASUS_MODE2),
- 	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
+diff --git a/arch/um/kernel/exitcode.c b/arch/um/kernel/exitcode.c
+index 829df49..41ebbfe 100644
+--- a/arch/um/kernel/exitcode.c
++++ b/arch/um/kernel/exitcode.c
+@@ -40,9 +40,11 @@ static ssize_t exitcode_proc_write(struct file *file,
+ 		const char __user *buffer, size_t count, loff_t *pos)
+ {
+ 	char *end, buf[sizeof("nnnnn\0")];
++	size_t size;
+ 	int tmp;
+ 
+-	if (copy_from_user(buf, buffer, count))
++	size = min(count, sizeof(buf));
++	if (copy_from_user(buf, buffer, size))
+ 		return -EFAULT;
+ 
+ 	tmp = simple_strtol(buf, &end, 0);
 -- 
 1.8.1.2
 
