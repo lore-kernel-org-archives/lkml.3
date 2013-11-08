@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab3KHHbb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 02:31:31 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:62013 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab3KHHba (ORCPT
+	id S1756489Ab3KHHdf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 02:33:35 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:56498 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab3KHHdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 02:31:30 -0500
-Message-ID: <1383895880.4964.91.camel@marge.simpson.net>
-Subject: Re: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
-From: Mike Galbraith <bitbucket@online.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>
-Date: Fri, 08 Nov 2013 08:31:20 +0100
-In-Reply-To: <20131108032343.GA18245@linux.vnet.ibm.com>
-References: <1383228427.5272.36.camel@marge.simpson.net>
-	 <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>
-	 <1383794799.5441.16.camel@marge.simpson.net>
-	 <1383798668.5441.25.camel@marge.simpson.net>
-	 <20131108032343.GA18245@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:Ko+lVUM3x6ixhkGj/iKSrNgmRMciDvWd7va5phiWHy3
- AbjvCcoNnEv3bX4zAhj0z6rnyfUzwqOT76PVxwe8pIQ/n0AwJa
- r7QJXhoN9P5prb0thW1M2Jo/Cku6J64DAQghRPLO6iMK1UUQu0
- OPCBbJBuUhqG6V70tLzMrJzfvfOSez3+iOcw8wFnouLLCXxrvI
- L7pxjbtnDY+oHPWATyL5jJbfS0aVoMxc+TgMRkP74SAfXAyzmX
- S0z9usbfGRkQZhwmh7LESmhAK7AWK3yV53+Ft4BGmwzQq8cYy1
- uoRxm/izq1uphnwrlkr8YBf7WY2yQbpwkbvc9cEXldaEvBMQYu
- 1hxFwBpJkLjtoxCtv0kHveF87u6w0TB8zZFiHLuxN
+	Fri, 8 Nov 2013 02:33:33 -0500
+Date: Thu, 7 Nov 2013 23:33:24 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Kent Overstreet <kmo@daterainc.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>, Olof Johansson <olof@lixom.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the block tree with the  tree
+Message-ID: <20131108073324.GA31662@infradead.org>
+References: <52740EB1.2070901@kernel.dk>
+ <527411DD.7050008@oracle.com>
+ <527414DE.9090704@kernel.dk>
+ <52756583.2030808@oracle.com>
+ <527BE7FA.90904@oracle.com>
+ <20131107192545.GA20624@moria.home.lan>
+ <527C2AA9.9040608@oracle.com>
+ <20131108125307.613427c04a7527c4359e6443@canb.auug.org.au>
+ <20131108020805.GI3842@kmo>
+ <527C4D35.8000907@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527C4D35.8000907@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-07 at 19:23 -0800, Paul E. McKenney wrote:
+Btw, I have to state that I very much disagree with dropping the
+direct I/O kernel changes, and I also very much disagree with keeping
+the immutable iovecs in.
 
-> An untested patch that gets rid of the RCU_SOFTIRQs in this case is below.
+For the latter I think the immutable iovecs are useful and do want to
+see them eventually, but they were merged at the latest possible point
+in the merge window and cause breakage all over the tree, so they very
+clearly are not ready at this point, and I fear even more breakage if
+they do get merged.
 
-Yup, toasted.
-
--Mike
+The changes for direct I/O from kernel space have been in for a long
+time, and they are blocking multiple consumers of the interface from
+getting submitted for about a year now.  Even if the guts of the
+direct-io code will get a write based on another patchset from Kent
+that will go on top of the immutable iovec changes we need the
+interfaces now and not another year down the road.
 
