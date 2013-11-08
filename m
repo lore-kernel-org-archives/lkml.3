@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356Ab3KHPGz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 10:06:55 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:9301 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932221Ab3KHPGx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 10:06:53 -0500
-Date: Fri, 8 Nov 2013 10:06:46 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] ftrace/x86: Load ftrace_ops in parameter not the variable
- holding it
-Message-ID: <20131108100646.07a63692@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	id S932389Ab3KHPHG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 10:07:06 -0500
+Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:57941 "EHLO
+	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932221Ab3KHPHB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 10:07:01 -0500
+Date: Fri, 8 Nov 2013 15:06:59 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
+ kthreadd V2
+In-Reply-To: <20131107225049.GC28130@localhost.localdomain>
+Message-ID: <0000014238407a1c-34e7bdbc-45c0-48de-a8a3-94a99f276044-000000@email.amazonses.com>
+References: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com> <20131016141326.2e517e18e4d8af880c97a282@linux-foundation.org> <00000141c36b03b6-2f9bd3de-d153-4359-901f-084aeb4c040d-000000@email.amazonses.com>
+ <20131017122344.39d55db97c3923131bdf2831@linux-foundation.org> <0000014233722db9-cc00d0af-a5fa-4090-83bd-73c87377b892-000000@email.amazonses.com> <20131107225049.GC28130@localhost.localdomain>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.11.08-54.240.9.70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 7 Nov 2013, Frederic Weisbecker wrote:
 
-Peter,
+> usermodehelper works are created via workqueues, right? And workqueues are an issue as
+> well for those who want CPU isolation.
 
-I found a bug in the ftrace callback code. When there's only one
-function registered that supplies its own recursion protection, it gets
-the ftrace_ops that it registered passed to it in the 3rd parameter
-from assembly (otherwise, it gets it from a helper function).
+AFAICT usermodehelper can be called from a variety of contexts.
 
-But the assembly uses 'leaq' instead of 'movq' and instead of passing
-the ftrace_ops to the callback, it passes in the address of the pointer
-to the current ftrace_ops structure :-p.  Luckily, all users that needed
-ftrace_ops so far used the helper function. But I have new code that
-requires this to work that is scheduled for 3.14, I would like to get
-this fix in for 3.13. As there are no current users of the direct
-assembly passing, it's not required for stable.
+> So this looks like a more general problem than just call_usermodehelper.
 
-I didn't know what branch to base this on in tip so I'm sending you the
-patch here. You can pull in in directly or if you tell me which branch
-to base on, I can send you a pull request. Your choice.
+Well the code explicitly sets the the affinity mask to all cpus which
+creates a problem for low latency processors. It does not inherit the
+affinity from any calling process.
 
-Thanks!
+> Last time I checked, it seemed to me that this is an unbound workqueue? If so can't we tune
+> the affinity of this workqueue? If not perhaps that's something we want to solve and which
+> could be useful for all the users who don't want their CPU to be disturbed.
 
--- Steve
-
-
->From 95669fe1c8236af4519937d19545e65da0d29f1d Mon Sep 17 00:00:00 2001
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-Date: Thu, 7 Nov 2013 18:11:58 -0500
-Subject: ftrace/x86: Load ftrace_ops in parameter not the variable
- holding it
-
-Function tracing callbacks expect to have the ftrace_ops that registered it
-passed to them, not the address of the variable that holds the ftrace_ops
-that registered it.
-
-Use a movq instead of a leaq to store the ftrace_ops into the parameter
-of the function tracing callback.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/kernel/entry_64.S | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b077f4c..d7570c1 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -88,7 +88,7 @@ END(function_hook)
- 	MCOUNT_SAVE_FRAME \skip
- 
- 	/* Load the ftrace_ops into the 3rd parameter */
--	leaq function_trace_op, %rdx
-+	movq function_trace_op, %rdx
- 
- 	/* Load ip into the first parameter */
- 	movq RIP(%rsp), %rdi
--- 
-1.8.1.4
-
+There are various contexts from which usermodehelper can be called.
+Drivers use it etc.
