@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab3KHC2D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:28:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34868 "EHLO
+	id S1757539Ab3KHC2X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:28:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34849 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932653Ab3KHCVp (ORCPT
+	with ESMTP id S932634Ab3KHCVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:21:45 -0500
+	Thu, 7 Nov 2013 21:21:36 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bian Yu <bianyu@kedacom.com>, NeilBrown <neilb@suse.de>,
+Cc: Felix Fietkau <nbd@openwrt.org>, Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 60/91] md: avoid deadlock when md_set_badblocks.
-Date: Thu,  7 Nov 2013 18:15:15 -0800
-Message-Id: <1383876946-2396-61-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 42/91] mac80211: drop spoofed packets in ad-hoc mode
+Date: Thu,  7 Nov 2013 18:14:57 -0800
+Message-Id: <1383876946-2396-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -27,112 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bian Yu <bianyu@kedacom.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 905b0297a9533d7a6ee00a01a990456636877dd6 upstream.
+commit 6329b8d917adc077caa60c2447385554130853a3 upstream.
 
-When operate harddisk and hit errors, md_set_badblocks is called after
-scsi_restart_operations which already disabled the irq. but md_set_badblocks
-will call write_sequnlock_irq and enable irq. so softirq can preempt the
-current thread and that may cause a deadlock. I think this situation should
-use write_sequnlock_irqsave/irqrestore instead.
+If an Ad-Hoc node receives packets with the Cell ID or its own MAC
+address as source address, it hits a WARN_ON in sta_info_insert_check()
+With many packets, this can massively spam the logs. One way that this
+can easily happen is through having Cisco APs in the area with rouge AP
+detection and countermeasures enabled.
+Such Cisco APs will regularly send fake beacons, disassoc and deauth
+packets that trigger these warnings.
 
-I met the situation and the call trace is below:
-[  638.919974] BUG: spinlock recursion on CPU#0, scsi_eh_13/1010
-[  638.921923]  lock: 0xffff8800d4d51fc8, .magic: dead4ead, .owner: scsi_eh_13/1010, .owner_cpu: 0
-[  638.923890] CPU: 0 PID: 1010 Comm: scsi_eh_13 Not tainted 3.12.0-rc5+ #37
-[  638.925844] Hardware name: To be filled by O.E.M. To be filled by O.E.M./MAHOBAY, BIOS 4.6.5 03/05/2013
-[  638.927816]  ffff880037ad4640 ffff880118c03d50 ffffffff8172ff85 0000000000000007
-[  638.929829]  ffff8800d4d51fc8 ffff880118c03d70 ffffffff81730030 ffff8800d4d51fc8
-[  638.931848]  ffffffff81a72eb0 ffff880118c03d90 ffffffff81730056 ffff8800d4d51fc8
-[  638.933884] Call Trace:
-[  638.935867]  <IRQ>  [<ffffffff8172ff85>] dump_stack+0x55/0x76
-[  638.937878]  [<ffffffff81730030>] spin_dump+0x8a/0x8f
-[  638.939861]  [<ffffffff81730056>] spin_bug+0x21/0x26
-[  638.941836]  [<ffffffff81336de4>] do_raw_spin_lock+0xa4/0xc0
-[  638.943801]  [<ffffffff8173f036>] _raw_spin_lock+0x66/0x80
-[  638.945747]  [<ffffffff814a73ed>] ? scsi_device_unbusy+0x9d/0xd0
-[  638.947672]  [<ffffffff8173fb1b>] ? _raw_spin_unlock+0x2b/0x50
-[  638.949595]  [<ffffffff814a73ed>] scsi_device_unbusy+0x9d/0xd0
-[  638.951504]  [<ffffffff8149ec47>] scsi_finish_command+0x37/0xe0
-[  638.953388]  [<ffffffff814a75e8>] scsi_softirq_done+0xa8/0x140
-[  638.955248]  [<ffffffff8130e32b>] blk_done_softirq+0x7b/0x90
-[  638.957116]  [<ffffffff8104fddd>] __do_softirq+0xfd/0x330
-[  638.958987]  [<ffffffff810b964f>] ? __lock_release+0x6f/0x100
-[  638.960861]  [<ffffffff8174a5cc>] call_softirq+0x1c/0x30
-[  638.962724]  [<ffffffff81004c7d>] do_softirq+0x8d/0xc0
-[  638.964565]  [<ffffffff8105024e>] irq_exit+0x10e/0x150
-[  638.966390]  [<ffffffff8174ad4a>] smp_apic_timer_interrupt+0x4a/0x60
-[  638.968223]  [<ffffffff817499af>] apic_timer_interrupt+0x6f/0x80
-[  638.970079]  <EOI>  [<ffffffff810b964f>] ? __lock_release+0x6f/0x100
-[  638.971899]  [<ffffffff8173fa6a>] ? _raw_spin_unlock_irq+0x3a/0x50
-[  638.973691]  [<ffffffff8173fa60>] ? _raw_spin_unlock_irq+0x30/0x50
-[  638.975475]  [<ffffffff81562393>] md_set_badblocks+0x1f3/0x4a0
-[  638.977243]  [<ffffffff81566e07>] rdev_set_badblocks+0x27/0x80
-[  638.978988]  [<ffffffffa00d97bb>] raid5_end_read_request+0x36b/0x4e0 [raid456]
-[  638.980723]  [<ffffffff811b5a1d>] bio_endio+0x1d/0x40
-[  638.982463]  [<ffffffff81304ff3>] req_bio_endio.isra.65+0x83/0xa0
-[  638.984214]  [<ffffffff81306b9f>] blk_update_request+0x7f/0x350
-[  638.985967]  [<ffffffff81306ea1>] blk_update_bidi_request+0x31/0x90
-[  638.987710]  [<ffffffff813085e0>] __blk_end_bidi_request+0x20/0x50
-[  638.989439]  [<ffffffff8130862f>] __blk_end_request_all+0x1f/0x30
-[  638.991149]  [<ffffffff81308746>] blk_peek_request+0x106/0x250
-[  638.992861]  [<ffffffff814a62a9>] ? scsi_kill_request.isra.32+0xe9/0x130
-[  638.994561]  [<ffffffff814a633a>] scsi_request_fn+0x4a/0x3d0
-[  638.996251]  [<ffffffff813040a7>] __blk_run_queue+0x37/0x50
-[  638.997900]  [<ffffffff813045af>] blk_run_queue+0x2f/0x50
-[  638.999553]  [<ffffffff814a5750>] scsi_run_queue+0xe0/0x1c0
-[  639.001185]  [<ffffffff814a7721>] scsi_run_host_queues+0x21/0x40
-[  639.002798]  [<ffffffff814a2e87>] scsi_restart_operations+0x177/0x200
-[  639.004391]  [<ffffffff814a4fe9>] scsi_error_handler+0xc9/0xe0
-[  639.005996]  [<ffffffff814a4f20>] ? scsi_unjam_host+0xd0/0xd0
-[  639.007600]  [<ffffffff81072f6b>] kthread+0xdb/0xe0
-[  639.009205]  [<ffffffff81072e90>] ? flush_kthread_worker+0x170/0x170
-[  639.010821]  [<ffffffff81748cac>] ret_from_fork+0x7c/0xb0
-[  639.012437]  [<ffffffff81072e90>] ? flush_kthread_worker+0x170/0x170
+To fix this issue, drop such spoofed packets early in the rx path.
 
-This bug was introduce in commit  2e8ac30312973dd20e68073653
-(the first time rdev_set_badblock was call from interrupt context),
-so this patch is appropriate for 3.5 and subsequent kernels.
-
-Signed-off-by: Bian Yu <bianyu@kedacom.com>
-Reviewed-by: Jianpeng Ma <majianpeng@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-by: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/md.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ net/mac80211/rx.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 0411bde..a240f16 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -8044,6 +8044,7 @@ static int md_set_badblocks(struct badblocks *bb, sector_t s, int sectors,
- 	u64 *p;
- 	int lo, hi;
- 	int rv = 1;
-+	unsigned long flags;
- 
- 	if (bb->shift < 0)
- 		/* badblocks are disabled */
-@@ -8058,7 +8059,7 @@ static int md_set_badblocks(struct badblocks *bb, sector_t s, int sectors,
- 		sectors = next - s;
- 	}
- 
--	write_seqlock_irq(&bb->lock);
-+	write_seqlock_irqsave(&bb->lock, flags);
- 
- 	p = bb->page;
- 	lo = 0;
-@@ -8174,7 +8175,7 @@ static int md_set_badblocks(struct badblocks *bb, sector_t s, int sectors,
- 	bb->changed = 1;
- 	if (!acknowledged)
- 		bb->unacked_exist = 1;
--	write_sequnlock_irq(&bb->lock);
-+	write_sequnlock_irqrestore(&bb->lock, flags);
- 
- 	return rv;
- }
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index 87f76fa..b1e5e03 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -2916,6 +2916,9 @@ static int prepare_for_handlers(struct ieee80211_rx_data *rx,
+ 	case NL80211_IFTYPE_ADHOC:
+ 		if (!bssid)
+ 			return 0;
++		if (ether_addr_equal(sdata->vif.addr, hdr->addr2) ||
++		    ether_addr_equal(sdata->u.ibss.bssid, hdr->addr2))
++			return 0;
+ 		if (ieee80211_is_beacon(hdr->frame_control)) {
+ 			return 1;
+ 		} else if (!ieee80211_bssid_match(bssid, sdata->u.ibss.bssid)) {
 -- 
 1.8.1.2
 
