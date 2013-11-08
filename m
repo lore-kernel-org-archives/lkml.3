@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab3KHCR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:17:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34580 "EHLO
+	id S932838Ab3KHCgV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:36:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34610 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756602Ab3KHCQX (ORCPT
+	with ESMTP id S1757003Ab3KHCR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:16:23 -0500
+	Thu, 7 Nov 2013 21:17:57 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 86/91] staging: wlags49_h2: buffer overflow setting station name
-Date: Thu,  7 Nov 2013 18:15:41 -0800
-Message-Id: <1383876946-2396-87-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 30/91] virtio-net: don't respond to cpu hotplug notifier if we're not ready
+Date: Thu,  7 Nov 2013 18:14:45 -0800
+Message-Id: <1383876946-2396-31-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -28,67 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jason Wang <jasowang@redhat.com>
 
-commit b5e2f339865fb443107e5b10603e53bbc92dc054 upstream.
+[ Upstream commit 3ab098df35f8b98b6553edc2e40234af512ba877 ]
 
-We need to check the length parameter before doing the memcpy().  I've
-actually changed it to strlcpy() as well so that it's NUL terminated.
+We're trying to re-configure the affinity unconditionally in cpu hotplug
+callback. This may lead the issue during resuming from s3/s4 since
 
-You need CAP_NET_ADMIN to trigger these so it's not the end of the
-world.
+- virt queues haven't been allocated at that time.
+- it's unnecessary since thaw method will re-configure the affinity.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ kamal: backport to 3.8 (context) ]
+Fix this issue by checking the config_enable and do nothing is we're not ready.
+
+The bug were introduced by commit 8de4b2f3ae90c8fc0f17eeaab87d5a951b66ee17
+(virtio-net: reset virtqueue affinity when doing cpu hotplug).
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/wlags49_h2/wl_priv.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/net/virtio_net.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/staging/wlags49_h2/wl_priv.c b/drivers/staging/wlags49_h2/wl_priv.c
-index 87e1e41..0978d9b 100644
---- a/drivers/staging/wlags49_h2/wl_priv.c
-+++ b/drivers/staging/wlags49_h2/wl_priv.c
-@@ -570,6 +570,7 @@ int wvlan_uil_put_info( struct uilreq *urq, struct wl_private *lp )
- 	ltv_t                   *pLtv;
- 	bool_t                  ltvAllocated = FALSE;
- 	ENCSTRCT                sEncryption;
-+	size_t			len;
- 
- #ifdef USE_WDS
- 	hcf_16                  hcfPort  = HCF_PORT_0;
-@@ -686,7 +687,8 @@ int wvlan_uil_put_info( struct uilreq *urq, struct wl_private *lp )
- 					break;
- 				case CFG_CNF_OWN_NAME:
- 					memset( lp->StationName, 0, sizeof( lp->StationName ));
--					memcpy( (void *)lp->StationName, (void *)&pLtv->u.u8[2], (size_t)pLtv->u.u16[0]);
-+					len = min_t(size_t, pLtv->u.u16[0], sizeof(lp->StationName));
-+					strlcpy(lp->StationName, &pLtv->u.u8[2], len);
- 					pLtv->u.u16[0] = CNV_INT_TO_LITTLE( pLtv->u.u16[0] );
- 					break;
- 				case CFG_CNF_LOAD_BALANCING:
-@@ -1800,6 +1802,7 @@ int wvlan_set_station_nickname(struct net_device *dev,
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 35c00c5..848d26c 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1076,6 +1076,11 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
  {
-         struct wl_private *lp = wl_priv(dev);
-         unsigned long flags;
-+	size_t len;
-         int         ret = 0;
- 	/*------------------------------------------------------------------------*/
+ 	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
  
-@@ -1810,8 +1813,8 @@ int wvlan_set_station_nickname(struct net_device *dev,
-         wl_lock(lp, &flags);
++	mutex_lock(&vi->config_lock);
++
++	if (!vi->config_enable)
++		goto done;
++
+ 	switch(action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+@@ -1088,6 +1093,9 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
+ 	default:
+ 		break;
+ 	}
++
++done:
++	mutex_unlock(&vi->config_lock);
+ 	return NOTIFY_OK;
+ }
  
-         memset( lp->StationName, 0, sizeof( lp->StationName ));
--
--        memcpy( lp->StationName, extra, wrqu->data.length);
-+	len = min_t(size_t, wrqu->data.length, sizeof(lp->StationName));
-+	strlcpy(lp->StationName, extra, len);
- 
-         /* Commit the adapter parameters */
-         wl_apply( lp );
 -- 
 1.8.1.2
 
