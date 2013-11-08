@@ -1,106 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab3KHU3N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 15:29:13 -0500
-Received: from smtprelay0234.hostedemail.com ([216.40.44.234]:42872 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757478Ab3KHU3L (ORCPT
+	id S1758196Ab3KHU3p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 15:29:45 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:61445 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757478Ab3KHU3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 15:29:11 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1605:1711:1730:1747:1777:1792:2194:2198:2199:2200:2393:2553:2559:2562:2691:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:7652:8957:9108:10004:10400:10848:11026:11232:11658:11914:12043:12050:12517:12519:12740:13161:13229:13869,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pear23_4fdb675f34b16
-X-Filterd-Recvd-Size: 3768
-Message-ID: <1383942547.2639.49.camel@joe-AO722>
-Subject: Re: [PATCH v2 2/2] x86: add prefetching to do_csum
-From: Joe Perches <joe@perches.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Date: Fri, 08 Nov 2013 12:29:07 -0800
-In-Reply-To: <20131108201459.GE16052@hmsreliant.think-freely.org>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
-	 <1383751399-10298-1-git-send-email-nhorman@tuxdriver.com>
-	 <1383751399-10298-3-git-send-email-nhorman@tuxdriver.com>
-	 <20131106153429.GA26336@redhat.com>
-	 <20131106155445.GB6357@neilslaptop.think-freely.org>
-	 <1383758363.7940.19.camel@joe-AO722>
-	 <20131108190136.GB16052@hmsreliant.think-freely.org>
-	 <1383939193.2639.39.camel@joe-AO722>
-	 <20131108201459.GE16052@hmsreliant.think-freely.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Nov 2013 15:29:42 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/ga6k41RZHo2nNlBkoYIy5tQe7KymT30Q=
+Date: Fri, 8 Nov 2013 15:29:30 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Olof Johansson <olof@lixom.net>
+Cc: Kumar Gala <galak@codeaurora.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 7/9] ARM: add Armada 1500 and Sony NSZ-GS7 device
+ tree files
+Message-ID: <20131108202930.GL10335@titan.lakedaemon.net>
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1383661723-17956-8-git-send-email-sebastian.hesselbarth@gmail.com>
+ <0AF697FD-60AA-4B8B-A35F-3DF2FFBCF7AF@codeaurora.org>
+ <20131108165721.GA10335@titan.lakedaemon.net>
+ <8DC09031-553C-4FD5-8F05-F93D6FE40F3A@codeaurora.org>
+ <20131108182415.GG10335@titan.lakedaemon.net>
+ <CAOesGMhfr3CNxKNRJa+eJepr2Fc-jx4rTQ7cPerTkQM-CyzuCg@mail.gmail.com>
+ <20131108193054.GJ10335@titan.lakedaemon.net>
+ <CAOesGMir+Zar0hskPQ+ZN6Z7+R-G5GhrafenQPgjZGbVGG9uwA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMir+Zar0hskPQ+ZN6Z7+R-G5GhrafenQPgjZGbVGG9uwA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-08 at 15:14 -0500, Neil Horman wrote:
-> On Fri, Nov 08, 2013 at 11:33:13AM -0800, Joe Perches wrote:
-> > On Fri, 2013-11-08 at 14:01 -0500, Neil Horman wrote:
-> > > On Wed, Nov 06, 2013 at 09:19:23AM -0800, Joe Perches wrote:
-> > > > On Wed, 2013-11-06 at 10:54 -0500, Neil Horman wrote:
-> > > > > On Wed, Nov 06, 2013 at 10:34:29AM -0500, Dave Jones wrote:
-> > > > > > On Wed, Nov 06, 2013 at 10:23:19AM -0500, Neil Horman wrote:
-> > > > > >  > do_csum was identified via perf recently as a hot spot when doing
-> > > > > >  > receive on ip over infiniband workloads.  After alot of testing and
-> > > > > >  > ideas, we found the best optimization available to us currently is to
-> > > > > >  > prefetch the entire data buffer prior to doing the checksum
-> > > > []
-> > > > > I'll fix this up and send a v3, but I'll give it a day in case there are more
-> > > > > comments first.
-> > > > 
-> > > > Perhaps a reduction in prefetch loop count helps.
-> > > > 
-> > > > Was capping the amount prefetched and letting the
-> > > > hardware prefetch also tested?
-> > > > 
-> > > > 	prefetch_lines(buff, min(len, cache_line_size() * 8u));
-> > > > 
-> > > 
-> > > Just tested this out:
-> > 
-> > Thanks.
-> > 
-> > Reformatting the table so it's a bit more
-> > readable/comparable for me:
-> > 
-> > len	SetSz	Loops	cycles/byte
-> > 			limited	unlimited
-> > 1500B	64MB	1M	1.3442	1.3605
-> > 1500B	128MB	1M	1.3410	1.3542
-> > 1500B	256MB	1M	1.3536	1.3710
-> > 1500B	512MB	1M	1.3463	1.3536
-> > 9000B	64MB	1M	0.8522	0.8504
-> > 9000B	128MB	1M	0.8528	0.8536
-> > 9000B	256MB	1M	0.8532	0.8520
-> > 9000B	512MB	1M	0.8527	0.8525
-> > 64KB	64MB	1M	0.7686	0.7683
-> > 64KB	128MB	1M	0.7695	0.7686
-> > 64KB	256MB	1M	0.7699	0.7708
-> > 64KB	512MB	1M	0.7799	0.7694
-> > 
-> > This data appears to show some value
-> > in capping for 1500b lengths and noise
-> > for shorter and longer lengths.
-> > 
-> > Any idea what the actual distribution of
-> > do_csum lengths is under various loads?
-> > 
-> I don't have any hard data no, sorry.
+On Fri, Nov 08, 2013 at 12:10:27PM -0800, Olof Johansson wrote:
+> On Fri, Nov 8, 2013 at 11:30 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> > On Fri, Nov 08, 2013 at 11:14:07AM -0800, Olof Johansson wrote:
+> >> On Fri, Nov 8, 2013 at 10:24 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> >> > On Fri, Nov 08, 2013 at 12:06:26PM -0600, Kumar Gala wrote:
+> >> >>
+> >> >> On Nov 8, 2013, at 10:57 AM, Jason Cooper wrote:
+> >> >>
+> >> >> > On Fri, Nov 08, 2013 at 10:13:19AM -0600, Kumar Gala wrote:
+> >> >> >> On Nov 5, 2013, at 8:28 AM, Sebastian Hesselbarth wrote:
+> >> >> > ...
+> >> >> >>> .../devicetree/bindings/arm/marvell,berlin.txt     |   24 +++
+> >> >> >>> arch/arm/boot/dts/Makefile                         |    2 +
+> >> >> >>> arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts         |   29 +++
+> >> >> >>> arch/arm/boot/dts/berlin2.dtsi                     |  227 ++++++++++++++++++++
+> >> >> >>> 4 files changed, 282 insertions(+)
+> >> >> >>> create mode 100644 Documentation/devicetree/bindings/arm/marvell,berlin.txt
+> >> >> >>> create mode 100644 arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts
+> >> >> >>> create mode 100644 arch/arm/boot/dts/berlin2.dtsi
+> >> >> >>
+> >> >> >> Haven't we been trying to go away from non-prefixed dts/dtsi?
+> >> >> >
+> >> >> > hmmm, this is the first I've heard of that.  Although, your proposal
+> >> >> > (in another thread) makes more sense now.  :)
+> >> >> >
+> >> >> >> So should these be something like marvell-berlin2-...
+> >> >> >
+> >> >> > I don't recall this being brought up at the summit, nor in Grant's
+> >> >> > report.  I do need to give it a more careful read this weekend, though.
+> >> >> > Perhaps I missed something.
+> >> >>
+> >> >> This was based on review comments Olof gave when we pushed some .dts
+> >> >> files for MSM/APQ Qualcomm Technologies soc/boards.
+> >> >
+> >> > As Andrew Lunn mentioned to me earlier, we should consider the fact that
+> >> > the dts file names are being used by Debian's flash-kernel.  Oh no!
+> >> > Another ABI! ;-)
+> >>
+> >> Yes, the names are mostly stable. ST-Ericsson renamed their dts files
+> >> and it caused some pain, some build environments have them hardcoded,
+> >> etc.
+> >>
+> >> Still, it is a good idea to start adding new ones using family or
+> >> vendor prefixes, so they are easier to group. Please keep that in mind
+> >> on new ones too, Jason -- I don't think I've discussed with you in the
+> >> past. :-)
+> >
+> > Nope, I definitely missed that if you did ;-)  Will do in the future.
+> >
+> > Perhaps now is the time to consider separating the dts filename from the
+> > dtb filename?  I'm warming up to my idea of globalscale,mirabox.dtb...
+> 
+> Having a "dtb-install" make target that sets those up as softlinks
+> could be a good idea, at least.
 
-I think you should before you implement this.
-You might find extremely short lengths.
+oooh, I like that.  Something like
 
-> I'll cap the prefetch at 1500B for now, since it
-> doesn't seem to hurt or help beyond that
+$ dtc -L -o kirkwood-dreamplug.dtb kirkwood-dreamplug.dts
+$ ls
+...
+globalscale,dreamplug.dtb -> kirkwood-dreamplug.dtb
+...
+kirkwood-dreamplug.dtb
+...
+$
 
-The table data has a max prefetch of
-8 * boot_cpu_data.x86_cache_alignment so
-I believe it's always less than 1500 but
-perhaps 4 might be slightly better still.
+Otherwise the build system would have to learn to parse dts/dtbs...
 
+> I'm not sold on using them as filenames myself though.
 
+fair enough.
+
+thx,
+
+Jason.
