@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757623Ab3KHQN6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 11:13:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8268 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756024Ab3KHQN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 11:13:57 -0500
-Message-ID: <527D0D8F.5010001@redhat.com>
-Date: Fri, 08 Nov 2013 11:13:03 -0500
-From: Doug Ledford <dledford@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1757644Ab3KHQPQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 11:15:16 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53773 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756278Ab3KHQPP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 11:15:15 -0500
+Date: Fri, 8 Nov 2013 09:15:08 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        Olof Johansson <olof@lixom.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the block tree with the  tree
+Message-ID: <20131108161508.GL10212@kernel.dk>
+References: <527414DE.9090704@kernel.dk>
+ <52756583.2030808@oracle.com>
+ <527BE7FA.90904@oracle.com>
+ <20131107192545.GA20624@moria.home.lan>
+ <527C2AA9.9040608@oracle.com>
+ <20131108125307.613427c04a7527c4359e6443@canb.auug.org.au>
+ <20131108020805.GI3842@kmo>
+ <527C4D35.8000907@oracle.com>
+ <20131108073324.GA31662@infradead.org>
+ <20131108152915.GI10212@kernel.dk>
 MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] delete decade+ obsolete aic7xxx_old driver
-References: <20131108160446.GA16190@windriver.com>
-In-Reply-To: <20131108160446.GA16190@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131108152915.GI10212@kernel.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2013 11:04 AM, Paul Gortmaker wrote:
+On Fri, Nov 08 2013, Jens Axboe wrote:
+> On Thu, Nov 07 2013, Christoph Hellwig wrote:
+> > Btw, I have to state that I very much disagree with dropping the
+> > direct I/O kernel changes, and I also very much disagree with keeping
+> > the immutable iovecs in.
+> > 
+> > For the latter I think the immutable iovecs are useful and do want to
+> > see them eventually, but they were merged at the latest possible point
+> > in the merge window and cause breakage all over the tree, so they very
+> > clearly are not ready at this point, and I fear even more breakage if
+> > they do get merged.
+> 
+> I agree, I've had this very conversation with Kent as well. The merge of
+> it has gone a lot worse than I had feared, and the resulting series at
+> this point is a non-bisectable mess. The fallback plan was to pull it
+> from the 3.13 tree and shove it into a 3.14 tree with more for-next
+> simmering.
+> 
+> It is in progress, just takes a while...
 
-> Paul Gortmaker (1):
->        scsi: delete decade+ obsolete aic7xxx_old driver
->
->   Documentation/scsi/00-INDEX             |     2 -
->   Documentation/scsi/aic7xxx_old.txt      |   511 --
->   MAINTAINERS                             |     1 -
->   drivers/scsi/Kconfig                    |    41 -
->   drivers/scsi/Makefile                   |     1 -
->   drivers/scsi/aic7xxx_old.c              | 11149 ------------------------------
->   drivers/scsi/aic7xxx_old/aic7xxx.h      |    28 -
->   drivers/scsi/aic7xxx_old/aic7xxx.reg    |  1401 ----
->   drivers/scsi/aic7xxx_old/aic7xxx.seq    |  1539 -----
->   drivers/scsi/aic7xxx_old/aic7xxx_proc.c |   270 -
->   drivers/scsi/aic7xxx_old/aic7xxx_reg.h  |   629 --
->   drivers/scsi/aic7xxx_old/aic7xxx_seq.c  |   817 ---
->   drivers/scsi/aic7xxx_old/scsi_message.h |    49 -
->   drivers/scsi/aic7xxx_old/sequencer.h    |   135 -
->   14 files changed, 16573 deletions(-)
->   delete mode 100644 Documentation/scsi/aic7xxx_old.txt
->   delete mode 100644 drivers/scsi/aic7xxx_old.c
->   delete mode 100644 drivers/scsi/aic7xxx_old/aic7xxx.h
->   delete mode 100644 drivers/scsi/aic7xxx_old/aic7xxx.reg
->   delete mode 100644 drivers/scsi/aic7xxx_old/aic7xxx.seq
->   delete mode 100644 drivers/scsi/aic7xxx_old/aic7xxx_proc.c
->   delete mode 100644 drivers/scsi/aic7xxx_old/aic7xxx_reg.h
->   delete mode 100644 drivers/scsi/aic7xxx_old/aic7xxx_seq.c
->   delete mode 100644 drivers/scsi/aic7xxx_old/scsi_message.h
->   delete mode 100644 drivers/scsi/aic7xxx_old/sequencer.h
->
+And it's done and pushed out. for-3.13/drivers is still missing the
+bcache bits, those will get merged back in once they don't depend on the
+immutable changes anymore.
 
-Farewell old friend...don't let the door hit you in the ass on the way 
-out ;-)
+Dave, this should make your life easier. And Stephen, if you pull the
+new for-next, it should make yours a lot easier as well.
+
+-- 
+Jens Axboe
+
