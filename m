@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758498Ab3KHXKk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 18:10:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36702 "EHLO
+	id S1758522Ab3KHXKo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 18:10:44 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36716 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758109Ab3KHXKU (ORCPT
+	with ESMTP id S1758455Ab3KHXKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 18:10:20 -0500
-Date: Fri, 8 Nov 2013 15:10:02 -0800
+	Fri, 8 Nov 2013 18:10:36 -0500
+Date: Fri, 8 Nov 2013 15:10:24 -0800
 From: tip-bot for Seiji Aguchi <tipbot@zytor.com>
-Message-ID: <tip-25c74b10bacead867478480170083f69cfc0db48@git.kernel.org>
+Message-ID: <tip-d34603b07c4255b2b00a546d34f297ccd50ae4c6@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         seiji.aguchi@hds.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         seiji.aguchi@hds.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <52716DEC.5050204@hds.com>
-References: <52716DEC.5050204@hds.com>
+In-Reply-To: <52716E67.6090705@hds.com>
+References: <52716E67.6090705@hds.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/trace] x86, trace:
-  Register exception handler to trace IDT
-Git-Commit-ID: 25c74b10bacead867478480170083f69cfc0db48
+Subject: [tip:x86/trace] x86, trace: Add page fault tracepoints
+Git-Commit-ID: d34603b07c4255b2b00a546d34f297ccd50ae4c6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,318 +27,150 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 08 Nov 2013 15:10:08 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 08 Nov 2013 15:10:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  25c74b10bacead867478480170083f69cfc0db48
-Gitweb:     http://git.kernel.org/tip/25c74b10bacead867478480170083f69cfc0db48
+Commit-ID:  d34603b07c4255b2b00a546d34f297ccd50ae4c6
+Gitweb:     http://git.kernel.org/tip/d34603b07c4255b2b00a546d34f297ccd50ae4c6
 Author:     Seiji Aguchi <seiji.aguchi@hds.com>
-AuthorDate: Wed, 30 Oct 2013 16:37:00 -0400
+AuthorDate: Wed, 30 Oct 2013 16:39:03 -0400
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 8 Nov 2013 14:15:45 -0800
+CommitDate: Fri, 8 Nov 2013 14:15:49 -0800
 
-x86, trace: Register exception handler to trace IDT
+x86, trace: Add page fault tracepoints
 
-This patch registers exception handlers for tracing to a trace IDT.
+This patch introduces page fault tracepoints to x86 architecture
+by switching IDT.
 
-To implemented it in set_intr_gate(), this patch does followings.
- - Register the exception handlers to
-   the trace IDT by prepending "trace_" to the handler's names.
- - Also, newly introduce trace_page_fault() to add tracepoints
-   in a subsequent patch.
+  Two events, for user and kernel spaces, are introduced at the beginning
+  of page fault handler for tracing.
+
+  - User space event
+    There is a request of page fault event for user space as below.
+
+    https://lkml.kernel.org/r/1368079520-11015-2-git-send-email-fdeslaur+()+gmail+!+com
+    https://lkml.kernel.org/r/1368079520-11015-1-git-send-email-fdeslaur+()+gmail+!+com
+
+  - Kernel space event:
+    When we measure an overhead in kernel space for investigating performance
+    issues, we can check if it comes from the page fault events.
 
 Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Link: http://lkml.kernel.org/r/52716DEC.5050204@hds.com
+Link: http://lkml.kernel.org/r/52716E67.6090705@hds.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/desc.h    | 28 +++++++++++++++++++++++-----
- arch/x86/include/asm/hw_irq.h  |  3 +++
- arch/x86/include/asm/segment.h |  3 +++
- arch/x86/include/asm/traps.h   | 20 ++++++++++++++++++++
- arch/x86/kernel/entry_32.S     | 10 ++++++++++
- arch/x86/kernel/entry_64.S     | 13 ++++++++++++-
- arch/x86/kernel/head64.c       |  2 +-
- arch/x86/kernel/kvm.c          |  2 +-
- arch/x86/kernel/traps.c        | 28 ++++++++++++++--------------
- arch/x86/mm/fault.c            | 10 ++++++++++
- 10 files changed, 97 insertions(+), 22 deletions(-)
+ arch/x86/include/asm/trace/exceptions.h | 52 +++++++++++++++++++++++++++++++++
+ arch/x86/mm/Makefile                    |  2 ++
+ arch/x86/mm/fault.c                     | 13 +++++++++
+ 3 files changed, 67 insertions(+)
 
-diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
-index d939567..3d73437 100644
---- a/arch/x86/include/asm/desc.h
-+++ b/arch/x86/include/asm/desc.h
-@@ -327,10 +327,25 @@ static inline void write_trace_idt_entry(int entry, const gate_desc *gate)
- {
- 	write_idt_entry(trace_idt_table, entry, gate);
- }
+diff --git a/arch/x86/include/asm/trace/exceptions.h b/arch/x86/include/asm/trace/exceptions.h
+new file mode 100644
+index 0000000..86540c0
+--- /dev/null
++++ b/arch/x86/include/asm/trace/exceptions.h
+@@ -0,0 +1,52 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM exceptions
 +
-+static inline void _trace_set_gate(int gate, unsigned type, void *addr,
-+				   unsigned dpl, unsigned ist, unsigned seg)
-+{
-+	gate_desc s;
++#if !defined(_TRACE_PAGE_FAULT_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_PAGE_FAULT_H
 +
-+	pack_gate(&s, type, (unsigned long)addr, dpl, ist, seg);
-+	/*
-+	 * does not need to be atomic because it is only done once at
-+	 * setup time
-+	 */
-+	write_trace_idt_entry(gate, &s);
-+}
- #else
- static inline void write_trace_idt_entry(int entry, const gate_desc *gate)
- {
- }
++#include <linux/tracepoint.h>
 +
-+#define _trace_set_gate(gate, type, addr, dpl, ist, seg)
- #endif
- 
- static inline void _set_gate(int gate, unsigned type, void *addr,
-@@ -353,11 +368,14 @@ static inline void _set_gate(int gate, unsigned type, void *addr,
-  * Pentium F0 0F bugfix can have resulted in the mapped
-  * IDT being write-protected.
-  */
--static inline void set_intr_gate(unsigned int n, void *addr)
--{
--	BUG_ON((unsigned)n > 0xFF);
--	_set_gate(n, GATE_INTERRUPT, addr, 0, 0, __KERNEL_CS);
--}
-+#define set_intr_gate(n, addr)						\
-+	do {								\
-+		BUG_ON((unsigned)n > 0xFF);				\
-+		_set_gate(n, GATE_INTERRUPT, (void *)addr, 0, 0,	\
-+			  __KERNEL_CS);					\
-+		_trace_set_gate(n, GATE_INTERRUPT, (void *)trace_##addr,\
-+				0, 0, __KERNEL_CS);			\
-+	} while (0)
- 
- extern int first_system_vector;
- /* used_vectors is BITMAP for irq is not managed by percpu vector_irq */
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index 92b3bae..cba45d9 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -187,6 +187,9 @@ extern __visible void smp_invalidate_interrupt(struct pt_regs *);
- #endif
- 
- extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
-+#ifdef CONFIG_TRACING
-+#define trace_interrupt interrupt
-+#endif
- 
- typedef int vector_irq_t[NR_VECTORS];
- DECLARE_PER_CPU(vector_irq_t, vector_irq);
-diff --git a/arch/x86/include/asm/segment.h b/arch/x86/include/asm/segment.h
-index c48a950..6f1c3a8 100644
---- a/arch/x86/include/asm/segment.h
-+++ b/arch/x86/include/asm/segment.h
-@@ -214,6 +214,9 @@
- #ifdef __KERNEL__
- #ifndef __ASSEMBLY__
- extern const char early_idt_handlers[NUM_EXCEPTION_VECTORS][2+2+5];
-+#ifdef CONFIG_TRACING
-+#define trace_early_idt_handlers early_idt_handlers
-+#endif
- 
- /*
-  * Load a segment. Fall back on loading the zero
-diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
-index 7036cb6..58d66fe 100644
---- a/arch/x86/include/asm/traps.h
-+++ b/arch/x86/include/asm/traps.h
-@@ -37,6 +37,23 @@ asmlinkage void machine_check(void);
- #endif /* CONFIG_X86_MCE */
- asmlinkage void simd_coprocessor_error(void);
- 
-+#ifdef CONFIG_TRACING
-+asmlinkage void trace_page_fault(void);
-+#define trace_divide_error divide_error
-+#define trace_bounds bounds
-+#define trace_invalid_op invalid_op
-+#define trace_device_not_available device_not_available
-+#define trace_coprocessor_segment_overrun coprocessor_segment_overrun
-+#define trace_invalid_TSS invalid_TSS
-+#define trace_segment_not_present segment_not_present
-+#define trace_general_protection general_protection
-+#define trace_spurious_interrupt_bug spurious_interrupt_bug
-+#define trace_coprocessor_error coprocessor_error
-+#define trace_alignment_check alignment_check
-+#define trace_simd_coprocessor_error simd_coprocessor_error
-+#define trace_async_page_fault async_page_fault
-+#endif
++extern void trace_irq_vector_regfunc(void);
++extern void trace_irq_vector_unregfunc(void);
 +
- dotraplinkage void do_divide_error(struct pt_regs *, long);
- dotraplinkage void do_debug(struct pt_regs *, long);
- dotraplinkage void do_nmi(struct pt_regs *, long);
-@@ -55,6 +72,9 @@ asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *);
- #endif
- dotraplinkage void do_general_protection(struct pt_regs *, long);
- dotraplinkage void do_page_fault(struct pt_regs *, unsigned long);
-+#ifdef CONFIG_TRACING
-+dotraplinkage void trace_do_page_fault(struct pt_regs *, unsigned long);
-+#endif
- dotraplinkage void do_spurious_interrupt_bug(struct pt_regs *, long);
- dotraplinkage void do_coprocessor_error(struct pt_regs *, long);
- dotraplinkage void do_alignment_check(struct pt_regs *, long);
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index f0dcb0c..0661abe 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1247,6 +1247,16 @@ return_to_handler:
-  */
- 	.pushsection .kprobes.text, "ax"
- 
-+#ifdef CONFIG_TRACING
-+ENTRY(trace_page_fault)
-+	RING0_EC_FRAME
-+	ASM_CLAC
-+	pushl_cfi $trace_do_page_fault
-+	jmp error_code
-+	CFI_ENDPROC
-+END(trace_page_fault)
-+#endif
++DECLARE_EVENT_CLASS(x86_exceptions,
 +
- ENTRY(page_fault)
- 	RING0_EC_FRAME
- 	ASM_CLAC
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b077f4c..8b7b169 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1280,6 +1280,17 @@ ENTRY(\sym)
- END(\sym)
- .endm
- 
-+#ifdef CONFIG_TRACING
-+.macro trace_errorentry sym do_sym
-+errorentry trace(\sym) trace(\do_sym)
-+errorentry \sym \do_sym
-+.endm
-+#else
-+.macro trace_errorentry sym do_sym
-+errorentry \sym \do_sym
-+.endm
-+#endif
++	TP_PROTO(unsigned long address, struct pt_regs *regs,
++		 unsigned long error_code),
 +
- 	/* error code is on the stack already */
- .macro paranoiderrorentry sym do_sym
- ENTRY(\sym)
-@@ -1482,7 +1493,7 @@ zeroentry xen_int3 do_int3
- errorentry xen_stack_segment do_stack_segment
- #endif
- errorentry general_protection do_general_protection
--errorentry page_fault do_page_fault
-+trace_errorentry page_fault do_page_fault
- #ifdef CONFIG_KVM_GUEST
- errorentry async_page_fault do_async_page_fault
- #endif
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index 1be8e43..85126cc 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -162,7 +162,7 @@ asmlinkage void __init x86_64_start_kernel(char * real_mode_data)
- 	clear_bss();
++	TP_ARGS(address, regs, error_code),
++
++	TP_STRUCT__entry(
++		__field(		unsigned long, address	)
++		__field(		unsigned long, ip	)
++		__field(		unsigned long, error_code )
++	),
++
++	TP_fast_assign(
++		__entry->address = address;
++		__entry->ip = regs->ip;
++		__entry->error_code = error_code;
++	),
++
++	TP_printk("address=%pf ip=%pf error_code=0x%lx",
++		  (void *)__entry->address, (void *)__entry->ip,
++		  __entry->error_code) );
++
++#define DEFINE_PAGE_FAULT_EVENT(name)				\
++DEFINE_EVENT_FN(x86_exceptions, name,				\
++	TP_PROTO(unsigned long address,	struct pt_regs *regs,	\
++		 unsigned long error_code),			\
++	TP_ARGS(address, regs, error_code),			\
++	trace_irq_vector_regfunc,				\
++	trace_irq_vector_unregfunc);
++
++DEFINE_PAGE_FAULT_EVENT(user_page_fault);
++DEFINE_PAGE_FAULT_EVENT(kernel_page_fault);
++
++#undef TRACE_INCLUDE_PATH
++#define TRACE_INCLUDE_PATH .
++#define TRACE_INCLUDE_FILE exceptions
++#endif /*  _TRACE_PAGE_FAULT_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
+index 23d8e5f..6a19ad9 100644
+--- a/arch/x86/mm/Makefile
++++ b/arch/x86/mm/Makefile
+@@ -6,6 +6,8 @@ nostackp := $(call cc-option, -fno-stack-protector)
+ CFLAGS_physaddr.o		:= $(nostackp)
+ CFLAGS_setup_nx.o		:= $(nostackp)
  
- 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++)
--		set_intr_gate(i, &early_idt_handlers[i]);
-+		set_intr_gate(i, early_idt_handlers[i]);
- 	load_idt((const struct desc_ptr *)&idt_descr);
++CFLAGS_fault.o := -I$(src)/../include/asm/trace
++
+ obj-$(CONFIG_X86_PAT)		+= pat_rbtree.o
+ obj-$(CONFIG_SMP)		+= tlb.o
  
- 	copy_bootdata(__va(real_mode_data));
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index b2046e4..6dd802c 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -464,7 +464,7 @@ static struct notifier_block kvm_cpu_notifier = {
- 
- static void __init kvm_apf_trap_init(void)
- {
--	set_intr_gate(14, &async_page_fault);
-+	set_intr_gate(14, async_page_fault);
- }
- 
- void __init kvm_guest_init(void)
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 8c8093b..1c9d0ad 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -713,7 +713,7 @@ void __init early_trap_init(void)
- 	/* int3 can be called from all */
- 	set_system_intr_gate_ist(X86_TRAP_BP, &int3, DEBUG_STACK);
- #ifdef CONFIG_X86_32
--	set_intr_gate(X86_TRAP_PF, &page_fault);
-+	set_intr_gate(X86_TRAP_PF, page_fault);
- #endif
- 	load_idt(&idt_descr);
- }
-@@ -721,7 +721,7 @@ void __init early_trap_init(void)
- void __init early_trap_pf_init(void)
- {
- #ifdef CONFIG_X86_64
--	set_intr_gate(X86_TRAP_PF, &page_fault);
-+	set_intr_gate(X86_TRAP_PF, page_fault);
- #endif
- }
- 
-@@ -737,30 +737,30 @@ void __init trap_init(void)
- 	early_iounmap(p, 4);
- #endif
- 
--	set_intr_gate(X86_TRAP_DE, &divide_error);
-+	set_intr_gate(X86_TRAP_DE, divide_error);
- 	set_intr_gate_ist(X86_TRAP_NMI, &nmi, NMI_STACK);
- 	/* int4 can be called from all */
- 	set_system_intr_gate(X86_TRAP_OF, &overflow);
--	set_intr_gate(X86_TRAP_BR, &bounds);
--	set_intr_gate(X86_TRAP_UD, &invalid_op);
--	set_intr_gate(X86_TRAP_NM, &device_not_available);
-+	set_intr_gate(X86_TRAP_BR, bounds);
-+	set_intr_gate(X86_TRAP_UD, invalid_op);
-+	set_intr_gate(X86_TRAP_NM, device_not_available);
- #ifdef CONFIG_X86_32
- 	set_task_gate(X86_TRAP_DF, GDT_ENTRY_DOUBLEFAULT_TSS);
- #else
- 	set_intr_gate_ist(X86_TRAP_DF, &double_fault, DOUBLEFAULT_STACK);
- #endif
--	set_intr_gate(X86_TRAP_OLD_MF, &coprocessor_segment_overrun);
--	set_intr_gate(X86_TRAP_TS, &invalid_TSS);
--	set_intr_gate(X86_TRAP_NP, &segment_not_present);
-+	set_intr_gate(X86_TRAP_OLD_MF, coprocessor_segment_overrun);
-+	set_intr_gate(X86_TRAP_TS, invalid_TSS);
-+	set_intr_gate(X86_TRAP_NP, segment_not_present);
- 	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
--	set_intr_gate(X86_TRAP_GP, &general_protection);
--	set_intr_gate(X86_TRAP_SPURIOUS, &spurious_interrupt_bug);
--	set_intr_gate(X86_TRAP_MF, &coprocessor_error);
--	set_intr_gate(X86_TRAP_AC, &alignment_check);
-+	set_intr_gate(X86_TRAP_GP, general_protection);
-+	set_intr_gate(X86_TRAP_SPURIOUS, spurious_interrupt_bug);
-+	set_intr_gate(X86_TRAP_MF, coprocessor_error);
-+	set_intr_gate(X86_TRAP_AC, alignment_check);
- #ifdef CONFIG_X86_MCE
- 	set_intr_gate_ist(X86_TRAP_MC, &machine_check, MCE_STACK);
- #endif
--	set_intr_gate(X86_TRAP_XF, &simd_coprocessor_error);
-+	set_intr_gate(X86_TRAP_XF, simd_coprocessor_error);
- 
- 	/* Reserve all the builtin and the syscall vector: */
- 	for (i = 0; i < FIRST_EXTERNAL_VECTOR; i++)
 diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 3aaeffc..fd3e281 100644
+index fd3e281..f2730cbc 100644
 --- a/arch/x86/mm/fault.c
 +++ b/arch/x86/mm/fault.c
-@@ -1231,3 +1231,13 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+@@ -20,6 +20,9 @@
+ #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
+ #include <asm/fixmap.h>			/* VSYSCALL_START		*/
+ 
++#define CREATE_TRACE_POINTS
++#include <asm/trace/exceptions.h>
++
+ /*
+  * Page fault error code bits:
+  *
+@@ -1232,12 +1235,22 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 	exception_exit(prev_state);
+ }
+ 
++static void trace_page_fault_entries(struct pt_regs *regs,
++				     unsigned long error_code)
++{
++	if (user_mode(regs))
++		trace_user_page_fault(read_cr2(), regs, error_code);
++	else
++		trace_kernel_page_fault(read_cr2(), regs, error_code);
++}
++
+ dotraplinkage void __kprobes
+ trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ {
+ 	enum ctx_state prev_state;
+ 
+ 	prev_state = exception_enter();
++	trace_page_fault_entries(regs, error_code);
  	__do_page_fault(regs, error_code);
  	exception_exit(prev_state);
  }
-+
-+dotraplinkage void __kprobes
-+trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
-+{
-+	enum ctx_state prev_state;
-+
-+	prev_state = exception_enter();
-+	__do_page_fault(regs, error_code);
-+	exception_exit(prev_state);
-+}
