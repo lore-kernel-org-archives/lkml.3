@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab3KHSvm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 13:51:42 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35788 "EHLO
+	id S1758037Ab3KHSvl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 13:51:41 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35786 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757981Ab3KHSvj (ORCPT
+	with ESMTP id S1757973Ab3KHSvj (ORCPT
 	<rfc822;linux-kernel@Vger.kernel.org>);
 	Fri, 8 Nov 2013 13:51:39 -0500
 From: Mark Brown <broonie@kernel.org>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
 Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
         linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Date: Fri,  8 Nov 2013 18:51:26 +0000
-Message-Id: <1383936686-24041-2-git-send-email-broonie@kernel.org>
+Date: Fri,  8 Nov 2013 18:51:25 +0000
+Message-Id: <1383936686-24041-1-git-send-email-broonie@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1383936686-24041-1-git-send-email-broonie@kernel.org>
-References: <1383936686-24041-1-git-send-email-broonie@kernel.org>
 X-SA-Exim-Connect-IP: 86.134.146.207
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
 Subject: [PATCH] mfd: wm831x: Use PM ops for shutdown
