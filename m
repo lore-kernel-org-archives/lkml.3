@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757748Ab3KHPLA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 10:11:00 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:48430 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754852Ab3KHPK5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 10:10:57 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>, <herbert@gondor.hengli.com.au>,
-        <linux-crypto@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <eric@eukrea.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH RESEND 7/7] crypto: atmel-sha - add sha information to the log
-Date: Fri, 8 Nov 2013 16:08:16 +0100
-Message-ID: <e8be86b81611f75ff961d93bd448996fcb5b51ef.1383922546.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <cover.1383922546.git.nicolas.ferre@atmel.com>
-References: <cover.1383922546.git.nicolas.ferre@atmel.com>
+	id S1757768Ab3KHPLH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 10:11:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56921 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757747Ab3KHPLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 10:11:04 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20131107223046.GK1962@tassilo.jf.intel.com>
+References: <1383844657-17487-1-git-send-email-ard.biesheuvel@linaro.org> <527C0195.50008@zytor.com> <20131107213944.GJ1962@tassilo.jf.intel.com> <CAKv+Gu9W-Pu4DGgB-85A3D4Ps9_FLSQgyK3EM7=k7KE1=xsnwg@mail.gmail.com> <20131107223046.GK1962@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [RFC PATCH 0/4] wire up CPU features to udev based module loading
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 08 Nov 2013 07:09:36 -0800
+To: Andi Kleen <ak@linux.intel.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+CC: x86@kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, tglx@linutronix.de,
+        Ingo Molnar <mingo@kernel.org>, Steve Capper <steve.capper@linaro.org>
+Message-ID: <a36043f3-15cc-40a4-9226-70e357ceb4d8@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Depending on peripheral capabilities, print SHA information at the end
-of the probe function.
+I assumed he was referring to just dropping those fields of they didn't make sense for the architecture.  That would make sense to do.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/crypto/atmel-sha.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Andi Kleen <ak@linux.intel.com> wrote:
+>> - the module aliases host tool has no arch specific dependencies at
+>> all except having x86cpu as one of the entries: would you mind
+>> dropping the x86 prefix there? Or rather add dependencies on $ARCH?
+>> (If we drop it there, we basically end up with 'cpu:' everywhere)
+>
+>Should be fine.
+>
+>> - in the vendor/family/model case, it may be preferable to drop these
+>> fields entirely from certain modules' aliases if they match on 'any'
+>> (provided that the module tools permit this) rather than add
+>> architecture, variant, revision, etc  fields for all architectures if
+>> they can only ever match on one
+>
+>The module tools require everything matching with the same wild cards.
+>
+>So I don't know how "any" would work.
+>
+>-Andi
 
-diff --git a/drivers/crypto/atmel-sha.c b/drivers/crypto/atmel-sha.c
-index ecfdf72..0618be0 100644
---- a/drivers/crypto/atmel-sha.c
-+++ b/drivers/crypto/atmel-sha.c
-@@ -1469,7 +1469,9 @@ static int atmel_sha_probe(struct platform_device *pdev)
- 	if (err)
- 		goto err_algs;
- 
--	dev_info(dev, "Atmel SHA1/SHA256\n");
-+	dev_info(dev, "Atmel SHA1/SHA256%s%s\n",
-+			sha_dd->caps.has_sha224 ? "/SHA224" : "",
-+			sha_dd->caps.has_sha_384_512 ? "/SHA384/SHA512" : "");
- 
- 	return 0;
- 
 -- 
-1.8.2.2
-
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
