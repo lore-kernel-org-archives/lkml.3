@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757893Ab3KHQwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 11:52:38 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42508 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757423Ab3KHQwh (ORCPT
+	id S1757909Ab3KHQw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 11:52:58 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:43202 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757653Ab3KHQw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 11:52:37 -0500
-Date: Fri, 8 Nov 2013 16:52:23 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: Use udiv/sdiv for __aeabi_{u}idiv library
-	functions
-Message-ID: <20131108165223.GL16735@n2100.arm.linux.org.uk>
-References: <1383852042-10780-1-git-send-email-sboyd@codeaurora.org> <20131108095842.GG28304@ns203013.ovh.net>
+	Fri, 8 Nov 2013 11:52:57 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+3bpskFsIZIAYHFhe1yuWVMGWL7eQKNNk=
+Date: Fri, 8 Nov 2013 11:52:55 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: devicetree@vger.kernel.org,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>
+Subject: Re: common location for devicetree files
+Message-ID: <20131108165255.GA32668@titan.lakedaemon.net>
+References: <1438803E-C904-428B-B042-891978BC15DF@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131108095842.GG28304@ns203013.ovh.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1438803E-C904-428B-B042-891978BC15DF@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 10:58:42AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 11:20 Thu 07 Nov     , Stephen Boyd wrote:
-> > @@ -381,6 +384,13 @@ static void __init cpuid_init_hwcaps(void)
-> >  		elf_hwcap |= HWCAP_IDIVT;
-> >  	}
-> >  
-> > +#ifdef CONFIG_THUMB2_KERNEL
-> if (IS_ENABLED(CONFIG_THUMB2_KERNEL) && elf_hwcap & HWCAP_IDIVT)
-> > +	if (elf_hwcap & HWCAP_IDIVT)
-> > +#else
-> > +	if (elf_hwcap & HWCAP_IDIVA)
-> > +#endif
+On Thu, Nov 07, 2013 at 05:21:58PM -0600, Kumar Gala wrote:
+> As we start having more sharing of device trees between architectures
+> (arm & arm64, arm & powerpc, guessing maybe mips & arm) we need dts to
+> live in location that 
+> 
+> I was wondering what people felt about doing:
+> 
+> 	arch/dts/<VENDOR>/
+> 
+> as a common location that could be shared.  I'm up for other
+> suggestions.
 
-Take another look, and you'll see the change that you're suggesting is
-wrong.  Instead, the following may be a more reasonable suggestion as
-a suitable replacement:
+What do we really need to do before the move?  Should all arch dts files
+be able to #include from any arch?  What's the minimum churn needed to
+accomplish that?  Maybe just move the needed bits to arch/dts/include/ ?
 
-	if (elf_hwcap & (IS_ENABLED(CONFIG_THUMB2_KERNEL) ?
-				HWCAP_IDIVT : HWCAP_IDIVA))
+I'm not real keen on separating by vendor.  For example, us mvebu folks
+would probably miss useful/duplicated effort in another vendor's
+subdirectory.  Which was the whole reason for moving driver code out of
+machine directories to begin with.
+
+thx,
+
+Jason.
