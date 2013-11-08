@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945Ab3KHTEW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 14:04:22 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:35156 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757444Ab3KHTEU (ORCPT
+	id S1758072Ab3KHTHU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 14:07:20 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46263 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757309Ab3KHTHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 14:04:20 -0500
-Message-ID: <527D35B3.9020702@codeaurora.org>
-Date: Fri, 08 Nov 2013 11:04:19 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 8 Nov 2013 14:07:18 -0500
+Date: Fri, 8 Nov 2013 14:07:10 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Joe Perches <joe@perches.com>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Subject: Re: [PATCH v2 2/2] x86: add prefetching to do_csum
+Message-ID: <20131108190710.GC16052@hmsreliant.think-freely.org>
+References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
+ <1383751399-10298-1-git-send-email-nhorman@tuxdriver.com>
+ <1383751399-10298-3-git-send-email-nhorman@tuxdriver.com>
+ <20131106153429.GA26336@redhat.com>
+ <20131106155445.GB6357@neilslaptop.think-freely.org>
+ <1383758363.7940.19.camel@joe-AO722>
+ <20131106200204.GB11415@hmsreliant.think-freely.org>
+ <1383768458.7940.33.camel@joe-AO722>
+ <20131108162502.GA16052@hmsreliant.think-freely.org>
+ <1383929467.2639.14.camel@joe-AO722>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: Use udiv/sdiv for __aeabi_{u}idiv library functions
-References: <1383852042-10780-1-git-send-email-sboyd@codeaurora.org> <yw1xr4aqx1vi.fsf@unicorn.mansr.com>
-In-Reply-To: <yw1xr4aqx1vi.fsf@unicorn.mansr.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383929467.2639.14.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/13 09:02, Måns Rullgård wrote:
-> Stephen Boyd <sboyd@codeaurora.org> writes:
->
->> +int __aeabi_idiv(int numerator, int denominator)
->> +{
->> +	if (static_key_false(&cpu_has_idiv)) {
->> +		int ret;
->> +
->> +		asm volatile (
->> +		".arch_extension idiv\n"
->> +		"sdiv %0, %1, %2"
->> +		: "=&r" (ret)
-> There is no need for the & in the output constraint.  Dropping it allows
-> using one of the source registers as destination which may sometimes be
-> beneficial.
+On Fri, Nov 08, 2013 at 08:51:07AM -0800, Joe Perches wrote:
+> On Fri, 2013-11-08 at 11:25 -0500, Neil Horman wrote:
+> > On Wed, Nov 06, 2013 at 12:07:38PM -0800, Joe Perches wrote:
+> > > On Wed, 2013-11-06 at 15:02 -0500, Neil Horman wrote:
+> > > > On Wed, Nov 06, 2013 at 09:19:23AM -0800, Joe Perches wrote:
+> > > []
+> > > > > __always_inline instead of inline
+> > > > > static __always_inline void prefetch_lines(const void *addr, size_t len)
+> > > > > {
+> > > > > 	const void *end = addr + len;
+> > > > > ...
+> > > > > 
+> > > > > buff doesn't need a void * cast in prefetch_lines
+> > > > > 
+> > > > Actually I take back what I said here, we do need the cast, not for a conversion
+> > > > from unsigned char * to void *, but rather to discard the const qualifier
+> > > > without making the compiler complain.
+> > > 
+> > > Not if the function is changed to const void *
+> > > and end is also const void * as shown.
+> > > 
+> > Addr is incremented in the for loop, so it can't be const.  I could add a loop
+> > counter variable on the stack, but that doesn't seem like it would help anything
+> 
+> Perhaps you meant
+> 	void * const addr;
+> but that's not what I wrote.
+> 
+No, I meant smoething like:
+static __always_inline void prefetch_lines(const void * addr, size_t len)
+{
+	const void *tmp = (void *)addr;
+	...
+	for(;tmp<end; tmp+=cache_line_size())
+	...
+}
 
-Ok. Thanks. That does seem to improve things.
+> Let me know if this doesn't compile.
+> It does here...
+Huh, it does.  But that makes very little sense to me.  by qualifying addr as
+const, how is the compiler not throwing a warning in the for loop about us
+incrementing that same variable?
 
-before:
-
-00000000 <__aeabi_idiv>:
-   0:   e320f000        nop     {0}
-   4:   eafffffe        b       0 <___aeabi_idiv>
-   8:   e713f110        sdiv    r3, r0, r1
-   c:   e1a00003        mov     r0, r3
-  10:   e12fff1e        bx      lr
-
-00000014 <__aeabi_uidiv>:
-  14:   e320f000        nop     {0}
-  18:   eafffffe        b       0 <___aeabi_uidiv>
-  1c:   e733f110        udiv    r3, r0, r1
-  20:   e1a00003        mov     r0, r3
-  24:   e12fff1e        bx      lr
-
-after:
-
-00000000 <__aeabi_idiv>:
-   0:   e320f000        nop     {0}
-   4:   eafffffe        b       0 <___aeabi_idiv>
-   8:   e710f110        sdiv    r0, r0, r1
-   c:   e12fff1e        bx      lr
-
-00000010 <__aeabi_uidiv>:
-  10:   e320f000        nop     {0}
-  14:   eafffffe        b       0 <___aeabi_uidiv>
-  18:   e730f110        udiv    r0, r0, r1
-  1c:   e12fff1e        bx      lr
-
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
 
