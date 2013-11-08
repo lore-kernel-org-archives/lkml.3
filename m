@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab3KHCXU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:23:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34957 "EHLO
+	id S1757360Ab3KHCXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:23:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34950 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757274Ab3KHCWR (ORCPT
+	with ESMTP id S1757271Ab3KHCWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:22:17 -0500
+	Thu, 7 Nov 2013 21:22:15 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>,
-        dri-devel@lists.freedesktop.org, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 56/91] drm: Prevent overwriting from userspace underallocating core ioctl structs
-Date: Thu,  7 Nov 2013 18:15:11 -0800
-Message-Id: <1383876946-2396-57-git-send-email-kamal@canonical.com>
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 58/91] drm/radeon/atom: workaround vbios bug in transmitter table on rs780
+Date: Thu,  7 Nov 2013 18:15:13 -0800
+Message-Id: <1383876946-2396-59-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,54 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit b062672e305ce071f21eb9e18b102c2a430e0999 upstream.
+commit c23632d4e57c0dd20bf50eca08fa0eb8ad3ff680 upstream.
 
-Apply the protections from
+Some rs780 asics seem to be affected as well.
 
-commit 1b2f1489633888d4a06028315dc19d65768a1c05
-Author: Dave Airlie <airlied@redhat.com>
-Date:   Sat Aug 14 20:20:34 2010 +1000
+See:
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=91f3a6aaf280294b07c05dfe606e6c27b7ba3c72
 
-    drm: block userspace under allocating buffer and having drivers overwrite it (v2)
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60791
 
-to the core ioctl structs as well, for we found one instance where there
-is a 32-/64-bit size mismatch and were guilty of writing beyond the end
-of the user's buffer.
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Dave Airlie <airlied@redhat.com>
-Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Cc: dri-devel@lists.freedesktop.org
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/drm_drv.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_encoders.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
-index be174ca..4177780 100644
---- a/drivers/gpu/drm/drm_drv.c
-+++ b/drivers/gpu/drm/drm_drv.c
-@@ -411,9 +411,16 @@ long drm_ioctl(struct file *filp,
- 			asize = drv_size;
- 	}
- 	else if ((nr >= DRM_COMMAND_END) || (nr < DRM_COMMAND_BASE)) {
-+		u32 drv_size;
-+
- 		ioctl = &drm_ioctls[nr];
--		cmd = ioctl->cmd;
-+
-+		drv_size = _IOC_SIZE(ioctl->cmd);
- 		usize = asize = _IOC_SIZE(cmd);
-+		if (drv_size > asize)
-+			asize = drv_size;
-+
-+		cmd = ioctl->cmd;
- 	} else
- 		goto err_i1;
- 
+diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
+index 3b681de..e4f56ac 100644
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1641,7 +1641,7 @@ radeon_atom_encoder_dpms_dig(struct drm_encoder *encoder, int mode)
+ 			 * does the same thing and more.
+ 			 */
+ 			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
+-			    (rdev->family != CHIP_RS880))
++			    (rdev->family != CHIP_RS780) && (rdev->family != CHIP_RS880))
+ 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
+ 		}
+ 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
 -- 
 1.8.1.2
 
