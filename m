@@ -1,113 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756476Ab3KHHe2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 02:34:28 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46964 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab3KHHeY (ORCPT
+	id S1756708Ab3KHHgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 02:36:13 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:57669 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab3KHHgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 02:34:24 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <527C93B5.7010407@jp.fujitsu.com>
-Date: Fri, 8 Nov 2013 16:33:09 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <matt.fleming@intel.com>, <matthew.garrett@nebula.com>, <richard@nod.at>,
-        <jlee@suse.com>
-Subject: [PATCH] x86, efi: change name of efi_no_storage_paranoia parameter
- to efi_storage_paranoia
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+	Fri, 8 Nov 2013 02:36:07 -0500
+Date: Fri, 8 Nov 2013 18:35:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sukadev Bhattiprolu <sukadev@us.ibm.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: linux-next: manual merge of the akpm-current tree with the vfs tree
+Message-Id: <20131108183552.dbe7c66fa6dee7f84bf73b44@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__8_Nov_2013_18_35_52_+1100_ui8wPWY2hB2n2/Wp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By following works, my system very often fails set_variable() to set new
-variable to efi variable storage and shows "efivars: set_variable() failed:
-status=-28" message.
+--Signature=_Fri__8_Nov_2013_18_35_52_+1100_ui8wPWY2hB2n2/Wp
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-- commit 31ff2f20d9003e74991d135f56e503fe776c127c
-    efi: Distinguish between "remaining space" and actually used space
-- commit 8c58bf3eec3b8fc8162fe557e9361891c20758f2
-    x86,efi: Implement efi_no_storage_paranoia parameter
-- commit f8b8404337de4e2466e2e1139ea68b1f8295974f
-    Modify UEFI anti-bricking code
+Hi Andrew,
 
-When booting my system, remaining space of efi variable storage is about
-5KB. So there is no room that sets a new variable to the storage.
+Today's linux-next merge of the akpm-current tree got a conflict in
+fs/autofs4/inode.c between commit baa40671d3e3 ("autofs4: make freeing
+sbi rcu-delayed") from the vfs tree and commit e4af471815fc ("autofs4:
+allow autofs to work outside the initial PID namespace") from the
+akpm-current tree.
 
-According to above works, efi_no_storage_paranoia parameter was prepared
-for sane UEFI which can do gc and fulfills spec. But why need a system
-with a sane UEFI set the parameter? It is wrong. A system with a broken
-UEFI should set the parameter.
+I fixed it up (I think - see below) and can carry the fix as necessary
+(no action is required).
 
-This patch changes name of the parameter to efi_storage_paranoia and uses
-all efi variable storage with no parameter.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: Matthew Garrett <matthew.garrett@nebula.com>
-CC: Richard Weinberger <richard@nod.at>
-CC: Lee, Chun-Y <jlee@suse.com>
-CC: Matt Fleming <matt.fleming@intel.com>
----
- Documentation/kernel-parameters.txt | 10 +++++-----
- arch/x86/platform/efi/efi.c         |  8 ++++----
- 2 files changed, 9 insertions(+), 9 deletions(-)
+diff --cc fs/autofs4/inode.c
+index 3b9cc9b973c2,1b045ecfcea2..000000000000
+--- a/fs/autofs4/inode.c
++++ b/fs/autofs4/inode.c
+@@@ -56,13 -56,20 +56,15 @@@ void autofs4_kill_sb(struct super_bloc
+  	 * just call kill_anon_super when we are called from
+  	 * deactivate_super.
+  	 */
+- 	if (sbi) /* Free wait queues, close pipe */
+ -	if (!sbi)
+ -		goto out_kill_sb;
+ -
+ -	/* Free wait queues, close pipe */
+ -	autofs4_catatonic_mode(sbi);
+ -
+ -	put_pid(sbi->oz_pgrp);
+ -
+ -	sb->s_fs_info =3D NULL;
+ -	kfree(sbi);
+++	if (sbi) { /* Free wait queues, close pipe */
+ +		autofs4_catatonic_mode(sbi);
+++		put_pid(sbi->oz_pgrp);
+++	}
+ =20
+ -out_kill_sb:
+  	DPRINTK("shutting down");
+  	kill_litter_super(sb);
+ +	if (sbi)
+ +		kfree_rcu(sbi, rcu);
+  }
+ =20
+  static int autofs4_show_options(struct seq_file *m, struct dentry *root)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index fcbb736..2157c8e 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -888,11 +888,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	edd=		[EDD]
- 			Format: {"off" | "on" | "skip[mbr]"}
+--Signature=_Fri__8_Nov_2013_18_35_52_+1100_ui8wPWY2hB2n2/Wp
+Content-Type: application/pgp-signature
 
--	efi_no_storage_paranoia [EFI; X86]
--			Using this parameter you can use more than 50% of
--			your efi variable storage. Use this parameter only if
--			you are really sure that your UEFI does sane gc and
--			fulfills the spec otherwise your board may brick.
-+	efi_storage_paranoia [EFI; X86]
-+			Using this parameter you cannot use your efi variable
-+			storage when the remaining space of the storage becomes
-+			less than 5KB. Use this parameter if your UEFI does
-+			not sane gc and fulfills the spec.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
- 	eisa_irq_edge=	[PARISC,HW]
- 			See header of drivers/parisc/eisa.c.
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index c7e22ab..010a0eb 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -107,14 +107,14 @@ static int __init setup_add_efi_memmap(char *arg)
- }
- early_param("add_efi_memmap", setup_add_efi_memmap);
+iQIcBAEBCAAGBQJSfJRcAAoJEMDTa8Ir7ZwVw5cP/3p39MhpV80EeU/DoGYVGpvL
+lmVGMIzxnO7RsHxs/9cvccClJgtqVPYcbwkNg6TYnIgfOk6Y8OFvcYBJjg5TYo9+
+AA90FuVu947yZD+qUWgPNHKzfYtQrpyCUh6z4DX/hG1DdVyzLgcd20rH4IEONGZF
+jv6vI0rpKmHFn3w1CV8oggyMJ/xHIrQcl4qxc8Wa0/ydNjW9MuGK+1PiO7ELvBCt
+ESM94D9dCSP9RuVyuWHV9XcXrK2Nfyv7C1jeIwGULnEICxWBM223fmxA8e0jJMNq
+2aQnqT8+nsQ9Q8lg1wPl1S+vqfOUM+D1JvRdfk4AP40nKU7ndB4LZRVdLNC4RVP+
+tSgjmbgwFt+Vxc670CjMxjujfX7/ZhIeG9HhUVqIDdvzAVt1Fjd4LZaUnj2EL2+m
+QCF/NgCXs7aaR2zHQTXJVmbU/ln0/6KEy0ALkMge8slrUiTrP2U+pznuMQf69UKw
+UBk8e7qKrYmAXoLI6Xi+5dRLzsprPHcZ+9K9tewg3S2sPR9yvLYFbIIgRbXHGi9y
+I22PXPdY/CmSKoy4w4O9wx3mcp2bNz3BnUuREhuI3PcDeKRvayRDAJUT0DGEGuW5
+l3V/R5zftcF7Znb+gOwvl/MM2LvaABduCH3ITTbd6xv3GPgzdt37d8IF4zwctOan
+1iBJ26CR8PaNkqy3veAC
+=dUG6
+-----END PGP SIGNATURE-----
 
--static bool efi_no_storage_paranoia;
-+static bool efi_storage_paranoia;
-
- static int __init setup_storage_paranoia(char *arg)
- {
--	efi_no_storage_paranoia = true;
-+	efi_storage_paranoia = true;
- 	return 0;
- }
--early_param("efi_no_storage_paranoia", setup_storage_paranoia);
-+early_param("efi_storage_paranoia", setup_storage_paranoia);
-
-
- static efi_status_t virt_efi_get_time(efi_time_t *tm, efi_time_cap_t *tc)
-@@ -1066,7 +1066,7 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
- 	 * 5KB. This figure was provided by Samsung, so should be safe.
- 	 */
- 	if ((remaining_size - size < EFI_MIN_RESERVE) &&
--		!efi_no_storage_paranoia) {
-+		efi_storage_paranoia) {
-
- 		/*
- 		 * Triggering garbage collection may require that the firmware
-
+--Signature=_Fri__8_Nov_2013_18_35_52_+1100_ui8wPWY2hB2n2/Wp--
