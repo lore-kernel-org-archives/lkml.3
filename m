@@ -1,89 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab3KHUHJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 15:07:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22511 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758146Ab3KHUHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 15:07:07 -0500
-Date: Fri, 8 Nov 2013 15:06:59 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: hsweeten@visionengravers.com
-Subject: Re: staging: comedi: drivers: use comedi_dio_update_state() for
- complex cases
-Message-ID: <20131108200659.GA2101@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	hsweeten@visionengravers.com
-References: <20131107062754.93B2D660F4A@gitolite.kernel.org>
+	id S1758236Ab3KHUIS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 15:08:18 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46895 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757583Ab3KHUIR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 15:08:17 -0500
+Date: Fri, 8 Nov 2013 15:08:03 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Joe Perches <joe@perches.com>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Subject: Re: [PATCH v2 2/2] x86: add prefetching to do_csum
+Message-ID: <20131108200803.GD16052@hmsreliant.think-freely.org>
+References: <1383751399-10298-3-git-send-email-nhorman@tuxdriver.com>
+ <20131106153429.GA26336@redhat.com>
+ <20131106155445.GB6357@neilslaptop.think-freely.org>
+ <1383758363.7940.19.camel@joe-AO722>
+ <20131106200204.GB11415@hmsreliant.think-freely.org>
+ <1383768458.7940.33.camel@joe-AO722>
+ <20131108162502.GA16052@hmsreliant.think-freely.org>
+ <1383929467.2639.14.camel@joe-AO722>
+ <20131108190710.GC16052@hmsreliant.think-freely.org>
+ <1383938259.2639.29.camel@joe-AO722>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131107062754.93B2D660F4A@gitolite.kernel.org>
+In-Reply-To: <1383938259.2639.29.camel@joe-AO722>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 06:27:54AM +0000, Linux Kernel wrote:
- > Gitweb:     http://git.kernel.org/linus/;a=commit;h=b3ff824a81e8978deb56f6d163479c1a0a606037
- > Commit:     b3ff824a81e8978deb56f6d163479c1a0a606037
- > Parent:     97f4289ad08cffe55de06d4ac4f89ac540450aee
- > Author:     H Hartley Sweeten <hsweeten@visionengravers.com>
- > AuthorDate: Fri Aug 30 11:06:17 2013 -0700
- > Committer:  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- > CommitDate: Tue Sep 17 07:47:40 2013 -0700
- > 
- >     staging: comedi: drivers: use comedi_dio_update_state() for complex cases
- >     
- >     Use comedi_dio_update_state() to handle the boilerplate code to update
- >     the subdevice s->state for more complex cases where the hardware is only
- >     updated based on the 'mask' of the channels that are modified.
- >     
- >     Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
- >     Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
- >     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- 
-This bit looks suspect :-
- 
- >  	if (mask) {
- > -		s->state &= ~mask;
- > -		s->state |= (bits & mask);
- > -
- >  		if (mask & 0x00ff)
- >  			outb(s->state & 0xff, dev->iobase + reg);
- > -		if ((mask & 0xff00) && (s->n_chan > 8))
- > +		if ((mask & 0xff00) & (s->n_chan > 8))
- >  			outb((s->state >> 8) & 0xff, dev->iobase + reg + 1);
- > -		if ((mask & 0xff0000) && (s->n_chan > 16))
- > +		if ((mask & 0xff0000) & (s->n_chan > 16))
- >  			outb((s->state >> 16) & 0xff, dev->iobase + reg + 2);
- > -		if ((mask & 0xff000000) && (s->n_chan > 24))
- > +		if ((mask & 0xff000000) & (s->n_chan > 24))
- >  			outb((s->state >> 24) & 0xff, dev->iobase + reg + 3);
- >  	}
+On Fri, Nov 08, 2013 at 11:17:39AM -0800, Joe Perches wrote:
+> On Fri, 2013-11-08 at 14:07 -0500, Neil Horman wrote:
+> > On Fri, Nov 08, 2013 at 08:51:07AM -0800, Joe Perches wrote:
+> > > On Fri, 2013-11-08 at 11:25 -0500, Neil Horman wrote:
+> > > > On Wed, Nov 06, 2013 at 12:07:38PM -0800, Joe Perches wrote:
+> > > > > On Wed, 2013-11-06 at 15:02 -0500, Neil Horman wrote:
+> > > > > > On Wed, Nov 06, 2013 at 09:19:23AM -0800, Joe Perches wrote:
+> > > > > []
+> > > > > > > __always_inline instead of inline
+> > > > > > > static __always_inline void prefetch_lines(const void *addr, size_t len)
+> > > > > > > {
+> > > > > > > 	const void *end = addr + len;
+> > > > > > > ...
+> > > > > > > 
+> > > > > > > buff doesn't need a void * cast in prefetch_lines
+> > > > > > > 
+> > > > > > Actually I take back what I said here, we do need the cast, not for a conversion
+> > > > > > from unsigned char * to void *, but rather to discard the const qualifier
+> > > > > > without making the compiler complain.
+> > > > > 
+> > > > > Not if the function is changed to const void *
+> > > > > and end is also const void * as shown.
+> > > > > 
+> > > > Addr is incremented in the for loop, so it can't be const.  I could add a loop
+> > > > counter variable on the stack, but that doesn't seem like it would help anything
+> > > 
+> > > Perhaps you meant
+> > > 	void * const addr;
+> > > but that's not what I wrote.
+> > > 
+> > No, I meant smoething like:
+> > static __always_inline void prefetch_lines(const void * addr, size_t len)
+> > {
+> > 	const void *tmp = (void *)addr;
+> > 	...
+> > 	for(;tmp<end; tmp+=cache_line_size())
+> > 	...
+> > }
+> > 
+> > > Let me know if this doesn't compile.
+> > > It does here...
+> > Huh, it does.  But that makes very little sense to me.  by qualifying addr as
+> > const, how is the compiler not throwing a warning in the for loop about us
+> > incrementing that same variable?
+> 
+> Because it points to const data but is not const itself.
+> 
+> void * const foo;	/* value of foo can't change */
+> const void *bar;	/* data pointed to by bar can't change */
+> const void * const baz; /* Neither baz nor data pointed to by baz can change */
+> 
+Doh!  Wow, that was just staring me in the face and I missed it :)
 
+Thanks for pointing it out.  I'll make that adjustment
+Neil
 
-should those be shifts ? Like so ?
-
-
-diff --git a/drivers/staging/comedi/drivers/pcl730.c b/drivers/staging/comedi/drivers/pcl730.c
-index d041b714db29..29a54e5d73d6 100644
---- a/drivers/staging/comedi/drivers/pcl730.c
-+++ b/drivers/staging/comedi/drivers/pcl730.c
-@@ -173,11 +173,11 @@ static int pcl730_do_insn_bits(struct comedi_device *dev,
- 	if (mask) {
- 		if (mask & 0x00ff)
- 			outb(s->state & 0xff, dev->iobase + reg);
--		if ((mask & 0xff00) & (s->n_chan > 8))
-+		if ((mask & 0xff00) & (s->n_chan >> 8))
- 			outb((s->state >> 8) & 0xff, dev->iobase + reg + 1);
--		if ((mask & 0xff0000) & (s->n_chan > 16))
-+		if ((mask & 0xff0000) & (s->n_chan >> 16))
- 			outb((s->state >> 16) & 0xff, dev->iobase + reg + 2);
--		if ((mask & 0xff000000) & (s->n_chan > 24))
-+		if ((mask & 0xff000000) & (s->n_chan >> 24))
- 			outb((s->state >> 24) & 0xff, dev->iobase + reg + 3);
- 	}
- 
