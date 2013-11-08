@@ -1,47 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757899Ab3KHToF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 14:44:05 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:34083 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757537Ab3KHToD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 14:44:03 -0500
-X-IronPort-AV: E=Sophos;i="4.93,661,1378857600"; 
-   d="scan'208";a="69701934"
-Date: Fri, 8 Nov 2013 19:42:42 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, Will Deacon <will.deacon@arm.com>
-Subject: Re: swiotlb on arm status
-In-Reply-To: <20131108193815.GU16735@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.02.1311081942090.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1311061245580.26077@kaball.uk.xensource.com> <alpine.DEB.2.02.1311081854530.26077@kaball.uk.xensource.com> <20131108193815.GU16735@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758167Ab3KHTpz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 14:45:55 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:35401 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757494Ab3KHTpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 14:45:54 -0500
+Date: Fri, 8 Nov 2013 13:45:50 -0600
+From: Ben Myers <bpm@sgi.com>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: elder@kernel.org, Mark Tinguely <tinguely@sgi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: XFS leadership and a new co-maintainer candidate
+Message-ID: <20131108194550.GZ1935@sgi.com>
+References: <20131107220208.GY1935@sgi.com>
+ <527C0F64.3010906@sgi.com>
+ <527C4B27.6020205@redhat.com>
+ <527CC50D.4060905@redhat.com>
+ <20131108180337.GO10553@sgi.com>
+ <527D28DC.6060305@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527D28DC.6060305@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Nov 2013, Russell King - ARM Linux wrote:
-> On Fri, Nov 08, 2013 at 06:56:43PM +0000, Stefano Stabellini wrote:
-> > Russell,
-> > sorry to harass you again, but I am starting to be worried about missing
-> > the merge window. Could you please take a last look at these patches?
-> 
-> Well, as far as this patch goes, yes it's fine.
-> 
-> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
- 
-Thank you!!
+Hey Ric,
 
-
-> But I wonder what's happening with xgmac?  Will it get fixed?
+On Fri, Nov 08, 2013 at 01:09:32PM -0500, Ric Wheeler wrote:
+> On 11/08/2013 01:03 PM, Ben Myers wrote:
+> >Hey Ric,
+> >
+> >On Fri, Nov 08, 2013 at 06:03:41AM -0500, Ric Wheeler wrote:
+> >>In the XFS community, we have 2 clear leaders in terms of
+> >>contributions of significant feaures and depth of knowledge -
+> >>Christoph and Dave.
+> >>
+> >>If you look at the number of patches submitted by developers since
+> >>3.0 who have more than 10 patches, we get the following:
+> >>
+> >>     319 Author: Dave Chinner <dchinner@redhat.com>
+> >>     163 Author: Christoph Hellwig <hch@infradead.org>
+> >>      51 Author: Christoph Hellwig <hch@lst.de>
+> >>      35 Author: Linus Torvalds <torvalds@linux-foundation.org>
+> >>      34 Author: Chandra Seetharaman <sekharan@us.ibm.com>
+> >>      29 Author: Al Viro <viro@zeniv.linux.org.uk>
+> >>      28 Author: Brian Foster <bfoster@redhat.com>
+> >>      25 Author: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> >>      24 Author: Jeff Liu <jeff.liu@oracle.com>
+> >>      21 Author: Jie Liu <jeff.liu@oracle.com>
+> >>      20 Author: Mark Tinguely <tinguely@sgi.com>
+> >>      16 Author: Dave Chinner <david@fromorbit.com>
+> >>      12 Author: Eric Sandeen <sandeen@redhat.com>
+> >>      12 Author: Carlos Maiolino <cmaiolino@redhat.com>
+> >>
+> >>If we as a community had more capacity for patch review, Dave's
+> >>numbers would have jumped up even higher :)
+> >>
+> >>It is certainly very welcome to bring new developers into our
+> >>community, but if we are going to add a co-maintainer for XFS, we
+> >>really need to have one of our two leading developers in that role.
+> >Mark is replacing Alex as my backup because Alex is really busy at
+> >Linaro and asked to be taken off awhile ago.  The holiday season is
+> >coming up and I fully intend to go off my meds, turn in to Fonzy the
+> >bear, and eat my hat.  I need someone to watch the shop while I'm off
+> >exploring on Mars.  I trust Mark to do that because he is totally
+> >awesome.
+> >
+> >-Ben
 > 
+> I don't mean any disrepect to you or to Mark,
+       
+Don't worry about it, I have plenty to spare.  ;P
 
-Rob sent a patch to fix it. I tested it and it works.
+> but maintainership is
+> something that you earn over time by proving yourself in the
+> community as a developer and a leader of the technology on a
+> personal level.
+>
+> It is not something that gets managed by the community of developers
+> and has the key role of keeping the most frequent developers engaged
+> and happy.  That has not been working for us as a community lately.
+> 
+> Dave Chinner is the obvious person to take on the maintainer role as
+> someone who has an order of magnitude more code contributed than
+> either of you (even combined).
+> 
+> Christoph, if he has time, would also be an excellent candidate.
+
+Eric is also a good choice.  I'd be happy to add all three.
+
+-Ben
