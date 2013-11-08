@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3KHKIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 05:08:52 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:37987 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610Ab3KHKIu (ORCPT
+	id S1756902Ab3KHKJi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 05:09:38 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:41188 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752666Ab3KHKJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 05:08:50 -0500
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org (open list:VIDEOBUF2 FRAMEWORK),
-        linux-kernel@vger.kernel.org (open list), sylvester.nawrocki@gmail.com,
-        hverkuil@xs4all.nl
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH] vb2: Return 0 when streamon and streamoff are already on/off
-Date: Fri,  8 Nov 2013 11:08:45 +0100
-Message-Id: <1383905325-6163-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 1.8.4.rc3
+	Fri, 8 Nov 2013 05:09:37 -0500
+From: Caizhiyong <caizhiyong@hisilicon.com>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Karel Zak <kzak@redhat.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Subject: RE: [PATCH 2/2]  mtd: cmdlinepart: use cmdline partition parser lib
+Thread-Topic: [PATCH 2/2]  mtd: cmdlinepart: use cmdline partition parser lib
+Thread-Index: AQHOzyiczXccMKf72E2y9hcK5+vClpoWzHYAgAQyg5D//6JCgIAAj5oA
+Date: Fri, 8 Nov 2013 09:58:19 +0000
+Message-ID: <C3050A4DBA34F345975765E43127F10F1C08B2F6@szxeml512-mbs.china.huawei.com>
+References: <C3050A4DBA34F345975765E43127F10F1C0643B8@szxeml512-mbx.china.huawei.com>
+ <20131020120603.GA18678@localhost>
+ <C3050A4DBA34F345975765E43127F10F1C084C81@szxeml512-mbs.china.huawei.com>
+ <20131105144328.fb5a6a1d423776b324771706@linux-foundation.org>
+ <C3050A4DBA34F345975765E43127F10F1C08B274@szxeml512-mbs.china.huawei.com>
+ <20131108091216.GA2365@localhost>
+In-Reply-To: <20131108091216.GA2365@localhost>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.67.223.36]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA8A9ipU005959
 
-According to the doc:
+> Such results was never posted and unless we see those, I think
+> I'd rather NACK this patch instead. I like the cleanup, but only
+> if it's guaranteed to _not_ brake things, specially when dealing
+> with a kernel parameter.
 
-If VIDIOC_STREAMON is called when streaming is already in progress,
-or if VIDIOC_STREAMOFF is called when streaming is already stopped,
-then the ioctl does nothing and 0 is returned.
+Do you have some test case or test standard for me perform.
 
-The current implementation was returning -EINVAL instead.
-
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/media/v4l2-core/videobuf2-core.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
-index c979946..a3c8eff 100644
---- a/drivers/media/v4l2-core/videobuf2-core.c
-+++ b/drivers/media/v4l2-core/videobuf2-core.c
-@@ -1695,8 +1695,8 @@ int vb2_streamon(struct vb2_queue *q, enum v4l2_buf_type type)
- 	}
- 
- 	if (q->streaming) {
--		dprintk(1, "streamon: already streaming\n");
--		return -EBUSY;
-+		dprintk(3, "streamon successful: already streaming\n");
-+		return 0;
- 	}
- 
- 	/*
-@@ -1752,8 +1752,8 @@ int vb2_streamoff(struct vb2_queue *q, enum v4l2_buf_type type)
- 	}
- 
- 	if (!q->streaming) {
--		dprintk(1, "streamoff: not streaming\n");
--		return -EINVAL;
-+		dprintk(3, "streamoff successful: not streaming\n");
-+		return 0;
- 	}
- 
- 	/*
--- 
-1.8.4.rc3
-
+> --
+> Ezequiel GarcÃ­a, Free Electrons
+> Embedded Linux, Kernel and Android Engineering
+> http://free-electrons.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
