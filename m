@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932824Ab3KHCfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:35:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34614 "EHLO
+	id S1757013Ab3KHCR6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:17:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34580 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757025Ab3KHCSA (ORCPT
+	with ESMTP id S1756602Ab3KHCQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:18:00 -0500
+	Thu, 7 Nov 2013 21:16:23 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Durrant <paul.durrant@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 23/91] xen-netback: Don't destroy the netdev until the vif is shut down
-Date: Thu,  7 Nov 2013 18:14:38 -0800
-Message-Id: <1383876946-2396-24-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 86/91] staging: wlags49_h2: buffer overflow setting station name
+Date: Thu,  7 Nov 2013 18:15:41 -0800
+Message-Id: <1383876946-2396-87-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -29,132 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Durrant <paul.durrant@citrix.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 279f438e36c0a70b23b86d2090aeec50155034a9 ]
+commit b5e2f339865fb443107e5b10603e53bbc92dc054 upstream.
 
-Without this patch, if a frontend cycles through states Closing
-and Closed (which Windows frontends need to do) then the netdev
-will be destroyed and requires re-invocation of hotplug scripts
-to restore state before the frontend can move to Connected. Thus
-when udev is not in use the backend gets stuck in InitWait.
+We need to check the length parameter before doing the memcpy().  I've
+actually changed it to strlcpy() as well so that it's NUL terminated.
 
-With this patch, the netdev is left alone whilst the backend is
-still online and is only de-registered and freed just prior to
-destroying the vif (which is also nicely symmetrical with the
-netdev allocation and registration being done during probe) so
-no re-invocation of hotplug scripts is required.
+You need CAP_NET_ADMIN to trigger these so it's not the end of the
+world.
 
-Signed-off-by: Paul Durrant <paul.durrant@citrix.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/xen-netback/common.h    |  1 +
- drivers/net/xen-netback/interface.c | 12 ++++++++++--
- drivers/net/xen-netback/xenbus.c    | 17 ++++++++++++-----
- 3 files changed, 23 insertions(+), 7 deletions(-)
+ drivers/staging/wlags49_h2/wl_priv.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index 9d7f172..1a28508 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -115,6 +115,7 @@ struct xenvif *xenvif_alloc(struct device *parent,
- int xenvif_connect(struct xenvif *vif, unsigned long tx_ring_ref,
- 		   unsigned long rx_ring_ref, unsigned int evtchn);
- void xenvif_disconnect(struct xenvif *vif);
-+void xenvif_free(struct xenvif *vif);
+diff --git a/drivers/staging/wlags49_h2/wl_priv.c b/drivers/staging/wlags49_h2/wl_priv.c
+index 87e1e41..0978d9b 100644
+--- a/drivers/staging/wlags49_h2/wl_priv.c
++++ b/drivers/staging/wlags49_h2/wl_priv.c
+@@ -570,6 +570,7 @@ int wvlan_uil_put_info( struct uilreq *urq, struct wl_private *lp )
+ 	ltv_t                   *pLtv;
+ 	bool_t                  ltvAllocated = FALSE;
+ 	ENCSTRCT                sEncryption;
++	size_t			len;
  
- void xenvif_get(struct xenvif *vif);
- void xenvif_put(struct xenvif *vif);
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index 221f426..2ef5ec9 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -302,6 +302,9 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
- 	}
- 
- 	netdev_dbg(dev, "Successfully created xenvif\n");
-+
-+	__module_get(THIS_MODULE);
-+
- 	return vif;
- }
- 
-@@ -367,9 +370,14 @@ void xenvif_disconnect(struct xenvif *vif)
- 	if (vif->irq)
- 		unbind_from_irqhandler(vif->irq, vif);
- 
--	unregister_netdev(vif->dev);
--
- 	xen_netbk_unmap_frontend_rings(vif);
-+}
-+
-+void xenvif_free(struct xenvif *vif)
-+{
-+	unregister_netdev(vif->dev);
- 
- 	free_netdev(vif->dev);
-+
-+	module_put(THIS_MODULE);
- }
-diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
-index 410018c..abe24ff 100644
---- a/drivers/net/xen-netback/xenbus.c
-+++ b/drivers/net/xen-netback/xenbus.c
-@@ -42,7 +42,7 @@ static int netback_remove(struct xenbus_device *dev)
- 	if (be->vif) {
- 		kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
- 		xenbus_rm(XBT_NIL, dev->nodename, "hotplug-status");
--		xenvif_disconnect(be->vif);
-+		xenvif_free(be->vif);
- 		be->vif = NULL;
- 	}
- 	kfree(be);
-@@ -203,9 +203,18 @@ static void disconnect_backend(struct xenbus_device *dev)
+ #ifdef USE_WDS
+ 	hcf_16                  hcfPort  = HCF_PORT_0;
+@@ -686,7 +687,8 @@ int wvlan_uil_put_info( struct uilreq *urq, struct wl_private *lp )
+ 					break;
+ 				case CFG_CNF_OWN_NAME:
+ 					memset( lp->StationName, 0, sizeof( lp->StationName ));
+-					memcpy( (void *)lp->StationName, (void *)&pLtv->u.u8[2], (size_t)pLtv->u.u16[0]);
++					len = min_t(size_t, pLtv->u.u16[0], sizeof(lp->StationName));
++					strlcpy(lp->StationName, &pLtv->u.u8[2], len);
+ 					pLtv->u.u16[0] = CNV_INT_TO_LITTLE( pLtv->u.u16[0] );
+ 					break;
+ 				case CFG_CNF_LOAD_BALANCING:
+@@ -1800,6 +1802,7 @@ int wvlan_set_station_nickname(struct net_device *dev,
  {
- 	struct backend_info *be = dev_get_drvdata(&dev->dev);
+         struct wl_private *lp = wl_priv(dev);
+         unsigned long flags;
++	size_t len;
+         int         ret = 0;
+ 	/*------------------------------------------------------------------------*/
  
-+	if (be->vif)
-+		xenvif_disconnect(be->vif);
-+}
-+
-+static void destroy_backend(struct xenbus_device *dev)
-+{
-+	struct backend_info *be = dev_get_drvdata(&dev->dev);
-+
- 	if (be->vif) {
-+		kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
- 		xenbus_rm(XBT_NIL, dev->nodename, "hotplug-status");
--		xenvif_disconnect(be->vif);
-+		xenvif_free(be->vif);
- 		be->vif = NULL;
- 	}
- }
-@@ -237,14 +246,11 @@ static void frontend_changed(struct xenbus_device *dev,
- 	case XenbusStateConnected:
- 		if (dev->state == XenbusStateConnected)
- 			break;
--		backend_create_xenvif(be);
- 		if (be->vif)
- 			connect(be);
- 		break;
+@@ -1810,8 +1813,8 @@ int wvlan_set_station_nickname(struct net_device *dev,
+         wl_lock(lp, &flags);
  
- 	case XenbusStateClosing:
--		if (be->vif)
--			kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
- 		disconnect_backend(dev);
- 		xenbus_switch_state(dev, XenbusStateClosing);
- 		break;
-@@ -253,6 +259,7 @@ static void frontend_changed(struct xenbus_device *dev,
- 		xenbus_switch_state(dev, XenbusStateClosed);
- 		if (xenbus_dev_is_online(dev))
- 			break;
-+		destroy_backend(dev);
- 		/* fall through if not online */
- 	case XenbusStateUnknown:
- 		device_unregister(&dev->dev);
+         memset( lp->StationName, 0, sizeof( lp->StationName ));
+-
+-        memcpy( lp->StationName, extra, wrqu->data.length);
++	len = min_t(size_t, wrqu->data.length, sizeof(lp->StationName));
++	strlcpy(lp->StationName, extra, len);
+ 
+         /* Commit the adapter parameters */
+         wl_apply( lp );
 -- 
 1.8.1.2
 
