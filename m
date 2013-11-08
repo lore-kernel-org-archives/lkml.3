@@ -1,151 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214Ab3KHTqD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 14:46:03 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:53996 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758158Ab3KHTp7 (ORCPT
+	id S1758228Ab3KHTqG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 14:46:06 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:63495 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758199Ab3KHTqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 14:45:59 -0500
+	Fri, 8 Nov 2013 14:46:03 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
         maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v6 0/4] perf/x86: add Intel RAPL PMU support
-Date: Fri,  8 Nov 2013 20:45:59 +0100
-Message-Id: <1383939963-7750-1-git-send-email-eranian@google.com>
+Subject: [PATCH v6 1/4] perf: add active_entry list head to struct perf_event
+Date: Fri,  8 Nov 2013 20:46:00 +0100
+Message-Id: <1383939963-7750-2-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1383939963-7750-1-git-send-email-eranian@google.com>
+References: <1383939963-7750-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new uncore PMU to expose the Intel
-RAPL (Running Average Power Limit) energy consumption counters.
-Up to 3 counters, each counting a single RAPL event are exposed.
+This patch adds a new field to the struct perf_event.
+It is intended to be used to chain events which are
+active (enabled). It helps in the hardware layer
+for PMUs which do not have actual counter restrictions, i.e.,
+free running read-only counters. Active events are chained
+as opposed to being tracked via the counter they use.
 
-The RAPL counters are available on Intel SandyBridge, IvyBridge,
-Haswell. The server processors add a 3rd counter to measure
-DRAM power consumption.
-
-The following events are available and exposed in sysfs:
-- power/energy-cores: power consumption of all cores on socket
-- power/energy-pkg  : power consumption of all cores + LLC cache
-- power/energy-dram : power consumption of DRAM (servers only)
-
-The RAPL PMU is uncore by nature and is implemented such
-that it only works in system-wide mode. Measuring only
-one CPU per socket is sufficient. 
-
-The counters all count in the same unit. The perf_events API
-exposes all RAPL counters as 64-bit integers counting in unit
-of 1/2^32 Joules (about 0.23 nJ). User level tools must convert
-the counts by multiplying them by the scaling factor exposed
-in the correponding event .scale file in sysfs to obtain a value
-expressed in Joules. The reason for this approach is that the kernel
-avoids doing floating point math whenever possible because it is
-expensive (user floating-point state must be saved). The method
-used avoids kernel floating-point and does not incur any precision
-loss. Thanks to PeterZ for suggesting this approach.
-
-To convert the raw count in Watts: W = C * 2.3 / (1e10 * time)
-
-The kernel exposes both the scaling factor and the unit (Joules)
-in sysfs:
-$ ls -1 /sys/devices/power/events/energy-*
-/sys/devices/power/events/energy-cores
-/sys/devices/power/events/energy-cores.scale
-/sys/devices/power/events/energy-cores.unit
-/sys/devices/power/events/energy-pkg
-/sys/devices/power/events/energy-pkg.scale
-/sys/devices/power/events/energy-pkg.unit
-
-$ cat /sys/devices/power/events/energy-cores.scale
-2.3283064365386962890625e-10
-
-$ cat cat /sys/devices/power/events/energy-cores.unit
-Joules
-
-RAPL PMU is a new standalone PMU which registers with the
-perf_event core subsystem. The PMU type (attr->type) is
-dynamically allocated and is available from /sys/device/rapl/type.
-
-Sampling is not supported by the RAPL PMU. There is no
-privilege level filtering either.
-
-The PMU exports a cpumask in /sys/devices/power/cpumask. It
-is used by perf to ensure only one instance of each RAPL event
-is measured per processor socket. Hotplug CPU is also supported.
-
-The perf stat infrastrructure is enhanced to show events
-units. It also applies the scaling factor. As such, perf stat prints
-RAPL events in Joules (and not increments of 0.23 nJ):
-
- # perf stat -a -e power/energy-pkg/,power/energy-cores/,cycles -I 1000 sleep 1000
- #          time             counts   unit events
-     1.000282860               2.51 Joules power/energy-pkg/
-     1.000282860               0.31 Joules power/energy-cores/
-     1.000282860           37765378        cycles
-
-The patch adds a hrtimer to poll the counters given that
-they do no interrupt on overflow. Hardware counters are 32-bit
-wide.
-
-In v2, we add the locking necesarry to protect the rapl_pmu
-struct. We also add a description at the top of the file.
-We check for Intel only processor. We improved the data
-layout of the rapl_pmu struct. We also lifted the restriction
-of the number of instances of RAPL counters that can be active
-at the same time. RAPL is free running counters, so ought to be
-able to measure events as many times as necessary in parallel
-via multiple tools. There is never multiplexing among RAPL events.
-
-In v3, we have renamed the event to be more generic power/* instead
-of rapl/*. We have modified perf stat to print the event with the
-unit and scaling factors.
-
-In v4, we integrate the feedback from Jiri and rebase to 3.12-rc7+
-from tip.git.
-
-In v5, we export the full scaling factor to increase prescision.
-In the perf tool, we changed the way the .unit and .scale syfs
-entries are parsed. Thank to Jiri for this contribution on this.
-We also fix a couple of printf() issues with perf stat and units.
-Now, we print no unit symbol when the event has no unit (was ? before).
-Patch is relative to 3.12 from tip.git.
-
-In v6, we fixed a few issues in the perf tool having to do with printing
-of the unit. Works for uncore events now. There is a major restructuring
-of the code in the kernel because the hrtimer needs to be per-cpu and
-not shared per socket because there can be multiple sessions in parallel
-and also because of hotplug CPU. The hotplug cpu code was also updated.
-
-Thanks to all contributors to this patch series: PeterZ, Jiri, Maria,
-Arnaldo, Andi, Ingo.
-
-Supported CPUs: SandyBridge, IvyBridge, Haswell.
+To save space we use a union with hlist_entry as both
+are mutually exclusive (suggested by Jiri Olsa).
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ include/linux/perf_event.h |    5 ++++-
+ kernel/events/core.c       |    1 +
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-Stephane Eranian (4):
-  perf: add active_entry list head to struct perf_event
-  perf stat: add event unit and scale support
-  perf,x86: add Intel RAPL PMU support
-  perf,x86: add RAPL hrtimer support
-
- arch/x86/kernel/cpu/Makefile                |    2 +-
- arch/x86/kernel/cpu/perf_event_intel_rapl.c |  677 +++++++++++++++++++++++++++
- include/linux/perf_event.h                  |    5 +-
- kernel/events/core.c                        |    1 +
- tools/perf/builtin-stat.c                   |  114 +++--
- tools/perf/util/evsel.c                     |    2 +
- tools/perf/util/evsel.h                     |    3 +
- tools/perf/util/parse-events.c              |   28 +-
- tools/perf/util/pmu.c                       |  139 +++++-
- tools/perf/util/pmu.h                       |    3 +-
- 10 files changed, 928 insertions(+), 46 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_rapl.c
-
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 2e069d1..8f4a70f 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -319,7 +319,10 @@ struct perf_event {
+ 	 */
+ 	struct list_head		migrate_entry;
+ 
+-	struct hlist_node		hlist_entry;
++	union {
++		struct hlist_node	hlist_entry;
++		struct list_head	active_entry;
++	};
+ 	int				nr_siblings;
+ 	int				group_flags;
+ 	struct perf_event		*group_leader;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 4dc078d..90dca5c 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6663,6 +6663,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 	INIT_LIST_HEAD(&event->event_entry);
+ 	INIT_LIST_HEAD(&event->sibling_list);
+ 	INIT_LIST_HEAD(&event->rb_entry);
++	INIT_LIST_HEAD(&event->active_entry);
+ 
+ 	init_waitqueue_head(&event->waitq);
+ 	init_irq_work(&event->pending, perf_pending_event);
 -- 
 1.7.9.5
 
