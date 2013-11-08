@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757322Ab3KHMuR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 07:50:17 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:45833 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756837Ab3KHMuO (ORCPT
+	id S1757186Ab3KHMw0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 07:52:26 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:41137 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144Ab3KHMwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 07:50:14 -0500
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH 3/3] mm, memory-failure: fix the typo in me_pagecache_dirty()
-Date: Fri,  8 Nov 2013 20:47:38 +0800
-Message-Id: <1383914858-14533-3-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1383914858-14533-1-git-send-email-zwu.kernel@gmail.com>
-References: <1383914858-14533-1-git-send-email-zwu.kernel@gmail.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110812-0928-0000-0000-0000036C66B4
+	Fri, 8 Nov 2013 07:52:25 -0500
+X-AuditID: 85900ec0-d272ab9000001514-83-527cde853373
+Subject: [PATCH -tip RFC 0/2] kprobes: introduce NOKPROBE_SYMBOL() and
+ prohibit probing on .entry.text
+To: Ingo Molnar <mingo@kernel.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: x86@kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org,
+        "David S. Miller" <davem@davemloft.net>
+Date: Fri, 08 Nov 2013 12:52:13 +0000
+Message-ID: <20131108125213.19972.49271.stgit@kbuild-fedora.novalocal>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Currently the blacklist is maintained by hand in kprobes.c 
+which is separated from the function definition and is hard
+to catch up the kernel update.
+To solve this issue, I've tried to implement new
+NOKPROBE_SYMBOL() macro for making kprobe blacklist at 
+build time. Since the NOKPROBE_SYMBOL() macros can be placed
+right after the function is defined, it is easy to maintain.
+At this moment, I applied the macro only for the symbols
+which is listed in kprobes.c. As we discussed in previous
+thread, if the gcc accepts to introduce new annotation to
+store the function address (and size) at somewhere, we can
+easily move onto that by replacing NOKPROBE_SYMBOL() with
+nokprobe annotation (and just modifying the
+populate_kprobe_blacklist() a bit).
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+This series also includes a change which prohibits probing
+on the address in .entry.text because the code is used for
+very low-level sensitive interrupt/syscall entries. Probing
+such code may cause unexpected result (actually most of
+that area is already in the kprobe blacklist).
+So I've decide to prohibit probing all of them.
+
+Since Ingo wasn't convinced about the idea in the previous
+discussion, I just make this series as RFC series.
+I'd like to ask again with actual implementation and plan.
+
+Thank you,
+
 ---
- mm/memory-failure.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index bf3351b..d8ec181 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -611,7 +611,7 @@ static int me_pagecache_clean(struct page *p, unsigned long pfn)
- }
- 
- /*
-- * Dirty cache page page
-+ * Dirty cache page
-  * Issues: when the error hit a hole page the error is not properly
-  * propagated.
-  */
+Masami Hiramatsu (2):
+      kprobes: Prohibit probing on .entry.text code
+      kprobes: Introduce NOKPROBE_SYMBOL() macro for blacklist
+
+
+ arch/x86/kernel/entry_32.S        |   33 ------------
+ arch/x86/kernel/entry_64.S        |   20 --------
+ arch/x86/kernel/paravirt.c        |    4 ++
+ include/asm-generic/vmlinux.lds.h |    9 +++
+ include/linux/kprobes.h           |   19 +++++++
+ kernel/kprobes.c                  |   98 ++++++++++++++++++-------------------
+ kernel/sched/core.c               |    1 
+ 7 files changed, 80 insertions(+), 104 deletions(-)
+
 -- 
-1.7.6.5
-
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
