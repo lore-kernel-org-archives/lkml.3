@@ -1,85 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab3KHHIM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 02:08:12 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:47800 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab3KHHIL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 02:08:11 -0500
-Date: Fri, 8 Nov 2013 18:07:59 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the userns tree
-Message-Id: <20131108180759.12dab53816900b1b58c1ea1b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__8_Nov_2013_18_07_59_+1100_wNYv58u5cR1bxlPN"
+	id S1753620Ab3KHHJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 02:09:47 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:60350 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752471Ab3KHHJp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 02:09:45 -0500
+Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20131107204626.GA11746@breakpoint.cc>
+Date: Fri, 8 Nov 2013 09:09:37 +0200
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3D6B2CC8-37D0-486B-B06F-FF51B72A0E29@antoniou-consulting.com>
+References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com> <20131106190152.GA8662@breakpoint.cc> <20131106193041.GA26796@roeck-us.net> <20131106203821.GC8662@breakpoint.cc> <20131106211754.GA29300@roeck-us.net> <20131107192558.GA11453@breakpoint.cc> <4F47D5F8-F3C7-45CA-9D88-2D814BDC1BC7@antoniou-consulting.com> <20131107204626.GA11746@breakpoint.cc>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__8_Nov_2013_18_07_59_+1100_wNYv58u5cR1bxlPN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Sebastian,
 
-Hi Eric,
+On Nov 7, 2013, at 10:46 PM, Sebastian Andrzej Siewior wrote:
 
-After merging the userns tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+> On 07.11.13, Pantelis Antoniou wrote:
+>> Hi Sebastian,
+> Hi Pantelis,
+> 
+>> FWIW DT has been ported to x86. And is present on arm/powerpc/mips/arc and possibly
+>> others.
+> 
+> Yes, I know. I am the one that did the work for CE4100, the first one
+> that boots with DT on x86.
+> 
+>> So what are we talking about again? If you care about the non-DT case, why
+>> don't you make a patch about how you could support Guenter's use case on
+>> the x86.
+> 
+> I am only saying that this "hot-plug a device at a non hot-plugagle bus at
+> runtime" is not limited to DT but this solution is. X86 + ACPI is not
+> the only limitation. ARM is (forced) going to ACPI as well as far I
+> know. And this solution is limited to DT. This is what I am pointing
+> out.
+> 
 
-fs/namespace.c: In function 'detach_mounts':
-fs/namespace.c:1340:2: error: implicit declaration of function 'br_write_lo=
-ck' [-Werror=3Dimplicit-function-declaration]
-  br_write_lock(&vfsmount_lock);
-  ^
-fs/namespace.c:1340:17: error: 'vfsmount_lock' undeclared (first use in thi=
-s function)
-  br_write_lock(&vfsmount_lock);
-                 ^
-fs/namespace.c:1340:17: note: each undeclared identifier is reported only o=
-nce for each function it appears in
-fs/namespace.c:1345:2: error: implicit declaration of function 'br_write_un=
-lock' [-Werror=3Dimplicit-function-declaration]
-  br_write_unlock(&vfsmount_lock);
-  ^
+Who is forcing ACPI on ARM? Maybe for ARM64 and server markets but interest
+in ACPI for all the other markets I'd say is nil.
 
-Caused by the interaction between commit d7e58b8abc4f ("vfs: Add a
-function to lazily unmount all mounts from any dentry. v3") from the
-userns tree and commit 84550b9356af ("RCU'd vfsmounts") from the vfs tree.
+A DT limited solution has more reach _today_ that what ACPI _might_ do sometime.
 
-I don't know how to fix this up, so I have just dropped the userns tree
-for today.  I only dropped that tree because it was the latter of the two
-conflicting trees.
+There is a big big world outside of x86.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>> His use case is not uncommon, believe it or not, and x86 would benefit from
+>> something this flexible.
+> 
+> I *think* a more flexible solution would be something like bus_type which is
+> exposed via configfs. It would be attached behind a certain device/bus where
+> the "physical" hotplug interface is. The user would then be able to read the
+> configuration based on whatever information he has and could then create
+> devices he likes at runtime. This wouldn't depend much on the firmware that is
+> used but would require a little more work I think.
+> 
 
---Signature=_Fri__8_Nov_2013_18_07_59_+1100_wNYv58u5cR1bxlPN
-Content-Type: application/pgp-signature
+You might've missed the posting, but the original implementation was using a
+bus (a capebus) and that went over like a lead ballon.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+People use this, and find the concept useful.
 
-iQIcBAEBCAAGBQJSfI3UAAoJEMDTa8Ir7ZwVL9sP/RyIx4Bgz5gVke55WsKNc42T
-SI0qdqOtanceP/3pBjtdA37UAkJD8YZgFZE/k5TU6bNHuG+rnhY9B/oVY+IxNaqX
-vRV0je3ibChGj5SLWEKjMhiJXyBAGutfDSLXwkwHAjF5Yrq8XNBT+h9pBZ1MiDH+
-e/mIvRs2RS0eUpANRRPA2VaVORoHw2DKE09E0UFPuuINy6kLyOjRUoHPQEpX9iZU
-E3faTzOogI5iypiwGLw1ZicmP45Xpqz1islBMjamKcPyVUNzjrwgASzbZ81auHkr
-OEpDmhdxZpmmhIUrD/I4wC3+uoNbEbt7tprVmpEKD6lWrmg94eSQpLZhoFJ/buyG
-K+KccIPrLecOqW3M8lWb+e2lG3ibORhmKi/6Q3kzi1DRv9n8fhGiEXA1uonrxPA7
-6/zJ77hoQS05eqo3/DgIOh3JTs1uPQAXTGrqbn3dewEVBkgUjT2xM1rXFVJ5Gk08
-1TgF+m6+tpQTAj2t8YKEJJK5fhFtAne0hifx99Hj0jr07KOucCXVksCjWhBOB8p9
-Ybn2dDZojQBh8WPUmqAB82U7Wq8oA/Xy3nzUnxXCu/pUj0YVc3doLdOHGDvQ1zmP
-7ZtpJjD3XHUEFlreDeUbdh+VCPoDnyUxU/5v+CqozSTsLnOZqCE0S/YfNlrebfSV
-057F149Gk5aVSaraB/nL
-=78F/
------END PGP SIGNATURE-----
+In a nutshell, sure, there _might_ be better ways to do it, but no-one has
+actually stepped forward and did it better.
 
---Signature=_Fri__8_Nov_2013_18_07_59_+1100_wNYv58u5cR1bxlPN--
+>> Regards
+>> 
+>> -- Pantelis
+> 
+> Sebastian
+
+Regards
+
+-- Pantelis
+
