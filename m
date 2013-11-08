@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932767Ab3KHXrz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 18:47:55 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57494 "EHLO bear.ext.ti.com"
+	id S932783Ab3KHXr5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 18:47:57 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42147 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932353Ab3KHXns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932274Ab3KHXns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Nov 2013 18:43:48 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <tj@kernel.org>, <linux-kernel@vger.kernel.org>
@@ -12,10 +12,10 @@ CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Yinghai Lu <yinghai@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 14/24] mm/lib/swiotlb: Use memblock apis for early memory allocations
-Date: Fri, 8 Nov 2013 18:41:50 -0500
-Message-ID: <1383954120-24368-15-git-send-email-santosh.shilimkar@ti.com>
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: [PATCH 19/24] mm/percpu: Use memblock apis for early memory allocations
+Date: Fri, 8 Nov 2013 18:41:55 -0500
+Message-ID: <1383954120-24368-20-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
@@ -37,88 +37,146 @@ bootmem APIs.
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
 
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- lib/swiotlb.c |   36 +++++++++++++++++++++---------------
- 1 file changed, 21 insertions(+), 15 deletions(-)
+ mm/percpu.c |   41 +++++++++++++++++++++++++----------------
+ 1 file changed, 25 insertions(+), 16 deletions(-)
 
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 4e8686c..78ac01a 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -169,8 +169,9 @@ int __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
- 	/*
- 	 * Get the overflow emergency buffer
- 	 */
--	v_overflow_buffer = alloc_bootmem_low_pages_nopanic(
--						PAGE_ALIGN(io_tlb_overflow));
-+	v_overflow_buffer = memblock_virt_alloc_align_nopanic(
-+						PAGE_ALIGN(io_tlb_overflow),
-+						PAGE_SIZE);
- 	if (!v_overflow_buffer)
- 		return -ENOMEM;
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 8c8e08f..de68457 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1063,7 +1063,7 @@ struct pcpu_alloc_info * __init pcpu_alloc_alloc_info(int nr_groups,
+ 			  __alignof__(ai->groups[0].cpu_map[0]));
+ 	ai_size = base_size + nr_units * sizeof(ai->groups[0].cpu_map[0]);
  
-@@ -181,11 +182,15 @@ int __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
- 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
- 	 * between io_tlb_start and io_tlb_end.
- 	 */
--	io_tlb_list = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
-+	io_tlb_list = memblock_virt_alloc_align(
-+				PAGE_ALIGN(io_tlb_nslabs * sizeof(int)),
-+				PAGE_SIZE);
- 	for (i = 0; i < io_tlb_nslabs; i++)
-  		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
- 	io_tlb_index = 0;
--	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
-+	io_tlb_orig_addr = memblock_virt_alloc_align(
-+				PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)),
-+				PAGE_SIZE);
- 
- 	if (verbose)
- 		swiotlb_print_info();
-@@ -212,13 +217,14 @@ swiotlb_init(int verbose)
- 	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
- 
- 	/* Get IO TLB memory from the low pages */
--	vstart = alloc_bootmem_low_pages_nopanic(PAGE_ALIGN(bytes));
-+	vstart = memblock_virt_alloc_align_nopanic(PAGE_ALIGN(bytes),
-+						   PAGE_SIZE);
- 	if (vstart && !swiotlb_init_with_tbl(vstart, io_tlb_nslabs, verbose))
- 		return;
- 
- 	if (io_tlb_start)
--		free_bootmem(io_tlb_start,
--				 PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
-+		memblock_free_early(io_tlb_start,
-+				    PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
- 	pr_warn("Cannot allocate SWIOTLB buffer");
- 	no_iotlb_memory = true;
+-	ptr = alloc_bootmem_nopanic(PFN_ALIGN(ai_size));
++	ptr = memblock_virt_alloc_nopanic(PFN_ALIGN(ai_size));
+ 	if (!ptr)
+ 		return NULL;
+ 	ai = ptr;
+@@ -1088,7 +1088,7 @@ struct pcpu_alloc_info * __init pcpu_alloc_alloc_info(int nr_groups,
+  */
+ void __init pcpu_free_alloc_info(struct pcpu_alloc_info *ai)
+ {
+-	free_bootmem(__pa(ai), ai->__ai_size);
++	memblock_free_early(__pa(ai), ai->__ai_size);
  }
-@@ -354,14 +360,14 @@ void __init swiotlb_free(void)
- 		free_pages((unsigned long)phys_to_virt(io_tlb_start),
- 			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
- 	} else {
--		free_bootmem_late(io_tlb_overflow_buffer,
--				  PAGE_ALIGN(io_tlb_overflow));
--		free_bootmem_late(__pa(io_tlb_orig_addr),
--				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
--		free_bootmem_late(__pa(io_tlb_list),
--				  PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
--		free_bootmem_late(io_tlb_start,
--				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
-+		memblock_free_late(io_tlb_overflow_buffer,
-+				   PAGE_ALIGN(io_tlb_overflow));
-+		memblock_free_late(__pa(io_tlb_orig_addr),
-+				   PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
-+		memblock_free_late(__pa(io_tlb_list),
-+				   PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
-+		memblock_free_late(io_tlb_start,
-+				   PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
- 	}
- 	io_tlb_nslabs = 0;
+ 
+ /**
+@@ -1246,10 +1246,12 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	PCPU_SETUP_BUG_ON(pcpu_verify_alloc_info(ai) < 0);
+ 
+ 	/* process group information and build config tables accordingly */
+-	group_offsets = alloc_bootmem(ai->nr_groups * sizeof(group_offsets[0]));
+-	group_sizes = alloc_bootmem(ai->nr_groups * sizeof(group_sizes[0]));
+-	unit_map = alloc_bootmem(nr_cpu_ids * sizeof(unit_map[0]));
+-	unit_off = alloc_bootmem(nr_cpu_ids * sizeof(unit_off[0]));
++	group_offsets = memblock_virt_alloc(ai->nr_groups *
++					     sizeof(group_offsets[0]));
++	group_sizes = memblock_virt_alloc(ai->nr_groups *
++					   sizeof(group_sizes[0]));
++	unit_map = memblock_virt_alloc(nr_cpu_ids * sizeof(unit_map[0]));
++	unit_off = memblock_virt_alloc(nr_cpu_ids * sizeof(unit_off[0]));
+ 
+ 	for (cpu = 0; cpu < nr_cpu_ids; cpu++)
+ 		unit_map[cpu] = UINT_MAX;
+@@ -1311,7 +1313,7 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	 * empty chunks.
+ 	 */
+ 	pcpu_nr_slots = __pcpu_size_to_slot(pcpu_unit_size) + 2;
+-	pcpu_slot = alloc_bootmem(pcpu_nr_slots * sizeof(pcpu_slot[0]));
++	pcpu_slot = memblock_virt_alloc(pcpu_nr_slots * sizeof(pcpu_slot[0]));
+ 	for (i = 0; i < pcpu_nr_slots; i++)
+ 		INIT_LIST_HEAD(&pcpu_slot[i]);
+ 
+@@ -1322,7 +1324,7 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	 * covers static area + reserved area (mostly used for module
+ 	 * static percpu allocation).
+ 	 */
+-	schunk = alloc_bootmem(pcpu_chunk_struct_size);
++	schunk = memblock_virt_alloc(pcpu_chunk_struct_size);
+ 	INIT_LIST_HEAD(&schunk->list);
+ 	schunk->base_addr = base_addr;
+ 	schunk->map = smap;
+@@ -1346,7 +1348,7 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 
+ 	/* init dynamic chunk if necessary */
+ 	if (dyn_size) {
+-		dchunk = alloc_bootmem(pcpu_chunk_struct_size);
++		dchunk = memblock_virt_alloc(pcpu_chunk_struct_size);
+ 		INIT_LIST_HEAD(&dchunk->list);
+ 		dchunk->base_addr = base_addr;
+ 		dchunk->map = dmap;
+@@ -1626,7 +1628,7 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
+ 	size_sum = ai->static_size + ai->reserved_size + ai->dyn_size;
+ 	areas_size = PFN_ALIGN(ai->nr_groups * sizeof(void *));
+ 
+-	areas = alloc_bootmem_nopanic(areas_size);
++	areas = memblock_virt_alloc_nopanic(areas_size);
+ 	if (!areas) {
+ 		rc = -ENOMEM;
+ 		goto out_free;
+@@ -1711,7 +1713,7 @@ out_free_areas:
+ out_free:
+ 	pcpu_free_alloc_info(ai);
+ 	if (areas)
+-		free_bootmem(__pa(areas), areas_size);
++		memblock_free_early(__pa(areas), areas_size);
+ 	return rc;
  }
+ #endif /* BUILD_EMBED_FIRST_CHUNK */
+@@ -1759,7 +1761,7 @@ int __init pcpu_page_first_chunk(size_t reserved_size,
+ 	/* unaligned allocations can't be freed, round up to page size */
+ 	pages_size = PFN_ALIGN(unit_pages * num_possible_cpus() *
+ 			       sizeof(pages[0]));
+-	pages = alloc_bootmem(pages_size);
++	pages = memblock_virt_alloc(pages_size);
+ 
+ 	/* allocate pages */
+ 	j = 0;
+@@ -1822,7 +1824,7 @@ enomem:
+ 		free_fn(page_address(pages[j]), PAGE_SIZE);
+ 	rc = -ENOMEM;
+ out_free_ar:
+-	free_bootmem(__pa(pages), pages_size);
++	memblock_free_early(__pa(pages), pages_size);
+ 	pcpu_free_alloc_info(ai);
+ 	return rc;
+ }
+@@ -1847,12 +1849,15 @@ EXPORT_SYMBOL(__per_cpu_offset);
+ static void * __init pcpu_dfl_fc_alloc(unsigned int cpu, size_t size,
+ 				       size_t align)
+ {
+-	return __alloc_bootmem_nopanic(size, align, __pa(MAX_DMA_ADDRESS));
++	return  memblock_virt_alloc_try_nid_nopanic(size, align,
++						     __pa(MAX_DMA_ADDRESS),
++						     BOOTMEM_ALLOC_ACCESSIBLE,
++						     MAX_NUMNODES);
+ }
+ 
+ static void __init pcpu_dfl_fc_free(void *ptr, size_t size)
+ {
+-	free_bootmem(__pa(ptr), size);
++	memblock_free_early(__pa(ptr), size);
+ }
+ 
+ void __init setup_per_cpu_areas(void)
+@@ -1895,7 +1900,11 @@ void __init setup_per_cpu_areas(void)
+ 	void *fc;
+ 
+ 	ai = pcpu_alloc_alloc_info(1, 1);
+-	fc = __alloc_bootmem(unit_size, PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
++	fc = memblock_virt_alloc_try_nid_nopanic(unit_size,
++						 PAGE_SIZE,
++						 __pa(MAX_DMA_ADDRESS),
++						 BOOTMEM_ALLOC_ACCESSIBLE,
++						 MAX_NUMNODES);
+ 	if (!ai || !fc)
+ 		panic("Failed to allocate memory for percpu areas.");
+ 	/* kmemleak tracks the percpu allocations separately */
 -- 
 1.7.9.5
 
