@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757042Ab3KHN7W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 08:59:22 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:59651 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab3KHN7U (ORCPT
+	id S1757312Ab3KHN7a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 08:59:30 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:41802 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab3KHN7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 08:59:20 -0500
+	Fri, 8 Nov 2013 08:59:23 -0500
+Date: Fri, 8 Nov 2013 14:59:18 +0100
+From: Robert Richter <rric@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org
+Subject: Re: [PATCH] edac, highbank: remove dependency on ARCH_HIGHBANK
+Message-ID: <20131108135918.GO7429@rric.localhost>
+References: <1383708352-19527-1-git-send-email-robherring2@gmail.com>
+ <20131106142025.GB16072@x1.alien8.de>
+ <527A6B08.5020302@gmail.com>
+ <20131106165437.GA21870@x1.alien8.de>
+ <527A79B5.4070507@gmail.com>
+ <20131107122716.GC27116@x1.alien8.de>
+ <527B943E.9050603@gmail.com>
+ <20131107133329.GJ27116@x1.alien8.de>
 MIME-Version: 1.0
-In-Reply-To: <20131108123619.GC31551@ulmo.nvidia.com>
-References: <1381145866-445-1-git-send-email-treding@nvidia.com>
- <CAH9NwWfDRiQ3FegMyx1YBQ5jUgPvc7h2cxd3KgyeDdnsq6UgMw@mail.gmail.com> <20131108123619.GC31551@ulmo.nvidia.com>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Fri, 8 Nov 2013 14:58:56 +0100
-Message-ID: <CAH9NwWc0AjmnXX1uen1z1bX5Z0pRyYrGY9a949L6=ZAF6YeL8w@mail.gmail.com>
-Subject: Re: [PATCH v2 00/12] pwm-backlight: Add GPIO and power supply support
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Marek Vasut <marek.vasut@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131107133329.GJ27116@x1.alien8.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/8 Thierry Reding <thierry.reding@gmail.com>:
-> On Thu, Nov 07, 2013 at 01:00:04PM +0100, Christian Gmeiner wrote:
->> Hi Thierry
->>
->>
->> This series adds the ability to specify a GPIO and a power supply to
->> > enable a backlight.
->> >
->>
->> Whats the state of this patch set? I am looking for this kind of
->> functionality for a pwm based
->> backlight on a devicetree only imx6 device.
->
-> Those patches (except the one that adds the backlight-boot-off property)
-> will be part of my pull request for 3.13.
->
+On 07.11.13 14:33:29, Borislav Petkov wrote:
+> On Thu, Nov 07, 2013 at 07:23:10AM -0600, Rob Herring wrote:
+> > See, we are benefiting already.
+> 
+> You can catch this when building on arm64, i.e. basically one of the
+> target architectures for which the driver is meant for.
 
-That are really good news.. will try this patch set on a 3.12 kernel.
+Can't we just take
 
---
-Christian Gmeiner, MSc
+ depends on EDAC_MM_EDAC && (ARCH_MULTI_V7 || ARM64)
+
+as a first step to increase build coverage?
+
+There is also COMPILE_TEST that could be used which is exactly what we
+want here: "Compile also drivers which will not load":
+
+ depends on EDAC_MM_EDAC && (ARCH_MULTI_V7 || ARM64 || COMPILE_TEST)
+
+This should enable it with allmodconfig.
+
+-Robert
