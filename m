@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab3KHNeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 08:34:04 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56540 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752933Ab3KHNeC (ORCPT
+	id S1756620Ab3KHNhc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 08:37:32 -0500
+Received: from smtprelay0202.b.hostedemail.com ([64.98.42.202]:52044 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752626Ab3KHNhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 08:34:02 -0500
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: cw00.choi@samsung.com
-Cc: myungjoo.ham@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH 3/4] extcon: arizona: Fix race with microphone detection and removal
-Date: Fri,  8 Nov 2013 13:19:42 +0000
-Message-Id: <1383916783-17921-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Fri, 8 Nov 2013 08:37:31 -0500
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:,RULES_HIT:41:152:355:379:582:973:988:989:1152:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2692:2741:3138:3139:3140:3141:3142:3352:3421:3622:3865:3866:3867:3870:3871:3872:3874:4250:4361:5007:6119:6120:6261:6691:7901:7903:7996:9108:10004:10400:10450:10455:10848:11658:11914:12517:12519:12679:13069:13071:13161:13229:13311:13357:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: men44_7ba66bc786919
+X-Filterd-Recvd-Size: 1667
+Date: Fri, 8 Nov 2013 13:37:29 +0000 (UTC)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <1600311353.38386.1383917849694.JavaMail.mail@webmail14>
+Subject: Not being able to reread the partition table - why is Linux so 90x?
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.146.168.227]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The microphone detection code is run as delayed work to provide
-additional debounce, it is possible that the jack could have been
-removed by the time we process the microphone detection. Turn this
-case into a no op.
+Hello,
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/extcon/extcon-arizona.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+I wonder why in 2013 I still cannot modify _unused_ partitions on the fly,
+yeah, the Internet is full of:
 
-diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index cce24de..0d70bf6 100644
---- a/drivers/extcon/extcon-arizona.c
-+++ b/drivers/extcon/extcon-arizona.c
-@@ -782,6 +782,19 @@ static void arizona_micd_detect(struct work_struct *work)
- 
- 	mutex_lock(&info->lock);
- 
-+	/* If the cable was removed while measuring ignore the result */
-+	ret = extcon_get_cable_state_(&info->edev, ARIZONA_CABLE_MECHANICAL);
-+	if (ret < 0) {
-+		dev_err(arizona->dev, "Failed to check cable state: %d\n",
-+				ret);
-+		mutex_unlock(&info->lock);
-+		return;
-+	} else if (!ret) {
-+		dev_dbg(arizona->dev, "Ignoring MICDET for removed cable\n");
-+		mutex_unlock(&info->lock);
-+		return;
-+	}
-+
- 	for (i = 0; i < 10 && !(val & MICD_LVL_0_TO_8); i++) {
- 		ret = regmap_read(arizona->regmap, ARIZONA_MIC_DETECT_3, &val);
- 		if (ret != 0) {
--- 
-1.7.2.5
+# hdparm -z /dev/sda
 
+/dev/sda:
+ re-reading partition table
+ BLKRRPART failed: Device or resource busy
+
+# fdisk (after adding a new partition using unused space on my hdd)
+...
+Command (m for help): w
+
+The partition table has been altered.
+Calling ioctl() to re-read partition table.
+Re-reading the partition table failed.: Device or resource busy
+
+SCSI rescan command doesn't work too.
+
+I do understand that the Linux kernel doesn't have any form of invoke() but
+then it prevents me from altering the partitions which are not used - it's
+100% counter intuitive. Windows, for instance, allows to modify even a
+system partition on the fly since 2006, Linux doesn't allow to add partitions
+without rebooting the system.
+
+Could anyone elaborate, please?
+
+Best regards,
+
+Artem
