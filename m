@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab3KHLdJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 06:33:09 -0500
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:46713
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757191Ab3KHLdE (ORCPT
+	id S1755794Ab3KHLhb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 06:37:31 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62605 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642Ab3KHLh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 06:33:04 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-From: Nicolin Chen <b42378@freescale.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <s.hauer@pengutronix.de>, <timur@tabi.org>, <shawn.guo@linaro.org>,
-        <broonie@kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
-        <ijc+devicetree@hellion.org.uk>
-Subject: [PATCH v5 2/4] dma: imx-sdma: Add new dma type for ssi dual fifo script
-Date: Fri, 8 Nov 2013 19:32:52 +0800
-Message-ID: <ea134688ce580e1159a22a9c5666b3e568f23963.1383910029.git.b42378@freescale.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1383910029.git.b42378@freescale.com>
-References: <cover.1383910029.git.b42378@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Fri, 8 Nov 2013 06:37:29 -0500
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
+        lee.jones@linaro.org, rob@landley.net, sachin.kamat@linaro.org
+Subject: [PATCH 1/1] Documentation/mfd: Update s2mps11.txt
+Date: Fri,  8 Nov 2013 17:05:42 +0530
+Message-Id: <1383910542-19349-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new DMA_TYPE for SSI dual FIFO script, included
-in SDMA firmware version 2. This script would allow SSI use dual
-fifo mode to transimit/receive data without occasional hardware
-underrun/overrun.
+Updated the number of LDOs and BUCKs as per the user manual.
+Fixed trivial typos to improve readability.
 
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 ---
- Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt | 1 +
- drivers/dma/imx-sdma.c                                 | 4 ++++
- include/linux/platform_data/dma-imx.h                  | 1 +
- 3 files changed, 6 insertions(+)
+ Documentation/devicetree/bindings/mfd/s2mps11.txt |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
-index 4fa814d..68b83ec 100644
---- a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
-+++ b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
-@@ -42,6 +42,7 @@ The full ID of peripheral types can be found below.
- 	19	IPU Memory
- 	20	ASRC
- 	21	ESAI
-+	22	SSI Dual FIFO	(needs firmware ver >= 2)
+diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+index c9332c626021..78a840d7510d 100644
+--- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
++++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+@@ -1,10 +1,10 @@
  
- The third cell specifies the transfer priority as below.
+ * Samsung S2MPS11 Voltage and Current Regulator
  
-diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index c7ece8d..efaa9a9 100644
---- a/drivers/dma/imx-sdma.c
-+++ b/drivers/dma/imx-sdma.c
-@@ -725,6 +725,10 @@ static void sdma_get_pc(struct sdma_channel *sdmac,
- 		per_2_emi = sdma->script_addrs->app_2_mcu_addr;
- 		emi_2_per = sdma->script_addrs->mcu_2_app_addr;
- 		break;
-+	case IMX_DMATYPE_SSI_DUAL:
-+		per_2_emi = sdma->script_addrs->ssish_2_mcu_addr;
-+		emi_2_per = sdma->script_addrs->mcu_2_ssish_addr;
-+		break;
- 	case IMX_DMATYPE_SSI_SP:
- 	case IMX_DMATYPE_MMC:
- 	case IMX_DMATYPE_SDHC:
-diff --git a/include/linux/platform_data/dma-imx.h b/include/linux/platform_data/dma-imx.h
-index beac6b8..bcbc6c3 100644
---- a/include/linux/platform_data/dma-imx.h
-+++ b/include/linux/platform_data/dma-imx.h
-@@ -39,6 +39,7 @@ enum sdma_peripheral_type {
- 	IMX_DMATYPE_IPU_MEMORY,	/* IPU Memory */
- 	IMX_DMATYPE_ASRC,	/* ASRC */
- 	IMX_DMATYPE_ESAI,	/* ESAI */
-+	IMX_DMATYPE_SSI_DUAL,	/* SSI Dual FIFO */
- };
+-The Samsung S2MP211 is a multi-function device which includes voltage and
++The Samsung S2MPS11 is a multi-function device which includes voltage and
+ current regulators, RTC, charger controller and other sub-blocks. It is
+-interfaced to the host controller using a I2C interface. Each sub-block is
+-addressed by the host system using different I2C slave address.
++interfaced to the host controller using an I2C interface. Each sub-block is
++addressed by the host system using different I2C slave addresses.
  
- enum imx_dma_prio {
+ Required properties:
+ - compatible: Should be "samsung,s2mps11-pmic".
+@@ -43,7 +43,8 @@ sub-node should be of the format as listed below.
+ 
+  BUCK[2/3/4/6] supports disabling ramp delay on hardware, so explictly
+  regulator-ramp-delay = <0> can be used for them to disable ramp delay.
+- In absence of regulator-ramp-delay property, default ramp delay will be used.
++ In the absence of the regulator-ramp-delay property, the default ramp
++ delay will be used.
+ 
+ NOTE: Some BUCKs share the ramp rate setting i.e. same ramp value will be set
+ for a particular group of BUCKs. So provide same regulator-ramp-delay<value>.
+@@ -58,10 +59,10 @@ supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
+ as per the datasheet of s2mps11.
+ 
+ 	- LDOn
+-		  - valid values for n are 1 to 28
++		  - valid values for n are 1 to 38
+ 		  - Example: LDO0, LD01, LDO28
+ 	- BUCKn
+-		  - valid values for n are 1 to 9.
++		  - valid values for n are 1 to 10.
+ 		  - Example: BUCK1, BUCK2, BUCK9
+ 
+ Example:
 -- 
-1.8.4
-
+1.7.9.5
 
