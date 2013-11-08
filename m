@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690Ab3KHBe3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 20:34:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59732 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752781Ab3KHBeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 20:34:25 -0500
-Date: Fri, 8 Nov 2013 09:33:30 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Baoquan He <bhe@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mwhitehe@redhat.com, x86@kernel.org,
-        chaowang@redhat.com, kexec@lists.infradead.org,
-        davej@fedoraproject.org, mingo@redhat.com, holt@sgi.com, hpa@zytor.com,
-        rmk+kernel@arm.linux.org.uk, tglx@linutronix.de,
-        akpm@linux-foundation.org, vgoyal@redhat.com, trenn@suse.de,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] x86: make reboot task only run on the appropriate
- processor
-Message-ID: <20131108013330.GA4684@dhcp-16-126.nay.redhat.com>
-References: <1383642967-12595-1-git-send-email-bhe@redhat.com>
+	id S1755610Ab3KHBnm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 20:43:42 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:46333 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab3KHBnj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 20:43:39 -0500
+X-Auth-Info: ug53rtPAS67Cxz2uEb/61izCW06h8oVgfXxPhGJqD6A=
+From: Marek Vasut <marex@denx.de>
+To: Dmitry Artamonow <mad_soft@inbox.lv>
+Subject: Re: [PATCH] ARM: pxa/colibri: fix build with CONFIG_USB_OHCI_HCD=y
+Date: Fri, 8 Nov 2013 02:43:33 +0100
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>
+References: <1383835013-22215-1-git-send-email-mad_soft@inbox.lv>
+In-Reply-To: <1383835013-22215-1-git-send-email-mad_soft@inbox.lv>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383642967-12595-1-git-send-email-bhe@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201311080243.33269.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/13 at 05:16pm, Baoquan He wrote:
-> Currently system always reboot after below message when execute "kexec -e".
+Dear Dmitry Artamonow,
+
+> Fix following build failure observed when support for
+> OHCI host controller is enabled.
 > 
-> [    0.572119] smpboot: Booting Node   0, Processors  #   1 OK
+>   CC      arch/arm/mach-pxa/colibri-evalboard.o
+> arch/arm/mach-pxa/colibri-evalboard.c: In function 'colibri_ohci_init':
+> arch/arm/mach-pxa/colibri-evalboard.c:68: error: implicit declaration of
+> function 'IOMEM' make[1]: *** [arch/arm/mach-pxa/colibri-evalboard.o]
+> Error 1
+> make: *** [arch/arm/mach-pxa] Error 2
 > 
-> In commit 1b3a5d02ee070c8f9943333b9b6370f486601e0f, reboot= handling was
-> moved to kerne/reboot.c. However, the code to migrate current thread to
-> reboot cpu was removed. That cause this incorrect kexec behavior.
-> 
-> Now add that code block back.
+> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.lv>
 
-quote a mail from Thomas Renninger <trenn@suse.de>:
-Answer his questions here.
+Acked-by: Marek Vasut <marex@denx.de>
 
-> > For the smp boot issue I think there's nothing to do with dracut.
-> >
-> > Can you try below patch?
-> > https://lkml.org/lkml/2013/11/5/88
->
-> That seem to have helped, thanks!
->
-> Feel free to add:
->
-> Tested-by: trenn@suse.de
->
-> The problem existed in 3.11 already?
-> I had the problem with a 3.11 kernel and tried a
-> 3.12 kernel with this patch now.
-
-It's a regression between 3.10 ~ 3.11
-
->
-> It would be great if:
-> Cc: stable@vger.kernel.org
-> is added as well then.
->
-
-I also like it to be in stable.
-
-Thanks
-Dave
+Best regards,
+Marek Vasut
