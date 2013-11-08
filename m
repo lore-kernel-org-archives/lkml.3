@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066Ab3KHKVF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 05:21:05 -0500
-Received: from mga14.intel.com ([143.182.124.37]:41559 "EHLO mga14.intel.com"
+	id S1757130Ab3KHKVS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 05:21:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36843 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756674Ab3KHKVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 05:21:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="318666742"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH] perf record: Use correct return type for write()
-Date: Fri,  8 Nov 2013 12:27:50 +0200
-Message-Id: <1383906470-21002-1-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1757086Ab3KHKVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 05:21:15 -0500
+Date: Fri, 8 Nov 2013 11:21:13 +0100
+From: Jan Kara <jack@suse.cz>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
+ too much
+Message-ID: <20131108102113.GB6343@quack.suse.cz>
+References: <1383860919-1883-1-git-send-email-jack@suse.cz>
+ <1383860919-1883-4-git-send-email-jack@suse.cz>
+ <CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
+ <20131107225733.GE2054@quack.suse.cz>
+ <20131107232148.GE28130@localhost.localdomain>
+ <20131107183717.0fc9eb6e@gandalf.local.home>
+ <20131107234647.GG28130@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131107234647.GG28130@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-write() returns a 'ssize_t' not an 'int'.
+On Fri 08-11-13 00:46:49, Frederic Weisbecker wrote:
+> On Thu, Nov 07, 2013 at 06:37:17PM -0500, Steven Rostedt wrote:
+> > On Fri, 8 Nov 2013 00:21:51 +0100
+> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > 
+> > > Offloading to a workqueue would be perhaps better, and writing to the serial
+> > > console could then be done with interrupts enabled, preemptible context, etc...
+> > 
+> > Oh God no ;-)  Adding workqueue logic into printk just spells a
+> > nightmare of much more complexity for a critical kernel infrastructure.
+> 
+> But yeah that's scary, that means workqueues itself can't printk that safely.
+> So, you're right after all.
+  Yeah, we've been there (that was actually my initial proposal). But
+Andrew and Steven (rightfully) objected and suggested irq_work should be
+used instead.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/builtin-record.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 15280b5..20df1f3 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -81,7 +81,7 @@ static int write_output(struct perf_record *rec, void *buf, size_t size)
- 	struct perf_data_file *file = &rec->file;
- 
- 	while (size) {
--		int ret = write(file->fd, buf, size);
-+		ssize_t ret = write(file->fd, buf, size);
- 
- 		if (ret < 0) {
- 			pr_err("failed to write perf data, error: %m\n");
+								Honza
 -- 
-1.7.11.7
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
