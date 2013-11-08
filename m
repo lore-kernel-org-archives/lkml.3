@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab3KHBeP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 20:34:15 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:57701 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781Ab3KHBeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 20:34:13 -0500
+	id S1755690Ab3KHBe3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 20:34:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59732 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752781Ab3KHBeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 20:34:25 -0500
+Date: Fri, 8 Nov 2013 09:33:30 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Baoquan He <bhe@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mwhitehe@redhat.com, x86@kernel.org,
+        chaowang@redhat.com, kexec@lists.infradead.org,
+        davej@fedoraproject.org, mingo@redhat.com, holt@sgi.com, hpa@zytor.com,
+        rmk+kernel@arm.linux.org.uk, tglx@linutronix.de,
+        akpm@linux-foundation.org, vgoyal@redhat.com, trenn@suse.de,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] x86: make reboot task only run on the appropriate
+ processor
+Message-ID: <20131108013330.GA4684@dhcp-16-126.nay.redhat.com>
+References: <1383642967-12595-1-git-send-email-bhe@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1383852042-10780-1-git-send-email-sboyd@codeaurora.org>
-References: <1383852042-10780-1-git-send-email-sboyd@codeaurora.org>
-Date: Thu, 7 Nov 2013 19:34:13 -0600
-Message-ID: <CAL_JsqJ9zbJFJePk2FHH8UhrUP2J7fuuiZLb+NhuTovRodqrCA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Use udiv/sdiv for __aeabi_{u}idiv library functions
-From: Rob Herring <robherring2@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383642967-12595-1-git-send-email-bhe@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 7, 2013 at 1:20 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> If we're running on a v7 ARM CPU, detect if the CPU supports the
-> sdiv/udiv instructions and replace the signed and unsigned
-> division library functions with an sdiv/udiv instruction.
+On 11/05/13 at 05:16pm, Baoquan He wrote:
+> Currently system always reboot after below message when execute "kexec -e".
+> 
+> [    0.572119] smpboot: Booting Node   0, Processors  #   1 OK
+> 
+> In commit 1b3a5d02ee070c8f9943333b9b6370f486601e0f, reboot= handling was
+> moved to kerne/reboot.c. However, the code to migrate current thread to
+> reboot cpu was removed. That cause this incorrect kexec behavior.
+> 
+> Now add that code block back.
 
-[snip]
+quote a mail from Thomas Renninger <trenn@suse.de>:
+Answer his questions here.
 
-> diff --git a/arch/arm/lib/Makefile b/arch/arm/lib/Makefile
-> index bd454b0..6ed6496 100644
-> --- a/arch/arm/lib/Makefile
-> +++ b/arch/arm/lib/Makefile
-> @@ -15,6 +15,9 @@ lib-y         := backtrace.o changebit.o csumipv6.o csumpartial.o   \
->                    io-readsb.o io-writesb.o io-readsl.o io-writesl.o  \
->                    call_with_stack.o
+> > For the smp boot issue I think there's nothing to do with dracut.
+> >
+> > Can you try below patch?
+> > https://lkml.org/lkml/2013/11/5/88
 >
-> +lib-$(CONFIG_CPU_V7) += div-v7.o
-> +CFLAGS_div-v7.o := -march=armv7-a
+> That seem to have helped, thanks!
+>
+> Feel free to add:
+>
+> Tested-by: trenn@suse.de
+>
+> The problem existed in 3.11 already?
+> I had the problem with a 3.11 kernel and tried a
+> 3.12 kernel with this patch now.
 
-Won't this fail to build if the compiler doesn't have armv7-a support.
-Perhaps we don't care about compilers that old.
+It's a regression between 3.10 ~ 3.11
 
-Rob
+>
+> It would be great if:
+> Cc: stable@vger.kernel.org
+> is added as well then.
+>
+
+I also like it to be in stable.
+
+Thanks
+Dave
