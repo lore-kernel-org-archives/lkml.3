@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756992Ab3KHK01 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 05:26:27 -0500
-Received: from benson.vm.bytemark.co.uk ([212.110.190.137]:43705 "EHLO
-	benson.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756922Ab3KHK0Z (ORCPT
+	id S1757168Ab3KHK3D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 05:29:03 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:65534 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756967Ab3KHK27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 05:26:25 -0500
-Message-ID: <1383906355.3189.77.camel@kazak.uk.xensource.com>
-Subject: Re: [linux-sunxi] [PATCH 2/2] ARM: sun6i: Add SMP support for the
- Allwinner A31
-From: Ian Campbell <ijc@hellion.org.uk>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-kernel@vger.kernel.org
-Date: Fri, 08 Nov 2013 10:25:55 +0000
-In-Reply-To: <20131108084056.GB26440@lukather>
-References: <1383471013-21695-1-git-send-email-maxime.ripard@free-electrons.com>
-	 <1383471013-21695-3-git-send-email-maxime.ripard@free-electrons.com>
-	 <1383583997.8826.123.camel@kazak.uk.xensource.com>
-	 <20131108084056.GB26440@lukather>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Nov 2013 05:28:59 -0500
+Date: Fri, 8 Nov 2013 10:28:53 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org, rob@landley.net
+Subject: Re: [PATCH 1/1] Documentation/mfd: Fix typos in s2mps11.txt
+Message-ID: <20131108102853.GV30901@lee--X1>
+References: <1383634640-26869-1-git-send-email-sachin.kamat@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1383634640-26869-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-08 at 09:40 +0100, Maxime Ripard wrote:
-> > I'm trying to work out if we can make this work with the requirement
-> > which both Xen and KVM have to enter the kernel in NS-HYP mode.
-> > 
-> > The way this works on e.g. vexpress is (roughly) that u-boot wakes up
-> > the secondary CPUs from the lowlevel firmware and places them into its
-> > own holding pen, which has the same wake up protocol as the firmware so
-> > the kernel can just use the same code. If u-boot never gets to run on
-> > secondary CPUs that isn't going to help much. 
-> > 
-> > My concern is that the sequence here appears to involve resetting the
-> > secondary CPU, which I figure will probably defeat that strategy by
-> > kicking the CPU back into the lowlevel firmware in the reset state,
-> > meaning it can't be done by a u-boot only change.
+As this is only a trivial patch, I'll take it out the hands of the
+already overloaded DT maintainers.
+
+> Fixed trivial typos to improve readability.
 > 
-> I think this is where we're headed for the A20, Marc was interested in
-> doing that,
-
-Marc Zyngier is that?
-
->  since we already have pretty much this in u-boot already,
-> however, this is not the case for the A31.
-
-> As far as I know, the Allwinner's bootloader that we currently use
-> isn't bringing up the secondary CPUs, and we don't have any port of
-> some sort of u-boot yet that we could work on.
-
-Ah, OK. I'd assumed that A20 and A31 (indeed, most sunxi platforms) were
-mostly equivalent as far as u-boot support went.
-
-> So, I guess we don't really have much choice in that case, even though
-> eventually I'd like to have this for the A31 too.
-
-Right, I suppose it makes sense to consider what we want to do on the
-A20 now and keep in mind that A31 may want to follow in the future.
-
-> > Hrm, what to do ... perhaps a DT driven selection between this mechanism
-> > and sev to kick a wfe loop reading the private register?
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/mfd/s2mps11.txt |    9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
 > 
-> We can discuss this whenever we will actually have that choice to
-> make, but maybe a kernel parameter would be better?
+> diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+> index c9332c6..0ff4e65 100644
+> --- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
+> +++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+> @@ -1,10 +1,10 @@
+>  
+>  * Samsung S2MPS11 Voltage and Current Regulator
+>  
+> -The Samsung S2MP211 is a multi-function device which includes voltage and
+> +The Samsung S2MPS11 is a multi-function device which includes voltage and
 
-I don't think so -- u-boot would then have to munge the command line to
-say that it had/had not brought up secondaries. DTB seems more natural
-to me. e.g. on ARMv8 there is already a requirement to provide a per-CPU
-property describing the bringup protocol ("PSCI" and "spintable" are the
-options there).
+Nice catch eagle-eye!
 
-Anyway, once I get to the point of being able to do something I'll
-coordinate with Marc etc and figure out what to do. In the meantime I
-think having the kernel do the bringup (like this patch does) is
-sensible. It's very likely to be what we want to do in the absence of
-any instruction to the contrary (DTB or otherwise) in the future anyway.
+>  current regulators, RTC, charger controller and other sub-blocks. It is
+> -interfaced to the host controller using a I2C interface. Each sub-block is
+> -addressed by the host system using different I2C slave address.
+> +interfaced to the host controller using an I2C interface. Each sub-block is
+> +addressed by the host system using different I2C slave addresses.
+>  
+>  Required properties:
+>  - compatible: Should be "samsung,s2mps11-pmic".
+> @@ -43,7 +43,8 @@ sub-node should be of the format as listed below.
+>  
+>   BUCK[2/3/4/6] supports disabling ramp delay on hardware, so explictly
+>   regulator-ramp-delay = <0> can be used for them to disable ramp delay.
+> - In absence of regulator-ramp-delay property, default ramp delay will be used.
+> + In the absence of regulator-ramp-delay property, default ramp delay will
+> + be used.
 
-Thanks,
+So if we're being pertinacity here, your correction isn't much better.
 
-Ian.
+s/of regulator-ramp-delay property,/of {the,an} regulator-ramp-delay property, the
 
+or 
 
+s/of regulator-ramp-delay property,/of regulator-ramp-delay, the
+
+>  NOTE: Some BUCKs share the ramp rate setting i.e. same ramp value will be set
+>  for a particular group of BUCKs. So provide same regulator-ramp-delay<value>.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
