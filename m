@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab3KHAFY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 19:05:24 -0500
-Received: from dmz-mailsec-scanner-1.mit.edu ([18.9.25.12]:42622 "EHLO
-	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756116Ab3KHAEZ (ORCPT
+	id S1756560Ab3KHAFa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 19:05:30 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:43625 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756503Ab3KHAFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 19:04:25 -0500
-X-AuditID: 1209190c-b7f058e000005fd9-ef-527c295bb891
-Date: Thu, 7 Nov 2013 18:59:21 -0500
-From: Greg Price <price@MIT.EDU>
-To: "Theodore Ts'o" <tytso@MIT.EDU>
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 08/11] random: simplify accounting logic
-Message-ID: <20131107235920.GK16018@ringworld.MIT.EDU>
-References: <cover.1383868558.git.price@mit.edu>
+	Thu, 7 Nov 2013 19:05:21 -0500
+Message-ID: <527C2AA9.9040608@oracle.com>
+Date: Thu, 07 Nov 2013 18:04:57 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1383868558.git.price@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsUixG6nrhutWRNksGWPgsXuOYtZLC7vmsPm
-	wORxZsERdo/Pm+QCmKK4bFJSczLLUov07RK4Mu6fu85ecIerovXVatYGxgscXYycHBICJhKn
-	dy5ghbDFJC7cW8/WxcjFISQwm0li+t7prBDOBkaJ3o6XzBDOT0aJiUePsXQxcnCwCKhIXHtl
-	DNLNJqAg8WP+OmYQW0RAWWLVzE1MIDazgL3E76mT2UFsYQELiRld78HivAJmEtv2t7CA2EIC
-	BhI/p79lgYgLSpyc+YQFoldL4sa/l0wgq5gFpCWW/wM7mlPAUKK9+QrY0aJAF0w5uY1tAqPg
-	LCTds5B0z0LoXsDIvIpRNiW3Sjc3MTOnODVZtzg5MS8vtUjXUC83s0QvNaV0EyModDkleXYw
-	vjmodIhRgINRiYe34EJ1kBBrYllxZe4hRkkOJiVR3onqNUFCfEn5KZUZicUZ8UWlOanFhxgl
-	OJiVRHifKQLleFMSK6tSi/JhUtIcLErivDc57IOEBNITS1KzU1MLUotgsjIcHEoSvDM1gBoF
-	i1LTUyvSMnNKENJMHJwgw3mAhj8BWcxbXJCYW5yZDpE/xagoJc5rBNIsAJLIKM2D64WllleM
-	4kCvCPO+AGnnAaYluO5XQIOZgAaH/KoEGVySiJCSamBc5zc96ZjcBubJf0Szjmg6FijyBJ6O
-	k37WeGv1l/Z5Z2YlXL1hIPAifx+jd8IFia7jDMfCLybqPnXp9w3bfzjxRGyXdcx2syV8ZlMV
-	YvwWfWaudPdQZ26VPCEhxxmoy1bOI/LFtfTe6fB9TDeF++0aNyzqqpZZuyDt4+y2mCkbDlsu
-	XvnmiasSS3FGoqEWc1FxIgAvwR5/CAMAAA==
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>, Olof Johansson <olof@lixom.net>
+Subject: Re: linux-next: manual merge of the block tree with the  tree
+References: <20131101142026.10390b6e3f70de348770c137@canb.auug.org.au> <5273C473.5070803@kernel.dk> <20131102072252.88d2380fa392705b912dbfad@canb.auug.org.au> <52740EB1.2070901@kernel.dk> <527411DD.7050008@oracle.com> <527414DE.9090704@kernel.dk> <52756583.2030808@oracle.com> <527BE7FA.90904@oracle.com> <20131107192545.GA20624@moria.home.lan>
+In-Reply-To: <20131107192545.GA20624@moria.home.lan>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This logic is exactly equivalent to the old logic, but it should
-be easier to see what it's doing.
+On 11/07/2013 01:25 PM, Kent Overstreet wrote:
+> On Thu, Nov 07, 2013 at 01:20:26PM -0600, Dave Kleikamp wrote:
 
-The equivalence depends on one fact from outside this function:
-when 'r->limit' is false, 'reserved' is zero.  (Well, two facts;
-the other is that 'reserved' is never negative.)
+>> I ended up replacing a call to bio_iovec_idx() with __bvec_iter_bvec()
+>> since the former was removed. It's not very elegant, but it works. I'm
+>> open to suggestions on a cleaner fix, but it can wait until one or both
+>> of these trees is merged.
+> 
+> No, that's definitely wrong. Read Documentation/block/biovecs.txt - you
+> need to use either the new bio_iovec() or bio_iovec() iter. I can do the
+> conversion later today.
 
-Which is a good thing, too, because the "entropy_count = reserved"
-line would have had a bug otherwise -- 'reserved' counts bytes and
-'entropy_count' counts bits.  Fortunately that line could only be
-reached if 'r->limit' was false, and zero bytes is zero bits.
+Stephen,
+Can you please drop the aio-direct tree for the time being?
 
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Greg Price <price@mit.edu>
----
- drivers/char/random.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+My stuff is not aligning very well with the immutable biovecs and Kent
+has a different approach in mind. I'll be working with him on a
+replacement that will hopefully be simpler.
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 8824e8d..9e4645e 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -860,12 +860,7 @@ retry:
- 		/* If limited, never pull more than available */
- 		if (r->limit)
- 			nbytes = min_t(size_t, nbytes, entropy_count/8 - reserved);
--
--		if (entropy_count / 8 >= nbytes + reserved) {
--			entropy_count -= nbytes*8;
--		} else {
--			entropy_count = reserved;
--		}
-+		entropy_count = max_t(int, entropy_count - nbytes*8, 0);
- 		if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
- 			goto retry;
- 
--- 
-1.8.3.2
-
+Thanks,
+Shaggy
