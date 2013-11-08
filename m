@@ -1,280 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab3KHJZs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 04:25:48 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:56921 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab3KHJZl (ORCPT
+	id S1756742Ab3KHJ1B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 04:27:01 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:38830 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab3KHJ05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 04:25:41 -0500
-Message-ID: <527CAE10.7000806@gmail.com>
-Date: Fri, 08 Nov 2013 10:25:36 +0100
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 8 Nov 2013 04:26:57 -0500
+Date: Fri, 8 Nov 2013 09:26:51 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] ARM: ux500: Remove ATAG support for SDI (MMC)
+Message-ID: <20131108092651.GT30901@lee--X1>
+References: <1383732348-18576-1-git-send-email-lee.jones@linaro.org>
+ <1383732348-18576-4-git-send-email-lee.jones@linaro.org>
+ <CAPDyKFrd+UHYjZw7=8sf=gmATQ8rPubAVrjWYpbhODak+hOhZQ@mail.gmail.com>
+ <20131107120742.GP30901@lee--X1>
+ <CACRpkdYuBL58Pj8EZmVGGxXk8mrOY=YkVwWC1Ho7SH01442z0Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>, peterz@infradead.org,
-        tglx@linutronix.de
-CC: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com
-Subject: Re: [PATCH 14/14] sched: add sched_dl documentation.
-References: <1383832027-15666-1-git-send-email-juri.lelli@gmail.com> <527BC380.4070300@infradead.org>
-In-Reply-To: <527BC380.4070300@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdYuBL58Pj8EZmVGGxXk8mrOY=YkVwWC1Ho7SH01442z0Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 08 Nov 2013, Linus Walleij wrote:
 
-On 11/07/2013 05:44 PM, Randy Dunlap wrote:
-> Hi,
+> On Thu, Nov 7, 2013 at 1:07 PM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> Just a few minor edits...
+> >> > -struct mmci_platform_data mop500_sdi0_data = {
+> >> > -       .f_max          = 100000000,
+> >> > -       .capabilities   = MMC_CAP_4_BIT_DATA |
+> >> > -                               MMC_CAP_SD_HIGHSPEED |
+> >> > -                               MMC_CAP_MMC_HIGHSPEED |
+> >> > -                               MMC_CAP_ERASE |
+> >> > -                               MMC_CAP_UHS_SDR12 |
+> >> > -                               MMC_CAP_UHS_SDR25,
+> >>
+> >> I guess all the above caps is having binders in DT then?
+> >
+> > They're not there yet, no. But this stuff is not used anymore in
+> > Mainline hence the patch. I attempted to supply bindings for them, but
+> > they were rejected. Would you like to have a stab at that?
 > 
+> Yeah but we basically regressed the ux500 with the patch now
+> queued for v3.13:
+> commit 49c129519a7a8840767321c38d2eaf84a263529b
+> "ARM: ux500: Stop passing MMC's platform data for Device Tree boots"
+> 
+> Which deleted the passing of this non-yet-DT:ed platform
+> data.
+> 
+> Since it's a regression we need to do a fixup patch for the
+> v3.13 series adding it back.
 
-Thanks!
+Okay, do you want me to do that?
 
-Best,
+> Since this patch probably needs to be rewritten on top of
+> that I don't merge this patch as of now.
 
-- Juri
+Sure.
 
-> On 11/07/13 05:47, Juri Lelli wrote:
->> From: Dario Faggioli <raistlin@linux.it>
->>
->> Add in Documentation/scheduler/ some hints about the design
->> choices, the usage and the future possible developments of the
->> sched_dl scheduling class and of the SCHED_DEADLINE policy.
->>
->> Signed-off-by: Dario Faggioli <raistlin@linux.it>
->> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
->> ---
->>  Documentation/scheduler/sched-deadline.txt |  196 ++++++++++++++++++++++++++++
->>  kernel/sched/deadline.c                    |    3 +-
->>  2 files changed, 198 insertions(+), 1 deletion(-)
->>  create mode 100644 Documentation/scheduler/sched-deadline.txt
->>
->> diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
->> new file mode 100644
->> index 0000000..4d1ed52
->> --- /dev/null
->> +++ b/Documentation/scheduler/sched-deadline.txt
->> @@ -0,0 +1,196 @@
->> +			  Deadline Task Scheduling
->> +			  ------------------------
->> +
->> +CONTENTS
->> +========
->> +
->> +0. WARNING
->> +1. Overview
->> +2. Task scheduling
->> +2. The Interface
->> +3. Bandwidth management
->> +  3.1 System-wide settings
->> +  3.2 Task interface
->> +  3.4 Default behavior
->> +4. Tasks CPU affinity
->> +  4.1 SCHED_DEADLINE and cpusets HOWTO
->> +5. Future plans
->> +
->> +
->> +0. WARNING
->> +==========
->> +
->> + Fiddling with these settings can result in an unpredictable or even unstable
->> + system behavior. As for -rt (group) scheduling, it is assumed that root users
->> + know what they're doing.
->> +
->> +
->> +1. Overview
->> +===========
->> +
->> + The SCHED_DEADLINE policy contained inside the sched_dl scheduling class is
->> + basically an implementation of the Earliest Deadline First (EDF) scheduling
->> + algorithm, augmented with a mechanism (called Constant Bandwidth Server, CBS)
->> + that makes it possible to isolate the behavior of tasks between each other.
->> +
->> +
->> +2. Task scheduling
->> +==================
->> +
->> + The typical -deadline task is composed of a computation phase (instance)
->> + which is activated on a periodic or sporadic fashion. The expected (maximum)
->> + duration of such computation is called the task's runtime; the time interval
->> + by which each instance needs to be completed is called the task's relative
->> + deadline. The task's absolute deadline is dynamically calculated as the
->> + time instant a task (or, more properly) activates plus the relative
->> + deadline.
->> +
->> + The EDF[1] algorithm selects the task with the smallest absolute deadline as
->> + the one to be executed first, while the CBS[2,3] ensures that each task runs
->> + for at most its runtime every period, avoiding any interference between
->> + different tasks (bandwidth isolation).
->> + Thanks to this feature, also tasks that do not strictly comply with the
->> + computational model described above can effectively use the new policy.
->> + IOW, there are no limitations on what kind of task can exploit this new
->> + scheduling discipline, even if it must be said that it is particularly
->> + suited for periodic or sporadic tasks that need guarantees on their
->> + timing behavior, e.g., multimedia, streaming, control applications, etc.
->> +
->> + References:
->> +  1 - C. L. Liu and J. W. Layland. Scheduling algorithms for multiprogram-
->> +      ming in a hard-real-time environment. Journal of the Association for
->> +      Computing Machinery, 20(1), 1973.
->> +  2 - L. Abeni , G. Buttazzo. Integrating Multimedia Applications in Hard
->> +      Real-Time Systems. Proceedings of the 19th IEEE Real-time Systems
->> +      Symposium, 1998. http://retis.sssup.it/~giorgio/paps/1998/rtss98-cbs.pdf
->> +  3 - L. Abeni. Server Mechanisms for Multimedia Applications. ReTiS Lab
->> +      Technical Report. http://xoomer.virgilio.it/lucabe72/pubs/tr-98-01.ps
->> +
->> +3. Bandwidth management
->> +=======================
->> +
->> + In order for the -deadline scheduling to be effective and useful, it is
->> + important to have some method to keep the allocation of the available CPU
->> + bandwidth to the tasks under control.
->> + This is usually called "admission control" and if it is not performed at all,
->> + no guarantee can be given on the actual scheduling of the -deadline tasks.
->> +
->> + Since when RT-throttling has been introduced each task group has a bandwidth
->> + associated, calculated as a certain amount of runtime over a period.
->> + Moreover, to make it possible to manipulate such bandwidth, readable/writable
->> + controls have been added to both procfs (for system wide settings) and cgroupfs
->> + (for per-group settings).
->> + Therefore, the same interface is being used for controlling the bandwidth
->> + distrubution to -deadline tasks and task groups, i.e., new controls but with
->> + similar names, equivalent meaning and with the same usage paradigm are added.
->> +
->> + However, more discussion is needed in order to figure out how we want to manage
->> + SCHED_DEADLINE bandwidth at the task group level. Therefore, SCHED_DEADLINE
->> + uses (for now) a less sophisticated, but actually very sensible, mechanism to
->> + ensure that a certain utilization cap is not overcome per each root_domain.
->> +
->> + Another main difference between deadline bandwidth management and RT-throttling
->> + is that -deadline tasks have bandwidth on their own (while -rt ones don't!),
->> + and thus we don't need an higher level throttling mechanism to enforce the
->> + desired bandwidth.
->> +
->> +3.1 System wide settings
->> +------------------------
->> +
->> + The system wide settings are configured under the /proc virtual file system.
->> +
->> + The control knob that is added to the /proc virtual file system is
->> + /proc/sys/kernel/sched_dl_runtime_us. It accepts (if written) and provides (if
->> + read) the new runtime for each CPU in each root_domain. The period control knob
->> + is instead shared with -rt settings (/proc/sys/kernel/sched_rt_period_us). 
->> +
->> + The CPU bandwidth available to -deadline tasks is actually a sub-quota of
->> + the -rt bandwidth. By default 95% of system bandwidth is allocate to -rt tasks;
->> + among this, a 40% quota is reserved for -dl tasks. To have the actual quota a
-> 
-> s/among/within/
-> 
->> + simple multiplication is needed: .95 * .40 = .38 (38% of system bandwidth for
->> + deadline tasks).
->> +
->> + This means that, for a root_domain comprising M CPUs, -deadline tasks
->> + can be created until the sum of their bandwidths stay below:
-> 
->                    while                             stays
-> 
->> +
->> +   M * (sched_dl_runtime_us * rt_bw)
->> +
->> + It is also possible to disable this bandwidth management logic, and
->> + be thus free of oversubscribing the system up to any arbitrary level.
->> + This is done by writing -1 in /proc/sys/kernel/sched_dl_runtime_us or
->> + in /proc/sys/kernel/sched_rt_runtime_us.
->> +
->> +
->> +3.2 Task interface
->> +------------------
->> +
->> + Specifying a periodic/sporadic task that executes for a given amount of
->> + runtime at each instance, and that is scheduled according to the urgency of
->> + its own timing constraints needs, in general, a way of declaring:
->> +  - a (maximum/typical) instance execution time,
->> +  - a minimum interval between consecutive instances,
->> +  - a time constraint by which each instance must be completed.
->> +
->> + Therefore:
->> +  * a new struct sched_param2, containing all the necessary fields is
->> +    provided;
->> +  * the new scheduling related syscalls that manipulate it, i.e.,
->> +    sched_setscheduler2(), sched_setparam2() and sched_getparam2()
->> +    are implemented.
->> +
->> +
->> +3.3 Default behavior
->> +---------------------
->> +
->> +The default value for SCHED_DEADLINE bandwidth is to have dl_runtime equal to
->> +40000. Being rt_period equal to 1000000, by default, it means that -deadline
-> 
->           With rt_period equal to 1000000,
-> 
->> +tasks can use at most 40%, multiplied by the number of CPUs that compose the
->> +root_domain, for each root_domain.
->> +
->> +A -deadline task cannot fork.
->> +
->> +4. Tasks CPU affinity
->> +=====================
->> +
->> +-deadline tasks cannot have an affinity mask smaller that the entire
->> +root_domain they are created on. However, affinities can be specified
->> +through the cpuset facility (Documentation/cgroups/cpusets.txt).
->> +
->> +4.1 SCHED_DEADLINE and cpusets HOWTO
->> +------------------------------------
->> +
->> +An example of a simple configuration (pin a -deadline task to CPU0)
->> +follows (rt-app is used to create a -deadline task).
->> +
->> +mkdir /dev/cpuset
->> +mount -t cgroup -o cpuset cpuset /dev/cpuset
->> +cd /dev/cpuset
->> +mkdir cpu0
->> +echo 0 > cpu0/cpuset.cpus
->> +echo 0 > cpu0/cpuset.mems
->> +echo 1 > cpuset.cpu_exclusive
->> +echo 0 > cpuset.sched_load_balance
->> +echo 1 > cpu0/cpuset.cpu_exclusive
->> +echo 1 > cpu0/cpuset.mem_exclusive
->> +echo $$ > cpu0/tasks
->> +rt-app -t 100000:10000:d:0 -D5 (it is now actually superfluous to specify
->> +task affinity)
->> +
->> +5. Future plans
->> +===============
->> +
->> +Still missing:
->> +
->> + - refinements to deadline inheritance, especially regarding the possibility
->> +   of retaining bandwidth isolation among non-interacting tasks. This is
->> +   being studied from both theoretical and practical point of views, and
-> 
->                                                         points of view,
-> 
->> +   hopefully we should be able to produce some demonstrative code soon;
->> + - (c)group based bandwidth management, and maybe scheduling;
->> + - access control for non-root users (and related security concerns to
->> +   address), which is the best way to allow unprivileged use of the mechanisms
->> +   and how to prevent non-root users "cheat" the system?
->> +
->> +As already discussed, we are planning also to merge this work with the EDF
->> +throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
->> +the preliminary phases of the merge and we really seek feedback that would
->> +help us decide on the direction it should take.
-> 
-> 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
