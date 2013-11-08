@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758131Ab3KHTdT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 14:33:19 -0500
-Received: from smtprelay0185.hostedemail.com ([216.40.44.185]:60568 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757474Ab3KHTdR (ORCPT
+	id S1758152Ab3KHTe3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 14:34:29 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:58902 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758134Ab3KHTe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 14:33:17 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2198:2199:2200:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:4321:4362:5007:7652:8957:9108:10004:10400:10848:11026:11232:11658:11914:12050:12296:12517:12519:12740:13069:13311:13357:13869,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: shoe66_1c652379f9e42
-X-Filterd-Recvd-Size: 2955
-Message-ID: <1383939193.2639.39.camel@joe-AO722>
-Subject: Re: [PATCH v2 2/2] x86: add prefetching to do_csum
-From: Joe Perches <joe@perches.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Date: Fri, 08 Nov 2013 11:33:13 -0800
-In-Reply-To: <20131108190136.GB16052@hmsreliant.think-freely.org>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
-	 <1383751399-10298-1-git-send-email-nhorman@tuxdriver.com>
-	 <1383751399-10298-3-git-send-email-nhorman@tuxdriver.com>
-	 <20131106153429.GA26336@redhat.com>
-	 <20131106155445.GB6357@neilslaptop.think-freely.org>
-	 <1383758363.7940.19.camel@joe-AO722>
-	 <20131108190136.GB16052@hmsreliant.think-freely.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Nov 2013 14:34:27 -0500
+Date: Fri, 8 Nov 2013 11:34:24 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Ben Myers <bpm@sgi.com>
+Cc: Ric Wheeler <rwheeler@redhat.com>, elder@kernel.org,
+        Mark Tinguely <tinguely@sgi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: XFS leadership and a new co-maintainer candidate
+Message-ID: <20131108193424.GA11052@infradead.org>
+References: <20131107220208.GY1935@sgi.com>
+ <527C0F64.3010906@sgi.com>
+ <527C4B27.6020205@redhat.com>
+ <527CC50D.4060905@redhat.com>
+ <20131108180337.GO10553@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131108180337.GO10553@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-08 at 14:01 -0500, Neil Horman wrote:
-> On Wed, Nov 06, 2013 at 09:19:23AM -0800, Joe Perches wrote:
-> > On Wed, 2013-11-06 at 10:54 -0500, Neil Horman wrote:
-> > > On Wed, Nov 06, 2013 at 10:34:29AM -0500, Dave Jones wrote:
-> > > > On Wed, Nov 06, 2013 at 10:23:19AM -0500, Neil Horman wrote:
-> > > >  > do_csum was identified via perf recently as a hot spot when doing
-> > > >  > receive on ip over infiniband workloads.  After alot of testing and
-> > > >  > ideas, we found the best optimization available to us currently is to
-> > > >  > prefetch the entire data buffer prior to doing the checksum
-> > []
-> > > I'll fix this up and send a v3, but I'll give it a day in case there are more
-> > > comments first.
-> > 
-> > Perhaps a reduction in prefetch loop count helps.
-> > 
-> > Was capping the amount prefetched and letting the
-> > hardware prefetch also tested?
-> > 
-> > 	prefetch_lines(buff, min(len, cache_line_size() * 8u));
-> > 
-> 
-> Just tested this out:
-
-Thanks.
-
-Reformatting the table so it's a bit more
-readable/comparable for me:
-
-len	SetSz	Loops	cycles/byte
-			limited	unlimited
-1500B	64MB	1M	1.3442	1.3605
-1500B	128MB	1M	1.3410	1.3542
-1500B	256MB	1M	1.3536	1.3710
-1500B	512MB	1M	1.3463	1.3536
-9000B	64MB	1M	0.8522	0.8504
-9000B	128MB	1M	0.8528	0.8536
-9000B	256MB	1M	0.8532	0.8520
-9000B	512MB	1M	0.8527	0.8525
-64KB	64MB	1M	0.7686	0.7683
-64KB	128MB	1M	0.7695	0.7686
-64KB	256MB	1M	0.7699	0.7708
-64KB	512MB	1M	0.7799	0.7694
-
-This data appears to show some value
-in capping for 1500b lengths and noise
-for shorter and longer lengths.
-
-Any idea what the actual distribution of
-do_csum lengths is under various loads?
+On Fri, Nov 08, 2013 at 12:03:37PM -0600, Ben Myers wrote:
+> Mark is replacing Alex as my backup because Alex is really busy at
+> Linaro and asked to be taken off awhile ago.  The holiday season is
+> coming up and I fully intend to go off my meds, turn in to Fonzy the
+> bear, and eat my hat.  I need someone to watch the shop while I'm off
+> exploring on Mars.  I trust Mark to do that because he is totally
+> awesome.
 
 
+Doing this as an unilateral decisions is not something that will win you
+a fan base.
+
+While we never had anything reassembling a democracy in Linux Kernel
+development making decisions without even contacting the major
+contributor is wrong, twice so if the maintainer is a relatively minor
+contributor to start with.
+
+Just because it recent came up elsewhere I'd like to recite the
+definition from Trond here again:
+
+	http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-June/000066.html
+
+By many of the creative roles enlisted there it's clear that Dave should
+be the maintainer.  He's been the main contributor and chief architect
+for XFS for many year, while the maintainers came and went at the mercy
+of SGI.  This is not meant to bad mouth either of you as I think you're
+doing a reasonably good job compared to other maintainers, but at the
+same time the direction is set by other people that have a much longer
+involvement with the project, and having them officially in control
+would help us forward a lot.  It would also avoid having to spend
+considerable resources to train every new generation of SGI maintainer.
+
+Coming to and end I would like to maintain Dave Chinner as the primary
+XFS maintainer for all the work he has done as biggest contributor and
+architect of XFS since longer than I can remember, and I would love to
+retain Ben Myers as a co-maintainer for all the good work he has done
+maintaining and reviewing patches since November 2011.
+
+I would also like to use this post as a public venue to condemn the
+unilateral smokey backroom decisions about XFS maintainership that
+SGI is trying to enforce on the community.
