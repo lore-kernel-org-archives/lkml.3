@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab3KHIeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 03:34:13 -0500
-Received: from georges.telenet-ops.be ([195.130.137.68]:44004 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab3KHIeJ (ORCPT
+	id S1755859Ab3KHIkb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 03:40:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44914 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab3KHIka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 03:34:09 -0500
-Date: Fri, 8 Nov 2013 09:33:39 +0100 (CET)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: [git pull] m68k updates for 3.13
-Message-ID: <alpine.DEB.2.02.1311080929260.10299@ayla.of.borg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 8 Nov 2013 03:40:30 -0500
+Date: Fri, 8 Nov 2013 09:40:01 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Jiri Olsa <jolsa@redhat.com>, Adrian Hunter <adrian.hunter@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V3 06/11] perf record: Add an option to force per-cpu
+ mmaps
+Message-ID: <20131108084001.GG19203@twins.programming.kicks-ass.net>
+References: <1383313899-15987-1-git-send-email-adrian.hunter@intel.com>
+ <1383313899-15987-7-git-send-email-adrian.hunter@intel.com>
+ <20131104152942.GA4004@krava.brq.redhat.com>
+ <5278AC36.1020702@intel.com>
+ <20131105094220.GA1071@krava.brq.redhat.com>
+ <5278EE0A.1080108@intel.com>
+ <20131105133024.GE1071@krava.brq.redhat.com>
+ <20131105142545.GD22912@ghostprotocols.net>
+ <20131105173152.GB7329@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105173152.GB7329@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+On Tue, Nov 05, 2013 at 02:31:52PM -0300, Arnaldo Carvalho de Melo wrote:
+> PeterZ,
+> 
+> 	Can I have your Acked-by for this one? I guess now the goal is
+> achieved, no?
 
-The following changes since commit 6e4664525b1db28f8c4e1130957f70a94c19213e:
+So this option allows -t/-p/-u to create one buffer per cpu and attach
+all the various thread/process/user tasks' their counters to that one
+buffer?
 
-  Linux 3.11 (2013-09-02 13:46:10 -0700)
+As opposed to the current state where each such counter would have its
+own buffer.
 
-are available in the git repository at:
+If this is what the patch does, then yes, although I would prefer a
+slightly clearer Changelog.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-
-for you to fetch changes up to 77a42796786c2ea2d3a67262fb5f1f707c3e0594:
-
-  m68k: Remove deprecated IRQF_DISABLED (2013-09-26 09:54:16 +0200)
-
-----------------------------------------------------------------
-Geert Uytterhoeven (1):
-      m68k/m68knommu: Implement __get_user_unaligned/__put_user_unaligned()
-
-Michael Opdenacker (1):
-      m68k: Remove deprecated IRQF_DISABLED
-
-Summary:
-  - __put_user_unaligned may/will be used by btrfs
-  - m68k part of a global cleanup
-
-Thanks for pulling!
-
- arch/m68k/include/asm/floppy.h         |    2 +-
- arch/m68k/include/asm/sun3xflop.h      |    2 +-
- arch/m68k/include/asm/uaccess.h        |    7 +++++++
- arch/m68k/platform/68000/timers.c      |    2 +-
- arch/m68k/platform/68360/config.c      |    2 +-
- arch/m68k/platform/coldfire/pit.c      |    2 +-
- arch/m68k/platform/coldfire/sltimers.c |    4 ++--
- arch/m68k/platform/coldfire/timers.c   |    4 ++--
- 8 files changed, 16 insertions(+), 9 deletions(-)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Acked-by: Peter Zijlstra <peterz@infradead.org>
