@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932590Ab3KHCTy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:19:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34699 "EHLO
+	id S932624Ab3KHCUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:20:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34746 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932453Ab3KHCTD (ORCPT
+	with ESMTP id S932453Ab3KHCUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:19:03 -0500
+	Thu, 7 Nov 2013 21:20:03 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jani Nikula <jani.nikula@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>, <annndddrr@gmail.com>,
-        Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 72/91] drm/i915: quirk away phantom LVDS on Intel's D525MW mainboard
-Date: Thu,  7 Nov 2013 18:15:27 -0800
-Message-Id: <1383876946-2396-73-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 74/91] mm: Wait for THP migrations to complete during NUMA hinting faults
+Date: Thu,  7 Nov 2013 18:15:29 -0800
+Message-Id: <1383876946-2396-75-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -30,47 +30,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit dcf6d294830d46b0e6901477fb4bf455281d90c8 upstream.
+commit 42836f5f8baa33085f547098b74aa98991ee9216 upstream.
 
-This replaceable mainboard only has a VGA-out, yet it claims to also have
-a connected LVDS header.
+The locking for migrating THP is unusual. While normal page migration
+prevents parallel accesses using a migration PTE, THP migration relies on
+a combination of the page_table_lock, the page lock and the existance of
+the NUMA hinting PTE to guarantee safety but there is a bug in the scheme.
 
-Addresses https://bugs.freedesktop.org/show_bug.cgi?id=65256
+If a THP page is currently being migrated and another thread traps a
+fault on the same page it checks if the page is misplaced. If it is not,
+then pmd_numa is cleared. The problem is that it checks if the page is
+misplaced without holding the page lock meaning that the racing thread
+can be migrating the THP when the second thread clears the NUMA bit
+and faults a stale page.
 
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Reported-by: Cornel Panceac <cpanceac@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: <annndddrr@gmail.com>
-Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Greg KH <greg@kroah.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This patch checks if the page is potentially being migrated and stalls
+using the lock_page if it is potentially being migrated before checking
+if the page is misplaced or not.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1381141781-10992-6-git-send-email-mgorman@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_lvds.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ mm/huge_memory.c | 23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 5cfd10e..a4f9f68 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -805,6 +805,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 			DMI_EXACT_MATCH(DMI_BOARD_NAME, "D510MO"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Intel D525MW",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
-+			DMI_EXACT_MATCH(DMI_BOARD_NAME, "D525MW"),
-+		},
-+	},
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index a057a7d..f3868de 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1315,13 +1315,14 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (current_nid == numa_node_id())
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
  
- 	{ }	/* terminating entry */
- };
+-	target_nid = mpol_misplaced(page, vma, haddr);
+-	if (target_nid == -1) {
+-		put_page(page);
+-		goto clear_pmdnuma;
+-	}
++	/*
++	 * Acquire the page lock to serialise THP migrations but avoid dropping
++	 * page_table_lock if at all possible
++	 */
++	if (trylock_page(page))
++		goto got_lock;
+ 
+-	/* Acquire the page lock to serialise THP migrations */
++	/* Serialise against migrationa and check placement check placement */
+ 	spin_unlock(&mm->page_table_lock);
+ 	lock_page(page);
+ 	page_locked = true;
+@@ -1333,9 +1334,17 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		put_page(page);
+ 		goto out_unlock;
+ 	}
+-	spin_unlock(&mm->page_table_lock);
++
++got_lock:
++	target_nid = mpol_misplaced(page, vma, haddr);
++	if (target_nid == -1) {
++		unlock_page(page);
++		put_page(page);
++		goto clear_pmdnuma;
++	}
+ 
+ 	/* Migrate the THP to the requested node */
++	spin_unlock(&mm->page_table_lock);
+ 	migrated = migrate_misplaced_transhuge_page(mm, vma,
+ 				pmdp, pmd, addr,
+ 				page, target_nid);
 -- 
 1.8.1.2
 
