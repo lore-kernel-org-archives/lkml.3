@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034Ab3KHSGa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 13:06:30 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:58870 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756614Ab3KHSG2 convert rfc822-to-8bit (ORCPT
+	id S1758039Ab3KHSHV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 13:07:21 -0500
+Received: from mail-yh0-f74.google.com ([209.85.213.74]:65163 "EHLO
+	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757426Ab3KHSHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 13:06:28 -0500
-Subject: Re: [PATCH v3 7/9] ARM: add Armada 1500 and Sony NSZ-GS7 device tree files
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20131108165721.GA10335@titan.lakedaemon.net>
-Date: Fri, 8 Nov 2013 12:06:26 -0600
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Rob Landley <rob@landley.net>, linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8DC09031-553C-4FD5-8F05-F93D6FE40F3A@codeaurora.org>
-References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com> <1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com> <1383661723-17956-8-git-send-email-sebastian.hesselbarth@gmail.com> <0AF697FD-60AA-4B8B-A35F-3DF2FFBCF7AF@codeaurora.org> <20131108165721.GA10335@titan.lakedaemon.net>
-To: Jason Cooper <jason@lakedaemon.net>
-X-Mailer: Apple Mail (2.1283)
+	Fri, 8 Nov 2013 13:07:20 -0500
+From: Sameer Nanda <snanda@chromium.org>
+To: akpm@linux-foundation.org, mhocko@suse.cz, rientjes@google.com,
+        hannes@cmpxchg.org, rusty@rustcorp.com.au, semenzato@google.com,
+        murzin.v@gmail.com, oleg@redhat.com, dserrg@gmail.com,
+        msb@chromium.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sameer Nanda <snanda@chromium.org>
+Subject: [PATCH v2] mm, oom: Fix race when selecting process to kill
+Date: Fri,  8 Nov 2013 10:07:15 -0800
+Message-Id: <1383934035-933-1-git-send-email-snanda@chromium.org>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <alpine.DEB.2.02.1311061631280.22318@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1311061631280.22318@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The selection of the process to be killed happens in two spots:
+first in select_bad_process and then a further refinement by
+looking for child processes in oom_kill_process. Since this is
+a two step process, it is possible that the process selected by
+select_bad_process may get a SIGKILL just before oom_kill_process
+executes. If this were to happen, __unhash_process deletes this
+process from the thread_group list. This results in oom_kill_process
+getting stuck in an infinite loop when traversing the thread_group
+list of the selected process.
 
-On Nov 8, 2013, at 10:57 AM, Jason Cooper wrote:
+Fix this race by adding a pid_alive check for the selected process
+with tasklist_lock held in oom_kill_process.
 
-> On Fri, Nov 08, 2013 at 10:13:19AM -0600, Kumar Gala wrote:
->> On Nov 5, 2013, at 8:28 AM, Sebastian Hesselbarth wrote:
-> ...
->>> .../devicetree/bindings/arm/marvell,berlin.txt     |   24 +++
->>> arch/arm/boot/dts/Makefile                         |    2 +
->>> arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts         |   29 +++
->>> arch/arm/boot/dts/berlin2.dtsi                     |  227 ++++++++++++++++++++
->>> 4 files changed, 282 insertions(+)
->>> create mode 100644 Documentation/devicetree/bindings/arm/marvell,berlin.txt
->>> create mode 100644 arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts
->>> create mode 100644 arch/arm/boot/dts/berlin2.dtsi
->> 
->> Haven't we been trying to go away from non-prefixed dts/dtsi?
-> 
-> hmmm, this is the first I've heard of that.  Although, your proposal
-> (in another thread) makes more sense now.  :)
-> 
->> So should these be something like marvell-berlin2-...
-> 
-> I don't recall this being brought up at the summit, nor in Grant's
-> report.  I do need to give it a more careful read this weekend, though.
-> Perhaps I missed something.
+Change-Id: I865c64486ccfc0e4818e7045a8fa3353e2fb63f8
+Signed-off-by: Sameer Nanda <snanda@chromium.org>
+---
+ mm/oom_kill.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-This was based on review comments Olof gave when we pushed some .dts files for MSM/APQ Qualcomm Technologies soc/boards.
-
-- k
-
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 6738c47..af99b1a 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -412,13 +412,16 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
+ 					      DEFAULT_RATELIMIT_BURST);
+ 
++	read_lock(&tasklist_lock);
++
+ 	/*
+ 	 * If the task is already exiting, don't alarm the sysadmin or kill
+ 	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+ 	 */
+-	if (p->flags & PF_EXITING) {
++	if (p->flags & PF_EXITING || !pid_alive(p)) {
+ 		set_tsk_thread_flag(p, TIF_MEMDIE);
+ 		put_task_struct(p);
++		read_unlock(&tasklist_lock);
+ 		return;
+ 	}
+ 
+@@ -436,7 +439,6 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	 * parent.  This attempts to lose the minimal amount of work done while
+ 	 * still freeing memory.
+ 	 */
+-	read_lock(&tasklist_lock);
+ 	do {
+ 		list_for_each_entry(child, &t->children, sibling) {
+ 			unsigned int child_points;
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.8.4.1
 
