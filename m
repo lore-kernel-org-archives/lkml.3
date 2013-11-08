@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab3KHQ6W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 11:58:22 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:57124 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757441Ab3KHQ6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 11:58:20 -0500
-Date: Fri, 8 Nov 2013 11:58:19 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Julius Werner <jwerner@chromium.org>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Benson Leung <bleung@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>
-Subject: Re: [PATCH v2] usb: hub: Use correct reset for wedged USB3 devices
- that are NOTATTACHED
-In-Reply-To: <1383850754-21856-1-git-send-email-jwerner@chromium.org>
-Message-ID: <Pine.LNX.4.44L0.1311081157390.1162-100000@iolanthe.rowland.org>
+	id S1757950Ab3KHQ7E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 11:59:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35939 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757680Ab3KHQ7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 11:59:02 -0500
+Date: Fri, 8 Nov 2013 18:00:17 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch
+	methods (v6)
+Message-ID: <20131108170017.GB28753@redhat.com>
+References: <20131104155131.GD4440@redhat.com> <20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com> <87sivbz65t.fsf@sejong.aot.lge.com> <20131105174535.GA6385@redhat.com> <20131105192401.GA772@redhat.com> <87vc05x5zf.fsf@sejong.aot.lge.com> <20131106173754.GA11299@redhat.com> <20131106182408.GA12922@redhat.com> <8761s4wprj.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8761s4wprj.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Nov 2013, Julius Werner wrote:
+On 11/07, Namhyung Kim wrote:
+>
+> On Wed, 6 Nov 2013 19:24:08 +0100, Oleg Nesterov wrote:
+> >
+> > Note that instruction_pointer_set() is not really nice in any case,
+> > this can obviously confuse FETCH_MTD_reg("ip").
+>
+> Yes.
+>
+> >
+> > But lets ignore this. The solution is simple, we can pass/use this
+> > info via current->utask. We can either add the new member, or add
+> > a union. Or simply reuse xol_vaddr. Doesn't matter.
+>
+> Okay, I'll take a look.
 
-> This patch adds a check for USB_STATE_NOTATTACHED to the
-> hub_port_warm_reset_required() workaround for ports that end up in
-> Compliance Mode in hub_events() when trying to decide which reset
-> function to use. Trying to call usb_reset_device() with a NOTATTACHED
-> device will just fail and leave the port broken.
-> 
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
-> ---
->  drivers/usb/core/hub.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index e6b682c..0188056 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -4799,8 +4799,9 @@ static void hub_events(void)
->  					hub->ports[i - 1]->child;
->  
->  				dev_dbg(hub_dev, "warm reset port %d\n", i);
-> -				if (!udev || !(portstatus &
-> -						USB_PORT_STAT_CONNECTION)) {
-> +				if (!udev ||
-> +				    !(portstatus & USB_PORT_STAT_CONNECTION) ||
-> +				    udev->state == USB_STATE_NOTATTACHED) {
->  					status = hub_port_reset(hub, i,
->  							NULL, HUB_BH_RESET_TIME,
->  							true);
+I guess we need the union in uprobe_task anyway... I'll send the patch
+soon.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Until we have the new members in uprobe_task, you can reuse utask->vaddr,
+this is safe.
+
+IOW, you can use current->utask->vaddr instead of regs->ip (as we did
+in the previous discussin) to pass the necessary info to ->fetch().
+
+Oleg.
 
