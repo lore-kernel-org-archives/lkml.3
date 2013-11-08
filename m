@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab3KHXpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 18:45:52 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42158 "EHLO arroyo.ext.ti.com"
+	id S932672Ab3KHXqK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 18:46:10 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:53214 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932299Ab3KHXn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 18:43:58 -0500
+	id S932461Ab3KHXnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 18:43:55 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <tj@kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
         Yinghai Lu <yinghai@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 24/24] mm/ARM: OMAP: Use memblock apis for early memory allocations
-Date: Fri, 8 Nov 2013 18:42:00 -0500
-Message-ID: <1383954120-24368-25-git-send-email-santosh.shilimkar@ti.com>
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH 17/24] mm/hugetlb: Use memblock apis for early memory allocations
+Date: Fri, 8 Nov 2013 18:41:53 -0500
+Message-ID: <1383954120-24368-18-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
@@ -24,6 +24,8 @@ Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+From: Grygorii Strashko <grygorii.strashko@ti.com>
 
 Switch to memblock interfaces for early memory allocator instead of
 bootmem allocator. No functional change in beahvior than what it is
@@ -37,40 +39,41 @@ bootmem APIs.
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>
 
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- arch/arm/mach-omap2/omap_hwmod.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ mm/hugetlb.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-index d9ee0ff..0a3a048 100644
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -2676,9 +2676,7 @@ static int __init _alloc_links(struct omap_hwmod_link **ml,
- 	sz = sizeof(struct omap_hwmod_link) * LINKS_PER_OCP_IF;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index b49579c..3c9f965 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1282,9 +1282,9 @@ int __weak alloc_bootmem_huge_page(struct hstate *h)
+ 	for_each_node_mask_to_alloc(h, nr_nodes, node, &node_states[N_MEMORY]) {
+ 		void *addr;
  
- 	*sl = NULL;
--	*ml = alloc_bootmem(sz);
+-		addr = __alloc_bootmem_node_nopanic(NODE_DATA(node),
+-				huge_page_size(h), huge_page_size(h), 0);
 -
--	memset(*ml, 0, sz);
-+	*ml = memblock_virt_alloc(sz);
++		addr = memblock_virt_alloc_try_nid_nopanic(
++				huge_page_size(h), huge_page_size(h),
++				0, BOOTMEM_ALLOC_ACCESSIBLE, node);
+ 		if (addr) {
+ 			/*
+ 			 * Use the beginning of the huge page to store the
+@@ -1324,8 +1324,8 @@ static void __init gather_bootmem_prealloc(void)
  
- 	*sl = (void *)(*ml) + sizeof(struct omap_hwmod_link);
- 
-@@ -2797,9 +2795,7 @@ static int __init _alloc_linkspace(struct omap_hwmod_ocp_if **ois)
- 	pr_debug("omap_hwmod: %s: allocating %d byte linkspace (%d links)\n",
- 		 __func__, sz, max_ls);
- 
--	linkspace = alloc_bootmem(sz);
--
--	memset(linkspace, 0, sz);
-+	linkspace = memblock_virt_alloc(sz);
- 
- 	return 0;
- }
+ #ifdef CONFIG_HIGHMEM
+ 		page = pfn_to_page(m->phys >> PAGE_SHIFT);
+-		free_bootmem_late((unsigned long)m,
+-				  sizeof(struct huge_bootmem_page));
++		memblock_free_late(__pa(m),
++				   sizeof(struct huge_bootmem_page));
+ #else
+ 		page = virt_to_page(m);
+ #endif
 -- 
 1.7.9.5
 
