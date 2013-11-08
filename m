@@ -1,150 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758110Ab3KHS6r (ORCPT <rfc822;w@1wt.eu>);
+	id S1758128Ab3KHS6v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 13:58:51 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:37414 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758016Ab3KHS6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Nov 2013 13:58:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41169 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757775Ab3KHS6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 13:58:46 -0500
-Date: Fri, 8 Nov 2013 20:00:03 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] uprobes: Add uprobe_task->dup_work/dup_addr
-Message-ID: <20131108190003.GA12755@redhat.com>
+X-Originating-IP: 173.246.103.110
+Date: Fri, 8 Nov 2013 10:58:41 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the akpm-current tree with the vfs
+ tree
+Message-ID: <20131108185841.GC11311@jtriplet-mobl1>
+References: <20131108183806.809acb8b1608c42457d64e5a@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131108183806.809acb8b1608c42457d64e5a@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uprobe_task->vaddr is a bit strange. First of all it is not really
-needed, we can move it into arch_uprobe_task. The generic code uses
-it only to pass the additional argument to arch_uprobe_pre_xol(),
-and since it is always equal to instruction_pointer() this looks
-even more strange.
+On Fri, Nov 08, 2013 at 06:38:06PM +1100, Stephen Rothwell wrote:
+> Hi Andrew,
+> 
+> Today's linux-next merge of the akpm-current tree got a conflict in
+> include/linux/lglock.h between commit 4314ff760e8b ("no need to keep
+> brlock macros anymore...") from the vfs tree and commit f5639052d567
+> ("lglock: map to spinlock when !CONFIG_SMP") from the akpm-current tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-And both utask->vaddr and and utask->autask have the same scope,
-they only have the meaning when the task executes the probed insn
-out-of-line. This means it is safe to reuse both in UTASK_RUNNING
-state.
+This looks like the right fix.
 
-OTOH, it is also used by uprobe_copy_process() and dup_xol_work()
-for another purpose, this doesn't look clean and doesn't allow to
-move this member into arch_uprobe_task.
-
-This patch adds the union with 2 anonymous structs into uprobe_task.
-
-The first struct is autask + vaddr, this way we "almost" move vaddr
-into autask.
-
-The second struct has 2 new members for uprobe_copy_process() paths:
-->dup_addr which can be used instead ->vaddr, and ->dup_work which
-can be used to avoid kmalloc() and simplify the code.
-
-Note that this union will likely have another member(s), we need
-something like "private_data_for_handlers" so that the tracing
-handlers could use it to communicate with call_fetch() methods.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/uprobes.h |   21 ++++++++++++++++-----
- kernel/events/uprobes.c |   16 ++++------------
- 2 files changed, 20 insertions(+), 17 deletions(-)
-
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 319eae7..366b8b2 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -26,6 +26,7 @@
- 
- #include <linux/errno.h>
- #include <linux/rbtree.h>
-+#include <linux/types.h>
- 
- struct vm_area_struct;
- struct mm_struct;
-@@ -72,14 +73,24 @@ enum uprobe_task_state {
-  */
- struct uprobe_task {
- 	enum uprobe_task_state		state;
--	struct arch_uprobe_task		autask;
- 
--	struct return_instance		*return_instances;
--	unsigned int			depth;
--	struct uprobe			*active_uprobe;
-+	union {
-+		struct {
-+			struct arch_uprobe_task	autask;
-+			unsigned long		vaddr;
-+		};
-+
-+		struct {
-+			struct callback_head	dup_work;
-+			unsigned long		dup_addr;
-+		};
-+	};
- 
-+	struct uprobe			*active_uprobe;
- 	unsigned long			xol_vaddr;
--	unsigned long			vaddr;
-+
-+	struct return_instance		*return_instances;
-+	unsigned int			depth;
- };
- 
- /*
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 24b7d6c..2546a7b 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1403,12 +1403,10 @@ static void uprobe_warn(struct task_struct *t, const char *msg)
- 
- static void dup_xol_work(struct callback_head *work)
- {
--	kfree(work);
--
- 	if (current->flags & PF_EXITING)
- 		return;
- 
--	if (!__create_xol_area(current->utask->vaddr))
-+	if (!__create_xol_area(current->utask->dup_addr))
- 		uprobe_warn(current, "dup xol area");
- }
- 
-@@ -1419,7 +1417,6 @@ void uprobe_copy_process(struct task_struct *t, unsigned long flags)
- {
- 	struct uprobe_task *utask = current->utask;
- 	struct mm_struct *mm = current->mm;
--	struct callback_head *work;
- 	struct xol_area *area;
- 
- 	t->utask = NULL;
-@@ -1441,14 +1438,9 @@ void uprobe_copy_process(struct task_struct *t, unsigned long flags)
- 	if (mm == t->mm)
- 		return;
- 
--	/* TODO: move it into the union in uprobe_task */
--	work = kmalloc(sizeof(*work), GFP_KERNEL);
--	if (!work)
--		return uprobe_warn(t, "dup xol area");
--
--	t->utask->vaddr = area->vaddr;
--	init_task_work(work, dup_xol_work);
--	task_work_add(t, work, true);
-+	t->utask->dup_addr = area->vaddr;
-+	init_task_work(&t->utask->dup_work, dup_xol_work);
-+	task_work_add(t, &t->utask->dup_work, true);
- }
- 
- /*
--- 
-1.5.5.1
+> diff --cc include/linux/lglock.h
+> index 96549abe8842,6561b1c0fa63..000000000000
+> --- a/include/linux/lglock.h
+> +++ b/include/linux/lglock.h
+> @@@ -25,6 -25,18 +25,8 @@@
+>   #include <linux/cpu.h>
+>   #include <linux/notifier.h>
+>   
+>  -/* can make br locks by using local lock for read side, global lock for write */
+>  -#define br_lock_init(name)	lg_lock_init(name, #name)
+>  -#define br_read_lock(name)	lg_local_lock(name)
+>  -#define br_read_unlock(name)	lg_local_unlock(name)
+>  -#define br_write_lock(name)	lg_global_lock(name)
+>  -#define br_write_unlock(name)	lg_global_unlock(name)
+>  -
+>  -#define DEFINE_BRLOCK(name)		DEFINE_LGLOCK(name)
+>  -#define DEFINE_STATIC_BRLOCK(name)	DEFINE_STATIC_LGLOCK(name)
+>  -
+> + #ifdef CONFIG_SMP
+> + 
+>   #ifdef CONFIG_DEBUG_LOCK_ALLOC
+>   #define LOCKDEP_INIT_MAP lockdep_init_map
+>   #else
 
 
