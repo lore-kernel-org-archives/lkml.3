@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab3KHMhi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 07:37:38 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:40927 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab3KHMhg (ORCPT
+	id S1757015Ab3KHMnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 07:43:42 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:30254 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752683Ab3KHMnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 07:37:36 -0500
-Date: Fri, 8 Nov 2013 04:37:13 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>
-Subject: Re: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
-Message-ID: <20131108123713.GC18245@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1383228427.5272.36.camel@marge.simpson.net>
- <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>
- <1383794799.5441.16.camel@marge.simpson.net>
- <1383798668.5441.25.camel@marge.simpson.net>
- <20131108032343.GA18245@linux.vnet.ibm.com>
- <1383895880.4964.91.camel@marge.simpson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383895880.4964.91.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110812-0928-0000-0000-00000335E41A
+	Fri, 8 Nov 2013 07:43:41 -0500
+Date: Fri, 8 Nov 2013 07:43:36 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Petr Mladek <pmladek@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v2 1/8] x86: speed up int3-based patching using less
+ paranoid write
+Message-ID: <20131108074336.29dfbc15@gandalf.local.home>
+In-Reply-To: <527CD34A.30406@hitachi.com>
+References: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
+	<1383901932-1945-3-git-send-email-pmladek@suse.cz>
+	<527CD34A.30406@hitachi.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 08:31:20AM +0100, Mike Galbraith wrote:
-> On Thu, 2013-11-07 at 19:23 -0800, Paul E. McKenney wrote:
+On Fri, 08 Nov 2013 21:04:26 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+
+> (2013/11/08 18:12), Petr Mladek wrote:
+> > This change is inspired by the int3-based patching code used in
+> > ftrace. See the commit fd4363fff3d9 (x86: Introduce int3
+> > (breakpoint)-based instruction patching).
+> > 
+> > When trying to use text_poke_bp in ftrace, the result was slower than
+> > the original implementation.
+> > 
+> > It turned out that one difference was in text_poke vs. ftrace_write.
+> > text_poke did many extra operations to make sure that the change
+> > was atomic.
 > 
-> > An untested patch that gets rid of the RCU_SOFTIRQs in this case is below.
-> 
-> Yup, toasted.
+> AFAIK, the main reason why text_poke is used is avoiding
+> RODATA protection (by alias mapping).
 
-You lost me on this one.  If my patch broke your system, any chance of
-any diagnostic information?
+That is correct, and the reason ftrace didn't do that is because it
+would be quite expensive to map 22,000 addresses for each change.
 
-							Thanx, Paul
-
+-- Steve
