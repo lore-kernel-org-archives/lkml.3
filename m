@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab3KHXnw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 18:43:52 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:53199 "EHLO comal.ext.ti.com"
+	id S932496Ab3KHXoC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 18:44:02 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42145 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932260Ab3KHXni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 18:43:38 -0500
+	id S932300Ab3KHXnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 18:43:45 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <tj@kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 08/24] mm/memblock: drop WARN and use SMP_CACHE_BYTES as a default alignment
-Date: Fri, 8 Nov 2013 18:41:44 -0500
-Message-ID: <1383954120-24368-9-git-send-email-santosh.shilimkar@ti.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH 11/24] mm/printk: Use memblock apis for early memory allocations
+Date: Fri, 8 Nov 2013 18:41:47 -0500
+Message-ID: <1383954120-24368-12-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
@@ -24,36 +25,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grygorii Strashko <grygorii.strashko@ti.com>
+Switch to memblock interfaces for early memory allocator instead of
+bootmem allocator. No functional change in beahvior than what it is
+in current code from bootmem users points of view.
 
-drop WARN and use SMP_CACHE_BYTES as a default alignment in
-memblock_alloc_base_nid() as recommended by Tejun Heo in
-https://lkml.org/lkml/2013/10/13/117.
-
+Archs already converted to NO_BOOTMEM now directly use memblock
+interfaces instead of bootmem wrappers build on top of memblock. And the
+archs which still uses bootmem, these new apis just fallback to exiting
+bootmem APIs.
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 
 Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- mm/memblock.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/printk/printk.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 88a6a0e..36b795f 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -785,8 +785,8 @@ static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
- {
- 	phys_addr_t found;
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index b4e8500..706295e 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -757,14 +757,10 @@ void __init setup_log_buf(int early)
+ 		return;
  
--	if (WARN_ON(!align))
--		align = __alignof__(long long);
-+	if (!align)
-+		align = SMP_CACHE_BYTES;
+ 	if (early) {
+-		unsigned long mem;
+-
+-		mem = memblock_alloc(new_log_buf_len, PAGE_SIZE);
+-		if (!mem)
+-			return;
+-		new_log_buf = __va(mem);
++		new_log_buf =
++			memblock_virt_alloc_align(new_log_buf_len, PAGE_SIZE);
+ 	} else {
+-		new_log_buf = alloc_bootmem_nopanic(new_log_buf_len);
++		new_log_buf = memblock_virt_alloc_nopanic(new_log_buf_len);
+ 	}
  
- 	/* align @size to avoid excessive fragmentation on reserved array */
- 	size = round_up(size, align);
+ 	if (unlikely(!new_log_buf)) {
 -- 
 1.7.9.5
 
