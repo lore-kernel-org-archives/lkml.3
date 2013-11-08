@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209Ab3KHUck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 15:32:40 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:59059 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757629Ab3KHUch (ORCPT
+	id S1757930Ab3KHUmB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 15:42:01 -0500
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:38269 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757666Ab3KHUl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 15:32:37 -0500
-Message-ID: <527D4A61.8020202@gmail.com>
-Date: Fri, 08 Nov 2013 15:32:33 -0500
-From: Ric Wheeler <ricwheeler@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 8 Nov 2013 15:41:59 -0500
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>, Ben Myers <bpm@sgi.com>
-CC: elder@kernel.org, Mark Tinguely <tinguely@sgi.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+In-Reply-To: <cover.1380315959.git.luto@amacapital.net>
+References: <cover.1380315959.git.luto@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 8 Nov 2013 12:41:38 -0800
+Message-ID: <CALCETrX4-WHrCumnOxEoa53-2otNOPBFk_Q6yL3ufyhWbaJ1wQ@mail.gmail.com>
+Subject: Re: [PATCH v5 0/4] iMC SMBUS and DIMM bus probing
+To: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org
+Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com, Ric Wheeler <rwheeler@redhat.com>
-Subject: Re: XFS leadership and a new co-maintainer candidate
-References: <20131107220208.GY1935@sgi.com> <527C0F64.3010906@sgi.com>	<527C4B27.6020205@redhat.com> <527CC50D.4060905@redhat.com>	<20131108180337.GO10553@sgi.com> <20131108193424.GA11052@infradead.org>
-In-Reply-To: <20131108193424.GA11052@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rui Wang <ruiv.wang@gmail.com>, Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2013 02:34 PM, Christoph Hellwig wrote:
-> On Fri, Nov 08, 2013 at 12:03:37PM -0600, Ben Myers wrote:
->> Mark is replacing Alex as my backup because Alex is really busy at
->> Linaro and asked to be taken off awhile ago.  The holiday season is
->> coming up and I fully intend to go off my meds, turn in to Fonzy the
->> bear, and eat my hat.  I need someone to watch the shop while I'm off
->> exploring on Mars.  I trust Mark to do that because he is totally
->> awesome.
+On Fri, Sep 27, 2013 at 6:02 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> Intel LGA2011 machines have dedicated SMBUS controllers for DIMM
+> sockets.  Because they're dedicated, they can be safely and accurately
+> probed, since all devices on them are known to be attached to DIMMs.
+> The devices found are:
+>  - SPD EEPROMs
+>  - TSODs (Temperature Sensor on DIMMs)
+>  - Other interesting things, with drivers hopefully to follow...
 >
-> Doing this as an unilateral decisions is not something that will win you
-> a fan base.
+> This patch series adds a simple generic layer for probing for DIMMs over
+> SMBUS and an i2c bus driver for the iMC controller found on Intel
+> LGA2011 chips.
 >
-> While we never had anything reassembling a democracy in Linux Kernel
-> development making decisions without even contacting the major
-> contributor is wrong, twice so if the maintainer is a relatively minor
-> contributor to start with.
+> It now uses only modern infrastructure -- new-style I2C probing and the
+> at24 (instead of eeprom) driver.
 >
-> Just because it recent came up elsewhere I'd like to recite the
-> definition from Trond here again:
+> I've tested this on a Core i7 Extreme and on a Xeon E5 server.
 >
-> 	http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-June/000066.html
+> Patches 1-3 are useful even without patch 4.  I'm still hoping for feedback
+> on patch 4.
 >
-> By many of the creative roles enlisted there it's clear that Dave should
-> be the maintainer.  He's been the main contributor and chief architect
-> for XFS for many year, while the maintainers came and went at the mercy
-> of SGI.  This is not meant to bad mouth either of you as I think you're
-> doing a reasonably good job compared to other maintainers, but at the
-> same time the direction is set by other people that have a much longer
-> involvement with the project, and having them officially in control
-> would help us forward a lot.  It would also avoid having to spend
-> considerable resources to train every new generation of SGI maintainer.
+> Changes from v4:
+>  - Added the sb_edac changes -- i2c_imc and sb_edac can now coexist
+>  - Added some paranoid race detection.
+>  - The driver now confirms its ability to claim software control of the SMBUS
+>    master.  This prevents unpleasant problems on systems that enable CLTT
+>    (closed loop thermal throttling).
+>  - Reordered the patches so that the DIMM bus code is last.
 >
-> Coming to and end I would like to maintain Dave Chinner as the primary
-> XFS maintainer for all the work he has done as biggest contributor and
-> architect of XFS since longer than I can remember, and I would love to
-> retain Ben Myers as a co-maintainer for all the good work he has done
-> maintaining and reviewing patches since November 2011.
+> Changes from v3:
+>  - Dropped redundant "tsod" driver
+>  - Dropped eeprom modalias
+>  - Switched to probing for the "eeprom" and "jc42"
+>
+> Andy Lutomirski (4):
+>   Move Intel SNB device ids from sb_edac to pci_ids.h
+>   sb_edac: Claim a different PCI device
+>   i2c_imc: New driver for Intel's iMC, found on LGA2011 chips
+>   i2c, i2c_imc: Add DIMM bus code
+>
+>  drivers/edac/sb_edac.c        |  32 +--
+>  drivers/i2c/busses/Kconfig    |  19 ++
+>  drivers/i2c/busses/Makefile   |   5 +
+>  drivers/i2c/busses/dimm-bus.c |  97 ++++++++
+>  drivers/i2c/busses/i2c-imc.c  | 562 ++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/i2c/dimm-bus.h  |  24 ++
+>  include/linux/pci_ids.h       |  15 ++
+>  7 files changed, 723 insertions(+), 31 deletions(-)
+>  create mode 100644 drivers/i2c/busses/dimm-bus.c
+>  create mode 100644 drivers/i2c/busses/i2c-imc.c
+>  create mode 100644 include/linux/i2c/dimm-bus.h
 
-This sounds like exactly the right thing to do to me as well,
+Any update on these?  It would be nice to get them reviewed and applied.
 
-Ric
-
->
-> I would also like to use this post as a public venue to condemn the
-> unilateral smokey backroom decisions about XFS maintainership that
-> SGI is trying to enforce on the community.
->
->
-
-
+Thanks,
+Andy
