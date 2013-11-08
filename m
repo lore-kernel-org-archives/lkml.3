@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690Ab3KHHOd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 02:14:33 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:42488 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab3KHHO2 convert rfc822-to-8bit (ORCPT
+	id S1756072Ab3KHHPn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 02:15:43 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:59157 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606Ab3KHHPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 02:14:28 -0500
-From: Caizhiyong <caizhiyong@hisilicon.com>
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Karel Zak <kzak@redhat.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Shmulik Ladkani" <shmulik.ladkani@gmail.com>
-Subject: RE: [PATCH 2/2] mtd: cmdlinepart: use cmdline partition parser lib
-Thread-Topic: [PATCH 2/2] mtd: cmdlinepart: use cmdline partition parser lib
-Thread-Index: AQHO2oFrdZVowL3RlkWq6ldfMyBBbpoa6lug
-Date: Fri, 8 Nov 2013 07:13:21 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F1C08B2A8@szxeml512-mbs.china.huawei.com>
-References: <C3050A4DBA34F345975765E43127F10F1C0643B8@szxeml512-mbx.china.huawei.com>
-	<20131020120603.GA18678@localhost>
-	<C3050A4DBA34F345975765E43127F10F1C084C81@szxeml512-mbs.china.huawei.com>
-	<20131105144328.fb5a6a1d423776b324771706@linux-foundation.org>
- <CAN8TOE8CoSsUSGaLG5Z_-xVLhhnm052Hp2Rqzs3Hr3cU8Lp-8g@mail.gmail.com>
-In-Reply-To: <CAN8TOE8CoSsUSGaLG5Z_-xVLhhnm052Hp2Rqzs3Hr3cU8Lp-8g@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.67.223.36]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+	Fri, 8 Nov 2013 02:15:42 -0500
+Date: Fri, 8 Nov 2013 18:15:31 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: late commits (Was: linux-next: manual merge of the userns tree with
+ the vfs tree)
+Message-Id: <20131108181531.4fbdf925307f8fe9ed304372@canb.auug.org.au>
+In-Reply-To: <20131108175055.4c050e6770e0047aec42dae3@canb.auug.org.au>
+References: <20131108175055.4c050e6770e0047aec42dae3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__8_Nov_2013_18_15_31_+1100_j6mXh5plb9uieVvv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Nobody has had time to test this on MTD, it seems, and as such, I
-> strongly recommend you do not force it through -mm. We are perfectly
-> capable of merging it through the MTD tree if it ever gets proper
-> vetting by people in MTD (not just on block devices), and I am well
-> aware of this patch set's existence.
-> 
-> However, the patch really provides little to no benefit to the MTD
-> subsystem at the moment, at the added cost of reviewing the small
-> differences in parsing. For some reason, Cai decided to make small
-> differences in the parser between drivers/mtd/cmdlinepart.c and
-> block/cmdline-parser.c, and it is not obvious that these differences
-> retain the same parsing. For instance, according to my code
-> read-through, the block device parser seems to accept multiple
-> partitions to be specified with "-" (meaning "fill the remaining
-> device"). MTD already has code that rejects such a parser string
-> outright.
+--Signature=_Fri__8_Nov_2013_18_15_31_+1100_j6mXh5plb9uieVvv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The next '-' partition be ignore at function "cmdline_parts_set", and the client will get a right result.
-Is there any other worry about '-' I don't know ?
+Hi Al,
 
-> 
-> So, I'd recommend one of the following:
-> (1) We (MTD users) make more time to properly test this patch and post
-> relevant results (i.e., tested partition strings) or
-> (2) Somebody (Cai?) spend time to actually make block/cmdline-parser.c
-> fully equivalent to the parser in drivers/mtd/cmdlinepart.c. That
-> means it should be trivial to compare the two and say "yes, these are
-> equivalent". That is currently not the case, AFAICT.
+On Fri, 8 Nov 2013 17:50:55 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> Al, I do have to wonder why a commit whose whole commit message is:
+>=20
+> "RCU'd vfsmounts
+>    =20
+> _very_ preliminary, barely tested."
+>=20
+> is in linux-next as is not being kept over for v3.14 at this point.
 
-I understand your worry about, we use cmdlinepart many years.
-I will spend time to make block/cmdline-parser.c fully equivalent to the
-parser in drivers/mtd/cmdlinepart.c.
+Oh, I see, it was discussed back at the beginning of October.  Pity it
+didn't turn up in linux-next then so my volunteer temporary replacements
+could have dealt with it :-)
 
-> 
-> Without one of those two, I will give my NAK.
-> 
-> Brian
+However, it really, really needs a (better) commit message.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__8_Nov_2013_18_15_31_+1100_j6mXh5plb9uieVvv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSfI+XAAoJEMDTa8Ir7ZwVAw8P/3BkwQDM9MlkItlu6Ia+EUGY
+8FDOgMktno2ET2wVRX3za1DbVLevo9Rl8g28qps6nYj6RgKOYCRC4DI6sl/xyKfk
+PD1GkvVV3UsYVgVMoBX3wGXujN/g8KwHWFYnrNJJTZmxZ1vvMUmQGNS98/WexVfm
+EDtWbndYJrVjcsjWSOpn0K+C46nhj0ZA9GW0yNB9Paq7mRh7KGumkOivmBaqGnsp
+gwslw2Rt25SA5SVjopt+5X4QJiAGWOv1d7NhTDkoZi5bY4fg5V09cRYpSGUYsivJ
+vCEcbBywOruPLdDAl3dGFcTrp+Z7PFrvoNJE2hvbhqKXytnMZjZQEu00QpFIr1KY
+TJhNYhCu4fh4hzk+xOdBPxQZuLhyIGB+jn8uN/BVj5Oc4ZLG0wQMpCTCOuC/gG4i
+TA5NOZSwJ5DjOI/n8rKei/pfWNZ/dcINUm9MCCLnvqxHuK4d+/ig59eGQID8A7Yi
+dPGtFKh0IXc+VHj9C2+LGMpJI16lLhFAFDWDjn7shsFew+iRYt5tkyZlfQvdvDx3
+/ZxMDfUeyipsU1HZG9zJFqliQ/mdxCgHCRljmMu/gzeefh53Rxo4uEcvNGBqqgOJ
+6PErZNHWiPpc0Qw4mzhHUuGNMHWtDhukH1kzOhmZXXqFtRoE8WRXLm5GdsD2Tckm
+Ci7qLZDcvcPdbXSOlgOH
+=Thdk
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__8_Nov_2013_18_15_31_+1100_j6mXh5plb9uieVvv--
