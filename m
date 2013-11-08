@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab3KHHNF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 02:13:05 -0500
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:46443 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756410Ab3KHHNB (ORCPT
+	id S1756690Ab3KHHOd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 02:14:33 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:42488 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab3KHHO2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 02:13:01 -0500
+	Fri, 8 Nov 2013 02:14:28 -0500
+From: Caizhiyong <caizhiyong@hisilicon.com>
+To: Brian Norris <computersforpeace@gmail.com>
+CC: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Karel Zak <kzak@redhat.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "Shmulik Ladkani" <shmulik.ladkani@gmail.com>
+Subject: RE: [PATCH 2/2] mtd: cmdlinepart: use cmdline partition parser lib
+Thread-Topic: [PATCH 2/2] mtd: cmdlinepart: use cmdline partition parser lib
+Thread-Index: AQHO2oFrdZVowL3RlkWq6ldfMyBBbpoa6lug
+Date: Fri, 8 Nov 2013 07:13:21 +0000
+Message-ID: <C3050A4DBA34F345975765E43127F10F1C08B2A8@szxeml512-mbs.china.huawei.com>
+References: <C3050A4DBA34F345975765E43127F10F1C0643B8@szxeml512-mbx.china.huawei.com>
+	<20131020120603.GA18678@localhost>
+	<C3050A4DBA34F345975765E43127F10F1C084C81@szxeml512-mbs.china.huawei.com>
+	<20131105144328.fb5a6a1d423776b324771706@linux-foundation.org>
+ <CAN8TOE8CoSsUSGaLG5Z_-xVLhhnm052Hp2Rqzs3Hr3cU8Lp-8g@mail.gmail.com>
+In-Reply-To: <CAN8TOE8CoSsUSGaLG5Z_-xVLhhnm052Hp2Rqzs3Hr3cU8Lp-8g@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.67.223.36]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com>
-References: <1383789208.5970.1.camel@phoenix>
-	<CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
-	<CAFRkauAEt-YhBt11opj_GVCLrxGsTSd2LowWGmukTSmGuJkd3A@mail.gmail.com>
-	<CACVXFVO=QA-R1+twCL9fc_3vASg6Ap-3ezi=tU1MV1pdPYrfWw@mail.gmail.com>
-	<CAFRkauAdR3=ByE0_B3OsqOBjmbz2a02EXb+6g-vn=1TJ7AZc8Q@mail.gmail.com>
-	<CACVXFVMaLOfDvzdn_1NryQY59cgtLdMMqHL-_ZAa95MPz4p56Q@mail.gmail.com>
-	<CAFRkauDe7V3N0AbfvE_=GEXHZ_Fw62VsA8p50wSUYE1-TRqMfw@mail.gmail.com>
-	<87zjpf4w0j.fsf@rustcorp.com.au>
-	<CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com>
-	<CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com>
-Date: Fri, 8 Nov 2013 15:13:00 +0800
-Message-ID: <CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com>
-Subject: Re: kernel BUG at kernel/kallsyms.c:222!
-From: Ming Lei <tom.leiming@gmail.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+> Nobody has had time to test this on MTD, it seems, and as such, I
+> strongly recommend you do not force it through -mm. We are perfectly
+> capable of merging it through the MTD tree if it ever gets proper
+> vetting by people in MTD (not just on block devices), and I am well
+> aware of this patch set's existence.
+> 
+> However, the patch really provides little to no benefit to the MTD
+> subsystem at the moment, at the added cost of reviewing the small
+> differences in parsing. For some reason, Cai decided to make small
+> differences in the parser between drivers/mtd/cmdlinepart.c and
+> block/cmdline-parser.c, and it is not obvious that these differences
+> retain the same parsing. For instance, according to my code
+> read-through, the block device parser seems to accept multiple
+> partitions to be specified with "-" (meaning "fill the remaining
+> device"). MTD already has code that rejects such a parser string
+> outright.
 
-On Fri, Nov 8, 2013 at 12:20 PM, Axel Lin <axel.lin@ingics.com> wrote:
->
->
-> Hi Ming,
->
-> I have patches on top of 3.12 to support gpl32700 SoC.
-> So you cannot find this platform on mainline kernel.
+The next '-' partition be ignore at function "cmdline_parts_set", and the client will get a right result.
+Is there any other worry about '-' I don't know ?
 
-OK, I see.
+> 
+> So, I'd recommend one of the following:
+> (1) We (MTD users) make more time to properly test this patch and post
+> relevant results (i.e., tested partition strings) or
+> (2) Somebody (Cai?) spend time to actually make block/cmdline-parser.c
+> fully equivalent to the parser in drivers/mtd/cmdlinepart.c. That
+> means it should be trivial to compare the two and say "yes, these are
+> equivalent". That is currently not the case, AFAICT.
 
-> I havn't tried perf, below is my config for your reference:
-> (to make the config smaller, I grep out disabled config entries.)
+I understand your worry about, we use cmdlinepart many years.
+I will spend time to make block/cmdline-parser.c fully equivalent to the
+parser in drivers/mtd/cmdlinepart.c.
 
-I doubt CONFIG_VMSPLIT_3G/CONFIG_PAGE_OFFSET isn't
-used at all in your unmerged patchset, also your link script should
-be different with in-tree arch/arm/kernel/vmlinux.lds.S, otherwise
-you may put all your kernel symbols after 0xC00000000.
-
-Maybe you need to not define PAGE_OFFSET and let it be
-PHYS_OFFSET at default, also VMSPLIT_3G shouldn't have
-been there on non-MMU linux.
-
-
-Thanks,
--- 
-Ming Lei
+> 
+> Without one of those two, I will give my NAK.
+> 
+> Brian
