@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab3KHGqX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 01:46:23 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:62519 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab3KHGqR (ORCPT
+	id S1753187Ab3KHGq2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 01:46:28 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:64064 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830Ab3KHGqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 01:46:17 -0500
+	Fri, 8 Nov 2013 01:46:23 -0500
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
         Grygorii Strashko <grygorii.strashko@ti.com>
@@ -14,9 +14,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         LAK <linux-arm-kernel@lists.infradead.org>, linux-gpio@vger.kernel.org,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 1/2] gpio: davinci: Fix a check for unbanked gpio
-Date: Fri,  8 Nov 2013 12:15:55 +0530
-Message-Id: <1383893156-28010-2-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH 2/2] ARM: davinci: Fix number of resources passed to davinci_gpio_register() call
+Date: Fri,  8 Nov 2013 12:15:56 +0530
+Message-Id: <1383893156-28010-3-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383893156-28010-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1383893156-28010-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -26,39 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-This patch fixes a check for offset in gpio_to_irq_unbanked()
-and also assigns gpio_irq, gpio_unbanked of chips[0] to
-appropriate values which is used in gpio_to_irq_unbanked()
-function.
+The davinci_gpio_register() function expects the number of
+resources as the second parameter, but size of resources
+was passed to it due to which it was causing unexpected
+behaviour. This patch fixes the same by passing the
+ARRAY_SIZE of resources.
 
 Reported-by: Grygorii Strashko <grygorii.strashko@ti.com>
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/gpio/gpio-davinci.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arm/mach-davinci/dm355.c  |    2 +-
+ arch/arm/mach-davinci/dm365.c  |    2 +-
+ arch/arm/mach-davinci/dm644x.c |    2 +-
+ arch/arm/mach-davinci/dm646x.c |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
-index 8847adf..84be701 100644
---- a/drivers/gpio/gpio-davinci.c
-+++ b/drivers/gpio/gpio-davinci.c
-@@ -327,7 +327,7 @@ static int gpio_to_irq_unbanked(struct gpio_chip *chip, unsigned offset)
- 	 * NOTE:  we assume for now that only irqs in the first gpio_chip
- 	 * can provide direct-mapped IRQs to AINTC (up to 32 GPIOs).
- 	 */
--	if (offset < d->irq_base)
-+	if (offset < d->gpio_unbanked)
- 		return d->gpio_irq + offset;
- 	else
- 		return -ENODEV;
-@@ -419,6 +419,8 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
+diff --git a/arch/arm/mach-davinci/dm355.c b/arch/arm/mach-davinci/dm355.c
+index ef9ff1f..536ce52 100644
+--- a/arch/arm/mach-davinci/dm355.c
++++ b/arch/arm/mach-davinci/dm355.c
+@@ -906,7 +906,7 @@ static struct davinci_gpio_platform_data dm355_gpio_platform_data = {
+ int __init dm355_gpio_register(void)
+ {
+ 	return davinci_gpio_register(dm355_gpio_resources,
+-				     sizeof(dm355_gpio_resources),
++				     ARRAY_SIZE(dm355_gpio_resources),
+ 				     &dm355_gpio_platform_data);
+ }
+ /*----------------------------------------------------------------------*/
+diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
+index 1511a06..9c96520 100644
+--- a/arch/arm/mach-davinci/dm365.c
++++ b/arch/arm/mach-davinci/dm365.c
+@@ -720,7 +720,7 @@ static struct davinci_gpio_platform_data dm365_gpio_platform_data = {
+ int __init dm365_gpio_register(void)
+ {
+ 	return davinci_gpio_register(dm365_gpio_resources,
+-				     sizeof(dm365_gpio_resources),
++				     ARRAY_SIZE(dm365_gpio_resources),
+ 				     &dm365_gpio_platform_data);
+ }
  
- 		/* pass "bank 0" GPIO IRQs to AINTC */
- 		chips[0].chip.to_irq = gpio_to_irq_unbanked;
-+		chips[0].gpio_irq = bank_irq;
-+		chips[0].gpio_unbanked = pdata->gpio_unbanked;
- 		binten = BIT(0);
- 
- 		/* AINTC handles mask/unmask; GPIO handles triggering */
+diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
+index 143a321..72a3aa7 100644
+--- a/arch/arm/mach-davinci/dm644x.c
++++ b/arch/arm/mach-davinci/dm644x.c
+@@ -792,7 +792,7 @@ static struct davinci_gpio_platform_data dm644_gpio_platform_data = {
+ int __init dm644x_gpio_register(void)
+ {
+ 	return davinci_gpio_register(dm644_gpio_resources,
+-				     sizeof(dm644_gpio_resources),
++				     ARRAY_SIZE(dm644_gpio_resources),
+ 				     &dm644_gpio_platform_data);
+ }
+ /*----------------------------------------------------------------------*/
+diff --git a/arch/arm/mach-davinci/dm646x.c b/arch/arm/mach-davinci/dm646x.c
+index 2a73f29..d1b646c 100644
+--- a/arch/arm/mach-davinci/dm646x.c
++++ b/arch/arm/mach-davinci/dm646x.c
+@@ -769,7 +769,7 @@ static struct davinci_gpio_platform_data dm646x_gpio_platform_data = {
+ int __init dm646x_gpio_register(void)
+ {
+ 	return davinci_gpio_register(dm646x_gpio_resources,
+-				     sizeof(dm646x_gpio_resources),
++				     ARRAY_SIZE(dm646x_gpio_resources),
+ 				     &dm646x_gpio_platform_data);
+ }
+ /*----------------------------------------------------------------------*/
 -- 
 1.7.9.5
 
