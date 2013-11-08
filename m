@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756778Ab3KHKCp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 05:02:45 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:8001 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753007Ab3KHKCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 05:02:41 -0500
-X-IronPort-AV: E=Sophos;i="4.93,658,1378828800"; 
-   d="scan'208";a="8980322"
-Message-ID: <527CB54B.4040704@cn.fujitsu.com>
-Date: Fri, 08 Nov 2013 17:56:27 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Al Viro <viro@zeniv.linux.org.uk>, fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] fs/buffer.c: exit if already confirmed page has
- dirty and writeback buffers
-References: <5278C21B.7010204@cn.fujitsu.com> <20131107114459.GB31798@quack.suse.cz>
-In-Reply-To: <20131107114459.GB31798@quack.suse.cz>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/08 18:00:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/08 18:00:42,
-	Serialize complete at 2013/11/08 18:00:42
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756870Ab3KHKIw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 05:08:52 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:37987 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753610Ab3KHKIu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 05:08:50 -0500
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org (open list:VIDEOBUF2 FRAMEWORK),
+        linux-kernel@vger.kernel.org (open list), sylvester.nawrocki@gmail.com,
+        hverkuil@xs4all.nl
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH] vb2: Return 0 when streamon and streamoff are already on/off
+Date: Fri,  8 Nov 2013 11:08:45 +0100
+Message-Id: <1383905325-6163-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+According to the doc:
 
-On 11/07/2013 07:44 PM, Jan Kara wrote:
+If VIDIOC_STREAMON is called when streaming is already in progress,
+or if VIDIOC_STREAMOFF is called when streaming is already stopped,
+then the ioctl does nothing and 0 is returned.
 
-> On Tue 05-11-13 18:02:03, Gu Zheng wrote:
->> Stop the loop of iterating bh if we have confirmed page
->> has dirty and writeback buffers.
->   Thanks for the patch. What I'm somewhat missing here is a motivation of
-> the patch. For the common case where blocksize == pagesize this is a noop
-> (only adds some code). 
+The current implementation was returning -EINVAL instead.
 
-Yes, you're right.
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ drivers/media/v4l2-core/videobuf2-core.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-> For the case where blocksize < pagesize we can
-> possibly save checking some buffers but how common is that going be?
-
-It's really hard to say.:( But many file systems support small blocksize.
-
-> Does that minimal speed up outweight the cost of additional check / code
-> complication?
-
-In fact, without complete test. But I think the speed up can outweigh the cost
-if blocksize small enough. For example, blocksize: 1k, pagesize: 4k, we can
-reduce 6 bh check(3 dirty, 3 writeback) in the best case.
-
-Best regards,
-Gu
-
-> 
-> 								Honza
-> 
->>
->> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->> ---
->>  fs/buffer.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/fs/buffer.c b/fs/buffer.c
->> index 6024877..519cc5c 100644
->> --- a/fs/buffer.c
->> +++ b/fs/buffer.c
->> @@ -112,7 +112,7 @@ void buffer_check_dirty_writeback(struct page *page,
->>  			*dirty = true;
->>  
->>  		bh = bh->b_this_page;
->> -	} while (bh != head);
->> +	} while ((bh != head) && !(*writeback && *dirty));
->>  }
->>  EXPORT_SYMBOL(buffer_check_dirty_writeback);
->>  
->> -- 
->> 1.7.7
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+index c979946..a3c8eff 100644
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -1695,8 +1695,8 @@ int vb2_streamon(struct vb2_queue *q, enum v4l2_buf_type type)
+ 	}
+ 
+ 	if (q->streaming) {
+-		dprintk(1, "streamon: already streaming\n");
+-		return -EBUSY;
++		dprintk(3, "streamon successful: already streaming\n");
++		return 0;
+ 	}
+ 
+ 	/*
+@@ -1752,8 +1752,8 @@ int vb2_streamoff(struct vb2_queue *q, enum v4l2_buf_type type)
+ 	}
+ 
+ 	if (!q->streaming) {
+-		dprintk(1, "streamoff: not streaming\n");
+-		return -EINVAL;
++		dprintk(3, "streamoff successful: not streaming\n");
++		return 0;
+ 	}
+ 
+ 	/*
+-- 
+1.8.4.rc3
 
