@@ -1,156 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758307Ab3KHTwn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 14:52:43 -0500
-Received: from mga02.intel.com ([134.134.136.20]:5797 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758105Ab3KHTwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 14:52:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="432139922"
-Subject: [PATCH v5 4/4] MCS Lock: Barrier corrections
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Will Deacon <will.deacon@arm.com>, "Figo.zhang" <figo1802@gmail.com>
-In-Reply-To: <cover.1383935697.git.tim.c.chen@linux.intel.com>
-References: <cover.1383935697.git.tim.c.chen@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Nov 2013 11:52:38 -0800
-Message-ID: <1383940358.11046.417.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1758248Ab3KHTzG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 14:55:06 -0500
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:53528 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757722Ab3KHTzD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 14:55:03 -0500
+From: Sameer Nanda <snanda@chromium.org>
+To: akpm@linux-foundation.org, mhocko@suse.cz, rientjes@google.com,
+        hannes@cmpxchg.org, rusty@rustcorp.com.au, semenzato@google.com,
+        murzin.v@gmail.com, oleg@redhat.com, dserrg@gmail.com,
+        msb@chromium.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sameer Nanda <snanda@chromium.org>
+Subject: [PATCH v3] mm, oom: Fix race when selecting process to kill
+Date: Fri,  8 Nov 2013 11:49:33 -0800
+Message-Id: <1383940173-16480-1-git-send-email-snanda@chromium.org>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <20131108184515.GA11555@redhat.com>
+References: <20131108184515.GA11555@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Waiman Long <Waiman.Long@hp.com>
+The selection of the process to be killed happens in two spots:
+first in select_bad_process and then a further refinement by
+looking for child processes in oom_kill_process. Since this is
+a two step process, it is possible that the process selected by
+select_bad_process may get a SIGKILL just before oom_kill_process
+executes. If this were to happen, __unhash_process deletes this
+process from the thread_group list. This results in oom_kill_process
+getting stuck in an infinite loop when traversing the thread_group
+list of the selected process.
 
-This patch corrects the way memory barriers are used in the MCS lock
-with smp_load_acquire and smp_store_release fucnction.
-It removes ones that are not needed.
+Fix this race by adding a pid_alive check for the selected process
+with tasklist_lock held in oom_kill_process.
 
-It uses architecture specific load-acquire and store-release
-primitives for synchronization, if available. Generic implementations
-are provided in case they are not defined even though they may not
-be optimal. These generic implementation could be removed later on
-once changes are made in all the relevant header files.
-
-Suggested-by: Michel Lespinasse <walken@google.com>
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Sameer Nanda <snanda@chromium.org>
 ---
- kernel/locking/mcs_spinlock.c |   48 +++++++++++++++++++++++++++++++++++------
- 1 files changed, 41 insertions(+), 7 deletions(-)
+ mm/oom_kill.c | 21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
-index b6f27f8..df5c167 100644
---- a/kernel/locking/mcs_spinlock.c
-+++ b/kernel/locking/mcs_spinlock.c
-@@ -23,6 +23,31 @@
- #endif
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 6738c47..7b28d9f 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -413,12 +413,20 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 					      DEFAULT_RATELIMIT_BURST);
  
- /*
-+ * Fall back to use the regular atomic operations and memory barrier if
-+ * the acquire/release versions are not defined.
-+ */
-+#ifndef	xchg_acquire
-+# define xchg_acquire(p, v)		xchg(p, v)
-+#endif
+ 	/*
++	 * while_each_thread is currently not RCU safe. Lets hold the
++	 * tasklist_lock across all invocations of while_each_thread (including
++	 * the one in find_lock_task_mm) in this function.
++	 */
++	read_lock(&tasklist_lock);
 +
-+#ifndef	smp_load_acquire
-+# define smp_load_acquire(p)				\
-+	({						\
-+		typeof(*p) __v = ACCESS_ONCE(*(p));	\
-+		smp_mb();				\
-+		__v;					\
-+	})
-+#endif
-+
-+#ifndef smp_store_release
-+# define smp_store_release(p, v)		\
-+	do {					\
-+		smp_mb();			\
-+		ACCESS_ONCE(*(p)) = v;		\
-+	} while (0)
-+#endif
-+
-+/*
-  * In order to acquire the lock, the caller should declare a local node and
-  * pass a reference of the node to this function in addition to the lock.
-  * If the lock has already been acquired, then this will proceed to spin
-@@ -37,15 +62,19 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- 	node->locked = 0;
- 	node->next   = NULL;
- 
--	prev = xchg(lock, node);
-+	/* xchg() provides a memory barrier */
-+	prev = xchg_acquire(lock, node);
- 	if (likely(prev == NULL)) {
- 		/* Lock acquired */
++	/*
+ 	 * If the task is already exiting, don't alarm the sysadmin or kill
+ 	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+ 	 */
+-	if (p->flags & PF_EXITING) {
++	if (p->flags & PF_EXITING || !pid_alive(p)) {
+ 		set_tsk_thread_flag(p, TIF_MEMDIE);
+ 		put_task_struct(p);
++		read_unlock(&tasklist_lock);
  		return;
  	}
- 	ACCESS_ONCE(prev->next) = node;
--	smp_wmb();
--	/* Wait until the lock holder passes the lock down */
--	while (!ACCESS_ONCE(node->locked))
-+	/*
-+	 * Wait until the lock holder passes the lock down.
-+	 * Using smp_load_acquire() provides a memory barrier that
-+	 * ensures subsequent operations happen after the lock is acquired.
-+	 */
-+	while (!(smp_load_acquire(&node->locked)))
- 		arch_mutex_cpu_relax();
- }
- EXPORT_SYMBOL_GPL(mcs_spin_lock);
-@@ -54,7 +83,7 @@ EXPORT_SYMBOL_GPL(mcs_spin_lock);
-  * Releases the lock. The caller should pass in the corresponding node that
-  * was used to acquire the lock.
-  */
--static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
-+void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- {
- 	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
  
-@@ -68,7 +97,12 @@ static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *nod
- 		while (!(next = ACCESS_ONCE(node->next)))
- 			arch_mutex_cpu_relax();
- 	}
--	ACCESS_ONCE(next->locked) = 1;
--	smp_wmb();
+@@ -436,7 +444,6 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	 * parent.  This attempts to lose the minimal amount of work done while
+ 	 * still freeing memory.
+ 	 */
+-	read_lock(&tasklist_lock);
+ 	do {
+ 		list_for_each_entry(child, &t->children, sibling) {
+ 			unsigned int child_points;
+@@ -456,10 +463,18 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 			}
+ 		}
+ 	} while_each_thread(p, t);
+-	read_unlock(&tasklist_lock);
+ 
+ 	rcu_read_lock();
++
+ 	p = find_lock_task_mm(victim);
++
 +	/*
-+	 * Pass lock to next waiter.
-+	 * smp_store_release() provides a memory barrier to ensure
-+	 * all operations in the critical section has been completed
-+	 * before unlocking.
++	 * Since while_each_thread is currently not RCU safe, this unlock of
++	 * tasklist_lock may need to be moved further down if any additional
++	 * while_each_thread loops get added to this function.
 +	 */
-+	smp_store_release(&next->locked , 1);
- }
- EXPORT_SYMBOL_GPL(mcs_spin_unlock);
++	read_unlock(&tasklist_lock);
++
+ 	if (!p) {
+ 		rcu_read_unlock();
+ 		put_task_struct(victim);
 -- 
-1.7.4.4
-
+1.8.4.1
 
