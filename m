@@ -1,58 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab3KHN0g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 08:26:36 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:61449 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab3KHN0e (ORCPT
+	id S1757273Ab3KHNeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 08:34:06 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56531 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751827Ab3KHNeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 08:26:34 -0500
-Message-ID: <1383917188.4964.94.camel@marge.simpson.net>
-Subject: Re: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
-From: Mike Galbraith <bitbucket@online.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>
-Date: Fri, 08 Nov 2013 14:26:28 +0100
-In-Reply-To: <20131108123713.GC18245@linux.vnet.ibm.com>
-References: <1383228427.5272.36.camel@marge.simpson.net>
-	 <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>
-	 <1383794799.5441.16.camel@marge.simpson.net>
-	 <1383798668.5441.25.camel@marge.simpson.net>
-	 <20131108032343.GA18245@linux.vnet.ibm.com>
-	 <1383895880.4964.91.camel@marge.simpson.net>
-	 <20131108123713.GC18245@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:VfpykriFRihAG/ncYw3mtDduf2vU3VcwTJ77Or7WZGg
- kQlZjWMuNb4AHEw+sHQPsrjKKAQDHi0YTrd3cney1NS0cKELlj
- RsyBEJIGWa4pjA7DXNn9wKeRG/U4OLZ4qqwVfNVNyuwLlaoVmy
- 3wBIgUfSXIoASR/367MDJ11m2me234A3ZJRK8hygjhFpXIz68g
- axquAu0Nc871DE20GXEbdQrjLwsxs+rLzepE6se9YIDny3DkAl
- M7TvcM/bYCcV/IFccfGH+289pA9tL4Aa8GnyYySLHOBfu0bvwk
- nd4iwngXytWh9SG9B5xHZvZH63+n8xmrWKkVP8Go/6umoQo8dk
- xE/S/7Vq2Pj+1nNPOPD5d8/sWyLYfcxU9XOyG+i9B
+	Fri, 8 Nov 2013 08:34:02 -0500
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: cw00.choi@samsung.com
+Cc: myungjoo.ham@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/4] extcon: arizona: Add defines for microphone detection levels
+Date: Fri,  8 Nov 2013 13:19:40 +0000
+Message-Id: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-08 at 04:37 -0800, Paul E. McKenney wrote: 
-> On Fri, Nov 08, 2013 at 08:31:20AM +0100, Mike Galbraith wrote:
-> > On Thu, 2013-11-07 at 19:23 -0800, Paul E. McKenney wrote:
-> > 
-> > > An untested patch that gets rid of the RCU_SOFTIRQs in this case is below.
-> > 
-> > Yup, toasted.
-> 
-> You lost me on this one.  If my patch broke your system, any chance of
-> any diagnostic information?
+Improve readability by creating a define for each microphone detection
+level.
 
-No no, the RCU_SOFTIRQs are toast, history, gone.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/extcon/extcon-arizona.c       |   21 ++++++++++++++++-----
+ include/linux/mfd/arizona/registers.h |    9 +++++++++
+ 2 files changed, 25 insertions(+), 5 deletions(-)
 
--Mike
+diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+index 3c55ec8..6d914ba 100644
+--- a/drivers/extcon/extcon-arizona.c
++++ b/drivers/extcon/extcon-arizona.c
+@@ -44,6 +44,17 @@
+ #define HPDET_DEBOUNCE 500
+ #define DEFAULT_MICD_TIMEOUT 2000
+ 
++enum {
++	MICD_LVL_1_TO_7 = ARIZONA_MICD_LVL_1 | ARIZONA_MICD_LVL_2 |
++			  ARIZONA_MICD_LVL_3 | ARIZONA_MICD_LVL_4 |
++			  ARIZONA_MICD_LVL_5 | ARIZONA_MICD_LVL_6 |
++			  ARIZONA_MICD_LVL_7,
++
++	MICD_LVL_0_TO_7 = ARIZONA_MICD_LVL_0 | MICD_LVL_1_TO_7,
++
++	MICD_LVL_0_TO_8 = MICD_LVL_0_TO_7 | ARIZONA_MICD_LVL_8,
++};
++
+ struct arizona_extcon_info {
+ 	struct device *dev;
+ 	struct arizona *arizona;
+@@ -765,7 +776,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 
+ 	mutex_lock(&info->lock);
+ 
+-	for (i = 0; i < 10 && !(val & 0x7fc); i++) {
++	for (i = 0; i < 10 && !(val & MICD_LVL_0_TO_8); i++) {
+ 		ret = regmap_read(arizona->regmap, ARIZONA_MIC_DETECT_3, &val);
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev,
+@@ -784,7 +795,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 		}
+ 	}
+ 
+-	if (i == 10 && !(val & 0x7fc)) {
++	if (i == 10 && !(val & MICD_LVL_0_TO_8)) {
+ 		dev_err(arizona->dev, "Failed to get valid MICDET value\n");
+ 		mutex_unlock(&info->lock);
+ 		return;
+@@ -798,7 +809,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 	}
+ 
+ 	/* If we got a high impedence we should have a headset, report it. */
+-	if (info->detecting && (val & 0x400)) {
++	if (info->detecting && (val & ARIZONA_MICD_LVL_8)) {
+ 		arizona_identify_headphone(info);
+ 
+ 		ret = extcon_update_state(&info->edev,
+@@ -827,7 +838,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 	 * plain headphones.  If both polarities report a low
+ 	 * impedence then give up and report headphones.
+ 	 */
+-	if (info->detecting && (val & 0x3f8)) {
++	if (info->detecting && (val & MICD_LVL_1_TO_7)) {
+ 		if (info->jack_flips >= info->micd_num_modes * 10) {
+ 			dev_dbg(arizona->dev, "Detected HP/line\n");
+ 			arizona_identify_headphone(info);
+@@ -851,7 +862,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 	 * If we're still detecting and we detect a short then we've
+ 	 * got a headphone.  Otherwise it's a button press.
+ 	 */
+-	if (val & 0x3fc) {
++	if (val & MICD_LVL_0_TO_7) {
+ 		if (info->mic) {
+ 			dev_dbg(arizona->dev, "Mic button detected\n");
+ 
+diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
+index 4706d3d..10d9e70 100644
+--- a/include/linux/mfd/arizona/registers.h
++++ b/include/linux/mfd/arizona/registers.h
+@@ -2196,6 +2196,15 @@
+ /*
+  * R677 (0x2A5) - Mic Detect 3
+  */
++#define ARIZONA_MICD_LVL_0                       0x0004  /* MICD_LVL - [2] */
++#define ARIZONA_MICD_LVL_1                       0x0008  /* MICD_LVL - [3] */
++#define ARIZONA_MICD_LVL_2                       0x0010  /* MICD_LVL - [4] */
++#define ARIZONA_MICD_LVL_3                       0x0020  /* MICD_LVL - [5] */
++#define ARIZONA_MICD_LVL_4                       0x0040  /* MICD_LVL - [6] */
++#define ARIZONA_MICD_LVL_5                       0x0080  /* MICD_LVL - [7] */
++#define ARIZONA_MICD_LVL_6                       0x0100  /* MICD_LVL - [8] */
++#define ARIZONA_MICD_LVL_7                       0x0200  /* MICD_LVL - [9] */
++#define ARIZONA_MICD_LVL_8                       0x0400  /* MICD_LVL - [10] */
+ #define ARIZONA_MICD_LVL_MASK                    0x07FC  /* MICD_LVL - [10:2] */
+ #define ARIZONA_MICD_LVL_SHIFT                        2  /* MICD_LVL - [10:2] */
+ #define ARIZONA_MICD_LVL_WIDTH                        9  /* MICD_LVL - [10:2] */
+-- 
+1.7.2.5
 
