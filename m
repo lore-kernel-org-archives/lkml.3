@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861Ab3KHRtA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 12:49:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55503 "EHLO
+	id S1757943Ab3KHRtF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 12:49:05 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55504 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756953Ab3KHRs6 (ORCPT
+	with ESMTP id S1756972Ab3KHRtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 12:48:58 -0500
-Date: Fri, 8 Nov 2013 10:48:56 -0700
+	Fri, 8 Nov 2013 12:49:01 -0500
+Date: Fri, 8 Nov 2013 10:49:00 -0700
 From: Jens Axboe <axboe@kernel.dk>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] block IO core bits for 3.13
-Message-ID: <20131108174856.GA3195@kernel.dk>
+Subject: [GIT PULL] block drivers updates for 3.13
+Message-ID: <20131108174900.GB3195@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,192 +22,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-This is the pull request for the core changes in the block layer for
-3.13. It contains:
+This is the block driver pull request for 3.13. As with the core pull
+request just sent out, this was rebased on top of the core branch again
+after the immutable series was pulled. This also means that bcache gets
+to sit the initial pull over. I will send a second driver pull request
+in the merge window to get those fixes in, once they have been rebased
+and tested on top of the non-immutable stack.
 
-- The new blk-mq request interface. This is a new and more scalable
-  queueing model that marries the best part of the request based
-  interface we currently have (which is fully featured, but scales
-  poorly) and the bio based "interface" which the new drivers for high
-  IOPS devices end up using because it's much faster than the request
-  based one. The bio interface has no block layer support, since it taps
-  into the stack much earlier. This means that drivers end up having to
-  implement a lot of functionality on their own, like tagging, timeout
-  handling, requeue, etc. The blk-mq interface provides all these. Some
-  drivers even provide a switch to select bio or rq and has code to
-  handle both, since things like merging only works in the rq model and
-  hence is faster for some workloads. This is a huge mess. Conversion of
-  these drivers nets us a substantial code reduction. Initial results on
-  converting SCSI to this model even shows an 8x improvement on single
-  queue devices. So while the model was intended to work on the newer
-  multiqueue devices, it has substantial improvements for "classic"
-  hardware as well. This code has gone through extensive testing and
-  development, it's now ready to go. A pull request is coming to convert
-  virtio-blk to this model will be will be coming as well, with more
-  drivers scheduled for 3.14 conversion.
+This pull request contains:
 
-- Two blktrace fixes from Jan and Chen Gang.
+- Add support for the sTec Kronos pci-e flash card from sTec. Also has
+  various cleanups for this driver, from myself, Bart, Mike Snizter, and
+  Wei Yongjun.
 
-- A plug merge fix from Alireza Haghdoost.
+- Add surprise removal support for the micron mtip32xx driver from
+  Micron.
 
-- Conversion of __get_cpu_var() from Christoph Lameter.
+- Floppy documentation fix from Ben Harris.
 
-- Fix for sector_div() with 64-bit divider from Geert Uytterhoeven.
+- debugfs bug fix for pktcdvd from Dan Carpenter.
 
-- A fix for a race between request completion and the timeout handling
-  from Jeff Moyer. This is what caused the merge conflict with
-  blk-mq/core, in case you are looking at that.
+- Fix for the mtip32xx driver stack usage in the debugfs path,
+  dynamically allocating those buffers instead. From David Milburn.
 
-- A dm stacking fix from Mike Snitzer.
+- Disable cpqarray in Kconfig. The plan is to remove it on request of
+  HP, but lets disable it for a few revisions just to see if anyone
+  yells.
 
-- A code consolidation fix and duplicated code removal from Kent
-  Overstreet.
+- drbd fixes from Lars Ellenberg and Philipp Reisner.
 
-- A handful of block bug fixes from Mikulas Patocka, fixing a loop crash
-  and memory corruption on blk cg.
+- Elevator switch fix for the s390 block driver from Heiko Carstens.
 
-- Elevator switch bug fix from Tomoki Sekiyama.
+- loop crash fix on IO to unassigned device from Mikulas Patocka.
 
+- A series of bug fixes for the IBM rsxx pci-e flash driver from Philip
+  J Kelleher.
 
-A heads-up that I had to rebase this branch. Initially the immutable
-bio_vecs had been queued up for inclusion, but a week later, it became
-clear that it wasn't fully cooked yet. So the decision was made to pull
-this out and postpone it until 3.14. It was a straight forward rebase,
-just pruning out the immutable series and the later fixes of problems
-with it. The rest of the patches applied directly and no further changes
-were made.
+- cciss probe fix from Stephen Cameron.
+
+- Xen block front/back fixes from Roger Pau Monne and Vegard Nossum.
 
 
 Please pull!
 
 
-  git://git.kernel.dk/linux-block.git for-3.13/core
+  git://git.kernel.dk/linux-block.git for-3.13/drivers
 
-for you to fetch changes up to e37459b8e2c7db6735e39e019e448b76e5e77647:
+for you to fetch changes up to f7cb20f03dc6dff1b19942cf3dda6d154c86f29b:
 
-  Merge branch 'blk-mq/core' into for-3.13/core (2013-11-08 09:08:12 -0700)
+  floppy: Correct documentation of driver options when used as a module. (2013-11-08 09:10:31 -0700)
 
 ----------------------------------------------------------------
+Akhil Bhansali (2):
+      Add support for sTec's pci-e flash card Kronos
+      skd: Fix checkpatch ERRORS and removed unused functions
 
-Alireza Haghdoost (1):
-      block: Enable sysfs nomerge control for I/O requests in the plug list
+Asai Thambi S P (1):
+      mtip32xx: Add SRSI support
 
-Chen Gang (1):
-      kernel: trace: blktrace: remove redundent memcpy() in compat_blk_trace_setup()
+Bartlomiej Zolnierkiewicz (11):
+      skd: fix unregister_blkdev() placement
+      skd: fix error paths in skd_init()
+      skd: fix error messages in skd_init()
+      skd: register block device only if some devices are present
+      skd: remove SCSI subsystem specific includes
+      skd: use <asm/unaligned.h>
+      skd: remove redundant skdev->pdev assignment from skd_pci_probe()
+      skd: remove SKD_OMIT_FROM_SRC_DIST ifdefs
+      skd: cleanup skd_do_inq_page_da()
+      skd: reorder construct/destruct code
+      skd: fix formatting in skd_s1120.h
 
-Christoph Hellwig (3):
-      block: remove request ref_count
-      blk-mq: add blk_mq_stop_hw_queues
-      blk-mq: fix for flush deadlock
+Ben Harris (1):
+      floppy: Correct documentation of driver options when used as a module.
 
-Christoph Lameter (1):
-      block: Replace __get_cpu_var uses
+Dan Carpenter (1):
+      pktcdvd: debugfs functions return NULL on error
 
-Duan Jiong (2):
-      block: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
-      block: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
+David Milburn (1):
+      mtip32xx: dynamically allocate buffer in debugfs functions
 
-Geert Uytterhoeven (1):
-      block: Do not call sector_div() with a 64-bit divisor
+Heiko Carstens (1):
+      s390/dasd: hold request queue sysfs lock when calling elevator_init()
 
-Jan Kara (1):
-      blktrace: Send BLK_TN_PROCESS events to all running traces
+Jens Axboe (3):
+      block: disable cpqarray in Kconfig
+      skd: rip out bio path
+      skd: cleanup the skd_*() function block wrapping
 
-Jeff Moyer (1):
-      block: fix race between request completion and timeout handling
+Lars Ellenberg (3):
+      drbd: fix NULL pointer deref in module init error path
+      drbd: fix decoding of bitmap vli rle for device sizes > 64 TB
+      drbd: avoid to shrink max_bio_size due to peer re-configuration
 
-Jens Axboe (7):
-      smp: export __smp_call_function_single()
-      smp: don't warn about csd->flags having CSD_FLAG_LOCK cleared for !wait
-      block: make rq->cmd_flags be 64-bit
-      blk-mq: new multi-queue block IO queueing mechanism
-      null_blk: multi queue aware block test driver
-      blk-mq: don't disallow request merges for req->special being set
-      Merge branch 'blk-mq/core' into for-3.13/core
-
-Kent Overstreet (2):
-      block: Use rw_copy_check_uvector()
-      block: Consolidate duplicated bio_trim() implementations
+Michael Opdenacker (1):
+      mg_disk: remove deprecated IRQF_DISABLED
 
 Mike Snitzer (1):
-      block: properly stack underlying max_segment_size to DM device
+      skd: more removal of bio-based code
 
-Mikulas Patocka (4):
-      blk-core: Fix memory corruption if blkcg_init_queue fails
-      loop: fix crash if blk_alloc_queue fails
-      block: fix a probe argument to blk_register_region
-      bdi: test bdi_init failure
+Mikulas Patocka (1):
+      loop: fix crash when using unassigned loop device
 
-Shaohua Li (5):
-      percpu_counter: make APIs irq safe
-      percpu_ida: make percpu_ida percpu size/batch configurable
-      percpu_ida: add percpu_ida_for_each_free
-      percpu_ida: add an API to return free tags
-      blk-mq: mq plug list breakage
+Philip J Kelleher (5):
+      rsxx: Handling failed pci_map_page on PowerPC and double free.
+      rsxx: Moving pci_map_page to prevent overflow.
+      rsxx: Kernel Panic caused by mapping Discards
+      rsxx: Disallow discards from being unmapped.
+      rsxx: Fix possible kernel panic with invalid config.
 
-Tomoki Sekiyama (2):
-      elevator: Fix a race in elevator switching and md device initialization
-      elevator: acquire q->sysfs_lock in elevator_change()
+Philipp Reisner (2):
+      drbd: Fix an connection drop issue after enabling allow-two-primaries
+      drbd: Fix adding of new minors with freshly created meta data
 
- block/Makefile               |    5 +-
- block/blk-core.c             |  175 +++--
- block/blk-exec.c             |   14 +-
- block/blk-flush.c            |  154 ++++-
- block/blk-iopoll.c           |    6 +-
- block/blk-lib.c              |   10 +-
- block/blk-merge.c            |   17 +-
- block/blk-mq-cpu.c           |   93 +++
- block/blk-mq-cpumap.c        |  108 +++
- block/blk-mq-sysfs.c         |  384 +++++++++++
- block/blk-mq-tag.c           |  204 ++++++
- block/blk-mq-tag.h           |   27 +
- block/blk-mq.c               | 1500 ++++++++++++++++++++++++++++++++++++++++++
- block/blk-mq.h               |   52 ++
- block/blk-settings.c         |    1 +
- block/blk-softirq.c          |    8 +-
- block/blk-sysfs.c            |   13 +
- block/blk-timeout.c          |   77 ++-
- block/blk.h                  |   17 +
- block/elevator.c             |   22 +-
- block/ioctl.c                |    2 +-
- block/scsi_ioctl.c           |   39 +-
- drivers/block/Kconfig        |    3 +
- drivers/block/Makefile       |    1 +
- drivers/block/brd.c          |    2 +-
- drivers/block/floppy.c       |    4 +-
- drivers/block/loop.c         |    6 +-
- drivers/block/null_blk.c     |  635 ++++++++++++++++++
- drivers/block/xen-blkfront.c |   53 +-
- drivers/md/md.c              |   40 --
- drivers/md/md.h              |    1 -
- drivers/md/raid1.c           |   10 +-
- drivers/md/raid10.c          |   18 +-
- drivers/scsi/sd.c            |    2 +-
- fs/bio.c                     |   46 ++
- fs/char_dev.c                |    3 +-
- fs/fscache/object.c          |    2 +-
- include/linux/backing-dev.h  |    4 +-
- include/linux/bio.h          |    3 +
- include/linux/blk-mq.h       |  183 ++++++
- include/linux/blk_types.h    |   68 +-
- include/linux/blkdev.h       |   60 +-
- include/linux/blktrace_api.h |    4 +-
- include/linux/percpu_ida.h   |   23 +-
- kernel/smp.c                 |    7 +-
- kernel/trace/blktrace.c      |   36 +-
- lib/percpu_counter.c         |   15 +-
- lib/percpu_ida.c             |   89 ++-
- mm/swap.c                    |    3 +-
- 49 files changed, 3885 insertions(+), 364 deletions(-)
- create mode 100644 block/blk-mq-cpu.c
- create mode 100644 block/blk-mq-cpumap.c
- create mode 100644 block/blk-mq-sysfs.c
- create mode 100644 block/blk-mq-tag.c
- create mode 100644 block/blk-mq-tag.h
- create mode 100644 block/blk-mq.c
- create mode 100644 block/blk-mq.h
- create mode 100644 drivers/block/null_blk.c
- create mode 100644 include/linux/blk-mq.h
+Roger Pau Monne (3):
+      xen-blkfront: revoke foreign access for grants not mapped by the backend
+      xen-blkfront: improve aproximation of required grants per request
+      xen-blkfront: restore the non-persistent data path
+
+Stephen M. Cameron (1):
+      cciss: return 0 from driver probe function on success, not 1
+
+Vegard Nossum (1):
+      xen/blkback: fix reference counting
+
+Wei Yongjun (1):
+      skd: fix error return code in skd_pci_probe()
+
+rchinthekindi (1):
+      skd: Replaced custom debug PRINTKs with pr_debug
+
+ Documentation/blockdev/floppy.txt   |    6 +-
+ drivers/block/Kconfig               |   12 +-
+ drivers/block/Makefile              |    2 +
+ drivers/block/cciss.c               |    2 +-
+ drivers/block/drbd/drbd_int.h       |    3 +-
+ drivers/block/drbd/drbd_main.c      |   19 +-
+ drivers/block/drbd/drbd_nl.c        |    6 +-
+ drivers/block/drbd/drbd_receiver.c  |   45 +-
+ drivers/block/drbd/drbd_req.c       |    3 +
+ drivers/block/loop.c                |   15 +-
+ drivers/block/mg_disk.c             |    2 +-
+ drivers/block/mtip32xx/mtip32xx.c   |  500 ++--
+ drivers/block/mtip32xx/mtip32xx.h   |   18 +-
+ drivers/block/pktcdvd.c             |   22 +-
+ drivers/block/rsxx/core.c           |    8 +-
+ drivers/block/rsxx/dev.c            |    8 +-
+ drivers/block/rsxx/dma.c            |  119 +-
+ drivers/block/rsxx/rsxx_priv.h      |   11 +-
+ drivers/block/skd_main.c            | 5432 +++++++++++++++++++++++++++++++++++
+ drivers/block/skd_s1120.h           |  330 +++
+ drivers/block/xen-blkback/blkback.c |    3 +-
+ drivers/block/xen-blkfront.c        |  159 +-
+ drivers/s390/block/dasd.c           |    8 +-
+ 23 files changed, 6369 insertions(+), 364 deletions(-)
+ create mode 100644 drivers/block/skd_main.c
+ create mode 100644 drivers/block/skd_s1120.h
 
 -- 
 Jens Axboe
