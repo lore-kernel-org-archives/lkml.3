@@ -1,51 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab3KHEzM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 23:55:12 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:53843 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648Ab3KHEzK (ORCPT
+	id S1756529Ab3KHE7D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 23:59:03 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:43059 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754244Ab3KHE7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 23:55:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <CADmjqpNWYVxrXuo106rBuZeZ2BrkGFkmbMJ8jxi39c8kLiQ+iw@mail.gmail.com>
-References: <1383791330-8289-1-git-send-email-chenxg@marvell.com>
-	<CAKohpo=2xjR=nr5hyMg9bve5_uVbV79R2FTxks0bLmL7kNV9Mg@mail.gmail.com>
-	<CADmjqpNWYVxrXuo106rBuZeZ2BrkGFkmbMJ8jxi39c8kLiQ+iw@mail.gmail.com>
-Date: Fri, 8 Nov 2013 10:25:09 +0530
-Message-ID: <CAKohpon6DhiWMuszuznK4ZNCBTpy0_r3gGvTXCDMcktXpN3HEw@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: conservative: fix requested_freq reduction issue
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <skarafotis@gmail.com>
-Cc: Xiaoguang Chen <chenxg@marvell.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Xiaoguang Chen <chenxg.marvell@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Nov 2013 23:59:01 -0500
+Date: Fri, 8 Nov 2013 15:58:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>, Jason Wang <jasowang@redhat.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the tip tree with the net-next tree
+Message-Id: <20131108155833.873fd4dcd27a56e0ff8f6df0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__8_Nov_2013_15_58_33_+1100_H=8xqEuf.VyzzWFE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 November 2013 00:36, Stratos Karafotis <skarafotis@gmail.com> wrote:
-> I think the existing code already checks if the requested_freq is greater
-> than policy->max in __cpufreq_driver_target.
+--Signature=_Fri__8_Nov_2013_15_58_33_+1100_H=8xqEuf.VyzzWFE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes it does. But the problem is:
-- cs_check_cpu() sets requested_freq above policy->max
-- We execute following code because (requested_freq != policy->max)
+Hi all,
 
-    dbs_info->requested_freq += get_freq_target(cs_tuners, policy);
-    __cpufreq_driver_target(policy, dbs_info->requested_freq,
-CPUFREQ_RELATION_H);
-- In __cpufreq_driver_target(), we don't do anything and return early..
-- Above will keep on repeating all the time..
+Today's linux-next merge of the tip tree got a conflict in
+drivers/net/virtio_net.c between commit 9bb8ca86075f ("virtio-net: switch
+to use XPS to choose txq") from the net-next tree and commit 827da44c6141
+("net: Explicitly initialize u64_stats_sync structures for lockdep") from
+the tip tree.
 
-If we change the code as I have suggested it to be:
-- After first loop where requested_freq went over policy->max, we will
-return early from cs_check_cpu(), but we have already set freq to max..
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> If we put this check earlier, cpufreq will never reach policy->max.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Can you please explain why do you see that happening?
+diff --cc drivers/net/virtio_net.c
+index 7d0eff710913,ee384f3d612b..000000000000
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@@ -1584,6 -1569,18 +1584,14 @@@ static int virtnet_probe(struct virtio_
+  	if (vi->stats =3D=3D NULL)
+  		goto free;
+ =20
++ 	for_each_possible_cpu(i) {
++ 		struct virtnet_stats *virtnet_stats;
++ 		virtnet_stats =3D per_cpu_ptr(vi->stats, i);
++ 		u64_stats_init(&virtnet_stats->tx_syncp);
++ 		u64_stats_init(&virtnet_stats->rx_syncp);
++ 	}
++=20
++=20
+ -	vi->vq_index =3D alloc_percpu(int);
+ -	if (vi->vq_index =3D=3D NULL)
+ -		goto free_stats;
+ -
+  	mutex_init(&vi->config_lock);
+  	vi->config_enable =3D true;
+  	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
+
+--Signature=_Fri__8_Nov_2013_15_58_33_+1100_H=8xqEuf.VyzzWFE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSfG99AAoJEMDTa8Ir7ZwV2QMP/2RR4y4YwTc0bvFOlEGSNfzT
+bLVbCx8HpqOavx6pxgNteOsIsPPGPuZH1cJAVzaSohmnHHTBbt0ZrjsxUDATpIhX
+VyfaFmKUN7YgZRXYjyM8GNxBdMGrL4dGM4v5SNIL5IwXvoUA+FrE3mwvvZC0IuUf
+kGE/QQL6Jky8kk6irJsAHHPuVkDFMCym2FQTjHdX2/XR3X3mPSnAyiMBEXmtDw1s
+FYMz0f8vdHO4pOo/TZmy74g5uo3wnr/nXfpChFxpIlgfGFZDMhiGzhzEVkgEllbl
+DCY/hgTTBZioDlIc79KPistTtB3kcbCqVcXKdB3fHTCB4bj0VZCL/sy+PxbBKhnV
+PDzbUmKzRtRL9G83JKTY5OgjjdJ9i5eCgh1fiiuNe1LCkn8XWRZnl9yQUIdh7DcI
+JFKSwEPCNsQYebkrblgFeLhLqIKSNapaesoAFML0Dra3ZYWK0Fd879NfSirSy3/m
+fDZ6sOupoOFbZafkEC1Mb14ukLh+J/uwFEpiUpE1SlL9rvPZY8qsMJJcXbdQcDyD
+2ZVS/KKiiB6b1kCNeaJmu+tT/JZONWryMO4DoJZY/DOzI0HQ40QC2YhLx54qiQs1
+r5qPR+YNIgeQDTZ2aCBPIBonnJxN86uwbGF4M2kFB0ZSmE9MPITUc7WAk7IaJYRP
+6K7aqxdtudyPTSW2AM6o
+=JEKM
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__8_Nov_2013_15_58_33_+1100_H=8xqEuf.VyzzWFE--
