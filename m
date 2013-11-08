@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab3KHCSx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:18:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34673 "EHLO
+	id S932510Ab3KHCS5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:18:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34678 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932441Ab3KHCSo (ORCPT
+	with ESMTP id S932453Ab3KHCSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:18:44 -0500
+	Thu, 7 Nov 2013 21:18:47 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jiri Benc <jbenc@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 28/91] unix_diag: fix info leak
-Date: Thu,  7 Nov 2013 18:14:43 -0800
-Message-Id: <1383876946-2396-29-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 20/91] ipv4: fix ineffective source address selection
+Date: Thu,  7 Nov 2013 18:14:35 -0800
+Message-Id: <1383876946-2396-21-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -28,33 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Jiri Benc <jbenc@redhat.com>
 
-[ Upstream commit 6865d1e834be84ddd5808d93d5035b492346c64a ]
+[ Upstream commit 0a7e22609067ff524fc7bbd45c6951dd08561667 ]
 
-When filling the netlink message we miss to wipe the pad field,
-therefore leak one byte of heap memory to userland. Fix this by
-setting pad to 0.
+When sending out multicast messages, the source address in inet->mc_addr is
+ignored and rewritten by an autoselected one. This is caused by a typo in
+commit 813b3b5db831 ("ipv4: Use caller's on-stack flowi as-is in output
+route lookups").
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Jiri Benc <jbenc@redhat.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/unix/diag.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/route.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/unix/diag.c b/net/unix/diag.c
-index 5ac19dc..ff4f29b 100644
---- a/net/unix/diag.c
-+++ b/net/unix/diag.c
-@@ -124,6 +124,7 @@ static int sk_diag_fill(struct sock *sk, struct sk_buff *skb, struct unix_diag_r
- 	rep->udiag_family = AF_UNIX;
- 	rep->udiag_type = sk->sk_type;
- 	rep->udiag_state = sk->sk_state;
-+	rep->pad = 0;
- 	rep->udiag_ino = sk_ino;
- 	sock_diag_save_cookie(sk, rep->udiag_cookie);
- 
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 70da494..0bf88e4 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -2024,7 +2024,7 @@ struct rtable *__ip_route_output_key(struct net *net, struct flowi4 *fl4)
+ 							      RT_SCOPE_LINK);
+ 			goto make_route;
+ 		}
+-		if (fl4->saddr) {
++		if (!fl4->saddr) {
+ 			if (ipv4_is_multicast(fl4->daddr))
+ 				fl4->saddr = inet_select_addr(dev_out, 0,
+ 							      fl4->flowi4_scope);
 -- 
 1.8.1.2
 
