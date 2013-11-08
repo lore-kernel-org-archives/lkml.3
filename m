@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab3KHHTW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 02:19:22 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:47735 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752913Ab3KHHTV (ORCPT
+	id S1756416Ab3KHHXq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 02:23:46 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:17491 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab3KHHXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 02:19:21 -0500
-From: Thomas Hellstrom <thellstrom@vmware.com>
-To: dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        linux-kernel@vger.kernel.org
-Cc: Thomas Hellstrom <thellstrom@vmware.com>
-Subject: [PATCH RFC] dma-buf/fs Add get_[file|dma_buf]_unless_doomed
-Date: Thu,  7 Nov 2013 23:18:54 -0800
-Message-Id: <1383895134-4535-1-git-send-email-thellstrom@vmware.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 8 Nov 2013 02:23:43 -0500
+Message-ID: <527C9170.9030005@huawei.com>
+Date: Fri, 8 Nov 2013 15:23:28 +0800
+From: Weng Meiling <wengmeiling.weng@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: <linux-nfs@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <bfields@fieldses.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH] nfsd:add '\n' when read file supported_krb5_enctypes
+References: <52786412.5030403@huawei.com>
+In-Reply-To: <52786412.5030403@huawei.com>
+X-Forwarded-Message-Id: <52786412.5030403@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.127]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this context, a "doomed" object is an object whose refcount has reached
-zero, but that has not yet been freed.
 
-To avoid mutual refcounting vmwgfx need to have a non-refcounted pointer to
-a dma-buf in a lookup structure. The pointer is removed in the dma-buf
-destructor. To allow lookup-structure private locks we need
-get_dma_buf_unless_doomed(). This common refcounting scenario is described
-with examples in detail in the kref documentaion.
-The solution with local locks is under kref_get_unless_zero().
-See also kobject_get_unless_zero() and its commit message.
-Since dma-bufs are using the attached file for refcounting,
-get_dma_buf_unless_doomed maps directly to a get_file_unless_doomed.
+From: Weng Meiling <wengmeiling.weng@huawei.com>
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
 ---
- include/linux/dma-buf.h |   16 ++++++++++++++++
- include/linux/fs.h      |   15 +++++++++++++++
- 2 files changed, 31 insertions(+)
+ fs/nfsd/nfsctl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
-index dfac5ed..6e58144 100644
---- a/include/linux/dma-buf.h
-+++ b/include/linux/dma-buf.h
-@@ -162,6 +162,22 @@ static inline void get_dma_buf(struct dma_buf *dmabuf)
- 	get_file(dmabuf->file);
+diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+index 7f55517..31db42c 100644
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -188,7 +188,7 @@ static const struct file_operations export_features_operations = {
+ #if defined(CONFIG_SUNRPC_GSS) || defined(CONFIG_SUNRPC_GSS_MODULE)
+ static int supported_enctypes_show(struct seq_file *m, void *v)
+ {
+-	seq_printf(m, KRB5_SUPPORTED_ENCTYPES);
++	seq_printf(m, "%s\n", KRB5_SUPPORTED_ENCTYPES);
+ 	return 0;
  }
- 
-+/**
-+ * get_dma_buf_unless_doomed - convenience wrapper for get_file_unless_doomed
-+ *
-+ * @dmabuf:	[in]	pointer to dma_buf
-+ *
-+ * Obtain a dma-buf reference from a lookup structure that doesn't refcount
-+ * the dma-buf, but synchronizes with its release method to make sure it has
-+ * not been freed yet. See for example kref_get_unless_zero documentation.
-+ * Returns true if refcounting succeeds, false otherwise.
-+ */
-+static inline bool __must_check
-+get_dma_buf_unless_doomed(struct dma_buf *dmabuf)
-+{
-+	return get_file_unless_doomed(dmabuf->file);
-+}
-+
- struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
- 							struct device *dev);
- void dma_buf_detach(struct dma_buf *dmabuf,
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 3f40547..a96c333 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -824,6 +824,21 @@ static inline struct file *get_file(struct file *f)
- 	atomic_long_inc(&f->f_count);
- 	return f;
- }
-+
-+/**
-+ * get_file_unless_doomed - convenience wrapper for get_file_unless_doomed
-+ * @file:	[in]	pointer to file
-+ *
-+ * Obtain a file reference from a lookup structure that doesn't refcount
-+ * the file, but synchronizes with its release method to make sure it has
-+ * not been freed yet. See for example kref_get_unless_zero documentation.
-+ * Returns true if refcounting succeeds, false otherwise.
-+ */
-+static inline bool __must_check get_file_unless_doomed(struct file *f)
-+{
-+	return atomic_long_inc_not_zero(&f->f_count) != 0L;
-+}
-+
- #define fput_atomic(x)	atomic_long_add_unless(&(x)->f_count, -1, 1)
- #define file_count(x)	atomic_long_read(&(x)->f_count)
- 
+
 -- 
-1.7.10.4
+1.8.3.1
+
+
+
+
