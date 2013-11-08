@@ -1,125 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758196Ab3KHU3p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 15:29:45 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:61445 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757478Ab3KHU3m (ORCPT
+	id S1758209Ab3KHUck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 15:32:40 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:59059 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757629Ab3KHUch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 15:29:42 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ga6k41RZHo2nNlBkoYIy5tQe7KymT30Q=
-Date: Fri, 8 Nov 2013 15:29:30 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Olof Johansson <olof@lixom.net>
-Cc: Kumar Gala <galak@codeaurora.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 7/9] ARM: add Armada 1500 and Sony NSZ-GS7 device
- tree files
-Message-ID: <20131108202930.GL10335@titan.lakedaemon.net>
-References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1383661723-17956-8-git-send-email-sebastian.hesselbarth@gmail.com>
- <0AF697FD-60AA-4B8B-A35F-3DF2FFBCF7AF@codeaurora.org>
- <20131108165721.GA10335@titan.lakedaemon.net>
- <8DC09031-553C-4FD5-8F05-F93D6FE40F3A@codeaurora.org>
- <20131108182415.GG10335@titan.lakedaemon.net>
- <CAOesGMhfr3CNxKNRJa+eJepr2Fc-jx4rTQ7cPerTkQM-CyzuCg@mail.gmail.com>
- <20131108193054.GJ10335@titan.lakedaemon.net>
- <CAOesGMir+Zar0hskPQ+ZN6Z7+R-G5GhrafenQPgjZGbVGG9uwA@mail.gmail.com>
+	Fri, 8 Nov 2013 15:32:37 -0500
+Message-ID: <527D4A61.8020202@gmail.com>
+Date: Fri, 08 Nov 2013 15:32:33 -0500
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOesGMir+Zar0hskPQ+ZN6Z7+R-G5GhrafenQPgjZGbVGG9uwA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Hellwig <hch@infradead.org>, Ben Myers <bpm@sgi.com>
+CC: elder@kernel.org, Mark Tinguely <tinguely@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, Ric Wheeler <rwheeler@redhat.com>
+Subject: Re: XFS leadership and a new co-maintainer candidate
+References: <20131107220208.GY1935@sgi.com> <527C0F64.3010906@sgi.com>	<527C4B27.6020205@redhat.com> <527CC50D.4060905@redhat.com>	<20131108180337.GO10553@sgi.com> <20131108193424.GA11052@infradead.org>
+In-Reply-To: <20131108193424.GA11052@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 12:10:27PM -0800, Olof Johansson wrote:
-> On Fri, Nov 8, 2013 at 11:30 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> > On Fri, Nov 08, 2013 at 11:14:07AM -0800, Olof Johansson wrote:
-> >> On Fri, Nov 8, 2013 at 10:24 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> >> > On Fri, Nov 08, 2013 at 12:06:26PM -0600, Kumar Gala wrote:
-> >> >>
-> >> >> On Nov 8, 2013, at 10:57 AM, Jason Cooper wrote:
-> >> >>
-> >> >> > On Fri, Nov 08, 2013 at 10:13:19AM -0600, Kumar Gala wrote:
-> >> >> >> On Nov 5, 2013, at 8:28 AM, Sebastian Hesselbarth wrote:
-> >> >> > ...
-> >> >> >>> .../devicetree/bindings/arm/marvell,berlin.txt     |   24 +++
-> >> >> >>> arch/arm/boot/dts/Makefile                         |    2 +
-> >> >> >>> arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts         |   29 +++
-> >> >> >>> arch/arm/boot/dts/berlin2.dtsi                     |  227 ++++++++++++++++++++
-> >> >> >>> 4 files changed, 282 insertions(+)
-> >> >> >>> create mode 100644 Documentation/devicetree/bindings/arm/marvell,berlin.txt
-> >> >> >>> create mode 100644 arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts
-> >> >> >>> create mode 100644 arch/arm/boot/dts/berlin2.dtsi
-> >> >> >>
-> >> >> >> Haven't we been trying to go away from non-prefixed dts/dtsi?
-> >> >> >
-> >> >> > hmmm, this is the first I've heard of that.  Although, your proposal
-> >> >> > (in another thread) makes more sense now.  :)
-> >> >> >
-> >> >> >> So should these be something like marvell-berlin2-...
-> >> >> >
-> >> >> > I don't recall this being brought up at the summit, nor in Grant's
-> >> >> > report.  I do need to give it a more careful read this weekend, though.
-> >> >> > Perhaps I missed something.
-> >> >>
-> >> >> This was based on review comments Olof gave when we pushed some .dts
-> >> >> files for MSM/APQ Qualcomm Technologies soc/boards.
-> >> >
-> >> > As Andrew Lunn mentioned to me earlier, we should consider the fact that
-> >> > the dts file names are being used by Debian's flash-kernel.  Oh no!
-> >> > Another ABI! ;-)
-> >>
-> >> Yes, the names are mostly stable. ST-Ericsson renamed their dts files
-> >> and it caused some pain, some build environments have them hardcoded,
-> >> etc.
-> >>
-> >> Still, it is a good idea to start adding new ones using family or
-> >> vendor prefixes, so they are easier to group. Please keep that in mind
-> >> on new ones too, Jason -- I don't think I've discussed with you in the
-> >> past. :-)
-> >
-> > Nope, I definitely missed that if you did ;-)  Will do in the future.
-> >
-> > Perhaps now is the time to consider separating the dts filename from the
-> > dtb filename?  I'm warming up to my idea of globalscale,mirabox.dtb...
-> 
-> Having a "dtb-install" make target that sets those up as softlinks
-> could be a good idea, at least.
+On 11/08/2013 02:34 PM, Christoph Hellwig wrote:
+> On Fri, Nov 08, 2013 at 12:03:37PM -0600, Ben Myers wrote:
+>> Mark is replacing Alex as my backup because Alex is really busy at
+>> Linaro and asked to be taken off awhile ago.  The holiday season is
+>> coming up and I fully intend to go off my meds, turn in to Fonzy the
+>> bear, and eat my hat.  I need someone to watch the shop while I'm off
+>> exploring on Mars.  I trust Mark to do that because he is totally
+>> awesome.
+>
+> Doing this as an unilateral decisions is not something that will win you
+> a fan base.
+>
+> While we never had anything reassembling a democracy in Linux Kernel
+> development making decisions without even contacting the major
+> contributor is wrong, twice so if the maintainer is a relatively minor
+> contributor to start with.
+>
+> Just because it recent came up elsewhere I'd like to recite the
+> definition from Trond here again:
+>
+> 	http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-June/000066.html
+>
+> By many of the creative roles enlisted there it's clear that Dave should
+> be the maintainer.  He's been the main contributor and chief architect
+> for XFS for many year, while the maintainers came and went at the mercy
+> of SGI.  This is not meant to bad mouth either of you as I think you're
+> doing a reasonably good job compared to other maintainers, but at the
+> same time the direction is set by other people that have a much longer
+> involvement with the project, and having them officially in control
+> would help us forward a lot.  It would also avoid having to spend
+> considerable resources to train every new generation of SGI maintainer.
+>
+> Coming to and end I would like to maintain Dave Chinner as the primary
+> XFS maintainer for all the work he has done as biggest contributor and
+> architect of XFS since longer than I can remember, and I would love to
+> retain Ben Myers as a co-maintainer for all the good work he has done
+> maintaining and reviewing patches since November 2011.
 
-oooh, I like that.  Something like
+This sounds like exactly the right thing to do to me as well,
 
-$ dtc -L -o kirkwood-dreamplug.dtb kirkwood-dreamplug.dts
-$ ls
-...
-globalscale,dreamplug.dtb -> kirkwood-dreamplug.dtb
-...
-kirkwood-dreamplug.dtb
-...
-$
+Ric
 
-Otherwise the build system would have to learn to parse dts/dtbs...
+>
+> I would also like to use this post as a public venue to condemn the
+> unilateral smokey backroom decisions about XFS maintainership that
+> SGI is trying to enforce on the community.
+>
+>
 
-> I'm not sold on using them as filenames myself though.
 
-fair enough.
-
-thx,
-
-Jason.
