@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932612Ab3KHCcO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:32:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34655 "EHLO
+	id S932382Ab3KHCSa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:18:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34635 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932391Ab3KHCSc (ORCPT
+	with ESMTP id S1757091Ab3KHCSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:18:32 -0500
+	Thu, 7 Nov 2013 21:18:16 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+Cc: Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 27/91] farsync: fix info leak in ioctl
-Date: Thu,  7 Nov 2013 18:14:42 -0800
-Message-Id: <1383876946-2396-28-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 32/91] net: dst: provide accessor function to dst->xfrm
+Date: Thu,  7 Nov 2013 18:14:47 -0800
+Message-Id: <1383876946-2396-33-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -28,33 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit 96b340406724d87e4621284ebac5e059d67b2194 ]
+[ Upstream commit e87b3998d795123b4139bc3f25490dd236f68212 ]
 
-The fst_get_iface() code fails to initialize the two padding bytes of
-struct sync_serial_settings after the ->loopback member. Add an explicit
-memset(0) before filling the structure to avoid the info leak.
+dst->xfrm is conditionally defined.  Provide accessor funtion that
+is always available.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wan/farsync.c | 1 +
- 1 file changed, 1 insertion(+)
+ include/net/dst.h | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/drivers/net/wan/farsync.c b/drivers/net/wan/farsync.c
-index 56941d6..9d6082f 100644
---- a/drivers/net/wan/farsync.c
-+++ b/drivers/net/wan/farsync.c
-@@ -1972,6 +1972,7 @@ fst_get_iface(struct fst_card_info *card, struct fst_port_info *port,
- 	}
+diff --git a/include/net/dst.h b/include/net/dst.h
+index b3ebe17..1cdf9a4 100644
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@ -474,10 +474,22 @@ static inline struct dst_entry *xfrm_lookup(struct net *net,
+ {
+ 	return dst_orig;
+ } 
++
++static inline struct xfrm_state *dst_xfrm(const struct dst_entry *dst)
++{
++	return NULL;
++}
++
+ #else
+ extern struct dst_entry *xfrm_lookup(struct net *net, struct dst_entry *dst_orig,
+ 				     const struct flowi *fl, struct sock *sk,
+ 				     int flags);
++
++/* skb attached with this dst needs transformation if dst->xfrm is valid */
++static inline struct xfrm_state *dst_xfrm(const struct dst_entry *dst)
++{
++	return dst->xfrm;
++}
+ #endif
  
- 	i = port->index;
-+	memset(&sync, 0, sizeof(sync));
- 	sync.clock_rate = FST_RDL(card, portConfig[i].lineSpeed);
- 	/* Lucky card and linux use same encoding here */
- 	sync.clock_type = FST_RDB(card, portConfig[i].internalClock) ==
+ #endif /* _NET_DST_H */
 -- 
 1.8.1.2
 
