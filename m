@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab3KHQYO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 11:24:14 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:45310 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757560Ab3KHQYN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 11:24:13 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: [PATCH] xen: delete new instances of added __cpuinit
-Date: Fri, 8 Nov 2013 11:21:51 -0500
-Message-ID: <1383927711-26742-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.4.1
+	id S1757730Ab3KHQZG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 11:25:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42087 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757212Ab3KHQZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 11:25:04 -0500
+Date: Fri, 8 Nov 2013 11:24:21 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        akpm@linux-foundation.org, davej@fedoraproject.org,
+        rmk+kernel@arm.linux.org.uk, chaowang@redhat.com, mwhitehe@redhat.com,
+        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Robin Holt <robinmholt@linux.com>, Robin Holt <robinmholt@gmail.com>
+Subject: Re: [PATCH] x86: make reboot task only run on the appropriate
+ processor
+Message-ID: <20131108162421.GC13068@redhat.com>
+References: <1383642967-12595-1-git-send-email-bhe@redhat.com>
+ <20131108151416.GA13068@redhat.com>
+ <527D0D50.6010607@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527D0D50.6010607@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 6efa20e49b9cb1db1ab66870cc37323474a75a13
-("xen: Support 64-bit PV guest receiving NMIs") and
-commit cd9151e26d31048b2b5e00fd02e110e07d2200c9
-( "xen/balloon: set a mapping for ballooned out pages")
-added new instances of __cpuinit usage.
+On Fri, Nov 08, 2013 at 08:12:00AM -0800, H. Peter Anvin wrote:
+> On 11/08/2013 07:14 AM, Vivek Goyal wrote:
+> > 
+> > Hi Bao,
+> > 
+> > This patch fixes the issue for me too. I noticed that we have generic
+> > function migrate_to_reboot_cpu() to achieve what we want and rest of
+> > the reboot paths are using it. So how about using that function. I 
+> > wrote the new patch below. It works for me. Can you please give it
+> > a try.
+> > 
+> > Thanks
+> > Vivek
+> > 
+> 
+> Is this path exercised for the kdump flow?  migrate_to_reboot_cpu() is
+> unsafe in that case.
 
-We removed this a couple versions ago; we now want to remove
-the compat no-op stubs.  Introducing new users is not what
-we want to see at this point in time, as it will break once
-the stubs are gone.
+kdump path should not be affected by this change as it uses crash_kexec()
+instead of kerenl_kexec() for its entry. And crash_kexec() path does not
+call migrate_to_reboot_cpu().
 
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- arch/x86/xen/setup.c  | 2 +-
- drivers/xen/balloon.c | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Thanks
+Vivek
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 09f3059..68c054f 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -556,7 +556,7 @@ void xen_enable_syscall(void)
- 	}
- #endif /* CONFIG_X86_64 */
- }
--void __cpuinit xen_enable_nmi(void)
-+void xen_enable_nmi(void)
- {
- #ifdef CONFIG_X86_64
- 	if (register_callback(CALLBACKTYPE_nmi, nmi))
-diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-index b232908..3143fa1 100644
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -596,7 +596,7 @@ static void __init balloon_add_region(unsigned long start_pfn,
- 	}
- }
- 
--static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
-+static int balloon_cpu_notify(struct notifier_block *self,
- 				    unsigned long action, void *hcpu)
- {
- 	int cpu = (long)hcpu;
-@@ -616,7 +616,7 @@ static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
- 	return NOTIFY_OK;
- }
- 
--static struct notifier_block balloon_cpu_notifier __cpuinitdata = {
-+static struct notifier_block balloon_cpu_notifier = {
- 	.notifier_call	= balloon_cpu_notify,
- };
- 
--- 
-1.8.4.1
-
+> 
+> > Index: linux-2.6/kernel/kexec.c
+> > ===================================================================
+> > --- linux-2.6.orig/kernel/kexec.c	2013-10-16 00:30:50.000000000 -0400
+> > +++ linux-2.6/kernel/kexec.c	2013-11-08 21:34:02.492072375 -0500
+> > @@ -1676,6 +1676,7 @@ int kernel_kexec(void)
+> >  #endif
+> >  	{
+> >  		kernel_restart_prepare(NULL);
+> > +		migrate_to_reboot_cpu();
+> >  		printk(KERN_EMERG "Starting new kernel\n");
+> >  		machine_shutdown();
+> >  	}
+> > 
