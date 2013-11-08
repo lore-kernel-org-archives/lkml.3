@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757075Ab3KHJO0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 04:14:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33476 "EHLO mx2.suse.de"
+	id S1757117Ab3KHJOs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 04:14:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33490 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756905Ab3KHJOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 04:14:23 -0500
+	id S1757092Ab3KHJOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 04:14:44 -0500
 From: Petr Mladek <pmladek@suse.cz>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -14,9 +14,9 @@ To: Steven Rostedt <rostedt@goodmis.org>,
         Jiri Kosina <jkosina@suse.cz>
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH v2 3/8] x86: allow to call text_poke_bp during boot
-Date: Fri,  8 Nov 2013 10:12:07 +0100
-Message-Id: <1383901932-1945-5-git-send-email-pmladek@suse.cz>
+Subject: [PATCH v2 4/8] x86: add generic function to modify more calls using int3 framework
+Date: Fri,  8 Nov 2013 10:12:08 +0100
+Message-Id: <1383901932-1945-6-git-send-email-pmladek@suse.cz>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
 References: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
@@ -24,72 +24,423 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We would like to use text_poke_bp in ftrace. It might be called also during
-boot when there is only one CPU and we do not need to sync the others.
+The commit fd4363fff3d9 (x86: Introduce int3 (breakpoint)-based instruction
+patching) uses the same technique that has been used in ftrace since 08d636b
+("ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine")
 
-The check is must to have because there are also disabled interrupts during
-the boot. Then the call would cause a deadlock, see the warning in
-"smp_call_function_many", kernel/smp.c:371.
+When trying to use text_poke_bp in dynamic ftrace, the process was significantly
+slower than the original code. For example, I tried to switch between 7 tracers:
+blk, branch, function_graph, wakeup_rt, irqsoff, function, and nop. Every tracer
+has also been enabled and disabled. With 500 cycles, I got these times with the
+original code:
 
-Note that the check might need an update when we add support for zero CPUS
-or complex numbers, e.g 5i-3 CPUs.
+    real    16m14.390s    16m15.200s    16m19.632s
+    user    0m0.028s      0m0.024s	0m0.028s
+    sys     0m23.788s     0m23.812s	0m23.804s
 
-The change is inspired by the code in arch/x86/kernel/ftrace.c.
+and with text_poke_bp:
+
+    real    29m45.785s    29m47.504s    29m44.016
+    user    0m0.004s      0m0.004s	0m0.004s
+    sys     0m15.776s     0m16.088s     0m16.192s
+
+It turned out that most of the extra time was spent in the call:
+
+   on_each_cpu(do_sync_core, NULL, 1)
+
+It is needed to reset the speculative queue of decoded instructions on each CPU.
+It is relatively expensive operation. The original code reduced the usage by
+patching all instructions in parallel.
+
+This commits adds text_poke_bp_iter that provides generic interface for patching
+more instructions in parallel. It is basically a mix of text_poke_bp and
+ftrace_replace_code. The list of addresses and opcodes is passed via
+an iterator and callbacks.
+
+We need to iterate several times but we do not need both opcodes and the address
+in all stages. They are passed via callback to avoid an unnecessary computation.
+
+The function checks the current code before patching. It might be possible to
+leave this check in the ftrace code but such paranoia is useful in general.
+It helps to keep the system consistent. And the old opcode is needed anyway.
+When something goes wrong, it is used to get back to a valid state. Note
+that an error might happen even when adding interrupt to a particular address.
+
+The optional "finish" callback can be used to update state of the patched entry.
+For example, it is needed to update the related ftrace record.
+
+Some opcodes might already be in the final state and do not need patching.
+It would be possible to detect this by comparing the old and new opcode but
+there might be more a effective way. For example, ftrace could tell this by
+ftrace_test_record. We pass this information via the get_opcode callbacks.
+They return a valid opcode when a change is needed and NULL otherwise. Note
+that we should call the "finish" callback even then the code is not really
+modified.
+
+Finally, ftrace wants to know more information about a potential failure.
+The error code is passed via the return value. The failing address and
+the number of the failed record is passed via the iterator structure.
 
 Signed-off-by: Petr Mladek <pmladek@suse.cz>
 ---
- arch/x86/kernel/alternative.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/alternative.h |  36 ++++++
+ arch/x86/kernel/alternative.c      | 251 +++++++++++++++++++++++++++++++++++--
+ 2 files changed, 275 insertions(+), 12 deletions(-)
 
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index f2343d8..60c0520 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -229,4 +229,40 @@ extern int poke_int3_handler(struct pt_regs *regs);
+ extern int text_poke_bp(void *addr, const void *opcode, size_t len,
+ 			void *handler);
+ 
++struct text_poke_bp_iter {
++	/* information used to start iteration from the beginning */
++	void *init;
++	/* length of the patched instruction */
++	size_t len;
++	/* details about failure if any */
++	int fail_count;
++	void *fail_addr;
++	/* iteration over entries */
++	void *(*start)(void *init);
++	void *(*next)(void *prev);
++	/* callback to get patched address */
++	void *(*get_addr)(void *cur);
++	/*
++	 * Callbacks to get the patched code. They could return NULL if no
++	 * patching is needed; This is useful for example in ftrace.
++	 */
++	const void *(*get_opcode)(void *cur);
++	const void *(*get_old_opcode)(void *cur);
++	/*
++	 * Optional function that is called when the patching of the given
++	 * has finished. It might be NULL if no postprocess is needed.
++	 */
++	int (*finish)(void *cur);
++	/*
++	 * Helper function for int3 handler. It decides whether the given IP
++	 * is being patched or not.
++	 *
++	 * Try to implement it as fast as possible. It affects performance
++	 * of the system when the patching is in progress.
++	 */
++	void *(*is_handled)(const unsigned long ip);
++};
++
++extern int text_poke_bp_list(struct text_poke_bp_iter *iter);
++
+ #endif /* _ASM_X86_ALTERNATIVE_H */
 diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index c459e62..c28c108 100644
+index c28c108..95e8a7f 100644
 --- a/arch/x86/kernel/alternative.c
 +++ b/arch/x86/kernel/alternative.c
-@@ -630,6 +630,17 @@ static void do_sync_core(void *info)
- 	sync_core();
+@@ -641,8 +641,11 @@ static void run_sync(void)
+ 		on_each_cpu(do_sync_core, NULL, 1);
  }
  
-+static void run_sync(void)
-+{
-+	/*
-+	 * We do not need to sync other cores during boot when there is only one
-+	 * CPU enabled. In fact, we must not because there are also disabled
-+	 * interrupts. The call would fail because of a potential deadlock.
-+	 */
-+	if (num_online_cpus() != 1)
-+		on_each_cpu(do_sync_core, NULL, 1);
-+}
-+
++static char bp_int3;
  static bool bp_patching_in_progress;
  static void *bp_int3_handler, *bp_int3_addr;
++static size_t bp_int3_len;
++static void *(*bp_int3_is_handled)(const unsigned long ip);
  
-@@ -692,7 +703,7 @@ int text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+ int poke_int3_handler(struct pt_regs *regs)
+ {
+@@ -652,14 +655,23 @@ int poke_int3_handler(struct pt_regs *regs)
+ 	if (likely(!bp_patching_in_progress))
+ 		return 0;
+ 
+-	if (user_mode_vm(regs) || regs->ip != (unsigned long)bp_int3_addr)
++	if (user_mode_vm(regs))
+ 		return 0;
+ 
+-	/* set up the specified breakpoint handler */
+-	regs->ip = (unsigned long) bp_int3_handler;
++	/* Check if address is handled by text_poke_bp */
++	if (bp_int3_handler && regs->ip == (unsigned long)bp_int3_addr) {
++		regs->ip = (unsigned long)bp_int3_handler;
++		return 1;
++	}
+ 
+-	return 1;
++	/* Check if address is handled by text_poke_bp_list */
++	if (bp_int3_is_handled && bp_int3_is_handled(regs->ip)) {
++		/* just skip the instruction */
++		regs->ip += bp_int3_len - 1;
++		return 1;
++	}
+ 
++	return 0;
+ }
+ 
+ /**
+@@ -686,11 +698,13 @@ int poke_int3_handler(struct pt_regs *regs)
+  */
+ int text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+ {
+-	unsigned char int3 = 0xcc;
+ 	int ret;
+ 
++	bp_int3 = 0xcc;
+ 	bp_int3_handler = handler;
+-	bp_int3_addr = (u8 *)addr + sizeof(int3);
++	bp_int3_addr = (u8 *)addr + sizeof(bp_int3);
++	bp_int3_len = len;
++	bp_int3_is_handled = NULL;
+ 	bp_patching_in_progress = true;
+ 	/*
+ 	 * Corresponding read barrier in int3 notifier for
+@@ -699,17 +713,17 @@ int text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+ 	 */
+ 	smp_wmb();
+ 
+-	ret = text_poke_part(addr, &int3, sizeof(int3));
++	ret = text_poke_part(addr, &bp_int3, sizeof(bp_int3));
  	if (unlikely(ret))
  		goto fail;
  
--	on_each_cpu(do_sync_core, NULL, 1);
-+	run_sync();
+ 	run_sync();
  
- 	if (len - sizeof(int3) > 0) {
+-	if (len - sizeof(int3) > 0) {
++	if (len - sizeof(bp_int3) > 0) {
  		/* patch all but the first byte */
-@@ -706,7 +717,7 @@ int text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
- 		 * not necessary and we'd be safe even without it. But
- 		 * better safe than sorry (plus there's not only Intel).
- 		 */
--		on_each_cpu(do_sync_core, NULL, 1);
-+		run_sync();
+-		ret = text_poke_part((char *)addr + sizeof(int3),
+-			       (const char *) opcode + sizeof(int3),
+-			       len - sizeof(int3));
++		ret = text_poke_part((char *)addr + sizeof(bp_int3),
++				     (const char *) opcode + sizeof(bp_int3),
++				     len - sizeof(bp_int3));
+ 		if (unlikely(ret))
+ 			goto fail;
+ 		/*
+@@ -721,7 +735,7 @@ int text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
  	}
  
  	/* patch the first byte */
-@@ -714,7 +725,7 @@ int text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+-	ret = text_poke_part(addr, opcode, sizeof(int3));
++	ret = text_poke_part(addr, opcode, sizeof(bp_int3));
  	if (unlikely(ret))
  		goto fail;
  
--	on_each_cpu(do_sync_core, NULL, 1);
-+	run_sync();
+@@ -734,3 +748,216 @@ fail:
+ 	return ret;
+ }
  
- fail:
- 	bp_patching_in_progress = false;
++static int notrace text_poke_check(void *addr, const void *opcode, size_t len)
++{
++	unsigned char actual[MAX_PATCH_LEN];
++
++	if (probe_kernel_read(actual, addr, len)) {
++		return -EFAULT;
++	}
++
++	if (memcmp(actual, opcode, len) != 0) {
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int notrace add_iter_breakpoint(struct text_poke_bp_iter *iterator,
++				       void *iter)
++{
++	void *addr;
++	const void *old_opcode;
++	int ret = 0;
++
++	/* nope if the code is not defined */
++	old_opcode = iterator->get_old_opcode(iter);
++	if (!old_opcode)
++		return 0;
++
++	addr = iterator->get_addr(iter);
++	ret = text_poke_check(addr, old_opcode, bp_int3_len);
++
++	if (likely(!ret))
++		/* write the breakpoint */
++		ret = text_poke_part(addr, &bp_int3, sizeof(bp_int3));
++
++	return ret;
++}
++
++static int notrace update_iter_code(struct text_poke_bp_iter *iterator,
++				   void *iter)
++{
++	void *addr;
++	const void *opcode;
++
++	/* nope if the code is not defined */
++	opcode = iterator->get_opcode(iter);
++	if (!opcode)
++		return 0;
++
++	/* write all but the first byte */
++	addr = iterator->get_addr(iter);
++	return text_poke_part(addr + sizeof(bp_int3),
++			      opcode + sizeof(bp_int3),
++			      bp_int3_len - sizeof(bp_int3));
++}
++
++static int notrace finish_iter_update(struct text_poke_bp_iter *iterator,
++				      void *iter)
++{
++	void *addr;
++	const void *opcode;
++	int ret = 0;
++
++	opcode = iterator->get_opcode(iter);
++	if (opcode) {
++		/* write the first byte if defined */
++		addr = iterator->get_addr(iter);
++		ret = text_poke_part(addr, opcode, sizeof(bp_int3));
++	}
++
++	/* Patching has finished. Let's update the status flag if any. */
++	if (!ret && iterator->finish)
++		ret = iterator->finish(iter);
++
++	return ret;
++}
++
++static int notrace recover_iter(struct text_poke_bp_iter *iterator,
++				void *iter)
++{
++	void *addr;
++	const void *old_opcode;
++	unsigned char actual[MAX_PATCH_LEN];
++	int ret = 0;
++
++	/* If opcode is not defined, we did not change this address at all */
++	old_opcode = iterator->get_old_opcode(iter);
++	if(!old_opcode)
++		return 0;
++
++	addr = iterator->get_addr(iter);
++	if (probe_kernel_read(actual, addr, bp_int3_len))
++		return -EFAULT;
++
++	/* We are done if there is no interrupt */
++	if (actual[0] != bp_int3)
++		return 0;
++
++	/* Put the old code back behind the interrupt if it is not there */
++	if (memcmp(actual + sizeof(bp_int3),
++		   old_opcode + sizeof(bp_int3),
++		   bp_int3_len - sizeof(bp_int3)) != 0) {
++		ret = text_poke_part(addr + sizeof(bp_int3),
++				     old_opcode + sizeof(bp_int3),
++				     bp_int3_len - sizeof(bp_int3));
++		/*
++		 * It is not optimal to sync for each repaired address.
++		 * But this is a corner case and we are in bad state anyway.
++		 * Note that this is not needed on Intel, see text_poke_bp
++		 */
++		run_sync();
++	}
++
++	/* Finally, put back the first byte from the old code */
++	if (!ret) {
++		ret = text_poke_part(addr, old_opcode, sizeof(bp_int3));
++	}
++
++	return ret;
++}
++
++#define for_text_poke_bp_iter(iterator,iter)	     \
++	for (iter = iterator->start(iterator->init); \
++	     iter;				     \
++	     iter = iterator->next(iter))
++
++/**
++ * text_poke_bp_list() -- update instructions on live kernel on SMP
++ * @iterator:	structure that allows to iterate over the patched addressed
++ * 		and get all the needed information
++ *
++ * Modify several instructions by using int3 breakpoint on SMP in parallel.
++ * The principle is the same as in text_poke_bp. But synchronization of all CPUs
++ * is relatively slow operation, so we need to reduce it. Hence we add interrupt
++ * for all instructions before we modify the other bytes, etc.
++ *
++ * The operation wants to keep a consistent state. If anything goes wrong,
++ * it does the best effort to restore the original state. The only exception
++ * are addresses where the patching has finished. But the caller can be informed
++ * about this via the finish callback.
++ *
++ * It is a bit more paranoid than text_poke_bp because it checks the actual
++ * code before patching. This is a good practice proposed by the ftrace code.
++ *
++ * Note: must be called under text_mutex.
++ */
++int text_poke_bp_list(struct text_poke_bp_iter *iterator)
++{
++	void *iter;
++	const char *report = "adding breakpoints";
++	int count = 0;
++	int ret = 0;
++
++	bp_int3 = 0xcc;
++	bp_int3_addr = NULL;
++	bp_int3_len = iterator->len;
++	bp_int3_handler = NULL;
++	bp_int3_is_handled = iterator->is_handled;
++	bp_patching_in_progress = true;
++
++	smp_wmb();
++
++	/* add interrupts */
++	for_text_poke_bp_iter(iterator, iter) {
++		ret = add_iter_breakpoint(iterator, iter);
++		if (ret)
++			goto fail;
++		count++;
++	}
++	run_sync();
++
++	report = "updating code";
++	if (bp_int3_len - sizeof(bp_int3) > 0) {
++		count = 0;
++		/* patch all but the first byte */
++		for_text_poke_bp_iter(iterator, iter) {
++			ret = update_iter_code(iterator, iter);
++			if (ret)
++				goto fail;
++			count++;
++		}
++		run_sync();
++	}
++
++	/* patch the first byte */
++	report = "finishing update";
++	count = 0;
++	for_text_poke_bp_iter(iterator, iter) {
++		ret = finish_iter_update(iterator, iter);
++		if (ret)
++			goto fail;
++		count++;
++	}
++	run_sync();
++
++fail:
++	if (unlikely(ret)) {
++		printk(KERN_WARNING "text_poke_bp_iter failed on %s (%d):\n",
++		       report, count);
++		/* save information about the failure */
++		iterator->fail_count = count;
++		iterator->fail_addr = iterator->get_addr(iter);
++		/* try to recover the old state */
++		for_text_poke_bp_iter(iterator, iter) {
++			recover_iter(iterator, iter);
++		}
++		run_sync();
++	}
++
++	bp_patching_in_progress = false;
++	smp_wmb();
++
++	return ret;
++}
 -- 
 1.8.4
 
