@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801Ab3KHGU3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 01:20:29 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:33370 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538Ab3KHGU1 (ORCPT
+	id S1752714Ab3KHGqN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 01:46:13 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:58635 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009Ab3KHGqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 01:20:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <87zjpfv5w3.fsf@devron.myhome.or.jp>
-References: <20131107074108.GB21844@elgon.mountain>
-	<87zjpfv5w3.fsf@devron.myhome.or.jp>
-Date: Fri, 8 Nov 2013 15:20:26 +0900
-Message-ID: <CAKYAXd9M1W+2raJzkE+ZfTzL6Z=dnOiQ3UeL6c3fFAnTZnw3vg@mail.gmail.com>
-Subject: Re: [patch] fat: double unlock on error path
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 8 Nov 2013 01:46:10 -0500
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>, linux-gpio@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH 0/2] DaVinci: GPIO: fixes
+Date: Fri,  8 Nov 2013 12:15:54 +0530
+Message-Id: <1383893156-28010-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/8, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Dan Carpenter <dan.carpenter@oracle.com> writes:
->
->> There is a stray unlock here which was not intended.  I have removed it.
->>
->> Fixes: 3f9f3dfb5755 ('fat: add fat_fallocate operation')
->> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
->>
->> diff --git a/fs/fat/file.c b/fs/fat/file.c
->> index 03f716f..befedee 100644
->> --- a/fs/fat/file.c
->> +++ b/fs/fat/file.c
->> @@ -257,10 +257,8 @@ static long fat_fallocate(struct file *file, int
->> mode,
->>  		goto error;
->>
->>  	err = inode_newsize_ok(inode, (len + offset));
->> -	if (err) {
->> -		mutex_unlock(&inode->i_mutex);
->> +	if (err)
->>  		goto error;
->> -	}
->>
->>  	if (mode & FALLOC_FL_KEEP_SIZE) {
->>  		/* First compute the number of clusters to be allocated */
->
-> Right. Namjae, please include this fix to patchset at next time.
-Okay, I will include it in the next patch-set.
-Thank you!
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
->
-> Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+This patch series fixes gpio driver regestration
+and offset check for unbanked gpio.
+
+Lad, Prabhakar (2):
+  gpio: davinci: Fix a check for unbanked gpio
+  ARM: davinci: Fix number of resources passed to
+    davinci_gpio_register() call
+
+ arch/arm/mach-davinci/dm355.c  |    2 +-
+ arch/arm/mach-davinci/dm365.c  |    2 +-
+ arch/arm/mach-davinci/dm644x.c |    2 +-
+ arch/arm/mach-davinci/dm646x.c |    2 +-
+ drivers/gpio/gpio-davinci.c    |    4 +++-
+ 5 files changed, 7 insertions(+), 5 deletions(-)
+
+-- 
+1.7.9.5
+
