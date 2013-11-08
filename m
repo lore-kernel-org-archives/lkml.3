@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757714Ab3KHRXy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 12:23:54 -0500
-Received: from mout.gmx.net ([212.227.17.22]:52966 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757362Ab3KHRXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 12:23:53 -0500
+	id S1757798Ab3KHR06 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 12:26:58 -0500
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:43803 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab3KHR05 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 12:26:57 -0500
 MIME-Version: 1.0
-Message-ID: <trinity-7afc36d5-e334-4d98-a3d6-2f30c36b8a9b-1383931431108@3capp-gmx-bs12>
-From: "Peter Huewe" <PeterHuewe@gmx.de>
-To: "Ashley Lai" <adlai@linux.vnet.ibm.com>
-Cc: "Jason Gunthorpe" <jgunthorpe@obsidianresearch.com>,
-        tpmdd-devel@lists.sourceforge.net, "Peter Huewe" <peterhuewe@gmx.de>,
-        linux-kernel@vger.kernel.org
-Subject: Aw: Re: [tpmdd-devel] tpm: Remainder of earlier clean up
-Content-Type: text/plain; charset=UTF-8
-Date: Fri, 8 Nov 2013 18:23:51 +0100 (CET)
-Importance: normal
-Sensitivity: Normal
-In-Reply-To: <1383929654.32324.27.camel@fishsauce>
-References: <1383536326-28772-1-git-send-email-jgunthorpe@obsidianresearch.com>,
- <1383929654.32324.27.camel@fishsauce>
-X-UI-Message-Type: mail
-X-Priority: 3
-X-Provags-ID: V03:K0:pb7VJhKZuqVH6DU6Qqak7Kiy1T6HPFWj7fUPH6aK1zy
- C3Usi0czxKJ54C6jHsXpmXta5GwHLuSO9EH1lgbiD5P9Rz0ORv
- KiFnbksittRPD7kUua/6nXo0Klc1RYNKti13HQlfegCDdRi8/d
- hY/d/mlqAAgy3E2CNSJPatA0zDkywWYGedJTjeoKPVWnZLN0qS
- /88iHb8x9S7QTphLN/+ut4KSjw9VyzDE+HPM3Bf5QHKcEz0WD+
- iAVpqd2YVxoBieZHhlSd2K9ZQUNiogbH1o86xka9mXMYgSoyi1 TeVtmw=
+In-Reply-To: <527CE32F.6090305@imgtec.com>
+References: <1381163377-21044-1-git-send-email-robherring2@gmail.com>
+	<1381163377-21044-9-git-send-email-robherring2@gmail.com>
+	<527CE32F.6090305@imgtec.com>
+Date: Fri, 8 Nov 2013 11:26:55 -0600
+Message-ID: <CAL_JsqKprnCn7JQj7QFbMbLW3Ei-paBH6RYti+CgEFCb4JUaAQ@mail.gmail.com>
+Subject: Re: [PATCH v2 08/29] metag: use unflatten_and_copy_device_tree
+From: Rob Herring <robherring2@gmail.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        linux-metag <linux-metag@vger.kernel.org>,
+        Qais <qais.yousef@imgtec.com>, Qais Yousef <qsyousef@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 8, 2013 at 7:12 AM, James Hogan <james.hogan@imgtec.com> wrote:
+> On 07/10/13 17:29, Rob Herring wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> Use the common unflatten_and_copy_device_tree to copy the built-in FDT
+>> out of init section.
+>>
+>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>> Cc: James Hogan <james.hogan@imgtec.com>
+>
+> With Qais' suggestion of removing the extern void copy_fdt(void) from
+> arch/metag/include/asm/prom.h (thanks Qais):
+> Acked-by: James Hogan <james.hogan@imgtec.com>
 
-Hi Jason, Ashley
-> Just want to let you know that I'm not forgetting about reviewing these
-> patches. It is on my to do list, I will get to it by this or next
-> weekend.
+Look at the second series with the prom.h clean-up. prom.h is removed
+from metag altogether now.
 
-I'm also on it ;)
-But of course it's quite a lot
+Rob
