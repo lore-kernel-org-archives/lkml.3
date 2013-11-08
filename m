@@ -1,154 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757223Ab3KHJQK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 04:16:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33588 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757044Ab3KHJQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 04:16:05 -0500
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH v2 8/8] x86: enable/disable ftrace graph call using new int3-based framework
-Date: Fri,  8 Nov 2013 10:12:12 +0100
-Message-Id: <1383901932-1945-10-git-send-email-pmladek@suse.cz>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
-References: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
+	id S1756873Ab3KHJS6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 04:18:58 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47071 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460Ab3KHJSz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 04:18:55 -0500
+Message-ID: <527CAC79.3030709@ti.com>
+Date: Fri, 8 Nov 2013 14:48:49 +0530
+From: Mugunthan V N <mugunthanvnm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
+Subject: Re: [patch] net: make ndev->irq signed for error handling
+References: <20131107074849.GF21844@elgon.mountain> <527B842E.2060909@ti.com> <20131107122249.GN20521@mwanda> <527BC0CF.70003@ti.com> <20131108084136.GY26669@mwanda>
+In-Reply-To: <20131108084136.GY26669@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One more change related to replacing the existing Int3-based framework with
-the new generic function introduced by the commit fd4363fff3d9
-(x86: Introduce int3 (breakpoint)-based instruction patching)
+On Friday 08 November 2013 02:11 PM, Dan Carpenter wrote:
+> On Thu, Nov 07, 2013 at 10:03:19PM +0530, Mugunthan V N wrote:
+>> On Thursday 07 November 2013 05:52 PM, Dan Carpenter wrote:
+>>> On Thu, Nov 07, 2013 at 05:44:38PM +0530, Mugunthan V N wrote:
+>>>> On Thursday 07 November 2013 01:18 PM, Dan Carpenter wrote:
+>>>>> There is a bug in cpsw_probe() where we do:
+>>>>>
+>>>>> 	ndev->irq = platform_get_irq(pdev, 0);
+>>>>> 	if (ndev->irq < 0) {
+>>>>>
+>>>>> The problem is that "ndev->irq" is unsigned so the error handling
+>>>>> doesn't work.  I have changed it to a regular int.
+>>>>>
+>>>>> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>>>> ndev->irq is never used any where in the driver, I think its better to
+>>>> remove this part of code from probe. If every one is ok, I can send a
+>>>> patch to remove the code.
+>>> It seems like cpsw_ndo_poll_controller() uses it.
+>>>
+>>>
+>> That can be changed to pass one of the interrupt numbers from priv as
+>> the irq number is not used in interrupt service routine.
+> I don't know anything about this driver, so I'm fine with your idea.
+>
+Anyhow David has applied your patch, I will send a driver cleanup patch
+seperately.
 
-ftrace_enable_ftrace_graph_caller and ftrace_disable_ftrace_graph_caller
-modified the jump target directly without using the int3 guard. It worked
-because writing the address was an atomic operation.
-
-We do not really need to use the safe ftrace_modify_code here but it helps
-to remove another arch-specific code. The result is more consistent
-and better readable code which is might be worth the change.
-
-Signed-off-by: Petr Mladek <pmladek@suse.cz>
----
- arch/x86/kernel/ftrace.c | 63 +++++++++++-------------------------------------
- 1 file changed, 14 insertions(+), 49 deletions(-)
-
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index 92fe8ca..20d2028 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -47,7 +47,7 @@ int ftrace_arch_code_modify_post_process(void)
- union ftrace_code_union {
- 	char code[MCOUNT_INSN_SIZE];
- 	struct {
--		char e8;
-+		char inst;
- 		int offset;
- 	} __attribute__((packed));
- };
-@@ -88,7 +88,7 @@ static unsigned char *ftrace_call_replace(unsigned long ip, unsigned long addr)
- {
- 	static union ftrace_code_union calc;
- 
--	calc.e8		= 0xe8;
-+	calc.inst	= 0xe8;
- 	calc.offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
- 
- 	/*
-@@ -98,27 +98,11 @@ static unsigned char *ftrace_call_replace(unsigned long ip, unsigned long addr)
- 	return calc.code;
- }
- 
--static inline int
--within(unsigned long addr, unsigned long start, unsigned long end)
-+static void ftrace_jump_replace(union ftrace_code_union *calc,
-+				unsigned long ip, unsigned long addr)
- {
--	return addr >= start && addr < end;
--}
--
--static int
--do_ftrace_mod_code(unsigned long ip, const void *new_code)
--{
--	/*
--	 * On x86_64, kernel text mappings are mapped read-only with
--	 * CONFIG_DEBUG_RODATA. So we use the kernel identity mapping instead
--	 * of the kernel text mapping to modify the kernel text.
--	 *
--	 * For 32bit kernels, these mappings are same and we can use
--	 * kernel identity mapping to modify code.
--	 */
--	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
--		ip = (unsigned long)__va(__pa_symbol(ip));
--
--	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
-+	calc->inst	= 0xe9;
-+	calc->offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
- }
- 
- static const unsigned char *ftrace_nop_replace(void)
-@@ -369,45 +353,26 @@ int __init ftrace_dyn_arch_init(void *data)
- #ifdef CONFIG_DYNAMIC_FTRACE
- extern void ftrace_graph_call(void);
- 
--static int ftrace_mod_jmp(unsigned long ip,
--			  int old_offset, int new_offset)
--{
--	unsigned char code[MCOUNT_INSN_SIZE];
--
--	if (probe_kernel_read(code, (void *)ip, MCOUNT_INSN_SIZE))
--		return -EFAULT;
--
--	if (code[0] != 0xe9 || old_offset != *(int *)(&code[1]))
--		return -EINVAL;
--
--	*(int *)(&code[1]) = new_offset;
--
--	if (do_ftrace_mod_code(ip, &code))
--		return -EPERM;
--
--	return 0;
--}
--
- int ftrace_enable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
-+	union ftrace_code_union old, new;
- 
--	old_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
-+	ftrace_jump_replace(&old, ip, (unsigned long)(&ftrace_stub));
-+	ftrace_jump_replace(&new, ip, (unsigned long)(&ftrace_graph_caller));
- 
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_modify_code(ip, old.code, new.code);
- }
- 
- int ftrace_disable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
-+	union ftrace_code_union old, new;
- 
--	old_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
-+	ftrace_jump_replace(&old, ip, (unsigned long)(&ftrace_graph_caller));
-+	ftrace_jump_replace(&new, ip, (unsigned long)(&ftrace_stub));
- 
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_modify_code(ip, old.code, new.code);
- }
- 
- #endif /* !CONFIG_DYNAMIC_FTRACE */
--- 
-1.8.4
-
+Regards
+Mugunthan V N
