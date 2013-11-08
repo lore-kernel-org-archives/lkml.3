@@ -1,219 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932850Ab3KHChF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:37:05 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:9749 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932371Ab3KHCg7 (ORCPT
+	id S1756927Ab3KHCRl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:17:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34527 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756460Ab3KHCQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:36:59 -0500
-X-Spam-Score: -100.8
-Message-ID: <527C4ECB.9050504@asianux.com>
-Date: Fri, 08 Nov 2013 10:39:07 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "vgupta@synopsys.com" <vgupta@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jonas Bonn <jonas@southpole.se>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dhowells@redhat.com" <dhowells@redhat.com>
-Subject: Re: [PATCH] arch: arc: uapi: be sure of "_UAPI" prefix for all guard
- macros
-References: <527C4E10.4070408@asianux.com>
-In-Reply-To: <527C4E10.4070408@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Nov 2013 21:16:15 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 21/91] can: dev: fix nlmsg size calculation in can_get_size()
+Date: Thu,  7 Nov 2013 18:14:36 -0800
+Message-Id: <1383876946-2396-22-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
+References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2013 10:36 AM, Chen Gang wrote:
-> For all uapi headers, need use "_UAPI" prefix for its guard macro
-> (which will be stripped by "scripts/headers_installler.sh").
-> 
-> And be sure of all "endif" append (or have correct) related comment.
-> 
-> Also reserve guard macro in empty file, since some of "usr/include/*"
-> header files may check guard macro to know whether content related
-> header file.
-> 
+3.8.13.13 -stable review patch.  If anyone has any objections, please let me know.
 
-Oh, sorry.
+------------------
 
-Need add additional comment for the normal header file which missing
-guard macro.
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-And also need cc to David Howells which provide many valuable suggestions.
+[ Upstream commit fe119a05f8ca481623a8d02efcc984332e612528 ]
 
-I will send patch v2 for it.
+This patch fixes the calculation of the nlmsg size, by adding the missing
+nla_total_size().
 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/arc/include/uapi/asm/byteorder.h  |    6 +++---
->  arch/arc/include/uapi/asm/cachectl.h   |    6 +++---
->  arch/arc/include/uapi/asm/elf.h        |    2 +-
->  arch/arc/include/uapi/asm/setup.h      |    9 +++++++--
->  arch/arc/include/uapi/asm/sigcontext.h |    6 +++---
->  arch/arc/include/uapi/asm/signal.h     |    6 +++---
->  arch/arc/include/uapi/asm/swab.h       |    6 +++---
->  arch/arc/include/uapi/asm/unistd.h     |    4 ++++
->  8 files changed, 27 insertions(+), 18 deletions(-)
-> 
-> diff --git a/arch/arc/include/uapi/asm/byteorder.h b/arch/arc/include/uapi/asm/byteorder.h
-> index 9da71d4..859fde2 100644
-> --- a/arch/arc/include/uapi/asm/byteorder.h
-> +++ b/arch/arc/include/uapi/asm/byteorder.h
-> @@ -6,8 +6,8 @@
->   * published by the Free Software Foundation.
->   */
->  
-> -#ifndef __ASM_ARC_BYTEORDER_H
-> -#define __ASM_ARC_BYTEORDER_H
-> +#ifndef _UAPI__ASM_ARC_BYTEORDER_H
-> +#define _UAPI__ASM_ARC_BYTEORDER_H
->  
->  #ifdef CONFIG_CPU_BIG_ENDIAN
->  #include <linux/byteorder/big_endian.h>
-> @@ -15,4 +15,4 @@
->  #include <linux/byteorder/little_endian.h>
->  #endif
->  
-> -#endif /* ASM_ARC_BYTEORDER_H */
-> +#endif /* _UAPI__ASM_ARC_BYTEORDER_H */
-> diff --git a/arch/arc/include/uapi/asm/cachectl.h b/arch/arc/include/uapi/asm/cachectl.h
-> index 51c73f0..2437fc6 100644
-> --- a/arch/arc/include/uapi/asm/cachectl.h
-> +++ b/arch/arc/include/uapi/asm/cachectl.h
-> @@ -6,8 +6,8 @@
->   * published by the Free Software Foundation.
->   */
->  
-> -#ifndef __ARC_ASM_CACHECTL_H
-> -#define __ARC_ASM_CACHECTL_H
-> +#ifndef _UAPI__ARC_ASM_CACHECTL_H
-> +#define _UAPI__ARC_ASM_CACHECTL_H
->  
->  /*
->   * ARC ABI flags defined for Android's finegrained cacheflush requirements
-> @@ -25,4 +25,4 @@
->  #define DCACHE	CF_D_FLUSH
->  #define BCACHE	(CF_I_INV | CF_D_FLUSH)
->  
-> -#endif
-> +#endif /* _UAPI__ARC_ASM_CACHECTL_H */
-> diff --git a/arch/arc/include/uapi/asm/elf.h b/arch/arc/include/uapi/asm/elf.h
-> index 0f99ac8..4e82dc6 100644
-> --- a/arch/arc/include/uapi/asm/elf.h
-> +++ b/arch/arc/include/uapi/asm/elf.h
-> @@ -23,4 +23,4 @@ typedef unsigned long elf_fpregset_t;
->  
->  typedef elf_greg_t elf_gregset_t[ELF_NGREG];
->  
-> -#endif
-> +#endif /* _UAPI__ASM_ARC_ELF_H */
-> diff --git a/arch/arc/include/uapi/asm/setup.h b/arch/arc/include/uapi/asm/setup.h
-> index a6d4e44..09a8df7 100644
-> --- a/arch/arc/include/uapi/asm/setup.h
-> +++ b/arch/arc/include/uapi/asm/setup.h
-> @@ -1,6 +1,11 @@
->  /*
->   * setup.h is part of userspace header ABI so UAPI scripts have to generate it
->   * even if there's nothing to export - causing empty <uapi/asm/setup.h>
-> - * However to prevent "patch" from discarding it we add this placeholder
-> - * comment
-> + *
-> + * And some user programs may check guard macro to know whether content related
-> + * header file (e.g. some of "/usr/include/ *" header files check guard macro),
-> + * so recommend to still reserve guard macro in empty file.
->   */
-> +#ifndef _UAPI__ASM_ARC_SETUP_H
-> +#define _UAPI__ASM_ARC_SETUP_H
-> +#endif /* _UAPI__ASM_ARC_SETUP_H */
-> diff --git a/arch/arc/include/uapi/asm/sigcontext.h b/arch/arc/include/uapi/asm/sigcontext.h
-> index 9678a11..b2063ff 100644
-> --- a/arch/arc/include/uapi/asm/sigcontext.h
-> +++ b/arch/arc/include/uapi/asm/sigcontext.h
-> @@ -6,8 +6,8 @@
->   * published by the Free Software Foundation.
->   */
->  
-> -#ifndef _ASM_ARC_SIGCONTEXT_H
-> -#define _ASM_ARC_SIGCONTEXT_H
-> +#ifndef _UAPI_ASM_ARC_SIGCONTEXT_H
-> +#define _UAPI_ASM_ARC_SIGCONTEXT_H
->  
->  #include <asm/ptrace.h>
->  
-> @@ -19,4 +19,4 @@ struct sigcontext {
->  	struct user_regs_struct regs;
->  };
->  
-> -#endif /* _ASM_ARC_SIGCONTEXT_H */
-> +#endif /* _UAPI_ASM_ARC_SIGCONTEXT_H */
-> diff --git a/arch/arc/include/uapi/asm/signal.h b/arch/arc/include/uapi/asm/signal.h
-> index fad62f7..f212d83 100644
-> --- a/arch/arc/include/uapi/asm/signal.h
-> +++ b/arch/arc/include/uapi/asm/signal.h
-> @@ -8,8 +8,8 @@
->   * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
->   */
->  
-> -#ifndef _ASM_ARC_SIGNAL_H
-> -#define _ASM_ARC_SIGNAL_H
-> +#ifndef _UAPI_ASM_ARC_SIGNAL_H
-> +#define _UAPI_ASM_ARC_SIGNAL_H
->  
->  /*
->   * This is much needed for ARC sigreturn optimization.
-> @@ -24,4 +24,4 @@
->  
->  #include <asm-generic/signal.h>
->  
-> -#endif /* _ASM_ARC_SIGNAL_H */
-> +#endif /* _UAPI_ASM_ARC_SIGNAL_H */
-> diff --git a/arch/arc/include/uapi/asm/swab.h b/arch/arc/include/uapi/asm/swab.h
-> index 095599a..7237a21 100644
-> --- a/arch/arc/include/uapi/asm/swab.h
-> +++ b/arch/arc/include/uapi/asm/swab.h
-> @@ -13,8 +13,8 @@
->   *  -Hardware assisted single cycle bswap (Use Case of ARC custom instrn)
->   */
->  
-> -#ifndef __ASM_ARC_SWAB_H
-> -#define __ASM_ARC_SWAB_H
-> +#ifndef _UAPI__ASM_ARC_SWAB_H
-> +#define _UAPI__ASM_ARC_SWAB_H
->  
->  #include <linux/types.h>
->  
-> @@ -95,4 +95,4 @@
->  #define __SWAB_64_THRU_32__
->  #endif
->  
-> -#endif
-> +#endif /* _UAPI__ASM_ARC_SWAB_H */
-> diff --git a/arch/arc/include/uapi/asm/unistd.h b/arch/arc/include/uapi/asm/unistd.h
-> index 6f30484..109f32c 100644
-> --- a/arch/arc/include/uapi/asm/unistd.h
-> +++ b/arch/arc/include/uapi/asm/unistd.h
-> @@ -7,6 +7,8 @@
->   */
->  
->  /******** no-legacy-syscalls-ABI *******/
-> +#ifndef _UAPI_ASM_ARC_UNISTD_H
-> +#define _UAPI_ASM_ARC_UNISTD_H
->  
->  #define __ARCH_WANT_SYS_EXECVE
->  #define __ARCH_WANT_SYS_CLONE
-> @@ -32,3 +34,5 @@ __SYSCALL(__NR_arc_gettls, sys_arc_gettls)
->  /* Generic syscall (fs/filesystems.c - lost in asm-generic/unistd.h */
->  #define __NR_sysfs		(__NR_arch_specific_syscall + 3)
->  __SYSCALL(__NR_sysfs, sys_sysfs)
-> +
-> +#endif /* _UAPI_ASM_ARC_UNISTD_H */
-> 
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/can/dev.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-
+diff --git a/drivers/net/can/dev.c b/drivers/net/can/dev.c
+index 8233e5e..6afbe46 100644
+--- a/drivers/net/can/dev.c
++++ b/drivers/net/can/dev.c
+@@ -698,14 +698,14 @@ static size_t can_get_size(const struct net_device *dev)
+ 	size_t size;
+ 
+ 	size = nla_total_size(sizeof(u32));   /* IFLA_CAN_STATE */
+-	size += sizeof(struct can_ctrlmode);  /* IFLA_CAN_CTRLMODE */
++	size += nla_total_size(sizeof(struct can_ctrlmode));  /* IFLA_CAN_CTRLMODE */
+ 	size += nla_total_size(sizeof(u32));  /* IFLA_CAN_RESTART_MS */
+-	size += sizeof(struct can_bittiming); /* IFLA_CAN_BITTIMING */
+-	size += sizeof(struct can_clock);     /* IFLA_CAN_CLOCK */
++	size += nla_total_size(sizeof(struct can_bittiming)); /* IFLA_CAN_BITTIMING */
++	size += nla_total_size(sizeof(struct can_clock));     /* IFLA_CAN_CLOCK */
+ 	if (priv->do_get_berr_counter)        /* IFLA_CAN_BERR_COUNTER */
+-		size += sizeof(struct can_berr_counter);
++		size += nla_total_size(sizeof(struct can_berr_counter));
+ 	if (priv->bittiming_const)	      /* IFLA_CAN_BITTIMING_CONST */
+-		size += sizeof(struct can_bittiming_const);
++		size += nla_total_size(sizeof(struct can_bittiming_const));
+ 
+ 	return size;
+ }
 -- 
-Chen Gang
+1.8.1.2
+
