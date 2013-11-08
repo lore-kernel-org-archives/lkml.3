@@ -1,261 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab3KHBny (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 20:43:54 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:24340 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755664Ab3KHBnr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 20:43:47 -0500
-Message-ID: <527C41E9.6040002@oracle.com>
-Date: Fri, 08 Nov 2013 09:44:09 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel@lists.xenproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH] PCI: Introduce two new MSI infrastructure calls for masking/unmasking.
-References: <1383772616-23060-1-git-send-email-konrad.wilk@oracle.com> <CAErSpo4rdHwhuF=SM6WT3EP3TGoUFnwxVdx5919qxea3On7MRw@mail.gmail.com>
-In-Reply-To: <CAErSpo4rdHwhuF=SM6WT3EP3TGoUFnwxVdx5919qxea3On7MRw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756105Ab3KHBrq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 20:47:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48615 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754473Ab3KHBrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 20:47:43 -0500
+Date: Thu, 7 Nov 2013 20:49:48 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, Steve French <sfrench@samba.org>,
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Subject: Re: [PATCH linux-next] cifs: Use data structures to compute NTLMv2
+ response offsets
+Message-ID: <20131107204948.512b383e@corrin.poochiereds.net>
+In-Reply-To: <1383867657-110399-1-git-send-email-tim.gardner@canonical.com>
+References: <1383867657-110399-1-git-send-email-tim.gardner@canonical.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu,  7 Nov 2013 16:40:57 -0700
+Tim Gardner <tim.gardner@canonical.com> wrote:
 
-On 2013-11-07 07:51, Bjorn Helgaas wrote:
-> [+cc Thomas, Ingo, Peter, x86 list]
->
-> On Wed, Nov 6, 2013 at 2:16 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
->> Certain platforms do not allow writes in the MSI-X bars
->> to setup or tear down vector values. To combat against
->> the generic code trying to write to that and either silently
->> being ignored or crashing due to the pagetables being marked r/o
->> this patch introduces a platform over-write.
->>
->> Note that we keep two separate, non-weak, functions
->> default_mask_msi_irqs() and default_mask_msix_irqs() for the
->> behavior of the arch_mask_msi_irqs() and arch_mask_msix_irqs(),
->> as the default behavior is needed by x86 PCI code.
->>
->> For Xen, which does not allow the guest to write to MSI-X
->> tables - as the hypervisor is solely responsible for setting
->> the vector values - we implement two nops.
->>
->> CC: Bjorn Helgaas <bhelgaas@google.com>
->> CC: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
->> CC: Zhenzhong Duan <zhenzhong.duan@oracle.com>
->> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> I think this is safe, and I'd like to squeeze it into the v3.13 merge
-> window next week, since it supersedes three patches Zhenzhong has been
-> trying to get in since July [1], and this patch is much simpler to
-> understand.
-This patch could replace the first two.
-I think the third patch of mine is still needed as it does a different 
-thing.
-It optimizes restore path in dom0.
+> A bit of cleanup plus some gratuitous variable renaming. I think using
+> structures instead of numeric offsets makes this code much more
+> understandable.
+> 
+> Also added a comment about current time range expected by
+> the server.
+> 
+> Cc: Jeff Layton <jlayton@redhat.com>
+> Cc: Steve French <sfrench@samba.org>
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+> 
+> The comment about time of day needing to be within 5 minutes is important (to me
+> at least). I spent the best part of a week thinking I had endian issues on powerpc
+> when in truth I was just too stupid to notice that the clock
+> was not updated. Danged embedded platforms...
+> 
+> checkpatch has some problems with this patch regarding attribute packed, but I chose
+> to remain consistent with existing code.
+> 
+> WARNING: __packed is preferred over __attribute__((packed))
+> #141: FILE: fs/cifs/cifspdu.h:705:
+> +	    } __attribute__((packed)) challenge;
+> 
+> WARNING: __packed is preferred over __attribute__((packed))
+> #142: FILE: fs/cifs/cifspdu.h:706:
+> +	} __attribute__((packed));
+> 
+> total: 0 errors, 2 warnings, 99 lines checked
+> 
+> Tested on cifs-2.6 for-linus (c481e9feee78c6ce1ba0a1c8c892049f6514f6cf) by mounting
+> to iOS 10.8 and Win 8.0 Pro.
+> 
+> rtg
+> 
+>  fs/cifs/cifsencrypt.c |   40 ++++++++++++++++++++++++----------------
+>  fs/cifs/cifspdu.h     |    8 +++++++-
+>  2 files changed, 31 insertions(+), 17 deletions(-)
+> 
+> diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
+> index fc6f4f3..4934347 100644
+> --- a/fs/cifs/cifsencrypt.c
+> +++ b/fs/cifs/cifsencrypt.c
+> @@ -548,7 +548,13 @@ static int
+>  CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
+>  {
+>  	int rc;
+> -	unsigned int offset = CIFS_SESS_KEY_SIZE + 8;
+> +	struct ntlmv2_resp *ntlmv2 = (struct ntlmv2_resp *)
+> +	    (ses->auth_key.response + CIFS_SESS_KEY_SIZE);
+> +	unsigned int hash_len;
+> +
+> +	/* The MD5 hash starts at challenge_key.key */
+> +	hash_len = ses->auth_key.len - (CIFS_SESS_KEY_SIZE +
+> +		offsetof(struct ntlmv2_resp, challenge.key[0]));
+>  
+>  	if (!ses->server->secmech.sdeschmacmd5) {
+>  		cifs_dbg(VFS, "%s: can't generate ntlmv2 hash\n", __func__);
+> @@ -556,7 +562,7 @@ CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
+>  	}
+>  
+>  	rc = crypto_shash_setkey(ses->server->secmech.hmacmd5,
+> -				ntlmv2_hash, CIFS_HMAC_MD5_HASH_SIZE);
+> +				 ntlmv2_hash, CIFS_HMAC_MD5_HASH_SIZE);
+>  	if (rc) {
+>  		cifs_dbg(VFS, "%s: Could not set NTLMV2 Hash as a key\n",
+>  			 __func__);
+> @@ -570,20 +576,21 @@ CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
+>  	}
+>  
+>  	if (ses->server->negflavor == CIFS_NEGFLAVOR_EXTENDED)
+> -		memcpy(ses->auth_key.response + offset,
+> -			ses->ntlmssp->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
+> +		memcpy(ntlmv2->challenge.key,
+> +		       ses->ntlmssp->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
+>  	else
+> -		memcpy(ses->auth_key.response + offset,
+> -			ses->server->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
+> +		memcpy(ntlmv2->challenge.key,
+> +		       ses->server->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
+>  	rc = crypto_shash_update(&ses->server->secmech.sdeschmacmd5->shash,
+> -		ses->auth_key.response + offset, ses->auth_key.len - offset);
+> +				 ntlmv2->challenge.key, hash_len);
+>  	if (rc) {
+>  		cifs_dbg(VFS, "%s: Could not update with response\n", __func__);
+>  		return rc;
+>  	}
+>  
+> +	/* Note that the MD5 digest over writes anon.challenge_key.key */
+>  	rc = crypto_shash_final(&ses->server->secmech.sdeschmacmd5->shash,
+> -		ses->auth_key.response + CIFS_SESS_KEY_SIZE);
+> +				ntlmv2->ntlmv2_hash);
+>  	if (rc)
+>  		cifs_dbg(VFS, "%s: Could not generate md5 hash\n", __func__);
+>  
+> @@ -627,7 +634,7 @@ setup_ntlmv2_rsp(struct cifs_ses *ses, const struct nls_table *nls_cp)
+>  	int rc;
+>  	int baselen;
+>  	unsigned int tilen;
+> -	struct ntlmv2_resp *buf;
+> +	struct ntlmv2_resp *ntlmv2;
+>  	char ntlmv2_hash[16];
+>  	unsigned char *tiblob = NULL; /* target info blob */
+>  
+> @@ -660,13 +667,14 @@ setup_ntlmv2_rsp(struct cifs_ses *ses, const struct nls_table *nls_cp)
+>  	}
+>  	ses->auth_key.len += baselen;
+>  
+> -	buf = (struct ntlmv2_resp *)
+> +	ntlmv2 = (struct ntlmv2_resp *)
+>  			(ses->auth_key.response + CIFS_SESS_KEY_SIZE);
+> -	buf->blob_signature = cpu_to_le32(0x00000101);
+> -	buf->reserved = 0;
+> -	buf->time = cpu_to_le64(cifs_UnixTimeToNT(CURRENT_TIME));
+> -	get_random_bytes(&buf->client_chal, sizeof(buf->client_chal));
+> -	buf->reserved2 = 0;
+> +	ntlmv2->blob_signature = cpu_to_le32(0x00000101);
+> +	ntlmv2->reserved = 0;
+> +	/* Must be within 5 minutes of the server */
+> +	ntlmv2->time = cpu_to_le64(cifs_UnixTimeToNT(CURRENT_TIME));
+> +	get_random_bytes(&ntlmv2->client_chal, sizeof(ntlmv2->client_chal));
+> +	ntlmv2->reserved2 = 0;
+>  
+>  	memcpy(ses->auth_key.response + baselen, tiblob, tilen);
+>  
+> @@ -706,7 +714,7 @@ setup_ntlmv2_rsp(struct cifs_ses *ses, const struct nls_table *nls_cp)
+>  	}
+>  
+>  	rc = crypto_shash_update(&ses->server->secmech.sdeschmacmd5->shash,
+> -		ses->auth_key.response + CIFS_SESS_KEY_SIZE,
+> +		ntlmv2->ntlmv2_hash,
+>  		CIFS_HMAC_MD5_HASH_SIZE);
+>  	if (rc) {
+>  		cifs_dbg(VFS, "%s: Could not update with response\n", __func__);
+> diff --git a/fs/cifs/cifspdu.h b/fs/cifs/cifspdu.h
+> index 9e5ee34..33df36e 100644
+> --- a/fs/cifs/cifspdu.h
+> +++ b/fs/cifs/cifspdu.h
+> @@ -697,7 +697,13 @@ struct ntlmssp2_name {
+>  } __attribute__((packed));
+>  
+>  struct ntlmv2_resp {
+> -	char ntlmv2_hash[CIFS_ENCPWD_SIZE];
+> +	union {
+> +	    char ntlmv2_hash[CIFS_ENCPWD_SIZE];
+> +	    struct {
+> +		__u8 reserved[8];
+> +		__u8 key[CIFS_SERVER_CHALLENGE_SIZE];
+> +	    } __attribute__((packed)) challenge;
+> +	} __attribute__((packed));
+>  	__le32 blob_signature;
+>  	__u32  reserved;
+>  	__le64  time;
 
-zduan
->
-> I *think* this also fixes an actual bug on Xen.  Konrad, is there a
-> bugzilla or any kind of email problem description that we can include
-> here as a reference?  I think there's a lost interrupt with qlcnic,
-> but I don't know the details or what the failure looks like to a user.
->
-> [1] http://lkml.kernel.org/r/51EF44FA.4020903@oracle.com
->
->> ---
->>   arch/x86/include/asm/x86_init.h |  3 +++
->>   arch/x86/kernel/x86_init.c      | 10 ++++++++++
->>   arch/x86/pci/xen.c              | 13 ++++++++++++-
->>   drivers/pci/msi.c               | 22 ++++++++++++++++------
->>   include/linux/msi.h             |  2 ++
->>   5 files changed, 43 insertions(+), 7 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
->> index 828a156..0f1be11 100644
->> --- a/arch/x86/include/asm/x86_init.h
->> +++ b/arch/x86/include/asm/x86_init.h
->> @@ -172,6 +172,7 @@ struct x86_platform_ops {
->>
->>   struct pci_dev;
->>   struct msi_msg;
->> +struct msi_desc;
->>
->>   struct x86_msi_ops {
->>          int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
->> @@ -182,6 +183,8 @@ struct x86_msi_ops {
->>          void (*teardown_msi_irqs)(struct pci_dev *dev);
->>          void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
->>          int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
->> +       u32 (*msi_mask_irq)(struct msi_desc *desc, u32 mask, u32 flag);
->> +       u32 (*msix_mask_irq)(struct msi_desc *desc, u32 flag);
->>   };
->>
->>   struct IO_APIC_route_entry;
->> diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
->> index 8ce0072..021783b 100644
->> --- a/arch/x86/kernel/x86_init.c
->> +++ b/arch/x86/kernel/x86_init.c
->> @@ -116,6 +116,8 @@ struct x86_msi_ops x86_msi = {
->>          .teardown_msi_irqs      = default_teardown_msi_irqs,
->>          .restore_msi_irqs       = default_restore_msi_irqs,
->>          .setup_hpet_msi         = default_setup_hpet_msi,
->> +       .msi_mask_irq           = default_msi_mask_irq,
->> +       .msix_mask_irq          = default_msix_mask_irq,
->>   };
->>
->>   /* MSI arch specific hooks */
->> @@ -138,6 +140,14 @@ void arch_restore_msi_irqs(struct pci_dev *dev, int irq)
->>   {
->>          x86_msi.restore_msi_irqs(dev, irq);
->>   }
->> +u32 arch_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
->> +{
->> +       return x86_msi.msi_mask_irq(desc, mask, flag);
->> +}
->> +u32 arch_msix_mask_irq(struct msi_desc *desc, u32 flag)
->> +{
->> +       return x86_msi.msix_mask_irq(desc, flag);
->> +}
->>   #endif
->>
->>   struct x86_io_apic_ops x86_io_apic_ops = {
->> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
->> index 48e8461..5eee495 100644
->> --- a/arch/x86/pci/xen.c
->> +++ b/arch/x86/pci/xen.c
->> @@ -382,7 +382,14 @@ static void xen_teardown_msi_irq(unsigned int irq)
->>   {
->>          xen_destroy_irq(irq);
->>   }
->> -
->> +static u32 xen_nop_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
->> +{
->> +       return 0;
->> +}
->> +static u32 xen_nop_msix_mask_irq(struct msi_desc *desc, u32 flag)
->> +{
->> +       return 0;
->> +}
->>   #endif
->>
->>   int __init pci_xen_init(void)
->> @@ -406,6 +413,8 @@ int __init pci_xen_init(void)
->>          x86_msi.setup_msi_irqs = xen_setup_msi_irqs;
->>          x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
->>          x86_msi.teardown_msi_irqs = xen_teardown_msi_irqs;
->> +       x86_msi.msi_mask_irq = xen_nop_msi_mask_irq;
->> +       x86_msi.msix_mask_irq = xen_nop_msix_mask_irq;
->>   #endif
->>          return 0;
->>   }
->> @@ -485,6 +494,8 @@ int __init pci_xen_initial_domain(void)
->>          x86_msi.setup_msi_irqs = xen_initdom_setup_msi_irqs;
->>          x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
->>          x86_msi.restore_msi_irqs = xen_initdom_restore_msi_irqs;
->> +       x86_msi.msi_mask_irq = xen_nop_msi_mask_irq;
->> +       x86_msi.msix_mask_irq = xen_nop_msix_mask_irq;
->>   #endif
->>          xen_setup_acpi_sci();
->>          __acpi_register_gsi = acpi_register_gsi_xen;
->> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
->> index d5f90d6..7916699 100644
->> --- a/drivers/pci/msi.c
->> +++ b/drivers/pci/msi.c
->> @@ -185,7 +185,7 @@ static inline __attribute_const__ u32 msi_enabled_mask(u16 control)
->>    * reliably as devices without an INTx disable bit will then generate a
->>    * level IRQ which will never be cleared.
->>    */
->> -static u32 __msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
->> +u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
->>   {
->>          u32 mask_bits = desc->masked;
->>
->> @@ -199,9 +199,14 @@ static u32 __msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
->>          return mask_bits;
->>   }
->>
->> +__weak u32 arch_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
->> +{
->> +       return default_msi_mask_irq(desc, mask, flag);
->> +}
->> +
->>   static void msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
->>   {
->> -       desc->masked = __msi_mask_irq(desc, mask, flag);
->> +       desc->masked = arch_msi_mask_irq(desc, mask, flag);
->>   }
->>
->>   /*
->> @@ -211,7 +216,7 @@ static void msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
->>    * file.  This saves a few milliseconds when initialising devices with lots
->>    * of MSI-X interrupts.
->>    */
->> -static u32 __msix_mask_irq(struct msi_desc *desc, u32 flag)
->> +u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag)
->>   {
->>          u32 mask_bits = desc->masked;
->>          unsigned offset = desc->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE +
->> @@ -224,9 +229,14 @@ static u32 __msix_mask_irq(struct msi_desc *desc, u32 flag)
->>          return mask_bits;
->>   }
->>
->> +__weak u32 arch_msix_mask_irq(struct msi_desc *desc, u32 flag)
->> +{
->> +       return default_msix_mask_irq(desc, flag);
->> +}
->> +
->>   static void msix_mask_irq(struct msi_desc *desc, u32 flag)
->>   {
->> -       desc->masked = __msix_mask_irq(desc, flag);
->> +       desc->masked = arch_msix_mask_irq(desc, flag);
->>   }
->>
->>   static void msi_set_mask_bit(struct irq_data *data, u32 flag)
->> @@ -902,7 +912,7 @@ void pci_msi_shutdown(struct pci_dev *dev)
->>          pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &ctrl);
->>          mask = msi_capable_mask(ctrl);
->>          /* Keep cached state to be restored */
->> -       __msi_mask_irq(desc, mask, ~mask);
->> +       arch_msi_mask_irq(desc, mask, ~mask);
->>
->>          /* Restore dev->irq to its default pin-assertion irq */
->>          dev->irq = desc->msi_attrib.default_irq;
->> @@ -998,7 +1008,7 @@ void pci_msix_shutdown(struct pci_dev *dev)
->>          /* Return the device with MSI-X masked as initial states */
->>          list_for_each_entry(entry, &dev->msi_list, list) {
->>                  /* Keep cached states to be restored */
->> -               __msix_mask_irq(entry, 1);
->> +               arch_msix_mask_irq(entry, 1);
->>          }
->>
->>          msix_set_enable(dev, 0);
->> diff --git a/include/linux/msi.h b/include/linux/msi.h
->> index b17ead8..87cce50 100644
->> --- a/include/linux/msi.h
->> +++ b/include/linux/msi.h
->> @@ -64,6 +64,8 @@ void arch_restore_msi_irqs(struct pci_dev *dev, int irq);
->>
->>   void default_teardown_msi_irqs(struct pci_dev *dev);
->>   void default_restore_msi_irqs(struct pci_dev *dev, int irq);
->> +u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
->> +u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag);
->>
->>   struct msi_chip {
->>          struct module *owner;
->> --
->> 1.8.3.1
->>
+(cc'ing Shirish since he wrote most of this code...)
 
+Nice cleanup, I like it.
+
+Acked-by: Jeff Layton <jlayton@redhat.com>
