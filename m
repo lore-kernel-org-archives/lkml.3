@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab3KHLMX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 06:12:23 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33805 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756638Ab3KHLMV (ORCPT
+	id S1756817Ab3KHLUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 06:20:12 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:63696 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753126Ab3KHLUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 06:12:21 -0500
-Date: Fri, 8 Nov 2013 11:11:52 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Wenyou Yang <Wenyou.Yang@atmel.com>, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20131108111152.GL2493@sirena.org.uk>
-References: <1383816846-10561-1-git-send-email-richard.genoud@gmail.com>
+	Fri, 8 Nov 2013 06:20:10 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s6Wo+7iKhEdF4/RK"
-Content-Disposition: inline
-In-Reply-To: <1383816846-10561-1-git-send-email-richard.genoud@gmail.com>
-X-Cookie: You love peace.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 86.153.69.173
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: atmel: add support for changing message transfer
- speed
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20131108102853.GV30901@lee--X1>
+References: <1383634640-26869-1-git-send-email-sachin.kamat@linaro.org>
+	<20131108102853.GV30901@lee--X1>
+Date: Fri, 8 Nov 2013 16:50:09 +0530
+Message-ID: <CAK9yfHwOPrMn-OTOBP8Efdw6sMFaoU8yQpQqV3o1+=Ffdryv=g@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Documentation/mfd: Fix typos in s2mps11.txt
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Landley <rob@landley.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 8 November 2013 15:58, Lee Jones <lee.jones@linaro.org> wrote:
+> As this is only a trivial patch, I'll take it out the hands of the
+> already overloaded DT maintainers.
+>
+>> Fixed trivial typos to improve readability.
+>>
+>> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> ---
+>>  Documentation/devicetree/bindings/mfd/s2mps11.txt |    9 +++++----
+>>  1 file changed, 5 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+>> index c9332c6..0ff4e65 100644
+>> --- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
+>> +++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+>> @@ -1,10 +1,10 @@
+>>
+>>  * Samsung S2MPS11 Voltage and Current Regulator
+>>
+>> -The Samsung S2MP211 is a multi-function device which includes voltage and
+>> +The Samsung S2MPS11 is a multi-function device which includes voltage and
+>
+> Nice catch eagle-eye!
 
---s6Wo+7iKhEdF4/RK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+:)
 
-On Thu, Nov 07, 2013 at 10:34:06AM +0100, Richard Genoud wrote:
-> The only speed available was max_speed (the maximum speed declared for a
-> device).
-> This patch adds the support for spi_tranfer->speed_hz parameter.
-> We can now set a different speed for each spi message.
+>
+>>  current regulators, RTC, charger controller and other sub-blocks. It is
+>> -interfaced to the host controller using a I2C interface. Each sub-block is
+>> -addressed by the host system using different I2C slave address.
+>> +interfaced to the host controller using an I2C interface. Each sub-block is
+>> +addressed by the host system using different I2C slave addresses.
+>>
+>>  Required properties:
+>>  - compatible: Should be "samsung,s2mps11-pmic".
+>> @@ -43,7 +43,8 @@ sub-node should be of the format as listed below.
+>>
+>>   BUCK[2/3/4/6] supports disabling ramp delay on hardware, so explictly
+>>   regulator-ramp-delay = <0> can be used for them to disable ramp delay.
+>> - In absence of regulator-ramp-delay property, default ramp delay will be used.
+>> + In the absence of regulator-ramp-delay property, default ramp delay will
+>> + be used.
+>
+> So if we're being pertinacity here, your correction isn't much better.
+>
+> s/of regulator-ramp-delay property,/of {the,an} regulator-ramp-delay property, the
 
-Applied, thanks.
+I like this one :)
+>
+> or
+>
+> s/of regulator-ramp-delay property,/of regulator-ramp-delay, the
 
---s6Wo+7iKhEdF4/RK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSfMb1AAoJELSic+t+oim9mokP/iqAJ0SWcE4KJH9Tg73t7FDL
-m6QQImAgYJL4cBsRAYzu9kwnAXXbLlgq7qPNw6iH6pjn/FdGw5tqQoxvamDEx0IK
-bxy2dGvX1HsIGkQou0AcPn0vVJzx5N9sh397rdqzOzcV2N0JDJCi5P0TsuxjjBFy
-PNXbf/nTm6OA17ksoFFINHZhO+rTOVO38rb+SCYX8pyQNV7Bl7j/qKY+orfbE17h
-1DKAUfxBZF2zq8L2zJ1SMO7NIbwwzm7423g9W1W2f/UQHX7jmM0TNebLNH0I0Nx0
-ZejIHKm4YiYNc617MNcdVWMAf9JyBvvJ7aBDZ6zzJ0m+xK0XK16tozZj9OshNQHB
-8jmnEOkrRN0NG8//G7uh7aEk+vH4JrV5uJWX2VeJuOC5N6V/9uxlFIfUEy1soMUj
-hhKbJDHYKZcN4a9PcumFOFxfWqdlAEqcX8HCBM5xuclAbfBwnkrCbkmg4oKukA86
-maLMiOMQo1rGMx/aUILbwvZPQWiiWeB41ADMMlPY8iKIdW30jQdQOHjH766bcI04
-zarsI3zr7Hc57lLYzhcHFq76l+STn2VbYlgRXHzSzDPhUVvK5ZB/ZKyC1SY9ttrJ
-5c6dqEk2upHBO6n6bTFIOZrfOFtEObVVvhZhcppRuqDERhlasZQjhMWTU3um3aUS
-FqROpNSFRv2GZaJORWFl
-=6SqR
------END PGP SIGNATURE-----
-
---s6Wo+7iKhEdF4/RK--
+-- 
+With warm regards,
+Sachin
