@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab3KHCWa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:22:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34966 "EHLO
+	id S1757318Ab3KHCW2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:22:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34968 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757286Ab3KHCWU (ORCPT
+	with ESMTP id S1757288Ab3KHCWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Nov 2013 21:22:20 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: Pawel Baldysiak <pawel.baldysiak@intel.com>,
+        Lukasz Dorau <lukasz.dorau@intel.com>, NeilBrown <neilb@suse.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 49/91] can: flexcan: fix mx28 detection by rearanging OF match table
-Date: Thu,  7 Nov 2013 18:15:04 -0800
-Message-Id: <1383876946-2396-50-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 59/91] md: Fix skipping recovery for read-only arrays.
+Date: Thu,  7 Nov 2013 18:15:14 -0800
+Message-Id: <1383876946-2396-60-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -27,38 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Lukasz Dorau <lukasz.dorau@intel.com>
 
-commit e358784297992b012e8071764d996191dd2b1a54 upstream.
+commit 61e4947c99c4494336254ec540c50186d186150b upstream.
 
-The current implemetation of of_match_device() relies that the of_device_id
-table in the driver is sorted from most specific to least specific compatible.
+Since:
+        commit 7ceb17e87bde79d285a8b988cfed9eaeebe60b86
+        md: Allow devices to be re-added to a read-only array.
 
-Without this patch the mx28 is detected as the less specific p1010. This leads
-to a p1010 specific workaround is activated on the mx28, which is not needed.
+spares are activated on a read-only array. In case of raid1 and raid10
+personalities it causes that not-in-sync devices are marked in-sync
+without checking if recovery has been finished.
 
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+If a read-only array is degraded and one of its devices is not in-sync
+(because the array has been only partially recovered) recovery will be skipped.
+
+This patch adds checking if recovery has been finished before marking a device
+in-sync for raid1 and raid10 personalities. In case of raid5 personality
+such condition is already present (at raid5.c:6029).
+
+Bug was introduced in 3.10 and causes data corruption.
+
+Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
+Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/can/flexcan.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/raid1.c  | 1 +
+ drivers/md/raid10.c | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
-index 5817a39..4c90a27 100644
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -968,9 +968,9 @@ static void unregister_flexcandev(struct net_device *dev)
- }
- 
- static const struct of_device_id flexcan_of_match[] = {
--	{ .compatible = "fsl,p1010-flexcan", .data = &fsl_p1010_devtype_data, },
--	{ .compatible = "fsl,imx28-flexcan", .data = &fsl_imx28_devtype_data, },
- 	{ .compatible = "fsl,imx6q-flexcan", .data = &fsl_imx6q_devtype_data, },
-+	{ .compatible = "fsl,imx28-flexcan", .data = &fsl_imx28_devtype_data, },
-+	{ .compatible = "fsl,p1010-flexcan", .data = &fsl_p1010_devtype_data, },
- 	{ /* sentinel */ },
- };
- MODULE_DEVICE_TABLE(of, flexcan_of_match);
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index a382d84..21f0c3f 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1493,6 +1493,7 @@ static int raid1_spare_active(struct mddev *mddev)
+ 			}
+ 		}
+ 		if (rdev
++		    && rdev->recovery_offset == MaxSector
+ 		    && !test_bit(Faulty, &rdev->flags)
+ 		    && !test_and_set_bit(In_sync, &rdev->flags)) {
+ 			count++;
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 92858ab..b8f5688 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1718,6 +1718,7 @@ static int raid10_spare_active(struct mddev *mddev)
+ 			}
+ 			sysfs_notify_dirent_safe(tmp->replacement->sysfs_state);
+ 		} else if (tmp->rdev
++			   && tmp->rdev->recovery_offset == MaxSector
+ 			   && !test_bit(Faulty, &tmp->rdev->flags)
+ 			   && !test_and_set_bit(In_sync, &tmp->rdev->flags)) {
+ 			count++;
 -- 
 1.8.1.2
 
