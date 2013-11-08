@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142Ab3KHTOL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 14:14:11 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:64347 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757565Ab3KHTOI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 14:14:08 -0500
+	id S1758149Ab3KHTPI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 14:15:08 -0500
+Received: from void.printf.net ([89.145.121.20]:43460 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757272Ab3KHTPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 14:15:06 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Alexey Neyman <stilor@att.net>
+Cc: Dong Aisheng <dongas86@gmail.com>,
+        linux-mmc@vger.kernel.org (open list:SECURE DIGITAL HO...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [PATCH] mmc: sdhci: Avoid needless loop while handling SDIO interrupts in sdhci_irq()
+References: <CAA+hA=StthxfMWjQ+0fhdRiPuDDVWUGrrW9E71Q+E3RoF_QdHw@mail.gmail.com>
+	<1383709236-26692-1-git-send-email-stilor@att.net>
+Date: Fri, 08 Nov 2013 14:14:54 -0500
+In-Reply-To: <1383709236-26692-1-git-send-email-stilor@att.net> (Alexey
+	Neyman's message of "Tue, 5 Nov 2013 19:40:36 -0800")
+Message-ID: <87y54ywvrl.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <20131108182415.GG10335@titan.lakedaemon.net>
-References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1383661723-17956-8-git-send-email-sebastian.hesselbarth@gmail.com>
-	<0AF697FD-60AA-4B8B-A35F-3DF2FFBCF7AF@codeaurora.org>
-	<20131108165721.GA10335@titan.lakedaemon.net>
-	<8DC09031-553C-4FD5-8F05-F93D6FE40F3A@codeaurora.org>
-	<20131108182415.GG10335@titan.lakedaemon.net>
-Date: Fri, 8 Nov 2013 11:14:07 -0800
-Message-ID: <CAOesGMhfr3CNxKNRJa+eJepr2Fc-jx4rTQ7cPerTkQM-CyzuCg@mail.gmail.com>
-Subject: Re: [PATCH v3 7/9] ARM: add Armada 1500 and Sony NSZ-GS7 device tree files
-From: Olof Johansson <olof@lixom.net>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Kumar Gala <galak@codeaurora.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 8, 2013 at 10:24 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> On Fri, Nov 08, 2013 at 12:06:26PM -0600, Kumar Gala wrote:
->>
->> On Nov 8, 2013, at 10:57 AM, Jason Cooper wrote:
->>
->> > On Fri, Nov 08, 2013 at 10:13:19AM -0600, Kumar Gala wrote:
->> >> On Nov 5, 2013, at 8:28 AM, Sebastian Hesselbarth wrote:
->> > ...
->> >>> .../devicetree/bindings/arm/marvell,berlin.txt     |   24 +++
->> >>> arch/arm/boot/dts/Makefile                         |    2 +
->> >>> arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts         |   29 +++
->> >>> arch/arm/boot/dts/berlin2.dtsi                     |  227 ++++++++++++++++++++
->> >>> 4 files changed, 282 insertions(+)
->> >>> create mode 100644 Documentation/devicetree/bindings/arm/marvell,berlin.txt
->> >>> create mode 100644 arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts
->> >>> create mode 100644 arch/arm/boot/dts/berlin2.dtsi
->> >>
->> >> Haven't we been trying to go away from non-prefixed dts/dtsi?
->> >
->> > hmmm, this is the first I've heard of that.  Although, your proposal
->> > (in another thread) makes more sense now.  :)
->> >
->> >> So should these be something like marvell-berlin2-...
->> >
->> > I don't recall this being brought up at the summit, nor in Grant's
->> > report.  I do need to give it a more careful read this weekend, though.
->> > Perhaps I missed something.
->>
->> This was based on review comments Olof gave when we pushed some .dts
->> files for MSM/APQ Qualcomm Technologies soc/boards.
+Hi Alexey,
+
+On Tue, Nov 05 2013, Alexey Neyman wrote:
+> Ignore Card Interrupt bit in the interrupt status if we already know that
+> mmc_signal_sdio_irq() is going to be called at the end of sdhci_irq(). This
+> avoids a needless loop in sdhci_irq() repeatedly reading interrupt status
+> and doing nothing.
 >
-> As Andrew Lunn mentioned to me earlier, we should consider the fact that
-> the dts file names are being used by Debian's flash-kernel.  Oh no!
-> Another ABI! ;-)
+> Signed-off-by: Alexey Neyman <stilor@att.net>
+> Acked-by: Dong Aisheng <b29396@freescale.com>
+> ---
+>  drivers/mmc/host/sdhci.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+>
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 7a7fb4f..a83cd1b 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -2491,6 +2491,14 @@ again:
+>  	result = IRQ_HANDLED;
+>  
+>  	intmask = sdhci_readl(host, SDHCI_INT_STATUS);
+> +
+> +	/*
+> +	 * If we know we'll call the driver to signal SDIO IRQ, disregard
+> +	 * further indications of Card Interrupt in the status to avoid a
+> +	 * needless loop.
+> +	 */
+> +	if (cardint)
+> +		intmask &= ~SDHCI_INT_CARD_INT;
+>  	if (intmask && --max_loops)
+>  		goto again;
+>  out:
 
-Yes, the names are mostly stable. ST-Ericsson renamed their dts files
-and it caused some pain, some build environments have them hardcoded,
-etc.
+Thanks, pushed to mmc-next for 3.13.
 
-Still, it is a good idea to start adding new ones using family or
-vendor prefixes, so they are easier to group. Please keep that in mind
-on new ones too, Jason -- I don't think I've discussed with you in the
-past. :-)
-
-
--Olof
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
