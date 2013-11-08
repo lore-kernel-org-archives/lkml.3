@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757913Ab3KHUG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 15:06:26 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61613 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757478Ab3KHUGZ (ORCPT
+	id S1758198Ab3KHUG5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 15:06:57 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:53287 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758146Ab3KHUG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 15:06:25 -0500
-Date: Fri, 8 Nov 2013 21:06:22 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
- kthreadd V2
-Message-ID: <20131108200620.GC14606@localhost.localdomain>
-References: <20131016141326.2e517e18e4d8af880c97a282@linux-foundation.org>
- <00000141c36b03b6-2f9bd3de-d153-4359-901f-084aeb4c040d-000000@email.amazonses.com>
- <20131017122344.39d55db97c3923131bdf2831@linux-foundation.org>
- <0000014233722db9-cc00d0af-a5fa-4090-83bd-73c87377b892-000000@email.amazonses.com>
- <20131107225049.GC28130@localhost.localdomain>
- <0000014238407a1c-34e7bdbc-45c0-48de-a8a3-94a99f276044-000000@email.amazonses.com>
- <20131108163112.GA12853@localhost.localdomain>
- <0000014238ad0fb9-aa252280-8e44-48ac-a096-e6dee26e09ea-000000@email.amazonses.com>
- <20131108191235.GB12853@localhost.localdomain>
- <000001423945fde3-f846f403-58b9-4acd-a2b8-43b62991ce02-000000@email.amazonses.com>
+	Fri, 8 Nov 2013 15:06:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000001423945fde3-f846f403-58b9-4acd-a2b8-43b62991ce02-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20131029060058.GD21983@codeaurora.org>
+References: <526DBEAA.4030707@linaro.org>
+	<1382984701-2371-1-git-send-email-sboyd@codeaurora.org>
+	<878uxcq1m7.fsf@linaro.org>
+	<20131029060058.GD21983@codeaurora.org>
+Date: Fri, 8 Nov 2013 12:06:55 -0800
+Message-ID: <CAOesGMhjC=NDn4YiY4tQ3ZcW_rK9_qOY03CVD1eyVFC74ucdrA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: Support arch_irq_work_raise() via self IPIs
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Kevin Hilman <khilman@linaro.org>, Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 07:52:37PM +0000, Christoph Lameter wrote:
-> On Fri, 8 Nov 2013, Frederic Weisbecker wrote:
-> 
-> > I understand, but why not solving that from the workqueue affinity? We want to
-> > solve the issue of unbound workqueues in CPU isolation anyway.
-> 
-> Sure if you can solve that with an unbound work queue then this patch is
-> not needed. Do you have a patch that addresses this issue in your
-> patchset?
+On Mon, Oct 28, 2013 at 11:00 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 10/28, Kevin Hilman wrote:
+>> Stephen Boyd <sboyd@codeaurora.org> writes:
+>>
+>> > This will allow the scheduler tick to be restarted if we're in
+>> > full NOHZ mode.
+>> >
+>> > Cc: Kevin Hilman <khilman@linaro.org>
+>> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>>
+>> Minor nit, but I'd prefer a more verbose changelog (I forget things
+>> quickly and like to rely on changelogs for my memory.)  Probably worth
+>> adding something like: "By default, irq_work is tied to the tick
+>> processing (update_process_times()) but in full NOHZ mode, no tick means
+>> no IRQ work.  In order for IRQ work to be done in full NOHZ mode, a
+>> self-IPI is used to process IRQ work."
+>>
+>> Other than the changelog nit, patch looks good, feel free to add
+>>
+>> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+>>
+>> If Russell is OK with this, it can go to his patch system.
+>>
+>
+> Fair enough. This is what I came up with. I'll send it off to the
+> patch tracker in about 12 hours if nobody else has anymore
+> comments.
+>
+> ----8<-----
+> ARM: Support arch_irq_work_raise() via self IPIs
+>
+> By default, IRQ work is run from the tick interrupt (see
+> irq_work_run() in update_process_times()). When we're in full
+> NOHZ mode, restarting the tick requires the use of IRQ work and
+> if the only place we run IRQ work is in the tick interrupt we
+> have an unbreakable cycle. Implement arch_irq_work_raise() via
+> self IPIs to break this cycle and get the tick started again.
+> Note that we implement this via IPIs which are only available on
+> SMP builds. This shouldn't be a problem because full NOHZ is only
+> supported on SMP builds anyway.
+>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
 
-No. Sorry.
 
-> How far out is the merging of that patch?
+Hm, so I think this just landed in -next, which seems... late for
+3.13. Anyway, it causes boot failures on Cubieboards (Allwinner A10),
+I just bisected it down to this patch (fails to boot
+multi_v7_defconfig, no console output at all).
+
+Unfortunately I'm not getting any debug_ll output from the board at
+the moment, so I can't actually get to a panic stack or other error
+info. :( I hope I can get back to you with one later today.
+
+
+-Olof
