@@ -1,71 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab3KHSQK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 13:16:10 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:47134 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758000Ab3KHSQI (ORCPT
+	id S1758027Ab3KHSQJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 13:16:09 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:35858 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757841Ab3KHSQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 13:16:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <CADmjqpP4dxWoU_3dLzC5+JffvwnZaLV=uxFTghpMRoSL_85TrA@mail.gmail.com>
-References: <1383791330-8289-1-git-send-email-chenxg@marvell.com>
-	<CAKohpo=2xjR=nr5hyMg9bve5_uVbV79R2FTxks0bLmL7kNV9Mg@mail.gmail.com>
-	<CADmjqpNWYVxrXuo106rBuZeZ2BrkGFkmbMJ8jxi39c8kLiQ+iw@mail.gmail.com>
-	<CAKohpon6DhiWMuszuznK4ZNCBTpy0_r3gGvTXCDMcktXpN3HEw@mail.gmail.com>
-	<CADmjqpP4dxWoU_3dLzC5+JffvwnZaLV=uxFTghpMRoSL_85TrA@mail.gmail.com>
-Date: Fri, 8 Nov 2013 23:46:06 +0530
-Message-ID: <CAKohpo=Rq-Sds5FzVdxcAEb78sqemq5JCc3S+pc11mu_b_ZpNA@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: conservative: fix requested_freq reduction issue
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <skarafotis@gmail.com>
-Cc: Xiaoguang Chen <chenxg@marvell.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Xiaoguang Chen <chenxg.marvell@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 8 Nov 2013 13:16:06 -0500
+Date: Fri, 08 Nov 2013 13:16:00 -0500 (EST)
+Message-Id: <20131108.131600.429467852837234893.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-next 2013-11-08
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131108154802.GG2002@tuxdriver.com>
+References: <20131108154802.GG2002@tuxdriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 08 Nov 2013 10:16:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 November 2013 23:13, Stratos Karafotis <skarafotis@gmail.com> wrote:
-> Please let me rephrase my previous post. In some circumstances (depending
-> on freq_step and freq_table values) CPU frequency will never reach to
-> policy->max.
->
-> For example suppose that (for simplicity values in MHz):
-> policy->max = 1000
-> policy->cur = 800
-> requested_freq = 800
-> freq_target = 300
->
-> In 'first' iteration, if we return early with this code (because
-> requested_freq will be
-> 1100):
-> if (dbs_info->requested_freq >= policy->max)
->      return;
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Fri, 8 Nov 2013 10:48:03 -0500
 
-That's not correct. At this point requested_freq would have been
-800 only, and would have increased after this instruction to 1100.
-So, in the first transition we will go to max freq, but not from the
-second.
+> Here is one more pull request for the 3.13 window.  This is primarily
+> composed of downstream pull requests that were posted while I was
+> traveling during the last part of the 3.12 release.
 
-Though this piece of code is more simplified by the new solution
-I gave.
-
-> CPU freq will never go over 800MHz.
->
-> I think the current code works correctly.
-> - The requested freq will go to 1100 in first iteration.
-> - __cpufreq_driver_target will change CPU freq to 1000
-> - dbs_cpufreq_notifier will adjust the requested_freq to 1000
-
-> So, I think there is no need for an extra check because of
-> dbs_cpufreq_notifier code.
-
-Now with the new code in place we are correcting requested_freq
-in cs_check_cpu(), then why do we need dbs_cpufreq_notifier()?
-
-What do you think?
+Pulled, thanks John.
