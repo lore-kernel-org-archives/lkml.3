@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756910Ab3KHJ2U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 04:28:20 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:36128 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460Ab3KHJ2P convert rfc822-to-8bit (ORCPT
+	id S1756119Ab3KHJau (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 04:30:50 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:57450 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab3KHJap convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 04:28:15 -0500
+	Fri, 8 Nov 2013 04:30:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <8251B150E4DF5041A62C3EA9F0AB2E060255308A9E7B@SELDMBX99.corpusers.net>
+In-Reply-To: <20131107140421.GF13674@arm.com>
 References: <CAKfTPtCh+f1FZxkWqU5=2PjGtfRaN8jVV3WdTCzLDAWSjMP7yw@mail.gmail.com>
 	<1383831224-26134-1-git-send-email-vincent.guittot@linaro.org>
-	<8251B150E4DF5041A62C3EA9F0AB2E060255308A9E7B@SELDMBX99.corpusers.net>
-Date: Fri, 8 Nov 2013 10:28:14 +0100
-Message-ID: <CAKfTPtChCfWzyPUZt0VX5odMne79A+0wuzGOm+SK_pY2uKVA4A@mail.gmail.com>
+	<20131107140421.GF13674@arm.com>
+Date: Fri, 8 Nov 2013 10:30:43 +0100
+Message-ID: <CAKfTPtCcMx1edpN0-3ghK3jiGSjOOtJpAoDegxm7Jg2x+oAJzA@mail.gmail.com>
 Subject: Re: Bench for testing scheduler
 From: Vincent Guittot <vincent.guittot@linaro.org>
-To: "Rowand, Frank" <Frank.Rowand@sonymobile.com>
-Cc: "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "Morten.Rasmussen@arm.com" <Morten.Rasmussen@arm.com>,
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
         "alex.shi@linaro.org" <alex.shi@linaro.org>,
         "peterz@infradead.org" <peterz@infradead.org>,
         "pjt@google.com" <pjt@google.com>,
@@ -30,6 +29,7 @@ Cc: "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
         "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
         "markgross@thegnar.org" <markgross@thegnar.org>,
         "khilman@linaro.org" <khilman@linaro.org>,
+        "Frank.Rowand@sonymobile.com" <Frank.Rowand@sonymobile.com>,
         "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=windows-1252
@@ -38,27 +38,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 November 2013 01:04, Rowand, Frank <Frank.Rowand@sonymobile.com> wrote:
-> Hi Vincent,
->
-> Thanks for creating some benchmark numbers!
-
-you're welcome
-
->
->
-> On Thursday, November 07, 2013 5:33 AM, Vincent Guittot [vincent.guittot@linaro.org] wrote:
->>
+On 7 November 2013 15:04, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> On Thu, Nov 07, 2013 at 01:33:43PM +0000, Vincent Guittot wrote:
 >> On 7 November 2013 12:32, Catalin Marinas <catalin.marinas@arm.com> wrote:
->> > Hi Vincent,
->> >
->> > (for whatever reason, the text is wrapped and results hard to read)
->>
->> Yes, i have just seen that. It looks like gmail has wrapped the lines.
->> I have added the results which should not be wrapped, at the end of this email
->>
->> >
->> >
 >> > On Thu, Nov 07, 2013 at 10:54:30AM +0000, Vincent Guittot wrote:
 >> >> During the Energy-aware scheduling mini-summit, we spoke about benches
 >> >> that should be used to evaluate the modifications of the scheduler.
@@ -70,46 +52,6 @@ you're welcome
 >> >> run such tests on a tc2 platform with the packing tasks patchset.
 >> >> I have use the following command:
 >> >> #cyclictest -t <number of cores> -q -e 10000000 -i <500-12000> -d 150 -l 2000
->
-> The number of loops ("-l 2000") should be much larger to create useful
-> results.  I don't have a specific number that is large enough, I just
-> know from experience that 2000 is way too small.  For example, running
-> cyclictest several times with the same values on my laptop gives values
-> that are not consistent:
-
-The Avg figures look almost stable IMO. Are you speaking about the Max
-value for the inconsistency ?
-
->
->    $ sudo ./cyclictest -t -q -e 10000000 -i 500 -d 150 -l 2000
->    # /dev/cpu_dma_latency set to 10000000us
->    T: 0 ( 9703) P: 0 I:500 C:   2000 Min:      2 Act:   90 Avg:   77 Max:     243
->    T: 1 ( 9704) P: 0 I:650 C:   1557 Min:      2 Act:   58 Avg:   68 Max:     226
->    T: 2 ( 9705) P: 0 I:800 C:   1264 Min:      2 Act:   54 Avg:   81 Max:    1017
->    T: 3 ( 9706) P: 0 I:950 C:   1065 Min:      2 Act:   11 Avg:   80 Max:     260
->
->    $ sudo ./cyclictest -t -q -e 10000000 -i 500 -d 150 -l 2000
->    # /dev/cpu_dma_latency set to 10000000us
->    T: 0 ( 9709) P: 0 I:500 C:   2000 Min:      2 Act:   45 Avg:   74 Max:     390
->    T: 1 ( 9710) P: 0 I:650 C:   1554 Min:      2 Act:   82 Avg:   61 Max:     810
->    T: 2 ( 9711) P: 0 I:800 C:   1263 Min:      2 Act:   83 Avg:   74 Max:     287
->    T: 3 ( 9712) P: 0 I:950 C:   1064 Min:      2 Act:  103 Avg:   79 Max:     551
->
->    $ sudo ./cyclictest -t -q -e 10000000 -i 500 -d 150 -l 2000
->    # /dev/cpu_dma_latency set to 10000000us
->    T: 0 ( 9716) P: 0 I:500 C:   2000 Min:      2 Act:   82 Avg:   72 Max:     252
->    T: 1 ( 9717) P: 0 I:650 C:   1556 Min:      2 Act:  115 Avg:   77 Max:     354
->    T: 2 ( 9718) P: 0 I:800 C:   1264 Min:      2 Act:   59 Avg:   78 Max:    1143
->    T: 3 ( 9719) P: 0 I:950 C:   1065 Min:      2 Act:  104 Avg:   70 Max:     238
->
->    $ sudo ./cyclictest -t -q -e 10000000 -i 500 -d 150 -l 2000
->    # /dev/cpu_dma_latency set to 10000000us
->    T: 0 ( 9722) P: 0 I:500 C:   2000 Min:      2 Act:   82 Avg:   68 Max:     213
->    T: 1 ( 9723) P: 0 I:650 C:   1555 Min:      2 Act:   65 Avg:   65 Max:    1279
->    T: 2 ( 9724) P: 0 I:800 C:   1264 Min:      2 Act:   91 Avg:   69 Max:     244
->    T: 3 ( 9725) P: 0 I:950 C:   1065 Min:      2 Act:   58 Avg:   76 Max:     242
->
->
 >> >
 >> > cyclictest could be a good starting point but we need to improve it to
 >> > allow threads of different loads, possibly starting multiple processes
@@ -118,81 +60,47 @@ value for the inconsistency ?
 >> > configurations (per SoC and per use-case). But the big risk is that we
 >> > try to optimise the scheduler for something which is not realistic.
 >>
->> The goal of this simple bench is to measure the wake up latency and the reachable value of the scheduler on a platform but not to emulate a "real" use case. In the same way than sched-pipe tests a specific behavior of the scheduler, this bench tests the wake up latency of a system.
->>
->> Starting multi processes and adding some loads can also be useful but the target will be a bit different from wake up latency. I have one concern with randomness because it prevents from having repeatable and comparable tests and results.
->>
->> I agree that we have to test "real" use cases but it doesn't prevent from testing the limit of a characteristic on a system
->>
->> >
->> >
->> > We are working on describing some basic scenarios (plain English for
->> > now) and one of them could be video playing with threads for audio and
->> > video decoding with random change in the workload.
->> >
->> > So I think the first step should be a set of tools/scripts to analyse
->> > the scheduler behaviour, both in terms of latency and power, and these
->> > can use perf sched. We can then run some real life scenarios (e.g.
->> > Android video playback) and build a benchmark that matches such
->> > behaviour as close as possible. We can probably use (or improve) perf
->> > sched replay to also simulate such workload (we may need additional
->> > features like thread dependencies).
->> >
->> >> The figures below give the average wakeup latency and power
->> >> consumption for default scheduler behavior, packing tasks at cluster
->> >> level and packing tasks at core level. We can see both wakeup latency
->> >> and power consumption variation. The detailed result is not a simple
->> >> single value which makes comparison not so easy but the average of all
->> >> measurements should give us a usable “score”.
->> >
->> > How did you assess the power/energy?
->>
->> I have use the embedded joule meter of the tc2.
->>
->> >
->> > Thanks.
->> >
->> > --
->> > Catalin
->>
->>             |  Default average results                  |  Cluster Packing average results          |  Core Packing average results
->>             |  Latency     stddev  A7 energy A15 energy |  Latency     stddev  A7 energy A15 energy |  Latency     stddev  A7 energy A15 energy
->>             |     (us)                   (J)        (J) |     (us)                   (J)        (J) |     (us)                   (J)        (J)
->>             |      879                794890    2364175 |      416                879688      12750 |      189                897452      30052
->>
->>  Cyclictest |  Default                                  |  Packing at Cluster level                 |  Packing at Core level
->>    Interval |  Latency     stddev  A7 energy A15 energy |  Latency     stddev  A7 energy A15 energy |  Latency     stddev  A7 energy A15 energy
->>        (us) |     (us)                   (J)        (J) |     (us)                   (J)        (J) |     (us)                   (J)        (J)
->>         500         24          1    1147477    2479576         21          1    1136768      11693         22          1    1126062      30138
->>         700         22          1    1136084    3058419         21          0    1125280      11761         21          1    1109950      23503
+>> The goal of this simple bench is to measure the wake up latency and
+>> the reachable value of the scheduler on a platform but not to emulate
+>> a "real" use case. In the same way than sched-pipe tests a specific
+>> behavior of the scheduler, this bench tests the wake up latency of a
+>> system.
 >
-> < snip >
+> These figures are indeed useful to make sure we don't have any
+> regression in terms of latency but I would not use cyclictest (as it is)
+> to assess power improvements since the test is too artificial.
 >
-> Some questions about what these metrics are:
+>> Starting multi processes and adding some loads can also be useful but
+>> the target will be a bit different from wake up latency. I have one
+>> concern with randomness because it prevents from having repeatable and
+>> comparable tests and results.
 >
-> The cyclictest data is reported per thread.  How did you combine the per thread data
-> to get a single latency and stddev value?
+> We can avoid randomness but still make it varying by some predictable
+> function.
 >
-> Is "Latency" the average latency?
+>> I agree that we have to test "real" use cases but it doesn't prevent
+>> from testing the limit of a characteristic on a system
+>
+> I agree. My point is not to use this as "the benchmark".
 
-Yes. I have described below the procedure i have followed to get my results:
+ok, so i don't plan to make cyclictest "the" benchmark but "a"
+benchmark among others because i'm not sure that we can cover all
+needs with only one benchmark.
 
-I run the same test (same parameters) several times ( i have tried
-between 5 and 10 runs and the results were similar).
-For each run, i compute the average of per thread average figure and i
-compute the stddev between per thread results.
-The results that i sent is an average of all runs with the same parameters.
+As an example, cyclictest gives information of the wake up latency
+that can't be collected with trace
 
 >
-> stddev is not reported by cyclictest.  How did you create this value?  Did you
-> use the "-v" cyclictest option to report detailed data, then calculate stddev from
-> the detailed data?
-
-No i haven't used the -v because it generates too much spurious wake
-up that makes the results irrelevant
-
-Vincent
+> I would prefer to assess the impact on latency (and power) using a tool
+> independent from benchmarks like cyclictest (e.g. use the reports from
+> power sched). The reason is that once we have those tools/scripts in the
+> kernel, a third party can run it on real workloads and provide the
+> kernel developers with real numbers on performance vs power scheduling,
+> regressions between kernel versions etc. We can't create a power model
+> that you can run on an x86 for example and give you an indication of the
+> power saving on ARM, you need to run the benchmarks on the actual
+> hardware (that's why I don't think linsched is of much use from a power
+> perspective).
 >
-> Thanks,
->
-> -Frank
+> --
+> Catalin
