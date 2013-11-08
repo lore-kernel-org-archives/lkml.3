@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab3KHC1Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:27:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34885 "EHLO
+	id S932521Ab3KHC1n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:27:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34873 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932673Ab3KHCVx (ORCPT
+	with ESMTP id S932661Ab3KHCVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:21:53 -0500
+	Thu, 7 Nov 2013 21:21:48 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 69/91] ALSA: hda - Fix unbalanced runtime PM refcount after S3/S4
-Date: Thu,  7 Nov 2013 18:15:24 -0800
-Message-Id: <1383876946-2396-70-git-send-email-kamal@canonical.com>
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 63/91] target/pscsi: fix return value check
+Date: Thu,  7 Nov 2013 18:15:18 -0800
+Message-Id: <1383876946-2396-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -26,39 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit e6bbe666673ab044a3d39ddb74e4d9a401cf1d6f upstream.
+commit 58932e96e438cd78f75e765d7b87ef39d3533d15 upstream.
 
-When a machine goes to S3/S4 after power-save is enabled, the runtime
-PM refcount might be incorrectly decreased because the power-down
-triggered soon after resume assumes that the controller was already
-powered up, and issues the pm_notify down.
+In case of error, the function scsi_host_lookup() returns NULL
+pointer not ERR_PTR(). The IS_ERR() test in the return value check
+should be replaced with NULL test.
 
-This patch fixes the incorrect pm_notify call simply by checking the
-current value properly.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/hda_codec.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/target/target_core_pscsi.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
-index f283157..d048204 100644
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -4514,8 +4514,8 @@ static void hda_power_work(struct work_struct *work)
- 	spin_unlock(&codec->power_lock);
- 
- 	state = hda_call_codec_suspend(codec, true);
--	codec->pm_down_notified = 0;
--	if (!bus->power_keep_link_on && (state & AC_PWRST_CLK_STOP_OK)) {
-+	if (!codec->pm_down_notified &&
-+	    !bus->power_keep_link_on && (state & AC_PWRST_CLK_STOP_OK)) {
- 		codec->pm_down_notified = 1;
- 		hda_call_pm_notify(bus, false);
+diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
+index 55b9530..5975a94 100644
+--- a/drivers/target/target_core_pscsi.c
++++ b/drivers/target/target_core_pscsi.c
+@@ -134,10 +134,10 @@ static int pscsi_pmode_enable_hba(struct se_hba *hba, unsigned long mode_flag)
+ 	 * pSCSI Host ID and enable for phba mode
+ 	 */
+ 	sh = scsi_host_lookup(phv->phv_host_id);
+-	if (IS_ERR(sh)) {
++	if (!sh) {
+ 		pr_err("pSCSI: Unable to locate SCSI Host for"
+ 			" phv_host_id: %d\n", phv->phv_host_id);
+-		return PTR_ERR(sh);
++		return -EINVAL;
  	}
+ 
+ 	phv->phv_lld_host = sh;
+@@ -515,10 +515,10 @@ static int pscsi_configure_device(struct se_device *dev)
+ 			sh = phv->phv_lld_host;
+ 		} else {
+ 			sh = scsi_host_lookup(pdv->pdv_host_id);
+-			if (IS_ERR(sh)) {
++			if (!sh) {
+ 				pr_err("pSCSI: Unable to locate"
+ 					" pdv_host_id: %d\n", pdv->pdv_host_id);
+-				return PTR_ERR(sh);
++				return -EINVAL;
+ 			}
+ 		}
+ 	} else {
 -- 
 1.8.1.2
 
