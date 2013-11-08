@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab3KHIC1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 03:02:27 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:56582 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab3KHICY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 03:02:24 -0500
-Date: Fri, 8 Nov 2013 00:02:21 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>, Olof Johansson <olof@lixom.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the block tree with the  tree
-Message-ID: <20131108080221.GA31866@infradead.org>
-References: <527BE7FA.90904@oracle.com>
- <20131107192545.GA20624@moria.home.lan>
- <527C2AA9.9040608@oracle.com>
- <20131108125307.613427c04a7527c4359e6443@canb.auug.org.au>
- <20131108020805.GI3842@kmo>
- <527C4D35.8000907@oracle.com>
- <20131108073324.GA31662@infradead.org>
- <20131108073959.GA17807@kmo-pixel>
- <20131108074445.GA11595@infradead.org>
- <20131108075617.GB17807@kmo-pixel>
+	id S1754022Ab3KHIGH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 03:06:07 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751095Ab3KHIGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 03:06:03 -0500
+Message-ID: <527C9B5C.6040509@nod.at>
+Date: Fri, 08 Nov 2013 09:05:48 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131108075617.GB17807@kmo-pixel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matt.fleming@intel.com, matthew.garrett@nebula.com, jlee@suse.com
+Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia parameter
+ to efi_storage_paranoia
+References: <527C93B5.7010407@jp.fujitsu.com>
+In-Reply-To: <527C93B5.7010407@jp.fujitsu.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 11:56:17PM -0800, Kent Overstreet wrote:
-> So, I don't think the iov_iter stuff is the right approach for solving
-> the loop issue; it's an ugly hack and after immutable biovecs we're
-> pretty close to a better solution and some major cleanups too.
+Am 08.11.2013 08:33, schrieb Yasuaki Ishimatsu:
+> By following works, my system very often fails set_variable() to set new
+> variable to efi variable storage and shows "efivars: set_variable() failed:
+> status=-28" message.
+> 
+> - commit 31ff2f20d9003e74991d135f56e503fe776c127c
+>     efi: Distinguish between "remaining space" and actually used space
+> - commit 8c58bf3eec3b8fc8162fe557e9361891c20758f2
+>     x86,efi: Implement efi_no_storage_paranoia parameter
+> - commit f8b8404337de4e2466e2e1139ea68b1f8295974f
+>     Modify UEFI anti-bricking code
+> 
+> When booting my system, remaining space of efi variable storage is about
+> 5KB. So there is no room that sets a new variable to the storage.
+> 
+> According to above works, efi_no_storage_paranoia parameter was prepared
+> for sane UEFI which can do gc and fulfills spec. But why need a system
+> with a sane UEFI set the parameter? It is wrong. A system with a broken
+> UEFI should set the parameter.
 
-All the consumers aren't limited to a block-based filesystem backing,
-including loop.  So we need a file-ops based approach for in-kernel
-dio/aio.  If you have a counter proposal please at least describe it.
+And how does one know that his UEFI is broken?
+"Oh my board is briked because I wrote too much into a variable, maybe setting
+efi_storage_paranoia would have saved me. Let's try with the next board..." ;)
 
+Thanks,
+//richard
