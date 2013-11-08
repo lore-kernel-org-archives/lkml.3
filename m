@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758324Ab3KHV5T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 16:57:19 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:60996 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757706Ab3KHV5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 16:57:16 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] libertas_usb: fix leak at failure path in if_usb_probe()
-Date: Sat,  9 Nov 2013 01:57:03 +0400
-Message-Id: <1383947823-8670-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.1.2
+	id S1758363Ab3KHWAL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 17:00:11 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:3903 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757792Ab3KHWAH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 17:00:07 -0500
+Date: Fri, 8 Nov 2013 16:00:04 -0600
+From: Mike Miller <mike.miller@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>, thenzl@redhat.com
+Subject: [PATCH 1/1] scsi: hpsa correct gen9 PCI IDs
+Message-ID: <20131108220004.GA8532@beardog.cce.hp.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Error handling code in if_usb_probe() misses usb_put_dev(udev).
+From: Mike Miller <mike.miller@hp.com>
 
-Found by Linux Driver Verification project (linuxtesting.org).
+This patch deletes one ID that never should have in in hpsa. It also the PCI
+ID's for two cancelled products.
+Please consider this for inclusion.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: Mike Miller <mike.miller@hp.com>
 ---
- drivers/net/wireless/libertas/if_usb.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/hpsa.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/libertas/if_usb.c b/drivers/net/wireless/libertas/if_usb.c
-index 2798077..7aec7b2 100644
---- a/drivers/net/wireless/libertas/if_usb.c
-+++ b/drivers/net/wireless/libertas/if_usb.c
-@@ -285,6 +285,7 @@ static int if_usb_probe(struct usb_interface *intf,
- 	return 0;
- 
- err_get_fw:
-+	usb_put_dev(udev);
- 	lbs_remove_card(priv);
- err_add_card:
- 	if_usb_reset_device(cardp);
--- 
-1.8.1.2
-
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 891c86b..5ddf749 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -91,21 +91,18 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3249},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324A},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324B},
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3233},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x334D},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3350},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3351},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3352},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3353},
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x334D},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3356},
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1920},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1921},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1922},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1923},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1924},
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1925},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1926},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1928},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1929},
+@@ -140,11 +137,11 @@ static struct board_type products[] = {
+ 	{0x3249103C, "Smart Array P812", &SA5_access},
+ 	{0x324A103C, "Smart Array P712m", &SA5_access},
+ 	{0x324B103C, "Smart Array P711m", &SA5_access},
++	{0x334D103C, "Smart Array P822se", &SA5_access},
+ 	{0x3350103C, "Smart Array P222", &SA5_access},
+ 	{0x3351103C, "Smart Array P420", &SA5_access},
+ 	{0x3352103C, "Smart Array P421", &SA5_access},
+ 	{0x3353103C, "Smart Array P822", &SA5_access},
+-	{0x334D103C, "Smart Array P822se", &SA5_access},
+ 	{0x3354103C, "Smart Array P420i", &SA5_access},
+ 	{0x3355103C, "Smart Array P220i", &SA5_access},
+ 	{0x3356103C, "Smart Array P721m", &SA5_access},
