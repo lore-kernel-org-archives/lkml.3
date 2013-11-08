@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757500Ab3KHPyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 10:54:13 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:56626 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756613Ab3KHPyL (ORCPT
+	id S1757510Ab3KHPy3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 10:54:29 -0500
+Received: from host171.canaca.com ([67.55.55.225]:47737 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756613Ab3KHPy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 10:54:11 -0500
-Date: Fri, 8 Nov 2013 15:54:04 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 2/2] mfd: max77693: reorder params in API for regmap
- consistency
-Message-ID: <20131108155404.GA30901@lee--X1>
-References: <1383923118-26921-1-git-send-email-k.kozlowski@samsung.com>
- <1383923118-26921-2-git-send-email-k.kozlowski@samsung.com>
+	Fri, 8 Nov 2013 10:54:26 -0500
+Message-ID: <cff1cc7d90beecb0a36ff8e81215ec29.squirrel@mungewell.org>
+In-Reply-To: <alpine.LNX.2.00.1311081414470.835@pobox.suse.cz>
+References: <1383766244-2336-1-git-send-email-simon@mungewell.org>
+    <alpine.LNX.2.00.1311081414470.835@pobox.suse.cz>
+Date: Fri, 8 Nov 2013 10:54:24 -0500
+Subject: Re: [PATCH 1/5] HID:hid-lg4ff: Scale autocentering force properly on
+ Logitech wheel
+From: simon@mungewell.org
+To: "Jiri Kosina" <jkosina@suse.cz>
+Cc: "Simon Wood" <simon@mungewell.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Elias Vanderstuyft" <elias.vds@gmail.com>,
+        =?iso-8859-1?Q?=22Michal_Mal=FD=22?= <madcatxster@prifuk.cz>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1383923118-26921-2-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 08 Nov 2013, Krzysztof Kozlowski wrote:
+> On Wed, 6 Nov 2013, Simon Wood wrote:
+>
+>> Adjust the scaling and lineartity to match that of the Windows
+>> driver (from MOMO testing).
+>>
+>> Reported-by: Elias Vanderstuyft <elias.vds@gmail.com>
+>> Signed-off-by: Simon Wood <simon@mungewell.org>
+>
+> I have applied the series, thanks.
 
-> The last two parameters of certain register access functions were in
-> different order than regmap API. This was confusing and error-prone.
-> 
-> Reorder parameters for register access API to match regmap API:
->  - max77693_bulk_read() reorder count and buf,
->  - max77693_bulk_write() reorder count and buf,
->  - max77693_update_reg() reorder val and mask.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/extcon/extcon-max77693.c     |   14 +++++++-------
->  drivers/mfd/max77693-irq.c           |    2 +-
->  drivers/mfd/max77693.c               |    6 +++---
->  include/linux/mfd/max77693-private.h |   10 +++++-----
->  4 files changed, 16 insertions(+), 16 deletions(-)
+Thanks to all involved.
+Simon
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
