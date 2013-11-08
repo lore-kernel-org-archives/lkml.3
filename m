@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab3KHSKP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 13:10:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59238 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757956Ab3KHSJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 13:09:58 -0500
-Message-ID: <527D28DC.6060305@redhat.com>
-Date: Fri, 08 Nov 2013 13:09:32 -0500
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1757978Ab3KHSNy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 13:13:54 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:61941 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757504Ab3KHSNw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 13:13:52 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18I8BYQnbdOpG9PCYb4xEmSaLgC0fnDKZo=
+Date: Fri, 8 Nov 2013 13:13:51 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: devicetree@vger.kernel.org,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>
+Subject: Re: common location for devicetree files
+Message-ID: <20131108181351.GF10335@titan.lakedaemon.net>
+References: <1438803E-C904-428B-B042-891978BC15DF@codeaurora.org>
+ <20131108165255.GA32668@titan.lakedaemon.net>
+ <5957C301-9698-45B0-BFED-749DE79D0A74@codeaurora.org>
 MIME-Version: 1.0
-To: Ben Myers <bpm@sgi.com>
-CC: Mark Tinguely <tinguely@sgi.com>, elder@kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, xfs@oss.sgi.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: XFS leadership and a new co-maintainer candidate
-References: <20131107220208.GY1935@sgi.com> <527C0F64.3010906@sgi.com> <527C4B27.6020205@redhat.com> <527CC50D.4060905@redhat.com> <20131108180337.GO10553@sgi.com>
-In-Reply-To: <20131108180337.GO10553@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5957C301-9698-45B0-BFED-749DE79D0A74@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2013 01:03 PM, Ben Myers wrote:
-> Hey Ric,
->
-> On Fri, Nov 08, 2013 at 06:03:41AM -0500, Ric Wheeler wrote:
->> In the XFS community, we have 2 clear leaders in terms of
->> contributions of significant feaures and depth of knowledge -
->> Christoph and Dave.
->>
->> If you look at the number of patches submitted by developers since
->> 3.0 who have more than 10 patches, we get the following:
->>
->>      319 Author: Dave Chinner <dchinner@redhat.com>
->>      163 Author: Christoph Hellwig <hch@infradead.org>
->>       51 Author: Christoph Hellwig <hch@lst.de>
->>       35 Author: Linus Torvalds <torvalds@linux-foundation.org>
->>       34 Author: Chandra Seetharaman <sekharan@us.ibm.com>
->>       29 Author: Al Viro <viro@zeniv.linux.org.uk>
->>       28 Author: Brian Foster <bfoster@redhat.com>
->>       25 Author: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>       24 Author: Jeff Liu <jeff.liu@oracle.com>
->>       21 Author: Jie Liu <jeff.liu@oracle.com>
->>       20 Author: Mark Tinguely <tinguely@sgi.com>
->>       16 Author: Dave Chinner <david@fromorbit.com>
->>       12 Author: Eric Sandeen <sandeen@redhat.com>
->>       12 Author: Carlos Maiolino <cmaiolino@redhat.com>
->>
->> If we as a community had more capacity for patch review, Dave's
->> numbers would have jumped up even higher :)
->>
->> It is certainly very welcome to bring new developers into our
->> community, but if we are going to add a co-maintainer for XFS, we
->> really need to have one of our two leading developers in that role.
-> Mark is replacing Alex as my backup because Alex is really busy at
-> Linaro and asked to be taken off awhile ago.  The holiday season is
-> coming up and I fully intend to go off my meds, turn in to Fonzy the
-> bear, and eat my hat.  I need someone to watch the shop while I'm off
-> exploring on Mars.  I trust Mark to do that because he is totally
-> awesome.
->
-> -Ben
+On Fri, Nov 08, 2013 at 11:59:56AM -0600, Kumar Gala wrote:
+> 
+> On Nov 8, 2013, at 10:52 AM, Jason Cooper wrote:
+> 
+> > On Thu, Nov 07, 2013 at 05:21:58PM -0600, Kumar Gala wrote:
+> >> As we start having more sharing of device trees between architectures
+> >> (arm & arm64, arm & powerpc, guessing maybe mips & arm) we need dts to
+> >> live in location that 
+> >> 
+> >> I was wondering what people felt about doing:
+> >> 
+> >> 	arch/dts/<VENDOR>/
+> >> 
+> >> as a common location that could be shared.  I'm up for other
+> >> suggestions.
+> > 
+> > What do we really need to do before the move?  Should all arch dts files
+> > be able to #include from any arch?  What's the minimum churn needed to
+> > accomplish that?  Maybe just move the needed bits to arch/dts/include/ ?
+> > 
+> > I'm not real keen on separating by vendor.  For example, us mvebu folks
+> > would probably miss useful/duplicated effort in another vendor's
+> > subdirectory.  Which was the whole reason for moving driver code out of
+> > machine directories to begin with.
+> 
+> 
+> Can you explain that further, what would you miss from other vendors.
+> All the patches should still be going via devicetree ML.
 
-I don't mean any disrepect to you or to Mark, but maintainership is something 
-that you earn over time by proving yourself in the community as a developer and 
-a leader of the technology on a personal level.
+I was simply applying the same logic used to justify moving all of the
+driver code out of arch/arm/.  Once that happened, a lot of patterns
+emerged and we have things like common clock now.  Yet all of this code
+(originally under arch/arm) was submitted to the same ML.
 
-It is not something that gets managed by the community of developers and has the 
-key role of keeping the most frequent developers engaged and happy.  That has 
-not been working for us as a community lately.
+iow, there's a difference between being on the same high-traffic
+mailinglist where people are filtering out just what they need, and
+being in the same subdirectory, right next to three other
+implementations of the same code (I exaggerate, but the point remains).
+It's a lot easier to spot similar implementations when they are all
+congregated under one directory.
 
-Dave Chinner is the obvious person to take on the maintainer role as someone who 
-has an order of magnitude more code contributed than either of you (even combined).
+How many boards are using the same PMIC across vendors?  Would it make
+sense to have a tps6905.dtsi they could all include?  Flash chips?  I'm
+just asking.
 
-Christoph, if he has time, would also be an excellent candidate.
+My gut is that having separate vendor directories would lead to
+balkanization.  That might not be a problem, but it's worth considering.
 
-Regards,
+thx,
 
-Ric
-
+Jason.
