@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757767Ab3KHSs4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 13:48:56 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56765 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756953Ab3KHSsz (ORCPT
+	id S1757964Ab3KHSvY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 13:51:24 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:34011 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757039Ab3KHSvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 13:48:55 -0500
-Message-ID: <527D3215.5020909@infradead.org>
-Date: Fri, 08 Nov 2013 10:48:53 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 8 Nov 2013 13:51:23 -0500
+Message-ID: <527D32A9.2060603@codeaurora.org>
+Date: Fri, 08 Nov 2013 10:51:21 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
-CC: linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: linux-next: Tree for Nov 8 (various vfs)
-References: <20131108194753.c45ecb7db2fdd59e156d8acd@canb.auug.org.au>
-In-Reply-To: <20131108194753.c45ecb7db2fdd59e156d8acd@canb.auug.org.au>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Rob Herring <robherring2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: Use udiv/sdiv for __aeabi_{u}idiv library functions
+References: <1383852042-10780-1-git-send-email-sboyd@codeaurora.org> <CAL_JsqJ9zbJFJePk2FHH8UhrUP2J7fuuiZLb+NhuTovRodqrCA@mail.gmail.com> <20131108115004.GH28304@ns203013.ovh.net> <20131108165437.GM16735@n2100.arm.linux.org.uk>
+In-Reply-To: <20131108165437.GM16735@n2100.arm.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/13 00:47, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Please do *not* add any v3.14 material to linux-next until after
-> v3.13-rc1 is released.
-> 
-> [A bit of a mess today :-(]
-> 
-> Changes since 20131107:
-> 
-> The vfs tree lost its build failure but gained a conflict against Linus'
-> tree.
-> 
-> The userns tree gained conflicts against the vfs tree and a build failure
-> caused by merge issues, so I dropped it for today.
-> 
-> The akpm-current tree gained conflicts against the vfs and tip trees.
+On 11/08/13 08:54, Russell King - ARM Linux wrote:
+> On Fri, Nov 08, 2013 at 12:50:04PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>> On 19:34 Thu 07 Nov     , Rob Herring wrote:
+>>> On Thu, Nov 7, 2013 at 1:20 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>>> If we're running on a v7 ARM CPU, detect if the CPU supports the
+>>>> sdiv/udiv instructions and replace the signed and unsigned
+>>>> division library functions with an sdiv/udiv instruction.
+>>> [snip]
+>>>
+>>>> diff --git a/arch/arm/lib/Makefile b/arch/arm/lib/Makefile
+>>>> index bd454b0..6ed6496 100644
+>>>> --- a/arch/arm/lib/Makefile
+>>>> +++ b/arch/arm/lib/Makefile
+>>>> @@ -15,6 +15,9 @@ lib-y         := backtrace.o changebit.o csumipv6.o csumpartial.o   \
+>>>>                    io-readsb.o io-writesb.o io-readsl.o io-writesl.o  \
+>>>>                    call_with_stack.o
+>>>>
+>>>> +lib-$(CONFIG_CPU_V7) += div-v7.o
+>>>> +CFLAGS_div-v7.o := -march=armv7-a
+>>> Won't this fail to build if the compiler doesn't have armv7-a support.
+>>> Perhaps we don't care about compilers that old.
+>> use the propoer compiler to compile a armv7 kernel
+> It's probably about time to get rid of the conditionals for this in
+> the main arch/arm/Makefile actually - some of those date back some
+> 10 or so years.  That's something for the v3.14 merge window.
 
-on both i386 and x86_64:
-
-vfs build errors:
-
-fs/open.c:486:3: error: implicit declaration of function 'break_deleg_wait' [-Werror=implicit-function-declaration]
-fs/namei.c:3726:3: error: implicit declaration of function 'break_deleg_wait' [-Werror=implicit-function-declaration]
-fs/utimes.c:110:3: error: implicit declaration of function 'break_deleg_wait' [-Werror=implicit-function-declaration]
-
+I'll take that as an endorsement for not falling back to -march=armv5t
+-Wa,-march=armv7-a like is done in arch/arm/Makefile.
 
 -- 
-~Randy
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
