@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932469Ab3KHXn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 18:43:56 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42144 "EHLO arroyo.ext.ti.com"
+	id S932541Ab3KHXoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 18:44:10 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42156 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932299Ab3KHXno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 18:43:44 -0500
+	id S932436Ab3KHXnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 18:43:52 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <tj@kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Yinghai Lu <yinghai@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH 07/24] mm/char: remove unnecessary inclusion of bootmem.h
-Date: Fri, 8 Nov 2013 18:41:43 -0500
-Message-ID: <1383954120-24368-8-git-send-email-santosh.shilimkar@ti.com>
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH 21/24] mm/firmware: Use memblock apis for early memory allocations
+Date: Fri, 8 Nov 2013 18:41:57 -0500
+Message-ID: <1383954120-24368-22-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com>
@@ -27,34 +25,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grygorii Strashko <grygorii.strashko@ti.com>
+Switch to memblock interfaces for early memory allocator instead of
+bootmem allocator. No functional change in beahvior than what it is
+in current code from bootmem users points of view.
 
-Clean-up to remove depedency with bootmem headers.
+Archs already converted to NO_BOOTMEM now directly use memblock
+interfaces instead of bootmem wrappers build on top of memblock. And the
+archs which still uses bootmem, these new apis just fallback to exiting
+bootmem APIs.
 
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- drivers/char/mem.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/firmware/memmap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index f895a8c..92c5937 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -22,7 +22,6 @@
- #include <linux/device.h>
- #include <linux/highmem.h>
- #include <linux/backing-dev.h>
--#include <linux/bootmem.h>
- #include <linux/splice.h>
- #include <linux/pfn.h>
- #include <linux/export.h>
+diff --git a/drivers/firmware/memmap.c b/drivers/firmware/memmap.c
+index e2e04b0..15550b2 100644
+--- a/drivers/firmware/memmap.c
++++ b/drivers/firmware/memmap.c
+@@ -324,7 +324,7 @@ int __init firmware_map_add_early(u64 start, u64 end, const char *type)
+ {
+ 	struct firmware_map_entry *entry;
+ 
+-	entry = alloc_bootmem(sizeof(struct firmware_map_entry));
++	entry = memblock_virt_alloc(sizeof(struct firmware_map_entry));
+ 	if (WARN_ON(!entry))
+ 		return -ENOMEM;
+ 
 -- 
 1.7.9.5
 
