@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab3KHAkf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 19:40:35 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59870 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752205Ab3KHAkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 19:40:33 -0500
-Message-ID: <527C32F6.2040908@ti.com>
-Date: Thu, 7 Nov 2013 19:40:22 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755102Ab3KHApj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 19:45:39 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:53828 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753899Ab3KHAph (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 19:45:37 -0500
 MIME-Version: 1.0
-To: Joel Fernandes <joelf@ti.com>
-CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        open list:
-	DOCUMENTATION <linux-doc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>, ;
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	;
-			^-missing semicolon to end mail group, extraneous tokens in mailbox, missing end of mailbox
-Subject: Re: [PATCH] doc: devicetree: Add bindings documentation for omap-des
- driver
-References: <1383871035-16608-1-git-send-email-joelf@ti.com>
-In-Reply-To: <1383871035-16608-1-git-send-email-joelf@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87zjpf4w0j.fsf@rustcorp.com.au>
+References: <1383789208.5970.1.camel@phoenix>
+	<CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
+	<CAFRkauAEt-YhBt11opj_GVCLrxGsTSd2LowWGmukTSmGuJkd3A@mail.gmail.com>
+	<CACVXFVO=QA-R1+twCL9fc_3vASg6Ap-3ezi=tU1MV1pdPYrfWw@mail.gmail.com>
+	<CAFRkauAdR3=ByE0_B3OsqOBjmbz2a02EXb+6g-vn=1TJ7AZc8Q@mail.gmail.com>
+	<CACVXFVMaLOfDvzdn_1NryQY59cgtLdMMqHL-_ZAa95MPz4p56Q@mail.gmail.com>
+	<CAFRkauDe7V3N0AbfvE_=GEXHZ_Fw62VsA8p50wSUYE1-TRqMfw@mail.gmail.com>
+	<87zjpf4w0j.fsf@rustcorp.com.au>
+Date: Fri, 8 Nov 2013 08:45:37 +0800
+Message-ID: <CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com>
+Subject: Re: kernel BUG at kernel/kallsyms.c:222!
+From: Ming Lei <tom.leiming@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Axel Lin <axel.lin@ingics.com>, Russell King <linux@arm.linux.org.uk>,
+        Michal Marek <mmarek@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 07 November 2013 07:37 PM, Joel Fernandes wrote:
-> Add documentation for the generic OMAP DES crypto module describing the device
-> tree bindings.
-> 
-> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> ---
-Thanks Joel for picking this up.
-FWIW, Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+On Fri, Nov 8, 2013 at 7:44 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Axel Lin <axel.lin@ingics.com> writes:
+>> 2013/11/7 Ming Lei <tom.leiming@gmail.com>:
+>>> Hi,
+>>>
+>>> On Thu, Nov 7, 2013 at 10:47 AM, Axel Lin <axel.lin@ingics.com> wrote:
+>>>>
+>>>> hi Ming,
+>>>> Seems CONFIG_PAGE_OFFSET is not configurabe in "make menuconfig".
+>>>> And I found CONFIG_PAGE_OFFSET=0xC0000000 for all below configs...
+>>>> $ make at91_dt_defconfig; grep  CONFIG_PAGE_OFFSET .config
+>>>> $ make ep93xx_defconfig; grep  CONFIG_PAGE_OFFSET .config
+>>>> $ make imx_v4_v5_defconfig; grep CONFIG_PAGE_OFFSET .config
+>>>> $ make mxs_defconfig; grep CONFIG_PAGE_OFFSET .config
+>>>> $ make omap2plus_defconfig; grep CONFIG_PAGE_OFFSET .config
+>>>> $ make s3c6400_defconfig; grep CONFIG_PAGE_OFFSET .config
+>>>> $ make at91x40_defconfig; grep CONFIG_PAGE_OFFSET .config
+>>>> ( at91x40_defconfig is also arm7tdmi )
+>>>
+>>> Firstly it can be configured via VMSPLIT_3GVMSPLIT_2G/VMSPLIT_1G.
+>>>
+>>> Secondly, configurable or not isn't the point, and maybe some uclinux
+>>> platforms do not use CONFIG_PAGE_OFFSET at all, but they should
+>>> set it as a reasonable value or at least be below than the start link
+>>> address of vmlinux.
+>>
+>> Hi Ming,
+>>
+>> I found in arch/arm/include/asm/memory.h:
+>> CONFIG_PAGE_OFFSET is not used if !CONFIG_MMU.
+>> So looks like setting CONFIG_PAGE_OFFSET to other value still won't work.
+>
+> This seems like the simplest solution, but it may mean you still have
+> crap in /proc/kallsyms.
+>
+> Does it work for you?
+
+Yes, it should work, but I am wondering if perf can work on uClinux.
+
+Axel, could you post your .config?
 
 
+Thanks,
+-- 
+Ming Lei
