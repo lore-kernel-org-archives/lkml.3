@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab3KHCQw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:16:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34497 "EHLO
+	id S1756715Ab3KHCQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:16:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34449 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756379Ab3KHCQO (ORCPT
+	with ESMTP id S1756278Ab3KHCQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:16:14 -0500
+	Thu, 7 Nov 2013 21:16:13 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 15/91] l2tp: Fix build warning with ipv6 disabled.
-Date: Thu,  7 Nov 2013 18:14:30 -0800
-Message-Id: <1383876946-2396-16-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 01/91] ACPICA: Interpreter: Fix Store() when implicit conversion is not possible.
+Date: Thu,  7 Nov 2013 18:14:16 -0800
+Message-Id: <1383876946-2396-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,75 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Bob Moore <robert.moore@intel.com>
 
-[ Upstream commit 8d8a51e26a6d415e1470759f2cf5f3ee3ee86196 ]
+commit 3f654bad3257427bea7ba1c4d43a23d99a03622b upstream.
 
-net/l2tp/l2tp_core.c: In function ‘l2tp_verify_udp_checksum’:
-net/l2tp/l2tp_core.c:499:22: warning: unused variable ‘tunnel’ [-Wunused-variable]
+For the cases such as a store of a string to an existing package
+object, implement the store as a CopyObject().
+This is a small departure from the ACPI specification which states
+that the control method should be aborted in this case. However,
+ASLTS suite depends on this behavior.
 
-Create a helper "l2tp_tunnel()" to facilitate this, and as a side
-effect get rid of a bunch of unnecessary void pointer casts.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/l2tp/l2tp_core.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/acpi/acpica/exstore.c | 29 ++++++++++++++++++++++++-----
+ 1 file changed, 24 insertions(+), 5 deletions(-)
 
-diff --git a/net/l2tp/l2tp_core.c b/net/l2tp/l2tp_core.c
-index 8861e9f..02a922c 100644
---- a/net/l2tp/l2tp_core.c
-+++ b/net/l2tp/l2tp_core.c
-@@ -115,6 +115,11 @@ static void l2tp_session_set_header_len(struct l2tp_session *session, int versio
- static void l2tp_tunnel_free(struct l2tp_tunnel *tunnel);
- static void l2tp_tunnel_closeall(struct l2tp_tunnel *tunnel);
+diff --git a/drivers/acpi/acpica/exstore.c b/drivers/acpi/acpica/exstore.c
+index 90431f1..4ff37e8 100644
+--- a/drivers/acpi/acpica/exstore.c
++++ b/drivers/acpi/acpica/exstore.c
+@@ -487,14 +487,33 @@ acpi_ex_store_object_to_node(union acpi_operand_object *source_desc,
+ 	default:
  
-+static inline struct l2tp_tunnel *l2tp_tunnel(struct sock *sk)
-+{
-+	return sk->sk_user_data;
-+}
-+
- static inline struct l2tp_net *l2tp_pernet(struct net *net)
- {
- 	BUG_ON(!net);
-@@ -517,7 +522,6 @@ out:
- static inline int l2tp_verify_udp_checksum(struct sock *sk,
- 					   struct sk_buff *skb)
- {
--	struct l2tp_tunnel *tunnel = (struct l2tp_tunnel *)sk->sk_user_data;
- 	struct udphdr *uh = udp_hdr(skb);
- 	u16 ulen = ntohs(uh->len);
- 	__wsum psum;
-@@ -526,7 +530,7 @@ static inline int l2tp_verify_udp_checksum(struct sock *sk,
- 		return 0;
+ 		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
+-				  "Storing %s (%p) directly into node (%p) with no implicit conversion\n",
++				  "Storing [%s] (%p) directly into node [%s] (%p)"
++				  " with no implicit conversion\n",
+ 				  acpi_ut_get_object_type_name(source_desc),
+-				  source_desc, node));
++				  source_desc,
++				  acpi_ut_get_object_type_name(target_desc),
++				  node));
  
- #if IS_ENABLED(CONFIG_IPV6)
--	if (sk->sk_family == PF_INET6 && !tunnel->v4mapped) {
-+	if (sk->sk_family == PF_INET6 && !l2tp_tunnel(sk)->v4mapped) {
- 		if (!uh->check) {
- 			LIMIT_NETDEBUG(KERN_INFO "L2TP: IPv6: checksum is 0\n");
- 			return 1;
-@@ -1271,9 +1275,8 @@ EXPORT_SYMBOL_GPL(l2tp_xmit_skb);
-  */
- static void l2tp_tunnel_destruct(struct sock *sk)
- {
--	struct l2tp_tunnel *tunnel;
-+	struct l2tp_tunnel *tunnel = l2tp_tunnel(sk);
+-		/* No conversions for all other types. Just attach the source object */
++		/*
++		 * No conversions for all other types. Directly store a copy of
++		 * the source object. NOTE: This is a departure from the ACPI
++		 * spec, which states "If conversion is impossible, abort the
++		 * running control method".
++		 *
++		 * This code implements "If conversion is impossible, treat the
++		 * Store operation as a CopyObject".
++		 */
++		status =
++		    acpi_ut_copy_iobject_to_iobject(source_desc, &new_desc,
++						    walk_state);
++		if (ACPI_FAILURE(status)) {
++			return_ACPI_STATUS(status);
++		}
  
--	tunnel = sk->sk_user_data;
- 	if (tunnel == NULL)
- 		goto end;
- 
-@@ -1596,7 +1599,7 @@ int l2tp_tunnel_create(struct net *net, int fd, int version, u32 tunnel_id, u32
+-		status = acpi_ns_attach_object(node, source_desc,
+-					       source_desc->common.type);
++		status =
++		    acpi_ns_attach_object(node, new_desc,
++					  new_desc->common.type);
++		acpi_ut_remove_reference(new_desc);
+ 		break;
  	}
  
- 	/* Check if this socket has already been prepped */
--	tunnel = (struct l2tp_tunnel *)sk->sk_user_data;
-+	tunnel = l2tp_tunnel(sk);
- 	if (tunnel != NULL) {
- 		/* This socket has already been prepped */
- 		err = -EBUSY;
 -- 
 1.8.1.2
 
