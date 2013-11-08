@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935Ab3KHRyv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 12:54:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39380 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757550Ab3KHRyt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 12:54:49 -0500
-Message-ID: <1383933278.10256.1.camel@fourier>
-Subject: Re: [PATCH 3.8 23/91] xen-netback: Don't destroy the netdev until
- the vif is shut down
-From: Kamal Mostafa <kamal@canonical.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Paul Durrant <paul.durrant@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>, Wei Liu <wei.liu2@citrix.com>
-Date: Fri, 08 Nov 2013 09:54:38 -0800
-In-Reply-To: <1383904422.3189.55.camel@kazak.uk.xensource.com>
-References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
-	 <1383876946-2396-24-git-send-email-kamal@canonical.com>
-	 <1383904422.3189.55.camel@kazak.uk.xensource.com>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-pdvTZnml0aZlED55Ghpr"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1757993Ab3KHR4r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 12:56:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47554 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757426Ab3KHR4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 12:56:45 -0500
+Date: Fri, 8 Nov 2013 09:56:08 -0800
+From: Zach Brown <zab@redhat.com>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the block tree with the  tree
+Message-ID: <20131108175608.GK6710@lenny.home.zabbo.net>
+References: <20131108020805.GI3842@kmo>
+ <527C4D35.8000907@oracle.com>
+ <20131108073324.GA31662@infradead.org>
+ <20131108073959.GA17807@kmo-pixel>
+ <20131108074445.GA11595@infradead.org>
+ <20131108075617.GB17807@kmo-pixel>
+ <20131108080221.GA31866@infradead.org>
+ <20131108081737.GA27885@kmo-pixel>
+ <20131108083251.GA20121@infradead.org>
+ <20131108092106.GA30271@kmo-pixel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131108092106.GA30271@kmo-pixel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > > That make sense? I can show you more concretely what I'm working on if
+> > > you want. Or if I'm full of crap and this is useless for what you guys
+> > > want I'm sure you'll let me know :)
+> > 
+> > It sounds interesting, but also a little confusing at this point, at
+> > least from the non-block side of view.
+> 
+> Zach, you want to chime in? He was involved in the discussion yesterday,
+> he might be able to explain this stuff better than I.
 
---=-pdvTZnml0aZlED55Ghpr
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I can try.  I may not do the *best* job because I've been on the
+periphery of most of this since I left the proof of concept back at
+Oracle :).
 
-On Fri, 2013-11-08 at 09:53 +0000, Ian Campbell wrote:
-> On Thu, 2013-11-07 at 18:14 -0800, Kamal Mostafa wrote:
-> > 3.8.13.13 -stable review patch.  If anyone has any objections, please l=
-et me know.
->=20
-> This patch caused a regression in the 3.10 stable tree. Two additional
-> patches were needed, see:
->         http://www.spinics.net/lists/netdev/msg256637.html
->         http://www.spinics.net/lists/netdev/msg256636.html
->=20
-> Ian.
->=20
->=20
+The first part is passing in pages instead of mapped addresses.  That's
+where the iov_iter argument came from.  A ham-fisted proof of concept to
+try to abstract iterating over any old type of memory.  But it's not
+*really* abstract because dio magically knows (look for gross
+iov_iter_has_iovec() callers) whether the memory is in iovecs or bio
+pages when its verifying alignment, pinning or not, etc.  In the end
+it's little more than syntactic sugar to try and pretend that two
+interfaces are one.
 
-Thanks very much for the heads-up Ian ...  I'll get those two additional
-patches into 3.8.13.13 also.
+For expedience, this iov_iter approach used the loop's bio to store the
+pages in the iov_iter rather than translating the bio's pages to a page
+array in the iov_iter.
 
- -Kamal
+So the first part of what I think Kent is picturing is to take that to
+its logical conclusion and have the caller describe the io memory and
+offset with a bio instead of explicit address and offset arguments.
+This way dio can do nice bio management operations to kick off its
+device bios rather than having to clumsily build them from either
+incoming pages or mapped user addresses that are hidden in iov_iter.
 
+I'm imagining cutting the current dio up in to two phases.  One that
+pins user pages and puts them in bios and one that maps those file bios
+to device bios and submits them.  Then the fop method becomes the second
+phase so that loop can call it with its file bios.  Call it
+->submit_file_bio() instead of ->do_direct_IO(), maybe?
 
---=-pdvTZnml0aZlED55Ghpr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+The other part of this series that isn't getting as much attention,
+though, is async submission and completion.  This patch introduces a
+weird in-kernel aio submission interface that adds special cases to aio.
+In this new bio world order we could get rid of that complication by
+relying on the bio's ->bi_end_io() for completion.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I suppose a high level view of this strategy is to move more towards a
+stack where layers have matching inputs and outputs.  If both dio and
+loop take bios as input and translate them into submitted output bios
+then the stacking becomes more natural.
 
-iQIcBAABCAAGBQJSfSVeAAoJEHqwmdxYrXhZgBgP/0Du+tkRoi5mjysGznaxR30Y
-dMyR7lOe4Nc2vVTtp3ONiu+OPChe/yEEHvZRtKbuVfa9c1/aJE5UY/E0v9nC3Smg
-GH0OEVwu1KmiGxEfooyZlYaySDcyiWbkm0WkUs98X6w/dz2c63N3b26/7AQuHYzQ
-pcPVZJ4jqfZRIzagd3zOx9shRZS8Pu6YISw0P25j5efeqSSMAsvLFfNrEGn7G4q9
-fe/y+UxRvI6n/a3vIzvAybEb/qUQTCEn3wUTtsysZAz8uEbzpjFV6sJHa+h6O6J0
-7V3Utb2cGEKVpHesXhIkgFuazDlwNMMakRb6V5D3EFav0GIqiLilVImAQjiEhld+
-qib2DeKxO72XtD4Y2JtUsK00AWYmdqvopBrQYl4wa99PaCL1dwcQty82P7Cx6t91
-KFS10ew3IY6lkAme8BYp+jIfpKbDszMKHm9XICDWY6liinSSVR4XlPjWTtDQQY3Y
-Ct3Bm33xu1nqJb9Od/7ARFfM3Ghh7Nhf3XIIaTBPbqJgIC23HInwUQ+pYennOq95
-40jWkehL4R6rJm4a5u2eh5rjgt480wVj11r9SE0xwDT+//EZHlNlQLc/0z4IL2lp
-pIbVOw0jUYDqLwrTJB+08ZUuj5EOjrlXTu5ZwERCpiVqhYYrn1rLcL3Eu3ikwkN+
-TAAoNAJmHqthvMxqPfDx
-=jpsI
------END PGP SIGNATURE-----
+That's the blue sky fantasy anyway.  There's a lot of detail being
+glossed over.  I want to see what the patches look like.
 
---=-pdvTZnml0aZlED55Ghpr--
-
+- z
