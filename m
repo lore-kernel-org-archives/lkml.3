@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757455Ab3KHOpu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 09:45:50 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:41984 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756891Ab3KHOpt (ORCPT
+	id S1757122Ab3KHOt4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 09:49:56 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:31764 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751254Ab3KHOtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 09:45:49 -0500
-Date: Fri, 8 Nov 2013 06:45:34 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <bitbucket@online.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>
-Subject: Re: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
-Message-ID: <20131108144534.GE18245@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1383228427.5272.36.camel@marge.simpson.net>
- <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>
- <1383794799.5441.16.camel@marge.simpson.net>
- <1383798668.5441.25.camel@marge.simpson.net>
- <20131108032343.GA18245@linux.vnet.ibm.com>
- <1383895880.4964.91.camel@marge.simpson.net>
- <20131108123713.GC18245@linux.vnet.ibm.com>
- <1383917188.4964.94.camel@marge.simpson.net>
- <20131108140331.GD18245@linux.vnet.ibm.com>
- <20131108142934.GA11112@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131108142934.GA11112@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110814-0928-0000-0000-00000336ABDF
+	Fri, 8 Nov 2013 09:49:55 -0500
+Date: Fri, 8 Nov 2013 09:49:51 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Petr Mladek <pmladek@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v2 1/8] x86: speed up int3-based patching using less
+ paranoid write
+Message-ID: <20131108094951.5b26ea65@gandalf.local.home>
+In-Reply-To: <527CD34A.30406@hitachi.com>
+References: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
+	<1383901932-1945-3-git-send-email-pmladek@suse.cz>
+	<527CD34A.30406@hitachi.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 03:29:38PM +0100, Frederic Weisbecker wrote:
-> On Fri, Nov 08, 2013 at 06:03:31AM -0800, Paul E. McKenney wrote:
-> > On Fri, Nov 08, 2013 at 02:26:28PM +0100, Mike Galbraith wrote:
-> > > On Fri, 2013-11-08 at 04:37 -0800, Paul E. McKenney wrote: 
-> > > > On Fri, Nov 08, 2013 at 08:31:20AM +0100, Mike Galbraith wrote:
-> > > > > On Thu, 2013-11-07 at 19:23 -0800, Paul E. McKenney wrote:
-> > > > > 
-> > > > > > An untested patch that gets rid of the RCU_SOFTIRQs in this case is below.
-> > > > > 
-> > > > > Yup, toasted.
-> > > > 
-> > > > You lost me on this one.  If my patch broke your system, any chance of
-> > > > any diagnostic information?
-> > > 
-> > > No no, the RCU_SOFTIRQs are toast, history, gone.
-> > 
-> > Ah, I do like that outcome much better!  ;-)  The scheduling-clock
-> > interrupts are gone (or at least reduced) as well?
-> > 
-> > And does this mean that I can have your Tested-by?
+On Fri, 08 Nov 2013 21:04:26 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+
+
+> >  static void do_sync_core(void *info)
+> >  {
+> >  	sync_core();
+> > @@ -648,15 +687,15 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+> >  	 */
+> >  	smp_wmb();
+> >  
+> > -	text_poke(addr, &int3, sizeof(int3));
+> > +	text_poke_part(addr, &int3, sizeof(int3));
 > 
-> What's wrong with Toasted-by: ?  ;)
+> Anyway, text_poke itself will cause a BUG if it hits an error, but text_poke_part() seems
+> silently failing. It should handle the error correctly (or call BUG()).
+> 
 
-Does this mean that I can have your Toasted by?  ;-)
+text_poke_part() shouldn't do a bug on error, but this code probably
+should.
 
-							Thanx, Paul
+	if (text_poke_part(addr, &int3, sizeof(int3)))
+		BUG();
 
+Note, I would avoid doing:
+
+	BUG_ON(text_poke_part(...));
+
+as we don't want "side effects" in the BUG() macros. You may do:
+
+	ret = text_poke_part(...);
+	BUG_ON(ret);
+
+Which has the added benefit of the implicit "unlikely" in the BUG_ON()
+macro.
+
+Or we can have do_sync_core() be able to handle errors and have their
+callers handle them too.
+
+-- Steve
