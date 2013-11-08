@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757652Ab3KHQW4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 11:22:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56842 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757472Ab3KHQWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 11:22:55 -0500
-Date: Fri, 8 Nov 2013 17:24:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] uprobes: Fix the memory out of bound overwrite in
-	copy_insn()
-Message-ID: <20131108162415.GA27502@redhat.com>
-References: <20131106191913.GA18661@redhat.com> <20131107075151.GB31560@gmail.com> <20131107143432.GA6240@redhat.com> <20131107151601.GA5163@gmail.com> <20131107162736.GA31834@redhat.com> <20131107194010.GA29154@redhat.com> <20131107194032.GB29154@redhat.com>
+	id S932127Ab3KHQYO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 11:24:14 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:45310 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757560Ab3KHQYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 11:24:13 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: [PATCH] xen: delete new instances of added __cpuinit
+Date: Fri, 8 Nov 2013 11:21:51 -0500
+Message-ID: <1383927711-26742-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131107194032.GB29154@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07, Oleg Nesterov wrote:
->
-> Note: we do not care if offset + size > i_size, the users of
-> arch_uprobe->insn can't know how many bytes were actually copied
-> anyway. But perhaps this needs more changes.
+commit 6efa20e49b9cb1db1ab66870cc37323474a75a13
+("xen: Support 64-bit PV guest receiving NMIs") and
+commit cd9151e26d31048b2b5e00fd02e110e07d2200c9
+( "xen/balloon: set a mapping for ballooned out pages")
+added new instances of __cpuinit usage.
 
-I guess this not is not very clear...
+We removed this a couple versions ago; we now want to remove
+the compat no-op stubs.  Introducing new users is not what
+we want to see at this point in time, as it will break once
+the stubs are gone.
 
-What I tried to say. Suppose that offset == 0 and i_size = 1.
-In this case we still copy MAX_UINSN_BYTES into arch.insn
-because the task gets the same page after page fault anyway,
-and we can't inform arch_uprobe_analyze_insn() that we have
-only read 1 byte. So this doesn't matter.
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ arch/x86/xen/setup.c  | 2 +-
+ drivers/xen/balloon.c | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-I changed this as follows:
-
-	Note: we do not care if we read extra bytes after inode->i_size
-	if we got the valid page. This is fine because the task gets the
-	same page after page-fault, and arch_uprobe_analyze_insn() can't
-	know how how many bytes were actually read anyway.
-
-I also moved the comment up, before the main loop.
-
-Srikar, I am going to add this to my tree unless you object now.
-I verified that this indeed fixes the crash and the code looks
-"obviously correct, see below.
-
-Oleg.
-
-static int __copy_insn(struct address_space *mapping, struct file *filp,
-			void *insn, int nbytes, loff_t offset)
-{
-	struct page *page;
-
-	if (!mapping->a_ops->readpage)
-		return -EIO;
-	/*
-	 * Ensure that the page that has the original instruction is
-	 * populated and in page-cache.
-	 */
-	page = read_mapping_page(mapping, offset >> PAGE_CACHE_SHIFT, filp);
-	if (IS_ERR(page))
-		return PTR_ERR(page);
-
-	copy_from_page(page, offset, insn, nbytes);
-	page_cache_release(page);
-
-	return 0;
-}
-
-static int copy_insn(struct uprobe *uprobe, struct file *filp)
-{
-	struct address_space *mapping = uprobe->inode->i_mapping;
-	loff_t offs = uprobe->offset;
-	void *insn = uprobe->arch.insn;
-	int size = MAX_UINSN_BYTES;
-	int len, err = -EIO;
-
-	/* Copy only available bytes, -EIO if nothing was read */
-	do {
-		if (offs >= i_size_read(uprobe->inode))
-			break;
-
-		len = min_t(int, size, PAGE_SIZE - (offs & ~PAGE_MASK));
-		err = __copy_insn(mapping, filp, insn, len, offs);
-		if (err)
-			break;
-
-		insn += len;
-		offs += len;
-		size -= len;
-	} while (size);
-
-	return err;
-}
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 09f3059..68c054f 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -556,7 +556,7 @@ void xen_enable_syscall(void)
+ 	}
+ #endif /* CONFIG_X86_64 */
+ }
+-void __cpuinit xen_enable_nmi(void)
++void xen_enable_nmi(void)
+ {
+ #ifdef CONFIG_X86_64
+ 	if (register_callback(CALLBACKTYPE_nmi, nmi))
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index b232908..3143fa1 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -596,7 +596,7 @@ static void __init balloon_add_region(unsigned long start_pfn,
+ 	}
+ }
+ 
+-static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
++static int balloon_cpu_notify(struct notifier_block *self,
+ 				    unsigned long action, void *hcpu)
+ {
+ 	int cpu = (long)hcpu;
+@@ -616,7 +616,7 @@ static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
+ 	return NOTIFY_OK;
+ }
+ 
+-static struct notifier_block balloon_cpu_notifier __cpuinitdata = {
++static struct notifier_block balloon_cpu_notifier = {
+ 	.notifier_call	= balloon_cpu_notify,
+ };
+ 
+-- 
+1.8.4.1
 
