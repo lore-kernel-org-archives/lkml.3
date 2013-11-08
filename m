@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab3KHCWV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:22:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34926 "EHLO
+	id S1757332Ab3KHCWa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:22:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34966 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932709Ab3KHCWD (ORCPT
+	with ESMTP id S1757286Ab3KHCWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:22:03 -0500
+	Thu, 7 Nov 2013 21:22:20 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 51/91] wireless: radiotap: fix parsing buffer overrun
-Date: Thu,  7 Nov 2013 18:15:06 -0800
-Message-Id: <1383876946-2396-52-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 49/91] can: flexcan: fix mx28 detection by rearanging OF match table
+Date: Thu,  7 Nov 2013 18:15:04 -0800
+Message-Id: <1383876946-2396-50-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -27,56 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit f5563318ff1bde15b10e736e97ffce13be08bc1a upstream.
+commit e358784297992b012e8071764d996191dd2b1a54 upstream.
 
-When parsing an invalid radiotap header, the parser can overrun
-the buffer that is passed in because it doesn't correctly check
- 1) the minimum radiotap header size
- 2) the space for extended bitmaps
+The current implemetation of of_match_device() relies that the of_device_id
+table in the driver is sorted from most specific to least specific compatible.
 
-The first issue doesn't affect any in-kernel user as they all
-check the minimum size before calling the radiotap function.
-The second issue could potentially affect the kernel if an skb
-is passed in that consists only of the radiotap header with a
-lot of extended bitmaps that extend past the SKB. In that case
-a read-only buffer overrun by at most 4 bytes is possible.
+Without this patch the mx28 is detected as the less specific p1010. This leads
+to a p1010 specific workaround is activated on the mx28, which is not needed.
 
-Fix this by adding the appropriate checks to the parser.
-
-Reported-by: Evan Huus <eapache@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/wireless/radiotap.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/net/can/flexcan.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/wireless/radiotap.c b/net/wireless/radiotap.c
-index 7d604c0..a271c27 100644
---- a/net/wireless/radiotap.c
-+++ b/net/wireless/radiotap.c
-@@ -97,6 +97,10 @@ int ieee80211_radiotap_iterator_init(
- 	struct ieee80211_radiotap_header *radiotap_header,
- 	int max_length, const struct ieee80211_radiotap_vendor_namespaces *vns)
- {
-+	/* check the radiotap header can actually be present */
-+	if (max_length < sizeof(struct ieee80211_radiotap_header))
-+		return -EINVAL;
-+
- 	/* Linux only supports version 0 radiotap format */
- 	if (radiotap_header->it_version)
- 		return -EINVAL;
-@@ -131,7 +135,8 @@ int ieee80211_radiotap_iterator_init(
- 			 */
+diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+index 5817a39..4c90a27 100644
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -968,9 +968,9 @@ static void unregister_flexcandev(struct net_device *dev)
+ }
  
- 			if ((unsigned long)iterator->_arg -
--			    (unsigned long)iterator->_rtheader >
-+			    (unsigned long)iterator->_rtheader +
-+			    sizeof(uint32_t) >
- 			    (unsigned long)iterator->_max_length)
- 				return -EINVAL;
- 		}
+ static const struct of_device_id flexcan_of_match[] = {
+-	{ .compatible = "fsl,p1010-flexcan", .data = &fsl_p1010_devtype_data, },
+-	{ .compatible = "fsl,imx28-flexcan", .data = &fsl_imx28_devtype_data, },
+ 	{ .compatible = "fsl,imx6q-flexcan", .data = &fsl_imx6q_devtype_data, },
++	{ .compatible = "fsl,imx28-flexcan", .data = &fsl_imx28_devtype_data, },
++	{ .compatible = "fsl,p1010-flexcan", .data = &fsl_p1010_devtype_data, },
+ 	{ /* sentinel */ },
+ };
+ MODULE_DEVICE_TABLE(of, flexcan_of_match);
 -- 
 1.8.1.2
 
