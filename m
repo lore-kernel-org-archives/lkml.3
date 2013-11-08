@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab3KHNeh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 08:34:37 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56549 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756955Ab3KHNeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756973Ab3KHNeE (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 8 Nov 2013 08:34:04 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56540 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752933Ab3KHNeC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 08:34:02 -0500
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: cw00.choi@samsung.com
 Cc: myungjoo.ham@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
         patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
         Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH 4/4] extcon: arizona: Eliminate dead error handling code
-Date: Fri,  8 Nov 2013 13:19:43 +0000
-Message-Id: <1383916783-17921-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 3/4] extcon: arizona: Fix race with microphone detection and removal
+Date: Fri,  8 Nov 2013 13:19:42 +0000
+Message-Id: <1383916783-17921-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
@@ -22,46 +22,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As a small disclaimer I would personally prefer to not merge this patch.
-I have added it based on previous code review of the other patches in
-this chain.
-
-arizona_hpdet_do_id currently can only return 0 or -EAGAIN making the
-else if clause handling error codes redundant, this patch removes this
-clause.
-
-Whilst this clause is not currently hit removing it makes the code
-fragile. It will not be obvious whilst editing arizona_hpdet_do_id that
-you shouldn't add a return value other than 0 or -EAGAIN.
+The microphone detection code is run as delayed work to provide
+additional debounce, it is possible that the jack could have been
+removed by the time we process the microphone detection. Turn this
+case into a no op.
 
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/extcon/extcon-arizona.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/extcon/extcon-arizona.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index 0d70bf6..2313b1e 100644
+index cce24de..0d70bf6 100644
 --- a/drivers/extcon/extcon-arizona.c
 +++ b/drivers/extcon/extcon-arizona.c
-@@ -476,6 +476,9 @@ static int arizona_hpdet_read(struct arizona_extcon_info *info)
- 	return val;
- }
+@@ -782,6 +782,19 @@ static void arizona_micd_detect(struct work_struct *work)
  
-+/* This function should only return 0 or -EAGAIN, if other return values are
-+ * added additional handling should be added in arizona_hpdet_irq.
-+ */
- static int arizona_hpdet_do_id(struct arizona_extcon_info *info, int *reading,
- 			       bool *mic)
- {
-@@ -591,8 +594,6 @@ static irqreturn_t arizona_hpdet_irq(int irq, void *data)
- 	ret = arizona_hpdet_do_id(info, &reading, &mic);
- 	if (ret == -EAGAIN)
- 		goto out;
--	else if (ret < 0)
--		goto done;
+ 	mutex_lock(&info->lock);
  
- 	/* Report high impedence cables as line outputs */
- 	if (reading >= 5000)
++	/* If the cable was removed while measuring ignore the result */
++	ret = extcon_get_cable_state_(&info->edev, ARIZONA_CABLE_MECHANICAL);
++	if (ret < 0) {
++		dev_err(arizona->dev, "Failed to check cable state: %d\n",
++				ret);
++		mutex_unlock(&info->lock);
++		return;
++	} else if (!ret) {
++		dev_dbg(arizona->dev, "Ignoring MICDET for removed cable\n");
++		mutex_unlock(&info->lock);
++		return;
++	}
++
+ 	for (i = 0; i < 10 && !(val & MICD_LVL_0_TO_8); i++) {
+ 		ret = regmap_read(arizona->regmap, ARIZONA_MIC_DETECT_3, &val);
+ 		if (ret != 0) {
 -- 
 1.7.2.5
 
