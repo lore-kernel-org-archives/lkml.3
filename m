@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab3KHIUC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 03:20:02 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:60874 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743Ab3KHITz (ORCPT
+	id S1753207Ab3KHIXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 03:23:36 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:60882 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140Ab3KHIXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 03:19:55 -0500
-From: Mikael Pettersson <mikpelinux@gmail.com>
+	Fri, 8 Nov 2013 03:23:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <21116.40614.511367.579373@gargle.gargle.HOWL>
-Date: Fri, 8 Nov 2013 09:19:50 +0100
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Mikael Pettersson <mikpelinux@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG?] mtrr sanitizer fails on Latitude E6230
-In-Reply-To: <CAE9FiQWPBBug_TWOnQRsSbTpaNPL9v5SsU33Akg2D47c6stHSw@mail.gmail.com>
-References: <21114.2315.610902.200164@gargle.gargle.HOWL>
-	<CAE9FiQX3mGLmzFCyaHYPBA2QgvxBYr9zarXcUKa5DC0ZtiiWZw@mail.gmail.com>
-	<21115.20118.72541.74924@gargle.gargle.HOWL>
-	<CAE9FiQWPBBug_TWOnQRsSbTpaNPL9v5SsU33Akg2D47c6stHSw@mail.gmail.com>
-X-Mailer: VM 8.1.2 under 24.1.1 (x86_64-redhat-linux-gnu)
+In-Reply-To: <527B790B.4040200@linaro.org>
+References: <20131106110508.6806.48070.sendpatchset@w520>
+	<20131106110518.6806.79333.sendpatchset@w520>
+	<527B790B.4040200@linaro.org>
+Date: Fri, 8 Nov 2013 17:23:31 +0900
+Message-ID: <CANqRtoSn7=NeY2bSpacCXn6tKatn1S+CP3r-+mka91b0neJ4kw@mail.gmail.com>
+Subject: Re: [PATCH v2 01/03] clocksource: Add Kconfig entries for CMT, MTU2,
+ TMU and STI
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu writes:
- > On Thu, Nov 7, 2013 at 12:25 AM, Mikael Pettersson <mikpelinux@gmail.com> wrote:
- > > Yinghai Lu writes:
- > >  > On Wed, Nov 6, 2013 at 1:16 AM, Mikael Pettersson <mikpelinux@gmail.com> wrote:
- > >  > > I recently got a Dell Latitude E6230 (Ivy Bridge i7-3540M) and noticed that
- > >  > > the mtrr sanitizer failed on it:
- > >  > >
- > >  > > === snip ===
- > >  > > Linux version 3.12.0 (mikpe@barley) (gcc version 4.8.3 20131017 (prerelease) (GCC) ) #1 SMP Wed Nov 6 09:46:02 CET 2013
- > >  > > Command line: ro root=LABEL=/ resume=/dev/sda2 rd_NO_LUKS rd_NO_LVM rd_NO_MD rd_NO_DM LANG=en_US.UTF-8 SYSFONT=latarcyrheb-sun16 KEYTABLE=sv-latin1
- > >  > ...
- > >  > gran_size: 8M  chunk_size: 64M         num_reg: 9      lose cover RAM: 6M
- > >  > ...
- > >  > > mtrr_cleanup: can not find optimal value
- > >  > > please specify mtrr_gran_size/mtrr_chunk_size
- > >  > > === snip ===
- > >  > >
- > >  > > For now I'm disabling the mtrr sanitizer in this machine's kernel.
- > >  >
- > >  > Can you try to boot with "mtrr_gran_size=8m mtrr_chunk_size=64m" ?
- > >
- > > That results in:
- > >
- > > reg 0, base: 0GB, range: 8GB, type WB
- > > reg 1, base: 8GB, range: 512MB, type WB
- > > reg 2, base: 3584MB, range: 512MB, type UC
- > > reg 3, base: 3520MB, range: 64MB, type UC
- > > reg 4, base: 3512MB, range: 8MB, type UC
- > > reg 5, base: 8688MB, range: 16MB, type UC
- > > reg 6, base: 8680MB, range: 8MB, type UC
- > > reg 7, base: 8678MB, range: 2MB, type UC
- > > total RAM covered: 8094M
- > >  gran_size: 8M  chunk_size: 64M         num_reg: 9      lose cover RAM: 6M
- > > New variable MTRRs
- > > reg 0, base: 0GB, range: 2GB, type WB
- > > reg 1, base: 2GB, range: 1GB, type WB
- > > reg 2, base: 3GB, range: 256MB, type WB
- > > reg 3, base: 3328MB, range: 128MB, type WB
- > > reg 4, base: 3456MB, range: 64MB, type WB
- > > reg 5, base: 3512MB, range: 8MB, type UC
- > > reg 6, base: 4GB, range: 4GB, type WB
- > > reg 7, base: 8GB, range: 512MB, type WB
- > > reg 8, base: 8672MB, range: 32MB, type UC
- > > e820: update [mem 0xdb800000-0xffffffff] usable ==> reserved
- > > e820: update [mem 0x21e000000-0x21e5fffff] usable ==> reserved
- > ...
- > >> modified: [mem 0x000000021e000000-0x000000021e5fffff] reserved
- > 
- > that is right, it throw 6M away.
- > 
- > Did you notice any slowness or speeding for x window?
+On Thu, Nov 7, 2013 at 8:27 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> On 11/06/2013 12:05 PM, Magnus Damm wrote:
+>>
+>> From: Magnus Damm <damm@opensource.se>
+>>
+>> Add Kconfig entries for CMT, MTU2, TMU and STI to
+>> drivers/clocksource/Kconfig. This will allow us to
+>> get rid of duplicated entires in architecture code
+>> such as arch/sh and arch/arm/mach-shmobile.
+>>
+>> Signed-off-by: Magnus Damm <damm@opensource.se>
+>
+>
+> Hi Magnus,
+>
+> we are preventing to have selectable timer from this Kconfig.
+>
+> You should select the timers from the arch Kconfig option.
 
-I'm not noticing any change.  i915 kernel driver + xorg's intel driver.
+Thanks for your reply. In the case of ARM multiplatform this sounds
+like a good match, but I wonder what to do in the case of single
+platform ARM and the SH architecture. It would be nice to share the
+same Kconfig entries for both SH and all ARM variants.
 
- > What does /proc/mtrr look like after xwindow is started?
+As you can see, in this series the Kconfig is shared between SH and
+ARM mach-shmobile. Actually, on those platforms we don't treat the
+timers any differently than any other device driver and traditionally
+we have been allowing the user to select which timer to use as system
+timer via the kernel configuration. What is the reason behind your
+suggestion with the arch Kconfig selection? It seems to me that timers
+are being treated differently than any other device driver, but I'm
+not sure why that is the case.
 
-reg00: base=0x000000000 (    0MB), size= 2048MB, count=1: write-back
-reg01: base=0x080000000 ( 2048MB), size= 1024MB, count=1: write-back
-reg02: base=0x0c0000000 ( 3072MB), size=  256MB, count=1: write-back
-reg03: base=0x0d0000000 ( 3328MB), size=  128MB, count=1: write-back
-reg04: base=0x0d8000000 ( 3456MB), size=   64MB, count=1: write-back
-reg05: base=0x0db800000 ( 3512MB), size=    8MB, count=1: uncachable
-reg06: base=0x100000000 ( 4096MB), size= 4096MB, count=1: write-back
-reg07: base=0x200000000 ( 8192MB), size=  512MB, count=1: write-back
-reg08: base=0x21e000000 ( 8672MB), size=   32MB, count=1: uncachable
+Changing SH and ARM single/multi to select via the architecture
+Kconfig seems like a functional regression for single platforms to me.
+It is also not really in line with TWD and architected timers that are
+today selectable via the ARM Kconfig. Say that I would like to develop
+code for a certain timer on a SoC with multiple timers, how can I make
+sure the right timer is used? Perhaps you propose relying on the
+clocksource and clockevent ratings?
 
-/Mikael
+Cheers,
+
+/ magnus
