@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab3KHKJi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 05:09:38 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:41188 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666Ab3KHKJh (ORCPT
+	id S1756968Ab3KHKKW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 05:10:22 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:61877 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756792Ab3KHKKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 05:09:37 -0500
-From: Caizhiyong <caizhiyong@hisilicon.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Karel Zak <kzak@redhat.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Subject: RE: [PATCH 2/2]  mtd: cmdlinepart: use cmdline partition parser lib
-Thread-Topic: [PATCH 2/2]  mtd: cmdlinepart: use cmdline partition parser lib
-Thread-Index: AQHOzyiczXccMKf72E2y9hcK5+vClpoWzHYAgAQyg5D//6JCgIAAj5oA
-Date: Fri, 8 Nov 2013 09:58:19 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F1C08B2F6@szxeml512-mbs.china.huawei.com>
-References: <C3050A4DBA34F345975765E43127F10F1C0643B8@szxeml512-mbx.china.huawei.com>
- <20131020120603.GA18678@localhost>
- <C3050A4DBA34F345975765E43127F10F1C084C81@szxeml512-mbs.china.huawei.com>
- <20131105144328.fb5a6a1d423776b324771706@linux-foundation.org>
- <C3050A4DBA34F345975765E43127F10F1C08B274@szxeml512-mbs.china.huawei.com>
- <20131108091216.GA2365@localhost>
-In-Reply-To: <20131108091216.GA2365@localhost>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.67.223.36]
-Content-Type: text/plain; charset="utf-8"
+	Fri, 8 Nov 2013 05:10:17 -0500
+Message-ID: <527CB887.8090703@linaro.org>
+Date: Fri, 08 Nov 2013 11:10:15 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-arm-kernel@lists.infradead.org
+CC: linux-sh@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] clocksource: sh_mtu2: Release clock when sh_mtu2_register()
+ fails
+References: <1383000569-8916-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1383057045-22608-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+In-Reply-To: <1383057045-22608-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA8A9ipU005959
 
-> Such results was never posted and unless we see those, I think
-> I'd rather NACK this patch instead. I like the cleanup, but only
-> if it's guaranteed to _not_ brake things, specially when dealing
-> with a kernel parameter.
+On 10/29/2013 03:30 PM, Laurent Pinchart wrote:
+> Fix the probe error path to release the clock resource when the
+> sh_mtu2_register() call fails.
+>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-Do you have some test case or test standard for me perform.
+Applied in my tree as 3.13 fixes
 
-> --
-> Ezequiel GarcÃ­a, Free Electrons
-> Embedded Linux, Kernel and Android Engineering
-> http://free-electrons.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> ---
+>   drivers/clocksource/sh_mtu2.c | 11 +++++++++--
+>   1 file changed, 9 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
+> index 4aac9ee..e6cfb32 100644
+> --- a/drivers/clocksource/sh_mtu2.c
+> +++ b/drivers/clocksource/sh_mtu2.c
+> @@ -313,8 +313,15 @@ static int sh_mtu2_setup(struct sh_mtu2_priv *p, struct platform_device *pdev)
+>   		goto err1;
+>   	}
+>
+> -	return sh_mtu2_register(p, (char *)dev_name(&p->pdev->dev),
+> -				cfg->clockevent_rating);
+> +	ret = sh_mtu2_register(p, (char *)dev_name(&p->pdev->dev),
+> +			       cfg->clockevent_rating);
+> +	if (ret < 0)
+> +		goto err2;
+> +
+> +	return 0;
+> +
+> + err2:
+> +	clk_put(p->clk);
+>    err1:
+>   	iounmap(p->mapbase);
+>    err0:
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
