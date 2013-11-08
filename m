@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab3KHIkb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 03:40:31 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44914 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab3KHIka (ORCPT
+	id S1756720Ab3KHIky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 03:40:54 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:59566 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753720Ab3KHIkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 03:40:30 -0500
-Date: Fri, 8 Nov 2013 09:40:01 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>, Adrian Hunter <adrian.hunter@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V3 06/11] perf record: Add an option to force per-cpu
- mmaps
-Message-ID: <20131108084001.GG19203@twins.programming.kicks-ass.net>
-References: <1383313899-15987-1-git-send-email-adrian.hunter@intel.com>
- <1383313899-15987-7-git-send-email-adrian.hunter@intel.com>
- <20131104152942.GA4004@krava.brq.redhat.com>
- <5278AC36.1020702@intel.com>
- <20131105094220.GA1071@krava.brq.redhat.com>
- <5278EE0A.1080108@intel.com>
- <20131105133024.GE1071@krava.brq.redhat.com>
- <20131105142545.GD22912@ghostprotocols.net>
- <20131105173152.GB7329@ghostprotocols.net>
+	Fri, 8 Nov 2013 03:40:52 -0500
+Date: Fri, 8 Nov 2013 09:40:35 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Guenter Roeck <linux@roeck-us.net>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
+Message-ID: <20131108084035.GA4074@breakpoint.cc>
+References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
+ <20131106190152.GA8662@breakpoint.cc>
+ <20131106193041.GA26796@roeck-us.net>
+ <20131106203821.GC8662@breakpoint.cc>
+ <20131106211754.GA29300@roeck-us.net>
+ <20131107192558.GA11453@breakpoint.cc>
+ <4F47D5F8-F3C7-45CA-9D88-2D814BDC1BC7@antoniou-consulting.com>
+ <20131107204626.GA11746@breakpoint.cc>
+ <20131107230052.GC24450@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131105173152.GB7329@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131107230052.GC24450@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 02:31:52PM -0300, Arnaldo Carvalho de Melo wrote:
-> PeterZ,
+On 07.11.13, Guenter Roeck wrote:
+> > I am only saying that this "hot-plug a device at a non hot-plugagle bus at
+> > runtime" is not limited to DT but this solution is. X86 + ACPI is not
+> > the only limitation. ARM is (forced) going to ACPI as well as far I
+> > know. And this solution is limited to DT. This is what I am pointing
+> > out.
+> > 
+> I can't tell about ARM, but I am not entirely sure how ACPI support on ARM
+> is going to help us on powerpc.
+
+I'm not saying help. Just if you extend one firmware to solve a problem
+you need to do it again on an another firmware.
+
+> > > His use case is not uncommon, believe it or not, and x86 would benefit from
+> > > something this flexible.
+> > 
+> > I *think* a more flexible solution would be something like bus_type which is
+> > exposed via configfs. It would be attached behind a certain device/bus where
+> > the "physical" hotplug interface is. The user would then be able to read the
+> > configuration based on whatever information he has and could then create
+> > devices he likes at runtime. This wouldn't depend much on the firmware that is
+> > used but would require a little more work I think.
+> > 
+> Quite frankly, I am interested at a solution that works and solves our problems.
+> I am not looking for something that is 100% perfect and may never be delivered.
 > 
-> 	Can I have your Acked-by for this one? I guess now the goal is
-> achieved, no?
+> Fortunately, the Linux kernel was willing to adopt multiple different file
+> systems, and still accepts new ones on a regular basis. If a new file system
+> is better, it will start getting used, and old file systems are being phased out
+> as fewer people use them. I would hope the same should be possible with DT
+> overlays and possible other future solutions for the same problem, and that
+> we won't have to wait for the perfect solution from day 1.
 
-So this option allows -t/-p/-u to create one buffer per cpu and attach
-all the various thread/process/user tasks' their counters to that one
-buffer?
+don't argue about that. However you have to provide support for those
+things, they don't simply phase out. You still have support for reiserfs
+but I think a lot (likely not all) of the its users migrated away.
 
-As opposed to the current state where each such counter would have its
-own buffer.
+If you guys already talked about this and everyone agreed on this then I
+am not standing in your way, never was. I was just curious about the
+background for this.
 
-If this is what the patch does, then yes, although I would prefer a
-slightly clearer Changelog.
+> 
+> Guenter
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+Sebastian
