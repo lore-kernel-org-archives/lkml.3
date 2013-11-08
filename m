@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757236Ab3KHCVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:21:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34830 "EHLO
+	id S1757297Ab3KHC3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:29:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34822 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756529Ab3KHCV1 (ORCPT
+	with ESMTP id S1756584Ab3KHCVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:21:27 -0500
+	Thu, 7 Nov 2013 21:21:23 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: Bruno Randolf <br1@einfach.org>, Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 38/91] inet: fix possible memory corruption with UDP_CORK and UFO
-Date: Thu,  7 Nov 2013 18:14:53 -0800
-Message-Id: <1383876946-2396-39-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 41/91] cfg80211: fix warning when using WEXT for IBSS
+Date: Thu,  7 Nov 2013 18:14:56 -0800
+Message-Id: <1383876946-2396-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -29,83 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Bruno Randolf <br1@einfach.org>
 
-[ This is a simplified -stable version of a set of upstream commits. ]
+commit f478f33a93f9353dcd1fe55445343d76b1c3f84a upstream.
 
-This is a replacement patch only for stable which does fix the problems
-handled by the following two commits in -net:
+Fix kernel warning when using WEXT for configuring ad-hoc mode,
+e.g.  "iwconfig wlan0 essid test channel 1"
 
-"ip_output: do skb ufo init for peeked non ufo skb as well" (e93b7d748be887cd7639b113ba7d7ef792a7efb9)
-"ip6_output: do skb ufo init for peeked non ufo skb as well" (c547dbf55d5f8cf615ccc0e7265e98db27d3fb8b)
+WARNING: at net/wireless/chan.c:373 cfg80211_chandef_usable+0x50/0x21c [cfg80211]()
 
-Three frames are written on a corked udp socket for which the output
-netdevice has UFO enabled.  If the first and third frame are smaller than
-the mtu and the second one is bigger, we enqueue the second frame with
-skb_append_datato_frags without initializing the gso fields. This leads
-to the third frame appended regulary and thus constructing an invalid skb.
+The warning is caused by an uninitialized variable center_freq1.
 
-This fixes the problem by always using skb_append_datato_frags as soon
-as the first frag got enqueued to the skb without marking the packet
-as SKB_GSO_UDP.
-
-The problem with only two frames for ipv6 was fixed by "ipv6: udp
-packets following an UFO enqueued packet need also be handled by UFO"
-(2811ebac2521ceac84f2bdae402455baa6a7fb47).
-
-Cc: Jiri Pirko <jiri@resnulli.us>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Bruno Randolf <br1@einfach.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/skbuff.h | 5 +++++
- net/ipv4/ip_output.c   | 2 +-
- net/ipv6/ip6_output.c  | 2 +-
- 3 files changed, 7 insertions(+), 2 deletions(-)
+ net/wireless/ibss.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 24f93a1..db29f78 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -1252,6 +1252,11 @@ static inline int skb_pagelen(const struct sk_buff *skb)
- 	return len + skb_headlen(skb);
- }
+diff --git a/net/wireless/ibss.c b/net/wireless/ibss.c
+index 9b9551e..ceef854 100644
+--- a/net/wireless/ibss.c
++++ b/net/wireless/ibss.c
+@@ -269,6 +269,8 @@ int cfg80211_ibss_wext_join(struct cfg80211_registered_device *rdev,
+ 				if (chan->flags & IEEE80211_CHAN_DISABLED)
+ 					continue;
+ 				wdev->wext.ibss.chandef.chan = chan;
++				wdev->wext.ibss.chandef.center_freq1 =
++					chan->center_freq;
+ 				break;
+ 			}
  
-+static inline bool skb_has_frags(const struct sk_buff *skb)
-+{
-+	return skb_shinfo(skb)->nr_frags;
-+}
-+
- /**
-  * __skb_fill_page_desc - initialise a paged fragment in an skb
-  * @skb: buffer containing fragment to be initialised
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 11b2d78..fd5720b 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -844,7 +844,7 @@ static int __ip_append_data(struct sock *sk,
- 		csummode = CHECKSUM_PARTIAL;
- 
- 	cork->length += length;
--	if (((length > mtu) || (skb && skb_is_gso(skb))) &&
-+	if (((length > mtu) || (skb && skb_has_frags(skb))) &&
- 	    (sk->sk_protocol == IPPROTO_UDP) &&
- 	    (rt->dst.dev->features & NETIF_F_UFO) && !rt->dst.header_len) {
- 		err = ip_ufo_append_data(sk, queue, getfrag, from, length,
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 3ae7a5d..f477a89 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1271,7 +1271,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 	skb = skb_peek_tail(&sk->sk_write_queue);
- 	cork->length += length;
- 	if (((length > mtu) ||
--	     (skb && skb_is_gso(skb))) &&
-+	     (skb && skb_has_frags(skb))) &&
- 	    (sk->sk_protocol == IPPROTO_UDP) &&
- 	    (rt->dst.dev->features & NETIF_F_UFO)) {
- 		err = ip6_ufo_append_data(sk, getfrag, from, length,
+@@ -353,6 +355,7 @@ int cfg80211_ibss_wext_siwfreq(struct net_device *dev,
+ 	if (chan) {
+ 		wdev->wext.ibss.chandef.chan = chan;
+ 		wdev->wext.ibss.chandef.width = NL80211_CHAN_WIDTH_20_NOHT;
++		wdev->wext.ibss.chandef.center_freq1 = freq;
+ 		wdev->wext.ibss.channel_fixed = true;
+ 	} else {
+ 		/* cfg80211_ibss_wext_join will pick one if needed */
 -- 
 1.8.1.2
 
