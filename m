@@ -1,173 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453Ab3KHD7e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 22:59:34 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:46443 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753652Ab3KHD7b (ORCPT
+	id S1755936Ab3KHEI0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 23:08:26 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:62640 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab3KHEIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 22:59:31 -0500
-X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Nov 2013 22:59:31 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvYaABK/CFHO+Ip3/2dsb2JhbABEJrhWhhIXc4IfAQUnExsBIxALISUPBSUkE4gRwS2QKWEDiGGJeYMyiVCFHoFegxU
-X-IPAS-Result: AvYaABK/CFHO+Ip3/2dsb2JhbABEJrhWhhIXc4IfAQUnExsBIxALISUPBSUkE4gRwS2QKWEDiGGJeYMyiVCFHoFegxU
-X-IronPort-AV: E=Sophos;i="4.84,565,1355115600"; 
-   d="scan'208";a="37359027"
-Date: Thu, 7 Nov 2013 18:50:01 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>
-Subject: Re: [RFC] arch: Introduce new TSO memory barrier smp_tmb()
-Message-ID: <20131107235001.GA30034@Krystal>
-References: <20131101145634.GH19466@laptop.lan>
- <20131102173239.GB3947@linux.vnet.ibm.com>
- <20131103144017.GA25118@linux.vnet.ibm.com>
- <20131103151704.GJ19466@laptop.lan>
- <CA+55aFx_kuvR-0dwJtjvnhtha5QBc5XcLZPRH=WKT+hYVAKOrw@mail.gmail.com>
- <20131103200124.GK19466@laptop.lan>
- <20131103224242.GF3947@linux.vnet.ibm.com>
- <CA+55aFyD_kCkAHQwHCUBrumO-pH6LaZikTNvyWDW_tWsHdqk6Q@mail.gmail.com>
- <20131104105059.GL3947@linux.vnet.ibm.com>
- <20131104112254.GK28601@twins.programming.kicks-ass.net>
+	Thu, 7 Nov 2013 23:08:24 -0500
+Message-ID: <1383883695.21334.1.camel@phoenix>
+Subject: [PATCH RESEND] irqchip: sun4i: Don't write to read-only registers
+From: Axel Lin <axel.lin@ingics.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 08 Nov 2013 12:08:15 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <20131104112254.GK28601@twins.programming.kicks-ass.net>
-X-Editor: vi
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
+According to the datasheet[1], the Interrupt IRQ Pending Registers are
+read-only. The implementation of sun4i_irq_ack() is wrong because it writes
+to these read-only registers.
 
-[...]
+This patch removes the wrong irq_ack callback implementation and all the code
+writing to these read-only registers in sun4i_of_init().
 
-Hi Peter,
+[1] http://dl.linux-sunxi.org/A10/A10%20User%20Manual%20-%20v1.20%20%282012-04-09%2c%20DECRYPTED%29.pdf
 
-Looking at this simplified version of perf's ring buffer
-synchronization, I get concerned about the following issue:
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+Hi Thomas,
+This patch was sent on https://lkml.org/lkml/2013/7/6/59 with Maxime's Ack.
+And re-sent on https://lkml.org/lkml/2013/7/19/229
+I change the subject line as the patch does is to avoid writing to read-only
+registers.
 
-> /*
->  * One important detail is that the kbuf part and the kbuf_writer() are
->  * strictly per cpu and we can thus rely on program order for those.
->  *
->  * Only the userspace consumer can possibly run on another cpu, and thus we
->  * need to ensure data consistency for those.
->  */
-> 
-> struct buffer {
->         u64 size;
->         u64 tail;
->         u64 head;
->         void *data;
-> };
-> 
-> struct buffer *kbuf, *ubuf;
-> 
-> /*
->  * If there's space in the buffer; store the data @buf; otherwise
->  * discard it.
->  */
-> void kbuf_write(int sz, void *buf)
-> {
-> 	u64 tail, head, offset;
-> 
-> 	do {
-> 		tail = ACCESS_ONCE(ubuf->tail);
-> 		offset = head = kbuf->head;
-> 		if (CIRC_SPACE(head, tail, kbuf->size) < sz) {
-> 			/* discard @buf */
-> 			return;
-> 		}
-> 		head += sz;
-> 	} while (local_cmpxchg(&kbuf->head, offset, head) != offset)
-> 
+Axel
+ drivers/irqchip/irq-sun4i.c | 18 ------------------
+ 1 file changed, 18 deletions(-)
 
-Let's suppose we have a thread executing kbuf_write(), interrupted by an
-IRQ or NMI right after a successful local_cmpxchg() (space reservation
-in the buffer). If the nested execution context also calls kbuf_write(),
-it will therefore update ubuf->head (below) with the second reserved
-space, and only after that will it return to the original thread context
-and continue executing kbuf_write(), thus overwriting ubuf->head with
-the prior-to-last reserved offset.
-
-All this probably works OK most of the times, when we have an event flow
-guaranteeing that a following event will fix things up, but there
-appears to be a risk of losing events near the end of the trace when
-those are in nested execution contexts.
-
-Thoughts ?
-
-Thanks,
-
-Mathieu
-
->         /*
->          * Ensure that if we see the userspace tail (ubuf->tail) such
->          * that there is space to write @buf without overwriting data
->          * userspace hasn't seen yet, we won't in fact store data before
->          * that read completes.
->          */
-> 
->         smp_mb(); /* A, matches with D */
-> 
->         memcpy(kbuf->data + offset, buf, sz);
-> 
->         /*
->          * Ensure that we write all the @buf data before we update the
->          * userspace visible ubuf->head pointer.
->          */
->         smp_wmb(); /* B, matches with C */
-> 
->         ubuf->head = kbuf->head;
-> }
-> 
-> /*
->  * Consume the buffer data and update the tail pointer to indicate to
->  * kernel space there's 'free' space.
->  */
-> void ubuf_read(void)
-> {
->         u64 head, tail;
-> 
->         tail = ACCESS_ONCE(ubuf->tail);
->         head = ACCESS_ONCE(ubuf->head);
-> 
->         /*
->          * Ensure we read the buffer boundaries before the actual buffer
->          * data...
->          */
->         smp_rmb(); /* C, matches with B */
-> 
->         while (tail != head) {
->                 obj = ubuf->data + tail;
->                 /* process obj */
->                 tail += obj->size;
->                 tail %= ubuf->size;
->         }
-> 
->         /*
->          * Ensure all data reads are complete before we issue the
->          * ubuf->tail update; once that update hits, kbuf_write() can
->          * observe and overwrite data.
->          */
->         smp_mb(); /* D, matches with A */
-> 
->         ubuf->tail = tail;
-> }
-
+diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
+index a5438d8..29b75c0a 100644
+--- a/drivers/irqchip/irq-sun4i.c
++++ b/drivers/irqchip/irq-sun4i.c
+@@ -38,18 +38,6 @@ static struct irq_domain *sun4i_irq_domain;
+ 
+ static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
+ 
+-static void sun4i_irq_ack(struct irq_data *irqd)
+-{
+-	unsigned int irq = irqd_to_hwirq(irqd);
+-	unsigned int irq_off = irq % 32;
+-	int reg = irq / 32;
+-	u32 val;
+-
+-	val = readl(sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
+-	writel(val | (1 << irq_off),
+-	       sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
+-}
+-
+ static void sun4i_irq_mask(struct irq_data *irqd)
+ {
+ 	unsigned int irq = irqd_to_hwirq(irqd);
+@@ -76,7 +64,6 @@ static void sun4i_irq_unmask(struct irq_data *irqd)
+ 
+ static struct irq_chip sun4i_irq_chip = {
+ 	.name		= "sun4i_irq",
+-	.irq_ack	= sun4i_irq_ack,
+ 	.irq_mask	= sun4i_irq_mask,
+ 	.irq_unmask	= sun4i_irq_unmask,
+ };
+@@ -114,11 +101,6 @@ static int __init sun4i_of_init(struct device_node *node,
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(1));
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(2));
+ 
+-	/* Clear all the pending interrupts */
+-	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(0));
+-	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(1));
+-	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(2));
+-
+ 	/* Enable protection mode */
+ 	writel(0x01, sun4i_irq_base + SUN4I_IRQ_PROTECTION_REG);
+ 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+1.8.1.2
+
+
+
