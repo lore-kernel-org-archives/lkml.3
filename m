@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab3KHKNT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 05:13:19 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:36354 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757321Ab3KHKNG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 05:13:06 -0500
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>, linux-gpio@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH v5 7/7] ARM: davinci: da850 evm: add GPIO pinumux entries DT node
-Date: Fri,  8 Nov 2013 15:41:50 +0530
-Message-Id: <1383905510-31760-8-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1383905510-31760-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1383905510-31760-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S1756917Ab3KHKSK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 05:18:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36624 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756507Ab3KHKSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 05:18:06 -0500
+Date: Fri, 8 Nov 2013 11:18:01 +0100
+From: Jan Kara <jack@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH 2/4] irq_work: Provide a irq work that can be processed
+ on any cpu
+Message-ID: <20131108101801.GA6343@quack.suse.cz>
+References: <1383860919-1883-1-git-send-email-jack@suse.cz>
+ <1383860919-1883-3-git-send-email-jack@suse.cz>
+ <CAFTL4hxLXb3hZacx_EdHeKZVfrpuyGoNqpGbX997XJx0UJSwyg@mail.gmail.com>
+ <20131107221904.GB2054@quack.suse.cz>
+ <20131107222311.GA28130@localhost.localdomain>
+ <20131107225034.GD2054@quack.suse.cz>
+ <20131107225408.GD28130@localhost.localdomain>
+ <20131107230111.GF2054@quack.suse.cz>
+ <20131107183142.4ae4345e@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131107183142.4ae4345e@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KV Sujith <sujithkv@ti.com>
+On Thu 07-11-13 18:31:42, Steven Rostedt wrote:
+> On Fri, 8 Nov 2013 00:01:11 +0100
+> Jan Kara <jack@suse.cz> wrote:
+> 
+> > On Thu 07-11-13 23:54:10, Frederic Weisbecker wrote:
+> 
+> > > So if the current CPU can handle it, what is the problem?
+> >   I hope this gets cleared out in my other email. But to make sure: If
+> > other CPUs are idle (i.e. not appending to the printk buffer), we can well
+> > handle the printing on the current CPU (with some breaks to allow
+> > interrupts to be served etc.). If other CPUs are also appending to printk
+> > buffer, that's where we really want to push the work to other CPUs.
+> 
+> I guess the question is, how does it migrate? I guess that's not so
+> clear. Or do you just hope that the timer tick on another CPU will come
+> in first and finish the job for you? As the list is global and all CPUs
+> get to see it.
+  There are two possibilities how the migration can happen:
+1) a tick happens first on some other cpu and thus it will pick up the work
+2) a printk happens first on some other cpu and thus it will pick printing
+   in its console_unlock() call.
 
-Add GPIO DT node and pinmux entries for DA850 EVM. GPIO is
-configurable differently on different boards. So add GPIO
-pinmuxing in dts file.
+  I agree in both cases we depend on statistics, there's no real guarantee
+the migration happens. But in my testing this seems to be enough.
 
-Signed-off-by: KV Sujith <sujithkv@ti.com>
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- arch/arm/boot/dts/da850-evm.dts |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
-
-diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-index 588ce58..f82c129 100644
---- a/arch/arm/boot/dts/da850-evm.dts
-+++ b/arch/arm/boot/dts/da850-evm.dts
-@@ -17,6 +17,21 @@
- 	soc {
- 		pmx_core: pinmux@1c14120 {
- 			status = "okay";
-+
-+			gpio_pins: pinmux_gpio_pins {
-+				pinctrl-single,bits = <
-+					/* GPIO2_4 GPIO2_6 */
-+					0x18 0x00008080 0x0000f0f0
-+					/* GPIO2_8 GPIO2_15 */
-+					0x14 0x80000008 0xf000000f
-+					/* GPIO3_12 GPIO3_13 */
-+					0x1C 0x00008800 0x0000ff00
-+					/* GPIO4_0 GPIO4_1 */
-+					0x28 0x88000000 0xff000000
-+					/* GPIO6_9 GPIO6_10 GPIO6_13 */
-+					0x34 0x08800800 0x0ff00f00
-+				>;
-+			};
- 		};
- 		serial0: serial@1c42000 {
- 			status = "okay";
-@@ -101,6 +116,11 @@
- 			pinctrl-names = "default";
- 			pinctrl-0 = <&mii_pins>;
- 		};
-+		gpio: gpio@1e26000 {
-+			status = "okay";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&gpio_pins>;
-+		};
- 	};
- 	nand_cs3@62000000 {
- 		status = "okay";
+								Honza
 -- 
-1.7.9.5
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
