@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab3KHA4R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 19:56:17 -0500
-Received: from mga03.intel.com ([143.182.124.21]:36668 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754261Ab3KHA4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 19:56:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="318511043"
-From: "Keller, Jacob E" <jacob.e.keller@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Daniel Borkmann <dborkman@redhat.com>, Andrey Vagin <avagin@openvz.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Alexei Starovoitov" <ast@plumgrid.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "stable@vger.kernel.org.#.3.12" <stable@vger.kernel.org.#.3.12>
-Subject: Re: [PATCH] net: don't forget to free sk_filter
-Thread-Topic: [PATCH] net: don't forget to free sk_filter
-Thread-Index: AQHO2w35HCJlCwMu/UG0+qQ8VmHOjpoZGi8AgAACggCAAe3tAA==
-Date: Fri, 8 Nov 2013 00:56:09 +0000
-Message-ID: <1383872168.9330.23.camel@jekeller-desk1.amr.corp.intel.com>
-References: <1383753106-26978-1-git-send-email-avagin@openvz.org>
-	 <527A9638.4020404@redhat.com>
-	 <1383766098.21999.2.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1383766098.21999.2.camel@edumazet-glaptop2.roam.corp.google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [134.134.173.156]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <606FFAAEF723A84EA3CA2B3D92D8AEB5@intel.com>
+	id S1756565Ab3KHA4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 19:56:37 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:63701 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756056Ab3KHA4f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 19:56:35 -0500
+X-Spam-Score: -100.8
+Message-ID: <527C373F.5050009@asianux.com>
+Date: Fri, 08 Nov 2013 08:58:39 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: josh@freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] kernel/rcutorture.c: be sure of enough memory for
+ result printing
+References: <525C9256.5010002@asianux.com> <525C9FAE.4090209@asianux.com> <20131015082613.GG5790@linux.vnet.ibm.com> <525D35E9.3000604@asianux.com> <20131015144732.GG9150@linux.vnet.ibm.com> <525DF4F0.3070901@asianux.com> <525F3830.2060001@asianux.com> <5264C0DD.9060006@asianux.com> <20131106203859.GO18245@linux.vnet.ibm.com> <527AFB41.5050803@asianux.com> <20131107205930.GV18245@linux.vnet.ibm.com>
+In-Reply-To: <20131107205930.GV18245@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA80uM5i003126
 
-On Wed, 2013-11-06 at 11:28 -0800, Eric Dumazet wrote:
-> On Wed, 2013-11-06 at 20:19 +0100, Daniel Borkmann wrote:
-> 
-> > When you send v2 with Alexei's feedback, please also be more specific
-> > in your subject like "net: x86: bpf: don't forget to free sk_filter"
-> > or the like. Also it's enough to say 'This memory leak was introduced
-> > by commit d45ed4a4e3 ("net: fix unsafe set_memory_rw from softirq")'
-> > instead of copying the whole log. Anyways, for v2 with feedback included
-> > then:
-> 
-> Actually, the new way [1] of doing this would be to use the 'Fixes:' tag
-> as in :
-> 
-> Fixes: <12 digits SHA1> ("net: fix unsafe set_memory_rw from softirq")
-> 
-> [1] As discussed at last Kernel Summit
-> 
-> Example in 
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6920a1bd037374a632d585de127b6f945199dcb8
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On 11/08/2013 04:59 AM, Paul E. McKenney wrote:
+> On Thu, Nov 07, 2013 at 10:30:25AM +0800, Chen Gang wrote:
+>> > If the contents is more than 4096 bytes (e.g. if have 1K cpus), current
+>> > sprintf() will cause memory overflow. And this fix patch is to be sure
+>> > of memory large enough.
+>> > 
+>> > Benefit:
+>> > 
+>> >  - do not truncate printing contents.
+>> >  - extensible, it is large enough for printing various related contents.
+>> >  - simple and clear enough for both source code readers and writers.
+>> > 
+>> > Shortcoming:
+>> > 
+>> >  - It will waste some memory:
+>> > 
+>> >     1 cpu now comsumes 50 - 60 bytes, and this patch provides 200 bytes.
+>> >     global printing now comsumes a few KB, and this patch provide 8KB,
+>> >     so for 1K cpus, it may waste 100 - 200 KB memory.
+>> > 
+>> >    after finish printing, it will free the related memory, quickly.
+>> >    it is a test module, so wast a little memory for extensible is OK.
+>> > 
+>> > Related  test (Fedora16 2 CPUs, 2GB RAM x86_64)
+>> > 
+>> >  - as module, with/without "torture_type=srcu".
+>> >  - build-in not boot runnable, with/without "torture_type=srcu".
+>> >  - build-in let boot runnable, with/without "torture_type=srcu".
+>> > 
+>> > 
+>> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> Thank you, queued for 3.14.
 
-Has there been any mention of a forthcoming patch
-to ./Documentation/SubmittingPatches which documents this?
+Thank you too.
 
-Thanks,
-Jake
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Chen Gang
