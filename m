@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab3KHPJu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 10:09:50 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:48143 "EHLO
+	id S1757709Ab3KHPKO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 10:10:14 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:48254 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757161Ab3KHPJs (ORCPT
+	with ESMTP id S1757471Ab3KHPKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 10:09:48 -0500
+	Fri, 8 Nov 2013 10:10:12 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: <linux-arm-kernel@lists.infradead.org>, <herbert@gondor.hengli.com.au>,
         <linux-crypto@vger.kernel.org>
 CC: <linux-kernel@vger.kernel.org>, <eric@eukrea.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH RESEND 4/7] crypto: atmel-aes - add support for Device Tree
-Date: Fri, 8 Nov 2013 16:08:13 +0100
-Message-ID: <334fd77d7cadb130e742c2bc6d2a0f431a4302e6.1383922546.git.nicolas.ferre@atmel.com>
+Subject: [PATCH RESEND 5/7] crypto: atmel-tdes - add support for Device Tree
+Date: Fri, 8 Nov 2013 16:08:14 +0100
+Message-ID: <a0fb62f3ceeb32f9e2cd0ab7ca75d2fb7d0608b5.1383922546.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.8.2.2
 In-Reply-To: <cover.1383922546.git.nicolas.ferre@atmel.com>
 References: <cover.1383922546.git.nicolas.ferre@atmel.com>
@@ -25,7 +25,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Add support for Device Tree and use of the DMA DT API to
-get the needed channels.
+get the channels if needed.
 Documentation is added for these DT nodes.
 
 Initial code by: Nicolas Royer and Eukrea.
@@ -33,43 +33,44 @@ Initial code by: Nicolas Royer and Eukrea.
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
  .../devicetree/bindings/crypto/atmel-crypto.txt    |  23 ++++
- drivers/crypto/atmel-aes.c                         | 143 ++++++++++++++-------
+ drivers/crypto/atmel-tdes.c                        | 143 ++++++++++++++-------
  2 files changed, 117 insertions(+), 49 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/crypto/atmel-crypto.txt
 
 diff --git a/Documentation/devicetree/bindings/crypto/atmel-crypto.txt b/Documentation/devicetree/bindings/crypto/atmel-crypto.txt
-new file mode 100644
-index 0000000..d273f0b
---- /dev/null
+index d273f0b..9a24fd9 100644
+--- a/Documentation/devicetree/bindings/crypto/atmel-crypto.txt
 +++ b/Documentation/devicetree/bindings/crypto/atmel-crypto.txt
-@@ -0,0 +1,23 @@
-+* Atmel HW cryptographic accelerators
+@@ -21,3 +21,26 @@ aes@f8038000 {
+ 	dmas = <&dma1 2 18>,
+ 	       <&dma1 2 19>;
+ 	dma-names = "tx", "rx";
 +
-+These are the HW cryptographic accelerators found on some Atmel products.
-+
-+* Advanced Encryption Standard (AES)
++* Triple Data Encryption Standard (Triple DES)
 +
 +Required properties:
-+- compatible : Should be "atmel,at91sam9g46-aes".
-+- reg: Should contain AES registers location and length.
-+- interrupts: Should contain the IRQ line for the AES.
++- compatible : Should be "atmel,at91sam9g46-tdes".
++- reg: Should contain TDES registers location and length.
++- interrupts: Should contain the IRQ line for the TDES.
++
++Optional properties:
 +- dmas: List of two DMA specifiers as described in
 +        atmel-dma.txt and dma.txt files.
 +- dma-names: Contains one identifier string for each DMA specifier
 +             in the dmas property.
 +
 +Example:
-+aes@f8038000 {
-+	compatible = "atmel,at91sam9g46-aes";
-+	reg = <0xf8038000 0x100>;
-+	interrupts = <43 4 0>;
-+	dmas = <&dma1 2 18>,
-+	       <&dma1 2 19>;
++tdes@f803c000 {
++	compatible = "atmel,at91sam9g46-tdes";
++	reg = <0xf803c000 0x100>;
++	interrupts = <44 4 0>;
++	dmas = <&dma1 2 20>,
++	       <&dma1 2 21>;
 +	dma-names = "tx", "rx";
-diff --git a/drivers/crypto/atmel-aes.c b/drivers/crypto/atmel-aes.c
-index c1efd91..d7c9e31 100644
---- a/drivers/crypto/atmel-aes.c
-+++ b/drivers/crypto/atmel-aes.c
++};
+diff --git a/drivers/crypto/atmel-tdes.c b/drivers/crypto/atmel-tdes.c
+index 4a99564..6cde5b5 100644
+--- a/drivers/crypto/atmel-tdes.c
++++ b/drivers/crypto/atmel-tdes.c
 @@ -30,6 +30,7 @@
  #include <linux/irq.h>
  #include <linux/scatterlist.h>
@@ -78,16 +79,8 @@ index c1efd91..d7c9e31 100644
  #include <linux/delay.h>
  #include <linux/crypto.h>
  #include <linux/cryptohash.h>
-@@ -39,6 +40,7 @@
- #include <crypto/hash.h>
- #include <crypto/internal/hash.h>
- #include <linux/platform_data/crypto-atmel.h>
-+#include <dt-bindings/dma/at91.h>
- #include "atmel-aes-regs.h"
- 
- #define CFB8_BLOCK_SIZE		1
-@@ -747,59 +749,50 @@ static int atmel_aes_dma_init(struct atmel_aes_dev *dd,
- 	struct crypto_platform_data *pdata)
+@@ -716,59 +717,50 @@ static int atmel_tdes_dma_init(struct atmel_tdes_dev *dd,
+ 			struct crypto_platform_data *pdata)
  {
  	int err = -ENOMEM;
 -	dma_cap_mask_t mask_in, mask_out;
@@ -98,33 +91,33 @@ index c1efd91..d7c9e31 100644
 +
 +	/* Try to grab 2 DMA channels */
 +	dd->dma_lch_in.chan = dma_request_slave_channel_compat(mask,
-+			atmel_aes_filter, &pdata->dma_slave->rxdata, dd->dev, "tx");
++			atmel_tdes_filter, &pdata->dma_slave->rxdata, dd->dev, "tx");
 +	if (!dd->dma_lch_in.chan)
 +		goto err_dma_in;
 +
 +	dd->dma_lch_in.dma_conf.direction = DMA_MEM_TO_DEV;
 +	dd->dma_lch_in.dma_conf.dst_addr = dd->phys_base +
-+		AES_IDATAR(0);
-+	dd->dma_lch_in.dma_conf.src_maxburst = dd->caps.max_burst_size;
++		TDES_IDATA1R;
++	dd->dma_lch_in.dma_conf.src_maxburst = 1;
 +	dd->dma_lch_in.dma_conf.src_addr_width =
 +		DMA_SLAVE_BUSWIDTH_4_BYTES;
-+	dd->dma_lch_in.dma_conf.dst_maxburst = dd->caps.max_burst_size;
++	dd->dma_lch_in.dma_conf.dst_maxburst = 1;
 +	dd->dma_lch_in.dma_conf.dst_addr_width =
 +		DMA_SLAVE_BUSWIDTH_4_BYTES;
 +	dd->dma_lch_in.dma_conf.device_fc = false;
 +
 +	dd->dma_lch_out.chan = dma_request_slave_channel_compat(mask,
-+			atmel_aes_filter, &pdata->dma_slave->txdata, dd->dev, "rx");
++			atmel_tdes_filter, &pdata->dma_slave->txdata, dd->dev, "rx");
 +	if (!dd->dma_lch_out.chan)
 +		goto err_dma_out;
 +
 +	dd->dma_lch_out.dma_conf.direction = DMA_DEV_TO_MEM;
 +	dd->dma_lch_out.dma_conf.src_addr = dd->phys_base +
-+		AES_ODATAR(0);
-+	dd->dma_lch_out.dma_conf.src_maxburst = dd->caps.max_burst_size;
++		TDES_ODATA1R;
++	dd->dma_lch_out.dma_conf.src_maxburst = 1;
 +	dd->dma_lch_out.dma_conf.src_addr_width =
 +		DMA_SLAVE_BUSWIDTH_4_BYTES;
-+	dd->dma_lch_out.dma_conf.dst_maxburst = dd->caps.max_burst_size;
++	dd->dma_lch_out.dma_conf.dst_maxburst = 1;
 +	dd->dma_lch_out.dma_conf.dst_addr_width =
 +		DMA_SLAVE_BUSWIDTH_4_BYTES;
 +	dd->dma_lch_out.dma_conf.device_fc = false;
@@ -137,18 +130,18 @@ index c1efd91..d7c9e31 100644
 -		dma_cap_set(DMA_SLAVE, mask_in);
 -
 -		dd->dma_lch_in.chan = dma_request_channel(mask_in,
--				atmel_aes_filter, &pdata->dma_slave->rxdata);
+-				atmel_tdes_filter, &pdata->dma_slave->rxdata);
 -
 -		if (!dd->dma_lch_in.chan)
 -			goto err_dma_in;
 -
 -		dd->dma_lch_in.dma_conf.direction = DMA_MEM_TO_DEV;
 -		dd->dma_lch_in.dma_conf.dst_addr = dd->phys_base +
--			AES_IDATAR(0);
--		dd->dma_lch_in.dma_conf.src_maxburst = dd->caps.max_burst_size;
+-			TDES_IDATA1R;
+-		dd->dma_lch_in.dma_conf.src_maxburst = 1;
 -		dd->dma_lch_in.dma_conf.src_addr_width =
 -			DMA_SLAVE_BUSWIDTH_4_BYTES;
--		dd->dma_lch_in.dma_conf.dst_maxburst = dd->caps.max_burst_size;
+-		dd->dma_lch_in.dma_conf.dst_maxburst = 1;
 -		dd->dma_lch_in.dma_conf.dst_addr_width =
 -			DMA_SLAVE_BUSWIDTH_4_BYTES;
 -		dd->dma_lch_in.dma_conf.device_fc = false;
@@ -156,18 +149,18 @@ index c1efd91..d7c9e31 100644
 -		dma_cap_zero(mask_out);
 -		dma_cap_set(DMA_SLAVE, mask_out);
 -		dd->dma_lch_out.chan = dma_request_channel(mask_out,
--				atmel_aes_filter, &pdata->dma_slave->txdata);
+-				atmel_tdes_filter, &pdata->dma_slave->txdata);
 -
 -		if (!dd->dma_lch_out.chan)
 -			goto err_dma_out;
 -
 -		dd->dma_lch_out.dma_conf.direction = DMA_DEV_TO_MEM;
 -		dd->dma_lch_out.dma_conf.src_addr = dd->phys_base +
--			AES_ODATAR(0);
--		dd->dma_lch_out.dma_conf.src_maxburst = dd->caps.max_burst_size;
+-			TDES_ODATA1R;
+-		dd->dma_lch_out.dma_conf.src_maxburst = 1;
 -		dd->dma_lch_out.dma_conf.src_addr_width =
 -			DMA_SLAVE_BUSWIDTH_4_BYTES;
--		dd->dma_lch_out.dma_conf.dst_maxburst = dd->caps.max_burst_size;
+-		dd->dma_lch_out.dma_conf.dst_maxburst = 1;
 -		dd->dma_lch_out.dma_conf.dst_addr_width =
 -			DMA_SLAVE_BUSWIDTH_4_BYTES;
 -		dd->dma_lch_out.dma_conf.device_fc = false;
@@ -185,18 +178,18 @@ index c1efd91..d7c9e31 100644
  	return err;
  }
  
-@@ -1261,6 +1254,47 @@ static void atmel_aes_get_cap(struct atmel_aes_dev *dd)
+@@ -1317,6 +1309,47 @@ static void atmel_tdes_get_cap(struct atmel_tdes_dev *dd)
  	}
  }
  
 +#if defined(CONFIG_OF)
-+static const struct of_device_id atmel_aes_dt_ids[] = {
-+	{ .compatible = "atmel,at91sam9g46-aes" },
++static const struct of_device_id atmel_tdes_dt_ids[] = {
++	{ .compatible = "atmel,at91sam9g46-tdes" },
 +	{ /* sentinel */ }
 +};
-+MODULE_DEVICE_TABLE(of, atmel_aes_dt_ids);
++MODULE_DEVICE_TABLE(of, atmel_tdes_dt_ids);
 +
-+static struct crypto_platform_data *atmel_aes_of_init(struct platform_device *pdev)
++static struct crypto_platform_data *atmel_tdes_of_init(struct platform_device *pdev)
 +{
 +	struct device_node *np = pdev->dev.of_node;
 +	struct crypto_platform_data *pdata;
@@ -223,47 +216,47 @@ index c1efd91..d7c9e31 100644
 +
 +	return pdata;
 +}
-+#else
-+static inline struct crypto_platform_data *atmel_aes_of_init(struct platform_device *pdev)
++#else /* CONFIG_OF */
++static inline struct crypto_platform_data *atmel_tdes_of_init(struct platform_device *pdev)
 +{
 +	return ERR_PTR(-EINVAL);
 +}
 +#endif
 +
- static int atmel_aes_probe(struct platform_device *pdev)
+ static int atmel_tdes_probe(struct platform_device *pdev)
  {
- 	struct atmel_aes_dev *aes_dd;
-@@ -1272,6 +1306,14 @@ static int atmel_aes_probe(struct platform_device *pdev)
- 
- 	pdata = pdev->dev.platform_data;
- 	if (!pdata) {
-+		pdata = atmel_aes_of_init(pdev);
-+		if (IS_ERR(pdata)) {
-+			err = PTR_ERR(pdata);
-+			goto aes_dd_err;
+ 	struct atmel_tdes_dev *tdes_dd;
+@@ -1399,13 +1432,24 @@ static int atmel_tdes_probe(struct platform_device *pdev)
+ 	if (tdes_dd->caps.has_dma) {
+ 		pdata = pdev->dev.platform_data;
+ 		if (!pdata) {
+-			dev_err(&pdev->dev, "platform data not available\n");
++			pdata = atmel_tdes_of_init(pdev);
++			if (IS_ERR(pdata)) {
++				dev_err(&pdev->dev, "platform data not available\n");
++				err = PTR_ERR(pdata);
++				goto err_pdata;
++			}
 +		}
-+	}
++		if (!pdata->dma_slave) {
+ 			err = -ENXIO;
+ 			goto err_pdata;
+ 		}
+ 		err = atmel_tdes_dma_init(tdes_dd, pdata);
+ 		if (err)
+ 			goto err_tdes_dma;
 +
-+	if (!pdata->dma_slave) {
- 		err = -ENXIO;
- 		goto aes_dd_err;
++		dev_info(dev, "using %s, %s for DMA transfers\n",
++				dma_chan_name(tdes_dd->dma_lch_in.chan),
++				dma_chan_name(tdes_dd->dma_lch_out.chan));
  	}
-@@ -1358,7 +1400,9 @@ static int atmel_aes_probe(struct platform_device *pdev)
- 	if (err)
- 		goto err_algs;
  
--	dev_info(dev, "Atmel AES\n");
-+	dev_info(dev, "Atmel AES - Using %s, %s for DMA transfers\n",
-+			dma_chan_name(aes_dd->dma_lch_in.chan),
-+			dma_chan_name(aes_dd->dma_lch_out.chan));
- 
- 	return 0;
- 
-@@ -1424,6 +1468,7 @@ static struct platform_driver atmel_aes_driver = {
+ 	spin_lock(&atmel_tdes.lock);
+@@ -1487,6 +1531,7 @@ static struct platform_driver atmel_tdes_driver = {
  	.driver		= {
- 		.name	= "atmel_aes",
+ 		.name	= "atmel_tdes",
  		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(atmel_aes_dt_ids),
++		.of_match_table = of_match_ptr(atmel_tdes_dt_ids),
  	},
  };
  
