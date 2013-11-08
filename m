@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab3KHKZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 05:25:59 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59388 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab3KHKZ4 (ORCPT
+	id S1756992Ab3KHK01 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 05:26:27 -0500
+Received: from benson.vm.bytemark.co.uk ([212.110.190.137]:43705 "EHLO
+	benson.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756922Ab3KHK0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 05:25:56 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <527CBC05.6080505@jp.fujitsu.com>
-Date: Fri, 8 Nov 2013 19:25:09 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <matt.fleming@intel.com>, <matthew.garrett@nebula.com>,
-        <jlee@suse.com>
-Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia parameter
- to efi_storage_paranoia
-References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at> <527CB013.30200@jp.fujitsu.com> <527CB0F4.8080606@nod.at>
-In-Reply-To: <527CB0F4.8080606@nod.at>
-Content-Type: text/plain; charset="ISO-2022-JP"
+	Fri, 8 Nov 2013 05:26:25 -0500
+Message-ID: <1383906355.3189.77.camel@kazak.uk.xensource.com>
+Subject: Re: [linux-sunxi] [PATCH 2/2] ARM: sun6i: Add SMP support for the
+ Allwinner A31
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-kernel@vger.kernel.org
+Date: Fri, 08 Nov 2013 10:25:55 +0000
+In-Reply-To: <20131108084056.GB26440@lukather>
+References: <1383471013-21695-1-git-send-email-maxime.ripard@free-electrons.com>
+	 <1383471013-21695-3-git-send-email-maxime.ripard@free-electrons.com>
+	 <1383583997.8826.123.camel@kazak.uk.xensource.com>
+	 <20131108084056.GB26440@lukather>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/08 18:37), Richard Weinberger wrote:
-> Am 08.11.2013 10:34, schrieb Yasuaki Ishimatsu:
->> (2013/11/08 17:05), Richard Weinberger wrote:
->>> Am 08.11.2013 08:33, schrieb Yasuaki Ishimatsu:
->>>> By following works, my system very often fails set_variable() to set new
->>>> variable to efi variable storage and shows "efivars: set_variable() failed:
->>>> status=-28" message.
->>>>
->>>> - commit 31ff2f20d9003e74991d135f56e503fe776c127c
->>>>       efi: Distinguish between "remaining space" and actually used space
->>>> - commit 8c58bf3eec3b8fc8162fe557e9361891c20758f2
->>>>       x86,efi: Implement efi_no_storage_paranoia parameter
->>>> - commit f8b8404337de4e2466e2e1139ea68b1f8295974f
->>>>       Modify UEFI anti-bricking code
->>>>
->>>> When booting my system, remaining space of efi variable storage is about
->>>> 5KB. So there is no room that sets a new variable to the storage.
->>>>
->>>> According to above works, efi_no_storage_paranoia parameter was prepared
->>>> for sane UEFI which can do gc and fulfills spec. But why need a system
->>>> with a sane UEFI set the parameter? It is wrong. A system with a broken
->>>> UEFI should set the parameter.
->>>
->>> And how does one know that his UEFI is broken?
->>
->> I have no idea. But at least, bricked board is broken UEFI.
->> Do you know the issue occurs on several boards or specific board?
+On Fri, 2013-11-08 at 09:40 +0100, Maxime Ripard wrote:
+> > I'm trying to work out if we can make this work with the requirement
+> > which both Xen and KVM have to enter the kernel in NS-HYP mode.
+> > 
+> > The way this works on e.g. vexpress is (roughly) that u-boot wakes up
+> > the secondary CPUs from the lowlevel firmware and places them into its
+> > own holding pen, which has the same wake up protocol as the firmware so
+> > the kernel can just use the same code. If u-boot never gets to run on
+> > secondary CPUs that isn't going to help much. 
+> > 
+> > My concern is that the sequence here appears to involve resetting the
+> > secondary CPU, which I figure will probably defeat that strategy by
+> > kicking the CPU back into the lowlevel firmware in the reset state,
+> > meaning it can't be done by a u-boot only change.
 > 
-> On *many* boards including laptops....
-> Please read the history of the whole issue.
+> I think this is where we're headed for the A20, Marc was interested in
+> doing that,
 
-Thank you for your comment.
-I has read git log. But there is no information like this.
-So I will read them of related threads again. Do you know good threads
-to know the history of the issue?
+Marc Zyngier is that?
+
+>  since we already have pretty much this in u-boot already,
+> however, this is not the case for the A31.
+
+> As far as I know, the Allwinner's bootloader that we currently use
+> isn't bringing up the secondary CPUs, and we don't have any port of
+> some sort of u-boot yet that we could work on.
+
+Ah, OK. I'd assumed that A20 and A31 (indeed, most sunxi platforms) were
+mostly equivalent as far as u-boot support went.
+
+> So, I guess we don't really have much choice in that case, even though
+> eventually I'd like to have this for the A31 too.
+
+Right, I suppose it makes sense to consider what we want to do on the
+A20 now and keep in mind that A31 may want to follow in the future.
+
+> > Hrm, what to do ... perhaps a DT driven selection between this mechanism
+> > and sev to kick a wfe loop reading the private register?
+> 
+> We can discuss this whenever we will actually have that choice to
+> make, but maybe a kernel parameter would be better?
+
+I don't think so -- u-boot would then have to munge the command line to
+say that it had/had not brought up secondaries. DTB seems more natural
+to me. e.g. on ARMv8 there is already a requirement to provide a per-CPU
+property describing the bringup protocol ("PSCI" and "spintable" are the
+options there).
+
+Anyway, once I get to the point of being able to do something I'll
+coordinate with Marc etc and figure out what to do. In the meantime I
+think having the kernel do the bringup (like this patch does) is
+sensible. It's very likely to be what we want to do in the absence of
+any instruction to the contrary (DTB or otherwise) in the future anyway.
 
 Thanks,
-Yasuaki Ishimatsu
 
-> 
-> Thanks,
-> //richard
-> 
+Ian.
 
 
