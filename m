@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab3KHK3D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 05:29:03 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:65534 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756967Ab3KHK27 (ORCPT
+	id S1757229Ab3KHK30 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 05:29:26 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48547 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757056Ab3KHK3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 05:28:59 -0500
-Date: Fri, 8 Nov 2013 10:28:53 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, rob@landley.net
-Subject: Re: [PATCH 1/1] Documentation/mfd: Fix typos in s2mps11.txt
-Message-ID: <20131108102853.GV30901@lee--X1>
-References: <1383634640-26869-1-git-send-email-sachin.kamat@linaro.org>
+	Fri, 8 Nov 2013 05:29:20 -0500
+Message-ID: <527CBCE4.3080106@oracle.com>
+Date: Fri, 08 Nov 2013 18:28:52 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1383634640-26869-1-git-send-email-sachin.kamat@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "changkun.li" <xfishcoder@gmail.com>
+CC: sjenning@linux.vnet.ibm.com, linux-mm@kvack.org, luyi@360.cn,
+        lichangkun@360.cn, linux-kernel@vger.kernel.org
+Subject: Re: [Patch 3.11.7 1/1]mm: remove and free expired data in time in
+ zswap
+References: <1383904203.2715.2.camel@ubuntu>
+In-Reply-To: <1383904203.2715.2.camel@ubuntu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As this is only a trivial patch, I'll take it out the hands of the
-already overloaded DT maintainers.
-
-> Fixed trivial typos to improve readability.
+On 11/08/2013 05:50 PM, changkun.li wrote:
+> In zswap, store page A to zbud if the compression ratio is high, insert
+> its entry into rbtree. if there is a entry B which has the same offset
+> in the rbtree.Remove and free B before insert the entry of A.
 > 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> case:
+> if the compression ratio of page A is not high, return without checking
+> the same offset one in rbtree.
+> 
+> if there is a entry B which has the same offset in the rbtree. Now, we
+> make sure B is invalid or expired. But the entry and compressed memory
+> of B are not freed in time.
+> 
+> Because zswap spaces data in memory, it makes the utilization of memory
+> lower. the other valid data in zbud is writeback to swap device more
+> possibility, when zswap is full.
+> 
+> So if we make sure a entry is expired, free it in time.
+> 
+> Signed-off-by: changkun.li<xfishcoder@gmail.com>
 > ---
->  Documentation/devicetree/bindings/mfd/s2mps11.txt |    9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
+>  mm/zswap.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> index c9332c6..0ff4e65 100644
-> --- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> +++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> @@ -1,10 +1,10 @@
+> diff --git a/mm/zswap.c b/mm/zswap.c
+> index cbd9578..90a2813 100644
+> --- a/mm/zswap.c
+> +++ b/mm/zswap.c
+> @@ -596,6 +596,7 @@ fail:
+>  	return ret;
+>  }
 >  
->  * Samsung S2MPS11 Voltage and Current Regulator
+> +static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t
+> offset);
+>  /*********************************
+>  * frontswap hooks
+>  **********************************/
+> @@ -614,7 +615,7 @@ static int zswap_frontswap_store(unsigned type,
+> pgoff_t offset,
 >  
-> -The Samsung S2MP211 is a multi-function device which includes voltage and
-> +The Samsung S2MPS11 is a multi-function device which includes voltage and
-
-Nice catch eagle-eye!
-
->  current regulators, RTC, charger controller and other sub-blocks. It is
-> -interfaced to the host controller using a I2C interface. Each sub-block is
-> -addressed by the host system using different I2C slave address.
-> +interfaced to the host controller using an I2C interface. Each sub-block is
-> +addressed by the host system using different I2C slave addresses.
+>  	if (!tree) {
+>  		ret = -ENODEV;
+> -		goto reject;
+> +		goto nodev;
+>  	}
 >  
->  Required properties:
->  - compatible: Should be "samsung,s2mps11-pmic".
-> @@ -43,7 +43,8 @@ sub-node should be of the format as listed below.
->  
->   BUCK[2/3/4/6] supports disabling ramp delay on hardware, so explictly
->   regulator-ramp-delay = <0> can be used for them to disable ramp delay.
-> - In absence of regulator-ramp-delay property, default ramp delay will be used.
-> + In the absence of regulator-ramp-delay property, default ramp delay will
-> + be used.
+>  	/* reclaim space if needed */
+> @@ -695,6 +696,8 @@ freepage:
+>  	put_cpu_var(zswap_dstmem);
+>  	zswap_entry_cache_free(entry);
+>  reject:
+> +	zswap_frontswap_invalidate_page(type, offset);
 
-So if we're being pertinacity here, your correction isn't much better.
-
-s/of regulator-ramp-delay property,/of {the,an} regulator-ramp-delay property, the
-
-or 
-
-s/of regulator-ramp-delay property,/of regulator-ramp-delay, the
-
->  NOTE: Some BUCKs share the ramp rate setting i.e. same ramp value will be set
->  for a particular group of BUCKs. So provide same regulator-ramp-delay<value>.
+I'm afraid when arrives here zswap_rb_search(offset) will always return
+NULL entry. So most of the time, it's just waste time to call
+zswap_frontswap_invalidate_page() to search rbtree.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards,
+-Bob
