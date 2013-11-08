@@ -1,45 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883Ab3KHJxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 04:53:47 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:37481 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751874Ab3KHJxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 04:53:45 -0500
-X-IronPort-AV: E=Sophos;i="4.93,658,1378857600"; 
-   d="scan'208";a="71960177"
-Message-ID: <1383904422.3189.55.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH 3.8 23/91] xen-netback: Don't destroy the netdev until
- the vif is shut down
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Kamal Mostafa <kamal@canonical.com>
-CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        <kernel-team@lists.ubuntu.com>, Paul Durrant <paul.durrant@citrix.com>,
-        "David Vrabel" <david.vrabel@citrix.com>,
-        Wei Liu <wei.liu2@citrix.com>
-Date: Fri, 8 Nov 2013 09:53:42 +0000
-In-Reply-To: <1383876946-2396-24-git-send-email-kamal@canonical.com>
-References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
-	 <1383876946-2396-24-git-send-email-kamal@canonical.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1755664Ab3KHJ4o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 04:56:44 -0500
+Received: from 18.mo3.mail-out.ovh.net ([87.98.172.162]:54621 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752385Ab3KHJ4j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 04:56:39 -0500
+Date: Fri, 8 Nov 2013 10:58:42 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Use udiv/sdiv for __aeabi_{u}idiv library functions
+Message-ID: <20131108095842.GG28304@ns203013.ovh.net>
+References: <1383852042-10780-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383852042-10780-1-git-send-email-sboyd@codeaurora.org>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 13065786944317336381
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrheejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrheejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-07 at 18:14 -0800, Kamal Mostafa wrote:
-> 3.8.13.13 -stable review patch.  If anyone has any objections, please let me know.
-
-This patch caused a regression in the 3.10 stable tree. Two additional
-patches were needed, see:
-        http://www.spinics.net/lists/netdev/msg256637.html
-        http://www.spinics.net/lists/netdev/msg256636.html
-
-Ian.
-
-
+On 11:20 Thu 07 Nov     , Stephen Boyd wrote:
+> If we're running on a v7 ARM CPU, detect if the CPU supports the
+> sdiv/udiv instructions and replace the signed and unsigned
+> division library functions with an sdiv/udiv instruction.
+> 
+> Running the perf messaging benchmark in pipe mode
+> 
+>  $ perf bench sched messaging -p
+> 
+> shows a modest improvement on my v7 CPU.
+> 
+> before:
+> (5.060 + 5.960 + 5.971 + 5.643 + 6.029 + 5.665 + 6.050 + 5.870 + 6.117 + 5.683) / 10 = 5.805
+> 
+> after:
+> (4.884 + 5.549 + 5.749 + 6.001 + 5.460 + 5.103 + 5.956 + 6.112 + 5.468 + 5.093) / 10 = 5.538
+> 
+> (5.805 - 5.538) / 5.805 = 4.6%
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+> 
+> Should we add in the __div0() call if the denominator is 0?
+> 
+>  arch/arm/kernel/setup.c  | 10 +++++++++
+>  arch/arm/lib/Makefile    |  3 +++
+>  arch/arm/lib/div-v7.c    | 58 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  arch/arm/lib/lib1funcs.S | 16 +++++++++++++
+>  4 files changed, 87 insertions(+)
+>  create mode 100644 arch/arm/lib/div-v7.c
+> 
+> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> index 0e1e2b3..7d519f4 100644
+> --- a/arch/arm/kernel/setup.c
+> +++ b/arch/arm/kernel/setup.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/bug.h>
+>  #include <linux/compiler.h>
+>  #include <linux/sort.h>
+> +#include <linux/static_key.h>
+>  
+>  #include <asm/unified.h>
+>  #include <asm/cp15.h>
+> @@ -365,6 +366,8 @@ void __init early_print(const char *str, ...)
+>  	printk("%s", buf);
+>  }
+>  
+> +struct static_key cpu_has_idiv = STATIC_KEY_INIT_FALSE;
+> +
+>  static void __init cpuid_init_hwcaps(void)
+>  {
+>  	unsigned int divide_instrs, vmsa;
+> @@ -381,6 +384,13 @@ static void __init cpuid_init_hwcaps(void)
+>  		elf_hwcap |= HWCAP_IDIVT;
+>  	}
+>  
+> +#ifdef CONFIG_THUMB2_KERNEL
+if (IS_ENABLED(CONFIG_THUMB2_KERNEL) && elf_hwcap & HWCAP_IDIVT)
+> +	if (elf_hwcap & HWCAP_IDIVT)
+> +#else
+> +	if (elf_hwcap & HWCAP_IDIVA)
+> +#endif
+> +		static_key_slow_inc(&cpu_has_idiv);
+> +
+>  	/* LPAE implies atomic ldrd/strd instructions */
+>  	vmsa = (read_cpuid_ext(CPUID_EXT_MMFR0) & 0xf) >> 0;
+>  	if (vmsa >= 5)
+> diff --git a/arch/arm/lib/Makefile b/arch/arm/lib/Makefile
+> index bd454b0..6ed6496 100644
+> --- a/arch/arm/lib/Makefile
+> +++ b/arch/arm/lib/Makefile
+> @@ -15,6 +15,9 @@ lib-y		:= backtrace.o changebit.o csumipv6.o csumpartial.o   \
+>  		   io-readsb.o io-writesb.o io-readsl.o io-writesl.o  \
+>  		   call_with_stack.o
+>  
+> +lib-$(CONFIG_CPU_V7) += div-v7.o
+> +CFLAGS_div-v7.o := -march=armv7-a
+> +
+>  mmu-y	:= clear_user.o copy_page.o getuser.o putuser.o
+>  
+>  # the code in uaccess.S is not preemption safe and
+> diff --git a/arch/arm/lib/div-v7.c b/arch/arm/lib/div-v7.c
+> new file mode 100644
+> index 0000000..96ceb92
+> --- /dev/null
+> +++ b/arch/arm/lib/div-v7.c
+> @@ -0,0 +1,58 @@
+> +/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/static_key.h>
+> +
+> +extern int ___aeabi_idiv(int, int);
+> +extern unsigned ___aeabi_uidiv(int, int);
+> +
+> +extern struct static_key cpu_has_idiv;
+> +
+> +int __aeabi_idiv(int numerator, int denominator)
+> +{
+> +	if (static_key_false(&cpu_has_idiv)) {
+> +		int ret;
+> +
+> +		asm volatile (
+> +		".arch_extension idiv\n"
+> +		"sdiv %0, %1, %2"
+> +		: "=&r" (ret)
+> +		: "r" (numerator), "r" (denominator));
+> +
+> +		return ret;
+> +	}
+> +
+> +	return ___aeabi_idiv(numerator, denominator);
+> +}
+> +
+> +int __divsi3(int numerator, int denominator)
+> +	__attribute__((alias("__aeabi_idiv")));
+> +
+> +unsigned __aeabi_uidiv(int numerator, int denominator)
+> +{
+> +	if (static_key_false(&cpu_has_idiv)) {
+> +		int ret;
+> +
+> +		asm volatile (
+> +		".arch_extension idiv\n"
+> +		"udiv %0, %1, %2"
+> +		: "=&r" (ret)
+> +		: "r" (numerator), "r" (denominator));
+> +
+> +		return ret;
+> +	}
+> +
+> +	return ___aeabi_uidiv(numerator, denominator);
+> +}
+> +
+> +unsigned __udivsi3(int numerator, int denominator)
+> +	__attribute__((alias("__aeabi_uidiv")));
+> diff --git a/arch/arm/lib/lib1funcs.S b/arch/arm/lib/lib1funcs.S
+> index c562f64..adea088 100644
+> --- a/arch/arm/lib/lib1funcs.S
+> +++ b/arch/arm/lib/lib1funcs.S
+> @@ -205,8 +205,12 @@ Boston, MA 02111-1307, USA.  */
+>  .endm
+>  
+>  
+> +#if defined(ZIMAGE) || !defined(CONFIG_CPU_V7)
+>  ENTRY(__udivsi3)
+>  ENTRY(__aeabi_uidiv)
+> +#else
+> +ENTRY(___aeabi_uidiv)
+> +#endif
+>  UNWIND(.fnstart)
+>  
+>  	subs	r2, r1, #1
+> @@ -232,8 +236,12 @@ UNWIND(.fnstart)
+>  	mov	pc, lr
+>  
+>  UNWIND(.fnend)
+> +#if defined(ZIMAGE) || !defined(CONFIG_CPU_V7)
+>  ENDPROC(__udivsi3)
+>  ENDPROC(__aeabi_uidiv)
+> +#else
+> +ENDPROC(___aeabi_uidiv)
+> +#endif
+>  
+>  ENTRY(__umodsi3)
+>  UNWIND(.fnstart)
+> @@ -253,8 +261,12 @@ UNWIND(.fnstart)
+>  UNWIND(.fnend)
+>  ENDPROC(__umodsi3)
+>  
+> +#if defined(ZIMAGE) || !defined(CONFIG_CPU_V7)
+>  ENTRY(__divsi3)
+>  ENTRY(__aeabi_idiv)
+> +#else
+> +ENTRY(___aeabi_idiv)
+> +#endif
+>  UNWIND(.fnstart)
+>  
+>  	cmp	r1, #0
+> @@ -293,8 +305,12 @@ UNWIND(.fnstart)
+>  	mov	pc, lr
+>  
+>  UNWIND(.fnend)
+> +#if defined(ZIMAGE) || !defined(CONFIG_CPU_V7)
+>  ENDPROC(__divsi3)
+>  ENDPROC(__aeabi_idiv)
+> +#else
+> +ENDPROC(___aeabi_idiv)
+> +#endif
+>  
+>  ENTRY(__modsi3)
+>  UNWIND(.fnstart)
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
