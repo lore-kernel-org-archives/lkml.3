@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab3KHPEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 10:04:09 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:46772 "EHLO
+	id S1757480Ab3KHPEO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 10:04:14 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:46783 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757307Ab3KHPEH (ORCPT
+	by vger.kernel.org with ESMTP id S1757307Ab3KHPEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 10:04:07 -0500
+	Fri, 8 Nov 2013 10:04:11 -0500
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Rob Herring <robherring2@gmail.com>,
@@ -25,43 +25,54 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH v4 0/5] OF: Fixes in preperation of DT overlays
-Date: Fri,  8 Nov 2013 17:03:55 +0200
-Message-Id: <1383923040-24803-1-git-send-email-panto@antoniou-consulting.com>
+Subject: [PATCH v4 1/5] OF: Introduce device tree node flag helpers.
+Date: Fri,  8 Nov 2013 17:03:56 +0200
+Message-Id: <1383923040-24803-2-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1383923040-24803-1-git-send-email-panto@antoniou-consulting.com>
+References: <1383923040-24803-1-git-send-email-panto@antoniou-consulting.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset introduces a number of fixes that are required
-for the subsequent patches that add DT overlays support.
+Helper functions for working with device node flags.
 
-Most of them are trivial, adding small bits that are missing,
-or exporting functions that were private before.
+Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+---
+ include/linux/of.h | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-Changes in V4:
- * Bug fix about prop->len == 0 by Ionut Nicu <ioan.nicu.ext@nsn.com>
-
-Changes in V3:
- * EXPORT_SYMBOL() of_property_notify
-
-Changes in V2:
- * Reorded patchset so that bisect works
-
-Pantelis Antoniou (5):
-  OF: Introduce device tree node flag helpers.
-  OF: Clear detach flag on attach
-  OF: export of_property_notify
-  OF: Export all DT proc update functions
-  OF: Introduce utility helper functions
-
- drivers/of/Makefile |   2 +-
- drivers/of/base.c   |  78 ++++++++--------
- drivers/of/util.c   | 251 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/of.h  | 119 +++++++++++++++++++++++++
- 4 files changed, 412 insertions(+), 38 deletions(-)
- create mode 100644 drivers/of/util.c
-
+diff --git a/include/linux/of.h b/include/linux/of.h
+index f95aee3..786c4f6 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -114,6 +114,26 @@ static inline void of_node_set_flag(struct device_node *n, unsigned long flag)
+ 	set_bit(flag, &n->_flags);
+ }
+ 
++static inline void of_node_clear_flag(struct device_node *n, unsigned long flag)
++{
++	clear_bit(flag, &n->_flags);
++}
++
++static inline int of_property_check_flag(struct property *p, unsigned long flag)
++{
++	return test_bit(flag, &p->_flags);
++}
++
++static inline void of_property_set_flag(struct property *p, unsigned long flag)
++{
++	set_bit(flag, &p->_flags);
++}
++
++static inline void of_property_clear_flag(struct property *p, unsigned long flag)
++{
++	clear_bit(flag, &p->_flags);
++}
++
+ extern struct device_node *of_find_all_nodes(struct device_node *prev);
+ 
+ /*
 -- 
 1.7.12
 
