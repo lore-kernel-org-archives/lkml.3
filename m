@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139Ab3KHTl3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 14:41:29 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:39097 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757595Ab3KHTl2 (ORCPT
+	id S1758169Ab3KHTmP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 14:42:15 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:52250 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758054Ab3KHTmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 14:41:28 -0500
-Date: Fri, 8 Nov 2013 20:41:24 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: suravee.suthikulpanit@amd.com
-Cc: mingo@kernel.org, mingo@redhat.com, jacob.w.shin@gmail.com,
-        oleg@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        hpa@zytor.com, tgl@domain.invalid, linux-kernel@vger.kernel.org,
-        sherry.hurwitz@amd.com
-Subject: Re: [PATCH 1/3] perf/x86/amd: AMD support for bp_len >
- HW_BREAKPOINT_LEN_8
-Message-ID: <20131108194122.GA14606@localhost.localdomain>
-References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1380730268-25807-2-git-send-email-suravee.suthikulpanit@amd.com>
+	Fri, 8 Nov 2013 14:42:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380730268-25807-2-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <527CC2A5.7080000@linaro.org>
+References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
+	<1381960030-1640-2-git-send-email-tim.kryger@linaro.org>
+	<527CC2A5.7080000@linaro.org>
+Date: Fri, 8 Nov 2013 11:42:12 -0800
+Message-ID: <CAAYSxhoHYaFzcoxEAJrNb6d8n1aKGDN68K3eekRT22s0h7960w@mail.gmail.com>
+Subject: Re: [RESEND PATCH v2 1/6] ARM: dts: Declare clocks as fixed on bcm11351
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Christian Daudt <bcm@fixthebug.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 11:11:06AM -0500, suravee.suthikulpanit@amd.com wrote:
-> From: Jacob Shin <jacob.w.shin@gmail.com>
-> 
-> Implement hardware breakpoint address mask for AMD Family 16h and
-> above processors. CPUID feature bit indicates hardware support for
-> DRn_ADDR_MASK MSRs. These masks further qualify DRn/DR7 hardware
-> breakpoint addresses to allow matching of larger addresses ranges.
-> 
-> Valuable advice and pseudo code from Oleg Nesterov <oleg@redhat.com>
-> 
-> Signed-off-by: Jacob Shin <jacob.w.shin@gmail.com>
-> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> ---
->  arch/x86/include/asm/cpufeature.h     |  2 ++
->  arch/x86/include/asm/debugreg.h       |  5 ++++
->  arch/x86/include/asm/hw_breakpoint.h  |  1 +
->  arch/x86/include/uapi/asm/msr-index.h |  4 +++
->  arch/x86/kernel/cpu/amd.c             | 19 ++++++++++++++
->  arch/x86/kernel/hw_breakpoint.c       | 47 ++++++++++++++---------------------
->  6 files changed, 49 insertions(+), 29 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-> index d3f5c63..26609bb 100644
-> --- a/arch/x86/include/asm/cpufeature.h
-> +++ b/arch/x86/include/asm/cpufeature.h
-> @@ -170,6 +170,7 @@
->  #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
->  #define X86_FEATURE_PERFCTR_CORE (6*32+23) /* core performance counter extensions */
->  #define X86_FEATURE_PERFCTR_NB  (6*32+24) /* NB performance counter extensions */
-> +#define X86_FEATURE_BPEXT	(6*32+26) /* data breakpoint extension */
+On Fri, Nov 8, 2013 at 2:53 AM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
 
-Does this feature only work on data breakpoint or is instruction breakpoint
-address range supported as well?
+> I was wondering what is the status of this patchset ?
+>
+> The patchset touches different areas maintained by different people. Through
+> what tree do you expect this patchset to be merged ??
+
+Hi Daniel,
+
+I plan to send an updated version soon to address some concerns raised by Mark.
+
+Once all the maintainers are satisfied and provide their acks, I would
+like Christian to take the series into his tree.
+
+I expect Christian will have a few other Broadcom DTS file changes in
+his tree so sending the series through him should make it easier to
+avoid/manage conflicts.
+
+Christian, would that work for you?
+
+Thanks,
+Tim Kryger
