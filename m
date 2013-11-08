@@ -1,79 +1,970 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758099Ab3KHWvI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 17:51:08 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:51426 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757570Ab3KHWvD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 17:51:03 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20131108175848.6ca49f0ee8fe2a6c1125394a@canb.auug.org.au>
-	<20131108072732.GA27537@infradead.org>
-Date: Fri, 08 Nov 2013 14:50:42 -0800
-In-Reply-To: <20131108072732.GA27537@infradead.org> (Christoph Hellwig's
-	message of "Thu, 7 Nov 2013 23:27:32 -0800")
-Message-ID: <87ob5uwlrx.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19zPmweKclgeeMOALcsjZt/yhHW725mwZQ=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2191]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Christoph Hellwig <hch@infradead.org>
-X-Spam-Relay-Country: 
-Subject: Re: linux-next: build failure after merge of the userns tree
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1758400Ab3KHWyI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 17:54:08 -0500
+Received: from ring0.de ([91.143.88.219]:60425 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757706Ab3KHWyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 17:54:05 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
+	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+	*      for more information.
+	*      [URIs: ti.com]
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>, Kumar Gala <galak@codeaurora.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@secretlab.ca>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sebastian Reichel <sre@debian.org>
+Subject: [PATCH] Documentation: dt: Merge TWL family documentation
+Date: Fri,  8 Nov 2013 23:51:15 +0100
+Message-Id: <1383951075-1910-1-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> writes:
+Merge all TWL family subnode documentation into
+the TWL family documentation file and fix typo
+in its filename.
 
-> On Fri, Nov 08, 2013 at 05:58:48PM +1100, Stephen Rothwell wrote:
->> Hi Eric,
->> 
->> After merging the userns tree, today's linux-next build (powerpc
->> ppc64_defconfig) failed like this:
->> 
->> fs/namei.c: In function 'covered':
->> fs/namei.c:3528:2: error: too many arguments to function '__lookup_mnt'
->>   is_covered = d_mountpoint(dentry) && __lookup_mnt(mnt, dentry, 1);
->>   ^
->> 
->> Caused by my incomplete merge resolution between commits 474279dc0f77
->> ("split __lookup_mnt() in two functions") from the vfs tree and
->> a3b4491433f2 ("vfs: Don't allow overwriting mounts in the current mount
->> namespace") from the userns tree.
->
-> Btw, I don't think the userns tree has any business touching lookup
-> and mount semantics in namei.c without an explicit VFS signoff.
->
-> Please drop the tree for now.
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+ .../devicetree/bindings/gpio/gpio-twl4030.txt      |  29 --
+ .../devicetree/bindings/input/twl4030-keypad.txt   |  31 --
+ .../bindings/input/twl4030-pwrbutton.txt           |  21 -
+ .../devicetree/bindings/mfd/twl-familly.txt        |  47 ---
+ .../devicetree/bindings/mfd/twl-family.txt         | 456 +++++++++++++++++++++
+ .../devicetree/bindings/mfd/twl4030-audio.txt      |  46 ---
+ .../devicetree/bindings/mfd/twl4030-power.txt      |  28 --
+ .../devicetree/bindings/pwm/ti,twl-pwm.txt         |  17 -
+ .../devicetree/bindings/pwm/ti,twl-pwmled.txt      |  17 -
+ .../bindings/regulator/twl-regulator.txt           |  67 ---
+ Documentation/devicetree/bindings/rtc/twl-rtc.txt  |  12 -
+ .../devicetree/bindings/usb/twlxxxx-usb.txt        |  40 --
+ .../devicetree/bindings/watchdog/twl4030-wdt.txt   |  10 -
+ 13 files changed, 456 insertions(+), 365 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/gpio/gpio-twl4030.txt
+ delete mode 100644 Documentation/devicetree/bindings/input/twl4030-keypad.txt
+ delete mode 100644 Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
+ delete mode 100644 Documentation/devicetree/bindings/mfd/twl-familly.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/twl-family.txt
+ delete mode 100644 Documentation/devicetree/bindings/mfd/twl4030-audio.txt
+ delete mode 100644 Documentation/devicetree/bindings/mfd/twl4030-power.txt
+ delete mode 100644 Documentation/devicetree/bindings/pwm/ti,twl-pwm.txt
+ delete mode 100644 Documentation/devicetree/bindings/pwm/ti,twl-pwmled.txt
+ delete mode 100644 Documentation/devicetree/bindings/regulator/twl-regulator.txt
+ delete mode 100644 Documentation/devicetree/bindings/rtc/twl-rtc.txt
+ delete mode 100644 Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
+ delete mode 100644 Documentation/devicetree/bindings/watchdog/twl4030-wdt.txt
 
-This is ultimatley a pretty siginficant bug user namespace fix.  So the
-code absolutely has business being in the user namespace tree.  The code
-has been reviewed and people did not scream.  I asked if Al wanted to
-take the patches and if not I would take them through my tree.
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-twl4030.txt b/Documentation/devicetree/bindings/gpio/gpio-twl4030.txt
+deleted file mode 100644
+index 66788fd..0000000
+--- a/Documentation/devicetree/bindings/gpio/gpio-twl4030.txt
++++ /dev/null
+@@ -1,29 +0,0 @@
+-twl4030 GPIO controller bindings
+-
+-Required properties:
+-- compatible:
+-  - "ti,twl4030-gpio" for twl4030 GPIO controller
+-- #gpio-cells : Should be two.
+-  - first cell is the pin number
+-  - second cell is used to specify optional parameters (unused)
+-- gpio-controller : Marks the device node as a GPIO controller.
+-- #interrupt-cells : Should be 2.
+-- interrupt-controller: Mark the device node as an interrupt controller
+-  The first cell is the GPIO number.
+-  The second cell is not used.
+-- ti,use-leds : Enables LEDA and LEDB outputs if set
+-- ti,debounce : if n-th bit is set, debounces GPIO-n
+-- ti,mmc-cd : if n-th bit is set, GPIO-n controls VMMC(n+1)
+-- ti,pullups : if n-th bit is set, set a pullup on GPIO-n
+-- ti,pulldowns : if n-th bit is set, set a pulldown on GPIO-n
+-
+-Example:
+-
+-twl_gpio: gpio {
+-    compatible = "ti,twl4030-gpio";
+-    #gpio-cells = <2>;
+-    gpio-controller;
+-    #interrupt-cells = <2>;
+-    interrupt-controller;
+-    ti,use-leds;
+-};
+diff --git a/Documentation/devicetree/bindings/input/twl4030-keypad.txt b/Documentation/devicetree/bindings/input/twl4030-keypad.txt
+deleted file mode 100644
+index 901d10f..0000000
+--- a/Documentation/devicetree/bindings/input/twl4030-keypad.txt
++++ /dev/null
+@@ -1,31 +0,0 @@
+-* TWL4030's Keypad Controller device tree bindings
+-
+-TWL4030's Keypad controller is used to interface a SoC with a matrix-type
+-keypad device. The keypad controller supports multiple row and column lines.
+-A key can be placed at each intersection of a unique row and a unique column.
+-The keypad controller can sense a key-press and key-release and report the
+-event using a interrupt to the cpu.
+-
+-This binding is based on the matrix-keymap binding with the following
+-changes:
+-
+- * keypad,num-rows and keypad,num-columns are required.
+-
+-Required SoC Specific Properties:
+-- compatible: should be one of the following
+-   - "ti,twl4030-keypad": For controllers compatible with twl4030 keypad
+-      controller.
+-- interrupt: should be one of the following
+-   - <1>: For controllers compatible with twl4030 keypad controller.
+-
+-Optional Properties specific to linux:
+-- linux,keypad-no-autorepeat: do not enable autorepeat feature.
+-
+-Example:
+-	twl_keypad: keypad {
+-		compatible = "ti,twl4030-keypad";
+-		interrupts = <1>;
+-		keypad,num-rows = <8>;
+-		keypad,num-columns = <8>;
+-		linux,keypad-no-autorepeat;
+-	};
+diff --git a/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt b/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
+deleted file mode 100644
+index c864a46..0000000
+--- a/Documentation/devicetree/bindings/input/twl4030-pwrbutton.txt
++++ /dev/null
+@@ -1,21 +0,0 @@
+-Texas Instruments TWL family (twl4030) pwrbutton module
+-
+-This module is part of the TWL4030. For more details about the whole
+-chip see Documentation/devicetree/bindings/mfd/twl-familly.txt.
+-
+-This module provides a simple power button event via an Interrupt.
+-
+-Required properties:
+-- compatible: should be one of the following
+-   - "ti,twl4030-pwrbutton": For controllers compatible with twl4030
+-- interrupts: should be one of the following
+-   - <8>: For controllers compatible with twl4030
+-
+-Example:
+-
+-&twl {
+-	twl_pwrbutton: pwrbutton {
+-		compatible = "ti,twl4030-pwrbutton";
+-		interrupts = <8>;
+-	};
+-};
+diff --git a/Documentation/devicetree/bindings/mfd/twl-familly.txt b/Documentation/devicetree/bindings/mfd/twl-familly.txt
+deleted file mode 100644
+index a66fcf9..0000000
+--- a/Documentation/devicetree/bindings/mfd/twl-familly.txt
++++ /dev/null
+@@ -1,47 +0,0 @@
+-Texas Instruments TWL family
+-
+-The TWLs are Integrated Power Management Chips.
+-Some version might contain much more analog function like
+-USB transceiver or Audio amplifier.
+-These chips are connected to an i2c bus.
+-
+-
+-Required properties:
+-- compatible : Must be "ti,twl4030";
+-  For Integrated power-management/audio CODEC device used in OMAP3
+-  based boards
+-- compatible : Must be "ti,twl6030";
+-  For Integrated power-management used in OMAP4 based boards
+-- interrupts : This i2c device has an IRQ line connected to the main SoC
+-- interrupt-controller : Since the twl support several interrupts internally,
+-  it is considered as an interrupt controller cascaded to the SoC one.
+-- #interrupt-cells = <1>;
+-- interrupt-parent : The parent interrupt controller.
+-
+-Optional node:
+-- Child nodes contain in the twl. The twl family is made of several variants
+-  that support a different number of features.
+-  The children nodes will thus depend of the capability of the variant.
+-
+-
+-Example:
+-/*
+- * Integrated Power Management Chip
+- * http://www.ti.com/lit/ds/symlink/twl6030.pdf
+- */
+-twl@48 {
+-    compatible = "ti,twl6030";
+-    reg = <0x48>;
+-    interrupts = <39>; /* IRQ_SYS_1N cascaded to gic */
+-    interrupt-controller;
+-    #interrupt-cells = <1>;
+-    interrupt-parent = <&gic>;
+-    #address-cells = <1>;
+-    #size-cells = <0>;
+-
+-    twl_rtc {
+-        compatible = "ti,twl_rtc";
+-        interrupts = <11>;
+-        reg = <0>;
+-    };
+-};
+diff --git a/Documentation/devicetree/bindings/mfd/twl-family.txt b/Documentation/devicetree/bindings/mfd/twl-family.txt
+new file mode 100644
+index 0000000..a296766
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/twl-family.txt
+@@ -0,0 +1,456 @@
++Texas Instruments TWL family
++----------------------------
++
++The TWLs are Integrated Power Management Chips.
++Some version might contain much more analog function like
++USB transceiver or Audio amplifier.
++These chips are connected to an i2c bus.
++
++
++Required properties:
++- compatible : Must be "ti,twl4030";
++  For Integrated power-management/audio CODEC device used in OMAP3
++  based boards
++- compatible : Must be "ti,twl6030";
++  For Integrated power-management used in OMAP4 based boards
++- interrupts : This i2c device has an IRQ line connected to the main SoC
++- interrupt-controller : Since the twl support several interrupts internally,
++  it is considered as an interrupt controller cascaded to the SoC one.
++- #interrupt-cells = <1>;
++- interrupt-parent : The parent interrupt controller.
++
++Optional nodes:
++- Child nodes contained in the twl. The twl family is made of several
++  variants that support a different number of features. The children
++  nodes will thus depend of the capability of the variant.
++
++TWL Regulator
++-------------
++
++Required properties:
++For twl6030 regulators/LDOs
++- compatible:
++  - "ti,twl6030-vaux1" for VAUX1 LDO
++  - "ti,twl6030-vaux2" for VAUX2 LDO
++  - "ti,twl6030-vaux3" for VAUX3 LDO
++  - "ti,twl6030-vmmc" for VMMC LDO
++  - "ti,twl6030-vpp" for VPP LDO
++  - "ti,twl6030-vusim" for VUSIM LDO
++  - "ti,twl6030-vana" for VANA LDO
++  - "ti,twl6030-vcxio" for VCXIO LDO
++  - "ti,twl6030-vdac" for VDAC LDO
++  - "ti,twl6030-vusb" for VUSB LDO
++  - "ti,twl6030-v1v8" for V1V8 LDO
++  - "ti,twl6030-v2v1" for V2V1 LDO
++  - "ti,twl6030-vdd1" for VDD1 SMPS
++  - "ti,twl6030-vdd2" for VDD2 SMPS
++  - "ti,twl6030-vdd3" for VDD3 SMPS
++For twl6032 regulators/LDOs
++- compatible:
++  - "ti,twl6032-ldo1" for LDO1 LDO
++  - "ti,twl6032-ldo2" for LDO2 LDO
++  - "ti,twl6032-ldo3" for LDO3 LDO
++  - "ti,twl6032-ldo4" for LDO4 LDO
++  - "ti,twl6032-ldo5" for LDO5 LDO
++  - "ti,twl6032-ldo6" for LDO6 LDO
++  - "ti,twl6032-ldo7" for LDO7 LDO
++  - "ti,twl6032-ldoln" for LDOLN LDO
++  - "ti,twl6032-ldousb" for LDOUSB LDO
++  - "ti,twl6032-smps3" for SMPS3 SMPS
++  - "ti,twl6032-smps4" for SMPS4 SMPS
++  - "ti,twl6032-vio" for VIO SMPS
++For twl4030 regulators/LDOs
++- compatible:
++  - "ti,twl4030-vaux1" for VAUX1 LDO
++  - "ti,twl4030-vaux2" for VAUX2 LDO
++  - "ti,twl5030-vaux2" for VAUX2 LDO
++  - "ti,twl4030-vaux3" for VAUX3 LDO
++  - "ti,twl4030-vaux4" for VAUX4 LDO
++  - "ti,twl4030-vmmc1" for VMMC1 LDO
++  - "ti,twl4030-vmmc2" for VMMC2 LDO
++  - "ti,twl4030-vpll1" for VPLL1 LDO
++  - "ti,twl4030-vpll2" for VPLL2 LDO
++  - "ti,twl4030-vsim" for VSIM LDO
++  - "ti,twl4030-vdac" for VDAC LDO
++  - "ti,twl4030-vintana2" for VINTANA2 LDO
++  - "ti,twl4030-vio" for VIO LDO
++  - "ti,twl4030-vdd1" for VDD1 SMPS
++  - "ti,twl4030-vdd2" for VDD2 SMPS
++  - "ti,twl4030-vintana1" for VINTANA1 LDO
++  - "ti,twl4030-vintdig" for VINTDIG LDO
++  - "ti,twl4030-vusb1v5" for VUSB1V5 LDO
++  - "ti,twl4030-vusb1v8" for VUSB1V8 LDO
++  - "ti,twl4030-vusb3v1" for VUSB3V1 LDO
++
++Optional properties:
++- Any optional property defined in bindings/regulator/regulator.txt
++
++TWL RTC
++-------
++
++Required properties:
++- compatible : Should be twl4030-rtc
++
++TWL PWM
++-------
++
++Supported PWMs:
++On TWL4030 series: PWM1 and PWM2
++On TWL6030 series: PWM0 and PWM1
++
++Required properties:
++- compatible: "ti,twl4030-pwm" or "ti,twl6030-pwm"
++- #pwm-cells: should be 2. See pwm.txt in this directory for a description of
++  the cells format.
++
++TWL PWM LED
++-----------
++
++Supported PWMs:
++On TWL4030 series: PWMA and PWMB (connected to LEDA and LEDB terminals)
++On TWL6030 series: LED PWM (mainly used as charging indicator LED)
++
++Required properties:
++- compatible: "ti,twl4030-pwmled" or "ti,twl6030-pwmled"
++- #pwm-cells: should be 2. See pwm.txt in this directory for a description of
++  the cells format.
++
++TWL4030 USB PHY AND COMPARATOR
++------------------------------
++
++Required properties:
++ - compatible : Should be "ti,twl4030-usb"
++ - interrupts : The interrupt numbers to the cpu should be specified. First
++   interrupt number is the otg interrupt number that raises ID interrupts
++   and VBUS interrupts. The second interrupt number is optional.
++ - <supply-name>-supply : phandle to the regulator device tree node.
++   <supply-name> should be vusb1v5, vusb1v8 and vusb3v1
++ - usb_mode : The mode used by the phy to connect to the controller. "1"
++   specifies "ULPI" mode and "2" specifies "CEA2011_3PIN" mode.
++
++TWL6030 USB COMPARATOR
++----------------------
++
++Required properties:
++ - compatible : Should be "ti,twl6030-usb"
++ - interrupts : Two interrupt numbers to the cpu should be specified. First
++   interrupt number is the otg interrupt number that raises ID interrupts when
++   the controller has to act as host and the second interrupt number is the
++   usb interrupt number that raises VBUS interrupts when the controller has to
++   act as device
++ - usb-supply : phandle to the regulator device tree node. It should be vusb
++   if it is twl6030 or ldousb if it is twl6032 subclass.
++
++TWL4030 GPIO Controller
++-----------------------
++
++Required properties:
++- compatible:
++  - "ti,twl4030-gpio" for twl4030 GPIO controller
++- #gpio-cells : Should be two.
++  - first cell is the pin number
++  - second cell is used to specify optional parameters (unused)
++- gpio-controller : Marks the device node as a GPIO controller.
++- #interrupt-cells : Should be 2.
++- interrupt-controller: Mark the device node as an interrupt controller
++  The first cell is the GPIO number.
++  The second cell is not used.
++- ti,use-leds : Enables LEDA and LEDB outputs if set
++- ti,debounce : if n-th bit is set, debounces GPIO-n
++- ti,mmc-cd : if n-th bit is set, GPIO-n controls VMMC(n+1)
++- ti,pullups : if n-th bit is set, set a pullup on GPIO-n
++- ti,pulldowns : if n-th bit is set, set a pulldown on GPIO-n
++
++TWL4030 Audio
++-------------
++
++The audio module inside the TWL family consist of an audio codec and
++a vibrator driver.
++
++Required properties:
++- compatible : must be "ti,twl4030-audio"
++
++Optional properties, nodes:
++
++Audio functionality:
++- codec { }: Need to be present if the audio functionality is used. Within this
++	     section the following options can be used:
++- ti,digimic_delay: Delay need after enabling the digimic to reduce artifacts
++		    from the start of the recorded sample (in ms)
++-ti,ramp_delay_value: HS ramp delay configuration to reduce pop noise
++-ti,hs_extmute: Use external mute for HS pop reduction
++-ti,hs_extmute_gpio: Use external GPIO to control the external mute
++-ti,offset_cncl_path: Offset cancellation path selection, refer to TRM for the
++		      valid values.
++
++Vibra functionality
++- ti,enable-vibra: Need to be set to <1> if the vibra functionality is used. if
++		   missing or it is 0, the vibra functionality is disabled.
++
++TWL4030 Power
++-------------
++
++The power management module inside the TWL family provides several facilities
++to control the power resources, including power scripts. For now, the binding
++only supports the complete shutdown of the system after poweroff.
++
++Required properties:
++- compatible : must be "ti,twl4030-power"
++
++Optional properties:
++- ti,use_poweroff: With this flag, the chip will initiates an ACTIVE-to-OFF or
++		   SLEEP-to-OFF transition when the system poweroffs.
++
++TWL4030 Watchdog
++----------------
++
++Required properties:
++	compatible = "ti,twl4030-wdt";
++
++TWL4030 Power Button
++--------------------
++
++This module is part of the TWL4030. For more details about the whole
++chip see Documentation/devicetree/bindings/mfd/twl-familly.txt.
++
++This module provides a simple power button event via an Interrupt.
++
++Required properties:
++- compatible: should be one of the following
++   - "ti,twl4030-pwrbutton": For controllers compatible with twl4030
++- interrupts: should be one of the following
++   - <8>: For controllers compatible with twl4030
++
++TWL4030 Keypad
++--------------
++
++TWL4030's Keypad controller is used to interface a SoC with a matrix-type
++keypad device. The keypad controller supports multiple row and column lines.
++A key can be placed at each intersection of a unique row and a unique column.
++The keypad controller can sense a key-press and key-release and report the
++event using a interrupt to the cpu.
++
++This binding is based on the matrix-keymap binding with the following
++changes:
++
++ * keypad,num-rows and keypad,num-columns are required.
++
++Required SoC Specific Properties:
++- compatible: should be one of the following
++   - "ti,twl4030-keypad": For controllers compatible with twl4030 keypad
++      controller.
++- interrupt: should be one of the following
++   - <1>: For controllers compatible with twl4030 keypad controller.
++
++Optional Properties specific to linux:
++- linux,keypad-no-autorepeat: do not enable autorepeat feature.
++
++Example
++-------
++
++This is an example for TWL4030 binding (Nokia N900):
++
++&i2c {
++	twl@48 {
++		compatible = "ti,twl4030";
++
++		interrupt-controller;
++		#interrupt-cells = <1>;
++
++		reg = <0x48>;
++
++		interrupt-parent = <&intc>;
++		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
++
++		rtc {
++			compatible = "ti,twl4030-rtc";
++			interrupts = <11>;
++		};
++
++		watchdog {
++			compatible = "ti,twl4030-wdt";
++		};
++
++		vaux1: regulator-vaux1 {
++			compatible = "ti,twl4030-vaux1";
++
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <2800000>;
++			regulator-always-on; /* due battery cover sensor */
++		};
++
++		vaux2: regulator-vaux2 {
++			compatible = "ti,twl4030-vaux2";
++
++			regulator-name = "VCSI";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++		};
++
++		vaux3: regulator-vaux3 {
++			compatible = "ti,twl4030-vaux3";
++
++			regulator-name = "VMMC2_30";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <3000000>;
++		};
++
++		vaux4: regulator-vaux4 {
++			compatible = "ti,twl4030-vaux4";
++
++			regulator-name = "VCAM_ANA_28";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <2800000>;
++		};
++
++		vcc: regulator-vdd1 {
++			compatible = "ti,twl4030-vdd1";
++			regulator-min-microvolt = <600000>;
++			regulator-max-microvolt = <1450000>;
++		};
++
++		vdac: regulator-vdac {
++			compatible = "ti,twl4030-vdac";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++		};
++
++		vio: regulator-vio {
++			compatible = "ti,twl4030-vio";
++
++			regulator-name = "VIO";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++		};
++
++		vintana1: regulator-vintana1 {
++			compatible = "ti,twl4030-vintana1";
++
++			regulator-name = "VINTANA1";
++			/* fixed to 1500000 */
++			regulator-always-on;
++		};
++
++		vintana2: regulator-vintana2 {
++			compatible = "ti,twl4030-vintana2";
++
++			regulator-name = "VINTANA2";
++			regulator-min-microvolt = <2750000>;
++			regulator-max-microvolt = <2750000>;
++			regulator-always-on;
++		};
++
++		vintdig: regulator-vintdig {
++			compatible = "ti,twl4030-vintdig";
++
++			regulator-name = "VINTDIG";
++			/* fixed to 1500000 */
++			regulator-always-on;
++		};
++
++		vmmc1: regulator-vmmc1 {
++			compatible = "ti,twl4030-vmmc1";
++
++			regulator-name = "VMMC1";
++			regulator-min-microvolt = <1850000>;
++			regulator-max-microvolt = <3150000>;
++		};
++
++		vmmc2: regulator-vmmc2 {
++			compatible = "ti,twl4030-vmmc2";
++
++			regulator-name = "V28_A";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <3000000>;
++			regulator-always-on; /* due VIO leak to AIC34 VDDs */
++		};
++
++		vusb1v5: regulator-vusb1v5 {
++			compatible = "ti,twl4030-vusb1v5";
++		};
++
++		vusb1v8: regulator-vusb1v8 {
++			compatible = "ti,twl4030-vusb1v8";
++		};
++
++		vusb3v1: regulator-vusb3v1 {
++			compatible = "ti,twl4030-vusb3v1";
++		};
++
++		vpll1: regulator-vpll1 {
++			compatible = "ti,twl4030-vpll1";
++
++			regulator-name = "VPLL";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++			regulator-always-on;
++		};
++
++		vpll2: regulator-vpll2 {
++			compatible = "ti,twl4030-vpll2";
++
++			regulator-name = "VSDI_CSI";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++			regulator-always-on;
++		};
++
++		vsim: regulator-vsim {
++			compatible = "ti,twl4030-vsim";
++
++			regulator-name = "VMMC2_IO_18";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++		};
++
++		twl_gpio: gpio {
++			compatible = "ti,twl4030-gpio";
++			gpio-controller;
++			#gpio-cells = <2>;
++			interrupt-controller;
++			#interrupt-cells = <1>;
++		};
++
++		usb2_phy: twl4030-usb {
++			compatible = "ti,twl4030-usb";
++			interrupts = <10>, <4>;
++			usb1v5-supply = <&vusb1v5>;
++			usb1v8-supply = <&vusb1v8>;
++			usb3v1-supply = <&vusb3v1>;
++			usb_mode = <1>;
++		};
++
++		twl_pwm: pwm {
++			compatible = "ti,twl4030-pwm";
++			#pwm-cells = <2>;
++		};
++
++		twl_pwmled: pwmled {
++			compatible = "ti,twl4030-pwmled";
++			#pwm-cells = <2>;
++		};
++
++		twl_keypad: keypad {
++			compatible = "ti,twl4030-keypad";
++			interrupts = <1>;
++			keypad,num-rows = <8>;
++			keypad,num-columns = <8>;
++
++			linux,keymap = < 0x00000010 /* KEY_Q */
++					 0x00010018 /* KEY_O */
++					 0x00020019 /* KEY_P */
++					 /* ... */
++					 >;
++		};
++
++		twl_pwrbutton: pwrbutton {
++			compatible = "ti,twl4030-pwrbutton";
++			interrupts = <8>;
++		};
++
++		twl_audio: audio {
++			compatible = "ti,twl4030-audio";
++			ti,enable-vibra = <1>;
++		};
++	};
++};
+diff --git a/Documentation/devicetree/bindings/mfd/twl4030-audio.txt b/Documentation/devicetree/bindings/mfd/twl4030-audio.txt
+deleted file mode 100644
+index 414d2ae..0000000
+--- a/Documentation/devicetree/bindings/mfd/twl4030-audio.txt
++++ /dev/null
+@@ -1,46 +0,0 @@
+-Texas Instruments TWL family (twl4030) audio module
+-
+-The audio module inside the TWL family consist of an audio codec and a vibra
+-driver.
+-
+-Required properties:
+-- compatible : must be "ti,twl4030-audio"
+-
+-Optional properties, nodes:
+-
+-Audio functionality:
+-- codec { }: Need to be present if the audio functionality is used. Within this
+-	     section the following options can be used:
+-- ti,digimic_delay: Delay need after enabling the digimic to reduce artifacts
+-		    from the start of the recorded sample (in ms)
+--ti,ramp_delay_value: HS ramp delay configuration to reduce pop noise
+--ti,hs_extmute: Use external mute for HS pop reduction
+--ti,hs_extmute_gpio: Use external GPIO to control the external mute
+--ti,offset_cncl_path: Offset cancellation path selection, refer to TRM for the
+-		      valid values.
+-
+-Vibra functionality
+-- ti,enable-vibra: Need to be set to <1> if the vibra functionality is used. if
+-		   missing or it is 0, the vibra functionality is disabled.
+-
+-Example:
+-&i2c1 {
+-	clock-frequency = <2600000>;
+-
+-	twl: twl@48 {
+-		reg = <0x48>;
+-		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
+-		interrupt-parent = <&intc>;
+-
+-		twl_audio: audio {
+-			compatible = "ti,twl4030-audio";
+-
+-			ti,enable-vibra = <1>;
+-
+-			codec {
+-				ti,ramp_delay_value = <3>;
+-			};
+-
+-		};
+-	};
+-};
+diff --git a/Documentation/devicetree/bindings/mfd/twl4030-power.txt b/Documentation/devicetree/bindings/mfd/twl4030-power.txt
+deleted file mode 100644
+index 8e15ec3..0000000
+--- a/Documentation/devicetree/bindings/mfd/twl4030-power.txt
++++ /dev/null
+@@ -1,28 +0,0 @@
+-Texas Instruments TWL family (twl4030) reset and power management module
+-
+-The power management module inside the TWL family provides several facilities
+-to control the power resources, including power scripts. For now, the
+-binding only supports the complete shutdown of the system after poweroff.
+-
+-Required properties:
+-- compatible : must be "ti,twl4030-power"
+-
+-Optional properties:
+-- ti,use_poweroff: With this flag, the chip will initiates an ACTIVE-to-OFF or
+-		   SLEEP-to-OFF transition when the system poweroffs.
+-
+-Example:
+-&i2c1 {
+-	clock-frequency = <2600000>;
+-
+-	twl: twl@48 {
+-		reg = <0x48>;
+-		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
+-		interrupt-parent = <&intc>;
+-
+-		twl_power: power {
+-			compatible = "ti,twl4030-power";
+-			ti,use_poweroff;
+-		};
+-	};
+-};
+diff --git a/Documentation/devicetree/bindings/pwm/ti,twl-pwm.txt b/Documentation/devicetree/bindings/pwm/ti,twl-pwm.txt
+deleted file mode 100644
+index 4e32bee..0000000
+--- a/Documentation/devicetree/bindings/pwm/ti,twl-pwm.txt
++++ /dev/null
+@@ -1,17 +0,0 @@
+-Texas Instruments TWL series PWM drivers
+-
+-Supported PWMs:
+-On TWL4030 series: PWM1 and PWM2
+-On TWL6030 series: PWM0 and PWM1
+-
+-Required properties:
+-- compatible: "ti,twl4030-pwm" or "ti,twl6030-pwm"
+-- #pwm-cells: should be 2. See pwm.txt in this directory for a description of
+-  the cells format.
+-
+-Example:
+-
+-twl_pwm: pwm {
+-	compatible = "ti,twl6030-pwm";
+-	#pwm-cells = <2>;
+-};
+diff --git a/Documentation/devicetree/bindings/pwm/ti,twl-pwmled.txt b/Documentation/devicetree/bindings/pwm/ti,twl-pwmled.txt
+deleted file mode 100644
+index 9f4b460..0000000
+--- a/Documentation/devicetree/bindings/pwm/ti,twl-pwmled.txt
++++ /dev/null
+@@ -1,17 +0,0 @@
+-Texas Instruments TWL series PWM drivers connected to LED terminals
+-
+-Supported PWMs:
+-On TWL4030 series: PWMA and PWMB (connected to LEDA and LEDB terminals)
+-On TWL6030 series: LED PWM (mainly used as charging indicator LED)
+-
+-Required properties:
+-- compatible: "ti,twl4030-pwmled" or "ti,twl6030-pwmled"
+-- #pwm-cells: should be 2. See pwm.txt in this directory for a description of
+-  the cells format.
+-
+-Example:
+-
+-twl_pwmled: pwmled {
+-	compatible = "ti,twl6030-pwmled";
+-	#pwm-cells = <2>;
+-};
+diff --git a/Documentation/devicetree/bindings/regulator/twl-regulator.txt b/Documentation/devicetree/bindings/regulator/twl-regulator.txt
+deleted file mode 100644
+index 75b0c16..0000000
+--- a/Documentation/devicetree/bindings/regulator/twl-regulator.txt
++++ /dev/null
+@@ -1,67 +0,0 @@
+-TWL family of regulators
+-
+-Required properties:
+-For twl6030 regulators/LDOs
+-- compatible:
+-  - "ti,twl6030-vaux1" for VAUX1 LDO
+-  - "ti,twl6030-vaux2" for VAUX2 LDO
+-  - "ti,twl6030-vaux3" for VAUX3 LDO
+-  - "ti,twl6030-vmmc" for VMMC LDO
+-  - "ti,twl6030-vpp" for VPP LDO
+-  - "ti,twl6030-vusim" for VUSIM LDO
+-  - "ti,twl6030-vana" for VANA LDO
+-  - "ti,twl6030-vcxio" for VCXIO LDO
+-  - "ti,twl6030-vdac" for VDAC LDO
+-  - "ti,twl6030-vusb" for VUSB LDO
+-  - "ti,twl6030-v1v8" for V1V8 LDO
+-  - "ti,twl6030-v2v1" for V2V1 LDO
+-  - "ti,twl6030-vdd1" for VDD1 SMPS
+-  - "ti,twl6030-vdd2" for VDD2 SMPS
+-  - "ti,twl6030-vdd3" for VDD3 SMPS
+-For twl6032 regulators/LDOs
+-- compatible:
+-  - "ti,twl6032-ldo1" for LDO1 LDO
+-  - "ti,twl6032-ldo2" for LDO2 LDO
+-  - "ti,twl6032-ldo3" for LDO3 LDO
+-  - "ti,twl6032-ldo4" for LDO4 LDO
+-  - "ti,twl6032-ldo5" for LDO5 LDO
+-  - "ti,twl6032-ldo6" for LDO6 LDO
+-  - "ti,twl6032-ldo7" for LDO7 LDO
+-  - "ti,twl6032-ldoln" for LDOLN LDO
+-  - "ti,twl6032-ldousb" for LDOUSB LDO
+-  - "ti,twl6032-smps3" for SMPS3 SMPS
+-  - "ti,twl6032-smps4" for SMPS4 SMPS
+-  - "ti,twl6032-vio" for VIO SMPS
+-For twl4030 regulators/LDOs
+-- compatible:
+-  - "ti,twl4030-vaux1" for VAUX1 LDO
+-  - "ti,twl4030-vaux2" for VAUX2 LDO
+-  - "ti,twl5030-vaux2" for VAUX2 LDO
+-  - "ti,twl4030-vaux3" for VAUX3 LDO
+-  - "ti,twl4030-vaux4" for VAUX4 LDO
+-  - "ti,twl4030-vmmc1" for VMMC1 LDO
+-  - "ti,twl4030-vmmc2" for VMMC2 LDO
+-  - "ti,twl4030-vpll1" for VPLL1 LDO
+-  - "ti,twl4030-vpll2" for VPLL2 LDO
+-  - "ti,twl4030-vsim" for VSIM LDO
+-  - "ti,twl4030-vdac" for VDAC LDO
+-  - "ti,twl4030-vintana2" for VINTANA2 LDO
+-  - "ti,twl4030-vio" for VIO LDO
+-  - "ti,twl4030-vdd1" for VDD1 SMPS
+-  - "ti,twl4030-vdd2" for VDD2 SMPS
+-  - "ti,twl4030-vintana1" for VINTANA1 LDO
+-  - "ti,twl4030-vintdig" for VINTDIG LDO
+-  - "ti,twl4030-vusb1v5" for VUSB1V5 LDO
+-  - "ti,twl4030-vusb1v8" for VUSB1V8 LDO
+-  - "ti,twl4030-vusb3v1" for VUSB3V1 LDO
+-
+-Optional properties:
+-- Any optional property defined in bindings/regulator/regulator.txt
+-
+-Example:
+-
+-	xyz: regulator@0 {
+-		compatible = "ti,twl6030-vaux1";
+-		regulator-min-microvolt  = <1000000>;
+-		regulator-max-microvolt  = <3000000>;
+-	};
+diff --git a/Documentation/devicetree/bindings/rtc/twl-rtc.txt b/Documentation/devicetree/bindings/rtc/twl-rtc.txt
+deleted file mode 100644
+index 596e0c9..0000000
+--- a/Documentation/devicetree/bindings/rtc/twl-rtc.txt
++++ /dev/null
+@@ -1,12 +0,0 @@
+-* TI twl RTC
+-
+-The TWL family (twl4030/6030) contains a RTC.
+-
+-Required properties:
+-- compatible : Should be twl4030-rtc
+-
+-Examples:
+-
+-rtc@0 {
+-    compatible = "ti,twl4030-rtc";
+-};
+diff --git a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
+deleted file mode 100644
+index 0aee0ad..0000000
+--- a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
++++ /dev/null
+@@ -1,40 +0,0 @@
+-USB COMPARATOR OF TWL CHIPS
+-
+-TWL6030 USB COMPARATOR
+- - compatible : Should be "ti,twl6030-usb"
+- - interrupts : Two interrupt numbers to the cpu should be specified. First
+-   interrupt number is the otg interrupt number that raises ID interrupts when
+-   the controller has to act as host and the second interrupt number is the
+-   usb interrupt number that raises VBUS interrupts when the controller has to
+-   act as device
+- - usb-supply : phandle to the regulator device tree node. It should be vusb
+-   if it is twl6030 or ldousb if it is twl6032 subclass.
+-
+-twl6030-usb {
+-	compatible = "ti,twl6030-usb";
+-	interrupts = < 4 10 >;
+-};
+-
+-Board specific device node entry
+-&twl6030-usb {
+-	usb-supply = <&vusb>;
+-};
+-
+-TWL4030 USB PHY AND COMPARATOR
+- - compatible : Should be "ti,twl4030-usb"
+- - interrupts : The interrupt numbers to the cpu should be specified. First
+-   interrupt number is the otg interrupt number that raises ID interrupts
+-   and VBUS interrupts. The second interrupt number is optional.
+- - <supply-name>-supply : phandle to the regulator device tree node.
+-   <supply-name> should be vusb1v5, vusb1v8 and vusb3v1
+- - usb_mode : The mode used by the phy to connect to the controller. "1"
+-   specifies "ULPI" mode and "2" specifies "CEA2011_3PIN" mode.
+-
+-twl4030-usb {
+-	compatible = "ti,twl4030-usb";
+-	interrupts = < 10 4 >;
+-	usb1v5-supply = <&vusb1v5>;
+-	usb1v8-supply = <&vusb1v8>;
+-	usb3v1-supply = <&vusb3v1>;
+-	usb_mode = <1>;
+-};
+diff --git a/Documentation/devicetree/bindings/watchdog/twl4030-wdt.txt b/Documentation/devicetree/bindings/watchdog/twl4030-wdt.txt
+deleted file mode 100644
+index 80a3719..0000000
+--- a/Documentation/devicetree/bindings/watchdog/twl4030-wdt.txt
++++ /dev/null
+@@ -1,10 +0,0 @@
+-Device tree bindings for twl4030-wdt driver (TWL4030 watchdog)
+-
+-Required properties:
+-	compatible = "ti,twl4030-wdt";
+-
+-Example:
+-
+-watchdog {
+-	compatible = "ti,twl4030-wdt";
+-};
+-- 
+1.8.4.rc3
 
-Al was watching the conversation so I assumed that no answer to that
-request was sufficient to take these patches in my tree.
-
-I fully intend to take responsibility for these patches and work through
-whatever issues they have, and I intend to send Linus my pull request.
-As such dropping the userns tree from linux-next seems inappropriate.
-
-Eric
