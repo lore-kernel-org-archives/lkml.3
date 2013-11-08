@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab3KHCWN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:22:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34906 "EHLO
+	id S1757387Ab3KHCYD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:24:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34944 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932693Ab3KHCV7 (ORCPT
+	with ESMTP id S1757261Ab3KHCWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:21:59 -0500
+	Thu, 7 Nov 2013 21:22:13 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 70/91] ASoC: dapm: Fix source list debugfs outputs
-Date: Thu,  7 Nov 2013 18:15:25 -0800
-Message-Id: <1383876946-2396-71-git-send-email-kamal@canonical.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>,
+        dri-devel@lists.freedesktop.org, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 57/91] drm: Pad drm_mode_get_connector to 64-bit boundary
+Date: Thu,  7 Nov 2013 18:15:12 -0800
+Message-Id: <1383876946-2396-58-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -27,34 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit ff18620c2157671a8ee21ebb8e6a3520ea209b1f upstream.
+commit bc5bd37ce48c66e9192ad2e7231e9678880f6f8e upstream.
 
-... due to a copy & paste error.
+Pavel Roskin reported that DRM_IOCTL_MODE_GETCONNECTOR was overwritting
+the 4 bytes beyond the end of its structure with a 32-bit userspace
+running on a 64-bit kernel. This is due to the padding gcc inserts as
+the drm_mode_get_connector struct includes a u64 and its size is not a
+natural multiple of u64s.
 
-Spotted by coverity CID 710923.
+64-bit kernel:
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+sizeof(drm_mode_get_connector)=80, alignof=8
+sizeof(drm_mode_get_encoder)=20, alignof=4
+sizeof(drm_mode_modeinfo)=68, alignof=4
+
+32-bit userspace:
+
+sizeof(drm_mode_get_connector)=76, alignof=4
+sizeof(drm_mode_get_encoder)=20, alignof=4
+sizeof(drm_mode_modeinfo)=68, alignof=4
+
+Fortuituously we can insert explicit padding to the tail of our
+structures without breaking ABI.
+
+Reported-by: Pavel Roskin <proski@gnu.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: dri-devel@lists.freedesktop.org
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/soc-dapm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/uapi/drm/drm_mode.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-index 258acad..f8495ef 100644
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -1766,7 +1766,7 @@ static ssize_t dapm_widget_power_read_file(struct file *file,
- 				w->active ? "active" : "inactive");
+diff --git a/include/uapi/drm/drm_mode.h b/include/uapi/drm/drm_mode.h
+index 3d6301b..f604a1a 100644
+--- a/include/uapi/drm/drm_mode.h
++++ b/include/uapi/drm/drm_mode.h
+@@ -223,6 +223,8 @@ struct drm_mode_get_connector {
+ 	__u32 connection;
+ 	__u32 mm_width, mm_height; /**< HxW in millimeters */
+ 	__u32 subpixel;
++
++	__u32 pad;
+ };
  
- 	list_for_each_entry(p, &w->sources, list_sink) {
--		if (p->connected && !p->connected(w, p->sink))
-+		if (p->connected && !p->connected(w, p->source))
- 			continue;
- 
- 		if (p->connect)
+ #define DRM_MODE_PROP_PENDING	(1<<0)
 -- 
 1.8.1.2
 
