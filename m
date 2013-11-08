@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162Ab3KHKML (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 05:12:11 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:39301 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754852Ab3KHKMI (ORCPT
+	id S1757200Ab3KHKMU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 05:12:20 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:38655 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757166Ab3KHKMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 05:12:08 -0500
+	Fri, 8 Nov 2013 05:12:16 -0500
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
         Grygorii Strashko <grygorii.strashko@ti.com>
@@ -20,53 +20,44 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH v5 0/7] gpio: daVinci: cleanup and feature enhancement
-Date: Fri,  8 Nov 2013 15:41:43 +0530
-Message-Id: <1383905510-31760-1-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v5 1/7] gpio: davinci: remove unnecessary printk
+Date: Fri,  8 Nov 2013 15:41:44 +0530
+Message-Id: <1383905510-31760-2-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1383905510-31760-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1383905510-31760-1-git-send-email-prabhakar.csengg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KV Sujith <sujithkv@ti.com>
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-This patch series does the following
-1> Ports the driver to use irqdomain.
-2> Adds dt binding support for gpio-davinci.
-3> Adds DA850 dt support goio.
+the devm_*() helper prints error messages in case of
+errors no need to do the same in the driver.
 
-Changes for v5:
-1: Fixed review comments pointed by Grygorii.
-2: Dropped the fixup patch
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ drivers/gpio/gpio-davinci.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-This patch series is based on following fixup series
-http://us.generation-nt.com/answer/patch-0-2-davinci-gpio-fixes-help-212978272.html
-
-KV Sujith (3):
-  gpio: davinci: add OF support
-  ARM: davinci: da850: add GPIO DT node
-  ARM: davinci: da850 evm: add GPIO pinumux entries DT node
-
-Lad, Prabhakar (4):
-  gpio: davinci: remove unnecessary printk
-  gpio: davinci: use readl/writel instead of __raw_*
-  gpio: davinci: use irqdomain
-  gpio: davinci: remove unused variable intc_irq_num
-
- .../devicetree/bindings/gpio/gpio-davinci.txt      |   39 +++++
- arch/arm/boot/dts/da850-evm.dts                    |   20 +++
- arch/arm/boot/dts/da850.dtsi                       |   14 ++
- arch/arm/mach-davinci/da830.c                      |    1 -
- arch/arm/mach-davinci/da850.c                      |    1 -
- arch/arm/mach-davinci/dm355.c                      |    1 -
- arch/arm/mach-davinci/dm365.c                      |    1 -
- arch/arm/mach-davinci/dm644x.c                     |    1 -
- arch/arm/mach-davinci/dm646x.c                     |    1 -
- drivers/gpio/gpio-davinci.c                        |  170 +++++++++++++-------
- include/linux/platform_data/gpio-davinci.h         |    3 +-
- 11 files changed, 185 insertions(+), 67 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-davinci.txt
-
+diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
+index 84be701..7230c43 100644
+--- a/drivers/gpio/gpio-davinci.c
++++ b/drivers/gpio/gpio-davinci.c
+@@ -389,11 +389,9 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
+ 	}
+ 
+ 	clk = devm_clk_get(dev, "gpio");
+-	if (IS_ERR(clk)) {
+-		printk(KERN_ERR "Error %ld getting gpio clock?\n",
+-		       PTR_ERR(clk));
++	if (IS_ERR(clk))
+ 		return PTR_ERR(clk);
+-	}
++
+ 	clk_prepare_enable(clk);
+ 
+ 	/*
 -- 
 1.7.9.5
 
