@@ -1,190 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab3KHMEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 07:04:40 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:36639 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab3KHMEj (ORCPT
+	id S1757205Ab3KHMEz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 07:04:55 -0500
+Received: from 3.mo1.mail-out.ovh.net ([46.105.60.232]:50252 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757079Ab3KHMEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 07:04:39 -0500
-Message-ID: <527CD34A.30406@hitachi.com>
-Date: Fri, 08 Nov 2013 21:04:26 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 8 Nov 2013 07:04:54 -0500
+Date: Fri, 8 Nov 2013 12:50:04 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: Use udiv/sdiv for __aeabi_{u}idiv library functions
+Message-ID: <20131108115004.GH28304@ns203013.ovh.net>
+References: <1383852042-10780-1-git-send-email-sboyd@codeaurora.org>
+ <CAL_JsqJ9zbJFJePk2FHH8UhrUP2J7fuuiZLb+NhuTovRodqrCA@mail.gmail.com>
 MIME-Version: 1.0
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH v2 1/8] x86: speed up int3-based patching using less paranoid
- write
-References: <1383901932-1945-1-git-send-email-pmladek@suse.cz> <1383901932-1945-3-git-send-email-pmladek@suse.cz>
-In-Reply-To: <1383901932-1945-3-git-send-email-pmladek@suse.cz>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL_JsqJ9zbJFJePk2FHH8UhrUP2J7fuuiZLb+NhuTovRodqrCA@mail.gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 14946602738881178588
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrheejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrheejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/08 18:12), Petr Mladek wrote:
-> This change is inspired by the int3-based patching code used in
-> ftrace. See the commit fd4363fff3d9 (x86: Introduce int3
-> (breakpoint)-based instruction patching).
+On 19:34 Thu 07 Nov     , Rob Herring wrote:
+> On Thu, Nov 7, 2013 at 1:20 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> > If we're running on a v7 ARM CPU, detect if the CPU supports the
+> > sdiv/udiv instructions and replace the signed and unsigned
+> > division library functions with an sdiv/udiv instruction.
 > 
-> When trying to use text_poke_bp in ftrace, the result was slower than
-> the original implementation.
+> [snip]
 > 
-> It turned out that one difference was in text_poke vs. ftrace_write.
-> text_poke did many extra operations to make sure that the change
-> was atomic.
-
-AFAIK, the main reason why text_poke is used is avoiding
-RODATA protection (by alias mapping).
-
-> In fact, we do not need this luxury in text_poke_bp because
-> the modified code is guarded by the int3 handler. The int3
-> interrupt itself is added and removed by an atomic operation
-> because we modify only one byte.
+> > diff --git a/arch/arm/lib/Makefile b/arch/arm/lib/Makefile
+> > index bd454b0..6ed6496 100644
+> > --- a/arch/arm/lib/Makefile
+> > +++ b/arch/arm/lib/Makefile
+> > @@ -15,6 +15,9 @@ lib-y         := backtrace.o changebit.o csumipv6.o csumpartial.o   \
+> >                    io-readsb.o io-writesb.o io-readsl.o io-writesl.o  \
+> >                    call_with_stack.o
+> >
+> > +lib-$(CONFIG_CPU_V7) += div-v7.o
+> > +CFLAGS_div-v7.o := -march=armv7-a
 > 
-> This patch adds text_poke_part which is inspired by ftrace_write.
-> Then it is used in text_poke_bp instead of the paranoid text_poke.
+> Won't this fail to build if the compiler doesn't have armv7-a support.
+> Perhaps we don't care about compilers that old.
+
+use the propoer compiler to compile a armv7 kernel
+
+Best Regards,
+J.
 > 
-> For example, I tried to switch between 7 tracers: blk, branch,
-> function_graph, wakeup_rt, irqsoff, function, and nop. Every tracer
-> has also been enabled and disabled. With 100 cycles, I got these
-> times with text_poke:
+> Rob
 > 
->     real    25m7.380s     25m13.44s     25m9.072s
->     user    0m0.004s      0m0.004s      0m0.004s
->     sys     0m3.480s      0m3.508s      0m3.420s
-> 
-> and with text_poke_part:
-> 
->     real    3m23.335s     3m24.422s     3m26.686s
->     user    0m0.004s      0m0.004s	0m0.004s
->     sys     0m3.724s      0m3.772s	0m3.588s
-> 
-> Signed-off-by: Petr Mladek <pmladek@suse.cz>
-> ---
->  arch/x86/kernel/alternative.c | 49 ++++++++++++++++++++++++++++++++++++++-----
->  1 file changed, 44 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-> index df94598..0586dc1 100644
-> --- a/arch/x86/kernel/alternative.c
-> +++ b/arch/x86/kernel/alternative.c
-> @@ -8,6 +8,7 @@
->  #include <linux/kprobes.h>
->  #include <linux/mm.h>
->  #include <linux/vmalloc.h>
-> +#include <linux/uaccess.h>
->  #include <linux/memory.h>
->  #include <linux/stop_machine.h>
->  #include <linux/slab.h>
-> @@ -586,6 +587,44 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
->  	return addr;
->  }
->  
-> +/**
-> + * text_poke_part - Update part of the instruction on a live kernel when using
-> + * 		    int3 breakpoint
-> + * @addr:   address to modify
-> + * @opcode: source of the copy
-> + * @len:    length to copy
-> + *
-> + * If we patch instructions using int3 interrupt, we do not need to be so
-> + * careful about an atomic write. Adding and removing the interrupt is atomic
-> + * because we modify only one byte. The rest of the instruction could be
-> + * modified in several steps because it is guarded by the interrupt handler.
-> + * Hence we could use faster code here. See also text_poke_bp below for more
-> + * details.
-> + *
-> + * Note: Must be called under text_mutex.
-> + */
-> +static int text_poke_part(void *addr, const void *opcode, size_t len)
-> +{
-> +	/*
-> +	 * On x86_64, kernel text mappings are mapped read-only with
-> +	 * CONFIG_DEBUG_RODATA. So we use the kernel identity mapping instead
-> +	 * of the kernel text mapping to modify the kernel text.
-
-Hmm, I couldn't find the guarantee that __va(__pa_symbol(x)) gives us a
-raw(writable) text pages always.
-Even it is true, it seems wired that we can still rewrite such protected
-page without any spacial page remapping operation.
-
-
-> +	 *
-> +	 * For 32bit kernels, these mappings are same and we can use
-> +	 * kernel identity mapping to modify code.
-> +	 */
-> +	if (((unsigned long)addr >= (unsigned long)_text) &&
-> +	    ((unsigned long)addr < (unsigned long)_etext))
-> +		addr = __va(__pa_symbol(addr));
-
-You should also warn or return error if the given addr is not in the kernel text.
-
-> +
-> +	if (probe_kernel_write(addr, opcode, len))
-> +		return -EPERM;
-> +
-> +	sync_core();
-> +
-> +	return 0;
-> +}
-> +
->  static void do_sync_core(void *info)
->  {
->  	sync_core();
-> @@ -648,15 +687,15 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
->  	 */
->  	smp_wmb();
->  
-> -	text_poke(addr, &int3, sizeof(int3));
-> +	text_poke_part(addr, &int3, sizeof(int3));
-
-Anyway, text_poke itself will cause a BUG if it hits an error, but text_poke_part() seems
-silently failing. It should handle the error correctly (or call BUG()).
-
->  
->  	on_each_cpu(do_sync_core, NULL, 1);
->  
->  	if (len - sizeof(int3) > 0) {
->  		/* patch all but the first byte */
-> -		text_poke((char *)addr + sizeof(int3),
-> -			  (const char *) opcode + sizeof(int3),
-> -			  len - sizeof(int3));
-> +		text_poke_part((char *)addr + sizeof(int3),
-> +			       (const char *) opcode + sizeof(int3),
-> +			       len - sizeof(int3));
-
-Here we should check an error too.
-
->  		/*
->  		 * According to Intel, this core syncing is very likely
->  		 * not necessary and we'd be safe even without it. But
-> @@ -666,7 +705,7 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
->  	}
->  
->  	/* patch the first byte */
-> -	text_poke(addr, opcode, sizeof(int3));
-> +	text_poke_part(addr, opcode, sizeof(int3));
-
-Ditto.
-
->  
->  	on_each_cpu(do_sync_core, NULL, 1);
-
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
