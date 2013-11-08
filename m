@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757114Ab3KHPff (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 10:35:35 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46550 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab3KHPfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 10:35:33 -0500
-Date: Fri, 8 Nov 2013 10:35:07 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, xen-devel@lists.xenproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH] PCI: Introduce two new MSI infrastructure calls for
- masking/unmasking.
-Message-ID: <20131108153507.GA24755@phenom.dumpdata.com>
-References: <1383772616-23060-1-git-send-email-konrad.wilk@oracle.com>
- <CAErSpo4rdHwhuF=SM6WT3EP3TGoUFnwxVdx5919qxea3On7MRw@mail.gmail.com>
- <527C41E9.6040002@oracle.com>
+	id S1757404Ab3KHPm4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 10:42:56 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:39012 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756350Ab3KHPmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 10:42:54 -0500
+Message-ID: <527D05BA.3000008@ti.com>
+Date: Fri, 8 Nov 2013 17:39:38 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <527C41E9.6040002@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>, Sekhar Nori <nsekhar@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        <linux-gpio@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v5 1/7] gpio: davinci: remove unnecessary printk
+References: <1383905510-31760-1-git-send-email-prabhakar.csengg@gmail.com> <1383905510-31760-2-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1383905510-31760-2-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 09:44:09AM +0800, Zhenzhong Duan wrote:
-> 
-> On 2013-11-07 07:51, Bjorn Helgaas wrote:
-> >[+cc Thomas, Ingo, Peter, x86 list]
-> >
-> >On Wed, Nov 6, 2013 at 2:16 PM, Konrad Rzeszutek Wilk
-> ><konrad.wilk@oracle.com> wrote:
-> >>Certain platforms do not allow writes in the MSI-X bars
-> >>to setup or tear down vector values. To combat against
-> >>the generic code trying to write to that and either silently
-> >>being ignored or crashing due to the pagetables being marked r/o
-> >>this patch introduces a platform over-write.
-> >>
-> >>Note that we keep two separate, non-weak, functions
-> >>default_mask_msi_irqs() and default_mask_msix_irqs() for the
-> >>behavior of the arch_mask_msi_irqs() and arch_mask_msix_irqs(),
-> >>as the default behavior is needed by x86 PCI code.
-> >>
-> >>For Xen, which does not allow the guest to write to MSI-X
-> >>tables - as the hypervisor is solely responsible for setting
-> >>the vector values - we implement two nops.
-> >>
-> >>CC: Bjorn Helgaas <bhelgaas@google.com>
-> >>CC: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-> >>CC: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> >>Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >I think this is safe, and I'd like to squeeze it into the v3.13 merge
-> >window next week, since it supersedes three patches Zhenzhong has been
-> >trying to get in since July [1], and this patch is much simpler to
-> >understand.
-> This patch could replace the first two.
-> I think the third patch of mine is still needed as it does a
-> different thing.
-> It optimizes restore path in dom0.
+On 11/08/2013 12:11 PM, Prabhakar Lad wrote:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>
+> the devm_*() helper prints error messages in case of
+> errors no need to do the same in the driver.
 
-I tried to rebase it on top of this patch but it ended up that
-you still need the two arguments (for restore_... operation). 
+Pls, drop it - devm_clk_get() doesn't always print error messages
+>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>   drivers/gpio/gpio-davinci.c |    6 ++----
+>   1 file changed, 2 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
+> index 84be701..7230c43 100644
+> --- a/drivers/gpio/gpio-davinci.c
+> +++ b/drivers/gpio/gpio-davinci.c
+> @@ -389,11 +389,9 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
+>   	}
+>
+>   	clk = devm_clk_get(dev, "gpio");
+> -	if (IS_ERR(clk)) {
+> -		printk(KERN_ERR "Error %ld getting gpio clock?\n",
+> -		       PTR_ERR(clk));
+> +	if (IS_ERR(clk))
+>   		return PTR_ERR(clk);
+> -	}
+> +
+>   	clk_prepare_enable(clk);
+>
+>   	/*
+>
 
-But perhaps there is a better way. If you can rebase on top
-of this patch - and send it out - that would be great!
