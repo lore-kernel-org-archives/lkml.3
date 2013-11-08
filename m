@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758169Ab3KHTmP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 14:42:15 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:52250 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758054Ab3KHTmN (ORCPT
+	id S1757899Ab3KHToF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 14:44:05 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:34083 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757537Ab3KHToD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 14:42:13 -0500
+	Fri, 8 Nov 2013 14:44:03 -0500
+X-IronPort-AV: E=Sophos;i="4.93,661,1378857600"; 
+   d="scan'208";a="69701934"
+Date: Fri, 8 Nov 2013 19:42:42 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, Will Deacon <will.deacon@arm.com>
+Subject: Re: swiotlb on arm status
+In-Reply-To: <20131108193815.GU16735@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1311081942090.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1311061245580.26077@kaball.uk.xensource.com> <alpine.DEB.2.02.1311081854530.26077@kaball.uk.xensource.com> <20131108193815.GU16735@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <527CC2A5.7080000@linaro.org>
-References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
-	<1381960030-1640-2-git-send-email-tim.kryger@linaro.org>
-	<527CC2A5.7080000@linaro.org>
-Date: Fri, 8 Nov 2013 11:42:12 -0800
-Message-ID: <CAAYSxhoHYaFzcoxEAJrNb6d8n1aKGDN68K3eekRT22s0h7960w@mail.gmail.com>
-Subject: Re: [RESEND PATCH v2 1/6] ARM: dts: Declare clocks as fixed on bcm11351
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Christian Daudt <bcm@fixthebug.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Patch Tracking <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 8, 2013 at 2:53 AM, Daniel Lezcano
-<daniel.lezcano@linaro.org> wrote:
+On Fri, 8 Nov 2013, Russell King - ARM Linux wrote:
+> On Fri, Nov 08, 2013 at 06:56:43PM +0000, Stefano Stabellini wrote:
+> > Russell,
+> > sorry to harass you again, but I am starting to be worried about missing
+> > the merge window. Could you please take a last look at these patches?
+> 
+> Well, as far as this patch goes, yes it's fine.
+> 
+> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+ 
+Thank you!!
 
-> I was wondering what is the status of this patchset ?
->
-> The patchset touches different areas maintained by different people. Through
-> what tree do you expect this patchset to be merged ??
 
-Hi Daniel,
+> But I wonder what's happening with xgmac?  Will it get fixed?
+> 
 
-I plan to send an updated version soon to address some concerns raised by Mark.
-
-Once all the maintainers are satisfied and provide their acks, I would
-like Christian to take the series into his tree.
-
-I expect Christian will have a few other Broadcom DTS file changes in
-his tree so sending the series through him should make it easier to
-avoid/manage conflicts.
-
-Christian, would that work for you?
-
-Thanks,
-Tim Kryger
+Rob sent a patch to fix it. I tested it and it works.
