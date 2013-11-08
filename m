@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932686Ab3KHCVz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:21:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34854 "EHLO
+	id S1757513Ab3KHC0s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:26:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34896 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932642Ab3KHCVj (ORCPT
+	with ESMTP id S932684Ab3KHCVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:21:39 -0500
+	Thu, 7 Nov 2013 21:21:55 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Seif Mazareeb <seif@marvell.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Stefan Hajnoczi <stefanha@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 37/91] net: fix cipso packet validation when !NETLABEL
-Date: Thu,  7 Nov 2013 18:14:52 -0800
-Message-Id: <1383876946-2396-38-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 64/91] vhost/scsi: Fix incorrect usage of get_user_pages_fast write parameter
+Date: Thu,  7 Nov 2013 18:15:19 -0800
+Message-Id: <1383876946-2396-65-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -27,57 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seif Mazareeb <seif@marvell.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-[ Upstream commit f2e5ddcc0d12f9c4c7b254358ad245c9dddce13b ]
+commit 60a01f558af9c48b0bb31f303c479e32721add3f upstream.
 
-When CONFIG_NETLABEL is disabled, the cipso_v4_validate() function could loop
-forever in the main loop if opt[opt_iter +1] == 0, this will causing a kernel
-crash in an SMP system, since the CPU executing this function will
-stall /not respond to IPIs.
+This patch addresses a long-standing bug where the get_user_pages_fast()
+write parameter used for setting the underlying page table entry permission
+bits was incorrectly set to write=1 for data_direction=DMA_TO_DEVICE, and
+passed into get_user_pages_fast() via vhost_scsi_map_iov_to_sgl().
 
-This problem can be reproduced by running the IP Stack Integrity Checker
-(http://isic.sourceforge.net) using the following command on a Linux machine
-connected to DUT:
+However, this parameter is intended to signal WRITEs to pinned userspace
+PTEs for the virtio-scsi DMA_FROM_DEVICE -> READ payload case, and *not*
+for the virtio-scsi DMA_TO_DEVICE -> WRITE payload case.
 
-"icmpsic -s rand -d <DUT IP address> -r 123456"
-wait (1-2 min)
+This bug would manifest itself as random process segmentation faults on
+KVM host after repeated vhost starts + stops and/or with lots of vhost
+endpoints + LUNs.
 
-Signed-off-by: Seif Mazareeb <seif@marvell.com>
-Acked-by: Paul Moore <paul@paul-moore.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Stefan Hajnoczi <stefanha@redhat.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Asias He <asias@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[ kamal: backport to 3.8 (applied to tcm_vhost.c) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/net/cipso_ipv4.h | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/vhost/tcm_vhost.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/net/cipso_ipv4.h b/include/net/cipso_ipv4.h
-index a7a683e..a8c2ef6 100644
---- a/include/net/cipso_ipv4.h
-+++ b/include/net/cipso_ipv4.h
-@@ -290,6 +290,7 @@ static inline int cipso_v4_validate(const struct sk_buff *skb,
- 	unsigned char err_offset = 0;
- 	u8 opt_len = opt[1];
- 	u8 opt_iter;
-+	u8 tag_len;
- 
- 	if (opt_len < 8) {
- 		err_offset = 1;
-@@ -302,11 +303,12 @@ static inline int cipso_v4_validate(const struct sk_buff *skb,
- 	}
- 
- 	for (opt_iter = 6; opt_iter < opt_len;) {
--		if (opt[opt_iter + 1] > (opt_len - opt_iter)) {
-+		tag_len = opt[opt_iter + 1];
-+		if ((tag_len == 0) || (opt[opt_iter + 1] > (opt_len - opt_iter))) {
- 			err_offset = opt_iter + 1;
- 			goto out;
- 		}
--		opt_iter += opt[opt_iter + 1];
-+		opt_iter += tag_len;
- 	}
- 
- out:
+diff --git a/drivers/vhost/tcm_vhost.c b/drivers/vhost/tcm_vhost.c
+index 22321cf..9412440 100644
+--- a/drivers/vhost/tcm_vhost.c
++++ b/drivers/vhost/tcm_vhost.c
+@@ -696,7 +696,7 @@ static void vhost_scsi_handle_vq(struct vhost_scsi *vs)
+ 		if (data_direction != DMA_NONE) {
+ 			ret = vhost_scsi_map_iov_to_sgl(tv_cmd,
+ 					&vq->iov[data_first], data_num,
+-					data_direction == DMA_TO_DEVICE);
++					data_direction == DMA_FROM_DEVICE);
+ 			if (unlikely(ret)) {
+ 				vq_err(vq, "Failed to map iov to sgl\n");
+ 				break; /* TODO */
 -- 
 1.8.1.2
 
