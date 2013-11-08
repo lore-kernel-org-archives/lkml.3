@@ -1,29 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab3KHCS0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:18:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34598 "EHLO
+	id S1757089Ab3KHCSO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:18:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34574 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab3KHCQ3 (ORCPT
+	with ESMTP id S1756596Ab3KHCQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:16:29 -0500
+	Thu, 7 Nov 2013 21:16:22 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>, Takashi Iwai <tiwai@suse.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 90/91] lib/scatterlist.c: don't flush_kernel_dcache_page on slab page
-Date: Thu,  7 Nov 2013 18:15:45 -0800
-Message-Id: <1383876946-2396-91-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 89/91] ALSA: fix oops in snd_pcm_info() caused by ASoC DPCM
+Date: Thu,  7 Nov 2013 18:15:44 -0800
+Message-Id: <1383876946-2396-90-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -36,64 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 3d77b50c5874b7e923be946ba793644f82336b75 upstream.
+commit a4461f41b94cb52e0141af717dcf4ef6558c8e2e upstream.
 
-Commit b1adaf65ba03 ("[SCSI] block: add sg buffer copy helper
-functions") introduces two sg buffer copy helpers, and calls
-flush_kernel_dcache_page() on pages in SG list after these pages are
-written to.
+Unable to handle kernel NULL pointer dereference at virtual address 00000008
+pgd = d5300000
+[00000008] *pgd=0d265831, *pte=00000000, *ppte=00000000
+Internal error: Oops: 17 [#1] PREEMPT ARM
+CPU: 0 PID: 2295 Comm: vlc Not tainted 3.11.0+ #755
+task: dee74800 ti: e213c000 task.ti: e213c000
+PC is at snd_pcm_info+0xc8/0xd8
+LR is at 0x30232065
+pc : [<c031b52c>]    lr : [<30232065>]    psr: a0070013
+sp : e213dea8  ip : d81cb0d0  fp : c05f7678
+r10: c05f7770  r9 : fffffdfd  r8 : 00000000
+r7 : d8a968a8  r6 : d8a96800  r5 : d8a96200  r4 : d81cb000
+r3 : 00000000  r2 : d81cb000  r1 : 00000001  r0 : d8a96200
+Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c5387d  Table: 15300019  DAC: 00000015
+Process vlc (pid: 2295, stack limit = 0xe213c248)
+[<c031b52c>] (snd_pcm_info) from [<c031b570>] (snd_pcm_info_user+0x34/0x9c)
+[<c031b570>] (snd_pcm_info_user) from [<c03164a4>] (snd_pcm_control_ioctl+0x274/0x280)
+[<c03164a4>] (snd_pcm_control_ioctl) from [<c0311458>] (snd_ctl_ioctl+0xc0/0x55c)
+[<c0311458>] (snd_ctl_ioctl) from [<c00eca84>] (do_vfs_ioctl+0x80/0x31c)
+[<c00eca84>] (do_vfs_ioctl) from [<c00ecd5c>] (SyS_ioctl+0x3c/0x60)
+[<c00ecd5c>] (SyS_ioctl) from [<c000e500>] (ret_fast_syscall+0x0/0x48)
+Code: e1a00005 e59530dc e3a01001 e1a02004 (e5933008)
+---[ end trace cb3d9bdb8dfefb3c ]---
 
-Unfortunately, the commit may introduce a potential bug:
+This is provoked when the ASoC front end is open along with its backend,
+(which causes the backend to have a runtime assigned to it) and then the
+SNDRV_CTL_IOCTL_PCM_INFO is requested for the (visible) backend device.
 
- - Before sending some SCSI commands, kmalloc() buffer may be passed to
-   block layper, so flush_kernel_dcache_page() can see a slab page
-   finally
+Resolve this by ensuring that ASoC internal backend devices are not
+visible to userspace, just as the commentry for snd_pcm_new_internal()
+says it should be.
 
- - According to cachetlb.txt, flush_kernel_dcache_page() is only called
-   on "a user page", which surely can't be a slab page.
-
- - ARCH's implementation of flush_kernel_dcache_page() may use page
-   mapping information to do optimization so page_mapping() will see the
-   slab page, then VM_BUG_ON() is triggered.
-
-Aaro Koskinen reported the bug on ARM/kirkwood when DEBUG_VM is enabled,
-and this patch fixes the bug by adding test of '!PageSlab(miter->page)'
-before calling flush_kernel_dcache_page().
-
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Tested-by: Simon Baatz <gmbnomis@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Acked-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- lib/scatterlist.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/core/pcm.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-index 7874b01..bd86887 100644
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -495,7 +495,8 @@ void sg_miter_stop(struct sg_mapping_iter *miter)
- 	if (miter->addr) {
- 		miter->__offset += miter->consumed;
+diff --git a/sound/core/pcm.c b/sound/core/pcm.c
+index 61798f8..2df12bd 100644
+--- a/sound/core/pcm.c
++++ b/sound/core/pcm.c
+@@ -49,6 +49,8 @@ static struct snd_pcm *snd_pcm_get(struct snd_card *card, int device)
+ 	struct snd_pcm *pcm;
  
--		if (miter->__flags & SG_MITER_TO_SG)
-+		if ((miter->__flags & SG_MITER_TO_SG) &&
-+		    !PageSlab(miter->page))
- 			flush_kernel_dcache_page(miter->page);
+ 	list_for_each_entry(pcm, &snd_pcm_devices, list) {
++		if (pcm->internal)
++			continue;
+ 		if (pcm->card == card && pcm->device == device)
+ 			return pcm;
+ 	}
+@@ -60,6 +62,8 @@ static int snd_pcm_next(struct snd_card *card, int device)
+ 	struct snd_pcm *pcm;
  
- 		if (miter->__flags & SG_MITER_ATOMIC) {
+ 	list_for_each_entry(pcm, &snd_pcm_devices, list) {
++		if (pcm->internal)
++			continue;
+ 		if (pcm->card == card && pcm->device > device)
+ 			return pcm->device;
+ 		else if (pcm->card->number > card->number)
 -- 
 1.8.1.2
 
