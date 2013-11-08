@@ -1,108 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab3KHJVB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 04:21:01 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:34656 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab3KHJUy (ORCPT
+	id S1756447Ab3KHJZs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 04:25:48 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:56921 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab3KHJZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 04:20:54 -0500
-Date: Fri, 8 Nov 2013 01:21:06 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>, Olof Johansson <olof@lixom.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the block tree with the  tree
-Message-ID: <20131108092106.GA30271@kmo-pixel>
-References: <20131108125307.613427c04a7527c4359e6443@canb.auug.org.au>
- <20131108020805.GI3842@kmo>
- <527C4D35.8000907@oracle.com>
- <20131108073324.GA31662@infradead.org>
- <20131108073959.GA17807@kmo-pixel>
- <20131108074445.GA11595@infradead.org>
- <20131108075617.GB17807@kmo-pixel>
- <20131108080221.GA31866@infradead.org>
- <20131108081737.GA27885@kmo-pixel>
- <20131108083251.GA20121@infradead.org>
+	Fri, 8 Nov 2013 04:25:41 -0500
+Message-ID: <527CAE10.7000806@gmail.com>
+Date: Fri, 08 Nov 2013 10:25:36 +0100
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131108083251.GA20121@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Randy Dunlap <rdunlap@infradead.org>, peterz@infradead.org,
+        tglx@linutronix.de
+CC: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com
+Subject: Re: [PATCH 14/14] sched: add sched_dl documentation.
+References: <1383832027-15666-1-git-send-email-juri.lelli@gmail.com> <527BC380.4070300@infradead.org>
+In-Reply-To: <527BC380.4070300@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 12:32:51AM -0800, Christoph Hellwig wrote:
-> On Fri, Nov 08, 2013 at 12:17:37AM -0800, Kent Overstreet wrote:
-> > The core issue isn't whether the IO is going to a block based filesystem
-> > (but thanks for pointing out that that's not necessarily true!) but
-> > whether we want to work with pinned pages or not. If pinned pages are ok
-> > for everything, then bios as a common interface work - likely evolving
-> > them a bit to be more general (it's just bi_bdev and bi_sector that's
-> > actually block specific) - and IMO that would be far preferable to this
-> > abstraction layer.
-> > 
-> > If OTOH we need a common interface that's also for places where we can't
-> > afford the overhead of pinning user pages - that's a different story,
-> > and maybe we do need all this infrastructure then. That's why I'm asking
-> > about the stuff you meantioned, I'm honestly not sure.
+Hi,
+
+On 11/07/2013 05:44 PM, Randy Dunlap wrote:
+> Hi,
 > 
-> For both of them we will deal with kernel-allocated pages that are never
-> mapped to userspace.  This is likely to be true for all the consumers
-> of in-kernel aio/dio as the existing interfaces handle user pages just
-> fine.
-
-Ok, that's good to know.
-
-> > What I'm working towards though is a clean separation between buffered
-> > and direct code paths, so that buffered IO can continue work with iovs
-> > and for O_DIRECT the first thing you do is fill out a bio with pinned
-> > pages and send it down to filesystem code or wherever it's going to go.
+> Just a few minor edits...
 > 
-> I don't think pushing bios above the fs interface is a good idea. Note
-> that the iovecs come from userspace for the user pages cases, so there
-> is little we can do about that, and non-bio based direct I/O
-> implementations generally work directly at just that level and never
-> even touch the direct-io.c code.
 
-Bios can point to userspage pages just fine (and they do today for DIO
-to block devices/block based filesystems today). Don't think of bios as
-"block device IOs", just think of them as the equivalent of an iovec +
-iov_iter except instead of (potentially userspace) pointers you have
-page pointers. That's the core part of what they do (and even if we
-don't standardize on bios for that we should standardize on _something_
-for that functionality).
+Thanks!
 
-Here's the helper function I wrote for my dio rewrite - it should really
-take an iov_iter instead of uaddr and len, but user iovec -> bio is the
-easy bit:
+Best,
 
-http://evilpiepirate.org/git/linux-bcache.git/commit/?h=block_stuff&id=4462c03167767c656986afaf981f891705fd5d3b
+- Juri
 
-> If you want to redo the ->direct_IO address_space operation and
-> generic_file_direct_write and the direct I/O side of
-> generic_file_aio_read (both of which aren't anywhere near as generic as
-> the name claims) I'm all for it, but it really won't affect the consumer
-> of the in-kernel aio/dio code.
-
-I'm skeptical, but I'm way too tired to make good arguments and this
-touches on too much code that I'm less familiar with.
-
-also the flow of control in this code is such a goddamn clusterfuck I
-don't even know what to say.
-
-I'll dig more into the ecryptfs and target aio stuff tomorrow though.
-
-> > That make sense? I can show you more concretely what I'm working on if
-> > you want. Or if I'm full of crap and this is useless for what you guys
-> > want I'm sure you'll let me know :)
+> On 11/07/13 05:47, Juri Lelli wrote:
+>> From: Dario Faggioli <raistlin@linux.it>
+>>
+>> Add in Documentation/scheduler/ some hints about the design
+>> choices, the usage and the future possible developments of the
+>> sched_dl scheduling class and of the SCHED_DEADLINE policy.
+>>
+>> Signed-off-by: Dario Faggioli <raistlin@linux.it>
+>> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+>> ---
+>>  Documentation/scheduler/sched-deadline.txt |  196 ++++++++++++++++++++++++++++
+>>  kernel/sched/deadline.c                    |    3 +-
+>>  2 files changed, 198 insertions(+), 1 deletion(-)
+>>  create mode 100644 Documentation/scheduler/sched-deadline.txt
+>>
+>> diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
+>> new file mode 100644
+>> index 0000000..4d1ed52
+>> --- /dev/null
+>> +++ b/Documentation/scheduler/sched-deadline.txt
+>> @@ -0,0 +1,196 @@
+>> +			  Deadline Task Scheduling
+>> +			  ------------------------
+>> +
+>> +CONTENTS
+>> +========
+>> +
+>> +0. WARNING
+>> +1. Overview
+>> +2. Task scheduling
+>> +2. The Interface
+>> +3. Bandwidth management
+>> +  3.1 System-wide settings
+>> +  3.2 Task interface
+>> +  3.4 Default behavior
+>> +4. Tasks CPU affinity
+>> +  4.1 SCHED_DEADLINE and cpusets HOWTO
+>> +5. Future plans
+>> +
+>> +
+>> +0. WARNING
+>> +==========
+>> +
+>> + Fiddling with these settings can result in an unpredictable or even unstable
+>> + system behavior. As for -rt (group) scheduling, it is assumed that root users
+>> + know what they're doing.
+>> +
+>> +
+>> +1. Overview
+>> +===========
+>> +
+>> + The SCHED_DEADLINE policy contained inside the sched_dl scheduling class is
+>> + basically an implementation of the Earliest Deadline First (EDF) scheduling
+>> + algorithm, augmented with a mechanism (called Constant Bandwidth Server, CBS)
+>> + that makes it possible to isolate the behavior of tasks between each other.
+>> +
+>> +
+>> +2. Task scheduling
+>> +==================
+>> +
+>> + The typical -deadline task is composed of a computation phase (instance)
+>> + which is activated on a periodic or sporadic fashion. The expected (maximum)
+>> + duration of such computation is called the task's runtime; the time interval
+>> + by which each instance needs to be completed is called the task's relative
+>> + deadline. The task's absolute deadline is dynamically calculated as the
+>> + time instant a task (or, more properly) activates plus the relative
+>> + deadline.
+>> +
+>> + The EDF[1] algorithm selects the task with the smallest absolute deadline as
+>> + the one to be executed first, while the CBS[2,3] ensures that each task runs
+>> + for at most its runtime every period, avoiding any interference between
+>> + different tasks (bandwidth isolation).
+>> + Thanks to this feature, also tasks that do not strictly comply with the
+>> + computational model described above can effectively use the new policy.
+>> + IOW, there are no limitations on what kind of task can exploit this new
+>> + scheduling discipline, even if it must be said that it is particularly
+>> + suited for periodic or sporadic tasks that need guarantees on their
+>> + timing behavior, e.g., multimedia, streaming, control applications, etc.
+>> +
+>> + References:
+>> +  1 - C. L. Liu and J. W. Layland. Scheduling algorithms for multiprogram-
+>> +      ming in a hard-real-time environment. Journal of the Association for
+>> +      Computing Machinery, 20(1), 1973.
+>> +  2 - L. Abeni , G. Buttazzo. Integrating Multimedia Applications in Hard
+>> +      Real-Time Systems. Proceedings of the 19th IEEE Real-time Systems
+>> +      Symposium, 1998. http://retis.sssup.it/~giorgio/paps/1998/rtss98-cbs.pdf
+>> +  3 - L. Abeni. Server Mechanisms for Multimedia Applications. ReTiS Lab
+>> +      Technical Report. http://xoomer.virgilio.it/lucabe72/pubs/tr-98-01.ps
+>> +
+>> +3. Bandwidth management
+>> +=======================
+>> +
+>> + In order for the -deadline scheduling to be effective and useful, it is
+>> + important to have some method to keep the allocation of the available CPU
+>> + bandwidth to the tasks under control.
+>> + This is usually called "admission control" and if it is not performed at all,
+>> + no guarantee can be given on the actual scheduling of the -deadline tasks.
+>> +
+>> + Since when RT-throttling has been introduced each task group has a bandwidth
+>> + associated, calculated as a certain amount of runtime over a period.
+>> + Moreover, to make it possible to manipulate such bandwidth, readable/writable
+>> + controls have been added to both procfs (for system wide settings) and cgroupfs
+>> + (for per-group settings).
+>> + Therefore, the same interface is being used for controlling the bandwidth
+>> + distrubution to -deadline tasks and task groups, i.e., new controls but with
+>> + similar names, equivalent meaning and with the same usage paradigm are added.
+>> +
+>> + However, more discussion is needed in order to figure out how we want to manage
+>> + SCHED_DEADLINE bandwidth at the task group level. Therefore, SCHED_DEADLINE
+>> + uses (for now) a less sophisticated, but actually very sensible, mechanism to
+>> + ensure that a certain utilization cap is not overcome per each root_domain.
+>> +
+>> + Another main difference between deadline bandwidth management and RT-throttling
+>> + is that -deadline tasks have bandwidth on their own (while -rt ones don't!),
+>> + and thus we don't need an higher level throttling mechanism to enforce the
+>> + desired bandwidth.
+>> +
+>> +3.1 System wide settings
+>> +------------------------
+>> +
+>> + The system wide settings are configured under the /proc virtual file system.
+>> +
+>> + The control knob that is added to the /proc virtual file system is
+>> + /proc/sys/kernel/sched_dl_runtime_us. It accepts (if written) and provides (if
+>> + read) the new runtime for each CPU in each root_domain. The period control knob
+>> + is instead shared with -rt settings (/proc/sys/kernel/sched_rt_period_us). 
+>> +
+>> + The CPU bandwidth available to -deadline tasks is actually a sub-quota of
+>> + the -rt bandwidth. By default 95% of system bandwidth is allocate to -rt tasks;
+>> + among this, a 40% quota is reserved for -dl tasks. To have the actual quota a
 > 
-> It sounds interesting, but also a little confusing at this point, at
-> least from the non-block side of view.
-
-Zack, you want to chime in? He was involved in the discussion yesterday,
-he might be able to explain this stuff better than I.
+> s/among/within/
+> 
+>> + simple multiplication is needed: .95 * .40 = .38 (38% of system bandwidth for
+>> + deadline tasks).
+>> +
+>> + This means that, for a root_domain comprising M CPUs, -deadline tasks
+>> + can be created until the sum of their bandwidths stay below:
+> 
+>                    while                             stays
+> 
+>> +
+>> +   M * (sched_dl_runtime_us * rt_bw)
+>> +
+>> + It is also possible to disable this bandwidth management logic, and
+>> + be thus free of oversubscribing the system up to any arbitrary level.
+>> + This is done by writing -1 in /proc/sys/kernel/sched_dl_runtime_us or
+>> + in /proc/sys/kernel/sched_rt_runtime_us.
+>> +
+>> +
+>> +3.2 Task interface
+>> +------------------
+>> +
+>> + Specifying a periodic/sporadic task that executes for a given amount of
+>> + runtime at each instance, and that is scheduled according to the urgency of
+>> + its own timing constraints needs, in general, a way of declaring:
+>> +  - a (maximum/typical) instance execution time,
+>> +  - a minimum interval between consecutive instances,
+>> +  - a time constraint by which each instance must be completed.
+>> +
+>> + Therefore:
+>> +  * a new struct sched_param2, containing all the necessary fields is
+>> +    provided;
+>> +  * the new scheduling related syscalls that manipulate it, i.e.,
+>> +    sched_setscheduler2(), sched_setparam2() and sched_getparam2()
+>> +    are implemented.
+>> +
+>> +
+>> +3.3 Default behavior
+>> +---------------------
+>> +
+>> +The default value for SCHED_DEADLINE bandwidth is to have dl_runtime equal to
+>> +40000. Being rt_period equal to 1000000, by default, it means that -deadline
+> 
+>           With rt_period equal to 1000000,
+> 
+>> +tasks can use at most 40%, multiplied by the number of CPUs that compose the
+>> +root_domain, for each root_domain.
+>> +
+>> +A -deadline task cannot fork.
+>> +
+>> +4. Tasks CPU affinity
+>> +=====================
+>> +
+>> +-deadline tasks cannot have an affinity mask smaller that the entire
+>> +root_domain they are created on. However, affinities can be specified
+>> +through the cpuset facility (Documentation/cgroups/cpusets.txt).
+>> +
+>> +4.1 SCHED_DEADLINE and cpusets HOWTO
+>> +------------------------------------
+>> +
+>> +An example of a simple configuration (pin a -deadline task to CPU0)
+>> +follows (rt-app is used to create a -deadline task).
+>> +
+>> +mkdir /dev/cpuset
+>> +mount -t cgroup -o cpuset cpuset /dev/cpuset
+>> +cd /dev/cpuset
+>> +mkdir cpu0
+>> +echo 0 > cpu0/cpuset.cpus
+>> +echo 0 > cpu0/cpuset.mems
+>> +echo 1 > cpuset.cpu_exclusive
+>> +echo 0 > cpuset.sched_load_balance
+>> +echo 1 > cpu0/cpuset.cpu_exclusive
+>> +echo 1 > cpu0/cpuset.mem_exclusive
+>> +echo $$ > cpu0/tasks
+>> +rt-app -t 100000:10000:d:0 -D5 (it is now actually superfluous to specify
+>> +task affinity)
+>> +
+>> +5. Future plans
+>> +===============
+>> +
+>> +Still missing:
+>> +
+>> + - refinements to deadline inheritance, especially regarding the possibility
+>> +   of retaining bandwidth isolation among non-interacting tasks. This is
+>> +   being studied from both theoretical and practical point of views, and
+> 
+>                                                         points of view,
+> 
+>> +   hopefully we should be able to produce some demonstrative code soon;
+>> + - (c)group based bandwidth management, and maybe scheduling;
+>> + - access control for non-root users (and related security concerns to
+>> +   address), which is the best way to allow unprivileged use of the mechanisms
+>> +   and how to prevent non-root users "cheat" the system?
+>> +
+>> +As already discussed, we are planning also to merge this work with the EDF
+>> +throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
+>> +the preliminary phases of the merge and we really seek feedback that would
+>> +help us decide on the direction it should take.
+> 
+> 
