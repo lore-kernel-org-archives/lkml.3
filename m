@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757206Ab3KHCVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:21:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34801 "EHLO
+	id S1757218Ab3KHCVY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:21:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34817 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757174Ab3KHCVN (ORCPT
+	with ESMTP id S1756529Ab3KHCVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:21:13 -0500
+	Thu, 7 Nov 2013 21:21:21 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mariusz Ceier <mceier+kernel@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 39/91] davinci_emac.c: Fix IFF_ALLMULTI setup
-Date: Thu,  7 Nov 2013 18:14:54 -0800
-Message-Id: <1383876946-2396-40-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 40/91] jfs: fix error path in ialloc
+Date: Thu,  7 Nov 2013 18:14:55 -0800
+Message-Id: <1383876946-2396-41-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -28,45 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mariusz Ceier <mceier+kernel@gmail.com>
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-[ Upstream commit d69e0f7ea95fef8059251325a79c004bac01f018 ]
+commit 8660998608cfa1077e560034db81885af8e1e885 upstream.
 
-When IFF_ALLMULTI flag is set on interface and IFF_PROMISC isn't,
-emac_dev_mcast_set should only enable RX of multicasts and reset
-MACHASH registers.
+If insert_inode_locked() fails, we shouldn't be calling
+unlock_new_inode().
 
-It does this, but afterwards it either sets up multicast MACs
-filtering or disables RX of multicasts and resets MACHASH registers
-again, rendering IFF_ALLMULTI flag useless.
-
-This patch fixes emac_dev_mcast_set, so that multicast MACs filtering and
-disabling of RX of multicasts are skipped when IFF_ALLMULTI flag is set.
-
-Tested with kernel 2.6.37.
-
-Signed-off-by: Mariusz Ceier <mceier+kernel@gmail.com>
-Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Tested-by: Michael L. Semon <mlsemon35@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/ti/davinci_emac.c | 3 +--
+ fs/jfs/jfs_inode.c | 3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/ti/davinci_emac.c b/drivers/net/ethernet/ti/davinci_emac.c
-index 4ebcb24..17a3028 100644
---- a/drivers/net/ethernet/ti/davinci_emac.c
-+++ b/drivers/net/ethernet/ti/davinci_emac.c
-@@ -878,8 +878,7 @@ static void emac_dev_mcast_set(struct net_device *ndev)
- 		    netdev_mc_count(ndev) > EMAC_DEF_MAX_MULTICAST_ADDRESSES) {
- 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
- 			emac_add_mcast(priv, EMAC_ALL_MULTI_SET, NULL);
--		}
--		if (!netdev_mc_empty(ndev)) {
-+		} else if (!netdev_mc_empty(ndev)) {
- 			struct netdev_hw_addr *ha;
+diff --git a/fs/jfs/jfs_inode.c b/fs/jfs/jfs_inode.c
+index c1a3e60..7f464c5 100644
+--- a/fs/jfs/jfs_inode.c
++++ b/fs/jfs/jfs_inode.c
+@@ -95,7 +95,7 @@ struct inode *ialloc(struct inode *parent, umode_t mode)
  
- 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
+ 	if (insert_inode_locked(inode) < 0) {
+ 		rc = -EINVAL;
+-		goto fail_unlock;
++		goto fail_put;
+ 	}
+ 
+ 	inode_init_owner(inode, parent, mode);
+@@ -156,7 +156,6 @@ struct inode *ialloc(struct inode *parent, umode_t mode)
+ fail_drop:
+ 	dquot_drop(inode);
+ 	inode->i_flags |= S_NOQUOTA;
+-fail_unlock:
+ 	clear_nlink(inode);
+ 	unlock_new_inode(inode);
+ fail_put:
 -- 
 1.8.1.2
 
