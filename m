@@ -1,82 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757930Ab3KHUmB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 15:42:01 -0500
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:38269 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757666Ab3KHUl7 (ORCPT
+	id S1758146Ab3KHUnM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 15:43:12 -0500
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:52953 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757521Ab3KHUnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 15:41:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <cover.1380315959.git.luto@amacapital.net>
-References: <cover.1380315959.git.luto@amacapital.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 8 Nov 2013 12:41:38 -0800
-Message-ID: <CALCETrX4-WHrCumnOxEoa53-2otNOPBFk_Q6yL3ufyhWbaJ1wQ@mail.gmail.com>
-Subject: Re: [PATCH v5 0/4] iMC SMBUS and DIMM bus probing
-To: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org
-Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rui Wang <ruiv.wang@gmail.com>, Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 8 Nov 2013 15:43:08 -0500
+To: akpm@linux-foundation.org, mingo@kernel.org
+Cc: benh@kernel.crashing.org, paulus@samba.org, ralf@linux-mips.org,
+        linux-kernel@vger.kernel.org
+From: Jason Baron <jbaron@akamai.com>
+Subject: [PATCH] panic: Make panic_timeout configurable
+Message-Id: <20131108204307.49C6AFE076@prod-mail-relay02.akamai.com>
+Date: Fri,  8 Nov 2013 20:43:07 +0000 (GMT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 27, 2013 at 6:02 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> Intel LGA2011 machines have dedicated SMBUS controllers for DIMM
-> sockets.  Because they're dedicated, they can be safely and accurately
-> probed, since all devices on them are known to be attached to DIMMs.
-> The devices found are:
->  - SPD EEPROMs
->  - TSODs (Temperature Sensor on DIMMs)
->  - Other interesting things, with drivers hopefully to follow...
->
-> This patch series adds a simple generic layer for probing for DIMMs over
-> SMBUS and an i2c bus driver for the iMC controller found on Intel
-> LGA2011 chips.
->
-> It now uses only modern infrastructure -- new-style I2C probing and the
-> at24 (instead of eeprom) driver.
->
-> I've tested this on a Core i7 Extreme and on a Xeon E5 server.
->
-> Patches 1-3 are useful even without patch 4.  I'm still hoping for feedback
-> on patch 4.
->
-> Changes from v4:
->  - Added the sb_edac changes -- i2c_imc and sb_edac can now coexist
->  - Added some paranoid race detection.
->  - The driver now confirms its ability to claim software control of the SMBUS
->    master.  This prevents unpleasant problems on systems that enable CLTT
->    (closed loop thermal throttling).
->  - Reordered the patches so that the DIMM bus code is last.
->
-> Changes from v3:
->  - Dropped redundant "tsod" driver
->  - Dropped eeprom modalias
->  - Switched to probing for the "eeprom" and "jc42"
->
-> Andy Lutomirski (4):
->   Move Intel SNB device ids from sb_edac to pci_ids.h
->   sb_edac: Claim a different PCI device
->   i2c_imc: New driver for Intel's iMC, found on LGA2011 chips
->   i2c, i2c_imc: Add DIMM bus code
->
->  drivers/edac/sb_edac.c        |  32 +--
->  drivers/i2c/busses/Kconfig    |  19 ++
->  drivers/i2c/busses/Makefile   |   5 +
->  drivers/i2c/busses/dimm-bus.c |  97 ++++++++
->  drivers/i2c/busses/i2c-imc.c  | 562 ++++++++++++++++++++++++++++++++++++++++++
->  include/linux/i2c/dimm-bus.h  |  24 ++
->  include/linux/pci_ids.h       |  15 ++
->  7 files changed, 723 insertions(+), 31 deletions(-)
->  create mode 100644 drivers/i2c/busses/dimm-bus.c
->  create mode 100644 drivers/i2c/busses/i2c-imc.c
->  create mode 100644 include/linux/i2c/dimm-bus.h
+The panic_timeout can be set via the command line option 'panic=x', or via
+/proc/sys/kernel/panic, however that is not sufficient when the panic occurs
+before we are able to set up these values. Thus, add a CONFIG_PANIC_TIMEOUT
+so that we can set the desired value from the .config, instead of carrying a
+patch for it.
 
-Any update on these?  It would be nice to get them reviewed and applied.
+The default panic_timeout value continues to be 0 - wait forever, except for
+powerpc and mips, which have been defaulted to 180 and 5 respectively. This
+is in keeping with the fact that these arches already set panic_timeout in
+their arch init code. However, I found two exceptions- one in mips and one in
+powerpc where settings didn't match these default values. In those two cases,
+I left the arch code so it continues to override. Perhaps, these cases can
+be converted to the default?
 
-Thanks,
-Andy
+Signed-off-by: Jason Baron <jbaron@akamai.com>
+---
+ arch/mips/netlogic/xlp/setup.c |  1 -
+ arch/mips/netlogic/xlr/setup.c |  1 -
+ arch/mips/sibyte/swarm/setup.c |  2 --
+ arch/powerpc/kernel/setup_32.c |  3 ---
+ arch/powerpc/kernel/setup_64.c |  3 ---
+ kernel/panic.c                 |  2 +-
+ lib/Kconfig.debug              | 12 ++++++++++++
+ 7 files changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/arch/mips/netlogic/xlp/setup.c b/arch/mips/netlogic/xlp/setup.c
+index 76a7131..8fa1042 100644
+--- a/arch/mips/netlogic/xlp/setup.c
++++ b/arch/mips/netlogic/xlp/setup.c
+@@ -92,7 +92,6 @@ static void __init xlp_init_mem_from_bars(void)
+ 
+ void __init plat_mem_setup(void)
+ {
+-	panic_timeout	= 5;
+ 	_machine_restart = (void (*)(char *))nlm_linux_exit;
+ 	_machine_halt	= nlm_linux_exit;
+ 	pm_power_off	= nlm_linux_exit;
+diff --git a/arch/mips/netlogic/xlr/setup.c b/arch/mips/netlogic/xlr/setup.c
+index 214d123..921be5f 100644
+--- a/arch/mips/netlogic/xlr/setup.c
++++ b/arch/mips/netlogic/xlr/setup.c
+@@ -92,7 +92,6 @@ static void nlm_linux_exit(void)
+ 
+ void __init plat_mem_setup(void)
+ {
+-	panic_timeout	= 5;
+ 	_machine_restart = (void (*)(char *))nlm_linux_exit;
+ 	_machine_halt	= nlm_linux_exit;
+ 	pm_power_off	= nlm_linux_exit;
+diff --git a/arch/mips/sibyte/swarm/setup.c b/arch/mips/sibyte/swarm/setup.c
+index 41707a2..3462c83 100644
+--- a/arch/mips/sibyte/swarm/setup.c
++++ b/arch/mips/sibyte/swarm/setup.c
+@@ -134,8 +134,6 @@ void __init plat_mem_setup(void)
+ #error invalid SiByte board configuration
+ #endif
+ 
+-	panic_timeout = 5;  /* For debug.  */
+-
+ 	board_be_handler = swarm_be_handler;
+ 
+ 	if (xicor_probe())
+diff --git a/arch/powerpc/kernel/setup_32.c b/arch/powerpc/kernel/setup_32.c
+index a4bbcae..6de656a 100644
+--- a/arch/powerpc/kernel/setup_32.c
++++ b/arch/powerpc/kernel/setup_32.c
+@@ -298,9 +298,6 @@ void __init setup_arch(char **cmdline_p)
+ 	if (cpu_has_feature(CPU_FTR_UNIFIED_ID_CACHE))
+ 		ucache_bsize = icache_bsize = dcache_bsize;
+ 
+-	/* reboot on panic */
+-	panic_timeout = 180;
+-
+ 	if (ppc_md.panic)
+ 		setup_panic();
+ 
+diff --git a/arch/powerpc/kernel/setup_64.c b/arch/powerpc/kernel/setup_64.c
+index 278ca93..ea7270a1 100644
+--- a/arch/powerpc/kernel/setup_64.c
++++ b/arch/powerpc/kernel/setup_64.c
+@@ -590,9 +590,6 @@ void __init setup_arch(char **cmdline_p)
+ 	dcache_bsize = ppc64_caches.dline_size;
+ 	icache_bsize = ppc64_caches.iline_size;
+ 
+-	/* reboot on panic */
+-	panic_timeout = 180;
+-
+ 	if (ppc_md.panic)
+ 		setup_panic();
+ 
+diff --git a/kernel/panic.c b/kernel/panic.c
+index b6c482c..b59c0ac 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -33,7 +33,7 @@ static int pause_on_oops;
+ static int pause_on_oops_flag;
+ static DEFINE_SPINLOCK(pause_on_oops_lock);
+ 
+-int panic_timeout;
++int panic_timeout = CONFIG_PANIC_TIMEOUT;
+ EXPORT_SYMBOL_GPL(panic_timeout);
+ 
+ ATOMIC_NOTIFIER_HEAD(panic_notifier_list);
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index ebef88f..22b746e 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -761,6 +761,18 @@ config PANIC_ON_OOPS_VALUE
+ 	default 0 if !PANIC_ON_OOPS
+ 	default 1 if PANIC_ON_OOPS
+ 
++config PANIC_TIMEOUT
++	int "panic timeout"
++	default 0 if (!PPC && !MIPS)
++	default 180 if PPC
++	default 5 if MIPS
++	help
++	  Set the timeout value (in seconds) until a reboot occurs when the
++	  the kernel panics. If n = 0, then we wait forever. A timeout
++	  value n > 0 will wait n seconds before rebooting, while a timeout
++	  value n < 0 will reboot immediately. Note: some architectures
++	  hard code a value here, which will override this setting.
++
+ config SCHED_DEBUG
+ 	bool "Collect scheduler debugging info"
+ 	depends on DEBUG_KERNEL && PROC_FS
+-- 
+1.8.2
+
