@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428Ab3KHVX3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 16:23:29 -0500
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:36437 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932381Ab3KHVXZ (ORCPT
+	id S1758063Ab3KHVfJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 16:35:09 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:48440 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757583Ab3KHVfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 16:23:25 -0500
-From: Shuah Khan <shuah.kh@samsung.com>
-To: james.l.morris@oracle.com, zohar@linux.vnet.ibm.com,
-        d.kasatkin@samsung.com, dhowells@redhat.com
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: [PATCH linux-next] security/integrity: Fix build error and warnings when CONFIG_INTEGRITY_ASYMMETRIC_KEYS is disabled
-Date: Fri,  8 Nov 2013 14:23:20 -0700
-Message-Id: <1383945800-12060-1-git-send-email-shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 8 Nov 2013 16:35:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAYSxhoHYaFzcoxEAJrNb6d8n1aKGDN68K3eekRT22s0h7960w@mail.gmail.com>
+References: <1381960030-1640-1-git-send-email-tim.kryger@linaro.org>
+	<1381960030-1640-2-git-send-email-tim.kryger@linaro.org>
+	<527CC2A5.7080000@linaro.org>
+	<CAAYSxhoHYaFzcoxEAJrNb6d8n1aKGDN68K3eekRT22s0h7960w@mail.gmail.com>
+Date: Fri, 8 Nov 2013 13:35:04 -0800
+Message-ID: <CAEPRUYoXHJbST9Yg8=-YT_C9Lhj+VQA734quw=++pLTGaWXRyg@mail.gmail.com>
+Subject: Re: [RESEND PATCH v2 1/6] ARM: dts: Declare clocks as fixed on bcm11351
+From: Christian Daudt <bcm@fixthebug.org>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed both linux-next build error and warnings with the following changes
+I can pick up the dt related changes as long as the other code works
+as-is both with and without the change (i.e. no backwards/forwards
+compatibility issues). If this must be introduced alongside the other
+changes, then the patches will have to be reworked to break them up by
+subtree so they can go in atomically.
+ csd
 
-- define integrity_init_keyring() only when CONFIG_INTEGRITY_ASYMMETRIC_KEYS
-  is enabled
-- move integrity_init_keyring() stub from integrity.h
-- define integrity_init_keyring() prototype as an extern when
-  CONFIG_INTEGRITY_ASYMMETRIC_KEYS
 
-linux-next build fails with the following error when CONFIG_INTEGRITY_ASYMMETRIC_KEYS
-is disabled.
-
-  CC      security/integrity/digsig.o
-security/integrity/digsig.c:70:5: error: redefinition of ‘integrity_init_keyring’
- int integrity_init_keyring(const unsigned int id)
-     ^
-In file included from security/integrity/digsig.c:22:0:
-security/integrity/integrity.h:149:12: note: previous definition of ‘integrity_init_keyring’ was here
- static int integrity_init_keyring(const unsigned int id)
-            ^
-security/integrity/integrity.h:149:12: warning: ‘integrity_init_keyring’ defined but not used [-Wunused-function]
-make[2]: *** [security/integrity/digsig.o] Error 1
-make[1]: *** [security/integrity] Error 2
-make: *** [security] Error 2
-
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- security/integrity/digsig.c    | 7 +++++++
- security/integrity/integrity.h | 8 ++------
- 2 files changed, 9 insertions(+), 6 deletions(-)
-
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index 77ca965..28bc1a7 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -67,6 +67,7 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 	return -EOPNOTSUPP;
- }
- 
-+#ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
- int integrity_init_keyring(const unsigned int id)
- {
- 	const struct cred *cred = current_cred();
-@@ -84,3 +85,9 @@ int integrity_init_keyring(const unsigned int id)
- 			keyring_name[id], PTR_ERR(keyring[id]));
- 	return 0;
- }
-+#else
-+int integrity_init_keyring(const unsigned int id)
-+{
-+	return 0;
-+}
-+#endif
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index b9e7c13..99ac783 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -134,22 +134,18 @@ static inline int integrity_digsig_verify(const unsigned int id,
- 
- #endif /* CONFIG_INTEGRITY_SIGNATURE */
- 
-+extern int integrity_init_keyring(const unsigned int id);
-+
- #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
- int asymmetric_verify(struct key *keyring, const char *sig,
- 		      int siglen, const char *data, int datalen);
- 
--int integrity_init_keyring(const unsigned int id);
- #else
- static inline int asymmetric_verify(struct key *keyring, const char *sig,
- 				    int siglen, const char *data, int datalen)
- {
- 	return -EOPNOTSUPP;
- }
--
--static int integrity_init_keyring(const unsigned int id)
--{
--	return 0;
--}
- #endif
- 
- #ifdef CONFIG_INTEGRITY_AUDIT
--- 
-1.8.3.2
-
+On Fri, Nov 8, 2013 at 11:42 AM, Tim Kryger <tim.kryger@linaro.org> wrote:
+> On Fri, Nov 8, 2013 at 2:53 AM, Daniel Lezcano
+> <daniel.lezcano@linaro.org> wrote:
+>
+>> I was wondering what is the status of this patchset ?
+>>
+>> The patchset touches different areas maintained by different people. Through
+>> what tree do you expect this patchset to be merged ??
+>
+> Hi Daniel,
+>
+> I plan to send an updated version soon to address some concerns raised by Mark.
+>
+> Once all the maintainers are satisfied and provide their acks, I would
+> like Christian to take the series into his tree.
+>
+> I expect Christian will have a few other Broadcom DTS file changes in
+> his tree so sending the series through him should make it easier to
+> avoid/manage conflicts.
+>
+> Christian, would that work for you?
+>
+> Thanks,
+> Tim Kryger
