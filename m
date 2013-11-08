@@ -1,61 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab3KHFSH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 00:18:07 -0500
-Received: from imap.thunk.org ([74.207.234.97]:55579 "EHLO imap.thunk.org"
+	id S1751454Ab3KHFVM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 00:21:12 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:36358 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801Ab3KHFSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 00:18:02 -0500
-Date: Fri, 8 Nov 2013 00:17:57 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: David Turner <novalis@novalis.org>
-Cc: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>
-Subject: Re: [PATCH v3] ext4: Fix reading of extended tv_sec (bug 23732)
-Message-ID: <20131108051757.GE11668@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	David Turner <novalis@novalis.org>, Jan Kara <jack@suse.cz>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Andreas Dilger <adilger.kernel@dilger.ca>
-References: <1383808590.23882.13.camel@chiang>
- <20131107160341.GA3850@quack.suse.cz>
- <1383864864.23882.33.camel@chiang>
- <20131107231445.GG2054@quack.suse.cz>
- <1383866807.23882.41.camel@chiang>
+	id S1750786Ab3KHFVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 00:21:10 -0500
+From: George Cherian <george.cherian@ti.com>
+To: <balbi@ti.com>, <stern@rowland.harvard.edu>, <bigeasy@linutronix.de>
+CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, George Cherian <george.cherian@ti.com>
+Subject: [PATCH v3] usb: gadget: f_mass_storage: call try_to_freeze only when its safe
+Date: Fri, 8 Nov 2013 10:50:52 +0530
+Message-ID: <1383888052-4227-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383866807.23882.41.camel@chiang>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 06:26:47PM -0500, David Turner wrote:
-> In ext4, the bottom two bits of {a,c,m}time_extra are used to extend
-> the {a,c,m}time fields, deferring the year 2038 problem to the year
-> 2446.  The representation (which this patch does not alter) is a bit
-> hackish, in that the most-significant bit is no longer (alone)
-> sufficient to indicate the sign.  That's because we're representing an
-> asymmetric range, with seven times as many positive values as
-> negative.
-> 
-> When decoding these extended fields, for times whose bottom 32 bits
-> would represent a negative number, sign extension causes the 64-bit
-> extended timestamp to be negative as well, which is not what's
-> intended.  This patch corrects that issue, so that the only negative
-> {a,c,m}times are those between 1901 and 1970 (as per 32-bit signed
-> timestamps).
-> 
-> Signed-off-by: David Turner <novalis@novalis.org>
-> Reported-by: Mark Harris <mh8928@yahoo.com>
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=23732
-> Reviewed-by: Jan Kara <jack@suse.cz>
+Call try_to_freeze() in sleep_thread() only when it's safe to sleep.
+do_read() and do_write() calls sleep_thread with lock held.
+Make sure these won't call try_to_freeze() by passing can_freeze flag
+to sleep_thread.
 
-Thanks, applied.
+Calling try_to_freeze() with a lock hold was done since day one in
+f_mass_storage but since commit 0f9548ca1 ("lockdep: check that no
+locks held at freeze time") lockdep complains about it.
 
-					- Ted
+Signed-off-by: George Cherian <george.cherian@ti.com>
+Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+---
+change from v1 -> v2
+	amend the commit log
+	v2 -> v3
+	amend the comit log again
+ drivers/usb/gadget/f_mass_storage.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index a03ba2c..f2d0d4b 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -602,13 +602,14 @@ static bool start_out_transfer(struct fsg_common *common, struct fsg_buffhd *bh)
+ 	return true;
+ }
+ 
+-static int sleep_thread(struct fsg_common *common)
++static int sleep_thread(struct fsg_common *common, bool can_freeze)
+ {
+ 	int	rc = 0;
+ 
+ 	/* Wait until a signal arrives or we are woken up */
+ 	for (;;) {
+-		try_to_freeze();
++		if (can_freeze)
++			try_to_freeze();
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 		if (signal_pending(current)) {
+ 			rc = -EINTR;
+@@ -682,7 +683,7 @@ static int do_read(struct fsg_common *common)
+ 		/* Wait for the next buffer to become available */
+ 		bh = common->next_buffhd_to_fill;
+ 		while (bh->state != BUF_STATE_EMPTY) {
+-			rc = sleep_thread(common);
++			rc = sleep_thread(common, false);
+ 			if (rc)
+ 				return rc;
+ 		}
+@@ -937,7 +938,7 @@ static int do_write(struct fsg_common *common)
+ 		}
+ 
+ 		/* Wait for something to happen */
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, false);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -1504,7 +1505,7 @@ static int throw_away_data(struct fsg_common *common)
+ 		}
+ 
+ 		/* Otherwise wait for something to happen */
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -1625,7 +1626,7 @@ static int send_status(struct fsg_common *common)
+ 	/* Wait for the next buffer to become available */
+ 	bh = common->next_buffhd_to_fill;
+ 	while (bh->state != BUF_STATE_EMPTY) {
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -1828,7 +1829,7 @@ static int do_scsi_command(struct fsg_common *common)
+ 	bh = common->next_buffhd_to_fill;
+ 	common->next_buffhd_to_drain = bh;
+ 	while (bh->state != BUF_STATE_EMPTY) {
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -2174,7 +2175,7 @@ static int get_next_command(struct fsg_common *common)
+ 	/* Wait for the next buffer to become available */
+ 	bh = common->next_buffhd_to_fill;
+ 	while (bh->state != BUF_STATE_EMPTY) {
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -2193,7 +2194,7 @@ static int get_next_command(struct fsg_common *common)
+ 
+ 	/* Wait for the CBW to arrive */
+ 	while (bh->state != BUF_STATE_FULL) {
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -2379,7 +2380,7 @@ static void handle_exception(struct fsg_common *common)
+ 			}
+ 			if (num_active == 0)
+ 				break;
+-			if (sleep_thread(common))
++			if (sleep_thread(common, true))
+ 				return;
+ 		}
+ 
+@@ -2516,7 +2517,7 @@ static int fsg_main_thread(void *common_)
+ 		}
+ 
+ 		if (!common->running) {
+-			sleep_thread(common);
++			sleep_thread(common, true);
+ 			continue;
+ 		}
+ 
+-- 
+1.8.1
+
