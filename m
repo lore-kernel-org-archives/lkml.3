@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745Ab3KHFXW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 00:23:22 -0500
-Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:33606 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827Ab3KHFXT convert rfc822-to-8bit (ORCPT
+	id S1752904Ab3KHFYI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 00:24:08 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:8988 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750986Ab3KHFYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 00:23:19 -0500
-From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-To: "jingbai.ma@hp.com" <jingbai.ma@hp.com>
-CC: "vgoyal@redhat.com" <vgoyal@redhat.com>, "bhe@redhat.com" <bhe@redhat.com>,
-        "tom.vaden@hp.com" <tom.vaden@hp.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "ptesarik@suse.cz" <ptesarik@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lisa.mitchell@hp.com" <lisa.mitchell@hp.com>,
-        "d.hatayama@jp.fujitsu.com" <d.hatayama@jp.fujitsu.com>,
-        "anderson@redhat.com" <anderson@redhat.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>
-Subject: Re: [PATCH 0/3] makedumpfile: hugepage filtering for vmcore dump
-Thread-Topic: [PATCH 0/3] makedumpfile: hugepage filtering for vmcore dump
-Thread-Index: Ac7cQSGDwSVVXPiVS86p+wKGxlOMOw==
-Date: Fri, 8 Nov 2013 05:12:33 +0000
-Message-ID: <0910DD04CBD6DE4193FCF86B9C00BE971BD6C0@BPXM01GP.gisp.nec.co.jp>
-References: <20131105134532.32112.78008.stgit@k.asiapacific.hpqcorp.net>
- <20131105202631.GC4598@redhat.com>
- <0910DD04CBD6DE4193FCF86B9C00BE971BB7A9@BPXM01GP.gisp.nec.co.jp>
- <20131106142350.GB23357@redhat.com> <527B55F0.4000301@hp.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.21.40.240]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Nov 2013 00:24:04 -0500
+From: Xiaoguang Chen <chenxg@marvell.com>
+To: <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <chenxg@marvell.com>, <chenxg.marvell@gmail.com>
+Subject: [PATCH 1/2] cpufreq: conservative: fix requested_freq reduction issue
+Date: Fri, 8 Nov 2013 13:23:51 +0800
+Message-ID: <1383888232-27049-1-git-send-email-chenxg@marvell.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-11-07_08:2013-11-08,2013-11-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1311070277
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jingbai,
+When decreasing frequency, requested_freq may be less than
+freq_target, So requested_freq minus freq_target may be negative,
+But reqested_freq's unit is unsigned int, then the negative result
+will be one larger integer which may be even higher than
+requested_freq.
 
-(2013/11/07 17:58), Jingbai Ma wrote:
-> On 11/06/2013 10:23 PM, Vivek Goyal wrote:
->> On Wed, Nov 06, 2013 at 02:21:39AM +0000, Atsushi Kumagai wrote:
->>> (2013/11/06 5:27), Vivek Goyal wrote:
->>>> On Tue, Nov 05, 2013 at 09:45:32PM +0800, Jingbai Ma wrote:
->>>>> This patch set intend to exclude unnecessary hugepages from vmcore dump file.
->>>>>
->>>>> This patch requires the kernel patch to export necessary data structures into
->>>>> vmcore: "kexec: export hugepage data structure into vmcoreinfo"
->>>>> http://lists.infradead.org/pipermail/kexec/2013-November/009997.html
->>>>>
->>>>> This patch introduce two new dump levels 32 and 64 to exclude all unused and
->>>>> active hugepages. The level to exclude all unnecessary pages will be 127 now.
->>>>
->>>> Interesting. Why hugepages should be treated any differentely than normal
->>>> pages?
->>>>
->>>> If user asked to filter out free page, then it should be filtered and
->>>> it should not matter whether it is a huge page or not?
->>>
->>> I'm making a RFC patch of hugepages filtering based on such policy.
->>>
->>> I attach the prototype version.
->>> It's able to filter out also THPs, and suitable for cyclic processing
->>> because it depends on mem_map and looking up it can be divided into
->>> cycles. This is the same idea as page_is_buddy().
->>>
->>> So I think it's better.
->>
->> Agreed. Being able to treat hugepages in same manner as other pages
->> sounds good.
->>
->> Jingbai, looks good to you?
->
-> It looks good to me.
->
-> My only concern is by this way, we only can exclude all hugepage together, but can't exclude the free hugepages only. I'm not sure if user need to dump out the activated hugepage only.
->
-> Kumagai-san, please correct me, if I'm wrong.
+This patch is to fix such issue. when result becomes negative,
+set requested_freq as the min value of policy.
 
-Yes, my patch treats all allocated hugetlbfs pages as user pages,
-doesn't distinguish whether the pages are actually used or not.
-I made so because I guess it's enough for almost all users.
+Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/cpufreq_conservative.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-We can introduce new dump level after it's needed actually,
-but I don't think now is the time. To introduce it without
-demand will make this tool just more complex.
+diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
+index f62d822..218460f 100644
+--- a/drivers/cpufreq/cpufreq_conservative.c
++++ b/drivers/cpufreq/cpufreq_conservative.c
+@@ -80,13 +80,18 @@ static void cs_check_cpu(int cpu, unsigned int load)
+ 
+ 	/* Check for frequency decrease */
+ 	if (load < cs_tuners->down_threshold) {
++		unsigned int freq_target;
+ 		/*
+ 		 * if we cannot reduce the frequency anymore, break out early
+ 		 */
+ 		if (policy->cur == policy->min)
+ 			return;
+ 
+-		dbs_info->requested_freq -= get_freq_target(cs_tuners, policy);
++		freq_target = get_freq_target(cs_tuners, policy);
++		if (dbs_info->requested_freq > freq_target)
++			dbs_info->requested_freq -= freq_target;
++		else
++			dbs_info->requested_freq = policy->min;
+ 
+ 		__cpufreq_driver_target(policy, dbs_info->requested_freq,
+ 				CPUFREQ_RELATION_L);
+-- 
+1.8.0
 
-
-Thanks
-Atsushi Kumagai
