@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab3KHC3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:29:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34822 "EHLO
+	id S1757192Ab3KHCVQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:21:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34796 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756584Ab3KHCVX (ORCPT
+	with ESMTP id S1757139Ab3KHCVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:21:23 -0500
+	Thu, 7 Nov 2013 21:21:11 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bruno Randolf <br1@einfach.org>, Johannes Berg <johannes.berg@intel.com>,
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Jani Nikula <jani.nikula@intel.com>,
+        Cornel Panceac <cpanceac@gmail.com>, Greg KH <greg@kroah.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 41/91] cfg80211: fix warning when using WEXT for IBSS
-Date: Thu,  7 Nov 2013 18:14:56 -0800
-Message-Id: <1383876946-2396-42-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 71/91] drm/i915: quirk away phantom LVDS on Intel's D510MO mainboard
+Date: Thu,  7 Nov 2013 18:15:26 -0800
+Message-Id: <1383876946-2396-72-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -27,45 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruno Randolf <br1@einfach.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit f478f33a93f9353dcd1fe55445343d76b1c3f84a upstream.
+commit e5614f0c2d0f4d7f0b8ef745d34593baf2c5dbf8 upstream.
 
-Fix kernel warning when using WEXT for configuring ad-hoc mode,
-e.g.  "iwconfig wlan0 essid test channel 1"
+This replaceable mainboard only has a VGA-out, yet it claims to also have
+a connected LVDS header.
 
-WARNING: at net/wireless/chan.c:373 cfg80211_chandef_usable+0x50/0x21c [cfg80211]()
+Addresses https://bugs.freedesktop.org/show_bug.cgi?id=63860
 
-The warning is caused by an uninitialized variable center_freq1.
-
-Signed-off-by: Bruno Randolf <br1@einfach.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[jani.nikula@intel.com: use DMI_EXACT_MATCH for board name.]
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reported-by: <annndddrr@gmail.com>
+Cc: Cornel Panceac <cpanceac@gmail.com>
+Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/wireless/ibss.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/i915/intel_lvds.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/net/wireless/ibss.c b/net/wireless/ibss.c
-index 9b9551e..ceef854 100644
---- a/net/wireless/ibss.c
-+++ b/net/wireless/ibss.c
-@@ -269,6 +269,8 @@ int cfg80211_ibss_wext_join(struct cfg80211_registered_device *rdev,
- 				if (chan->flags & IEEE80211_CHAN_DISABLED)
- 					continue;
- 				wdev->wext.ibss.chandef.chan = chan;
-+				wdev->wext.ibss.chandef.center_freq1 =
-+					chan->center_freq;
- 				break;
- 			}
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index 2f0364d..5cfd10e 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -797,6 +797,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "ESPRIMO Q900"),
+ 		},
+ 	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Intel D510MO",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
++			DMI_EXACT_MATCH(DMI_BOARD_NAME, "D510MO"),
++		},
++	},
  
-@@ -353,6 +355,7 @@ int cfg80211_ibss_wext_siwfreq(struct net_device *dev,
- 	if (chan) {
- 		wdev->wext.ibss.chandef.chan = chan;
- 		wdev->wext.ibss.chandef.width = NL80211_CHAN_WIDTH_20_NOHT;
-+		wdev->wext.ibss.chandef.center_freq1 = freq;
- 		wdev->wext.ibss.channel_fixed = true;
- 	} else {
- 		/* cfg80211_ibss_wext_join will pick one if needed */
+ 	{ }	/* terminating entry */
+ };
 -- 
 1.8.1.2
 
