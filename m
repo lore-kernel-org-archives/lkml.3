@@ -1,264 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967Ab3KHRtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 12:49:53 -0500
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:12421 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757436Ab3KHRtv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 12:49:51 -0500
-From: Waiman Long <Waiman.Long@hp.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Alex Shi <alex.shi@linaro.org>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Jason Low <jason.low2@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v4.1 5/5] MCS Lock: Use arch-specific load-acquire/store-release primitives
-Date: Fri,  8 Nov 2013 12:49:15 -0500
-Message-Id: <1383932955-5547-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
+	id S1757987Ab3KHRud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 12:50:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13397 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757436Ab3KHRub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 12:50:31 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <2816992.xgHeIJfXWn@cmlinux10.ih.lucent.com>
+References: <2816992.xgHeIJfXWn@cmlinux10.ih.lucent.com>
+To: James Solner <solner@alcatel-lucent.com>
+Cc: dhowells@redhat.com, rusty@rustcorp.com.au, jwboyer@fedoraproject.org,
+        rdunlap@infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH v3] Add Documentation/module-signing.txt file
+Date: Fri, 08 Nov 2013 17:49:27 +0000
+Message-ID: <29648.1383932967@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses architecture specific load-acquire and store-release
-primitives for synchronization, if available. Generic implementations
-are provided in case they are not defined even though they may not
-be optimal. These generic implementation could be removed later on
-once changes are made in all the relevant header files.
 
-This patch also moves the actual lock/unlock code to mcs_spinlock.c
-file.
+Here's my take on it.
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Rusty deleted the original docs from the patches rather than fixing them up.
+Bad Rusty;-).
+
+David
 ---
- include/linux/mcs_spinlock.h |   78 +----------------------------------
- kernel/mcs_spinlock.c        |   94 ++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 93 insertions(+), 79 deletions(-)
+commit 49827f443556c0866b13d37edb34f0553f71b22c
+Author: James Solner <solner@alcatel-lucent.com>
+Date:   Wed Nov 6 12:53:36 2013 -0600
 
-diff --git a/include/linux/mcs_spinlock.h b/include/linux/mcs_spinlock.h
-index f2c71e8..d54bb23 100644
---- a/include/linux/mcs_spinlock.h
-+++ b/include/linux/mcs_spinlock.h
-@@ -12,19 +12,6 @@
- #ifndef __LINUX_MCS_SPINLOCK_H
- #define __LINUX_MCS_SPINLOCK_H
- 
--/*
-- * asm/processor.h may define arch_mutex_cpu_relax().
-- * If it is not defined, cpu_relax() will be used.
-- */
--#include <asm/barrier.h>
--#include <asm/cmpxchg.h>
--#include <asm/processor.h>
--#include <linux/compiler.h>
--
--#ifndef arch_mutex_cpu_relax
--# define arch_mutex_cpu_relax() cpu_relax()
--#endif
--
- struct mcs_spinlock {
- 	struct mcs_spinlock *next;
- 	int locked; /* 1 if lock acquired */
-@@ -32,68 +19,7 @@ struct mcs_spinlock {
- 
- extern
- void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node);
--
--/*
-- * In order to acquire the lock, the caller should declare a local node and
-- * pass a reference of the node to this function in addition to the lock.
-- * If the lock has already been acquired, then this will proceed to spin
-- * on this node->locked until the previous lock holder sets the node->locked
-- * in mcs_spin_unlock().
-- *
-- * The _raw_mcs_spin_lock() function should not be called directly. Instead,
-- * users should call mcs_spin_lock().
-- */
--static inline
--void _raw_mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
--{
--	struct mcs_spinlock *prev;
--
--	/* Init node */
--	node->locked = 0;
--	node->next   = NULL;
--
--	/* xchg() provides a memory barrier */
--	prev = xchg(lock, node);
--	if (likely(prev == NULL)) {
--		/* Lock acquired */
--		return;
--	}
--	ACCESS_ONCE(prev->next) = node;
--	/* Wait until the lock holder passes the lock down */
--	while (!ACCESS_ONCE(node->locked))
--		arch_mutex_cpu_relax();
--
--	/* Make sure subsequent operations happen after the lock is acquired */
--	smp_rmb();
--}
--
--/*
-- * Releases the lock. The caller should pass in the corresponding node that
-- * was used to acquire the lock.
-- */
--static inline
--void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
--{
--	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
--
--	if (likely(!next)) {
--		/*
--		 * cmpxchg() provides a memory barrier.
--		 * Release the lock by setting it to NULL
--		 */
--		if (likely(cmpxchg(lock, node, NULL) == node))
--			return;
--		/* Wait until the next pointer is set */
--		while (!(next = ACCESS_ONCE(node->next)))
--			arch_mutex_cpu_relax();
--	} else {
--		/*
--		 * Make sure all operations within the critical section
--		 * happen before the lock is released.
--		 */
--		smp_wmb();
--	}
--	ACCESS_ONCE(next->locked) = 1;
--}
-+extern
-+void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node);
- 
- #endif /* __LINUX_MCS_SPINLOCK_H */
-diff --git a/kernel/mcs_spinlock.c b/kernel/mcs_spinlock.c
-index 309dd42..153716d 100644
---- a/kernel/mcs_spinlock.c
-+++ b/kernel/mcs_spinlock.c
-@@ -7,15 +7,103 @@
-  * It avoids expensive cache bouncings that common test-and-set spin-lock
-  * implementations incur.
-  */
-+/*
-+ * asm/processor.h may define arch_mutex_cpu_relax().
-+ * If it is not defined, cpu_relax() will be used.
-+ */
-+#include <asm/barrier.h>
-+#include <asm/cmpxchg.h>
-+#include <asm/processor.h>
-+#include <linux/compiler.h>
- #include <linux/mcs_spinlock.h>
- #include <linux/export.h>
- 
-+#ifndef arch_mutex_cpu_relax
-+# define arch_mutex_cpu_relax() cpu_relax()
-+#endif
-+
-+/*
-+ * Fall back to use the regular atomic operations and memory barrier if
-+ * the acquire/release versions are not defined.
-+ */
-+#ifndef	xchg_acquire
-+# define xchg_acquire(p, v)		xchg(p, v)
-+#endif
-+
-+#ifndef	cmpxchg_release
-+# define cmpxchg_release(p, o, n)	cmpxchg(p, o, n)
-+#endif
-+
-+#ifndef	smp_load_acquire
-+# define smp_load_acquire(p)				\
-+	({						\
-+		typeof(*p) __v = ACCESS_ONCE(*(p));	\
-+		smp_mb();				\
-+		__v;					\
-+	})
-+#endif
-+
-+#ifndef smp_store_release
-+# define smp_store_release(p, v)		\
-+	do {					\
-+		smp_mb();			\
-+		ACCESS_ONCE(*(p)) = v;		\
-+	} while (0)
-+#endif
-+
- /*
-- * We don't inline mcs_spin_lock() so that perf can correctly account for the
-- * time spent in this lock function.
-+ * In order to acquire the lock, the caller should declare a local node and
-+ * pass a reference of the node to this function in addition to the lock.
-+ * If the lock has already been acquired, then this will proceed to spin
-+ * on this node->locked until the previous lock holder sets the node->locked
-+ * in mcs_spin_unlock().
-  */
- void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- {
--	_raw_mcs_spin_lock(lock, node);
-+	struct mcs_spinlock *prev;
-+
-+	/* Init node */
-+	node->locked = 0;
-+	node->next   = NULL;
-+
-+	/* xchg() provides a memory barrier */
-+	prev = xchg_acquire(lock, node);
-+	if (likely(prev == NULL)) {
-+		/* Lock acquired */
-+		return;
-+	}
-+	ACCESS_ONCE(prev->next) = node;
-+	/* Wait until the lock holder passes the lock down */
-+	while (!smp_load_acquire(&node->locked))
-+		arch_mutex_cpu_relax();
- }
- EXPORT_SYMBOL(mcs_spin_lock);
-+
-+/*
-+ * Releases the lock. The caller should pass in the corresponding node that
-+ * was used to acquire the lock.
-+ */
-+void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
-+{
-+	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
-+
-+	if (likely(!next)) {
-+		/*
-+		 * cmpxchg() provides a memory barrier.
-+		 * Release the lock by setting it to NULL
-+		 */
-+		if (likely(cmpxchg_release(lock, node, NULL) == node))
-+			return;
-+		/* Wait until the next pointer is set */
-+		while (!(next = ACCESS_ONCE(node->next)))
-+			arch_mutex_cpu_relax();
-+		ACCESS_ONCE(next->locked) = 1;
-+	} else {
-+		/*
-+		 * Make sure all operations within the critical section
-+		 * happen before the lock is released.
-+		 */
-+		smp_store_release(&next->locked, 1);
-+	}
-+}
-+EXPORT_SYMBOL(mcs_spin_unlock);
--- 
-1.7.1
+    Add Documentation/module-signing.txt file
+    
+    This patch adds the Documentation/module-signing.txt file that is
+    currently missing from the Documentation directory. The init/Kconfig
+    file references the Documentation/module-signing.txt file to explain
+    how kernel module signing works. This patch supplies this documentation.
+    
+    Signed-off-by: James Solner <solner@alcatel-lucent.com>
+    Signed-off-by: David Howells <dhowells@redhat.com>
 
+diff --git a/Documentation/module-signing.txt b/Documentation/module-signing.txt
+new file mode 100644
+index 000000000000..2b40e04d3c49
+--- /dev/null
++++ b/Documentation/module-signing.txt
+@@ -0,0 +1,240 @@
++			==============================
++			KERNEL MODULE SIGNING FACILITY
++			==============================
++
++CONTENTS
++
++ - Overview.
++ - Configuring module signing.
++ - Generating signing keys.
++ - Public keys in the kernel.
++ - Manually signing modules.
++ - Signed modules and stripping.
++ - Loading signed modules.
++ - Non-valid signatures and unsigned modules.
++ - Administering/protecting the private key.
++
++
++========
++OVERVIEW
++========
++
++The kernel module signing facility cryptographically signs modules during
++installation and then checks the signature upon loading the module.  This
++allows increased kernel security by disallowing the loading of unsigned modules
++or modules signed with an invalid key.  Module signing increases security by
++making it harder to load a malicious module into the kernel.  The module
++signature checking is done by the kernel so that it is not necessary to have
++trusted userspace bits.
++
++This facility uses X.509 ITU-T standard certificates to encode the public keys
++involved.  The signatures are not themselves encoded in any industrial standard
++type.  The facility currently only supports the RSA public key encryption
++standard (though it is pluggable and permits others to be used).  The possible
++hash algorithms that can be used are SHA-1, SHA-224, SHA-256, SHA-384, and
++SHA-512 (the algorithm is selected by data in the signature).
++
++
++==========================
++CONFIGURING MODULE SIGNING
++==========================
++
++The module signing facility is enabled by going to the "Enable Loadable Module
++Support" section of the kernel configuration and turning on
++
++	CONFIG_MODULE_SIG	"Module signature verification"
++
++This has a number of options available:
++
++ (1) "Require modules to be validly signed" (CONFIG_MODULE_SIG_FORCE)
++
++     This specifies how the kernel should deal with a module that has a
++     signature for which the key is not known or a module that is unsigned.
++
++     If this is off (ie. "permissive"), then modules for which the key is not
++     available and modules that are unsigned are permitted, but the kernel will
++     be marked as being tainted.
++
++     If this is on (ie. "restrictive"), only modules that have a valid
++     signature that can be verified by a public key in the kernel's possession
++     will be loaded.  All other modules will generate an error.
++
++     Irrespective of the setting here, if the module has a signature block that
++     cannot be parsed, it will be rejected out of hand.
++
++
++ (2) "Automatically sign all modules" (CONFIG_MODULE_SIG_ALL)
++
++     If this is on then modules will be automatically signed during the
++     modules_install phase of a build.  If this is off, then the modules must
++     be signed manually using:
++
++	scripts/sign-file
++
++
++ (3) "Which hash algorithm should modules be signed with?"
++
++     This presents a choice of which hash algorithm the installation phase will
++     sign the modules with:
++
++	CONFIG_SIG_SHA1		"Sign modules with SHA-1"
++	CONFIG_SIG_SHA224	"Sign modules with SHA-224"
++	CONFIG_SIG_SHA256	"Sign modules with SHA-256"
++	CONFIG_SIG_SHA384	"Sign modules with SHA-384"
++	CONFIG_SIG_SHA512	"Sign modules with SHA-512"
++
++     The algorithm selected here will also be built into the kernel (rather
++     than being a module) so that modules signed with that algorithm can have
++     their signatures checked without causing a dependency loop.
++
++
++=======================
++GENERATING SIGNING KEYS
++=======================
++
++Cryptographic keypairs are required to generate and check signatures.  A
++private key is used to generate a signature and the corresponding public key is
++used to check it.  The private key is only needed during the build, after which
++it can be deleted or stored securely.  The public key gets built into the
++kernel so that it can be used to check the signatures as the modules are
++loaded.
++
++Under normal conditions, the kernel build will automatically generate a new
++keypair using openssl if one does not exist in the files:
++
++	signing_key.priv
++	signing_key.x509
++
++during the building of vmlinux (the public part of the key needs to be built
++into vmlinux) using parameters in the:
++
++	x509.genkey
++
++file (which is also generated if it does not already exist).
++
++It is strongly recommended that you provide your own x509.genkey file.
++
++Most notably, in the x509.genkey file, the req_distinguished_name section
++should be altered from the default:
++
++	[ req_distinguished_name ]
++	O = Magrathea
++	CN = Glacier signing key
++	emailAddress = slartibartfast@magrathea.h2g2
++
++The generated RSA key size can also be set with:
++
++	[ req ]
++	default_bits = 4096
++
++
++It is also possible to manually generate the key private/public files using the
++x509.genkey key generation configuration file in the root node of the Linux
++kernel sources tree and the openssl command.  The following is an example to
++generate the public/private key files:
++
++	openssl req -new -nodes -utf8 -sha256 -days 36500 -batch -x509 \
++	   -config x509.genkey -outform DER -out signing_key.x509 \
++	   -keyout signing_key.priv
++
++
++=========================
++PUBLIC KEYS IN THE KERNEL
++=========================
++
++The kernel contains a ring of public keys that can be viewed by root.  They're
++in a keyring called ".system_keyring" that can be seen by:
++
++	[root@deneb ~]# cat /proc/keys
++	...
++	223c7853 I------     1 perm 1f030000     0     0 keyring   .system_keyring: 1
++	302d2d52 I------     1 perm 1f010000     0     0 asymmetri Fedora kernel signing key: d69a84e6bce3d216b979e9505b3e3ef9a7118079: X509.RSA a7118079 []
++	...
++
++Beyond the public key generated specifically for module signing, any file
++placed in the kernel source root directory or the kernel build root directory
++whose name is suffixed with ".x509" will be assumed to be an X.509 public key
++and will be added to the keyring.
++
++Further, the architecture code may take public keys from a hardware store and
++add those in also (e.g. from the UEFI key database).
++
++Finally, it is possible to add additional public keys by doing:
++
++	keyctl padd asymmetric "" [.system_keyring-ID] <[key-file]
++
++e.g.:
++
++	keyctl padd asymmetric "" 0x223c7853 <my_public_key.x509
++
++Note, however, that the kernel will only permit keys to be added to
++.system_keyring _if_ the new key's X.509 wrapper is validly signed by a key
++that is already resident in the .system_keyring at the time the key was added.
++
++
++=========================
++MANUALLY SIGNING MODULES
++=========================
++
++To manually sign a module, use the scripts/sign-file tool available in
++the Linux kernel source tree.  The script requires 4 arguments:
++
++	1.  The hash algorithm (e.g., sha256)
++	2.  The private key filename
++	3.  The public key filename
++	4.  The kernel module to be signed
++
++The following is an example to sign a kernel module:
++
++	scripts/sign-file sha512 kernel-signkey.priv \
++		kernel-signkey.x509 module.ko
++
++The hash algorithm used does not have to match the one configured, but if it
++doesn't, you should make sure that hash algorithm is either built into the
++kernel or can be loaded without requiring itself.
++
++
++============================
++SIGNED MODULES AND STRIPPING
++============================
++
++A signed module has a digital signature simply appended at the end.  The string
++"~Module signature appended~." at the end of the module's file confirms that a
++signature is present but it does not confirm that the signature is valid!
++
++Signed modules are BRITTLE as the signature is outside of the defined ELF
++container.  Thus they MAY NOT be stripped once the signature is computed and
++attached.  Note the entire module is the signed payload, including any and all
++debug information present at the time of signing.
++
++
++======================
++LOADING SIGNED MODULES
++======================
++
++Modules are loaded with insmod, modprobe, init_module() or finit_module(),
++exactly as for unsigned modules as no processing is done in userspace.  The
++signature checking is all done within the kernel.
++
++
++=========================================
++NON-VALID SIGNATURES AND UNSIGNED MODULES
++=========================================
++
++If CONFIG_MODULE_SIG_FORCE is enabled or enforcemodulesig=1 is supplied on
++the kernel command line, the kernel will only load validly signed modules
++for which it has a public key.   Otherwise, it will also load modules that are
++unsigned.   Any module for which the kernel has a key, but which proves to have
++a signature mismatch will not be permitted to load.
++
++Any module that has an unparseable signature will be rejected.
++
++
++=========================================
++ADMINISTERING/PROTECTING THE PRIVATE KEY
++=========================================
++
++Since the private key is used to sign modules, viruses and malware could use
++the private key to sign modules and compromise the operating system.  The
++private key must be either destroyed or moved to a secure location and not kept
++in the root node of the kernel source tree.
