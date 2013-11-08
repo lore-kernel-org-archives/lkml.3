@@ -1,174 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab3KHAIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 19:08:36 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:61583 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753806Ab3KHAI1 (ORCPT
+	id S1756181Ab3KHAJP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 19:09:15 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:37887 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755752Ab3KHAJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 19:08:27 -0500
-Message-ID: <527C2B78.2070201@ti.com>
-Date: Thu, 07 Nov 2013 18:08:24 -0600
-From: Nishanth Menon <nm@ti.com>
-Reply-To: nm@ti.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 7 Nov 2013 19:09:10 -0500
+Date: Fri, 8 Nov 2013 01:09:03 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Dave Jones <davej@redhat.com>
+Cc: linux-usb@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: usb-serial lockdep trace in linus' current tree.
+Message-ID: <20131108000903.GD8555@localhost>
+References: <20131107223728.GA18157@redhat.com>
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: Tony Lindgren <tony@atomide.com>, paul@pwsan.com, rnayak@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP2+: omap_device: maintain sane runtime pm status
- around suspend/resume
-References: <1383857942-23630-1-git-send-email-nm@ti.com> <87iow3rd3y.fsf@linaro.org>
-In-Reply-To: <87iow3rd3y.fsf@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131107223728.GA18157@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2013 05:44 PM, Kevin Hilman wrote:
-> Nishanth Menon <nm@ti.com> writes:
+On Thu, Nov 07, 2013 at 05:37:28PM -0500, Dave Jones wrote:
+> Seeing this since todays USB merge.
 >
->> OMAP device hooks around suspend|resume_noirq ensures that hwmod
->> devices are forced to idle using omap_device_idle/enable as part of
->> the last stage of suspend activity.
->>
->> For a device such as i2c who uses autosuspend, it is possible to enter
->> the suspend path with dev->power.runtime_status = RPM_ACTIVE.
->>
->> As part of the suspend flow, the generic runtime logic would increment
->> it's dev->power.disable_depth to 1. This should prevent further
->> pm_runtime_get_sync from succeeding once the runtime_status has been
->> set to RPM_SUSPENDED.
->>
->> Now, as part of the suspend_noirq handler in omap_device, we force the
->> following: if the device status is !suspended, we force the device
->> to idle using omap_device_idle (clocks are cut etc..). This ensures
->> that from a hardware perspective, the device is "suspended". However,
->> runtime_status is left to be active.
->>
->> *if* an operation is attempted after this point to
->> pm_runtime_get_sync, runtime framework depends on runtime_status to
->> indicate accurately the device status, and since it sees it to be
->> ACTIVE, it assumes the module is functional and returns a non-error
->> value. As a result the user will see pm_runtime_get succeed, however a
->> register access will crash due to the lack of clocks.
->
-> Ouch.
->
-> Dumb Q: who is requesting an i2c transaction after ->suspend_noirq().
-> The i2c driver itself should be able to detect that it's being accessed
-> after this point and return an error.
+> WARNING: CPU: 0 PID: 226 at kernel/lockdep.c:2740 lockdep_trace_alloc+0xc5/0xd0()
+> DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
+> Modules linked in: usb_debug(+) kvm_intel kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel microcode(+) pcspkr serio_raw
+> CPU: 0 PID: 226 Comm: systemd-udevd Not tainted 3.12.0+ #112
+>  ffffffff81a22d3d ffff88023cde5670 ffffffff8171a8e8 ffff88023cde56b8
+>  ffff88023cde56a8 ffffffff8105430d 0000000000000046 00000000000080d0
+>  0000000000000010 0000000000000001 ffff880244407a80 ffff88023cde5708
+> Call Trace:
+>  [<ffffffff8171a8e8>] dump_stack+0x4e/0x82
+>  [<ffffffff8105430d>] warn_slowpath_common+0x7d/0xa0
+>  [<ffffffff8105437c>] warn_slowpath_fmt+0x4c/0x50
+>  [<ffffffff810cbcd5>] lockdep_trace_alloc+0xc5/0xd0
+>  [<ffffffff811a5633>] __kmalloc+0x53/0x350
+>  [<ffffffff8153e417>] ? xhci_urb_enqueue+0xb7/0x610
+>  [<ffffffff81339f5c>] ? debug_dma_mapping_error+0x7c/0x90
+>  [<ffffffff8153e417>] xhci_urb_enqueue+0xb7/0x610
+>  [<ffffffff8150fad6>] usb_hcd_submit_urb+0xa6/0xae0
+>  [<ffffffff8100b2f4>] ? native_sched_clock+0x24/0x80
+>  [<ffffffff810c531f>] ? trace_hardirqs_off_caller+0x1f/0xc0
+>  [<ffffffff8100b2f4>] ? native_sched_clock+0x24/0x80
+>  [<ffffffff810c531f>] ? trace_hardirqs_off_caller+0x1f/0xc0
+>  [<ffffffff810c5439>] ? get_lock_stats+0x19/0x60
+>  [<ffffffff810c5bae>] ? put_lock_stats.isra.28+0xe/0x40
+>  [<ffffffff81511569>] usb_submit_urb+0x1f9/0x470
+>  [<ffffffff81554ca5>] usb_serial_generic_write_start+0xf5/0x210
+>  [<ffffffff81554ef0>] usb_serial_generic_write+0x70/0x90
+>  [<ffffffff81555637>] usb_console_write+0xc7/0x220
+>  [<ffffffff810af585>] call_console_drivers.constprop.23+0xa5/0x1e0
+>  [<ffffffff810afe0c>] console_unlock+0x40c/0x460
+>  [<ffffffff810b10ec>] register_console+0x12c/0x390
+>  [<ffffffff81555b62>] usb_serial_console_init+0x22/0x40
+>  [<ffffffff815539aa>] usb_serial_probe+0xfea/0x10e0
+>  [<ffffffff8100b2f4>] ? native_sched_clock+0x24/0x80
+>  [<ffffffff810c531f>] ? trace_hardirqs_off_caller+0x1f/0xc0
+>  [<ffffffff810c5439>] ? get_lock_stats+0x19/0x60
+>  [<ffffffff8172004d>] ? __mutex_unlock_slowpath+0xed/0x1a0
+>  [<ffffffff810c8af5>] ? trace_hardirqs_on_caller+0x115/0x1e0
+>  [<ffffffff810c8bcd>] ? trace_hardirqs_on+0xd/0x10
+>  [<ffffffff815164ef>] usb_probe_interface+0x1cf/0x300
+>  [<ffffffff814ad607>] driver_probe_device+0x87/0x390
+>  [<ffffffff814ad9e3>] __driver_attach+0x93/0xa0
+>  [<ffffffff814ad950>] ? __device_attach+0x40/0x40
+>  [<ffffffff814ab53b>] bus_for_each_dev+0x6b/0xb0
+>  [<ffffffff814ad02e>] driver_attach+0x1e/0x20
+>  [<ffffffff8155246e>] usb_serial_register_drivers+0x29e/0x580
+>  [<ffffffffa0005000>] ? 0xffffffffa0004fff
+>  [<ffffffffa000501e>] usb_serial_module_init+0x1e/0x1000 [usb_debug]
+>  [<ffffffff810002c2>] do_one_initcall+0xf2/0x1a0
+>  [<ffffffff8103c7b3>] ? set_memory_nx+0x43/0x50
+>  [<ffffffff810d9e42>] load_module+0x1fd2/0x26a0
+>  [<ffffffff810d4f90>] ? store_uevent+0x40/0x40
+>  [<ffffffff810da6a6>] SyS_finit_module+0x86/0xb0
+>  [<ffffffff8172db64>] tracesys+0xdd/0xe2
+> ---[ end trace ee033a3c9fd6263b ]---
 
-i2c dropped it generic suspend handlers at
-commit 584b408d37af4e0b38ad5b60f236381bcdf396bc
-Author: Kevin Hilman <khilman@ti.com>
-Date:   Thu Aug 4 07:53:02 2011 -0700
+A recent change in usb-serial used the wrong memory-allocation flag in
+write(), which results in a
 
-     Revert "i2c-omap: fix static suspend vs. runtime suspend"
+	[    5.979005] BUG: sleeping function called from invalid context at /home/johan/src/linux/linux-nu/mm/dmapool.c:310
 
-     Also, as of v3.1, the PM domain level code for OMAP handles device
-     power state transistions automatically for devices, so drivers no
-     longer need to specifically call the bus/pm_domain methods themselves.
+with usb-next when using a usb-serial console as you seem to do be doing
+as well.
 
+Could be related. Care to give the fix below a try?
 
-- So it is rightly in the mercy of runtime PM to adequately represent 
-it's state. I disagree that i2c driver should in addition have to 
-remember what it's generic suspend state is.
-  - See the link to the cpufreq and the logs to see the call stack where 
-it fails.
+Thanks,
+Johan
 
-Now, this is fine, since omap_i2c_xfer should ideally fail with a 
-pm_runtime_get_sync returning -EACCESS when device is really suspended 
-(remember, we are doing autosuspend - so, in the case I caught, there 
-was regulator voltage set prior to entering suspend, but timeout was not 
-yet hit for autosuspend of i2c to kick in yet).
+>From 7caaef75ebba3cfa3916b53ce1aee95291802ac4 Mon Sep 17 00:00:00 2001
+From: Johan Hovold <jhovold@gmail.com>
+Date: Fri, 8 Nov 2013 00:44:31 +0100
+Subject: [PATCH] USB: serial: fix write memory-allocation flag
 
->
-> That being said, I agree that omap_device should still be catching this
-> case in order to find/fix driver races like this.
+Fix regression introduced by commit 818f60365a29 ("USB: serial: add
+memory flags to usb_serial_generic_write_start"), which used GFP_KERNEL
+in write, which must not not sleep.
+---
+ drivers/usb/serial/generic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->
->> To prevent this from happening, we should ensure that runtime_status
->> exactly indicates the device status. As a result of this change
->> any further calls to pm_runtime_get* would return -EACCES (since
->> disable_depth is 1). On resume, we restore the clocks and runtime
->> status exactly as we suspended with.
->>
->> Reported-by: J Keerthy <j-keerthy@ti.com>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> Acked-by: Rajendra Nayak <rnayak@ti.com>
->> ---
->> patch baseline: V3.12 tag (also applies on linux-next next-20131107 tag)
->>
->> Logs from 3.12 based vendor kernel:
->> Before: http://pastebin.com/m5KxnB7a
->> After: http://pastebin.com/8AfX4e7r
->>
->> The discussion on cpufreq side of the story which triggered this scenario:
->> 	http://marc.info/?l=linux-pm&m=138263811321921&w=2
->>
->> Tested on TI vendor kernel (with dt boot):
->> 	AM335x: evm, BBB, sk, BBW
->> 	OMAP5uEVM, DRA7-evm
->>
->>   arch/arm/mach-omap2/omap_device.c |   16 ++++++++++++++--
->>   arch/arm/mach-omap2/omap_device.h |    1 +
->>   2 files changed, 15 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
->> index b69dd9a..87ecbb0 100644
->> --- a/arch/arm/mach-omap2/omap_device.c
->> +++ b/arch/arm/mach-omap2/omap_device.c
->> @@ -621,6 +621,13 @@ static int _od_suspend_noirq(struct device *dev)
->>
->>   	if (!ret && !pm_runtime_status_suspended(dev)) {
->>   		if (pm_generic_runtime_suspend(dev) == 0) {
->> +			if (!pm_runtime_suspended(dev)) {
->
-> Why the addition check for supended here?
+diff --git a/drivers/usb/serial/generic.c b/drivers/usb/serial/generic.c
+index 2b01ec8651c2..538498646b06 100644
+--- a/drivers/usb/serial/generic.c
++++ b/drivers/usb/serial/generic.c
+@@ -208,7 +208,7 @@ int usb_serial_generic_write(struct tty_struct *tty,
+ 		return 0;
+ 
+ 	count = kfifo_in_locked(&port->write_fifo, buf, count, &port->lock);
+-	result = usb_serial_generic_write_start(port, GFP_KERNEL);
++	result = usb_serial_generic_write_start(port, GFP_ATOMIC);
+ 	if (result)
+ 		return result;
+ 
+-- 
+1.8.4.2
 
-pm_runtime_status_suspended checks only the dev->power.runtime_status
-but that may not truely indicate device was in previous use - in the 
-case of devices like i2c who depend on autosuspend.
-
-pm_runtime_suspended checks for dev->power.runtime_status == 
-RPM_SUSPENDED and disable_depth
-
->
-> This version (as opposed to the _status_suspended() version above will
-> fail if runtime PM has been disabled from userspace (via
-> /sys/devices/.../power/control), and will thus prevent low power states
-> from being hit in suspend if runtime suspend has been disabled from
-> userspace.  That's a bug.
-
-yes, and so it should fail to achieve low power state. we explicitly 
-stated disable suspend, yet we go behind the runtime PM's back and force 
-disable the module clocks. now drivers should NOT know what the state of 
-the omap_device meddling is and should obey the configuration and 
-completely trust pm_runtime to accurately denote the module state.
-
->
->> +				/* NOTE: *might* indicate driver race */
->
-> Yes, a driver race which should then be fixed in the driver.
-
-true if this is a non-autosuspend device, in auto suspend devices, this 
-could be a regular phenomenon if timeout is pretty large.. but atleast 
-that should allow debug.
->
->> +				dev_dbg(dev, "%s: Force suspending\n",
->> +					__func__);
->> +				pm_runtime_set_suspended(dev);
->> +				od->flags |= OMAP_DEVICE_SUSPEND_FORCED;
->
-> Not sure why you need an additonal flag.  Why not just always do this
-> and use the existin OMAP_DEVICE_SUSPENDED flag.
-
-restore of runtime data structure state is only needed for specific 
-devices - not all..
-
---
-Regards,
-Nishanth Menon
