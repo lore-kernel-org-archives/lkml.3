@@ -1,85 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758100Ab3KHS6Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 13:58:24 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:51574 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758050Ab3KHS6W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 13:58:22 -0500
-X-Originating-IP: 173.246.103.110
-Date: Fri, 8 Nov 2013 10:58:12 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the akpm-current tree with the tip
- tree
-Message-ID: <20131108185812.GB11311@jtriplet-mobl1>
-References: <20131108184805.ec16e3b5cc08834cb5d4f812@canb.auug.org.au>
+	id S1758110Ab3KHS6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 13:58:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41169 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757775Ab3KHS6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 13:58:46 -0500
+Date: Fri, 8 Nov 2013 20:00:03 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] uprobes: Add uprobe_task->dup_work/dup_addr
+Message-ID: <20131108190003.GA12755@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131108184805.ec16e3b5cc08834cb5d4f812@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 06:48:05PM +1100, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> Today's linux-next merge of the akpm-current tree got a conflict in
-> kernel/Makefile between commits 60fc28746a7b ("locking: Move the spinlock
-> code to kernel/locking/") and cd4d241d57c9 ("locking: Move the lglocks
-> code to kernel/locking/") from the tip tree and commit f5639052d567
-> ("lglock: map to spinlock when !CONFIG_SMP") from the akpm-current tree.
-> 
-> I fixed it up (dropping the kernel/Makefile section of the akpm-current
-> commit and adding the below patch) and can carry the fix as necessary (no
-> action is required).
+uprobe_task->vaddr is a bit strange. First of all it is not really
+needed, we can move it into arch_uprobe_task. The generic code uses
+it only to pass the additional argument to arch_uprobe_pre_xol(),
+and since it is always equal to instruction_pointer() this looks
+even more strange.
 
-Won't splitting the Makefile change into a separate commit break
-bisection, in particular if you have the changes adding inlines but you
-also compile in lglock.o?  Shouldn't this be squashed into the merge
-itself, keeping the kernel/Makefile section of my original patch?
+And both utask->vaddr and and utask->autask have the same scope,
+they only have the meaning when the task executes the probed insn
+out-of-line. This means it is safe to reuse both in UTASK_RUNNING
+state.
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 8 Nov 2013 18:45:25 +1100
-> Subject: [PATCH] lglock: fixup for code movement
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  kernel/locking/Makefile | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/locking/Makefile b/kernel/locking/Makefile
-> index baab8e5e7f66..bb3c65930a20 100644
-> --- a/kernel/locking/Makefile
-> +++ b/kernel/locking/Makefile
-> @@ -1,5 +1,5 @@
->  
-> -obj-y += mutex.o semaphore.o rwsem.o lglock.o
-> +obj-y += mutex.o semaphore.o rwsem.o
->  
->  ifdef CONFIG_FUNCTION_TRACER
->  CFLAGS_REMOVE_lockdep.o = -pg
-> @@ -8,6 +8,7 @@ CFLAGS_REMOVE_mutex-debug.o = -pg
->  CFLAGS_REMOVE_rtmutex-debug.o = -pg
->  endif
->  
-> +obj-$(CONFIG_SMP) += lglock.o
->  obj-$(CONFIG_DEBUG_MUTEXES) += mutex-debug.o
->  obj-$(CONFIG_LOCKDEP) += lockdep.o
->  ifeq ($(CONFIG_PROC_FS),y)
-> -- 
-> 1.8.4.2
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+OTOH, it is also used by uprobe_copy_process() and dup_xol_work()
+for another purpose, this doesn't look clean and doesn't allow to
+move this member into arch_uprobe_task.
+
+This patch adds the union with 2 anonymous structs into uprobe_task.
+
+The first struct is autask + vaddr, this way we "almost" move vaddr
+into autask.
+
+The second struct has 2 new members for uprobe_copy_process() paths:
+->dup_addr which can be used instead ->vaddr, and ->dup_work which
+can be used to avoid kmalloc() and simplify the code.
+
+Note that this union will likely have another member(s), we need
+something like "private_data_for_handlers" so that the tracing
+handlers could use it to communicate with call_fetch() methods.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ include/linux/uprobes.h |   21 ++++++++++++++++-----
+ kernel/events/uprobes.c |   16 ++++------------
+ 2 files changed, 20 insertions(+), 17 deletions(-)
+
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 319eae7..366b8b2 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -26,6 +26,7 @@
+ 
+ #include <linux/errno.h>
+ #include <linux/rbtree.h>
++#include <linux/types.h>
+ 
+ struct vm_area_struct;
+ struct mm_struct;
+@@ -72,14 +73,24 @@ enum uprobe_task_state {
+  */
+ struct uprobe_task {
+ 	enum uprobe_task_state		state;
+-	struct arch_uprobe_task		autask;
+ 
+-	struct return_instance		*return_instances;
+-	unsigned int			depth;
+-	struct uprobe			*active_uprobe;
++	union {
++		struct {
++			struct arch_uprobe_task	autask;
++			unsigned long		vaddr;
++		};
++
++		struct {
++			struct callback_head	dup_work;
++			unsigned long		dup_addr;
++		};
++	};
+ 
++	struct uprobe			*active_uprobe;
+ 	unsigned long			xol_vaddr;
+-	unsigned long			vaddr;
++
++	struct return_instance		*return_instances;
++	unsigned int			depth;
+ };
+ 
+ /*
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 24b7d6c..2546a7b 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1403,12 +1403,10 @@ static void uprobe_warn(struct task_struct *t, const char *msg)
+ 
+ static void dup_xol_work(struct callback_head *work)
+ {
+-	kfree(work);
+-
+ 	if (current->flags & PF_EXITING)
+ 		return;
+ 
+-	if (!__create_xol_area(current->utask->vaddr))
++	if (!__create_xol_area(current->utask->dup_addr))
+ 		uprobe_warn(current, "dup xol area");
+ }
+ 
+@@ -1419,7 +1417,6 @@ void uprobe_copy_process(struct task_struct *t, unsigned long flags)
+ {
+ 	struct uprobe_task *utask = current->utask;
+ 	struct mm_struct *mm = current->mm;
+-	struct callback_head *work;
+ 	struct xol_area *area;
+ 
+ 	t->utask = NULL;
+@@ -1441,14 +1438,9 @@ void uprobe_copy_process(struct task_struct *t, unsigned long flags)
+ 	if (mm == t->mm)
+ 		return;
+ 
+-	/* TODO: move it into the union in uprobe_task */
+-	work = kmalloc(sizeof(*work), GFP_KERNEL);
+-	if (!work)
+-		return uprobe_warn(t, "dup xol area");
+-
+-	t->utask->vaddr = area->vaddr;
+-	init_task_work(work, dup_xol_work);
+-	task_work_add(t, work, true);
++	t->utask->dup_addr = area->vaddr;
++	init_task_work(&t->utask->dup_work, dup_xol_work);
++	task_work_add(t, &t->utask->dup_work, true);
+ }
+ 
+ /*
+-- 
+1.5.5.1
 
 
