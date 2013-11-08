@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757641Ab3KHQbE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 11:31:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35834 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757525Ab3KHQbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 11:31:02 -0500
-From: Paul Moore <pmoore@redhat.com>
-To: libseccomp-discuss@lists.sourceforge.net
-Cc: Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
-        James Hogan <james.hogan@imgtec.com>, Will Drewry <wad@chromium.org>,
+	id S1757754Ab3KHQbW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 11:31:22 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:56385 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757684Ab3KHQbT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 11:31:19 -0500
+Date: Fri, 8 Nov 2013 17:31:14 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [libseccomp-discuss] [PATCH v2] seccomp: not compatible with ARM OABI
-Date: Fri, 08 Nov 2013 11:29:58 -0500
-Message-ID: <1464650.041viV29xe@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.11.2 (Linux/3.10.13-gentoo; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <CALCETrVgwMto=5Rn34dDOLrmzLargvs4QxCdPWdEvd=UZhg_Jg@mail.gmail.com>
-References: <20131107174746.GA22344@www.outflux.net> <1383850597.2938.52.camel@localhost> <CALCETrVgwMto=5Rn34dDOLrmzLargvs4QxCdPWdEvd=UZhg_Jg@mail.gmail.com>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
+ kthreadd V2
+Message-ID: <20131108163112.GA12853@localhost.localdomain>
+References: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com>
+ <20131016141326.2e517e18e4d8af880c97a282@linux-foundation.org>
+ <00000141c36b03b6-2f9bd3de-d153-4359-901f-084aeb4c040d-000000@email.amazonses.com>
+ <20131017122344.39d55db97c3923131bdf2831@linux-foundation.org>
+ <0000014233722db9-cc00d0af-a5fa-4090-83bd-73c87377b892-000000@email.amazonses.com>
+ <20131107225049.GC28130@localhost.localdomain>
+ <0000014238407a1c-34e7bdbc-45c0-48de-a8a3-94a99f276044-000000@email.amazonses.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0000014238407a1c-34e7bdbc-45c0-48de-a8a3-94a99f276044-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 07, 2013 11:05:26 AM Andy Lutomirski wrote:
-> On Thu, Nov 7, 2013 at 10:56 AM, Eric Paris <eparis@redhat.com> wrote:
->
-> > Isn't x32 similarly screwy?  Does it work because the syscall numbers
-> > are different?
+On Fri, Nov 08, 2013 at 03:06:59PM +0000, Christoph Lameter wrote:
+> On Thu, 7 Nov 2013, Frederic Weisbecker wrote:
 > 
-> Yes (from reading the code -- I haven't actually tried it).
+> > usermodehelper works are created via workqueues, right? And workqueues are an issue as
+> > well for those who want CPU isolation.
+> 
+> AFAICT usermodehelper can be called from a variety of contexts.
 
-I've got a x32 VM that I boot occasionally to test seccomp/libseccomp.  For 
-the purposes of seccomp it looks exactly like x86_64, including sharing the 
-same AUDIT_ARCH_X86_64 value, the only difference being the syscall number 
-offset ... Assuming you're using kernel 3.9 or later.  Previous kernels had a 
-bug which stripped the x32 syscall offset so it was impossible to distinguish 
-from x86_64 and x32 with seccomp.  See the following commit for the details:
+But it looks like it always end up calling a workqueue. May be I missed something though.
 
- commit 8b4b9f27e57584f3d90e0bb84cf800ad81cfe3a1
- Author: Paul Moore <pmoore@redhat.com>
- Date:   Fri Feb 15 12:21:43 2013 -0500
+Now we can argue that this workqueue seem to create kernel threads, which in turn create other kernel thread (uhh?)
+and I don't know if those inherit the kworker affinity. But from a quick look, it seems to me that
+this is what we want.
 
-    x86: remove the x32 syscall bitmask from syscall_get_nr()
-    
-    Commit fca460f95e928bae373daa8295877b6905bc62b8 simplified the x32
-    implementation by creating a syscall bitmask, equal to 0x40000000, that
-    could be applied to x32 syscalls such that the masked syscall number
-    would be the same as a x86_64 syscall.  While that patch was a nice
-    way to simplify the code, it went a bit too far by adding the mask to
-    syscall_get_nr(); returning the masked syscall numbers can cause
-    confusion with callers that expect syscall numbers matching the x32
-    ABI, e.g. unmasked syscall numbers.
-    
-    This patch fixes this by simply removing the mask from syscall_get_nr()
-    while preserving the other changes from the original commit.  While
-    there are several syscall_get_nr() callers in the kernel, most simply
-    check that the syscall number is greater than zero, in this case this
-    patch will have no effect.  Of those remaining callers, they appear
-    to be few, seccomp and ftrace, and from my testing of seccomp without
-    this patch the original commit definitely breaks things; the seccomp
-    filter does not correctly filter the syscalls due to the difference in
-    syscall numbers in the BPF filter and the value from syscall_get_nr().
-    Applying this patch restores the seccomp BPF filter functionality on
-    x32.
-    
-    I've tested this patch with the seccomp BPF filters as well as ftrace
-    and everything looks reasonable to me; needless to say general usage
-    seemed fine as well.
-    
-    Signed-off-by: Paul Moore <pmoore@redhat.com>
-    Link: http://lkml.kernel.org/r/20130215172143.12549.10292.stgit@localhost
-    Cc: <stable@vger.kernel.org>
-    Cc: Will Drewry <wad@chromium.org>
-    Cc: H. Peter Anvin <hpa@zytor.com>
-    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+BTW the use of kernel_thread is justified in this comment: "/* Keventd can't block, but this (a child) can. */"
+Do these kernel_threads exist because kworker can't block? Actually the new workqueue subsystem can have blocking
+worklets now, may be something can be simplified there although I haven't checked the details. But perhaps
+we can spare one level of kernel threads.
 
-> I've always interpreted the AUDIT_ARCH stuff as meaning that
-> (audit_arch, nr) uniquely identifies a syscall and that (audit_arch,
-> nr, argument registers) identifies a syscall and its arguments.
+Can't we use kthreads there btw? Or may be we need a task->mm to do the user things.
 
-That matches my own experience working with seccomp.
+> 
+> > So this looks like a more general problem than just call_usermodehelper.
+> 
+> Well the code explicitly sets the the affinity mask to all cpus which
+> creates a problem for low latency processors. It does not inherit the
+> affinity from any calling process.
 
-> On x32, the syscall invocation instruction is identical to x86_64 and
-> the mode of the process has nothing to do with which syscall is
-> invoked, so having a different audit_arch is unnecessary (as long as
-> the x32 bit in nr is preserved).
+But how is that an argument in favour of changing this to inheriting the affinity from
+the workqueue thread rather than kthread?
 
--- 
-paul moore
-security and virtualization @ redhat
+> 
+> > Last time I checked, it seemed to me that this is an unbound workqueue? If so can't we tune
+> > the affinity of this workqueue? If not perhaps that's something we want to solve and which
+> > could be useful for all the users who don't want their CPU to be disturbed.
+> 
+> There are various contexts from which usermodehelper can be called.
+> Drivers use it etc.
 
+But they all converge to the workqueue, or I'm missing other code paths?
+
+Thanks.
