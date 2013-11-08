@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126Ab3KHTMw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 14:12:52 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:50565 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757528Ab3KHTMu (ORCPT
+	id S1758142Ab3KHTOL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 14:14:11 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:64347 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757565Ab3KHTOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 14:12:50 -0500
-Date: Fri, 8 Nov 2013 20:12:46 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
- kthreadd V2
-Message-ID: <20131108191235.GB12853@localhost.localdomain>
-References: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com>
- <20131016141326.2e517e18e4d8af880c97a282@linux-foundation.org>
- <00000141c36b03b6-2f9bd3de-d153-4359-901f-084aeb4c040d-000000@email.amazonses.com>
- <20131017122344.39d55db97c3923131bdf2831@linux-foundation.org>
- <0000014233722db9-cc00d0af-a5fa-4090-83bd-73c87377b892-000000@email.amazonses.com>
- <20131107225049.GC28130@localhost.localdomain>
- <0000014238407a1c-34e7bdbc-45c0-48de-a8a3-94a99f276044-000000@email.amazonses.com>
- <20131108163112.GA12853@localhost.localdomain>
- <0000014238ad0fb9-aa252280-8e44-48ac-a096-e6dee26e09ea-000000@email.amazonses.com>
+	Fri, 8 Nov 2013 14:14:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000014238ad0fb9-aa252280-8e44-48ac-a096-e6dee26e09ea-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20131108182415.GG10335@titan.lakedaemon.net>
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1383661723-17956-8-git-send-email-sebastian.hesselbarth@gmail.com>
+	<0AF697FD-60AA-4B8B-A35F-3DF2FFBCF7AF@codeaurora.org>
+	<20131108165721.GA10335@titan.lakedaemon.net>
+	<8DC09031-553C-4FD5-8F05-F93D6FE40F3A@codeaurora.org>
+	<20131108182415.GG10335@titan.lakedaemon.net>
+Date: Fri, 8 Nov 2013 11:14:07 -0800
+Message-ID: <CAOesGMhfr3CNxKNRJa+eJepr2Fc-jx4rTQ7cPerTkQM-CyzuCg@mail.gmail.com>
+Subject: Re: [PATCH v3 7/9] ARM: add Armada 1500 and Sony NSZ-GS7 device tree files
+From: Olof Johansson <olof@lixom.net>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Kumar Gala <galak@codeaurora.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 05:05:35PM +0000, Christoph Lameter wrote:
-> On Fri, 8 Nov 2013, Frederic Weisbecker wrote:
-> 
-> > But it looks like it always end up calling a workqueue. May be I missed something though.
-> >
-> > Now we can argue that this workqueue seem to create kernel threads, which in turn create other kernel thread (uhh?)
-> > and I don't know if those inherit the kworker affinity. But from a quick look, it seems to me that
-> > this is what we want.
-> 
-> Right. The problem is that the affinity cannot be inherited since
-> usermodehelper may be called from a workqueue or other restricted kernel
-> context. The main point of the usermodehelper logic is to work itself out
-> of the restrictions of the context in which is was called to be able to
-> fork off a kernel thread that then can call a userspace helper program.
+On Fri, Nov 8, 2013 at 10:24 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> On Fri, Nov 08, 2013 at 12:06:26PM -0600, Kumar Gala wrote:
+>>
+>> On Nov 8, 2013, at 10:57 AM, Jason Cooper wrote:
+>>
+>> > On Fri, Nov 08, 2013 at 10:13:19AM -0600, Kumar Gala wrote:
+>> >> On Nov 5, 2013, at 8:28 AM, Sebastian Hesselbarth wrote:
+>> > ...
+>> >>> .../devicetree/bindings/arm/marvell,berlin.txt     |   24 +++
+>> >>> arch/arm/boot/dts/Makefile                         |    2 +
+>> >>> arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts         |   29 +++
+>> >>> arch/arm/boot/dts/berlin2.dtsi                     |  227 ++++++++++++++++++++
+>> >>> 4 files changed, 282 insertions(+)
+>> >>> create mode 100644 Documentation/devicetree/bindings/arm/marvell,berlin.txt
+>> >>> create mode 100644 arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts
+>> >>> create mode 100644 arch/arm/boot/dts/berlin2.dtsi
+>> >>
+>> >> Haven't we been trying to go away from non-prefixed dts/dtsi?
+>> >
+>> > hmmm, this is the first I've heard of that.  Although, your proposal
+>> > (in another thread) makes more sense now.  :)
+>> >
+>> >> So should these be something like marvell-berlin2-...
+>> >
+>> > I don't recall this being brought up at the summit, nor in Grant's
+>> > report.  I do need to give it a more careful read this weekend, though.
+>> > Perhaps I missed something.
+>>
+>> This was based on review comments Olof gave when we pushed some .dts
+>> files for MSM/APQ Qualcomm Technologies soc/boards.
+>
+> As Andrew Lunn mentioned to me earlier, we should consider the fact that
+> the dts file names are being used by Debian's flash-kernel.  Oh no!
+> Another ABI! ;-)
 
-I understand, but why not solving that from the workqueue affinity? We want to
-solve the issue of unbound workqueues in CPU isolation anyway.
+Yes, the names are mostly stable. ST-Ericsson renamed their dts files
+and it caused some pain, some build environments have them hardcoded,
+etc.
 
-> 
-> I want to restrict on which processors this working out of the limiting
-> context can occur. It should not occur on low latency processors nor
-> should user space stuff be run there.
-> 
-> Without this patch we see various processes being sprinkled over all the
-> processors in the system when usermodehelper is invoked.
+Still, it is a good idea to start adding new ones using family or
+vendor prefixes, so they are easier to group. Please keep that in mind
+on new ones too, Jason -- I don't think I've discussed with you in the
+past. :-)
 
-I got that, and I too am interested in solving this problem. I'm not fighting
-against the purpose of this patch but against the way we solve that.
+
+-Olof
