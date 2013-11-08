@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab3KHPFl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 10:05:41 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:41411 "EHLO
+	id S932150Ab3KHPFy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 10:05:54 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:41437 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757293Ab3KHPFj (ORCPT
+	with ESMTP id S932106Ab3KHPFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 10:05:39 -0500
-X-AuditID: cbfec7f5-b7fe66d00000432e-5f-527cfdc16825
+	Fri, 8 Nov 2013 10:05:51 -0500
+X-AuditID: cbfec7f5-b7fe66d00000432e-9b-527cfdce46e5
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
@@ -18,20 +18,23 @@ To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         linux-samsung-soc@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 1/2] mfd: sec: reorder params in API for regmap consistency
-Date: Fri, 08 Nov 2013 16:05:17 +0100
-Message-id: <1383923118-26921-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 2/2] mfd: max77693: reorder params in API for regmap consistency
+Date: Fri, 08 Nov 2013 16:05:18 +0100
+Message-id: <1383923118-26921-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDJMWRmVeSWpSXmKPExsVy+t/xq7oH/9YEGUx8rWAx9eETNovrX56z
-	Wrx+YWhxtukNu8X9r0cZLb5d6WCy2PT4GqvF5V1z2CxmnN/HZHG7cQWbxeluVouLK74wOfB4
-	7Jx1l91j06pONo871/awecw7GeixeUm9R9+WVYwenzfJBbBHcdmkpOZklqUW6dslcGXsnXGe
-	saBfq2Lr/ZcsDYzblboYOTkkBEwk1l/4xgRhi0lcuLeerYuRi0NIYCmjxNmPv5ggnD4miav7
-	jjKDVLEJGEtsXr4ErEpE4AuTRMef72AJZoE4idMvloPZwgLeEqe3LQOzWQRUJR62/mLsYuTg
-	4BVwl9h9QgnElBBQkJgzyWYCI/cCRoZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCEh9nUH
-	49JjVocYBTgYlXh4T1yqDhJiTSwrrsw9xCjBwawkwlv+sCZIiDclsbIqtSg/vqg0J7X4ECMT
-	B6dUA6PtSTPT+ZvZTOV+3Q5iNix4kXnU8lYZ9zf5owtmXtsR4XeF66I+Z0utzbPEoGVLw0VC
-	vvRdq3si1lp0NOyf6ITdNv+qf0eWzq1g5V7uc67RZP+NXV0G3rWV16s6vrwJ1Jn/6dgV28cF
-	7I19cS5KPT9afd74Oa4S9fUtELe0eSK8/+Pnvj9ZJ5VYijMSDbWYi4oTASFEyUoPAgAA
+In-reply-to: <1383923118-26921-1-git-send-email-k.kozlowski@samsung.com>
+References: <1383923118-26921-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t/xq7rn/tYEGVxolreY+vAJm8X1L89Z
+	LV6/MLQ42/SG3eL+16OMFt+udDBZbHp8jdXi8q45bBYzzu9jsrjduILN4nQ3q8XFFV+YHHg8
+	ds66y+6xaVUnm8eda3vYPOadDPTYvKTeo2/LKkaPz5vkAtijuGxSUnMyy1KL9O0SuDK+PtvE
+	XPBQp6Lx9S72BsZ5ql2MnBwSAiYSz5p/M0LYYhIX7q1n62Lk4hASWMoo8WjHbmYIp49J4vK7
+	P0wgVWwCxhKbly8BqxIR+MIk0fHnOzNIglkgTuL0i+VgtrBAgMSxxZvBbBYBVYkHe6eygNi8
+	Au4Slz/0AQ3iAFqnIDFnkg1ImFPAQ2Lm1nlg5UJAJX//tLFOYORdwMiwilE0tTS5oDgpPddI
+	rzgxt7g0L10vOT93EyMkKL/uYFx6zOoQowAHoxIP74lL1UFCrIllxZW5hxglOJiVRHjLH9YE
+	CfGmJFZWpRblxxeV5qQWH2Jk4uCUamDc/W3ClRXJt/9qzW6Y/KNARGefyQnG/R5TpDZ2rTtv
+	uMX+eFPjwXRG3XOCgRzn28yE/nKETSwMenA+j9VqxZQXYc6nog4sKso6/KuSI+NJzZYZtntc
+	ZF/+WKGTPtshz+2d8PE3mVFTZ6la/Z1q+fr/5i2nRAMjmI6sOXHGRXuOu6lapc1WY658JZbi
+	jERDLeai4kQAxwr29igCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -40,141 +43,138 @@ The last two parameters of certain register access functions were in
 different order than regmap API. This was confusing and error-prone.
 
 Reorder parameters for register access API to match regmap API:
- - sec_bulk_read() reorder count and buf,
- - sec_bulk_write() reorder count and buf,
- - sec_reg_update() reorder val and mask.
+ - max77693_bulk_read() reorder count and buf,
+ - max77693_bulk_write() reorder count and buf,
+ - max77693_update_reg() reorder val and mask.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/mfd/sec-core.c           |    6 +++---
- drivers/regulator/s5m8767.c      |   26 +++++++++++++-------------
- include/linux/mfd/samsung/core.h |    6 +++---
- 3 files changed, 19 insertions(+), 19 deletions(-)
+ drivers/extcon/extcon-max77693.c     |   14 +++++++-------
+ drivers/mfd/max77693-irq.c           |    2 +-
+ drivers/mfd/max77693.c               |    6 +++---
+ include/linux/mfd/max77693-private.h |   10 +++++-----
+ 4 files changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index f530e4b..039814e 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -84,7 +84,7 @@ int sec_reg_read(struct sec_pmic_dev *sec_pmic, u8 reg, void *dest)
- }
- EXPORT_SYMBOL_GPL(sec_reg_read);
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index da268fb..602d948 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -257,8 +257,8 @@ static int max77693_muic_set_debounce_time(struct max77693_muic_info *info,
+ 	case ADC_DEBOUNCE_TIME_38_62MS:
+ 		ret = max77693_update_reg(info->max77693->regmap_muic,
+ 					  MAX77693_MUIC_REG_CTRL3,
+-					  time << CONTROL3_ADCDBSET_SHIFT,
+-					  CONTROL3_ADCDBSET_MASK);
++					  CONTROL3_ADCDBSET_MASK,
++					  time << CONTROL3_ADCDBSET_SHIFT);
+ 		if (ret) {
+ 			dev_err(info->dev, "failed to set ADC debounce time\n");
+ 			return ret;
+@@ -294,7 +294,7 @@ static int max77693_muic_set_path(struct max77693_muic_info *info,
+ 		ctrl1 = CONTROL1_SW_OPEN;
  
--int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf)
-+int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u8 reg, u8 *buf, int count)
- {
- 	return regmap_bulk_read(sec_pmic->regmap, reg, buf, count);
- }
-@@ -96,13 +96,13 @@ int sec_reg_write(struct sec_pmic_dev *sec_pmic, u8 reg, u8 value)
- }
- EXPORT_SYMBOL_GPL(sec_reg_write);
- 
--int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf)
-+int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u8 reg, u8 *buf, int count)
- {
- 	return regmap_raw_write(sec_pmic->regmap, reg, buf, count);
- }
- EXPORT_SYMBOL_GPL(sec_bulk_write);
- 
--int sec_reg_update(struct sec_pmic_dev *sec_pmic, u8 reg, u8 val, u8 mask)
-+int sec_reg_update(struct sec_pmic_dev *sec_pmic, u8 reg, u8 mask, u8 val)
- {
- 	return regmap_update_bits(sec_pmic->regmap, reg, mask, val);
- }
-diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index c24448b..ac10db4 100644
---- a/drivers/regulator/s5m8767.c
-+++ b/drivers/regulator/s5m8767.c
-@@ -243,7 +243,7 @@ static int s5m8767_reg_enable(struct regulator_dev *rdev)
- 	if (ret)
+ 	ret = max77693_update_reg(info->max77693->regmap_muic,
+-			MAX77693_MUIC_REG_CTRL1, ctrl1, COMP_SW_MASK);
++			MAX77693_MUIC_REG_CTRL1, COMP_SW_MASK, ctrl1);
+ 	if (ret < 0) {
+ 		dev_err(info->dev, "failed to update MUIC register\n");
  		return ret;
+@@ -306,8 +306,8 @@ static int max77693_muic_set_path(struct max77693_muic_info *info,
+ 		ctrl2 |= CONTROL2_LOWPWR_MASK;	/* LowPwr=1, CPEn=0 */
  
--	return sec_reg_update(s5m8767->iodev, reg, enable_ctrl, mask);
-+	return sec_reg_update(s5m8767->iodev, reg, mask, enable_ctrl);
- }
- 
- static int s5m8767_reg_disable(struct regulator_dev *rdev)
-@@ -256,7 +256,7 @@ static int s5m8767_reg_disable(struct regulator_dev *rdev)
- 	if (ret)
+ 	ret = max77693_update_reg(info->max77693->regmap_muic,
+-			MAX77693_MUIC_REG_CTRL2, ctrl2,
+-			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK);
++			MAX77693_MUIC_REG_CTRL2,
++			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK, ctrl2);
+ 	if (ret < 0) {
+ 		dev_err(info->dev, "failed to update MUIC register\n");
  		return ret;
+@@ -970,7 +970,7 @@ static void max77693_muic_irq_work(struct work_struct *work)
+ 			irq_type = muic_irqs[i].irq;
  
--	return sec_reg_update(s5m8767->iodev, reg, ~mask, mask);
-+	return sec_reg_update(s5m8767->iodev, reg, mask, ~mask);
+ 	ret = max77693_bulk_read(info->max77693->regmap_muic,
+-			MAX77693_MUIC_REG_STATUS1, 2, info->status);
++			MAX77693_MUIC_REG_STATUS1, info->status, 2);
+ 	if (ret) {
+ 		dev_err(info->dev, "failed to read MUIC register\n");
+ 		mutex_unlock(&info->mutex);
+@@ -1043,7 +1043,7 @@ static int max77693_muic_detect_accessory(struct max77693_muic_info *info)
+ 
+ 	/* Read STATUSx register to detect accessory */
+ 	ret = max77693_bulk_read(info->max77693->regmap_muic,
+-			MAX77693_MUIC_REG_STATUS1, 2, info->status);
++			MAX77693_MUIC_REG_STATUS1, info->status, 2);
+ 	if (ret) {
+ 		dev_err(info->dev, "failed to read MUIC register\n");
+ 		mutex_unlock(&info->mutex);
+diff --git a/drivers/mfd/max77693-irq.c b/drivers/mfd/max77693-irq.c
+index 1029d01..8718927 100644
+--- a/drivers/mfd/max77693-irq.c
++++ b/drivers/mfd/max77693-irq.c
+@@ -207,7 +207,7 @@ static irqreturn_t max77693_irq_thread(int irq, void *data)
+ 	if (irq_src & MAX77693_IRQSRC_MUIC)
+ 		/* MUIC INT1 ~ INT3 */
+ 		max77693_bulk_read(max77693->regmap_muic, MAX77693_MUIC_REG_INT1,
+-			MAX77693_NUM_IRQ_MUIC_REGS, &irq_reg[MUIC_INT1]);
++			&irq_reg[MUIC_INT1], MAX77693_NUM_IRQ_MUIC_REGS);
+ 
+ 	/* Apply masking */
+ 	for (i = 0; i < MAX77693_IRQ_GROUP_NR; i++) {
+diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+index c04723e..54f1a7f 100644
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -60,7 +60,7 @@ int max77693_read_reg(struct regmap *map, u8 reg, u8 *dest)
  }
+ EXPORT_SYMBOL_GPL(max77693_read_reg);
  
- static int s5m8767_get_vsel_reg(int reg_id, struct s5m8767_info *s5m8767)
-@@ -820,14 +820,14 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
- 	if (pdata->buck2_gpiodvs || pdata->buck3_gpiodvs ||
- 	   pdata->buck4_gpiodvs) {
- 		sec_reg_update(s5m8767->iodev, S5M8767_REG_BUCK2CTRL,
--				(pdata->buck2_gpiodvs) ? (1 << 1) : (0 << 1),
--				1 << 1);
-+				1 << 1,
-+				(pdata->buck2_gpiodvs) ? (1 << 1) : (0 << 1));
- 		sec_reg_update(s5m8767->iodev, S5M8767_REG_BUCK3CTRL,
--				(pdata->buck3_gpiodvs) ? (1 << 1) : (0 << 1),
--				1 << 1);
-+				1 << 1,
-+				(pdata->buck3_gpiodvs) ? (1 << 1) : (0 << 1));
- 		sec_reg_update(s5m8767->iodev, S5M8767_REG_BUCK4CTRL,
--				(pdata->buck4_gpiodvs) ? (1 << 1) : (0 << 1),
--				1 << 1);
-+				1 << 1,
-+				(pdata->buck4_gpiodvs) ? (1 << 1) : (0 << 1));
- 	}
+-int max77693_bulk_read(struct regmap *map, u8 reg, int count, u8 *buf)
++int max77693_bulk_read(struct regmap *map, u8 reg, u8 *buf, int count)
+ {
+ 	int ret;
  
- 	/* Initialize GPIO DVS registers */
-@@ -862,19 +862,19 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
- 		switch (s5m8767->ramp_delay) {
- 		case 5:
- 			sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
--					0x40, 0xf0);
-+					0xf0, 0x40);
- 			break;
- 		case 10:
- 			sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
--					0x90, 0xf0);
-+					0xf0, 0x90);
- 			break;
- 		case 25:
- 			sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
--					0xd0, 0xf0);
-+					0xf0, 0xd0);
- 			break;
- 		case 50:
- 			sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
--					0xe0, 0xf0);
-+					0xf0, 0xe0);
- 			break;
- 		case 100:
- 			sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-@@ -882,7 +882,7 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
- 			break;
- 		default:
- 			sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
--					0x90, 0xf0);
-+					0xf0, 0x90);
- 		}
- 	}
+@@ -80,7 +80,7 @@ int max77693_write_reg(struct regmap *map, u8 reg, u8 value)
+ }
+ EXPORT_SYMBOL_GPL(max77693_write_reg);
  
-diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
-index 378ae8a..b04509e 100644
---- a/include/linux/mfd/samsung/core.h
-+++ b/include/linux/mfd/samsung/core.h
-@@ -58,10 +58,10 @@ void sec_irq_exit(struct sec_pmic_dev *sec_pmic);
- int sec_irq_resume(struct sec_pmic_dev *sec_pmic);
+-int max77693_bulk_write(struct regmap *map, u8 reg, int count, u8 *buf)
++int max77693_bulk_write(struct regmap *map, u8 reg, u8 *buf, int count)
+ {
+ 	int ret;
  
- extern int sec_reg_read(struct sec_pmic_dev *sec_pmic, u8 reg, void *dest);
--extern int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf);
-+extern int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u8 reg, u8 *buf, int count);
- extern int sec_reg_write(struct sec_pmic_dev *sec_pmic, u8 reg, u8 value);
--extern int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf);
--extern int sec_reg_update(struct sec_pmic_dev *sec_pmic, u8 reg, u8 val, u8 mask);
-+extern int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u8 reg, u8 *buf, int count);
-+extern int sec_reg_update(struct sec_pmic_dev *sec_pmic, u8 reg, u8 mask, u8 val);
+@@ -90,7 +90,7 @@ int max77693_bulk_write(struct regmap *map, u8 reg, int count, u8 *buf)
+ }
+ EXPORT_SYMBOL_GPL(max77693_bulk_write);
  
- struct sec_platform_data {
- 	struct sec_regulator_data	*regulators;
+-int max77693_update_reg(struct regmap *map, u8 reg, u8 val, u8 mask)
++int max77693_update_reg(struct regmap *map, u8 reg, u8 mask, u8 val)
+ {
+ 	int ret;
+ 
+diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
+index 244fb0d..40fd954 100644
+--- a/include/linux/mfd/max77693-private.h
++++ b/include/linux/mfd/max77693-private.h
+@@ -334,12 +334,12 @@ enum max77693_types {
+ };
+ 
+ extern int max77693_read_reg(struct regmap *map, u8 reg, u8 *dest);
+-extern int max77693_bulk_read(struct regmap *map, u8 reg, int count,
+-				u8 *buf);
++extern int max77693_bulk_read(struct regmap *map, u8 reg, u8 *buf,
++				int count);
+ extern int max77693_write_reg(struct regmap *map, u8 reg, u8 value);
+-extern int max77693_bulk_write(struct regmap *map, u8 reg, int count,
+-				u8 *buf);
+-extern int max77693_update_reg(struct regmap *map, u8 reg, u8 val, u8 mask);
++extern int max77693_bulk_write(struct regmap *map, u8 reg, u8 *buf,
++				int count);
++extern int max77693_update_reg(struct regmap *map, u8 reg, u8 mask, u8 val);
+ 
+ extern int max77693_irq_init(struct max77693_dev *max77686);
+ extern void max77693_irq_exit(struct max77693_dev *max77686);
 -- 
 1.7.9.5
 
