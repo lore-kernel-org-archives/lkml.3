@@ -1,122 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab3KHIpN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 03:45:13 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:55927 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751221Ab3KHIpK (ORCPT
+	id S1756793Ab3KHIp3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 03:45:29 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:49279 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756258Ab3KHIp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 03:45:10 -0500
-Date: Fri, 8 Nov 2013 09:40:56 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Ian Campbell <ijc@hellion.org.uk>
-Cc: linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-kernel@vger.kernel.org
-Subject: Re: [linux-sunxi] [PATCH 2/2] ARM: sun6i: Add SMP support for the
- Allwinner A31
-Message-ID: <20131108084056.GB26440@lukather>
-References: <1383471013-21695-1-git-send-email-maxime.ripard@free-electrons.com>
- <1383471013-21695-3-git-send-email-maxime.ripard@free-electrons.com>
- <1383583997.8826.123.camel@kazak.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VZLKKa0PG5KXlQhV"
-Content-Disposition: inline
-In-Reply-To: <1383583997.8826.123.camel@kazak.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 8 Nov 2013 03:45:26 -0500
+Date: Fri, 8 Nov 2013 19:45:11 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Tomasz Figa <t.figa@samsung.com>,
+        Tushar Behera <tushar.behera@linaro.org>, linux-next@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: Re: Boot failure on Arndale with next-20131105
+Message-Id: <20131108194511.545e99151b4fe5efb9ed6f0f@canb.auug.org.au>
+In-Reply-To: <5279622C.8040509@kernel.dk>
+References: <CAHbNUh1Cw3bc4WR0VcD1H_eKYqGBtv_215_euh6mwTbZ41ejUw@mail.gmail.com>
+	<1451170.jb5zbRXgpt@amdc1227>
+	<52792D13.70704@wwwdotorg.org>
+	<5279622C.8040509@kernel.dk>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__8_Nov_2013_19_45_11_+1100_oDf0H/C1P1yURSh3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---VZLKKa0PG5KXlQhV
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Fri__8_Nov_2013_19_45_11_+1100_oDf0H/C1P1yURSh3
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Ian,
+Hi Jens,
 
-On Mon, Nov 04, 2013 at 04:53:17PM +0000, Ian Campbell wrote:
-> Not a comment on the patch, or even A31, but a question about how the
-> SMP boot process works on sunxi generally...
+On Tue, 05 Nov 2013 14:25:00 -0700 Jens Axboe <axboe@kernel.dk> wrote:
+>
+> On 11/05/2013 10:38 AM, Stephen Warren wrote:
+> > I note that compiling next-20131105 generates quite a few warnings re:
+> > uninitialized variables. Reverting the commit doesn't solve those.
+> >=20
+> >> block/blk-merge.c: In function =E2=80=98blk_bio_map_sg=E2=80=99:
+> >> block/blk-merge.c:133:8: warning: =E2=80=98bvprv.bv_len=E2=80=99 may b=
+e used uninitialized in this function [-Wmaybe-uninitialized]
+> >> block/blk-merge.c:233:23: note: =E2=80=98bvprv.bv_len=E2=80=99 was dec=
+lared here
+> >> block/blk-merge.c:133:8: warning: =E2=80=98bvprv.bv_offset=E2=80=99 ma=
+y be used uninitialized in this function [-Wmaybe-uninitialized]
+> >> block/blk-merge.c:233:23: note: =E2=80=98bvprv.bv_offset=E2=80=99 was =
+declared here
+> >> block/blk-merge.c:133:8: warning: =E2=80=98bvprv.bv_page=E2=80=99 may =
+be used uninitialized in this function [-Wmaybe-uninitialized]
+> >> block/blk-merge.c:233:23: note: =E2=80=98bvprv.bv_page=E2=80=99 was de=
+clared here
+> >> block/blk-merge.c: In function =E2=80=98blk_rq_map_sg=E2=80=99:
+> >> block/blk-merge.c:133:8: warning: =E2=80=98bvprv.bv_page=E2=80=99 may =
+be used uninitialized in this function [-Wmaybe-uninitialized]
+> >> block/blk-merge.c:171:23: note: =E2=80=98bvprv.bv_page=E2=80=99 was de=
+clared here
+> >> block/blk-merge.c:133:8: warning: =E2=80=98bvprv.bv_offset=E2=80=99 ma=
+y be used uninitialized in this function [-Wmaybe-uninitialized]
+> >> block/blk-merge.c:171:23: note: =E2=80=98bvprv.bv_offset=E2=80=99 was =
+declared here
+> >> block/blk-merge.c:133:8: warning: =E2=80=98bvprv.bv_len=E2=80=99 may b=
+e used uninitialized in this function [-Wmaybe-uninitialized]
+> >> block/blk-merge.c:171:23: note: =E2=80=98bvprv.bv_len=E2=80=99 was dec=
+lared here
+> >> block/blk-merge.c: In function =E2=80=98attempt_merge=E2=80=99:
+> >> block/blk-merge.c:108:7: warning: =E2=80=98end_bv.bv_offset=E2=80=99 m=
+ay be used uninitialized in this function [-Wmaybe-uninitialized]
+> >> block/blk-merge.c:89:17: note: =E2=80=98end_bv.bv_offset=E2=80=99 was =
+declared here
+> >> block/blk-merge.c:108:7: warning: =E2=80=98end_bv.bv_page=E2=80=99 may=
+ be used uninitialized in this function [-Wmaybe-uninitialized]
+> >> block/blk-merge.c:89:17: note: =E2=80=98end_bv.bv_page=E2=80=99 was de=
+clared here
+> >> block/blk-merge.c:108:7: warning: =E2=80=98end_bv.bv_len=E2=80=99 may =
+be used uninitialized in this function [-Wmaybe-uninitialized]
+> >> block/blk-merge.c:89:17: note: =E2=80=98end_bv.bv_len=E2=80=99 was dec=
+lared here
 >=20
-> On Sun, 2013-11-03 at 10:30 +0100, Maxime Ripard wrote:
-> > The A31 is a quad Cortex-A7. Add the logic to use the IPs used to
-> > control the CPU configuration and the CPU power so that we can bring up
-> > secondary CPUs at boot.
-> > [...]
-> > +	/* Set CPU boot address */
-> > +	writel(virt_to_phys(sun6i_secondary_startup),
-> > +	       cpucfg_membase + CPUCFG_PRIVATE0_REG);
->=20
-> Does the secondary CPU jump straight here from the lowlevel firmware or
-> does it go through the bootloader which reads the reg and does the jump?
-> I can't see any reference to this reg in u-boot so I guess the former?
+> Looks like an incomplete merge. The patch to silence those warnings
+> (which aren't bugs, BTW) is definitely in my for-next branch.
 
-There's no reference of this either in the A31 datasheet (or at least,
-none I could find), so I assume the former too.
-
-> I'm trying to work out if we can make this work with the requirement
-> which both Xen and KVM have to enter the kernel in NS-HYP mode.
->=20
-> The way this works on e.g. vexpress is (roughly) that u-boot wakes up
-> the secondary CPUs from the lowlevel firmware and places them into its
-> own holding pen, which has the same wake up protocol as the firmware so
-> the kernel can just use the same code. If u-boot never gets to run on
-> secondary CPUs that isn't going to help much.=20
->=20
-> My concern is that the sequence here appears to involve resetting the
-> secondary CPU, which I figure will probably defeat that strategy by
-> kicking the CPU back into the lowlevel firmware in the reset state,
-> meaning it can't be done by a u-boot only change.
-
-I think this is where we're headed for the A20, Marc was interested in
-doing that, since we already have pretty much this in u-boot already,
-however, this is not the case for the A31.
-
-As far as I know, the Allwinner's bootloader that we currently use
-isn't bringing up the secondary CPUs, and we don't have any port of
-some sort of u-boot yet that we could work on.
-
-So, I guess we don't really have much choice in that case, even though
-eventually I'd like to have this for the A31 too.
-
-> Hrm, what to do ... perhaps a DT driven selection between this mechanism
-> and sev to kick a wfe loop reading the private register?
-
-We can discuss this whenever we will actually have that choice to
-make, but maybe a kernel parameter would be better?
-
-Thanks,
-Maxime
+I am still getting those warnings in linux-next for various builds
+(include 1386 defconfig).  Any hints would be good.
 
 --=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---VZLKKa0PG5KXlQhV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--Signature=_Fri__8_Nov_2013_19_45_11_+1100_oDf0H/C1P1yURSh3
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSfKOYAAoJEBx+YmzsjxAgO6IQALSMyGyD3E/dFPDmGgypE2IY
-kCvS5ZSB6hJmBAs+3oJWqdTZmKT/aQrWEQN55QGnyHqTCDoN2paSIVF797n+yTBj
-2AcENi6nn6Qcz8nE6DxJze0KgWFlpNds9LQdXOP8kSE2U5e21zbHfYq1OBniIIPm
-5nQ6HyyNRPHjV5WxVVlD7KUzn9gEHSP5lW8556rVbZ/oD4Ss73dnHa0KJNeKKPAF
-8u4Ys5Iutit1AzhT+Q1AEXypzhdO5FLlj0uegiljt4XVRNhFLAxtwgWhRy7NR0t7
-XIZ7qri9dZ764HDhUaCY7/nReq4PW69OwF9Lc6rMcuq9eunbW6fMVM5fB2vLQlT8
-MNrK0Sd1h4EicvEgn+6JgJTZEsk8ER5VcKL1i1oewZofo44cE0RbKH4poPa4R2W0
-9EPDlLpqBuk4XrqZRuDiNvtJEYkaEf6AwkYaBZLSM4bQp6leBa/sn+T0ddh0m8DL
-sdW42Q2DQsXCtRs1fn1MIHpi4Gd4K4NMeKCfOI3dpOIv5IERfrWdur5ACx5MXi4a
-rVWhv8edFJI1GoANRtO4t7CfB+yJFFDJK3SXFjBpPg27ARbtEmWy5/4rhnNmjhSg
-4EIcNMkvC3Zf7cbp8uyu5PbA6Tj6YOsGLhfolhi128GGeKl2m+QwSMj0E8+XI58a
-R1ot04QVtPWfm2CgkFGR
-=pifl
+iQIcBAEBCAAGBQJSfKSbAAoJEMDTa8Ir7ZwVVfYP/2QAPYFpZWnvh9/kNAxKpPx9
+SLplRxcGzPh8azlgwAaQxlD3jOp94B8vwmtdUqcGSChBPUIOVDsR1F+D7dzGK6es
+KawfriA7pynnAv/0RhvM/LQWYHwxqqp19Nt7TlibjOmQLPTZvvsCZm7ZAxClbyHL
+ekyh5gnd39Mbo9TOejRSyYXJYmto4wbnc8dA3KW2NnU2kOlZnN5zHd0+TFba37vy
+Vb1hvWQDy3iVNvuZImd+r/kZPvKCq4s09dD75mj2X5GciWV9IJ2pIBPjqE8LeBrX
+4RxwPRG3VKUfNPDDUPe4jB4Y8bv9wGIHwSf3eOKSblrgMNrPVEKWWAK+F9vIBtMy
+J2Ra0mnLWikDCZ2PfhVPaUrUGlK5/ievKUEevE+RcV4Ok7t32ZszGtzbFMUbQR8d
+XQDauyZyGxLrL3jQ4z5ojIAI6dCOmjthArTxafT6LLGxDrmhC67N5BdpaibN1tzN
+z9EwIgM1socCMji8/WG7nC/2dFd++BqEP22YpJUp603rYVXx/98V4xAdhcWG+GLD
+6oFm5B/2+Yl95abv4pHgXlT9muyBDRQFxs8HsFLzjROWURTz0LmiJV53HzFt9cVg
+0nGSZHVsZX4xtgP/vWdnwTIBYRnHdccDIfxC5dt2a65QTPwJQLnP9Puqiix/bgn4
+YRefDIxehRDNjZ9DaPyB
+=fTaN
 -----END PGP SIGNATURE-----
 
---VZLKKa0PG5KXlQhV--
+--Signature=_Fri__8_Nov_2013_19_45_11_+1100_oDf0H/C1P1yURSh3--
