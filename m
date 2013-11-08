@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab3KHCWK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:22:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34901 "EHLO
+	id S1757419Ab3KHCYy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:24:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34935 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932642Ab3KHCV4 (ORCPT
+	with ESMTP id S932670Ab3KHCWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:21:56 -0500
+	Thu, 7 Nov 2013 21:22:07 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+Cc: Thomas Hellstrom <thellstrom@vmware.com>, Dave Airlie <airlied@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 65/91] parisc: Do not crash 64bit SMP kernels on machines with >= 4GB RAM
-Date: Thu,  7 Nov 2013 18:15:20 -0800
-Message-Id: <1383876946-2396-66-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 54/91] drm/vmwgfx: Don't kill clients on VT switch
+Date: Thu,  7 Nov 2013 18:15:09 -0800
+Message-Id: <1383876946-2396-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -27,72 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 54e181e073fc1415e41917d725ebdbd7de956455 upstream.
+commit c4249855ac5b2a383704d31e040d3831d6a25c6f upstream.
 
-Since the beginning of the parisc-linux port, sometimes 64bit SMP kernels were
-not able to bring up other CPUs than the monarch CPU and instead crashed the
-kernel.  The reason was unclear, esp. since it involved various machines (e.g.
-J5600, J6750 and SuperDome). Testing showed, that those crashes didn't happened
-when less than 4GB were installed, or if a 32bit Linux kernel was booted.
+DRI clients that tried to grab the TTM lock when the master (X server) was
+switched away during a VT switch were sent the SIGTERM signal by the
+kernel. Fix this so that they are only sent that signal when the master has
+exited.
 
-In the end, the fix for those SMP problems is trivial:
-During the early phase of the initialization of the CPUs, including the monarch
-CPU, the PDC_PSW firmware function to enable WIDE (=64bit) mode is called.
-It's documented that this firmware function may clobber various registers, and
-one one of those possibly clobbered registers is %cr30 which holds the task
-thread info pointer.
-
-Now, if %cr30 would always have been clobbered, then this bug would have been
-detected much earlier. But lots of testing finally showed, that - at least for
-%cr30 - on some machines only the upper 32bits of the 64bit register suddenly
-turned zero after the firmware call.
-
-So, after finding the root cause, the explanation for the various crashes
-became clear:
-- On 32bit SMP Linux kernels all upper 32bit were zero, so we didn't faced this
-  problem.
-- Monarch CPUs in 64bit mode always booted sucessfully, because the inital task
-  thread info pointer was below 4GB.
-- Secondary CPUs booted sucessfully on machines with less than 4GB RAM because
-  the upper 32bit were zero anyay.
-- Secondary CPus failed to boot if we had more than 4GB RAM and the task thread
-  info pointer was located above the 4GB boundary.
-
-Finally, the patch to fix this problem is trivial by saving the %cr30 register
-before the firmware call and restoring it afterwards.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/parisc/kernel/head.S | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/arch/parisc/kernel/head.S b/arch/parisc/kernel/head.S
-index 37aabd7..d2d5825 100644
---- a/arch/parisc/kernel/head.S
-+++ b/arch/parisc/kernel/head.S
-@@ -195,6 +195,8 @@ common_stext:
- 	ldw             MEM_PDC_HI(%r0),%r6
- 	depd            %r6, 31, 32, %r3        /* move to upper word */
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+index 161f8b2..099d8d4 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+@@ -740,9 +740,17 @@ static void vmw_postclose(struct drm_device *dev,
+ 	struct vmw_fpriv *vmw_fp;
  
-+	mfctl		%cr30,%r6		/* PCX-W2 firmware bug */
+ 	vmw_fp = vmw_fpriv(file_priv);
+-	ttm_object_file_release(&vmw_fp->tfile);
+-	if (vmw_fp->locked_master)
 +
- 	ldo             PDC_PSW(%r0),%arg0              /* 21 */
- 	ldo             PDC_PSW_SET_DEFAULTS(%r0),%arg1 /* 2 */
- 	ldo             PDC_PSW_WIDE_BIT(%r0),%arg2     /* 2 */
-@@ -203,6 +205,8 @@ common_stext:
- 	copy            %r0,%arg3
++	if (vmw_fp->locked_master) {
++		struct vmw_master *vmaster =
++			vmw_master(vmw_fp->locked_master);
++
++		ttm_lock_set_kill(&vmaster->lock, true, SIGTERM);
++		ttm_vt_unlock(&vmaster->lock);
+ 		drm_master_put(&vmw_fp->locked_master);
++	}
++
++	ttm_object_file_release(&vmw_fp->tfile);
+ 	kfree(vmw_fp);
+ }
  
- stext_pdc_ret:
-+	mtctl		%r6,%cr30		/* restore task thread info */
-+
- 	/* restore rfi target address*/
- 	ldd             TI_TASK-THREAD_SZ_ALGN(%sp), %r10
- 	tophys_r1       %r10
+@@ -942,14 +950,13 @@ static void vmw_master_drop(struct drm_device *dev,
+ 
+ 	vmw_fp->locked_master = drm_master_get(file_priv->master);
+ 	ret = ttm_vt_lock(&vmaster->lock, false, vmw_fp->tfile);
+-	vmw_execbuf_release_pinned_bo(dev_priv);
+-
+ 	if (unlikely((ret != 0))) {
+ 		DRM_ERROR("Unable to lock TTM at VT switch.\n");
+ 		drm_master_put(&vmw_fp->locked_master);
+ 	}
+ 
+-	ttm_lock_set_kill(&vmaster->lock, true, SIGTERM);
++	ttm_lock_set_kill(&vmaster->lock, false, SIGTERM);
++	vmw_execbuf_release_pinned_bo(dev_priv);
+ 
+ 	if (!dev_priv->enable_fb) {
+ 		ret = ttm_bo_evict_mm(&dev_priv->bdev, TTM_PL_VRAM);
 -- 
 1.8.1.2
 
