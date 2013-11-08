@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab3KHJNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 04:13:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33361 "EHLO mx2.suse.de"
+	id S1756945Ab3KHJN0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 04:13:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33380 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756904Ab3KHJND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 04:13:03 -0500
+	id S1756638Ab3KHJNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 04:13:22 -0500
 From: Petr Mladek <pmladek@suse.cz>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -15,9 +15,11 @@ To: Steven Rostedt <rostedt@goodmis.org>,
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Petr Mladek <pmladek@suse.cz>
 Subject: [PATCH v2 0/8] x86: use new text_poke_bp in ftrace
-Date: Fri,  8 Nov 2013 10:12:03 +0100
-Message-Id: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
+Date: Fri,  8 Nov 2013 10:12:04 +0100
+Message-Id: <1383901932-1945-2-git-send-email-pmladek@suse.cz>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
+References: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -43,7 +45,6 @@ with the generic functions.
 The last three patches modifies different parts of the current
 x86-specific ftrace implementation and use the generic function there.
 
-
 Changes in v2:
 
     + check for number of CPUs instead of enabling IRQs when syncing CPUs;
@@ -62,11 +63,7 @@ Changes in v2:
       it started to be slower on idle machine after the commit commit
       c229828ca6bc62d6c654 (rcu: Throttle rcu_try_advance_all_cbs() execution)
 
-
-Unfortunately, the size of the code is almost the same. But most of it is
-generic and can be reused.
-
-Also I tried to switch between 7 tracers: blk, branch, function_graph, wakeup_rt,
+I tried to switch between 7 tracers: blk, branch, function_graph, wakeup_rt,
 irqsoff, function, and nop. Every tracer has also been enabled and disabled.
 With 500 cycles, I got these times before the change:
 
@@ -80,6 +77,8 @@ and after
     user    0m0.004s      0m0.004s	0m0.004s
     sys     0m18.244s     0m18.252s	0m18.308s
 
+Unfortunately, the size of the code is almost the same. But most of it is
+generic and can be reused.
 
 The patches are against kernel/git/tip/tip.git on top of the commit
 af7949e870d4632b Merge branch 'tools/kvm perf fixes'
@@ -104,3 +103,4 @@ Petr Mladek (8):
 
 -- 
 1.8.4
+
