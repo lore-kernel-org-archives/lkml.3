@@ -1,89 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab3KHBDu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 20:03:50 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:45921 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754717Ab3KHBDr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 20:03:47 -0500
-Date: Fri, 8 Nov 2013 08:58:30 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 9/9] ARM: add initial support for Marvell Berlin SoCs
-Message-ID: <20131108085830.5368c92b@xhacker>
-In-Reply-To: <527C049B.4030608@gmail.com>
-References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20131107134033.59bd127a@xhacker>
-	<527B67A1.3020803@gmail.com>
-	<201311071720.47489.arnd@arndb.de>
-	<527C049B.4030608@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1755783Ab3KHBQj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 20:16:39 -0500
+Received: from mga09.intel.com ([134.134.136.24]:12530 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753584Ab3KHBQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 20:16:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="405356968"
+Subject: Re: [PATCH v3 3/5] MCS Lock: Barrier corrections
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rik van Riel <riel@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "Figo. zhang" <figo1802@gmail.com>, linux-arch@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, George Spelvin <linux@horizon.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Hurley <peter@hurleysoftware.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Alex Shi <alex.shi@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>
+In-Reply-To: <CANN689G2H3goDO3KyO5=CzV7RkTukU-B=KsZpLWV_0=pwzZWpw@mail.gmail.com>
+References: <cover.1383771175.git.tim.c.chen@linux.intel.com>
+	 <1383773827.11046.355.camel@schen9-DESK>
+	 <CA+55aFyNX=5i0hmk-KuD+Vk+yBD-kkAiywx1Lx_JJmHVPx=1wA@mail.gmail.com>
+	 <CANN689HkNP-UZOu+vDCFPG5_k=BNZG6a+oP+Ope16vLc2ShFzw@mail.gmail.com>
+	 <CA+55aFwn1HUt3iXo6Zz8j1HUJi+qJ1NfcnUz-P+XCYLL7gjCMQ@mail.gmail.com>
+	 <CANN689EgdDQV=srsLELUpiTGOSF0SLUZ=BC2LnMxNrYTv3H=Wg@mail.gmail.com>
+	 <20131107143139.GT18245@linux.vnet.ibm.com>
+	 <CANN689FqUSnr=Prum0Kt6+0gr9dWKD8GT9Gbrtiyyg+PTyFkyA@mail.gmail.com>
+	 <1383858951.11046.399.camel@schen9-DESK>
+	 <20131107222144.GC19203@twins.programming.kicks-ass.net>
+	 <CANN689G2H3goDO3KyO5=CzV7RkTukU-B=KsZpLWV_0=pwzZWpw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Nov 2013 17:16:32 -0800
+Message-ID: <1383873392.11046.402.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-11-07_08:2013-11-08,2013-11-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1311070213
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sebastian,
-
-On Thu, 7 Nov 2013 13:22:35 -0800
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
-
-> On 11/07/2013 05:20 PM, Arnd Bergmann wrote:
-> > On Thursday 07 November 2013, Sebastian Hesselbarth wrote:
-> >> Actually, IIRC smp_twd does not compile without SMP set, so the above
-> >> should at least be 'HAVE_ARM_TWD if SMP'. If you shrink MULTI_V7 down
-> >> to non-SMP cores, you can disable it and it will fail to compile.
+On Thu, 2013-11-07 at 14:43 -0800, Michel Lespinasse wrote:
+> On Thu, Nov 7, 2013 at 2:21 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Thu, Nov 07, 2013 at 01:15:51PM -0800, Tim Chen wrote:
+> >> Michel, are you planning to do an implementation of
+> >> load-acquire/store-release functions of various architectures?
 > >
-> > If there are UP-systems for which TWD is the best clocksource, we should
-> > probably fix the code to allow that configuration. IIRC there were already
-> > patches recently in this area, maybe it's already solved.
+> > A little something like this:
+> > http://marc.info/?l=linux-arch&m=138386254111507
+> >
+> > It so happens we were working on that the past week or so due to another
+> > issue ;-)
+> 
+> Haha, awesome, I wasn't aware of this effort.
+> 
+> Tim: my approach would be to provide the acquire/release operations in
+> arch-specific include files, and have a default implementation using
+> barriers for arches who don't provide these new ops. That way you make
+> it work on all arches at once (using the default implementation) and
+> make it fast on any arch that cares.
+> 
+> >> Or is the approach of arch specific memory barrier for MCS
+> >> an acceptable one before load-acquire and store-release
+> >> are available?  Are there any technical issues remaining with
+> >> the patchset after including including Waiman's arch specific barrier?
+> 
+> I don't want to stand in the way of Waiman's change, and I had
+> actually taken the same approach with arch-specific barriers when
+> proposing some queue spinlocks in the past; however I do feel that
+> this comes back regularly enough that having acquire/release
+> primitives available would help, hence my proposal.
+> 
+> That said, earlier in the thread Linus said we should probably get all
+> our ducks in a row before going forward with this, so...
+> 
 
-The problems is twd is not mandatory in CA9 UP system, so it may not exist.
-However, I got answers from soc people, the BG2CD does configured and enabled
-TWD. so we are lucky and can add HAVE_TWD for BG2CD.
+With the load_acquire and store_release implemented, it should be
+pretty straightforward to implement MCS with them.  I'll respin
+the patch series with these primitives.
 
-> 
-> I just tried barebox bootloader to use TWD as timer on berlin2cd and it
-> perfectly works, i.e. with time related commands I can see the timer
-> register decreasing. So the timer is available on this UP SoC.
+Thanks.
 
-Yep. It is available.
-
-> 
-> As said before, compiling linux without CONFIG_SMP but with
-> CONFIG_HAVE_ARM_TWD gives:
-> 
-> warning: (SOC_OMAP5 && ARCH_ROCKCHIP && ARCH_SHMOBILE_MULTI && 
-> MACH_BERLIN_BG2 && MACH_BERLIN_BG2CD) selects HAVE_ARM_TWD which has 
-> unmet direct dependencies (SMP)
-> 
-> and
-> 
-> arch/arm/kernel/smp_twd.c: In function 'twd_local_timer_of_register':
-> arch/arm/kernel/smp_twd.c:391: error: 'setup_max_cpus' undeclared (first 
-> use in this function)
-> arch/arm/kernel/smp_twd.c:391: error: (Each undeclared identifier is 
-> reported only once
-> arch/arm/kernel/smp_twd.c:391: error: for each function it appears in.)
-> make[1]: *** [arch/arm/kernel/smp_twd.o] Error 1
-> 
-> I haven't looked deeper into this, but I guess it will not be hard
-> to make ARM_TWD independent of SMP.
-> 
-> Sebastian
-> 
+Tim
 
