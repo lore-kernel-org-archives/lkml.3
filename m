@@ -1,108 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037Ab3KHSvl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 13:51:41 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35786 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757973Ab3KHSvj (ORCPT
-	<rfc822;linux-kernel@Vger.kernel.org>);
-	Fri, 8 Nov 2013 13:51:39 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Date: Fri,  8 Nov 2013 18:51:25 +0000
-Message-Id: <1383936686-24041-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.4.2
-X-SA-Exim-Connect-IP: 86.134.146.207
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] mfd: wm831x: Use PM ops for shutdown
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1758093Ab3KHSxP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 13:53:15 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:34302 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757182Ab3KHSxN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 13:53:13 -0500
+Message-ID: <527D3318.2050003@codeaurora.org>
+Date: Fri, 08 Nov 2013 10:53:12 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Use udiv/sdiv for __aeabi_{u}idiv library functions
+References: <1383852042-10780-1-git-send-email-sboyd@codeaurora.org> <20131108095842.GG28304@ns203013.ovh.net> <20131108165223.GL16735@n2100.arm.linux.org.uk>
+In-Reply-To: <20131108165223.GL16735@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On 11/08/13 08:52, Russell King - ARM Linux wrote:
+> On Fri, Nov 08, 2013 at 10:58:42AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>> On 11:20 Thu 07 Nov     , Stephen Boyd wrote:
+>>> @@ -381,6 +384,13 @@ static void __init cpuid_init_hwcaps(void)
+>>>  		elf_hwcap |= HWCAP_IDIVT;
+>>>  	}
+>>>  
+>>> +#ifdef CONFIG_THUMB2_KERNEL
+>> if (IS_ENABLED(CONFIG_THUMB2_KERNEL) && elf_hwcap & HWCAP_IDIVT)
+>>> +	if (elf_hwcap & HWCAP_IDIVT)
+>>> +#else
+>>> +	if (elf_hwcap & HWCAP_IDIVA)
+>>> +#endif
+> Take another look, and you'll see the change that you're suggesting is
+> wrong.  Instead, the following may be a more reasonable suggestion as
+> a suitable replacement:
+>
+> 	if (elf_hwcap & (IS_ENABLED(CONFIG_THUMB2_KERNEL) ?
+> 				HWCAP_IDIVT : HWCAP_IDIVA))
 
-This helps move us towards removing the bus custom operations.
+I can use IS_ENABLED() but I'd prefer a local variable to make it
+simpler in the conditional.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/mfd/wm831x-i2c.c | 8 +++++---
- drivers/mfd/wm831x-spi.c | 8 +++++---
- 2 files changed, 10 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/mfd/wm831x-i2c.c b/drivers/mfd/wm831x-i2c.c
-index 2b29cae..a4cbefe 100644
---- a/drivers/mfd/wm831x-i2c.c
-+++ b/drivers/mfd/wm831x-i2c.c
-@@ -64,11 +64,13 @@ static int wm831x_i2c_suspend(struct device *dev)
- 	return wm831x_device_suspend(wm831x);
- }
- 
--static void wm831x_i2c_shutdown(struct i2c_client *i2c)
-+static int wm831x_i2c_poweroff(struct device *dev)
- {
--	struct wm831x *wm831x = i2c_get_clientdata(i2c);
-+	struct wm831x *wm831x = dev_get_drvdata(dev);
- 
- 	wm831x_device_shutdown(wm831x);
-+
-+	return 0;
- }
- 
- static const struct i2c_device_id wm831x_i2c_id[] = {
-@@ -85,6 +87,7 @@ MODULE_DEVICE_TABLE(i2c, wm831x_i2c_id);
- 
- static const struct dev_pm_ops wm831x_pm_ops = {
- 	.suspend = wm831x_i2c_suspend,
-+	.poweroff = wm831x_i2c_poweroff,
- };
- 
- static struct i2c_driver wm831x_i2c_driver = {
-@@ -95,7 +98,6 @@ static struct i2c_driver wm831x_i2c_driver = {
- 	},
- 	.probe = wm831x_i2c_probe,
- 	.remove = wm831x_i2c_remove,
--	.shutdown = wm831x_i2c_shutdown,
- 	.id_table = wm831x_i2c_id,
- };
- 
-diff --git a/drivers/mfd/wm831x-spi.c b/drivers/mfd/wm831x-spi.c
-index 07de3cc..b8a5e3b 100644
---- a/drivers/mfd/wm831x-spi.c
-+++ b/drivers/mfd/wm831x-spi.c
-@@ -66,16 +66,19 @@ static int wm831x_spi_suspend(struct device *dev)
- 	return wm831x_device_suspend(wm831x);
- }
- 
--static void wm831x_spi_shutdown(struct spi_device *spi)
-+static int wm831x_spi_poweroff(struct device *dev)
- {
--	struct wm831x *wm831x = spi_get_drvdata(spi);
-+	struct wm831x *wm831x = dev_get_drvdata(dev);
- 
- 	wm831x_device_shutdown(wm831x);
-+
-+	return 0;
- }
- 
- static const struct dev_pm_ops wm831x_spi_pm = {
- 	.freeze = wm831x_spi_suspend,
- 	.suspend = wm831x_spi_suspend,
-+	.poweroff = wm831x_spi_poweroff,
- };
- 
- static const struct spi_device_id wm831x_spi_ids[] = {
-@@ -99,7 +102,6 @@ static struct spi_driver wm831x_spi_driver = {
- 	.id_table	= wm831x_spi_ids,
- 	.probe		= wm831x_spi_probe,
- 	.remove		= wm831x_spi_remove,
--	.shutdown	= wm831x_spi_shutdown,
- };
- 
- static int __init wm831x_spi_init(void)
 -- 
-1.8.4.2
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
