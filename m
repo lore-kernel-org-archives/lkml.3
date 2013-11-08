@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab3KHEX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 23:23:57 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:47168 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756685Ab3KHEXd (ORCPT
+	id S1756191Ab3KHEc3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 23:32:29 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:52729 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab3KHEc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 23:23:33 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, jolsa@redhat.com, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/2] perf record: Move existing write_output into helper function
-Date: Thu,  7 Nov 2013 21:23:24 -0700
-Message-Id: <1383884605-30968-2-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
-In-Reply-To: <1383884605-30968-1-git-send-email-dsahern@gmail.com>
-References: <1383884605-30968-1-git-send-email-dsahern@gmail.com>
+	Thu, 7 Nov 2013 23:32:28 -0500
+X-Spam-Score: -100.8
+Message-ID: <527C69DC.80901@asianux.com>
+Date: Fri, 08 Nov 2013 12:34:36 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [Consult] Do we need related web site link in "./COPYING" file?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Code move only; no logic changes. In preparation for the mmap
-based output option in the next patch.
+Hello All:
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/builtin-record.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+I guess COPYING is our GPL License file, it already contents related
+Free Software Foundation address. Do we also need content related web
+site link?
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 15280b5e5574..6e6a41856c41 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -76,7 +76,7 @@ struct perf_record {
- 	long			samples;
- };
- 
--static int write_output(struct perf_record *rec, void *buf, size_t size)
-+static int do_write_output(struct perf_record *rec, void *buf, size_t size)
- {
- 	struct perf_data_file *file = &rec->file;
- 
-@@ -97,6 +97,11 @@ static int write_output(struct perf_record *rec, void *buf, size_t size)
- 	return 0;
- }
- 
-+static int write_output(struct perf_record *rec, void *buf, size_t size)
-+{
-+	return do_write_output(rec, buf, size);
-+}
-+
- static int process_synthesized_event(struct perf_tool *tool,
- 				     union perf_event *event,
- 				     struct perf_sample *sample __maybe_unused,
+When make patch for "arch/arm64/include/uapi/", "scripts/checkpatch.pl"
+will report the issue below:
+
+  ERROR: Do not include the paragraph about writing to the Free Software Foundation's mailing address from the sample GPL notice. The FSF has changed addresses in the past, and may do so again. Linux already includes a copy of the GPL.
+  #209: FILE: arch/arm64/include/uapi/asm/signal.h:13:
+    * You should have received a copy of the GNU General Public License$
+
+I guess, "scrpits/checkpatch.pl" wants to say: "the Linux GPL copy
+already contents related web site, so need not 'hard code' them in
+another place".
+
+
+BTW: I find some "^L" in COPYING file, are they for page separation?
+
+
+Welcome any suggestions or completions.
+
+Thanks.
 -- 
-1.8.3.4 (Apple Git-47)
-
+Chen Gang
