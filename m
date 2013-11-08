@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab3KHEI0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 23:08:26 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:62640 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab3KHEIY (ORCPT
+	id S1755464Ab3KHEOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 23:14:42 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45702 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab3KHEOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 23:08:24 -0500
-Message-ID: <1383883695.21334.1.camel@phoenix>
-Subject: [PATCH RESEND] irqchip: sun4i: Don't write to read-only registers
-From: Axel Lin <axel.lin@ingics.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 08 Nov 2013 12:08:15 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 7 Nov 2013 23:14:41 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <527C64E2.4000501@jp.fujitsu.com>
+Date: Fri, 08 Nov 2013 13:13:22 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Baoquan He <bhe@redhat.com>
+CC: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
+        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
+Subject: Re: [PATCH v4 0/3] x86, apic, kexec: Add disable_cpu_apic kernel
+ parameter
+References: <20131022150015.24240.39686.stgit@localhost6.localdomain6> <20131108033043.GA3133@dhcp-16-105.nay.redhat.com>
+In-Reply-To: <20131108033043.GA3133@dhcp-16-105.nay.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the datasheet[1], the Interrupt IRQ Pending Registers are
-read-only. The implementation of sun4i_irq_ack() is wrong because it writes
-to these read-only registers.
+(2013/11/08 12:30), Baoquan He wrote:
+> Hi,
+>
+> Reccently people reported kexec didn't work correctly. After check, it's
+> a regression. Since a code block which migrate current thread to cpu0
+> when executing "kexec -e", this can be reproduced by setting affinity to
+> CPUn(n!=0). You can find this patch in this link:
+> https://lkml.org/lkml/2013/11/5/88
+>
+> Then I thought why we don't do this in kdump. I tried migrating current
+> thread to cpu0 when crash happened, it works very well. Set affinity to
+> make crash happened on CPUn(n!=0), then all cpus can be brought up and
+> dump is successful. I pasted the patch as below.
+>
+> Only one thing worried me, whether the context related to crash cpu will
+> be different, and do we care which cpu crashed. If it need be cared, or
+> it doesn't involve difference, That will be great. Multiple CPUs can be
+> supported easily in this simpler way. Meanwhile, this patch just try to
+> migrate, if it's failed, we can avoid to bring up bsp.
+>
+> Watch do you think about it?
+>
 
-This patch removes the wrong irq_ack callback implementation and all the code
-writing to these read-only registers in sun4i_of_init().
+We have already discussed this idea. It's the idea of my first patch and
+it was nacked. See the following url. (Sorry, I removed explanation of
+development history from patch description at v4 patch, but I've planned
+to write what ideas doesn't work well in documentation of this work.)
 
-[1] http://dl.linux-sunxi.org/A10/A10%20User%20Manual%20-%20v1.20%20%282012-04-09%2c%20DECRYPTED%29.pdf
+https://lkml.org/lkml/2012/4/15/181
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
-Hi Thomas,
-This patch was sent on https://lkml.org/lkml/2013/7/6/59 with Maxime's Ack.
-And re-sent on https://lkml.org/lkml/2013/7/19/229
-I change the subject line as the patch does is to avoid writing to read-only
-registers.
+The key reason why we cannot do that is the environment we are running
+must be considered broken. Either interrupts or scheduler could no longer
+work. Tables for interrupts can be broken. The other cpus except for the
+crashing cpu are no longer guaranteed to be running sanely. Migrating cpu
+from the crashing cpu to cpu0 reduces reliability of kdump.
 
-Axel
- drivers/irqchip/irq-sun4i.c | 18 ------------------
- 1 file changed, 18 deletions(-)
-
-diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
-index a5438d8..29b75c0a 100644
---- a/drivers/irqchip/irq-sun4i.c
-+++ b/drivers/irqchip/irq-sun4i.c
-@@ -38,18 +38,6 @@ static struct irq_domain *sun4i_irq_domain;
- 
- static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
- 
--static void sun4i_irq_ack(struct irq_data *irqd)
--{
--	unsigned int irq = irqd_to_hwirq(irqd);
--	unsigned int irq_off = irq % 32;
--	int reg = irq / 32;
--	u32 val;
--
--	val = readl(sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
--	writel(val | (1 << irq_off),
--	       sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
--}
--
- static void sun4i_irq_mask(struct irq_data *irqd)
- {
- 	unsigned int irq = irqd_to_hwirq(irqd);
-@@ -76,7 +64,6 @@ static void sun4i_irq_unmask(struct irq_data *irqd)
- 
- static struct irq_chip sun4i_irq_chip = {
- 	.name		= "sun4i_irq",
--	.irq_ack	= sun4i_irq_ack,
- 	.irq_mask	= sun4i_irq_mask,
- 	.irq_unmask	= sun4i_irq_unmask,
- };
-@@ -114,11 +101,6 @@ static int __init sun4i_of_init(struct device_node *node,
- 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(1));
- 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(2));
- 
--	/* Clear all the pending interrupts */
--	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(0));
--	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(1));
--	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(2));
--
- 	/* Enable protection mode */
- 	writel(0x01, sun4i_irq_base + SUN4I_IRQ_PROTECTION_REG);
- 
 -- 
-1.8.1.2
-
-
+Thanks.
+HATAYAMA, Daisuke
 
