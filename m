@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab3KHUCv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 15:02:51 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59317 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757437Ab3KHUCt (ORCPT
+	id S1757913Ab3KHUG0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 15:06:26 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:61613 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757478Ab3KHUGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 15:02:49 -0500
-Date: Fri, 8 Nov 2013 21:02:46 +0100
+	Fri, 8 Nov 2013 15:06:25 -0500
+Date: Fri, 8 Nov 2013 21:06:22 +0100
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: perf/tracepoint: another fuzzer generated lockup
-Message-ID: <20131108200244.GB14606@localhost.localdomain>
-References: <alpine.DEB.2.10.1311081440440.7281@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
+ kthreadd V2
+Message-ID: <20131108200620.GC14606@localhost.localdomain>
+References: <20131016141326.2e517e18e4d8af880c97a282@linux-foundation.org>
+ <00000141c36b03b6-2f9bd3de-d153-4359-901f-084aeb4c040d-000000@email.amazonses.com>
+ <20131017122344.39d55db97c3923131bdf2831@linux-foundation.org>
+ <0000014233722db9-cc00d0af-a5fa-4090-83bd-73c87377b892-000000@email.amazonses.com>
+ <20131107225049.GC28130@localhost.localdomain>
+ <0000014238407a1c-34e7bdbc-45c0-48de-a8a3-94a99f276044-000000@email.amazonses.com>
+ <20131108163112.GA12853@localhost.localdomain>
+ <0000014238ad0fb9-aa252280-8e44-48ac-a096-e6dee26e09ea-000000@email.amazonses.com>
+ <20131108191235.GB12853@localhost.localdomain>
+ <000001423945fde3-f846f403-58b9-4acd-a2b8-43b62991ce02-000000@email.amazonses.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu>
+In-Reply-To: <000001423945fde3-f846f403-58b9-4acd-a2b8-43b62991ce02-000000@email.amazonses.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 03:06:11PM -0500, Vince Weaver wrote:
+On Fri, Nov 08, 2013 at 07:52:37PM +0000, Christoph Lameter wrote:
+> On Fri, 8 Nov 2013, Frederic Weisbecker wrote:
 > 
-> and again, this time after 600k successful syscalls or so.
+> > I understand, but why not solving that from the workqueue affinity? We want to
+> > solve the issue of unbound workqueues in CPU isolation anyway.
 > 
-> This is on a core2 machine.
-> 
-> [ 1020.396002] ------------[ cut here ]------------
-> [ 1020.396002] WARNING: CPU: 1 PID: 3036 at kernel/watchdog.c:245 watchdog_over)
-> [ 1020.396002] Watchdog detected hard LOCKUP on cpu 1
-> [ 1020.396002] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powern
-> [ 1020.396002] CPU: 1 PID: 3036 Comm: perf_fuzzer Not tainted 3.12.0 #2
-> [ 1020.396002] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BI2
-> [ 1020.396002]  00000000000000f5 ffff88011fc87c48 ffffffff8151aad6 ffff88011fc88
-> [ 1020.396002]  ffffffff8103cd68 0000000100000000 ffffffff810a101c ffff88011b380
-> [ 1020.396002]  ffff88011fc87ef8 ffff88011fc87d58 0000000000000000 ffff88011fc88
-> [ 1020.396002] Call Trace:
-> [ 1020.396002]  <NMI>  [<ffffffff8151aad6>] ? dump_stack+0x41/0x53
-> [ 1020.396002]  [<ffffffff8103cd68>] ? warn_slowpath_common+0x81/0x9c
-> [ 1020.396002]  [<ffffffff810a101c>] ? watchdog_overflow_callback+0x9b/0xa6
-> [ 1020.396002]  [<ffffffff8103ce25>] ? warn_slowpath_fmt+0x46/0x48
-> [ 1020.396002]  [<ffffffff810a101c>] ? watchdog_overflow_callback+0x9b/0xa6
-> [ 1020.396002]  [<ffffffff810ca4a2>] ? __perf_event_overflow+0x12e/0x1ab
-> [ 1020.396002]  [<ffffffff81018cf5>] ? intel_pmu_handle_irq+0x318/0x34d
-> [ 1020.396002]  [<ffffffff81018cfc>] ? intel_pmu_handle_irq+0x31f/0x34d
-> [ 1020.396002]  [<ffffffff81018c95>] ? intel_pmu_handle_irq+0x2b8/0x34d
-> [ 1020.396002]  [<ffffffff81018671>] ? intel_pmu_enable_all+0x55/0xa7
-> [ 1020.396002]  [<ffffffff8151edfc>] ? nmi_handle+0xa8/0x13a
-> [ 1020.396002]  [<ffffffff8151f473>] ? perf_event_nmi_handler+0x24/0x3d
-> [ 1020.396002]  [<ffffffff8151edb2>] ? nmi_handle+0x5e/0x13a
-> [ 1020.396002]  [<ffffffff8151ef35>] ? do_nmi+0xa7/0x2bd
-> [ 1020.396002]  [<ffffffff8151e537>] ? end_repeat_nmi+0x1e/0x2e
-> [ 1020.396002]  [<ffffffff8102bcc8>] ? apic_send_IPI_self+0x33/0x35
-> [ 1020.396002]  [<ffffffff8102bcc8>] ? apic_send_IPI_self+0x33/0x35
-> [ 1020.396002]  [<ffffffff8102bcc8>] ? apic_send_IPI_self+0x33/0x35
-> [ 1020.396002]  <<EOE>>  <IRQ>  [<ffffffff81005ee2>] ? arch_irq_work_raise+0x27a
-> [ 1020.396002]  [<ffffffff810c4ada>] ? irq_work_queue+0x70/0x72
-> [ 1020.396002]  [<ffffffff810ca510>] ? __perf_event_overflow+0x19c/0x1ab
-> [ 1020.396002]  [<ffffffff8104ae16>] ? __send_signal+0x244/0x26f
-> [ 1020.396002]  [<ffffffff810ca68b>] ? perf_swevent_overflow+0x3f/0x58
-> [ 1020.396002]  [<ffffffff810ca8a5>] ? perf_tp_event+0xe9/0x1f6
-> [ 1020.396002]  [<ffffffff81005f6b>] ? smp_trace_irq_work_interrupt+0x34/0x7e
-> [ 1020.396002]  [<ffffffff81040954>] ? perf_trace_softirq+0x8a/0x96
-> [ 1020.396002]  [<ffffffff8100366f>] ? perf_trace_x86_irq_vector+0xc0/0xc9
-> [ 1020.396002]  [<ffffffff81005f6b>] ? smp_trace_irq_work_interrupt+0x34/0x7e
-> [ 1020.396002]  [<ffffffff81005f6b>] ? smp_trace_irq_work_interrupt+0x34/0x7e
-> [ 1020.396002]  [<ffffffff815261ca>] ? trace_irq_work_interrupt+0x6a/0x70
-> [ 1020.396002]  [<ffffffff81040fba>] ? __do_softirq+0x95/0x208
-> [ 1020.396002]  [<ffffffff815263dc>] ? call_softirq+0x1c/0x30
-> [ 1020.396002]  [<ffffffff810041b9>] ? do_softirq+0x38/0x6d
-> [ 1020.396002]  [<ffffffff81040d1c>] ? irq_exit+0x45/0xa1
-> [ 1020.396002]  [<ffffffff81526a14>] ? smp_trace_apic_timer_interrupt+0x83/0x91
-> [ 1020.396002]  [<ffffffff8152597a>] ? trace_apic_timer_interrupt+0x6a/0x70
-> [ 1020.396002]  <EOI>  [<ffffffff810c7c20>] ? __perf_event_enable+0x118/0x173
-> [ 1020.396002]  [<ffffffff8104c694>] ? get_signal_to_deliver+0x47d/0x48a
-> [ 1020.396002]  [<ffffffff810024da>] ? do_signal+0x46/0x5f5
-> [ 1020.396002]  [<ffffffff8100b9f5>] ? perf_trace_sys_exit+0x3e/0xa7
-> [ 1020.396002]  [<ffffffff81002ab5>] ? do_notify_resume+0x2c/0x6a
-> [ 1020.396002]  [<ffffffff81524ea0>] ? int_signal+0x12/0x17
-> [ 1020.396002] ---[ end trace 2b385d729ba32e92 ]---
-> [ 1020.396002] perf samples too long (8101340 > 10000), lowering kernel.perf_ev0
-> [ 1020.396002] INFO: NMI handler (perf_event_nmi_handler) took too long to run:s
-> [ 1033.301811] perf samples too long (8038058 > 20000), lowering kernel.perf_ev0
-> [ 1034.125811] perf samples too long (7975268 > 40000), lowering kernel.perf_ev0
-> [ 1034.973813] perf samples too long (7912968 > 76923), lowering kernel.perf_ev0
-> [ 1035.821813] perf samples too long (7851154 > 142857), lowering kernel.perf_e0
-> [ 1036.669813] perf samples too long (7789824 > 250000), lowering kernel.perf_e0
-> [ 1037.517812] perf samples too long (7728973 > 500000), lowering kernel.perf_e0
-> 
+> Sure if you can solve that with an unbound work queue then this patch is
+> not needed. Do you have a patch that addresses this issue in your
+> patchset?
 
-There seem to be a loop that takes too long in intel_pmu_handle_irq(). Your two
-previous reports seemed to suggest that lbr is involved, but not this one.
+No. Sorry.
 
-I'm going to look further into this, unfortunately my testbox is an AMD...
+> How far out is the merging of that patch?
