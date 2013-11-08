@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757896Ab3KHRiS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 12:38:18 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24245 "EHLO
+	id S1757923Ab3KHRiY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 12:38:24 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24303 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757445Ab3KHRiP (ORCPT
+	with ESMTP id S1757445Ab3KHRiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 12:38:15 -0500
+	Fri, 8 Nov 2013 12:38:22 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Ian.Campbell@citrix.com, xen-devel@lists.xenproject.org,
         linux-kernel@vger.kernel.org, JBeulich@suse.com,
         david.vrabel@citrix.com, boris.ostrovsky@oracle.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Mukesh Rathor <mukesh.rathor@oracle.com>
-Subject: [PATCH 1/4] xen/mcfg: Call PHYSDEVOP_pci_mmcfg_reserved for MCFG areas.
-Date: Fri,  8 Nov 2013 12:38:03 -0500
-Message-Id: <1383932286-25080-2-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3/4] xen/manage: Guard against user-space initiated poweroff and XenBus.
+Date: Fri,  8 Nov 2013 12:38:05 -0500
+Message-Id: <1383932286-25080-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com>
 References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com>
@@ -24,113 +23,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PCI MMCONFIG area is usually reserved via the E820 so the Xen hypervisor
-is aware of these regions. But they can also be enumerated in the ACPI
-DSDT which means the hypervisor won't know of them until the initial
-domain informs it of via PHYSDEVOP_pci_mmcfg_reserved.
+There is a race case where the user does 'poweroff'
+and at the same time the system admin does 'xl shutdown'.
 
-This is what this patch does for all of the MCFG regions that the
-initial domain is aware of (E820 enumerated and ACPI).
+Depending on the race, the system_state will be SYSTEM_RUNNING or
+SYSTEM_POWER_OFF. If SYSTEM_RUNNING we just end up making
+a duplicate call to 'poweroff' (while it is running).
 
-Reported-by:  Santosh Jodh <Santosh.Jodh@citrix.com>
-CC: Jan Beulich <JBeulich@suse.com>
-CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>
-CC: Mukesh Rathor <mukesh.rathor@oracle.com>
+That will fail or execute (And if executed then it will be
+stuck in the reboot_mutex mutex). But nobody will care b/c the
+machine is in poweroff sequence.
+
+If the system_state is SYSTEM_POWER_OFF then we end up making
+a duplicate call to kernel_power_off. There is no locking
+there so we walk in the same steps as what 'poweroff'
+has been doing.
+
+The code in kernel/reboot.c has a mutex guarding against multiple
+'poweroff' operations. But not against the kernel 'orderly_poweroff'.
+
+As such, lets detect this so that we don't invoke orderly_poweroff
+if the user had initiated a poweroff.
+
+This is code by changing the 'shutting_down' to an atomic and
+having a reboot notifier. If the 'shutting_down' is set to anything
+but SHUTDOWN_INVALID the XenBus handler will not run.
+
+That is exactly what we do in the reboot notifier - we set the
+'shutting_down' to SHUTDOWN_POWEROFF.
+
+The reason we change the 'shutting_down' to an atomic is that
+the changes to said variable were normally guarded by the XenBus
+mutex - "xenwatch_mutex" - guarantting only one caller changing
+shutting_down. Since we have now the reboot notifier we have
+another user of this variable. Surfacing the 'xenwatch_mutex'
+out of XenBus is not a nice way of doing it. Having the
+variable however be atomic solves the problem easily.
+
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[v1: Redid it a bit]
-[v2: Dropped the P2M 1-1 setting]
-[v3: Check for Xen in-case we are running under baremetal]
-[v4: Wrap with CONFIG_PCI_MMCONFIG]
+[v2: Don't expose xenwatch_mutex, add comments]
 ---
- drivers/xen/pci.c               | 47 +++++++++++++++++++++++++++++++++++++++++
- include/xen/interface/physdev.h | 11 ++++++++++
- 2 files changed, 58 insertions(+)
+ drivers/xen/manage.c | 51 ++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 42 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/xen/pci.c b/drivers/xen/pci.c
-index 18fff88..d15f6e8 100644
---- a/drivers/xen/pci.c
-+++ b/drivers/xen/pci.c
-@@ -26,6 +26,7 @@
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
- #include "../pci/pci.h"
-+#include <asm/pci_x86.h>
+diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+index 3f8496c..323703a 100644
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -36,8 +36,16 @@ enum shutdown_state {
+ 	 SHUTDOWN_HALT = 4,
+ };
  
- static bool __read_mostly pci_seg_supported = true;
+-/* Ignore multiple shutdown requests. */
+-static enum shutdown_state shutting_down = SHUTDOWN_INVALID;
++/* Ignore multiple shutdown requests. There are two potential race conditions:
++ *  - Multiple XenStore 'shutdown' requests. We don't want to run any off
++ *    the callbacks in parallel.
++ *  - In progress 'poweroff' (initiated inside the guest) and a XenStore
++ *     'shutdown' request. If the poweroff has transitioned 'system_state' to
++ *    SYSTEM_POWER_OFF we do not want to call orderly_poweroff. 'system_state'
++ *    is not SMP safe so we depend on reboot notifiers to set 'shutting_down'
++ *    so that we will ignore XenBus shutdown requests.
++ */
++static atomic_t shutting_down = ATOMIC_INIT(SHUTDOWN_INVALID);
  
-@@ -192,3 +193,49 @@ static int __init register_xen_pci_notifier(void)
+ struct suspend_info {
+ 	int cancelled;
+@@ -109,7 +117,7 @@ static void do_suspend(void)
+ 	int err;
+ 	struct suspend_info si;
+ 
+-	shutting_down = SHUTDOWN_SUSPEND;
++	atomic_set(&shutting_down, SHUTDOWN_SUSPEND);
+ 
+ #ifdef CONFIG_PREEMPT
+ 	/* If the kernel is preemptible, we need to freeze all the processes
+@@ -173,7 +181,7 @@ out_thaw:
+ 	thaw_processes();
+ out:
+ #endif
+-	shutting_down = SHUTDOWN_INVALID;
++	atomic_set(&shutting_down, SHUTDOWN_INVALID);
+ }
+ #endif	/* CONFIG_HIBERNATE_CALLBACKS */
+ 
+@@ -184,7 +192,7 @@ struct shutdown_handler {
+ 
+ static void do_poweroff(void)
+ {
+-	shutting_down = SHUTDOWN_POWEROFF;
++	atomic_set(&shutting_down, SHUTDOWN_POWEROFF);
+ 	switch (system_state) {
+ 	case SYSTEM_BOOTING:
+ 		orderly_poweroff(true);
+@@ -201,7 +209,7 @@ static void do_poweroff(void)
+ 
+ static void do_reboot(void)
+ {
+-	shutting_down = SHUTDOWN_POWEROFF; /* ? */
++	atomic_set(&shutting_down, SHUTDOWN_POWEROFF); /* ? */
+ 	ctrl_alt_del();
  }
  
- arch_initcall(register_xen_pci_notifier);
-+
-+#ifdef CONFIG_PCI_MMCONFIG
-+static int __init xen_mcfg_late(void)
-+{
-+	struct pci_mmcfg_region *cfg;
-+	int rc;
-+
-+	if (!xen_initial_domain())
-+		return 0;
-+
-+	if ((pci_probe & PCI_PROBE_MMCONF) == 0)
-+		return 0;
-+
-+	if (list_empty(&pci_mmcfg_list))
-+		return 0;
-+
-+	/* Check whether they are in the right area. */
-+	list_for_each_entry(cfg, &pci_mmcfg_list, list) {
-+		struct physdev_pci_mmcfg_reserved r;
-+
-+		r.address = cfg->address;
-+		r.segment = cfg->segment;
-+		r.start_bus = cfg->start_bus;
-+		r.end_bus = cfg->end_bus;
-+		r.flags = XEN_PCI_MMCFG_RESERVED;
-+
-+		rc = HYPERVISOR_physdev_op(PHYSDEVOP_pci_mmcfg_reserved, &r);
-+		switch (rc) {
-+		case 0:
-+		case -ENOSYS:
-+			continue;
-+
-+		default:
-+			pr_warn("Failed to report MMCONFIG reservation"
-+				" state for %s to hypervisor"
-+				" (%d)\n",
-+				cfg->name, rc);
-+		}
-+	}
-+	return 0;
-+}
-+/*
-+ * Needs to be done after acpi_init which are subsys_initcall.
-+ */
-+subsys_initcall_sync(xen_mcfg_late);
-+#endif
-diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-index 7000bb1..42721d1 100644
---- a/include/xen/interface/physdev.h
-+++ b/include/xen/interface/physdev.h
-@@ -231,6 +231,17 @@ struct physdev_get_free_pirq {
- #define XEN_PCI_DEV_VIRTFN             0x2
- #define XEN_PCI_DEV_PXM                0x4
+@@ -222,7 +230,7 @@ static void shutdown_handler(struct xenbus_watch *watch,
+ 	};
+ 	static struct shutdown_handler *handler;
  
-+#define XEN_PCI_MMCFG_RESERVED         0x1
-+
-+#define PHYSDEVOP_pci_mmcfg_reserved    24
-+struct physdev_pci_mmcfg_reserved {
-+    uint64_t address;
-+    uint16_t segment;
-+    uint8_t start_bus;
-+    uint8_t end_bus;
-+    uint32_t flags;
+-	if (shutting_down != SHUTDOWN_INVALID)
++	if (atomic_read(&shutting_down) != SHUTDOWN_INVALID)
+ 		return;
+ 
+  again:
+@@ -256,12 +264,29 @@ static void shutdown_handler(struct xenbus_watch *watch,
+ 		handler->cb();
+ 	} else {
+ 		pr_info("Ignoring shutdown request: %s\n", str);
+-		shutting_down = SHUTDOWN_INVALID;
++		atomic_set(&shutting_down, SHUTDOWN_INVALID);
+ 	}
+ 
+ 	kfree(str);
+ }
++/*
++ * This function is called when the system is being rebooted.
++ */
++static int
++xen_system_reboot(struct notifier_block *nb, unsigned long event, void *unused)
++{
++	switch (event) {
++	case SYS_RESTART:
++	case SYS_HALT:
++	case SYS_POWER_OFF:
++		atomic_set(&shutting_down, SHUTDOWN_POWEROFF);
++		break;
++	default:
++		break;
++	}
+ 
++	return NOTIFY_DONE;
++}
+ #ifdef CONFIG_MAGIC_SYSRQ
+ static void sysrq_handler(struct xenbus_watch *watch, const char **vec,
+ 			  unsigned int len)
+@@ -302,6 +327,10 @@ static struct xenbus_watch shutdown_watch = {
+ 	.callback = shutdown_handler
+ };
+ 
++static struct notifier_block xen_shutdown_notifier = {
++	.notifier_call = xen_system_reboot,
 +};
 +
- #define PHYSDEVOP_pci_device_add        25
- struct physdev_pci_device_add {
-     /* IN */
+ static int setup_shutdown_watcher(void)
+ {
+ 	int err;
+@@ -319,7 +348,11 @@ static int setup_shutdown_watcher(void)
+ 		return err;
+ 	}
+ #endif
+-
++	err = register_reboot_notifier(&xen_shutdown_notifier);
++	if (err) {
++		pr_warn("Failed to register shutdown notifier\n");
++		return err;
++	}
+ 	return 0;
+ }
+ 
 -- 
 1.8.3.1
 
