@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab3KHK30 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 05:29:26 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:48547 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757056Ab3KHK3U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 05:29:20 -0500
-Message-ID: <527CBCE4.3080106@oracle.com>
-Date: Fri, 08 Nov 2013 18:28:52 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1757257Ab3KHK3d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 05:29:33 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757091Ab3KHK32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 05:29:28 -0500
+Message-ID: <527CBD01.1000908@nod.at>
+Date: Fri, 08 Nov 2013 11:29:21 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: "changkun.li" <xfishcoder@gmail.com>
-CC: sjenning@linux.vnet.ibm.com, linux-mm@kvack.org, luyi@360.cn,
-        lichangkun@360.cn, linux-kernel@vger.kernel.org
-Subject: Re: [Patch 3.11.7 1/1]mm: remove and free expired data in time in
- zswap
-References: <1383904203.2715.2.camel@ubuntu>
-In-Reply-To: <1383904203.2715.2.camel@ubuntu>
-Content-Type: text/plain; charset=UTF-8
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matt.fleming@intel.com, matthew.garrett@nebula.com, jlee@suse.com
+Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia parameter
+ to efi_storage_paranoia
+References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at> <527CB013.30200@jp.fujitsu.com> <527CB0F4.8080606@nod.at> <527CBC05.6080505@jp.fujitsu.com>
+In-Reply-To: <527CBC05.6080505@jp.fujitsu.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2013 05:50 PM, changkun.li wrote:
-> In zswap, store page A to zbud if the compression ratio is high, insert
-> its entry into rbtree. if there is a entry B which has the same offset
-> in the rbtree.Remove and free B before insert the entry of A.
+Am 08.11.2013 11:25, schrieb Yasuaki Ishimatsu:
+> (2013/11/08 18:37), Richard Weinberger wrote:
+>> Am 08.11.2013 10:34, schrieb Yasuaki Ishimatsu:
+>>> (2013/11/08 17:05), Richard Weinberger wrote:
+>>>> Am 08.11.2013 08:33, schrieb Yasuaki Ishimatsu:
+>>>>> By following works, my system very often fails set_variable() to set new
+>>>>> variable to efi variable storage and shows "efivars: set_variable() failed:
+>>>>> status=-28" message.
+>>>>>
+>>>>> - commit 31ff2f20d9003e74991d135f56e503fe776c127c
+>>>>>       efi: Distinguish between "remaining space" and actually used space
+>>>>> - commit 8c58bf3eec3b8fc8162fe557e9361891c20758f2
+>>>>>       x86,efi: Implement efi_no_storage_paranoia parameter
+>>>>> - commit f8b8404337de4e2466e2e1139ea68b1f8295974f
+>>>>>       Modify UEFI anti-bricking code
+>>>>>
+>>>>> When booting my system, remaining space of efi variable storage is about
+>>>>> 5KB. So there is no room that sets a new variable to the storage.
+>>>>>
+>>>>> According to above works, efi_no_storage_paranoia parameter was prepared
+>>>>> for sane UEFI which can do gc and fulfills spec. But why need a system
+>>>>> with a sane UEFI set the parameter? It is wrong. A system with a broken
+>>>>> UEFI should set the parameter.
+>>>>
+>>>> And how does one know that his UEFI is broken?
+>>>
+>>> I have no idea. But at least, bricked board is broken UEFI.
+>>> Do you know the issue occurs on several boards or specific board?
+>>
+>> On *many* boards including laptops....
+>> Please read the history of the whole issue.
 > 
-> case:
-> if the compression ratio of page A is not high, return without checking
-> the same offset one in rbtree.
-> 
-> if there is a entry B which has the same offset in the rbtree. Now, we
-> make sure B is invalid or expired. But the entry and compressed memory
-> of B are not freed in time.
-> 
-> Because zswap spaces data in memory, it makes the utilization of memory
-> lower. the other valid data in zbud is writeback to swap device more
-> possibility, when zswap is full.
-> 
-> So if we make sure a entry is expired, free it in time.
-> 
-> Signed-off-by: changkun.li<xfishcoder@gmail.com>
-> ---
->  mm/zswap.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/zswap.c b/mm/zswap.c
-> index cbd9578..90a2813 100644
-> --- a/mm/zswap.c
-> +++ b/mm/zswap.c
-> @@ -596,6 +596,7 @@ fail:
->  	return ret;
->  }
->  
-> +static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t
-> offset);
->  /*********************************
->  * frontswap hooks
->  **********************************/
-> @@ -614,7 +615,7 @@ static int zswap_frontswap_store(unsigned type,
-> pgoff_t offset,
->  
->  	if (!tree) {
->  		ret = -ENODEV;
-> -		goto reject;
-> +		goto nodev;
->  	}
->  
->  	/* reclaim space if needed */
-> @@ -695,6 +696,8 @@ freepage:
->  	put_cpu_var(zswap_dstmem);
->  	zswap_entry_cache_free(entry);
->  reject:
-> +	zswap_frontswap_invalidate_page(type, offset);
+> Thank you for your comment.
+> I has read git log. But there is no information like this.
+> So I will read them of related threads again. Do you know good threads
+> to know the history of the issue?
 
-I'm afraid when arrives here zswap_rb_search(offset) will always return
-NULL entry. So most of the time, it's just waste time to call
-zswap_frontswap_invalidate_page() to search rbtree.
+Everything started with an issue that killed Samsung laptops:
+http://mjg59.dreamwidth.org/22855.html
 
--- 
-Regards,
--Bob
+Later it was found that if you write too much into UEFI variables many
+UEFI implementations will do bad things.
+
+Thanks,
+//richard
+
