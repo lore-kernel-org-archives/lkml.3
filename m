@@ -1,193 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab3KHVTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 16:19:35 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:62757 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757460Ab3KHVTd (ORCPT
+	id S1758234Ab3KHVVS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 16:21:18 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:59279 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757548Ab3KHVVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 16:19:33 -0500
+	Fri, 8 Nov 2013 16:21:13 -0500
+Date: Fri, 8 Nov 2013 13:21:07 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v5 4/4] qrwlock: Use the mcs_spinlock helper functions
+ for MCS queuing
+Message-ID: <20131108212107.GI18245@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1383585440-4391-1-git-send-email-Waiman.Long@hp.com>
+ <1383585440-4391-5-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-In-Reply-To: <1383867657-110399-1-git-send-email-tim.gardner@canonical.com>
-References: <1383867657-110399-1-git-send-email-tim.gardner@canonical.com>
-Date: Fri, 8 Nov 2013 15:19:31 -0600
-Message-ID: <CADT32e+ed9EzAb2jraHxmB0CF5AMUQ7XYiuEfH-FOcy7XqqmNQ@mail.gmail.com>
-Subject: Re: [PATCH linux-next] cifs: Use data structures to compute NTLMv2
- response offsets
-From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-cifs <linux-cifs@vger.kernel.org>,
-        samba-technical <samba-technical@lists.samba.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@samba.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383585440-4391-5-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110821-1542-0000-0000-000003170DCD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks correct.  You may want to verify that the code works fine for both
-sec=ntlmssp/ntlmsspi and sec=ntlmv2/ntlmv2i mount options.
+On Mon, Nov 04, 2013 at 12:17:20PM -0500, Waiman Long wrote:
+> There is a pending patch in the rwsem patch series that adds a generic
+> MCS locking helper functions to do MCS-style locking. This patch
+> will enable the queue rwlock to use that generic MCS lock/unlock
+> primitives for internal queuing. This patch should only be merged
+> after the merging of that generic MCS locking patch.
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 
-Reviewed-by: Shirish Pargaonkar <spargaonkar@suse.com>
+This one does might address at least some of the earlier memory-barrier
+issues, at least assuming that the MCS lock is properly memory-barriered.
 
-On Thu, Nov 7, 2013 at 5:40 PM, Tim Gardner <tim.gardner@canonical.com> wrote:
-> A bit of cleanup plus some gratuitous variable renaming. I think using
-> structures instead of numeric offsets makes this code much more
-> understandable.
->
-> Also added a comment about current time range expected by
-> the server.
->
-> Cc: Jeff Layton <jlayton@redhat.com>
-> Cc: Steve French <sfrench@samba.org>
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Then again, maybe not.  Please see below.
+
+							Thanx, Paul
+
 > ---
->
-> The comment about time of day needing to be within 5 minutes is important (to me
-> at least). I spent the best part of a week thinking I had endian issues on powerpc
-> when in truth I was just too stupid to notice that the clock
-> was not updated. Danged embedded platforms...
->
-> checkpatch has some problems with this patch regarding attribute packed, but I chose
-> to remain consistent with existing code.
->
-> WARNING: __packed is preferred over __attribute__((packed))
-> #141: FILE: fs/cifs/cifspdu.h:705:
-> +           } __attribute__((packed)) challenge;
->
-> WARNING: __packed is preferred over __attribute__((packed))
-> #142: FILE: fs/cifs/cifspdu.h:706:
-> +       } __attribute__((packed));
->
-> total: 0 errors, 2 warnings, 99 lines checked
->
-> Tested on cifs-2.6 for-linus (c481e9feee78c6ce1ba0a1c8c892049f6514f6cf) by mounting
-> to iOS 10.8 and Win 8.0 Pro.
->
-> rtg
->
->  fs/cifs/cifsencrypt.c |   40 ++++++++++++++++++++++++----------------
->  fs/cifs/cifspdu.h     |    8 +++++++-
->  2 files changed, 31 insertions(+), 17 deletions(-)
->
-> diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
-> index fc6f4f3..4934347 100644
-> --- a/fs/cifs/cifsencrypt.c
-> +++ b/fs/cifs/cifsencrypt.c
-> @@ -548,7 +548,13 @@ static int
->  CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
+>  include/asm-generic/qrwlock.h |    7 +--
+>  lib/qrwlock.c                 |  140 +++++++++++++----------------------------
+>  2 files changed, 45 insertions(+), 102 deletions(-)
+> 
+> diff --git a/include/asm-generic/qrwlock.h b/include/asm-generic/qrwlock.h
+> index 78ad4a5..014e6e9 100644
+> --- a/include/asm-generic/qrwlock.h
+> +++ b/include/asm-generic/qrwlock.h
+> @@ -54,10 +54,7 @@ typedef u64 __nrcpupair_t;
+>   * QRW_READER_BIAS to the rw field to increment the reader count won't
+>   * disturb the writer and the fair fields.
+>   */
+> -struct qrwnode {
+> -	struct qrwnode *next;
+> -	bool		wait;	/* Waiting flag */
+> -};
+> +struct mcs_spinlock;
+> 
+>  typedef struct qrwlock {
+>  	union qrwcnts {
+> @@ -74,7 +71,7 @@ typedef struct qrwlock {
+>  		};
+>  		__nrcpupair_t rw;		/* Reader/writer number pair */
+>  	} cnts;
+> -	struct qrwnode *waitq;			/* Tail of waiting queue */
+> +	struct mcs_spinlock *waitq;		/* Tail of waiting queue */
+>  } arch_rwlock_t;
+> 
+>  /*
+> diff --git a/lib/qrwlock.c b/lib/qrwlock.c
+> index a85b9e1..6817853 100644
+> --- a/lib/qrwlock.c
+> +++ b/lib/qrwlock.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/cpumask.h>
+>  #include <linux/percpu.h>
+>  #include <linux/hardirq.h>
+> +#include <linux/mcs_spinlock.h>
+>  #include <asm-generic/qrwlock.h>
+> 
+>  /*
+> @@ -46,87 +47,16 @@
+>   */
+> 
+>  /**
+> - * wait_in_queue - Add to queue and wait until it is at the head
+> - * @lock: Pointer to queue rwlock structure
+> - * @node: Node pointer to be added to the queue
+> - *
+> - * The use of smp_wmb() is to make sure that the other CPUs see the change
+> - * ASAP.
+> - */
+> -static __always_inline void
+> -wait_in_queue(struct qrwlock *lock, struct qrwnode *node)
+> -{
+> -	struct qrwnode *prev;
+> -
+> -	node->next = NULL;
+> -	node->wait = true;
+> -	prev = xchg(&lock->waitq, node);
+> -	if (prev) {
+> -		prev->next = node;
+> -		smp_wmb();
+> -		/*
+> -		 * Wait until the waiting flag is off
+> -		 */
+> -		while (ACCESS_ONCE(node->wait))
+> -			cpu_relax();
+> -	}
+> -}
+> -
+> -/**
+> - * signal_next - Signal the next one in queue to be at the head
+> - * @lock: Pointer to queue rwlock structure
+> - * @node: Node pointer to the current head of queue
+> - */
+> -static __always_inline void
+> -signal_next(struct qrwlock *lock, struct qrwnode *node)
+> -{
+> -	struct qrwnode *next;
+> -
+> -	/*
+> -	 * Try to notify the next node first without disturbing the cacheline
+> -	 * of the lock. If that fails, check to see if it is the last node
+> -	 * and so should clear the wait queue.
+> -	 */
+> -	next = ACCESS_ONCE(node->next);
+> -	if (likely(next))
+> -		goto notify_next;
+> -
+> -	/*
+> -	 * Clear the wait queue if it is the last node
+> -	 */
+> -	if ((ACCESS_ONCE(lock->waitq) == node) &&
+> -	    (cmpxchg(&lock->waitq, node, NULL) == node))
+> -			return;
+> -	/*
+> -	 * Wait until the next one in queue set up the next field
+> -	 */
+> -	while (likely(!(next = ACCESS_ONCE(node->next))))
+> -		cpu_relax();
+> -	/*
+> -	 * The next one in queue is now at the head
+> -	 */
+> -notify_next:
+> -	barrier();
+> -	ACCESS_ONCE(next->wait) = false;
+> -	smp_wmb();
+> -}
+> -
+> -/**
+>   * rspin_until_writer_unlock - inc reader count & spin until writer is gone
+>   * @lock: Pointer to queue rwlock structure
+> + * @cnts: Queue read/write lock counts structure
+>   *
+>   * In interrupt context or at the head of the queue, the reader will just
+>   * increment the reader count & wait until the writer releases the lock.
+>   */
+>  static __always_inline void
+> -rspin_until_writer_unlock(struct qrwlock *lock, int inc)
+> +rspin_until_writer_unlock(struct qrwlock *lock, union qrwcnts cnts)
 >  {
->         int rc;
-> -       unsigned int offset = CIFS_SESS_KEY_SIZE + 8;
-> +       struct ntlmv2_resp *ntlmv2 = (struct ntlmv2_resp *)
-> +           (ses->auth_key.response + CIFS_SESS_KEY_SIZE);
-> +       unsigned int hash_len;
+> -	union qrwcnts cnts;
+> -
+> -	if (inc)
+> -		cnts.rw = xadd(&lock->cnts.rw, QRW_READER_BIAS);
+> -	else
+> -		cnts.rw = ACCESS_ONCE(lock->cnts.rw);
+>  	while (cnts.writer == QW_LOCKED) {
+>  		cpu_relax();
+>  		cnts.rw = ACCESS_ONCE(lock->cnts.rw);
+> @@ -139,7 +69,7 @@ rspin_until_writer_unlock(struct qrwlock *lock, int inc)
+>   */
+>  void queue_read_lock_slowpath(struct qrwlock *lock)
+>  {
+> -	struct qrwnode node;
+> +	struct mcs_spinlock node;
+>  	union qrwcnts cnts;
+> 
+>  	/*
+> @@ -150,7 +80,8 @@ void queue_read_lock_slowpath(struct qrwlock *lock)
+>  		 * Readers in interrupt context will spin until the lock is
+>  		 * available without waiting in the queue.
+>  		 */
+> -		rspin_until_writer_unlock(lock, 0);
+> +		cnts.rw = ACCESS_ONCE(lock->cnts.rw);
+> +		rspin_until_writer_unlock(lock, cnts);
+>  		return;
+>  	}
+>  	cnts.rw = xadd(&lock->cnts.rw, -QRW_READER_BIAS);
+> @@ -158,7 +89,7 @@ void queue_read_lock_slowpath(struct qrwlock *lock)
+>  	/*
+>  	 * Put the reader into the wait queue
+>  	 */
+> -	wait_in_queue(lock, &node);
+> +	mcs_spin_lock(&lock->waitq, &node);
+> 
+>  	/*
+>  	 * At the head of the wait queue now, try to increment the reader
+> @@ -172,12 +103,36 @@ void queue_read_lock_slowpath(struct qrwlock *lock)
+>  		while (ACCESS_ONCE(lock->cnts.writer))
+>  			cpu_relax();
+>  	}
+> -	rspin_until_writer_unlock(lock, 1);
+> -	signal_next(lock, &node);
+> +	/*
+> +	 * Increment reader count & wait until writer unlock
+> +	 */
+> +	cnts.rw = xadd(&lock->cnts.rw, QRW_READER_BIAS);
+> +	rspin_until_writer_unlock(lock, cnts);
+> +	mcs_spin_unlock(&lock->waitq, &node);
+
+But mcs_spin_unlock() is only required to do a RELEASE barrier, which
+could still allow critical-section leakage.
+
+>  }
+>  EXPORT_SYMBOL(queue_read_lock_slowpath);
+> 
+>  /**
+> + * _write_trylock - try to acquire a write lock
+> + * @lock : Pointer to queue rwlock structure
+> + * @old  : Old value of the qrwcnts
+> + * @new  : New value of the qrwcnts
+> + * Return: 1 if lock acquired, 0 otherwise
+> + *
+> + * Put old & new as function arguments can force the compiler to generate
+> + * better code with less stack memory access.
+> + */
+> +static __always_inline int _write_trylock(struct qrwlock *lock,
+> +				union qrwcnts old, union qrwcnts new)
+> +{
+> +	new.rw     = old.rw;
+> +	new.writer = QW_LOCKED;
+> +	if (likely(cmpxchg(&lock->cnts.rw, old.rw, new.rw) == old.rw))
+> +		return 1;
+> +	return 0;
+> +}
 > +
-> +       /* The MD5 hash starts at challenge_key.key */
-> +       hash_len = ses->auth_key.len - (CIFS_SESS_KEY_SIZE +
-> +               offsetof(struct ntlmv2_resp, challenge.key[0]));
->
->         if (!ses->server->secmech.sdeschmacmd5) {
->                 cifs_dbg(VFS, "%s: can't generate ntlmv2 hash\n", __func__);
-> @@ -556,7 +562,7 @@ CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
->         }
->
->         rc = crypto_shash_setkey(ses->server->secmech.hmacmd5,
-> -                               ntlmv2_hash, CIFS_HMAC_MD5_HASH_SIZE);
-> +                                ntlmv2_hash, CIFS_HMAC_MD5_HASH_SIZE);
->         if (rc) {
->                 cifs_dbg(VFS, "%s: Could not set NTLMV2 Hash as a key\n",
->                          __func__);
-> @@ -570,20 +576,21 @@ CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
->         }
->
->         if (ses->server->negflavor == CIFS_NEGFLAVOR_EXTENDED)
-> -               memcpy(ses->auth_key.response + offset,
-> -                       ses->ntlmssp->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
-> +               memcpy(ntlmv2->challenge.key,
-> +                      ses->ntlmssp->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
->         else
-> -               memcpy(ses->auth_key.response + offset,
-> -                       ses->server->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
-> +               memcpy(ntlmv2->challenge.key,
-> +                      ses->server->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
->         rc = crypto_shash_update(&ses->server->secmech.sdeschmacmd5->shash,
-> -               ses->auth_key.response + offset, ses->auth_key.len - offset);
-> +                                ntlmv2->challenge.key, hash_len);
->         if (rc) {
->                 cifs_dbg(VFS, "%s: Could not update with response\n", __func__);
->                 return rc;
->         }
->
-> +       /* Note that the MD5 digest over writes anon.challenge_key.key */
->         rc = crypto_shash_final(&ses->server->secmech.sdeschmacmd5->shash,
-> -               ses->auth_key.response + CIFS_SESS_KEY_SIZE);
-> +                               ntlmv2->ntlmv2_hash);
->         if (rc)
->                 cifs_dbg(VFS, "%s: Could not generate md5 hash\n", __func__);
->
-> @@ -627,7 +634,7 @@ setup_ntlmv2_rsp(struct cifs_ses *ses, const struct nls_table *nls_cp)
->         int rc;
->         int baselen;
->         unsigned int tilen;
-> -       struct ntlmv2_resp *buf;
-> +       struct ntlmv2_resp *ntlmv2;
->         char ntlmv2_hash[16];
->         unsigned char *tiblob = NULL; /* target info blob */
->
-> @@ -660,13 +667,14 @@ setup_ntlmv2_rsp(struct cifs_ses *ses, const struct nls_table *nls_cp)
->         }
->         ses->auth_key.len += baselen;
->
-> -       buf = (struct ntlmv2_resp *)
-> +       ntlmv2 = (struct ntlmv2_resp *)
->                         (ses->auth_key.response + CIFS_SESS_KEY_SIZE);
-> -       buf->blob_signature = cpu_to_le32(0x00000101);
-> -       buf->reserved = 0;
-> -       buf->time = cpu_to_le64(cifs_UnixTimeToNT(CURRENT_TIME));
-> -       get_random_bytes(&buf->client_chal, sizeof(buf->client_chal));
-> -       buf->reserved2 = 0;
-> +       ntlmv2->blob_signature = cpu_to_le32(0x00000101);
-> +       ntlmv2->reserved = 0;
-> +       /* Must be within 5 minutes of the server */
-> +       ntlmv2->time = cpu_to_le64(cifs_UnixTimeToNT(CURRENT_TIME));
-> +       get_random_bytes(&ntlmv2->client_chal, sizeof(ntlmv2->client_chal));
-> +       ntlmv2->reserved2 = 0;
->
->         memcpy(ses->auth_key.response + baselen, tiblob, tilen);
->
-> @@ -706,7 +714,7 @@ setup_ntlmv2_rsp(struct cifs_ses *ses, const struct nls_table *nls_cp)
->         }
->
->         rc = crypto_shash_update(&ses->server->secmech.sdeschmacmd5->shash,
-> -               ses->auth_key.response + CIFS_SESS_KEY_SIZE,
-> +               ntlmv2->ntlmv2_hash,
->                 CIFS_HMAC_MD5_HASH_SIZE);
->         if (rc) {
->                 cifs_dbg(VFS, "%s: Could not update with response\n", __func__);
-> diff --git a/fs/cifs/cifspdu.h b/fs/cifs/cifspdu.h
-> index 9e5ee34..33df36e 100644
-> --- a/fs/cifs/cifspdu.h
-> +++ b/fs/cifs/cifspdu.h
-> @@ -697,7 +697,13 @@ struct ntlmssp2_name {
->  } __attribute__((packed));
->
->  struct ntlmv2_resp {
-> -       char ntlmv2_hash[CIFS_ENCPWD_SIZE];
-> +       union {
-> +           char ntlmv2_hash[CIFS_ENCPWD_SIZE];
-> +           struct {
-> +               __u8 reserved[8];
-> +               __u8 key[CIFS_SERVER_CHALLENGE_SIZE];
-> +           } __attribute__((packed)) challenge;
-> +       } __attribute__((packed));
->         __le32 blob_signature;
->         __u32  reserved;
->         __le64  time;
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> +/**
+>   * queue_write_3step_lock - acquire write lock in 3 steps
+>   * @lock : Pointer to queue rwlock structure
+>   * Return: 1 if lock acquired, 0 otherwise
+> @@ -194,33 +149,24 @@ static __always_inline int queue_write_3step_lock(struct qrwlock *lock)
+>  	union qrwcnts old, new;
+> 
+>  	old.rw = ACCESS_ONCE(lock->cnts.rw);
+> +	new.rw = 0;
+> 
+>  	/* Step 1 */
+> -	if (!old.writer & !old.readers) {
+> -		new.rw     = old.rw;
+> -		new.writer = QW_LOCKED;
+> -		if (likely(cmpxchg(&lock->cnts.rw, old.rw, new.rw) == old.rw))
+> -			return 1;
+> -	}
+> +	if (!old.writer && !old.readers && _write_trylock(lock, old, new))
+> +		return 1;
+> 
+>  	/* Step 2 */
+>  	if (old.writer || (cmpxchg(&lock->cnts.writer, 0, QW_WAITING) != 0))
+>  		return 0;
+> 
+>  	/* Step 3 */
+> -	while (true) {
+> +	cpu_relax();
+> +	old.rw = ACCESS_ONCE(lock->cnts.rw);
+> +	while (old.readers || !_write_trylock(lock, old, new)) {
+>  		cpu_relax();
+>  		old.rw = ACCESS_ONCE(lock->cnts.rw);
+> -		if (!old.readers) {
+> -			new.rw     = old.rw;
+> -			new.writer = QW_LOCKED;
+> -			if (likely(cmpxchg(&lock->cnts.rw, old.rw, new.rw)
+> -				== old.rw))
+> -				return 1;
+> -		}
+>  	}
+> -	/* Should never reach here */
+> -	return 0;
+> +	return 1;
+
+This one still seems properly barriered, good!
+
+>  }
+> 
+>  /**
+> @@ -229,12 +175,12 @@ static __always_inline int queue_write_3step_lock(struct qrwlock *lock)
+>   */
+>  void queue_write_lock_slowpath(struct qrwlock *lock)
+>  {
+> -	struct qrwnode node;
+> +	struct mcs_spinlock node;
+> 
+>  	/*
+>  	 * Put the writer into the wait queue
+>  	 */
+> -	wait_in_queue(lock, &node);
+> +	mcs_spin_lock(&lock->waitq, &node);
+> 
+>  	/*
+>  	 * At the head of the wait queue now, call queue_write_3step_lock()
+> @@ -242,6 +188,6 @@ void queue_write_lock_slowpath(struct qrwlock *lock)
+>  	 */
+>  	while (!queue_write_3step_lock(lock))
+>  		cpu_relax();
+> -	signal_next(lock, &node);
+> +	mcs_spin_unlock(&lock->waitq, &node);
+>  }
+>  EXPORT_SYMBOL(queue_write_lock_slowpath);
+> -- 
+> 1.7.1
+> 
+
