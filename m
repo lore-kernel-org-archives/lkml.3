@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab3KHLdb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 06:33:31 -0500
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:45498
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756139Ab3KHLd1 (ORCPT
+	id S1757290Ab3KHLdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 06:33:10 -0500
+Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:25292
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757182Ab3KHLdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 06:33:27 -0500
+	Fri, 8 Nov 2013 06:33:03 -0500
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 3
 X-BigFish: VS3(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
@@ -20,9 +20,9 @@ CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
         <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
         <ijc+devicetree@hellion.org.uk>
-Subject: [PATCH v5 4/4] ARM: dts: imx: use dual-fifo sdma script for ssi
-Date: Fri, 8 Nov 2013 19:32:54 +0800
-Message-ID: <086ab5d4ad12e1bf8b4a8a2e1fb38108b5728919.1383910029.git.b42378@freescale.com>
+Subject: [PATCH v5 1/4] dma: imx-sdma: Add sdma firmware version 2 support
+Date: Fri, 8 Nov 2013 19:32:51 +0800
+Message-ID: <1524b725cecd208ad63741f0b7214d0039608ac0.1383910029.git.b42378@freescale.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <cover.1383910029.git.b42378@freescale.com>
 References: <cover.1383910029.git.b42378@freescale.com>
@@ -34,120 +34,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dual-fifo sdma scripts instead of shared scripts for ssi on i.MX series.
+On i.MX5/6 series, SDMA is using new version firmware to support SSI
+dual FIFO feature and HDMI Audio (i.MX6Q/DL only). Thus add it.
 
 Signed-off-by: Nicolin Chen <b42378@freescale.com>
 ---
- arch/arm/boot/dts/imx51.dtsi   |  4 ++--
- arch/arm/boot/dts/imx53.dtsi   |  4 ++--
- arch/arm/boot/dts/imx6qdl.dtsi | 12 ++++++------
- arch/arm/boot/dts/imx6sl.dtsi  | 12 ++++++------
- 4 files changed, 16 insertions(+), 16 deletions(-)
+ drivers/dma/imx-sdma.c                     | 15 ++++++++++++++-
+ include/linux/platform_data/dma-imx-sdma.h |  5 +++++
+ 2 files changed, 19 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/imx51.dtsi b/arch/arm/boot/dts/imx51.dtsi
-index 54cee65..1a71eac 100644
---- a/arch/arm/boot/dts/imx51.dtsi
-+++ b/arch/arm/boot/dts/imx51.dtsi
-@@ -154,8 +154,8 @@
- 					reg = <0x70014000 0x4000>;
- 					interrupts = <30>;
- 					clocks = <&clks 49>;
--					dmas = <&sdma 24 1 0>,
--					       <&sdma 25 1 0>;
-+					dmas = <&sdma 24 22 0>,
-+					       <&sdma 25 22 0>;
- 					dma-names = "rx", "tx";
- 					fsl,fifo-depth = <15>;
- 					fsl,ssi-dma-events = <25 24 23 22>; /* TX0 RX0 TX1 RX1 */
-diff --git a/arch/arm/boot/dts/imx53.dtsi b/arch/arm/boot/dts/imx53.dtsi
-index 4307e80..7208fde 100644
---- a/arch/arm/boot/dts/imx53.dtsi
-+++ b/arch/arm/boot/dts/imx53.dtsi
-@@ -153,8 +153,8 @@
- 					reg = <0x50014000 0x4000>;
- 					interrupts = <30>;
- 					clocks = <&clks 49>;
--					dmas = <&sdma 24 1 0>,
--					       <&sdma 25 1 0>;
-+					dmas = <&sdma 24 22 0>,
-+					       <&sdma 25 22 0>;
- 					dma-names = "rx", "tx";
- 					fsl,fifo-depth = <15>;
- 					fsl,ssi-dma-events = <25 24 23 22>; /* TX0 RX0 TX1 RX1 */
-diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
-index 57e9c38..6e096ca 100644
---- a/arch/arm/boot/dts/imx6qdl.dtsi
-+++ b/arch/arm/boot/dts/imx6qdl.dtsi
-@@ -223,8 +223,8 @@
- 					reg = <0x02028000 0x4000>;
- 					interrupts = <0 46 0x04>;
- 					clocks = <&clks 178>;
--					dmas = <&sdma 37 1 0>,
--					       <&sdma 38 1 0>;
-+					dmas = <&sdma 37 22 0>,
-+					       <&sdma 38 22 0>;
- 					dma-names = "rx", "tx";
- 					fsl,fifo-depth = <15>;
- 					fsl,ssi-dma-events = <38 37>;
-@@ -236,8 +236,8 @@
- 					reg = <0x0202c000 0x4000>;
- 					interrupts = <0 47 0x04>;
- 					clocks = <&clks 179>;
--					dmas = <&sdma 41 1 0>,
--					       <&sdma 42 1 0>;
-+					dmas = <&sdma 41 22 0>,
-+					       <&sdma 42 22 0>;
- 					dma-names = "rx", "tx";
- 					fsl,fifo-depth = <15>;
- 					fsl,ssi-dma-events = <42 41>;
-@@ -249,8 +249,8 @@
- 					reg = <0x02030000 0x4000>;
- 					interrupts = <0 48 0x04>;
- 					clocks = <&clks 180>;
--					dmas = <&sdma 45 1 0>,
--					       <&sdma 46 1 0>;
-+					dmas = <&sdma 45 22 0>,
-+					       <&sdma 46 22 0>;
- 					dma-names = "rx", "tx";
- 					fsl,fifo-depth = <15>;
- 					fsl,ssi-dma-events = <46 45>;
-diff --git a/arch/arm/boot/dts/imx6sl.dtsi b/arch/arm/boot/dts/imx6sl.dtsi
-index c46651e..b32ba99 100644
---- a/arch/arm/boot/dts/imx6sl.dtsi
-+++ b/arch/arm/boot/dts/imx6sl.dtsi
-@@ -195,8 +195,8 @@
- 					reg = <0x02028000 0x4000>;
- 					interrupts = <0 46 0x04>;
- 					clocks = <&clks IMX6SL_CLK_SSI1>;
--					dmas = <&sdma 37 1 0>,
--					       <&sdma 38 1 0>;
-+					dmas = <&sdma 37 22 0>,
-+					       <&sdma 38 22 0>;
- 					dma-names = "rx", "tx";
- 					fsl,fifo-depth = <15>;
- 					status = "disabled";
-@@ -207,8 +207,8 @@
- 					reg = <0x0202c000 0x4000>;
- 					interrupts = <0 47 0x04>;
- 					clocks = <&clks IMX6SL_CLK_SSI2>;
--					dmas = <&sdma 41 1 0>,
--					       <&sdma 42 1 0>;
-+					dmas = <&sdma 41 22 0>,
-+					       <&sdma 42 22 0>;
- 					dma-names = "rx", "tx";
- 					fsl,fifo-depth = <15>;
- 					status = "disabled";
-@@ -219,8 +219,8 @@
- 					reg = <0x02030000 0x4000>;
- 					interrupts = <0 48 0x04>;
- 					clocks = <&clks IMX6SL_CLK_SSI3>;
--					dmas = <&sdma 45 1 0>,
--					       <&sdma 46 1 0>;
-+					dmas = <&sdma 45 22 0>,
-+					       <&sdma 46 22 0>;
- 					dma-names = "rx", "tx";
- 					fsl,fifo-depth = <15>;
- 					status = "disabled";
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index fc43603..c7ece8d 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -323,6 +323,7 @@ struct sdma_engine {
+ 	struct clk			*clk_ipg;
+ 	struct clk			*clk_ahb;
+ 	spinlock_t			channel_0_lock;
++	u32				script_number;
+ 	struct sdma_script_start_addrs	*script_addrs;
+ 	const struct sdma_driver_data	*drvdata;
+ };
+@@ -1238,6 +1239,7 @@ static void sdma_issue_pending(struct dma_chan *chan)
+ }
+ 
+ #define SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1	34
++#define SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V2	38
+ 
+ static void sdma_add_scripts(struct sdma_engine *sdma,
+ 		const struct sdma_script_start_addrs *addr)
+@@ -1246,7 +1248,7 @@ static void sdma_add_scripts(struct sdma_engine *sdma,
+ 	s32 *saddr_arr = (u32 *)sdma->script_addrs;
+ 	int i;
+ 
+-	for (i = 0; i < SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1; i++)
++	for (i = 0; i < sdma->script_number; i++)
+ 		if (addr_arr[i] > 0)
+ 			saddr_arr[i] = addr_arr[i];
+ }
+@@ -1272,6 +1274,17 @@ static void sdma_load_firmware(const struct firmware *fw, void *context)
+ 		goto err_firmware;
+ 	if (header->ram_code_start + header->ram_code_size > fw->size)
+ 		goto err_firmware;
++	switch (header->version_major) {
++		case 1:
++			sdma->script_number = SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1;
++			break;
++		case 2:
++			sdma->script_number = SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V2;
++			break;
++		default:
++			dev_err(sdma->dev, "unknown firmware version\n");
++			return;
++	}
+ 
+ 	addr = (void *)header + header->script_addrs_start;
+ 	ram_code = (void *)header + header->ram_code_start;
+diff --git a/include/linux/platform_data/dma-imx-sdma.h b/include/linux/platform_data/dma-imx-sdma.h
+index 3a39428..eabac4e 100644
+--- a/include/linux/platform_data/dma-imx-sdma.h
++++ b/include/linux/platform_data/dma-imx-sdma.h
+@@ -43,6 +43,11 @@ struct sdma_script_start_addrs {
+ 	s32 dptc_dvfs_addr;
+ 	s32 utra_addr;
+ 	s32 ram_code_start_addr;
++	/* End of v1 array */
++	s32 mcu_2_ssish_addr;
++	s32 ssish_2_mcu_addr;
++	s32 hdmi_dma_addr;
++	/* End of v2 array */
+ };
+ 
+ /**
 -- 
 1.8.4
 
