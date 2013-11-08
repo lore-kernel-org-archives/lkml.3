@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab3KHJfA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 04:35:00 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34409 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab3KHJe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 04:34:57 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <527CB013.30200@jp.fujitsu.com>
-Date: Fri, 8 Nov 2013 18:34:11 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1756260Ab3KHJfe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 04:35:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25642 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754418Ab3KHJfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 04:35:31 -0500
+Date: Fri, 8 Nov 2013 10:34:55 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/2] perf record: mmap output file - v4
+Message-ID: <20131108093455.GA1230@krava.brq.redhat.com>
+References: <1383884605-30968-1-git-send-email-dsahern@gmail.com>
+ <1383884605-30968-3-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <matt.fleming@intel.com>, <matthew.garrett@nebula.com>,
-        <jlee@suse.com>
-Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia parameter
- to efi_storage_paranoia
-References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at>
-In-Reply-To: <527C9B5C.6040509@nod.at>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383884605-30968-3-git-send-email-dsahern@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/08 17:05), Richard Weinberger wrote:
-> Am 08.11.2013 08:33, schrieb Yasuaki Ishimatsu:
->> By following works, my system very often fails set_variable() to set new
->> variable to efi variable storage and shows "efivars: set_variable() failed:
->> status=-28" message.
->>
->> - commit 31ff2f20d9003e74991d135f56e503fe776c127c
->>      efi: Distinguish between "remaining space" and actually used space
->> - commit 8c58bf3eec3b8fc8162fe557e9361891c20758f2
->>      x86,efi: Implement efi_no_storage_paranoia parameter
->> - commit f8b8404337de4e2466e2e1139ea68b1f8295974f
->>      Modify UEFI anti-bricking code
->>
->> When booting my system, remaining space of efi variable storage is about
->> 5KB. So there is no room that sets a new variable to the storage.
->>
->> According to above works, efi_no_storage_paranoia parameter was prepared
->> for sane UEFI which can do gc and fulfills spec. But why need a system
->> with a sane UEFI set the parameter? It is wrong. A system with a broken
->> UEFI should set the parameter.
-> 
-> And how does one know that his UEFI is broken?
+On Thu, Nov 07, 2013 at 09:23:25PM -0700, David Ahern wrote:
 
-I have no idea. But at least, bricked board is broken UEFI.
-Do you know the issue occurs on several boards or specific board?
+SNIP
 
-Thanks,
-Yasuaki Ishimatsu
+>  
+> +static void mmap_output_fini(struct perf_record *rec)
+> +{
+> +	off_t len;
+> +	int fd;
+> +
+> +	if (!rec->mmap.use)
+> +		return;
+> +
+> +	rec->mmap.use = false;
+> +
+> +	len = rec->session->header.data_offset + rec->bytes_written;
+> +	fd = rec->file.fd;
+> +
+> +	munmap(rec->mmap.addr, rec->mmap.out_size);
+> +	rec->mmap.addr = NULL;
+> +
+> +	if (ftruncate(fd, len) != 0)
+> +		pr_err("ftruncate failed\n");
 
-> "Oh my board is briked because I wrote too much into a variable, maybe setting
-> efi_storage_paranoia would have saved me. Let's try with the next board..." ;)
-> 
-> Thanks,
-> //richard
-> 
+I think we should fail here and dont let the finishing
+code run on probably corrupted file.
 
+the code that process build IDs could even get stuck
 
+jirka
