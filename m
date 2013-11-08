@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756945Ab3KHJN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 04:13:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33380 "EHLO mx2.suse.de"
+	id S1756982Ab3KHJNq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 04:13:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33421 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756638Ab3KHJNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 04:13:22 -0500
+	id S1752868Ab3KHJNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 04:13:42 -0500
 From: Petr Mladek <pmladek@suse.cz>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -14,9 +14,9 @@ To: Steven Rostedt <rostedt@goodmis.org>,
         Jiri Kosina <jkosina@suse.cz>
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH v2 0/8] x86: use new text_poke_bp in ftrace
-Date: Fri,  8 Nov 2013 10:12:04 +0100
-Message-Id: <1383901932-1945-2-git-send-email-pmladek@suse.cz>
+Subject: [PATCH v2 1/8] x86: speed up int3-based patching using less paranoid write
+Date: Fri,  8 Nov 2013 10:12:05 +0100
+Message-Id: <1383901932-1945-3-git-send-email-pmladek@suse.cz>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
 References: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
@@ -24,83 +24,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit fd4363fff3d9 (x86: Introduce int3 (breakpoint)-based instruction
-patching) uses the same technique that has been used in ftrace since 08d636b
-("ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine")
+This change is inspired by the int3-based patching code used in
+ftrace. See the commit fd4363fff3d9 (x86: Introduce int3
+(breakpoint)-based instruction patching).
 
-This patch set merge the two implementations and remove duplicities from
-the ftrace side. It adds a generic function to efficiently patch more
-instructions at once. It also makes the generic int3-based framework
-and the ftrace code a bit faster.
+When trying to use text_poke_bp in ftrace, the result was slower than
+the original implementation.
 
-The first patch speed up the existing text_poke_bp.
+It turned out that one difference was in text_poke vs. ftrace_write.
+text_poke did many extra operations to make sure that the change
+was atomic.
 
-The next 3 patches improve the generic int3-based framework to be usable
-with ftrace. All the changes are based on ideas already used in ftrace.
-They are needed to keep the functionality and efficiency.
+In fact, we do not need this luxury in text_poke_bp because
+the modified code is guarded by the int3 handler. The int3
+interrupt itself is added and removed by an atomic operation
+because we modify only one byte.
 
-The 5th patch speedups the original ftrace code but it is useful also
-with the generic functions.
+This patch adds text_poke_part which is inspired by ftrace_write.
+Then it is used in text_poke_bp instead of the paranoid text_poke.
 
-The last three patches modifies different parts of the current
-x86-specific ftrace implementation and use the generic function there.
+For example, I tried to switch between 7 tracers: blk, branch,
+function_graph, wakeup_rt, irqsoff, function, and nop. Every tracer
+has also been enabled and disabled. With 100 cycles, I got these
+times with text_poke:
 
-Changes in v2:
+    real    25m7.380s     25m13.44s     25m9.072s
+    user    0m0.004s      0m0.004s      0m0.004s
+    sys     0m3.480s      0m3.508s      0m3.420s
 
-    + check for number of CPUs instead of enabling IRQs when syncing CPUs;
-      suggested by Steven Rostedt, Paul E. McKenney, and Masami Hiramatsu
-    + return error codes in text_poke_part and text_poke_bp; needed by ftrace
-    + reverted changes in text_poke_bp; it patches only single address again
-    + introduce text_poke_bp_iter for patching multiple addresses:
-	+ uses iterator and callbacks instead of copying data
-	+ checks old code before patching
-	+ returns error code and more info about error; needed by ftrace
-	+ provides recovery mechanism in case of errors
-    + update ftrace.c to use the new text_poke_bp_iter
-    + split notrace __probe_kernel_read into separate patch because it
-      is useful for original ftrace code as well
-    + rebased on current kernel tip and updated performance statistics;
-      it started to be slower on idle machine after the commit commit
-      c229828ca6bc62d6c654 (rcu: Throttle rcu_try_advance_all_cbs() execution)
+and with text_poke_part:
 
-I tried to switch between 7 tracers: blk, branch, function_graph, wakeup_rt,
-irqsoff, function, and nop. Every tracer has also been enabled and disabled.
-With 500 cycles, I got these times before the change:
-
-    real    18m2.477s     18m8.654s     18m9.196s
-    user    0m0.008s      0m0.008s	0m0.012s
-    sys     0m17.316s     0m17.104s	0m17.300s
-
-and after
-
-    real    17m9.753s     17m12.272s    17m11.424s
+    real    3m23.335s     3m24.422s     3m26.686s
     user    0m0.004s      0m0.004s	0m0.004s
-    sys     0m18.244s     0m18.252s	0m18.308s
+    sys     0m3.724s      0m3.772s	0m3.588s
 
-Unfortunately, the size of the code is almost the same. But most of it is
-generic and can be reused.
+Signed-off-by: Petr Mladek <pmladek@suse.cz>
+---
+ arch/x86/kernel/alternative.c | 49 ++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 44 insertions(+), 5 deletions(-)
 
-The patches are against kernel/git/tip/tip.git on top of the commit
-af7949e870d4632b Merge branch 'tools/kvm perf fixes'
-
-Petr Mladek (8):
-  x86: speed up int3-based patching using less paranoid write
-  x86: return error code in text_poke_bp
-  x86: allow to call text_poke_bp during boot
-  x86: add generic function to modify more calls using int3 framework
-  x86: do not trace __probe_kernel_read
-  x86: modify ftrace function using the new int3-based framework
-  x86: patch all traced function calls using the int3-based framework
-  x86: enable/disable ftrace graph call using new int3-based framework
-
- arch/x86/include/asm/alternative.h |  39 ++-
- arch/x86/kernel/alternative.c      | 321 +++++++++++++++++++--
- arch/x86/kernel/ftrace.c           | 571 ++++++++-----------------------------
- arch/x86/kernel/traps.c            |  10 -
- include/linux/ftrace.h             |   6 -
- mm/maccess.c                       |   2 +-
- 6 files changed, 462 insertions(+), 487 deletions(-)
-
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index df94598..0586dc1 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -8,6 +8,7 @@
+ #include <linux/kprobes.h>
+ #include <linux/mm.h>
+ #include <linux/vmalloc.h>
++#include <linux/uaccess.h>
+ #include <linux/memory.h>
+ #include <linux/stop_machine.h>
+ #include <linux/slab.h>
+@@ -586,6 +587,44 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
+ 	return addr;
+ }
+ 
++/**
++ * text_poke_part - Update part of the instruction on a live kernel when using
++ * 		    int3 breakpoint
++ * @addr:   address to modify
++ * @opcode: source of the copy
++ * @len:    length to copy
++ *
++ * If we patch instructions using int3 interrupt, we do not need to be so
++ * careful about an atomic write. Adding and removing the interrupt is atomic
++ * because we modify only one byte. The rest of the instruction could be
++ * modified in several steps because it is guarded by the interrupt handler.
++ * Hence we could use faster code here. See also text_poke_bp below for more
++ * details.
++ *
++ * Note: Must be called under text_mutex.
++ */
++static int text_poke_part(void *addr, const void *opcode, size_t len)
++{
++	/*
++	 * On x86_64, kernel text mappings are mapped read-only with
++	 * CONFIG_DEBUG_RODATA. So we use the kernel identity mapping instead
++	 * of the kernel text mapping to modify the kernel text.
++	 *
++	 * For 32bit kernels, these mappings are same and we can use
++	 * kernel identity mapping to modify code.
++	 */
++	if (((unsigned long)addr >= (unsigned long)_text) &&
++	    ((unsigned long)addr < (unsigned long)_etext))
++		addr = __va(__pa_symbol(addr));
++
++	if (probe_kernel_write(addr, opcode, len))
++		return -EPERM;
++
++	sync_core();
++
++	return 0;
++}
++
+ static void do_sync_core(void *info)
+ {
+ 	sync_core();
+@@ -648,15 +687,15 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+ 	 */
+ 	smp_wmb();
+ 
+-	text_poke(addr, &int3, sizeof(int3));
++	text_poke_part(addr, &int3, sizeof(int3));
+ 
+ 	on_each_cpu(do_sync_core, NULL, 1);
+ 
+ 	if (len - sizeof(int3) > 0) {
+ 		/* patch all but the first byte */
+-		text_poke((char *)addr + sizeof(int3),
+-			  (const char *) opcode + sizeof(int3),
+-			  len - sizeof(int3));
++		text_poke_part((char *)addr + sizeof(int3),
++			       (const char *) opcode + sizeof(int3),
++			       len - sizeof(int3));
+ 		/*
+ 		 * According to Intel, this core syncing is very likely
+ 		 * not necessary and we'd be safe even without it. But
+@@ -666,7 +705,7 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+ 	}
+ 
+ 	/* patch the first byte */
+-	text_poke(addr, opcode, sizeof(int3));
++	text_poke_part(addr, opcode, sizeof(int3));
+ 
+ 	on_each_cpu(do_sync_core, NULL, 1);
+ 
 -- 
 1.8.4
 
