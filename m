@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783Ab3KHBQj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 20:16:39 -0500
-Received: from mga09.intel.com ([134.134.136.24]:12530 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753584Ab3KHBQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 20:16:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="405356968"
-Subject: Re: [PATCH v3 3/5] MCS Lock: Barrier corrections
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rik van Riel <riel@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "Figo. zhang" <figo1802@gmail.com>, linux-arch@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, George Spelvin <linux@horizon.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Hurley <peter@hurleysoftware.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Alex Shi <alex.shi@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>
-In-Reply-To: <CANN689G2H3goDO3KyO5=CzV7RkTukU-B=KsZpLWV_0=pwzZWpw@mail.gmail.com>
-References: <cover.1383771175.git.tim.c.chen@linux.intel.com>
-	 <1383773827.11046.355.camel@schen9-DESK>
-	 <CA+55aFyNX=5i0hmk-KuD+Vk+yBD-kkAiywx1Lx_JJmHVPx=1wA@mail.gmail.com>
-	 <CANN689HkNP-UZOu+vDCFPG5_k=BNZG6a+oP+Ope16vLc2ShFzw@mail.gmail.com>
-	 <CA+55aFwn1HUt3iXo6Zz8j1HUJi+qJ1NfcnUz-P+XCYLL7gjCMQ@mail.gmail.com>
-	 <CANN689EgdDQV=srsLELUpiTGOSF0SLUZ=BC2LnMxNrYTv3H=Wg@mail.gmail.com>
-	 <20131107143139.GT18245@linux.vnet.ibm.com>
-	 <CANN689FqUSnr=Prum0Kt6+0gr9dWKD8GT9Gbrtiyyg+PTyFkyA@mail.gmail.com>
-	 <1383858951.11046.399.camel@schen9-DESK>
-	 <20131107222144.GC19203@twins.programming.kicks-ass.net>
-	 <CANN689G2H3goDO3KyO5=CzV7RkTukU-B=KsZpLWV_0=pwzZWpw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Nov 2013 17:16:32 -0800
-Message-ID: <1383873392.11046.402.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1754123Ab3KHBUi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 20:20:38 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:59045 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab3KHBUh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 20:20:37 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Mahesh Sivasubramanian <msivasub@codeaurora.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: Save/Restore 64-bit TTBR registers on LPAE suspend/resume
+Date: Thu,  7 Nov 2013 17:20:33 -0800
+Message-Id: <1383873633-2499-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.rc0.44.gf26f72d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-07 at 14:43 -0800, Michel Lespinasse wrote:
-> On Thu, Nov 7, 2013 at 2:21 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Thu, Nov 07, 2013 at 01:15:51PM -0800, Tim Chen wrote:
-> >> Michel, are you planning to do an implementation of
-> >> load-acquire/store-release functions of various architectures?
-> >
-> > A little something like this:
-> > http://marc.info/?l=linux-arch&m=138386254111507
-> >
-> > It so happens we were working on that the past week or so due to another
-> > issue ;-)
-> 
-> Haha, awesome, I wasn't aware of this effort.
-> 
-> Tim: my approach would be to provide the acquire/release operations in
-> arch-specific include files, and have a default implementation using
-> barriers for arches who don't provide these new ops. That way you make
-> it work on all arches at once (using the default implementation) and
-> make it fast on any arch that cares.
-> 
-> >> Or is the approach of arch specific memory barrier for MCS
-> >> an acceptable one before load-acquire and store-release
-> >> are available?  Are there any technical issues remaining with
-> >> the patchset after including including Waiman's arch specific barrier?
-> 
-> I don't want to stand in the way of Waiman's change, and I had
-> actually taken the same approach with arch-specific barriers when
-> proposing some queue spinlocks in the past; however I do feel that
-> this comes back regularly enough that having acquire/release
-> primitives available would help, hence my proposal.
-> 
-> That said, earlier in the thread Linus said we should probably get all
-> our ducks in a row before going forward with this, so...
-> 
+From: Mahesh Sivasubramanian <msivasub@codeaurora.org>
 
-With the load_acquire and store_release implemented, it should be
-pretty straightforward to implement MCS with them.  I'll respin
-the patch series with these primitives.
+LPAE enabled kernels use the 64-bit version of TTBR0 and TTBR1
+registers. If we're running an LPAE kernel, fill the upper half
+of TTBR0 with 0 because we're setting it to the idmap here (the
+idmap is guaranteed to be < 4Gb) and fully restore TTBR1 instead
+of just restoring the lower 32 bits. Failure to do so can cause
+failures on resume from suspend when these registers are only
+half restored.
 
-Thanks.
+Signed-off-by: Mahesh Sivasubramanian <msivasub@codeaurora.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mm/proc-v7.S | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-Tim
+diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+index c63d9bd..fb8b5e0 100644
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -92,7 +92,7 @@ ENDPROC(cpu_v7_dcache_clean_area)
+ 
+ /* Suspend/resume support: derived from arch/arm/mach-s5pv210/sleep.S */
+ .globl	cpu_v7_suspend_size
+-.equ	cpu_v7_suspend_size, 4 * 8
++.equ	cpu_v7_suspend_size, 4 * 9
+ #ifdef CONFIG_ARM_CPU_SUSPEND
+ ENTRY(cpu_v7_do_suspend)
+ 	stmfd	sp!, {r4 - r10, lr}
+@@ -101,13 +101,17 @@ ENTRY(cpu_v7_do_suspend)
+ 	stmia	r0!, {r4 - r5}
+ #ifdef CONFIG_MMU
+ 	mrc	p15, 0, r6, c3, c0, 0	@ Domain ID
++#ifdef CONFIG_ARM_LPAE
++	mrrc	p15, 1, r5, r7, c2	@ TTB 1
++#else
+ 	mrc	p15, 0, r7, c2, c0, 1	@ TTB 1
++#endif
+ 	mrc	p15, 0, r11, c2, c0, 2	@ TTB control register
+ #endif
+ 	mrc	p15, 0, r8, c1, c0, 0	@ Control register
+ 	mrc	p15, 0, r9, c1, c0, 1	@ Auxiliary control register
+ 	mrc	p15, 0, r10, c1, c0, 2	@ Co-processor access control
+-	stmia	r0, {r6 - r11}
++	stmia	r0, {r5 - r11}
+ 	ldmfd	sp!, {r4 - r10, pc}
+ ENDPROC(cpu_v7_do_suspend)
+ 
+@@ -118,16 +122,19 @@ ENTRY(cpu_v7_do_resume)
+ 	ldmia	r0!, {r4 - r5}
+ 	mcr	p15, 0, r4, c13, c0, 0	@ FCSE/PID
+ 	mcr	p15, 0, r5, c13, c0, 3	@ User r/o thread ID
+-	ldmia	r0, {r6 - r11}
++	ldmia	r0, {r5 - r11}
+ #ifdef CONFIG_MMU
+ 	mcr	p15, 0, ip, c8, c7, 0	@ invalidate TLBs
+ 	mcr	p15, 0, r6, c3, c0, 0	@ Domain ID
+-#ifndef CONFIG_ARM_LPAE
++#ifdef CONFIG_ARM_LPAE
++	mcrr	p15, 0, r1, ip, c2	@ TTB 0
++	mcrr	p15, 1, r5, r7, c2	@ TTB 1
++#else
+ 	ALT_SMP(orr	r1, r1, #TTB_FLAGS_SMP)
+ 	ALT_UP(orr	r1, r1, #TTB_FLAGS_UP)
+-#endif
+ 	mcr	p15, 0, r1, c2, c0, 0	@ TTB 0
+ 	mcr	p15, 0, r7, c2, c0, 1	@ TTB 1
++#endif
+ 	mcr	p15, 0, r11, c2, c0, 2	@ TTB control register
+ 	ldr	r4, =PRRR		@ PRRR
+ 	ldr	r5, =NMRR		@ NMRR
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
