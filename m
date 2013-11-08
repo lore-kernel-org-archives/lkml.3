@@ -1,49 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab3KHBnm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 20:43:42 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:46333 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692Ab3KHBnj (ORCPT
+	id S1756044Ab3KHBny (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 20:43:54 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:24340 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab3KHBnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 20:43:39 -0500
-X-Auth-Info: ug53rtPAS67Cxz2uEb/61izCW06h8oVgfXxPhGJqD6A=
-From: Marek Vasut <marex@denx.de>
-To: Dmitry Artamonow <mad_soft@inbox.lv>
-Subject: Re: [PATCH] ARM: pxa/colibri: fix build with CONFIG_USB_OHCI_HCD=y
-Date: Fri, 8 Nov 2013 02:43:33 +0100
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>
-References: <1383835013-22215-1-git-send-email-mad_soft@inbox.lv>
-In-Reply-To: <1383835013-22215-1-git-send-email-mad_soft@inbox.lv>
+	Thu, 7 Nov 2013 20:43:47 -0500
+Message-ID: <527C41E9.6040002@oracle.com>
+Date: Fri, 08 Nov 2013 09:44:09 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH] PCI: Introduce two new MSI infrastructure calls for masking/unmasking.
+References: <1383772616-23060-1-git-send-email-konrad.wilk@oracle.com> <CAErSpo4rdHwhuF=SM6WT3EP3TGoUFnwxVdx5919qxea3On7MRw@mail.gmail.com>
+In-Reply-To: <CAErSpo4rdHwhuF=SM6WT3EP3TGoUFnwxVdx5919qxea3On7MRw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201311080243.33269.marex@denx.de>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Dmitry Artamonow,
 
-> Fix following build failure observed when support for
-> OHCI host controller is enabled.
-> 
->   CC      arch/arm/mach-pxa/colibri-evalboard.o
-> arch/arm/mach-pxa/colibri-evalboard.c: In function 'colibri_ohci_init':
-> arch/arm/mach-pxa/colibri-evalboard.c:68: error: implicit declaration of
-> function 'IOMEM' make[1]: *** [arch/arm/mach-pxa/colibri-evalboard.o]
-> Error 1
-> make: *** [arch/arm/mach-pxa] Error 2
-> 
-> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.lv>
+On 2013-11-07 07:51, Bjorn Helgaas wrote:
+> [+cc Thomas, Ingo, Peter, x86 list]
+>
+> On Wed, Nov 6, 2013 at 2:16 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+>> Certain platforms do not allow writes in the MSI-X bars
+>> to setup or tear down vector values. To combat against
+>> the generic code trying to write to that and either silently
+>> being ignored or crashing due to the pagetables being marked r/o
+>> this patch introduces a platform over-write.
+>>
+>> Note that we keep two separate, non-weak, functions
+>> default_mask_msi_irqs() and default_mask_msix_irqs() for the
+>> behavior of the arch_mask_msi_irqs() and arch_mask_msix_irqs(),
+>> as the default behavior is needed by x86 PCI code.
+>>
+>> For Xen, which does not allow the guest to write to MSI-X
+>> tables - as the hypervisor is solely responsible for setting
+>> the vector values - we implement two nops.
+>>
+>> CC: Bjorn Helgaas <bhelgaas@google.com>
+>> CC: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+>> CC: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+>> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> I think this is safe, and I'd like to squeeze it into the v3.13 merge
+> window next week, since it supersedes three patches Zhenzhong has been
+> trying to get in since July [1], and this patch is much simpler to
+> understand.
+This patch could replace the first two.
+I think the third patch of mine is still needed as it does a different 
+thing.
+It optimizes restore path in dom0.
 
-Acked-by: Marek Vasut <marex@denx.de>
+zduan
+>
+> I *think* this also fixes an actual bug on Xen.  Konrad, is there a
+> bugzilla or any kind of email problem description that we can include
+> here as a reference?  I think there's a lost interrupt with qlcnic,
+> but I don't know the details or what the failure looks like to a user.
+>
+> [1] http://lkml.kernel.org/r/51EF44FA.4020903@oracle.com
+>
+>> ---
+>>   arch/x86/include/asm/x86_init.h |  3 +++
+>>   arch/x86/kernel/x86_init.c      | 10 ++++++++++
+>>   arch/x86/pci/xen.c              | 13 ++++++++++++-
+>>   drivers/pci/msi.c               | 22 ++++++++++++++++------
+>>   include/linux/msi.h             |  2 ++
+>>   5 files changed, 43 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+>> index 828a156..0f1be11 100644
+>> --- a/arch/x86/include/asm/x86_init.h
+>> +++ b/arch/x86/include/asm/x86_init.h
+>> @@ -172,6 +172,7 @@ struct x86_platform_ops {
+>>
+>>   struct pci_dev;
+>>   struct msi_msg;
+>> +struct msi_desc;
+>>
+>>   struct x86_msi_ops {
+>>          int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
+>> @@ -182,6 +183,8 @@ struct x86_msi_ops {
+>>          void (*teardown_msi_irqs)(struct pci_dev *dev);
+>>          void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
+>>          int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
+>> +       u32 (*msi_mask_irq)(struct msi_desc *desc, u32 mask, u32 flag);
+>> +       u32 (*msix_mask_irq)(struct msi_desc *desc, u32 flag);
+>>   };
+>>
+>>   struct IO_APIC_route_entry;
+>> diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+>> index 8ce0072..021783b 100644
+>> --- a/arch/x86/kernel/x86_init.c
+>> +++ b/arch/x86/kernel/x86_init.c
+>> @@ -116,6 +116,8 @@ struct x86_msi_ops x86_msi = {
+>>          .teardown_msi_irqs      = default_teardown_msi_irqs,
+>>          .restore_msi_irqs       = default_restore_msi_irqs,
+>>          .setup_hpet_msi         = default_setup_hpet_msi,
+>> +       .msi_mask_irq           = default_msi_mask_irq,
+>> +       .msix_mask_irq          = default_msix_mask_irq,
+>>   };
+>>
+>>   /* MSI arch specific hooks */
+>> @@ -138,6 +140,14 @@ void arch_restore_msi_irqs(struct pci_dev *dev, int irq)
+>>   {
+>>          x86_msi.restore_msi_irqs(dev, irq);
+>>   }
+>> +u32 arch_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+>> +{
+>> +       return x86_msi.msi_mask_irq(desc, mask, flag);
+>> +}
+>> +u32 arch_msix_mask_irq(struct msi_desc *desc, u32 flag)
+>> +{
+>> +       return x86_msi.msix_mask_irq(desc, flag);
+>> +}
+>>   #endif
+>>
+>>   struct x86_io_apic_ops x86_io_apic_ops = {
+>> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+>> index 48e8461..5eee495 100644
+>> --- a/arch/x86/pci/xen.c
+>> +++ b/arch/x86/pci/xen.c
+>> @@ -382,7 +382,14 @@ static void xen_teardown_msi_irq(unsigned int irq)
+>>   {
+>>          xen_destroy_irq(irq);
+>>   }
+>> -
+>> +static u32 xen_nop_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+>> +{
+>> +       return 0;
+>> +}
+>> +static u32 xen_nop_msix_mask_irq(struct msi_desc *desc, u32 flag)
+>> +{
+>> +       return 0;
+>> +}
+>>   #endif
+>>
+>>   int __init pci_xen_init(void)
+>> @@ -406,6 +413,8 @@ int __init pci_xen_init(void)
+>>          x86_msi.setup_msi_irqs = xen_setup_msi_irqs;
+>>          x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
+>>          x86_msi.teardown_msi_irqs = xen_teardown_msi_irqs;
+>> +       x86_msi.msi_mask_irq = xen_nop_msi_mask_irq;
+>> +       x86_msi.msix_mask_irq = xen_nop_msix_mask_irq;
+>>   #endif
+>>          return 0;
+>>   }
+>> @@ -485,6 +494,8 @@ int __init pci_xen_initial_domain(void)
+>>          x86_msi.setup_msi_irqs = xen_initdom_setup_msi_irqs;
+>>          x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
+>>          x86_msi.restore_msi_irqs = xen_initdom_restore_msi_irqs;
+>> +       x86_msi.msi_mask_irq = xen_nop_msi_mask_irq;
+>> +       x86_msi.msix_mask_irq = xen_nop_msix_mask_irq;
+>>   #endif
+>>          xen_setup_acpi_sci();
+>>          __acpi_register_gsi = acpi_register_gsi_xen;
+>> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+>> index d5f90d6..7916699 100644
+>> --- a/drivers/pci/msi.c
+>> +++ b/drivers/pci/msi.c
+>> @@ -185,7 +185,7 @@ static inline __attribute_const__ u32 msi_enabled_mask(u16 control)
+>>    * reliably as devices without an INTx disable bit will then generate a
+>>    * level IRQ which will never be cleared.
+>>    */
+>> -static u32 __msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+>> +u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+>>   {
+>>          u32 mask_bits = desc->masked;
+>>
+>> @@ -199,9 +199,14 @@ static u32 __msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+>>          return mask_bits;
+>>   }
+>>
+>> +__weak u32 arch_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+>> +{
+>> +       return default_msi_mask_irq(desc, mask, flag);
+>> +}
+>> +
+>>   static void msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+>>   {
+>> -       desc->masked = __msi_mask_irq(desc, mask, flag);
+>> +       desc->masked = arch_msi_mask_irq(desc, mask, flag);
+>>   }
+>>
+>>   /*
+>> @@ -211,7 +216,7 @@ static void msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+>>    * file.  This saves a few milliseconds when initialising devices with lots
+>>    * of MSI-X interrupts.
+>>    */
+>> -static u32 __msix_mask_irq(struct msi_desc *desc, u32 flag)
+>> +u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag)
+>>   {
+>>          u32 mask_bits = desc->masked;
+>>          unsigned offset = desc->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE +
+>> @@ -224,9 +229,14 @@ static u32 __msix_mask_irq(struct msi_desc *desc, u32 flag)
+>>          return mask_bits;
+>>   }
+>>
+>> +__weak u32 arch_msix_mask_irq(struct msi_desc *desc, u32 flag)
+>> +{
+>> +       return default_msix_mask_irq(desc, flag);
+>> +}
+>> +
+>>   static void msix_mask_irq(struct msi_desc *desc, u32 flag)
+>>   {
+>> -       desc->masked = __msix_mask_irq(desc, flag);
+>> +       desc->masked = arch_msix_mask_irq(desc, flag);
+>>   }
+>>
+>>   static void msi_set_mask_bit(struct irq_data *data, u32 flag)
+>> @@ -902,7 +912,7 @@ void pci_msi_shutdown(struct pci_dev *dev)
+>>          pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &ctrl);
+>>          mask = msi_capable_mask(ctrl);
+>>          /* Keep cached state to be restored */
+>> -       __msi_mask_irq(desc, mask, ~mask);
+>> +       arch_msi_mask_irq(desc, mask, ~mask);
+>>
+>>          /* Restore dev->irq to its default pin-assertion irq */
+>>          dev->irq = desc->msi_attrib.default_irq;
+>> @@ -998,7 +1008,7 @@ void pci_msix_shutdown(struct pci_dev *dev)
+>>          /* Return the device with MSI-X masked as initial states */
+>>          list_for_each_entry(entry, &dev->msi_list, list) {
+>>                  /* Keep cached states to be restored */
+>> -               __msix_mask_irq(entry, 1);
+>> +               arch_msix_mask_irq(entry, 1);
+>>          }
+>>
+>>          msix_set_enable(dev, 0);
+>> diff --git a/include/linux/msi.h b/include/linux/msi.h
+>> index b17ead8..87cce50 100644
+>> --- a/include/linux/msi.h
+>> +++ b/include/linux/msi.h
+>> @@ -64,6 +64,8 @@ void arch_restore_msi_irqs(struct pci_dev *dev, int irq);
+>>
+>>   void default_teardown_msi_irqs(struct pci_dev *dev);
+>>   void default_restore_msi_irqs(struct pci_dev *dev, int irq);
+>> +u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
+>> +u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag);
+>>
+>>   struct msi_chip {
+>>          struct module *owner;
+>> --
+>> 1.8.3.1
+>>
 
-Best regards,
-Marek Vasut
