@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757136Ab3KHCUw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 21:20:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34769 "EHLO
+	id S1757156Ab3KHCU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 21:20:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34774 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757120Ab3KHCUs (ORCPT
+	with ESMTP id S1756782Ab3KHCUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 21:20:48 -0500
+	Thu, 7 Nov 2013 21:20:53 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+Cc: Felix Fietkau <nbd@openwrt.org>, Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 79/91] mm: Account for a THP NUMA hinting update as one PTE update
-Date: Thu,  7 Nov 2013 18:15:34 -0800
-Message-Id: <1383876946-2396-80-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 43/91] mac80211: use sta_info_get_bss() for nl80211 tx and client probing
+Date: Thu,  7 Nov 2013 18:14:58 -0800
+Message-Id: <1383876946-2396-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383876946-2396-1-git-send-email-kamal@canonical.com>
 References: <1383876946-2396-1-git-send-email-kamal@canonical.com>
@@ -30,41 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 0255d491848032f6c601b6410c3b8ebded3a37b1 upstream.
+commit 03bb7f42765ce596604f03d179f3137d7df05bba upstream.
 
-A THP PMD update is accounted for as 512 pages updated in vmstat.  This is
-large difference when estimating the cost of automatic NUMA balancing and
-can be misleading when comparing results that had collapsed versus split
-THP. This patch addresses the accounting issue.
+This allows calls for clients in AP_VLANs (e.g. for 4-addr) to succeed
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-10-git-send-email-mgorman@suse.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/mprotect.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/cfg.c | 2 +-
+ net/mac80211/tx.c  | 3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 94722a4..2bbb648 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -145,7 +145,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 				split_huge_page_pmd(vma, addr, pmd);
- 			else if (change_huge_pmd(vma, pmd, addr, newprot,
- 						 prot_numa)) {
--				pages += HPAGE_PMD_NR;
-+				pages++;
- 				continue;
- 			}
- 			/* fall through */
+diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
+index 40732e3..a1df92b 100644
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -3113,7 +3113,7 @@ static int ieee80211_probe_client(struct wiphy *wiphy, struct net_device *dev,
+ 		return -EINVAL;
+ 	}
+ 	band = chanctx_conf->def.chan->band;
+-	sta = sta_info_get(sdata, peer);
++	sta = sta_info_get_bss(sdata, peer);
+ 	if (sta) {
+ 		qos = test_sta_flag(sta, WLAN_STA_WME);
+ 	} else {
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index 467c1d1..6b976b7 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1149,7 +1149,8 @@ ieee80211_tx_prepare(struct ieee80211_sub_if_data *sdata,
+ 		tx->sta = rcu_dereference(sdata->u.vlan.sta);
+ 		if (!tx->sta && sdata->dev->ieee80211_ptr->use_4addr)
+ 			return TX_DROP;
+-	} else if (info->flags & IEEE80211_TX_CTL_INJECTED ||
++	} else if (info->flags & (IEEE80211_TX_CTL_INJECTED |
++				  IEEE80211_TX_INTFL_NL80211_FRAME_TX) ||
+ 		   tx->sdata->control_port_protocol == tx->skb->protocol) {
+ 		tx->sta = sta_info_get_bss(sdata, hdr->addr1);
+ 	}
 -- 
 1.8.1.2
 
