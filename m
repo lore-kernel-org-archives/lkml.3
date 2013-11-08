@@ -1,93 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab3KHIky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 03:40:54 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:59566 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753720Ab3KHIkw (ORCPT
+	id S1754501Ab3KHIpN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 03:45:13 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:55927 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751221Ab3KHIpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 03:40:52 -0500
-Date: Fri, 8 Nov 2013 09:40:35 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Guenter Roeck <linux@roeck-us.net>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
-Message-ID: <20131108084035.GA4074@breakpoint.cc>
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
- <20131106190152.GA8662@breakpoint.cc>
- <20131106193041.GA26796@roeck-us.net>
- <20131106203821.GC8662@breakpoint.cc>
- <20131106211754.GA29300@roeck-us.net>
- <20131107192558.GA11453@breakpoint.cc>
- <4F47D5F8-F3C7-45CA-9D88-2D814BDC1BC7@antoniou-consulting.com>
- <20131107204626.GA11746@breakpoint.cc>
- <20131107230052.GC24450@roeck-us.net>
+	Fri, 8 Nov 2013 03:45:10 -0500
+Date: Fri, 8 Nov 2013 09:40:56 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Ian Campbell <ijc@hellion.org.uk>
+Cc: linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, linux-kernel@vger.kernel.org
+Subject: Re: [linux-sunxi] [PATCH 2/2] ARM: sun6i: Add SMP support for the
+ Allwinner A31
+Message-ID: <20131108084056.GB26440@lukather>
+References: <1383471013-21695-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1383471013-21695-3-git-send-email-maxime.ripard@free-electrons.com>
+ <1383583997.8826.123.camel@kazak.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VZLKKa0PG5KXlQhV"
 Content-Disposition: inline
-In-Reply-To: <20131107230052.GC24450@roeck-us.net>
+In-Reply-To: <1383583997.8826.123.camel@kazak.uk.xensource.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.11.13, Guenter Roeck wrote:
-> > I am only saying that this "hot-plug a device at a non hot-plugagle bus at
-> > runtime" is not limited to DT but this solution is. X86 + ACPI is not
-> > the only limitation. ARM is (forced) going to ACPI as well as far I
-> > know. And this solution is limited to DT. This is what I am pointing
-> > out.
-> > 
-> I can't tell about ARM, but I am not entirely sure how ACPI support on ARM
-> is going to help us on powerpc.
 
-I'm not saying help. Just if you extend one firmware to solve a problem
-you need to do it again on an another firmware.
+--VZLKKa0PG5KXlQhV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > > His use case is not uncommon, believe it or not, and x86 would benefit from
-> > > something this flexible.
-> > 
-> > I *think* a more flexible solution would be something like bus_type which is
-> > exposed via configfs. It would be attached behind a certain device/bus where
-> > the "physical" hotplug interface is. The user would then be able to read the
-> > configuration based on whatever information he has and could then create
-> > devices he likes at runtime. This wouldn't depend much on the firmware that is
-> > used but would require a little more work I think.
-> > 
-> Quite frankly, I am interested at a solution that works and solves our problems.
-> I am not looking for something that is 100% perfect and may never be delivered.
-> 
-> Fortunately, the Linux kernel was willing to adopt multiple different file
-> systems, and still accepts new ones on a regular basis. If a new file system
-> is better, it will start getting used, and old file systems are being phased out
-> as fewer people use them. I would hope the same should be possible with DT
-> overlays and possible other future solutions for the same problem, and that
-> we won't have to wait for the perfect solution from day 1.
+Hi Ian,
 
-don't argue about that. However you have to provide support for those
-things, they don't simply phase out. You still have support for reiserfs
-but I think a lot (likely not all) of the its users migrated away.
+On Mon, Nov 04, 2013 at 04:53:17PM +0000, Ian Campbell wrote:
+> Not a comment on the patch, or even A31, but a question about how the
+> SMP boot process works on sunxi generally...
+>=20
+> On Sun, 2013-11-03 at 10:30 +0100, Maxime Ripard wrote:
+> > The A31 is a quad Cortex-A7. Add the logic to use the IPs used to
+> > control the CPU configuration and the CPU power so that we can bring up
+> > secondary CPUs at boot.
+> > [...]
+> > +	/* Set CPU boot address */
+> > +	writel(virt_to_phys(sun6i_secondary_startup),
+> > +	       cpucfg_membase + CPUCFG_PRIVATE0_REG);
+>=20
+> Does the secondary CPU jump straight here from the lowlevel firmware or
+> does it go through the bootloader which reads the reg and does the jump?
+> I can't see any reference to this reg in u-boot so I guess the former?
 
-If you guys already talked about this and everyone agreed on this then I
-am not standing in your way, never was. I was just curious about the
-background for this.
+There's no reference of this either in the A31 datasheet (or at least,
+none I could find), so I assume the former too.
 
-> 
-> Guenter
+> I'm trying to work out if we can make this work with the requirement
+> which both Xen and KVM have to enter the kernel in NS-HYP mode.
+>=20
+> The way this works on e.g. vexpress is (roughly) that u-boot wakes up
+> the secondary CPUs from the lowlevel firmware and places them into its
+> own holding pen, which has the same wake up protocol as the firmware so
+> the kernel can just use the same code. If u-boot never gets to run on
+> secondary CPUs that isn't going to help much.=20
+>=20
+> My concern is that the sequence here appears to involve resetting the
+> secondary CPU, which I figure will probably defeat that strategy by
+> kicking the CPU back into the lowlevel firmware in the reset state,
+> meaning it can't be done by a u-boot only change.
 
-Sebastian
+I think this is where we're headed for the A20, Marc was interested in
+doing that, since we already have pretty much this in u-boot already,
+however, this is not the case for the A31.
+
+As far as I know, the Allwinner's bootloader that we currently use
+isn't bringing up the secondary CPUs, and we don't have any port of
+some sort of u-boot yet that we could work on.
+
+So, I guess we don't really have much choice in that case, even though
+eventually I'd like to have this for the A31 too.
+
+> Hrm, what to do ... perhaps a DT driven selection between this mechanism
+> and sev to kick a wfe loop reading the private register?
+
+We can discuss this whenever we will actually have that choice to
+make, but maybe a kernel parameter would be better?
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--VZLKKa0PG5KXlQhV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSfKOYAAoJEBx+YmzsjxAgO6IQALSMyGyD3E/dFPDmGgypE2IY
+kCvS5ZSB6hJmBAs+3oJWqdTZmKT/aQrWEQN55QGnyHqTCDoN2paSIVF797n+yTBj
+2AcENi6nn6Qcz8nE6DxJze0KgWFlpNds9LQdXOP8kSE2U5e21zbHfYq1OBniIIPm
+5nQ6HyyNRPHjV5WxVVlD7KUzn9gEHSP5lW8556rVbZ/oD4Ss73dnHa0KJNeKKPAF
+8u4Ys5Iutit1AzhT+Q1AEXypzhdO5FLlj0uegiljt4XVRNhFLAxtwgWhRy7NR0t7
+XIZ7qri9dZ764HDhUaCY7/nReq4PW69OwF9Lc6rMcuq9eunbW6fMVM5fB2vLQlT8
+MNrK0Sd1h4EicvEgn+6JgJTZEsk8ER5VcKL1i1oewZofo44cE0RbKH4poPa4R2W0
+9EPDlLpqBuk4XrqZRuDiNvtJEYkaEf6AwkYaBZLSM4bQp6leBa/sn+T0ddh0m8DL
+sdW42Q2DQsXCtRs1fn1MIHpi4Gd4K4NMeKCfOI3dpOIv5IERfrWdur5ACx5MXi4a
+rVWhv8edFJI1GoANRtO4t7CfB+yJFFDJK3SXFjBpPg27ARbtEmWy5/4rhnNmjhSg
+4EIcNMkvC3Zf7cbp8uyu5PbA6Tj6YOsGLhfolhi128GGeKl2m+QwSMj0E8+XI58a
+R1ot04QVtPWfm2CgkFGR
+=pifl
+-----END PGP SIGNATURE-----
+
+--VZLKKa0PG5KXlQhV--
