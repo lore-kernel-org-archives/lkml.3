@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757730Ab3KHQZG (ORCPT <rfc822;w@1wt.eu>);
+	id S1757757Ab3KHQZK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 11:25:10 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:57932 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757212Ab3KHQZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Nov 2013 11:25:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42087 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757212Ab3KHQZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 11:25:04 -0500
-Date: Fri, 8 Nov 2013 11:24:21 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        akpm@linux-foundation.org, davej@fedoraproject.org,
-        rmk+kernel@arm.linux.org.uk, chaowang@redhat.com, mwhitehe@redhat.com,
-        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Robin Holt <robinmholt@linux.com>, Robin Holt <robinmholt@gmail.com>
-Subject: Re: [PATCH] x86: make reboot task only run on the appropriate
- processor
-Message-ID: <20131108162421.GC13068@redhat.com>
-References: <1383642967-12595-1-git-send-email-bhe@redhat.com>
- <20131108151416.GA13068@redhat.com>
- <527D0D50.6010607@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <527D0D50.6010607@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMRPzZJwUkQZkhA5E2QW6YVmou2uypytno8Yqb6bzgqhW7kJMA@mail.gmail.com>
+References: <bug-60555-41252@https.bugzilla.kernel.org/> <CAErSpo4BKuuo=kz9RLpZNwrM=HnV3Zt7qLeoUCywV6ESoO+=wQ@mail.gmail.com>
+ <CAErSpo7nyyfZ8n97hyjkmzfCcPBVFTid0BrVXLwiBA0YhkdREA@mail.gmail.com> <CAMRPzZJwUkQZkhA5E2QW6YVmou2uypytno8Yqb6bzgqhW7kJMA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 8 Nov 2013 09:24:45 -0700
+Message-ID: <CAErSpo7+CseUORXRuovB-HUnJeQZCNsdSnsv6JHYuNFKLNNB5w@mail.gmail.com>
+Subject: Re: [Bug 60555] New: Some amount of ifconfig cause load average
+ increase and system freeze
+To: Yaroslav Molochko <onorua@gmail.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 08:12:00AM -0800, H. Peter Anvin wrote:
-> On 11/08/2013 07:14 AM, Vivek Goyal wrote:
-> > 
-> > Hi Bao,
-> > 
-> > This patch fixes the issue for me too. I noticed that we have generic
-> > function migrate_to_reboot_cpu() to achieve what we want and rest of
-> > the reboot paths are using it. So how about using that function. I 
-> > wrote the new patch below. It works for me. Can you please give it
-> > a try.
-> > 
-> > Thanks
-> > Vivek
-> > 
-> 
-> Is this path exercised for the kdump flow?  migrate_to_reboot_cpu() is
-> unsafe in that case.
+On Fri, Nov 8, 2013 at 5:24 AM, Yaroslav Molochko <onorua@gmail.com> wrote:
+> Sorry. I was not using this machine for quite a bit, I've updated to the new
+> kernel and updated bug with the information you asked
 
-kdump path should not be affected by this change as it uses crash_kexec()
-instead of kerenl_kexec() for its entry. And crash_kexec() path does not
-call migrate_to_reboot_cpu().
+Thanks.
 
-Thanks
-Vivek
+Note that this appears to be vanilla v3.12, which has e1000e version
+2.3.2-k in it.  Intel maintains newer drivers out-of-tree at
+http://sourceforge.net/projects/e1000/, and it's possible this is some
+bug that has already been fixed.  The current version there looks like
+e1000e-2.5.4, released 2013-09-05.
 
-> 
-> > Index: linux-2.6/kernel/kexec.c
-> > ===================================================================
-> > --- linux-2.6.orig/kernel/kexec.c	2013-10-16 00:30:50.000000000 -0400
-> > +++ linux-2.6/kernel/kexec.c	2013-11-08 21:34:02.492072375 -0500
-> > @@ -1676,6 +1676,7 @@ int kernel_kexec(void)
-> >  #endif
-> >  	{
-> >  		kernel_restart_prepare(NULL);
-> > +		migrate_to_reboot_cpu();
-> >  		printk(KERN_EMERG "Starting new kernel\n");
-> >  		machine_shutdown();
-> >  	}
-> > 
+I think only the Intel folks can help you out with this.
+
+Bjorn
+
+>> > On Mon, Jul 15, 2013 at 2:31 AM,  <bugzilla-daemon@bugzilla.kernel.org>
+>> > wrote:
+>> >> https://bugzilla.kernel.org/show_bug.cgi?id=60555
+>> >>
+>> >>             Bug ID: 60555
+>> >>            Summary: Some amount of ifconfig cause load average increase
+>> >>                     and system freeze
+>> >>            Product: Drivers
+>> >>            Version: 2.5
+>> >>     Kernel Version: 3.10.0
+>> >>           Hardware: All
+>> >>                 OS: Linux
+>> >>               Tree: Mainline
+>> >>             Status: NEW
+>> >>           Severity: normal
+>> >>           Priority: P1
+>> >>          Component: PCI
+>> >>           Assignee: drivers_pci@kernel-bugs.osdl.org
+>> >>           Reporter: onorua@gmail.com
+>> >>         Regression: No
+>> >>
+>> >> I've faced with the situation when system stopped to process any
+>> >> request.
+>> >> Further analysis showed that the load average was around 20, and was
+>> >> constantly
+>> >> increasing (the normal LA for this system is 0.3-1).
+>> >
+>> > Thanks for the report; sorry it fell through the cracks.
+>> >
+>> > Is this problem reproducible?  If so, can you try to reproduce it on
+>> > v3.11?  Can you please attach a complete dmesg log and "lspci -vv" (as
+>> > root) output to the bugzilla?
+>> >
+>> > The BUG_ON you're hitting is here, but I don't know what it means:
+>> >
+>> >     #ifdef CONFIG_GENERIC_HARDIRQS
+>> >                 for (i = 0; i < nvec; i++)
+>> >                         BUG_ON(irq_has_action(entry->irq + i));
+>> >     #endif
+>>
+>> What's the status of this?  Is it still a problem?  Should we just
+>> close the bug as unreproducible?
+>>
+>> Bjorn
+>
+>
