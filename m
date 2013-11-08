@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757023Ab3KHLES (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 06:04:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28870 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753046Ab3KHLEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 06:04:16 -0500
-Message-ID: <527CC50D.4060905@redhat.com>
-Date: Fri, 08 Nov 2013 06:03:41 -0500
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756979Ab3KHLMX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 06:12:23 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33805 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756638Ab3KHLMV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 06:12:21 -0500
+Date: Fri, 8 Nov 2013 11:11:52 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Wenyou Yang <Wenyou.Yang@atmel.com>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20131108111152.GL2493@sirena.org.uk>
+References: <1383816846-10561-1-git-send-email-richard.genoud@gmail.com>
 MIME-Version: 1.0
-To: Ric Wheeler <rwheeler@redhat.com>, Mark Tinguely <tinguely@sgi.com>,
-        Ben Myers <bpm@sgi.com>
-CC: elder@kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        xfs@oss.sgi.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: XFS leadership and a new co-maintainer candidate
-References: <20131107220208.GY1935@sgi.com> <527C0F64.3010906@sgi.com> <527C4B27.6020205@redhat.com>
-In-Reply-To: <527C4B27.6020205@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s6Wo+7iKhEdF4/RK"
+Content-Disposition: inline
+In-Reply-To: <1383816846-10561-1-git-send-email-richard.genoud@gmail.com>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 86.153.69.173
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: atmel: add support for changing message transfer
+ speed
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the XFS community, we have 2 clear leaders in terms of contributions of 
-significant feaures and depth of knowledge - Christoph and Dave.
 
-If you look at the number of patches submitted by developers since 3.0 who have 
-more than 10 patches, we get the following:
+--s6Wo+7iKhEdF4/RK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-     319 Author: Dave Chinner <dchinner@redhat.com>
-     163 Author: Christoph Hellwig <hch@infradead.org>
-      51 Author: Christoph Hellwig <hch@lst.de>
-      35 Author: Linus Torvalds <torvalds@linux-foundation.org>
-      34 Author: Chandra Seetharaman <sekharan@us.ibm.com>
-      29 Author: Al Viro <viro@zeniv.linux.org.uk>
-      28 Author: Brian Foster <bfoster@redhat.com>
-      25 Author: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-      24 Author: Jeff Liu <jeff.liu@oracle.com>
-      21 Author: Jie Liu <jeff.liu@oracle.com>
-      20 Author: Mark Tinguely <tinguely@sgi.com>
-      16 Author: Dave Chinner <david@fromorbit.com>
-      12 Author: Eric Sandeen <sandeen@redhat.com>
-      12 Author: Carlos Maiolino <cmaiolino@redhat.com>
+On Thu, Nov 07, 2013 at 10:34:06AM +0100, Richard Genoud wrote:
+> The only speed available was max_speed (the maximum speed declared for a
+> device).
+> This patch adds the support for spi_tranfer->speed_hz parameter.
+> We can now set a different speed for each spi message.
 
-If we as a community had more capacity for patch review, Dave's numbers would 
-have jumped up even higher :)
+Applied, thanks.
 
-It is certainly very welcome to bring new developers into our community, but if 
-we are going to add a co-maintainer for XFS, we really need to have one of our 
-two leading developers in that role.
+--s6Wo+7iKhEdF4/RK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Best regards,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Ric
+iQIcBAEBAgAGBQJSfMb1AAoJELSic+t+oim9mokP/iqAJ0SWcE4KJH9Tg73t7FDL
+m6QQImAgYJL4cBsRAYzu9kwnAXXbLlgq7qPNw6iH6pjn/FdGw5tqQoxvamDEx0IK
+bxy2dGvX1HsIGkQou0AcPn0vVJzx5N9sh397rdqzOzcV2N0JDJCi5P0TsuxjjBFy
+PNXbf/nTm6OA17ksoFFINHZhO+rTOVO38rb+SCYX8pyQNV7Bl7j/qKY+orfbE17h
+1DKAUfxBZF2zq8L2zJ1SMO7NIbwwzm7423g9W1W2f/UQHX7jmM0TNebLNH0I0Nx0
+ZejIHKm4YiYNc617MNcdVWMAf9JyBvvJ7aBDZ6zzJ0m+xK0XK16tozZj9OshNQHB
+8jmnEOkrRN0NG8//G7uh7aEk+vH4JrV5uJWX2VeJuOC5N6V/9uxlFIfUEy1soMUj
+hhKbJDHYKZcN4a9PcumFOFxfWqdlAEqcX8HCBM5xuclAbfBwnkrCbkmg4oKukA86
+maLMiOMQo1rGMx/aUILbwvZPQWiiWeB41ADMMlPY8iKIdW30jQdQOHjH766bcI04
+zarsI3zr7Hc57lLYzhcHFq76l+STn2VbYlgRXHzSzDPhUVvK5ZB/ZKyC1SY9ttrJ
+5c6dqEk2upHBO6n6bTFIOZrfOFtEObVVvhZhcppRuqDERhlasZQjhMWTU3um3aUS
+FqROpNSFRv2GZaJORWFl
+=6SqR
+-----END PGP SIGNATURE-----
 
-
-
-On 11/07/2013 09:23 PM, Ric Wheeler wrote:
-> Hi Ben,
->
-> How exactly did we decide to add a new co-maintainer? Shouldn't we have some 
-> discussion on the list and see some substantial history of contributions?
->
-> Best regards,
->
-> Ric
->
->
-> On 11/07/2013 05:08 PM, Mark Tinguely wrote:
->> Updated maintainer info.
->>
->> Signed-off-by: Ben Myers <bpm@sgi.com>
->> Reviewed-by: Mark Tinguely <tinguely@sgi.com>
->> ---
->>  MAINTAINERS |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> Index: b/MAINTAINERS
->> ===================================================================
->> --- a/MAINTAINERS    2013-11-07 15:42:04.554561805 -0600
->> +++ b/MAINTAINERS    2013-11-07 15:42:59.034889770 -0600
->> @@ -9388,7 +9388,7 @@ F:    drivers/xen/*swiotlb*
->>  XFS FILESYSTEM
->>  P:    Silicon Graphics Inc
->>  M:    Ben Myers <bpm@sgi.com>
->> -M:    Alex Elder <elder@kernel.org>
->> +M:    Mark Tinguely <tinguely@sgi.com>
->>  M:    xfs@oss.sgi.com
->>  L:    xfs@oss.sgi.com
->>  W:    http://oss.sgi.com/projects/xfs
->>
->> _______________________________________________
->> xfs mailing list
->> xfs@oss.sgi.com
->> http://oss.sgi.com/mailman/listinfo/xfs
->
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
-
+--s6Wo+7iKhEdF4/RK--
