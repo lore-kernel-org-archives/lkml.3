@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab3KHJhn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 04:37:43 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:51704 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab3KHJhk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 04:37:40 -0500
+	id S1756868Ab3KHJiE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 04:38:04 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751233Ab3KHJh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 04:37:59 -0500
+Message-ID: <527CB0F4.8080606@nod.at>
+Date: Fri, 08 Nov 2013 10:37:56 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1402665.MHsL7r71dU@flatron>
-References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
- <1773667.KXPxL5WsyI@amdc1227> <CAL_JsqKUaioiz2dw3Sr8f7UfqzjagWH_je2-u_QGYXRK5g1=yg@mail.gmail.com>
- <1402665.MHsL7r71dU@flatron>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Fri, 8 Nov 2013 09:37:19 +0000
-X-Google-Sender-Auth: J_uojuomQqGNf2uV6wHeElQ0HDs
-Message-ID: <CACxGe6tNwBHgM=Yr+mtSiwAdTg_90_j-7RUY93QOry9VTAYxUQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] of: irq: Fix interrupt-map entry matching
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Rob Herring <robherring2@gmail.com>, Tomasz Figa <t.figa@samsung.com>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matt.fleming@intel.com, matthew.garrett@nebula.com, jlee@suse.com
+Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia parameter
+ to efi_storage_paranoia
+References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at> <527CB013.30200@jp.fujitsu.com>
+In-Reply-To: <527CB013.30200@jp.fujitsu.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 7, 2013 at 10:11 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> On Thursday 07 of November 2013 10:40:16 Rob Herring wrote:
->> On Thu, Nov 7, 2013 at 5:32 AM, Tomasz Figa <t.figa@samsung.com> wrote:
->> > Hi Grant,
->> >
->> > Could you pick this patch up? It fixes boot-up at least on several
->> > Exynos based platforms, which use interrupt-map nodes with
->> > #interrupt-cells higher than 1.
->> >
->> > Also please disregard patch 2/2, as your fix that has been merged
->> > seems
->> > to be fine.
+Am 08.11.2013 10:34, schrieb Yasuaki Ishimatsu:
+> (2013/11/08 17:05), Richard Weinberger wrote:
+>> Am 08.11.2013 08:33, schrieb Yasuaki Ishimatsu:
+>>> By following works, my system very often fails set_variable() to set new
+>>> variable to efi variable storage and shows "efivars: set_variable() failed:
+>>> status=-28" message.
+>>>
+>>> - commit 31ff2f20d9003e74991d135f56e503fe776c127c
+>>>      efi: Distinguish between "remaining space" and actually used space
+>>> - commit 8c58bf3eec3b8fc8162fe557e9361891c20758f2
+>>>      x86,efi: Implement efi_no_storage_paranoia parameter
+>>> - commit f8b8404337de4e2466e2e1139ea68b1f8295974f
+>>>      Modify UEFI anti-bricking code
+>>>
+>>> When booting my system, remaining space of efi variable storage is about
+>>> 5KB. So there is no room that sets a new variable to the storage.
+>>>
+>>> According to above works, efi_no_storage_paranoia parameter was prepared
+>>> for sane UEFI which can do gc and fulfills spec. But why need a system
+>>> with a sane UEFI set the parameter? It is wrong. A system with a broken
+>>> UEFI should set the parameter.
 >>
->> I've applied the 1st patch.
->
-> Thanks Rob.
+>> And how does one know that his UEFI is broken?
+> 
+> I have no idea. But at least, bricked board is broken UEFI.
+> Do you know the issue occurs on several boards or specific board?
 
-Thanks Rob and Tomasz. That was definitely a brown-paper-bag mistake on my part.
+On *many* boards including laptops....
+Please read the history of the whole issue.
 
-g.
+Thanks,
+//richard
