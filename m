@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759036Ab3KIHhW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:37:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32903 "EHLO
+	id S1759092Ab3KIHhq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:37:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32871 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757540Ab3KIGuY (ORCPT
+	with ESMTP id S1757319Ab3KIGuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:24 -0500
+	Sat, 9 Nov 2013 01:50:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.10 23/74] can: flexcan: flexcan_chip_start: fix regression, mark one MB for TX and abort pending TX
-Date: Fri,  8 Nov 2013 22:51:28 -0800
-Message-Id: <20131109065115.156267668@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 19/74] iwlwifi: pcie: add SKUs for 6000, 6005 and 6235 series
+Date: Fri,  8 Nov 2013 22:51:24 -0800
+Message-Id: <20131109065114.888315566@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,73 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit d5a7b406c529e4595ce03dc8f6dcf7fa36f106fa upstream.
+commit 08a5dd3842f2ac61c6d69661d2d96022df8ae359 upstream.
 
-In patch
+Add some new PCI IDs to the table for 6000, 6005 and 6235 series.
 
-    0d1862e can: flexcan: fix flexcan_chip_start() on imx6
-
-the loop in flexcan_chip_start() that iterates over all mailboxes after the
-soft reset of the CAN core was removed. This loop put all mailboxes (even the
-ones marked as reserved 1...7) into EMPTY/INACTIVE mode. On mailboxes 8...63,
-this aborts any pending TX messages.
-
-After a cold boot there is random garbage in the mailboxes, which leads to
-spontaneous transmit of CAN frames during first activation. Further if the
-interface was disabled with a pending message (usually due to an error
-condition on the CAN bus), this message is retransmitted after enabling the
-interface again.
-
-This patch fixes the regression by:
-1) Limiting the maximum number of used mailboxes to 8, 0...7 are used by the RX
-FIFO, 8 is used by TX.
-2) Marking the TX mailbox as EMPTY/INACTIVE, so that any pending TX of that
-mailbox is aborted.
-
-Cc: Lothar Waßmann <LW@KARO-electronics.de>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/flexcan.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-6000.c   |    6 ++++++
+ drivers/net/wireless/iwlwifi/iwl-config.h |    1 +
+ drivers/net/wireless/iwlwifi/pcie/drv.c   |   10 ++++++++++
+ 3 files changed, 17 insertions(+)
 
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -63,7 +63,7 @@
- #define FLEXCAN_MCR_BCC			BIT(16)
- #define FLEXCAN_MCR_LPRIO_EN		BIT(13)
- #define FLEXCAN_MCR_AEN			BIT(12)
--#define FLEXCAN_MCR_MAXMB(x)		((x) & 0xf)
-+#define FLEXCAN_MCR_MAXMB(x)		((x) & 0x1f)
- #define FLEXCAN_MCR_IDAM_A		(0 << 8)
- #define FLEXCAN_MCR_IDAM_B		(1 << 8)
- #define FLEXCAN_MCR_IDAM_C		(2 << 8)
-@@ -745,9 +745,11 @@ static int flexcan_chip_start(struct net
- 	 *
- 	 */
- 	reg_mcr = flexcan_read(&regs->mcr);
-+	reg_mcr &= ~FLEXCAN_MCR_MAXMB(0xff);
- 	reg_mcr |= FLEXCAN_MCR_FRZ | FLEXCAN_MCR_FEN | FLEXCAN_MCR_HALT |
- 		FLEXCAN_MCR_SUPV | FLEXCAN_MCR_WRN_EN |
--		FLEXCAN_MCR_IDAM_C | FLEXCAN_MCR_SRX_DIS;
-+		FLEXCAN_MCR_IDAM_C | FLEXCAN_MCR_SRX_DIS |
-+		FLEXCAN_MCR_MAXMB(FLEXCAN_TX_BUF_ID);
- 	netdev_dbg(dev, "%s: writing mcr=0x%08x", __func__, reg_mcr);
- 	flexcan_write(reg_mcr, &regs->mcr);
+--- a/drivers/net/wireless/iwlwifi/iwl-6000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
+@@ -268,6 +268,12 @@ const struct iwl_cfg iwl6035_2agn_cfg =
+ 	.ht_params = &iwl6000_ht_params,
+ };
  
-@@ -792,6 +794,10 @@ static int flexcan_chip_start(struct net
- 			&regs->cantxfg[i].can_ctrl);
- 	}
- 
-+	/* Abort any pending TX, mark Mailbox as INACTIVE */
-+	flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
-+		      &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
++const struct iwl_cfg iwl6035_2agn_sff_cfg = {
++	.name = "Intel(R) Centrino(R) Ultimate-N 6235 AGN",
++	IWL_DEVICE_6035,
++	.ht_params = &iwl6000_ht_params,
++};
 +
- 	/* acceptance mask/acceptance code (accept everything) */
- 	flexcan_write(0x0, &regs->rxgmask);
- 	flexcan_write(0x0, &regs->rx14mask);
+ const struct iwl_cfg iwl1030_bgn_cfg = {
+ 	.name = "Intel(R) Centrino(R) Wireless-N 1030 BGN",
+ 	IWL_DEVICE_6030,
+--- a/drivers/net/wireless/iwlwifi/iwl-config.h
++++ b/drivers/net/wireless/iwlwifi/iwl-config.h
+@@ -316,6 +316,7 @@ extern const struct iwl_cfg iwl2000_2bgn
+ extern const struct iwl_cfg iwl2000_2bgn_d_cfg;
+ extern const struct iwl_cfg iwl2030_2bgn_cfg;
+ extern const struct iwl_cfg iwl6035_2agn_cfg;
++extern const struct iwl_cfg iwl6035_2agn_sff_cfg;
+ extern const struct iwl_cfg iwl105_bgn_cfg;
+ extern const struct iwl_cfg iwl105_bgn_d_cfg;
+ extern const struct iwl_cfg iwl135_bgn_cfg;
+--- a/drivers/net/wireless/iwlwifi/pcie/drv.c
++++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
+@@ -138,13 +138,16 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
+ 
+ /* 6x00 Series */
+ 	{IWL_PCI_DEVICE(0x422B, 0x1101, iwl6000_3agn_cfg)},
++	{IWL_PCI_DEVICE(0x422B, 0x1108, iwl6000_3agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x422B, 0x1121, iwl6000_3agn_cfg)},
++	{IWL_PCI_DEVICE(0x422B, 0x1128, iwl6000_3agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x422C, 0x1301, iwl6000i_2agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x422C, 0x1306, iwl6000i_2abg_cfg)},
+ 	{IWL_PCI_DEVICE(0x422C, 0x1307, iwl6000i_2bg_cfg)},
+ 	{IWL_PCI_DEVICE(0x422C, 0x1321, iwl6000i_2agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x422C, 0x1326, iwl6000i_2abg_cfg)},
+ 	{IWL_PCI_DEVICE(0x4238, 0x1111, iwl6000_3agn_cfg)},
++	{IWL_PCI_DEVICE(0x4238, 0x1118, iwl6000_3agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x4239, 0x1311, iwl6000i_2agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x4239, 0x1316, iwl6000i_2abg_cfg)},
+ 
+@@ -152,12 +155,16 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
+ 	{IWL_PCI_DEVICE(0x0082, 0x1301, iwl6005_2agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x0082, 0x1306, iwl6005_2abg_cfg)},
+ 	{IWL_PCI_DEVICE(0x0082, 0x1307, iwl6005_2bg_cfg)},
++	{IWL_PCI_DEVICE(0x0082, 0x1308, iwl6005_2agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x0082, 0x1321, iwl6005_2agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x0082, 0x1326, iwl6005_2abg_cfg)},
++	{IWL_PCI_DEVICE(0x0082, 0x1328, iwl6005_2agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x0085, 0x1311, iwl6005_2agn_cfg)},
++	{IWL_PCI_DEVICE(0x0085, 0x1318, iwl6005_2agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x0085, 0x1316, iwl6005_2abg_cfg)},
+ 	{IWL_PCI_DEVICE(0x0082, 0xC020, iwl6005_2agn_sff_cfg)},
+ 	{IWL_PCI_DEVICE(0x0085, 0xC220, iwl6005_2agn_sff_cfg)},
++	{IWL_PCI_DEVICE(0x0085, 0xC228, iwl6005_2agn_sff_cfg)},
+ 	{IWL_PCI_DEVICE(0x0082, 0x4820, iwl6005_2agn_d_cfg)},
+ 	{IWL_PCI_DEVICE(0x0082, 0x1304, iwl6005_2agn_mow1_cfg)},/* low 5GHz active */
+ 	{IWL_PCI_DEVICE(0x0082, 0x1305, iwl6005_2agn_mow2_cfg)},/* high 5GHz active */
+@@ -239,8 +246,11 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
+ 
+ /* 6x35 Series */
+ 	{IWL_PCI_DEVICE(0x088E, 0x4060, iwl6035_2agn_cfg)},
++	{IWL_PCI_DEVICE(0x088E, 0x406A, iwl6035_2agn_sff_cfg)},
+ 	{IWL_PCI_DEVICE(0x088F, 0x4260, iwl6035_2agn_cfg)},
++	{IWL_PCI_DEVICE(0x088F, 0x426A, iwl6035_2agn_sff_cfg)},
+ 	{IWL_PCI_DEVICE(0x088E, 0x4460, iwl6035_2agn_cfg)},
++	{IWL_PCI_DEVICE(0x088E, 0x446A, iwl6035_2agn_sff_cfg)},
+ 	{IWL_PCI_DEVICE(0x088E, 0x4860, iwl6035_2agn_cfg)},
+ 	{IWL_PCI_DEVICE(0x088F, 0x5260, iwl6035_2agn_cfg)},
+ 
 
 
