@@ -1,69 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab3KIFHB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 00:07:01 -0500
-Received: from mga01.intel.com ([192.55.52.88]:19154 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831Ab3KIFG6 convert rfc822-to-8bit (ORCPT
+	id S1751314Ab3KIFQP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 00:16:15 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:55561 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab3KIFQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 00:06:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,665,1378882800"; 
-   d="scan'208";a="424668435"
-From: "Dixit, Ashutosh" <ashutosh.dixit@intel.com>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        "Kharche, Harshavardhan R" <harshavardhan.r.kharche@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Rao, Nikhil" <nikhil.rao@intel.com>,
-        "Dutt, Sudeep" <sudeep.dutt@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] misc: mic: dead code removal and minor cleanup
-Thread-Topic: [PATCH] misc: mic: dead code removal and minor cleanup
-Thread-Index: AQHO3QIfGx0Kfsdt00a6C/daJOLW15ocVxuA
-Date: Sat, 9 Nov 2013 05:06:57 +0000
-Message-ID: <6DC2528F945B4149AB6566DFB5F22ED38AAA142A@ORSMSX109.amr.corp.intel.com>
-References: <1383970422-16973-1-git-send-email-michael.opdenacker@free-electrons.com>
-In-Reply-To: <1383970422-16973-1-git-send-email-michael.opdenacker@free-electrons.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sat, 9 Nov 2013 00:16:07 -0500
+From: Len Brown <lenb@kernel.org>
+To: rjw@sisk.pl
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH 1/1] ACPI: delete CONFIG_ACPI_BLACKLIST_YEAR
+Date: Sat,  9 Nov 2013 00:13:16 -0500
+Message-Id: <eb2dbc3278cded2b5386dee1a371025ba8590cfb.1383973958.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.8.4
+Reply-To: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Michael Opdenacker [mailto:michael.opdenacker@free-electrons.com]
-> Sent: Friday, November 08, 2013 8:14 PM
-> Subject: [PATCH] misc: mic: dead code removal and minor cleanup
-> 
-> This removes the below test in drivers/misc/mic/card/mic_virtio.c:
-> 
-> if (!retry) {
-> ...
-> }
-> 
-> This is dead code because the "retry" variable was set to 100
-> earlier in the same function.
-> 
-> This also removes dev_dbg statements to print the value of this variable.
-> That's not interesting to print the value of a variable which value is
-> always the same.
+From: Len Brown <len.brown@intel.com>
 
-Hi Michael,
+About 10 years ago, this option was created to help
+distros enable ACPI and not get distracted by ACPI
+BIOS issues in machines which were deemed old
+at that time, eg 1999 and earlier.
 
-Thanks for your mail. However, the dead code has resulted from
-another bug in the code, we should be decrementing retry instead
-of i. The same bug occurs in several other places in the code too.
+After a couple of years, the high volume distros
+stopped bothering to set this option, and instead
+simply ran in ACPI mode on all systems with an
+ACPI BIOS -- regardless of BIOS DMI year.
 
-So I would say don't apply this patch. We are planning a series of
-patches to fix other issues in the code when the 3.13 merge window
-closes and will include this fix too and include you in "Reported-by".
+Recently there have been some ACPI-enabled systems
+with no DMI, mandating that CONFIG_ACPI_BLACKLIST_YEAR=0.
 
-Thanks,
-Ashutosh
+So it seems vanishingly unlikely that this option
+is helping anybody run a 2013 kernel on a 1998 system,
+and now more systems mandate this option be disabled,
+so we simplify by deleting it entirely.
+
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+ drivers/acpi/Kconfig     | 11 -----------
+ drivers/acpi/blacklist.c | 35 -----------------------------------
+ 2 files changed, 46 deletions(-)
+
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 22327e6..ce818e7 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -251,17 +251,6 @@ config ACPI_INITRD_TABLE_OVERRIDE
+ 	  initrd, therefore it's safe to say Y.
+ 	  See Documentation/acpi/initrd_table_override.txt for details
+ 
+-config ACPI_BLACKLIST_YEAR
+-	int "Disable ACPI for systems before Jan 1st this year" if X86_32
+-	default 0
+-	help
+-	  Enter a 4-digit year, e.g., 2001, to disable ACPI by default
+-	  on platforms with DMI BIOS date before January 1st that year.
+-	  "acpi=force" can be used to override this mechanism.
+-
+-	  Enter 0 to disable this mechanism and allow ACPI to
+-	  run by default no matter what the year.  (default)
+-
+ config ACPI_DEBUG
+ 	bool "Debug Statements"
+ 	default n
+diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+index 9515f18..a879588 100644
+--- a/drivers/acpi/blacklist.c
++++ b/drivers/acpi/blacklist.c
+@@ -75,39 +75,6 @@ static struct acpi_blacklist_item acpi_blacklist[] __initdata = {
+ 	{""}
+ };
+ 
+-#if	CONFIG_ACPI_BLACKLIST_YEAR
+-
+-static int __init blacklist_by_year(void)
+-{
+-	int year;
+-
+-	/* Doesn't exist? Likely an old system */
+-	if (!dmi_get_date(DMI_BIOS_DATE, &year, NULL, NULL)) {
+-		printk(KERN_ERR PREFIX "no DMI BIOS year, "
+-			"acpi=force is required to enable ACPI\n" );
+-		return 1;
+-	}
+-	/* 0? Likely a buggy new BIOS */
+-	if (year == 0) {
+-		printk(KERN_ERR PREFIX "DMI BIOS year==0, "
+-			"assuming ACPI-capable machine\n" );
+-		return 0;
+-	}
+-	if (year < CONFIG_ACPI_BLACKLIST_YEAR) {
+-		printk(KERN_ERR PREFIX "BIOS age (%d) fails cutoff (%d), "
+-		       "acpi=force is required to enable ACPI\n",
+-		       year, CONFIG_ACPI_BLACKLIST_YEAR);
+-		return 1;
+-	}
+-	return 0;
+-}
+-#else
+-static inline int blacklist_by_year(void)
+-{
+-	return 0;
+-}
+-#endif
+-
+ int __init acpi_blacklisted(void)
+ {
+ 	int i = 0;
+@@ -166,8 +133,6 @@ int __init acpi_blacklisted(void)
+ 		}
+ 	}
+ 
+-	blacklisted += blacklist_by_year();
+-
+ 	dmi_check_system(acpi_osi_dmi_table);
+ 
+ 	return blacklisted;
+-- 
+1.8.4
 
