@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933412Ab3KIHMh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:12:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33318 "EHLO
+	id S933426Ab3KIHMy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:12:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33304 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932749Ab3KIGwE (ORCPT
+	with ESMTP id S932742Ab3KIGwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:04 -0500
+	Sat, 9 Nov 2013 01:52:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Natrio <natrio@list.ru>, Jeff Pohlmeyer <yetanothergeek@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.11 39/94] Revert "epoll: use freezable blocking call"
-Date: Fri,  8 Nov 2013 22:51:45 -0800
-Message-Id: <20131109065206.990675079@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Jakub Kicinski <kubakici@wp.pl>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.11 38/94] Revert "rt2x00pci: Use PCI MSIs whenever possible"
+Date: Fri,  8 Nov 2013 22:51:44 -0800
+Message-Id: <20131109065206.922948634@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -27,49 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit c511851de162e8ec03d62e7d7feecbdf590d881d upstream.
+commit dfb6b7c109a7f98d324a759599d1b4616f02c79f upstream.
 
-This reverts commit 1c441e921201 (epoll: use freezable blocking call)
-which is reported to cause user space memory corruption to happen
-after suspend to RAM.
+This reverts commit 9483f40d8d01918b399b4e24d0c1111db0afffeb.
 
-Since it appears to be extremely difficult to root cause this
-problem, it is best to revert the offending commit and try to address
-the original issue in a better way later.
+Some devices stop to connect with above commit, see:
+https://bugzilla.kernel.org/show_bug.cgi?id=61621
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=61781
-Reported-by: Natrio <natrio@list.ru>
-Reported-by: Jeff Pohlmeyer <yetanothergeek@gmail.com>
-Bisected-by: Leo Wolf <jclw@ymail.com>
-Fixes: 1c441e921201 (epoll: use freezable blocking call)
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Since there is no clear benefit of having MSI enabled, just revert
+change to fix the problem.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Jakub Kicinski <kubakici@wp.pl>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/eventpoll.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00pci.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -34,7 +34,6 @@
- #include <linux/mutex.h>
- #include <linux/anon_inodes.h>
- #include <linux/device.h>
--#include <linux/freezer.h>
- #include <asm/uaccess.h>
- #include <asm/io.h>
- #include <asm/mman.h>
-@@ -1603,8 +1602,7 @@ fetch_events:
- 			}
+--- a/drivers/net/wireless/rt2x00/rt2x00pci.c
++++ b/drivers/net/wireless/rt2x00/rt2x00pci.c
+@@ -105,13 +105,11 @@ int rt2x00pci_probe(struct pci_dev *pci_
+ 		goto exit_release_regions;
+ 	}
  
- 			spin_unlock_irqrestore(&ep->lock, flags);
--			if (!freezable_schedule_hrtimeout_range(to, slack,
--								HRTIMER_MODE_ABS))
-+			if (!schedule_hrtimeout_range(to, slack, HRTIMER_MODE_ABS))
- 				timed_out = 1;
+-	pci_enable_msi(pci_dev);
+-
+ 	hw = ieee80211_alloc_hw(sizeof(struct rt2x00_dev), ops->hw);
+ 	if (!hw) {
+ 		rt2x00_probe_err("Failed to allocate hardware\n");
+ 		retval = -ENOMEM;
+-		goto exit_disable_msi;
++		goto exit_release_regions;
+ 	}
  
- 			spin_lock_irqsave(&ep->lock, flags);
+ 	pci_set_drvdata(pci_dev, hw);
+@@ -152,9 +150,6 @@ exit_free_reg:
+ exit_free_device:
+ 	ieee80211_free_hw(hw);
+ 
+-exit_disable_msi:
+-	pci_disable_msi(pci_dev);
+-
+ exit_release_regions:
+ 	pci_release_regions(pci_dev);
+ 
+@@ -179,8 +174,6 @@ void rt2x00pci_remove(struct pci_dev *pc
+ 	rt2x00pci_free_reg(rt2x00dev);
+ 	ieee80211_free_hw(hw);
+ 
+-	pci_disable_msi(pci_dev);
+-
+ 	/*
+ 	 * Free the PCI device data.
+ 	 */
 
 
