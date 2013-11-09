@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103Ab3KIHEn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:04:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33398 "EHLO
+	id S933088Ab3KIHEm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:04:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33416 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932819Ab3KIGwW (ORCPT
+	with ESMTP id S932831Ab3KIGwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:22 -0500
+	Sat, 9 Nov 2013 01:52:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Mark Brown <broonie@linaro.org>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.11 53/94] ALSA: fix oops in snd_pcm_info() caused by ASoC DPCM
-Date: Fri,  8 Nov 2013 22:51:59 -0800
-Message-Id: <20131109065208.026192992@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.11 15/94] mac80211: correctly close cancelled scans
+Date: Fri,  8 Nov 2013 22:51:21 -0800
+Message-Id: <20131109065205.327135501@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -27,71 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit a4461f41b94cb52e0141af717dcf4ef6558c8e2e upstream.
+commit a754055a1296fcbe6f32de3a5eaca6efb2fd1865 upstream.
 
-Unable to handle kernel NULL pointer dereference at virtual address 00000008
-pgd = d5300000
-[00000008] *pgd=0d265831, *pte=00000000, *ppte=00000000
-Internal error: Oops: 17 [#1] PREEMPT ARM
-CPU: 0 PID: 2295 Comm: vlc Not tainted 3.11.0+ #755
-task: dee74800 ti: e213c000 task.ti: e213c000
-PC is at snd_pcm_info+0xc8/0xd8
-LR is at 0x30232065
-pc : [<c031b52c>]    lr : [<30232065>]    psr: a0070013
-sp : e213dea8  ip : d81cb0d0  fp : c05f7678
-r10: c05f7770  r9 : fffffdfd  r8 : 00000000
-r7 : d8a968a8  r6 : d8a96800  r5 : d8a96200  r4 : d81cb000
-r3 : 00000000  r2 : d81cb000  r1 : 00000001  r0 : d8a96200
-Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c5387d  Table: 15300019  DAC: 00000015
-Process vlc (pid: 2295, stack limit = 0xe213c248)
-[<c031b52c>] (snd_pcm_info) from [<c031b570>] (snd_pcm_info_user+0x34/0x9c)
-[<c031b570>] (snd_pcm_info_user) from [<c03164a4>] (snd_pcm_control_ioctl+0x274/0x280)
-[<c03164a4>] (snd_pcm_control_ioctl) from [<c0311458>] (snd_ctl_ioctl+0xc0/0x55c)
-[<c0311458>] (snd_ctl_ioctl) from [<c00eca84>] (do_vfs_ioctl+0x80/0x31c)
-[<c00eca84>] (do_vfs_ioctl) from [<c00ecd5c>] (SyS_ioctl+0x3c/0x60)
-[<c00ecd5c>] (SyS_ioctl) from [<c000e500>] (ret_fast_syscall+0x0/0x48)
-Code: e1a00005 e59530dc e3a01001 e1a02004 (e5933008)
----[ end trace cb3d9bdb8dfefb3c ]---
+__ieee80211_scan_completed is called from a worker. This
+means that the following flow is possible.
 
-This is provoked when the ASoC front end is open along with its backend,
-(which causes the backend to have a runtime assigned to it) and then the
-SNDRV_CTL_IOCTL_PCM_INFO is requested for the (visible) backend device.
+ * driver calls ieee80211_scan_completed
+ * mac80211 cancels the scan (that is already complete)
+ * __ieee80211_scan_completed runs
 
-Resolve this by ensuring that ASoC internal backend devices are not
-visible to userspace, just as the commentry for snd_pcm_new_internal()
-says it should be.
+When scan_work will finally run, it will see that the scan
+hasn't been aborted and might even trigger another scan on
+another band. This leads to a situation where cfg80211's
+scan is not done and no further scan can be issued.
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Acked-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix this by setting a new flag when a HW scan is being
+cancelled so that no other scan will be triggered.
+
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/pcm.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/mac80211/ieee80211_i.h |    3 +++
+ net/mac80211/scan.c        |   19 +++++++++++++++++++
+ 2 files changed, 22 insertions(+)
 
---- a/sound/core/pcm.c
-+++ b/sound/core/pcm.c
-@@ -49,6 +49,8 @@ static struct snd_pcm *snd_pcm_get(struc
- 	struct snd_pcm *pcm;
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -858,6 +858,8 @@ struct tpt_led_trigger {
+  *	that the scan completed.
+  * @SCAN_ABORTED: Set for our scan work function when the driver reported
+  *	a scan complete for an aborted scan.
++ * @SCAN_HW_CANCELLED: Set for our scan work function when the scan is being
++ *	cancelled.
+  */
+ enum {
+ 	SCAN_SW_SCANNING,
+@@ -865,6 +867,7 @@ enum {
+ 	SCAN_ONCHANNEL_SCANNING,
+ 	SCAN_COMPLETED,
+ 	SCAN_ABORTED,
++	SCAN_HW_CANCELLED,
+ };
  
- 	list_for_each_entry(pcm, &snd_pcm_devices, list) {
-+		if (pcm->internal)
-+			continue;
- 		if (pcm->card == card && pcm->device == device)
- 			return pcm;
- 	}
-@@ -60,6 +62,8 @@ static int snd_pcm_next(struct snd_card
- 	struct snd_pcm *pcm;
+ /**
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -211,6 +211,9 @@ static bool ieee80211_prep_hw_scan(struc
+ 	enum ieee80211_band band;
+ 	int i, ielen, n_chans;
  
- 	list_for_each_entry(pcm, &snd_pcm_devices, list) {
-+		if (pcm->internal)
-+			continue;
- 		if (pcm->card == card && pcm->device > device)
- 			return pcm->device;
- 		else if (pcm->card->number > card->number)
++	if (test_bit(SCAN_HW_CANCELLED, &local->scanning))
++		return false;
++
+ 	do {
+ 		if (local->hw_scan_band == IEEE80211_NUM_BANDS)
+ 			return false;
+@@ -887,7 +890,23 @@ void ieee80211_scan_cancel(struct ieee80
+ 	if (!local->scan_req)
+ 		goto out;
+ 
++	/*
++	 * We have a scan running and the driver already reported completion,
++	 * but the worker hasn't run yet or is stuck on the mutex - mark it as
++	 * cancelled.
++	 */
++	if (test_bit(SCAN_HW_SCANNING, &local->scanning) &&
++	    test_bit(SCAN_COMPLETED, &local->scanning)) {
++		set_bit(SCAN_HW_CANCELLED, &local->scanning);
++		goto out;
++	}
++
+ 	if (test_bit(SCAN_HW_SCANNING, &local->scanning)) {
++		/*
++		 * Make sure that __ieee80211_scan_completed doesn't trigger a
++		 * scan on another band.
++		 */
++		set_bit(SCAN_HW_CANCELLED, &local->scanning);
+ 		if (local->ops->cancel_hw_scan)
+ 			drv_cancel_hw_scan(local,
+ 				rcu_dereference_protected(local->scan_sdata,
 
 
