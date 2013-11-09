@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758933Ab3KIHA6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:00:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33516 "EHLO
+	id S932903Ab3KIGwj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:52:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33425 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932916Ab3KIGwl (ORCPT
+	with ESMTP id S932778Ab3KIGw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:41 -0500
+	Sat, 9 Nov 2013 01:52:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu ShuoX <shuox.liu@intel.com>, Chen LinX <linx.z.chen@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.11 76/94] mm/pagewalk.c: fix walk_page_range() access of wrong PTEs
-Date: Fri,  8 Nov 2013 22:52:22 -0800
-Message-Id: <20131109065209.627508558@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.11 17/94] mac80211: use sta_info_get_bss() for nl80211 tx and client probing
+Date: Fri,  8 Nov 2013 22:51:23 -0800
+Message-Id: <20131109065205.461839153@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -30,53 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen LinX <linx.z.chen@intel.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 3017f079efd6af199b0852b5c425364513db460e upstream.
+commit 03bb7f42765ce596604f03d179f3137d7df05bba upstream.
 
-When walk_page_range walk a memory map's page tables, it'll skip
-VM_PFNMAP area, then variable 'next' will to assign to vma->vm_end, it
-maybe larger than 'end'.  In next loop, 'addr' will be larger than
-'next'.  Then in /proc/XXXX/pagemap file reading procedure, the 'addr'
-will growing forever in pagemap_pte_range, pte_to_pagemap_entry will
-access the wrong pte.
+This allows calls for clients in AP_VLANs (e.g. for 4-addr) to succeed
 
-  BUG: Bad page map in process procrank  pte:8437526f pmd:785de067
-  addr:9108d000 vm_flags:00200073 anon_vma:f0d99020 mapping:  (null) index:9108d
-  CPU: 1 PID: 4974 Comm: procrank Tainted: G    B   W  O 3.10.1+ #1
-  Call Trace:
-    dump_stack+0x16/0x18
-    print_bad_pte+0x114/0x1b0
-    vm_normal_page+0x56/0x60
-    pagemap_pte_range+0x17a/0x1d0
-    walk_page_range+0x19e/0x2c0
-    pagemap_read+0x16e/0x200
-    vfs_read+0x84/0x150
-    SyS_read+0x4a/0x80
-    syscall_call+0x7/0xb
-
-Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
-Signed-off-by: Chen LinX <linx.z.chen@intel.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/pagewalk.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/cfg.c |    2 +-
+ net/mac80211/tx.c  |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/mm/pagewalk.c
-+++ b/mm/pagewalk.c
-@@ -242,7 +242,7 @@ int walk_page_range(unsigned long addr,
- 		if (err)
- 			break;
- 		pgd++;
--	} while (addr = next, addr != end);
-+	} while (addr = next, addr < end);
- 
- 	return err;
- }
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -3334,7 +3334,7 @@ static int ieee80211_probe_client(struct
+ 		return -EINVAL;
+ 	}
+ 	band = chanctx_conf->def.chan->band;
+-	sta = sta_info_get(sdata, peer);
++	sta = sta_info_get_bss(sdata, peer);
+ 	if (sta) {
+ 		qos = test_sta_flag(sta, WLAN_STA_WME);
+ 	} else {
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1101,7 +1101,8 @@ ieee80211_tx_prepare(struct ieee80211_su
+ 		tx->sta = rcu_dereference(sdata->u.vlan.sta);
+ 		if (!tx->sta && sdata->dev->ieee80211_ptr->use_4addr)
+ 			return TX_DROP;
+-	} else if (info->flags & IEEE80211_TX_CTL_INJECTED ||
++	} else if (info->flags & (IEEE80211_TX_CTL_INJECTED |
++				  IEEE80211_TX_INTFL_NL80211_FRAME_TX) ||
+ 		   tx->sdata->control_port_protocol == tx->skb->protocol) {
+ 		tx->sta = sta_info_get_bss(sdata, hdr->addr1);
+ 	}
 
 
