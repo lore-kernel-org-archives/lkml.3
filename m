@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933196Ab3KIHG6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:06:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33365 "EHLO
+	id S933184Ab3KIHGy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:06:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33369 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932791Ab3KIGwN (ORCPT
+	with ESMTP id S932793Ab3KIGwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:13 -0500
+	Sat, 9 Nov 2013 01:52:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>
-Subject: [PATCH 3.11 47/94] parisc: Do not crash 64bit SMP kernels on machines with >= 4GB RAM
-Date: Fri,  8 Nov 2013 22:51:53 -0800
-Message-Id: <20131109065207.532296707@linuxfoundation.org>
+        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
+        Ming Lei <tom.leiming@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 3.11 48/94] scripts/kallsyms: filter symbols not in kernel address space
+Date: Fri,  8 Nov 2013 22:51:54 -0800
+Message-Id: <20131109065207.601418428@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -26,70 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Ming Lei <tom.leiming@gmail.com>
 
-commit 54e181e073fc1415e41917d725ebdbd7de956455 upstream.
+commit f6537f2f0eba4eba3354e48dbe3047db6d8b6254 upstream.
 
-Since the beginning of the parisc-linux port, sometimes 64bit SMP kernels were
-not able to bring up other CPUs than the monarch CPU and instead crashed the
-kernel.  The reason was unclear, esp. since it involved various machines (e.g.
-J5600, J6750 and SuperDome). Testing showed, that those crashes didn't happened
-when less than 4GB were installed, or if a 32bit Linux kernel was booted.
+This patch uses CONFIG_PAGE_OFFSET to filter symbols which
+are not in kernel address space because these symbols are
+generally for generating code purpose and can't be run at
+kernel mode, so we needn't keep them in /proc/kallsyms.
 
-In the end, the fix for those SMP problems is trivial:
-During the early phase of the initialization of the CPUs, including the monarch
-CPU, the PDC_PSW firmware function to enable WIDE (=64bit) mode is called.
-It's documented that this firmware function may clobber various registers, and
-one one of those possibly clobbered registers is %cr30 which holds the task
-thread info pointer.
+For example, on ARM there are some symbols which may be
+linked in relocatable code section, then perf can't parse
+symbols any more from /proc/kallsyms, this patch fixes the
+problem (introduced b9b32bf70f2fb710b07c94e13afbc729afe221da)
 
-Now, if %cr30 would always have been clobbered, then this bug would have been
-detected much earlier. But lots of testing finally showed, that - at least for
-%cr30 - on some machines only the upper 32bits of the 64bit register suddenly
-turned zero after the firmware call.
-
-So, after finding the root cause, the explanation for the various crashes
-became clear:
-- On 32bit SMP Linux kernels all upper 32bit were zero, so we didn't faced this
-  problem.
-- Monarch CPUs in 64bit mode always booted sucessfully, because the inital task
-  thread info pointer was below 4GB.
-- Secondary CPUs booted sucessfully on machines with less than 4GB RAM because
-  the upper 32bit were zero anyay.
-- Secondary CPus failed to boot if we had more than 4GB RAM and the task thread
-  info pointer was located above the 4GB boundary.
-
-Finally, the patch to fix this problem is trivial by saving the %cr30 register
-before the firmware call and restoring it afterwards.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/head.S |    4 ++++
- 1 file changed, 4 insertions(+)
+ scripts/kallsyms.c      |   12 +++++++++++-
+ scripts/link-vmlinux.sh |    2 ++
+ 2 files changed, 13 insertions(+), 1 deletion(-)
 
---- a/arch/parisc/kernel/head.S
-+++ b/arch/parisc/kernel/head.S
-@@ -195,6 +195,8 @@ common_stext:
- 	ldw             MEM_PDC_HI(%r0),%r6
- 	depd            %r6, 31, 32, %r3        /* move to upper word */
+--- a/scripts/kallsyms.c
++++ b/scripts/kallsyms.c
+@@ -55,6 +55,7 @@ static struct sym_entry *table;
+ static unsigned int table_size, table_cnt;
+ static int all_symbols = 0;
+ static char symbol_prefix_char = '\0';
++static unsigned long long kernel_start_addr = 0;
  
-+	mfctl		%cr30,%r6		/* PCX-W2 firmware bug */
-+
- 	ldo             PDC_PSW(%r0),%arg0              /* 21 */
- 	ldo             PDC_PSW_SET_DEFAULTS(%r0),%arg1 /* 2 */
- 	ldo             PDC_PSW_WIDE_BIT(%r0),%arg2     /* 2 */
-@@ -203,6 +205,8 @@ common_stext:
- 	copy            %r0,%arg3
+ int token_profit[0x10000];
  
- stext_pdc_ret:
-+	mtctl		%r6,%cr30		/* restore task thread info */
+@@ -65,7 +66,10 @@ unsigned char best_table_len[256];
+ 
+ static void usage(void)
+ {
+-	fprintf(stderr, "Usage: kallsyms [--all-symbols] [--symbol-prefix=<prefix char>] < in.map > out.S\n");
++	fprintf(stderr, "Usage: kallsyms [--all-symbols] "
++			"[--symbol-prefix=<prefix char>] "
++			"[--page-offset=<CONFIG_PAGE_OFFSET>] "
++			"< in.map > out.S\n");
+ 	exit(1);
+ }
+ 
+@@ -194,6 +198,9 @@ static int symbol_valid(struct sym_entry
+ 	int i;
+ 	int offset = 1;
+ 
++	if (s->addr < kernel_start_addr)
++		return 0;
 +
- 	/* restore rfi target address*/
- 	ldd             TI_TASK-THREAD_SZ_ALGN(%sp), %r10
- 	tophys_r1       %r10
+ 	/* skip prefix char */
+ 	if (symbol_prefix_char && *(s->sym + 1) == symbol_prefix_char)
+ 		offset++;
+@@ -646,6 +653,9 @@ int main(int argc, char **argv)
+ 				if ((*p == '"' && *(p+2) == '"') || (*p == '\'' && *(p+2) == '\''))
+ 					p++;
+ 				symbol_prefix_char = *p;
++			} else if (strncmp(argv[i], "--page-offset=", 14) == 0) {
++				const char *p = &argv[i][14];
++				kernel_start_addr = strtoull(p, NULL, 16);
+ 			} else
+ 				usage();
+ 		}
+--- a/scripts/link-vmlinux.sh
++++ b/scripts/link-vmlinux.sh
+@@ -82,6 +82,8 @@ kallsyms()
+ 		kallsymopt="${kallsymopt} --all-symbols"
+ 	fi
+ 
++	kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
++
+ 	local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
+ 		      ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
+ 
 
 
