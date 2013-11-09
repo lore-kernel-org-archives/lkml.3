@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933669Ab3KIH0i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:26:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33114 "EHLO
+	id S932411Ab3KIGvL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:51:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33018 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932419Ab3KIGvN (ORCPT
+	with ESMTP id S932300Ab3KIGu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:13 -0500
+	Sat, 9 Nov 2013 01:50:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.10 65/74] drm/vmwgfx: Dont put resources with invalid ids on lru list
-Date: Fri,  8 Nov 2013 22:52:10 -0800
-Message-Id: <20131109065118.039233172@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.10 52/74] au1200fb: io_remap_pfn_range() sets VM_IO
+Date: Fri,  8 Nov 2013 22:51:57 -0800
+Message-Id: <20131109065117.151874377@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -27,32 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 26682480c202e7360cbcdc3bc9e962bf749c6b8d upstream.
+commit 1fca06fafb235a88c4fa91294aa1726c0e22855b upstream.
 
-The evict code may try to swap them out causing a BUG in the destroy
-function.
+... and single return is quite sufficient to get out of function, TYVM
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_resource.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/video/au1200fb.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-@@ -970,7 +970,7 @@ void vmw_resource_unreserve(struct vmw_r
- 	if (new_backup)
- 		res->backup_offset = new_backup_offset;
+--- a/drivers/video/au1200fb.c
++++ b/drivers/video/au1200fb.c
+@@ -1258,13 +1258,9 @@ static int au1200fb_fb_mmap(struct fb_in
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 	pgprot_val(vma->vm_page_prot) |= _CACHE_MASK; /* CCA=7 */
  
--	if (!res->func->may_evict)
-+	if (!res->func->may_evict || res->id == -1)
- 		return;
+-	vma->vm_flags |= VM_IO;
+-
+ 	return io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
+ 				  vma->vm_end - vma->vm_start,
+ 				  vma->vm_page_prot);
+-
+-	return 0;
+ }
  
- 	write_lock(&dev_priv->resource_lock);
+ static void set_global(u_int cmd, struct au1200_lcd_global_regs_t *pdata)
 
 
