@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933547Ab3KIHVz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:21:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33200 "EHLO
+	id S933211Ab3KIHWr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:22:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33189 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932592Ab3KIGvb (ORCPT
+	with ESMTP id S932580Ab3KIGv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:31 -0500
+	Sat, 9 Nov 2013 01:51:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 41/74] ASoC: wm_hubs: Add missing break in hp_supply_event()
-Date: Fri,  8 Nov 2013 22:51:46 -0800
-Message-Id: <20131109065116.411600079@linuxfoundation.org>
+        Baruch Siach <baruch@tkos.co.il>, Max Filippov <jcmvbkbc@gmail.com>,
+        Chris Zankel <chris@zankel.net>
+Subject: [PATCH 3.10 48/74] xtensa: dont use alternate signal stack on threads
+Date: Fri,  8 Nov 2013 22:51:53 -0800
+Message-Id: <20131109065116.883286165@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -26,29 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Baruch Siach <baruch@tkos.co.il>
 
-commit 268ff14525edba31da29a12a9dd693cdd6a7872e upstream.
+commit cba9a90053e3b7973eff4f1946f33032e98eeed5 upstream.
 
-Spotted by coverity CID 115170.
+According to create_thread(3): "The new thread does not inherit the creating
+thread's alternate signal stack". Since commit f9a3879a (Fix sigaltstack
+corruption among cloned threads), current->sas_ss_size is set to 0 for cloned
+processes sharing VM with their parent. Don't use the (nonexistent) alternate
+signal stack in this case. This has been broken since commit 29c4dfd9 ([XTENSA]
+Remove non-rt signal handling).
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Fixes the SA_ONSTACK part of the nptl/tst-cancel20 test from uClibc.
+
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+Signed-off-by: Chris Zankel <chris@zankel.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm_hubs.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/xtensa/kernel/signal.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm_hubs.c
-+++ b/sound/soc/codecs/wm_hubs.c
-@@ -530,6 +530,7 @@ static int hp_supply_event(struct snd_so
- 				hubs->hp_startup_mode);
- 			break;
- 		}
-+		break;
+--- a/arch/xtensa/kernel/signal.c
++++ b/arch/xtensa/kernel/signal.c
+@@ -341,7 +341,7 @@ static int setup_frame(int sig, struct k
  
- 	case SND_SOC_DAPM_PRE_PMD:
- 		snd_soc_update_bits(codec, WM8993_CHARGE_PUMP_1,
+ 	sp = regs->areg[1];
+ 
+-	if ((ka->sa.sa_flags & SA_ONSTACK) != 0 && ! on_sig_stack(sp)) {
++	if ((ka->sa.sa_flags & SA_ONSTACK) != 0 && sas_ss_flags(sp) == 0) {
+ 		sp = current->sas_ss_sp + current->sas_ss_size;
+ 	}
+ 
 
 
