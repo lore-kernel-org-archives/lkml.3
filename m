@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933253Ab3KIHY1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:24:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33156 "EHLO
+	id S933613Ab3KIHYr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:24:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33153 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932515Ab3KIGvW (ORCPT
+	with ESMTP id S932511Ab3KIGvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 9 Nov 2013 01:51:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Jon Mason <jon.mason@intel.com>
-Subject: [PATCH 3.10 74/74] NTB: Correct debugfs to work with more than 1 NTB Device
-Date: Fri,  8 Nov 2013 22:52:19 -0800
-Message-Id: <20131109065118.659109254@linuxfoundation.org>
+Subject: [PATCH 3.10 73/74] NTB: Correct USD/DSD Identification
+Date: Fri,  8 Nov 2013 22:52:18 -0800
+Message-Id: <20131109065118.591320517@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -28,185 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jon Mason <jon.mason@intel.com>
 
-commit 1517a3f21a1dd321f16bcf44204bddff9d21abd0 upstream.
+commit b6750cfe0710a14fd147ba27fddbecae8ba88c77 upstream.
 
-Debugfs was setup in NTB to only have a single debugfs directory.  This
-resulted in the leaking of debugfs directories and files when multiple
-NTB devices were present, due to each device stomping on the variables
-containing the previous device's values (thus preventing them from being
-freed on cleanup).  Correct this by creating a secondary directory of
-the PCI BDF for each device present, and nesting the previously existing
-information in those directories.
+Due to ambiguous documentation, the USD/DSD identification is backward
+when compared to the setting in BIOS.  Correct the bits to match the
+BIOS setting.
 
 Signed-off-by: Jon Mason <jon.mason@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ntb/ntb_hw.c        |   27 +++++++++++++++++++++++++++
- drivers/ntb/ntb_hw.h        |   16 ++++++++++++++++
- drivers/ntb/ntb_transport.c |   17 +++++------------
- 3 files changed, 48 insertions(+), 12 deletions(-)
+ drivers/ntb/ntb_hw.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 --- a/drivers/ntb/ntb_hw.c
 +++ b/drivers/ntb/ntb_hw.c
-@@ -78,6 +78,8 @@ enum {
- 	BWD_HW,
- };
+@@ -531,9 +531,9 @@ static int ntb_xeon_setup(struct ntb_dev
+ 	}
  
-+static struct dentry *debugfs_dir;
-+
- /* Translate memory window 0,1 to BAR 2,4 */
- #define MW_TO_BAR(mw)	(mw * 2 + 2)
- 
-@@ -998,6 +1000,28 @@ static void ntb_free_callbacks(struct nt
- 	kfree(ndev->db_cb);
- }
- 
-+static void ntb_setup_debugfs(struct ntb_device *ndev)
-+{
-+	if (!debugfs_initialized())
-+		return;
-+
-+	if (!debugfs_dir)
-+		debugfs_dir = debugfs_create_dir(KBUILD_MODNAME, NULL);
-+
-+	ndev->debugfs_dir = debugfs_create_dir(pci_name(ndev->pdev),
-+					       debugfs_dir);
-+}
-+
-+static void ntb_free_debugfs(struct ntb_device *ndev)
-+{
-+	debugfs_remove_recursive(ndev->debugfs_dir);
-+
-+	if (debugfs_dir && simple_empty(debugfs_dir)) {
-+		debugfs_remove_recursive(debugfs_dir);
-+		debugfs_dir = NULL;
-+	}
-+}
-+
- static int ntb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
- 	struct ntb_device *ndev;
-@@ -1010,6 +1034,7 @@ static int ntb_pci_probe(struct pci_dev
- 	ndev->pdev = pdev;
- 	ndev->link_status = NTB_LINK_DOWN;
- 	pci_set_drvdata(pdev, ndev);
-+	ntb_setup_debugfs(ndev);
- 
- 	rc = pci_enable_device(pdev);
- 	if (rc)
-@@ -1106,6 +1131,7 @@ err2:
- err1:
- 	pci_disable_device(pdev);
- err:
-+	ntb_free_debugfs(ndev);
- 	kfree(ndev);
- 
- 	dev_err(&pdev->dev, "Error loading %s module\n", KBUILD_MODNAME);
-@@ -1135,6 +1161,7 @@ static void ntb_pci_remove(struct pci_de
- 	iounmap(ndev->reg_base);
- 	pci_release_selected_regions(pdev, NTB_BAR_MASK);
- 	pci_disable_device(pdev);
-+	ntb_free_debugfs(ndev);
- 	kfree(ndev);
- }
- 
---- a/drivers/ntb/ntb_hw.h
-+++ b/drivers/ntb/ntb_hw.h
-@@ -127,6 +127,8 @@ struct ntb_device {
- 	unsigned char link_status;
- 	struct delayed_work hb_timer;
- 	unsigned long last_ts;
-+
-+	struct dentry *debugfs_dir;
- };
- 
- /**
-@@ -155,6 +157,20 @@ static inline struct pci_dev *ntb_query_
- 	return ndev->pdev;
- }
- 
-+/**
-+ * ntb_query_debugfs() - return the debugfs pointer
-+ * @ndev: pointer to ntb_device instance
-+ *
-+ * Given the ntb pointer, return the debugfs directory pointer for the NTB
-+ * hardware device
-+ *
-+ * RETURNS: a pointer to the debugfs directory
-+ */
-+static inline struct dentry *ntb_query_debugfs(struct ntb_device *ndev)
-+{
-+	return ndev->debugfs_dir;
-+}
-+
- struct ntb_device *ntb_register_transport(struct pci_dev *pdev,
- 					  void *transport);
- void ntb_unregister_transport(struct ntb_device *ndev);
---- a/drivers/ntb/ntb_transport.c
-+++ b/drivers/ntb/ntb_transport.c
-@@ -157,7 +157,6 @@ struct ntb_transport {
- 	bool transport_link;
- 	struct delayed_work link_work;
- 	struct work_struct link_cleanup;
--	struct dentry *debugfs_dir;
- };
- 
- enum {
-@@ -824,12 +823,12 @@ static void ntb_transport_init_queue(str
- 	qp->tx_max_frame = min(transport_mtu, tx_size / 2);
- 	qp->tx_max_entry = tx_size / qp->tx_max_frame;
- 
--	if (nt->debugfs_dir) {
-+	if (ntb_query_debugfs(nt->ndev)) {
- 		char debugfs_name[4];
- 
- 		snprintf(debugfs_name, 4, "qp%d", qp_num);
- 		qp->debugfs_dir = debugfs_create_dir(debugfs_name,
--						     nt->debugfs_dir);
-+						 ntb_query_debugfs(nt->ndev));
- 
- 		qp->debugfs_stats = debugfs_create_file("stats", S_IRUSR,
- 							qp->debugfs_dir, qp,
-@@ -857,11 +856,6 @@ int ntb_transport_init(struct pci_dev *p
- 	if (!nt)
- 		return -ENOMEM;
- 
--	if (debugfs_initialized())
--		nt->debugfs_dir = debugfs_create_dir(KBUILD_MODNAME, NULL);
+ 	if (val & SNB_PPD_DEV_TYPE)
+-		ndev->dev_type = NTB_DEV_DSD;
 -	else
--		nt->debugfs_dir = NULL;
--
- 	nt->ndev = ntb_register_transport(pdev, nt);
- 	if (!nt->ndev) {
- 		rc = -EIO;
-@@ -907,7 +901,6 @@ err2:
- err1:
- 	ntb_unregister_transport(nt->ndev);
- err:
--	debugfs_remove_recursive(nt->debugfs_dir);
- 	kfree(nt);
- 	return rc;
- }
-@@ -921,16 +914,16 @@ void ntb_transport_free(void *transport)
- 	nt->transport_link = NTB_LINK_DOWN;
+ 		ndev->dev_type = NTB_DEV_USD;
++	else
++		ndev->dev_type = NTB_DEV_DSD;
  
- 	/* verify that all the qp's are freed */
--	for (i = 0; i < nt->max_qps; i++)
-+	for (i = 0; i < nt->max_qps; i++) {
- 		if (!test_bit(i, &nt->qp_bitmap))
- 			ntb_transport_free_queue(&nt->qps[i]);
-+		debugfs_remove_recursive(nt->qps[i].debugfs_dir);
-+	}
+ 	ndev->reg_ofs.pdb = ndev->reg_base + SNB_PDOORBELL_OFFSET;
+ 	ndev->reg_ofs.pdb_mask = ndev->reg_base + SNB_PDBMSK_OFFSET;
+@@ -647,6 +647,9 @@ static int ntb_device_setup(struct ntb_d
+ 	if (rc)
+ 		return rc;
  
- 	ntb_bus_remove(nt);
++	dev_info(&ndev->pdev->dev, "Device Type = %s\n",
++		 ndev->dev_type == NTB_DEV_USD ? "USD/DSP" : "DSD/USP");
++
+ 	/* Enable Bus Master and Memory Space on the secondary side */
+ 	writew(PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER, ndev->reg_ofs.spci_cmd);
  
- 	cancel_delayed_work_sync(&nt->link_work);
- 
--	debugfs_remove_recursive(nt->debugfs_dir);
--
- 	ntb_unregister_event_callback(nt->ndev);
- 
- 	pdev = ntb_query_pdev(nt->ndev);
 
 
