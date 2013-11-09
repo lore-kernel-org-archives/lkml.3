@@ -1,95 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab3KIVY1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 16:24:27 -0500
-Received: from scrye.com ([75.148.32.185]:58655 "EHLO mail.scrye.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757296Ab3KIVYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 16:24:24 -0500
-Date: Sat, 9 Nov 2013 14:23:56 -0700
-From: Kevin Fenzi <kevin@scrye.com>
-To: Jiri Kosina <jkosina@suse.cz>, Nikolai Kondrashov <spbnick@gmail.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: ELAN Touchscreen regression in recent 3.12 rc's? (USB)
-Message-ID: <20131109142356.6bf47526@voldemort.scrye.com>
-In-Reply-To: <CAFv23Q=7L=PqV88XhEMiRfZ+5ZzNWUDXqP3TSpgNwvFvk4sTpw@mail.gmail.com>
-References: <20131028150250.755b4cc8@voldemort.scrye.com>
- <CA+5PVA5hB9CcoxqWPvF1uJymKMtfyGJv9Tkkh8bxOdAmM-jKkQ@mail.gmail.com>
- <CAFv23QmGeGMCVAJCQHv8oDk_ZrXHKsemP1MHnn+uaQQ5DKoFOA@mail.gmail.com>
- <5270C549.30201@gmail.com>
- <alpine.LNX.2.00.1311051051590.2779@pobox.suse.cz>
- <CAFv23Qkbkh2UGv1fFRApg1nCP5ysvBLnLeSW19JLeAfDmbJEsA@mail.gmail.com>
- <20131106102838.347b005c@voldemort.scrye.com>
- <CAFv23Q=7L=PqV88XhEMiRfZ+5ZzNWUDXqP3TSpgNwvFvk4sTpw@mail.gmail.com>
-Organization: Scrye, INC
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA512;
- boundary="Sig_/XPI9=FK4p_1AIfQcsoj3pGS"; protocol="application/pgp-signature"
+	id S1758050Ab3KIV7B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 16:59:01 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:53102 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756775Ab3KIV7A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Nov 2013 16:59:00 -0500
+Date: Sun, 10 Nov 2013 06:58:56 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] percpu changes for v3.13-rc1
+Message-ID: <20131109215856.GA24275@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/XPI9=FK4p_1AIfQcsoj3pGS
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hello, Linus.
 
-On Thu, 7 Nov 2013 16:10:07 +0800
-AceLan Kao <acelan.kao@canonical.com> wrote:
+Two smallish changes for percpu.  Two patches to remove unused
+this_cpu_xor() and one to fix a bug in percpu init failure path so
+that it can reach the proper BUG() instead of oopsing earlier.
 
-> Hi Kevin,
->=20
-> http://people.canonical.com/~acelan/elan_touchscreen/
-> Here are the kernels, please test them one by one and tell me which
-> one works. As your description, the first one should work, and the
-> second one doesn't, I just want to make sure that, so I build the rc6
-> and rc7 kernel to test. Thanks.
+The patches are available in the git repository at:
 
-Thats very nice of you. :)=20
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.13
 
-However, I run Fedora rawhide here, so deb's aren't too useful for me.=20
+for you to fetch changes up to 90f2492cf9c84fd414ecfd2f40685fb5291a484e:
 
-I just confirmed that:=20
+  x86: remove this_cpu_xor() implementation (2013-10-27 09:03:46 -0400)
 
-kernel-3.12.0-0.rc6.git0.1.fc21.x86_64 is ok.=20
-and
-kernel-3.12.0-0.rc6.git1.1.fc21.x86_64 shows the issue.=20
+Thanks.
 
-So, thats between 3.12-rc6 and 57-g69c88dc
-I'm setting up to build some kernels to bisect it.=20
+----------------------------------------------------------------
+Heiko Carstens (2):
+      percpu: remove this_cpu_xor() implementation
+      x86: remove this_cpu_xor() implementation
 
-git bisect start
-# bad: [69c88dc7d9f1a6c3eceb7058111677c640811c94] vfs: fix new kernel-doc w=
-arnings
-git bisect bad 69c88dc7d9f1a6c3eceb7058111677c640811c94
-# good: [31d141e3a666269a3b6fcccddb0351caf7454240] Linux 3.12-rc6
-git bisect good 31d141e3a666269a3b6fcccddb0351caf7454240
+Michael Holzheu (1):
+      percpu: fix bootmem error handling in pcpu_page_first_chunk()
 
-Will let you know what I end up with, thanks.=20
+ arch/x86/include/asm/percpu.h |  8 --------
+ include/linux/percpu.h        | 32 --------------------------------
+ mm/percpu.c                   |  5 +++--
+ 3 files changed, 3 insertions(+), 42 deletions(-)
 
-kevin
+diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
+index 0da5200..604e13d 100644
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@ -377,9 +377,6 @@ do {									\
+ #define __this_cpu_or_1(pcp, val)	percpu_to_op("or", (pcp), val)
+ #define __this_cpu_or_2(pcp, val)	percpu_to_op("or", (pcp), val)
+ #define __this_cpu_or_4(pcp, val)	percpu_to_op("or", (pcp), val)
+-#define __this_cpu_xor_1(pcp, val)	percpu_to_op("xor", (pcp), val)
+-#define __this_cpu_xor_2(pcp, val)	percpu_to_op("xor", (pcp), val)
+-#define __this_cpu_xor_4(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define __this_cpu_xchg_1(pcp, val)	percpu_xchg_op(pcp, val)
+ #define __this_cpu_xchg_2(pcp, val)	percpu_xchg_op(pcp, val)
+ #define __this_cpu_xchg_4(pcp, val)	percpu_xchg_op(pcp, val)
+@@ -399,9 +396,6 @@ do {									\
+ #define this_cpu_or_1(pcp, val)		percpu_to_op("or", (pcp), val)
+ #define this_cpu_or_2(pcp, val)		percpu_to_op("or", (pcp), val)
+ #define this_cpu_or_4(pcp, val)		percpu_to_op("or", (pcp), val)
+-#define this_cpu_xor_1(pcp, val)	percpu_to_op("xor", (pcp), val)
+-#define this_cpu_xor_2(pcp, val)	percpu_to_op("xor", (pcp), val)
+-#define this_cpu_xor_4(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define this_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
+ #define this_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
+ #define this_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
+@@ -446,7 +440,6 @@ do {									\
+ #define __this_cpu_add_8(pcp, val)	percpu_add_op((pcp), val)
+ #define __this_cpu_and_8(pcp, val)	percpu_to_op("and", (pcp), val)
+ #define __this_cpu_or_8(pcp, val)	percpu_to_op("or", (pcp), val)
+-#define __this_cpu_xor_8(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define __this_cpu_add_return_8(pcp, val) percpu_add_return_op(pcp, val)
+ #define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
+ #define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
+@@ -456,7 +449,6 @@ do {									\
+ #define this_cpu_add_8(pcp, val)	percpu_add_op((pcp), val)
+ #define this_cpu_and_8(pcp, val)	percpu_to_op("and", (pcp), val)
+ #define this_cpu_or_8(pcp, val)		percpu_to_op("or", (pcp), val)
+-#define this_cpu_xor_8(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
+ #define this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
+ #define this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index cc88172..fd6ffe4 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -375,22 +375,6 @@ do {									\
+ # define this_cpu_or(pcp, val)		__pcpu_size_call(this_cpu_or_, (pcp), (val))
+ #endif
+ 
+-#ifndef this_cpu_xor
+-# ifndef this_cpu_xor_1
+-#  define this_cpu_xor_1(pcp, val)	_this_cpu_generic_to_op((pcp), (val), ^=)
+-# endif
+-# ifndef this_cpu_xor_2
+-#  define this_cpu_xor_2(pcp, val)	_this_cpu_generic_to_op((pcp), (val), ^=)
+-# endif
+-# ifndef this_cpu_xor_4
+-#  define this_cpu_xor_4(pcp, val)	_this_cpu_generic_to_op((pcp), (val), ^=)
+-# endif
+-# ifndef this_cpu_xor_8
+-#  define this_cpu_xor_8(pcp, val)	_this_cpu_generic_to_op((pcp), (val), ^=)
+-# endif
+-# define this_cpu_xor(pcp, val)		__pcpu_size_call(this_cpu_or_, (pcp), (val))
+-#endif
+-
+ #define _this_cpu_generic_add_return(pcp, val)				\
+ ({									\
+ 	typeof(pcp) ret__;						\
+@@ -629,22 +613,6 @@ do {									\
+ # define __this_cpu_or(pcp, val)	__pcpu_size_call(__this_cpu_or_, (pcp), (val))
+ #endif
+ 
+-#ifndef __this_cpu_xor
+-# ifndef __this_cpu_xor_1
+-#  define __this_cpu_xor_1(pcp, val)	__this_cpu_generic_to_op((pcp), (val), ^=)
+-# endif
+-# ifndef __this_cpu_xor_2
+-#  define __this_cpu_xor_2(pcp, val)	__this_cpu_generic_to_op((pcp), (val), ^=)
+-# endif
+-# ifndef __this_cpu_xor_4
+-#  define __this_cpu_xor_4(pcp, val)	__this_cpu_generic_to_op((pcp), (val), ^=)
+-# endif
+-# ifndef __this_cpu_xor_8
+-#  define __this_cpu_xor_8(pcp, val)	__this_cpu_generic_to_op((pcp), (val), ^=)
+-# endif
+-# define __this_cpu_xor(pcp, val)	__pcpu_size_call(__this_cpu_xor_, (pcp), (val))
+-#endif
+-
+ #define __this_cpu_generic_add_return(pcp, val)				\
+ ({									\
+ 	__this_cpu_add(pcp, val);					\
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 8c8e08f..0d10def 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1706,8 +1706,9 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
+ 
+ out_free_areas:
+ 	for (group = 0; group < ai->nr_groups; group++)
+-		free_fn(areas[group],
+-			ai->groups[group].nr_units * ai->unit_size);
++		if (areas[group])
++			free_fn(areas[group],
++				ai->groups[group].nr_units * ai->unit_size);
+ out_free:
+ 	pcpu_free_alloc_info(ai);
+ 	if (areas)
 
---Sig_/XPI9=FK4p_1AIfQcsoj3pGS
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCgAGBQJSfqfsAAoJEEs3sNgP+7teVlwP/iKCEvTPtYM3YiWeKmAH6tV7
-ufnLPyoE0u5/HYT+SxpcUaqpxRWUEUhPqqoCwSSdjVcIHLf0ZuCNpk8veH+KJnIQ
-74sAi5ftAOHFvxVMdXuXpNwxWkQfI6e7o5W+dBfNpZ7BVzFfHL5v5b2AfBWkcFmw
-2q+39g6avKaSnBiZwobzoMLZPcn3krrIJhQSHB3jyqtWDzNTuHgNVjaj7adpBAn3
-xKvW/tZRdRHSGGhvPjkrltQGyrawGdnqT8lrxbLk5jr6a2mOZL+F4WZm9ZDKA1SV
-gj/+COXG58OWcmNiM9hinty7RX6OaHt5euj0Jbnec+aXIJGfP9EW45RGyhPszxsN
-88oadBHKu81OiKLuZq63qhRN/lmKk6yp3/Koy6iwdPimdn3rUA+Tdnx8Tbr6vlg+
-APBk/AFRoS+69wGwvuW8+u8/waK85EkzGDIVMpRhrsLKvmFQiVp7RROxYphXR4St
-HG3so2M65DtR9I3igMXsQauAO5Hkv/Frnr2us2xiKYJIrxk9qzgqrfZPR2ztNe3F
-D2rcXyxawv3ecB9g18eDKNVfuV0YEZp8SwIRGIWezCkRg4dObQ1vr1DWasNSz7nT
-yRAT0byfLDsu5UNC9XR2JNtHhavrGr9GHkMz9liHidEKHwYhwkBTe3KcfO/jFEnC
-WCmqp9nYFKo99ilgY18W
-=nxcL
------END PGP SIGNATURE-----
-
---Sig_/XPI9=FK4p_1AIfQcsoj3pGS--
+-- 
+tejun
