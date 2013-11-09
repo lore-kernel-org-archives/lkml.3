@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932948Ab3KIGxA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:53:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33524 "EHLO
+	id S1758769Ab3KIG4j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:56:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33611 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932848Ab3KIGwm (ORCPT
+	with ESMTP id S932941Ab3KIGw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:42 -0500
+	Sat, 9 Nov 2013 01:52:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.11 58/94] Staging: sb105x: info leak in mp_get_count()
-Date: Fri,  8 Nov 2013 22:52:04 -0800
-Message-Id: <20131109065208.370792392@linuxfoundation.org>
+        Jon Mason <jon.mason@intel.com>
+Subject: [PATCH 3.11 92/94] NTB: Correct Number of Scratch Pad Registers
+Date: Fri,  8 Nov 2013 22:52:38 -0800
+Message-Id: <20131109065210.741755673@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -28,33 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jon Mason <jon.mason@intel.com>
 
-commit a8b33654b1e3b0c74d4a1fed041c9aae50b3c427 upstream.
+commit 87034511519815259e37336f52edf06d114d43b6 upstream.
 
-The icount.reserved[] array isn't initialized so it leaks stack
-information to userspace.
+The NTB Xeon hardware has 16 scratch pad registers and 16 back-to-back
+scratch pad registers.  Correct the #define to represent this and update
+the variable names to reflect their usage.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jon Mason <jon.mason@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/sb105x/sb_pci_mp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ntb/ntb_hw.c   |    2 +-
+ drivers/ntb/ntb_regs.h |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/sb105x/sb_pci_mp.c
-+++ b/drivers/staging/sb105x/sb_pci_mp.c
-@@ -1063,7 +1063,7 @@ static int mp_wait_modem_status(struct s
+--- a/drivers/ntb/ntb_hw.c
++++ b/drivers/ntb/ntb_hw.c
+@@ -547,7 +547,7 @@ static int ntb_xeon_setup(struct ntb_dev
+ 	if (ndev->conn_type == NTB_CONN_B2B) {
+ 		ndev->reg_ofs.sdb = ndev->reg_base + SNB_B2B_DOORBELL_OFFSET;
+ 		ndev->reg_ofs.spad_write = ndev->reg_base + SNB_B2B_SPAD_OFFSET;
+-		ndev->limits.max_spads = SNB_MAX_SPADS;
++		ndev->limits.max_spads = SNB_MAX_B2B_SPADS;
+ 	} else {
+ 		ndev->reg_ofs.sdb = ndev->reg_base + SNB_SDOORBELL_OFFSET;
+ 		ndev->reg_ofs.spad_write = ndev->reg_base + SNB_SPAD_OFFSET;
+--- a/drivers/ntb/ntb_regs.h
++++ b/drivers/ntb/ntb_regs.h
+@@ -53,8 +53,8 @@
+ #define NTB_LINK_WIDTH_MASK	0x03f0
  
- static int mp_get_count(struct sb_uart_state *state, struct serial_icounter_struct *icnt)
- {
--	struct serial_icounter_struct icount;
-+	struct serial_icounter_struct icount = {};
- 	struct sb_uart_icount cnow;
- 	struct sb_uart_port *port = state->port;
- 
+ #define SNB_MSIX_CNT		4
+-#define SNB_MAX_SPADS		16
+-#define SNB_MAX_COMPAT_SPADS	8
++#define SNB_MAX_B2B_SPADS	16
++#define SNB_MAX_COMPAT_SPADS	16
+ /* Reserve the uppermost bit for link interrupt */
+ #define SNB_MAX_DB_BITS		15
+ #define SNB_DB_BITS_PER_VEC	5
 
 
