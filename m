@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab3KIPTg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 10:19:36 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:33642 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753393Ab3KIPTd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 10:19:33 -0500
+	id S1754358Ab3KIPWC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 10:22:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38712 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753513Ab3KIPWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Nov 2013 10:22:00 -0500
+Date: Sat, 9 Nov 2013 16:23:13 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch
+	methods (v6)
+Message-ID: <20131109152313.GA14630@redhat.com>
+References: <20131104155131.GD4440@redhat.com> <20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com> <87sivbz65t.fsf@sejong.aot.lge.com> <20131105174535.GA6385@redhat.com> <20131105192401.GA772@redhat.com> <87vc05x5zf.fsf@sejong.aot.lge.com> <20131106173754.GA11299@redhat.com> <87a9hgwqal.fsf@sejong.aot.lge.com> <527DA997.4080306@hitachi.com>
 MIME-Version: 1.0
-In-Reply-To: <1383963966-10888-1-git-send-email-liwang@ubuntukylin.com>
-References: <1383963966-10888-1-git-send-email-liwang@ubuntukylin.com>
-Date: Sat, 9 Nov 2013 10:19:31 -0500
-Message-ID: <CANP1eJHthD-Q_Xv=HPWQjsJTHvpP2fj-X_j7HgBXaz5YKQ2EAQ@mail.gmail.com>
-Subject: Re: [PATCH] Ceph: allocate non-zero page to fscache in readpage()
-From: Milosz Tanski <milosz@adfin.com>
-To: Li Wang <liwang@ubuntukylin.com>
-Cc: ceph-devel <ceph-devel@vger.kernel.org>,
-        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
-        Sage Weil <sage@inktank.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527DA997.4080306@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Li, that's a good good catch.
-
-
-On Fri, Nov 8, 2013 at 9:26 PM, Li Wang <liwang@ubuntukylin.com> wrote:
-> ceph_osdc_readpages() returns number of bytes read, currently,
-> the code only allocate full-zero page into fscache, this patch
-> fixes this.
+On 11/09, Masami Hiramatsu wrote:
 >
-> Signed-off-by: Li Wang <liwang@ubuntukylin.com>
-> ---
->  fs/ceph/addr.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-> index 6df8bd4..1e561c0 100644
-> --- a/fs/ceph/addr.c
-> +++ b/fs/ceph/addr.c
-> @@ -216,7 +216,7 @@ static int readpage_nounlock(struct file *filp, struct page *page)
->         }
->         SetPageUptodate(page);
->
-> -       if (err == 0)
-> +       if (err >= 0)
->                 ceph_readpage_to_fscache(inode, page);
->
->  out:
-> --
-> 1.7.9.5
->
+> In that case, I suggest you to use "@+addr" for the relative address,
+> since that is an offset, isn't that? :)
 
+Agreed, @+addr looks better!
 
+> BTW, it seems that @addr syntax is hard to use for uprobes, because
+> current uprobes is based on a binary, not a process, we cannot specify
+> which process is probed when we define it.
 
--- 
-Milosz Tanski
-CTO
-10 East 53rd Street, 37th floor
-New York, NY 10022
+Yes, exactly. That is why we suggest that user-space should pass the
+ip-relative address (actually offset). This should hopefully solve all
+problems with relocations.
 
-p: 646-253-9055
-e: milosz@adfin.com
+Oleg.
+
