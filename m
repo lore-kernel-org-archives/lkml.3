@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758789Ab3KIG5D (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:57:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33608 "EHLO
+	id S1758623Ab3KIGw5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:52:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33497 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932778Ab3KIGw6 (ORCPT
+	with ESMTP id S932778Ab3KIGwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:58 -0500
+	Sat, 9 Nov 2013 01:52:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jon Mason <jon.mason@intel.com>
-Subject: [PATCH 3.11 91/94] NTB: Add Error Handling in ntb_device_setup
-Date: Fri,  8 Nov 2013 22:52:37 -0800
-Message-Id: <20131109065210.674026089@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.11 74/94] mm: Account for a THP NUMA hinting update as one PTE update
+Date: Fri,  8 Nov 2013 22:52:20 -0800
+Message-Id: <20131109065209.492375451@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -26,40 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Mason <jon.mason@intel.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 3b12a0d15bd1559e72ad21d9d807fd2a6706f0ab upstream.
+commit 0255d491848032f6c601b6410c3b8ebded3a37b1 upstream.
 
-If an error is encountered in ntb_device_setup, it is possible that the
-spci_cmd isn't populated.  Writes to the offset can result in a NULL
-pointer dereference.  This issue is easily encountered by running in
-NTB-RP mode, as it currently is not supported and will generate an
-error.  To get around this issue, return if an error is encountered
-prior to attempting to write to the spci_cmd offset.
+A THP PMD update is accounted for as 512 pages updated in vmstat.  This is
+large difference when estimating the cost of automatic NUMA balancing and
+can be misleading when comparing results that had collapsed versus split
+THP. This patch addresses the accounting issue.
 
-Signed-off-by: Jon Mason <jon.mason@intel.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1381141781-10992-10-git-send-email-mgorman@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ntb/ntb_hw.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ mm/mprotect.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ntb/ntb_hw.c
-+++ b/drivers/ntb/ntb_hw.c
-@@ -644,10 +644,13 @@ static int ntb_device_setup(struct ntb_d
- 		rc = -ENODEV;
- 	}
- 
-+	if (rc)
-+		return rc;
-+
- 	/* Enable Bus Master and Memory Space on the secondary side */
- 	writew(PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER, ndev->reg_ofs.spci_cmd);
- 
--	return rc;
-+	return 0;
- }
- 
- static void ntb_device_free(struct ntb_device *ndev)
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -148,7 +148,7 @@ static inline unsigned long change_pmd_r
+ 				split_huge_page_pmd(vma, addr, pmd);
+ 			else if (change_huge_pmd(vma, pmd, addr, newprot,
+ 						 prot_numa)) {
+-				pages += HPAGE_PMD_NR;
++				pages++;
+ 				continue;
+ 			}
+ 			/* fall through */
 
 
