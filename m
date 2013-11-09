@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757892Ab3KIGu0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:50:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32876 "EHLO
+	id S1757014Ab3KIGuM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:50:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32827 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757401Ab3KIGuT (ORCPT
+	with ESMTP id S1755821Ab3KIGuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:19 -0500
+	Sat, 9 Nov 2013 01:50:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [PATCH 3.10 01/74] usb-storage: add quirk for mandatory READ_CAPACITY_16
-Date: Fri,  8 Nov 2013 22:51:06 -0800
-Message-Id: <20131109065113.604224881@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.4 06/26] mac80211: update sta->last_rx on acked tx frames
+Date: Fri,  8 Nov 2013 22:51:35 -0800
+Message-Id: <20131109065050.674394316@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
-In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
-References: <20131109065113.502217951@linuxfoundation.org>
+In-Reply-To: <20131109065050.089866597@linuxfoundation.org>
+References: <20131109065050.089866597@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 32c37fc30c52508711ea6a108cfd5855b8a07176 upstream.
+commit 0c5b93290b2f3c7a376567c03ae8d385b0e99851 upstream.
 
-Some USB drive enclosures do not correctly report an
-overflow condition if they hold a drive with a capacity
-over 2TB and are confronted with a READ_CAPACITY_10.
-They answer with their capacity modulo 2TB.
-The generic layer cannot cope with that. It must be told
-to use READ_CAPACITY_16 from the beginning.
+When clients are idle for too long, hostapd sends nullfunc frames for
+probing. When those are acked by the client, the idle time needs to be
+updated.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+To make this work (and to avoid unnecessary probing), update sta->last_rx
+whenever an ACK was received for a tx packet. Only do this if the flag
+IEEE80211_HW_REPORTS_TX_ACK_STATUS is set.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/scsiglue.c     |    5 ++++-
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- include/linux/usb_usual.h          |    4 +++-
- 3 files changed, 14 insertions(+), 2 deletions(-)
+ net/mac80211/status.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/storage/scsiglue.c
-+++ b/drivers/usb/storage/scsiglue.c
-@@ -211,8 +211,11 @@ static int slave_configure(struct scsi_d
- 		/*
- 		 * Many devices do not respond properly to READ_CAPACITY_16.
- 		 * Tell the SCSI layer to try READ_CAPACITY_10 first.
-+		 * However some USB 3.0 drive enclosures return capacity
-+		 * modulo 2TB. Those must use READ_CAPACITY_16
- 		 */
--		sdev->try_rc_10_first = 1;
-+		if (!(us->fflags & US_FL_NEEDS_CAP16))
-+			sdev->try_rc_10_first = 1;
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -183,6 +183,9 @@ static void ieee80211_frame_acked(struct
+ 	struct ieee80211_local *local = sta->local;
+ 	struct ieee80211_sub_if_data *sdata = sta->sdata;
  
- 		/* assume SPC3 or latter devices support sense size > 18 */
- 		if (sdev->scsi_level > SCSI_SPC_2)
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1925,6 +1925,13 @@ UNUSUAL_DEV(  0x1652, 0x6600, 0x0201, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_IGNORE_RESIDUE ),
- 
-+/* Reported by Oliver Neukum <oneukum@suse.com> */
-+UNUSUAL_DEV(  0x174c, 0x55aa, 0x0100, 0x0100,
-+		"ASMedia",
-+		"AS2105",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NEEDS_CAP16),
++	if (local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)
++		sta->last_rx = jiffies;
 +
- /* Reported by Jesse Feddema <jdfeddema@gmail.com> */
- UNUSUAL_DEV(  0x177f, 0x0400, 0x0000, 0x0000,
- 		"Yarvik",
---- a/include/linux/usb_usual.h
-+++ b/include/linux/usb_usual.h
-@@ -66,7 +66,9 @@
- 	US_FLAG(INITIAL_READ10,	0x00100000)			\
- 		/* Initial READ(10) (and others) must be retried */	\
- 	US_FLAG(WRITE_CACHE,	0x00200000)			\
--		/* Write Cache status is not available */
-+		/* Write Cache status is not available */	\
-+	US_FLAG(NEEDS_CAP16,	0x00400000)
-+		/* cannot handle READ_CAPACITY_10 */
- 
- #define US_FLAG(name, value)	US_FL_##name = value ,
- enum { US_DO_ALL_FLAGS };
+ 	if (ieee80211_is_data_qos(mgmt->frame_control)) {
+ 		struct ieee80211_hdr *hdr = (void *) skb->data;
+ 		u8 *qc = ieee80211_get_qos_ctl(hdr);
 
 
