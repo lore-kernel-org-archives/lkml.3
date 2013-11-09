@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759256Ab3KIHnW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:43:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32816 "EHLO
+	id S1759267Ab3KIHnk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:43:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32811 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756271Ab3KIGtz (ORCPT
+	with ESMTP id S1756199Ab3KIGtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 9 Nov 2013 01:49:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [PATCH 3.4 02/26] USB: quirks.c: add one device that cannot deal with suspension
-Date: Fri,  8 Nov 2013 22:51:31 -0800
-Message-Id: <20131109065050.395025843@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.4 26/26] drm/radeon/atom: workaround vbios bug in transmitter table on rs780
+Date: Fri,  8 Nov 2013 22:51:55 -0800
+Message-Id: <20131109065052.023696610@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065050.089866597@linuxfoundation.org>
 References: <20131109065050.089866597@linuxfoundation.org>
@@ -26,30 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 4294bca7b423d1a5aa24307e3d112a04075e3763 upstream.
+commit c23632d4e57c0dd20bf50eca08fa0eb8ad3ff680 upstream.
 
-The device is not responsive when resumed, unless it is reset.
+Some rs780 asics seem to be affected as well.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+See:
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=91f3a6aaf280294b07c05dfe606e6c27b7ba3c72
+
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60791
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/quirks.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/radeon/atombios_encoders.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -152,6 +152,9 @@ static const struct usb_device_id usb_qu
- 	/* Broadcom BCM92035DGROM BT dongle */
- 	{ USB_DEVICE(0x0a5c, 0x2021), .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* MAYA44USB sound device */
-+	{ USB_DEVICE(0x0a92, 0x0091), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* Action Semiconductor flash disk */
- 	{ USB_DEVICE(0x10d6, 0x2200), .driver_info =
- 			USB_QUIRK_STRING_FETCH_255 },
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1430,7 +1430,7 @@ radeon_atom_encoder_dpms_dig(struct drm_
+ 			 * does the same thing and more.
+ 			 */
+ 			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
+-			    (rdev->family != CHIP_RS880))
++			    (rdev->family != CHIP_RS780) && (rdev->family != CHIP_RS880))
+ 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
+ 		}
+ 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
 
 
