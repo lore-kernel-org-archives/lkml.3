@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932369Ab3KIGvH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:51:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33007 "EHLO
+	id S933730Ab3KIH2d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:28:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33071 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932274Ab3KIGu6 (ORCPT
+	with ESMTP id S932338Ab3KIGvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:58 -0500
+	Sat, 9 Nov 2013 01:51:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.10 51/74] au1100fb: VM_IO is set by io_remap_pfn_range()
-Date: Fri,  8 Nov 2013 22:51:56 -0800
-Message-Id: <20131109065117.084029136@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 59/74] mm: Prevent parallel splits during THP migration
+Date: Fri,  8 Nov 2013 22:52:04 -0800
+Message-Id: <20131109065117.625098030@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -26,27 +30,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Mel Gorman <mgorman@suse.de>
 
-commit c607f450f6e49f5794f27617bedc638b51044d2e upstream.
+commit 587fe586f44a48f9691001ba6c45b86c8e4ba21f upstream.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+THP migrations are serialised by the page lock but on its own that does
+not prevent THP splits. If the page is split during THP migration then
+the pmd_same checks will prevent page table corruption but the unlock page
+and other fix-ups potentially will cause corruption. This patch takes the
+anon_vma lock to prevent parallel splits during migration.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1381141781-10992-7-git-send-email-mgorman@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/au1100fb.c |    2 --
- 1 file changed, 2 deletions(-)
+ mm/huge_memory.c |   44 ++++++++++++++++++++++++++++++--------------
+ 1 file changed, 30 insertions(+), 14 deletions(-)
 
---- a/drivers/video/au1100fb.c
-+++ b/drivers/video/au1100fb.c
-@@ -385,8 +385,6 @@ int au1100fb_fb_mmap(struct fb_info *fbi
- 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
- 	pgprot_val(vma->vm_page_prot) |= (6 << 9); //CCA=6
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1288,18 +1288,18 @@ out:
+ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 				unsigned long addr, pmd_t pmd, pmd_t *pmdp)
+ {
++	struct anon_vma *anon_vma = NULL;
+ 	struct page *page;
+ 	unsigned long haddr = addr & HPAGE_PMD_MASK;
+ 	int target_nid;
+ 	int current_nid = -1;
+-	bool migrated;
++	bool migrated, page_locked;
  
--	vma->vm_flags |= VM_IO;
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(pmd, *pmdp)))
+ 		goto out_unlock;
+ 
+ 	page = pmd_page(pmd);
+-	get_page(page);
+ 	current_nid = page_to_nid(page);
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+ 	if (current_nid == numa_node_id())
+@@ -1309,12 +1309,29 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	 * Acquire the page lock to serialise THP migrations but avoid dropping
+ 	 * page_table_lock if at all possible
+ 	 */
+-	if (trylock_page(page))
+-		goto got_lock;
++	page_locked = trylock_page(page);
++	target_nid = mpol_misplaced(page, vma, haddr);
++	if (target_nid == -1) {
++		/* If the page was locked, there are no parallel migrations */
++		if (page_locked) {
++			unlock_page(page);
++			goto clear_pmdnuma;
++		}
++
++		/* Otherwise wait for potential migrations and retry fault */
++		spin_unlock(&mm->page_table_lock);
++		wait_on_page_locked(page);
++		goto out;
++	}
+ 
+-	/* Serialise against migrationa and check placement check placement */
++	/* Page is misplaced, serialise migrations and parallel THP splits */
++	get_page(page);
+ 	spin_unlock(&mm->page_table_lock);
+-	lock_page(page);
++	if (!page_locked) {
++		lock_page(page);
++		page_locked = true;
++	}
++	anon_vma = page_lock_anon_vma_read(page);
+ 
+ 	/* Confirm the PTE did not while locked */
+ 	spin_lock(&mm->page_table_lock);
+@@ -1324,14 +1341,6 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 		goto out_unlock;
+ 	}
+ 
+-got_lock:
+-	target_nid = mpol_misplaced(page, vma, haddr);
+-	if (target_nid == -1) {
+-		unlock_page(page);
+-		put_page(page);
+-		goto clear_pmdnuma;
+-	}
 -
- 	if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
- 				vma->vm_end - vma->vm_start,
- 				vma->vm_page_prot)) {
+ 	/* Migrate the THP to the requested node */
+ 	spin_unlock(&mm->page_table_lock);
+ 	migrated = migrate_misplaced_transhuge_page(mm, vma,
+@@ -1340,6 +1349,8 @@ got_lock:
+ 		goto check_same;
+ 
+ 	task_numa_fault(target_nid, HPAGE_PMD_NR, true);
++	if (anon_vma)
++		page_unlock_anon_vma_read(anon_vma);
+ 	return 0;
+ 
+ check_same:
+@@ -1356,6 +1367,11 @@ clear_pmdnuma:
+ 	update_mmu_cache_pmd(vma, addr, pmdp);
+ out_unlock:
+ 	spin_unlock(&mm->page_table_lock);
++
++out:
++	if (anon_vma)
++		page_unlock_anon_vma_read(anon_vma);
++
+ 	if (current_nid != -1)
+ 		task_numa_fault(current_nid, HPAGE_PMD_NR, false);
+ 	return 0;
 
 
