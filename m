@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758394Ab3KIBRO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 20:17:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:16662 "EHLO mga09.intel.com"
+	id S1758500Ab3KIBS2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 20:18:28 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:42020 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757918Ab3KIBRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 20:17:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="432268212"
-Subject: Re: [PATCH v5 4/4] qrwlock: Use the mcs_spinlock helper functions
- for MCS queuing
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-In-Reply-To: <20131108212107.GI18245@linux.vnet.ibm.com>
-References: <1383585440-4391-1-git-send-email-Waiman.Long@hp.com>
-	 <1383585440-4391-5-git-send-email-Waiman.Long@hp.com>
-	 <20131108212107.GI18245@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Nov 2013 17:17:07 -0800
-Message-ID: <1383959827.11046.420.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1758008Ab3KIBS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 20:18:27 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: tj@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 13/24] mm/power: Use memblock apis for early memory allocations
+Date: Sat, 09 Nov 2013 02:30:44 +0100
+Message-ID: <1479529.EjZ9YN8f8I@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1383954120-24368-14-git-send-email-santosh.shilimkar@ti.com>
+References: <1383954120-24368-1-git-send-email-santosh.shilimkar@ti.com> <1383954120-24368-14-git-send-email-santosh.shilimkar@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-08 at 13:21 -0800, Paul E. McKenney wrote:
-> On Mon, Nov 04, 2013 at 12:17:20PM -0500, Waiman Long wrote:
-> > There is a pending patch in the rwsem patch series that adds a generic
-> > MCS locking helper functions to do MCS-style locking. This patch
-> > will enable the queue rwlock to use that generic MCS lock/unlock
-> > primitives for internal queuing. This patch should only be merged
-> > after the merging of that generic MCS locking patch.
-> > 
-> > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+On Friday, November 08, 2013 06:41:49 PM Santosh Shilimkar wrote:
+> Switch to memblock interfaces for early memory allocator instead of
+> bootmem allocator. No functional change in beahvior than what it is
+> in current code from bootmem users points of view.
 > 
-> This one does might address at least some of the earlier memory-barrier
-> issues, at least assuming that the MCS lock is properly memory-barriered.
+> Archs already converted to NO_BOOTMEM now directly use memblock
+> interfaces instead of bootmem wrappers build on top of memblock. And the
+> archs which still uses bootmem, these new apis just fallback to exiting
+> bootmem APIs.
+> 
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: linux-pm@vger.kernel.org
+> 
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Paul, will appreciate if you can take a look the latest version
-of MCS lock with load-acquire and store-release to see if it is now
-properly memory-barriered.
+Fine by me, thanks!
 
-Thanks.
-
-Tim
-
+> ---
+>  kernel/power/snapshot.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+> index 358a146..887134e 100644
+> --- a/kernel/power/snapshot.c
+> +++ b/kernel/power/snapshot.c
+> @@ -637,7 +637,7 @@ __register_nosave_region(unsigned long start_pfn, unsigned long end_pfn,
+>  		BUG_ON(!region);
+>  	} else
+>  		/* This allocation cannot fail */
+> -		region = alloc_bootmem(sizeof(struct nosave_region));
+> +		region = memblock_virt_alloc(sizeof(struct nosave_region));
+>  	region->start_pfn = start_pfn;
+>  	region->end_pfn = end_pfn;
+>  	list_add_tail(&region->list, &nosave_regions);
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
