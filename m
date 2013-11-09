@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab3KIT4n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 14:56:43 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:44253 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756751Ab3KIT4l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 14:56:41 -0500
-Date: Sat, 09 Nov 2013 14:56:37 -0500 (EST)
-Message-Id: <20131109.145637.1963860932249813503.davem@davemloft.net>
-To: jason@lakedaemon.net
-Cc: sebastian.hesselbarth@gmail.com, buytenh@wantstofly.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: mv643xx_eth: take over maintainership
- from Lennart
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20131004130707.GZ31178@titan.lakedaemon.net>
-References: <1380884199-25025-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20131004130707.GZ31178@titan.lakedaemon.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 09 Nov 2013 11:56:40 -0800 (PST)
+	id S1757333Ab3KIUDD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 15:03:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1586 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756462Ab3KIUC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Nov 2013 15:02:59 -0500
+Date: Sat, 9 Nov 2013 21:04:24 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@zeniv.linux.org.uk>, Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/1] fs: forbid to open anon-inode files via /proc
+Message-ID: <20131109200424.GA4967@redhat.com>
+References: <20131108183001.2564151a619f8f6df3db543a@canb.auug.org.au> <20131108125915.GA1000@redhat.com> <20131108134859.GA4461@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131108134859.GA4461@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Cooper <jason@lakedaemon.net>
-Date: Fri, 4 Oct 2013 09:07:07 -0400
+On 11/08, Oleg Nesterov wrote:
+>
+> On 11/08, Oleg Nesterov wrote:
+> >
+> > On 11/08, Stephen Rothwell wrote:
+> > >
+> > > Hi Andrew,
+> > >
+> > > Today's linux-next merge of the akpm-current tree got a conflict in
+> > > fs/anon_inodes.c between commit 24b0303e9532 ("take anon inode allocation
+> > > to libfs.c") from the vfs tree and commit 02f3ac4386d9 ("anon_inodefs:
+> > > forbid open via /proc") from the akpm-current tree.
+> > >
+> > > I just dropped the akpm-current changes for today - they should probably
+> > > be applied to fs/libfs.c.
+> >
+> > Well, this probably means that
+> >
+> > 	anon_inodefs-forbid-open-via-proc.patch
+> >
+> > should be dropped. I'll rediff this patch against vfs.git
+>
+> 24b0303e9532 also removes anon_inode_fops. It seems that it was not really
+> needed anyway, inode_init_always() does inode->i_fop = empty_fops...
+>
+> So probably we can simply change empty_fops but I need to recheck.
 
-> On Fri, Oct 04, 2013 at 12:56:39PM +0200, Sebastian Hesselbarth wrote:
->> Lennart says: "I haven't been able to spend time on mv643xx_eth for a
->> while now, so if you want to take over maintainership, I'd be fine with
->> that."
->> 
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> Acked-by: Lennert Buytenhek <buytenh@wantstofly.org>
->> ---
->> TBH, I have no clue about netdev internals, yet. But if David and Jason
->> Cooper promise to have one eye each on the first Acks, I am willing to
->> take over maintainership.
-> 
-> If David is ok with it,
-> 
-> Acked-by: Jason Cooper <jason@lakedaemon.net>
+Well. It looks "really obvious" that any user of inode_init_always()
+either needs to change ->i_fop or this file should not be opened via
+/proc...
 
-This got lost in the noise because it didn't get sent to netdev, I've
-applied it now.
+So, Al, feel free to ignore, this is minor. Still I think this patch
+makes sense. Based on vfs.git#for-next.
+
+Oleg.
+
