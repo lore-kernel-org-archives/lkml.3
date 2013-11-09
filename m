@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775Ab3KIG6f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:58:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33570 "EHLO
+	id S932597Ab3KIG6c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:58:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33576 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758603Ab3KIGww (ORCPT
+	with ESMTP id S1758605Ab3KIGwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:52 -0500
+	Sat, 9 Nov 2013 01:52:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.11 86/94] drm/i915: Add support for pipe_bpp readout
-Date: Fri,  8 Nov 2013 22:52:32 -0800
-Message-Id: <20131109065210.309683057@linuxfoundation.org>
+        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.11 59/94] staging: wlags49_h2: buffer overflow setting station name
+Date: Fri,  8 Nov 2013 22:52:05 -0800
+Message-Id: <20131109065208.457485433@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,121 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 4f56d12ebb28fceac4c6e60c8993fbfc122e1399 upstream.
+commit b5e2f339865fb443107e5b10603e53bbc92dc054 upstream.
 
-On CTG+ read out the pipe bpp setting from hardware and fill it into
-pipe config. Also check it appropriately.
+We need to check the length parameter before doing the memcpy().  I've
+actually changed it to strlcpy() as well so that it's NUL terminated.
 
-v2: Don't do the pipe_bpp extraction inside the PCH only code block on
-    ILK+.
-    Avoid the PIPECONF read as we already have read it for the
-    PIPECONF_EANBLE check.
+You need CAP_NET_ADMIN to trigger these so it's not the end of the
+world.
 
-Note: This is already in drm-intel-next-queued as
-commit 42571aefafb1d330ef84eb29418832f72e7dfb4c
-Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Date:   Fri Sep 6 23:29:00 2013 +0300
-
-    drm/i915: Add support for pipe_bpp readout
-
-but is needed for the following bugfix.
-
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_ddi.c     |   17 ++++++++++++++++
- drivers/gpu/drm/i915/intel_display.c |   36 +++++++++++++++++++++++++++++++++++
- 2 files changed, 53 insertions(+)
+ drivers/staging/wlags49_h2/wl_priv.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_ddi.c
-+++ b/drivers/gpu/drm/i915/intel_ddi.c
-@@ -1280,6 +1280,23 @@ void intel_ddi_get_config(struct intel_e
- 		flags |= DRM_MODE_FLAG_NVSYNC;
+--- a/drivers/staging/wlags49_h2/wl_priv.c
++++ b/drivers/staging/wlags49_h2/wl_priv.c
+@@ -570,6 +570,7 @@ int wvlan_uil_put_info(struct uilreq *ur
+ 	ltv_t                   *pLtv;
+ 	bool_t                  ltvAllocated = FALSE;
+ 	ENCSTRCT                sEncryption;
++	size_t			len;
  
- 	pipe_config->adjusted_mode.flags |= flags;
-+
-+	switch (temp & TRANS_DDI_BPC_MASK) {
-+	case TRANS_DDI_BPC_6:
-+		pipe_config->pipe_bpp = 18;
-+		break;
-+	case TRANS_DDI_BPC_8:
-+		pipe_config->pipe_bpp = 24;
-+		break;
-+	case TRANS_DDI_BPC_10:
-+		pipe_config->pipe_bpp = 30;
-+		break;
-+	case TRANS_DDI_BPC_12:
-+		pipe_config->pipe_bpp = 36;
-+		break;
-+	default:
-+		break;
-+	}
- }
+ #ifdef USE_WDS
+ 	hcf_16                  hcfPort  = HCF_PORT_0;
+@@ -686,7 +687,8 @@ int wvlan_uil_put_info(struct uilreq *ur
+ 					break;
+ 				case CFG_CNF_OWN_NAME:
+ 					memset(lp->StationName, 0, sizeof(lp->StationName));
+-					memcpy((void *)lp->StationName, (void *)&pLtv->u.u8[2], (size_t)pLtv->u.u16[0]);
++					len = min_t(size_t, pLtv->u.u16[0], sizeof(lp->StationName));
++					strlcpy(lp->StationName, &pLtv->u.u8[2], len);
+ 					pLtv->u.u16[0] = CNV_INT_TO_LITTLE(pLtv->u.u16[0]);
+ 					break;
+ 				case CFG_CNF_LOAD_BALANCING:
+@@ -1783,6 +1785,7 @@ int wvlan_set_station_nickname(struct ne
+ {
+ 	struct wl_private *lp = wl_priv(dev);
+ 	unsigned long flags;
++	size_t len;
+ 	int         ret = 0;
+ 	/*------------------------------------------------------------------------*/
  
- static void intel_ddi_destroy(struct drm_encoder *encoder)
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4943,6 +4943,22 @@ static bool i9xx_get_pipe_config(struct
- 	if (!(tmp & PIPECONF_ENABLE))
- 		return false;
+@@ -1793,8 +1796,8 @@ int wvlan_set_station_nickname(struct ne
+ 	wl_lock(lp, &flags);
  
-+	if (IS_G4X(dev) || IS_VALLEYVIEW(dev)) {
-+		switch (tmp & PIPECONF_BPC_MASK) {
-+		case PIPECONF_6BPC:
-+			pipe_config->pipe_bpp = 18;
-+			break;
-+		case PIPECONF_8BPC:
-+			pipe_config->pipe_bpp = 24;
-+			break;
-+		case PIPECONF_10BPC:
-+			pipe_config->pipe_bpp = 30;
-+			break;
-+		default:
-+			break;
-+		}
-+	}
-+
- 	intel_get_pipe_timings(crtc, pipe_config);
+ 	memset(lp->StationName, 0, sizeof(lp->StationName));
+-
+-	memcpy(lp->StationName, extra, wrqu->data.length);
++	len = min_t(size_t, wrqu->data.length, sizeof(lp->StationName));
++	strlcpy(lp->StationName, extra, len);
  
- 	i9xx_get_pfit_config(crtc, pipe_config);
-@@ -5821,6 +5837,23 @@ static bool ironlake_get_pipe_config(str
- 	if (!(tmp & PIPECONF_ENABLE))
- 		return false;
- 
-+	switch (tmp & PIPECONF_BPC_MASK) {
-+	case PIPECONF_6BPC:
-+		pipe_config->pipe_bpp = 18;
-+		break;
-+	case PIPECONF_8BPC:
-+		pipe_config->pipe_bpp = 24;
-+		break;
-+	case PIPECONF_10BPC:
-+		pipe_config->pipe_bpp = 30;
-+		break;
-+	case PIPECONF_12BPC:
-+		pipe_config->pipe_bpp = 36;
-+		break;
-+	default:
-+		break;
-+	}
-+
- 	if (I915_READ(PCH_TRANSCONF(crtc->pipe)) & TRANS_ENABLE) {
- 		struct intel_shared_dpll *pll;
- 
-@@ -8147,6 +8180,9 @@ intel_pipe_config_compare(struct drm_dev
- 	PIPE_CONF_CHECK_X(dpll_hw_state.fp0);
- 	PIPE_CONF_CHECK_X(dpll_hw_state.fp1);
- 
-+	if (IS_G4X(dev) || INTEL_INFO(dev)->gen >= 5)
-+		PIPE_CONF_CHECK_I(pipe_bpp);
-+
- #undef PIPE_CONF_CHECK_X
- #undef PIPE_CONF_CHECK_I
- #undef PIPE_CONF_CHECK_FLAGS
+ 	/* Commit the adapter parameters */
+ 	wl_apply(lp);
 
 
