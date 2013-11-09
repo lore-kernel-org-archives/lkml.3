@@ -1,164 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab3KIRjo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 12:39:44 -0500
-Received: from mic92-1-81-57-185-249.fbx.proxad.net ([81.57.185.249]:59738
-	"EHLO smtp.natisbad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700Ab3KIRjl convert rfc822-to-8bit (ORCPT
+	id S1756369Ab3KIRvR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 12:51:17 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:59747 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753740Ab3KIRvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 12:39:41 -0500
-X-Hashcash: 1:20:131109:linux@roeck-us.net::Qpa67nzkiqThVCkX:0000000000000000000000000000000000000000000CJnf
-X-Hashcash: 1:20:131109:khali@linux-fr.org::6oDPOWcdX/tNo4li:00000000000000000000000000000000000000000005L52
-X-Hashcash: 1:20:131109:rob.herring@calxeda.com::YIT2nvIQPL9oYEZg:000000000000000000000000000000000000002N0v
-X-Hashcash: 1:20:131109:pawel.moll@arm.com::PCUHdas6/IFSU9YK:00000000000000000000000000000000000000000005flU
-X-Hashcash: 1:20:131109:mark.rutland@arm.com::mdQ2RNdaxnndsJRf:000000000000000000000000000000000000000008C/A
-X-Hashcash: 1:20:131109:swarren@wwwdotorg.org::Nq5Qk5fUI9bOcE1V:00000000000000000000000000000000000000004164
-X-Hashcash: 1:20:131109:ijc+devicetree@hellion.org.uk::+jzjzg4citGUg5kV:000000000000000000000000000000000AgR
-X-Hashcash: 1:20:131109:rob@landley.net::hRTBeq5/LPY2NOf5:000L16
-X-Hashcash: 1:20:131109:grant.likely@linaro.org::PyRtrcONOQKRFNUk:000000000000000000000000000000000000001p8w
-X-Hashcash: 1:20:131109:linus.walleij@linaro.org::lrJeq2vAniuMODSP:00000000000000000000000000000000000008hxc
-X-Hashcash: 1:20:131109:arnd@arndb.de::ZW9gvbdyLUdBFIpJ:0000FEIL
-X-Hashcash: 1:20:131109:devicetree@vger.kernel.org::u0bx7EPp7Ha/0muw:0000000000000000000000000000000000018wI
-X-Hashcash: 1:20:131109:linux-doc@vger.kernel.org::T73GEmGonve25+PQ:0000000000000000000000000000000000002OIU
-X-Hashcash: 1:20:131109:linux-kernel@vger.kernel.org::y9hJckrfJHygSogU:0000000000000000000000000000000000vgM
-X-Hashcash: 1:20:131109:lm-sensors@lm-sensors.org::icuCAHQbAzDN/W1c:0000000000000000000000000000000000001Z50
-From: arno@natisbad.org (Arnaud Ebalard)
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Jean Delvare <khali@linux-fr.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: [PATCH] hwmon: add support for GMT G751 chip in lm75 driver
-X-PGP-Key-URL: http://natisbad.org/arno@natisbad.org.asc
-X-Fingerprint: D3A5 B68A 839B 38A5 815A 781B B77C 0748 A7AE 341B
-Date: Sat, 09 Nov 2013 18:39:14 +0100
-Message-ID: <87bo1th3ul.fsf@natisbad.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 9 Nov 2013 12:51:15 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jean Delvare <khali@linux-fr.org>, Fenghua Yu <fenghua.yu@intel.com>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 1/3] hwmon: (coretemp) Use PCI host bridge ID to identify CPU if necessary
+Date: Sat,  9 Nov 2013 09:51:07 -0800
+Message-Id: <1384019469-18666-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Atom S12x0 CPUs are identified by the CPU host bridge ID. Add an override
+table based on PCI IDs as well as code to detect it.
 
-This was tested on a NETGEAR ReadyNAS 2120 device (Marvell Armada XP
-based board, via DT).
+PCI access functions can now be called with PCI disabled, so unlike previous
+attempts to use PCI IDs, the code no longer depends on it. If PCI is disabled,
+the CPU will not be identified correctly. Since it is unlikely that anything
+will work in this case, this is an acceptable limitation.
 
-Signed-off-by: Arnaud Ebalard <arno@natisbad.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
-Hi Guenter,
+ drivers/hwmon/coretemp.c |   33 ++++++++++++++++++++++++++++++---
+ 1 file changed, 30 insertions(+), 3 deletions(-)
 
-As a side note, I removed the hunk that was present in previous patch to
-add gmt to the list of DT vendor prefixes because I noticed someone had
-taken care: https://lkml.org/lkml/2013/9/12/365
-
-For the records, here is what I get on my NAS with the attached patch:
-
-root@thin:/sys# sensors
-g762-i2c-0-3e
-Adapter: mv64xxx_i2c adapter
-fan1:        5461 RPM  (div = 1)
-
-g762-i2c-0-48
-Adapter: mv64xxx_i2c adapter
-fan1:        5461 RPM  (div = 1)
-
-g762-i2c-0-49
-Adapter: mv64xxx_i2c adapter
-fan1:        5461 RPM  (div = 1)
-
-g751-i2c-0-4c
-Adapter: mv64xxx_i2c adapter
-temp1:        +30.5°C  (high = +80.0°C, hyst = +75.0°C)
-
-armada_thermal-virtual-0
-Adapter: Virtual device
-temp1:        +34.2°C
-
-root@thin:/sys/bus/i2c/drivers/lm75/0-004c# ls
-driver  modalias  subsystem    temp1_max       uevent
-hwmon   name      temp1_input  temp1_max_hyst
-
-root@thin:/sys/bus/i2c/drivers/lm75/0-004c# dmesg | grep lm
-[  120.960471] lm75 0-004c: hwmon3: sensor 'g751'
-
-
-just by adding the following to the .dts:
-
-	g751: g751@4c {
-		compatible = "gmt,g751";
-		reg = <0x4c>;
-	};
-
-Do not hesitate to tell me if I missed something.
-
-Cheers,
-
-a+
-
- Documentation/devicetree/bindings/i2c/trivial-devices.txt | 1 +
- drivers/hwmon/Kconfig                                     | 1 +
- drivers/hwmon/lm75.c                                      | 3 +++
- 3 files changed, 5 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-index ad6a738..c98e5a2 100644
---- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-+++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-@@ -35,6 +35,7 @@ fsl,mc13892		MC13892: Power Management Integrated Circuit (PMIC) for i.MX35/51
- fsl,mma8450		MMA8450Q: Xtrinsic Low-power, 3-axis Xtrinsic Accelerometer
- fsl,mpr121		MPR121: Proximity Capacitive Touch Sensor Controller
- fsl,sgtl5000		SGTL5000: Ultra Low-Power Audio Codec
-+gmt,g751		G751: Digital Temperature Sensor and Thermal Watchdog with Two-Wire Interface
- infineon,slb9635tt	Infineon SLB9635 (Soft-) I2C TPM (old protocol, max 100khz)
- infineon,slb9645tt	Infineon SLB9645 I2C TPM (new protocol, max 400khz)
- maxim,ds1050		5 Bit Programmable, Pulse-Width Modulator
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index b3ab9d4..52d548f 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -656,6 +656,7 @@ config SENSORS_LM75
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index 78be661..5c8ab25 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -36,6 +36,7 @@
+ #include <linux/cpu.h>
+ #include <linux/smp.h>
+ #include <linux/moduleparam.h>
++#include <linux/pci.h>
+ #include <asm/msr.h>
+ #include <asm/processor.h>
+ #include <asm/cpu_device_id.h>
+@@ -190,6 +191,17 @@ static ssize_t show_temp(struct device *dev,
+ 	return tdata->valid ? sprintf(buf, "%d\n", tdata->temp) : -EAGAIN;
+ }
  
- 		- Analog Devices ADT75
- 		- Dallas Semiconductor DS75, DS1775 and DS7505
-+		- Global Mixed-mode Technology (GMT) G751
- 		- Maxim MAX6625 and MAX6626
- 		- Microchip MCP980x
- 		- National Semiconductor LM75, LM75A
-diff --git a/drivers/hwmon/lm75.c b/drivers/hwmon/lm75.c
-index c03b490..7e3ef13 100644
---- a/drivers/hwmon/lm75.c
-+++ b/drivers/hwmon/lm75.c
-@@ -39,6 +39,7 @@ enum lm75_type {		/* keep sorted in alphabetical order */
- 	ds1775,
- 	ds75,
- 	ds7505,
-+	g751,
- 	lm75,
- 	lm75a,
- 	max6625,
-@@ -208,6 +209,7 @@ lm75_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 		data->resolution = 12;
- 		data->sample_time = HZ / 4;
- 		break;
-+	case g751:
- 	case lm75:
- 	case lm75a:
- 		data->resolution = 9;
-@@ -296,6 +298,7 @@ static const struct i2c_device_id lm75_ids[] = {
- 	{ "ds1775", ds1775, },
- 	{ "ds75", ds75, },
- 	{ "ds7505", ds7505, },
-+	{ "g751", g751, },
- 	{ "lm75", lm75, },
- 	{ "lm75a", lm75a, },
- 	{ "max6625", max6625, },
++struct tjmax_pci {
++	unsigned int device;
++	int tjmax;
++};
++
++static const struct tjmax_pci tjmax_pci_table[] __cpuinitconst = {
++	{ 0x0c72, 102000 },	/* Atom S1240 (Centerton) */
++	{ 0x0c73, 95000 },	/* Atom S1220 (Centerton) */
++	{ 0x0c75, 95000 },	/* Atom S1260 (Centerton) */
++};
++
+ struct tjmax {
+ 	char const *id;
+ 	int tjmax;
+@@ -222,8 +234,11 @@ static const struct tjmax_model tjmax_model_table[] = {
+ 				 * is undetectable by software
+ 				 */
+ 	{ 0x27, ANY, 90000 },	/* Atom Medfield (Z2460) */
+-	{ 0x35, ANY, 90000 },	/* Atom Clover Trail/Cloverview (Z2760) */
+-	{ 0x36, ANY, 100000 },	/* Atom Cedar Trail/Cedarview (N2xxx, D2xxx) */
++	{ 0x35, ANY, 90000 },	/* Atom Clover Trail/Cloverview (Z27x0) */
++	{ 0x36, ANY, 100000 },	/* Atom Cedar Trail/Cedarview (N2xxx, D2xxx)
++				 * Also matches S12x0 (stepping 9), covered by
++				 * PCI table
++				 */
+ };
+ 
+ static int adjust_tjmax(struct cpuinfo_x86 *c, u32 id, struct device *dev)
+@@ -236,8 +251,20 @@ static int adjust_tjmax(struct cpuinfo_x86 *c, u32 id, struct device *dev)
+ 	int err;
+ 	u32 eax, edx;
+ 	int i;
++	struct pci_dev *host_bridge = pci_get_bus_and_slot(0, PCI_DEVFN(0, 0));
++
++	/*
++	 * Explicit tjmax table entries override heuristics.
++	 * First try PCI host bridge IDs, followed by model ID strings
++	 * and model/stepping information.
++	 */
++	if (host_bridge && host_bridge->vendor == PCI_VENDOR_ID_INTEL) {
++		for (i = 0; i < ARRAY_SIZE(tjmax_pci_table); i++) {
++			if (host_bridge->device == tjmax_pci_table[i].device)
++				return tjmax_pci_table[i].tjmax;
++		}
++	}
+ 
+-	/* explicit tjmax table entries override heuristics */
+ 	for (i = 0; i < ARRAY_SIZE(tjmax_table); i++) {
+ 		if (strstr(c->x86_model_id, tjmax_table[i].id))
+ 			return tjmax_table[i].tjmax;
 -- 
-1.8.4.rc3
+1.7.9.7
 
