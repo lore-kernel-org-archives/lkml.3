@@ -1,26 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933184Ab3KIHGy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:06:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33369 "EHLO
+	id S933208Ab3KIHHc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:07:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33358 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932793Ab3KIGwO (ORCPT
+	with ESMTP id S932788Ab3KIGwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:14 -0500
+	Sat, 9 Nov 2013 01:52:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
-        Ming Lei <tom.leiming@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 3.11 48/94] scripts/kallsyms: filter symbols not in kernel address space
-Date: Fri,  8 Nov 2013 22:51:54 -0800
-Message-Id: <20131109065207.601418428@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Marc Pignat <marc.pignat@hevs.ch>,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        nicolas.ferre@atmel.com, john.stultz@linaro.org, kernel@pengutronix.de
+Subject: [PATCH 3.11 46/94] clockevents: Sanitize ticks to nsec conversion
+Date: Fri,  8 Nov 2013 22:51:52 -0800
+Message-Id: <20131109065207.464151098@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,84 +38,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <tom.leiming@gmail.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit f6537f2f0eba4eba3354e48dbe3047db6d8b6254 upstream.
+commit 97b9410643475d6557d2517c2aff9fd2221141a9 upstream.
 
-This patch uses CONFIG_PAGE_OFFSET to filter symbols which
-are not in kernel address space because these symbols are
-generally for generating code purpose and can't be run at
-kernel mode, so we needn't keep them in /proc/kallsyms.
+Marc Kleine-Budde pointed out, that commit 77cc982 "clocksource: use
+clockevents_config_and_register() where possible" caused a regression
+for some of the converted subarchs.
 
-For example, on ARM there are some symbols which may be
-linked in relocatable code section, then perf can't parse
-symbols any more from /proc/kallsyms, this patch fixes the
-problem (introduced b9b32bf70f2fb710b07c94e13afbc729afe221da)
+The reason is, that the clockevents core code converts the minimal
+hardware tick delta to a nanosecond value for core internal
+usage. This conversion is affected by integer math rounding loss, so
+the backwards conversion to hardware ticks will likely result in a
+value which is less than the configured hardware limitation. The
+affected subarchs used their own workaround (SIGH!) which got lost in
+the conversion.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Michal Marek <mmarek@suse.cz>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+The solution for the issue at hand is simple: adding evt->mult - 1 to
+the shifted value before the integer divison in the core conversion
+function takes care of it. But this only works for the case where for
+the scaled math mult/shift pair "mult <= 1 << shift" is true. For the
+case where "mult > 1 << shift" we can apply the rounding add only for
+the minimum delta value to make sure that the backward conversion is
+not less than the given hardware limit. For the upper bound we need to
+omit the rounding add, because the backwards conversion is always
+larger than the original latch value. That would violate the upper
+bound of the hardware device.
+
+Though looking closer at the details of that function reveals another
+bogosity: The upper bounds check is broken as well. Checking for a
+resulting "clc" value greater than KTIME_MAX after the conversion is
+pointless. The conversion does:
+
+      u64 clc = (latch << evt->shift) / evt->mult;
+
+So there is no sanity check for (latch << evt->shift) exceeding the
+64bit boundary. The latch argument is "unsigned long", so on a 64bit
+arch the handed in argument could easily lead to an unnoticed shift
+overflow. With the above rounding fix applied the calculation before
+the divison is:
+
+       u64 clc = (latch << evt->shift) + evt->mult - 1;
+
+So we need to make sure, that neither the shift nor the rounding add
+is overflowing the u64 boundary.
+
+[ukl: move assignment to rnd after eventually changing mult, fix build
+ issue and correct comment with the right math]
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: nicolas.ferre@atmel.com
+Cc: Marc Pignat <marc.pignat@hevs.ch>
+Cc: john.stultz@linaro.org
+Cc: kernel@pengutronix.de
+Cc: Ronald Wahl <ronald.wahl@raritan.com>
+Cc: LAK <linux-arm-kernel@lists.infradead.org>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>
+Link: http://lkml.kernel.org/r/1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/kallsyms.c      |   12 +++++++++++-
- scripts/link-vmlinux.sh |    2 ++
- 2 files changed, 13 insertions(+), 1 deletion(-)
+ kernel/time/clockevents.c |   65 +++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 50 insertions(+), 15 deletions(-)
 
---- a/scripts/kallsyms.c
-+++ b/scripts/kallsyms.c
-@@ -55,6 +55,7 @@ static struct sym_entry *table;
- static unsigned int table_size, table_cnt;
- static int all_symbols = 0;
- static char symbol_prefix_char = '\0';
-+static unsigned long long kernel_start_addr = 0;
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -33,29 +33,64 @@ struct ce_unbind {
+ 	int res;
+ };
  
- int token_profit[0x10000];
- 
-@@ -65,7 +66,10 @@ unsigned char best_table_len[256];
- 
- static void usage(void)
+-/**
+- * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
+- * @latch:	value to convert
+- * @evt:	pointer to clock event device descriptor
+- *
+- * Math helper, returns latch value converted to nanoseconds (bound checked)
+- */
+-u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
++static u64 cev_delta2ns(unsigned long latch, struct clock_event_device *evt,
++			bool ismax)
  {
--	fprintf(stderr, "Usage: kallsyms [--all-symbols] [--symbol-prefix=<prefix char>] < in.map > out.S\n");
-+	fprintf(stderr, "Usage: kallsyms [--all-symbols] "
-+			"[--symbol-prefix=<prefix char>] "
-+			"[--page-offset=<CONFIG_PAGE_OFFSET>] "
-+			"< in.map > out.S\n");
- 	exit(1);
+ 	u64 clc = (u64) latch << evt->shift;
++	u64 rnd;
+ 
+ 	if (unlikely(!evt->mult)) {
+ 		evt->mult = 1;
+ 		WARN_ON(1);
+ 	}
++	rnd = (u64) evt->mult - 1;
++
++	/*
++	 * Upper bound sanity check. If the backwards conversion is
++	 * not equal latch, we know that the above shift overflowed.
++	 */
++	if ((clc >> evt->shift) != (u64)latch)
++		clc = ~0ULL;
++
++	/*
++	 * Scaled math oddities:
++	 *
++	 * For mult <= (1 << shift) we can safely add mult - 1 to
++	 * prevent integer rounding loss. So the backwards conversion
++	 * from nsec to device ticks will be correct.
++	 *
++	 * For mult > (1 << shift), i.e. device frequency is > 1GHz we
++	 * need to be careful. Adding mult - 1 will result in a value
++	 * which when converted back to device ticks can be larger
++	 * than latch by up to (mult - 1) >> shift. For the min_delta
++	 * calculation we still want to apply this in order to stay
++	 * above the minimum device ticks limit. For the upper limit
++	 * we would end up with a latch value larger than the upper
++	 * limit of the device, so we omit the add to stay below the
++	 * device upper boundary.
++	 *
++	 * Also omit the add if it would overflow the u64 boundary.
++	 */
++	if ((~0ULL - clc > rnd) &&
++	    (!ismax || evt->mult <= (1U << evt->shift)))
++		clc += rnd;
+ 
+ 	do_div(clc, evt->mult);
+-	if (clc < 1000)
+-		clc = 1000;
+-	if (clc > KTIME_MAX)
+-		clc = KTIME_MAX;
+ 
+-	return clc;
++	/* Deltas less than 1usec are pointless noise */
++	return clc > 1000 ? clc : 1000;
++}
++
++/**
++ * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
++ * @latch:	value to convert
++ * @evt:	pointer to clock event device descriptor
++ *
++ * Math helper, returns latch value converted to nanoseconds (bound checked)
++ */
++u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
++{
++	return cev_delta2ns(latch, evt, false);
+ }
+ EXPORT_SYMBOL_GPL(clockevent_delta2ns);
+ 
+@@ -380,8 +415,8 @@ void clockevents_config(struct clock_eve
+ 		sec = 600;
+ 
+ 	clockevents_calc_mult_shift(dev, freq, sec);
+-	dev->min_delta_ns = clockevent_delta2ns(dev->min_delta_ticks, dev);
+-	dev->max_delta_ns = clockevent_delta2ns(dev->max_delta_ticks, dev);
++	dev->min_delta_ns = cev_delta2ns(dev->min_delta_ticks, dev, false);
++	dev->max_delta_ns = cev_delta2ns(dev->max_delta_ticks, dev, true);
  }
  
-@@ -194,6 +198,9 @@ static int symbol_valid(struct sym_entry
- 	int i;
- 	int offset = 1;
- 
-+	if (s->addr < kernel_start_addr)
-+		return 0;
-+
- 	/* skip prefix char */
- 	if (symbol_prefix_char && *(s->sym + 1) == symbol_prefix_char)
- 		offset++;
-@@ -646,6 +653,9 @@ int main(int argc, char **argv)
- 				if ((*p == '"' && *(p+2) == '"') || (*p == '\'' && *(p+2) == '\''))
- 					p++;
- 				symbol_prefix_char = *p;
-+			} else if (strncmp(argv[i], "--page-offset=", 14) == 0) {
-+				const char *p = &argv[i][14];
-+				kernel_start_addr = strtoull(p, NULL, 16);
- 			} else
- 				usage();
- 		}
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -82,6 +82,8 @@ kallsyms()
- 		kallsymopt="${kallsymopt} --all-symbols"
- 	fi
- 
-+	kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
-+
- 	local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
- 		      ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
- 
+ /**
 
 
