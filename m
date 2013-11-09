@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab3KIGtt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:49:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60976 "EHLO
+	id S1756149Ab3KIGtw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:49:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60985 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753966Ab3KIGto (ORCPT
+	with ESMTP id S1755422Ab3KIGtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:49:44 -0500
+	Sat, 9 Nov 2013 01:49:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.4 16/26] ASoC: wm_hubs: Add missing break in hp_supply_event()
-Date: Fri,  8 Nov 2013 22:51:45 -0800
-Message-Id: <20131109065051.344576160@linuxfoundation.org>
+        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 18/26] staging: ozwpan: prevent overflow in oz_cdev_write()
+Date: Fri,  8 Nov 2013 22:51:47 -0800
+Message-Id: <20131109065051.477959159@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065050.089866597@linuxfoundation.org>
 References: <20131109065050.089866597@linuxfoundation.org>
@@ -26,29 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 268ff14525edba31da29a12a9dd693cdd6a7872e upstream.
+commit c2c65cd2e14ada6de44cb527e7f1990bede24e15 upstream.
 
-Spotted by coverity CID 115170.
+We need to check "count" so we don't overflow the ei->data buffer.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm_hubs.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/ozwpan/ozcdev.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/soc/codecs/wm_hubs.c
-+++ b/sound/soc/codecs/wm_hubs.c
-@@ -413,6 +413,7 @@ static int hp_supply_event(struct snd_so
- 				hubs->hp_startup_mode);
- 			break;
- 		}
-+		break;
+--- a/drivers/staging/ozwpan/ozcdev.c
++++ b/drivers/staging/ozwpan/ozcdev.c
+@@ -153,6 +153,9 @@ ssize_t oz_cdev_write(struct file *filp,
+ 	struct oz_app_hdr *app_hdr;
+ 	struct oz_serial_ctx *ctx;
  
- 	case SND_SOC_DAPM_PRE_PMD:
- 		snd_soc_update_bits(codec, WM8993_CHARGE_PUMP_1,
++	if (count > sizeof(ei->data) - sizeof(*elt) - sizeof(*app_hdr))
++		return -EINVAL;
++
+ 	spin_lock_bh(&g_cdev.lock);
+ 	pd = g_cdev.active_pd;
+ 	if (pd)
 
 
