@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933826Ab3KIHbu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:31:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32989 "EHLO
+	id S933813Ab3KIHbq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:31:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32992 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758484Ab3KIGuq (ORCPT
+	with ESMTP id S1758493Ab3KIGur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:46 -0500
+	Sat, 9 Nov 2013 01:50:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [PATCH 3.10 04/74] USB: quirks: add touchscreen that is dazzeled by remote wakeup
-Date: Fri,  8 Nov 2013 22:51:09 -0800
-Message-Id: <20131109065113.813956624@linuxfoundation.org>
+        "Alexey E. Kramarenko" <alexeyk13@yandex.ru>
+Subject: [PATCH 3.10 05/74] USB: serial: ftdi_sio: add id for Z3X Box device
+Date: Fri,  8 Nov 2013 22:51:10 -0800
+Message-Id: <20131109065113.881529173@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,30 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Алексей Крамаренко <alexeyk13@yandex.ru>
 
-commit 614ced91fc6fbb5a1cdd12f0f1b6c9197d9f1350 upstream.
+commit e1466ad5b1aeda303f9282463d55798d2eda218c upstream.
 
-The device descriptors are messed up after remote wakeup
+Custom VID/PID for Z3X Box device, popular tool for cellphone flashing.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Alexey E. Kramarenko <alexeyk13@yandex.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/quirks.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -97,6 +97,9 @@ static const struct usb_device_id usb_qu
- 	/* Alcor Micro Corp. Hub */
- 	{ USB_DEVICE(0x058f, 0x9254), .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* MicroTouch Systems touchscreen */
-+	{ USB_DEVICE(0x0596, 0x051e), .driver_info = USB_QUIRK_RESET_RESUME },
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -906,6 +906,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
+ 	/* Crucible Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1307,3 +1307,9 @@
+  * Manufacturer: Crucible Technologies
+  */
+ #define FTDI_CT_COMET_PID	0x8e08
 +
- 	/* appletouch */
- 	{ USB_DEVICE(0x05ac, 0x021a), .driver_info = USB_QUIRK_RESET_RESUME },
- 
++/*
++ * Product: Z3X Box
++ * Manufacturer: Smart GSM Team
++ */
++#define FTDI_Z3X_PID		0x0011
 
 
