@@ -1,30 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933655Ab3KIH0J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:26:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33125 "EHLO
+	id S933640Ab3KIH0F (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:26:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33130 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932445Ab3KIGvP (ORCPT
+	with ESMTP id S932453Ab3KIGvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 9 Nov 2013 01:51:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Dave Airlie <airlied@redhat.com>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH 3.10 67/74] drm: Prevent overwriting from userspace underallocating core ioctl structs
-Date: Fri,  8 Nov 2013 22:52:12 -0800
-Message-Id: <20131109065118.173242382@linuxfoundation.org>
+        Pavel Roskin <proski@gnu.org>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org
+Subject: [PATCH 3.10 68/74] drm: Pad drm_mode_get_connector to 64-bit boundary
+Date: Fri,  8 Nov 2013 22:52:13 -0800
+Message-Id: <20131109065118.242570021@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,50 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit b062672e305ce071f21eb9e18b102c2a430e0999 upstream.
+commit bc5bd37ce48c66e9192ad2e7231e9678880f6f8e upstream.
 
-Apply the protections from
+Pavel Roskin reported that DRM_IOCTL_MODE_GETCONNECTOR was overwritting
+the 4 bytes beyond the end of its structure with a 32-bit userspace
+running on a 64-bit kernel. This is due to the padding gcc inserts as
+the drm_mode_get_connector struct includes a u64 and its size is not a
+natural multiple of u64s.
 
-commit 1b2f1489633888d4a06028315dc19d65768a1c05
-Author: Dave Airlie <airlied@redhat.com>
-Date:   Sat Aug 14 20:20:34 2010 +1000
+64-bit kernel:
 
-    drm: block userspace under allocating buffer and having drivers overwrite it (v2)
+sizeof(drm_mode_get_connector)=80, alignof=8
+sizeof(drm_mode_get_encoder)=20, alignof=4
+sizeof(drm_mode_modeinfo)=68, alignof=4
 
-to the core ioctl structs as well, for we found one instance where there
-is a 32-/64-bit size mismatch and were guilty of writing beyond the end
-of the user's buffer.
+32-bit userspace:
 
+sizeof(drm_mode_get_connector)=76, alignof=4
+sizeof(drm_mode_get_encoder)=20, alignof=4
+sizeof(drm_mode_modeinfo)=68, alignof=4
+
+Fortuituously we can insert explicit padding to the tail of our
+structures without breaking ABI.
+
+Reported-by: Pavel Roskin <proski@gnu.org>
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Cc: Dave Airlie <airlied@redhat.com>
-Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
 Cc: dri-devel@lists.freedesktop.org
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_drv.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ include/uapi/drm/drm_mode.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/gpu/drm/drm_drv.c
-+++ b/drivers/gpu/drm/drm_drv.c
-@@ -406,9 +406,16 @@ long drm_ioctl(struct file *filp,
- 		cmd = ioctl->cmd_drv;
- 	}
- 	else if ((nr >= DRM_COMMAND_END) || (nr < DRM_COMMAND_BASE)) {
-+		u32 drv_size;
+--- a/include/uapi/drm/drm_mode.h
++++ b/include/uapi/drm/drm_mode.h
+@@ -223,6 +223,8 @@ struct drm_mode_get_connector {
+ 	__u32 connection;
+ 	__u32 mm_width, mm_height; /**< HxW in millimeters */
+ 	__u32 subpixel;
 +
- 		ioctl = &drm_ioctls[nr];
--		cmd = ioctl->cmd;
-+
-+		drv_size = _IOC_SIZE(ioctl->cmd);
- 		usize = asize = _IOC_SIZE(cmd);
-+		if (drv_size > asize)
-+			asize = drv_size;
-+
-+		cmd = ioctl->cmd;
- 	} else
- 		goto err_i1;
++	__u32 pad;
+ };
  
+ #define DRM_MODE_PROP_PENDING	(1<<0)
 
 
