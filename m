@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933690Ab3KIH1U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:27:20 -0500
+	id S933384Ab3KIH14 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:27:56 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:33081 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932379Ab3KIGvJ (ORCPT
+	with ESMTP id S932274Ab3KIGvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:09 -0500
+	Sat, 9 Nov 2013 01:51:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 62/74] mm: Account for a THP NUMA hinting update as one PTE update
-Date: Fri,  8 Nov 2013 22:52:07 -0800
-Message-Id: <20131109065117.830420249@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 42/74] ASoC: dapm: Fix source list debugfs outputs
+Date: Fri,  8 Nov 2013 22:51:47 -0800
+Message-Id: <20131109065116.480117171@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -30,39 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 0255d491848032f6c601b6410c3b8ebded3a37b1 upstream.
+commit ff18620c2157671a8ee21ebb8e6a3520ea209b1f upstream.
 
-A THP PMD update is accounted for as 512 pages updated in vmstat.  This is
-large difference when estimating the cost of automatic NUMA balancing and
-can be misleading when comparing results that had collapsed versus split
-THP. This patch addresses the accounting issue.
+... due to a copy & paste error.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-10-git-send-email-mgorman@suse.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Spotted by coverity CID 710923.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mprotect.c |    2 +-
+ sound/soc/soc-dapm.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -145,7 +145,7 @@ static inline unsigned long change_pmd_r
- 				split_huge_page_pmd(vma, addr, pmd);
- 			else if (change_huge_pmd(vma, pmd, addr, newprot,
- 						 prot_numa)) {
--				pages += HPAGE_PMD_NR;
-+				pages++;
- 				continue;
- 			}
- 			/* fall through */
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -1797,7 +1797,7 @@ static ssize_t dapm_widget_power_read_fi
+ 				w->active ? "active" : "inactive");
+ 
+ 	list_for_each_entry(p, &w->sources, list_sink) {
+-		if (p->connected && !p->connected(w, p->sink))
++		if (p->connected && !p->connected(w, p->source))
+ 			continue;
+ 
+ 		if (p->connect)
 
 
