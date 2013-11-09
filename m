@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758815Ab3KIG5d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:57:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33593 "EHLO
+	id S1758833Ab3KIG5x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:57:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33586 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758620Ab3KIGw4 (ORCPT
+	with ESMTP id S1758616Ab3KIGwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:56 -0500
+	Sat, 9 Nov 2013 01:52:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, peterz@infradead.org,
-        imirkin@alum.mit.edu, daniel.vetter@ffwll.ch, robdclark@gmail.com
-Subject: [PATCH 3.11 89/94] mutex: Avoid gcc version dependent __builtin_constant_p() usage
-Date: Fri,  8 Nov 2013 22:52:35 -0800
-Message-Id: <20131109065210.539422941@linuxfoundation.org>
+        Jan-Michael Brummer <jan.brummer@tabos.org>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.11 88/94] drm/i915: Fix the PPT fdi lane bifurcate state handling on ivb
+Date: Fri,  8 Nov 2013 22:52:34 -0800
+Message-Id: <20131109065210.470190401@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,181 +32,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit b0267507dfd0187fb7840a0ec461a510a7f041c5 upstream.
+commit 1fbc0d789d12fec313c91912fc11733fdfbab863 upstream.
 
-Commit 040a0a37 ("mutex: Add support for wound/wait style locks")
-used "!__builtin_constant_p(p == NULL)" but gcc 3.x cannot
-handle such expression correctly, leading to boot failure when
-built with CONFIG_DEBUG_MUTEXES=y.
+Originally I've thought that this is leftover hw state dirt from the
+BIOS. But after way too much helpless flailing around on my part I've
+noticed that the actual bug is when we change the state of an already
+active pipe.
 
-Fix it by explicitly passing a bool which tells whether p != NULL
-or not.
+For example when we change the fdi lines from 2 to 3 without switching
+off outputs in-between we'll never see the crucial on->off transition
+in the ->modeset_global_resources hook the current logic relies on.
 
-[ PeterZ: This is a sad patch, but provided it actually generates
-          similar code I suppose its the best we can do bar whole
-	  sale deprecating gcc-3. ]
+Patch version 2 got this right by instead also checking whether the
+pipe is indeed active. But that in turn broke things when pipes have
+been turned off through dpms since the bifurcate enabling is done in
+the ->crtc_mode_set callback.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: peterz@infradead.org
-Cc: imirkin@alum.mit.edu
-Cc: daniel.vetter@ffwll.ch
-Cc: robdclark@gmail.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/201310171945.AGB17114.FSQVtHOJFOOFML@I-love.SAKURA.ne.jp
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+To address this issues discussed with Ville in the patch review move
+the setting of the bifurcate bit into the ->crtc_enable hook. That way
+we won't wreak havoc with this state when userspace puts all other
+outputs into dpms off state. This also moves us forward with our
+overall goal to unify the modeset and dpms on paths (which we need to
+have to allow runtime pm in the dpms off state).
+
+Unfortunately this requires us to move the bifurcate helpers around a
+bit.
+
+Also update the commit message, I've misanalyzed the bug rather badly.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=70507
+Tested-by: Jan-Michael Brummer <jan.brummer@tabos.org>
+Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/mutex.c |   32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |   95 +++++++++++++++++------------------
+ 1 file changed, 48 insertions(+), 47 deletions(-)
 
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -408,7 +408,7 @@ ww_mutex_set_context_fastpath(struct ww_
- static __always_inline int __sched
- __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		    struct lockdep_map *nest_lock, unsigned long ip,
--		    struct ww_acquire_ctx *ww_ctx)
-+		    struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
- {
- 	struct task_struct *task = current;
- 	struct mutex_waiter waiter;
-@@ -448,7 +448,7 @@ __mutex_lock_common(struct mutex *lock,
- 		struct task_struct *owner;
- 		struct mspin_node  node;
- 
--		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
-+		if (use_ww_ctx && ww_ctx->acquired > 0) {
- 			struct ww_mutex *ww;
- 
- 			ww = container_of(lock, struct ww_mutex, base);
-@@ -478,7 +478,7 @@ __mutex_lock_common(struct mutex *lock,
- 		if ((atomic_read(&lock->count) == 1) &&
- 		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
- 			lock_acquired(&lock->dep_map, ip);
--			if (!__builtin_constant_p(ww_ctx == NULL)) {
-+			if (use_ww_ctx) {
- 				struct ww_mutex *ww;
- 				ww = container_of(lock, struct ww_mutex, base);
- 
-@@ -548,7 +548,7 @@ slowpath:
- 			goto err;
- 		}
- 
--		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
-+		if (use_ww_ctx && ww_ctx->acquired > 0) {
- 			ret = __mutex_lock_check_stamp(lock, ww_ctx);
- 			if (ret)
- 				goto err;
-@@ -568,7 +568,7 @@ done:
- 	mutex_remove_waiter(lock, &waiter, current_thread_info());
- 	mutex_set_owner(lock);
- 
--	if (!__builtin_constant_p(ww_ctx == NULL)) {
-+	if (use_ww_ctx) {
- 		struct ww_mutex *ww = container_of(lock,
- 						      struct ww_mutex,
- 						      base);
-@@ -618,7 +618,7 @@ mutex_lock_nested(struct mutex *lock, un
- {
- 	might_sleep();
- 	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
--			    subclass, NULL, _RET_IP_, NULL);
-+			    subclass, NULL, _RET_IP_, NULL, 0);
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2251,9 +2251,10 @@ static void intel_fdi_normal_train(struc
+ 			   FDI_FE_ERRC_ENABLE);
  }
  
- EXPORT_SYMBOL_GPL(mutex_lock_nested);
-@@ -628,7 +628,7 @@ _mutex_lock_nest_lock(struct mutex *lock
+-static bool pipe_has_enabled_pch(struct intel_crtc *intel_crtc)
++static bool pipe_has_enabled_pch(struct intel_crtc *crtc)
  {
- 	might_sleep();
- 	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
--			    0, nest, _RET_IP_, NULL);
-+			    0, nest, _RET_IP_, NULL, 0);
+-	return intel_crtc->base.enabled && intel_crtc->config.has_pch_encoder;
++	return crtc->base.enabled && crtc->active &&
++		crtc->config.has_pch_encoder;
  }
  
- EXPORT_SYMBOL_GPL(_mutex_lock_nest_lock);
-@@ -638,7 +638,7 @@ mutex_lock_killable_nested(struct mutex
+ static void ivb_modeset_global_resources(struct drm_device *dev)
+@@ -2901,6 +2902,48 @@ static void ironlake_pch_transcoder_set_
+ 		   I915_READ(VSYNCSHIFT(cpu_transcoder)));
+ }
+ 
++static void cpt_enable_fdi_bc_bifurcation(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	uint32_t temp;
++
++	temp = I915_READ(SOUTH_CHICKEN1);
++	if (temp & FDI_BC_BIFURCATION_SELECT)
++		return;
++
++	WARN_ON(I915_READ(FDI_RX_CTL(PIPE_B)) & FDI_RX_ENABLE);
++	WARN_ON(I915_READ(FDI_RX_CTL(PIPE_C)) & FDI_RX_ENABLE);
++
++	temp |= FDI_BC_BIFURCATION_SELECT;
++	DRM_DEBUG_KMS("enabling fdi C rx\n");
++	I915_WRITE(SOUTH_CHICKEN1, temp);
++	POSTING_READ(SOUTH_CHICKEN1);
++}
++
++static void ivybridge_update_fdi_bc_bifurcation(struct intel_crtc *intel_crtc)
++{
++	struct drm_device *dev = intel_crtc->base.dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
++
++	switch (intel_crtc->pipe) {
++	case PIPE_A:
++		break;
++	case PIPE_B:
++		if (intel_crtc->config.fdi_lanes > 2)
++			WARN_ON(I915_READ(SOUTH_CHICKEN1) & FDI_BC_BIFURCATION_SELECT);
++		else
++			cpt_enable_fdi_bc_bifurcation(dev);
++
++		break;
++	case PIPE_C:
++		cpt_enable_fdi_bc_bifurcation(dev);
++
++		break;
++	default:
++		BUG();
++	}
++}
++
+ /*
+  * Enable PCH resources required for PCH ports:
+  *   - PCH PLLs
+@@ -2919,6 +2962,9 @@ static void ironlake_pch_enable(struct d
+ 
+ 	assert_pch_transcoder_disabled(dev_priv, pipe);
+ 
++	if (IS_IVYBRIDGE(dev))
++		ivybridge_update_fdi_bc_bifurcation(intel_crtc);
++
+ 	/* Write the TU size bits before fdi link training, so that error
+ 	 * detection works. */
+ 	I915_WRITE(FDI_RX_TUSIZE1(pipe),
+@@ -5512,48 +5558,6 @@ static bool ironlake_compute_clocks(stru
+ 	return true;
+ }
+ 
+-static void cpt_enable_fdi_bc_bifurcation(struct drm_device *dev)
+-{
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+-	uint32_t temp;
+-
+-	temp = I915_READ(SOUTH_CHICKEN1);
+-	if (temp & FDI_BC_BIFURCATION_SELECT)
+-		return;
+-
+-	WARN_ON(I915_READ(FDI_RX_CTL(PIPE_B)) & FDI_RX_ENABLE);
+-	WARN_ON(I915_READ(FDI_RX_CTL(PIPE_C)) & FDI_RX_ENABLE);
+-
+-	temp |= FDI_BC_BIFURCATION_SELECT;
+-	DRM_DEBUG_KMS("enabling fdi C rx\n");
+-	I915_WRITE(SOUTH_CHICKEN1, temp);
+-	POSTING_READ(SOUTH_CHICKEN1);
+-}
+-
+-static void ivybridge_update_fdi_bc_bifurcation(struct intel_crtc *intel_crtc)
+-{
+-	struct drm_device *dev = intel_crtc->base.dev;
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+-
+-	switch (intel_crtc->pipe) {
+-	case PIPE_A:
+-		break;
+-	case PIPE_B:
+-		if (intel_crtc->config.fdi_lanes > 2)
+-			WARN_ON(I915_READ(SOUTH_CHICKEN1) & FDI_BC_BIFURCATION_SELECT);
+-		else
+-			cpt_enable_fdi_bc_bifurcation(dev);
+-
+-		break;
+-	case PIPE_C:
+-		cpt_enable_fdi_bc_bifurcation(dev);
+-
+-		break;
+-	default:
+-		BUG();
+-	}
+-}
+-
+ int ironlake_get_lanes_required(int target_clock, int link_bw, int bpp)
  {
- 	might_sleep();
- 	return __mutex_lock_common(lock, TASK_KILLABLE,
--				   subclass, NULL, _RET_IP_, NULL);
-+				   subclass, NULL, _RET_IP_, NULL, 0);
- }
- EXPORT_SYMBOL_GPL(mutex_lock_killable_nested);
+ 	/*
+@@ -5768,9 +5772,6 @@ static int ironlake_crtc_mode_set(struct
+ 					     &intel_crtc->config.fdi_m_n);
+ 	}
  
-@@ -647,7 +647,7 @@ mutex_lock_interruptible_nested(struct m
- {
- 	might_sleep();
- 	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE,
--				   subclass, NULL, _RET_IP_, NULL);
-+				   subclass, NULL, _RET_IP_, NULL, 0);
- }
+-	if (IS_IVYBRIDGE(dev))
+-		ivybridge_update_fdi_bc_bifurcation(intel_crtc);
+-
+ 	ironlake_set_pipeconf(crtc);
  
- EXPORT_SYMBOL_GPL(mutex_lock_interruptible_nested);
-@@ -685,7 +685,7 @@ __ww_mutex_lock(struct ww_mutex *lock, s
- 
- 	might_sleep();
- 	ret =  __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
--				   0, &ctx->dep_map, _RET_IP_, ctx);
-+				   0, &ctx->dep_map, _RET_IP_, ctx, 1);
- 	if (!ret && ctx->acquired > 1)
- 		return ww_mutex_deadlock_injection(lock, ctx);
- 
-@@ -700,7 +700,7 @@ __ww_mutex_lock_interruptible(struct ww_
- 
- 	might_sleep();
- 	ret = __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
--				  0, &ctx->dep_map, _RET_IP_, ctx);
-+				  0, &ctx->dep_map, _RET_IP_, ctx, 1);
- 
- 	if (!ret && ctx->acquired > 1)
- 		return ww_mutex_deadlock_injection(lock, ctx);
-@@ -812,28 +812,28 @@ __mutex_lock_slowpath(atomic_t *lock_cou
- 	struct mutex *lock = container_of(lock_count, struct mutex, count);
- 
- 	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0,
--			    NULL, _RET_IP_, NULL);
-+			    NULL, _RET_IP_, NULL, 0);
- }
- 
- static noinline int __sched
- __mutex_lock_killable_slowpath(struct mutex *lock)
- {
- 	return __mutex_lock_common(lock, TASK_KILLABLE, 0,
--				   NULL, _RET_IP_, NULL);
-+				   NULL, _RET_IP_, NULL, 0);
- }
- 
- static noinline int __sched
- __mutex_lock_interruptible_slowpath(struct mutex *lock)
- {
- 	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0,
--				   NULL, _RET_IP_, NULL);
-+				   NULL, _RET_IP_, NULL, 0);
- }
- 
- static noinline int __sched
- __ww_mutex_lock_slowpath(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
- {
- 	return __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE, 0,
--				   NULL, _RET_IP_, ctx);
-+				   NULL, _RET_IP_, ctx, 1);
- }
- 
- static noinline int __sched
-@@ -841,7 +841,7 @@ __ww_mutex_lock_interruptible_slowpath(s
- 					    struct ww_acquire_ctx *ctx)
- {
- 	return __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE, 0,
--				   NULL, _RET_IP_, ctx);
-+				   NULL, _RET_IP_, ctx, 1);
- }
- 
- #endif
+ 	/* Set up the display plane register */
 
 
