@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab3KIGtm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:49:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60950 "EHLO
+	id S1755110Ab3KIGtn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:49:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60945 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753998Ab3KIGtj (ORCPT
+	with ESMTP id S1753966Ab3KIGth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:49:39 -0500
+	Sat, 9 Nov 2013 01:49:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pawel Baldysiak <pawel.baldysiak@intel.com>,
-        Lukasz Dorau <lukasz.dorau@intel.com>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.4 11/26] md: Fix skipping recovery for read-only arrays.
-Date: Fri,  8 Nov 2013 22:51:40 -0800
-Message-Id: <20131109065051.007223561@linuxfoundation.org>
+        Gwendal Grignou <gwendal@google.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.4 10/26] libata: make ata_eh_qc_retry() bump scmd->allowed on bogus failures
+Date: Fri,  8 Nov 2013 22:51:39 -0800
+Message-Id: <20131109065050.940787326@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065050.089866597@linuxfoundation.org>
 References: <20131109065050.089866597@linuxfoundation.org>
@@ -27,56 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukasz Dorau <lukasz.dorau@intel.com>
+From: Gwendal Grignou <gwendal@google.com>
 
-commit 61e4947c99c4494336254ec540c50186d186150b upstream.
+commit f13e220161e738c2710b9904dcb3cf8bb0bcce61 upstream.
 
-Since:
-        commit 7ceb17e87bde79d285a8b988cfed9eaeebe60b86
-        md: Allow devices to be re-added to a read-only array.
+libata EH decrements scmd->retries when the command failed for reasons
+unrelated to the command itself so that, for example, commands aborted
+due to suspend / resume cycle don't get penalized; however,
+decrementing scmd->retries isn't enough for ATA passthrough commands.
 
-spares are activated on a read-only array. In case of raid1 and raid10
-personalities it causes that not-in-sync devices are marked in-sync
-without checking if recovery has been finished.
+Without this fix, ATA passthrough commands are not resend to the
+drive, and no error is signalled to the caller because:
 
-If a read-only array is degraded and one of its devices is not in-sync
-(because the array has been only partially recovered) recovery will be skipped.
+- allowed retry count is 1
+- ata_eh_qc_complete fill the sense data, so result is valid
+- sense data is filled with untouched ATA registers.
 
-This patch adds checking if recovery has been finished before marking a device
-in-sync for raid1 and raid10 personalities. In case of raid5 personality
-such condition is already present (at raid5.c:6029).
-
-Bug was introduced in 3.10 and causes data corruption.
-
-Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
-Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Gwendal Grignou <gwendal@google.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c  |    1 +
- drivers/md/raid10.c |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/ata/libata-eh.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1357,6 +1357,7 @@ static int raid1_spare_active(struct mdd
- 			}
- 		}
- 		if (rdev
-+		    && rdev->recovery_offset == MaxSector
- 		    && !test_bit(Faulty, &rdev->flags)
- 		    && !test_and_set_bit(In_sync, &rdev->flags)) {
- 			count++;
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1534,6 +1534,7 @@ static int raid10_spare_active(struct md
- 			}
- 			sysfs_notify_dirent_safe(tmp->replacement->sysfs_state);
- 		} else if (tmp->rdev
-+			   && tmp->rdev->recovery_offset == MaxSector
- 			   && !test_bit(Faulty, &tmp->rdev->flags)
- 			   && !test_and_set_bit(In_sync, &tmp->rdev->flags)) {
- 			count++;
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -1287,14 +1287,14 @@ void ata_eh_qc_complete(struct ata_queue
+  *	should be retried.  To be used from EH.
+  *
+  *	SCSI midlayer limits the number of retries to scmd->allowed.
+- *	scmd->retries is decremented for commands which get retried
++ *	scmd->allowed is incremented for commands which get retried
+  *	due to unrelated failures (qc->err_mask is zero).
+  */
+ void ata_eh_qc_retry(struct ata_queued_cmd *qc)
+ {
+ 	struct scsi_cmnd *scmd = qc->scsicmd;
+-	if (!qc->err_mask && scmd->retries)
+-		scmd->retries--;
++	if (!qc->err_mask)
++		scmd->allowed++;
+ 	__ata_eh_qc_complete(qc);
+ }
+ 
 
 
