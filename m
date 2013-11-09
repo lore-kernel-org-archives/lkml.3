@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933598Ab3KIHXC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:23:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33176 "EHLO
+	id S933582Ab3KIHW7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:22:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33183 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932465Ab3KIGv1 (ORCPT
+	with ESMTP id S932577Ab3KIGv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 9 Nov 2013 01:51:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -13,9 +13,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 46/74] staging: wlags49_h2: buffer overflow setting station name
-Date: Fri,  8 Nov 2013 22:51:51 -0800
-Message-Id: <20131109065116.749234723@linuxfoundation.org>
+Subject: [PATCH 3.10 47/74] uml: check length in exitcode_proc_write()
+Date: Fri,  8 Nov 2013 22:51:52 -0800
+Message-Id: <20131109065116.815977005@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -30,13 +30,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit b5e2f339865fb443107e5b10603e53bbc92dc054 upstream.
+commit 201f99f170df14ba52ea4c52847779042b7a623b upstream.
 
-We need to check the length parameter before doing the memcpy().  I've
-actually changed it to strlcpy() as well so that it's NUL terminated.
-
-You need CAP_NET_ADMIN to trigger these so it's not the end of the
-world.
+We don't cap the size of buffer from the user so we could write past the
+end of the array here.  Only root can write to this file.
 
 Reported-by: Nico Golde <nico@ngolde.de>
 Reported-by: Fabian Yamaguchi <fabs@goesec.de>
@@ -45,47 +42,23 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/wlags49_h2/wl_priv.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ arch/um/kernel/exitcode.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/wlags49_h2/wl_priv.c
-+++ b/drivers/staging/wlags49_h2/wl_priv.c
-@@ -570,6 +570,7 @@ int wvlan_uil_put_info(struct uilreq *ur
- 	ltv_t                   *pLtv;
- 	bool_t                  ltvAllocated = FALSE;
- 	ENCSTRCT                sEncryption;
-+	size_t			len;
- 
- #ifdef USE_WDS
- 	hcf_16                  hcfPort  = HCF_PORT_0;
-@@ -686,7 +687,8 @@ int wvlan_uil_put_info(struct uilreq *ur
- 					break;
- 				case CFG_CNF_OWN_NAME:
- 					memset(lp->StationName, 0, sizeof(lp->StationName));
--					memcpy((void *)lp->StationName, (void *)&pLtv->u.u8[2], (size_t)pLtv->u.u16[0]);
-+					len = min_t(size_t, pLtv->u.u16[0], sizeof(lp->StationName));
-+					strlcpy(lp->StationName, &pLtv->u.u8[2], len);
- 					pLtv->u.u16[0] = CNV_INT_TO_LITTLE(pLtv->u.u16[0]);
- 					break;
- 				case CFG_CNF_LOAD_BALANCING:
-@@ -1783,6 +1785,7 @@ int wvlan_set_station_nickname(struct ne
+--- a/arch/um/kernel/exitcode.c
++++ b/arch/um/kernel/exitcode.c
+@@ -40,9 +40,11 @@ static ssize_t exitcode_proc_write(struc
+ 		const char __user *buffer, size_t count, loff_t *pos)
  {
- 	struct wl_private *lp = wl_priv(dev);
- 	unsigned long flags;
-+	size_t len;
- 	int         ret = 0;
- 	/*------------------------------------------------------------------------*/
+ 	char *end, buf[sizeof("nnnnn\0")];
++	size_t size;
+ 	int tmp;
  
-@@ -1793,8 +1796,8 @@ int wvlan_set_station_nickname(struct ne
- 	wl_lock(lp, &flags);
+-	if (copy_from_user(buf, buffer, count))
++	size = min(count, sizeof(buf));
++	if (copy_from_user(buf, buffer, size))
+ 		return -EFAULT;
  
- 	memset(lp->StationName, 0, sizeof(lp->StationName));
--
--	memcpy(lp->StationName, extra, wrqu->data.length);
-+	len = min_t(size_t, wrqu->data.length, sizeof(lp->StationName));
-+	strlcpy(lp->StationName, extra, len);
- 
- 	/* Commit the adapter parameters */
- 	wl_apply(lp);
+ 	tmp = simple_strtol(buf, &end, 0);
 
 
