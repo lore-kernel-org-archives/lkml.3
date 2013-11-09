@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758164Ab3KIGu3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:50:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32885 "EHLO
+	id S1758954Ab3KIHgN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:36:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32916 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab3KIGuU (ORCPT
+	with ESMTP id S1758138Ab3KIGu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:20 -0500
+	Sat, 9 Nov 2013 01:50:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        "Michael L. Semon" <mlsemon35@gmail.com>
-Subject: [PATCH 3.10 20/74] jfs: fix error path in ialloc
-Date: Fri,  8 Nov 2013 22:51:25 -0800
-Message-Id: <20131109065114.954901193@linuxfoundation.org>
+        Jes Sorensen <Jes.Sorensen@redhat.com>, Shaohua Li <shli@fusionio.com>,
+        NeilBrown <neilb@suse.de>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: [PATCH 3.10 26/74] raid5: set bio bi_vcnt 0 for discard request
+Date: Fri,  8 Nov 2013 22:51:31 -0800
+Message-Id: <20131109065115.369969191@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -27,39 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Shaohua Li <shli@kernel.org>
 
-commit 8660998608cfa1077e560034db81885af8e1e885 upstream.
+commit 37c61ff31e9b5e3fcf3cc6579f5c68f6ad40c4b1 upstream.
 
-If insert_inode_locked() fails, we shouldn't be calling
-unlock_new_inode().
+SCSI layer will add new payload for discard request. If two bios are merged
+to one, the second bio has bi_vcnt 1 which is set in raid5. This will confuse
+SCSI and cause oops.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Tested-by: Michael L. Semon <mlsemon35@gmail.com>
+Suitable for backport to 3.7+
+
+Reported-by: Jes Sorensen <Jes.Sorensen@redhat.com>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jfs/jfs_inode.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/md/raid5.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/fs/jfs/jfs_inode.c
-+++ b/fs/jfs/jfs_inode.c
-@@ -95,7 +95,7 @@ struct inode *ialloc(struct inode *paren
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -668,6 +668,12 @@ static void ops_run_io(struct stripe_hea
+ 			bi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+ 			bi->bi_io_vec[0].bv_offset = 0;
+ 			bi->bi_size = STRIPE_SIZE;
++			/*
++			 * If this is discard request, set bi_vcnt 0. We don't
++			 * want to confuse SCSI because SCSI will replace payload
++			 */
++			if (rw & REQ_DISCARD)
++				bi->bi_vcnt = 0;
+ 			if (rrdev)
+ 				set_bit(R5_DOUBLE_LOCKED, &sh->dev[i].flags);
  
- 	if (insert_inode_locked(inode) < 0) {
- 		rc = -EINVAL;
--		goto fail_unlock;
-+		goto fail_put;
- 	}
- 
- 	inode_init_owner(inode, parent, mode);
-@@ -156,7 +156,6 @@ struct inode *ialloc(struct inode *paren
- fail_drop:
- 	dquot_drop(inode);
- 	inode->i_flags |= S_NOQUOTA;
--fail_unlock:
- 	clear_nlink(inode);
- 	unlock_new_inode(inode);
- fail_put:
+@@ -706,6 +712,12 @@ static void ops_run_io(struct stripe_hea
+ 			rbi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+ 			rbi->bi_io_vec[0].bv_offset = 0;
+ 			rbi->bi_size = STRIPE_SIZE;
++			/*
++			 * If this is discard request, set bi_vcnt 0. We don't
++			 * want to confuse SCSI because SCSI will replace payload
++			 */
++			if (rw & REQ_DISCARD)
++				rbi->bi_vcnt = 0;
+ 			if (conf->mddev->gendisk)
+ 				trace_block_bio_remap(bdev_get_queue(rbi->bi_bdev),
+ 						      rbi, disk_devt(conf->mddev->gendisk),
 
 
