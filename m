@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932781Ab3KIGwJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:52:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33276 "EHLO
+	id S932822Ab3KIGwV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:52:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33342 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932688Ab3KIGvz (ORCPT
+	with ESMTP id S932778Ab3KIGwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:55 -0500
+	Sat, 9 Nov 2013 01:52:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.11 30/94] can: flexcan: flexcan_chip_start: fix regression, mark one MB for TX and abort pending TX
-Date: Fri,  8 Nov 2013 22:51:36 -0800
-Message-Id: <20131109065206.355737459@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.11 43/94] target: Fix assignment of LUN in tracepoints
+Date: Fri,  8 Nov 2013 22:51:49 -0800
+Message-Id: <20131109065207.259892960@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,73 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Roland Dreier <roland@purestorage.com>
 
-commit d5a7b406c529e4595ce03dc8f6dcf7fa36f106fa upstream.
+commit 2053a1db41193c2b5e1f47a91aaba0fd63ba7102 upstream.
 
-In patch
+The unpacked_lun field in the SCSI target tracepoints should be
+initialized with cmd->orig_fe_lun rather than cmd->se_lun->unpacked_lun
+for two reasons:
 
-    0d1862e can: flexcan: fix flexcan_chip_start() on imx6
+ - most importantly, if we are in the cmd_complete tracepoint
+   returning a check condition due to no LUN found, cmd->se_lun will
+   be NULL and we'll crash trying to dereference it.
 
-the loop in flexcan_chip_start() that iterates over all mailboxes after the
-soft reset of the CAN core was removed. This loop put all mailboxes (even the
-ones marked as reserved 1...7) into EMPTY/INACTIVE mode. On mailboxes 8...63,
-this aborts any pending TX messages.
+ - also, in any case, cmd->se_lun->unpacked_lun is an internal index
+   into the target's internal set of LUNs; cmd->orig_fe_lun is much
+   more useful and interesting, since it's the value the initiator
+   actually sent.
 
-After a cold boot there is random garbage in the mailboxes, which leads to
-spontaneous transmit of CAN frames during first activation. Further if the
-interface was disabled with a pending message (usually due to an error
-condition on the CAN bus), this message is retransmitted after enabling the
-interface again.
-
-This patch fixes the regression by:
-1) Limiting the maximum number of used mailboxes to 8, 0...7 are used by the RX
-FIFO, 8 is used by TX.
-2) Marking the TX mailbox as EMPTY/INACTIVE, so that any pending TX of that
-mailbox is aborted.
-
-Cc: Lothar Waßmann <LW@KARO-electronics.de>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/flexcan.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ include/trace/events/target.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -62,7 +62,7 @@
- #define FLEXCAN_MCR_BCC			BIT(16)
- #define FLEXCAN_MCR_LPRIO_EN		BIT(13)
- #define FLEXCAN_MCR_AEN			BIT(12)
--#define FLEXCAN_MCR_MAXMB(x)		((x) & 0xf)
-+#define FLEXCAN_MCR_MAXMB(x)		((x) & 0x1f)
- #define FLEXCAN_MCR_IDAM_A		(0 << 8)
- #define FLEXCAN_MCR_IDAM_B		(1 << 8)
- #define FLEXCAN_MCR_IDAM_C		(2 << 8)
-@@ -736,9 +736,11 @@ static int flexcan_chip_start(struct net
- 	 *
- 	 */
- 	reg_mcr = flexcan_read(&regs->mcr);
-+	reg_mcr &= ~FLEXCAN_MCR_MAXMB(0xff);
- 	reg_mcr |= FLEXCAN_MCR_FRZ | FLEXCAN_MCR_FEN | FLEXCAN_MCR_HALT |
- 		FLEXCAN_MCR_SUPV | FLEXCAN_MCR_WRN_EN |
--		FLEXCAN_MCR_IDAM_C | FLEXCAN_MCR_SRX_DIS;
-+		FLEXCAN_MCR_IDAM_C | FLEXCAN_MCR_SRX_DIS |
-+		FLEXCAN_MCR_MAXMB(FLEXCAN_TX_BUF_ID);
- 	netdev_dbg(dev, "%s: writing mcr=0x%08x", __func__, reg_mcr);
- 	flexcan_write(reg_mcr, &regs->mcr);
+--- a/include/trace/events/target.h
++++ b/include/trace/events/target.h
+@@ -144,7 +144,7 @@ TRACE_EVENT(target_sequencer_start,
+ 	),
  
-@@ -783,6 +785,10 @@ static int flexcan_chip_start(struct net
- 			&regs->cantxfg[i].can_ctrl);
- 	}
+ 	TP_fast_assign(
+-		__entry->unpacked_lun	= cmd->se_lun->unpacked_lun;
++		__entry->unpacked_lun	= cmd->orig_fe_lun;
+ 		__entry->opcode		= cmd->t_task_cdb[0];
+ 		__entry->data_length	= cmd->data_length;
+ 		__entry->task_attribute	= cmd->sam_task_attr;
+@@ -182,7 +182,7 @@ TRACE_EVENT(target_cmd_complete,
+ 	),
  
-+	/* Abort any pending TX, mark Mailbox as INACTIVE */
-+	flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
-+		      &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
-+
- 	/* acceptance mask/acceptance code (accept everything) */
- 	flexcan_write(0x0, &regs->rxgmask);
- 	flexcan_write(0x0, &regs->rx14mask);
+ 	TP_fast_assign(
+-		__entry->unpacked_lun	= cmd->se_lun->unpacked_lun;
++		__entry->unpacked_lun	= cmd->orig_fe_lun;
+ 		__entry->opcode		= cmd->t_task_cdb[0];
+ 		__entry->data_length	= cmd->data_length;
+ 		__entry->task_attribute	= cmd->sam_task_attr;
 
 
