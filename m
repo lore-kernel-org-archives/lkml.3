@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758833Ab3KIG5x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:57:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33586 "EHLO
+	id S1758841Ab3KIG6L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:58:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33581 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758616Ab3KIGwz (ORCPT
+	with ESMTP id S1758611Ab3KIGwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:55 -0500
+	Sat, 9 Nov 2013 01:52:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan-Michael Brummer <jan.brummer@tabos.org>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
+        Rob Pearce <rob@flitspace.org.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.11 88/94] drm/i915: Fix the PPT fdi lane bifurcate state handling on ivb
-Date: Fri,  8 Nov 2013 22:52:34 -0800
-Message-Id: <20131109065210.470190401@linuxfoundation.org>
+Subject: [PATCH 3.11 87/94] drm/i915: No LVDS hardware on Intel D410PT and D425KT
+Date: Fri,  8 Nov 2013 22:52:33 -0800
+Message-Id: <20131109065210.399516993@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,179 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Rob Pearce <rob@flitspace.org.uk>
 
-commit 1fbc0d789d12fec313c91912fc11733fdfbab863 upstream.
+commit 645378d85ee524e429aa4cf52806047b56cdc596 upstream.
 
-Originally I've thought that this is leftover hw state dirt from the
-BIOS. But after way too much helpless flailing around on my part I've
-noticed that the actual bug is when we change the state of an already
-active pipe.
+The Intel D410PT(LW) and D425KT Mini-ITX desktop boards both show up as
+having LVDS but the hardware is not populated. This patch adds them to
+the list of such systems. Patch is against 3.11.4
 
-For example when we change the fdi lines from 2 to 3 without switching
-off outputs in-between we'll never see the crucial on->off transition
-in the ->modeset_global_resources hook the current logic relies on.
+v2: Patch revised to match the D425KT exactly as the D425KTW does have
+LVDS.  According to Intel's documentation, the D410PTL and D410PLTW
+don't.
 
-Patch version 2 got this right by instead also checking whether the
-pipe is indeed active. But that in turn broke things when pipes have
-been turned off through dpms since the bifurcate enabling is done in
-the ->crtc_mode_set callback.
-
-To address this issues discussed with Ville in the patch review move
-the setting of the bifurcate bit into the ->crtc_enable hook. That way
-we won't wreak havoc with this state when userspace puts all other
-outputs into dpms off state. This also moves us forward with our
-overall goal to unify the modeset and dpms on paths (which we need to
-have to allow runtime pm in the dpms off state).
-
-Unfortunately this requires us to move the bifurcate helpers around a
-bit.
-
-Also update the commit message, I've misanalyzed the bug rather badly.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=70507
-Tested-by: Jan-Michael Brummer <jan.brummer@tabos.org>
-Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Rob Pearce <rob@flitspace.org.uk>
+[danvet: Pimp commit message to my liking and add cc: stable.]
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |   95 +++++++++++++++++------------------
- 1 file changed, 48 insertions(+), 47 deletions(-)
+ drivers/gpu/drm/i915/intel_lvds.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -2251,9 +2251,10 @@ static void intel_fdi_normal_train(struc
- 			   FDI_FE_ERRC_ENABLE);
- }
- 
--static bool pipe_has_enabled_pch(struct intel_crtc *intel_crtc)
-+static bool pipe_has_enabled_pch(struct intel_crtc *crtc)
- {
--	return intel_crtc->base.enabled && intel_crtc->config.has_pch_encoder;
-+	return crtc->base.enabled && crtc->active &&
-+		crtc->config.has_pch_encoder;
- }
- 
- static void ivb_modeset_global_resources(struct drm_device *dev)
-@@ -2901,6 +2902,48 @@ static void ironlake_pch_transcoder_set_
- 		   I915_READ(VSYNCSHIFT(cpu_transcoder)));
- }
- 
-+static void cpt_enable_fdi_bc_bifurcation(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	uint32_t temp;
-+
-+	temp = I915_READ(SOUTH_CHICKEN1);
-+	if (temp & FDI_BC_BIFURCATION_SELECT)
-+		return;
-+
-+	WARN_ON(I915_READ(FDI_RX_CTL(PIPE_B)) & FDI_RX_ENABLE);
-+	WARN_ON(I915_READ(FDI_RX_CTL(PIPE_C)) & FDI_RX_ENABLE);
-+
-+	temp |= FDI_BC_BIFURCATION_SELECT;
-+	DRM_DEBUG_KMS("enabling fdi C rx\n");
-+	I915_WRITE(SOUTH_CHICKEN1, temp);
-+	POSTING_READ(SOUTH_CHICKEN1);
-+}
-+
-+static void ivybridge_update_fdi_bc_bifurcation(struct intel_crtc *intel_crtc)
-+{
-+	struct drm_device *dev = intel_crtc->base.dev;
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+
-+	switch (intel_crtc->pipe) {
-+	case PIPE_A:
-+		break;
-+	case PIPE_B:
-+		if (intel_crtc->config.fdi_lanes > 2)
-+			WARN_ON(I915_READ(SOUTH_CHICKEN1) & FDI_BC_BIFURCATION_SELECT);
-+		else
-+			cpt_enable_fdi_bc_bifurcation(dev);
-+
-+		break;
-+	case PIPE_C:
-+		cpt_enable_fdi_bc_bifurcation(dev);
-+
-+		break;
-+	default:
-+		BUG();
-+	}
-+}
-+
- /*
-  * Enable PCH resources required for PCH ports:
-  *   - PCH PLLs
-@@ -2919,6 +2962,9 @@ static void ironlake_pch_enable(struct d
- 
- 	assert_pch_transcoder_disabled(dev_priv, pipe);
- 
-+	if (IS_IVYBRIDGE(dev))
-+		ivybridge_update_fdi_bc_bifurcation(intel_crtc);
-+
- 	/* Write the TU size bits before fdi link training, so that error
- 	 * detection works. */
- 	I915_WRITE(FDI_RX_TUSIZE1(pipe),
-@@ -5512,48 +5558,6 @@ static bool ironlake_compute_clocks(stru
- 	return true;
- }
- 
--static void cpt_enable_fdi_bc_bifurcation(struct drm_device *dev)
--{
--	struct drm_i915_private *dev_priv = dev->dev_private;
--	uint32_t temp;
--
--	temp = I915_READ(SOUTH_CHICKEN1);
--	if (temp & FDI_BC_BIFURCATION_SELECT)
--		return;
--
--	WARN_ON(I915_READ(FDI_RX_CTL(PIPE_B)) & FDI_RX_ENABLE);
--	WARN_ON(I915_READ(FDI_RX_CTL(PIPE_C)) & FDI_RX_ENABLE);
--
--	temp |= FDI_BC_BIFURCATION_SELECT;
--	DRM_DEBUG_KMS("enabling fdi C rx\n");
--	I915_WRITE(SOUTH_CHICKEN1, temp);
--	POSTING_READ(SOUTH_CHICKEN1);
--}
--
--static void ivybridge_update_fdi_bc_bifurcation(struct intel_crtc *intel_crtc)
--{
--	struct drm_device *dev = intel_crtc->base.dev;
--	struct drm_i915_private *dev_priv = dev->dev_private;
--
--	switch (intel_crtc->pipe) {
--	case PIPE_A:
--		break;
--	case PIPE_B:
--		if (intel_crtc->config.fdi_lanes > 2)
--			WARN_ON(I915_READ(SOUTH_CHICKEN1) & FDI_BC_BIFURCATION_SELECT);
--		else
--			cpt_enable_fdi_bc_bifurcation(dev);
--
--		break;
--	case PIPE_C:
--		cpt_enable_fdi_bc_bifurcation(dev);
--
--		break;
--	default:
--		BUG();
--	}
--}
--
- int ironlake_get_lanes_required(int target_clock, int link_bw, int bpp)
- {
- 	/*
-@@ -5768,9 +5772,6 @@ static int ironlake_crtc_mode_set(struct
- 					     &intel_crtc->config.fdi_m_n);
- 	}
- 
--	if (IS_IVYBRIDGE(dev))
--		ivybridge_update_fdi_bc_bifurcation(intel_crtc);
--
- 	ironlake_set_pipeconf(crtc);
- 
- 	/* Set up the display plane register */
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -696,6 +696,22 @@ static const struct dmi_system_id intel_
+ 	},
+ 	{
+ 		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Intel D410PT",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
++			DMI_MATCH(DMI_BOARD_NAME, "D410PT"),
++		},
++	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Intel D425KT",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
++			DMI_EXACT_MATCH(DMI_BOARD_NAME, "D425KT"),
++		},
++	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
+ 		.ident = "Intel D510MO",
+ 		.matches = {
+ 			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
 
 
