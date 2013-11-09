@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758875Ab3KIHeg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:34:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32940 "EHLO
+	id S1758895Ab3KIHfL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:35:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32937 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758303Ab3KIGue (ORCPT
+	with ESMTP id S1758256Ab3KIGud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:34 -0500
+	Sat, 9 Nov 2013 01:50:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 31/74] target/pscsi: fix return value check
-Date: Fri,  8 Nov 2013 22:51:36 -0800
-Message-Id: <20131109065115.706666651@linuxfoundation.org>
+        Pawel Baldysiak <pawel.baldysiak@intel.com>,
+        Lukasz Dorau <lukasz.dorau@intel.com>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 30/74] md: Fix skipping recovery for read-only arrays.
+Date: Fri,  8 Nov 2013 22:51:35 -0800
+Message-Id: <20131109065115.638460468@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -27,49 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Lukasz Dorau <lukasz.dorau@intel.com>
 
-commit 58932e96e438cd78f75e765d7b87ef39d3533d15 upstream.
+commit 61e4947c99c4494336254ec540c50186d186150b upstream.
 
-In case of error, the function scsi_host_lookup() returns NULL
-pointer not ERR_PTR(). The IS_ERR() test in the return value check
-should be replaced with NULL test.
+Since:
+        commit 7ceb17e87bde79d285a8b988cfed9eaeebe60b86
+        md: Allow devices to be re-added to a read-only array.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+spares are activated on a read-only array. In case of raid1 and raid10
+personalities it causes that not-in-sync devices are marked in-sync
+without checking if recovery has been finished.
+
+If a read-only array is degraded and one of its devices is not in-sync
+(because the array has been only partially recovered) recovery will be skipped.
+
+This patch adds checking if recovery has been finished before marking a device
+in-sync for raid1 and raid10 personalities. In case of raid5 personality
+such condition is already present (at raid5.c:6029).
+
+Bug was introduced in 3.10 and causes data corruption.
+
+Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
+Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_pscsi.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/md/raid1.c  |    1 +
+ drivers/md/raid10.c |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/target/target_core_pscsi.c
-+++ b/drivers/target/target_core_pscsi.c
-@@ -134,10 +134,10 @@ static int pscsi_pmode_enable_hba(struct
- 	 * pSCSI Host ID and enable for phba mode
- 	 */
- 	sh = scsi_host_lookup(phv->phv_host_id);
--	if (IS_ERR(sh)) {
-+	if (!sh) {
- 		pr_err("pSCSI: Unable to locate SCSI Host for"
- 			" phv_host_id: %d\n", phv->phv_host_id);
--		return PTR_ERR(sh);
-+		return -EINVAL;
- 	}
- 
- 	phv->phv_lld_host = sh;
-@@ -515,10 +515,10 @@ static int pscsi_configure_device(struct
- 			sh = phv->phv_lld_host;
- 		} else {
- 			sh = scsi_host_lookup(pdv->pdv_host_id);
--			if (IS_ERR(sh)) {
-+			if (!sh) {
- 				pr_err("pSCSI: Unable to locate"
- 					" pdv_host_id: %d\n", pdv->pdv_host_id);
--				return PTR_ERR(sh);
-+				return -EINVAL;
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1479,6 +1479,7 @@ static int raid1_spare_active(struct mdd
  			}
  		}
- 	} else {
+ 		if (rdev
++		    && rdev->recovery_offset == MaxSector
+ 		    && !test_bit(Faulty, &rdev->flags)
+ 		    && !test_and_set_bit(In_sync, &rdev->flags)) {
+ 			count++;
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1762,6 +1762,7 @@ static int raid10_spare_active(struct md
+ 			}
+ 			sysfs_notify_dirent_safe(tmp->replacement->sysfs_state);
+ 		} else if (tmp->rdev
++			   && tmp->rdev->recovery_offset == MaxSector
+ 			   && !test_bit(Faulty, &tmp->rdev->flags)
+ 			   && !test_and_set_bit(In_sync, &tmp->rdev->flags)) {
+ 			count++;
 
 
