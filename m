@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759316Ab3KIHp0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:45:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60991 "EHLO
+	id S1759335Ab3KIHqA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:46:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60974 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755356Ab3KIGtr (ORCPT
+	with ESMTP id S1754903Ab3KIGtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:49:47 -0500
+	Sat, 9 Nov 2013 01:49:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 19/26] Staging: bcm: info leak in ioctl
-Date: Fri,  8 Nov 2013 22:51:48 -0800
-Message-Id: <20131109065051.544547706@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Mark Brown <broonie@linaro.org>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.4 15/26] ALSA: fix oops in snd_pcm_info() caused by ASoC DPCM
+Date: Fri,  8 Nov 2013 22:51:44 -0800
+Message-Id: <20131109065051.277929759@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065050.089866597@linuxfoundation.org>
 References: <20131109065050.089866597@linuxfoundation.org>
@@ -28,32 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 8d1e72250c847fa96498ec029891de4dc638a5ba upstream.
+commit a4461f41b94cb52e0141af717dcf4ef6558c8e2e upstream.
 
-The DevInfo.u32Reserved[] array isn't initialized so it leaks kernel
-information to user space.
+Unable to handle kernel NULL pointer dereference at virtual address 00000008
+pgd = d5300000
+[00000008] *pgd=0d265831, *pte=00000000, *ppte=00000000
+Internal error: Oops: 17 [#1] PREEMPT ARM
+CPU: 0 PID: 2295 Comm: vlc Not tainted 3.11.0+ #755
+task: dee74800 ti: e213c000 task.ti: e213c000
+PC is at snd_pcm_info+0xc8/0xd8
+LR is at 0x30232065
+pc : [<c031b52c>]    lr : [<30232065>]    psr: a0070013
+sp : e213dea8  ip : d81cb0d0  fp : c05f7678
+r10: c05f7770  r9 : fffffdfd  r8 : 00000000
+r7 : d8a968a8  r6 : d8a96800  r5 : d8a96200  r4 : d81cb000
+r3 : 00000000  r2 : d81cb000  r1 : 00000001  r0 : d8a96200
+Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c5387d  Table: 15300019  DAC: 00000015
+Process vlc (pid: 2295, stack limit = 0xe213c248)
+[<c031b52c>] (snd_pcm_info) from [<c031b570>] (snd_pcm_info_user+0x34/0x9c)
+[<c031b570>] (snd_pcm_info_user) from [<c03164a4>] (snd_pcm_control_ioctl+0x274/0x280)
+[<c03164a4>] (snd_pcm_control_ioctl) from [<c0311458>] (snd_ctl_ioctl+0xc0/0x55c)
+[<c0311458>] (snd_ctl_ioctl) from [<c00eca84>] (do_vfs_ioctl+0x80/0x31c)
+[<c00eca84>] (do_vfs_ioctl) from [<c00ecd5c>] (SyS_ioctl+0x3c/0x60)
+[<c00ecd5c>] (SyS_ioctl) from [<c000e500>] (ret_fast_syscall+0x0/0x48)
+Code: e1a00005 e59530dc e3a01001 e1a02004 (e5933008)
+---[ end trace cb3d9bdb8dfefb3c ]---
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This is provoked when the ASoC front end is open along with its backend,
+(which causes the backend to have a runtime assigned to it) and then the
+SNDRV_CTL_IOCTL_PCM_INFO is requested for the (visible) backend device.
+
+Resolve this by ensuring that ASoC internal backend devices are not
+visible to userspace, just as the commentry for snd_pcm_new_internal()
+says it should be.
+
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Acked-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/bcm/Bcmchar.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/core/pcm.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/staging/bcm/Bcmchar.c
-+++ b/drivers/staging/bcm/Bcmchar.c
-@@ -1957,6 +1957,7 @@ cntrlEnd:
+--- a/sound/core/pcm.c
++++ b/sound/core/pcm.c
+@@ -49,6 +49,8 @@ static struct snd_pcm *snd_pcm_get(struc
+ 	struct snd_pcm *pcm;
  
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Called IOCTL_BCM_GET_DEVICE_DRIVER_INFO\n");
+ 	list_for_each_entry(pcm, &snd_pcm_devices, list) {
++		if (pcm->internal)
++			continue;
+ 		if (pcm->card == card && pcm->device == device)
+ 			return pcm;
+ 	}
+@@ -60,6 +62,8 @@ static int snd_pcm_next(struct snd_card
+ 	struct snd_pcm *pcm;
  
-+		memset(&DevInfo, 0, sizeof(DevInfo));
- 		DevInfo.MaxRDMBufferSize = BUFFER_4K;
- 		DevInfo.u32DSDStartOffset = EEPROM_CALPARAM_START;
- 		DevInfo.u32RxAlignmentCorrection = 0;
+ 	list_for_each_entry(pcm, &snd_pcm_devices, list) {
++		if (pcm->internal)
++			continue;
+ 		if (pcm->card == card && pcm->device > device)
+ 			return pcm->device;
+ 		else if (pcm->card->number > card->number)
 
 
