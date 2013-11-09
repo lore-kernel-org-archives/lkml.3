@@ -1,137 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab3KIBEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 20:04:38 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:58005 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757268Ab3KIBE3 (ORCPT
+	id S1758140Ab3KIBJU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 20:09:20 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:20274 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757850Ab3KIBJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 20:04:29 -0500
-Message-ID: <527D8A1B.3030001@codeaurora.org>
-Date: Fri, 08 Nov 2013 17:04:27 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Vinayak Kale <vkale@apm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-CC: will.deacon@arm.com, patches@apm.com, jcm@redhat.com, tglx@linutronix.de,
-        Tuan Phan <tphan@apm.com>
-Subject: Re: [PATCH 2/2] arm64: perf: add support for percpu pmu interrupt
-References: <1383739658-10036-1-git-send-email-vkale@apm.com> <1383739658-10036-3-git-send-email-vkale@apm.com>
-In-Reply-To: <1383739658-10036-3-git-send-email-vkale@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 8 Nov 2013 20:09:18 -0500
+Date: Fri, 8 Nov 2013 20:09:05 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>
+Subject: Re: perf/tracepoint: another fuzzer generated lockup
+Message-ID: <20131108200905.3bdb15d9@gandalf.local.home>
+In-Reply-To: <20131108223657.GF14606@localhost.localdomain>
+References: <alpine.DEB.2.10.1311081440440.7281@vincent-weaver-1.um.maine.edu>
+	<alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu>
+	<20131108200244.GB14606@localhost.localdomain>
+	<alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu>
+	<20131108204839.GD14606@localhost.localdomain>
+	<alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu>
+	<20131108223657.GF14606@localhost.localdomain>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just some pointer casting nits.
+On Fri, 8 Nov 2013 23:36:58 +0100
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-On 11/06/13 04:07, Vinayak Kale wrote:
-> Add support for irq registration when pmu interrupt is percpu.
->
-> Signed-off-by: Vinayak Kale <vkale@apm.com>
-> Signed-off-by: Tuan Phan <tphan@apm.com>
-> ---
->  arch/arm64/kernel/perf_event.c |  109 +++++++++++++++++++++++++++++-----------
->  1 file changed, 81 insertions(+), 28 deletions(-)
->
-> diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
-> index cea1594..e60dae3 100644
-> --- a/arch/arm64/kernel/perf_event.c
-> +++ b/arch/arm64/kernel/perf_event.c
-> @@ -44,6 +44,7 @@
->  static DEFINE_PER_CPU(struct perf_event * [ARMPMU_MAX_HWEVENTS], hw_events);
->  static DEFINE_PER_CPU(unsigned long [BITS_TO_LONGS(ARMPMU_MAX_HWEVENTS)], used_mask);
->  static DEFINE_PER_CPU(struct pmu_hw_events, cpu_hw_events);
-> +static bool is_percpuirq;
->  
->  #define to_arm_pmu(p) (container_of(p, struct arm_pmu, pmu))
->  
-> @@ -363,22 +364,51 @@ validate_group(struct perf_event *event)
->  }
->  
->  static void
-> +armpmu_disable_percpu_irq(void *data)
-> +{
-> +	struct arm_pmu *armpmu = (struct arm_pmu *)data;
 
-Useless cast from void *.
+> [  237.623178] ---[ end trace 40cda30d05d0ffa6 ]---
+> [  237.627769] perf samples too long (3397569 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
+> [  237.637124] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 444.233 msecs
+> 
+> 444 msecs is huge.
 
-> +	struct platform_device *pmu_device = armpmu->plat_device;
-> +	int irq = platform_get_irq(pmu_device, 0);
-> +
-> +	cpumask_test_and_clear_cpu(smp_processor_id(), &armpmu->active_irqs);
-> +	disable_percpu_irq(irq);
-> +}
-> +
-[...]
->  
-> +static void
-> +armpmu_enable_percpu_irq(void *data)
-> +{
-> +	struct arm_pmu *armpmu = (struct arm_pmu *)data;
+I don't think that's the issue you are looking for. Peter told me
+there's a timer race with overflows or something (I don't remember the
+details, Peter can clarify it), that causes the second timestamp to be
+bogus compared to the first, and this makes the code think that the NMI
+handler was running much longer that it actually was.
 
-Here too.
+-- Steve
 
-> +	struct platform_device *pmu_device = armpmu->plat_device;
-> +	int irq = platform_get_irq(pmu_device, 0);
-> +
-> +	enable_percpu_irq(irq, 0);
-> +	cpumask_set_cpu(smp_processor_id(), &armpmu->active_irqs);
-> +}
-> +
->  static int
->  armpmu_reserve_hardware(struct arm_pmu *armpmu)
->  {
-> @@ -396,34 +426,57 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
->  		return -ENODEV;
->  	}
->  
-> -	for (i = 0; i < irqs; ++i) {
-> -		err = 0;
-> -		irq = platform_get_irq(pmu_device, i);
-> -		if (irq < 0)
-> -			continue;
-> +	irq = platform_get_irq(pmu_device, 0);
->  
-> -		/*
-> -		 * If we have a single PMU interrupt that we can't shift,
-> -		 * assume that we're running on a uniprocessor machine and
-> -		 * continue. Otherwise, continue without this interrupt.
-> -		 */
-> -		if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
-> -			pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
-> -				    irq, i);
-> -			continue;
-> -		}
-> +	/*
-> +	 * Try 'request_percpu_irq' first. If it's return value indicates
-> +	 * that irq is not percpu then try 'request_irq'
-> +	 */
-> +	err = request_percpu_irq(irq, armpmu->handle_irq,
-> +			"arm-pmu", &cpu_hw_events);
-> +	if (err != -EPERM) {
-> +		is_percpuirq = true;
->  
-> -		err = request_irq(irq, armpmu->handle_irq,
-> -				  IRQF_NOBALANCING,
-> -				  "arm-pmu", armpmu);
->  		if (err) {
-> -			pr_err("unable to request IRQ%d for ARM PMU counters\n",
-> -				irq);
-> +			pr_err("unable to request percpu IRQ%d for ARM PMU counters\n",
-> +					irq);
->  			armpmu_release_hardware(armpmu);
->  			return err;
->  		}
->  
-> -		cpumask_set_cpu(i, &armpmu->active_irqs);
-> +		on_each_cpu(armpmu_enable_percpu_irq, (void *)armpmu, 1);
-
-Looks like a useless cast to void * here.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> 
+> [  247.186562] perf samples too long (3371028 > 5000), lowering kernel.perf_event_max_sample_rate to 25000
+> [  257.180241] perf samples too long (3344694 > 10000), lowering kernel.perf_event_max_sample_rate to 13000
+> [  267.173920] perf samples too long (3318566 > 19230), lowering kernel.perf_event_max_sample_rate to 7000
+> [  277.167598] perf samples too long (3292642 > 35714), lowering kernel.perf_event_max_sample_rate to 4000
+> [  287.161277] perf samples too long (3266920 > 62500), lowering kernel.perf_event_max_sample_rate to 2000
+> [  297.154956] perf samples too long (3241400 > 125000), lowering kernel.perf_event_max_sample_rate to 1000
 
