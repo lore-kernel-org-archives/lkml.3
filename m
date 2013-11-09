@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562Ab3KIGvZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:51:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33132 "EHLO
+	id S932591Ab3KIGvb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:51:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33136 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932465Ab3KIGvQ (ORCPT
+	with ESMTP id S932231Ab3KIGvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:16 -0500
+	Sat, 9 Nov 2013 01:51:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 69/74] drm/radeon/atom: workaround vbios bug in transmitter table on rs780
-Date: Fri,  8 Nov 2013 22:52:14 -0800
-Message-Id: <20131109065118.311726184@linuxfoundation.org>
+        Jiaxing Wang <hello.wjx@gmail.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Jonghwan Choi <jhbird.choi@gmail.com>
+Subject: [PATCH 3.10 70/74] seq_file: always update file->f_pos in seq_lseek()
+Date: Fri,  8 Nov 2013 22:52:15 -0800
+Message-Id: <20131109065118.388161189@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -26,35 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
 
-commit c23632d4e57c0dd20bf50eca08fa0eb8ad3ff680 upstream.
+commit 05e16745c0c471bba313961b605b6da3b21a853d upstream.
 
-Some rs780 asics seem to be affected as well.
+This issue was first pointed out by Jiaxing Wang several months ago, but no
+further comments:
+https://lkml.org/lkml/2013/6/29/41
 
-See:
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=91f3a6aaf280294b07c05dfe606e6c27b7ba3c72
+As we know pread() does not change f_pos, so after pread(), file->f_pos
+and m->read_pos become different. And seq_lseek() does not update file->f_pos
+if offset equals to m->read_pos, so after pread() and seq_lseek()(lseek to
+m->read_pos), then a subsequent read may read from a wrong position, the
+following program produces the problem:
 
-Fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=60791
+    char str1[32] = { 0 };
+    char str2[32] = { 0 };
+    int poffset = 10;
+    int count = 20;
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+    /*open any seq file*/
+    int fd = open("/proc/modules", O_RDONLY);
+
+    pread(fd, str1, count, poffset);
+    printf("pread:%s\n", str1);
+
+    /*seek to where m->read_pos is*/
+    lseek(fd, poffset+count, SEEK_SET);
+
+    /*supposed to read from poffset+count, but this read from position 0*/
+    read(fd, str2, count);
+    printf("read:%s\n", str2);
+
+out put:
+pread:
+ ck_netbios_ns 12665
+read:
+ nf_conntrack_netbios
+
+/proc/modules:
+nf_conntrack_netbios_ns 12665 0 - Live 0xffffffffa038b000
+nf_conntrack_broadcast 12589 1 nf_conntrack_netbios_ns, Live 0xffffffffa0386000
+
+So we always update file->f_pos to offset in seq_lseek() to fix this issue.
+
+Signed-off-by: Jiaxing Wang <hello.wjx@gmail.com>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Jonghwan Choi <jhbird.choi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/seq_file.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1641,7 +1641,7 @@ radeon_atom_encoder_dpms_dig(struct drm_
- 			 * does the same thing and more.
- 			 */
- 			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
--			    (rdev->family != CHIP_RS880))
-+			    (rdev->family != CHIP_RS780) && (rdev->family != CHIP_RS880))
- 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -328,6 +328,8 @@ loff_t seq_lseek(struct file *file, loff
+ 				m->read_pos = offset;
+ 				retval = file->f_pos = offset;
+ 			}
++		} else {
++			file->f_pos = offset;
  		}
- 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
+ 	}
+ 	file->f_version = m->version;
 
 
