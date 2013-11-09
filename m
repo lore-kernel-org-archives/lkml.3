@@ -1,62 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab3KIOVH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 09:21:07 -0500
-Received: from mail-we0-f182.google.com ([74.125.82.182]:41605 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779Ab3KIOVD (ORCPT
+	id S1753649Ab3KIOWV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 09:22:21 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58907 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab3KIOWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 09:21:03 -0500
-Date: Sat, 9 Nov 2013 15:20:59 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: perf/tracepoint: another fuzzer generated lockup
-Message-ID: <20131109142056.GA26079@localhost.localdomain>
-References: <alpine.DEB.2.10.1311081440440.7281@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu>
- <20131108200244.GB14606@localhost.localdomain>
- <alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu>
- <20131108204839.GD14606@localhost.localdomain>
- <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu>
- <20131108223657.GF14606@localhost.localdomain>
- <20131109141039.GM16117@laptop.programming.kicks-ass.net>
+	Sat, 9 Nov 2013 09:22:17 -0500
+Date: Sat, 9 Nov 2013 15:22:16 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 50/74] uio: provide vm access to UIO_MEM_PHYS maps
+Message-ID: <20131109142216.GB14892@pengutronix.de>
+References: <20131109065113.502217951@linuxfoundation.org>
+ <20131109065117.016923315@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20131109141039.GM16117@laptop.programming.kicks-ass.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131109065117.016923315@linuxfoundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 09, 2013 at 03:10:39PM +0100, Peter Zijlstra wrote:
-> On Fri, Nov 08, 2013 at 11:36:58PM +0100, Frederic Weisbecker wrote:
-> > [  237.627769] perf samples too long (3397569 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
-> > [  237.637124] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 444.233 msecs
-> > 
-> > 444 msecs is huge.
+On Fri, Nov 08, 2013 at 10:51:55PM -0800, Greg Kroah-Hartman wrote:
+> 3.10-stable review patch.  If anyone has any objections, please let me know.
 > 
-> Be glad your system lived to tell about it ;-) Calling printk() from NMI
-> context is Russian roulette; I'm still waiting for the first report it
-> actually locked up :-)
-
-Haha, right. I dump with earlyprintk but that doesn't change the fact it passes through printk
-machinery. Fortunately I haven't yet got burdened with that. Although... maybe printk plays a role
-in the issue here...
-
+> ------------------
 > 
-> That said, I'm not sure what kernel you're running, but there were some
-> issues with time-keeping hereabouts, but more importantly that second
-> timing includes the printk() call of the first -- so that's always going
-> to be fucked.
+> From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> 
+> commit 7294151d0592e0ff48c61fca9fd7c93d613134da upstream.
+> 
+> This makes it possible to let gdb access mappings of the process that is
+> being debugged.
+> 
+> uio_mmap_logical was moved and uio_vm_ops renamed to group related code
+> and differentiate to new stuff.
+I wonder why you picked that one for stable?!
 
-It's a recent tip:master. So the delta debug printout is certainly buggy, meanwhile
-these lockup only happen with Vince selftests, and they trigger a lot of these NMI-too-long
-issues, or may be that's the other way round :)...
+Best regards
+Uwe
+> 
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+>  drivers/uio/uio.c |   26 +++++++++++++++++---------
+>  1 file changed, 17 insertions(+), 9 deletions(-)
+> 
+> --- a/drivers/uio/uio.c
+> +++ b/drivers/uio/uio.c
+> @@ -630,12 +630,26 @@ static int uio_vma_fault(struct vm_area_
+>  	return 0;
+>  }
+>  
+> -static const struct vm_operations_struct uio_vm_ops = {
+> +static const struct vm_operations_struct uio_logical_vm_ops = {
+>  	.open = uio_vma_open,
+>  	.close = uio_vma_close,
+>  	.fault = uio_vma_fault,
+>  };
+>  
+> +static int uio_mmap_logical(struct vm_area_struct *vma)
+> +{
+> +	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
+> +	vma->vm_ops = &uio_logical_vm_ops;
+> +	uio_vma_open(vma);
+> +	return 0;
+> +}
+> +
+> +static const struct vm_operations_struct uio_physical_vm_ops = {
+> +#ifdef CONFIG_HAVE_IOREMAP_PROT
+> +	.access = generic_access_phys,
+> +#endif
+> +};
+> +
+>  static int uio_mmap_physical(struct vm_area_struct *vma)
+>  {
+>  	struct uio_device *idev = vma->vm_private_data;
+> @@ -643,6 +657,8 @@ static int uio_mmap_physical(struct vm_a
+>  	if (mi < 0)
+>  		return -EINVAL;
+>  
+> +	vma->vm_ops = &uio_physical_vm_ops;
+> +
+>  	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+>  
+>  	return remap_pfn_range(vma,
+> @@ -652,14 +668,6 @@ static int uio_mmap_physical(struct vm_a
+>  			       vma->vm_page_prot);
+>  }
+>  
+> -static int uio_mmap_logical(struct vm_area_struct *vma)
+> -{
+> -	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
+> -	vma->vm_ops = &uio_vm_ops;
+> -	uio_vma_open(vma);
+> -	return 0;
+> -}
+> -
+>  static int uio_mmap(struct file *filep, struct vm_area_struct *vma)
+>  {
+>  	struct uio_listener *listener = filep->private_data;
+> 
+> 
+> 
 
-I'm trying to narrow down the issue, lets hope the lockup is not actually due to printk
-itself.
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
