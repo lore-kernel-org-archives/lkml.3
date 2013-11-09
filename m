@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759061Ab3KIHhj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:37:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32899 "EHLO
+	id S1759138Ab3KIHio (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:38:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32885 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757449Ab3KIGuW (ORCPT
+	with ESMTP id S1757256Ab3KIGuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:22 -0500
+	Sat, 9 Nov 2013 01:50:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.10 22/74] can: flexcan: fix mx28 detection by rearanging OF match table
-Date: Fri,  8 Nov 2013 22:51:27 -0800
-Message-Id: <20131109065115.088864360@linuxfoundation.org>
+        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 18/74] rtlwifi: rtl8192cu: Fix error in pointer arithmetic
+Date: Fri,  8 Nov 2013 22:51:23 -0800
+Message-Id: <20131109065114.821487109@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -26,36 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
 
-commit e358784297992b012e8071764d996191dd2b1a54 upstream.
+commit 9473ca6e920a3b9ca902753ce52833657f9221cc upstream.
 
-The current implemetation of of_match_device() relies that the of_device_id
-table in the driver is sorted from most specific to least specific compatible.
+An error in calculating the offset in an skb causes the driver to read
+essential device info from the wrong locations. The main effect is that
+automatic gain calculations are nonsense.
 
-Without this patch the mx28 is detected as the less specific p1010. This leads
-to a p1010 specific workaround is activated on the mx28, which is not needed.
-
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/flexcan.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/trx.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -983,9 +983,9 @@ static void unregister_flexcandev(struct
- }
- 
- static const struct of_device_id flexcan_of_match[] = {
--	{ .compatible = "fsl,p1010-flexcan", .data = &fsl_p1010_devtype_data, },
--	{ .compatible = "fsl,imx28-flexcan", .data = &fsl_imx28_devtype_data, },
- 	{ .compatible = "fsl,imx6q-flexcan", .data = &fsl_imx6q_devtype_data, },
-+	{ .compatible = "fsl,imx28-flexcan", .data = &fsl_imx28_devtype_data, },
-+	{ .compatible = "fsl,p1010-flexcan", .data = &fsl_p1010_devtype_data, },
- 	{ /* sentinel */ },
- };
- MODULE_DEVICE_TABLE(of, flexcan_of_match);
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
+@@ -343,7 +343,8 @@ bool rtl92cu_rx_query_desc(struct ieee80
+ 					(bool)GET_RX_DESC_PAGGR(pdesc));
+ 	rx_status->mactime = GET_RX_DESC_TSFL(pdesc);
+ 	if (phystatus) {
+-		p_drvinfo = (struct rx_fwinfo_92c *)(pdesc + RTL_RX_DESC_SIZE);
++		p_drvinfo = (struct rx_fwinfo_92c *)(skb->data +
++						     stats->rx_bufshift);
+ 		rtl92c_translate_rx_signal_stuff(hw, skb, stats, pdesc,
+ 						 p_drvinfo);
+ 	}
 
 
