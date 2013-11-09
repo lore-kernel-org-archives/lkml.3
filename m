@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933796Ab3KIHa5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:30:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33002 "EHLO
+	id S933826Ab3KIHbu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:31:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932236Ab3KIGuz (ORCPT
+	with ESMTP id S1758484Ab3KIGuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:55 -0500
+	Sat, 9 Nov 2013 01:50:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 08/74] bcache: Fixed incorrect order of arguments to bio_alloc_bioset()
-Date: Fri,  8 Nov 2013 22:51:13 -0800
-Message-Id: <20131109065114.083757826@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>
+Subject: [PATCH 3.10 04/74] USB: quirks: add touchscreen that is dazzeled by remote wakeup
+Date: Fri,  8 Nov 2013 22:51:09 -0800
+Message-Id: <20131109065113.813956624@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -27,28 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <kmo@daterainc.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit d4eddd42f592a0cf06818fae694a3d271f842e4d upstream.
+commit 614ced91fc6fbb5a1cdd12f0f1b6c9197d9f1350 upstream.
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The device descriptors are messed up after remote wakeup
+
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bcache/request.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -1059,7 +1059,7 @@ static void request_write(struct cached_
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -97,6 +97,9 @@ static const struct usb_device_id usb_qu
+ 	/* Alcor Micro Corp. Hub */
+ 	{ USB_DEVICE(0x058f, 0x9254), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 		if (bio->bi_rw & REQ_FLUSH) {
- 			/* Also need to send a flush to the backing device */
--			struct bio *flush = bio_alloc_bioset(0, GFP_NOIO,
-+			struct bio *flush = bio_alloc_bioset(GFP_NOIO, 0,
- 							     dc->disk.bio_split);
++	/* MicroTouch Systems touchscreen */
++	{ USB_DEVICE(0x0596, 0x051e), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* appletouch */
+ 	{ USB_DEVICE(0x05ac, 0x021a), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 			flush->bi_rw	= WRITE_FLUSH;
 
 
