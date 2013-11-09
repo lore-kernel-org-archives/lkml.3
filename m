@@ -1,139 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3KIOhZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 09:37:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57950 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752545Ab3KIOhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 09:37:23 -0500
-Date: Sat, 9 Nov 2013 14:37:18 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Alex Thorlton <athorlton@sgi.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] mm: numa: Return the number of base pages altered by
- protection changes
-Message-ID: <20131109143718.GC5040@suse.de>
+	id S1753561Ab3KIOxJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 09:53:09 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:59560 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752584Ab3KIOxD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Nov 2013 09:53:03 -0500
+Date: Sat, 9 Nov 2013 15:52:59 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: perf/tracepoint: another fuzzer generated lockup
+Message-ID: <20131109145258.GB26079@localhost.localdomain>
+References: <alpine.DEB.2.10.1311081440440.7281@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu>
+ <20131108200244.GB14606@localhost.localdomain>
+ <alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu>
+ <20131108204839.GD14606@localhost.localdomain>
+ <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu>
+ <20131108223657.GF14606@localhost.localdomain>
+ <20131109141039.GM16117@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131109141039.GM16117@laptop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 0255d491 (mm: Account for a THP NUMA hinting update as one PTE
-update) was added to account for the number of PTE updates when marking
-pages prot_numa. task_numa_work was using the old return value to track
-how much address space had been updated. Altering the return value causes
-the scanner to do more work than it is configured or documented to in a
-single unit of work.
+On Sat, Nov 09, 2013 at 03:10:39PM +0100, Peter Zijlstra wrote:
+> On Fri, Nov 08, 2013 at 11:36:58PM +0100, Frederic Weisbecker wrote:
+> > [  237.627769] perf samples too long (3397569 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
+> > [  237.637124] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 444.233 msecs
+> > 
+> > 444 msecs is huge.
+> 
+> Be glad your system lived to tell about it ;-) Calling printk() from NMI
+> context is Russian roulette; I'm still waiting for the first report it
+> actually locked up :-)
+> 
+> That said, I'm not sure what kernel you're running, but there were some
+> issues with time-keeping hereabouts, but more importantly that second
+> timing includes the printk() call of the first -- so that's always going
+> to be fucked.
 
-This patch reverts 0255d491 and accounts for the number of THP updates
-separately in vmstat. It is up to the administrator to interpret the pair
-of values correctly. This is a straight-forward operation and likely to
-only be of interest when actively debugging NUMA balancing problems.
+So, an idea of what may be happening: an event overflows while FASYNC flag is set so it triggers an irq work
+to send the signal (kill_fasync).
+After the irq work triggers, it generates an irq_work_exit event, which in turn overflows and,
+if it has FASYNC, triggers a new irq work. The irq work triggers and generates an irq work exit event which
+has FASYNC flag, etc...
 
-The impact of this patch is that the NUMA PTE scanner will scan slower when
-THP is enabled and workloads may converge slower as a result. On the flip
-size system CPU usage should be lower than recent tests reported. This is
-an illustrative example of a short single JVM specjbb test
-
-specjbb
-                       3.12.0                3.12.0
-                      vanilla      acctupdates
-TPut 1      26143.00 (  0.00%)     25747.00 ( -1.51%)
-TPut 7     185257.00 (  0.00%)    183202.00 ( -1.11%)
-TPut 13    329760.00 (  0.00%)    346577.00 (  5.10%)
-TPut 19    442502.00 (  0.00%)    460146.00 (  3.99%)
-TPut 25    540634.00 (  0.00%)    549053.00 (  1.56%)
-TPut 31    512098.00 (  0.00%)    519611.00 (  1.47%)
-TPut 37    461276.00 (  0.00%)    474973.00 (  2.97%)
-TPut 43    403089.00 (  0.00%)    414172.00 (  2.75%)
-
-              3.12.0      3.12.0
-             vanillaacctupdates
-User         5169.64     5184.14
-System        100.45       80.02
-Elapsed       252.75      251.85
-
-Performance is similar but note the reduction in system CPU time. While
-this showed a performance gain, it will not be universal but at least
-it'll be behaving as documented. The vmstats are obviously different but
-here is an obvious interpretation of them from mmtests.
-
-                                3.12.0      3.12.0
-                               vanillaacctupdates
-NUMA page range updates        1408326    11043064
-NUMA huge PMD updates                0       21040
-NUMA PTE updates               1408326      291624
-
-"NUMA page range updates" == nr_pte_updates and is the value returned to
-the NUMA pte scanner. NUMA huge PMD updates were the number of THP updates
-which in combination can be used to calculate how many ptes were updated
-from userspace.
-
-Reported-by: Alex Thorlton <athorlton@sgi.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/vm_event_item.h | 1 +
- mm/mprotect.c                 | 6 +++++-
- mm/vmstat.c                   | 1 +
- 3 files changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 1855f0a..c557c6d 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -39,6 +39,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
- #ifdef CONFIG_NUMA_BALANCING
- 		NUMA_PTE_UPDATES,
-+		NUMA_HUGE_PTE_UPDATES,
- 		NUMA_HINT_FAULTS,
- 		NUMA_HINT_FAULTS_LOCAL,
- 		NUMA_PAGE_MIGRATE,
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 412ba2b..f94d2bd 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -138,6 +138,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 	pmd_t *pmd;
- 	unsigned long next;
- 	unsigned long pages = 0;
-+	unsigned long nr_huge_updates = 0;
- 	bool all_same_node;
- 
- 	pmd = pmd_offset(pud, addr);
-@@ -148,7 +149,8 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 				split_huge_page_pmd(vma, addr, pmd);
- 			else if (change_huge_pmd(vma, pmd, addr, newprot,
- 						 prot_numa)) {
--				pages++;
-+				pages += HPAGE_PMD_NR;
-+				nr_huge_updates++;
- 				continue;
- 			}
- 			/* fall through */
-@@ -168,6 +170,8 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 			change_pmd_protnuma(vma->vm_mm, addr, pmd);
- 	} while (pmd++, addr = next, addr != end);
- 
-+	if (nr_huge_updates)
-+		count_vm_numa_events(NUMA_HUGE_PTE_UPDATES, nr_huge_updates);
- 	return pages;
- }
- 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 9bb3145..5a442a7 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -812,6 +812,7 @@ const char * const vmstat_text[] = {
- 
- #ifdef CONFIG_NUMA_BALANCING
- 	"numa_pte_updates",
-+	"numa_huge_pte_updates",
- 	"numa_hint_faults",
- 	"numa_hint_faults_local",
- 	"numa_pages_migrated",
+Looks like a nice way to deadlock with an infinite loop of irq work.
