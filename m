@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933019Ab3KIGxQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:53:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33557 "EHLO
+	id S933004Ab3KIGxM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:53:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33555 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab3KIGwt (ORCPT
+	with ESMTP id S1758583Ab3KIGws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:49 -0500
+	Sat, 9 Nov 2013 01:52:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.11 83/94] drm/radeon/atom: workaround vbios bug in transmitter table on rs780
-Date: Fri,  8 Nov 2013 22:52:29 -0800
-Message-Id: <20131109065210.104588999@linuxfoundation.org>
+        Pavel Roskin <proski@gnu.org>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org
+Subject: [PATCH 3.11 82/94] drm: Pad drm_mode_get_connector to 64-bit boundary
+Date: Fri,  8 Nov 2013 22:52:28 -0800
+Message-Id: <20131109065210.037125337@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -26,35 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit c23632d4e57c0dd20bf50eca08fa0eb8ad3ff680 upstream.
+commit bc5bd37ce48c66e9192ad2e7231e9678880f6f8e upstream.
 
-Some rs780 asics seem to be affected as well.
+Pavel Roskin reported that DRM_IOCTL_MODE_GETCONNECTOR was overwritting
+the 4 bytes beyond the end of its structure with a 32-bit userspace
+running on a 64-bit kernel. This is due to the padding gcc inserts as
+the drm_mode_get_connector struct includes a u64 and its size is not a
+natural multiple of u64s.
 
-See:
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=91f3a6aaf280294b07c05dfe606e6c27b7ba3c72
+64-bit kernel:
 
-Fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=60791
+sizeof(drm_mode_get_connector)=80, alignof=8
+sizeof(drm_mode_get_encoder)=20, alignof=4
+sizeof(drm_mode_modeinfo)=68, alignof=4
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+32-bit userspace:
+
+sizeof(drm_mode_get_connector)=76, alignof=4
+sizeof(drm_mode_get_encoder)=20, alignof=4
+sizeof(drm_mode_modeinfo)=68, alignof=4
+
+Fortuituously we can insert explicit padding to the tail of our
+structures without breaking ABI.
+
+Reported-by: Pavel Roskin <proski@gnu.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: dri-devel@lists.freedesktop.org
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/uapi/drm/drm_mode.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1657,7 +1657,7 @@ radeon_atom_encoder_dpms_dig(struct drm_
- 			 * does the same thing and more.
- 			 */
- 			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
--			    (rdev->family != CHIP_RS880))
-+			    (rdev->family != CHIP_RS780) && (rdev->family != CHIP_RS880))
- 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
- 		}
- 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
+--- a/include/uapi/drm/drm_mode.h
++++ b/include/uapi/drm/drm_mode.h
+@@ -223,6 +223,8 @@ struct drm_mode_get_connector {
+ 	__u32 connection;
+ 	__u32 mm_width, mm_height; /**< HxW in millimeters */
+ 	__u32 subpixel;
++
++	__u32 pad;
+ };
+ 
+ #define DRM_MODE_PROP_PENDING	(1<<0)
 
 
