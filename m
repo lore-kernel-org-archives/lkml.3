@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933582Ab3KIHW7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:22:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33183 "EHLO
+	id S933602Ab3KIHXp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:23:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33168 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932577Ab3KIGv1 (ORCPT
+	with ESMTP id S932436Ab3KIGvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:27 -0500
+	Sat, 9 Nov 2013 01:51:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 47/74] uml: check length in exitcode_proc_write()
-Date: Fri,  8 Nov 2013 22:51:52 -0800
-Message-Id: <20131109065116.815977005@linuxfoundation.org>
+Subject: [PATCH 3.10 45/74] Staging: sb105x: info leak in mp_get_count()
+Date: Fri,  8 Nov 2013 22:51:50 -0800
+Message-Id: <20131109065116.682458370@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -30,10 +30,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 201f99f170df14ba52ea4c52847779042b7a623b upstream.
+commit a8b33654b1e3b0c74d4a1fed041c9aae50b3c427 upstream.
 
-We don't cap the size of buffer from the user so we could write past the
-end of the array here.  Only root can write to this file.
+The icount.reserved[] array isn't initialized so it leaks stack
+information to userspace.
 
 Reported-by: Nico Golde <nico@ngolde.de>
 Reported-by: Fabian Yamaguchi <fabs@goesec.de>
@@ -42,23 +42,19 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/um/kernel/exitcode.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/staging/sb105x/sb_pci_mp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/um/kernel/exitcode.c
-+++ b/arch/um/kernel/exitcode.c
-@@ -40,9 +40,11 @@ static ssize_t exitcode_proc_write(struc
- 		const char __user *buffer, size_t count, loff_t *pos)
+--- a/drivers/staging/sb105x/sb_pci_mp.c
++++ b/drivers/staging/sb105x/sb_pci_mp.c
+@@ -1063,7 +1063,7 @@ static int mp_wait_modem_status(struct s
+ 
+ static int mp_get_count(struct sb_uart_state *state, struct serial_icounter_struct *icnt)
  {
- 	char *end, buf[sizeof("nnnnn\0")];
-+	size_t size;
- 	int tmp;
+-	struct serial_icounter_struct icount;
++	struct serial_icounter_struct icount = {};
+ 	struct sb_uart_icount cnow;
+ 	struct sb_uart_port *port = state->port;
  
--	if (copy_from_user(buf, buffer, count))
-+	size = min(count, sizeof(buf));
-+	if (copy_from_user(buf, buffer, size))
- 		return -EFAULT;
- 
- 	tmp = simple_strtol(buf, &end, 0);
 
 
