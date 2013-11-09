@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933602Ab3KIHXp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:23:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33168 "EHLO
+	id S932536Ab3KIGvX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:51:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33118 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932436Ab3KIGvY (ORCPT
+	with ESMTP id S932436Ab3KIGvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:24 -0500
+	Sat, 9 Nov 2013 01:51:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 45/74] Staging: sb105x: info leak in mp_get_count()
-Date: Fri,  8 Nov 2013 22:51:50 -0800
-Message-Id: <20131109065116.682458370@linuxfoundation.org>
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.10 66/74] drm/vmwgfx: Dont kill clients on VT switch
+Date: Fri,  8 Nov 2013 22:52:11 -0800
+Message-Id: <20131109065118.105836452@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -28,33 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit a8b33654b1e3b0c74d4a1fed041c9aae50b3c427 upstream.
+commit c4249855ac5b2a383704d31e040d3831d6a25c6f upstream.
 
-The icount.reserved[] array isn't initialized so it leaks stack
-information to userspace.
+DRI clients that tried to grab the TTM lock when the master (X server) was
+switched away during a VT switch were sent the SIGTERM signal by the
+kernel. Fix this so that they are only sent that signal when the master has
+exited.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/sb105x/sb_pci_mp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/drivers/staging/sb105x/sb_pci_mp.c
-+++ b/drivers/staging/sb105x/sb_pci_mp.c
-@@ -1063,7 +1063,7 @@ static int mp_wait_modem_status(struct s
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+@@ -740,9 +740,17 @@ static void vmw_postclose(struct drm_dev
+ 	struct vmw_fpriv *vmw_fp;
  
- static int mp_get_count(struct sb_uart_state *state, struct serial_icounter_struct *icnt)
- {
--	struct serial_icounter_struct icount;
-+	struct serial_icounter_struct icount = {};
- 	struct sb_uart_icount cnow;
- 	struct sb_uart_port *port = state->port;
+ 	vmw_fp = vmw_fpriv(file_priv);
+-	ttm_object_file_release(&vmw_fp->tfile);
+-	if (vmw_fp->locked_master)
++
++	if (vmw_fp->locked_master) {
++		struct vmw_master *vmaster =
++			vmw_master(vmw_fp->locked_master);
++
++		ttm_lock_set_kill(&vmaster->lock, true, SIGTERM);
++		ttm_vt_unlock(&vmaster->lock);
+ 		drm_master_put(&vmw_fp->locked_master);
++	}
++
++	ttm_object_file_release(&vmw_fp->tfile);
+ 	kfree(vmw_fp);
+ }
  
+@@ -942,14 +950,13 @@ static void vmw_master_drop(struct drm_d
+ 
+ 	vmw_fp->locked_master = drm_master_get(file_priv->master);
+ 	ret = ttm_vt_lock(&vmaster->lock, false, vmw_fp->tfile);
+-	vmw_execbuf_release_pinned_bo(dev_priv);
+-
+ 	if (unlikely((ret != 0))) {
+ 		DRM_ERROR("Unable to lock TTM at VT switch.\n");
+ 		drm_master_put(&vmw_fp->locked_master);
+ 	}
+ 
+-	ttm_lock_set_kill(&vmaster->lock, true, SIGTERM);
++	ttm_lock_set_kill(&vmaster->lock, false, SIGTERM);
++	vmw_execbuf_release_pinned_bo(dev_priv);
+ 
+ 	if (!dev_priv->enable_fb) {
+ 		ret = ttm_bo_evict_mm(&dev_priv->bdev, TTM_PL_VRAM);
 
 
