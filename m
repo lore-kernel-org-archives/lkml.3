@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab3KIPeM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 10:34:12 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:54468 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610Ab3KIPeL (ORCPT
+	id S1756205Ab3KIPfj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 10:35:39 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:34123 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753785Ab3KIPfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 10:34:11 -0500
-Message-ID: <527E55EF.5080504@linux.com>
-Date: Sat, 09 Nov 2013 16:34:07 +0100
-From: Levente Kurusa <levex@linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Caizhiyong <caizhiyong@hisilicon.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>
-Subject: Re: [PATCH] regmap: Fix compile warning with value uninitialized
-References: <C3050A4DBA34F345975765E43127F10F1C08B39E@szxeml512-mbs.china.huawei.com> <20131109151626.GT2493@sirena.org.uk>
-In-Reply-To: <20131109151626.GT2493@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Sat, 9 Nov 2013 10:35:37 -0500
+From: Felipe Pena <felipensp@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        Felipe Pena <felipensp@gmail.com>
+Subject: [PATCH] block: xen-blkfront: Fix possible NULL ptr dereference
+Date: Sat,  9 Nov 2013 13:36:09 -0200
+Message-Id: <1384011369-4381-1-git-send-email-felipensp@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-11-09 16:16 keltezéssel, Mark Brown írta:
-> On Sat, Nov 09, 2013 at 09:49:11AM +0000, Caizhiyong wrote:
-> 
->> @@ -2170,7 +2170,8 @@ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
->>  			  int num_regs)
->>  {
->>  	struct reg_default *p;
->> -	int i, ret;
->> +	int i;
->> +	int ret = 0;
->>  	bool bypass;
-Wouldn't the following be better?
+In the blkif_release function the bdget_disk() call might returns
+a NULL ptr which might be dereferenced on bdev->bd_openers checking
 
-int i, ret = 0;
+Signed-off-by: Felipe Pena <felipensp@gmail.com>
+---
+ drivers/block/xen-blkfront.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-I think it is more readable.
-
-> 
-> This sort of fix isn't ideal, it just silences the warning but if the
-> compiler has spotted a genuine oversight in the function it won't
-> address it.  It's better to include some analysis of why this is a good
-> fix.
-> 
-The only condition when 'ret' is not set is when the num_regs parameter is zero
-and krealloc doesn't fail. If the above two conditions apply, then
-the code would return an uninitialized value. However, calling this function with
-num_regs == 0, would be a waste as it essentially does nothing.
-
-Also, I think code which throws warnings is worse than code
-which doesn't.
-
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index a4660bb..7bb1552 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -1959,6 +1959,9 @@ static void blkif_release(struct gendisk *disk, fmode_t mode)
+ 
+ 	bdev = bdget_disk(disk, 0);
+ 
++	if (!bdev)
++		goto out_mutex;
++
+ 	if (bdev->bd_openers)
+ 		goto out;
+ 
+@@ -1989,6 +1992,7 @@ static void blkif_release(struct gendisk *disk, fmode_t mode)
+ 
+ out:
+ 	bdput(bdev);
++out_mutex:
+ 	mutex_unlock(&blkfront_mutex);
+ }
+ 
 -- 
-Regards,
-Levente Kurusa
+1.7.10.4
+
