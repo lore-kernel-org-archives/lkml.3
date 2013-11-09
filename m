@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab3KIGuP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:50:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32846 "EHLO
+	id S932713Ab3KIHjB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:39:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32876 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756864Ab3KIGuJ (ORCPT
+	with ESMTP id S1756864Ab3KIGuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:09 -0500
+	Sat, 9 Nov 2013 01:50:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 10/74] mac80211: correctly close cancelled scans
-Date: Fri,  8 Nov 2013 22:51:15 -0800
-Message-Id: <20131109065114.220334243@linuxfoundation.org>
+        Sven Neumann <s.neumann@raumfeld.com>,
+        Andreas Fenkart <andreas.fenkart@streamunlimited.com>,
+        Daniel Mack <zonque@gmail.com>, Dylan Reid <dgreid@chromium.org>,
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        Paul Stewart <pstew@chromium.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 17/74] mwifiex: fix SDIO interrupt lost issue
+Date: Fri,  8 Nov 2013 22:51:22 -0800
+Message-Id: <20131109065114.754076069@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -27,88 +31,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit a754055a1296fcbe6f32de3a5eaca6efb2fd1865 upstream.
+commit 453b0c3f6910672f79da354077af728d92f95c5b upstream.
 
-__ieee80211_scan_completed is called from a worker. This
-means that the following flow is possible.
+601216e "mwifiex: process RX packets in SDIO IRQ thread directly"
+introduced a command timeout issue which can be reproduced easily on
+an AM33xx platform using a test application written by Daniel Mack:
 
- * driver calls ieee80211_scan_completed
- * mac80211 cancels the scan (that is already complete)
- * __ieee80211_scan_completed runs
+https://gist.github.com/zonque/6579314
 
-When scan_work will finally run, it will see that the scan
-hasn't been aborted and might even trigger another scan on
-another band. This leads to a situation where cfg80211's
-scan is not done and no further scan can be issued.
+mwifiex_main_process() is called from both the SDIO handler and
+the workqueue. In case an interrupt occurs right after the
+int_status check, but before updating the mwifiex_processing flag,
+this interrupt gets lost, resulting in a command timeout and
+consequently a card reset.
 
-Fix this by setting a new flag when a HW scan is being
-cancelled so that no other scan will be triggered.
+Let main_proc_lock protect both int_status and mwifiex_processing
+flag. This fixes the interrupt lost issue.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Sven Neumann <s.neumann@raumfeld.com>
+Reported-by: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+Tested-by: Daniel Mack <zonque@gmail.com>
+Reviewed-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Paul Stewart <pstew@chromium.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/ieee80211_i.h |    3 +++
- net/mac80211/scan.c        |   19 +++++++++++++++++++
- 2 files changed, 22 insertions(+)
+ drivers/net/wireless/mwifiex/main.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -842,6 +842,8 @@ struct tpt_led_trigger {
-  *	that the scan completed.
-  * @SCAN_ABORTED: Set for our scan work function when the driver reported
-  *	a scan complete for an aborted scan.
-+ * @SCAN_HW_CANCELLED: Set for our scan work function when the scan is being
-+ *	cancelled.
-  */
- enum {
- 	SCAN_SW_SCANNING,
-@@ -849,6 +851,7 @@ enum {
- 	SCAN_ONCHANNEL_SCANNING,
- 	SCAN_COMPLETED,
- 	SCAN_ABORTED,
-+	SCAN_HW_CANCELLED,
- };
+--- a/drivers/net/wireless/mwifiex/main.c
++++ b/drivers/net/wireless/mwifiex/main.c
+@@ -270,10 +270,12 @@ process_start:
+ 		}
+ 	} while (true);
  
- /**
---- a/net/mac80211/scan.c
-+++ b/net/mac80211/scan.c
-@@ -202,6 +202,9 @@ static bool ieee80211_prep_hw_scan(struc
- 	enum ieee80211_band band;
- 	int i, ielen, n_chans;
- 
-+	if (test_bit(SCAN_HW_CANCELLED, &local->scanning))
-+		return false;
-+
- 	do {
- 		if (local->hw_scan_band == IEEE80211_NUM_BANDS)
- 			return false;
-@@ -878,7 +881,23 @@ void ieee80211_scan_cancel(struct ieee80
- 	if (!local->scan_req)
- 		goto out;
- 
-+	/*
-+	 * We have a scan running and the driver already reported completion,
-+	 * but the worker hasn't run yet or is stuck on the mutex - mark it as
-+	 * cancelled.
-+	 */
-+	if (test_bit(SCAN_HW_SCANNING, &local->scanning) &&
-+	    test_bit(SCAN_COMPLETED, &local->scanning)) {
-+		set_bit(SCAN_HW_CANCELLED, &local->scanning);
-+		goto out;
+-	if ((adapter->int_status) || IS_CARD_RX_RCVD(adapter))
++	spin_lock_irqsave(&adapter->main_proc_lock, flags);
++	if ((adapter->int_status) || IS_CARD_RX_RCVD(adapter)) {
++		spin_unlock_irqrestore(&adapter->main_proc_lock, flags);
+ 		goto process_start;
 +	}
-+
- 	if (test_bit(SCAN_HW_SCANNING, &local->scanning)) {
-+		/*
-+		 * Make sure that __ieee80211_scan_completed doesn't trigger a
-+		 * scan on another band.
-+		 */
-+		set_bit(SCAN_HW_CANCELLED, &local->scanning);
- 		if (local->ops->cancel_hw_scan)
- 			drv_cancel_hw_scan(local,
- 				rcu_dereference_protected(local->scan_sdata,
+ 
+-	spin_lock_irqsave(&adapter->main_proc_lock, flags);
+ 	adapter->mwifiex_processing = false;
+ 	spin_unlock_irqrestore(&adapter->main_proc_lock, flags);
+ 
 
 
