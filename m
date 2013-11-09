@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933453Ab3KIHNt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:13:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33304 "EHLO
+	id S933461Ab3KIHOW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:14:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33294 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932727Ab3KIGwA (ORCPT
+	with ESMTP id S932712Ab3KIGv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:00 -0500
+	Sat, 9 Nov 2013 01:51:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jes Sorensen <Jes.Sorensen@redhat.com>, Shaohua Li <shli@fusionio.com>,
-        NeilBrown <neilb@suse.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: [PATCH 3.11 35/94] raid5: set bio bi_vcnt 0 for discard request
-Date: Fri,  8 Nov 2013 22:51:41 -0800
-Message-Id: <20131109065206.718908827@linuxfoundation.org>
+        "Geyslan G. Bem" <geyslan@gmail.com>,
+        Tyler Hicks <tyhicks@canonical.com>
+Subject: [PATCH 3.11 33/94] ecryptfs: Fix memory leakage in keystore.c
+Date: Fri,  8 Nov 2013 22:51:39 -0800
+Message-Id: <20131109065206.584656667@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -28,53 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shaohua Li <shli@kernel.org>
+From: "Geyslan G. Bem" <geyslan@gmail.com>
 
-commit 37c61ff31e9b5e3fcf3cc6579f5c68f6ad40c4b1 upstream.
+commit 3edc8376c06133e3386265a824869cad03a4efd4 upstream.
 
-SCSI layer will add new payload for discard request. If two bios are merged
-to one, the second bio has bi_vcnt 1 which is set in raid5. This will confuse
-SCSI and cause oops.
+In 'decrypt_pki_encrypted_session_key' function:
 
-Suitable for backport to 3.7+
+Initializes 'payload' pointer and releases it on exit.
 
-Reported-by: Jes Sorensen <Jes.Sorensen@redhat.com>
-Signed-off-by: Shaohua Li <shli@fusionio.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid5.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ fs/ecryptfs/keystore.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -668,6 +668,12 @@ static void ops_run_io(struct stripe_hea
- 			bi->bi_io_vec[0].bv_len = STRIPE_SIZE;
- 			bi->bi_io_vec[0].bv_offset = 0;
- 			bi->bi_size = STRIPE_SIZE;
-+			/*
-+			 * If this is discard request, set bi_vcnt 0. We don't
-+			 * want to confuse SCSI because SCSI will replace payload
-+			 */
-+			if (rw & REQ_DISCARD)
-+				bi->bi_vcnt = 0;
- 			if (rrdev)
- 				set_bit(R5_DOUBLE_LOCKED, &sh->dev[i].flags);
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -1149,7 +1149,7 @@ decrypt_pki_encrypted_session_key(struct
+ 	struct ecryptfs_msg_ctx *msg_ctx;
+ 	struct ecryptfs_message *msg = NULL;
+ 	char *auth_tok_sig;
+-	char *payload;
++	char *payload = NULL;
+ 	size_t payload_len = 0;
+ 	int rc;
  
-@@ -706,6 +712,12 @@ static void ops_run_io(struct stripe_hea
- 			rbi->bi_io_vec[0].bv_len = STRIPE_SIZE;
- 			rbi->bi_io_vec[0].bv_offset = 0;
- 			rbi->bi_size = STRIPE_SIZE;
-+			/*
-+			 * If this is discard request, set bi_vcnt 0. We don't
-+			 * want to confuse SCSI because SCSI will replace payload
-+			 */
-+			if (rw & REQ_DISCARD)
-+				rbi->bi_vcnt = 0;
- 			if (conf->mddev->gendisk)
- 				trace_block_bio_remap(bdev_get_queue(rbi->bi_bdev),
- 						      rbi, disk_devt(conf->mddev->gendisk),
+@@ -1203,6 +1203,7 @@ decrypt_pki_encrypted_session_key(struct
+ 	}
+ out:
+ 	kfree(msg);
++	kfree(payload);
+ 	return rc;
+ }
+ 
 
 
