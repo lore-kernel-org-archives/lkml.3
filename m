@@ -1,70 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab3KIEOA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 23:14:00 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:58012 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751069Ab3KIEN7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 23:13:59 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: harshavardhan.r.kharche@intel.com, ashutosh.dixit@intel.com,
-        gregkh@linuxfoundation.org, nikhil.rao@intel.com,
-        sudeep.dutt@intel.com
-Cc: linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] misc: mic: dead code removal and minor cleanup
-Date: Sat,  9 Nov 2013 05:13:42 +0100
-Message-Id: <1383970422-16973-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751268Ab3KIFDF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 00:03:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40451 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751000Ab3KIFDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Nov 2013 00:03:03 -0500
+Message-ID: <527DC1BE.6030107@zytor.com>
+Date: Fri, 08 Nov 2013 21:01:50 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Dave Young <dyoung@redhat.com>, Matt Fleming <matt@console-pimps.org>
+CC: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, bp@alien8.de
+Subject: Re: [patch 0/7 v2] kexec kernel efi runtime support
+References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com> <20131108143118.GA22636@console-pimps.org> <20131109035739.GB4294@dhcp-16-126.nay.redhat.com>
+In-Reply-To: <20131109035739.GB4294@dhcp-16-126.nay.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the below test in drivers/misc/mic/card/mic_virtio.c:
+On 11/08/2013 07:57 PM, Dave Young wrote:
+> 
+> Hmm, if CONFIG_DEBUG_BOOT_PARAMS is not set, then kexec-tools should
+> fail getting efi_info, so I will fix kexec-tools patch about this.
+> 
+> Also CONFIG_EFI_RUNTIME_MAP should select CONFIG_DEBUG_BOOT_PARAMS.
+> In future will try to move the boot params data out of debugfs. 
+> 
 
-if (!retry) {
-...
-}
+Honestly, if we need debugfs to get actual functionality, it shouldn't
+be in sploit^Wdebugfs...
 
-This is dead code because the "retry" variable was set to 100
-earlier in the same function.
+	-hpa
 
-This also removes dev_dbg statements to print the value of this variable.
-That's not interesting to print the value of a variable which value is
-always the same.
-
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/misc/mic/card/mic_virtio.c | 8 --------
- 1 file changed, 8 deletions(-)
-
-diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
-index 914cc9b2caad..0f387504b3fa 100644
---- a/drivers/misc/mic/card/mic_virtio.c
-+++ b/drivers/misc/mic/card/mic_virtio.c
-@@ -167,8 +167,6 @@ static void mic_reset_inform_host(struct virtio_device *vdev)
- 		msleep(100);
- 	};
- 
--	dev_dbg(mic_dev(mvdev), "%s: retry: %d\n", __func__, retry);
--
- 	/* Reset status to 0 in case we timed out */
- 	iowrite8(0, &mvdev->desc->status);
- }
-@@ -337,12 +335,6 @@ static int mic_find_vqs(struct virtio_device *vdev, unsigned nvqs,
- 		msleep(100);
- 	};
- 
--	dev_dbg(mic_dev(mvdev), "%s: retry: %d\n", __func__, retry);
--	if (!retry) {
--		err = -ENODEV;
--		goto error;
--	}
--
- 	return 0;
- error:
- 	mic_del_vqs(vdev);
--- 
-1.8.1.2
 
