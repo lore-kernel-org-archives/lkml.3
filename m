@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055Ab3KIGyl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:54:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33661 "EHLO
+	id S933069Ab3KIGyn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:54:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33655 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932990Ab3KIGxJ (ORCPT
+	with ESMTP id S932985Ab3KIGxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:53:09 -0500
+	Sat, 9 Nov 2013 01:53:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.11 57/94] Staging: bcm: info leak in ioctl
-Date: Fri,  8 Nov 2013 22:52:03 -0800
-Message-Id: <20131109065208.300954567@linuxfoundation.org>
+Subject: [PATCH 3.11 66/94] aacraid: missing capable() check in compat ioctl
+Date: Fri,  8 Nov 2013 22:52:12 -0800
+Message-Id: <20131109065208.942380192@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -30,30 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 8d1e72250c847fa96498ec029891de4dc638a5ba upstream.
+commit f856567b930dfcdbc3323261bf77240ccdde01f5 upstream.
 
-The DevInfo.u32Reserved[] array isn't initialized so it leaks kernel
-information to user space.
+In commit d496f94d22d1 ('[SCSI] aacraid: fix security weakness') we
+added a check on CAP_SYS_RAWIO to the ioctl.  The compat ioctls need the
+check as well.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
 Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/bcm/Bcmchar.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/aacraid/linit.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/staging/bcm/Bcmchar.c
-+++ b/drivers/staging/bcm/Bcmchar.c
-@@ -1960,6 +1960,7 @@ cntrlEnd:
+--- a/drivers/scsi/aacraid/linit.c
++++ b/drivers/scsi/aacraid/linit.c
+@@ -771,6 +771,8 @@ static long aac_compat_do_ioctl(struct a
+ static int aac_compat_ioctl(struct scsi_device *sdev, int cmd, void __user *arg)
+ {
+ 	struct aac_dev *dev = (struct aac_dev *)sdev->host->hostdata;
++	if (!capable(CAP_SYS_RAWIO))
++		return -EPERM;
+ 	return aac_compat_do_ioctl(dev, cmd, (unsigned long)arg);
+ }
  
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Called IOCTL_BCM_GET_DEVICE_DRIVER_INFO\n");
- 
-+		memset(&DevInfo, 0, sizeof(DevInfo));
- 		DevInfo.MaxRDMBufferSize = BUFFER_4K;
- 		DevInfo.u32DSDStartOffset = EEPROM_CALPARAM_START;
- 		DevInfo.u32RxAlignmentCorrection = 0;
 
 
