@@ -1,30 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758320Ab3KIBQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 20:16:13 -0500
-Received: from x.mailservicemail.com ([199.255.114.3]:37155 "EHLO
-	ecelserver-b.rallypointpro.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1757955Ab3KIBQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 20:16:07 -0500
-X-Mailer: Networx Mail 1.2.2
-Date: Fri, 8 Nov 2013 19:15:57 -0600 (CST)
-From: "Joseph  M. Martin" <josephmartin@mypowersystem.com>
-Reply-To: Joseph Martin <joemartin55@outlook.com>
-Message-ID: <81852910.3170396.1383959757150.JavaMail.root@mypowersystem.com>
-In-Reply-To: <460108467.3170385.1383959715426.JavaMail.root@mypowersystem.com>
-Subject: From: Joseph
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1758394Ab3KIBRO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 20:17:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:16662 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757918Ab3KIBRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Nov 2013 20:17:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="432268212"
+Subject: Re: [PATCH v5 4/4] qrwlock: Use the mcs_spinlock helper functions
+ for MCS queuing
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+In-Reply-To: <20131108212107.GI18245@linux.vnet.ibm.com>
+References: <1383585440-4391-1-git-send-email-Waiman.Long@hp.com>
+	 <1383585440-4391-5-git-send-email-Waiman.Long@hp.com>
+	 <20131108212107.GI18245@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Nov 2013 17:17:07 -0800
+Message-ID: <1383959827.11046.420.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.215.162.20]
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am a US Army officer currently on military assignment in Iraq, I humbly ask of your assistance secure and invest some money for me in your country. As a matter of fact, I have the sum of US$5 Million which I would like you to help me to invest. 
-I will appreciate it if you can assist me urgently in securing and investing the money in your country pending when I will disengage from my military assignment. I promise to compensate you with 10% of the funds for your assistance while hoping that you assist me as soon as possible. I await your urgent response. 
-Best regards 
-Joseph Martin 
+On Fri, 2013-11-08 at 13:21 -0800, Paul E. McKenney wrote:
+> On Mon, Nov 04, 2013 at 12:17:20PM -0500, Waiman Long wrote:
+> > There is a pending patch in the rwsem patch series that adds a generic
+> > MCS locking helper functions to do MCS-style locking. This patch
+> > will enable the queue rwlock to use that generic MCS lock/unlock
+> > primitives for internal queuing. This patch should only be merged
+> > after the merging of that generic MCS locking patch.
+> > 
+> > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> 
+> This one does might address at least some of the earlier memory-barrier
+> issues, at least assuming that the MCS lock is properly memory-barriered.
+
+Paul, will appreciate if you can take a look the latest version
+of MCS lock with load-acquire and store-release to see if it is now
+properly memory-barriered.
+
+Thanks.
+
+Tim
 
