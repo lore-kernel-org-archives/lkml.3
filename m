@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933813Ab3KIHbq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:31:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32992 "EHLO
+	id S1758477Ab3KIGup (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:50:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32945 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758493Ab3KIGur (ORCPT
+	with ESMTP id S1758407Ab3KIGuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:47 -0500
+	Sat, 9 Nov 2013 01:50:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Alexey E. Kramarenko" <alexeyk13@yandex.ru>
-Subject: [PATCH 3.10 05/74] USB: serial: ftdi_sio: add id for Z3X Box device
-Date: Fri,  8 Nov 2013 22:51:10 -0800
-Message-Id: <20131109065113.881529173@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 37/74] ALSA: hda - Add missing initial vmaster hook at build_controls callback
+Date: Fri,  8 Nov 2013 22:51:42 -0800
+Message-Id: <20131109065116.118333879@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,41 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Алексей Крамаренко <alexeyk13@yandex.ru>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit e1466ad5b1aeda303f9282463d55798d2eda218c upstream.
+commit b63eae0a6c84839275a4638a7baa391be965cd0e upstream.
 
-Custom VID/PID for Z3X Box device, popular tool for cellphone flashing.
+The generic parser has a support of vmaster hook, but this is
+initialized only in the init callback with the check of the presence
+of the corresponding kctl.  However, since kctl is NULL at the very
+first init callback that is called before build_controls callback, the
+vmaster hook sync is skipped there.  Eventually this leads to the
+uninitialized state depending on the hook implementation.
 
-Signed-off-by: Alexey E. Kramarenko <alexeyk13@yandex.ru>
+This patch adds a simple workaround, just calling the sync function
+explicitly at build_controls callback.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+ sound/pci/hda/hda_generic.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -906,6 +906,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
- 	/* Crucible Devices */
- 	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1307,3 +1307,9 @@
-  * Manufacturer: Crucible Technologies
-  */
- #define FTDI_CT_COMET_PID	0x8e08
-+
-+/*
-+ * Product: Z3X Box
-+ * Manufacturer: Smart GSM Team
-+ */
-+#define FTDI_Z3X_PID		0x0011
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -4383,9 +4383,11 @@ int snd_hda_gen_build_controls(struct hd
+ 					    true, &spec->vmaster_mute.sw_kctl);
+ 		if (err < 0)
+ 			return err;
+-		if (spec->vmaster_mute.hook)
++		if (spec->vmaster_mute.hook) {
+ 			snd_hda_add_vmaster_hook(codec, &spec->vmaster_mute,
+ 						 spec->vmaster_mute_enum);
++			snd_hda_sync_vmaster_hook(&spec->vmaster_mute);
++		}
+ 	}
+ 
+ 	free_kctls(spec); /* no longer needed */
 
 
