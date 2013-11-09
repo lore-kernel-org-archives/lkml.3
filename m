@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758739Ab3KIHQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:16:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33290 "EHLO
+	id S933490Ab3KIHQn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:16:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33285 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932702Ab3KIGv6 (ORCPT
+	with ESMTP id S932697Ab3KIGv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:58 -0500
+	Sat, 9 Nov 2013 01:51:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Lu <aaron.lu@intel.com>,
+        Khalid Aziz <khalid.aziz@oracle.com>,
+        Pierre Uszynski <pierre@rahul.net>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.11 32/94] SCSI: sd: call blk_pm_runtime_init before add_disk
-Date: Fri,  8 Nov 2013 22:51:38 -0800
-Message-Id: <20131109065206.511780269@linuxfoundation.org>
+Subject: [PATCH 3.11 31/94] SCSI: BusLogic: Fix an oops when intializing multimaster adapter
+Date: Fri,  8 Nov 2013 22:51:37 -0800
+Message-Id: <20131109065206.429623340@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -27,70 +28,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Khalid Aziz <khalid.aziz@oracle.com>
 
-commit 10c580e4239df5c3344ca00322eca86ab2de880b upstream.
+commit 6541932ea2f7de0b0c5203decf666b143ad5fa33 upstream.
 
-Sujit has found a race condition that would make q->nr_pending
-unbalanced, it occurs as Sujit explained:
+This fixes an oops caused by buslogic driver when initializing a BusLogic
+MultiMaster adapter. Initialization code used scope of a variable
+incorrectly which created a NULL pointer. Oops message is below:
 
-"
-sd_probe_async() ->
-	add_disk() ->
-		disk_add_event() ->
-			schedule(disk_events_workfn)
-	sd_revalidate_disk()
-	blk_pm_runtime_init()
-return;
+BUG: unable to handle kernel NULL pointer dereference at 0000000c
+IP: [<c150c137>] blogic_init_mm_probeinfo.isra.17+0x20a/0x583
+*pde = 00000000
+Oops: 002 [#1] PREEMPT SMP
+Modules linked in:
+CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.11.1.puz1 #1
+Hardware name:    /Canterwood, BIOS 6.00 PG 05/16/2003
+task: f7050000 ti: f7054000 task.ti: f7054000
+EIP: 0060:[<c150c137>] EFLAGS: 00010246 CPU:1
+EIP is at blogic_init_mm_probeinfo.isra.17+0x20a/0x583
+EAX: 00000013 EBX: 00000000 ECX: 00000000 EDX: f8001000
+ESI: f71cb800 EDI: f7388000 EBP: 00007800 ESP: f7055c84
+ DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+CR0: 8005003b CR2: 0000000c CR3: 0154f000 CR4: 000007d0
+Stack:
+ 0000001c 00000000 c11a59f6 f7055c98 00008130 ffffffff ffffffff 00000000
+ 00000003 00000000 00000000 00000000 00000013 f8001000 00000001 000003d0
+ 00000000 00000000 00000000 c14e3f84 f78803c8 00000000 f738c000 000000e9
+Call Trace:
+ [<c11a59f6>] ? pci_get_subsys+0x33/0x38
+ [<c150c4fb>] ? blogic_init_probeinfo_list+0x4b/0x19e
+ [<c108d593>] ? __alloc_pages_nodemask+0xe3/0x623
+ [<c108d593>] ? __alloc_pages_nodemask+0xe3/0x623
+ [<c10fb99e>] ? sysfs_link_sibling+0x61/0x8d
+ [<c10b0519>] ? kmem_cache_alloc+0x8b/0xb5
+ [<c150cce5>] ? blogic_init+0xa1/0x10e8
+ [<c10fc0a8>] ? sysfs_add_one+0x10/0x9d
+ [<c10fc18a>] ? sysfs_addrm_finish+0x12/0x85
+ [<c10fca37>] ? sysfs_do_create_link_sd+0x9d/0x1b4
+ [<c117c272>] ? blk_register_queue+0x69/0xb3
+ [<c10fcb68>] ? sysfs_create_link+0x1a/0x2c
+ [<c1181a07>] ? add_disk+0x1a1/0x3c7
+ [<c138737b>] ? klist_next+0x60/0xc3
+ [<c122cc3a>] ? scsi_dh_detach+0x68/0x68
+ [<c1213e36>] ? bus_for_each_dev+0x51/0x61
+ [<c1000356>] ? do_one_initcall+0x22/0x12c
+ [<c10f3688>] ? __proc_create+0x8c/0xba
+ [<c150cc44>] ? blogic_setup+0x5f6/0x5f6
+ [<c14e94aa>] ? repair_env_string+0xf/0x4d
+ [<c14e949b>] ? do_early_param+0x71/0x71
+ [<c103efaa>] ? parse_args+0x21f/0x33d
+ [<c14e9a54>] ? kernel_init_freeable+0xdf/0x17d
+ [<c14e949b>] ? do_early_param+0x71/0x71
+ [<c1388b64>] ? kernel_init+0x8/0xc0
+ [<c1392222>] ? ret_from_kernel_thread+0x6/0x28
+ [<c1392227>] ? ret_from_kernel_thread+0x1b/0x28
+ [<c1388b5c>] ? rest_init+0x6c/0x6c
+Code: 89 44 24 10 0f b6 44 24 3d 89 44 24 0c c7 44 24 08 00 00 00 00 c7 44 24 04 38 62 46 c1 c7 04 24 02 00 00 00 e8 78 13 d2 ff 31 db <89> 6b 0c b0 20 89 ea ee
+ c7 44 24 08 04 00 00 00 8d 44 24 4c 89
+EIP: [<c150c137>] blogic_init_mm_probeinfo.isra.17+0x20a/0x583 SS:ESP 0068:f7055c84
+CR2: 000000000000000c
+---[ end trace 17f45f5196d40487 ]---
+Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
 
-Let's say the disk_events_workfn() calls sd_check_events() which tries
-to send test_unit_ready() and because of sd_revalidate_disk() trying to
-send another commands the test_unit_ready() might be re-queued as the
-tagged command queuing is disabled.
-
-So the race condition is -
-
-Thread 1 			  |		Thread 2
-sd_revalidate_disk()		  |	sd_check_events()
-...nr_pending = 0 as q->dev = NULL|	scsi_queue_insert()
-blk_runtime_pm_init()		  | 	blk_pm_requeue_request() ->
-				  |	nr_pending = -1 since
-				  |	q->dev != NULL
-"
-
-The problem is, the test_unit_ready request doesn't get counted the
-first time it is queued, so the later decrement of q->nr_pending in
-blk_pm_requeue_request makes it unbalanced.
-
-Fix this by calling blk_pm_runtime_init before add_disk so that all
-requests initiated there will all be counted.
-
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Reported-and-tested-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+Reported-by: Pierre Uszynski <pierre@rahul.net>
+Tested-by: Pierre Uszynski <pierre@rahul.net>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/sd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/BusLogic.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2853,6 +2853,7 @@ static void sd_probe_async(void *data, a
- 		gd->events |= DISK_EVENT_MEDIA_CHANGE;
- 	}
+--- a/drivers/scsi/BusLogic.c
++++ b/drivers/scsi/BusLogic.c
+@@ -696,7 +696,7 @@ static int __init blogic_init_mm_probein
+ 	while ((pci_device = pci_get_device(PCI_VENDOR_ID_BUSLOGIC,
+ 					PCI_DEVICE_ID_BUSLOGIC_MULTIMASTER,
+ 					pci_device)) != NULL) {
+-		struct blogic_adapter *adapter = adapter;
++		struct blogic_adapter *host_adapter = adapter;
+ 		struct blogic_adapter_info adapter_info;
+ 		enum blogic_isa_ioport mod_ioaddr_req;
+ 		unsigned char bus;
+@@ -744,9 +744,9 @@ static int __init blogic_init_mm_probein
+ 		   known and enabled, note that the particular Standard ISA I/O
+ 		   Address should not be probed.
+ 		 */
+-		adapter->io_addr = io_addr;
+-		blogic_intreset(adapter);
+-		if (blogic_cmd(adapter, BLOGIC_INQ_PCI_INFO, NULL, 0,
++		host_adapter->io_addr = io_addr;
++		blogic_intreset(host_adapter);
++		if (blogic_cmd(host_adapter, BLOGIC_INQ_PCI_INFO, NULL, 0,
+ 				&adapter_info, sizeof(adapter_info)) ==
+ 				sizeof(adapter_info)) {
+ 			if (adapter_info.isa_port < 6)
+@@ -762,7 +762,7 @@ static int __init blogic_init_mm_probein
+ 		   I/O Address assigned at system initialization.
+ 		 */
+ 		mod_ioaddr_req = BLOGIC_IO_DISABLE;
+-		blogic_cmd(adapter, BLOGIC_MOD_IOADDR, &mod_ioaddr_req,
++		blogic_cmd(host_adapter, BLOGIC_MOD_IOADDR, &mod_ioaddr_req,
+ 				sizeof(mod_ioaddr_req), NULL, 0);
+ 		/*
+ 		   For the first MultiMaster Host Adapter enumerated,
+@@ -779,12 +779,12 @@ static int __init blogic_init_mm_probein
  
-+	blk_pm_runtime_init(sdp->request_queue, dev);
- 	add_disk(gd);
- 	if (sdkp->capacity)
- 		sd_dif_config_host(sdkp);
-@@ -2861,7 +2862,6 @@ static void sd_probe_async(void *data, a
- 
- 	sd_printk(KERN_NOTICE, sdkp, "Attached SCSI %sdisk\n",
- 		  sdp->removable ? "removable " : "");
--	blk_pm_runtime_init(sdp->request_queue, dev);
- 	scsi_autopm_put_device(sdp);
- 	put_device(&sdkp->dev);
- }
+ 			fetch_localram.offset = BLOGIC_AUTOSCSI_BASE + 45;
+ 			fetch_localram.count = sizeof(autoscsi_byte45);
+-			blogic_cmd(adapter, BLOGIC_FETCH_LOCALRAM,
++			blogic_cmd(host_adapter, BLOGIC_FETCH_LOCALRAM,
+ 					&fetch_localram, sizeof(fetch_localram),
+ 					&autoscsi_byte45,
+ 					sizeof(autoscsi_byte45));
+-			blogic_cmd(adapter, BLOGIC_GET_BOARD_ID, NULL, 0, &id,
+-					sizeof(id));
++			blogic_cmd(host_adapter, BLOGIC_GET_BOARD_ID, NULL, 0,
++					&id, sizeof(id));
+ 			if (id.fw_ver_digit1 == '5')
+ 				force_scan_order =
+ 					autoscsi_byte45.force_scan_order;
 
 
