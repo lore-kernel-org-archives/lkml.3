@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933221Ab3KIHHh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:07:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33350 "EHLO
+	id S1758613Ab3KIHII (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:08:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932785Ab3KIGwL (ORCPT
+	with ESMTP id S932772Ab3KIGwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:11 -0500
+	Sat, 9 Nov 2013 01:52:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.11 45/94] vhost/scsi: Fix incorrect usage of get_user_pages_fast write parameter
-Date: Fri,  8 Nov 2013 22:51:51 -0800
-Message-Id: <20131109065207.395868320@linuxfoundation.org>
+        Pawel Baldysiak <pawel.baldysiak@intel.com>,
+        Lukasz Dorau <lukasz.dorau@intel.com>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.11 42/94] md: Fix skipping recovery for read-only arrays.
+Date: Fri,  8 Nov 2013 22:51:48 -0800
+Message-Id: <20131109065207.191358605@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -28,43 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Lukasz Dorau <lukasz.dorau@intel.com>
 
-commit 60a01f558af9c48b0bb31f303c479e32721add3f upstream.
+commit 61e4947c99c4494336254ec540c50186d186150b upstream.
 
-This patch addresses a long-standing bug where the get_user_pages_fast()
-write parameter used for setting the underlying page table entry permission
-bits was incorrectly set to write=1 for data_direction=DMA_TO_DEVICE, and
-passed into get_user_pages_fast() via vhost_scsi_map_iov_to_sgl().
+Since:
+        commit 7ceb17e87bde79d285a8b988cfed9eaeebe60b86
+        md: Allow devices to be re-added to a read-only array.
 
-However, this parameter is intended to signal WRITEs to pinned userspace
-PTEs for the virtio-scsi DMA_FROM_DEVICE -> READ payload case, and *not*
-for the virtio-scsi DMA_TO_DEVICE -> WRITE payload case.
+spares are activated on a read-only array. In case of raid1 and raid10
+personalities it causes that not-in-sync devices are marked in-sync
+without checking if recovery has been finished.
 
-This bug would manifest itself as random process segmentation faults on
-KVM host after repeated vhost starts + stops and/or with lots of vhost
-endpoints + LUNs.
+If a read-only array is degraded and one of its devices is not in-sync
+(because the array has been only partially recovered) recovery will be skipped.
 
-Cc: Stefan Hajnoczi <stefanha@redhat.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Asias He <asias@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+This patch adds checking if recovery has been finished before marking a device
+in-sync for raid1 and raid10 personalities. In case of raid5 personality
+such condition is already present (at raid5.c:6029).
+
+Bug was introduced in 3.10 and causes data corruption.
+
+Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
+Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/vhost/scsi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid1.c  |    1 +
+ drivers/md/raid10.c |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/vhost/scsi.c
-+++ b/drivers/vhost/scsi.c
-@@ -1030,7 +1030,7 @@ vhost_scsi_handle_vq(struct vhost_scsi *
- 		if (data_direction != DMA_NONE) {
- 			ret = vhost_scsi_map_iov_to_sgl(cmd,
- 					&vq->iov[data_first], data_num,
--					data_direction == DMA_TO_DEVICE);
-+					data_direction == DMA_FROM_DEVICE);
- 			if (unlikely(ret)) {
- 				vq_err(vq, "Failed to map iov to sgl\n");
- 				goto err_free;
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1479,6 +1479,7 @@ static int raid1_spare_active(struct mdd
+ 			}
+ 		}
+ 		if (rdev
++		    && rdev->recovery_offset == MaxSector
+ 		    && !test_bit(Faulty, &rdev->flags)
+ 		    && !test_and_set_bit(In_sync, &rdev->flags)) {
+ 			count++;
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1782,6 +1782,7 @@ static int raid10_spare_active(struct md
+ 			}
+ 			sysfs_notify_dirent_safe(tmp->replacement->sysfs_state);
+ 		} else if (tmp->rdev
++			   && tmp->rdev->recovery_offset == MaxSector
+ 			   && !test_bit(Faulty, &tmp->rdev->flags)
+ 			   && !test_and_set_bit(In_sync, &tmp->rdev->flags)) {
+ 			count++;
 
 
