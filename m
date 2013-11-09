@@ -1,19 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933629Ab3KIHZc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:25:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33147 "EHLO
+	id S932463Ab3KIGvQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:51:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33007 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932479Ab3KIGvT (ORCPT
+	with ESMTP id S932304Ab3KIGvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:19 -0500
+	Sat, 9 Nov 2013 01:51:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jon Mason <jon.mason@intel.com>
-Subject: [PATCH 3.10 71/74] NTB: Add Error Handling in ntb_device_setup
-Date: Fri,  8 Nov 2013 22:52:16 -0800
-Message-Id: <20131109065118.456575859@linuxfoundation.org>
+        Ming Lei <ming.lei@canonical.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Simon Baatz <gmbnomis@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 54/74] lib/scatterlist.c: dont flush_kernel_dcache_page on slab page
+Date: Fri,  8 Nov 2013 22:51:59 -0800
+Message-Id: <20131109065117.288952653@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -26,40 +36,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Mason <jon.mason@intel.com>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit 3b12a0d15bd1559e72ad21d9d807fd2a6706f0ab upstream.
+commit 3d77b50c5874b7e923be946ba793644f82336b75 upstream.
 
-If an error is encountered in ntb_device_setup, it is possible that the
-spci_cmd isn't populated.  Writes to the offset can result in a NULL
-pointer dereference.  This issue is easily encountered by running in
-NTB-RP mode, as it currently is not supported and will generate an
-error.  To get around this issue, return if an error is encountered
-prior to attempting to write to the spci_cmd offset.
+Commit b1adaf65ba03 ("[SCSI] block: add sg buffer copy helper
+functions") introduces two sg buffer copy helpers, and calls
+flush_kernel_dcache_page() on pages in SG list after these pages are
+written to.
 
-Signed-off-by: Jon Mason <jon.mason@intel.com>
+Unfortunately, the commit may introduce a potential bug:
+
+ - Before sending some SCSI commands, kmalloc() buffer may be passed to
+   block layper, so flush_kernel_dcache_page() can see a slab page
+   finally
+
+ - According to cachetlb.txt, flush_kernel_dcache_page() is only called
+   on "a user page", which surely can't be a slab page.
+
+ - ARCH's implementation of flush_kernel_dcache_page() may use page
+   mapping information to do optimization so page_mapping() will see the
+   slab page, then VM_BUG_ON() is triggered.
+
+Aaro Koskinen reported the bug on ARM/kirkwood when DEBUG_VM is enabled,
+and this patch fixes the bug by adding test of '!PageSlab(miter->page)'
+before calling flush_kernel_dcache_page().
+
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Tested-by: Simon Baatz <gmbnomis@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ntb/ntb_hw.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ lib/scatterlist.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/ntb/ntb_hw.c
-+++ b/drivers/ntb/ntb_hw.c
-@@ -644,10 +644,13 @@ static int ntb_device_setup(struct ntb_d
- 		rc = -ENODEV;
- 	}
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -529,7 +529,8 @@ void sg_miter_stop(struct sg_mapping_ite
+ 		miter->__offset += miter->consumed;
+ 		miter->__remaining -= miter->consumed;
  
-+	if (rc)
-+		return rc;
-+
- 	/* Enable Bus Master and Memory Space on the secondary side */
- 	writew(PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER, ndev->reg_ofs.spci_cmd);
+-		if (miter->__flags & SG_MITER_TO_SG)
++		if ((miter->__flags & SG_MITER_TO_SG) &&
++		    !PageSlab(miter->page))
+ 			flush_kernel_dcache_page(miter->page);
  
--	return rc;
-+	return 0;
- }
- 
- static void ntb_device_free(struct ntb_device *ndev)
+ 		if (miter->__flags & SG_MITER_ATOMIC) {
 
 
