@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052Ab3KIHSe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:18:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33246 "EHLO
+	id S933098Ab3KIHSw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:18:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932648Ab3KIGvr (ORCPT
+	with ESMTP id S932646Ab3KIGvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 9 Nov 2013 01:51:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bruno Randolf <br1@einfach.org>,
+        Luciano Coelho <luciano.coelho@intel.com>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.11 22/94] cfg80211: fix warning when using WEXT for IBSS
-Date: Fri,  8 Nov 2013 22:51:28 -0800
-Message-Id: <20131109065205.803433886@linuxfoundation.org>
+Subject: [PATCH 3.11 21/94] cfg80211: use the correct macro to check for active monitor support
+Date: Fri,  8 Nov 2013 22:51:27 -0800
+Message-Id: <20131109065205.735956555@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -27,43 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruno Randolf <br1@einfach.org>
+From: Luciano Coelho <luciano.coelho@intel.com>
 
-commit f478f33a93f9353dcd1fe55445343d76b1c3f84a upstream.
+commit 180032973ee97daddf5c9d733e5b425b108f8679 upstream.
 
-Fix kernel warning when using WEXT for configuring ad-hoc mode,
-e.g.  "iwconfig wlan0 essid test channel 1"
+Use MONITOR_FLAG_ACTIVE, which is a flag mask, instead of
+NL80211_MNTR_FLAG_ACTIVE, which is a flag index, when checking if the
+hardware supports active monitoring.
 
-WARNING: at net/wireless/chan.c:373 cfg80211_chandef_usable+0x50/0x21c [cfg80211]()
-
-The warning is caused by an uninitialized variable center_freq1.
-
-Signed-off-by: Bruno Randolf <br1@einfach.org>
+Signed-off-by: Luciano Coelho <luciano.coelho@intel.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/ibss.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/wireless/nl80211.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/wireless/ibss.c
-+++ b/net/wireless/ibss.c
-@@ -263,6 +263,8 @@ int cfg80211_ibss_wext_join(struct cfg80
- 				if (chan->flags & IEEE80211_CHAN_DISABLED)
- 					continue;
- 				wdev->wext.ibss.chandef.chan = chan;
-+				wdev->wext.ibss.chandef.center_freq1 =
-+					chan->center_freq;
- 				break;
- 			}
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -2379,7 +2379,7 @@ static int nl80211_set_interface(struct
+ 		change = true;
+ 	}
  
-@@ -347,6 +349,7 @@ int cfg80211_ibss_wext_siwfreq(struct ne
- 	if (chan) {
- 		wdev->wext.ibss.chandef.chan = chan;
- 		wdev->wext.ibss.chandef.width = NL80211_CHAN_WIDTH_20_NOHT;
-+		wdev->wext.ibss.chandef.center_freq1 = freq;
- 		wdev->wext.ibss.channel_fixed = true;
- 	} else {
- 		/* cfg80211_ibss_wext_join will pick one if needed */
+-	if (flags && (*flags & NL80211_MNTR_FLAG_ACTIVE) &&
++	if (flags && (*flags & MONITOR_FLAG_ACTIVE) &&
+ 	    !(rdev->wiphy.features & NL80211_FEATURE_ACTIVE_MONITOR))
+ 		return -EOPNOTSUPP;
+ 
+@@ -2441,7 +2441,7 @@ static int nl80211_new_interface(struct
+ 				  info->attrs[NL80211_ATTR_MNTR_FLAGS] : NULL,
+ 				  &flags);
+ 
+-	if (!err && (flags & NL80211_MNTR_FLAG_ACTIVE) &&
++	if (!err && (flags & MONITOR_FLAG_ACTIVE) &&
+ 	    !(rdev->wiphy.features & NL80211_FEATURE_ACTIVE_MONITOR))
+ 		return -EOPNOTSUPP;
+ 
 
 
