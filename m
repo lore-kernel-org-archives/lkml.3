@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758804Ab3KIG5G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:57:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33605 "EHLO
+	id S1758789Ab3KIG5D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:57:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33608 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758625Ab3KIGw5 (ORCPT
+	with ESMTP id S932778Ab3KIGw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:57 -0500
+	Sat, 9 Nov 2013 01:52:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiaxing Wang <hello.wjx@gmail.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Jonghwan Choi <jhbird.choi@gmail.com>
-Subject: [PATCH 3.11 90/94] seq_file: always update file->f_pos in seq_lseek()
-Date: Fri,  8 Nov 2013 22:52:36 -0800
-Message-Id: <20131109065210.607123109@linuxfoundation.org>
+        Jon Mason <jon.mason@intel.com>
+Subject: [PATCH 3.11 91/94] NTB: Add Error Handling in ntb_device_setup
+Date: Fri,  8 Nov 2013 22:52:37 -0800
+Message-Id: <20131109065210.674026089@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -28,70 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+From: Jon Mason <jon.mason@intel.com>
 
-commit 05e16745c0c471bba313961b605b6da3b21a853d upstream.
+commit 3b12a0d15bd1559e72ad21d9d807fd2a6706f0ab upstream.
 
-This issue was first pointed out by Jiaxing Wang several months ago, but no
-further comments:
-https://lkml.org/lkml/2013/6/29/41
+If an error is encountered in ntb_device_setup, it is possible that the
+spci_cmd isn't populated.  Writes to the offset can result in a NULL
+pointer dereference.  This issue is easily encountered by running in
+NTB-RP mode, as it currently is not supported and will generate an
+error.  To get around this issue, return if an error is encountered
+prior to attempting to write to the spci_cmd offset.
 
-As we know pread() does not change f_pos, so after pread(), file->f_pos
-and m->read_pos become different. And seq_lseek() does not update file->f_pos
-if offset equals to m->read_pos, so after pread() and seq_lseek()(lseek to
-m->read_pos), then a subsequent read may read from a wrong position, the
-following program produces the problem:
-
-    char str1[32] = { 0 };
-    char str2[32] = { 0 };
-    int poffset = 10;
-    int count = 20;
-
-    /*open any seq file*/
-    int fd = open("/proc/modules", O_RDONLY);
-
-    pread(fd, str1, count, poffset);
-    printf("pread:%s\n", str1);
-
-    /*seek to where m->read_pos is*/
-    lseek(fd, poffset+count, SEEK_SET);
-
-    /*supposed to read from poffset+count, but this read from position 0*/
-    read(fd, str2, count);
-    printf("read:%s\n", str2);
-
-out put:
-pread:
- ck_netbios_ns 12665
-read:
- nf_conntrack_netbios
-
-/proc/modules:
-nf_conntrack_netbios_ns 12665 0 - Live 0xffffffffa038b000
-nf_conntrack_broadcast 12589 1 nf_conntrack_netbios_ns, Live 0xffffffffa0386000
-
-So we always update file->f_pos to offset in seq_lseek() to fix this issue.
-
-Signed-off-by: Jiaxing Wang <hello.wjx@gmail.com>
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Jonghwan Choi <jhbird.choi@gmail.com>
+Signed-off-by: Jon Mason <jon.mason@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/seq_file.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/ntb/ntb_hw.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -328,6 +328,8 @@ loff_t seq_lseek(struct file *file, loff
- 				m->read_pos = offset;
- 				retval = file->f_pos = offset;
- 			}
-+		} else {
-+			file->f_pos = offset;
- 		}
+--- a/drivers/ntb/ntb_hw.c
++++ b/drivers/ntb/ntb_hw.c
+@@ -644,10 +644,13 @@ static int ntb_device_setup(struct ntb_d
+ 		rc = -ENODEV;
  	}
- 	file->f_version = m->version;
+ 
++	if (rc)
++		return rc;
++
+ 	/* Enable Bus Master and Memory Space on the secondary side */
+ 	writew(PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER, ndev->reg_ofs.spci_cmd);
+ 
+-	return rc;
++	return 0;
+ }
+ 
+ static void ntb_device_free(struct ntb_device *ndev)
 
 
