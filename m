@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933764Ab3KIH3f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:29:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33040 "EHLO
+	id S933778Ab3KIH3j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:29:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33035 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932311Ab3KIGvD (ORCPT
+	with ESMTP id S932306Ab3KIGvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:03 -0500
+	Sat, 9 Nov 2013 01:51:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.10 56/74] clk: fixup argument order when setting VCO parameters
-Date: Fri,  8 Nov 2013 22:52:01 -0800
-Message-Id: <20131109065117.423343174@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 55/74] aacraid: missing capable() check in compat ioctl
+Date: Fri,  8 Nov 2013 22:52:00 -0800
+Message-Id: <20131109065117.356656311@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -28,35 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Austin <jonathan.austin@arm.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 2f9f64bc5aa31836810cd25301aa4772ad73ebab upstream.
+commit f856567b930dfcdbc3323261bf77240ccdde01f5 upstream.
 
-The order of arguments in the call to vco_set() for the ICST clocks appears to
-have been switched in error, which results in the VCO not being initialised
-correctly. This in turn stops the integrated LCD on things like Integrator/CP
-from working correctly.
+In commit d496f94d22d1 ('[SCSI] aacraid: fix security weakness') we
+added a check on CAP_SYS_RAWIO to the ioctl.  The compat ioctls need the
+check as well.
 
-This patch fixes the order and restores the expected functionality.
-
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Jonathan Austin <jonathan.austin@arm.com>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/versatile/clk-icst.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/aacraid/linit.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/clk/versatile/clk-icst.c
-+++ b/drivers/clk/versatile/clk-icst.c
-@@ -107,7 +107,7 @@ static int icst_set_rate(struct clk_hw *
- 
- 	vco = icst_hz_to_vco(icst->params, rate);
- 	icst->rate = icst_hz(icst->params, vco);
--	vco_set(icst->vcoreg, icst->lockreg, vco);
-+	vco_set(icst->lockreg, icst->vcoreg, vco);
- 	return 0;
+--- a/drivers/scsi/aacraid/linit.c
++++ b/drivers/scsi/aacraid/linit.c
+@@ -771,6 +771,8 @@ static long aac_compat_do_ioctl(struct a
+ static int aac_compat_ioctl(struct scsi_device *sdev, int cmd, void __user *arg)
+ {
+ 	struct aac_dev *dev = (struct aac_dev *)sdev->host->hostdata;
++	if (!capable(CAP_SYS_RAWIO))
++		return -EPERM;
+ 	return aac_compat_do_ioctl(dev, cmd, (unsigned long)arg);
  }
  
 
