@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933869Ab3KIHdL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:33:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32937 "EHLO
+	id S933882Ab3KIHdd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:33:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32945 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758382Ab3KIGuj (ORCPT
+	with ESMTP id S1758364Ab3KIGui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:39 -0500
+	Sat, 9 Nov 2013 01:50:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 36/74] ARC: Incorrect mm reference used in vmalloc fault handler
-Date: Fri,  8 Nov 2013 22:51:41 -0800
-Message-Id: <20131109065116.049352109@linuxfoundation.org>
+        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
+        Ming Lei <tom.leiming@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 3.10 35/74] scripts/kallsyms: filter symbols not in kernel address space
+Date: Fri,  8 Nov 2013 22:51:40 -0800
+Message-Id: <20131109065115.981102672@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -29,65 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+From: Ming Lei <tom.leiming@gmail.com>
 
-commit 9c41f4eeb9d51f3ece20428d35a3ea32cf3b5622 upstream.
+commit f6537f2f0eba4eba3354e48dbe3047db6d8b6254 upstream.
 
-A vmalloc fault needs to sync up PGD/PTE entry from init_mm to current
-task's "active_mm".  ARC vmalloc fault handler however was using mm.
+This patch uses CONFIG_PAGE_OFFSET to filter symbols which
+are not in kernel address space because these symbols are
+generally for generating code purpose and can't be run at
+kernel mode, so we needn't keep them in /proc/kallsyms.
 
-A vmalloc fault for non user task context (actually pre-userland, from
-init thread's open for /dev/console) caused the handler to deref NULL mm
-(for mm->pgd)
+For example, on ARM there are some symbols which may be
+linked in relocatable code section, then perf can't parse
+symbols any more from /proc/kallsyms, this patch fixes the
+problem (introduced b9b32bf70f2fb710b07c94e13afbc729afe221da)
 
-The reasons it worked so far is amazing:
-
-1. By default (!SMP), vmalloc fault handler uses a cached value of PGD.
-   In SMP that MMU register is repurposed hence need for mm pointer deref.
-
-2. In pre-3.12 SMP kernel, the problem triggering vmalloc didn't exist in
-   pre-userland code path - it was introduced with commit 20bafb3d23d108bc
-   "n_tty: Move buffers into n_tty_data"
-
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Noam Camus <noamc@ezchip.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/mm/fault.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ scripts/kallsyms.c      |   12 +++++++++++-
+ scripts/link-vmlinux.sh |    2 ++
+ 2 files changed, 13 insertions(+), 1 deletion(-)
 
---- a/arch/arc/mm/fault.c
-+++ b/arch/arc/mm/fault.c
-@@ -16,7 +16,7 @@
- #include <linux/kdebug.h>
- #include <asm/pgalloc.h>
+--- a/scripts/kallsyms.c
++++ b/scripts/kallsyms.c
+@@ -55,6 +55,7 @@ static struct sym_entry *table;
+ static unsigned int table_size, table_cnt;
+ static int all_symbols = 0;
+ static char symbol_prefix_char = '\0';
++static unsigned long long kernel_start_addr = 0;
  
--static int handle_vmalloc_fault(struct mm_struct *mm, unsigned long address)
-+static int handle_vmalloc_fault(unsigned long address)
+ int token_profit[0x10000];
+ 
+@@ -65,7 +66,10 @@ unsigned char best_table_len[256];
+ 
+ static void usage(void)
  {
- 	/*
- 	 * Synchronize this task's top level page-table
-@@ -26,7 +26,7 @@ static int handle_vmalloc_fault(struct m
- 	pud_t *pud, *pud_k;
- 	pmd_t *pmd, *pmd_k;
+-	fprintf(stderr, "Usage: kallsyms [--all-symbols] [--symbol-prefix=<prefix char>] < in.map > out.S\n");
++	fprintf(stderr, "Usage: kallsyms [--all-symbols] "
++			"[--symbol-prefix=<prefix char>] "
++			"[--page-offset=<CONFIG_PAGE_OFFSET>] "
++			"< in.map > out.S\n");
+ 	exit(1);
+ }
  
--	pgd = pgd_offset_fast(mm, address);
-+	pgd = pgd_offset_fast(current->active_mm, address);
- 	pgd_k = pgd_offset_k(address);
+@@ -194,6 +198,9 @@ static int symbol_valid(struct sym_entry
+ 	int i;
+ 	int offset = 1;
  
- 	if (!pgd_present(*pgd_k))
-@@ -72,7 +72,7 @@ void do_page_fault(struct pt_regs *regs,
- 	 * nothing more.
- 	 */
- 	if (address >= VMALLOC_START && address <= VMALLOC_END) {
--		ret = handle_vmalloc_fault(mm, address);
-+		ret = handle_vmalloc_fault(address);
- 		if (unlikely(ret))
- 			goto bad_area_nosemaphore;
- 		else
++	if (s->addr < kernel_start_addr)
++		return 0;
++
+ 	/* skip prefix char */
+ 	if (symbol_prefix_char && *(s->sym + 1) == symbol_prefix_char)
+ 		offset++;
+@@ -646,6 +653,9 @@ int main(int argc, char **argv)
+ 				if ((*p == '"' && *(p+2) == '"') || (*p == '\'' && *(p+2) == '\''))
+ 					p++;
+ 				symbol_prefix_char = *p;
++			} else if (strncmp(argv[i], "--page-offset=", 14) == 0) {
++				const char *p = &argv[i][14];
++				kernel_start_addr = strtoull(p, NULL, 16);
+ 			} else
+ 				usage();
+ 		}
+--- a/scripts/link-vmlinux.sh
++++ b/scripts/link-vmlinux.sh
+@@ -82,6 +82,8 @@ kallsyms()
+ 		kallsymopt="${kallsymopt} --all-symbols"
+ 	fi
+ 
++	kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
++
+ 	local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
+ 		      ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
+ 
 
 
