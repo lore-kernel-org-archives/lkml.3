@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816Ab3KIHBk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:01:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33491 "EHLO
+	id S932941Ab3KIHCB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:02:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33482 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932899Ab3KIGwi (ORCPT
+	with ESMTP id S932889Ab3KIGwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:38 -0500
+	Sat, 9 Nov 2013 01:52:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johannes Weiner <hannes@cmpxchg.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.11 73/94] mm: Close races between THP migration and PMD numa clearing
-Date: Fri,  8 Nov 2013 22:52:19 -0800
-Message-Id: <20131109065209.423485927@linuxfoundation.org>
+Subject: [PATCH 3.11 72/94] mm: numa: Sanitize task_numa_fault() callsites
+Date: Fri,  8 Nov 2013 22:52:18 -0800
+Message-Id: <20131109065209.355964917@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -32,30 +32,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit 3f926ab945b60a5824369d21add7710622a2eac0 upstream.
+commit c61109e34f60f6e85bb43c5a1cd51c0e3db40847 upstream.
 
-THP migration uses the page lock to guard against parallel allocations
-but there are cases like this still open
+There are three callers of task_numa_fault():
 
-  Task A					Task B
-  ---------------------				---------------------
-  do_huge_pmd_numa_page				do_huge_pmd_numa_page
-  lock_page
-  mpol_misplaced == -1
-  unlock_page
-  goto clear_pmdnuma
-						lock_page
-						mpol_misplaced == 2
-						migrate_misplaced_transhuge
-  pmd = pmd_mknonnuma
-  set_pmd_at
+ - do_huge_pmd_numa_page():
+     Accounts against the current node, not the node where the
+     page resides, unless we migrated, in which case it accounts
+     against the node we migrated to.
 
-During hours of testing, one crashed with weird errors and while I have
-no direct evidence, I suspect something like the race above happened.
-This patch extends the page lock to being held until the pmd_numa is
-cleared to prevent migration starting in parallel while the pmd_numa is
-being cleared. It also flushes the old pmd entry and orders pagetable
-insertion before rmap insertion.
+ - do_numa_page():
+     Accounts against the current node, not the node where the
+     page resides, unless we migrated, in which case it accounts
+     against the node we migrated to.
+
+ - do_pmd_numa_page():
+     Accounts not at all when the page isn't migrated, otherwise
+     accounts against the node we migrated towards.
+
+This seems wrong to me; all three sites should have the same
+sementaics, furthermore we should accounts against where the page
+really is, we already know where the task is.
+
+So modify all three sites to always account; we did after all receive
+the fault; and always account to where the page is after migration,
+regardless of success.
+
+They all still differ on when they clear the PTE/PMD; ideally that
+would get sorted too.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Reviewed-by: Rik van Riel <riel@redhat.com>
@@ -63,140 +67,193 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-9-git-send-email-mgorman@suse.de
+Link: http://lkml.kernel.org/r/1381141781-10992-8-git-send-email-mgorman@suse.de
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |   33 +++++++++++++++------------------
- mm/migrate.c     |   19 +++++++++++--------
- 2 files changed, 26 insertions(+), 26 deletions(-)
+ mm/huge_memory.c |   25 +++++++++++++------------
+ mm/memory.c      |   53 +++++++++++++++++++++--------------------------------
+ 2 files changed, 34 insertions(+), 44 deletions(-)
 
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -1316,24 +1316,25 @@ int do_huge_pmd_numa_page(struct mm_stru
- 	target_nid = mpol_misplaced(page, vma, haddr);
- 	if (target_nid == -1) {
- 		/* If the page was locked, there are no parallel migrations */
--		if (page_locked) {
--			unlock_page(page);
-+		if (page_locked)
- 			goto clear_pmdnuma;
--		}
+@@ -1293,18 +1293,19 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	struct anon_vma *anon_vma = NULL;
+ 	struct page *page;
+ 	unsigned long haddr = addr & HPAGE_PMD_MASK;
++	int page_nid = -1, this_nid = numa_node_id();
+ 	int target_nid;
+-	int current_nid = -1;
+-	bool migrated, page_locked;
++	bool page_locked;
++	bool migrated = false;
  
--		/* Otherwise wait for potential migrations and retry fault */
-+		/*
-+		 * Otherwise wait for potential migrations and retry. We do
-+		 * relock and check_same as the page may no longer be mapped.
-+		 * As the fault is being retried, do not account for it.
-+		 */
- 		spin_unlock(&mm->page_table_lock);
- 		wait_on_page_locked(page);
-+		page_nid = -1;
- 		goto out;
- 	}
- 
- 	/* Page is misplaced, serialise migrations and parallel THP splits */
- 	get_page(page);
- 	spin_unlock(&mm->page_table_lock);
--	if (!page_locked) {
-+	if (!page_locked)
- 		lock_page(page);
--		page_locked = true;
--	}
- 	anon_vma = page_lock_anon_vma_read(page);
- 
- 	/* Confirm the PTE did not while locked */
-@@ -1341,32 +1342,28 @@ int do_huge_pmd_numa_page(struct mm_stru
- 	if (unlikely(!pmd_same(pmd, *pmdp))) {
- 		unlock_page(page);
- 		put_page(page);
-+		page_nid = -1;
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(pmd, *pmdp)))
  		goto out_unlock;
- 	}
  
--	/* Migrate the THP to the requested node */
-+	/*
-+	 * Migrate the THP to the requested node, returns with page unlocked
-+	 * and pmd_numa cleared.
-+	 */
+ 	page = pmd_page(pmd);
+-	current_nid = page_to_nid(page);
++	page_nid = page_to_nid(page);
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+-	if (current_nid == numa_node_id())
++	if (page_nid == this_nid)
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
+ 
+ 	/*
+@@ -1347,19 +1348,18 @@ int do_huge_pmd_numa_page(struct mm_stru
  	spin_unlock(&mm->page_table_lock);
  	migrated = migrate_misplaced_transhuge_page(mm, vma,
  				pmdp, pmd, addr, page, target_nid);
- 	if (migrated)
- 		page_nid = target_nid;
--	else
--		goto check_same;
+-	if (!migrated)
++	if (migrated)
++		page_nid = target_nid;
++	else
+ 		goto check_same;
  
- 	goto out;
--
--check_same:
--	spin_lock(&mm->page_table_lock);
--	if (unlikely(!pmd_same(pmd, *pmdp))) {
--		/* Someone else took our fault */
--		page_nid = -1;
--		goto out_unlock;
--	}
+-	task_numa_fault(target_nid, HPAGE_PMD_NR, true);
+-	if (anon_vma)
+-		page_unlock_anon_vma_read(anon_vma);
+-	return 0;
++	goto out;
+ 
+ check_same:
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(pmd, *pmdp))) {
+ 		/* Someone else took our fault */
+-		current_nid = -1;
++		page_nid = -1;
+ 		goto out_unlock;
+ 	}
  clear_pmdnuma:
-+	BUG_ON(!PageLocked(page));
- 	pmd = pmd_mknonnuma(pmd);
- 	set_pmd_at(mm, haddr, pmdp, pmd);
- 	VM_BUG_ON(pmd_numa(*pmdp));
- 	update_mmu_cache_pmd(vma, addr, pmdp);
-+	unlock_page(page);
- out_unlock:
- 	spin_unlock(&mm->page_table_lock);
+@@ -1374,8 +1374,9 @@ out:
+ 	if (anon_vma)
+ 		page_unlock_anon_vma_read(anon_vma);
  
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1712,12 +1712,12 @@ int migrate_misplaced_transhuge_page(str
- 		unlock_page(new_page);
- 		put_page(new_page);		/* Free it */
+-	if (current_nid != -1)
+-		task_numa_fault(current_nid, HPAGE_PMD_NR, false);
++	if (page_nid != -1)
++		task_numa_fault(page_nid, HPAGE_PMD_NR, migrated);
++
+ 	return 0;
+ }
  
--		unlock_page(page);
-+		/* Retake the callers reference and putback on LRU */
-+		get_page(page);
- 		putback_lru_page(page);
--
--		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
--		isolated = 0;
--		goto out;
-+		mod_zone_page_state(page_zone(page),
-+			 NR_ISOLATED_ANON + page_lru, -HPAGE_PMD_NR);
-+		goto out_fail;
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3532,12 +3532,12 @@ static int do_nonlinear_fault(struct mm_
+ }
+ 
+ int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
+-				unsigned long addr, int current_nid)
++				unsigned long addr, int page_nid)
+ {
+ 	get_page(page);
+ 
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+-	if (current_nid == numa_node_id())
++	if (page_nid == numa_node_id())
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
+ 
+ 	return mpol_misplaced(page, vma, addr);
+@@ -3548,7 +3548,7 @@ int do_numa_page(struct mm_struct *mm, s
+ {
+ 	struct page *page = NULL;
+ 	spinlock_t *ptl;
+-	int current_nid = -1;
++	int page_nid = -1;
+ 	int target_nid;
+ 	bool migrated = false;
+ 
+@@ -3578,15 +3578,10 @@ int do_numa_page(struct mm_struct *mm, s
+ 		return 0;
  	}
  
- 	/*
-@@ -1734,9 +1734,9 @@ int migrate_misplaced_transhuge_page(str
- 	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
- 	entry = pmd_mkhuge(entry);
+-	current_nid = page_to_nid(page);
+-	target_nid = numa_migrate_prep(page, vma, addr, current_nid);
++	page_nid = page_to_nid(page);
++	target_nid = numa_migrate_prep(page, vma, addr, page_nid);
+ 	pte_unmap_unlock(ptep, ptl);
+ 	if (target_nid == -1) {
+-		/*
+-		 * Account for the fault against the current node if it not
+-		 * being replaced regardless of where the page is located.
+-		 */
+-		current_nid = numa_node_id();
+ 		put_page(page);
+ 		goto out;
+ 	}
+@@ -3594,11 +3589,11 @@ int do_numa_page(struct mm_struct *mm, s
+ 	/* Migrate to the requested node */
+ 	migrated = migrate_misplaced_page(page, target_nid);
+ 	if (migrated)
+-		current_nid = target_nid;
++		page_nid = target_nid;
  
--	page_add_new_anon_rmap(new_page, vma, haddr);
--
-+	pmdp_clear_flush(vma, haddr, pmd);
- 	set_pmd_at(mm, haddr, pmd, entry);
-+	page_add_new_anon_rmap(new_page, vma, haddr);
- 	update_mmu_cache_pmd(vma, address, &entry);
- 	page_remove_rmap(page);
- 	/*
-@@ -1755,7 +1755,6 @@ int migrate_misplaced_transhuge_page(str
- 	count_vm_events(PGMIGRATE_SUCCESS, HPAGE_PMD_NR);
- 	count_vm_numa_events(NUMA_PAGE_MIGRATE, HPAGE_PMD_NR);
- 
--out:
- 	mod_zone_page_state(page_zone(page),
- 			NR_ISOLATED_ANON + page_lru,
- 			-HPAGE_PMD_NR);
-@@ -1764,6 +1763,10 @@ out:
- out_fail:
- 	count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
- out_dropref:
-+	entry = pmd_mknonnuma(entry);
-+	set_pmd_at(mm, haddr, pmd, entry);
-+	update_mmu_cache_pmd(vma, address, &entry);
-+
- 	unlock_page(page);
- 	put_page(page);
+ out:
+-	if (current_nid != -1)
+-		task_numa_fault(current_nid, 1, migrated);
++	if (page_nid != -1)
++		task_numa_fault(page_nid, 1, migrated);
  	return 0;
+ }
+ 
+@@ -3613,7 +3608,6 @@ static int do_pmd_numa_page(struct mm_st
+ 	unsigned long offset;
+ 	spinlock_t *ptl;
+ 	bool numa = false;
+-	int local_nid = numa_node_id();
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	pmd = *pmdp;
+@@ -3636,9 +3630,10 @@ static int do_pmd_numa_page(struct mm_st
+ 	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
+ 		pte_t pteval = *pte;
+ 		struct page *page;
+-		int curr_nid = local_nid;
++		int page_nid = -1;
+ 		int target_nid;
+-		bool migrated;
++		bool migrated = false;
++
+ 		if (!pte_present(pteval))
+ 			continue;
+ 		if (!pte_numa(pteval))
+@@ -3660,25 +3655,19 @@ static int do_pmd_numa_page(struct mm_st
+ 		if (unlikely(page_mapcount(page) != 1))
+ 			continue;
+ 
+-		/*
+-		 * Note that the NUMA fault is later accounted to either
+-		 * the node that is currently running or where the page is
+-		 * migrated to.
+-		 */
+-		curr_nid = local_nid;
+-		target_nid = numa_migrate_prep(page, vma, addr,
+-					       page_to_nid(page));
+-		if (target_nid == -1) {
++		page_nid = page_to_nid(page);
++		target_nid = numa_migrate_prep(page, vma, addr, page_nid);
++		pte_unmap_unlock(pte, ptl);
++		if (target_nid != -1) {
++			migrated = migrate_misplaced_page(page, target_nid);
++			if (migrated)
++				page_nid = target_nid;
++		} else {
+ 			put_page(page);
+-			continue;
+ 		}
+ 
+-		/* Migrate to the requested node */
+-		pte_unmap_unlock(pte, ptl);
+-		migrated = migrate_misplaced_page(page, target_nid);
+-		if (migrated)
+-			curr_nid = target_nid;
+-		task_numa_fault(curr_nid, 1, migrated);
++		if (page_nid != -1)
++			task_numa_fault(page_nid, 1, migrated);
+ 
+ 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
+ 	}
 
 
