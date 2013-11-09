@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758673Ab3KIHOS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:14:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33298 "EHLO
+	id S1758739Ab3KIHQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:16:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33290 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932629Ab3KIGv7 (ORCPT
+	with ESMTP id S932702Ab3KIGv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:59 -0500
+	Sat, 9 Nov 2013 01:51:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Colin Ian King <colin.king@canonical.com>,
-        Lars Duesing <lars.duesing@camelotsweb.de>,
-        Tyler Hicks <tyhicks@canonical.com>
-Subject: [PATCH 3.11 34/94] eCryptfs: fix 32 bit corruption issue
-Date: Fri,  8 Nov 2013 22:51:40 -0800
-Message-Id: <20131109065206.651930839@linuxfoundation.org>
+        Aaron Lu <aaron.lu@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.11 32/94] SCSI: sd: call blk_pm_runtime_init before add_disk
+Date: Fri,  8 Nov 2013 22:51:38 -0800
+Message-Id: <20131109065206.511780269@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -28,34 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Ian King <colin.king@canonical.com>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit 43b7c6c6a4e3916edd186ceb61be0c67d1e0969e upstream.
+commit 10c580e4239df5c3344ca00322eca86ab2de880b upstream.
 
-Shifting page->index on 32 bit systems was overflowing, causing
-data corruption of > 4GB files. Fix this by casting it first.
+Sujit has found a race condition that would make q->nr_pending
+unbalanced, it occurs as Sujit explained:
 
-https://launchpad.net/bugs/1243636
+"
+sd_probe_async() ->
+	add_disk() ->
+		disk_add_event() ->
+			schedule(disk_events_workfn)
+	sd_revalidate_disk()
+	blk_pm_runtime_init()
+return;
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
-Reported-by: Lars Duesing <lars.duesing@camelotsweb.de>
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Let's say the disk_events_workfn() calls sd_check_events() which tries
+to send test_unit_ready() and because of sd_revalidate_disk() trying to
+send another commands the test_unit_ready() might be re-queued as the
+tagged command queuing is disabled.
+
+So the race condition is -
+
+Thread 1 			  |		Thread 2
+sd_revalidate_disk()		  |	sd_check_events()
+...nr_pending = 0 as q->dev = NULL|	scsi_queue_insert()
+blk_runtime_pm_init()		  | 	blk_pm_requeue_request() ->
+				  |	nr_pending = -1 since
+				  |	q->dev != NULL
+"
+
+The problem is, the test_unit_ready request doesn't get counted the
+first time it is queued, so the later decrement of q->nr_pending in
+blk_pm_requeue_request makes it unbalanced.
+
+Fix this by calling blk_pm_runtime_init before add_disk so that all
+requests initiated there will all be counted.
+
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Reported-and-tested-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/crypto.c |    2 +-
+ drivers/scsi/sd.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ecryptfs/crypto.c
-+++ b/fs/ecryptfs/crypto.c
-@@ -408,7 +408,7 @@ static loff_t lower_offset_for_page(stru
- 				    struct page *page)
- {
- 	return ecryptfs_lower_header_size(crypt_stat) +
--	       (page->index << PAGE_CACHE_SHIFT);
-+	       ((loff_t)page->index << PAGE_CACHE_SHIFT);
- }
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2853,6 +2853,7 @@ static void sd_probe_async(void *data, a
+ 		gd->events |= DISK_EVENT_MEDIA_CHANGE;
+ 	}
  
- /**
++	blk_pm_runtime_init(sdp->request_queue, dev);
+ 	add_disk(gd);
+ 	if (sdkp->capacity)
+ 		sd_dif_config_host(sdkp);
+@@ -2861,7 +2862,6 @@ static void sd_probe_async(void *data, a
+ 
+ 	sd_printk(KERN_NOTICE, sdkp, "Attached SCSI %sdisk\n",
+ 		  sdp->removable ? "removable " : "");
+-	blk_pm_runtime_init(sdp->request_queue, dev);
+ 	scsi_autopm_put_device(sdp);
+ 	put_device(&sdkp->dev);
+ }
 
 
