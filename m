@@ -1,29 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab3KIGzS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:55:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33651 "EHLO
+	id S932969Ab3KIGxF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:53:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33533 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932979Ab3KIGxH (ORCPT
+	with ESMTP id S932934Ab3KIGwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:53:07 -0500
+	Sat, 9 Nov 2013 01:52:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Simon Baatz <gmbnomis@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.11 65/94] lib/scatterlist.c: dont flush_kernel_dcache_page on slab page
-Date: Fri,  8 Nov 2013 22:52:11 -0800
-Message-Id: <20131109065208.874792878@linuxfoundation.org>
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.11 78/94] drm/vmwgfx: Dont kill clients on VT switch
+Date: Fri,  8 Nov 2013 22:52:24 -0800
+Message-Id: <20131109065209.762825950@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -36,62 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 3d77b50c5874b7e923be946ba793644f82336b75 upstream.
+commit c4249855ac5b2a383704d31e040d3831d6a25c6f upstream.
 
-Commit b1adaf65ba03 ("[SCSI] block: add sg buffer copy helper
-functions") introduces two sg buffer copy helpers, and calls
-flush_kernel_dcache_page() on pages in SG list after these pages are
-written to.
+DRI clients that tried to grab the TTM lock when the master (X server) was
+switched away during a VT switch were sent the SIGTERM signal by the
+kernel. Fix this so that they are only sent that signal when the master has
+exited.
 
-Unfortunately, the commit may introduce a potential bug:
-
- - Before sending some SCSI commands, kmalloc() buffer may be passed to
-   block layper, so flush_kernel_dcache_page() can see a slab page
-   finally
-
- - According to cachetlb.txt, flush_kernel_dcache_page() is only called
-   on "a user page", which surely can't be a slab page.
-
- - ARCH's implementation of flush_kernel_dcache_page() may use page
-   mapping information to do optimization so page_mapping() will see the
-   slab page, then VM_BUG_ON() is triggered.
-
-Aaro Koskinen reported the bug on ARM/kirkwood when DEBUG_VM is enabled,
-and this patch fixes the bug by adding test of '!PageSlab(miter->page)'
-before calling flush_kernel_dcache_page().
-
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Tested-by: Simon Baatz <gmbnomis@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/scatterlist.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -577,7 +577,8 @@ void sg_miter_stop(struct sg_mapping_ite
- 		miter->__offset += miter->consumed;
- 		miter->__remaining -= miter->consumed;
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+@@ -738,9 +738,17 @@ static void vmw_postclose(struct drm_dev
+ 	struct vmw_fpriv *vmw_fp;
  
--		if (miter->__flags & SG_MITER_TO_SG)
-+		if ((miter->__flags & SG_MITER_TO_SG) &&
-+		    !PageSlab(miter->page))
- 			flush_kernel_dcache_page(miter->page);
+ 	vmw_fp = vmw_fpriv(file_priv);
+-	ttm_object_file_release(&vmw_fp->tfile);
+-	if (vmw_fp->locked_master)
++
++	if (vmw_fp->locked_master) {
++		struct vmw_master *vmaster =
++			vmw_master(vmw_fp->locked_master);
++
++		ttm_lock_set_kill(&vmaster->lock, true, SIGTERM);
++		ttm_vt_unlock(&vmaster->lock);
+ 		drm_master_put(&vmw_fp->locked_master);
++	}
++
++	ttm_object_file_release(&vmw_fp->tfile);
+ 	kfree(vmw_fp);
+ }
  
- 		if (miter->__flags & SG_MITER_ATOMIC) {
+@@ -940,14 +948,13 @@ static void vmw_master_drop(struct drm_d
+ 
+ 	vmw_fp->locked_master = drm_master_get(file_priv->master);
+ 	ret = ttm_vt_lock(&vmaster->lock, false, vmw_fp->tfile);
+-	vmw_execbuf_release_pinned_bo(dev_priv);
+-
+ 	if (unlikely((ret != 0))) {
+ 		DRM_ERROR("Unable to lock TTM at VT switch.\n");
+ 		drm_master_put(&vmw_fp->locked_master);
+ 	}
+ 
+-	ttm_lock_set_kill(&vmaster->lock, true, SIGTERM);
++	ttm_lock_set_kill(&vmaster->lock, false, SIGTERM);
++	vmw_execbuf_release_pinned_bo(dev_priv);
+ 
+ 	if (!dev_priv->enable_fb) {
+ 		ret = ttm_bo_evict_mm(&dev_priv->bdev, TTM_PL_VRAM);
 
 
