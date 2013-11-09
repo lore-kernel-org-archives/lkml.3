@@ -1,127 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab3KILXl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 06:23:41 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:56954 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab3KILXj (ORCPT
+	id S1752642Ab3KILqT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 06:46:19 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:60099 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446Ab3KILqP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 06:23:39 -0500
-From: Baptiste Covolato <b.covolato@gmail.com>
-To: greg@kroah.com
-Cc: swetland@google.com, linux-kernel@vger.kernel.org,
-        Baptiste Covolato <b.covolato@gmail.com>
-Subject: [PATCH] Staging: android: Add possibility to compile android drivers as modules
-Date: Sat,  9 Nov 2013 14:23:42 +0100
-Message-Id: <1384003422-24683-1-git-send-email-b.covolato@gmail.com>
-X-Mailer: git-send-email 1.8.4.2
+	Sat, 9 Nov 2013 06:46:15 -0500
+From: Caizhiyong <caizhiyong@hisilicon.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Brian Norris <computersforpeace@gmail.com>,
+        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Karel Zak <kzak@redhat.com>,
+        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
+Subject: [PATCH 2/2] mtd: cmdlinepart: support master name is not set when
+ parser partition
+Thread-Topic: [PATCH 2/2] mtd: cmdlinepart: support master name is not set
+ when parser partition
+Thread-Index: Ac7dQNrmaepPFNCzTfSQ2Rn2iobZJg==
+Date: Sat, 9 Nov 2013 11:43:06 +0000
+Message-ID: <C3050A4DBA34F345975765E43127F10F1C08B3EA@szxeml512-mbs.china.huawei.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.67.223.36]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compilation of Android staging drivers as drivers is now possible.
+From: Cai Zhiyong <caizhiyong@huawei.com>
+Date: Sat, 9 Nov 2013 17:54:12 +0800
+Subject: [PATCH 2/2] mtd: cmdlinepart: support master name is not set when parser partition
 
-Signed-off-by: Baptiste Covolato <b.covolato@gmail.com>
+ -Fix compile warning with value and function undeclared.
+  this reported by <fengguang.wu@intel.com> and
+  Randy Dunlap <rdunlap@infradead.org>
+
+ -support master name is not set when parser partition.
+  this feature is supported in the old parser.
+
+Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
 ---
- drivers/staging/android/Kconfig | 18 +++++++++---------
- drivers/staging/android/TODO    |  1 -
- 2 files changed, 9 insertions(+), 10 deletions(-)
+ drivers/mtd/Kconfig       |  1 +
+ drivers/mtd/cmdlinepart.c | 10 ++++++++--
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
-index 1e9ab6d..a22737d 100644
---- a/drivers/staging/android/Kconfig
-+++ b/drivers/staging/android/Kconfig
-@@ -1,7 +1,7 @@
- menu "Android"
- 
- config ANDROID
--	bool "Android Drivers"
-+	tristate "Android Drivers"
- 	default N
+diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
+index daf544a..f8f45e0 100644
+--- a/drivers/mtd/Kconfig
++++ b/drivers/mtd/Kconfig
+@@ -76,6 +76,7 @@ endif # MTD_REDBOOT_PARTS
+ config MTD_CMDLINE_PARTS
+ 	tristate "Command line partition table parsing"
+ 	select BLK_CMDLINE_PARSER
++	depends on BLOCK
+ 	depends on MTD
  	---help---
- 	  Enable support for various drivers needed on the Android platform
-@@ -9,7 +9,7 @@ config ANDROID
- if ANDROID
+ 	  Allow generic configuration of the MTD partition tables via the kernel
+diff --git a/drivers/mtd/cmdlinepart.c b/drivers/mtd/cmdlinepart.c
+index ba934a4..2074164 100644
+--- a/drivers/mtd/cmdlinepart.c
++++ b/drivers/mtd/cmdlinepart.c
+@@ -54,6 +54,7 @@
+   */
  
- config ANDROID_BINDER_IPC
--	bool "Android Binder IPC Driver"
-+	tristate "Android Binder IPC Driver"
- 	depends on MMU
- 	default n
- 	---help---
-@@ -21,7 +21,7 @@ config ANDROID_BINDER_IPC
- 	  between said processes.
+ #include <linux/kernel.h>
++#include <linux/slab.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/partitions.h>
+ #include <linux/module.h>
+@@ -108,7 +109,12 @@ static int parse_cmdline_partitions(struct mtd_info *master,
+ 	if (!mtd_cmdline_parts)
+ 		return 0;
  
- config ASHMEM
--	bool "Enable the Anonymous Shared Memory Subsystem"
-+	tristate "Enable the Anonymous Shared Memory Subsystem"
- 	default n
- 	depends on SHMEM
- 	---help---
-@@ -50,7 +50,7 @@ config ANDROID_LOGGER
- 	  much overhead in the system.
+-	parts = cmdline_parts_find(mtd_cmdline_parts, master->name);
++	/* If master->name is not set, return the first device partition. */
++	if (!master->name)
++		parts = mtd_cmdline_parts->next_parts;
++	else
++		parts = cmdline_parts_find(mtd_cmdline_parts, master->name);
++
+ 	if (!parts)
+ 		return 0;
  
- config ANDROID_TIMED_OUTPUT
--	bool "Timed output class driver"
-+	tristate "Timed output class driver"
- 	default y
+@@ -143,5 +149,5 @@ MODULE_PARM_DESC(mtdparts, "Partitioning specification");
+ module_param(mtdparts, charp, 0);
  
- config ANDROID_TIMED_GPIO
-@@ -59,13 +59,13 @@ config ANDROID_TIMED_GPIO
- 	default n
- 
- config ANDROID_LOW_MEMORY_KILLER
--	bool "Android Low Memory Killer"
-+	tristate "Android Low Memory Killer"
- 	default N
- 	---help---
- 	  Registers processes to be killed when memory is low
- 
- config ANDROID_INTF_ALARM_DEV
--	bool "Android alarm driver"
-+	tristate "Android alarm driver"
- 	depends on RTC_CLASS
- 	default n
- 	---help---
-@@ -74,7 +74,7 @@ config ANDROID_INTF_ALARM_DEV
- 	  Also exports the alarm interface to user-space.
- 
- config SYNC
--	bool "Synchronization framework"
-+	tristate "Synchronization framework"
- 	default n
- 	select ANON_INODES
- 	---help---
-@@ -83,7 +83,7 @@ config SYNC
- 	  synchronization built into devices like GPUs.
- 
- config SW_SYNC
--	bool "Software synchronization objects"
-+	tristate "Software synchronization objects"
- 	default n
- 	depends on SYNC
- 	---help---
-@@ -92,7 +92,7 @@ config SW_SYNC
- 	  the synchronization.
- 
- config SW_SYNC_USER
--	bool "Userspace API for SW_SYNC"
-+	tristate "Userspace API for SW_SYNC"
- 	default n
- 	depends on SW_SYNC
- 	---help---
-diff --git a/drivers/staging/android/TODO b/drivers/staging/android/TODO
-index b15fb0d..9b7394a 100644
---- a/drivers/staging/android/TODO
-+++ b/drivers/staging/android/TODO
-@@ -2,7 +2,6 @@ TODO:
- 	- checkpatch.pl cleanups
- 	- sparse fixes
- 	- rename files to be not so "generic"
--	- make sure things build as modules properly
- 	- add proper arch dependencies as needed
- 	- audit userspace interfaces to make sure they are sane
- 
+ MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Marius Groeger <mag@sysgo.de>");
++MODULE_AUTHOR("Cai Zhiyong <caizhiyong@huawei.com>");
+ MODULE_DESCRIPTION("Command line configuration of MTD partitions");
 -- 
-1.8.4.2
+1.8.1.5
 
