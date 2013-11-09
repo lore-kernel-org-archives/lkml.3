@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759092Ab3KIHhq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:37:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32871 "EHLO
+	id S1759078Ab3KIHho (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:37:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32895 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757319Ab3KIGuS (ORCPT
+	with ESMTP id S1757420Ab3KIGuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:18 -0500
+	Sat, 9 Nov 2013 01:50:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 19/74] iwlwifi: pcie: add SKUs for 6000, 6005 and 6235 series
-Date: Fri,  8 Nov 2013 22:51:24 -0800
-Message-Id: <20131109065114.888315566@linuxfoundation.org>
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.10 21/74] can: at91-can: fix device to driver data mapping for platform devices
+Date: Fri,  8 Nov 2013 22:51:26 -0800
+Message-Id: <20131109065115.021916374@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -27,94 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit 08a5dd3842f2ac61c6d69661d2d96022df8ae359 upstream.
+commit 5abbeea553c8260ed4e2ac4aae962aff800b6c6d upstream.
 
-Add some new PCI IDs to the table for 6000, 6005 and 6235 series.
+In commit:
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+    3078cde7 can: at91_can: add dt support
+
+device tree support was added to the at91_can driver. In this commit the
+mapping of device to driver data was mixed up. This results in the sam9x5
+parameters being used for the sam9263 and the workaround for the broken mailbox
+0 on the sam9263 not being activated.
+
+This patch fixes the broken platform_device_id table.
+
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-6000.c   |    6 ++++++
- drivers/net/wireless/iwlwifi/iwl-config.h |    1 +
- drivers/net/wireless/iwlwifi/pcie/drv.c   |   10 ++++++++++
- 3 files changed, 17 insertions(+)
+ drivers/net/can/at91_can.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-6000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
-@@ -268,6 +268,12 @@ const struct iwl_cfg iwl6035_2agn_cfg =
- 	.ht_params = &iwl6000_ht_params,
- };
+--- a/drivers/net/can/at91_can.c
++++ b/drivers/net/can/at91_can.c
+@@ -1409,10 +1409,10 @@ static int at91_can_remove(struct platfo
  
-+const struct iwl_cfg iwl6035_2agn_sff_cfg = {
-+	.name = "Intel(R) Centrino(R) Ultimate-N 6235 AGN",
-+	IWL_DEVICE_6035,
-+	.ht_params = &iwl6000_ht_params,
-+};
-+
- const struct iwl_cfg iwl1030_bgn_cfg = {
- 	.name = "Intel(R) Centrino(R) Wireless-N 1030 BGN",
- 	IWL_DEVICE_6030,
---- a/drivers/net/wireless/iwlwifi/iwl-config.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-config.h
-@@ -316,6 +316,7 @@ extern const struct iwl_cfg iwl2000_2bgn
- extern const struct iwl_cfg iwl2000_2bgn_d_cfg;
- extern const struct iwl_cfg iwl2030_2bgn_cfg;
- extern const struct iwl_cfg iwl6035_2agn_cfg;
-+extern const struct iwl_cfg iwl6035_2agn_sff_cfg;
- extern const struct iwl_cfg iwl105_bgn_cfg;
- extern const struct iwl_cfg iwl105_bgn_d_cfg;
- extern const struct iwl_cfg iwl135_bgn_cfg;
---- a/drivers/net/wireless/iwlwifi/pcie/drv.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
-@@ -138,13 +138,16 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- 
- /* 6x00 Series */
- 	{IWL_PCI_DEVICE(0x422B, 0x1101, iwl6000_3agn_cfg)},
-+	{IWL_PCI_DEVICE(0x422B, 0x1108, iwl6000_3agn_cfg)},
- 	{IWL_PCI_DEVICE(0x422B, 0x1121, iwl6000_3agn_cfg)},
-+	{IWL_PCI_DEVICE(0x422B, 0x1128, iwl6000_3agn_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1301, iwl6000i_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1306, iwl6000i_2abg_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1307, iwl6000i_2bg_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1321, iwl6000i_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1326, iwl6000i_2abg_cfg)},
- 	{IWL_PCI_DEVICE(0x4238, 0x1111, iwl6000_3agn_cfg)},
-+	{IWL_PCI_DEVICE(0x4238, 0x1118, iwl6000_3agn_cfg)},
- 	{IWL_PCI_DEVICE(0x4239, 0x1311, iwl6000i_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x4239, 0x1316, iwl6000i_2abg_cfg)},
- 
-@@ -152,12 +155,16 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- 	{IWL_PCI_DEVICE(0x0082, 0x1301, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1306, iwl6005_2abg_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1307, iwl6005_2bg_cfg)},
-+	{IWL_PCI_DEVICE(0x0082, 0x1308, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1321, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1326, iwl6005_2abg_cfg)},
-+	{IWL_PCI_DEVICE(0x0082, 0x1328, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0085, 0x1311, iwl6005_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x0085, 0x1318, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0085, 0x1316, iwl6005_2abg_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0xC020, iwl6005_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x0085, 0xC220, iwl6005_2agn_sff_cfg)},
-+	{IWL_PCI_DEVICE(0x0085, 0xC228, iwl6005_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x4820, iwl6005_2agn_d_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1304, iwl6005_2agn_mow1_cfg)},/* low 5GHz active */
- 	{IWL_PCI_DEVICE(0x0082, 0x1305, iwl6005_2agn_mow2_cfg)},/* high 5GHz active */
-@@ -239,8 +246,11 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- 
- /* 6x35 Series */
- 	{IWL_PCI_DEVICE(0x088E, 0x4060, iwl6035_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x088E, 0x406A, iwl6035_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x088F, 0x4260, iwl6035_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x088F, 0x426A, iwl6035_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x088E, 0x4460, iwl6035_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x088E, 0x446A, iwl6035_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x088E, 0x4860, iwl6035_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x088F, 0x5260, iwl6035_2agn_cfg)},
- 
+ static const struct platform_device_id at91_can_id_table[] = {
+ 	{
+-		.name = "at91_can",
++		.name = "at91sam9x5_can",
+ 		.driver_data = (kernel_ulong_t)&at91_at91sam9x5_data,
+ 	}, {
+-		.name = "at91sam9x5_can",
++		.name = "at91_can",
+ 		.driver_data = (kernel_ulong_t)&at91_at91sam9263_data,
+ 	}, {
+ 		/* sentinel */
 
 
