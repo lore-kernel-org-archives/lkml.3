@@ -1,29 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129Ab3KIHov (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:44:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32777 "EHLO
+	id S1759302Ab3KIHpY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:45:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:61000 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753966Ab3KIGtv (ORCPT
+	with ESMTP id S1755531Ab3KIGts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:49:51 -0500
+	Sat, 9 Nov 2013 01:49:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Simon Baatz <gmbnomis@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 22/26] lib/scatterlist.c: dont flush_kernel_dcache_page on slab page
-Date: Fri,  8 Nov 2013 22:51:51 -0800
-Message-Id: <20131109065051.746459117@linuxfoundation.org>
+Subject: [PATCH 3.4 20/26] uml: check length in exitcode_proc_write()
+Date: Fri,  8 Nov 2013 22:51:49 -0800
+Message-Id: <20131109065051.611386144@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065050.089866597@linuxfoundation.org>
 References: <20131109065050.089866597@linuxfoundation.org>
@@ -36,62 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 3d77b50c5874b7e923be946ba793644f82336b75 upstream.
+commit 201f99f170df14ba52ea4c52847779042b7a623b upstream.
 
-Commit b1adaf65ba03 ("[SCSI] block: add sg buffer copy helper
-functions") introduces two sg buffer copy helpers, and calls
-flush_kernel_dcache_page() on pages in SG list after these pages are
-written to.
+We don't cap the size of buffer from the user so we could write past the
+end of the array here.  Only root can write to this file.
 
-Unfortunately, the commit may introduce a potential bug:
-
- - Before sending some SCSI commands, kmalloc() buffer may be passed to
-   block layper, so flush_kernel_dcache_page() can see a slab page
-   finally
-
- - According to cachetlb.txt, flush_kernel_dcache_page() is only called
-   on "a user page", which surely can't be a slab page.
-
- - ARCH's implementation of flush_kernel_dcache_page() may use page
-   mapping information to do optimization so page_mapping() will see the
-   slab page, then VM_BUG_ON() is triggered.
-
-Aaro Koskinen reported the bug on ARM/kirkwood when DEBUG_VM is enabled,
-and this patch fixes the bug by adding test of '!PageSlab(miter->page)'
-before calling flush_kernel_dcache_page().
-
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Tested-by: Simon Baatz <gmbnomis@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/scatterlist.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/um/kernel/exitcode.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -419,7 +419,8 @@ void sg_miter_stop(struct sg_mapping_ite
- 	if (miter->addr) {
- 		miter->__offset += miter->consumed;
+--- a/arch/um/kernel/exitcode.c
++++ b/arch/um/kernel/exitcode.c
+@@ -40,9 +40,11 @@ static ssize_t exitcode_proc_write(struc
+ 		const char __user *buffer, size_t count, loff_t *pos)
+ {
+ 	char *end, buf[sizeof("nnnnn\0")];
++	size_t size;
+ 	int tmp;
  
--		if (miter->__flags & SG_MITER_TO_SG)
-+		if ((miter->__flags & SG_MITER_TO_SG) &&
-+		    !PageSlab(miter->page))
- 			flush_kernel_dcache_page(miter->page);
+-	if (copy_from_user(buf, buffer, count))
++	size = min(count, sizeof(buf));
++	if (copy_from_user(buf, buffer, size))
+ 		return -EFAULT;
  
- 		if (miter->__flags & SG_MITER_ATOMIC) {
+ 	tmp = simple_strtol(buf, &end, 0);
 
 
