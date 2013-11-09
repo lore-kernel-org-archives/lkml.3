@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758727Ab3KIG4A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:56:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33632 "EHLO
+	id S1758747Ab3KIG4T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:56:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33627 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932965Ab3KIGxE (ORCPT
+	with ESMTP id S932958Ab3KIGxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:53:04 -0500
+	Sat, 9 Nov 2013 01:53:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: [PATCH 3.11 62/94] mm: make generic_access_phys available for modules
-Date: Fri,  8 Nov 2013 22:52:08 -0800
-Message-Id: <20131109065208.671957945@linuxfoundation.org>
+        Baruch Siach <baruch@tkos.co.il>, Max Filippov <jcmvbkbc@gmail.com>,
+        Chris Zankel <chris@zankel.net>
+Subject: [PATCH 3.11 61/94] xtensa: dont use alternate signal stack on threads
+Date: Fri,  8 Nov 2013 22:52:07 -0800
+Message-Id: <20131109065208.604138951@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,28 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+From: Baruch Siach <baruch@tkos.co.il>
 
-commit 5a73633ef01cd8772defa6a3c34a588376a1df4c upstream.
+commit cba9a90053e3b7973eff4f1946f33032e98eeed5 upstream.
 
-In the next commit this function will be used in the uio subsystem
+According to create_thread(3): "The new thread does not inherit the creating
+thread's alternate signal stack". Since commit f9a3879a (Fix sigaltstack
+corruption among cloned threads), current->sas_ss_size is set to 0 for cloned
+processes sharing VM with their parent. Don't use the (nonexistent) alternate
+signal stack in this case. This has been broken since commit 29c4dfd9 ([XTENSA]
+Remove non-rt signal handling).
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Fixes the SA_ONSTACK part of the nptl/tst-cancel20 test from uClibc.
+
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+Signed-off-by: Chris Zankel <chris@zankel.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/xtensa/kernel/signal.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4081,6 +4081,7 @@ int generic_access_phys(struct vm_area_s
+--- a/arch/xtensa/kernel/signal.c
++++ b/arch/xtensa/kernel/signal.c
+@@ -341,7 +341,7 @@ static int setup_frame(int sig, struct k
  
- 	return len;
- }
-+EXPORT_SYMBOL_GPL(generic_access_phys);
- #endif
+ 	sp = regs->areg[1];
  
- /*
+-	if ((ka->sa.sa_flags & SA_ONSTACK) != 0 && ! on_sig_stack(sp)) {
++	if ((ka->sa.sa_flags & SA_ONSTACK) != 0 && sas_ss_flags(sp) == 0) {
+ 		sp = current->sas_ss_sp + current->sas_ss_size;
+ 	}
+ 
 
 
