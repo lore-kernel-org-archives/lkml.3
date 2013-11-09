@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758552Ab3KIGvl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:51:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33214 "EHLO
+	id S933508Ab3KIHT7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:19:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33231 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932475Ab3KIGvg (ORCPT
+	with ESMTP id S1758554Ab3KIGvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:36 -0500
+	Sat, 9 Nov 2013 01:51:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [PATCH 3.11 02/94] usb-storage: add quirk for mandatory READ_CAPACITY_16
-Date: Fri,  8 Nov 2013 22:51:08 -0800
-Message-Id: <20131109065204.443881691@linuxfoundation.org>
+        Jan Klos <honza.klos@gmail.com>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <smfrench@gmail.com>
+Subject: [PATCH 3.11 08/94] cifs: Fix inability to write files >2GB to SMB2/3 shares
+Date: Fri,  8 Nov 2013 22:51:14 -0800
+Message-Id: <20131109065204.851491884@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -26,69 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Jan Klos <honza.klos@gmail.com>
 
-commit 32c37fc30c52508711ea6a108cfd5855b8a07176 upstream.
+commit 2f6c9479633780ba4a3484bba7eba5a721a5cf20 upstream.
 
-Some USB drive enclosures do not correctly report an
-overflow condition if they hold a drive with a capacity
-over 2TB and are confronted with a READ_CAPACITY_10.
-They answer with their capacity modulo 2TB.
-The generic layer cannot cope with that. It must be told
-to use READ_CAPACITY_16 from the beginning.
+When connecting to SMB2/3 shares, maximum file size is set to non-LFS maximum in superblock. This is due to cap_large_files bit being different for SMB1 and SMB2/3 (where it is just an internal flag that is not negotiated and the SMB1 one corresponds to multichannel capability, so maybe LFS works correctly if server sends 0x08 flag) while capabilities are checked always for the SMB1 bit in cifs_read_super().
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+The patch fixes this by checking for the correct bit according to the protocol version.
+
+Signed-off-by: Jan Klos <honza.klos@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/scsiglue.c     |    5 ++++-
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- include/linux/usb_usual.h          |    4 +++-
- 3 files changed, 14 insertions(+), 2 deletions(-)
+ fs/cifs/cifsfs.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/storage/scsiglue.c
-+++ b/drivers/usb/storage/scsiglue.c
-@@ -211,8 +211,11 @@ static int slave_configure(struct scsi_d
- 		/*
- 		 * Many devices do not respond properly to READ_CAPACITY_16.
- 		 * Tell the SCSI layer to try READ_CAPACITY_10 first.
-+		 * However some USB 3.0 drive enclosures return capacity
-+		 * modulo 2TB. Those must use READ_CAPACITY_16
- 		 */
--		sdev->try_rc_10_first = 1;
-+		if (!(us->fflags & US_FL_NEEDS_CAP16))
-+			sdev->try_rc_10_first = 1;
+--- a/fs/cifs/cifsfs.c
++++ b/fs/cifs/cifsfs.c
+@@ -120,14 +120,16 @@ cifs_read_super(struct super_block *sb)
+ {
+ 	struct inode *inode;
+ 	struct cifs_sb_info *cifs_sb;
++	struct cifs_tcon *tcon;
+ 	int rc = 0;
  
- 		/* assume SPC3 or latter devices support sense size > 18 */
- 		if (sdev->scsi_level > SCSI_SPC_2)
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1925,6 +1925,13 @@ UNUSUAL_DEV(  0x1652, 0x6600, 0x0201, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_IGNORE_RESIDUE ),
+ 	cifs_sb = CIFS_SB(sb);
++	tcon = cifs_sb_master_tcon(cifs_sb);
  
-+/* Reported by Oliver Neukum <oneukum@suse.com> */
-+UNUSUAL_DEV(  0x174c, 0x55aa, 0x0100, 0x0100,
-+		"ASMedia",
-+		"AS2105",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NEEDS_CAP16),
-+
- /* Reported by Jesse Feddema <jdfeddema@gmail.com> */
- UNUSUAL_DEV(  0x177f, 0x0400, 0x0000, 0x0000,
- 		"Yarvik",
---- a/include/linux/usb_usual.h
-+++ b/include/linux/usb_usual.h
-@@ -66,7 +66,9 @@
- 	US_FLAG(INITIAL_READ10,	0x00100000)			\
- 		/* Initial READ(10) (and others) must be retried */	\
- 	US_FLAG(WRITE_CACHE,	0x00200000)			\
--		/* Write Cache status is not available */
-+		/* Write Cache status is not available */	\
-+	US_FLAG(NEEDS_CAP16,	0x00400000)
-+		/* cannot handle READ_CAPACITY_10 */
+ 	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_POSIXACL)
+ 		sb->s_flags |= MS_POSIXACL;
  
- #define US_FLAG(name, value)	US_FL_##name = value ,
- enum { US_DO_ALL_FLAGS };
+-	if (cifs_sb_master_tcon(cifs_sb)->ses->capabilities & CAP_LARGE_FILES)
++	if (tcon->ses->capabilities & tcon->ses->server->vals->cap_large_files)
+ 		sb->s_maxbytes = MAX_LFS_FILESIZE;
+ 	else
+ 		sb->s_maxbytes = MAX_NON_LFS;
+@@ -147,7 +149,7 @@ cifs_read_super(struct super_block *sb)
+ 		goto out_no_root;
+ 	}
+ 
+-	if (cifs_sb_master_tcon(cifs_sb)->nocase)
++	if (tcon->nocase)
+ 		sb->s_d_op = &cifs_ci_dentry_ops;
+ 	else
+ 		sb->s_d_op = &cifs_dentry_ops;
 
 
