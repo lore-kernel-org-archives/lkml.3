@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933680Ab3KIH06 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:26:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33079 "EHLO
+	id S933701Ab3KIH1Z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:27:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33088 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932402Ab3KIGvL (ORCPT
+	with ESMTP id S932372Ab3KIGvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:11 -0500
+	Sat, 9 Nov 2013 01:51:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu ShuoX <shuox.liu@intel.com>, Chen LinX <linx.z.chen@intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 63/74] mm/pagewalk.c: fix walk_page_range() access of wrong PTEs
-Date: Fri,  8 Nov 2013 22:52:08 -0800
-Message-Id: <20131109065117.897866566@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 61/74] mm: Close races between THP migration and PMD numa clearing
+Date: Fri,  8 Nov 2013 22:52:06 -0800
+Message-Id: <20131109065117.763421455@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -30,53 +30,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen LinX <linx.z.chen@intel.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 3017f079efd6af199b0852b5c425364513db460e upstream.
+commit 3f926ab945b60a5824369d21add7710622a2eac0 upstream.
 
-When walk_page_range walk a memory map's page tables, it'll skip
-VM_PFNMAP area, then variable 'next' will to assign to vma->vm_end, it
-maybe larger than 'end'.  In next loop, 'addr' will be larger than
-'next'.  Then in /proc/XXXX/pagemap file reading procedure, the 'addr'
-will growing forever in pagemap_pte_range, pte_to_pagemap_entry will
-access the wrong pte.
+THP migration uses the page lock to guard against parallel allocations
+but there are cases like this still open
 
-  BUG: Bad page map in process procrank  pte:8437526f pmd:785de067
-  addr:9108d000 vm_flags:00200073 anon_vma:f0d99020 mapping:  (null) index:9108d
-  CPU: 1 PID: 4974 Comm: procrank Tainted: G    B   W  O 3.10.1+ #1
-  Call Trace:
-    dump_stack+0x16/0x18
-    print_bad_pte+0x114/0x1b0
-    vm_normal_page+0x56/0x60
-    pagemap_pte_range+0x17a/0x1d0
-    walk_page_range+0x19e/0x2c0
-    pagemap_read+0x16e/0x200
-    vfs_read+0x84/0x150
-    SyS_read+0x4a/0x80
-    syscall_call+0x7/0xb
+  Task A					Task B
+  ---------------------				---------------------
+  do_huge_pmd_numa_page				do_huge_pmd_numa_page
+  lock_page
+  mpol_misplaced == -1
+  unlock_page
+  goto clear_pmdnuma
+						lock_page
+						mpol_misplaced == 2
+						migrate_misplaced_transhuge
+  pmd = pmd_mknonnuma
+  set_pmd_at
 
-Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
-Signed-off-by: Chen LinX <linx.z.chen@intel.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+During hours of testing, one crashed with weird errors and while I have
+no direct evidence, I suspect something like the race above happened.
+This patch extends the page lock to being held until the pmd_numa is
+cleared to prevent migration starting in parallel while the pmd_numa is
+being cleared. It also flushes the old pmd entry and orders pagetable
+insertion before rmap insertion.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1381141781-10992-9-git-send-email-mgorman@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/pagewalk.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/huge_memory.c |   33 +++++++++++++++------------------
+ mm/migrate.c     |   19 +++++++++++--------
+ 2 files changed, 26 insertions(+), 26 deletions(-)
 
---- a/mm/pagewalk.c
-+++ b/mm/pagewalk.c
-@@ -242,7 +242,7 @@ int walk_page_range(unsigned long addr,
- 		if (err)
- 			break;
- 		pgd++;
--	} while (addr = next, addr != end);
-+	} while (addr = next, addr < end);
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1314,24 +1314,25 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	target_nid = mpol_misplaced(page, vma, haddr);
+ 	if (target_nid == -1) {
+ 		/* If the page was locked, there are no parallel migrations */
+-		if (page_locked) {
+-			unlock_page(page);
++		if (page_locked)
+ 			goto clear_pmdnuma;
+-		}
  
- 	return err;
- }
+-		/* Otherwise wait for potential migrations and retry fault */
++		/*
++		 * Otherwise wait for potential migrations and retry. We do
++		 * relock and check_same as the page may no longer be mapped.
++		 * As the fault is being retried, do not account for it.
++		 */
+ 		spin_unlock(&mm->page_table_lock);
+ 		wait_on_page_locked(page);
++		page_nid = -1;
+ 		goto out;
+ 	}
+ 
+ 	/* Page is misplaced, serialise migrations and parallel THP splits */
+ 	get_page(page);
+ 	spin_unlock(&mm->page_table_lock);
+-	if (!page_locked) {
++	if (!page_locked)
+ 		lock_page(page);
+-		page_locked = true;
+-	}
+ 	anon_vma = page_lock_anon_vma_read(page);
+ 
+ 	/* Confirm the PTE did not while locked */
+@@ -1339,32 +1340,28 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	if (unlikely(!pmd_same(pmd, *pmdp))) {
+ 		unlock_page(page);
+ 		put_page(page);
++		page_nid = -1;
+ 		goto out_unlock;
+ 	}
+ 
+-	/* Migrate the THP to the requested node */
++	/*
++	 * Migrate the THP to the requested node, returns with page unlocked
++	 * and pmd_numa cleared.
++	 */
+ 	spin_unlock(&mm->page_table_lock);
+ 	migrated = migrate_misplaced_transhuge_page(mm, vma,
+ 				pmdp, pmd, addr, page, target_nid);
+ 	if (migrated)
+ 		page_nid = target_nid;
+-	else
+-		goto check_same;
+ 
+ 	goto out;
+-
+-check_same:
+-	spin_lock(&mm->page_table_lock);
+-	if (unlikely(!pmd_same(pmd, *pmdp))) {
+-		/* Someone else took our fault */
+-		page_nid = -1;
+-		goto out_unlock;
+-	}
+ clear_pmdnuma:
++	BUG_ON(!PageLocked(page));
+ 	pmd = pmd_mknonnuma(pmd);
+ 	set_pmd_at(mm, haddr, pmdp, pmd);
+ 	VM_BUG_ON(pmd_numa(*pmdp));
+ 	update_mmu_cache_pmd(vma, addr, pmdp);
++	unlock_page(page);
+ out_unlock:
+ 	spin_unlock(&mm->page_table_lock);
+ 
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1710,12 +1710,12 @@ int migrate_misplaced_transhuge_page(str
+ 		unlock_page(new_page);
+ 		put_page(new_page);		/* Free it */
+ 
+-		unlock_page(page);
++		/* Retake the callers reference and putback on LRU */
++		get_page(page);
+ 		putback_lru_page(page);
+-
+-		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
+-		isolated = 0;
+-		goto out;
++		mod_zone_page_state(page_zone(page),
++			 NR_ISOLATED_ANON + page_lru, -HPAGE_PMD_NR);
++		goto out_fail;
+ 	}
+ 
+ 	/*
+@@ -1732,9 +1732,9 @@ int migrate_misplaced_transhuge_page(str
+ 	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+ 	entry = pmd_mkhuge(entry);
+ 
+-	page_add_new_anon_rmap(new_page, vma, haddr);
+-
++	pmdp_clear_flush(vma, haddr, pmd);
+ 	set_pmd_at(mm, haddr, pmd, entry);
++	page_add_new_anon_rmap(new_page, vma, haddr);
+ 	update_mmu_cache_pmd(vma, address, &entry);
+ 	page_remove_rmap(page);
+ 	/*
+@@ -1753,7 +1753,6 @@ int migrate_misplaced_transhuge_page(str
+ 	count_vm_events(PGMIGRATE_SUCCESS, HPAGE_PMD_NR);
+ 	count_vm_numa_events(NUMA_PAGE_MIGRATE, HPAGE_PMD_NR);
+ 
+-out:
+ 	mod_zone_page_state(page_zone(page),
+ 			NR_ISOLATED_ANON + page_lru,
+ 			-HPAGE_PMD_NR);
+@@ -1762,6 +1761,10 @@ out:
+ out_fail:
+ 	count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
+ out_dropref:
++	entry = pmd_mknonnuma(entry);
++	set_pmd_at(mm, haddr, pmd, entry);
++	update_mmu_cache_pmd(vma, address, &entry);
++
+ 	unlock_page(page);
+ 	put_page(page);
+ 	return 0;
 
 
