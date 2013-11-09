@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933508Ab3KIHT7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:19:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33231 "EHLO
+	id S933529Ab3KIHU2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:20:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33223 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758554Ab3KIGvm (ORCPT
+	with ESMTP id S1758538Ab3KIGvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:42 -0500
+	Sat, 9 Nov 2013 01:51:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Klos <honza.klos@gmail.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [PATCH 3.11 08/94] cifs: Fix inability to write files >2GB to SMB2/3 shares
-Date: Fri,  8 Nov 2013 22:51:14 -0800
-Message-Id: <20131109065204.851491884@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>
+Subject: [PATCH 3.11 05/94] USB: quirks: add touchscreen that is dazzeled by remote wakeup
+Date: Fri,  8 Nov 2013 22:51:11 -0800
+Message-Id: <20131109065204.649183574@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -27,51 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Klos <honza.klos@gmail.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 2f6c9479633780ba4a3484bba7eba5a721a5cf20 upstream.
+commit 614ced91fc6fbb5a1cdd12f0f1b6c9197d9f1350 upstream.
 
-When connecting to SMB2/3 shares, maximum file size is set to non-LFS maximum in superblock. This is due to cap_large_files bit being different for SMB1 and SMB2/3 (where it is just an internal flag that is not negotiated and the SMB1 one corresponds to multichannel capability, so maybe LFS works correctly if server sends 0x08 flag) while capabilities are checked always for the SMB1 bit in cifs_read_super().
+The device descriptors are messed up after remote wakeup
 
-The patch fixes this by checking for the correct bit according to the protocol version.
-
-Signed-off-by: Jan Klos <honza.klos@gmail.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsfs.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/core/quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -120,14 +120,16 @@ cifs_read_super(struct super_block *sb)
- {
- 	struct inode *inode;
- 	struct cifs_sb_info *cifs_sb;
-+	struct cifs_tcon *tcon;
- 	int rc = 0;
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -97,6 +97,9 @@ static const struct usb_device_id usb_qu
+ 	/* Alcor Micro Corp. Hub */
+ 	{ USB_DEVICE(0x058f, 0x9254), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	cifs_sb = CIFS_SB(sb);
-+	tcon = cifs_sb_master_tcon(cifs_sb);
++	/* MicroTouch Systems touchscreen */
++	{ USB_DEVICE(0x0596, 0x051e), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* appletouch */
+ 	{ USB_DEVICE(0x05ac, 0x021a), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_POSIXACL)
- 		sb->s_flags |= MS_POSIXACL;
- 
--	if (cifs_sb_master_tcon(cifs_sb)->ses->capabilities & CAP_LARGE_FILES)
-+	if (tcon->ses->capabilities & tcon->ses->server->vals->cap_large_files)
- 		sb->s_maxbytes = MAX_LFS_FILESIZE;
- 	else
- 		sb->s_maxbytes = MAX_NON_LFS;
-@@ -147,7 +149,7 @@ cifs_read_super(struct super_block *sb)
- 		goto out_no_root;
- 	}
- 
--	if (cifs_sb_master_tcon(cifs_sb)->nocase)
-+	if (tcon->nocase)
- 		sb->s_d_op = &cifs_ci_dentry_ops;
- 	else
- 		sb->s_d_op = &cifs_dentry_ops;
 
 
