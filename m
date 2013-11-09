@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933048Ab3KIHkE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:40:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32863 "EHLO
+	id S933429Ab3KIHkZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:40:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32859 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757034Ab3KIGuO (ORCPT
+	with ESMTP id S1756976Ab3KIGuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:14 -0500
+	Sat, 9 Nov 2013 01:50:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Lindroth <thomas.lindroth@gmail.com>,
+        Felix Fietkau <nbd@openwrt.org>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 14/74] mac80211: fix crash if bitrate calculation goes wrong
-Date: Fri,  8 Nov 2013 22:51:19 -0800
-Message-Id: <20131109065114.552973330@linuxfoundation.org>
+Subject: [PATCH 3.10 13/74] mac80211: update sta->last_rx on acked tx frames
+Date: Fri,  8 Nov 2013 22:51:18 -0800
+Message-Id: <20131109065114.485793211@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -27,36 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit d86aa4f8ca58898ec6a94c0635da20b948171ed7 upstream.
+commit 0c5b93290b2f3c7a376567c03ae8d385b0e99851 upstream.
 
-If a frame's timestamp is calculated, and the bitrate
-calculation goes wrong and returns zero, the system
-will attempt to divide by zero and crash. Catch this
-case and print the rate information that the driver
-reported when this happens.
+When clients are idle for too long, hostapd sends nullfunc frames for
+probing. When those are acked by the client, the idle time needs to be
+updated.
 
-Reported-by: Thomas Lindroth <thomas.lindroth@gmail.com>
+To make this work (and to avoid unnecessary probing), update sta->last_rx
+whenever an ACK was received for a tx packet. Only do this if the flag
+IEEE80211_HW_REPORTS_TX_ACK_STATUS is set.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/util.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/mac80211/status.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/mac80211/util.c
-+++ b/net/mac80211/util.c
-@@ -2174,6 +2174,10 @@ u64 ieee80211_calculate_rx_timestamp(str
- 	}
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -180,6 +180,9 @@ static void ieee80211_frame_acked(struct
+ 	struct ieee80211_local *local = sta->local;
+ 	struct ieee80211_sub_if_data *sdata = sta->sdata;
  
- 	rate = cfg80211_calculate_bitrate(&ri);
-+	if (WARN_ONCE(!rate,
-+		      "Invalid bitrate: flags=0x%x, idx=%d, vht_nss=%d\n",
-+		      status->flag, status->rate_idx, status->vht_nss))
-+		return 0;
- 
- 	/* rewind from end of MPDU */
- 	if (status->flag & RX_FLAG_MACTIME_END)
++	if (local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)
++		sta->last_rx = jiffies;
++
+ 	if (ieee80211_is_data_qos(mgmt->frame_control)) {
+ 		struct ieee80211_hdr *hdr = (void *) skb->data;
+ 		u8 *qc = ieee80211_get_qos_ctl(hdr);
 
 
