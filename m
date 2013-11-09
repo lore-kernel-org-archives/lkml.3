@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933153Ab3KIHGV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:06:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33382 "EHLO
+	id S933170Ab3KIHGk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:06:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33375 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932802Ab3KIGwR (ORCPT
+	with ESMTP id S932797Ab3KIGwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:17 -0500
+	Sat, 9 Nov 2013 01:52:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.11 50/94] ALSA: hda - Add missing initial vmaster hook at build_controls callback
-Date: Fri,  8 Nov 2013 22:51:56 -0800
-Message-Id: <20131109065207.824805144@linuxfoundation.org>
+        Vineet Gupta <vgupta@synopsys.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.11 49/94] ARC: Incorrect mm reference used in vmalloc fault handler
+Date: Fri,  8 Nov 2013 22:51:55 -0800
+Message-Id: <20131109065207.739852448@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -26,41 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 
-commit b63eae0a6c84839275a4638a7baa391be965cd0e upstream.
+commit 9c41f4eeb9d51f3ece20428d35a3ea32cf3b5622 upstream.
 
-The generic parser has a support of vmaster hook, but this is
-initialized only in the init callback with the check of the presence
-of the corresponding kctl.  However, since kctl is NULL at the very
-first init callback that is called before build_controls callback, the
-vmaster hook sync is skipped there.  Eventually this leads to the
-uninitialized state depending on the hook implementation.
+A vmalloc fault needs to sync up PGD/PTE entry from init_mm to current
+task's "active_mm".  ARC vmalloc fault handler however was using mm.
 
-This patch adds a simple workaround, just calling the sync function
-explicitly at build_controls callback.
+A vmalloc fault for non user task context (actually pre-userland, from
+init thread's open for /dev/console) caused the handler to deref NULL mm
+(for mm->pgd)
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The reasons it worked so far is amazing:
+
+1. By default (!SMP), vmalloc fault handler uses a cached value of PGD.
+   In SMP that MMU register is repurposed hence need for mm pointer deref.
+
+2. In pre-3.12 SMP kernel, the problem triggering vmalloc didn't exist in
+   pre-userland code path - it was introduced with commit 20bafb3d23d108bc
+   "n_tty: Move buffers into n_tty_data"
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: Noam Camus <noamc@ezchip.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arc/mm/fault.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -4428,9 +4428,11 @@ int snd_hda_gen_build_controls(struct hd
- 					    true, &spec->vmaster_mute.sw_kctl);
- 		if (err < 0)
- 			return err;
--		if (spec->vmaster_mute.hook)
-+		if (spec->vmaster_mute.hook) {
- 			snd_hda_add_vmaster_hook(codec, &spec->vmaster_mute,
- 						 spec->vmaster_mute_enum);
-+			snd_hda_sync_vmaster_hook(&spec->vmaster_mute);
-+		}
- 	}
+--- a/arch/arc/mm/fault.c
++++ b/arch/arc/mm/fault.c
+@@ -17,7 +17,7 @@
+ #include <asm/pgalloc.h>
+ #include <asm/mmu.h>
  
- 	free_kctls(spec); /* no longer needed */
+-static int handle_vmalloc_fault(struct mm_struct *mm, unsigned long address)
++static int handle_vmalloc_fault(unsigned long address)
+ {
+ 	/*
+ 	 * Synchronize this task's top level page-table
+@@ -27,7 +27,7 @@ static int handle_vmalloc_fault(struct m
+ 	pud_t *pud, *pud_k;
+ 	pmd_t *pmd, *pmd_k;
+ 
+-	pgd = pgd_offset_fast(mm, address);
++	pgd = pgd_offset_fast(current->active_mm, address);
+ 	pgd_k = pgd_offset_k(address);
+ 
+ 	if (!pgd_present(*pgd_k))
+@@ -73,7 +73,7 @@ void do_page_fault(struct pt_regs *regs,
+ 	 * nothing more.
+ 	 */
+ 	if (address >= VMALLOC_START && address <= VMALLOC_END) {
+-		ret = handle_vmalloc_fault(mm, address);
++		ret = handle_vmalloc_fault(address);
+ 		if (unlikely(ret))
+ 			goto bad_area_nosemaphore;
+ 		else
 
 
