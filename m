@@ -1,19 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759267Ab3KIHnk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:43:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32811 "EHLO
+	id S932677Ab3KIHoC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:44:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32798 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756199Ab3KIGtz (ORCPT
+	with ESMTP id S1756131Ab3KIGtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:49:55 -0500
+	Sat, 9 Nov 2013 01:49:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.4 26/26] drm/radeon/atom: workaround vbios bug in transmitter table on rs780
-Date: Fri,  8 Nov 2013 22:51:55 -0800
-Message-Id: <20131109065052.023696610@linuxfoundation.org>
+        Khalid Aziz <khalid.aziz@oracle.com>,
+        Pravin B Shelar <pshelar@nicira.com>, Christoph Lameter <cl@linux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 24/26] mm: fix aio performance regression for database caused by THP
+Date: Fri,  8 Nov 2013 22:51:53 -0800
+Message-Id: <20131109065051.882756124@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065050.089866597@linuxfoundation.org>
 References: <20131109065050.089866597@linuxfoundation.org>
@@ -26,35 +33,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Khalid Aziz <khalid.aziz@oracle.com>
 
-commit c23632d4e57c0dd20bf50eca08fa0eb8ad3ff680 upstream.
+commit 7cb2ef56e6a8b7b368b2e883a0a47d02fed66911 upstream.
 
-Some rs780 asics seem to be affected as well.
+I am working with a tool that simulates oracle database I/O workload.
+This tool (orion to be specific -
+<http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
+allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag.  It then
+does aio into these pages from flash disks using various common block
+sizes used by database.  I am looking at performance with two of the most
+common block sizes - 1M and 64K.  aio performance with these two block
+sizes plunged after Transparent HugePages was introduced in the kernel.
+Here are performance numbers:
 
-See:
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=91f3a6aaf280294b07c05dfe606e6c27b7ba3c72
+		pre-THP		2.6.39		3.11-rc5
+1M read		8384 MB/s	5629 MB/s	6501 MB/s
+64K read	7867 MB/s	4576 MB/s	4251 MB/s
 
-Fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=60791
+I have narrowed the performance impact down to the overheads introduced by
+THP in __get_page_tail() and put_compound_page() routines.  perf top shows
+>40% of cycles being spent in these two routines.  Every time direct I/O
+to hugetlbfs pages starts, kernel calls get_page() to grab a reference to
+the pages and calls put_page() when I/O completes to put the reference
+away.  THP introduced significant amount of locking overhead to get_page()
+and put_page() when dealing with compound pages because hugepages can be
+split underneath get_page() and put_page().  It added this overhead
+irrespective of whether it is dealing with hugetlbfs pages or transparent
+hugepages.  This resulted in 20%-45% drop in aio performance when using
+hugetlbfs pages.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Since hugetlbfs pages can not be split, there is no reason to go through
+all the locking overhead for these pages from what I can see.  I added
+code to __get_page_tail() and put_compound_page() to bypass all the
+locking code when working with hugetlbfs pages.  This improved performance
+significantly.  Performance numbers with this patch:
+
+		pre-THP		3.11-rc5	3.11-rc5 + Patch
+1M read		8384 MB/s	6501 MB/s	8371 MB/s
+64K read	7867 MB/s	4251 MB/s	6510 MB/s
+
+Performance with 64K read is still lower than what it was before THP, but
+still a 53% improvement.  It does mean there is more work to be done but I
+will take a 53% improvement for now.
+
+Please take a look at the following patch and let me know if it looks
+reasonable.
+
+[akpm@linux-foundation.org: tweak comments]
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/swap.c |   31 +++++++++++++++++++++++++++++--
+ 1 file changed, 29 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1430,7 +1430,7 @@ radeon_atom_encoder_dpms_dig(struct drm_
- 			 * does the same thing and more.
- 			 */
- 			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
--			    (rdev->family != CHIP_RS880))
-+			    (rdev->family != CHIP_RS780) && (rdev->family != CHIP_RS880))
- 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
- 		}
- 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -30,6 +30,7 @@
+ #include <linux/backing-dev.h>
+ #include <linux/memcontrol.h>
+ #include <linux/gfp.h>
++#include <linux/hugetlb.h>
+ 
+ #include "internal.h"
+ 
+@@ -68,13 +69,26 @@ static void __put_compound_page(struct p
+ {
+ 	compound_page_dtor *dtor;
+ 
+-	__page_cache_release(page);
++	if (!PageHuge(page))
++		__page_cache_release(page);
+ 	dtor = get_compound_page_dtor(page);
+ 	(*dtor)(page);
+ }
+ 
+ static void put_compound_page(struct page *page)
+ {
++	/*
++	 * hugetlbfs pages cannot be split from under us.  If this is a
++	 * hugetlbfs page, check refcount on head page and release the page if
++	 * the refcount becomes zero.
++	 */
++	if (PageHuge(page)) {
++		page = compound_head(page);
++		if (put_page_testzero(page))
++			__put_compound_page(page);
++		return;
++	}
++
+ 	if (unlikely(PageTail(page))) {
+ 		/* __split_huge_page_refcount can run under us */
+ 		struct page *page_head = compound_trans_head(page);
+@@ -159,8 +173,20 @@ bool __get_page_tail(struct page *page)
+ 	 */
+ 	unsigned long flags;
+ 	bool got = false;
+-	struct page *page_head = compound_trans_head(page);
++	struct page *page_head;
++
++	/*
++	 * If this is a hugetlbfs page it cannot be split under us.  Simply
++	 * increment refcount for the head page.
++	 */
++	if (PageHuge(page)) {
++		page_head = compound_head(page);
++		atomic_inc(&page_head->_count);
++		got = true;
++		goto out;
++	}
+ 
++	page_head = compound_trans_head(page);
+ 	if (likely(page != page_head && get_page_unless_zero(page_head))) {
+ 		/*
+ 		 * page_head wasn't a dangling pointer but it
+@@ -178,6 +204,7 @@ bool __get_page_tail(struct page *page)
+ 		if (unlikely(!got))
+ 			put_page(page_head);
+ 	}
++out:
+ 	return got;
+ }
+ EXPORT_SYMBOL(__get_page_tail);
 
 
