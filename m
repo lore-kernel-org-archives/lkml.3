@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758477Ab3KIGup (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:50:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32945 "EHLO
+	id S933841Ab3KIHc1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:32:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32981 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758407Ab3KIGuk (ORCPT
+	with ESMTP id S1758468Ab3KIGuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:40 -0500
+	Sat, 9 Nov 2013 01:50:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 37/74] ALSA: hda - Add missing initial vmaster hook at build_controls callback
-Date: Fri,  8 Nov 2013 22:51:42 -0800
-Message-Id: <20131109065116.118333879@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>
+Subject: [PATCH 3.10 03/74] USB: quirks.c: add one device that cannot deal with suspension
+Date: Fri,  8 Nov 2013 22:51:08 -0800
+Message-Id: <20131109065113.746283585@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -26,41 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit b63eae0a6c84839275a4638a7baa391be965cd0e upstream.
+commit 4294bca7b423d1a5aa24307e3d112a04075e3763 upstream.
 
-The generic parser has a support of vmaster hook, but this is
-initialized only in the init callback with the check of the presence
-of the corresponding kctl.  However, since kctl is NULL at the very
-first init callback that is called before build_controls callback, the
-vmaster hook sync is skipped there.  Eventually this leads to the
-uninitialized state depending on the hook implementation.
+The device is not responsive when resumed, unless it is reset.
 
-This patch adds a simple workaround, just calling the sync function
-explicitly at build_controls callback.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/core/quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -4383,9 +4383,11 @@ int snd_hda_gen_build_controls(struct hd
- 					    true, &spec->vmaster_mute.sw_kctl);
- 		if (err < 0)
- 			return err;
--		if (spec->vmaster_mute.hook)
-+		if (spec->vmaster_mute.hook) {
- 			snd_hda_add_vmaster_hook(codec, &spec->vmaster_mute,
- 						 spec->vmaster_mute_enum);
-+			snd_hda_sync_vmaster_hook(&spec->vmaster_mute);
-+		}
- 	}
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -130,6 +130,9 @@ static const struct usb_device_id usb_qu
+ 	/* Broadcom BCM92035DGROM BT dongle */
+ 	{ USB_DEVICE(0x0a5c, 0x2021), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	free_kctls(spec); /* no longer needed */
++	/* MAYA44USB sound device */
++	{ USB_DEVICE(0x0a92, 0x0091), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* Action Semiconductor flash disk */
+ 	{ USB_DEVICE(0x10d6, 0x2200), .driver_info =
+ 			USB_QUIRK_STRING_FETCH_255 },
 
 
