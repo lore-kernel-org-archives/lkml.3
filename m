@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab3KIGvo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:51:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33208 "EHLO
+	id S1758552Ab3KIGvl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:51:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33214 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932616Ab3KIGvf (ORCPT
+	with ESMTP id S932475Ab3KIGvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:35 -0500
+	Sat, 9 Nov 2013 01:51:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>, Peter Korsgaard <jacmet@sunsite.dk>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.11 01/94] usb: musb: start musb on the udc side, too
-Date: Fri,  8 Nov 2013 22:51:07 -0800
-Message-Id: <20131109065204.362616552@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>
+Subject: [PATCH 3.11 02/94] usb-storage: add quirk for mandatory READ_CAPACITY_16
+Date: Fri,  8 Nov 2013 22:51:08 -0800
+Message-Id: <20131109065204.443881691@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -28,180 +26,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 001dd84a92a25f8f2bad7d26df8bdb0362302c07 upstream.
+commit 32c37fc30c52508711ea6a108cfd5855b8a07176 upstream.
 
-I have am335x-evm with one port running in OTG mode. Since commit
-fe4cb09 ("usb: musb: gadget: remove hcd initialization") the loaded
-gadget does non pop up on the host. All I see is
-|usb 4-5: new high-speed USB device number 52 using ehci-pci
-|usb 4-5: device descriptor read/64, error -110
+Some USB drive enclosures do not correctly report an
+overflow condition if they hold a drive with a capacity
+over 2TB and are confronted with a READ_CAPACITY_10.
+They answer with their capacity modulo 2TB.
+The generic layer cannot cope with that. It must be told
+to use READ_CAPACITY_16 from the beginning.
 
-Since a later commit 2cc65fe ("usb: musb: add musb_host_setup() and
-musb_host_cleanup()) the gadget shows up on the host again but only
-in OTG mode (because we have the host init code running). It does not
-work in device only mode.
-If running in OTG mode and the gadget is removed and added back (rmmod
-followed by modprobe of a gadget) then the same error is pops up on the
-host side.
-
-This patch ensures that the gadget side also executes musb_start() which
-puts the chip in "connect accept" mode. With this change the device
-works in OTG & device mode and the gadget can be added & removed
-multiple times.
-A device (if musb is in OTG mode acting as a host) is only recognized if
-it is attached during module load (musb_hdrc module). After the device
-unplugged and plugged again the host does not recognize it. We get a
-buch of errors if musb running in OTG mode, attached to a host and no
-gadget is loaded. Bah.
-This is one step forward. Host & device only mode should work. I will
-look at OTG later. I looked at this before commit fe4cb09 and OTG wasn't
-working there perfectly so I am not sure that it is a regression :)
-
-Cc: Daniel Mack <zonque@gmail.com>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/musb_core.c    |   46 ++++++++++++++++++++++++++++++++++++++++
- drivers/usb/musb/musb_core.h    |    1 
- drivers/usb/musb/musb_gadget.c  |    2 +
- drivers/usb/musb/musb_virthub.c |   46 ----------------------------------------
- 4 files changed, 49 insertions(+), 46 deletions(-)
+ drivers/usb/storage/scsiglue.c     |    5 ++++-
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ include/linux/usb_usual.h          |    4 +++-
+ 3 files changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -923,6 +923,52 @@ static void musb_generic_disable(struct
- }
+--- a/drivers/usb/storage/scsiglue.c
++++ b/drivers/usb/storage/scsiglue.c
+@@ -211,8 +211,11 @@ static int slave_configure(struct scsi_d
+ 		/*
+ 		 * Many devices do not respond properly to READ_CAPACITY_16.
+ 		 * Tell the SCSI layer to try READ_CAPACITY_10 first.
++		 * However some USB 3.0 drive enclosures return capacity
++		 * modulo 2TB. Those must use READ_CAPACITY_16
+ 		 */
+-		sdev->try_rc_10_first = 1;
++		if (!(us->fflags & US_FL_NEEDS_CAP16))
++			sdev->try_rc_10_first = 1;
  
- /*
-+ * Program the HDRC to start (enable interrupts, dma, etc.).
-+ */
-+void musb_start(struct musb *musb)
-+{
-+	void __iomem    *regs = musb->mregs;
-+	u8              devctl = musb_readb(regs, MUSB_DEVCTL);
-+
-+	dev_dbg(musb->controller, "<== devctl %02x\n", devctl);
-+
-+	/*  Set INT enable registers, enable interrupts */
-+	musb->intrtxe = musb->epmask;
-+	musb_writew(regs, MUSB_INTRTXE, musb->intrtxe);
-+	musb->intrrxe = musb->epmask & 0xfffe;
-+	musb_writew(regs, MUSB_INTRRXE, musb->intrrxe);
-+	musb_writeb(regs, MUSB_INTRUSBE, 0xf7);
-+
-+	musb_writeb(regs, MUSB_TESTMODE, 0);
-+
-+	/* put into basic highspeed mode and start session */
-+	musb_writeb(regs, MUSB_POWER, MUSB_POWER_ISOUPDATE
-+			| MUSB_POWER_HSENAB
-+			/* ENSUSPEND wedges tusb */
-+			/* | MUSB_POWER_ENSUSPEND */
-+		   );
-+
-+	musb->is_active = 0;
-+	devctl = musb_readb(regs, MUSB_DEVCTL);
-+	devctl &= ~MUSB_DEVCTL_SESSION;
-+
-+	/* session started after:
-+	 * (a) ID-grounded irq, host mode;
-+	 * (b) vbus present/connect IRQ, peripheral mode;
-+	 * (c) peripheral initiates, using SRP
-+	 */
-+	if (musb->port_mode != MUSB_PORT_MODE_HOST &&
-+			(devctl & MUSB_DEVCTL_VBUS) == MUSB_DEVCTL_VBUS) {
-+		musb->is_active = 1;
-+	} else {
-+		devctl |= MUSB_DEVCTL_SESSION;
-+	}
-+
-+	musb_platform_enable(musb);
-+	musb_writeb(regs, MUSB_DEVCTL, devctl);
-+}
-+
-+/*
-  * Make the HDRC stop (disable interrupts, etc.);
-  * reversible by musb_start
-  * called on gadget driver unregister
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -511,6 +511,7 @@ static inline void musb_configure_ep0(st
- extern const char musb_driver_name[];
+ 		/* assume SPC3 or latter devices support sense size > 18 */
+ 		if (sdev->scsi_level > SCSI_SPC_2)
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1925,6 +1925,13 @@ UNUSUAL_DEV(  0x1652, 0x6600, 0x0201, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_IGNORE_RESIDUE ),
  
- extern void musb_stop(struct musb *musb);
-+extern void musb_start(struct musb *musb);
- 
- extern void musb_write_fifo(struct musb_hw_ep *ep, u16 len, const u8 *src);
- extern void musb_read_fifo(struct musb_hw_ep *ep, u16 len, u8 *dst);
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -1842,6 +1842,8 @@ static int musb_gadget_start(struct usb_
- 	musb->xceiv->state = OTG_STATE_B_IDLE;
- 	spin_unlock_irqrestore(&musb->lock, flags);
- 
-+	musb_start(musb);
++/* Reported by Oliver Neukum <oneukum@suse.com> */
++UNUSUAL_DEV(  0x174c, 0x55aa, 0x0100, 0x0100,
++		"ASMedia",
++		"AS2105",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_NEEDS_CAP16),
 +
- 	/* REVISIT:  funcall to other code, which also
- 	 * handles power budgeting ... this way also
- 	 * ensures HdrcStart is indirectly called.
---- a/drivers/usb/musb/musb_virthub.c
-+++ b/drivers/usb/musb/musb_virthub.c
-@@ -44,52 +44,6 @@
+ /* Reported by Jesse Feddema <jdfeddema@gmail.com> */
+ UNUSUAL_DEV(  0x177f, 0x0400, 0x0000, 0x0000,
+ 		"Yarvik",
+--- a/include/linux/usb_usual.h
++++ b/include/linux/usb_usual.h
+@@ -66,7 +66,9 @@
+ 	US_FLAG(INITIAL_READ10,	0x00100000)			\
+ 		/* Initial READ(10) (and others) must be retried */	\
+ 	US_FLAG(WRITE_CACHE,	0x00200000)			\
+-		/* Write Cache status is not available */
++		/* Write Cache status is not available */	\
++	US_FLAG(NEEDS_CAP16,	0x00400000)
++		/* cannot handle READ_CAPACITY_10 */
  
- #include "musb_core.h"
- 
--/*
--* Program the HDRC to start (enable interrupts, dma, etc.).
--*/
--static void musb_start(struct musb *musb)
--{
--	void __iomem	*regs = musb->mregs;
--	u8		devctl = musb_readb(regs, MUSB_DEVCTL);
--
--	dev_dbg(musb->controller, "<== devctl %02x\n", devctl);
--
--	/*  Set INT enable registers, enable interrupts */
--	musb->intrtxe = musb->epmask;
--	musb_writew(regs, MUSB_INTRTXE, musb->intrtxe);
--	musb->intrrxe = musb->epmask & 0xfffe;
--	musb_writew(regs, MUSB_INTRRXE, musb->intrrxe);
--	musb_writeb(regs, MUSB_INTRUSBE, 0xf7);
--
--	musb_writeb(regs, MUSB_TESTMODE, 0);
--
--	/* put into basic highspeed mode and start session */
--	musb_writeb(regs, MUSB_POWER, MUSB_POWER_ISOUPDATE
--						| MUSB_POWER_HSENAB
--						/* ENSUSPEND wedges tusb */
--						/* | MUSB_POWER_ENSUSPEND */
--						);
--
--	musb->is_active = 0;
--	devctl = musb_readb(regs, MUSB_DEVCTL);
--	devctl &= ~MUSB_DEVCTL_SESSION;
--
--	/* session started after:
--	 * (a) ID-grounded irq, host mode;
--	 * (b) vbus present/connect IRQ, peripheral mode;
--	 * (c) peripheral initiates, using SRP
--	 */
--	if (musb->port_mode != MUSB_PORT_MODE_HOST &&
--	    (devctl & MUSB_DEVCTL_VBUS) == MUSB_DEVCTL_VBUS) {
--		musb->is_active = 1;
--	} else {
--		devctl |= MUSB_DEVCTL_SESSION;
--	}
--
--	musb_platform_enable(musb);
--	musb_writeb(regs, MUSB_DEVCTL, devctl);
--}
--
- static void musb_port_suspend(struct musb *musb, bool do_suspend)
- {
- 	struct usb_otg	*otg = musb->xceiv->otg;
+ #define US_FLAG(name, value)	US_FL_##name = value ,
+ enum { US_DO_ALL_FLAGS };
 
 
