@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab3KIMMB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 07:12:01 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:60904 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989Ab3KIMMA (ORCPT
+	id S1752979Ab3KIMza (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 07:55:30 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:36995 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab3KIMz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 07:12:00 -0500
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] regulator: gpio-regulator: Don't oops on missing regulator-type property
-Date: Sat,  9 Nov 2013 13:12:28 +0100
-Message-Id: <1383999148-2516-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-X-Mailer: git-send-email 1.8.1.5
+	Sat, 9 Nov 2013 07:55:29 -0500
+Message-ID: <527E30BD.3030604@linux.com>
+Date: Sat, 09 Nov 2013 13:55:25 +0100
+From: Levente Kurusa <levex@linux.com>
+Reply-To: levex@linux.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Baptiste Covolato <b.covolato@gmail.com>, greg@kroah.com
+CC: swetland@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: android: Add possibility to compile android
+ drivers as modules
+References: <1384003422-24683-1-git-send-email-b.covolato@gmail.com>
+In-Reply-To: <1384003422-24683-1-git-send-email-b.covolato@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Catch missing regulator-type property in DT and return an error
-gracefully instead of deferencing a NULL pointer and crashing.
+2013-11-09 14:23 keltezéssel, Baptiste Covolato írta:
+> Compilation of Android staging drivers as drivers is now possible.
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- drivers/regulator/gpio-regulator.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+'drivers as drivers'? :-)
 
-diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
-index 98a98ff..bcd827c 100644
---- a/drivers/regulator/gpio-regulator.c
-+++ b/drivers/regulator/gpio-regulator.c
-@@ -139,6 +139,7 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
- 	struct property *prop;
- 	const char *regtype;
- 	int proplen, gpio, i;
-+	int ret;
- 
- 	config = devm_kzalloc(dev,
- 			sizeof(struct gpio_regulator_config),
-@@ -202,7 +203,11 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
- 	}
- 	config->nr_states = i;
- 
--	of_property_read_string(np, "regulator-type", &regtype);
-+	ret = of_property_read_string(np, "regulator-type", &regtype);
-+	if (ret < 0) {
-+		dev_err(dev, "Missing 'regulator-type' property\n");
-+		return ERR_PTR(-EINVAL);
-+	}
- 
- 	if (!strncmp("voltage", regtype, 7))
- 		config->type = REGULATOR_VOLTAGE;
+Also, this commit message says nothing about what the patch does.
+Something like this would be more appropriate:
+Edit Android Kconfig files to allow building the drivers as modules.
+
+
+
 -- 
 Regards,
-
-Laurent Pinchart
-
+Levente Kurusa
