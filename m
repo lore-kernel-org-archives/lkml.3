@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933043Ab3KIGxd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:53:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33622 "EHLO
+	id S1758654Ab3KIGxX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:53:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33614 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932953Ab3KIGxC (ORCPT
+	with ESMTP id S932949Ab3KIGxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:53:02 -0500
+	Sat, 9 Nov 2013 01:53:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.11 60/94] uml: check length in exitcode_proc_write()
-Date: Fri,  8 Nov 2013 22:52:06 -0800
-Message-Id: <20131109065208.535259883@linuxfoundation.org>
+        Jon Mason <jon.mason@intel.com>
+Subject: [PATCH 3.11 93/94] NTB: Correct USD/DSD Identification
+Date: Fri,  8 Nov 2013 22:52:39 -0800
+Message-Id: <20131109065210.810451658@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -28,37 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jon Mason <jon.mason@intel.com>
 
-commit 201f99f170df14ba52ea4c52847779042b7a623b upstream.
+commit b6750cfe0710a14fd147ba27fddbecae8ba88c77 upstream.
 
-We don't cap the size of buffer from the user so we could write past the
-end of the array here.  Only root can write to this file.
+Due to ambiguous documentation, the USD/DSD identification is backward
+when compared to the setting in BIOS.  Correct the bits to match the
+BIOS setting.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jon Mason <jon.mason@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/um/kernel/exitcode.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/ntb/ntb_hw.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/um/kernel/exitcode.c
-+++ b/arch/um/kernel/exitcode.c
-@@ -40,9 +40,11 @@ static ssize_t exitcode_proc_write(struc
- 		const char __user *buffer, size_t count, loff_t *pos)
- {
- 	char *end, buf[sizeof("nnnnn\0")];
-+	size_t size;
- 	int tmp;
+--- a/drivers/ntb/ntb_hw.c
++++ b/drivers/ntb/ntb_hw.c
+@@ -531,9 +531,9 @@ static int ntb_xeon_setup(struct ntb_dev
+ 	}
  
--	if (copy_from_user(buf, buffer, count))
-+	size = min(count, sizeof(buf));
-+	if (copy_from_user(buf, buffer, size))
- 		return -EFAULT;
+ 	if (val & SNB_PPD_DEV_TYPE)
+-		ndev->dev_type = NTB_DEV_DSD;
+-	else
+ 		ndev->dev_type = NTB_DEV_USD;
++	else
++		ndev->dev_type = NTB_DEV_DSD;
  
- 	tmp = simple_strtol(buf, &end, 0);
+ 	ndev->reg_ofs.pdb = ndev->reg_base + SNB_PDOORBELL_OFFSET;
+ 	ndev->reg_ofs.pdb_mask = ndev->reg_base + SNB_PDBMSK_OFFSET;
+@@ -647,6 +647,9 @@ static int ntb_device_setup(struct ntb_d
+ 	if (rc)
+ 		return rc;
+ 
++	dev_info(&ndev->pdev->dev, "Device Type = %s\n",
++		 ndev->dev_type == NTB_DEV_USD ? "USD/DSP" : "DSD/USP");
++
+ 	/* Enable Bus Master and Memory Space on the secondary side */
+ 	writew(PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER, ndev->reg_ofs.spci_cmd);
+ 
 
 
