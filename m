@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903Ab3KIGwj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:52:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33425 "EHLO
+	id S932816Ab3KIHBk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:01:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33491 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932778Ab3KIGw1 (ORCPT
+	with ESMTP id S932899Ab3KIGwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:27 -0500
+	Sat, 9 Nov 2013 01:52:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.11 17/94] mac80211: use sta_info_get_bss() for nl80211 tx and client probing
-Date: Fri,  8 Nov 2013 22:51:23 -0800
-Message-Id: <20131109065205.461839153@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.11 73/94] mm: Close races between THP migration and PMD numa clearing
+Date: Fri,  8 Nov 2013 22:52:19 -0800
+Message-Id: <20131109065209.423485927@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -27,43 +30,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 03bb7f42765ce596604f03d179f3137d7df05bba upstream.
+commit 3f926ab945b60a5824369d21add7710622a2eac0 upstream.
 
-This allows calls for clients in AP_VLANs (e.g. for 4-addr) to succeed
+THP migration uses the page lock to guard against parallel allocations
+but there are cases like this still open
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+  Task A					Task B
+  ---------------------				---------------------
+  do_huge_pmd_numa_page				do_huge_pmd_numa_page
+  lock_page
+  mpol_misplaced == -1
+  unlock_page
+  goto clear_pmdnuma
+						lock_page
+						mpol_misplaced == 2
+						migrate_misplaced_transhuge
+  pmd = pmd_mknonnuma
+  set_pmd_at
+
+During hours of testing, one crashed with weird errors and while I have
+no direct evidence, I suspect something like the race above happened.
+This patch extends the page lock to being held until the pmd_numa is
+cleared to prevent migration starting in parallel while the pmd_numa is
+being cleared. It also flushes the old pmd entry and orders pagetable
+insertion before rmap insertion.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1381141781-10992-9-git-send-email-mgorman@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/cfg.c |    2 +-
- net/mac80211/tx.c  |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ mm/huge_memory.c |   33 +++++++++++++++------------------
+ mm/migrate.c     |   19 +++++++++++--------
+ 2 files changed, 26 insertions(+), 26 deletions(-)
 
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -3334,7 +3334,7 @@ static int ieee80211_probe_client(struct
- 		return -EINVAL;
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1316,24 +1316,25 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	target_nid = mpol_misplaced(page, vma, haddr);
+ 	if (target_nid == -1) {
+ 		/* If the page was locked, there are no parallel migrations */
+-		if (page_locked) {
+-			unlock_page(page);
++		if (page_locked)
+ 			goto clear_pmdnuma;
+-		}
+ 
+-		/* Otherwise wait for potential migrations and retry fault */
++		/*
++		 * Otherwise wait for potential migrations and retry. We do
++		 * relock and check_same as the page may no longer be mapped.
++		 * As the fault is being retried, do not account for it.
++		 */
+ 		spin_unlock(&mm->page_table_lock);
+ 		wait_on_page_locked(page);
++		page_nid = -1;
+ 		goto out;
  	}
- 	band = chanctx_conf->def.chan->band;
--	sta = sta_info_get(sdata, peer);
-+	sta = sta_info_get_bss(sdata, peer);
- 	if (sta) {
- 		qos = test_sta_flag(sta, WLAN_STA_WME);
- 	} else {
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -1101,7 +1101,8 @@ ieee80211_tx_prepare(struct ieee80211_su
- 		tx->sta = rcu_dereference(sdata->u.vlan.sta);
- 		if (!tx->sta && sdata->dev->ieee80211_ptr->use_4addr)
- 			return TX_DROP;
--	} else if (info->flags & IEEE80211_TX_CTL_INJECTED ||
-+	} else if (info->flags & (IEEE80211_TX_CTL_INJECTED |
-+				  IEEE80211_TX_INTFL_NL80211_FRAME_TX) ||
- 		   tx->sdata->control_port_protocol == tx->skb->protocol) {
- 		tx->sta = sta_info_get_bss(sdata, hdr->addr1);
+ 
+ 	/* Page is misplaced, serialise migrations and parallel THP splits */
+ 	get_page(page);
+ 	spin_unlock(&mm->page_table_lock);
+-	if (!page_locked) {
++	if (!page_locked)
+ 		lock_page(page);
+-		page_locked = true;
+-	}
+ 	anon_vma = page_lock_anon_vma_read(page);
+ 
+ 	/* Confirm the PTE did not while locked */
+@@ -1341,32 +1342,28 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	if (unlikely(!pmd_same(pmd, *pmdp))) {
+ 		unlock_page(page);
+ 		put_page(page);
++		page_nid = -1;
+ 		goto out_unlock;
  	}
+ 
+-	/* Migrate the THP to the requested node */
++	/*
++	 * Migrate the THP to the requested node, returns with page unlocked
++	 * and pmd_numa cleared.
++	 */
+ 	spin_unlock(&mm->page_table_lock);
+ 	migrated = migrate_misplaced_transhuge_page(mm, vma,
+ 				pmdp, pmd, addr, page, target_nid);
+ 	if (migrated)
+ 		page_nid = target_nid;
+-	else
+-		goto check_same;
+ 
+ 	goto out;
+-
+-check_same:
+-	spin_lock(&mm->page_table_lock);
+-	if (unlikely(!pmd_same(pmd, *pmdp))) {
+-		/* Someone else took our fault */
+-		page_nid = -1;
+-		goto out_unlock;
+-	}
+ clear_pmdnuma:
++	BUG_ON(!PageLocked(page));
+ 	pmd = pmd_mknonnuma(pmd);
+ 	set_pmd_at(mm, haddr, pmdp, pmd);
+ 	VM_BUG_ON(pmd_numa(*pmdp));
+ 	update_mmu_cache_pmd(vma, addr, pmdp);
++	unlock_page(page);
+ out_unlock:
+ 	spin_unlock(&mm->page_table_lock);
+ 
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1712,12 +1712,12 @@ int migrate_misplaced_transhuge_page(str
+ 		unlock_page(new_page);
+ 		put_page(new_page);		/* Free it */
+ 
+-		unlock_page(page);
++		/* Retake the callers reference and putback on LRU */
++		get_page(page);
+ 		putback_lru_page(page);
+-
+-		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
+-		isolated = 0;
+-		goto out;
++		mod_zone_page_state(page_zone(page),
++			 NR_ISOLATED_ANON + page_lru, -HPAGE_PMD_NR);
++		goto out_fail;
+ 	}
+ 
+ 	/*
+@@ -1734,9 +1734,9 @@ int migrate_misplaced_transhuge_page(str
+ 	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+ 	entry = pmd_mkhuge(entry);
+ 
+-	page_add_new_anon_rmap(new_page, vma, haddr);
+-
++	pmdp_clear_flush(vma, haddr, pmd);
+ 	set_pmd_at(mm, haddr, pmd, entry);
++	page_add_new_anon_rmap(new_page, vma, haddr);
+ 	update_mmu_cache_pmd(vma, address, &entry);
+ 	page_remove_rmap(page);
+ 	/*
+@@ -1755,7 +1755,6 @@ int migrate_misplaced_transhuge_page(str
+ 	count_vm_events(PGMIGRATE_SUCCESS, HPAGE_PMD_NR);
+ 	count_vm_numa_events(NUMA_PAGE_MIGRATE, HPAGE_PMD_NR);
+ 
+-out:
+ 	mod_zone_page_state(page_zone(page),
+ 			NR_ISOLATED_ANON + page_lru,
+ 			-HPAGE_PMD_NR);
+@@ -1764,6 +1763,10 @@ out:
+ out_fail:
+ 	count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
+ out_dropref:
++	entry = pmd_mknonnuma(entry);
++	set_pmd_at(mm, haddr, pmd, entry);
++	update_mmu_cache_pmd(vma, address, &entry);
++
+ 	unlock_page(page);
+ 	put_page(page);
+ 	return 0;
 
 
