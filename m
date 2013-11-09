@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759216Ab3KIHmb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:42:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32824 "EHLO
+	id S1759236Ab3KIHm4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:42:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32821 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756494Ab3KIGt7 (ORCPT
+	with ESMTP id S1756401Ab3KIGt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:49:59 -0500
+	Sat, 9 Nov 2013 01:49:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.4 05/26] mac80211: correctly close cancelled scans
-Date: Fri,  8 Nov 2013 22:51:34 -0800
-Message-Id: <20131109065050.598729534@linuxfoundation.org>
+        "Alexey E. Kramarenko" <alexeyk13@yandex.ru>
+Subject: [PATCH 3.4 04/26] USB: serial: ftdi_sio: add id for Z3X Box device
+Date: Fri,  8 Nov 2013 22:51:33 -0800
+Message-Id: <20131109065050.532446199@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065050.089866597@linuxfoundation.org>
 References: <20131109065050.089866597@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,87 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Алексей Крамаренко <alexeyk13@yandex.ru>
 
-commit a754055a1296fcbe6f32de3a5eaca6efb2fd1865 upstream.
+commit e1466ad5b1aeda303f9282463d55798d2eda218c upstream.
 
-__ieee80211_scan_completed is called from a worker. This
-means that the following flow is possible.
+Custom VID/PID for Z3X Box device, popular tool for cellphone flashing.
 
- * driver calls ieee80211_scan_completed
- * mac80211 cancels the scan (that is already complete)
- * __ieee80211_scan_completed runs
-
-When scan_work will finally run, it will see that the scan
-hasn't been aborted and might even trigger another scan on
-another band. This leads to a situation where cfg80211's
-scan is not done and no further scan can be issued.
-
-Fix this by setting a new flag when a HW scan is being
-cancelled so that no other scan will be triggered.
-
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Alexey E. Kramarenko <alexeyk13@yandex.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/ieee80211_i.h |    3 +++
- net/mac80211/scan.c        |   19 +++++++++++++++++++
- 2 files changed, 22 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -789,12 +789,15 @@ struct tpt_led_trigger {
-  *	that the scan completed.
-  * @SCAN_ABORTED: Set for our scan work function when the driver reported
-  *	a scan complete for an aborted scan.
-+ * @SCAN_HW_CANCELLED: Set for our scan work function when the scan is being
-+ *	cancelled.
-  */
- enum {
- 	SCAN_SW_SCANNING,
- 	SCAN_HW_SCANNING,
- 	SCAN_COMPLETED,
- 	SCAN_ABORTED,
-+	SCAN_HW_CANCELLED,
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -916,6 +916,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
+ 	/* Crucible Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
  };
- 
- /**
---- a/net/mac80211/scan.c
-+++ b/net/mac80211/scan.c
-@@ -259,6 +259,9 @@ static bool ieee80211_prep_hw_scan(struc
- 	enum ieee80211_band band;
- 	int i, ielen, n_chans;
- 
-+	if (test_bit(SCAN_HW_CANCELLED, &local->scanning))
-+		return false;
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1307,3 +1307,9 @@
+  * Manufacturer: Crucible Technologies
+  */
+ #define FTDI_CT_COMET_PID	0x8e08
 +
- 	do {
- 		if (local->hw_scan_band == IEEE80211_NUM_BANDS)
- 			return false;
-@@ -844,7 +847,23 @@ void ieee80211_scan_cancel(struct ieee80
- 	if (!local->scan_req)
- 		goto out;
- 
-+	/*
-+	 * We have a scan running and the driver already reported completion,
-+	 * but the worker hasn't run yet or is stuck on the mutex - mark it as
-+	 * cancelled.
-+	 */
-+	if (test_bit(SCAN_HW_SCANNING, &local->scanning) &&
-+	    test_bit(SCAN_COMPLETED, &local->scanning)) {
-+		set_bit(SCAN_HW_CANCELLED, &local->scanning);
-+		goto out;
-+	}
-+
- 	if (test_bit(SCAN_HW_SCANNING, &local->scanning)) {
-+		/*
-+		 * Make sure that __ieee80211_scan_completed doesn't trigger a
-+		 * scan on another band.
-+		 */
-+		set_bit(SCAN_HW_CANCELLED, &local->scanning);
- 		if (local->ops->cancel_hw_scan)
- 			drv_cancel_hw_scan(local, local->scan_sdata);
- 		goto out;
++/*
++ * Product: Z3X Box
++ * Manufacturer: Smart GSM Team
++ */
++#define FTDI_Z3X_PID		0x0011
 
 
