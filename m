@@ -1,152 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933503Ab3KIHTY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:19:24 -0500
-Received: from mailbigip.dreamhost.com ([208.97.132.5]:37670 "EHLO
-	homiemail-a39.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932616Ab3KIHTO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 02:19:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=novalis.org; h=message-id:subject
-	:from:to:cc:date:in-reply-to:references:content-type
-	:mime-version:content-transfer-encoding; q=dns; s=novalis.org;
-	 b=G9c353emhApK72CSaqfGMfiCmIqHpQBnInm4Ud8Ctz1l2t/LWdkCCzWIsJB1M
-	B/fGuupXsZ6f7Xby5tqcwxiB3VVT9binMu1Fs8XKaAdTz9D9fjHKpuTUmGDDk7c+
-	emqJ2f7A+F9iXUcb5a1EAz6TmJ6HP8iHxON1M/t1F/dw/U=
-Message-ID: <1383981551.8994.27.camel@chiang>
-Subject: [PATCH] ext4: explain encoding of 34-bit a,c,mtime values
-From: David Turner <novalis@novalis.org>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: Jan Kara <jack@suse.cz>, Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Date: Sat, 09 Nov 2013 02:19:11 -0500
-In-Reply-To: <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
-References: <1383808590.23882.13.camel@chiang>
-	 <20131107160341.GA3850@quack.suse.cz> <1383864864.23882.33.camel@chiang>
-	 <20131107231445.GG2054@quack.suse.cz> <1383866807.23882.41.camel@chiang>
-	 <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+	id S932635Ab3KIGvo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:51:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33208 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932616Ab3KIGvf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Nov 2013 01:51:35 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Daniel Mack <zonque@gmail.com>, Peter Korsgaard <jacmet@sunsite.dk>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.11 01/94] usb: musb: start musb on the udc side, too
+Date: Fri,  8 Nov 2013 22:51:07 -0800
+Message-Id: <20131109065204.362616552@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc0.dirty
+In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
+References: <20131109065204.252462489@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-08 at 14:37 -0700, Andreas Dilger wrote:
-> On Nov 7, 2013, at 4:26 PM, David Turner <novalis@novalis.org> wrote:
-> > On Fri, 2013-11-08 at 00:14 +0100, Jan Kara wrote:
-> >> Still unnecessary type cast here (but that's a cosmetic issue).
-> > ...
-> >> Otherwise the patch looks good. You can add:
-> >> Reviewed-by: Jan Kara <jack@suse.cz>
-> > 
-> > Thanks.  A version with this correction and the reviewed-by follows.
-> 
-> Thanks for working on this.  It was (seriously) in my list of things to
-> get done, but I figured I still had a few years to work on it...
-> 
-> My (unfinished) version of this patch had a nice comment at ext4_encode_time()
-> that explained the encoding that is being used very clearly:
-> 
-> /*
->  * We need is an encoding that preserves the times for extra epoch "00":
->  *
->  * extra  msb of                         adjust for signed
->  * epoch  32-bit                         32-bit tv_sec to
->  * bits   time    decoded 64-bit tv_sec  64-bit tv_sec      valid time range
->  * 0 0    1    -0x80000000..-0x00000001  0x000000000     1901-12-13..1969-12-31
->  * 0 0    0    0x000000000..0x07fffffff  0x000000000     1970-01-01..2038-01-19
->  * 0 1    1    0x080000000..0x0ffffffff  0x100000000     2038-01-19..2106-02-07
->  * 0 1    0    0x100000000..0x17fffffff  0x100000000     2106-02-07..2174-02-25
->  * 1 0    1    0x180000000..0x1ffffffff  0x200000000     2174-02-25..2242-03-16
->  * 1 0    0    0x200000000..0x27fffffff  0x200000000     2242-03-16..2310-04-04
->  * 1 1    1    0x280000000..0x2ffffffff  0x300000000     2310-04-04..2378-04-22
->  * 1 1    0    0x300000000..0x37fffffff  0x300000000     2378-04-22..2446-05-10
->  */
-> 
-> It seems that your version of the patch seems to use a different encoding.  Not
-> that this is a problem, per-se, since my patch wasn’t in use anywhere, but it
-> would be nice to have a similarly clear explanation of what the mapping is so
-> that it can be clearly understood.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
-I have included a patch with an explanation (the patch is against
-tytso/dev -- I hope that's the correct place).  
+------------------
 
-> My ext4_{encode,decode}_extra_time() used add/subtract instead of mask/OR ops,
-> which changed the on-disk format for times beyond 2038, but those were already
-> broken, and presumably not in use by anyone yet. 
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-They were actually correct according to my patch's encoding (that is, my
-patch used the existing encoding).  The existing encoding was written
-correctly, but read wrongly.  As you say, this should not matter, since
-nobody should be writing these timestamps, but I assumed that the
-existing encoding had happened for a reason, and wanted to make the
-minimal change.
+commit 001dd84a92a25f8f2bad7d26df8bdb0362302c07 upstream.
 
-If you believe it is important, I would be happy to change it.
+I have am335x-evm with one port running in OTG mode. Since commit
+fe4cb09 ("usb: musb: gadget: remove hcd initialization") the loaded
+gadget does non pop up on the host. All I see is
+|usb 4-5: new high-speed USB device number 52 using ehci-pci
+|usb 4-5: device descriptor read/64, error -110
 
->  However, it seemed to me this
-> was easier to produce the correct results.  Have you tested your patch with
-> a variety of timestamps to verify its correctness? 
+Since a later commit 2cc65fe ("usb: musb: add musb_host_setup() and
+musb_host_cleanup()) the gadget shows up on the host again but only
+in OTG mode (because we have the host init code running). It does not
+work in device only mode.
+If running in OTG mode and the gadget is removed and added back (rmmod
+followed by modprobe of a gadget) then the same error is pops up on the
+host side.
 
-I tested by using touch -d to create one file in each year between 1902
-and 2446.  Then I unmounted and remounted the FS, and did ls -l and
-manually verified that each file's date matched its name.
+This patch ensures that the gadget side also executes musb_start() which
+puts the chip in "connect accept" mode. With this change the device
+works in OTG & device mode and the gadget can be added & removed
+multiple times.
+A device (if musb is in OTG mode acting as a host) is only recognized if
+it is attached during module load (musb_hdrc module). After the device
+unplugged and plugged again the host does not recognize it. We get a
+buch of errors if musb running in OTG mode, attached to a host and no
+gadget is loaded. Bah.
+This is one step forward. Host & device only mode should work. I will
+look at OTG later. I looked at this before commit fe4cb09 and OTG wasn't
+working there perfectly so I am not sure that it is a regression :)
 
-> It looks to me like you
-> have mapped the 1901-1969 range onto 0x3 for the epoch bits, instead 
-> of the (IMHO) natural 0x0 bits. The critical time ranges are listed 
-> above.
+Cc: Daniel Mack <zonque@gmail.com>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-I think the idea of this is that it is the bottom 34 bits of the 64-bit
-signed time.  However, it occurs to me that this relies on a two's
-complement machine.  Even though the C standard does not guarantee this,
-I believe the kernel requires it, so that's probably OK.
-
-Patch follows:
-
---
-Add a comment explaining the encoding of ext4's extra {a,c,m}time
-bits.
-
-Signed-off-by: David Turner <novalis@novalis.org>
 ---
- fs/ext4/ext4.h | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/usb/musb/musb_core.c    |   46 ++++++++++++++++++++++++++++++++++++++++
+ drivers/usb/musb/musb_core.h    |    1 
+ drivers/usb/musb/musb_gadget.c  |    2 +
+ drivers/usb/musb/musb_virthub.c |   46 ----------------------------------------
+ 4 files changed, 49 insertions(+), 46 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 121da383..ab69f14 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -713,6 +713,24 @@ struct move_extent {
- 	  sizeof((ext4_inode)->field))			\
- 	<= (EXT4_GOOD_OLD_INODE_SIZE +			\
- 	    (einode)->i_extra_isize))			\
-+/*
-+ * We use the bottom 34 bits of the signed 64-bit time value, with
-+ * the top two of these bits in the bottom of extra.  This leads
-+ * to a slightly odd encoding, which works like this:
-+ *
-+ * extra  msb of
-+ * epoch  32-bit
-+ * bits   time    decoded 64-bit tv_sec   valid time range
-+ * 0 0    0    0x000000000..0x07fffffff  1970-01-01..2038-01-19
-+ * 0 0    1    0x080000000..0x0ffffffff  2038-01-19..2106-02-07
-+ * 0 1    0    0x100000000..0x17fffffff  2106-02-07..2174-02-25
-+ * 0 1    1    0x180000000..0x1ffffffff  2174-02-25..2242-03-16
-+ * 1 0    0    0x200000000..0x27fffffff  2242-03-16..2310-04-04
-+ * 1 0    1    0x280000000..0x2ffffffff  2310-04-04..2378-04-22
-+ * 1 1    0    0x300000000..0x37fffffff  2378-04-22..2446-05-10
-+
-+ * 1 1    1    -0x80000000..-0x00000001  1901-12-13..1969-12-31
-+ */
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -923,6 +923,52 @@ static void musb_generic_disable(struct
+ }
  
- static inline __le32 ext4_encode_extra_time(struct timespec *time)
+ /*
++ * Program the HDRC to start (enable interrupts, dma, etc.).
++ */
++void musb_start(struct musb *musb)
++{
++	void __iomem    *regs = musb->mregs;
++	u8              devctl = musb_readb(regs, MUSB_DEVCTL);
++
++	dev_dbg(musb->controller, "<== devctl %02x\n", devctl);
++
++	/*  Set INT enable registers, enable interrupts */
++	musb->intrtxe = musb->epmask;
++	musb_writew(regs, MUSB_INTRTXE, musb->intrtxe);
++	musb->intrrxe = musb->epmask & 0xfffe;
++	musb_writew(regs, MUSB_INTRRXE, musb->intrrxe);
++	musb_writeb(regs, MUSB_INTRUSBE, 0xf7);
++
++	musb_writeb(regs, MUSB_TESTMODE, 0);
++
++	/* put into basic highspeed mode and start session */
++	musb_writeb(regs, MUSB_POWER, MUSB_POWER_ISOUPDATE
++			| MUSB_POWER_HSENAB
++			/* ENSUSPEND wedges tusb */
++			/* | MUSB_POWER_ENSUSPEND */
++		   );
++
++	musb->is_active = 0;
++	devctl = musb_readb(regs, MUSB_DEVCTL);
++	devctl &= ~MUSB_DEVCTL_SESSION;
++
++	/* session started after:
++	 * (a) ID-grounded irq, host mode;
++	 * (b) vbus present/connect IRQ, peripheral mode;
++	 * (c) peripheral initiates, using SRP
++	 */
++	if (musb->port_mode != MUSB_PORT_MODE_HOST &&
++			(devctl & MUSB_DEVCTL_VBUS) == MUSB_DEVCTL_VBUS) {
++		musb->is_active = 1;
++	} else {
++		devctl |= MUSB_DEVCTL_SESSION;
++	}
++
++	musb_platform_enable(musb);
++	musb_writeb(regs, MUSB_DEVCTL, devctl);
++}
++
++/*
+  * Make the HDRC stop (disable interrupts, etc.);
+  * reversible by musb_start
+  * called on gadget driver unregister
+--- a/drivers/usb/musb/musb_core.h
++++ b/drivers/usb/musb/musb_core.h
+@@ -511,6 +511,7 @@ static inline void musb_configure_ep0(st
+ extern const char musb_driver_name[];
+ 
+ extern void musb_stop(struct musb *musb);
++extern void musb_start(struct musb *musb);
+ 
+ extern void musb_write_fifo(struct musb_hw_ep *ep, u16 len, const u8 *src);
+ extern void musb_read_fifo(struct musb_hw_ep *ep, u16 len, u8 *dst);
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1842,6 +1842,8 @@ static int musb_gadget_start(struct usb_
+ 	musb->xceiv->state = OTG_STATE_B_IDLE;
+ 	spin_unlock_irqrestore(&musb->lock, flags);
+ 
++	musb_start(musb);
++
+ 	/* REVISIT:  funcall to other code, which also
+ 	 * handles power budgeting ... this way also
+ 	 * ensures HdrcStart is indirectly called.
+--- a/drivers/usb/musb/musb_virthub.c
++++ b/drivers/usb/musb/musb_virthub.c
+@@ -44,52 +44,6 @@
+ 
+ #include "musb_core.h"
+ 
+-/*
+-* Program the HDRC to start (enable interrupts, dma, etc.).
+-*/
+-static void musb_start(struct musb *musb)
+-{
+-	void __iomem	*regs = musb->mregs;
+-	u8		devctl = musb_readb(regs, MUSB_DEVCTL);
+-
+-	dev_dbg(musb->controller, "<== devctl %02x\n", devctl);
+-
+-	/*  Set INT enable registers, enable interrupts */
+-	musb->intrtxe = musb->epmask;
+-	musb_writew(regs, MUSB_INTRTXE, musb->intrtxe);
+-	musb->intrrxe = musb->epmask & 0xfffe;
+-	musb_writew(regs, MUSB_INTRRXE, musb->intrrxe);
+-	musb_writeb(regs, MUSB_INTRUSBE, 0xf7);
+-
+-	musb_writeb(regs, MUSB_TESTMODE, 0);
+-
+-	/* put into basic highspeed mode and start session */
+-	musb_writeb(regs, MUSB_POWER, MUSB_POWER_ISOUPDATE
+-						| MUSB_POWER_HSENAB
+-						/* ENSUSPEND wedges tusb */
+-						/* | MUSB_POWER_ENSUSPEND */
+-						);
+-
+-	musb->is_active = 0;
+-	devctl = musb_readb(regs, MUSB_DEVCTL);
+-	devctl &= ~MUSB_DEVCTL_SESSION;
+-
+-	/* session started after:
+-	 * (a) ID-grounded irq, host mode;
+-	 * (b) vbus present/connect IRQ, peripheral mode;
+-	 * (c) peripheral initiates, using SRP
+-	 */
+-	if (musb->port_mode != MUSB_PORT_MODE_HOST &&
+-	    (devctl & MUSB_DEVCTL_VBUS) == MUSB_DEVCTL_VBUS) {
+-		musb->is_active = 1;
+-	} else {
+-		devctl |= MUSB_DEVCTL_SESSION;
+-	}
+-
+-	musb_platform_enable(musb);
+-	musb_writeb(regs, MUSB_DEVCTL, devctl);
+-}
+-
+ static void musb_port_suspend(struct musb *musb, bool do_suspend)
  {
--- 
-1.8.1.2
-
+ 	struct usb_otg	*otg = musb->xceiv->otg;
 
 
