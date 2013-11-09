@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759202Ab3KIHmH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:42:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32831 "EHLO
+	id S1756540Ab3KIGuA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:50:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32771 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756591Ab3KIGuB (ORCPT
+	with ESMTP id S1755821Ab3KIGtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:01 -0500
+	Sat, 9 Nov 2013 01:49:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.4 07/26] rtlwifi: rtl8192cu: Fix error in pointer arithmetic
-Date: Fri,  8 Nov 2013 22:51:36 -0800
-Message-Id: <20131109065050.741119159@linuxfoundation.org>
+        Baruch Siach <baruch@tkos.co.il>, Max Filippov <jcmvbkbc@gmail.com>,
+        Chris Zankel <chris@zankel.net>
+Subject: [PATCH 3.4 21/26] xtensa: dont use alternate signal stack on threads
+Date: Fri,  8 Nov 2013 22:51:50 -0800
+Message-Id: <20131109065051.679803383@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065050.089866597@linuxfoundation.org>
 References: <20131109065050.089866597@linuxfoundation.org>
@@ -28,34 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
+From: Baruch Siach <baruch@tkos.co.il>
 
-commit 9473ca6e920a3b9ca902753ce52833657f9221cc upstream.
+commit cba9a90053e3b7973eff4f1946f33032e98eeed5 upstream.
 
-An error in calculating the offset in an skb causes the driver to read
-essential device info from the wrong locations. The main effect is that
-automatic gain calculations are nonsense.
+According to create_thread(3): "The new thread does not inherit the creating
+thread's alternate signal stack". Since commit f9a3879a (Fix sigaltstack
+corruption among cloned threads), current->sas_ss_size is set to 0 for cloned
+processes sharing VM with their parent. Don't use the (nonexistent) alternate
+signal stack in this case. This has been broken since commit 29c4dfd9 ([XTENSA]
+Remove non-rt signal handling).
 
-Signed-off-by: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fixes the SA_ONSTACK part of the nptl/tst-cancel20 test from uClibc.
+
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+Signed-off-by: Chris Zankel <chris@zankel.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/trx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/xtensa/kernel/signal.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-@@ -343,7 +343,8 @@ bool rtl92cu_rx_query_desc(struct ieee80
- 					(bool)GET_RX_DESC_PAGGR(pdesc));
- 	rx_status->mactime = GET_RX_DESC_TSFL(pdesc);
- 	if (phystatus) {
--		p_drvinfo = (struct rx_fwinfo_92c *)(pdesc + RTL_RX_DESC_SIZE);
-+		p_drvinfo = (struct rx_fwinfo_92c *)(skb->data +
-+						     stats->rx_bufshift);
- 		rtl92c_translate_rx_signal_stuff(hw, skb, stats, pdesc,
- 						 p_drvinfo);
+--- a/arch/xtensa/kernel/signal.c
++++ b/arch/xtensa/kernel/signal.c
+@@ -343,7 +343,7 @@ static int setup_frame(int sig, struct k
+ 
+ 	sp = regs->areg[1];
+ 
+-	if ((ka->sa.sa_flags & SA_ONSTACK) != 0 && ! on_sig_stack(sp)) {
++	if ((ka->sa.sa_flags & SA_ONSTACK) != 0 && sas_ss_flags(sp) == 0) {
+ 		sp = current->sas_ss_sp + current->sas_ss_size;
  	}
+ 
 
 
