@@ -1,67 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab3KITCf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 14:02:35 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:42837 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756750Ab3KITCU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 14:02:20 -0500
-Message-ID: <527E86B9.2050306@linux.com>
-Date: Sat, 09 Nov 2013 20:02:17 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: levex@linux.com
+	id S1757113Ab3KITH3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 14:07:29 -0500
+Received: from mout.gmx.net ([212.227.17.22]:65308 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756605Ab3KITH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Nov 2013 14:07:27 -0500
+Message-ID: <527E87EA.8080700@gmx.de>
+Date: Sat, 09 Nov 2013 20:07:22 +0100
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Caizhiyong <caizhiyong@hisilicon.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>
-Subject: Re: [PATCH] regmap: Fix compile warning with value uninitialized
-References: <C3050A4DBA34F345975765E43127F10F1C08B39E@szxeml512-mbs.china.huawei.com> <20131109151626.GT2493@sirena.org.uk> <527E55EF.5080504@linux.com> <20131109185741.GW2493@sirena.org.uk>
-In-Reply-To: <20131109185741.GW2493@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Richard Weinberger <richard@nod.at>
+CC: Konstantin Khlebnikov <koct9i@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>
+Subject: Re: [uml-devel] fuzz tested 32 bit user mode linux image hangs in
+ radix_tree_next_chunk()
+References: <526696BF.6050909@gmx.de>	<CAFLxGvy3NeRKu+KQCCm0j4LS60PYhH0bC8WWjfiPvpstPBjAkA@mail.gmail.com>	<5266A698.10400@gmx.de>	<5266B60A.1000005@nod.at>	<52715AD1.7000703@gmx.de> <CALYGNiPvJF1u8gXNcX1AZR5-VkGqJnaose84KBbdaoBAq8aoGQ@mail.gmail.com> <527AB23D.2060305@gmx.de> <527AB51B.1020005@nod.at>
+In-Reply-To: <527AB51B.1020005@nod.at>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:23wBj8HyAkDYpiF6z69mQwLSzPa7iyp6Bh5QMwrIUSuzWLMcqUd
+ ogsM2JEj+OB4qMsYfVxTheTYDF+8LuiPlqx5zw1jJ/5WHo9R86dPQTCuMTjJTqEm3YbrB2f
+ Szy0EMcNpl9uqCxBZSDhiHlOWXB8C2XRz8/LYiVJRrVTqncKxM4W3IvtcqCsEvIWwhwIrAr
+ TJdK8gZ+52/8EUKovKUCg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-11-09 19:57 keltez�ssel, Mark Brown �rta:
-> On Sat, Nov 09, 2013 at 04:34:07PM +0100, Levente Kurusa wrote:
->> 2013-11-09 16:16 keltez�ssel, Mark Brown �rta:
+On 11/06/2013 10:31 PM, Richard Weinberger wrote:
+> Am 06.11.2013 22:18, schrieb Toralf Förster:
+>> On 11/06/2013 05:06 PM, Konstantin Khlebnikov wrote:
+>>> In this case it must stop after scanning whole tree in line:
+>>> /* Overflow after ~0UL */
+>>> if (!index)
+>>>   return NULL;
+>>>
+>>
+>> A fresh current example with latest git tree shows that lines 769 and 770 do alternate :
 > 
->>>> -	int i, ret;
->>>> +	int i;
->>>> +	int ret = 0;
->>>>  	bool bypass;
+> Can you please ask gdb for the value of offset?
 > 
->> Wouldn't the following be better?
+> Thanks,
+> //richard
 > 
->> int i, ret = 0;
-> 
->> I think it is more readable.
-> 
-> No, that's not the kernel coding style.
-Alright.
-> 
->>> This sort of fix isn't ideal, it just silences the warning but if the
->>> compiler has spotted a genuine oversight in the function it won't
->>> address it.  It's better to include some analysis of why this is a good
->>> fix.
-> 
->> The only condition when 'ret' is not set is when the num_regs parameter is zero
->> and krealloc doesn't fail. If the above two conditions apply, then
->> the code would return an uninitialized value. However, calling this function with
->> num_regs == 0, would be a waste as it essentially does nothing.
-> 
-> OK, so that should be in the changelog - or there should be an error
-> check for num_regs == 0 which might be more helpful.
 
-Adding an explanation into the changelog and editing the patch
-in a way so that it adds a check would be the best choice I think.
+Still trying to get those values. One attempt to do that was to replace -O2 with -O0 in the Makefile,
+but that resulted into this error :
 
-Cai, can you please do this as part of the patch?
+  LD      kernel/built-in.o
+  CC      mm/memory.o
+In function ‘zap_pmd_range’,
+    inlined from ‘zap_pud_range’ at mm/memory.c:1265:8,
+    inlined from ‘unmap_page_range’ at mm/memory.c:1290:8:
+mm/memory.c:1220:23: error: call to ‘__compiletime_assert_1220’ declared with attribute error: BUILD_BUG failed
+mm/memory.c: In function ‘follow_page_mask’:
+mm/memory.c:1530:18: error: call to ‘__compiletime_assert_1530’ declared with attribute error: BUILD_BUG failed
+make[1]: *** [mm/memory.o] Error 1
+make: *** [mm] Error 2
+
+
+With -O1 it compiled at least.
+
+
+>>
+>> tfoerste@n22 ~/devel/linux $ sudo gdb /usr/local/bin/linux-v3.12-48-gbe408cd 16619 -n -batch -ex bt
+>> 0x08296a8c in radix_tree_next_chunk (root=0x25, iter=0x462e7c64, flags=12) at lib/radix-tree.c:770
+>> 770                                             if (node->slots[offset])
+>> #0  0x08296a8c in radix_tree_next_chunk (root=0x25, iter=0x462e7c64, flags=12) at lib/radix-tree.c:770
+>> #1  0x080cc1fe in find_get_pages (mapping=0x462ad470, start=0, nr_pages=14, pages=0xc) at mm/filemap.c:844
+>> #2  0x080d5d6a in pagevec_lookup (pvec=0x462e7cc8, mapping=0x25, start=37, nr_pages=37) at mm/swap.c:914
+>> #3  0x080d615a in truncate_inode_pages_range (mapping=0x462ad470, lstart=0, lend=-1) at mm/truncate.c:241
+>> #4  0x080d64ff in truncate_inode_pages (mapping=0x25, lstart=51539607589) at mm/truncate.c:358
+>>
+>>
+>>
+>>
+>> tfoerste@n22 ~/devel/linux $ sudo gdb /usr/local/bin/linux-v3.12-48-gbe408cd 16619 -n -batch -ex bt
+>> radix_tree_next_chunk (root=0x28, iter=0x462e7c64, flags=18) at lib/radix-tree.c:769
+>> 769                                     while (++offset < RADIX_TREE_MAP_SIZE) {
+>> #0  radix_tree_next_chunk (root=0x28, iter=0x462e7c64, flags=18) at lib/radix-tree.c:769
+>> #1  0x080cc1fe in find_get_pages (mapping=0x462ad470, start=0, nr_pages=14, pages=0x12) at mm/filemap.c:844
+>> #2  0x080d5d6a in pagevec_lookup (pvec=0x462e7cc8, mapping=0x28, start=40, nr_pages=40) at mm/swap.c:914
+>> #3  0x080d615a in truncate_inode_pages_range (mapping=0x462ad470, lstart=0, lend=-1) at mm/truncate.c:241
+>> #4  0x080d64ff in truncate_inode_pages (mapping=0x28, lstart=77309411368) at mm/truncate.c:358
+>> #5  0x0825e388 in hostfs_evict_inode (inode=0x462ad3b8) at fs/hostfs/hostfs_kern.c:242
+>> #6  0x0811a8df in evict (inode=0x462ad3b8) at fs/inode.c:549
+>>
+>>
+> 
+> 
+
 
 -- 
-Regards,
-Levente Kurusa
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
