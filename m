@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932591Ab3KIGvb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:51:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33136 "EHLO
+	id S932613Ab3KIGvf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:51:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33142 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932231Ab3KIGvR (ORCPT
+	with ESMTP id S932475Ab3KIGvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:17 -0500
+	Sat, 9 Nov 2013 01:51:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiaxing Wang <hello.wjx@gmail.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Jonghwan Choi <jhbird.choi@gmail.com>
-Subject: [PATCH 3.10 70/74] seq_file: always update file->f_pos in seq_lseek()
-Date: Fri,  8 Nov 2013 22:52:15 -0800
-Message-Id: <20131109065118.388161189@linuxfoundation.org>
+        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 43/74] staging: ozwpan: prevent overflow in oz_cdev_write()
+Date: Fri,  8 Nov 2013 22:51:48 -0800
+Message-Id: <20131109065116.547540346@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -28,70 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 05e16745c0c471bba313961b605b6da3b21a853d upstream.
+commit c2c65cd2e14ada6de44cb527e7f1990bede24e15 upstream.
 
-This issue was first pointed out by Jiaxing Wang several months ago, but no
-further comments:
-https://lkml.org/lkml/2013/6/29/41
+We need to check "count" so we don't overflow the ei->data buffer.
 
-As we know pread() does not change f_pos, so after pread(), file->f_pos
-and m->read_pos become different. And seq_lseek() does not update file->f_pos
-if offset equals to m->read_pos, so after pread() and seq_lseek()(lseek to
-m->read_pos), then a subsequent read may read from a wrong position, the
-following program produces the problem:
-
-    char str1[32] = { 0 };
-    char str2[32] = { 0 };
-    int poffset = 10;
-    int count = 20;
-
-    /*open any seq file*/
-    int fd = open("/proc/modules", O_RDONLY);
-
-    pread(fd, str1, count, poffset);
-    printf("pread:%s\n", str1);
-
-    /*seek to where m->read_pos is*/
-    lseek(fd, poffset+count, SEEK_SET);
-
-    /*supposed to read from poffset+count, but this read from position 0*/
-    read(fd, str2, count);
-    printf("read:%s\n", str2);
-
-out put:
-pread:
- ck_netbios_ns 12665
-read:
- nf_conntrack_netbios
-
-/proc/modules:
-nf_conntrack_netbios_ns 12665 0 - Live 0xffffffffa038b000
-nf_conntrack_broadcast 12589 1 nf_conntrack_netbios_ns, Live 0xffffffffa0386000
-
-So we always update file->f_pos to offset in seq_lseek() to fix this issue.
-
-Signed-off-by: Jiaxing Wang <hello.wjx@gmail.com>
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Jonghwan Choi <jhbird.choi@gmail.com>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/seq_file.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/ozwpan/ozcdev.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -328,6 +328,8 @@ loff_t seq_lseek(struct file *file, loff
- 				m->read_pos = offset;
- 				retval = file->f_pos = offset;
- 			}
-+		} else {
-+			file->f_pos = offset;
- 		}
- 	}
- 	file->f_version = m->version;
+--- a/drivers/staging/ozwpan/ozcdev.c
++++ b/drivers/staging/ozwpan/ozcdev.c
+@@ -153,6 +153,9 @@ static ssize_t oz_cdev_write(struct file
+ 	struct oz_app_hdr *app_hdr;
+ 	struct oz_serial_ctx *ctx;
+ 
++	if (count > sizeof(ei->data) - sizeof(*elt) - sizeof(*app_hdr))
++		return -EINVAL;
++
+ 	spin_lock_bh(&g_cdev.lock);
+ 	pd = g_cdev.active_pd;
+ 	if (pd)
 
 
