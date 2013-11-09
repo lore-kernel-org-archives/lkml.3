@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758403Ab3KIGuk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:50:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32924 "EHLO
+	id S933869Ab3KIHdL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:33:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32937 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758187Ab3KIGua (ORCPT
+	with ESMTP id S1758382Ab3KIGuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:30 -0500
+	Sat, 9 Nov 2013 01:50:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gwendal Grignou <gwendal@google.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 28/74] libata: make ata_eh_qc_retry() bump scmd->allowed on bogus failures
-Date: Fri,  8 Nov 2013 22:51:33 -0800
-Message-Id: <20131109065115.504408653@linuxfoundation.org>
+        Vineet Gupta <vgupta@synopsys.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 36/74] ARC: Incorrect mm reference used in vmalloc fault handler
+Date: Fri,  8 Nov 2013 22:51:41 -0800
+Message-Id: <20131109065116.049352109@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -26,49 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gwendal Grignou <gwendal@google.com>
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 
-commit f13e220161e738c2710b9904dcb3cf8bb0bcce61 upstream.
+commit 9c41f4eeb9d51f3ece20428d35a3ea32cf3b5622 upstream.
 
-libata EH decrements scmd->retries when the command failed for reasons
-unrelated to the command itself so that, for example, commands aborted
-due to suspend / resume cycle don't get penalized; however,
-decrementing scmd->retries isn't enough for ATA passthrough commands.
+A vmalloc fault needs to sync up PGD/PTE entry from init_mm to current
+task's "active_mm".  ARC vmalloc fault handler however was using mm.
 
-Without this fix, ATA passthrough commands are not resend to the
-drive, and no error is signalled to the caller because:
+A vmalloc fault for non user task context (actually pre-userland, from
+init thread's open for /dev/console) caused the handler to deref NULL mm
+(for mm->pgd)
 
-- allowed retry count is 1
-- ata_eh_qc_complete fill the sense data, so result is valid
-- sense data is filled with untouched ATA registers.
+The reasons it worked so far is amazing:
 
-Signed-off-by: Gwendal Grignou <gwendal@google.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+1. By default (!SMP), vmalloc fault handler uses a cached value of PGD.
+   In SMP that MMU register is repurposed hence need for mm pointer deref.
+
+2. In pre-3.12 SMP kernel, the problem triggering vmalloc didn't exist in
+   pre-userland code path - it was introduced with commit 20bafb3d23d108bc
+   "n_tty: Move buffers into n_tty_data"
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: Noam Camus <noamc@ezchip.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-eh.c |    6 +++---
+ arch/arc/mm/fault.c |    6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -1322,14 +1322,14 @@ void ata_eh_qc_complete(struct ata_queue
-  *	should be retried.  To be used from EH.
-  *
-  *	SCSI midlayer limits the number of retries to scmd->allowed.
-- *	scmd->retries is decremented for commands which get retried
-+ *	scmd->allowed is incremented for commands which get retried
-  *	due to unrelated failures (qc->err_mask is zero).
-  */
- void ata_eh_qc_retry(struct ata_queued_cmd *qc)
- {
- 	struct scsi_cmnd *scmd = qc->scsicmd;
--	if (!qc->err_mask && scmd->retries)
--		scmd->retries--;
-+	if (!qc->err_mask)
-+		scmd->allowed++;
- 	__ata_eh_qc_complete(qc);
- }
+--- a/arch/arc/mm/fault.c
++++ b/arch/arc/mm/fault.c
+@@ -16,7 +16,7 @@
+ #include <linux/kdebug.h>
+ #include <asm/pgalloc.h>
  
+-static int handle_vmalloc_fault(struct mm_struct *mm, unsigned long address)
++static int handle_vmalloc_fault(unsigned long address)
+ {
+ 	/*
+ 	 * Synchronize this task's top level page-table
+@@ -26,7 +26,7 @@ static int handle_vmalloc_fault(struct m
+ 	pud_t *pud, *pud_k;
+ 	pmd_t *pmd, *pmd_k;
+ 
+-	pgd = pgd_offset_fast(mm, address);
++	pgd = pgd_offset_fast(current->active_mm, address);
+ 	pgd_k = pgd_offset_k(address);
+ 
+ 	if (!pgd_present(*pgd_k))
+@@ -72,7 +72,7 @@ void do_page_fault(struct pt_regs *regs,
+ 	 * nothing more.
+ 	 */
+ 	if (address >= VMALLOC_START && address <= VMALLOC_END) {
+-		ret = handle_vmalloc_fault(mm, address);
++		ret = handle_vmalloc_fault(address);
+ 		if (unlikely(ret))
+ 			goto bad_area_nosemaphore;
+ 		else
 
 
