@@ -1,20 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932921Ab3KIGwm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:52:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33429 "EHLO
+	id S1758947Ab3KIHBA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:01:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33508 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932848Ab3KIGw2 (ORCPT
+	with ESMTP id S932908Ab3KIGwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:28 -0500
+	Sat, 9 Nov 2013 01:52:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.11 18/94] mac80211: update sta->last_rx on acked tx frames
-Date: Fri,  8 Nov 2013 22:51:24 -0800
-Message-Id: <20131109065205.529518492@linuxfoundation.org>
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andy Lutomirski <luto@amacapital.net>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.11 75/94] mm: /proc/pid/pagemap: inspect _PAGE_SOFT_DIRTY only on present pages
+Date: Fri,  8 Nov 2013 22:52:21 -0800
+Message-Id: <20131109065209.559757151@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -27,37 +37,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Cyrill Gorcunov <gorcunov@gmail.com>
 
-commit 0c5b93290b2f3c7a376567c03ae8d385b0e99851 upstream.
+commit e9cdd6e771580e6ff872e5c64e8b766972c7d1bc upstream.
 
-When clients are idle for too long, hostapd sends nullfunc frames for
-probing. When those are acked by the client, the idle time needs to be
-updated.
+If a page we are inspecting is in swap we may occasionally report it as
+having soft dirty bit (even if it is clean).  The pte_soft_dirty helper
+should be called on present pte only.
 
-To make this work (and to avoid unnecessary probing), update sta->last_rx
-whenever an ACK was received for a tx packet. Only do this if the flag
-IEEE80211_HW_REPORTS_TX_ACK_STATUS is set.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/status.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/proc/task_mmu.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/status.c
-+++ b/net/mac80211/status.c
-@@ -180,6 +180,9 @@ static void ieee80211_frame_acked(struct
- 	struct ieee80211_local *local = sta->local;
- 	struct ieee80211_sub_if_data *sdata = sta->sdata;
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -938,6 +938,8 @@ static void pte_to_pagemap_entry(pagemap
+ 		frame = pte_pfn(pte);
+ 		flags = PM_PRESENT;
+ 		page = vm_normal_page(vma, addr, pte);
++		if (pte_soft_dirty(pte))
++			flags2 |= __PM_SOFT_DIRTY;
+ 	} else if (is_swap_pte(pte)) {
+ 		swp_entry_t entry;
+ 		if (pte_swp_soft_dirty(pte))
+@@ -955,8 +957,6 @@ static void pte_to_pagemap_entry(pagemap
  
-+	if (local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)
-+		sta->last_rx = jiffies;
-+
- 	if (ieee80211_is_data_qos(mgmt->frame_control)) {
- 		struct ieee80211_hdr *hdr = (void *) skb->data;
- 		u8 *qc = ieee80211_get_qos_ctl(hdr);
+ 	if (page && !PageAnon(page))
+ 		flags |= PM_FILE;
+-	if (pte_soft_dirty(pte))
+-		flags2 |= __PM_SOFT_DIRTY;
+ 
+ 	*pme = make_pme(PM_PFRAME(frame) | PM_STATUS2(pm->v2, flags2) | flags);
+ }
 
 
