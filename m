@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759138Ab3KIHio (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:38:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32885 "EHLO
+	id S1757237Ab3KIGuP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:50:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32846 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757256Ab3KIGuR (ORCPT
+	with ESMTP id S1756864Ab3KIGuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:17 -0500
+	Sat, 9 Nov 2013 01:50:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 18/74] rtlwifi: rtl8192cu: Fix error in pointer arithmetic
-Date: Fri,  8 Nov 2013 22:51:23 -0800
-Message-Id: <20131109065114.821487109@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 10/74] mac80211: correctly close cancelled scans
+Date: Fri,  8 Nov 2013 22:51:15 -0800
+Message-Id: <20131109065114.220334243@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -28,34 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 9473ca6e920a3b9ca902753ce52833657f9221cc upstream.
+commit a754055a1296fcbe6f32de3a5eaca6efb2fd1865 upstream.
 
-An error in calculating the offset in an skb causes the driver to read
-essential device info from the wrong locations. The main effect is that
-automatic gain calculations are nonsense.
+__ieee80211_scan_completed is called from a worker. This
+means that the following flow is possible.
 
-Signed-off-by: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+ * driver calls ieee80211_scan_completed
+ * mac80211 cancels the scan (that is already complete)
+ * __ieee80211_scan_completed runs
+
+When scan_work will finally run, it will see that the scan
+hasn't been aborted and might even trigger another scan on
+another band. This leads to a situation where cfg80211's
+scan is not done and no further scan can be issued.
+
+Fix this by setting a new flag when a HW scan is being
+cancelled so that no other scan will be triggered.
+
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/trx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/mac80211/ieee80211_i.h |    3 +++
+ net/mac80211/scan.c        |   19 +++++++++++++++++++
+ 2 files changed, 22 insertions(+)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
-@@ -343,7 +343,8 @@ bool rtl92cu_rx_query_desc(struct ieee80
- 					(bool)GET_RX_DESC_PAGGR(pdesc));
- 	rx_status->mactime = GET_RX_DESC_TSFL(pdesc);
- 	if (phystatus) {
--		p_drvinfo = (struct rx_fwinfo_92c *)(pdesc + RTL_RX_DESC_SIZE);
-+		p_drvinfo = (struct rx_fwinfo_92c *)(skb->data +
-+						     stats->rx_bufshift);
- 		rtl92c_translate_rx_signal_stuff(hw, skb, stats, pdesc,
- 						 p_drvinfo);
- 	}
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -842,6 +842,8 @@ struct tpt_led_trigger {
+  *	that the scan completed.
+  * @SCAN_ABORTED: Set for our scan work function when the driver reported
+  *	a scan complete for an aborted scan.
++ * @SCAN_HW_CANCELLED: Set for our scan work function when the scan is being
++ *	cancelled.
+  */
+ enum {
+ 	SCAN_SW_SCANNING,
+@@ -849,6 +851,7 @@ enum {
+ 	SCAN_ONCHANNEL_SCANNING,
+ 	SCAN_COMPLETED,
+ 	SCAN_ABORTED,
++	SCAN_HW_CANCELLED,
+ };
+ 
+ /**
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -202,6 +202,9 @@ static bool ieee80211_prep_hw_scan(struc
+ 	enum ieee80211_band band;
+ 	int i, ielen, n_chans;
+ 
++	if (test_bit(SCAN_HW_CANCELLED, &local->scanning))
++		return false;
++
+ 	do {
+ 		if (local->hw_scan_band == IEEE80211_NUM_BANDS)
+ 			return false;
+@@ -878,7 +881,23 @@ void ieee80211_scan_cancel(struct ieee80
+ 	if (!local->scan_req)
+ 		goto out;
+ 
++	/*
++	 * We have a scan running and the driver already reported completion,
++	 * but the worker hasn't run yet or is stuck on the mutex - mark it as
++	 * cancelled.
++	 */
++	if (test_bit(SCAN_HW_SCANNING, &local->scanning) &&
++	    test_bit(SCAN_COMPLETED, &local->scanning)) {
++		set_bit(SCAN_HW_CANCELLED, &local->scanning);
++		goto out;
++	}
++
+ 	if (test_bit(SCAN_HW_SCANNING, &local->scanning)) {
++		/*
++		 * Make sure that __ieee80211_scan_completed doesn't trigger a
++		 * scan on another band.
++		 */
++		set_bit(SCAN_HW_CANCELLED, &local->scanning);
+ 		if (local->ops->cancel_hw_scan)
+ 			drv_cancel_hw_scan(local,
+ 				rcu_dereference_protected(local->scan_sdata,
 
 
