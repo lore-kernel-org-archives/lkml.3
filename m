@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab3KIHjB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:39:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32876 "EHLO
+	id S932890Ab3KIHjJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:39:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32871 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756864Ab3KIGuQ (ORCPT
+	with ESMTP id S1757173Ab3KIGuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:16 -0500
+	Sat, 9 Nov 2013 01:50:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sven Neumann <s.neumann@raumfeld.com>,
-        Andreas Fenkart <andreas.fenkart@streamunlimited.com>,
-        Daniel Mack <zonque@gmail.com>, Dylan Reid <dgreid@chromium.org>,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        Paul Stewart <pstew@chromium.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 17/74] mwifiex: fix SDIO interrupt lost issue
-Date: Fri,  8 Nov 2013 22:51:22 -0800
-Message-Id: <20131109065114.754076069@linuxfoundation.org>
+        Bruno Randolf <br1@einfach.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 16/74] cfg80211: fix warning when using WEXT for IBSS
+Date: Fri,  8 Nov 2013 22:51:21 -0800
+Message-Id: <20131109065114.687483005@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -31,55 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Bruno Randolf <br1@einfach.org>
 
-commit 453b0c3f6910672f79da354077af728d92f95c5b upstream.
+commit f478f33a93f9353dcd1fe55445343d76b1c3f84a upstream.
 
-601216e "mwifiex: process RX packets in SDIO IRQ thread directly"
-introduced a command timeout issue which can be reproduced easily on
-an AM33xx platform using a test application written by Daniel Mack:
+Fix kernel warning when using WEXT for configuring ad-hoc mode,
+e.g.  "iwconfig wlan0 essid test channel 1"
 
-https://gist.github.com/zonque/6579314
+WARNING: at net/wireless/chan.c:373 cfg80211_chandef_usable+0x50/0x21c [cfg80211]()
 
-mwifiex_main_process() is called from both the SDIO handler and
-the workqueue. In case an interrupt occurs right after the
-int_status check, but before updating the mwifiex_processing flag,
-this interrupt gets lost, resulting in a command timeout and
-consequently a card reset.
+The warning is caused by an uninitialized variable center_freq1.
 
-Let main_proc_lock protect both int_status and mwifiex_processing
-flag. This fixes the interrupt lost issue.
-
-Reported-by: Sven Neumann <s.neumann@raumfeld.com>
-Reported-by: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
-Tested-by: Daniel Mack <zonque@gmail.com>
-Reviewed-by: Dylan Reid <dgreid@chromium.org>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: Paul Stewart <pstew@chromium.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Bruno Randolf <br1@einfach.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/main.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/wireless/ibss.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/wireless/mwifiex/main.c
-+++ b/drivers/net/wireless/mwifiex/main.c
-@@ -270,10 +270,12 @@ process_start:
- 		}
- 	} while (true);
+--- a/net/wireless/ibss.c
++++ b/net/wireless/ibss.c
+@@ -269,6 +269,8 @@ int cfg80211_ibss_wext_join(struct cfg80
+ 				if (chan->flags & IEEE80211_CHAN_DISABLED)
+ 					continue;
+ 				wdev->wext.ibss.chandef.chan = chan;
++				wdev->wext.ibss.chandef.center_freq1 =
++					chan->center_freq;
+ 				break;
+ 			}
  
--	if ((adapter->int_status) || IS_CARD_RX_RCVD(adapter))
-+	spin_lock_irqsave(&adapter->main_proc_lock, flags);
-+	if ((adapter->int_status) || IS_CARD_RX_RCVD(adapter)) {
-+		spin_unlock_irqrestore(&adapter->main_proc_lock, flags);
- 		goto process_start;
-+	}
- 
--	spin_lock_irqsave(&adapter->main_proc_lock, flags);
- 	adapter->mwifiex_processing = false;
- 	spin_unlock_irqrestore(&adapter->main_proc_lock, flags);
- 
+@@ -353,6 +355,7 @@ int cfg80211_ibss_wext_siwfreq(struct ne
+ 	if (chan) {
+ 		wdev->wext.ibss.chandef.chan = chan;
+ 		wdev->wext.ibss.chandef.width = NL80211_CHAN_WIDTH_20_NOHT;
++		wdev->wext.ibss.chandef.center_freq1 = freq;
+ 		wdev->wext.ibss.channel_fixed = true;
+ 	} else {
+ 		/* cfg80211_ibss_wext_join will pick one if needed */
 
 
