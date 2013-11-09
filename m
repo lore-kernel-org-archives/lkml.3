@@ -1,46 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab3KIBO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 20:14:57 -0500
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:64281 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758107Ab3KIBOp (ORCPT
+	id S1758320Ab3KIBQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 20:16:13 -0500
+Received: from x.mailservicemail.com ([199.255.114.3]:37155 "EHLO
+	ecelserver-b.rallypointpro.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1757955Ab3KIBQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 20:14:45 -0500
+	Fri, 8 Nov 2013 20:16:07 -0500
+X-Mailer: Networx Mail 1.2.2
+Date: Fri, 8 Nov 2013 19:15:57 -0600 (CST)
+From: "Joseph  M. Martin" <josephmartin@mypowersystem.com>
+Reply-To: Joseph Martin <joemartin55@outlook.com>
+Message-ID: <81852910.3170396.1383959757150.JavaMail.root@mypowersystem.com>
+In-Reply-To: <460108467.3170385.1383959715426.JavaMail.root@mypowersystem.com>
+Subject: From: Joseph
 MIME-Version: 1.0
-Date: Fri, 8 Nov 2013 19:14:45 -0600
-Message-ID: <CAA_L7Z5NYpUf3YE0oWqMEmDmWCFLxybY55BT-+gVe4HWNvMR3A@mail.gmail.com>
-Subject: [PATCH 2/2] dell-wmi.c: Added support for the monitor hotkey present
- on laptops like the Dell N4110
-From: Souvik Banerjee <souvik1997@gmail.com>
-To: matthew.garrett@nebula.com, Matthew Garrett <mjg59@srcf.ucam.org>,
-        torvalds@linux-foundation.org
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.215.162.20]
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for the monitor switching hotkey on laptops such as the N4110.
+I am a US Army officer currently on military assignment in Iraq, I humbly ask of your assistance secure and invest some money for me in your country. As a matter of fact, I have the sum of US$5 Million which I would like you to help me to invest. 
+I will appreciate it if you can assist me urgently in securing and investing the money in your country pending when I will disengage from my military assignment. I promise to compensate you with 10% of the funds for your assistance while hoping that you assist me as soon as possible. I await your urgent response. 
+Best regards 
+Joseph Martin 
 
-Signed-off-by: Souvik Banerjee <souvik1997@gmail.com>
----
- drivers/platform/x86/dell-wmi.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/platform/x86/dell-wmi.c b/drivers/platform/x86/dell-wmi.c
-index 5adb60a..a880183 100644
---- a/drivers/platform/x86/dell-wmi.c
-+++ b/drivers/platform/x86/dell-wmi.c
-@@ -92,6 +92,8 @@ static const struct key_entry
-dell_wmi_legacy_keymap[] __initconst = {
-         { KE_IGNORE, 0xe025, { KEY_RESERVED } },
-         { KE_IGNORE, 0xe026, { KEY_RESERVED } },
-
-+        /* For laptops like the Dell Inspiron N4110 with a monitor hotkey */
-+        { KE_KEY, 0xe027, { KEY_SWITCHVIDEOMODE } },
-         { KE_IGNORE, 0xe02e, { KEY_VOLUMEDOWN } },
-         { KE_IGNORE, 0xe030, { KEY_VOLUMEUP } },
-         { KE_IGNORE, 0xe033, { KEY_KBDILLUMUP } },
---
-1.8.4.1
