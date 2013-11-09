@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051Ab3KICDR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Nov 2013 21:03:17 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:45784 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757309Ab3KICDP (ORCPT
+	id S1758184Ab3KICR4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Nov 2013 21:17:56 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:48766 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757939Ab3KICRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Nov 2013 21:03:15 -0500
-Date: Fri, 8 Nov 2013 18:02:33 -0800
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org
-Cc: linux-kernel@vger.kernel.org, Maynard Johnson <mpjohn@us.ibm.com>
-Subject: [RFC][PATCH] Fix inhert with perf record --pid
-Message-ID: <20131109020233.GA10009@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110902-8236-0000-0000-000003998BD7
+	Fri, 8 Nov 2013 21:17:52 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>
+Subject: [PATCH] MAINTAINERS: Add entry for Samsung SoC clock drivers
+Date: Sat,  9 Nov 2013 03:17:34 +0100
+Message-Id: <1383963454-2749-1-git-send-email-tomasz.figa@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Tomasz Figa <t.figa@samsung.com>
 
-A gently tested RFC patch...
+This patch adds an entry for Samsung SoC clock drivers located under
+drivers/clk/samsung/ directory, with me taking the maintainer role.
+
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: Mike Turquette <mturquette@linaro.org>
+Acked-by: Sachin Kamat <sachin.kamat@linaro.org>
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 ---
+ MAINTAINERS | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-
->From 38554891fc41082b767f24ce3293658f7329a691 Mon Sep 17 00:00:00 2001
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Date: Fri, 8 Nov 2013 17:14:06 -0800
-Subject: [PATCH] Fix inhert with perf record --pid
-
-If a target process is identified by its pid:
-
-	perf record --pid 1234
-
-perf record does not follow any _newly_ created children of the
-process. perf_evlist__config() clears the ->inherit flag.
-
-        if (evlist->cpus->map[0] < 0)
-		opts->no_inherit = true;
-
-It can be fixed and descendants can be followed, by this change
-below, but is this behavior by design ?
-
-We do follow the children if the same process is started by perf:
-
-	perf record ./a.out
-
-This was reported by Maynard Johnson <mpjohn@us.ibm.com>
-
-On a related note, perf_target__validate() has this:
-
-        /* CPU and PID are mutually exclusive */
-        if (target->tid && target->cpu_list) {
-                target->cpu_list = NULL;
-                if (ret == PERF_ERRNO_TARGET__SUCCESS)
-                        ret = PERF_ERRNO_TARGET__PID_OVERRIDE_CPU;
-        }
-
-Again, its not clear why pid and cpu are exclusive in this case:
-
-	perf record --pid 1234 -C 0,1,2
-
-The system call allows the both pid and cpu to be specified.
-
-Looking at commit, I see that this check was pulled in from builtin-top.c.
-
-	commit 4bd0f2d2c0cf14de9c84c2fe689120c6b0f667c8
-	Author: Namhyung Kim <namhyung.kim@lge.com>
-	Date:   Thu Apr 26 14:15:18 2012 +0900
-
-Does that check apply to 'perf record' or only 'perf top' ?
-
-Appreciate any comments.
-
----
- tools/perf/util/evlist.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index e584cd3..c81d01a 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -742,7 +742,7 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
- 		return -1;
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 61b8757..df7e1bf 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7319,6 +7319,12 @@ L:	linux-media@vger.kernel.org
+ S:	Supported
+ F:	drivers/media/i2c/s5c73m3/*
  
- 	if (perf_target__has_task(target))
--		evlist->cpus = cpu_map__dummy_new();
-+		evlist->cpus = cpu_map__new(target->cpu_list);
- 	else if (!perf_target__has_cpu(target) && !target->uses_mmap)
- 		evlist->cpus = cpu_map__dummy_new();
- 	else
++SAMSUNG SOC CLOCK DRIVERS
++M:	Tomasz Figa <t.figa@samsung.com>
++S:	Supported
++L:	linux-samsung-soc@vger.kernel.org (moderated for non-subscribers)
++F:	drivers/clk/samsung/
++
+ SERIAL DRIVERS
+ M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ L:	linux-serial@vger.kernel.org
 -- 
-1.7.1
+1.8.4.2
 
