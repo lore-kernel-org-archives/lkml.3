@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933429Ab3KIHkZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:40:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32859 "EHLO
+	id S933506Ab3KIHky (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:40:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32855 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756976Ab3KIGuM (ORCPT
+	with ESMTP id S1756907Ab3KIGuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:12 -0500
+	Sat, 9 Nov 2013 01:50:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Felix Fietkau <nbd@openwrt.org>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 13/74] mac80211: update sta->last_rx on acked tx frames
-Date: Fri,  8 Nov 2013 22:51:18 -0800
-Message-Id: <20131109065114.485793211@linuxfoundation.org>
+Subject: [PATCH 3.10 12/74] mac80211: use sta_info_get_bss() for nl80211 tx and client probing
+Date: Fri,  8 Nov 2013 22:51:17 -0800
+Message-Id: <20131109065114.411501357@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -29,35 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Felix Fietkau <nbd@openwrt.org>
 
-commit 0c5b93290b2f3c7a376567c03ae8d385b0e99851 upstream.
+commit 03bb7f42765ce596604f03d179f3137d7df05bba upstream.
 
-When clients are idle for too long, hostapd sends nullfunc frames for
-probing. When those are acked by the client, the idle time needs to be
-updated.
-
-To make this work (and to avoid unnecessary probing), update sta->last_rx
-whenever an ACK was received for a tx packet. Only do this if the flag
-IEEE80211_HW_REPORTS_TX_ACK_STATUS is set.
+This allows calls for clients in AP_VLANs (e.g. for 4-addr) to succeed
 
 Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/status.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/mac80211/cfg.c |    2 +-
+ net/mac80211/tx.c  |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/status.c
-+++ b/net/mac80211/status.c
-@@ -180,6 +180,9 @@ static void ieee80211_frame_acked(struct
- 	struct ieee80211_local *local = sta->local;
- 	struct ieee80211_sub_if_data *sdata = sta->sdata;
- 
-+	if (local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)
-+		sta->last_rx = jiffies;
-+
- 	if (ieee80211_is_data_qos(mgmt->frame_control)) {
- 		struct ieee80211_hdr *hdr = (void *) skb->data;
- 		u8 *qc = ieee80211_get_qos_ctl(hdr);
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -3315,7 +3315,7 @@ static int ieee80211_probe_client(struct
+ 		return -EINVAL;
+ 	}
+ 	band = chanctx_conf->def.chan->band;
+-	sta = sta_info_get(sdata, peer);
++	sta = sta_info_get_bss(sdata, peer);
+ 	if (sta) {
+ 		qos = test_sta_flag(sta, WLAN_STA_WME);
+ 	} else {
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1100,7 +1100,8 @@ ieee80211_tx_prepare(struct ieee80211_su
+ 		tx->sta = rcu_dereference(sdata->u.vlan.sta);
+ 		if (!tx->sta && sdata->dev->ieee80211_ptr->use_4addr)
+ 			return TX_DROP;
+-	} else if (info->flags & IEEE80211_TX_CTL_INJECTED ||
++	} else if (info->flags & (IEEE80211_TX_CTL_INJECTED |
++				  IEEE80211_TX_INTFL_NL80211_FRAME_TX) ||
+ 		   tx->sdata->control_port_protocol == tx->skb->protocol) {
+ 		tx->sta = sta_info_get_bss(sdata, hdr->addr1);
+ 	}
 
 
