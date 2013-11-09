@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170Ab3KIHGk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:06:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33375 "EHLO
+	id S933196Ab3KIHG6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:06:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33365 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932797Ab3KIGwQ (ORCPT
+	with ESMTP id S932791Ab3KIGwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:16 -0500
+	Sat, 9 Nov 2013 01:52:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.11 49/94] ARC: Incorrect mm reference used in vmalloc fault handler
-Date: Fri,  8 Nov 2013 22:51:55 -0800
-Message-Id: <20131109065207.739852448@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>
+Subject: [PATCH 3.11 47/94] parisc: Do not crash 64bit SMP kernels on machines with >= 4GB RAM
+Date: Fri,  8 Nov 2013 22:51:53 -0800
+Message-Id: <20131109065207.532296707@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -29,65 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+From: Helge Deller <deller@gmx.de>
 
-commit 9c41f4eeb9d51f3ece20428d35a3ea32cf3b5622 upstream.
+commit 54e181e073fc1415e41917d725ebdbd7de956455 upstream.
 
-A vmalloc fault needs to sync up PGD/PTE entry from init_mm to current
-task's "active_mm".  ARC vmalloc fault handler however was using mm.
+Since the beginning of the parisc-linux port, sometimes 64bit SMP kernels were
+not able to bring up other CPUs than the monarch CPU and instead crashed the
+kernel.  The reason was unclear, esp. since it involved various machines (e.g.
+J5600, J6750 and SuperDome). Testing showed, that those crashes didn't happened
+when less than 4GB were installed, or if a 32bit Linux kernel was booted.
 
-A vmalloc fault for non user task context (actually pre-userland, from
-init thread's open for /dev/console) caused the handler to deref NULL mm
-(for mm->pgd)
+In the end, the fix for those SMP problems is trivial:
+During the early phase of the initialization of the CPUs, including the monarch
+CPU, the PDC_PSW firmware function to enable WIDE (=64bit) mode is called.
+It's documented that this firmware function may clobber various registers, and
+one one of those possibly clobbered registers is %cr30 which holds the task
+thread info pointer.
 
-The reasons it worked so far is amazing:
+Now, if %cr30 would always have been clobbered, then this bug would have been
+detected much earlier. But lots of testing finally showed, that - at least for
+%cr30 - on some machines only the upper 32bits of the 64bit register suddenly
+turned zero after the firmware call.
 
-1. By default (!SMP), vmalloc fault handler uses a cached value of PGD.
-   In SMP that MMU register is repurposed hence need for mm pointer deref.
+So, after finding the root cause, the explanation for the various crashes
+became clear:
+- On 32bit SMP Linux kernels all upper 32bit were zero, so we didn't faced this
+  problem.
+- Monarch CPUs in 64bit mode always booted sucessfully, because the inital task
+  thread info pointer was below 4GB.
+- Secondary CPUs booted sucessfully on machines with less than 4GB RAM because
+  the upper 32bit were zero anyay.
+- Secondary CPus failed to boot if we had more than 4GB RAM and the task thread
+  info pointer was located above the 4GB boundary.
 
-2. In pre-3.12 SMP kernel, the problem triggering vmalloc didn't exist in
-   pre-userland code path - it was introduced with commit 20bafb3d23d108bc
-   "n_tty: Move buffers into n_tty_data"
+Finally, the patch to fix this problem is trivial by saving the %cr30 register
+before the firmware call and restoring it afterwards.
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Noam Camus <noamc@ezchip.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/mm/fault.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/parisc/kernel/head.S |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/arc/mm/fault.c
-+++ b/arch/arc/mm/fault.c
-@@ -17,7 +17,7 @@
- #include <asm/pgalloc.h>
- #include <asm/mmu.h>
+--- a/arch/parisc/kernel/head.S
++++ b/arch/parisc/kernel/head.S
+@@ -195,6 +195,8 @@ common_stext:
+ 	ldw             MEM_PDC_HI(%r0),%r6
+ 	depd            %r6, 31, 32, %r3        /* move to upper word */
  
--static int handle_vmalloc_fault(struct mm_struct *mm, unsigned long address)
-+static int handle_vmalloc_fault(unsigned long address)
- {
- 	/*
- 	 * Synchronize this task's top level page-table
-@@ -27,7 +27,7 @@ static int handle_vmalloc_fault(struct m
- 	pud_t *pud, *pud_k;
- 	pmd_t *pmd, *pmd_k;
++	mfctl		%cr30,%r6		/* PCX-W2 firmware bug */
++
+ 	ldo             PDC_PSW(%r0),%arg0              /* 21 */
+ 	ldo             PDC_PSW_SET_DEFAULTS(%r0),%arg1 /* 2 */
+ 	ldo             PDC_PSW_WIDE_BIT(%r0),%arg2     /* 2 */
+@@ -203,6 +205,8 @@ common_stext:
+ 	copy            %r0,%arg3
  
--	pgd = pgd_offset_fast(mm, address);
-+	pgd = pgd_offset_fast(current->active_mm, address);
- 	pgd_k = pgd_offset_k(address);
- 
- 	if (!pgd_present(*pgd_k))
-@@ -73,7 +73,7 @@ void do_page_fault(struct pt_regs *regs,
- 	 * nothing more.
- 	 */
- 	if (address >= VMALLOC_START && address <= VMALLOC_END) {
--		ret = handle_vmalloc_fault(mm, address);
-+		ret = handle_vmalloc_fault(address);
- 		if (unlikely(ret))
- 			goto bad_area_nosemaphore;
- 		else
+ stext_pdc_ret:
++	mtctl		%r6,%cr30		/* restore task thread info */
++
+ 	/* restore rfi target address*/
+ 	ldd             TI_TASK-THREAD_SZ_ALGN(%sp), %r10
+ 	tophys_r1       %r10
 
 
