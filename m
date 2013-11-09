@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009Ab3KIQB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 11:01:26 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40302 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310Ab3KIQBY (ORCPT
+	id S1754047Ab3KIQII (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 11:08:08 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:42844 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753256Ab3KIQIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 11:01:24 -0500
-Date: Sat, 9 Nov 2013 17:01:20 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Ingo Molnar <mingo@kernel.org>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch v5 0/9] liblockdep: userspace lockdep
-Message-ID: <20131109160120.GD4971@laptop.programming.kicks-ass.net>
-References: <20130626122408.GJ28407@twins.programming.kicks-ass.net>
- <20130626155325.GB7399@gmail.com>
- <51CB4328.7010006@oracle.com>
- <20130627090722.GC4398@gmail.com>
- <51CC4461.50207@oracle.com>
- <51DA127E.3040706@oracle.com>
- <20130708083914.GB3948@gmail.com>
- <5231FCA1.4090803@oracle.com>
- <20130912180120.GB32511@gmail.com>
- <527D1992.9000209@oracle.com>
+	Sat, 9 Nov 2013 11:08:04 -0500
+Date: Sat, 9 Nov 2013 08:10:30 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 50/74] uio: provide vm access to UIO_MEM_PHYS maps
+Message-ID: <20131109161030.GA22695@kroah.com>
+References: <20131109065113.502217951@linuxfoundation.org>
+ <20131109065117.016923315@linuxfoundation.org>
+ <20131109142216.GB14892@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <527D1992.9000209@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131109142216.GB14892@pengutronix.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 12:04:18PM -0500, Sasha Levin wrote:
+On Sat, Nov 09, 2013 at 03:22:16PM +0100, Uwe Kleine-König wrote:
+> On Fri, Nov 08, 2013 at 10:51:55PM -0800, Greg Kroah-Hartman wrote:
+> > 3.10-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > 
+> > commit 7294151d0592e0ff48c61fca9fd7c93d613134da upstream.
+> > 
+> > This makes it possible to let gdb access mappings of the process that is
+> > being debugged.
+> > 
+> > uio_mmap_logical was moved and uio_vm_ops renamed to group related code
+> > and differentiate to new stuff.
+> I wonder why you picked that one for stable?!
 
-> >
-> >* Sasha Levin <sasha.levin@oracle.com> wrote:
-> >
-> >>On 07/08/2013 04:39 AM, Ingo Molnar wrote:
-> >>>
-> >>>* Sasha Levin <sasha.levin@oracle.com> wrote:
-> >>>
-> >>>>>>The other issue is that with lock classes disabled you have to hit an
-> >>>>>>actual deadlock to trigger any output.
-> >>>>>>
-> >>>>>>I.e. much of the power of lockdep is diminished :-/ When actual
-> >>>>>>deadlocks are triggered then it's not particularly complex to debug
-> >>>>>>user-space apps: gdb the hung task(s) and look at the backtraces.
-> >>>>>
-> >>>>>Lock classes are disabled only if you're using the LD_PRELOAD method
-> >>>>>of testing. If you actually re-compile your code with the library (by
-> >>>>>just including the header and setting a #define to enable it) you will
-> >>>>>have lock classes.
-> >>>>
-> >>>>Hi Ingo,
-> >>>>
-> >>>>Just wondering if you're planning on pushing it over to Linus from your
-> >>>>tree, or should I go ahead and do it on my own?
-> >>>
-> >>>PeterZ is in favor as well so I'll apply them after the merge window, for
-> >>>v3.12.
-> >>
-> >>Hi Ingo,
-> >>
-> >>Do you intend to send liblockdep in this merge window as planned?
-> >
-> >If Peter agrees with them and picks them up then the next merge window
-> >would be fine I guess.
-> 
-> Ping? Anyone?
+Because of a bugfix in a later patch that requires this one...
 
-Urgh, I missed Ingo throwing the ball back in my court.. sorry about
-that. I'll have a look on Monday.
+thanks,
+
+greg k-h
