@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933449Ab3KIHNS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:13:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33309 "EHLO
+	id S933437Ab3KIHNP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:13:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33294 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932737Ab3KIGwB (ORCPT
+	with ESMTP id S932741Ab3KIGwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:01 -0500
+	Sat, 9 Nov 2013 01:52:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shaohua Li <shli@fusionio.com>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.11 36/94] raid5: avoid finding "discard" stripe
-Date: Fri,  8 Nov 2013 22:51:42 -0800
-Message-Id: <20131109065206.788259621@linuxfoundation.org>
+        Gwendal Grignou <gwendal@google.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.11 37/94] libata: make ata_eh_qc_retry() bump scmd->allowed on bogus failures
+Date: Fri,  8 Nov 2013 22:51:43 -0800
+Message-Id: <20131109065206.855866010@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -26,41 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shaohua Li <shli@kernel.org>
+From: Gwendal Grignou <gwendal@google.com>
 
-commit d47648fcf0611812286f68131b40251c6fa54f5e upstream.
+commit f13e220161e738c2710b9904dcb3cf8bb0bcce61 upstream.
 
-SCSI discard will damage discard stripe bio setting, eg, some fields are
-changed. If the stripe is reused very soon, we have wrong bios setting. We
-remove discard stripe from hash list, so next time the strip will be fully
-initialized.
+libata EH decrements scmd->retries when the command failed for reasons
+unrelated to the command itself so that, for example, commands aborted
+due to suspend / resume cycle don't get penalized; however,
+decrementing scmd->retries isn't enough for ATA passthrough commands.
 
-Suitable for backport to 3.7+.
+Without this fix, ATA passthrough commands are not resend to the
+drive, and no error is signalled to the caller because:
 
-Signed-off-by: Shaohua Li <shli@fusionio.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+- allowed retry count is 1
+- ata_eh_qc_complete fill the sense data, so result is valid
+- sense data is filled with untouched ATA registers.
+
+Signed-off-by: Gwendal Grignou <gwendal@google.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid5.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/ata/libata-eh.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -2812,6 +2812,14 @@ static void handle_stripe_clean_event(st
- 		}
- 		/* now that discard is done we can proceed with any sync */
- 		clear_bit(STRIPE_DISCARD, &sh->state);
-+		/*
-+		 * SCSI discard will change some bio fields and the stripe has
-+		 * no updated data, so remove it from hash list and the stripe
-+		 * will be reinitialized
-+		 */
-+		spin_lock_irq(&conf->device_lock);
-+		remove_hash(sh);
-+		spin_unlock_irq(&conf->device_lock);
- 		if (test_bit(STRIPE_SYNC_REQUESTED, &sh->state))
- 			set_bit(STRIPE_HANDLE, &sh->state);
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -1322,14 +1322,14 @@ void ata_eh_qc_complete(struct ata_queue
+  *	should be retried.  To be used from EH.
+  *
+  *	SCSI midlayer limits the number of retries to scmd->allowed.
+- *	scmd->retries is decremented for commands which get retried
++ *	scmd->allowed is incremented for commands which get retried
+  *	due to unrelated failures (qc->err_mask is zero).
+  */
+ void ata_eh_qc_retry(struct ata_queued_cmd *qc)
+ {
+ 	struct scsi_cmnd *scmd = qc->scsicmd;
+-	if (!qc->err_mask && scmd->retries)
+-		scmd->retries--;
++	if (!qc->err_mask)
++		scmd->allowed++;
+ 	__ata_eh_qc_complete(qc);
+ }
  
 
 
