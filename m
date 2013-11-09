@@ -1,35 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933208Ab3KIHHc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:07:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33358 "EHLO
+	id S933221Ab3KIHHh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:07:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33350 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932788Ab3KIGwM (ORCPT
+	with ESMTP id S932785Ab3KIGwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:12 -0500
+	Sat, 9 Nov 2013 01:52:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Marc Pignat <marc.pignat@hevs.ch>,
-        Ronald Wahl <ronald.wahl@raritan.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        nicolas.ferre@atmel.com, john.stultz@linaro.org, kernel@pengutronix.de
-Subject: [PATCH 3.11 46/94] clockevents: Sanitize ticks to nsec conversion
-Date: Fri,  8 Nov 2013 22:51:52 -0800
-Message-Id: <20131109065207.464151098@linuxfoundation.org>
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.11 45/94] vhost/scsi: Fix incorrect usage of get_user_pages_fast write parameter
+Date: Fri,  8 Nov 2013 22:51:51 -0800
+Message-Id: <20131109065207.395868320@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -38,162 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 97b9410643475d6557d2517c2aff9fd2221141a9 upstream.
+commit 60a01f558af9c48b0bb31f303c479e32721add3f upstream.
 
-Marc Kleine-Budde pointed out, that commit 77cc982 "clocksource: use
-clockevents_config_and_register() where possible" caused a regression
-for some of the converted subarchs.
+This patch addresses a long-standing bug where the get_user_pages_fast()
+write parameter used for setting the underlying page table entry permission
+bits was incorrectly set to write=1 for data_direction=DMA_TO_DEVICE, and
+passed into get_user_pages_fast() via vhost_scsi_map_iov_to_sgl().
 
-The reason is, that the clockevents core code converts the minimal
-hardware tick delta to a nanosecond value for core internal
-usage. This conversion is affected by integer math rounding loss, so
-the backwards conversion to hardware ticks will likely result in a
-value which is less than the configured hardware limitation. The
-affected subarchs used their own workaround (SIGH!) which got lost in
-the conversion.
+However, this parameter is intended to signal WRITEs to pinned userspace
+PTEs for the virtio-scsi DMA_FROM_DEVICE -> READ payload case, and *not*
+for the virtio-scsi DMA_TO_DEVICE -> WRITE payload case.
 
-The solution for the issue at hand is simple: adding evt->mult - 1 to
-the shifted value before the integer divison in the core conversion
-function takes care of it. But this only works for the case where for
-the scaled math mult/shift pair "mult <= 1 << shift" is true. For the
-case where "mult > 1 << shift" we can apply the rounding add only for
-the minimum delta value to make sure that the backward conversion is
-not less than the given hardware limit. For the upper bound we need to
-omit the rounding add, because the backwards conversion is always
-larger than the original latch value. That would violate the upper
-bound of the hardware device.
+This bug would manifest itself as random process segmentation faults on
+KVM host after repeated vhost starts + stops and/or with lots of vhost
+endpoints + LUNs.
 
-Though looking closer at the details of that function reveals another
-bogosity: The upper bounds check is broken as well. Checking for a
-resulting "clc" value greater than KTIME_MAX after the conversion is
-pointless. The conversion does:
-
-      u64 clc = (latch << evt->shift) / evt->mult;
-
-So there is no sanity check for (latch << evt->shift) exceeding the
-64bit boundary. The latch argument is "unsigned long", so on a 64bit
-arch the handed in argument could easily lead to an unnoticed shift
-overflow. With the above rounding fix applied the calculation before
-the divison is:
-
-       u64 clc = (latch << evt->shift) + evt->mult - 1;
-
-So we need to make sure, that neither the shift nor the rounding add
-is overflowing the u64 boundary.
-
-[ukl: move assignment to rnd after eventually changing mult, fix build
- issue and correct comment with the right math]
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: nicolas.ferre@atmel.com
-Cc: Marc Pignat <marc.pignat@hevs.ch>
-Cc: john.stultz@linaro.org
-Cc: kernel@pengutronix.de
-Cc: Ronald Wahl <ronald.wahl@raritan.com>
-Cc: LAK <linux-arm-kernel@lists.infradead.org>
-Cc: Ludovic Desroches <ludovic.desroches@atmel.com>
-Link: http://lkml.kernel.org/r/1380052223-24139-1-git-send-email-u.kleine-koenig@pengutronix.de
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Cc: Stefan Hajnoczi <stefanha@redhat.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Asias He <asias@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/clockevents.c |   65 +++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 50 insertions(+), 15 deletions(-)
+ drivers/vhost/scsi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -33,29 +33,64 @@ struct ce_unbind {
- 	int res;
- };
- 
--/**
-- * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
-- * @latch:	value to convert
-- * @evt:	pointer to clock event device descriptor
-- *
-- * Math helper, returns latch value converted to nanoseconds (bound checked)
-- */
--u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
-+static u64 cev_delta2ns(unsigned long latch, struct clock_event_device *evt,
-+			bool ismax)
- {
- 	u64 clc = (u64) latch << evt->shift;
-+	u64 rnd;
- 
- 	if (unlikely(!evt->mult)) {
- 		evt->mult = 1;
- 		WARN_ON(1);
- 	}
-+	rnd = (u64) evt->mult - 1;
-+
-+	/*
-+	 * Upper bound sanity check. If the backwards conversion is
-+	 * not equal latch, we know that the above shift overflowed.
-+	 */
-+	if ((clc >> evt->shift) != (u64)latch)
-+		clc = ~0ULL;
-+
-+	/*
-+	 * Scaled math oddities:
-+	 *
-+	 * For mult <= (1 << shift) we can safely add mult - 1 to
-+	 * prevent integer rounding loss. So the backwards conversion
-+	 * from nsec to device ticks will be correct.
-+	 *
-+	 * For mult > (1 << shift), i.e. device frequency is > 1GHz we
-+	 * need to be careful. Adding mult - 1 will result in a value
-+	 * which when converted back to device ticks can be larger
-+	 * than latch by up to (mult - 1) >> shift. For the min_delta
-+	 * calculation we still want to apply this in order to stay
-+	 * above the minimum device ticks limit. For the upper limit
-+	 * we would end up with a latch value larger than the upper
-+	 * limit of the device, so we omit the add to stay below the
-+	 * device upper boundary.
-+	 *
-+	 * Also omit the add if it would overflow the u64 boundary.
-+	 */
-+	if ((~0ULL - clc > rnd) &&
-+	    (!ismax || evt->mult <= (1U << evt->shift)))
-+		clc += rnd;
- 
- 	do_div(clc, evt->mult);
--	if (clc < 1000)
--		clc = 1000;
--	if (clc > KTIME_MAX)
--		clc = KTIME_MAX;
- 
--	return clc;
-+	/* Deltas less than 1usec are pointless noise */
-+	return clc > 1000 ? clc : 1000;
-+}
-+
-+/**
-+ * clockevents_delta2ns - Convert a latch value (device ticks) to nanoseconds
-+ * @latch:	value to convert
-+ * @evt:	pointer to clock event device descriptor
-+ *
-+ * Math helper, returns latch value converted to nanoseconds (bound checked)
-+ */
-+u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
-+{
-+	return cev_delta2ns(latch, evt, false);
- }
- EXPORT_SYMBOL_GPL(clockevent_delta2ns);
- 
-@@ -380,8 +415,8 @@ void clockevents_config(struct clock_eve
- 		sec = 600;
- 
- 	clockevents_calc_mult_shift(dev, freq, sec);
--	dev->min_delta_ns = clockevent_delta2ns(dev->min_delta_ticks, dev);
--	dev->max_delta_ns = clockevent_delta2ns(dev->max_delta_ticks, dev);
-+	dev->min_delta_ns = cev_delta2ns(dev->min_delta_ticks, dev, false);
-+	dev->max_delta_ns = cev_delta2ns(dev->max_delta_ticks, dev, true);
- }
- 
- /**
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -1030,7 +1030,7 @@ vhost_scsi_handle_vq(struct vhost_scsi *
+ 		if (data_direction != DMA_NONE) {
+ 			ret = vhost_scsi_map_iov_to_sgl(cmd,
+ 					&vq->iov[data_first], data_num,
+-					data_direction == DMA_TO_DEVICE);
++					data_direction == DMA_FROM_DEVICE);
+ 			if (unlikely(ret)) {
+ 				vq_err(vq, "Failed to map iov to sgl\n");
+ 				goto err_free;
 
 
