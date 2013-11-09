@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933064Ab3KIHD4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:03:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33432 "EHLO
+	id S933080Ab3KIHES (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:04:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33420 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932856Ab3KIGw3 (ORCPT
+	with ESMTP id S932841Ab3KIGw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:29 -0500
+	Sat, 9 Nov 2013 01:52:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Lindroth <thomas.lindroth@gmail.com>,
+        Thomas Huehn <thomas@net.t-labs.tu-berlin.de>,
+        Felix Fietkau <nbd@openwrt.org>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.11 19/94] mac80211: fix crash if bitrate calculation goes wrong
-Date: Fri,  8 Nov 2013 22:51:25 -0800
-Message-Id: <20131109065205.601348120@linuxfoundation.org>
+Subject: [PATCH 3.11 16/94] mac80211: drop spoofed packets in ad-hoc mode
+Date: Fri,  8 Nov 2013 22:51:22 -0800
+Message-Id: <20131109065205.394035755@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -27,36 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit d86aa4f8ca58898ec6a94c0635da20b948171ed7 upstream.
+commit 6329b8d917adc077caa60c2447385554130853a3 upstream.
 
-If a frame's timestamp is calculated, and the bitrate
-calculation goes wrong and returns zero, the system
-will attempt to divide by zero and crash. Catch this
-case and print the rate information that the driver
-reported when this happens.
+If an Ad-Hoc node receives packets with the Cell ID or its own MAC
+address as source address, it hits a WARN_ON in sta_info_insert_check()
+With many packets, this can massively spam the logs. One way that this
+can easily happen is through having Cisco APs in the area with rouge AP
+detection and countermeasures enabled.
+Such Cisco APs will regularly send fake beacons, disassoc and deauth
+packets that trigger these warnings.
 
-Reported-by: Thomas Lindroth <thomas.lindroth@gmail.com>
+To fix this issue, drop such spoofed packets early in the rx path.
+
+Reported-by: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/util.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/mac80211/rx.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/mac80211/util.c
-+++ b/net/mac80211/util.c
-@@ -2155,6 +2155,10 @@ u64 ieee80211_calculate_rx_timestamp(str
- 	}
- 
- 	rate = cfg80211_calculate_bitrate(&ri);
-+	if (WARN_ONCE(!rate,
-+		      "Invalid bitrate: flags=0x%x, idx=%d, vht_nss=%d\n",
-+		      status->flag, status->rate_idx, status->vht_nss))
-+		return 0;
- 
- 	/* rewind from end of MPDU */
- 	if (status->flag & RX_FLAG_MACTIME_END)
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -3014,6 +3014,9 @@ static int prepare_for_handlers(struct i
+ 	case NL80211_IFTYPE_ADHOC:
+ 		if (!bssid)
+ 			return 0;
++		if (ether_addr_equal(sdata->vif.addr, hdr->addr2) ||
++		    ether_addr_equal(sdata->u.ibss.bssid, hdr->addr2))
++			return 0;
+ 		if (ieee80211_is_beacon(hdr->frame_control)) {
+ 			return 1;
+ 		} else if (!ieee80211_bssid_match(bssid, sdata->u.ibss.bssid)) {
 
 
