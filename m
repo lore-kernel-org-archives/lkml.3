@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933808Ab3KIHa7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:30:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32998 "EHLO
+	id S933796Ab3KIHa5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:30:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33002 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932235Ab3KIGuy (ORCPT
+	with ESMTP id S932236Ab3KIGuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:54 -0500
+	Sat, 9 Nov 2013 01:50:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick Bartels <petzicus@googlemail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 07/74] cpufreq / intel_pstate: Fix max_perf_pct on resume
-Date: Fri,  8 Nov 2013 22:51:12 -0800
-Message-Id: <20131109065114.016539898@linuxfoundation.org>
+        Kent Overstreet <kmo@daterainc.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 08/74] bcache: Fixed incorrect order of arguments to bio_alloc_bioset()
+Date: Fri,  8 Nov 2013 22:51:13 -0800
+Message-Id: <20131109065114.083757826@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -28,47 +27,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Kent Overstreet <kmo@daterainc.com>
 
-commit 52e0a509e5d6f902ec26bc2a8bb02b137dc453be upstream.
+commit d4eddd42f592a0cf06818fae694a3d271f842e4d upstream.
 
-If the system is suspended while max_perf_pct is less than 100 percent
-or no_turbo set policy->{min,max} will be set incorrectly with scaled
-values which turn the scaled values into hard limits.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=61241
-Reported-by: Patrick Bartels <petzicus@googlemail.com>
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/md/bcache/request.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -629,8 +629,8 @@ static int __cpuinit intel_pstate_cpu_ex
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -1059,7 +1059,7 @@ static void request_write(struct cached_
  
- static int __cpuinit intel_pstate_cpu_init(struct cpufreq_policy *policy)
- {
--	int rc, min_pstate, max_pstate;
- 	struct cpudata *cpu;
-+	int rc;
+ 		if (bio->bi_rw & REQ_FLUSH) {
+ 			/* Also need to send a flush to the backing device */
+-			struct bio *flush = bio_alloc_bioset(0, GFP_NOIO,
++			struct bio *flush = bio_alloc_bioset(GFP_NOIO, 0,
+ 							     dc->disk.bio_split);
  
- 	rc = intel_pstate_init_cpu(policy->cpu);
- 	if (rc)
-@@ -644,9 +644,8 @@ static int __cpuinit intel_pstate_cpu_in
- 	else
- 		policy->policy = CPUFREQ_POLICY_POWERSAVE;
- 
--	intel_pstate_get_min_max(cpu, &min_pstate, &max_pstate);
--	policy->min = min_pstate * 100000;
--	policy->max = max_pstate * 100000;
-+	policy->min = cpu->pstate.min_pstate * 100000;
-+	policy->max = cpu->pstate.turbo_pstate * 100000;
- 
- 	/* cpuinfo and default policy values */
- 	policy->cpuinfo.min_freq = cpu->pstate.min_pstate * 100000;
+ 			flush->bi_rw	= WRITE_FLUSH;
 
 
