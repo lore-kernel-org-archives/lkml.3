@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933753Ab3KIH3Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:29:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33047 "EHLO
+	id S933764Ab3KIH3f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:29:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33040 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932313Ab3KIGvE (ORCPT
+	with ESMTP id S932311Ab3KIGvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:51:04 -0500
+	Sat, 9 Nov 2013 01:51:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 57/74] mm: numa: Do not account for a hinting fault if we raced
-Date: Fri,  8 Nov 2013 22:52:02 -0800
-Message-Id: <20131109065117.490679389@linuxfoundation.org>
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.10 56/74] clk: fixup argument order when setting VCO parameters
+Date: Fri,  8 Nov 2013 22:52:01 -0800
+Message-Id: <20131109065117.423343174@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -30,41 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Jonathan Austin <jonathan.austin@arm.com>
 
-commit 1dd49bfa3465756b3ce72214b58a33e4afb67aa3 upstream.
+commit 2f9f64bc5aa31836810cd25301aa4772ad73ebab upstream.
 
-If another task handled a hinting fault in parallel then do not double
-account for it.
+The order of arguments in the call to vco_set() for the ICST clocks appears to
+have been switched in error, which results in the VCO not being initialised
+correctly. This in turn stops the integrated LCD on things like Integrator/CP
+from working correctly.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-5-git-send-email-mgorman@suse.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+This patch fixes the order and restores the expected functionality.
+
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Jonathan Austin <jonathan.austin@arm.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/clk/versatile/clk-icst.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1335,8 +1335,11 @@ int do_huge_pmd_numa_page(struct mm_stru
+--- a/drivers/clk/versatile/clk-icst.c
++++ b/drivers/clk/versatile/clk-icst.c
+@@ -107,7 +107,7 @@ static int icst_set_rate(struct clk_hw *
  
- check_same:
- 	spin_lock(&mm->page_table_lock);
--	if (unlikely(!pmd_same(pmd, *pmdp)))
-+	if (unlikely(!pmd_same(pmd, *pmdp))) {
-+		/* Someone else took our fault */
-+		current_nid = -1;
- 		goto out_unlock;
-+	}
- clear_pmdnuma:
- 	pmd = pmd_mknonnuma(pmd);
- 	set_pmd_at(mm, haddr, pmdp, pmd);
+ 	vco = icst_hz_to_vco(icst->params, rate);
+ 	icst->rate = icst_hz(icst->params, vco);
+-	vco_set(icst->vcoreg, icst->lockreg, vco);
++	vco_set(icst->lockreg, icst->vcoreg, vco);
+ 	return 0;
+ }
+ 
 
 
