@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933396Ab3KIHLi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:11:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33328 "EHLO
+	id S1758617Ab3KIHMO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:12:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33324 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932682Ab3KIGwG (ORCPT
+	with ESMTP id S932757Ab3KIGwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:06 -0500
+	Sat, 9 Nov 2013 01:52:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.11 13/94] HID: wiimote: add LEGO-wiimote VID
-Date: Fri,  8 Nov 2013 22:51:19 -0800
-Message-Id: <20131109065205.188536445@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.11 40/94] Revert "select: use freezable blocking call"
+Date: Fri,  8 Nov 2013 22:51:46 -0800
+Message-Id: <20131109065207.057558981@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -26,63 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Herrmann <dh.herrmann@gmail.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 86b84167d4e67372376a57ea9955c5d53dae232f upstream.
+commit 59612d187912750f416fbffe0c00bc0811c54ab5 upstream.
 
-The LEGO-wiimote uses a different VID than the Nintendo ID. The device is
-technically the same so add the ID.
+This reverts commit 9745cdb36da8 (select: use freezable blocking call)
+that triggers problems during resume from suspend to RAM on Paul Bolle's
+32-bit x86 machines.  Paul says:
 
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+  Ever since I tried running (release candidates of) v3.11 on the two
+  working i686s I still have lying around I ran into issues on resuming
+  from suspend. Reverting 9745cdb36da8 (select: use freezable blocking
+  call) resolves those issues.
+
+  Resuming from suspend on i686 on (release candidates of) v3.11 and
+  later triggers issues like:
+
+  traps: systemd[1] general protection ip:b738e490 sp:bf882fc0 error:0 in libc-2.16.so[b731c000+1b0000]
+
+  and
+
+  traps: rtkit-daemon[552] general protection ip:804d6e5 sp:b6cb32f0 error:0 in rtkit-daemon[8048000+d000]
+
+  Once I hit the systemd error I can only get out of the mess that the
+  system is at that point by power cycling it.
+
+Since we are reverting another freezer-related change causing similar
+problems to happen, this one should be reverted as well.
+
+References: https://lkml.org/lkml/2013/10/29/583
+Reported-by: Paul Bolle <pebolle@tiscali.nl>
+Fixes: 9745cdb36da8 (select: use freezable blocking call)
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-core.c         |    1 +
- drivers/hid/hid-ids.h          |    1 +
- drivers/hid/hid-wiimote-core.c |    5 ++++-
- 3 files changed, 6 insertions(+), 1 deletion(-)
+ fs/select.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1827,6 +1827,7 @@ static const struct hid_device_id hid_ha
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -238,8 +238,7 @@ int poll_schedule_timeout(struct poll_wq
  
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_BT) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO, USB_DEVICE_ID_NINTENDO_WIIMOTE) },
-+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO2, USB_DEVICE_ID_NINTENDO_WIIMOTE) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO, USB_DEVICE_ID_NINTENDO_WIIMOTE2) },
- 	{ }
- };
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -633,6 +633,7 @@
- #define USB_DEVICE_ID_NEXTWINDOW_TOUCHSCREEN	0x0003
+ 	set_current_state(state);
+ 	if (!pwq->triggered)
+-		rc = freezable_schedule_hrtimeout_range(expires, slack,
+-							HRTIMER_MODE_ABS);
++		rc = schedule_hrtimeout_range(expires, slack, HRTIMER_MODE_ABS);
+ 	__set_current_state(TASK_RUNNING);
  
- #define USB_VENDOR_ID_NINTENDO		0x057e
-+#define USB_VENDOR_ID_NINTENDO2		0x054c
- #define USB_DEVICE_ID_NINTENDO_WIIMOTE	0x0306
- #define USB_DEVICE_ID_NINTENDO_WIIMOTE2	0x0330
- 
---- a/drivers/hid/hid-wiimote-core.c
-+++ b/drivers/hid/hid-wiimote-core.c
-@@ -838,7 +838,8 @@ static void wiimote_init_set_type(struct
- 		goto done;
- 	}
- 
--	if (vendor == USB_VENDOR_ID_NINTENDO) {
-+	if (vendor == USB_VENDOR_ID_NINTENDO ||
-+	    vendor == USB_VENDOR_ID_NINTENDO2) {
- 		if (product == USB_DEVICE_ID_NINTENDO_WIIMOTE) {
- 			devtype = WIIMOTE_DEV_GEN10;
- 			goto done;
-@@ -1860,6 +1861,8 @@ static void wiimote_hid_remove(struct hi
- static const struct hid_device_id wiimote_hid_devices[] = {
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO,
- 				USB_DEVICE_ID_NINTENDO_WIIMOTE) },
-+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO2,
-+				USB_DEVICE_ID_NINTENDO_WIIMOTE) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO,
- 				USB_DEVICE_ID_NINTENDO_WIIMOTE2) },
- 	{ }
+ 	/*
 
 
