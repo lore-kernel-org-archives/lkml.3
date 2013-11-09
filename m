@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933088Ab3KIHEm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 02:04:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33416 "EHLO
+	id S933112Ab3KIHFU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:05:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33394 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932831Ab3KIGwZ (ORCPT
+	with ESMTP id S932812Ab3KIGwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:52:25 -0500
+	Sat, 9 Nov 2013 01:52:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.11 15/94] mac80211: correctly close cancelled scans
-Date: Fri,  8 Nov 2013 22:51:21 -0800
-Message-Id: <20131109065205.327135501@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.11 52/94] ALSA: hda - Add a fixup for ASUS N76VZ
+Date: Fri,  8 Nov 2013 22:51:58 -0800
+Message-Id: <20131109065207.959124723@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -27,88 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a754055a1296fcbe6f32de3a5eaca6efb2fd1865 upstream.
+commit 6fc16e58adf50c0f1e4478538983fb5ff6f453d4 upstream.
 
-__ieee80211_scan_completed is called from a worker. This
-means that the following flow is possible.
+ASUS N76VZ needs the same fixup as N56VZ for supporting the boost
+speaker.
 
- * driver calls ieee80211_scan_completed
- * mac80211 cancels the scan (that is already complete)
- * __ieee80211_scan_completed runs
-
-When scan_work will finally run, it will see that the scan
-hasn't been aborted and might even trigger another scan on
-another band. This leads to a situation where cfg80211's
-scan is not done and no further scan can be issued.
-
-Fix this by setting a new flag when a HW scan is being
-cancelled so that no other scan will be triggered.
-
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=846529
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/ieee80211_i.h |    3 +++
- net/mac80211/scan.c        |   19 +++++++++++++++++++
- 2 files changed, 22 insertions(+)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -858,6 +858,8 @@ struct tpt_led_trigger {
-  *	that the scan completed.
-  * @SCAN_ABORTED: Set for our scan work function when the driver reported
-  *	a scan complete for an aborted scan.
-+ * @SCAN_HW_CANCELLED: Set for our scan work function when the scan is being
-+ *	cancelled.
-  */
- enum {
- 	SCAN_SW_SCANNING,
-@@ -865,6 +867,7 @@ enum {
- 	SCAN_ONCHANNEL_SCANNING,
- 	SCAN_COMPLETED,
- 	SCAN_ABORTED,
-+	SCAN_HW_CANCELLED,
- };
- 
- /**
---- a/net/mac80211/scan.c
-+++ b/net/mac80211/scan.c
-@@ -211,6 +211,9 @@ static bool ieee80211_prep_hw_scan(struc
- 	enum ieee80211_band band;
- 	int i, ielen, n_chans;
- 
-+	if (test_bit(SCAN_HW_CANCELLED, &local->scanning))
-+		return false;
-+
- 	do {
- 		if (local->hw_scan_band == IEEE80211_NUM_BANDS)
- 			return false;
-@@ -887,7 +890,23 @@ void ieee80211_scan_cancel(struct ieee80
- 	if (!local->scan_req)
- 		goto out;
- 
-+	/*
-+	 * We have a scan running and the driver already reported completion,
-+	 * but the worker hasn't run yet or is stuck on the mutex - mark it as
-+	 * cancelled.
-+	 */
-+	if (test_bit(SCAN_HW_SCANNING, &local->scanning) &&
-+	    test_bit(SCAN_COMPLETED, &local->scanning)) {
-+		set_bit(SCAN_HW_CANCELLED, &local->scanning);
-+		goto out;
-+	}
-+
- 	if (test_bit(SCAN_HW_SCANNING, &local->scanning)) {
-+		/*
-+		 * Make sure that __ieee80211_scan_completed doesn't trigger a
-+		 * scan on another band.
-+		 */
-+		set_bit(SCAN_HW_CANCELLED, &local->scanning);
- 		if (local->ops->cancel_hw_scan)
- 			drv_cancel_hw_scan(local,
- 				rcu_dereference_protected(local->scan_sdata,
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4382,6 +4382,7 @@ static const struct snd_pci_quirk alc662
+ 	SND_PCI_QUIRK(0x1028, 0x05db, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
+ 	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_ASUS_MODE4),
++	SND_PCI_QUIRK(0x1043, 0x1bf3, "ASUS N76VZ", ALC662_FIXUP_ASUS_MODE4),
+ 	SND_PCI_QUIRK(0x1043, 0x8469, "ASUS mobo", ALC662_FIXUP_NO_JACK_DETECT),
+ 	SND_PCI_QUIRK(0x105b, 0x0cd6, "Foxconn", ALC662_FIXUP_ASUS_MODE2),
+ 	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
 
 
