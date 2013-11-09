@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758349Ab3KIWF1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 17:05:27 -0500
-Received: from smtprelay04.ispgateway.de ([80.67.31.32]:55779 "EHLO
-	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756775Ab3KIWF0 (ORCPT
+	id S1758113Ab3KIWRg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 17:17:36 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:51531 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757283Ab3KIWRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 17:05:26 -0500
-Message-ID: <527EB181.2000602@ladisch.de>
-Date: Sat, 09 Nov 2013 23:04:49 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Sat, 9 Nov 2013 17:17:35 -0500
+Date: Sun, 10 Nov 2013 07:17:31 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] libata changes for v3.13-rc1
+Message-ID: <20131109221731.GB24275@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Stephan Mueller <smueller@chronox.de>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Pavel Machek <pavel@ucw.cz>,
-        sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and
- /dev/random
-References: <2579337.FPgJGgHYdz@tauon> <9172761.DO0L6FkY0c@tauon> <20131106130432.GK14235@thunk.org> <3842150.yBzxVUWavK@tauon>
-In-Reply-To: <3842150.yBzxVUWavK@tauon>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephan Mueller wrote:
-> Am Mittwoch, 6. November 2013, 08:04:32 schrieb Theodore Ts'o:
->> On Wed, Nov 06, 2013 at 01:51:17PM +0100, Stephan Mueller wrote:
->>>> That's unfortunate, since it leaves open the question of whether this
->>>> jitter is something that could be at least somewhat predictable if you
->>>> had a lot more information about the internal works of the CPU or not....
->>>
->>> I do not understand that answer: I thought we are talking about the
->>> search of non-predictable noise sources. If you cannot predict the
->>> sequence even if you have the state of the CPU, that is what we are
->>> looking for, is it not?
->>
->> I was asking the question about whether someone who knew more about
->> the internal _workings_ of the CPU, note of the state of the CPU.
->> This is not necessarily "the NSA guy", but someone who knows more
->> about the internal workings of the Intel CPU (such as an Intel
->> engineer --- and I've had Intel express misgivings about approaches
->> which depend on "CPU jitter" approaches), or just someone who has
->> spent a lot more time trying to examine the black box of the Intel CPU
->> from the outside.
->
-> I try to get more information from my contacts to other vendors. But I
-> am wondering what shall we do if the answer is (maybe even proven with
-> some test results) that they see the same issue themselves and have no
-> handle on it?
->
-> I mean, what is it that I would need to test and demonstrate to prove or
-> disprove my RNG?
+Hello, Linus.
 
-You need to prove that the CPU will never get into an internal state
-where the loop execution times happen to form a predictable pattern.
-Alternatively, detect this so that the measurements can be thrown away.
+Nothing too interesting.  Only two minor fixes in libata core.  Most
+changes are specific to hardware which isn't too common.
 
-> We can certainly test very much, but one thing we cannot prove, and
-> that is the fundamental jitter, provided it is a result of quantum
-> fluctuations. Just as with any other noise source, basic fundamental
-> principles are hard if not impossible to test.
+The patches are available in the following git branch
 
-You cannot test if the noise source was replaced with fake hardware.
-But if you know the characteristics of the noise source, you can test
-for likely failure modes, such as the output value being stuck or
-oscillating.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.13
 
-In the case of CPU jitter measurements, you do not have direct access to
-the noise source; you measure it indirectly through the CPU's internal
-state.  So you need to know how the delta times of a noisy CPU are
-different from the delta times of a CPU without or with unsuitable
-noise source.
+for you to fetch changes up to 9f961a5f6efc87a79571d7166257b36af28ffcfe:
 
+  ahci: Add Device IDs for Intel Wildcat Point-LP (2013-11-04 16:03:39 -0500)
 
-Regards,
-Clemens
+Thanks.
+
+----------------------------------------------------------------
+Chuansheng Liu (1):
+      ahci: Changing two module params with static and __read_mostly
+
+Dan Carpenter (1):
+      sata_highbank: clear whole array in highbank_initialize_phys()
+
+Gwendal Grignou (1):
+      libata: Fix display of sata speed
+
+James Ralston (1):
+      ahci: Add Device IDs for Intel Wildcat Point-LP
+
+Laurent Pinchart (1):
+      sata_rcar: Convert to clk_prepare/unprepare
+
+Levente Kurusa (1):
+      ata_piix: minor typo and a printk fix
+
+Richard Zhu (1):
+      ahci: imx: setup power saving methods
+
+Robert Hancock (1):
+      libata: Add some missing command descriptions
+
+Shan Hai (1):
+      drivers/libata: Set max sector to 65535 for Slimtype DVD A DS8A9SH drive
+
+xiangliang yu (1):
+      ahci: disabled FBS prior to issuing software reset
+
+ drivers/ata/ahci.c             |   4 ++
+ drivers/ata/ahci.h             |   2 +
+ drivers/ata/ahci_imx.c         | 101 ++++++++++++++++++++++++++++++++++++++++-
+ drivers/ata/ahci_platform.c    |   3 +-
+ drivers/ata/ata_piix.c         |  19 ++++----
+ drivers/ata/libahci.c          |  27 +++++++++--
+ drivers/ata/libata-core.c      |   1 +
+ drivers/ata/libata-eh.c        |   8 ++++
+ drivers/ata/libata-transport.c |  16 +++----
+ drivers/ata/sata_highbank.c    |   8 ++--
+ drivers/ata/sata_rcar.c        |  10 ++--
+ include/linux/ata.h            |   7 +++
+ 12 files changed, 171 insertions(+), 35 deletions(-)
+
+-- 
+tejun
