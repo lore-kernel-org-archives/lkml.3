@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758329Ab3KIGuf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:50:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32922 "EHLO
+	id S1758855Ab3KIHeb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 02:34:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32945 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab3KIGu3 (ORCPT
+	with ESMTP id S1758327Ab3KIGuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:50:29 -0500
+	Sat, 9 Nov 2013 01:50:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shaohua Li <shli@fusionio.com>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.10 27/74] raid5: avoid finding "discard" stripe
-Date: Fri,  8 Nov 2013 22:51:32 -0800
-Message-Id: <20131109065115.436903911@linuxfoundation.org>
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 32/74] vhost/scsi: Fix incorrect usage of get_user_pages_fast write parameter
+Date: Fri,  8 Nov 2013 22:51:37 -0800
+Message-Id: <20131109065115.774268642@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
 References: <20131109065113.502217951@linuxfoundation.org>
@@ -26,41 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shaohua Li <shli@kernel.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit d47648fcf0611812286f68131b40251c6fa54f5e upstream.
+commit 60a01f558af9c48b0bb31f303c479e32721add3f upstream.
 
-SCSI discard will damage discard stripe bio setting, eg, some fields are
-changed. If the stripe is reused very soon, we have wrong bios setting. We
-remove discard stripe from hash list, so next time the strip will be fully
-initialized.
+This patch addresses a long-standing bug where the get_user_pages_fast()
+write parameter used for setting the underlying page table entry permission
+bits was incorrectly set to write=1 for data_direction=DMA_TO_DEVICE, and
+passed into get_user_pages_fast() via vhost_scsi_map_iov_to_sgl().
 
-Suitable for backport to 3.7+.
+However, this parameter is intended to signal WRITEs to pinned userspace
+PTEs for the virtio-scsi DMA_FROM_DEVICE -> READ payload case, and *not*
+for the virtio-scsi DMA_TO_DEVICE -> WRITE payload case.
 
-Signed-off-by: Shaohua Li <shli@fusionio.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+This bug would manifest itself as random process segmentation faults on
+KVM host after repeated vhost starts + stops and/or with lots of vhost
+endpoints + LUNs.
+
+Cc: Stefan Hajnoczi <stefanha@redhat.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Asias He <asias@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid5.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/vhost/scsi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -2812,6 +2812,14 @@ static void handle_stripe_clean_event(st
- 		}
- 		/* now that discard is done we can proceed with any sync */
- 		clear_bit(STRIPE_DISCARD, &sh->state);
-+		/*
-+		 * SCSI discard will change some bio fields and the stripe has
-+		 * no updated data, so remove it from hash list and the stripe
-+		 * will be reinitialized
-+		 */
-+		spin_lock_irq(&conf->device_lock);
-+		remove_hash(sh);
-+		spin_unlock_irq(&conf->device_lock);
- 		if (test_bit(STRIPE_SYNC_REQUESTED, &sh->state))
- 			set_bit(STRIPE_HANDLE, &sh->state);
- 
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -1017,7 +1017,7 @@ static void vhost_scsi_handle_vq(struct
+ 		if (data_direction != DMA_NONE) {
+ 			ret = vhost_scsi_map_iov_to_sgl(tv_cmd,
+ 					&vq->iov[data_first], data_num,
+-					data_direction == DMA_TO_DEVICE);
++					data_direction == DMA_FROM_DEVICE);
+ 			if (unlikely(ret)) {
+ 				vq_err(vq, "Failed to map iov to sgl\n");
+ 				goto err_free;
 
 
