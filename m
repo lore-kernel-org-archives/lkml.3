@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab3KIGuJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:50:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32819 "EHLO
+	id S1757388Ab3KIGuT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:50:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32850 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab3KIGt5 (ORCPT
+	with ESMTP id S1755395Ab3KIGuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:49:57 -0500
+	Sat, 9 Nov 2013 01:50:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [PATCH 3.4 03/26] USB: quirks: add touchscreen that is dazzeled by remote wakeup
-Date: Fri,  8 Nov 2013 22:51:32 -0800
-Message-Id: <20131109065050.463937368@linuxfoundation.org>
+        Thomas Huehn <thomas@net.t-labs.tu-berlin.de>,
+        Felix Fietkau <nbd@openwrt.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 11/74] mac80211: drop spoofed packets in ad-hoc mode
+Date: Fri,  8 Nov 2013 22:51:16 -0800
+Message-Id: <20131109065114.290395058@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
-In-Reply-To: <20131109065050.089866597@linuxfoundation.org>
-References: <20131109065050.089866597@linuxfoundation.org>
+In-Reply-To: <20131109065113.502217951@linuxfoundation.org>
+References: <20131109065113.502217951@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 614ced91fc6fbb5a1cdd12f0f1b6c9197d9f1350 upstream.
+commit 6329b8d917adc077caa60c2447385554130853a3 upstream.
 
-The device descriptors are messed up after remote wakeup
+If an Ad-Hoc node receives packets with the Cell ID or its own MAC
+address as source address, it hits a WARN_ON in sta_info_insert_check()
+With many packets, this can massively spam the logs. One way that this
+can easily happen is through having Cisco APs in the area with rouge AP
+detection and countermeasures enabled.
+Such Cisco APs will regularly send fake beacons, disassoc and deauth
+packets that trigger these warnings.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+To fix this issue, drop such spoofed packets early in the rx path.
+
+Reported-by: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/quirks.c |    3 +++
+ net/mac80211/rx.c |    3 +++
  1 file changed, 3 insertions(+)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -119,6 +119,9 @@ static const struct usb_device_id usb_qu
- 	/* Alcor Micro Corp. Hub */
- 	{ USB_DEVICE(0x058f, 0x9254), .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* MicroTouch Systems touchscreen */
-+	{ USB_DEVICE(0x0596, 0x051e), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* appletouch */
- 	{ USB_DEVICE(0x05ac, 0x021a), .driver_info = USB_QUIRK_RESET_RESUME },
- 
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -3002,6 +3002,9 @@ static int prepare_for_handlers(struct i
+ 	case NL80211_IFTYPE_ADHOC:
+ 		if (!bssid)
+ 			return 0;
++		if (ether_addr_equal(sdata->vif.addr, hdr->addr2) ||
++		    ether_addr_equal(sdata->u.ibss.bssid, hdr->addr2))
++			return 0;
+ 		if (ieee80211_is_beacon(hdr->frame_control)) {
+ 			return 1;
+ 		} else if (!ieee80211_bssid_match(bssid, sdata->u.ibss.bssid)) {
 
 
