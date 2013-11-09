@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654Ab3KIGxX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 01:53:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33614 "EHLO
+	id S933019Ab3KIGxQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 01:53:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33557 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932949Ab3KIGxA (ORCPT
+	with ESMTP id S1753504Ab3KIGwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 01:53:00 -0500
+	Sat, 9 Nov 2013 01:52:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jon Mason <jon.mason@intel.com>
-Subject: [PATCH 3.11 93/94] NTB: Correct USD/DSD Identification
-Date: Fri,  8 Nov 2013 22:52:39 -0800
-Message-Id: <20131109065210.810451658@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.11 83/94] drm/radeon/atom: workaround vbios bug in transmitter table on rs780
+Date: Fri,  8 Nov 2013 22:52:29 -0800
+Message-Id: <20131109065210.104588999@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131109065204.252462489@linuxfoundation.org>
 References: <20131109065204.252462489@linuxfoundation.org>
@@ -26,44 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Mason <jon.mason@intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit b6750cfe0710a14fd147ba27fddbecae8ba88c77 upstream.
+commit c23632d4e57c0dd20bf50eca08fa0eb8ad3ff680 upstream.
 
-Due to ambiguous documentation, the USD/DSD identification is backward
-when compared to the setting in BIOS.  Correct the bits to match the
-BIOS setting.
+Some rs780 asics seem to be affected as well.
 
-Signed-off-by: Jon Mason <jon.mason@intel.com>
+See:
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=91f3a6aaf280294b07c05dfe606e6c27b7ba3c72
+
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60791
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ntb/ntb_hw.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/atombios_encoders.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ntb/ntb_hw.c
-+++ b/drivers/ntb/ntb_hw.c
-@@ -531,9 +531,9 @@ static int ntb_xeon_setup(struct ntb_dev
- 	}
- 
- 	if (val & SNB_PPD_DEV_TYPE)
--		ndev->dev_type = NTB_DEV_DSD;
--	else
- 		ndev->dev_type = NTB_DEV_USD;
-+	else
-+		ndev->dev_type = NTB_DEV_DSD;
- 
- 	ndev->reg_ofs.pdb = ndev->reg_base + SNB_PDOORBELL_OFFSET;
- 	ndev->reg_ofs.pdb_mask = ndev->reg_base + SNB_PDBMSK_OFFSET;
-@@ -647,6 +647,9 @@ static int ntb_device_setup(struct ntb_d
- 	if (rc)
- 		return rc;
- 
-+	dev_info(&ndev->pdev->dev, "Device Type = %s\n",
-+		 ndev->dev_type == NTB_DEV_USD ? "USD/DSP" : "DSD/USP");
-+
- 	/* Enable Bus Master and Memory Space on the secondary side */
- 	writew(PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER, ndev->reg_ofs.spci_cmd);
- 
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1657,7 +1657,7 @@ radeon_atom_encoder_dpms_dig(struct drm_
+ 			 * does the same thing and more.
+ 			 */
+ 			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
+-			    (rdev->family != CHIP_RS880))
++			    (rdev->family != CHIP_RS780) && (rdev->family != CHIP_RS880))
+ 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
+ 		}
+ 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
 
 
