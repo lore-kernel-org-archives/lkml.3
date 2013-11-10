@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab3KJQOH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 11:14:07 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:57088 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab3KJQOF (ORCPT
+	id S1751793Ab3KJQSi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 11:18:38 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:59476 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531Ab3KJQSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 11:14:05 -0500
+	Sun, 10 Nov 2013 11:18:37 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131110161049.GA17019@kroah.com>
-References: <20131019110539.GA25167@gmail.com>
-	<1383314769-3667-1-git-send-email-rashika.kheria@gmail.com>
-	<20131110154522.GA28926@kroah.com>
-	<CAMpEsFGXz5vo4u42MH29eZ8oBC3JB-p6+rvuLWhBZXmMWdL7TQ@mail.gmail.com>
-	<20131110161049.GA17019@kroah.com>
-Date: Sun, 10 Nov 2013 21:44:04 +0530
-Message-ID: <CAMpEsFGaeZx2f=xL4RZtuPb0XpuqK2EZHJ35YXmh=79iDF_Wew@mail.gmail.com>
-Subject: Re: [OPW kernel] Re: [PATCH v10] Staging: zram: Fix memory leak by
- refcount mismatch
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: opw-kernel <opw-kernel@googlegroups.com>, Minchan Kim <minchan@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+In-Reply-To: <CALeOzZ_K0o_h4gJ4w-twL5=-0QjC1XWb=m948wXWwjndr4q_Kw@mail.gmail.com>
+References: <CALeOzZ_K0o_h4gJ4w-twL5=-0QjC1XWb=m948wXWwjndr4q_Kw@mail.gmail.com>
+Date: Sun, 10 Nov 2013 17:18:35 +0100
+Message-ID: <CAFLxGvx-G8VkBvbdLkYSJee4oAU+4PdHzwszhaTaTMwGJAHkRA@mail.gmail.com>
+Subject: Re: Partially Privileged Applications
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Shahbaz Youssefi <shabbyx@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 10, 2013 at 9:40 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Sun, Nov 10, 2013 at 09:26:15PM +0530, Rashika Kheria wrote:
->> On Sun, Nov 10, 2013 at 9:15 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > On Fri, Nov 01, 2013 at 07:36:09PM +0530, Rashika Kheria wrote:
->> >> As suggested by Minchan Kim and Jerome Marchand "The code in reset_store
->> >> get the block device (bdget_disk()) but it does not put it (bdput()) when
->> >> it's done using it. The usage count is therefore incremented but never
->> >> decremented."
->> >>
->> >> This patch also puts bdput() for all error cases.
->> >>
->> >> Acked-by: Minchan Kim <minchan@kernel.org>
->> >> Acked-by: Jerome Marchand <jmarchan@redhat.com>
->> >> Cc: stable@vger.kernel.org
->> >> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
->> >> ---
->> >>
->> >> This revision fixes the following issue of the previous revision-
->> >> Incorrect Subject Line
->> >
->> > I'm a bit confused now, I see three different zram patches from you,
->> > with different subjects, are they all now just in one patch, this one?
->> >
->> > Can you just send me the outstanding zram patches that you have gotten
->> > acks from that you want applied, as I'm lost here.
->> >
->> > thanks,
->> >
->> > greg "easily confused" k-h
->> >
->>
->> Hi Greg,
->>
->> You have already applied the rest two patches for this driver. This is
->> the only patch which is left.
->>
->> But I think you might have problem applying this because there have
->> been changes in previous patches later i.e you applied v8 of this
->> series, while, maintainers later suggested to change more and hence v9
->> was also introduced.
->>
->> Therefore, v9's patch 1 and v10 patch is correct to be applied in the tree.
+On Sun, Nov 10, 2013 at 4:03 PM, Shahbaz Youssefi <shabbyx@gmail.com> wrote:
+> Dear all,
 >
-> Hm, can you please resend them, as I no longer have them in my queue.
+> First, please CC replies to myself. Second, this is an RFC.
 >
-> thanks,
+> I've been tampering with an idea for some time now and I've done some
+> research. Finally, I wrote it down here (a terrible place as it turned
+> out):
 >
-> greg k-h
+> http://shahbaz-youssefi.blogspot.it/2013/11/partially-privileged-applications.html
 >
+> and would like to know what you think. This idea requires an
+> improvement to the CPU architectures to allow unifying kernel and user
+> spaces and perform privileged instructions based on the location of
+> the instruction rather than a manually switched mode (or via traps).
+>
+> Please, do take a look at the link. I'm far from a kernel expert so
+> the idea may not be as rainbows and unicorns as it seems to me right
+> now. But it also may be. In that case, probably we need a push by
+> well-known people (i.e., Linus) to get the manufacturers to implement
+> the feature.
+>
+> At least from a developer's point of view, with this idea you could
+> gdb or even valgrind check the drivers in the very least with much
+> less chance of a kernel oops. How faster can you imagine debugging a
+> kernel module?
 
-Resent.
+So, we throw away 20 years of OS development and go back to hacky call
+gates? ;-)
 
-Thanks,
+> Thanks,
+> An unfortunate soul who has to deal with buggy kernel modules
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
 -- 
-Rashika Kheria
-B.Tech CSE
-IIIT Hyderabad
+Thanks,
+//richard
