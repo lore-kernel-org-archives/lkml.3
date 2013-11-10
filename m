@@ -1,181 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab3KJDWL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 22:22:11 -0500
-Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:22929 "EHLO
-	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757049Ab3KJDWF (ORCPT
+	id S1758629Ab3KJENt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 23:13:49 -0500
+Received: from linux-libre.fsfla.org ([208.118.235.54]:39311 "EHLO
+	linux-libre.fsfla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758588Ab3KJENs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 22:22:05 -0500
-X-Greylist: delayed 537 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Nov 2013 22:22:05 EST
-Message-ID: <527EF9BF.30107@hardwarefreak.com>
-Date: Sat, 09 Nov 2013 21:13:03 -0600
-From: Stan Hoeppner <stan@hardwarefreak.com>
-Reply-To: stan@hardwarefreak.com
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Sat, 9 Nov 2013 23:13:48 -0500
+From: Alexandre Oliva <oliva@gnu.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.12 released .. and no merge window yet .. and 4.0 plans?
+In-Reply-To: <CA+55aFwLkvSkparyvekdmMyvr6Srw1KkzTBp=_w0oQRWnPpJug@mail.gmail.com>
+	(Linus Torvalds's message of "Sun, 3 Nov 2013 16:10:59 -0800")
+Organization: Free thinker, not speaking for the GNU Project
+References: <CA+55aFwLkvSkparyvekdmMyvr6Srw1KkzTBp=_w0oQRWnPpJug@mail.gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+Date: Sun, 10 Nov 2013 02:13:20 -0200
+Message-ID: <ortxfksxlr.fsf@livre.home>
 MIME-Version: 1.0
-To: Ben Myers <bpm@sgi.com>, NeilBrown <neilb@suse.de>,
-        Dave Chinner <david@fromorbit.com>
-CC: Zhi Yong Wu <zwu.kernel@gmail.com>, elder@kernel.org,
-        Mark Tinguely <tinguely@sgi.com>, Ric Wheeler <rwheeler@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xfstests <xfs@oss.sgi.com>, Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] update xfs maintainers
-References: <527C4B27.6020205@redhat.com> <527CC50D.4060905@redhat.com>	<20131108180337.GO10553@sgi.com>	<20131108193424.GA11052@infradead.org>	<20131108204605.GA1935@sgi.com> <527D4E8D.3000109@redhat.com>	<20131108220309.GB1935@sgi.com>	<CAEH94LidwFnLX7cxetBAAzYzRGL+pc96egDNKPFKuPYcqKOtNg@mail.gmail.com>	<20131109104424.45b71dac@notabene.brown>	<20131109235130.GS10553@sgi.com> <20131110003049.GD1935@sgi.com>
-In-Reply-To: <20131110003049.GD1935@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave is on the other side of the international date line from those of
-us in the States.  If my time zone math is correct, this thread began
-and continued *after* the end of his 'normal' Friday workday, during
-Dave's weekend.  You think it might be possible he decided to unplug and
-actually live for a couple of days?
+On Nov  3, 2013, Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Put this on hold until Monday.
+> we'll have 4.0 follow 3.19 or something like that.
+
+> we could do a release with just stability and bug-fixes
+
+> the reason I mention "4.0" is that it would be a lovely time to do
+> that.
+
+That sounds backwards.  .0s are known for instability and major new
+features that justify the major version number bump.  A fixes-only
+release would make more sense as a last breath of the 3.* series, before
+(or even after?) 4.0 comes out.
+
+One way this might work is with a shorter release cycle after 3.19, with
+a fixes-only merge window, which would lead to a shorter stabilization
+cycle than usual, a rock-solid 3.20 release at the end of that cycle,
+during which new features would presumably have piled up for longer than
+usual, so as to make for more new features in the subsequent merge
+window, which would then justify a bump to 4.0.
+
+The shorter cycle towards 3.20, which would make the 2 cycles towards
+4.0 shorter than two usual cycles, may help relieve some of the pressure
+to get features into 3.19, since the merge window for 4.0 won't be that
+far off.
 
 -- 
-Stan
-
-
-
-On 11/9/2013 6:30 PM, Ben Myers wrote:
-> Dave,
-> 
-> On Sat, Nov 09, 2013 at 05:51:30PM -0600, Ben Myers wrote:
->> Hey Neil,
->>
->> On Sat, Nov 09, 2013 at 10:44:24AM +1100, NeilBrown wrote:
->>> On Sat, 9 Nov 2013 06:59:00 +0800 Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
->>>
->>>> On Sat, Nov 9, 2013 at 6:03 AM, Ben Myers <bpm@sgi.com> wrote:
->>>>> Hey Ric,
->>>>>
->>>>> On Fri, Nov 08, 2013 at 03:50:21PM -0500, Ric Wheeler wrote:
->>>>>> On 11/08/2013 03:46 PM, Ben Myers wrote:
->>>>>>> Hey Christoph,
->>>>>>>
->>>>>>> On Fri, Nov 08, 2013 at 11:34:24AM -0800, Christoph Hellwig wrote:
->>>>>>>> On Fri, Nov 08, 2013 at 12:03:37PM -0600, Ben Myers wrote:
->>>>>>>>> Mark is replacing Alex as my backup because Alex is really busy at
->>>>>>>>> Linaro and asked to be taken off awhile ago.  The holiday season is
->>>>>>>>> coming up and I fully intend to go off my meds, turn in to Fonzy the
->>>>>>>>> bear, and eat my hat.  I need someone to watch the shop while I'm off
->>>>>>>>> exploring on Mars.  I trust Mark to do that because he is totally
->>>>>>>>> awesome.
->>>>>>>>
->>>>>>>> Doing this as an unilateral decisions is not something that will win you
->>>>>>>> a fan base.
->>>>>>> It's posted for review.
->>>>>>>
->>>>>>>> While we never had anything reassembling a democracy in Linux Kernel
->>>>>>>> development making decisions without even contacting the major
->>>>>>>> contributor is wrong, twice so if the maintainer is a relatively minor
->>>>>>>> contributor to start with.
->>>>>>>>
->>>>>>>> Just because it recent came up elsewhere I'd like to recite the
->>>>>>>> definition from Trond here again:
->>>>>>>>
->>>>>>>>    http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-June/000066.html
->>>>>>>>
->>>>>>>> By many of the creative roles enlisted there it's clear that Dave should
->>>>>>>> be the maintainer.  He's been the main contributor and chief architect
->>>>>>>> for XFS for many year, while the maintainers came and went at the mercy
->>>>>>>> of SGI.  This is not meant to bad mouth either of you as I think you're
->>>>>>>> doing a reasonably good job compared to other maintainers, but at the
->>>>>>>> same time the direction is set by other people that have a much longer
->>>>>>>> involvement with the project, and having them officially in control
->>>>>>>> would help us forward a lot.  It would also avoid having to spend
->>>>>>>> considerable resources to train every new generation of SGI maintainer.
->>>>>>>>
->>>>>>>> Coming to and end I would like to maintain Dave Chinner as the primary
->>>>>>>> XFS maintainer for all the work he has done as biggest contributor and
->>>>>>>> architect of XFS since longer than I can remember, and I would love to
->>>>>>>> retain Ben Myers as a co-maintainer for all the good work he has done
->>>>>>>> maintaining and reviewing patches since November 2011.
->>>>>>> I think we're doing a decent job too.  So thanks for that much at least.  ;)
->>>>>>>> I would also like to use this post as a public venue to condemn the
->>>>>>>> unilateral smokey backroom decisions about XFS maintainership that SGI is
->>>>>>>> trying to enforce on the community.
->>>>>>> That really didn't happen Christoph.  It's not in my tree or in a pull request.
->>>>>>>
->>>>>>> Linus, let me know what you want to do.  I do think we're doing a fair job over
->>>>>>> here, and (geez) I'm just trying to add Mark as my backup since Alex is too
->>>>>>> busy.  I know the RH people want more control, and that's understandable, but
->>>>>>> they really don't need to replace me to get their code in.  Ouch.
->>>>>>>
->>>>>>> Thanks,
->>>>>>>     Ben
->>>>>>
->>>>>> Christoph is not a Red Hat person.
->>>>>>
->>>>>> Jeff is from Oracle.
->>>>>>
->>>>>> This is not a Red Hat vs SGI thing,
->>>>>
->>>>> Sorry if my read on that was wrong.
->>>>>
->>>>>> Dave simply has earned the right
->>>>>> to take on the formal leadership role of maintainer.
->>>>>
->>>>> Then we're gonna need some Reviewed-bys.  ;)
->>>>>
->>>>> From: Ben Myers <bpm@sgi.com>
->>>>>
->>>>> xfs: update maintainers
->>>>>
->>>>> Add Dave as maintainer of XFS.
->>>>>
->>>>> Signed-off-by: Ben Myers <bpm@sgi.com>
->>>>> ---
->>>>>  MAINTAINERS |    2 +-
->>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>>>
->>>>> Index: b/MAINTAINERS
->>>>> ===================================================================
->>>>> --- a/MAINTAINERS       2013-11-08 15:20:18.935186245 -0600
->>>>> +++ b/MAINTAINERS       2013-11-08 15:22:50.685245977 -0600
->>>>> @@ -9387,8 +9387,8 @@ F:        drivers/xen/*swiotlb*
->>>>>
->>>>>  XFS FILESYSTEM
->>>>>  P:     Silicon Graphics Inc
->>>>> +M:     Dave Chinner <dchinner@fromorbit.com>
->>>> Use his personal private mail account? I guess that you should ask for
->>>> his opinion at first, or it is more appropriate that he submit this
->>>> patch by himself.
->>
->> If y'all don't mind, I'd like to have authored this one.  ;)
->>  
->>> Indeed.  And does he even want the job?  I heard Linus say in a recent
->>> interview that being a maintainer is a $#!+ job. 
->>
->> I've found that it can be a little bit stressful sometimes and it tends to
->> crowd out feature work, so I guess I agree with him.  It turns out to be an
->> excellent weight loss plan.
->>
->>> Is it really best for the
->>> most active developers to be burdened with that extra work?
->>>
->>> (hmm.. maybe I should add Dave to the Cc here .. but no-one else did so best
->>> leave him alone to code in peace).
->>
->> Dave, what do you want to do here?  Which email?  What sort of arrangement?  I
->> gather that you probably do want the job, and I know you'll be fantastic.  Do
->> you want to do it all yourself?  Maybe split it up?
-> 
-> I should have also suggested that we can add you to this file and just keep our
-> existing arrangements.  That seems appropriate to me, befitting of your
-> achievements, the work you've been doing, and I'm willing to keep on as I am.
-> 
-> Regards,
-> Ben
-> 
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
-> 
+Alexandre Oliva, freedom fighter    http://FSFLA.org/~lxoliva/
+You must be the change you wish to see in the world. -- Gandhi
+Be Free! -- http://FSFLA.org/   FSF Latin America board member
+Free Software Evangelist      Red Hat Brazil Compiler Engineer
