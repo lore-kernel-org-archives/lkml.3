@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab3KJS6w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 13:58:52 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:48657 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762Ab3KJS6q (ORCPT
+	id S1752019Ab3KJTGx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 14:06:53 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:60196 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab3KJTGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 13:58:46 -0500
+	Sun, 10 Nov 2013 14:06:43 -0500
 From: Michal Nazarewicz <mpn@google.com>
-To: Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCH] drivers: infiniband: remove unused argument and minor dead code
-Date: Sun, 10 Nov 2013 19:58:35 +0100
-Message-Id: <1384109915-24095-1-git-send-email-mpn@google.com>
+To: Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: Intel Linux Wireless <ilw@linux.intel.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: [PATCH] net: wireless: iwlwifi: remove minor dead code
+Date: Sun, 10 Nov 2013 20:06:37 +0100
+Message-Id: <1384110397-24386-1-git-send-email-mpn@google.com>
 X-Mailer: git-send-email 1.8.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,34 +24,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <mina86@mina86.com>
 
-The dev variable is never assigned after being initialised.
+inta is checked to be zero in a IRQ_NONE branch so afterwards it
+cannot be zero as it is never modified.
 
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 ---
- drivers/infiniband/core/cma.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/net/wireless/iwlwifi/pcie/rx.c | 23 ++++++++---------------
+ 1 file changed, 8 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/infiniband/core/cma.c b/drivers/infiniband/core/cma.c
-index da9611d..33f114f 100644
---- a/drivers/infiniband/core/cma.c
-+++ b/drivers/infiniband/core/cma.c
-@@ -1452,7 +1452,6 @@ static int iw_conn_req_handler(struct iw_cm_id *cm_id,
- {
- 	struct rdma_cm_id *new_cm_id;
- 	struct rdma_id_private *listen_id, *conn_id;
--	struct net_device *dev = NULL;
- 	struct rdma_cm_event event;
- 	int ret;
- 	struct ib_device_attr attr;
-@@ -1530,8 +1529,6 @@ static int iw_conn_req_handler(struct iw_cm_id *cm_id,
- 	cma_deref_id(conn_id);
+diff --git a/drivers/net/wireless/iwlwifi/pcie/rx.c b/drivers/net/wireless/iwlwifi/pcie/rx.c
+index 3f237b4..c32122a 100644
+--- a/drivers/net/wireless/iwlwifi/pcie/rx.c
++++ b/drivers/net/wireless/iwlwifi/pcie/rx.c
+@@ -1121,7 +1121,6 @@ static irqreturn_t iwl_pcie_isr(int irq, void *data)
+ 	struct iwl_trans *trans = data;
+ 	struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+ 	u32 inta, inta_mask;
+-	irqreturn_t ret = IRQ_NONE;
  
- out:
--	if (dev)
--		dev_put(dev);
- 	mutex_unlock(&listen_id->handler_mutex);
- 	return ret;
+ 	lockdep_assert_held(&trans_pcie->irq_lock);
+ 
+@@ -1150,7 +1149,13 @@ static irqreturn_t iwl_pcie_isr(int irq, void *data)
+ 	 * or due to sporadic interrupts thrown from our NIC. */
+ 	if (!inta) {
+ 		IWL_DEBUG_ISR(trans, "Ignore interrupt, inta == 0\n");
+-		goto none;
++		/* re-enable interrupts here since we don't have anything to
++		 * service.  only Re-enable if disabled by irq and no
++		 * schedules tasklet. */
++		if (test_bit(STATUS_INT_ENABLED, &trans_pcie->status) &&
++		    !trans_pcie->inta)
++			iwl_enable_interrupts(trans);
++		return IRQ_NONE;
+ 	}
+ 
+ 	if ((inta == 0xFFFFFFFF) || ((inta & 0xFFFFFFF0) == 0xa5a5a5a0)) {
+@@ -1168,19 +1173,7 @@ static irqreturn_t iwl_pcie_isr(int irq, void *data)
+ 
+ 	trans_pcie->inta |= inta;
+ 	/* the thread will service interrupts and re-enable them */
+-	if (likely(inta))
+-		return IRQ_WAKE_THREAD;
+-
+-	ret = IRQ_HANDLED;
+-
+-none:
+-	/* re-enable interrupts here since we don't have anything to service. */
+-	/* only Re-enable if disabled by irq  and no schedules tasklet. */
+-	if (test_bit(STATUS_INT_ENABLED, &trans_pcie->status) &&
+-	    !trans_pcie->inta)
+-		iwl_enable_interrupts(trans);
+-
+-	return ret;
++	return IRQ_WAKE_THREAD;
  }
+ 
+ /* interrupt handler using ict table, with this interrupt driver will
 -- 
 1.8.3.2
 
