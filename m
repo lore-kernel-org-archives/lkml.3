@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab3KJPTb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 10:19:31 -0500
-Received: from mga02.intel.com ([134.134.136.20]:62424 "EHLO mga02.intel.com"
+	id S1752064Ab3KJPTh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 10:19:37 -0500
+Received: from mga02.intel.com ([134.134.136.20]:55854 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751504Ab3KJPTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 10:19:25 -0500
+	id S1751504Ab3KJPTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 10:19:33 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="432794242"
+   d="scan'208";a="432794263"
 From: Huajun Li <huajun.li.lee@gmail.com>
 To: jaegeuk.kim@samsung.com, linux-f2fs-devel@lists.sourceforge.net
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Huajun Li <huajun.li@intel.com>,
         Haicheng Li <haicheng.li@linux.intel.com>,
         Weihong Xu <weihong.xu@intel.com>
-Subject: [f2fs-dev][PATCH V2 4/6] f2fs: Key functions to handle inline data
-Date: Sun, 10 Nov 2013 23:13:19 +0800
-Message-Id: <1384096401-25169-5-git-send-email-huajun.li.lee@gmail.com>
+Subject: [f2fs-dev][PATCH V2 5/6] f2fs: Handle inline data operations
+Date: Sun, 10 Nov 2013 23:13:20 +0800
+Message-Id: <1384096401-25169-6-git-send-email-huajun.li.lee@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384096401-25169-1-git-send-email-huajun.li.lee@gmail.com>
 References: <1384096401-25169-1-git-send-email-huajun.li.lee@gmail.com>
@@ -27,226 +27,229 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Huajun Li <huajun.li@intel.com>
 
-Functions to implement inline data read/write, and move inline data to
-normal data block when file size exceeds inline data limitation.
+Hook inline data read/write, truncate, fallocate, setattr, etc.
+
+Files need meet following 2 requirement to inline:
+ 1) file size is not greater than MAX_INLINE_DATA;
+ 2) file doesn't pre-allocate data blocks by fallocate().
+
+FI_INLINE_DATA will not be set while creating a new regular inode because
+most of the files are bigger than ~3.4K. Set FI_INLINE_DATA only when
+data is submitted to block layer, ranther than set it while creating a new
+inode, this also avoids converting data from inline to normal data block
+and vice versa.
+
+While writting inline data to inode block, the first data block should be
+released if the file has a block indexed by i_addr[0].
+
+On the other hand, when a file operation is appied to a file with inline
+data, we need to test if this file can remain inline by doing this
+operation, otherwise it should be convert into normal file by reserving
+a new data block, copying inline data to this new block and clear
+FI_INLINE_DATA flag. Because reserve a new data block here will make use
+of i_addr[0], if we save inline data in i_addr[0..872], then the first
+4 bytes would be overwriten. This problem can be avoided simply by
+not using i_addr[0] for inline data.
 
 Signed-off-by: Huajun Li <huajun.li@intel.com>
 Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
 Signed-off-by: Weihong Xu <weihong.xu@intel.com>
 ---
- fs/f2fs/Makefile |    2 +-
- fs/f2fs/f2fs.h   |    8 +++
- fs/f2fs/inline.c |  172 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 181 insertions(+), 1 deletion(-)
- create mode 100644 fs/f2fs/inline.c
+ fs/f2fs/data.c |   49 ++++++++++++++++++++++++++++++++++++++++++++-----
+ fs/f2fs/file.c |   43 ++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 84 insertions(+), 8 deletions(-)
 
-diff --git a/fs/f2fs/Makefile b/fs/f2fs/Makefile
-index 27a0820..2e35da1 100644
---- a/fs/f2fs/Makefile
-+++ b/fs/f2fs/Makefile
-@@ -1,6 +1,6 @@
- obj-$(CONFIG_F2FS_FS) += f2fs.o
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 92d0724..2e72260 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -471,13 +471,28 @@ static int get_data_block_ro(struct inode *inode, sector_t iblock,
  
--f2fs-y		:= dir.o file.o inode.o namei.o hash.o super.o
-+f2fs-y		:= dir.o file.o inode.o namei.o hash.o super.o inline.o
- f2fs-y		+= checkpoint.o gc.o data.o node.o segment.o recovery.o
- f2fs-$(CONFIG_F2FS_STAT_FS) += debug.o
- f2fs-$(CONFIG_F2FS_FS_XATTR) += xattr.o
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index de84f52..5f78c9c 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -1253,4 +1253,12 @@ extern const struct inode_operations f2fs_dir_inode_operations;
- extern const struct inode_operations f2fs_symlink_inode_operations;
- extern const struct inode_operations f2fs_special_inode_operations;
+ static int f2fs_read_data_page(struct file *file, struct page *page)
+ {
+-	return mpage_readpage(page, get_data_block_ro);
++	int ret;
++	struct inode *inode = file->f_mapping->host;
++
++	/* If the file has inline data, try to read it directlly */
++	if (f2fs_has_inline_data(inode))
++		ret = f2fs_read_inline_data(inode, page);
++	else
++		ret = mpage_readpage(page, get_data_block_ro);
++
++	return ret;
+ }
  
-+/*
-+ * inline.c
-+ */
-+inline int f2fs_has_inline_data(struct inode *);
-+bool f2fs_may_inline(struct inode *);
-+int f2fs_read_inline_data(struct inode *, struct page *);
-+int f2fs_convert_inline_data(struct inode *, struct page *, unsigned);
-+int f2fs_write_inline_data(struct inode *, struct page *, unsigned int);
- #endif
-diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
-new file mode 100644
-index 0000000..e9b33d7
---- /dev/null
-+++ b/fs/f2fs/inline.c
-@@ -0,0 +1,172 @@
-+/*
-+ * fs/f2fs/inline.c
-+ * Copyright (c) 2013, Intel Corporation
-+ * Authors: Huajun Li <huajun.li@intel.com>
-+ *          Haicheng Li <haicheng.li@intel.com>
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
+ static int f2fs_read_data_pages(struct file *file,
+ 			struct address_space *mapping,
+ 			struct list_head *pages, unsigned nr_pages)
+ {
++	struct inode *inode = file->f_mapping->host;
 +
-+#include <linux/fs.h>
-+#include <linux/f2fs_fs.h>
++	/* If the file has inline data, skip readpages */
++	if (f2fs_has_inline_data(inode))
++		return 0;
 +
-+#include "f2fs.h"
+ 	return mpage_readpages(mapping, pages, nr_pages, get_data_block_ro);
+ }
+ 
+@@ -528,7 +543,7 @@ static int f2fs_write_data_page(struct page *page,
+ 	loff_t i_size = i_size_read(inode);
+ 	const pgoff_t end_index = ((unsigned long long) i_size)
+ 							>> PAGE_CACHE_SHIFT;
+-	unsigned offset;
++	unsigned offset = 0;
+ 	bool need_balance_fs = false;
+ 	int err = 0;
+ 
+@@ -562,7 +577,14 @@ write:
+ 		err = do_write_data_page(page);
+ 	} else {
+ 		f2fs_lock_op(sbi);
+-		err = do_write_data_page(page);
++		if (f2fs_has_inline_data(inode) || f2fs_may_inline(inode)) {
++			err = f2fs_write_inline_data(inode, page, offset);
++			f2fs_unlock_op(sbi);
++			goto out;
++		} else {
++			err = do_write_data_page(page);
++		}
 +
-+inline int f2fs_has_inline_data(struct inode *inode)
-+{
-+	return is_inode_flag_set(F2FS_I(inode), FI_INLINE_DATA);
-+}
-+
-+bool f2fs_may_inline(struct inode *inode)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	block_t nr_blocks;
-+	loff_t i_size;
-+
-+	if (!test_opt(sbi, INLINE_DATA))
-+		return false;
-+
-+	nr_blocks = F2FS_I(inode)->i_xattr_nid ? 3 : 2;
-+	if (inode->i_blocks > nr_blocks)
-+		return false;
-+
-+	i_size = i_size_read(inode);
-+	if (i_size > MAX_INLINE_DATA)
-+		return false;
-+
-+	return true;
-+}
-+
-+int f2fs_read_inline_data(struct inode *inode, struct page *page)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct page *ipage;
-+	void *src_addr, *dst_addr;
-+
-+	ipage = get_node_page(sbi, inode->i_ino);
-+	if (IS_ERR(ipage))
-+		return PTR_ERR(ipage);
-+
-+	src_addr = inline_data_addr(ipage);
-+	dst_addr = page_address(page);
-+
-+	zero_user_segment(page, INLINE_DATA_OFFSET,
-+				INLINE_DATA_OFFSET + MAX_INLINE_DATA);
-+	/* Copy the whole inline data block */
-+	memcpy(dst_addr, src_addr, MAX_INLINE_DATA);
-+	f2fs_put_page(ipage, 1);
-+
-+	SetPageUptodate(page);
-+	unlock_page(page);
-+
-+	return 0;
-+}
-+
-+static int __f2fs_convert_inline_data(struct inode *inode, struct page *page)
-+{
-+	int err;
-+	struct page *ipage;
-+	struct dnode_of_data dn;
-+	void *src_addr, *dst_addr;
-+	block_t old_blk_addr, new_blk_addr;
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+
-+	f2fs_lock_op(sbi);
-+	ipage = get_node_page(sbi, inode->i_ino);
-+	if (IS_ERR(ipage))
-+		return PTR_ERR(ipage);
-+
-+	/*
-+	 * i_addr[0] is not used for inline data,
-+	 * so reserving new block will not destroy inline data
-+	 */
-+	set_new_dnode(&dn, inode, ipage, ipage, 0);
-+	err = f2fs_reserve_block(&dn, 0);
-+	if (err) {
-+		f2fs_put_page(ipage, 1);
-+		f2fs_unlock_op(sbi);
-+		return err;
+ 		f2fs_unlock_op(sbi);
+ 		need_balance_fs = true;
+ 	}
+@@ -650,6 +672,15 @@ repeat:
+ 		return -ENOMEM;
+ 	*pagep = page;
+ 
++	if ((pos + len) < MAX_INLINE_DATA) {
++		if (f2fs_has_inline_data(inode))
++			goto inline_data;
++	} else if (f2fs_has_inline_data(inode)) {
++		err = f2fs_convert_inline_data(inode, page, flags);
++		if (err)
++			return err;
 +	}
 +
-+	src_addr = inline_data_addr(ipage);
-+	dst_addr = page_address(page);
-+	zero_user_segment(page, 0, PAGE_CACHE_SIZE);
+ 	f2fs_lock_op(sbi);
+ 	set_new_dnode(&dn, inode, NULL, NULL, 0);
+ 	err = f2fs_reserve_block(&dn, index);
+@@ -659,7 +690,7 @@ repeat:
+ 		f2fs_put_page(page, 1);
+ 		return err;
+ 	}
+-
++inline_data:
+ 	if ((len == PAGE_CACHE_SIZE) || PageUptodate(page))
+ 		return 0;
+ 
+@@ -675,7 +706,11 @@ repeat:
+ 	if (dn.data_blkaddr == NEW_ADDR) {
+ 		zero_user_segment(page, 0, PAGE_CACHE_SIZE);
+ 	} else {
+-		err = f2fs_readpage(sbi, page, dn.data_blkaddr, READ_SYNC);
++		if (f2fs_has_inline_data(inode))
++			err = f2fs_read_inline_data(inode, page);
++		else
++			err = f2fs_readpage(sbi, page,
++					dn.data_blkaddr, READ_SYNC);
+ 		if (err)
+ 			return err;
+ 		lock_page(page);
+@@ -724,6 +759,10 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb,
+ 	if (rw == WRITE)
+ 		return 0;
+ 
++	/* Let buffer I/O handle the inline data case. */
++	if (f2fs_has_inline_data(inode))
++		return 0;
 +
-+	/* Copy the whole inline data block */
-+	memcpy(dst_addr, src_addr, MAX_INLINE_DATA);
+ 	/* Needs synchronization with the cleaner */
+ 	return blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
+ 						  get_data_block_ro);
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 1cd8e44..ffafcb9 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -291,7 +291,9 @@ static int truncate_blocks(struct inode *inode, u64 from)
+ 
+ 	f2fs_put_dnode(&dn);
+ free_next:
+-	err = truncate_inode_blocks(inode, free_from);
 +
-+	/* write data page to try to make data consistent */
-+	old_blk_addr = dn.data_blkaddr;
-+	set_page_writeback(page);
-+	write_data_page(inode, page, &dn,
-+			old_blk_addr, &new_blk_addr);
-+	update_extent_cache(new_blk_addr, &dn);
-+	f2fs_wait_on_page_writeback(page, DATA, true);
++	if (!f2fs_has_inline_data(inode))
++		err = truncate_inode_blocks(inode, free_from);
+ 	f2fs_unlock_op(sbi);
+ 
+ 	/* lastly zero out the first data page */
+@@ -367,8 +369,17 @@ int f2fs_setattr(struct dentry *dentry, struct iattr *attr)
+ 
+ 	if ((attr->ia_valid & ATTR_SIZE) &&
+ 			attr->ia_size != i_size_read(inode)) {
++		if (f2fs_has_inline_data(inode) &&
++				(attr->ia_size > MAX_INLINE_DATA)) {
++			unsigned flags = AOP_FLAG_NOFS;
++			err = f2fs_convert_inline_data(inode, NULL, flags);
++			if (err)
++				return err;
++		}
 +
-+	/* clear inline data and flag after data writeback */
-+	zero_user_segment(ipage, INLINE_DATA_OFFSET,
-+				 INLINE_DATA_OFFSET + MAX_INLINE_DATA);
-+	clear_inode_flag(F2FS_I(inode), FI_INLINE_DATA);
-+
-+	sync_inode_page(&dn);
-+	f2fs_put_page(ipage, 1);
-+	f2fs_unlock_op(sbi);
-+
-+	return err;
-+}
-+
-+int f2fs_convert_inline_data(struct inode *inode,
-+			     struct page *p, unsigned flags)
-+{
-+	int err;
-+	struct page *page;
-+
-+	if (!p || p->index) {
+ 		truncate_setsize(inode, attr->ia_size);
+-		f2fs_truncate(inode);
++		if (!f2fs_has_inline_data(inode))
++			f2fs_truncate(inode);
+ 		f2fs_balance_fs(F2FS_SB(inode->i_sb));
+ 	}
+ 
+@@ -450,6 +461,26 @@ static int punch_hole(struct inode *inode, loff_t offset, loff_t len, int mode)
+ 	loff_t off_start, off_end;
+ 	int ret = 0;
+ 
++	if (f2fs_has_inline_data(inode)) {
++		struct page *page;
++		unsigned flags = AOP_FLAG_NOFS;
 +		page = grab_cache_page_write_begin(inode->i_mapping, 0, flags);
 +		if (IS_ERR(page))
 +			return PTR_ERR(page);
-+	} else {
-+		page = p;
++		if (offset + len > MAX_INLINE_DATA) {
++			ret = f2fs_convert_inline_data(inode, page, flags);
++			f2fs_put_page(page, 1);
++			if (ret)
++				return ret;
++		} else {
++			zero_user_segment(page, offset, offset + len);
++			SetPageUptodate(page);
++			set_page_dirty(page);
++			f2fs_put_page(page, 1);
++			goto out;
++		}
 +	}
 +
-+	err = __f2fs_convert_inline_data(inode, page);
-+
-+	if (!p || p->index)
-+		f2fs_put_page(page, 1);
-+
-+	return err;
-+}
-+
-+int f2fs_write_inline_data(struct inode *inode,
-+			   struct page *page, unsigned size)
-+{
-+	void *src_addr, *dst_addr;
-+	struct page *ipage;
-+	struct dnode_of_data dn;
-+	int err;
-+
-+	set_new_dnode(&dn, inode, NULL, NULL, 0);
-+	err = get_dnode_of_data(&dn, 0, LOOKUP_NODE);
-+	if (err)
-+		return err;
-+	ipage = dn.inode_page;
-+
-+	src_addr = page_address(page);
-+	dst_addr = inline_data_addr(ipage);
-+
-+	zero_user_segment(ipage, INLINE_DATA_OFFSET,
-+				 INLINE_DATA_OFFSET + MAX_INLINE_DATA);
-+	memcpy(dst_addr, src_addr, size);
-+
-+	/* Release the first data block if it is allocated */
-+	if (!f2fs_has_inline_data(inode)) {
-+		truncate_data_blocks_range(&dn, 1);
-+		set_inode_flag(F2FS_I(inode), FI_INLINE_DATA);
+ 	pg_start = ((unsigned long long) offset) >> PAGE_CACHE_SHIFT;
+ 	pg_end = ((unsigned long long) offset + len) >> PAGE_CACHE_SHIFT;
+ 
+@@ -483,7 +514,7 @@ static int punch_hole(struct inode *inode, loff_t offset, loff_t len, int mode)
+ 			f2fs_unlock_op(sbi);
+ 		}
+ 	}
+-
++out:
+ 	if (!(mode & FALLOC_FL_KEEP_SIZE) &&
+ 		i_size_read(inode) <= (offset + len)) {
+ 		i_size_write(inode, offset);
+@@ -502,6 +533,12 @@ static int expand_inode_data(struct inode *inode, loff_t offset,
+ 	loff_t off_start, off_end;
+ 	int ret = 0;
+ 
++	if (f2fs_has_inline_data(inode) && (offset + len > MAX_INLINE_DATA)) {
++		ret = f2fs_convert_inline_data(inode, NULL, AOP_FLAG_NOFS);
++		if (ret)
++			return ret;
 +	}
 +
-+	sync_inode_page(&dn);
-+	f2fs_put_dnode(&dn);
-+
-+	return 0;
-+}
+ 	ret = inode_newsize_ok(inode, (len + offset));
+ 	if (ret)
+ 		return ret;
 -- 
 1.7.9.5
 
