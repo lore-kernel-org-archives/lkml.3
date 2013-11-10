@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab3KJSil (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 13:38:41 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:54536 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061Ab3KJSiG (ORCPT
+	id S1752348Ab3KJSiy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 13:38:54 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:46043 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab3KJSio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 13:38:06 -0500
+	Sun, 10 Nov 2013 13:38:44 -0500
 From: Michal Nazarewicz <mpn@google.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCH RESEND] crypto: make sure *blkcipher_walk_init properly initialises walk
-Date: Sun, 10 Nov 2013 19:38:01 +0100
-Message-Id: <1384108681-23519-1-git-send-email-mpn@google.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers: video: metronomefb: avoid out-of-bounds array access
+Date: Sun, 10 Nov 2013 19:38:38 +0100
+Message-Id: <1384108718-23637-1-git-send-email-mpn@google.com>
 X-Mailer: git-send-email 1.8.4.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <mina86@mina86.com>
 
-blkcipher_walk_init and ablkcipher_walk_init functions are called
-to initialise a walk structure allocated on stack, which is not
-initialised by the caller.  This means, that the fields of the
-structure contain garbage when *_init is run.
+load_waveform function checks whether padding bytes in stuff2a
+and stuff2b are all zero, but does so by treating those arrays
+as a single longer array.  Since the structure is packed, and
+the size sum matches, it all works, but creates some confusion
+in the code.
 
-The *_init functions do not initialise all of the fields though,
-and in particular leave flags field as is.  This results in field
-containing unspecified value.
+This commit changes the stuff2a and stuff2b arrays into pad1 and
+pad2 fields such that they cover the same bytes as the arrays
+covered, and changes the check in the load_waveform function so
+that the fields are read instead of iterating over an arary.
 
-Zeroing the whole structure makes sure that all of the fields
-are initialised to the same value regardless of the values stored
-on the stack prior to the call to the *_init function.
-
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+It also renames the other “stuff” fields to “ignore*” fields to
+give them more semantic meaning.
 ---
- crypto/blkcipher.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/video/metronomefb.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/crypto/blkcipher.c b/crypto/blkcipher.c
-index a79e7e9..3fb99d8 100644
---- a/crypto/blkcipher.c
-+++ b/crypto/blkcipher.c
-@@ -305,7 +305,7 @@ static inline int blkcipher_copy_iv(struct blkcipher_walk *walk,
- int blkcipher_walk_virt(struct blkcipher_desc *desc,
- 			struct blkcipher_walk *walk)
- {
--	walk->flags &= ~BLKCIPHER_WALK_PHYS;
-+	walk->flags = 0;
- 	walk->blocksize = crypto_blkcipher_blocksize(desc->tfm);
- 	return blkcipher_walk_first(desc, walk);
- }
-@@ -314,7 +314,7 @@ EXPORT_SYMBOL_GPL(blkcipher_walk_virt);
- int blkcipher_walk_phys(struct blkcipher_desc *desc,
- 			struct blkcipher_walk *walk)
- {
--	walk->flags |= BLKCIPHER_WALK_PHYS;
-+	walk->flags = BLKCIPHER_WALK_PHYS;
- 	walk->blocksize = crypto_blkcipher_blocksize(desc->tfm);
- 	return blkcipher_walk_first(desc, walk);
- }
-@@ -352,7 +352,7 @@ int blkcipher_walk_virt_block(struct blkcipher_desc *desc,
- 			      struct blkcipher_walk *walk,
- 			      unsigned int blocksize)
- {
--	walk->flags &= ~BLKCIPHER_WALK_PHYS;
-+	walk->flags = 0;
- 	walk->blocksize = blocksize;
- 	return blkcipher_walk_first(desc, walk);
- }
+diff --git a/drivers/video/metronomefb.c b/drivers/video/metronomefb.c
+index 195cc2d..4f36a2b 100644
+--- a/drivers/video/metronomefb.c
++++ b/drivers/video/metronomefb.c
+@@ -126,7 +126,7 @@ static struct fb_var_screeninfo metronomefb_var = {
+ 
+ /* the waveform structure that is coming from userspace firmware */
+ struct waveform_hdr {
+-	u8 stuff[32];
++	u8 ignore1[32];
+ 
+ 	u8 wmta[3];
+ 	u8 fvsn;
+@@ -134,13 +134,14 @@ struct waveform_hdr {
+ 	u8 luts;
+ 	u8 mc;
+ 	u8 trc;
+-	u8 stuff3;
++	u8 ignore2;
+ 
+ 	u8 endb;
+ 	u8 swtb;
+-	u8 stuff2a[2];
++	u32 pad1; /* u16 halfof(pad1) */
+ 
+-	u8 stuff2b[3];
++	/* u16 halfof(pad1) */
++	u8 pad2;
+ 	u8 wfm_cs;
+ } __attribute__ ((packed));
+ 
+@@ -210,11 +211,9 @@ static int load_waveform(u8 *mem, size_t size, int m, int t,
+ 	}
+ 	wfm_hdr->mc += 1;
+ 	wfm_hdr->trc += 1;
+-	for (i = 0; i < 5; i++) {
+-		if (*(wfm_hdr->stuff2a + i) != 0) {
+-			dev_err(dev, "Error: unexpected value in padding\n");
+-			return -EINVAL;
+-		}
++	if (wfm_hdr->pad1 || wfm_hdr->pad2) {
++		dev_err(dev, "Error: unexpected value in padding\n");
++		return -EINVAL;
+ 	}
+ 
+ 	/* calculating trn. trn is something used to index into
 -- 
 1.8.3.2
 
