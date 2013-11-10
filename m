@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab3KJUSM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 15:18:12 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:42452 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab3KJUSB (ORCPT
+	id S1752194Ab3KJUZE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 15:25:04 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:50337 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab3KJUY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 15:18:01 -0500
+	Sun, 10 Nov 2013 15:24:58 -0500
 From: Michal Nazarewicz <mina86@mina86.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: Intel Linux Wireless <ilw@linux.intel.com>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2] net: wireless: iwlwifi: remove minor dead code
-In-Reply-To: <527FDB50.1050902@cogentembedded.com>
-References: <1384110397-24386-1-git-send-email-mpn@google.com> <527FDB50.1050902@cogentembedded.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/7] staging: go7007: fix use of uninitialised pointer
+In-Reply-To: <20131110185210.GA9633@kroah.com>
+References: <1384108677-23476-1-git-send-email-mpn@google.com> <20131110185210.GA9633@kroah.com>
 User-Agent: Notmuch/0.16+80~g81ee785 (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Sun, 10 Nov 2013 21:17:56 +0100
-Message-ID: <87iow080zv.fsf@mina86.com>
+Date: Sun, 10 Nov 2013 21:24:54 +0100
+Message-ID: <87fvr480o9.fsf@mina86.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,71 +26,29 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-inta is checked to be zero in a IRQ_NONE branch so afterwards it
-cannot be zero as it is never modified.
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 ---
- drivers/net/wireless/iwlwifi/pcie/rx.c | 24 +++++++++---------------
- 1 file changed, 9 insertions(+), 15 deletions(-)
+ drivers/staging/media/go7007/go7007-usb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On Sun, Nov 10 2013, Sergei Shtylyov wrote:
-> The preferred way of formatting the multi-line comments in the
-> networking code is this:
+On Sun, Nov 10 2013, Greg Kroah-Hartman wrote:
+> Please either delete this entirely, or use the struct device in the
+> usb_interface pointer.
 >
-> /* bla
->   * bla
->   */
+> A driver should never have a "raw" pr_* call.
 
-Works for me.  I used /* bla \n * bla */ because this is what the rest
-of this function was using.
-
-diff --git a/drivers/net/wireless/iwlwifi/pcie/rx.c b/drivers/net/wireless/iwlwifi/pcie/rx.c
-index 3f237b4..7d0fdc0 100644
---- a/drivers/net/wireless/iwlwifi/pcie/rx.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/rx.c
-@@ -1121,7 +1121,6 @@ static irqreturn_t iwl_pcie_isr(int irq, void *data)
- 	struct iwl_trans *trans = data;
- 	struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
- 	u32 inta, inta_mask;
--	irqreturn_t ret = IRQ_NONE;
+diff --git a/drivers/staging/media/go7007/go7007-usb.c b/drivers/staging/media/go7007/go7007-usb.c
+index 58684da..e8c708c 100644
+--- a/drivers/staging/media/go7007/go7007-usb.c
++++ b/drivers/staging/media/go7007/go7007-usb.c
+@@ -1057,7 +1057,7 @@ static int go7007_usb_probe(struct usb_interface *intf,
+ 	char *name;
+ 	int video_pipe, i, v_urb_len;
  
- 	lockdep_assert_held(&trans_pcie->irq_lock);
+-	dev_dbg(go->dev, "probing new GO7007 USB board\n");
++	dev_dbg(&intf->dev, "probing new GO7007 USB board\n");
  
-@@ -1150,7 +1149,14 @@ static irqreturn_t iwl_pcie_isr(int irq, void *data)
- 	 * or due to sporadic interrupts thrown from our NIC. */
- 	if (!inta) {
- 		IWL_DEBUG_ISR(trans, "Ignore interrupt, inta == 0\n");
--		goto none;
-+		/* re-enable interrupts here since we don't have anything to
-+		 * service.  only Re-enable if disabled by irq and no
-+		 * schedules tasklet.
-+		 */
-+		if (test_bit(STATUS_INT_ENABLED, &trans_pcie->status) &&
-+		    !trans_pcie->inta)
-+			iwl_enable_interrupts(trans);
-+		return IRQ_NONE;
- 	}
- 
- 	if ((inta == 0xFFFFFFFF) || ((inta & 0xFFFFFFF0) == 0xa5a5a5a0)) {
-@@ -1168,19 +1174,7 @@ static irqreturn_t iwl_pcie_isr(int irq, void *data)
- 
- 	trans_pcie->inta |= inta;
- 	/* the thread will service interrupts and re-enable them */
--	if (likely(inta))
--		return IRQ_WAKE_THREAD;
--
--	ret = IRQ_HANDLED;
--
--none:
--	/* re-enable interrupts here since we don't have anything to service. */
--	/* only Re-enable if disabled by irq  and no schedules tasklet. */
--	if (test_bit(STATUS_INT_ENABLED, &trans_pcie->status) &&
--	    !trans_pcie->inta)
--		iwl_enable_interrupts(trans);
--
--	return ret;
-+	return IRQ_WAKE_THREAD;
- }
- 
- /* interrupt handler using ict table, with this interrupt driver will
+ 	switch (id->driver_info) {
+ 	case GO7007_BOARDID_MATRIX_II:
 -- 
 1.8.3.2
