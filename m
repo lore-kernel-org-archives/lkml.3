@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853Ab3KJPqF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 10:46:05 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751471Ab3KJPqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 10:46:04 -0500
-Message-ID: <527FAA34.8080307@nod.at>
-Date: Sun, 10 Nov 2013 16:45:56 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751677Ab3KJP4S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 10:56:18 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:40794 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463Ab3KJP4Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 10:56:16 -0500
 MIME-Version: 1.0
-To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-CC: Konstantin Khlebnikov <koct9i@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: [uml-devel] fuzz tested 32 bit user mode linux image hangs in
- radix_tree_next_chunk()
-References: <526696BF.6050909@gmx.de>	<CAFLxGvy3NeRKu+KQCCm0j4LS60PYhH0bC8WWjfiPvpstPBjAkA@mail.gmail.com>	<5266A698.10400@gmx.de>	<5266B60A.1000005@nod.at>	<52715AD1.7000703@gmx.de> <CALYGNiPvJF1u8gXNcX1AZR5-VkGqJnaose84KBbdaoBAq8aoGQ@mail.gmail.com> <527AB23D.2060305@gmx.de> <527AB51B.1020005@nod.at> <527FA2BE.6090307@gmx.de>
-In-Reply-To: <527FA2BE.6090307@gmx.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131110154522.GA28926@kroah.com>
+References: <20131019110539.GA25167@gmail.com>
+	<1383314769-3667-1-git-send-email-rashika.kheria@gmail.com>
+	<20131110154522.GA28926@kroah.com>
+Date: Sun, 10 Nov 2013 21:26:15 +0530
+Message-ID: <CAMpEsFGXz5vo4u42MH29eZ8oBC3JB-p6+rvuLWhBZXmMWdL7TQ@mail.gmail.com>
+Subject: Re: [OPW kernel] Re: [PATCH v10] Staging: zram: Fix memory leak by
+ refcount mismatch
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: opw-kernel <opw-kernel@googlegroups.com>, Minchan Kim <minchan@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchand@redhat.com>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10.11.2013 16:14, schrieb Toralf Förster:
-> On 11/06/2013 10:31 PM, Richard Weinberger wrote:
->> Am 06.11.2013 22:18, schrieb Toralf Förster:
->>> On 11/06/2013 05:06 PM, Konstantin Khlebnikov wrote:
->>>> In this case it must stop after scanning whole tree in line:
->>>> /* Overflow after ~0UL */
->>>> if (!index)
->>>>   return NULL;
->>>>
->>>
->>> A fresh current example with latest git tree shows that lines 769 and 770 do alternate :
+On Sun, Nov 10, 2013 at 9:15 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Fri, Nov 01, 2013 at 07:36:09PM +0530, Rashika Kheria wrote:
+>> As suggested by Minchan Kim and Jerome Marchand "The code in reset_store
+>> get the block device (bdget_disk()) but it does not put it (bdput()) when
+>> it's done using it. The usage count is therefore incremented but never
+>> decremented."
 >>
->> Can you please ask gdb for the value of offset?
+>> This patch also puts bdput() for all error cases.
 >>
->> Thanks,
->> //richard
+>> Acked-by: Minchan Kim <minchan@kernel.org>
+>> Acked-by: Jerome Marchand <jmarchan@redhat.com>
+>> Cc: stable@vger.kernel.org
+>> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+>> ---
 >>
-> 
-> With this change 
-> 
-> diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-> index 7811ed3..b2e9db5 100644
-> --- a/lib/radix-tree.c
-> +++ b/lib/radix-tree.c
-> @@ -767,6 +767,7 @@ restart:
->                                                 offset + 1);
->                         else
->                                 while (++offset < RADIX_TREE_MAP_SIZE) {
-> +                                       printk ("node->slots[offset] %p offeset %lu\n", node->slots[offset], offset);
->                                         if (node->slots[offset])
->                                                 break;
->                                 }
+>> This revision fixes the following issue of the previous revision-
+>> Incorrect Subject Line
+>
+> I'm a bit confused now, I see three different zram patches from you,
+> with different subjects, are they all now just in one patch, this one?
+>
+> Can you just send me the outstanding zram patches that you have gotten
+> acks from that you want applied, as I'm lost here.
+>
+> thanks,
+>
+> greg "easily confused" k-h
+>
 
-Make sure that you print only in case of a enless loop. i.e. add a loop counter
-and start printing only if the loop was taken *very* often.
+Hi Greg,
+
+You have already applied the rest two patches for this driver. This is
+the only patch which is left.
+
+But I think you might have problem applying this because there have
+been changes in previous patches later i.e you applied v8 of this
+series, while, maintainers later suggested to change more and hence v9
+was also introduced.
+
+Therefore, v9's patch 1 and v10 patch is correct to be applied in the tree.
 
 Thanks,
-//richard
+-- 
+Rashika Kheria
+B.Tech CSE
+IIIT Hyderabad
