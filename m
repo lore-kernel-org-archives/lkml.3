@@ -1,84 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758591Ab3KJBQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 20:16:57 -0500
-Received: from mail.eperm.de ([89.247.134.16]:58974 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758554Ab3KJBQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 20:16:56 -0500
-From: Stephan Mueller <smueller@chronox.de>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Nicholas Mc Guire <der.herr@hofr.at>, "Theodore Ts'o" <tytso@mit.edu>,
-        Pavel Machek <pavel@ucw.cz>, sandy harris <sandyinchina@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
-Date: Sun, 10 Nov 2013 02:16:13 +0100
-Message-ID: <5040268.j2ZYME4FFf@myon.chronox.de>
-User-Agent: KMail/4.11.2 (Linux/3.11.7-200.fc19.x86_64; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <527EB157.70109@ladisch.de>
-References: <2579337.FPgJGgHYdz@tauon> <4606253.6dPOReUPaz@tauon> <527EB157.70109@ladisch.de>
+	id S1758608Ab3KJBch (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 20:32:37 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:60176 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758577Ab3KJBce (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Nov 2013 20:32:34 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Date: Sat, 9 Nov 2013 17:32:33 -0800
+Message-ID: <CAApbN=Jm=zuDaVYALmGg5z_QfJJ3q13e9tshb7OpAtPQ8Ema1w@mail.gmail.com>
+Subject: Cross thread shutdown of connected UDP socket, unexpected recvfrom behavior
+From: mpb <mpb.mail@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=001a11c25292f706e004eac89646
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, 9. November 2013, 23:04:07 schrieb Clemens Ladisch:
+--001a11c25292f706e004eac89646
+Content-Type: text/plain; charset=ISO-8859-1
 
-Hi Clemens,
+Hi LKML,
 
-> Stephan Mueller wrote:
-> > Am Donnerstag, 7. November 2013, 02:03:57 schrieb Nicholas Mc Guire:
-> >> On Wed, 06 Nov 2013, Stephan Mueller wrote:
-> >>> Besides, how on earth shall an attacker even gain knowledge about the
-> >>> state of the CPU or disable CPU mechanisms? Oh, I forgot, your NSA
-> >>> guy. But if he is able to do that, all discussions are moot because
-> >>> he simply disables any noise sources by flipping a bit, reads the
-> >>> memory that is used to hold the state of the RNG or just overwrites
-> >>> the memory locations where data is collected, because the general
-> >>> protection mechanisms offered by the kernel and the underlying
-> >>> hardware are broken.
-> >> 
-> >> No need to gain knowledge of the internal CPU state itt would be
-> >> sufficient to be able to put the CPU in a sub-state-space in which
-> >> the distribution is shifted. it may be enough to reduce the truely
-> >> random bits of some key only by a few bits to make it suceptible to
-> >> brute force attacks.
-> > 
-> > Note, the proposed RNG contains an unbias operation (the Von-Neumann
-> > unbiaser) which is proven to remove any bias when it is established that
-> > the individual observations are independent. And the way the
-> > observations are generated ensures that they are independent.
-> 
-> "Independent" does not mean that your own code avoids reusing data from
-> the previous loop iteration; it means that the _entire_ process that
-> generates the bits is not affected by any memory of the past.
+I have a C/pthreads program with two threads ("main" and "thread").
+"thread" calls recvfrom on a connected UDP socket and blocks, waiting
+for input.  "main" then calls shutdown SHUT_RD on the socket.  In
+"thread", recvfrom returns, apparently successfully, returning a zero
+length string, and setting src_addr to a bogus(?) address family,
+port, and source address.
 
-In the other email, I explained the different types of tests I performed. All 
-of these tests show proper statistical results.
+Is the above the correct behavior for recvfrom?
 
-Now, I also performed these tests without the Von-Neumann unbiaser. All of the 
-statistical tests results still showed a white noise (note, in the next code 
-release, I will have an allocation flag added that you can use to very simply 
-deactivate the Von-Neumann unbiaser for testing).
+Here is output from my program.  "main" sends "hello\0", then "" (the
+empty string), then calls shutdown.  "thread" receives "hello\0", "",
+and then finally receives an empty string that was never sent!
 
-So, the Von-Neumann unbiaser is to be considered a line of defence against 
-(not yet observed, but potential) skews. Similarly, the optional whitening 
-(non-cryptographic) function of jent_stir_pool is yet another line of defence.
+thread  recvfrom: Success
+  rv 6  addrlen 16  fam 2  port 8000  addr 100007f
 
-So, bottom line: I fully concur that using two separate measurements may not 
-imply that they are independent. But testing shows that it does not matter.
-> 
-> The observations are derived from the internal CPU state, which is *not*
-> reset between measurements.
-> 
-> 
-> Regards,
-> Clemens
+thread  recvfrom: Success
+  rv 0  addrlen 16  fam 2  port 8000  addr 100007f
 
+main    shutdown: Success
+  rv 0
 
-Ciao
-Stephan
--- 
-| Cui bono? |
+thread  recvfrom: Success
+  rv 0  addrlen 16  fam 59060  port 44237  addr deaadef0
+
+The source code (2k) for the porgram is attached.  I'm running Ubuntu
+13.04, kernel 3.8.0-19-generic #30-Ubuntu, on 32-bit i686.
+
+For reference, this June 2000 LKML thread discusses calling close in a
+similar situation.
+http://www.gossamer-threads.com/lists/linux/kernel/144379
+
+Please CC me if you have questions, otherwise I'll try to watch for
+answers in the list archives.
+
+Thanks!
+
+-mpb
+
+--001a11c25292f706e004eac89646
+Content-Type: text/x-csrc; charset=US-ASCII; name="test.c"
+Content-Disposition: attachment; filename="test.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hntl84y30
+
+CgojaW5jbHVkZSA8bmV0aW5ldC9pbi5oPgojaW5jbHVkZSA8cHRocmVhZC5oPgojaW5jbHVkZSA8
+c3RkaW8uaD4KI2luY2x1ZGUgPHN5cy9zb2NrZXQuaD4KI2luY2x1ZGUgPHN5cy90eXBlcy5oPgoK
+CnN0cnVjdCBzb2NrYWRkcl9pbiAgYWRkcl8wLCBhZGRyXzEsIGFkZHJfMiA7CmludCAgICAgICAg
+ICAgICAgICAgZmQwLCBmZDEsIHJ2MCwgcnYxLCBhZGRybGVuOwpjaGFyICAgICAgICAgICAgICAg
+IGJ1Zl8wWzEwMjRdLCBidWZfMVsxMDI0XTsKcHRocmVhZF90ICAgICAgICAgICB0aHJlYWQ7CnZv
+aWQqICAgICAgICAgICAgICAgdGhyZWFkX3J2OwoKCnZvaWQqIHRocmVhZF9tYWluICh2b2lkKiBh
+cmcpIHsKCiAgaW50IGk7ICBmb3IgKCBpPTA7ICBpPDM7ICBpKysgKSB7CgogICAgYWRkcl8yLnNp
+bl9mYW1pbHkgICAgICAgPSAgMDsKICAgIGFkZHJfMi5zaW5fcG9ydCAgICAgICAgID0gIDA7CiAg
+ICBhZGRyXzIuc2luX2FkZHIuc19hZGRyICA9ICAwOwoKICAgIGFkZHJsZW4gPSBzaXplb2YgYWRk
+cl8yOwogICAgcnYxID0gcmVjdmZyb20gKCBmZDEsIGJ1Zl8wLCBzaXplb2YgYnVmXzAsIDAsCgkJ
+ICAgICAoc3RydWN0IHNvY2thZGRyKikgJmFkZHJfMiwgJmFkZHJsZW4gKTsKCiAgICBpbnQgZmFt
+ICAgPSAgYWRkcl8yLnNpbl9mYW1pbHk7CiAgICBpbnQgcG9ydCAgPSAgYWRkcl8yLnNpbl9wb3J0
+OwogICAgaW50IGFkZHIgID0gIGFkZHJfMi5zaW5fYWRkci5zX2FkZHI7CgogICAgcHJpbnRmICgi
+XG4iKTsKICAgIHBlcnJvciAoInRocmVhZCAgcmVjdmZyb20iKTsKICAgIHByaW50ZiAoICIgIHJ2
+ICVkICBhZGRybGVuICVkICBmYW0gJWQgIHBvcnQgJWQgIGFkZHIgJXhcbiIsCgkgICAgIHJ2MSwg
+YWRkcmxlbiwgZmFtLCBudG9ocyAocG9ydCksIGFkZHIgKTsKICAgIDs7OyB9CgogIHJldHVybiBO
+VUxMOyB9CgoKdm9pZCBtYWluX21haW4gKCkgewoKICBzZW5kICggZmQwLCAiaGVsbG8iLCA2LCAw
+KTsKICBzZW5kICggZmQwLCAiIiwgICAgICAwLCAwKTsKICB1c2xlZXAgKDEwMDAwMCk7CgogIHJ2
+MCA9IHNodXRkb3duICggZmQxLCBTSFVUX1JEICk7CiAgcHJpbnRmICgiXG4iKTsKICBwZXJyb3Ig
+KCJtYWluICAgIHNodXRkb3duIik7CiAgcHJpbnRmICgiICAlZFxuIiwgcnYwKQoKICA7OzsgfQoK
+CmludCBtYWluICgpIHsKCiAgYWRkcl8wLnNpbl9mYW1pbHkgPSBBRl9JTkVUOwogIGFkZHJfMC5z
+aW5fcG9ydCA9IGh0b25zICg4MDAwKTsKICBpbmV0X3B0b24gKCBBRl9JTkVULCAiMTI3LjAuMC4x
+IiwgJmFkZHJfMC5zaW5fYWRkciApOwoKICBhZGRyXzEuc2luX2ZhbWlseSA9IEFGX0lORVQ7CiAg
+YWRkcl8xLnNpbl9wb3J0ID0gaHRvbnMgKDgwMDEpOwogIGluZXRfcHRvbiAoIEFGX0lORVQsICIx
+MjcuMC4wLjEiLCAmYWRkcl8xLnNpbl9hZGRyICk7CgogIGZkMCA9IHNvY2tldCAoIEFGX0lORVQs
+IFNPQ0tfREdSQU0sIDAgKTsKICBiaW5kICAgICggZmQwLCAoc3RydWN0IHNvY2thZGRyKikgJmFk
+ZHJfMCwgc2l6ZW9mIGFkZHJfMCApOwogIGNvbm5lY3QgKCBmZDAsIChzdHJ1Y3Qgc29ja2FkZHIq
+KSAmYWRkcl8xLCBzaXplb2YgYWRkcl8xICk7CgogIGZkMSA9IHNvY2tldCAoIEFGX0lORVQsIFNP
+Q0tfREdSQU0sIDAgKTsKICBiaW5kICAgICggZmQxLCAoc3RydWN0IHNvY2thZGRyKikgJmFkZHJf
+MSwgc2l6ZW9mIGFkZHJfMSApOwogIGNvbm5lY3QgKCBmZDEsIChzdHJ1Y3Qgc29ja2FkZHIqKSAm
+YWRkcl8wLCBzaXplb2YgYWRkcl8wICk7CgogIHB0aHJlYWRfY3JlYXRlICggJnRocmVhZCwgTlVM
+TCwgdGhyZWFkX21haW4sIE5VTEwgKTsKICBtYWluX21haW4gKCk7CiAgcHRocmVhZF9qb2luICgg
+dGhyZWFkLCAmdGhyZWFkX3J2ICk7CgogIHJldHVybiAwOyB9Cg==
+--001a11c25292f706e004eac89646--
