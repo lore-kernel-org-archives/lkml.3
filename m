@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab3KJPTk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 10:19:40 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55854 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037Ab3KJPTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 10:19:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="432794280"
-From: Huajun Li <huajun.li.lee@gmail.com>
-To: jaegeuk.kim@samsung.com, linux-f2fs-devel@lists.sourceforge.net
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Huajun Li <huajun.li@intel.com>
-Subject: [f2fs-dev][PATCH V2 6/6] f2fs: update f2fs Documentation
-Date: Sun, 10 Nov 2013 23:13:21 +0800
-Message-Id: <1384096401-25169-7-git-send-email-huajun.li.lee@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1384096401-25169-1-git-send-email-huajun.li.lee@gmail.com>
-References: <1384096401-25169-1-git-send-email-huajun.li.lee@gmail.com>
+	id S1751724Ab3KJPXm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 10:23:42 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:54427 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab3KJPXl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 10:23:41 -0500
+Date: Sun, 10 Nov 2013 16:23:38 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Joe Mario <jmario@redhat.com>, Michal Marek <mmarek@suse.cz>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [kallsyms] general protection fault: 0000 [#1] PREEMPT
+ DEBUG_PAGEALLOC
+Message-ID: <20131110152338.GN29695@two.firstfloor.org>
+References: <20131110094005.GA21916@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131110094005.GA21916@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Huajun Li <huajun.li@intel.com>
+On Sun, Nov 10, 2013 at 05:40:05PM +0800, Fengguang Wu wrote:
+> Hi Joe,
+> 
+> FYI. Here is another bisect result.
 
-This patch describes the inline_data support in f2fs document.
+I bet it's that strncpy() in kallsyms.c and someone passing in a too
+short buffer on a 32bit kernel.
 
-Signed-off-by: Huajun Li <huajun.li@intel.com>
----
- Documentation/filesystems/f2fs.txt |    2 ++
- 1 file changed, 2 insertions(+)
+We should really kill strncpy(), it's just evil.
 
-diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
-index a3fe811..9849372 100644
---- a/Documentation/filesystems/f2fs.txt
-+++ b/Documentation/filesystems/f2fs.txt
-@@ -120,6 +120,8 @@ active_logs=%u         Support configuring the number of active logs. In the
- disable_ext_identify   Disable the extension list configured by mkfs, so f2fs
-                        does not aware of cold files such as media files.
- inline_xattr           Enable the inline xattrs feature.
-+inline_data            Enable the inline data feature: New created small(<~3.4k)
-+                       files can be written into inode block.
- 
- ================================================================================
- DEBUGFS ENTRIES
--- 
-1.7.9.5
-
+-And
