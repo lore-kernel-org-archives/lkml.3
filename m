@@ -1,82 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021Ab3KJQqO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 11:46:14 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:56533 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab3KJQqM (ORCPT
+	id S1751951Ab3KJQuu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 11:50:50 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:61030 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab3KJQus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 11:46:12 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Kamil Debski <k.debski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
-        s.nawrocki@samsung.com, m.szyprowski@samsung.com,
-        gautam.vivek@samsung.com, mat.krawczuk@gmail.com,
-        yulgon.kim@samsung.com, p.paneri@samsung.com,
-        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org
-Subject: Re: [PATCH v3 3/3] usb: s3c-hsotg: Use the new Exynos USB phy driver with the generic phy framework
-Date: Sun, 10 Nov 2013 17:46:10 +0100
-Message-ID: <3111070.aXvW5a8oaK@flatron>
-User-Agent: KMail/4.11.3 (Linux/3.12.0-gentoo; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1383668001-19141-4-git-send-email-k.debski@samsung.com>
-References: <1383668001-19141-1-git-send-email-k.debski@samsung.com> <1383668001-19141-4-git-send-email-k.debski@samsung.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Sun, 10 Nov 2013 11:50:48 -0500
+From: Michal Nazarewicz <mpn@google.com>
+To: David Cohen <david.a.cohen@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: [PATCH 1/2] usb: gadget: f_fs: remove loop from I/O function
+Date: Sun, 10 Nov 2013 17:50:36 +0100
+Message-Id: <1384102237-19784-1-git-send-email-mpn@google.com>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <1383603177-4624-4-git-send-email-david.a.cohen@linux.intel.com>
+References: <1383603177-4624-4-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kamil,
+From: Michal Nazarewicz <mina86@mina86.com>
 
-This patch is changing a DT binding, but you haven't updated relevant
-documentation. Please remember about it in next version.
+When endpoint changes (due to it being disabled or alt setting changed),
+mimic the action as if the change happened after the request has been
+queued, instead of retrying with the new endpoint.
 
-On Tuesday 05 of November 2013 17:13:21 Kamil Debski wrote:
-> Change the used phy driver to the new Exynos USB phy driver that uses the
-> generic phy framework.
-> 
-> Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/usb/gadget/s3c-hsotg.c |   12 +++++++-----
->  1 file changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-> index bb31262..dc7f20c 100644
-> --- a/drivers/usb/gadget/s3c-hsotg.c
-> +++ b/drivers/usb/gadget/s3c-hsotg.c
-> @@ -31,6 +31,7 @@
->  #include <linux/regulator/consumer.h>
->  #include <linux/of.h>
->  #include <linux/of_platform.h>
-> +#include <linux/phy/phy.h>
->  
->  #include <linux/usb/ch9.h>
->  #include <linux/usb/gadget.h>
-> @@ -162,7 +163,7 @@ struct s3c_hsotg_ep {
->  struct s3c_hsotg {
->  	struct device		 *dev;
->  	struct usb_gadget_driver *driver;
-> -	struct usb_phy		*phy;
-> +	struct phy		 *phy;
->  	struct s3c_hsotg_plat	 *plat;
->  
->  	spinlock_t              lock;
-> @@ -2905,9 +2906,10 @@ static void s3c_hsotg_phy_enable(struct s3c_hsotg *hsotg)
->  	dev_dbg(hsotg->dev, "pdev 0x%p\n", pdev);
->  
->  	if (hsotg->phy)
-> -		usb_phy_init(hsotg->phy);
-> +		phy_power_on(hsotg->phy);
->  	else if (hsotg->plat->phy_init)
->  		hsotg->plat->phy_init(pdev, hsotg->plat->phy_type);
-> +
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+---
+ drivers/usb/gadget/f_fs.c | 94 +++++++++++++++++++++--------------------------
+ 1 file changed, 41 insertions(+), 53 deletions(-)
 
-nit: Stray blank line.
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index 44cf775..f875f26 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -754,74 +754,61 @@ static ssize_t ffs_epfile_io(struct file *file,
+ {
+ 	struct ffs_epfile *epfile = file->private_data;
+ 	struct ffs_ep *ep;
+-	char *data = NULL;
+ 	ssize_t ret;
++	char *data;
+ 	int halt;
 
-Best regards,
-Tomasz
+-	goto first_try;
+-	do {
+-		spin_unlock_irq(&epfile->ffs->eps_lock);
+-		mutex_unlock(&epfile->mutex);
++	/* Are we still active? */
++	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE)) {
++		ret = -ENODEV;
++		goto error;
++	}
 
+-first_try:
+-		/* Are we still active? */
+-		if (WARN_ON(epfile->ffs->state != FFS_ACTIVE)) {
+-			ret = -ENODEV;
++	/* Wait for endpoint to be enabled */
++	ep = epfile->ep;
++	if (!ep) {
++		if (file->f_flags & O_NONBLOCK) {
++			ret = -EAGAIN;
+ 			goto error;
+ 		}
+
+-		/* Wait for endpoint to be enabled */
+-		ep = epfile->ep;
+-		if (!ep) {
+-			if (file->f_flags & O_NONBLOCK) {
+-				ret = -EAGAIN;
+-				goto error;
+-			}
+-
+-			if (wait_event_interruptible(epfile->wait,
+-						     (ep = epfile->ep))) {
+-				ret = -EINTR;
+-				goto error;
+-			}
+-		}
+-
+-		/* Do we halt? */
+-		halt = !read == !epfile->in;
+-		if (halt && epfile->isoc) {
+-			ret = -EINVAL;
++		if (wait_event_interruptible(epfile->wait, (ep = epfile->ep))) {
++			ret = -EINTR;
+ 			goto error;
+ 		}
++	}
+
+-		/* Allocate & copy */
+-		if (!halt && !data) {
+-			data = kzalloc(len, GFP_KERNEL);
+-			if (unlikely(!data))
+-				return -ENOMEM;
++	/* Do we halt? */
++	halt = !read == !epfile->in;
++	if (halt && epfile->isoc) {
++		ret = -EINVAL;
++		goto error;
++	}
+
+-			if (!read &&
+-			    unlikely(__copy_from_user(data, buf, len))) {
+-				ret = -EFAULT;
+-				goto error;
+-			}
+-		}
++	/* Allocate & copy */
++	if (!halt) {
++		data = kmalloc(len, GFP_KERNEL);
++		if (unlikely(!data))
++			return -ENOMEM;
+
+-		/* We will be using request */
+-		ret = ffs_mutex_lock(&epfile->mutex,
+-				     file->f_flags & O_NONBLOCK);
+-		if (unlikely(ret))
++		if (!read && unlikely(copy_from_user(data, buf, len))) {
++			ret = -EFAULT;
+ 			goto error;
++		}
++	}
+
+-		/*
+-		 * We're called from user space, we can use _irq rather then
+-		 * _irqsave
+-		 */
+-		spin_lock_irq(&epfile->ffs->eps_lock);
++	/* We will be using request */
++	ret = ffs_mutex_lock(&epfile->mutex, file->f_flags & O_NONBLOCK);
++	if (unlikely(ret))
++		goto error;
++	spin_lock_irq(&epfile->ffs->eps_lock);
+
+-		/*
+-		 * While we were acquiring mutex endpoint got disabled
+-		 * or changed?
+-		 */
+-	} while (unlikely(epfile->ep != ep));
++	/* While we were acquiring mutex endpoint got disabled or changed. */
++	if (epfile->ep != ep) {
++		ret = -ESHUTDOWN;
++		spin_unlock_irq(&epfile->ffs->eps_lock);
++		goto error_unlock;
++	}
+
+ 	/* Halt */
+ 	if (unlikely(halt)) {
+@@ -856,6 +843,7 @@ first_try:
+ 		}
+ 	}
+
++error_unlock:
+ 	mutex_unlock(&epfile->mutex);
+ error:
+ 	kfree(data);
+--
+1.8.3.2
