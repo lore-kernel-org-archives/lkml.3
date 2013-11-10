@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751003Ab3KJJMs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 04:12:48 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:43415 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab3KJJMl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 04:12:41 -0500
+	id S1751032Ab3KJJ3Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 04:29:16 -0500
+Received: from mga02.intel.com ([134.134.136.20]:14166 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750875Ab3KJJ3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 04:29:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,671,1378882800"; 
+   d="scan'208";a="425053336"
+Date: Sun, 10 Nov 2013 17:29:07 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [vfsmounts] WARNING: CPU: 1 PID: 479 at fs/dcache.c:385
+ d_lru_del()
+Message-ID: <20131110092907.GA21120@localhost>
+References: <20131109030636.GA13464@localhost>
+ <20131109051931.GT13318@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <ecf977d9ccbd241723a606423267bb2d@biophys.uni-duesseldorf.de>
-References: <20130917082838.218329307@infradead.org>
-	<20130917182350.449685712@linutronix.de>
-	<20130917183628.534494408@linutronix.de>
-	<CAMuHMdWgrQf+ULDrZyY5R+vT3GtiWEgpsWxmfk0b5pivN7wBmg@mail.gmail.com>
-	<alpine.DEB.2.02.1309172315550.4089@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1309181159520.4089@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1309191652480.4089@ionos.tec.linutronix.de>
-	<87txhg3ftx.fsf@igel.home>
-	<CAMuHMdW-YBroi6GezUP-KQBVRAcmYtUQERvBC=ekmemopDhVow@mail.gmail.com>
-	<alpine.DEB.2.02.1311041305540.28335@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1311042032130.16975@ayla.of.borg>
-	<alpine.DEB.2.02.1311061237430.23353@ionos.tec.linutronix.de>
-	<CAMuHMdXDA2MRbR3GmD3KWC-iE6jnWX4uvbf1qeMd7RYX3O8f_g@mail.gmail.com>
-	<alpine.DEB.2.02.1311071655240.23353@ionos.tec.linutronix.de>
-	<ecf977d9ccbd241723a606423267bb2d@biophys.uni-duesseldorf.de>
-Date: Sun, 10 Nov 2013 10:12:39 +0100
-X-Google-Sender-Auth: U9mP-ebo0oeYewO92KvUP-3Bwgk
-Message-ID: <CAMuHMdVXk0NpinvqEszqL63fZEt3rOk6ZR9ogz0aHEzmEaW22A@mail.gmail.com>
-Subject: Re: [patch 1/6] hardirq: Make hardirq bits generic
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Michael Schmitz <schmitz@biophys.uni-duesseldorf.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131109051931.GT13318@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 10, 2013 at 9:49 AM, Michael Schmitz
-<schmitz@biophys.uni-duesseldorf.de> wrote:
->> Is there an easy to setup/use emulator around on which I could try to
->> dig into that myself?
->
-> I believe Geert uses ARAnyM for his tests of m68k kernels on emulators - it
-> is reasonably easy to set up and use. I've used it to debug problems we had
-> with the SLUB allocator two years ago.
+On Sat, Nov 09, 2013 at 05:19:31AM +0000, Al Viro wrote:
+> On Sat, Nov 09, 2013 at 11:06:36AM +0800, Fengguang Wu wrote:
+> > Greetings,
+> > 
+> > I got the below dmesg and the first bad commit is
+> > 
+> > commit 84550b9356af50c7cbd6b6ce6e8fd06585eebf14
+> > Author: Al Viro <viro@zeniv.linux.org.uk>
+> > Date:   Sun Sep 29 22:06:07 2013 -0400
+> 
+> 	Got it...  See if the following fixes the problem - it's
+> shrink_dcache_for_umount() needing to be careful after possible
+> run of d_genocide(); we are left with dentries that have zero
+> refcount and are not on any LRU.  And yes, it's d_genocide() being
+> not nice, exactly because it relies upon shrink_dcache_for_umount()
+> coming right after it to sweep the garbage.  So we'd better be
+> ready to deal with said garbage...
+> 
+> 	Diff below fixes that junk here.  Folded and re-pushed...
 
-Indeed. ARAnyM is the way to go.
+Thanks! I can confirm that it fixed the bug.
 
-> Not that it would hurt to try Geert's last non-booting kernel on true
-> hardware - either send the kernel image or a patch to apply to your current
-> tree please, Geert.
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
 
-Patches sent by private email.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 50d4357..72c99b8 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -1391,7 +1391,8 @@ static enum d_walk_ret umount_collect(void *_data, struct dentry *dentry)
+>  		 * need to get the global LRU lock and do the
+>  		 * LRU accounting.
+>  		 */
+> -		d_lru_del(dentry);
+> +		if (dentry->d_flags & DCACHE_LRU_LIST)
+> +			d_lru_del(dentry);
+>  		d_shrink_add(dentry, &data->dispose);
+>  		data->found++;
+>  		ret = D_WALK_NORETRY;
