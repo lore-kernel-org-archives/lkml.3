@@ -1,52 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750904Ab3KJISJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 03:18:09 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:47171 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794Ab3KJISG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 03:18:06 -0500
+	id S1750959Ab3KJIYd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 03:24:33 -0500
+Received: from [190.214.47.212] ([190.214.47.212]:53151 "EHLO
+	mail.distrito1p.gob.ec" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1750841Ab3KJIYb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 03:24:31 -0500
+X-Greylist: delayed 2044 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Nov 2013 03:24:31 EST
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-In-Reply-To: <20131110055145.GA7947@chokladfabriken.org>
-References: <1384029451-16555-1-git-send-email-geert@linux-m68k.org>
-	<20131110055145.GA7947@chokladfabriken.org>
-Date: Sun, 10 Nov 2013 09:18:05 +0100
-X-Google-Sender-Auth: PHq4sVAf90wFGT8WFLGbHutTc3k
-Message-ID: <CAMuHMdVDvN=E1wJ4Od2gohfoqwmcQ=P7u_ehtWQb-23GQBgt_Q@mail.gmail.com>
-Subject: Re: [ORLinux] [PATCH] openrisc: Add DTS and defconfig for DE0-Nano
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Cc: Jonas Bonn <jonas@southpole.se>, devicetree@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Mehall <contact@kevinmehall.net>, linux@openrisc.net
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Dear Sir/Madam
+To: Recipients <supports2@mipunto.com>
+From: Allen and Violet Large <supports2@mipunto.com>
+Date: Sun, 10 Nov 2013 08:41:07 +0100
+Reply-To: allenand.viole@aol.com
+Message-Id: <20131110073824.22C7C4D74F3@mail.distrito1p.gob.ec>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 10, 2013 at 6:51 AM, Stefan Kristiansson
-<stefan.kristiansson@saunalahti.fi> wrote:
-> On Sat, Nov 09, 2013 at 09:37:31PM +0100, Geert Uytterhoeven wrote:
->> Add a DTS and defconfig for the Terasic DE0-Nano Development and Education
->> Board running ORPSoC.  This board contains an Altera Cyclone IV FPGA with
->> support chips and I/O.
->>
->> The DTS was derived from published versions by Kevin Mehall and Marek
->> Czerski.
->
-> To give credit where credit is due, this was created by:
-> Gong Tao <gongtao0607@gmail.com>
+I saw your email address during the course of my research today.My Name is Allen my wife and I won a Jackpot Lottery 11.3 million in july and during the process my wife passed away as a result of cancer illness, we are donating the sum of 1.million dollars to 6 lucky individual over the world and if you received this email then you are one of the lucky recipients and all you have to do is get back to us so that we can send your details to the payout bank.
+Please note that you have to contact my private email for more information: allenand.viole@aol.com
 
-Sorry, I didn't know that. Jonas: please add.
+You can verify this by visiting the web pages below.
 
-Gr{oetje,eeting}s,
+http://www.dailymail.co.uk/news/article-1326473/Canadian-couple-Allen-Violet-Large-away-entire-11-2m-lottery-win.html
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Goodluck,
+Allen and Violet Large
