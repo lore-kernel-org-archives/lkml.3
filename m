@@ -1,164 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab3KJQuu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 11:50:50 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:61030 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab3KJQus (ORCPT
+	id S1752056Ab3KJQu6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 11:50:58 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:61439 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab3KJQuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 11:50:48 -0500
+	Sun, 10 Nov 2013 11:50:50 -0500
 From: Michal Nazarewicz <mpn@google.com>
 To: David Cohen <david.a.cohen@linux.intel.com>,
         Alan Stern <stern@rowland.harvard.edu>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCH 1/2] usb: gadget: f_fs: remove loop from I/O function
-Date: Sun, 10 Nov 2013 17:50:36 +0100
-Message-Id: <1384102237-19784-1-git-send-email-mpn@google.com>
+Subject: [PATCH 2/2] check quirk to pad epout buf size when not aligned to maxpacketsize
+Date: Sun, 10 Nov 2013 17:50:37 +0100
+Message-Id: <1384102237-19784-2-git-send-email-mpn@google.com>
 X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <1383603177-4624-4-git-send-email-david.a.cohen@linux.intel.com>
-References: <1383603177-4624-4-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <1384102237-19784-1-git-send-email-mpn@google.com>
+References: <1384102237-19784-1-git-send-email-mpn@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <mina86@mina86.com>
 
-When endpoint changes (due to it being disabled or alt setting changed),
-mimic the action as if the change happened after the request has been
-queued, instead of retrying with the new endpoint.
+Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
+to be aligned to maxpacketsize of an out endpoint.  ffs_epfile_io() needs
+to pad epout buffer to match above condition if quirk is found.
 
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 ---
- drivers/usb/gadget/f_fs.c | 94 +++++++++++++++++++++--------------------------
- 1 file changed, 41 insertions(+), 53 deletions(-)
+ I'm wondering whether the len should be aligned down rather then up.
+ This would have it's own problems, but maybe better then
+ a possibility of silently dropping data.
+
+ drivers/usb/gadget/f_fs.c | 21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 44cf775..f875f26 100644
+index f875f26..ea0b8ba 100644
 --- a/drivers/usb/gadget/f_fs.c
 +++ b/drivers/usb/gadget/f_fs.c
-@@ -754,74 +754,61 @@ static ssize_t ffs_epfile_io(struct file *file,
+@@ -753,8 +753,9 @@ static ssize_t ffs_epfile_io(struct file *file,
+ 			     char __user *buf, size_t len, int read)
  {
  	struct ffs_epfile *epfile = file->private_data;
++	struct usb_gadget *gadget = epfile->ffs->gadget;
  	struct ffs_ep *ep;
--	char *data = NULL;
- 	ssize_t ret;
-+	char *data;
+-	ssize_t ret;
++	ssize_t ret, data_len;
+ 	char *data;
  	int halt;
-
--	goto first_try;
--	do {
--		spin_unlock_irq(&epfile->ffs->eps_lock);
--		mutex_unlock(&epfile->mutex);
-+	/* Are we still active? */
-+	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE)) {
-+		ret = -ENODEV;
-+		goto error;
-+	}
-
--first_try:
--		/* Are we still active? */
--		if (WARN_ON(epfile->ffs->state != FFS_ACTIVE)) {
--			ret = -ENODEV;
-+	/* Wait for endpoint to be enabled */
-+	ep = epfile->ep;
-+	if (!ep) {
-+		if (file->f_flags & O_NONBLOCK) {
-+			ret = -EAGAIN;
- 			goto error;
- 		}
-
--		/* Wait for endpoint to be enabled */
--		ep = epfile->ep;
--		if (!ep) {
--			if (file->f_flags & O_NONBLOCK) {
--				ret = -EAGAIN;
--				goto error;
--			}
--
--			if (wait_event_interruptible(epfile->wait,
--						     (ep = epfile->ep))) {
--				ret = -EINTR;
--				goto error;
--			}
--		}
--
--		/* Do we halt? */
--		halt = !read == !epfile->in;
--		if (halt && epfile->isoc) {
--			ret = -EINVAL;
-+		if (wait_event_interruptible(epfile->wait, (ep = epfile->ep))) {
-+			ret = -EINTR;
- 			goto error;
- 		}
-+	}
-
--		/* Allocate & copy */
--		if (!halt && !data) {
--			data = kzalloc(len, GFP_KERNEL);
--			if (unlikely(!data))
--				return -ENOMEM;
-+	/* Do we halt? */
-+	halt = !read == !epfile->in;
-+	if (halt && epfile->isoc) {
-+		ret = -EINVAL;
-+		goto error;
-+	}
-
--			if (!read &&
--			    unlikely(__copy_from_user(data, buf, len))) {
--				ret = -EFAULT;
--				goto error;
--			}
--		}
-+	/* Allocate & copy */
-+	if (!halt) {
-+		data = kmalloc(len, GFP_KERNEL);
-+		if (unlikely(!data))
-+			return -ENOMEM;
-
--		/* We will be using request */
--		ret = ffs_mutex_lock(&epfile->mutex,
--				     file->f_flags & O_NONBLOCK);
--		if (unlikely(ret))
-+		if (!read && unlikely(copy_from_user(data, buf, len))) {
-+			ret = -EFAULT;
- 			goto error;
-+		}
-+	}
-
--		/*
--		 * We're called from user space, we can use _irq rather then
--		 * _irqsave
--		 */
--		spin_lock_irq(&epfile->ffs->eps_lock);
-+	/* We will be using request */
-+	ret = ffs_mutex_lock(&epfile->mutex, file->f_flags & O_NONBLOCK);
-+	if (unlikely(ret))
-+		goto error;
-+	spin_lock_irq(&epfile->ffs->eps_lock);
-
--		/*
--		 * While we were acquiring mutex endpoint got disabled
--		 * or changed?
--		 */
--	} while (unlikely(epfile->ep != ep));
-+	/* While we were acquiring mutex endpoint got disabled or changed. */
-+	if (epfile->ep != ep) {
-+		ret = -ESHUTDOWN;
-+		spin_unlock_irq(&epfile->ffs->eps_lock);
-+		goto error_unlock;
-+	}
-
- 	/* Halt */
- 	if (unlikely(halt)) {
-@@ -856,6 +843,7 @@ first_try:
+ 
+@@ -787,6 +788,13 @@ static ssize_t ffs_epfile_io(struct file *file,
+ 
+ 	/* Allocate & copy */
+ 	if (!halt) {
++		/*
++		 * Controller requires buffer size to be aligned to
++		 * maxpacketsize of an out endpoint.
++		 */
++		data_len = read && gadget->quirk_ep_out_aligned_size ?
++			usb_ep_align_maxpacketsize(ep->ep, len) : len;
++
+ 		data = kmalloc(len, GFP_KERNEL);
+ 		if (unlikely(!data))
+ 			return -ENOMEM;
+@@ -824,7 +832,7 @@ static ssize_t ffs_epfile_io(struct file *file,
+ 		req->context  = &done;
+ 		req->complete = ffs_epfile_io_complete;
+ 		req->buf      = data;
+-		req->length   = len;
++		req->length   = data_len;
+ 
+ 		ret = usb_ep_queue(ep->ep, req, GFP_ATOMIC);
+ 
+@@ -836,9 +844,16 @@ static ssize_t ffs_epfile_io(struct file *file,
+ 			ret = -EINTR;
+ 			usb_ep_dequeue(ep->ep, req);
+ 		} else {
++			/*
++			 * XXX We may end up silently droping data here.
++			 * Since data_len (i.e. req->length) may be bigger
++			 * than len (after being rounded up to maxpacketsize),
++			 * we may end up with more data then user space has
++			 * space for.
++			 */
+ 			ret = ep->status;
+ 			if (read && ret > 0 &&
+-			    unlikely(copy_to_user(buf, data, ret)))
++			    unlikely(copy_to_user(buf, data, min(ret, len))))
+ 				ret = -EFAULT;
  		}
  	}
-
-+error_unlock:
- 	mutex_unlock(&epfile->mutex);
- error:
- 	kfree(data);
---
+-- 
 1.8.3.2
+
