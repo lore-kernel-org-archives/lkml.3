@@ -1,41 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750967Ab3KJI3s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 03:29:48 -0500
-Received: from mail-wg0-f67.google.com ([74.125.82.67]:35144 "EHLO
-	mail-wg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab3KJI3p convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 03:29:45 -0500
+	id S1751061Ab3KJIbB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 03:31:01 -0500
+Received: from [190.214.47.212] ([190.214.47.212]:57526 "EHLO
+	mail.distrito1p.gob.ec" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751014Ab3KJIa5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 03:30:57 -0500
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Reply-To: azu_muda@yahoo.com
-Date: Sun, 10 Nov 2013 09:29:43 +0100
-Message-ID: <CA+5e7J_0wxCjR=JJ6yufDXve=gWzYj1BN658efmr2Yyhr8bhbQ@mail.gmail.com>
-Subject: YOUR ATM CARD IS READY TO PICK
-From: Mr Azu Muda <mr.alhaji.bello98@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Dear Sir/Madam
+To: Recipients <supports2@mipunto.com>
+From: Allen and Violet Large <supports2@mipunto.com>
+Date: Sun, 10 Nov 2013 08:41:31 +0100
+Reply-To: allenand.viole@aol.com
+Message-Id: <20131110073848.236AB4D75B5@mail.distrito1p.gob.ec>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attention,
+I saw your email address during the course of my research today.My Name is Allen my wife and I won a Jackpot Lottery 11.3 million in july and during the process my wife passed away as a result of cancer illness, we are donating the sum of 1.million dollars to 6 lucky individual over the world and if you received this email then you are one of the lucky recipients and all you have to do is get back to us so that we can send your details to the payout bank.
+Please note that you have to contact my private email for more information: allenand.viole@aol.com
 
-You Are Expected To Call DHL+226 78 71 46 75 Once You
-Receive this Email (ECO BANK) has finalize all the necessary arrangement and
-your fund $4.8USD is inside ATM CARD this moment your ATM CARD is in
-DHL OFFICE waiting
-for you Address were to deliver it. INFO:
+You can verify this by visiting the web pages below.
 
-Your name...
-Your country...
-Your address....
-You’re Age/sex....
-Your occupation....
-Direct phone number....
+http://www.dailymail.co.uk/news/article-1326473/Canadian-couple-Allen-Violet-Large-away-entire-11-2m-lottery-win.html
 
-This is your registration code (DHJKT0678G)
-Contact person: MR AZU MUDA
-Telephone - +226 226 78 71 46 75
-Email -(azu_muda@yahoo.com)
+Goodluck,
+Allen and Violet Large
