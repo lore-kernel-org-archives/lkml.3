@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab3KJStq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 13:49:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41739 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab3KJStk (ORCPT
+	id S1752041Ab3KJS6w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 13:58:52 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:48657 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab3KJS6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 13:49:40 -0500
-Date: Sun, 10 Nov 2013 10:52:10 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Michal Nazarewicz <mpn@google.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: go7007: fix use of uninitialised pointer
-Message-ID: <20131110185210.GA9633@kroah.com>
-References: <1384108677-23476-1-git-send-email-mpn@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384108677-23476-1-git-send-email-mpn@google.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sun, 10 Nov 2013 13:58:46 -0500
+From: Michal Nazarewicz <mpn@google.com>
+To: Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>
+Subject: [PATCH] drivers: infiniband: remove unused argument and minor dead code
+Date: Sun, 10 Nov 2013 19:58:35 +0100
+Message-Id: <1384109915-24095-1-git-send-email-mpn@google.com>
+X-Mailer: git-send-email 1.8.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 10, 2013 at 07:37:57PM +0100, Michal Nazarewicz wrote:
-> From: Michal Nazarewicz <mina86@mina86.com>
-> 
-> The go variable is declade without initialisation and invocation of
-> dev_dbg immediatelly tries to dereference it.
-> ---
->  drivers/staging/media/go7007/go7007-usb.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/media/go7007/go7007-usb.c b/drivers/staging/media/go7007/go7007-usb.c
-> index 58684da..457ab63 100644
-> --- a/drivers/staging/media/go7007/go7007-usb.c
-> +++ b/drivers/staging/media/go7007/go7007-usb.c
-> @@ -1057,7 +1057,7 @@ static int go7007_usb_probe(struct usb_interface *intf,
->  	char *name;
->  	int video_pipe, i, v_urb_len;
->  
-> -	dev_dbg(go->dev, "probing new GO7007 USB board\n");
-> +	pr_debug("probing new GO7007 USB board\n");
+From: Michal Nazarewicz <mina86@mina86.com>
 
-Please either delete this entirely, or use the struct device in the
-usb_interface pointer.
+The dev variable is never assigned after being initialised.
 
-A driver should never have a "raw" pr_* call.
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+---
+ drivers/infiniband/core/cma.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-thanks,
+diff --git a/drivers/infiniband/core/cma.c b/drivers/infiniband/core/cma.c
+index da9611d..33f114f 100644
+--- a/drivers/infiniband/core/cma.c
++++ b/drivers/infiniband/core/cma.c
+@@ -1452,7 +1452,6 @@ static int iw_conn_req_handler(struct iw_cm_id *cm_id,
+ {
+ 	struct rdma_cm_id *new_cm_id;
+ 	struct rdma_id_private *listen_id, *conn_id;
+-	struct net_device *dev = NULL;
+ 	struct rdma_cm_event event;
+ 	int ret;
+ 	struct ib_device_attr attr;
+@@ -1530,8 +1529,6 @@ static int iw_conn_req_handler(struct iw_cm_id *cm_id,
+ 	cma_deref_id(conn_id);
+ 
+ out:
+-	if (dev)
+-		dev_put(dev);
+ 	mutex_unlock(&listen_id->handler_mutex);
+ 	return ret;
+ }
+-- 
+1.8.3.2
 
-greg k-h
