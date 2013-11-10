@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab3KJSh5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 13:37:57 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:35849 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab3KJShu (ORCPT
+	id S1752181Ab3KJSi0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 13:38:26 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:37477 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab3KJSh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 13:37:50 -0500
+	Sun, 10 Nov 2013 13:37:58 -0500
 From: Michal Nazarewicz <mpn@google.com>
-To: Felipe Balbi <balbi@ti.com>, Roger Quadros <rogerq@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kelley Nielsen <kelleynnn@gmail.com>
+Cc: Marek Belisko <marek.belisko@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: phy: remove dead code
-Date: Sun, 10 Nov 2013 19:37:37 +0100
-Message-Id: <1384108657-23349-1-git-send-email-mpn@google.com>
+Subject: [PATCH] staging: ft1000: fix use of potentially unitiliaside variable
+Date: Sun, 10 Nov 2013 19:37:54 +0100
+Message-Id: <1384108674-23434-1-git-send-email-mpn@google.com>
 X-Mailer: git-send-email 1.8.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,36 +22,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <mina86@mina86.com>
 
+If boot_case is false, status in never assigned a value.
 ---
- drivers/usb/phy/phy-am335x.c  | 2 --
- drivers/usb/phy/phy-generic.c | 2 --
- 2 files changed, 4 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_download.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/usb/phy/phy-am335x.c b/drivers/usb/phy/phy-am335x.c
-index 6370e50..48d41ab 100644
---- a/drivers/usb/phy/phy-am335x.c
-+++ b/drivers/usb/phy/phy-am335x.c
-@@ -66,8 +66,6 @@ static int am335x_phy_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, am_phy);
-
- 	return 0;
--
--	return ret;
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+index 68ded17..12f333f 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+@@ -578,7 +578,7 @@ static int request_code_segment(struct ft1000_usb *ft1000dev, u16 **s_file,
+ 		 u8 **c_file, const u8 *endpoint, bool boot_case)
+ {
+ 	long word_length;
+-	int status;
++	int status = 0;
+ 
+ 	/*DEBUG("FT1000:REQUEST_CODE_SEGMENT\n");i*/
+ 	word_length = get_request_value(ft1000dev);
+@@ -1074,4 +1074,3 @@ int scram_dnldr(struct ft1000_usb *ft1000dev, void *pFileStart,
+ 
+ 	return status;
  }
-
- static int am335x_phy_remove(struct platform_device *pdev)
-diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
-index fce3a9e..db4fc22 100644
---- a/drivers/usb/phy/phy-generic.c
-+++ b/drivers/usb/phy/phy-generic.c
-@@ -271,8 +271,6 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, nop);
-
- 	return 0;
 -
--	return err;
- }
-
- static int usb_phy_gen_xceiv_remove(struct platform_device *pdev)
---
+-- 
 1.8.3.2
+
