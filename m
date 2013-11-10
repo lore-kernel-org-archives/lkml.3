@@ -1,52 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672Ab3KJPM6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 10:12:58 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:44403 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463Ab3KJPMz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 10:12:55 -0500
-Date: Sun, 10 Nov 2013 07:15:24 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/74] 3.10.19-stable review
-Message-ID: <20131110151524.GA26793@kroah.com>
-References: <20131109065113.502217951@linuxfoundation.org>
- <874n7k79vg.wl%satoru.takeuchi@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <874n7k79vg.wl%satoru.takeuchi@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1751802Ab3KJPNi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 10:13:38 -0500
+Received: from trinity.catbull.com ([88.198.52.214]:42685 "EHLO catbull.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751758Ab3KJPNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 10:13:35 -0500
+From: Joachim Adolf Schuetz <jas@catbull.com>
+To: gregkh@linuxfoundation.org, dulshani.gunawardhana89@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Joachim Adolf Schuetz <jas@catbull.com>
+Subject: [PATCH 2/2] staging: cxt1e1: comet: fixed some brace coding style issues.
+Date: Sun, 10 Nov 2013 16:13:05 +0100
+Message-Id: <1384096385-25851-1-git-send-email-jas@catbull.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 10, 2013 at 08:51:31PM +0900, Satoru Takeuchi wrote:
-> At Fri,  8 Nov 2013 22:51:05 -0800,
-> Greg Kroah-Hartman wrote:
-> > 
-> > This is the start of the stable review cycle for the 3.10.19 release.
-> > There are 74 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> 
-> This kernel can be built and boot without any problem.
-> Building a kernel with this kernel also works fine.
-> 
->  - Build Machine: debian jessy x86_64
->    CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
->    memory: 8GB
-> 
->  - Test machine: debian jessy x86_64(KVM guest on the Build Machine)
->    vCPU: x2
->    memory: 2GB
-> 
-> I reviewed the following patches and it looks good to me.
+Fixed some coding style issues - a few braces and indentions.
 
-Great, thanks for testing and letting me know.
+Signed-off-by: Joachim Adolf Schuetz <jas@catbull.com>
+---
+ drivers/staging/cxt1e1/comet.c |   31 +++++++++++++------------------
+ 1 files changed, 13 insertions(+), 18 deletions(-)
 
-greg k-h
+diff --git a/drivers/staging/cxt1e1/comet.c b/drivers/staging/cxt1e1/comet.c
+index 46a0d92..b130ad1 100644
+--- a/drivers/staging/cxt1e1/comet.c
++++ b/drivers/staging/cxt1e1/comet.c
+@@ -159,8 +159,7 @@ void init_comet(void *ci, comet_t *comet, u_int32_t port_mode, int clockmaster,
+     /* 60: t1 ALMI cfg */
+     /* Configure Line Coding */
+ 
+-	switch (port_mode)
+-	{
++	switch (port_mode) {
+ 	/* 1 - T1 B8ZS */
+ 	case CFG_FRAME_SF:
+ 		pci_write_32((u_int32_t *) &comet->cdrc_cfg, 0);
+@@ -286,8 +285,7 @@ void init_comet(void *ci, comet_t *comet, u_int32_t port_mode, int clockmaster,
+ 
+     /* 0x30: "BRIF cfg"; 0x20 is 'CMODE', 0x03 is (bit) rate */
+     /* note "rate bits can only be set once after reset" */
+-	if (clockmaster)
+-		{
++	if (clockmaster) {
+ 		/* CMODE == clockMode, 0=clock master (so all 3 others should be slave) */
+ 		/* rate = 1.544 Mb/s */
+ 		if (isT1mode)
+@@ -302,8 +300,7 @@ void init_comet(void *ci, comet_t *comet, u_int32_t port_mode, int clockmaster,
+ 
+ 		/* Master Mode i.e.FPMODE=0 (@0x20) */
+ 		pci_write_32((u_int32_t *) &comet->brif_fpcfg, 0x00);
+-		if ((moreParams & CFG_CLK_PORT_MASK) == CFG_CLK_PORT_INTERNAL)
+-			{
++		if ((moreParams & CFG_CLK_PORT_MASK) == CFG_CLK_PORT_INTERNAL) {
+ 			if (cxt1e1_log_level >= LOG_SBEBUG12)
+ 				pr_info(">> %s: clockmaster internal clock\n", __func__);
+ 			/* internal oscillator */
+@@ -422,8 +419,7 @@ WrtXmtWaveformTbl(ci_t *ci, comet_t *comet,
+ {
+ 	u_int32_t sample, unit;
+ 
+-	for (sample = 0; sample < COMET_NUM_SAMPLES; sample++)
+-		{
++	for (sample = 0; sample < COMET_NUM_SAMPLES; sample++) {
+ 		for (unit = 0; unit < COMET_NUM_UNITS; unit++)
+ 			WrtXmtWaveform(ci, comet, sample, unit, table[sample][unit]);
+ 		}
+@@ -554,8 +550,7 @@ SetCometOps(comet_t *comet)
+ {
+ 	volatile u_int8_t rd_value;
+ 
+-	if (comet == mConfig.C4Func1Base + (COMET0_OFFSET >> 2))
+-	{
++	if (comet == mConfig.C4Func1Base + (COMET0_OFFSET >> 2)) {
+ 		/* read the BRIF Configuration */
+ 		rd_value = (u_int8_t) pci_read_32((u_int32_t *) &comet->brif_cfg);
+ 		rd_value &= ~0x20;
+@@ -565,14 +560,14 @@ SetCometOps(comet_t *comet)
+ 		rd_value &= ~0x20;
+ 		pci_write_32((u_int32_t *) &comet->brif_fpcfg, (u_int8_t) rd_value);
+ 	} else {
+-	/* read the BRIF Configuration */
+-	rd_value = (u_int8_t) pci_read_32((u_int32_t *) &comet->brif_cfg);
+-	rd_value |= 0x20;
+-	pci_write_32((u_int32_t *) &comet->brif_cfg, (u_int32_t) rd_value);
+-	/* read the BRIF Frame Pulse Configuration */
+-	rd_value = (u_int8_t) pci_read_32((u_int32_t *) &comet->brif_fpcfg);
+-	rd_value |= 0x20;
+-	pci_write_32(u_int32_t *) & comet->brif_fpcfg, (u_int8_t) rd_value);
++		/* read the BRIF Configuration */
++		rd_value = (u_int8_t) pci_read_32((u_int32_t *) &comet->brif_cfg);
++		rd_value |= 0x20;
++		pci_write_32((u_int32_t *) &comet->brif_cfg, (u_int32_t) rd_value);
++		/* read the BRIF Frame Pulse Configuration */
++		rd_value = (u_int8_t) pci_read_32((u_int32_t *) &comet->brif_fpcfg);
++		rd_value |= 0x20;
++		pci_write_32(u_int32_t *) & comet->brif_fpcfg, (u_int8_t) rd_value);
+ 	}
+ }
+ #endif
+-- 
+1.7.2.5
+
