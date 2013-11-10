@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab3KJQoz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 11:44:55 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751531Ab3KJQoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 11:44:54 -0500
-Message-ID: <527FB804.9090509@nod.at>
-Date: Sun, 10 Nov 2013 17:44:52 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752021Ab3KJQqO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 11:46:14 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:56533 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751657Ab3KJQqM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 11:46:12 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Kamil Debski <k.debski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
+        s.nawrocki@samsung.com, m.szyprowski@samsung.com,
+        gautam.vivek@samsung.com, mat.krawczuk@gmail.com,
+        yulgon.kim@samsung.com, p.paneri@samsung.com,
+        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org
+Subject: Re: [PATCH v3 3/3] usb: s3c-hsotg: Use the new Exynos USB phy driver with the generic phy framework
+Date: Sun, 10 Nov 2013 17:46:10 +0100
+Message-ID: <3111070.aXvW5a8oaK@flatron>
+User-Agent: KMail/4.11.3 (Linux/3.12.0-gentoo; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1383668001-19141-4-git-send-email-k.debski@samsung.com>
+References: <1383668001-19141-1-git-send-email-k.debski@samsung.com> <1383668001-19141-4-git-send-email-k.debski@samsung.com>
 MIME-Version: 1.0
-To: Shahbaz Youssefi <shabbyx@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Partially Privileged Applications
-References: <CALeOzZ_K0o_h4gJ4w-twL5=-0QjC1XWb=m948wXWwjndr4q_Kw@mail.gmail.com>	<CAFLxGvx-G8VkBvbdLkYSJee4oAU+4PdHzwszhaTaTMwGJAHkRA@mail.gmail.com> <CALeOzZ-NQyOdxhd3e_c70i0HVMnxS=kcNLTVz8t7UCK9dqUMeg@mail.gmail.com>
-In-Reply-To: <CALeOzZ-NQyOdxhd3e_c70i0HVMnxS=kcNLTVz8t7UCK9dqUMeg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10.11.2013 17:24, schrieb Shahbaz Youssefi:
-> Not sure if I understood you (or you understood me). We don't throw
-> away anything. Only difference would be instead of generating a trap
-> to call a function in the kernel, we can just call it and have the
-> hardware take care of privileges. The "trap way" is the one that
-> actually seems hacky! A hack proposed to fix the brain-dead processors
-> of twenty years ago.
-> 
-> As a bonus you would also have more control over what parts of a
-> driver actually get run in privileged mode.
-> 
-> Care to explain why you would call this a step backwards?
+Hi Kamil,
 
-Maybe I did not understand your idea. But to me it sounds like plain old call gates.
-See: http://en.wikipedia.org/wiki/Call_gate
+This patch is changing a DT binding, but you haven't updated relevant
+documentation. Please remember about it in next version.
 
-Thanks,
-//richard
+On Tuesday 05 of November 2013 17:13:21 Kamil Debski wrote:
+> Change the used phy driver to the new Exynos USB phy driver that uses the
+> generic phy framework.
+> 
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/usb/gadget/s3c-hsotg.c |   12 +++++++-----
+>  1 file changed, 7 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+> index bb31262..dc7f20c 100644
+> --- a/drivers/usb/gadget/s3c-hsotg.c
+> +++ b/drivers/usb/gadget/s3c-hsotg.c
+> @@ -31,6 +31,7 @@
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/of.h>
+>  #include <linux/of_platform.h>
+> +#include <linux/phy/phy.h>
+>  
+>  #include <linux/usb/ch9.h>
+>  #include <linux/usb/gadget.h>
+> @@ -162,7 +163,7 @@ struct s3c_hsotg_ep {
+>  struct s3c_hsotg {
+>  	struct device		 *dev;
+>  	struct usb_gadget_driver *driver;
+> -	struct usb_phy		*phy;
+> +	struct phy		 *phy;
+>  	struct s3c_hsotg_plat	 *plat;
+>  
+>  	spinlock_t              lock;
+> @@ -2905,9 +2906,10 @@ static void s3c_hsotg_phy_enable(struct s3c_hsotg *hsotg)
+>  	dev_dbg(hsotg->dev, "pdev 0x%p\n", pdev);
+>  
+>  	if (hsotg->phy)
+> -		usb_phy_init(hsotg->phy);
+> +		phy_power_on(hsotg->phy);
+>  	else if (hsotg->plat->phy_init)
+>  		hsotg->plat->phy_init(pdev, hsotg->plat->phy_type);
+> +
+
+nit: Stray blank line.
+
+Best regards,
+Tomasz
+
