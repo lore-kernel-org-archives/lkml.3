@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab3KJWAp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 17:00:45 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:42987 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab3KJWAk (ORCPT
+	id S1752420Ab3KJWDm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 17:03:42 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:51711 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137Ab3KJWDe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 17:00:40 -0500
-USER-AGENT: Mutt/1.5.21 (2010-09-15)
+	Sun, 10 Nov 2013 17:03:34 -0500
+Date: Sun, 10 Nov 2013 16:03:29 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] Documentation/ABI: Document the non-ABI status of
+ Kconfig and symbols
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tao Ma <boyu.mt@taobao.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <20131024090825.GA3217@leaf> (from josh@joshtriplett.org on Thu
+	Oct 24 04:08:30 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1384121009.1974.263@driftwood>
 MIME-Version: 1.0
-Message-ID: <20131110212835.GB5302@mwanda>
-Date: Sun, 10 Nov 2013 13:28:35 -0800 (PST)
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Michal Nazarewicz <mpn@google.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ian Abbott <abbotti@mev.co.uk>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: fix potentially uninitialised variable
-References: <1384108669-23392-1-git-send-email-mpn@google.com>
-In-Reply-To: <1384108669-23392-1-git-send-email-mpn@google.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 10, 2013 at 07:37:49PM +0100, Michal Nazarewicz wrote:
-> From: Michal Nazarewicz <mina86@mina86.com>
-> 
-> If none of the if conditions take a true path, the ret variable will
-> never be assigned a value.
+On 10/24/2013 04:08:30 AM, Josh Triplett wrote:
+> On Thu, Oct 24, 2013 at 10:57:11AM +0200, Richard Weinberger wrote:
+> > On Thu, Oct 24, 2013 at 10:41 AM, Josh Triplett  
+> <josh@joshtriplett.org> wrote:
+> > > Discussion at Kernel Summit made it clear that the presence or  
+> absence
+> > > of specific Kconfig symbols are not considered ABI, and that no
+> > > userspace (or bootloader, etc) should rely on them.
+> > >
+> > > In addition, kernel-internal symbols are well established as  
+> non-ABI,
+> > > per Documentation/stable_api_nonsense.txt.
+> > >
+> > > Document both of these in Documentation/ABI/README, in a new  
+> section for
+> > > notable bits of non-ABI.
+> > >
+> > > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> > > ---
+> > >  Documentation/ABI/README | 13 +++++++++++++
+> > >  1 file changed, 13 insertions(+)
 
-Don't use a From: unless you are sending it on behalf of another sender.
+Should I grab this, or is it already going in through somebody else's  
+tree?
 
-You need a Signed-off-by line and it has to match your email address
-which you used to send the email.
-
-Otherwise, the patch is good an fixes an important bug.
-
-regards,
-dan carpenter
+Rob
