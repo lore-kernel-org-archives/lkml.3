@@ -1,127 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758559Ab3KIXvu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Nov 2013 18:51:50 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:65097 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758493Ab3KIXvk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Nov 2013 18:51:40 -0500
+	id S1758493Ab3KJAaz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Nov 2013 19:30:55 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:54987 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758348Ab3KJAax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Nov 2013 19:30:53 -0500
+Date: Sat, 9 Nov 2013 18:30:49 -0600
+From: Ben Myers <bpm@sgi.com>
+To: NeilBrown <neilb@suse.de>, Dave Chinner <david@fromorbit.com>
+Cc: Christoph Hellwig <hch@infradead.org>, elder@kernel.org,
+        Mark Tinguely <tinguely@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xfstests <xfs@oss.sgi.com>, Zhi Yong Wu <zwu.kernel@gmail.com>,
+        Ric Wheeler <rwheeler@redhat.com>
+Subject: Re: [PATCH] update xfs maintainers
+Message-ID: <20131110003049.GD1935@sgi.com>
+References: <527C4B27.6020205@redhat.com>
+ <527CC50D.4060905@redhat.com>
+ <20131108180337.GO10553@sgi.com>
+ <20131108193424.GA11052@infradead.org>
+ <20131108204605.GA1935@sgi.com>
+ <527D4E8D.3000109@redhat.com>
+ <20131108220309.GB1935@sgi.com>
+ <CAEH94LidwFnLX7cxetBAAzYzRGL+pc96egDNKPFKuPYcqKOtNg@mail.gmail.com>
+ <20131109104424.45b71dac@notabene.brown>
+ <20131109235130.GS10553@sgi.com>
 MIME-Version: 1.0
-X-Originating-IP: [2601:9:2080:7b:217:f2ff:fe01:ad74]
-In-Reply-To: <1383981551.8994.27.camel@chiang>
-References: <1383808590.23882.13.camel@chiang>
-	<20131107160341.GA3850@quack.suse.cz>
-	<1383864864.23882.33.camel@chiang>
-	<20131107231445.GG2054@quack.suse.cz>
-	<1383866807.23882.41.camel@chiang>
-	<D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
-	<1383981551.8994.27.camel@chiang>
-Date: Sat, 9 Nov 2013 15:51:39 -0800
-X-Google-Sender-Auth: mpgHA53QUI9m_rZSNwFiiki95So
-Message-ID: <CADQUmxULoLgXRyoPpJJMJLqJPsZ8M4oPP8ScGxWp+Np8-efq3g@mail.gmail.com>
-Subject: Re: [PATCH] ext4: explain encoding of 34-bit a,c,mtime values
-From: Mark Harris <mhlk@osj.us>
-To: David Turner <novalis@novalis.org>
-Cc: Andreas Dilger <adilger@dilger.ca>, Jan Kara <jack@suse.cz>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131109235130.GS10553@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 November 2013 23:19, David Turner <novalis@novalis.org> wrote:
->
-> On Fri, 2013-11-08 at 14:37 -0700, Andreas Dilger wrote:
-> > On Nov 7, 2013, at 4:26 PM, David Turner <novalis@novalis.org> wrote:
-> > > On Fri, 2013-11-08 at 00:14 +0100, Jan Kara wrote:
-> > >> Still unnecessary type cast here (but that's a cosmetic issue).
-> > > ...
-> > >> Otherwise the patch looks good. You can add:
-> > >> Reviewed-by: Jan Kara <jack@suse.cz>
-> > >
-> > > Thanks.  A version with this correction and the reviewed-by follows.
-> >
-> > Thanks for working on this.  It was (seriously) in my list of things to
-> > get done, but I figured I still had a few years to work on it...
-> >
-> > My (unfinished) version of this patch had a nice comment at ext4_encode_time()
-> > that explained the encoding that is being used very clearly:
-> >
-> > /*
-> >  * We need is an encoding that preserves the times for extra epoch "00":
-> >  *
-> >  * extra  msb of                         adjust for signed
-> >  * epoch  32-bit                         32-bit tv_sec to
-> >  * bits   time    decoded 64-bit tv_sec  64-bit tv_sec      valid time range
-> >  * 0 0    1    -0x80000000..-0x00000001  0x000000000     1901-12-13..1969-12-31
-> >  * 0 0    0    0x000000000..0x07fffffff  0x000000000     1970-01-01..2038-01-19
-> >  * 0 1    1    0x080000000..0x0ffffffff  0x100000000     2038-01-19..2106-02-07
-> >  * 0 1    0    0x100000000..0x17fffffff  0x100000000     2106-02-07..2174-02-25
-> >  * 1 0    1    0x180000000..0x1ffffffff  0x200000000     2174-02-25..2242-03-16
-> >  * 1 0    0    0x200000000..0x27fffffff  0x200000000     2242-03-16..2310-04-04
-> >  * 1 1    1    0x280000000..0x2ffffffff  0x300000000     2310-04-04..2378-04-22
-> >  * 1 1    0    0x300000000..0x37fffffff  0x300000000     2378-04-22..2446-05-10
-> >  */
-> >
-> > It seems that your version of the patch seems to use a different encoding.  Not
-> > that this is a problem, per-se, since my patch wasn’t in use anywhere, but it
-> > would be nice to have a similarly clear explanation of what the mapping is so
-> > that it can be clearly understood.
->
-> I have included a patch with an explanation (the patch is against
-> tytso/dev -- I hope that's the correct place).
->
-> > My ext4_{encode,decode}_extra_time() used add/subtract instead of mask/OR ops,
-> > which changed the on-disk format for times beyond 2038, but those were already
-> > broken, and presumably not in use by anyone yet.
->
-> They were actually correct according to my patch's encoding (that is, my
-> patch used the existing encoding).  The existing encoding was written
-> correctly, but read wrongly.  As you say, this should not matter, since
-> nobody should be writing these timestamps, but I assumed that the
-> existing encoding had happened for a reason, and wanted to make the
-> minimal change.
->
-> If you believe it is important, I would be happy to change it.
+Dave,
 
+On Sat, Nov 09, 2013 at 05:51:30PM -0600, Ben Myers wrote:
+> Hey Neil,
+> 
+> On Sat, Nov 09, 2013 at 10:44:24AM +1100, NeilBrown wrote:
+> > On Sat, 9 Nov 2013 06:59:00 +0800 Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
+> > 
+> > > On Sat, Nov 9, 2013 at 6:03 AM, Ben Myers <bpm@sgi.com> wrote:
+> > > > Hey Ric,
+> > > >
+> > > > On Fri, Nov 08, 2013 at 03:50:21PM -0500, Ric Wheeler wrote:
+> > > >> On 11/08/2013 03:46 PM, Ben Myers wrote:
+> > > >> >Hey Christoph,
+> > > >> >
+> > > >> >On Fri, Nov 08, 2013 at 11:34:24AM -0800, Christoph Hellwig wrote:
+> > > >> >>On Fri, Nov 08, 2013 at 12:03:37PM -0600, Ben Myers wrote:
+> > > >> >>>Mark is replacing Alex as my backup because Alex is really busy at
+> > > >> >>>Linaro and asked to be taken off awhile ago.  The holiday season is
+> > > >> >>>coming up and I fully intend to go off my meds, turn in to Fonzy the
+> > > >> >>>bear, and eat my hat.  I need someone to watch the shop while I'm off
+> > > >> >>>exploring on Mars.  I trust Mark to do that because he is totally
+> > > >> >>>awesome.
+> > > >> >>
+> > > >> >>Doing this as an unilateral decisions is not something that will win you
+> > > >> >>a fan base.
+> > > >> >It's posted for review.
+> > > >> >
+> > > >> >>While we never had anything reassembling a democracy in Linux Kernel
+> > > >> >>development making decisions without even contacting the major
+> > > >> >>contributor is wrong, twice so if the maintainer is a relatively minor
+> > > >> >>contributor to start with.
+> > > >> >>
+> > > >> >>Just because it recent came up elsewhere I'd like to recite the
+> > > >> >>definition from Trond here again:
+> > > >> >>
+> > > >> >>    http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-June/000066.html
+> > > >> >>
+> > > >> >>By many of the creative roles enlisted there it's clear that Dave should
+> > > >> >>be the maintainer.  He's been the main contributor and chief architect
+> > > >> >>for XFS for many year, while the maintainers came and went at the mercy
+> > > >> >>of SGI.  This is not meant to bad mouth either of you as I think you're
+> > > >> >>doing a reasonably good job compared to other maintainers, but at the
+> > > >> >>same time the direction is set by other people that have a much longer
+> > > >> >>involvement with the project, and having them officially in control
+> > > >> >>would help us forward a lot.  It would also avoid having to spend
+> > > >> >>considerable resources to train every new generation of SGI maintainer.
+> > > >> >>
+> > > >> >>Coming to and end I would like to maintain Dave Chinner as the primary
+> > > >> >>XFS maintainer for all the work he has done as biggest contributor and
+> > > >> >>architect of XFS since longer than I can remember, and I would love to
+> > > >> >>retain Ben Myers as a co-maintainer for all the good work he has done
+> > > >> >>maintaining and reviewing patches since November 2011.
+> > > >> >I think we're doing a decent job too.  So thanks for that much at least.  ;)
+> > > >> >>I would also like to use this post as a public venue to condemn the
+> > > >> >>unilateral smokey backroom decisions about XFS maintainership that SGI is
+> > > >> >>trying to enforce on the community.
+> > > >> >That really didn't happen Christoph.  It's not in my tree or in a pull request.
+> > > >> >
+> > > >> >Linus, let me know what you want to do.  I do think we're doing a fair job over
+> > > >> >here, and (geez) I'm just trying to add Mark as my backup since Alex is too
+> > > >> >busy.  I know the RH people want more control, and that's understandable, but
+> > > >> >they really don't need to replace me to get their code in.  Ouch.
+> > > >> >
+> > > >> >Thanks,
+> > > >> >     Ben
+> > > >>
+> > > >> Christoph is not a Red Hat person.
+> > > >>
+> > > >> Jeff is from Oracle.
+> > > >>
+> > > >> This is not a Red Hat vs SGI thing,
+> > > >
+> > > > Sorry if my read on that was wrong.
+> > > >
+> > > >> Dave simply has earned the right
+> > > >> to take on the formal leadership role of maintainer.
+> > > >
+> > > > Then we're gonna need some Reviewed-bys.  ;)
+> > > >
+> > > > From: Ben Myers <bpm@sgi.com>
+> > > >
+> > > > xfs: update maintainers
+> > > >
+> > > > Add Dave as maintainer of XFS.
+> > > >
+> > > > Signed-off-by: Ben Myers <bpm@sgi.com>
+> > > > ---
+> > > >  MAINTAINERS |    2 +-
+> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > >
+> > > > Index: b/MAINTAINERS
+> > > > ===================================================================
+> > > > --- a/MAINTAINERS       2013-11-08 15:20:18.935186245 -0600
+> > > > +++ b/MAINTAINERS       2013-11-08 15:22:50.685245977 -0600
+> > > > @@ -9387,8 +9387,8 @@ F:        drivers/xen/*swiotlb*
+> > > >
+> > > >  XFS FILESYSTEM
+> > > >  P:     Silicon Graphics Inc
+> > > > +M:     Dave Chinner <dchinner@fromorbit.com>
+> > > Use his personal private mail account? I guess that you should ask for
+> > > his opinion at first, or it is more appropriate that he submit this
+> > > patch by himself.
+> 
+> If y'all don't mind, I'd like to have authored this one.  ;)
+>  
+> > Indeed.  And does he even want the job?  I heard Linus say in a recent
+> > interview that being a maintainer is a $#!+ job. 
+> 
+> I've found that it can be a little bit stressful sometimes and it tends to
+> crowd out feature work, so I guess I agree with him.  It turns out to be an
+> excellent weight loss plan.
+> 
+> > Is it really best for the
+> > most active developers to be burdened with that extra work?
+> > 
+> > (hmm.. maybe I should add Dave to the Cc here .. but no-one else did so best
+> > leave him alone to code in peace).
+> 
+> Dave, what do you want to do here?  Which email?  What sort of arrangement?  I
+> gather that you probably do want the job, and I know you'll be fantastic.  Do
+> you want to do it all yourself?  Maybe split it up?
 
-The problem with the existing encoding is that pre-1970 dates are
-encoded with extra bits 1,1 in 64-bit kernels with ext4, but on 32-bit
-kernels and inodes that were originally written as ext3 the extra bits
-will be 0,0.  Currently, both are decoded as pre-1970 dates.
+I should have also suggested that we can add you to this file and just keep our
+existing arrangements.  That seems appropriate to me, befitting of your
+achievements, the work you've been doing, and I'm willing to keep on as I am.
 
-With your patch, only the 1,1 format used by 64-bit ext4 will decode
-as a pre-1970 date.  Dates previously written by ext3 or a 32-bit
-kernel will no longer be decoded as expected.  Also the patch does
-not update ext4_encode_extra_time to use this format for pre-1970
-dates in 32-bit mode.
-
-Possible solutions were discussed here, but no decision was made:
-http://thread.gmane.org/gmane.comp.file-systems.ext4/26087/focus=26406
-
-
->
->
-> >  However, it seemed to me this
-> > was easier to produce the correct results.  Have you tested your patch with
-> > a variety of timestamps to verify its correctness?
->
-> I tested by using touch -d to create one file in each year between 1902
-> and 2446.  Then I unmounted and remounted the FS, and did ls -l and
-> manually verified that each file's date matched its name.
->
-> > It looks to me like you
-> > have mapped the 1901-1969 range onto 0x3 for the epoch bits, instead
-> > of the (IMHO) natural 0x0 bits. The critical time ranges are listed
-> > above.
->
-> I think the idea of this is that it is the bottom 34 bits of the 64-bit
-> signed time.  However, it occurs to me that this relies on a two's
-> complement machine.  Even though the C standard does not guarantee this,
-> I believe the kernel requires it, so that's probably OK.
-
- - Mark
+Regards,
+Ben
