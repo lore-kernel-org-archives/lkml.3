@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab3KKUlL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 15:41:11 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:59407 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab3KKUlE (ORCPT
+	id S1752745Ab3KKUlU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 15:41:20 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:47702 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625Ab3KKUlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 15:41:04 -0500
-Message-ID: <528140DB.90301@gmail.com>
-Date: Mon, 11 Nov 2013 13:40:59 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+	Mon, 11 Nov 2013 15:41:10 -0500
+Date: Mon, 11 Nov 2013 21:41:04 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, jolsa@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
         Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 04/10] perf machine: Introduce synthesize_threads method
- out of open coded equivalent
-References: <1384201353-23863-1-git-send-email-acme@infradead.org> <1384201353-23863-5-git-send-email-acme@infradead.org>
-In-Reply-To: <1384201353-23863-5-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 2/2] perf record: mmap output file - v4
+Message-ID: <20131111204104.GB18886@gmail.com>
+References: <1383884605-30968-1-git-send-email-dsahern@gmail.com>
+ <1383884605-30968-3-git-send-email-dsahern@gmail.com>
+ <20131111112906.GE15810@gmail.com>
+ <20131111145804.GB27198@ghostprotocols.net>
+ <5280F50E.6010700@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5280F50E.6010700@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/13, 1:22 PM, Arnaldo Carvalho de Melo wrote:
-> +	if (perf_target__has_task(target))
-> +		return perf_event__synthesize_thread_map(tool, threads, process, machine, data_mmap);
-> +	else if (perf_target__has_cpu(target))
-> +		return perf_event__synthesize_threads(tool, process, machine, data_mmap);
 
+* David Ahern <dsahern@gmail.com> wrote:
 
-Getting kind of long on the line lengths...
+> On 11/11/13, 7:58 AM, Arnaldo Carvalho de Melo wrote:
+> >
+> >>Looks very clean now!
+> >
+> >>Acked-by: Ingo Molnar <mingo@kernel.org>
+> >
+> >Applied the prep patch, but waiting for v5 as stated by David when
+> >answering Jiri's concerns.
+> 
+> I'll re-send - giving some time for comments on the use of 
+> setjmp/longjmp to bounce out of memcpy and error exit when filesystem 
+> runs out of space.
+
+Maybe that could be an add-on patch instead?
+
+All the rest would already be an improvement, right?
+
+Thanks,
+
+	Ingo
