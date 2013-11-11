@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab3KKMTP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 07:19:15 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:60128 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059Ab3KKMTF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 07:19:05 -0500
-Date: Mon, 11 Nov 2013 13:19:00 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist
- periods (v2)
-Message-ID: <20131111121900.GD21397@gmail.com>
-References: <20131101092759.GC27063@gmail.com>
- <87bo1zz4mu.fsf@sejong.aot.lge.com>
- <20131105074650.GA2855@gmail.com>
- <87txfrxlq8.fsf@sejong.aot.lge.com>
- <20131105115802.GA12045@gmail.com>
- <87ppqex8tj.fsf@sejong.aot.lge.com>
- <20131106083046.GA4655@gmail.com>
- <87r4atx51i.fsf@sejong.aot.lge.com>
- <20131106114701.GA20249@gmail.com>
- <527A613A.20404@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <527A613A.20404@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753219Ab3KKMTY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 07:19:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753499Ab3KKMTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 07:19:14 -0500
+Date: Mon, 11 Nov 2013 07:18:25 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: devel@openvz.org, ebiederm@xmission.com, oleg@redhat.com,
+        bfields@fieldses.org, bharrosh@panasas.com
+Subject: call_usermodehelper in containers
+Message-ID: <20131111071825.62da01d1@tlielax.poochiereds.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We have a bit of a problem wrt to upcalls that use call_usermodehelper
+with containers and I'd like to bring this to some sort of resolution...
 
-* David Ahern <dsahern@gmail.com> wrote:
+A particularly problematic case (though there are others) is the
+nfsdcltrack upcall. It basically uses call_usermodehelper to run a
+program in userland to track some information on stable storage for
+nfsd.
 
-> On 11/6/13, 4:47 AM, Ingo Molnar wrote:
-> >I'm not too worried about call-graph 'legacies': it generates such huge
-> >perf.data files which is parsed so slowly at the moment that there's very
-> >little user base ... Anyone who absolutely needs call-graph profiling uses
-> >SysProf which performs well.
-> 
-> Actually, perf with callchains is used quite heavily on my products.
-> One of the selling points of perf.
+One could envision nfsd running on a machine with several containers,
+and each would need to track its own database of info on stable
+storage. When processing RPCs that come into the network address within
+a certain container, we want to ensure that it tracks this info inside
+the mount namespace within that container as well.
 
-That's nice to hear :)
+So, we ideally need to ensure that when this upcall is run, that we run
+the correct binary in the container *and* that it does all of its file
+I/O within the correct mount namespace. We might also need other
+namespace swapping as well.
 
-In what way is call-graph profiling utilized typically?
+Stanislav posted a patch a few months ago that tried to address this:
 
-Is it system-wide, i.e. something like:
+    https://lkml.org/lkml/2013/5/22/80
 
-	perf record -a -g sleep 10
+However, it failed to address some problems -- namely that we have to
+consider the case where a container may be running with reduced
+capabilities. We want to ensure that the UMH upcall inherits the
+correct capability set for its container as well.
 
-? If yes then that would explain why scalability problems rarely surfaced, 
-it takes a longer user-space profile to get to the event counts where 
-scalability started hurting.
+What's the correct approach to fix this? One possibility would be to
+keep a kernel thread around that sits in the correct namespace(s) and
+has the right privileges, and then use that to launch UMH programs.
+That thread could be spawned whenever someone runs rpc.nfsd inside a
+container.
 
-Thanks,
+Not very elegant, but it seems like something that would work.
 
-	Ingo
+Are there better approaches?
+
+-- 
+Jeff Layton <jlayton@redhat.com>
