@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab3KKCXl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 21:23:41 -0500
-Received: from ozlabs.org ([203.10.76.45]:40219 "EHLO ozlabs.org"
+	id S1752145Ab3KKCsT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 21:48:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44836 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752467Ab3KKCXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 21:23:23 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ming Lei <tom.leiming@gmail.com>, Axel Lin <axel.lin@ingics.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: kernel BUG at kernel/kallsyms.c:222!
-In-Reply-To: <CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com>
-References: <1383789208.5970.1.camel@phoenix> <CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com> <CAFRkauAEt-YhBt11opj_GVCLrxGsTSd2LowWGmukTSmGuJkd3A@mail.gmail.com> <CACVXFVO=QA-R1+twCL9fc_3vASg6Ap-3ezi=tU1MV1pdPYrfWw@mail.gmail.com> <CAFRkauAdR3=ByE0_B3OsqOBjmbz2a02EXb+6g-vn=1TJ7AZc8Q@mail.gmail.com> <CACVXFVMaLOfDvzdn_1NryQY59cgtLdMMqHL-_ZAa95MPz4p56Q@mail.gmail.com> <CAFRkauDe7V3N0AbfvE_=GEXHZ_Fw62VsA8p50wSUYE1-TRqMfw@mail.gmail.com> <87zjpf4w0j.fsf@rustcorp.com.au> <CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com> <CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com> <CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 11 Nov 2013 10:53:23 +1030
-Message-ID: <87y54vzszo.fsf@rustcorp.com.au>
+	id S1751003Ab3KKCsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 21:48:11 -0500
+Date: Mon, 11 Nov 2013 10:47:01 +0800
+From: Dave Young <dyoung@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de, Greg KH <greg@kroah.com>
+Subject: Re: [patch 0/7 v2] kexec kernel efi runtime support
+Message-ID: <20131111024701.GD4407@dhcp-16-126.nay.redhat.com>
+References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com>
+ <20131108143118.GA22636@console-pimps.org>
+ <20131109035739.GB4294@dhcp-16-126.nay.redhat.com>
+ <527DC1BE.6030107@zytor.com>
+ <20131111021356.GC4407@dhcp-16-126.nay.redhat.com>
+ <52803F15.3080204@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52803F15.3080204@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ming Lei <tom.leiming@gmail.com> writes:
-> Hi Axel,
->
-> On Fri, Nov 8, 2013 at 12:20 PM, Axel Lin <axel.lin@ingics.com> wrote:
->>
->>
->> Hi Ming,
->>
->> I have patches on top of 3.12 to support gpl32700 SoC.
->> So you cannot find this platform on mainline kernel.
->
-> OK, I see.
->
->> I havn't tried perf, below is my config for your reference:
->> (to make the config smaller, I grep out disabled config entries.)
->
-> I doubt CONFIG_VMSPLIT_3G/CONFIG_PAGE_OFFSET isn't
-> used at all in your unmerged patchset, also your link script should
-> be different with in-tree arch/arm/kernel/vmlinux.lds.S, otherwise
-> you may put all your kernel symbols after 0xC00000000.
->
-> Maybe you need to not define PAGE_OFFSET and let it be
-> PHYS_OFFSET at default, also VMSPLIT_3G shouldn't have
-> been there on non-MMU linux.
+On 11/10/13 at 06:21pm, H. Peter Anvin wrote:
+> On 11/10/2013 06:13 PM, Dave Young wrote:
+> > 
+> > Huang Ying <ying.huang@intel.com> created the debugfs file for boot_params.
+> > His first version patch tried sysfs, but sysfs is not designed for such
+> > binary blobs so finally it go to debugfs.
+> > 
+> 
+> That is a misunderstanding.  Binary blobs can exist in sysfs as long as
+> the blob is something that is inherently a blob.  This is admittedly a
+> corner case, but it is without any doubt a protocol-defined binary
+> structure.
 
-OK, unless there are other platforms which have this issue, I'll
-leave it with you to hold this patch for merge with your SoC.
+You are right. Greg objected that the whole structure being exported directly.
 
-Cheers,
-Rusty.
+> 
+> The reason it was put in debugfs is that there was no non-debug user for
+> it at the time.
+
+Ok, I did not know this background.
+
+> 
+> > Any idea for this is welcome, till now I have no better idea for such kind
+> > of data. We should have another *fs instead of using debugfs.
+> 
+> The problem with debugfs is that things go into debugfs with largely no
+> auditing.  As a result, mounting debugfs is very likely to mean that
+> your system is exploitable one way or another.
+
+Hmm, agree. Thanks for explaining about it.
+
+Thanks
+Dave
