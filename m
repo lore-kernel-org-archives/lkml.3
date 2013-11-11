@@ -1,114 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab3KKJGk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 04:06:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49089 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614Ab3KKJG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 04:06:28 -0500
-Date: Mon, 11 Nov 2013 10:06:21 +0100
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Jingbai Ma <jingbai.ma@hp.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "bhe@redhat.com" <bhe@redhat.com>,
-        "tom.vaden@hp.com" <tom.vaden@hp.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lisa.mitchell@hp.com" <lisa.mitchell@hp.com>,
-        "anderson@redhat.com" <anderson@redhat.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>
-Subject: Re: [PATCH 0/3] makedumpfile: hugepage filtering for vmcore dump
-Message-ID: <20131111100621.1c26b372@hananiah.suse.cz>
-In-Reply-To: <527C7629.1030007@hp.com>
-References: <20131105134532.32112.78008.stgit@k.asiapacific.hpqcorp.net>
-	<20131105202631.GC4598@redhat.com>
-	<0910DD04CBD6DE4193FCF86B9C00BE971BB7A9@BPXM01GP.gisp.nec.co.jp>
-	<20131106142350.GB23357@redhat.com>
-	<527B55F0.4000301@hp.com>
-	<0910DD04CBD6DE4193FCF86B9C00BE971BD6C0@BPXM01GP.gisp.nec.co.jp>
-	<527C74D8.8060006@jp.fujitsu.com>
-	<527C7629.1030007@hp.com>
-Organization: SUSE Linux, s.r.o.
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.21; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753056Ab3KKJMb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 04:12:31 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:47857
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752342Ab3KKJMX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 04:12:23 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1155h)
+Message-ID: <52809F67.20901@freescale.com>
+Date: Mon, 11 Nov 2013 17:12:07 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Dan Williams <dan.j.williams@intel.com>
+CC: "Koul, Vinod" <vinod.koul@intel.com>, <rob.herring@calxeda.com>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
+        <devicetree@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <dmaengine@vger.kernel.org>
+Subject: Re: [PATCH v11 3/3] DMA: Freescale: update driver to support 8-channel
+ DMA engine
+References: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com> <1380188023-3936-4-git-send-email-hongbo.zhang@freescale.com> <525F7C18.3010409@freescale.com> <5278587F.7090500@freescale.com> <CAA9_cme3c7SjH3iio0oR3FHpfoMzgrBDO-2k_Yf68G-AgFNqfA@mail.gmail.com>
+In-Reply-To: <CAA9_cme3c7SjH3iio0oR3FHpfoMzgrBDO-2k_Yf68G-AgFNqfA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 08 Nov 2013 13:27:05 +0800
-Jingbai Ma <jingbai.ma@hp.com> wrote:
+On 11/08/2013 10:45 AM, Dan Williams wrote:
+> On Mon, Nov 4, 2013 at 6:31 PM, Hongbo Zhang <hongbo.zhang@freescale.com> wrote:
+>> Hi Vinod Koul and Dan Williams,
+>> Ping?
+>>
+> Not much to review from the dmaengine side, just one question below.
+> It would be helpful if you can send these to the new dmaengine
+> patchwork at dmaengine@vger.kernel.org with the Acks you have already
+> collected.
+>
 
-> On 11/08/2013 01:21 PM, HATAYAMA Daisuke wrote:
-> > (2013/11/08 14:12), Atsushi Kumagai wrote:
-> >> Hello Jingbai,
-> >>
-> >> (2013/11/07 17:58), Jingbai Ma wrote:
-> >>> On 11/06/2013 10:23 PM, Vivek Goyal wrote:
-> >>>> On Wed, Nov 06, 2013 at 02:21:39AM +0000, Atsushi Kumagai wrote:
-> >>>>> (2013/11/06 5:27), Vivek Goyal wrote:
-> >>>>>> On Tue, Nov 05, 2013 at 09:45:32PM +0800, Jingbai Ma wrote:
-> >>>>>>> This patch set intend to exclude unnecessary hugepages from vmcore dump file.
-> >>>>>>>
-> >>>>>>> This patch requires the kernel patch to export necessary data structures into
-> >>>>>>> vmcore: "kexec: export hugepage data structure into vmcoreinfo"
-> >>>>>>> http://lists.infradead.org/pipermail/kexec/2013-November/009997.html
-> >>>>>>>
-> >>>>>>> This patch introduce two new dump levels 32 and 64 to exclude all unused and
-> >>>>>>> active hugepages. The level to exclude all unnecessary pages will be 127 now.
-> >>>>>>
-> >>>>>> Interesting. Why hugepages should be treated any differentely than normal
-> >>>>>> pages?
-> >>>>>>
-> >>>>>> If user asked to filter out free page, then it should be filtered and
-> >>>>>> it should not matter whether it is a huge page or not?
-> >>>>>
-> >>>>> I'm making a RFC patch of hugepages filtering based on such policy.
-> >>>>>
-> >>>>> I attach the prototype version.
-> >>>>> It's able to filter out also THPs, and suitable for cyclic processing
-> >>>>> because it depends on mem_map and looking up it can be divided into
-> >>>>> cycles. This is the same idea as page_is_buddy().
-> >>>>>
-> >>>>> So I think it's better.
-> >>>>
-> >>>> Agreed. Being able to treat hugepages in same manner as other pages
-> >>>> sounds good.
-> >>>>
-> >>>> Jingbai, looks good to you?
-> >>>
-> >>> It looks good to me.
-> >>>
-> >>> My only concern is by this way, we only can exclude all hugepage together, but can't exclude the free hugepages only. I'm not sure if user need to dump out the activated hugepage only.
-> >>>
-> >>> Kumagai-san, please correct me, if I'm wrong.
-> >>
-> >> Yes, my patch treats all allocated hugetlbfs pages as user pages,
-> >> doesn't distinguish whether the pages are actually used or not.
-> >> I made so because I guess it's enough for almost all users.
-> >>
-> >> We can introduce new dump level after it's needed actually,
-> >> but I don't think now is the time. To introduce it without
-> >> demand will make this tool just more complex.
-> >>
-> > 
-> > Typically, users would allocate huge pages as much as actually they use only,
-> > in order not to waste system memory. So, this design seems reasonable.
-> > 
-> 
-> OK, It looks reasonable.
+Sorry didn't notice this new mailing list.
+I will resend these patches to it again.
 
-Agreed. Whether a page is a huge page or not is an implementation
-detail (and with THP even more so). Makedumpfile users should only be
-concerned about the _meaning_ of what gets filtered, not about
-implementation details.
+>>
+>> On 10/17/2013 01:56 PM, Hongbo Zhang wrote:
+>>> Hi Vinod,
+>>> I have gotten ACK from Mark for both the 1/3 and 2/3 patches.
+>>> Thanks.
+>>>
+>>>
+>>> On 09/26/2013 05:33 PM, hongbo.zhang@freescale.com wrote:
+>>>> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+>>>>
+>>>> This patch adds support to 8-channel DMA engine, thus the driver works
+>>>> for both
+>>>> the new 8-channel and the legacy 4-channel DMA engines.
+>>>>
+>>>> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+>>>> ---
+>>>>    drivers/dma/Kconfig  |    9 +++++----
+>>>>    drivers/dma/fsldma.c |    9 ++++++---
+>>>>    drivers/dma/fsldma.h |    2 +-
+>>>>    3 files changed, 12 insertions(+), 8 deletions(-)
+>>>>
+>>>> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+>>>> index 6825957..3979c65 100644
+>>>> --- a/drivers/dma/Kconfig
+>>>> +++ b/drivers/dma/Kconfig
+>>>> @@ -89,14 +89,15 @@ config AT_HDMAC
+>>>>          Support the Atmel AHB DMA controller.
+>>>>      config FSL_DMA
+>>>> -    tristate "Freescale Elo and Elo Plus DMA support"
+>>>> +    tristate "Freescale Elo series DMA support"
+>>>>        depends on FSL_SOC
+>>>>        select DMA_ENGINE
+>>>>        select ASYNC_TX_ENABLE_CHANNEL_SWITCH
+>>>>        ---help---
+>>>> -      Enable support for the Freescale Elo and Elo Plus DMA controllers.
+>>>> -      The Elo is the DMA controller on some 82xx and 83xx parts, and the
+>>>> -      Elo Plus is the DMA controller on 85xx and 86xx parts.
+>>>> +      Enable support for the Freescale Elo series DMA controllers.
+>>>> +      The Elo is the DMA controller on some mpc82xx and mpc83xx parts,
+>>>> the
+>>>> +      EloPlus is on mpc85xx and mpc86xx and Pxxx parts, and the Elo3 is
+>>>> on
+>>>> +      some Txxx and Bxxx parts.
+>>>>      config MPC512X_DMA
+>>>>        tristate "Freescale MPC512x built-in DMA engine support"
+>>>> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+>>>> index 49e8fbd..16a9a48 100644
+>>>> --- a/drivers/dma/fsldma.c
+>>>> +++ b/drivers/dma/fsldma.c
+>>>> @@ -1261,7 +1261,9 @@ static int fsl_dma_chan_probe(struct fsldma_device
+>>>> *fdev,
+>>>>        WARN_ON(fdev->feature != chan->feature);
+>>>>          chan->dev = fdev->dev;
+>>>> -    chan->id = ((res.start - 0x100) & 0xfff) >> 7;
+>>>> +    chan->id = (res.start & 0xfff) < 0x300 ?
+>>>> +           ((res.start - 0x100) & 0xfff) >> 7 :
+>>>> +           ((res.start - 0x200) & 0xfff) >> 7;
+>>>>        if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
+> Isn't it a bit fragile to have this based on the resource address?
+> Can't device tree tell you the channel id directly by an index into
+> the "dma0: dma@100300" node?
 
-If we expose too much of the implementation, it may become hard to
-maintain backward compatibility one day...
+Yes, both this way and putting a "cell-index" into device tree work.
+This won't be fragile, because the resource address should always be 
+defined correctly, otherwise even if we can tell a channel id by 
+"cell-index" but with wrong resource address, nothing will work.
+This piece of code only doesn't seem as neat as using "cell-index", but 
+we prefer the style that let the device tree describes as true as what 
+hardware really has. This doesn't mean "cell-index" isn't acceptable, if 
+it is necessary and unavoidable, we can send another patch to add it, 
+but currently there is no need and we don't have to do this.
 
-Thank you very much for all the work!
+> --
+> Dan
+>
 
-Petr T
+
+
