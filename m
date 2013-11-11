@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab3KKPVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 10:21:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40172 "EHLO mx2.suse.de"
+	id S1754521Ab3KKPVz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 10:21:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40170 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754427Ab3KKPVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754430Ab3KKPVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 11 Nov 2013 10:21:21 -0500
 From: Takashi Iwai <tiwai@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: Prarit Bhargava <prarit@redhat.com>, Ming Lei <ming.lei@canonical.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         amd64-microcode@amd64.org
-Subject: [PATCH v2 2/3] microcode: Use request_firmware_direct()
-Date: Mon, 11 Nov 2013 16:21:17 +0100
-Message-Id: <1384183278-19787-3-git-send-email-tiwai@suse.de>
+Subject: [PATCH v2 3/3] firmware: Avoid bogus fallback warning
+Date: Mon, 11 Nov 2013 16:21:18 +0100
+Message-Id: <1384183278-19787-4-git-send-email-tiwai@suse.de>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1384183278-19787-1-git-send-email-tiwai@suse.de>
 References: <1384183278-19787-1-git-send-email-tiwai@suse.de>
@@ -21,45 +21,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new helper, request_firmware_direct(), for avoiding the
-lengthy timeout of non-existing firmware loads.  Especially the Intel
-microcode driver suffers from this problem because each CPU triggers
-the f/w loading, thus it ends up taking (literally) hours with many
-cores.
+The commit [3e358ac2bb5b: firmware: Be a bit more verbose about direct
+firmware loading failure] introduced a new warning message about
+falling back to user helper, but this isn't true when
+CONFIG_FW_LOADER_USER_HELPER isn't set.
 
-Tested-by: Prarit Bhargava <prarit@redhat.com>
+For avoiding the confusion, add a proper ifdef.  And now we can remove
+the dummy fw_load_from_user_helper(), too, since it's no longer called
+with CONFIG_FW_LOADER_USER_HELPER=n.
+
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 ---
- arch/x86/kernel/microcode_amd.c   | 2 +-
- arch/x86/kernel/microcode_intel.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/base/firmware_class.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index af99f71aeb7f..539a01a91210 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -430,7 +430,7 @@ static enum ucode_state request_microcode_amd(int cpu, struct device *device,
- 	if (c->x86 >= 0x15)
- 		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 7f48a6ffb0df..bb03c71bd94d 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -940,14 +940,6 @@ static void kill_requests_without_uevent(void)
+ #endif
  
--	if (request_firmware(&fw, (const char *)fw_name, device)) {
-+	if (request_firmware_direct(&fw, (const char *)fw_name, device)) {
- 		pr_err("failed to load file %s\n", fw_name);
- 		goto out;
- 	}
-diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
-index 5fb2cebf556b..a276fa75d9b5 100644
---- a/arch/x86/kernel/microcode_intel.c
-+++ b/arch/x86/kernel/microcode_intel.c
-@@ -278,7 +278,7 @@ static enum ucode_state request_microcode_fw(int cpu, struct device *device,
- 	sprintf(name, "intel-ucode/%02x-%02x-%02x",
- 		c->x86, c->x86_model, c->x86_mask);
+ #else /* CONFIG_FW_LOADER_USER_HELPER */
+-static inline int
+-fw_load_from_user_helper(struct firmware *firmware, const char *name,
+-			 struct device *device, bool uevent, bool nowait,
+-			 long timeout)
+-{
+-	return -ENOENT;
+-}
+-
+ /* No abort during direct loading */
+ #define is_fw_load_aborted(buf) false
  
--	if (request_firmware(&firmware, name, device)) {
-+	if (request_firmware_direct(&firmware, name, device)) {
- 		pr_debug("data file %s load failed\n", name);
- 		return UCODE_NFOUND;
+@@ -1097,11 +1089,13 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
+ 	if (ret) {
+ 		dev_warn(device, "Direct firmware load failed with error %d\n",
+ 			 ret);
++#ifdef CONFIG_FW_LOADER_USER_HELPER
+ 		if (fallback) {
+ 			dev_warn(device, "Falling back to user helper\n");
+ 			ret = fw_load_from_user_helper(fw, name, device,
+ 					       uevent, nowait, timeout);
+ 		}
++#endif
  	}
+ 
+ 	/* don't cache firmware handled without uevent */
 -- 
 1.8.4.2
 
