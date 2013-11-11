@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab3KKVKP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 16:10:15 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:46782 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab3KKVKG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 16:10:06 -0500
-Date: Mon, 11 Nov 2013 22:10:02 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vince Weaver <vince@deater.net>, hpa@zytor.com, anton@samba.org,
-        mathieu.desnoyers@polymtl.ca, linux-kernel@vger.kernel.org,
-        michael@ellerman.id.au, paulmck@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, fweisbec@gmail.com, VICTORK@il.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com, mikey@neuling.org,
-        linux-tip-commits@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [tip:perf/core] tools/perf: Add required memory barriers
-Message-ID: <20131111211002.GB19284@gmail.com>
-References: <20131030104246.GH16117@laptop.programming.kicks-ass.net>
- <tip-a94d342b9cb09edfe888ea972af0883b6a8d992b@git.kernel.org>
- <alpine.DEB.2.02.1311060847340.27224@pianoman.cluster.toy>
- <20131106140011.GL10651@twins.programming.kicks-ass.net>
- <20131106144456.GI26785@twins.programming.kicks-ass.net>
- <20131106160720.GK26785@twins.programming.kicks-ass.net>
- <alpine.DEB.2.02.1311061223290.28798@pianoman.cluster.toy>
- <20131106182437.GJ16117@laptop.programming.kicks-ass.net>
- <20131107082122.GC32438@gmail.com>
- <20131111162402.GA26898@twins.programming.kicks-ass.net>
+	id S1752490Ab3KKVKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 16:10:40 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:50246 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752335Ab3KKVKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 16:10:31 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Amit Pundir <amit.pundir@linaro.org>
+Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>
+Subject: Re: [RFC][PATCH] epoll: allow EPOLLWAKEUP flag if PM_SLEEP is enabled
+Date: Mon, 11 Nov 2013 22:22:55 +0100
+Message-ID: <7789635.0eeyCxz2tM@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1384192591-20916-1-git-send-email-amit.pundir@linaro.org>
+References: <1384192591-20916-1-git-send-email-amit.pundir@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131111162402.GA26898@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, November 11, 2013 11:26:31 PM Amit Pundir wrote:
+> I stumbled upon ENOMEM error from epoll_ctl() while bringing up Android-4.4 
+> on a device that does not yet support PM_SLEEP.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Well, Android depends on PM_SLEEP which is a known fact.
 
-> On Thu, Nov 07, 2013 at 09:21:22AM +0100, Ingo Molnar wrote:
-> > 
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > > Requiring the user of a kernel interface to have a deep knowledge of 
-> > > > optimizing compilers, barriers, and CPU memory models is just asking 
-> > > > for trouble.
-> > > 
-> > > It shouldn't be all that hard to put this in a (lgpl) library others can 
-> > > link to -- that way you can build it once (using GCC).
-> > 
-> > I'd suggest to expose it via a new perf syscall, using vsyscall methods to 
-> > not have to enter the kernel for the pure user-space bits. It should also 
-> > have a real usecase in tools/perf/ so that it's constantly tested, with 
-> > matching 'perf test' entries, etc.
+> While looking into the problem, I found that ep_create_wakeup_source()
+> reports ENOMEM if wakeup_source_register() returns NULL.
+> ep_create_wakeup_source() assumes that NULL is only returned if we run
+> into ENOMEM but NULL is also returned when CONFIG_PM_SLEEP is disabled.
+
+So the error value should not be ENOMEM.
+
+> If CONFIG_PM_SLEEP is disabled, stripping the EPOLLWAKEUP flag seems to
+> be a reasonable solution here, allowing the call to succeed, while
+> dropping the wakeup logic.  While returning EINVAL might also be a good
+> solution, stripping the flag seems to follow the established behavior,
+> as is done when the process doesn't have sufficient capabilities to
+> block suspend.
+
+Which is a different thing.
+
+> I'd appreciate any thoughts or feedback!
+>
+> Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
+> ---
+>  fs/eventpoll.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> Oh man, I've never poked at the entire vsyscall stuff before; let alone
-> done it for ARM, ARM64, PPC64 etc..
-> 
-> Keeping it in userspace like we have is so much easier.
+> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+> index 473e09d..7a83079 100644
+> --- a/fs/eventpoll.c
+> +++ b/fs/eventpoll.c
+> @@ -1820,7 +1820,8 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+>  		goto error_tgt_fput;
+>  
+>  	/* Check if EPOLLWAKEUP is allowed */
+> -	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_BLOCK_SUSPEND))
+> +	if ((epds.events & EPOLLWAKEUP) &&
+> +		(!capable(CAP_BLOCK_SUSPEND) || !IS_ENABLED(CONFIG_PM_SLEEP)))
 
-... and so much more broken in fantastic ways, right? ;-)
+I don't particularly like mixing the checking of CONFIG_ symbols with code like
+this.
 
-Thanks,
+I'd create a static inline function taking a pointer to epds.events that would
+do the
 
-	Ingo
+	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_BLOCK_SUSPEND))
+ 		epds.events &= ~EPOLLWAKEUP;
+
+for CONFIG_PM_SLEEP set and
+
+  		epds.events &= ~EPOLLWAKEUP;
+
+unconditionally for CONFIG_PM_SLEEP unset.
+
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
