@@ -1,129 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab3KKJMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 04:12:31 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:47857
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752342Ab3KKJMX (ORCPT
+	id S1753210Ab3KKJN0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 04:13:26 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:58989 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063Ab3KKJNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 04:12:23 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1155h)
-Message-ID: <52809F67.20901@freescale.com>
-Date: Mon, 11 Nov 2013 17:12:07 +0800
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 11 Nov 2013 04:13:17 -0500
+Message-ID: <52809FAA.6080107@monstr.eu>
+Date: Mon, 11 Nov 2013 10:13:14 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Dan Williams <dan.j.williams@intel.com>
-CC: "Koul, Vinod" <vinod.koul@intel.com>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
-        <devicetree@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>
-Subject: Re: [PATCH v11 3/3] DMA: Freescale: update driver to support 8-channel
- DMA engine
-References: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com> <1380188023-3936-4-git-send-email-hongbo.zhang@freescale.com> <525F7C18.3010409@freescale.com> <5278587F.7090500@freescale.com> <CAA9_cme3c7SjH3iio0oR3FHpfoMzgrBDO-2k_Yf68G-AgFNqfA@mail.gmail.com>
-In-Reply-To: <CAA9_cme3c7SjH3iio0oR3FHpfoMzgrBDO-2k_Yf68G-AgFNqfA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com
+Subject: Re: [PATCH] video: add OpenCores VGA/LCD framebuffer driver
+References: <1384088894-31920-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+In-Reply-To: <1384088894-31920-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="OLhXCKXbs0SMrE2iChrr3kaGbG1NjjIIe"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2013 10:45 AM, Dan Williams wrote:
-> On Mon, Nov 4, 2013 at 6:31 PM, Hongbo Zhang <hongbo.zhang@freescale.com> wrote:
->> Hi Vinod Koul and Dan Williams,
->> Ping?
->>
-> Not much to review from the dmaengine side, just one question below.
-> It would be helpful if you can send these to the new dmaengine
-> patchwork at dmaengine@vger.kernel.org with the Acks you have already
-> collected.
->
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--OLhXCKXbs0SMrE2iChrr3kaGbG1NjjIIe
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Sorry didn't notice this new mailing list.
-I will resend these patches to it again.
+On 11/10/2013 02:08 PM, Stefan Kristiansson wrote:
+> This adds support for the VGA/LCD core available from OpenCores:
+> http://opencores.org/project,vga_lcd
+>=20
+> The driver have been tested together with both OpenRISC and
+> ARM (socfpga) processors.
+>=20
+> Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+> ---
+>  drivers/video/Kconfig  |  17 ++
+>  drivers/video/Makefile |   1 +
+>  drivers/video/ocfb.c   | 479 +++++++++++++++++++++++++++++++++++++++++=
+++++++++
+>  3 files changed, 497 insertions(+)
+>  create mode 100644 drivers/video/ocfb.c
+>=20
+> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+> index 84b685f..2ea850c 100644
+> --- a/drivers/video/Kconfig
+> +++ b/drivers/video/Kconfig
+> @@ -979,6 +979,23 @@ config FB_PVR2
+>  	  (<file:drivers/video/pvr2fb.c>). Please see the file
+>  	  <file:Documentation/fb/pvr2fb.txt>.
+> =20
+> +config FB_OPENCORES
+> +	tristate "OpenCores VGA/LCD core 2.0 framebuffer support"
+> +	depends on FB
+> +	select FB_CFB_FILLRECT
+> +	select FB_CFB_COPYAREA
+> +	select FB_CFB_IMAGEBLIT
+> +	default n
+> +	help
+> +	  This enables support for the OpenCores VGA/LCD core.
+> +
+> +	  The OpenCores VGA/LCD core is typically used together with
+> +	  softcore CPUs (e.g. OpenRISC) or hard processor systems
 
->>
->> On 10/17/2013 01:56 PM, Hongbo Zhang wrote:
->>> Hi Vinod,
->>> I have gotten ACK from Mark for both the 1/3 and 2/3 patches.
->>> Thanks.
->>>
->>>
->>> On 09/26/2013 05:33 PM, hongbo.zhang@freescale.com wrote:
->>>> From: Hongbo Zhang <hongbo.zhang@freescale.com>
->>>>
->>>> This patch adds support to 8-channel DMA engine, thus the driver works
->>>> for both
->>>> the new 8-channel and the legacy 4-channel DMA engines.
->>>>
->>>> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
->>>> ---
->>>>    drivers/dma/Kconfig  |    9 +++++----
->>>>    drivers/dma/fsldma.c |    9 ++++++---
->>>>    drivers/dma/fsldma.h |    2 +-
->>>>    3 files changed, 12 insertions(+), 8 deletions(-)
->>>>
->>>> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
->>>> index 6825957..3979c65 100644
->>>> --- a/drivers/dma/Kconfig
->>>> +++ b/drivers/dma/Kconfig
->>>> @@ -89,14 +89,15 @@ config AT_HDMAC
->>>>          Support the Atmel AHB DMA controller.
->>>>      config FSL_DMA
->>>> -    tristate "Freescale Elo and Elo Plus DMA support"
->>>> +    tristate "Freescale Elo series DMA support"
->>>>        depends on FSL_SOC
->>>>        select DMA_ENGINE
->>>>        select ASYNC_TX_ENABLE_CHANNEL_SWITCH
->>>>        ---help---
->>>> -      Enable support for the Freescale Elo and Elo Plus DMA controllers.
->>>> -      The Elo is the DMA controller on some 82xx and 83xx parts, and the
->>>> -      Elo Plus is the DMA controller on 85xx and 86xx parts.
->>>> +      Enable support for the Freescale Elo series DMA controllers.
->>>> +      The Elo is the DMA controller on some mpc82xx and mpc83xx parts,
->>>> the
->>>> +      EloPlus is on mpc85xx and mpc86xx and Pxxx parts, and the Elo3 is
->>>> on
->>>> +      some Txxx and Bxxx parts.
->>>>      config MPC512X_DMA
->>>>        tristate "Freescale MPC512x built-in DMA engine support"
->>>> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
->>>> index 49e8fbd..16a9a48 100644
->>>> --- a/drivers/dma/fsldma.c
->>>> +++ b/drivers/dma/fsldma.c
->>>> @@ -1261,7 +1261,9 @@ static int fsl_dma_chan_probe(struct fsldma_device
->>>> *fdev,
->>>>        WARN_ON(fdev->feature != chan->feature);
->>>>          chan->dev = fdev->dev;
->>>> -    chan->id = ((res.start - 0x100) & 0xfff) >> 7;
->>>> +    chan->id = (res.start & 0xfff) < 0x300 ?
->>>> +           ((res.start - 0x100) & 0xfff) >> 7 :
->>>> +           ((res.start - 0x200) & 0xfff) >> 7;
->>>>        if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
-> Isn't it a bit fragile to have this based on the resource address?
-> Can't device tree tell you the channel id directly by an index into
-> the "dma0: dma@100300" node?
+I expect that here can be also Microblaze.
 
-Yes, both this way and putting a "cell-index" into device tree work.
-This won't be fragile, because the resource address should always be 
-defined correctly, otherwise even if we can tell a channel id by 
-"cell-index" but with wrong resource address, nothing will work.
-This piece of code only doesn't seem as neat as using "cell-index", but 
-we prefer the style that let the device tree describes as true as what 
-hardware really has. This doesn't mean "cell-index" isn't acceptable, if 
-it is necessary and unavoidable, we can send another patch to add it, 
-but currently there is no need and we don't have to do this.
+> +	  (e.g. Altera socfpga or Xilinx Zync) on FPGAs.
 
-> --
-> Dan
->
+s/Zync/Zynq/
+
+M
 
 
 
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--OLhXCKXbs0SMrE2iChrr3kaGbG1NjjIIe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlKAn6oACgkQykllyylKDCGxvgCfR0Uo95dUsgJR6505BAC+/WYD
+m9MAoJJV5YSZD1zuePPIkH0EVtm35px3
+=608F
+-----END PGP SIGNATURE-----
+
+--OLhXCKXbs0SMrE2iChrr3kaGbG1NjjIIe--
