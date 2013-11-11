@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab3KKPcU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 10:32:20 -0500
-Received: from imap.thunk.org ([74.207.234.97]:56707 "EHLO imap.thunk.org"
+	id S1754091Ab3KKPeC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 10:34:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40955 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753493Ab3KKPcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 10:32:16 -0500
-Date: Mon, 11 Nov 2013 10:32:06 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/3] panic: improve panic_timeout calculation
-Message-ID: <20131111153206.GA22113@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Ingo Molnar <mingo@kernel.org>,
-	Felipe Contreras <felipe.contreras@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Ingo Molnar <mingo@elte.hu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <1383871600-3831-1-git-send-email-felipe.contreras@gmail.com>
- <1383871600-3831-3-git-send-email-felipe.contreras@gmail.com>
- <20131111113218.GF15810@gmail.com>
- <CAMP44s0AVy=ef1k95bXsRJizW6zsPApFe9KPrRcg09ORo=2mQA@mail.gmail.com>
- <20131111124953.GA6765@gmail.com>
- <CAMP44s07Ub=G5mD_zkMvPkwcPWm6psZ-8L32dScy1txQkU_9Nw@mail.gmail.com>
- <20131111132812.GB7258@gmail.com>
- <CAMP44s2NYKfrYngTEN5+mPPHOJZLNmSVd3n8k5QNv_=Lpvncsw@mail.gmail.com>
- <20131111135216.GB8781@gmail.com>
+	id S1753493Ab3KKPd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 10:33:56 -0500
+Date: Mon, 11 Nov 2013 10:29:48 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        akpm@linux-foundation.org, davej@fedoraproject.org,
+        rmk+kernel@arm.linux.org.uk, chaowang@redhat.com, mwhitehe@redhat.com,
+        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Robin Holt <robinmholt@linux.com>, Robin Holt <robinmholt@gmail.com>
+Subject: Re: [PATCH] x86: make reboot task only run on the appropriate
+ processor
+Message-ID: <20131111152948.GA11547@redhat.com>
+References: <1383642967-12595-1-git-send-email-bhe@redhat.com>
+ <20131108151416.GA13068@redhat.com>
+ <527D0D50.6010607@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131111135216.GB8781@gmail.com>
+In-Reply-To: <527D0D50.6010607@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 02:52:16PM +0100, Ingo Molnar wrote:
-> > That's exactly what I did. Addressing feedback constructively doesn't 
-> > mean do exactly what you say without arguing.
+On Fri, Nov 08, 2013 at 08:12:00AM -0800, H. Peter Anvin wrote:
+> On 11/08/2013 07:14 AM, Vivek Goyal wrote:
+> > 
+> > Hi Bao,
+> > 
+> > This patch fixes the issue for me too. I noticed that we have generic
+> > function migrate_to_reboot_cpu() to achieve what we want and rest of
+> > the reboot paths are using it. So how about using that function. I 
+> > wrote the new patch below. It works for me. Can you please give it
+> > a try.
+> > 
+> > Thanks
+> > Vivek
+> > 
 > 
-> Your reply to my routine feedback was obtuse, argumentative and needlessly 
-> confrontative - that's not 'constructive'.
+> Is this path exercised for the kdump flow?  migrate_to_reboot_cpu() is
+> unsafe in that case.
 
-Felipe, remember when on the Git list Junio said he would stop trying
-to respond to any patches that had problems because you couldn't
-respond constructively to feedback, and you claimed that you had no
-problems working with other folks, including on the Linux Kernel
-mailing list?
+Hi Peter,
 
-You might want to take this feedback and consider whether the problem
-may be with *you*, and your user interface, and not with other folks
-like Ingo and Junio.  You clearly want to contribute to both projects,
-and we can always use more skilled hackers.  But part of being a good
-hacker is being able to play well with others.
+Can you please consider queuing up this patch for next release.
 
-Best regards,
+Thanks
+Vivek
 
-					- Ted
+> 
+> > Index: linux-2.6/kernel/kexec.c
+> > ===================================================================
+> > --- linux-2.6.orig/kernel/kexec.c	2013-10-16 00:30:50.000000000 -0400
+> > +++ linux-2.6/kernel/kexec.c	2013-11-08 21:34:02.492072375 -0500
+> > @@ -1676,6 +1676,7 @@ int kernel_kexec(void)
+> >  #endif
+> >  	{
+> >  		kernel_restart_prepare(NULL);
+> > +		migrate_to_reboot_cpu();
+> >  		printk(KERN_EMERG "Starting new kernel\n");
+> >  		machine_shutdown();
+> >  	}
+> > 
