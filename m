@@ -1,107 +1,432 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab3KKOSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 09:18:10 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:43259 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997Ab3KKOSE (ORCPT
+	id S1754185Ab3KKOUd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 09:20:33 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42490 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753418Ab3KKOUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 09:18:04 -0500
+	Mon, 11 Nov 2013 09:20:24 -0500
+Date: Mon, 11 Nov 2013 14:20:06 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Kumar Gala <galak@codeaurora.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Documentation: dt: Merge TWL family documentation
+Message-ID: <20131111142006.GG21201@e106331-lin.cambridge.arm.com>
+References: <1383951075-1910-1-git-send-email-sre@debian.org>
 MIME-Version: 1.0
-In-Reply-To: <1383202124-1775-3-git-send-email-tushar.behera@linaro.org>
-References: <1383202124-1775-1-git-send-email-tushar.behera@linaro.org>
-	<1383202124-1775-3-git-send-email-tushar.behera@linaro.org>
-Date: Mon, 11 Nov 2013 23:18:02 +0900
-Message-ID: <CAKew6eXHUZupSkvNDrX1R9+YREekYzVB5ktA7JRsARgA6OspMg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] clk: clk-s2mps11: Add support for clocks in S5M8767 MFD
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Patch Tracking <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383951075-1910-1-git-send-email-sre@debian.org>
+Thread-Topic: [PATCH] Documentation: dt: Merge TWL family documentation
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 3:48 PM, Tushar Behera <tushar.behera@linaro.org> wrote:
-> Since clock operation within S2MPS11 and S5M8767 are similar, we can
-> support both the devices within a single driver.
+On Fri, Nov 08, 2013 at 10:51:15PM +0000, Sebastian Reichel wrote:
+> Merge all TWL family subnode documentation into
+> the TWL family documentation file and fix typo
+> in its filename.
 >
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> CC: Yadwinder Singh Brar <yadi.brar@samsung.com>
-> CC: Mike Turquette <mturquette@linaro.org>
+> Signed-off-by: Sebastian Reichel <sre@debian.org>
 > ---
 
-Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Hi,
 
-Regards,
-Yadwinder
+If all of this is being moved into one place it would be nice to clean
+up some of the terminology and style so things are a bit more
+consistent.
 
->  drivers/clk/Kconfig       |    6 ++++--
->  drivers/clk/clk-s2mps11.c |    5 +++++
->  2 files changed, 9 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index 5c51115..7f2aef2 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -65,10 +65,12 @@ config COMMON_CLK_SI5351
->           generators.
->
->  config COMMON_CLK_S2MPS11
-> -       tristate "Clock driver for S2MPS11 MFD"
-> +       tristate "Clock driver for S2MPS11/S5M8767 MFD"
->         depends on MFD_SEC_CORE
->         ---help---
-> -         This driver supports S2MPS11 crystal oscillator clock.
-> +         This driver supports S2MPS11/S5M8767 crystal oscillator clock. These
-> +         multi-function devices have 3 fixed-rate oscillators, clocked at
-> +         32KHz each.
->
->  config CLK_TWL6040
->         tristate "External McPDM functional clock from twl6040"
-> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
-> index 2262cb4..19c075c 100644
-> --- a/drivers/clk/clk-s2mps11.c
-> +++ b/drivers/clk/clk-s2mps11.c
-> @@ -27,6 +27,7 @@
->  #include <linux/clk-provider.h>
->  #include <linux/platform_device.h>
->  #include <linux/mfd/samsung/s2mps11.h>
-> +#include <linux/mfd/samsung/s5m8767.h>
->  #include <linux/mfd/samsung/core.h>
->
->  #define s2mps11_name(a) (a->hw.init->name)
-> @@ -175,6 +176,9 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
->         case S2MPS11X:
->                 s2mps11_reg = S2MPS11_REG_RTC_CTRL;
->                 break;
-> +       case S5M8767X:
-> +               s2mps11_reg = S5M8767_REG_CTRL1;
-> +               break;
->         default:
->                 dev_err(&pdev->dev, "Invalid device type\n");
->                 return -EINVAL;
-> @@ -254,6 +258,7 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
->
->  static const struct platform_device_id s2mps11_clk_id[] = {
->         { "s2mps11-clk", S2MPS11X},
-> +       { "s5m8767-clk", S5M8767X},
->         { },
->  };
->  MODULE_DEVICE_TABLE(platform, s2mps11_clk_id);
-> --
-> 1.7.9.5
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+I'm not opposed to placing all of this in one file, but there are some
+additional changes I'd like to see at the same time.
+
+[...]
+
+> diff --git a/Documentation/devicetree/bindings/mfd/twl-family.txt b/Documentation/devicetree/bindings/mfd/twl-family.txt
+> new file mode 100644
+> index 0000000..a296766
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/twl-family.txt
+> @@ -0,0 +1,456 @@
+> +Texas Instruments TWL family
+> +----------------------------
+> +
+> +The TWLs are Integrated Power Management Chips.
+> +Some version might contain much more analog function like
+> +USB transceiver or Audio amplifier.
+> +These chips are connected to an i2c bus.
+> +
+> +
+> +Required properties:
+> +- compatible : Must be "ti,twl4030";
+> +  For Integrated power-management/audio CODEC device used in OMAP3
+> +  based boards
+> +- compatible : Must be "ti,twl6030";
+> +  For Integrated power-management used in OMAP4 based boards
+
+This is confusing. I'd reorganise this to list the possibilities under
+the description of the compatible property:
+
+- compatible: should contain:
+  * "ti,twl4030": For integrated power-management/audio CODEC device used
+     in OMAP3 boards.
+  * "ti,twl6030": For integrated power-management used in OMAP4 based
+     boards.
+
+In general it's nicer to describe compatible properties as "should
+contain" rather than "Must be" or similar, we may have backwards
+compatible HW variants in future and even if we don't it keeps all of
+the documentation consistent. This applies to all the other instances in
+the document too.
+
+> +- interrupts : This i2c device has an IRQ line connected to the main SoC
+
+This reads like a description of a boolean property. How about:
+
+- interrupts: interrupt-specifier for the sole interrupt generated by
+  the device.
+
+I assume that the twl only generates a single interrupt to its parent
+interrupt controller.
+
+> +- interrupt-controller : Since the twl support several interrupts internally,
+> +  it is considered as an interrupt controller cascaded to the SoC one.
+> +- #interrupt-cells = <1>;
+
+- #interrupt-cells: must be <1>
+
+It would be nice to have something more here, even if it's just
+something like "The twl supports 16 interrupts [0-15]" (note: I have no
+idea how many interrupt inputs the twl actually has).
+
+I think it would be better to note that the twl has some interrupt
+controller functionality in the description at the top of the file
+rather than here. The property description should obviously stay, but we
+don't need a long-winded description of why we need the
+interrupt-controller property.
+
+> +- interrupt-parent : The parent interrupt controller.
+
+Is this always required? Will this not be implicit most of the time?
+
+> +
+> +Optional nodes:
+> +- Child nodes contained in the twl. The twl family is made of several
+> +  variants that support a different number of features. The children
+> +  nodes will thus depend of the capability of the variant.
+> +
+> +TWL Regulator
+> +-------------
+> +
+> +Required properties:
+> +For twl6030 regulators/LDOs
+> +- compatible:
+> +  - "ti,twl6030-vaux1" for VAUX1 LDO
+> +  - "ti,twl6030-vaux2" for VAUX2 LDO
+> +  - "ti,twl6030-vaux3" for VAUX3 LDO
+> +  - "ti,twl6030-vmmc" for VMMC LDO
+> +  - "ti,twl6030-vpp" for VPP LDO
+> +  - "ti,twl6030-vusim" for VUSIM LDO
+> +  - "ti,twl6030-vana" for VANA LDO
+> +  - "ti,twl6030-vcxio" for VCXIO LDO
+> +  - "ti,twl6030-vdac" for VDAC LDO
+> +  - "ti,twl6030-vusb" for VUSB LDO
+> +  - "ti,twl6030-v1v8" for V1V8 LDO
+> +  - "ti,twl6030-v2v1" for V2V1 LDO
+> +  - "ti,twl6030-vdd1" for VDD1 SMPS
+> +  - "ti,twl6030-vdd2" for VDD2 SMPS
+> +  - "ti,twl6030-vdd3" for VDD3 SMPS
+> +For twl6032 regulators/LDOs
+> +- compatible:
+> +  - "ti,twl6032-ldo1" for LDO1 LDO
+> +  - "ti,twl6032-ldo2" for LDO2 LDO
+> +  - "ti,twl6032-ldo3" for LDO3 LDO
+> +  - "ti,twl6032-ldo4" for LDO4 LDO
+> +  - "ti,twl6032-ldo5" for LDO5 LDO
+> +  - "ti,twl6032-ldo6" for LDO6 LDO
+> +  - "ti,twl6032-ldo7" for LDO7 LDO
+> +  - "ti,twl6032-ldoln" for LDOLN LDO
+> +  - "ti,twl6032-ldousb" for LDOUSB LDO
+> +  - "ti,twl6032-smps3" for SMPS3 SMPS
+> +  - "ti,twl6032-smps4" for SMPS4 SMPS
+> +  - "ti,twl6032-vio" for VIO SMPS
+> +For twl4030 regulators/LDOs
+> +- compatible:
+> +  - "ti,twl4030-vaux1" for VAUX1 LDO
+> +  - "ti,twl4030-vaux2" for VAUX2 LDO
+> +  - "ti,twl5030-vaux2" for VAUX2 LDO
+> +  - "ti,twl4030-vaux3" for VAUX3 LDO
+> +  - "ti,twl4030-vaux4" for VAUX4 LDO
+> +  - "ti,twl4030-vmmc1" for VMMC1 LDO
+> +  - "ti,twl4030-vmmc2" for VMMC2 LDO
+> +  - "ti,twl4030-vpll1" for VPLL1 LDO
+> +  - "ti,twl4030-vpll2" for VPLL2 LDO
+> +  - "ti,twl4030-vsim" for VSIM LDO
+> +  - "ti,twl4030-vdac" for VDAC LDO
+> +  - "ti,twl4030-vintana2" for VINTANA2 LDO
+> +  - "ti,twl4030-vio" for VIO LDO
+> +  - "ti,twl4030-vdd1" for VDD1 SMPS
+> +  - "ti,twl4030-vdd2" for VDD2 SMPS
+> +  - "ti,twl4030-vintana1" for VINTANA1 LDO
+> +  - "ti,twl4030-vintdig" for VINTDIG LDO
+> +  - "ti,twl4030-vusb1v5" for VUSB1V5 LDO
+> +  - "ti,twl4030-vusb1v8" for VUSB1V8 LDO
+> +  - "ti,twl4030-vusb3v1" for VUSB3V1 LDO
+> +
+> +Optional properties:
+> +- Any optional property defined in bindings/regulator/regulator.txt
+> +
+> +TWL RTC
+> +-------
+> +
+> +Required properties:
+> +- compatible : Should be twl4030-rtc
+> +
+> +TWL PWM
+> +-------
+> +
+> +Supported PWMs:
+> +On TWL4030 series: PWM1 and PWM2
+> +On TWL6030 series: PWM0 and PWM1
+
+Could you explain what is meant by "supported" here? Are these the only
+PWMs that exist, or the only ones we bother to describe?
+
+> +
+> +Required properties:
+> +- compatible: "ti,twl4030-pwm" or "ti,twl6030-pwm"
+
+- compatible: Should contain one of:
+  * "ti,twl4030-pwm"
+  * "ti,twl6030-pwm"
+
+> +- #pwm-cells: should be 2. See pwm.txt in this directory for a description of
+> +  the cells format.
+> +
+> +TWL PWM LED
+> +-----------
+> +
+> +Supported PWMs:
+> +On TWL4030 series: PWMA and PWMB (connected to LEDA and LEDB terminals)
+> +On TWL6030 series: LED PWM (mainly used as charging indicator LED)
+> +
+> +Required properties:
+> +- compatible: "ti,twl4030-pwmled" or "ti,twl6030-pwmled"
+> +- #pwm-cells: should be 2. See pwm.txt in this directory for a description of
+> +  the cells format.
+
+I assume that this pwm documentation comment is now invalid due to the
+move to .../mfd/...?
+
+I see that pwm.txt describe the typical usage of the pwm-specifier,
+which I assume is what's being referred to, but doesn't describe the
+valid range of values for the chip-relative PWM number, nor the value
+range of periods. It would be nice to be explicit about the meaning of
+the cells here.
+
+> +
+> +TWL4030 USB PHY AND COMPARATOR
+> +------------------------------
+> +
+> +Required properties:
+> + - compatible : Should be "ti,twl4030-usb"
+> + - interrupts : The interrupt numbers to the cpu should be specified. First
+> +   interrupt number is the otg interrupt number that raises ID interrupts
+> +   and VBUS interrupts. The second interrupt number is optional.
+
+Nit: the interrupt is described by an interrupt-specifier, and may not
+be routed directly to the CPU. How about something like:
+
+- interrupts: A list of interrupt-specifiers:
+  [1] The OTG interrupt
+  [2] The VBUS interrupt (optional)
+
+Similarly elsewhere.
+
+Are these the only interrupts generated by the USB PHY and comparator?
+
+> + - <supply-name>-supply : phandle to the regulator device tree node.
+> +   <supply-name> should be vusb1v5, vusb1v8 and vusb3v1
+
+For other bindings I've asked for each *-supply property to be listed
+individually to enable easier searching. It would be nice to do the same
+here.
+
+> + - usb_mode : The mode used by the phy to connect to the controller. "1"
+> +   specifies "ULPI" mode and "2" specifies "CEA2011_3PIN" mode.
+
+I assumes these should be <1> and <2> rather than "1" and "2" (i.e.
+they're u32 cells rather than single character strings).
+
+> +
+> +TWL6030 USB COMPARATOR
+> +----------------------
+> +
+> +Required properties:
+> + - compatible : Should be "ti,twl6030-usb"
+> + - interrupts : Two interrupt numbers to the cpu should be specified. First
+> +   interrupt number is the otg interrupt number that raises ID interrupts when
+> +   the controller has to act as host and the second interrupt number is the
+> +   usb interrupt number that raises VBUS interrupts when the controller has to
+> +   act as device
+> + - usb-supply : phandle to the regulator device tree node. It should be vusb
+> +   if it is twl6030 or ldousb if it is twl6032 subclass.
+> +
+> +TWL4030 GPIO Controller
+> +-----------------------
+> +
+> +Required properties:
+> +- compatible:
+> +  - "ti,twl4030-gpio" for twl4030 GPIO controller
+> +- #gpio-cells : Should be two.
+> +  - first cell is the pin number
+> +  - second cell is used to specify optional parameters (unused)
+
+Is there a sane value for the second cell if it's unused (i.e. zero)?
+
+> +- gpio-controller : Marks the device node as a GPIO controller.
+> +- #interrupt-cells : Should be 2.
+> +- interrupt-controller: Mark the device node as an interrupt controller
+> +  The first cell is the GPIO number.
+> +  The second cell is not used.
+
+These should be associated with #interrupt-cells, not
+interrupt-controller.
+
+> +- ti,use-leds : Enables LEDA and LEDB outputs if set
+
+Type? Boolean?
+
+> +- ti,debounce : if n-th bit is set, debounces GPIO-n
+> +- ti,mmc-cd : if n-th bit is set, GPIO-n controls VMMC(n+1)
+> +- ti,pullups : if n-th bit is set, set a pullup on GPIO-n
+> +- ti,pulldowns : if n-th bit is set, set a pulldown on GPIO-n
+
+Are these u32 cells?
+
+> +
+> +TWL4030 Audio
+> +-------------
+> +
+> +The audio module inside the TWL family consist of an audio codec and
+> +a vibrator driver.
+> +
+> +Required properties:
+> +- compatible : must be "ti,twl4030-audio"
+> +
+> +Optional properties, nodes:
+> +
+> +Audio functionality:
+> +- codec { }: Need to be present if the audio functionality is used. Within this
+> +            section the following options can be used:
+
+If all of these properties go under the codex node, get rid of the
+"optional properties, nodes: " line and just have:
+
+The node must contain a subnode named "codec", which may have the
+following properties:
+
+> +- ti,digimic_delay: Delay need after enabling the digimic to reduce artifacts
+> +                   from the start of the recorded sample (in ms)
+> +-ti,ramp_delay_value: HS ramp delay configuration to reduce pop noise
+> +-ti,hs_extmute: Use external mute for HS pop reduction
+
+Is this a boolean, u32, phandle?
+
+> +-ti,hs_extmute_gpio: Use external GPIO to control the external mute
+
+Similarly?
+
+> +-ti,offset_cncl_path: Offset cancellation path selection, refer to TRM for the
+> +                     valid values.
+> +
+> +Vibra functionality
+> +- ti,enable-vibra: Need to be set to <1> if the vibra functionality is used. if
+> +                  missing or it is 0, the vibra functionality is disabled.
+
+s/Need to be/Should be/
+
+This reads like configuration (whether or not to use vibration), but I
+assume what this is actually saying is that a motor is wired up to the
+vibrator unit?
+
+If that's not the case, then I'm not sure why we even have this
+property.
+
+> +
+> +TWL4030 Power
+> +-------------
+> +
+> +The power management module inside the TWL family provides several facilities
+> +to control the power resources, including power scripts. For now, the binding
+> +only supports the complete shutdown of the system after poweroff.
+> +
+> +Required properties:
+> +- compatible : must be "ti,twl4030-power"
+> +
+> +Optional properties:
+> +- ti,use_poweroff: With this flag, the chip will initiates an ACTIVE-to-OFF or
+> +                  SLEEP-to-OFF transition when the system poweroffs.
+> +
+> +TWL4030 Watchdog
+> +----------------
+> +
+> +Required properties:
+> +       compatible = "ti,twl4030-wdt";
+
+This looks like a fragment of a dts rather than a description, and it's
+inconsistent with the description of other properties. It would be far
+nicer to have:
+
+- compatible: Should contain "ti,twl4030-wdt"
+
+> +
+> +TWL4030 Power Button
+> +--------------------
+> +
+> +This module is part of the TWL4030. For more details about the whole
+> +chip see Documentation/devicetree/bindings/mfd/twl-familly.txt.
+> +
+> +This module provides a simple power button event via an Interrupt.
+> +
+> +Required properties:
+> +- compatible: should be one of the following
+> +   - "ti,twl4030-pwrbutton": For controllers compatible with twl4030
+> +- interrupts: should be one of the following
+> +   - <8>: For controllers compatible with twl4030
+
+I find it odd to describe the precise wiring in the binding, but I guess
+this can change as required if a future variant is wired differently.
+
+> +
+> +TWL4030 Keypad
+> +--------------
+> +
+> +TWL4030's Keypad controller is used to interface a SoC with a matrix-type
+> +keypad device. The keypad controller supports multiple row and column lines.
+> +A key can be placed at each intersection of a unique row and a unique column.
+> +The keypad controller can sense a key-press and key-release and report the
+> +event using a interrupt to the cpu.
+> +
+> +This binding is based on the matrix-keymap binding with the following
+> +changes:
+> +
+> + * keypad,num-rows and keypad,num-columns are required.
+
+I would list these on separate lines, as done with other properties
+(which will make them more difficult to miss).
+
+Thanks,
+Mark.
