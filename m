@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab3KKJA1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 04:00:27 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:55305 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab3KKJAU (ORCPT
+	id S1753333Ab3KKJBY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 04:01:24 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:49069 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab3KKJBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 04:00:20 -0500
-Date: Mon, 11 Nov 2013 09:00:14 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: cw00.choi@samsung.com, myungjoo.ham@samsung.com, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] extcon: arizona: Eliminate dead error handling code
-Message-ID: <20131111090014.GB30901@lee--X1>
-References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1383916783-17921-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Mon, 11 Nov 2013 04:01:16 -0500
+Message-ID: <52809CD7.6080306@ti.com>
+Date: Mon, 11 Nov 2013 14:31:11 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1383916783-17921-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: phy: fix memory leak in error handling
+References: <1383974928-20730-1-git-send-email-michael.opdenacker@free-electrons.com>
+In-Reply-To: <1383974928-20730-1-git-send-email-michael.opdenacker@free-electrons.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> As a small disclaimer I would personally prefer to not merge this patch.
-> I have added it based on previous code review of the other patches in
-> this chain.
+Hi Michael,
 
-I'd prefer the functionally redundant 'else if' over the comment.
-
-I'm happy not to merge this patch.
-
-> arizona_hpdet_do_id currently can only return 0 or -EAGAIN making the
-> else if clause handling error codes redundant, this patch removes this
-> clause.
+On Saturday 09 November 2013 10:58 AM, Michael Opdenacker wrote:
+> This fixes a memory leak in the phy_create() function.
 > 
-> Whilst this clause is not currently hit removing it makes the code
-> fragile. It will not be obvious whilst editing arizona_hpdet_do_id that
-> you shouldn't add a return value other than 0 or -EAGAIN.
+> If ida_simple_get() returns with an error, the code jumps
+> to the "err0" label without freeing the "phy" pointer.
 > 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> This patch introduces a new error management label to address this.
+> 
+> Issue found with Coverity (CID 1127219)
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+
+A patch has already been sent for fixing this.
+
+https://git.kernel.org/cgit/linux/kernel/git/kishon/linux-phy.git/commit/?h=fixes
+
+Thanks
+Kishon
+
 > ---
->  drivers/extcon/extcon-arizona.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
+>  drivers/phy/phy-core.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-> index 0d70bf6..2313b1e 100644
-> --- a/drivers/extcon/extcon-arizona.c
-> +++ b/drivers/extcon/extcon-arizona.c
-> @@ -476,6 +476,9 @@ static int arizona_hpdet_read(struct arizona_extcon_info *info)
->  	return val;
->  }
+> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+> index 03cf8fb81554..8ddffe84d905 100644
+> --- a/drivers/phy/phy-core.c
+> +++ b/drivers/phy/phy-core.c
+> @@ -453,7 +453,7 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+>  	if (id < 0) {
+>  		dev_err(dev, "unable to get id\n");
+>  		ret = id;
+> -		goto err0;
+> +		goto err1;
+>  	}
 >  
-> +/* This function should only return 0 or -EAGAIN, if other return values are
-> + * added additional handling should be added in arizona_hpdet_irq.
-> + */
-
-Please see: Documentation/CodingStyle: Chapter 8: Commenting
-
->  static int arizona_hpdet_do_id(struct arizona_extcon_info *info, int *reading,
->  			       bool *mic)
->  {
-> @@ -591,8 +594,6 @@ static irqreturn_t arizona_hpdet_irq(int irq, void *data)
->  	ret = arizona_hpdet_do_id(info, &reading, &mic);
->  	if (ret == -EAGAIN)
->  		goto out;
-> -	else if (ret < 0)
-> -		goto done;
+>  	device_initialize(&phy->dev);
+> @@ -468,11 +468,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
 >  
->  	/* Report high impedence cables as line outputs */
->  	if (reading >= 5000)
+>  	ret = dev_set_name(&phy->dev, "phy-%s.%d", dev_name(dev), id);
+>  	if (ret)
+> -		goto err1;
+> +		goto err2;
+>  
+>  	ret = device_add(&phy->dev);
+>  	if (ret)
+> -		goto err1;
+> +		goto err2;
+>  
+>  	if (pm_runtime_enabled(dev)) {
+>  		pm_runtime_enable(&phy->dev);
+> @@ -481,9 +481,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+>  
+>  	return phy;
+>  
+> -err1:
+> +err2:
+>  	ida_remove(&phy_ida, phy->id);
+>  	put_device(&phy->dev);
+> +
+> +err1:
+>  	kfree(phy);
+>  
+>  err0:
+> 
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
