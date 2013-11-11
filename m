@@ -1,115 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab3KKSty (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 13:49:54 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:40262 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754032Ab3KKStr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 13:49:47 -0500
-Date: Mon, 11 Nov 2013 19:49:44 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/uaccess change for v3.13
-Message-ID: <20131111184944.GA16606@gmail.com>
+	id S1755135Ab3KKSvP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 13:51:15 -0500
+Received: from mga02.intel.com ([134.134.136.20]:39259 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754241Ab3KKSvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 13:51:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,679,1378882800"; 
+   d="scan'208";a="425731742"
+Message-ID: <52812829.4080508@linux.intel.com>
+Date: Mon, 11 Nov 2013 10:55:37 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+CC: linux-kbuild@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mmarek@suse.cz, rostedt@goodmis.org
+Subject: Re: make oldnoconfig fix?
+References: <52811DDD.3030609@linux.intel.com> <20131111181304.GB3510@free.fr>
+In-Reply-To: <20131111181304.GB3510@free.fr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 11/11/2013 10:13 AM, Yann E. MORIN wrote:
+> David, All,
 
-Please pull the latest x86-uaccess-for-linus git tree from:
+Hi Yann,
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-uaccess-for-linus
+>
+> On 2013-11-11 10:11 -0800, David Cohen spake thusly:
+>> Is there a plan to fix 'make oldnoconfig' option?
+>> I currently have need to it :)
+>> I've tracked a thread fixing 'make olddefconfig' where 'oldnoconfig'
+>> option is reported as a known bug, right?
+>
+> Sorry, I don't understand what your problem is.
 
-   # HEAD: ff47ab4ff3cddfa7bc1b25b990e24abe2ae474ff x86: Add 1/2/4/8 byte optimization to 64bit __copy_{from,to}_user_inatomic
+Maybe I assumed it was more 'known' then it actually is :)
 
-It includes a single change that micro-optimizes __copy_*_user_inatomic(), 
-used by the futx code.
+>
+> Care to explain in details what problem you have:
+>    - what you start with
+>    - what you do
+>    - what you get
+>    - what you expected
 
- Thanks,
+The bug with 'oldnoconfig' is: 'make oldnoconfig' is just an alias to
+'olddefconfig'. Any non-existent config is defined with its default
+value instead of 'N'.
 
-	Ingo
+I work with embedded platforms. I need to maintain a set of defconfigs
+for different products (customers some times want tailored configs, so
+creating a generic one isn't an option always).
 
------------------->
-Andi Kleen (1):
-      x86: Add 1/2/4/8 byte optimization to 64bit __copy_{from,to}_user_inatomic
+In order to have full control of the .config generated out of
+defconfigs, I don't allow any CONFIG_ to be selected implicitly. So
+everytime a Kconfig is changed in our internal tree, we need to update
+all defconfigs either with CONFIG_... = [y|n] or # CONFIG_... is not set
+
+If I managed to get 'make oldnoconfig' working, I could not care about
+# CONFIG_... is not set and internal and changes to defconfigs would be
+easily to understand and review.
+
+>
+> So we can try to reproduce the issue and investigate what is wrong.
+
+All we need to know is explained in this commit:
+
+commit fb16d8912db5268f29706010ecafff74b971c58d
+Author: Adam Lee <adam8157@gmail.com>
+Date:   Sat Sep 1 01:05:17 2012 +0800
+
+     kconfig: replace 'oldnoconfig' with 'olddefconfig', and keep the 
+old name as an alias
+
+     As 67d34a6a391369269a2e5dba8a5f42cc4cd50231 said, 'oldnoconfig' doesn't
+     set new symbols to 'n', but instead sets it to their default values.
+
+     So, this patch replaces 'oldnoconfig' with 'olddefconfig', stop making
+     people confused, and keep the old name 'oldnoconfig' as an alias,
+     because people already are dependent on its behavior with the
+     counter-intuitive name.
+
+     Signed-off-by: Adam Lee <adam8157@gmail.com>
+     Signed-off-by: Michal Marek <mmarek@suse.cz>
 
 
- arch/x86/include/asm/uaccess_64.h | 24 ++++++++++++++++++------
- 1 file changed, 18 insertions(+), 6 deletions(-)
+>
+> Since you mention an existing thread, please add a pointer (URL) to
+> this thread in the archives (Use: http://marc.info/?l=linux-kbuild ).
 
-diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
-index 4f7923d..64476bb 100644
---- a/arch/x86/include/asm/uaccess_64.h
-+++ b/arch/x86/include/asm/uaccess_64.h
-@@ -77,11 +77,10 @@ int copy_to_user(void __user *dst, const void *src, unsigned size)
- }
- 
- static __always_inline __must_check
--int __copy_from_user(void *dst, const void __user *src, unsigned size)
-+int __copy_from_user_nocheck(void *dst, const void __user *src, unsigned size)
- {
- 	int ret = 0;
- 
--	might_fault();
- 	if (!__builtin_constant_p(size))
- 		return copy_user_generic(dst, (__force void *)src, size);
- 	switch (size) {
-@@ -121,11 +120,17 @@ int __copy_from_user(void *dst, const void __user *src, unsigned size)
- }
- 
- static __always_inline __must_check
--int __copy_to_user(void __user *dst, const void *src, unsigned size)
-+int __copy_from_user(void *dst, const void __user *src, unsigned size)
-+{
-+	might_fault();
-+	return __copy_from_user_nocheck(dst, src, size);
-+}
-+
-+static __always_inline __must_check
-+int __copy_to_user_nocheck(void __user *dst, const void *src, unsigned size)
- {
- 	int ret = 0;
- 
--	might_fault();
- 	if (!__builtin_constant_p(size))
- 		return copy_user_generic((__force void *)dst, src, size);
- 	switch (size) {
-@@ -165,6 +170,13 @@ int __copy_to_user(void __user *dst, const void *src, unsigned size)
- }
- 
- static __always_inline __must_check
-+int __copy_to_user(void __user *dst, const void *src, unsigned size)
-+{
-+	might_fault();
-+	return __copy_to_user_nocheck(dst, src, size);
-+}
-+
-+static __always_inline __must_check
- int __copy_in_user(void __user *dst, const void __user *src, unsigned size)
- {
- 	int ret = 0;
-@@ -220,13 +232,13 @@ int __copy_in_user(void __user *dst, const void __user *src, unsigned size)
- static __must_check __always_inline int
- __copy_from_user_inatomic(void *dst, const void __user *src, unsigned size)
- {
--	return copy_user_generic(dst, (__force const void *)src, size);
-+	return __copy_from_user_nocheck(dst, (__force const void *)src, size);
- }
- 
- static __must_check __always_inline int
- __copy_to_user_inatomic(void __user *dst, const void *src, unsigned size)
- {
--	return copy_user_generic((__force void *)dst, src, size);
-+	return __copy_to_user_nocheck((__force void *)dst, src, size);
- }
- 
- extern long __copy_user_nocache(void *dst, const void __user *src,
+This is the thread I was talking about: 
+http://comments.gmane.org/gmane.linux.kbuild.devel/8560
+
+Master Yoda promised to fix it when the problem gets bigger :)
+
+Br, David
