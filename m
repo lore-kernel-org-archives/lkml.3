@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404Ab3KKCXP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 21:23:15 -0500
-Received: from smtprelay0141.hostedemail.com ([216.40.44.141]:52166 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751061Ab3KKCWv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 21:22:51 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:3874:4321:5007:7652:9108:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: blow29_52b3de8c9fd09
-X-Filterd-Recvd-Size: 2121
-Message-ID: <1384136570.4771.5.camel@joe-AO722>
-Subject: Re: [tip:x86/asm] x86, bitops:  Change bitops to be native operand
- size
-From: Joe Perches <joe@perches.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-arch <linux-arch@vger.kernel.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        james.t.kukunas@intel.com, hpa@linux.intel.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>
-Date: Sun, 10 Nov 2013 18:22:50 -0800
-In-Reply-To: <52803BA2.2080908@zytor.com>
-References: <tip-z61ofiwe90xeyb461o72h8ya@git.kernel.org>
-	 <1384117768.3081.10.camel@joe-AO722>
-	 <5ac67859-a0b2-47f5-bdc2-c2a52b8d6885@email.android.com>
-	 <1384123457.3081.33.camel@joe-AO722> <52803BA2.2080908@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752521Ab3KKCX3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 21:23:29 -0500
+Received: from ozlabs.org ([203.10.76.45]:56126 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752462Ab3KKCXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 21:23:23 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "LKML" <linux-kernel@vger.kernel.org>
+Cc: Aaron Lu <aaron.lu@intel.com>
+Cc: Amit Shah <amit.shah@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Christoph Paasch <christoph.paasch@uclouvain.be>
+Cc: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+Cc: Marc Zyngier <marc.zyngier@arm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: x86@kernel.org
+Subject: [PULL v2] virtio-next
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 11 Nov 2013 12:35:23 +1030
+Message-ID: <87ob5rzo9o.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-11-10 at 18:06 -0800, H. Peter Anvin wrote:
-> On 11/10/2013 02:44 PM, Joe Perches wrote:
-> > On Sun, 2013-11-10 at 14:10 -0800, H. Peter Anvin wrote:
-> >> Yes, on the generic it is int.
-> >> The problem is in part that some architectures have bitop
-> >> instructions with specific behavior.
-> > I think that all bitop indices should be changed
-> > to unsigned (int or long, probably long) for all
-> > arches.
-> > Is there any impediment to that?
-> It is at the very best misleading.  On x86 bit indicies will be signed
-> no matter what the data type says,
+The following changes since commit d8524ae9d6f492a9c6db9f4d89c5f9b8782fa2d5:
 
-?
+  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2013-09-22 19:51:49 -0700)
 
-> and having an unsigned data type
-> being interpreted as signed seems like really dangerous.
-> On the other hand, for the generic implementation unsigned long makes sense.
-> We might need a bitindex_t or something like that for it to be clean.
+are available in the git repository at:
 
-Is there really any reason to introduce bitindex_t?
 
-Perhaps the current x86 bitops asm code is being conflated
-with the ideal implementation?
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/virtio-next-for-linus
 
+for you to fetch changes up to 2bf4fd31394a3f875ea093ee8a209f30b378cbf3:
+
+  virtio_scsi: verify if queue is broken after virtqueue_get_buf() (2013-11-11 11:53:26 +1030)
+
+----------------------------------------------------------------
+Nothing really exciting: some groundwork for changing virtio endian, and
+some robustness fixes for broken virtio devices, plus minor tweaks.
+
+[vs last pull request: added the virtio-scsi broken vq escape patch, which
+I somehow lost.]
+
+Cheers,
+Rusty.
+
+----------------------------------------------------------------
+Aaron Lu (1):
+      virtio: pm: use CONFIG_PM_SLEEP instead of CONFIG_PM
+
+Andi Kleen (1):
+      x86, asmlinkage, lguest: Pass in globals into assembler statement
+
+Heinz Graalfs (10):
+      virtio_ring: change host notification API
+      virtio_ring: let virtqueue_{kick()/notify()} return a bool
+      virtio_net: verify if virtqueue_kick() succeeded
+      virtio_test: verify if virtqueue_kick() succeeded
+      virtio_ring: add new function virtqueue_is_broken()
+      virtio_blk: verify if queue is broken after virtqueue_get_buf()
+      virtio_console: verify if queue is broken after virtqueue_get_buf()
+      virtio_net: verify if queue is broken after virtqueue_get_buf()
+      virtio_ring: adapt to notify() returning bool
+      virtio_scsi: verify if queue is broken after virtqueue_get_buf()
+
+Marc Zyngier (1):
+      virtio: mmio: fix signature checking for BE guests
+
+Rusty Russell (4):
+      virtio_ring: plug kmemleak false positive.
+      virtio_config: introduce size-based accessors.
+      virtio: use size-based config accessors.
+      virtio_config: remove virtio_config_val
+
+ drivers/block/virtio_blk.c             |  83 ++++++++---------
+ drivers/char/hw_random/virtio-rng.c    |   4 +-
+ drivers/char/virtio_console.c          |  25 +++--
+ drivers/lguest/lguest_device.c         |   3 +-
+ drivers/lguest/x86/core.c              |   6 +-
+ drivers/net/caif/caif_virtio.c         |  23 ++---
+ drivers/net/virtio_net.c               |  44 +++++----
+ drivers/remoteproc/remoteproc_virtio.c |   3 +-
+ drivers/s390/kvm/kvm_virtio.c          |   8 +-
+ drivers/s390/kvm/virtio_ccw.c          |   5 +-
+ drivers/scsi/virtio_scsi.c             |  19 ++--
+ drivers/virtio/virtio_balloon.c        |  14 ++-
+ drivers/virtio/virtio_mmio.c           |   5 +-
+ drivers/virtio/virtio_pci.c            |   3 +-
+ drivers/virtio/virtio_ring.c           |  34 +++++--
+ include/linux/virtio.h                 |   6 +-
+ include/linux/virtio_config.h          | 161 +++++++++++++++++++++++++++------
+ include/linux/virtio_ring.h            |   2 +-
+ net/9p/trans_virtio.c                  |   9 +-
+ tools/virtio/virtio_test.c             |   6 +-
+ tools/virtio/vringh_test.c             |  13 ++-
+ 21 files changed, 310 insertions(+), 166 deletions(-)
