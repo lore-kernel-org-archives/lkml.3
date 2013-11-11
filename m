@@ -1,175 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab3KKVwP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 16:52:15 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:63580 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751531Ab3KKVwG (ORCPT
+	id S1752797Ab3KKVyY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 16:54:24 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42079 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab3KKVyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 16:52:06 -0500
-Date: Mon, 11 Nov 2013 16:52:04 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Bharath Ravi <rbharath@google.com>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        David Sharp <dhsharp@google.com>, Laurent Chavey <chavey@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tracing: Allow changing default ring buffer size for
- ftrace instances.
-Message-ID: <20131111165204.513a72cd@gandalf.local.home>
-In-Reply-To: <1383784982-27482-1-git-send-email-rbharath@google.com>
-References: <1383784982-27482-1-git-send-email-rbharath@google.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Mon, 11 Nov 2013 16:54:17 -0500
+Date: Mon, 11 Nov 2013 22:54:15 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jan Kara <jack@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
+ too much
+Message-ID: <20131111215415.GA23331@amd.pavel.ucw.cz>
+References: <1383860919-1883-1-git-send-email-jack@suse.cz>
+ <1383860919-1883-4-git-send-email-jack@suse.cz>
+ <CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
+ <20131107225733.GE2054@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131107225733.GE2054@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  6 Nov 2013 16:43:02 -0800
-Bharath Ravi <rbharath@google.com> wrote:
+Hi!
 
-> It is often memory efficient to start instances off with a smaller ring
-> buffer size than the current default. This is particularly true on
-> systems with many cores, or when multiple ftrace instances are created,
-> where the current (higher) default value results in allocation failures.
-> 
-> To allow instances to start off with custom ring buffer sizes, a new
-> debugfs file named "instance_default_buffer_size_kb" is added in the
+> > > A CPU can be caught in console_unlock() for a long time (tens of seconds
+> > > are reported by our customers) when other CPUs are using printk heavily
+> > > and serial console makes printing slow. Despite serial console drivers
+> > > are calling touch_nmi_watchdog() this triggers softlockup warnings
+> > > because interrupts are disabled for the whole time console_unlock() runs
+> > > (e.g. vprintk() calls console_unlock() with interrupts disabled). Thus
+> > > IPIs cannot be processed and other CPUs get stuck spinning in calls like
+> > > smp_call_function_many(). Also RCU eventually starts reporting lockups.
+> > >
+> > > In my artifical testing I can also easily trigger a situation when disk
+> > > disappears from the system apparently because interrupt from it wasn't
+> > > served for too long. This is why just silencing watchdogs isn't a
+> > > reliable solution to the problem and we simply have to avoid spending
+> > > too long in console_unlock() with interrupts disabled.
+> > >
+> > > The solution this patch works toward is to postpone printing to a later
+> > > moment / different CPU when we already printed over X characters in
+> > > current console_unlock() invocation. This is a crude heuristic but
+> > > measuring time we spent printing doesn't seem to be really viable - we
+> > > cannot rely on high resolution time being available and with interrupts
+> > > disabled jiffies are not updated. User can tune the value X via
+> > > printk.offload_chars kernel parameter.
+> > >
+> > > Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+> > > Signed-off-by: Jan Kara <jack@suse.cz>
+> > 
+> > When a message takes tens of seconds to be printed, it usually means
+> > we are in trouble somehow :)
+> > I wonder what printk source can trigger such a high volume.
+>   Machines with tens of processors and thousands of scsi devices. When
+> device discovery happens on boot, all processors are busily reporting new
+> scsi devices and one poor looser is bound to do the printing for ever and
+> ever until the machine dies...
 
-I don't mind the patch, but I hate the interface.
-"instance_default_buffer_size_kb", can we get a bigger name?
+Dunno. In these cases, would it make sense to:
 
-"instance_buffer_size_kb" may be sufficient, even though I don't even
-care for that.
+1) reduce amount of text printed
 
-I wonder if we add it to the tracing/options directory, if that would
-be better. Grant you, this would be the first option that's not an on
-off switch, but I'm not sure that's a bad thing.
+2) just print [XXX characters lost] on overruns?
 
-Have any better ideas?
-
--- Steve
-
-> root ftrace directory. A size in kilobytes may be written to this. Any
-> ftrace instances created will be initialized with ring buffers of the
-> size specified in this file.
-> 
-> This change also modifies allocate_trace_buffer() to use the "size"
-> parameter while setting set_buffer_entries(), instead of the actual ring
-> ring buffer size (which is "size" rounded up to the nearest page size).
-> This makes it consistent with the way writing to the buffer_size_kb
-> files works (using ring_buffer_resize()), and ensures that the
-> buffer_size_kb value of a newly created instance matches that written
-> to the instance_default_buffer_size file, instead of the rounded up
-> value.
-> 
-> Tested: Booted into a kernel with these changes, verified reading and
-> writing to the new file. Ensured that new ftrace instances created
-> used the size specified in instance_default_buffer_size_kb as their
-> initial ring buffer size.
-> 
-> Signed-off-by: Bharath Ravi <rbharath@google.com>
-> ---
->  kernel/trace/trace.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 54 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 7974ba2..d10afea 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -296,6 +296,14 @@ int tracing_is_enabled(void)
->  
->  static unsigned long		trace_buf_size = TRACE_BUF_SIZE_DEFAULT;
->  
-> +/*
-> + * instance_default_buf_size is the size in bytes that is allocated for an
-> + * instance's buffer when it is first created. This is initially set to
-> + * TRACE_BUF_SIZE_DEFAULT but may be modified by writing to the
-> + * "instance_default_buffer_size_kb" file.
-> + */
-> +static unsigned long instance_default_buf_size = TRACE_BUF_SIZE_DEFAULT;
-> +
->  /* trace_types holds a link list of available tracers. */
->  static struct tracer		*trace_types __read_mostly;
->  
-> @@ -3165,6 +3173,48 @@ static const struct file_operations show_traces_fops = {
->  	.llseek		= seq_lseek,
->  };
->  
-> +static ssize_t
-> +instance_default_buffer_size_read(struct file *filp, char __user *ubuf,
-> +				  size_t cnt, loff_t *ppos)
-> +{
-> +	int r = 0;
-> +	char buf[64];
-> +	ssize_t ret;
-> +
-> +	r = sprintf(buf, "%lu\n", instance_default_buf_size >> 10);
-> +	ret = simple_read_from_buffer(ubuf, cnt, ppos, buf, r);
-> +
-> +	return ret;
-> +}
-> +
-> +static ssize_t
-> +instance_default_buffer_size_write(struct file *filp, const char __user *ubuf,
-> +				   size_t cnt, loff_t *ppos)
-> +{
-> +	unsigned long val;
-> +	int ret;
-> +
-> +	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* ubuf must have at least 1 entry */
-> +	if (!val)
-> +		return -EINVAL;
-> +
-> +	/* val is in KB */
-> +	instance_default_buf_size = val << 10;
-> +
-> +	return cnt;
-> +}
-> +
-> +static const struct file_operations instance_default_buffer_size_fops = {
-> +	.open		= tracing_open_generic,
-> +	.read		= instance_default_buffer_size_read,
-> +	.write		= instance_default_buffer_size_write,
-> +	.llseek		= generic_file_llseek,
-> +};
-> +
->  /*
->   * The tracer itself will not take this lock, but still we want
->   * to provide a consistent cpumask to user-space:
-> @@ -5880,8 +5930,7 @@ allocate_trace_buffer(struct trace_array *tr, struct trace_buffer *buf, int size
->  	}
->  
->  	/* Allocate the first page for all buffers */
-> -	set_buffer_entries(&tr->trace_buffer,
-> -			   ring_buffer_size(tr->trace_buffer.buffer, 0));
-> +	set_buffer_entries(&tr->trace_buffer, size);
->  
->  	return 0;
->  }
-> @@ -5947,7 +5996,7 @@ static int new_instance_create(const char *name)
->  	INIT_LIST_HEAD(&tr->systems);
->  	INIT_LIST_HEAD(&tr->events);
->  
-> -	if (allocate_trace_buffers(tr, trace_buf_size) < 0)
-> +	if (allocate_trace_buffers(tr, instance_default_buf_size) < 0)
->  		goto out_free_tr;
->  
->  	tr->dir = debugfs_create_dir(name, trace_instance_dir);
-> @@ -6177,6 +6226,8 @@ static __init int tracer_init_debugfs(void)
->  	trace_create_file("dyn_ftrace_total_info", 0444, d_tracer,
->  			&ftrace_update_tot_cnt, &tracing_dyn_info_fops);
->  #endif
-> +	trace_create_file("instance_default_buffer_size_kb", 0444, d_tracer,
-> +			NULL, &instance_default_buffer_size_fops);
->  
->  	create_trace_instances(d_tracer);
->  
-
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
