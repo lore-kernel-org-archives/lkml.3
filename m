@@ -1,109 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab3KKSbN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 13:31:13 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:33323 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754301Ab3KKSbE (ORCPT
+	id S1755177Ab3KKSbU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 13:31:20 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:65276 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755156Ab3KKSbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 13:31:04 -0500
-Date: Mon, 11 Nov 2013 19:31:01 +0100
+	Mon, 11 Nov 2013 13:31:13 -0500
+Date: Mon, 11 Nov 2013 19:31:10 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: hpa@zytor.com, linux-kernel@vger.kernel.org, keescook@chromium.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/kaslr] x86, kaslr: Provide randomness functions
-Message-ID: <20131111183101.GA16051@gmail.com>
-References: <1381450698-28710-4-git-send-email-keescook@chromium.org>
- <tip-5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3@git.kernel.org>
- <20131111182046.GA14961@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/mm changes for v3.13
+Message-ID: <20131111183110.GA15907@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131111182046.GA14961@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+Please pull the latest x86-mm-for-linus git tree from:
 
-> 
-> * tip-bot for Kees Cook <tipbot@zytor.com> wrote:
-> 
-> > Commit-ID:  5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3
-> > Gitweb:     http://git.kernel.org/tip/5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3
-> > Author:     Kees Cook <keescook@chromium.org>
-> > AuthorDate: Thu, 10 Oct 2013 17:18:15 -0700
-> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> > CommitDate: Sun, 13 Oct 2013 03:12:12 -0700
-> > 
-> > x86, kaslr: Provide randomness functions
-> > 
-> > Adds potential sources of randomness: RDRAND, RDTSC, or the i8254.
-> > 
-> > This moves the pre-alternatives inline rdrand function into the header so
-> > both pieces of code can use it. Availability of RDRAND is then controlled
-> > by CONFIG_ARCH_RANDOM, if someone wants to disable it even for kASLR.
-> 
-> While reviewing this as a pre-pull-request, I noticed the following 
-> detail:
-> 
-> > +static unsigned long get_random_long(void)
-> > +{
-> > +	unsigned long random;
-> > +
-> > +	if (has_cpuflag(X86_FEATURE_RDRAND)) {
-> > +		debug_putstr("KASLR using RDRAND...\n");
-> > +		if (rdrand_long(&random))
-> > +			return random;
-> > +	}
-> > +
-> > +	if (has_cpuflag(X86_FEATURE_TSC)) {
-> > +		uint32_t raw;
-> > +
-> > +		debug_putstr("KASLR using RDTSC...\n");
-> > +		rdtscl(raw);
-> > +
-> > +		/* Only use the low bits of rdtsc. */
-> > +		random = raw & 0xffff;
-> > +	} else {
-> > +		debug_putstr("KASLR using i8254...\n");
-> > +		random = i8254();
-> > +	}
-> > +
-> > +	/* Extend timer bits poorly... */
-> > +	random |= (random << 16);
-> > +#ifdef CONFIG_X86_64
-> > +	random |= (random << 32);
-> > +#endif
-> > +	return random;
-> > +}
-> 
-> Why aren't the 3 sources of entropy XOR-ed together?
-> 
-> Also, we talked about also adding system dependent entropy sources, such 
-> as memory layout or the DMI table - none of that seems to have happened.
-> 
-> It's not like this function should be performance critical, it's run once 
-> per bootup, right? There's just no excuse for not maximizing available 
-> entropy in such a situation ...
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-mm-for-linus
 
-Another problem I noticed is that the RANDOMIZE_BASE Kconfig text does not 
-match the actual sources of entropy:
+   # HEAD: 6979287a7df66a92d6f308338e972a406f9ef842 x86/mm: Add 'step_size' comments to init_mem_mapping()
 
-           Entropy is generated using the RDRAND instruction if it
-           is supported.  If not, then RDTSC is used, if supported. If
-           neither RDRAND nor RDTSC are supported, then no randomness
-           is introduced.
+One cleanup that documents a particular detail in init_mem_mapping().
 
-(i8254 is missing.)
-
-Nor does the help text explain an important detail: what granularity does 
-the randomization have and roughly how many bits of the address are 
-randomized if people use the default values?
-
-Thanks,
+ Thanks,
 
 	Ingo
+
+------------------>
+Yinghai Lu (1):
+      x86/mm: Add 'step_size' comments to init_mem_mapping()
+
+
+ arch/x86/mm/init.c | 23 ++++++++++++++++++++---
+ 1 file changed, 20 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 04664cd..ce32017 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -399,8 +399,25 @@ static unsigned long __init init_range_memory_mapping(
+ 	return mapped_ram_size;
+ }
+ 
+-/* (PUD_SHIFT-PMD_SHIFT)/2 */
+-#define STEP_SIZE_SHIFT 5
++static unsigned long __init get_new_step_size(unsigned long step_size)
++{
++	/*
++	 * Explain why we shift by 5 and why we don't have to worry about
++	 * 'step_size << 5' overflowing:
++	 *
++	 * initial mapped size is PMD_SIZE (2M).
++	 * We can not set step_size to be PUD_SIZE (1G) yet.
++	 * In worse case, when we cross the 1G boundary, and
++	 * PG_LEVEL_2M is not set, we will need 1+1+512 pages (2M + 8k)
++	 * to map 1G range with PTE. Use 5 as shift for now.
++	 *
++	 * Don't need to worry about overflow, on 32bit, when step_size
++	 * is 0, round_down() returns 0 for start, and that turns it
++	 * into 0x100000000ULL.
++	 */
++	return step_size << 5;
++}
++
+ void __init init_mem_mapping(void)
+ {
+ 	unsigned long end, real_end, start, last_start;
+@@ -449,7 +466,7 @@ void __init init_mem_mapping(void)
+ 		min_pfn_mapped = last_start >> PAGE_SHIFT;
+ 		/* only increase step_size after big range get mapped */
+ 		if (new_mapped_ram_size > mapped_ram_size)
+-			step_size <<= STEP_SIZE_SHIFT;
++			step_size = get_new_step_size(step_size);
+ 		mapped_ram_size += new_mapped_ram_size;
+ 	}
+ 
