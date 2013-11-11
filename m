@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab3KKEvw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 23:51:52 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48234 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab3KKEvn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 23:51:43 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <528061E5.7010903@jp.fujitsu.com>
-Date: Mon, 11 Nov 2013 13:49:41 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: jerry.hoemann@hp.com
-CC: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
-        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v4 0/3] x86, apic, kexec: Add disable_cpu_apic kernel
- parameter
-References: <20131022150015.24240.39686.stgit@localhost6.localdomain6> <20131106190232.GA28119@anatevka.fc.hp.com>
-In-Reply-To: <20131106190232.GA28119@anatevka.fc.hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751570Ab3KKFD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 00:03:57 -0500
+Received: from mga11.intel.com ([192.55.52.93]:10893 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156Ab3KKFDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 00:03:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,675,1378882800"; 
+   d="scan'208";a="431112259"
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: [PATCH 1/2] tracing: Add __rcu to enter/exit_syscall_files
+Date: Sun, 10 Nov 2013 23:03:45 -0600
+Message-Id: <5e250e4e8a87071fe6e0b2042fea27f42d63794a.1384145701.git.tom.zanussi@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <cover.1384145701.git.tom.zanussi@linux.intel.com>
+References: <cover.1384145701.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <cover.1384145701.git.tom.zanussi@linux.intel.com>
+References: <cover.1384145701.git.tom.zanussi@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/07 4:02), jerry.hoemann@hp.com wrote:
-> On Wed, Oct 23, 2013 at 12:01:18AM +0900, HATAYAMA Daisuke wrote:
->> This patch set is to allow kdump 2nd kernel to wake up multiple CPUs
->> even if 1st kernel crashs on some AP, a continueing work from:
->>
->>    [PATCH v3 0/2] x86, apic, kdump: Disable BSP if boot cpu is AP
->>    https://lkml.org/lkml/2013/10/16/300.
->>
->> In this version, basic design has changed. Now users need to figure
->> out initial APIC ID of BSP in the 1st kernel and configures kernel
->> parameter for the 2nd kernel manually using disable_cpu_apic kernel
->> parameter to be newly introduced in this patch set. This design is
->> more flexible than the previous version in that we no longer have to
->> rely on ACPI/MP table to get initial APIC ID of BSP.
->>
->> Sorry, this patch set have not include in-source documentation
->> requested by Borislav Petkov yet, but I'll post it later separately,
->> which would be better to focus on documentation reviewing.
->>
->> ChangeLog
->>
->> v3 => v4)
->>
->> - Rebased on top of v3.12-rc6
->>
->> - Basic design has been changed. Now users need to figure out initial
->>    APIC ID of BSP in the 1st kernel and configures kernel parameter for
->>    the 2nd kernel manually using disable_cpu_apic kernel parameter to
->>    be newly introduced in this patch set. This design is more flexible
->>    than the previous version in that we no longer have to rely on
->>    ACPI/MP table to get initial APIC ID of BSP.
->>
->
->
-> Daisuke,
->
-> I have back ported version 4 of this patch to both a 2.6.32 and 3.0.80
-> based kernels and distros and tested on a prototype system.  I have
-> previously test version 1 & 3 as well.)
->
-> The systems are configured to boot the capture kernel 8-way parallel.
-> However, I am running makedumpfile single threaded.
->
-> Panic is induced via "echo c > /proc/sysrq-trigger".  This is done
-> under various system loads and on random cpus.  I have done over a
-> thousand dumps total during this testing.
->
+Add __rcu annotation to the contents of enter/exit_syscall_files to
+signify that they're protected by rcu and to silence the following
+sparse warnings when CONFIG_SPARSE_RCU_POINTER=y:
 
-Thanks for your testing.
+kernel/trace/trace_syscalls.c:320:23: error: incompatible types in
+  comparison expression (different address spaces)
+kernel/trace/trace_syscalls.c:368:23: error: incompatible types in
+  comparison expression (different address spaces)
 
-> I have seen no issues w/ the 3.0.80 dump testing on our proto.
->
-> On the 2.6.32 testing on our proto, i have hit a low probability (< 5%)
-> chance of the capture suffering a soft lockup hang during
-> "Switching to clocksource hpet."  I have not RCA'd this yet.
-> Note, I have seen this issue on earlier version of the patch, so
-> it is not specific to this version.
->
-> I then tested the 2.6.32 port on a dl380.  This worked without issue.
->
-> Note, I have seen no issues related to this patch on our proto when
-> booting the capture with a single processor.
->
-> While I am still pursuing the issue of the 2.6.32 kernel on our proto,
-> I believe this patch is good and should be accepted.
->
+Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ kernel/trace/trace.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-This seems there's something that depends on the system you used. But I
-have never verified my patch set on 2.6.32-based kernel. I'll try to
-do a similar test on some FJ systems.
-
-The 2.6.32-based kernel you mean is one of the Longterm release kernels,
-right? So, you used on the test the 2.6.32-based Longterm release kernel
-with my v4 patch, right?
-
-The root cause seems to have already been fixed on recent kernel since
-you didn't see the bug on 3.0.80-based kernel, so I think binary search
-would be useful.
-
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 11a04d6..7ca1993 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -192,8 +192,8 @@ struct trace_array {
+ #ifdef CONFIG_FTRACE_SYSCALLS
+ 	int			sys_refcount_enter;
+ 	int			sys_refcount_exit;
+-	struct ftrace_event_file *enter_syscall_files[NR_syscalls];
+-	struct ftrace_event_file *exit_syscall_files[NR_syscalls];
++	struct ftrace_event_file __rcu *enter_syscall_files[NR_syscalls];
++	struct ftrace_event_file __rcu *exit_syscall_files[NR_syscalls];
+ #endif
+ 	int			stop_count;
+ 	int			clock_id;
 -- 
-Thanks.
-HATAYAMA, Daisuke
+1.8.3.1
 
