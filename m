@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab3KKOep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 09:34:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36821 "EHLO mx2.suse.de"
+	id S1754023Ab3KKOf7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 09:35:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54635 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753098Ab3KKOeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 09:34:36 -0500
-Date: Mon, 11 Nov 2013 15:34:33 +0100
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: [GIT PULL] ext[23], udf & quota fix
-Message-ID: <20131111143433.GA24867@quack.suse.cz>
+	id S1753345Ab3KKOfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 09:35:52 -0500
+Date: Mon, 11 Nov 2013 09:08:15 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] lib/cpumask: Make CPUMASK_OFFSTACK usable without debug
+ dependency
+Message-ID: <20131111140815.GB20328@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -20,44 +23,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+When CPUMASK_OFFSTACK was added in 2008, it was dependent upon
+DEBUG_PER_CPU_MAPS being enabled, or an architecture could select it.
+The debug dependency adds additional overhead that isn't required for
+operation of the feature, and we need CPUMASK_OFFSTACK to increase the
+NR_CPUS value beyond 512 on x86.  We drop the current dependency and make
+sure SMP is set.
 
-  could you please pull from
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+---
+ lib/Kconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
-
-to get assorted fixes in quota, ext2, ext3 & udf. Probably the most
-important is a fix of fs corruption issue in ext2 XIP support (OTOH xip is
-rarely used).
-
-Top of the tree is 7ba3ec5749dd. The full shortlog is:
-
-Dan Carpenter (1):
-      quota: info leak in quota_getquota()
-
-Eric Sandeen (1):
-      ext3: Count journal as bsddf overhead in ext3_statfs
-
-Jan Kara (2):
-      jbd: Revert "jbd: remove dependency on __GFP_NOFAIL"
-      ext2: Fix fs corruption in ext2_get_xip_mem()
-
-Peter A. Felvegi (1):
-      udf: fix for pathetic mount times in case of invalid file system
-
-The diffstat is
-
- fs/ext2/inode.c      |  2 ++
- fs/ext2/xip.c        |  1 +
- fs/ext3/super.c      |  4 ++++
- fs/jbd/transaction.c |  8 ++++----
- fs/quota/quota.c     |  1 +
- fs/udf/super.c       | 45 ++++++++++++++++++++++++++++++++++++---------
- 6 files changed, 48 insertions(+), 13 deletions(-)
-
-							Thanks
-								Honza
-
+diff --git a/lib/Kconfig b/lib/Kconfig
+index b3c8be0..50b47cd 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -342,7 +342,8 @@ config CHECK_SIGNATURE
+ 	bool
+ 
+ config CPUMASK_OFFSTACK
+-	bool "Force CPU masks off stack" if DEBUG_PER_CPU_MAPS
++	bool "Force CPU masks off stack"
++	depends on SMP
+ 	help
+ 	  Use dynamic allocation for cpumask_var_t, instead of putting
+ 	  them on the stack.  This is a bit more expensive, but avoids
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.3.1
+
