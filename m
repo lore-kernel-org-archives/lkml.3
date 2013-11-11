@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab3KKK6X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 05:58:23 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38784 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752894Ab3KKK6U (ORCPT
+	id S1753346Ab3KKK6k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 05:58:40 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:60854 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894Ab3KKK6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 05:58:20 -0500
-Date: Mon, 11 Nov 2013 10:58:12 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping support
-Message-ID: <20131111105812.GC28302@mudshark.cambridge.arm.com>
-References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
- <1382008671-4515-3-git-send-email-sandeepa.prabhu@linaro.org>
- <20131108165639.GD15074@mudshark.cambridge.arm.com>
- <527DFC1C.1020107@hitachi.com>
- <CA+b37P3U=cAbUvs=2B9wA4F7S9o49vh7d-KamjPsHcz-b9ZYLA@mail.gmail.com>
- <52808D53.7080904@hitachi.com>
- <5280B6C8.7050807@hitachi.com>
+	Mon, 11 Nov 2013 05:58:32 -0500
+Date: Mon, 11 Nov 2013 16:29:25 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] uprobes/powerpc: Kill arch_uprobe->ainsn
+Message-ID: <20131111105925.GB21356@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20131109175350.GA17412@redhat.com>
+ <20131109175409.GA17437@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5280B6C8.7050807@hitachi.com>
+In-Reply-To: <20131109175409.GA17437@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111110-6688-0000-0000-0000035D324C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 10:51:52AM +0000, Masami Hiramatsu wrote:
-> (2013/11/11 16:54), Masami Hiramatsu wrote:
-> >>>> In fact, how do you avoid a race with hardware breakpoints? E.g., somebody
-> >>>> places a hardware breakpoint on an instruction in the kernel for which
-> >>>> kprobes has patched in a brk. We take the hardware breakpoint, disable the
-> >>>> breakpoint and set up a single step before returning to the brk. The brk
-> >>>> then traps, but we must take care not to disable single-step and/or unmask
-> >>>> debug exceptions, because that will cause the hardware breakpoint code to
-> >>>> re-arm its breakpoint before we've stepped off the brk instruction.
-> >>>
-> >>> Hmm, frankly to say, this kind of race issue is not seriously discussed
-> >>> on x86 too, since kgdb is still a special tool (not used on the production
-> >>> system).
-> >>> I think under such situation kgdb operator must have full control of the
-> >>> system, and he can (and has to) avoid such kind of race.
-> >> Masami,
-> >>
-> >> Hmm I think in same lines, but not sure if we expect kprobes to be
-> >> able to work fool-proof along with kgdb or hw breakpoints ?
-> > 
-> > For hw breakpoint, yes, we finally get check each other to safely
-> > use it even if one rejects the other one at some points(address).
-> > Since the hw breakpoint is already open for normal user via perf,
-> > we should do it. But the policy still needs to be discussed.
+On Sat, Nov 09, 2013 at 06:54:09PM +0100, Oleg Nesterov wrote:
+> powerpc has both arch_uprobe->insn and arch_uprobe->ainsn to
+> make the generic code happy. This is no longer needed after
+> the previous change, powerpc can just use "u32 insn".
 > 
-> OK, I've ensured that the hw_breakpoint (from perf) can work
-> with kprobes (from ftrace) at the same address on x86.
-> So if arm64 already support hw_breakpoint on perf, kprobes should
-> work with it.
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  arch/powerpc/include/asm/uprobes.h |    5 ++---
+>  arch/powerpc/kernel/uprobes.c      |    2 +-
+>  2 files changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/powerpc/include/asm/uprobes.h b/arch/powerpc/include/asm/uprobes.h
+> index 75c6ecd..7422a99 100644
+> --- a/arch/powerpc/include/asm/uprobes.h
+> +++ b/arch/powerpc/include/asm/uprobes.h
+> @@ -36,9 +36,8 @@ typedef ppc_opcode_t uprobe_opcode_t;
+> 
+>  struct arch_uprobe {
+>  	union {
+> -		u8	insn[MAX_UINSN_BYTES];
+> -		u8	ixol[MAX_UINSN_BYTES];
+> -		u32	ainsn;
+> +		u32	insn;
+> +		u32	ixol;
+>  	};
+>  };
+> 
+> diff --git a/arch/powerpc/kernel/uprobes.c b/arch/powerpc/kernel/uprobes.c
+> index 59f419b..003b209 100644
+> --- a/arch/powerpc/kernel/uprobes.c
+> +++ b/arch/powerpc/kernel/uprobes.c
+> @@ -186,7 +186,7 @@ bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>  	 * emulate_step() returns 1 if the insn was successfully emulated.
+>  	 * For all other cases, we need to single-step in hardware.
+>  	 */
+> -	ret = emulate_step(regs, auprobe->ainsn);
+> +	ret = emulate_step(regs, auprobe->insn);
+>  	if (ret > 0)
+>  		return true;
 
-Single-stepping on x86 is different to the step behaviour on arm64 afaik. On
-ARM, we have to manually remove the breakpoint, perform a single-step, then
-add the breakpoint again. If we re-enable debug exceptions in the kprobe
-handler, the step will complete early and we'll never step off the
-breakpoint.
+Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-Sandeepa: I think you need to retry Masami's test on the arm64 model, since
-I'm fairly sure it won't work as expected without some additional code.
+Thanks Oleg.
 
-Will
+Ananth
+
