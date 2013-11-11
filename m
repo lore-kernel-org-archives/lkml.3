@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab3KKQCH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 11:02:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44488 "EHLO mail.zytor.com"
+	id S1754600Ab3KKQDT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 11:03:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44512 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753173Ab3KKQB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 11:01:59 -0500
-Message-ID: <5280FF5E.2090009@zytor.com>
-Date: Mon, 11 Nov 2013 08:01:34 -0800
+	id S1753799Ab3KKQDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 11:03:08 -0500
+Message-ID: <5280FF8E.8050801@zytor.com>
+Date: Mon, 11 Nov 2013 08:02:22 -0800
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        seiji.aguchi@hds.com, tglx@linutronix.de, hpa@linux.intel.com
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/trace] x86, trace: Add page fault tracepoints
-References: <52716E67.6090705@hds.com> <tip-d34603b07c4255b2b00a546d34f297ccd50ae4c6@git.kernel.org> <20131111082955.GB12405@gmail.com>
-In-Reply-To: <20131111082955.GB12405@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
+CC: Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        davej@fedoraproject.org, rmk+kernel@arm.linux.org.uk,
+        chaowang@redhat.com, mwhitehe@redhat.com, kexec@lists.infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Robin Holt <robinmholt@linux.com>, Robin Holt <robinmholt@gmail.com>
+Subject: Re: [PATCH] x86: make reboot task only run on the appropriate processor
+References: <1383642967-12595-1-git-send-email-bhe@redhat.com> <20131108151416.GA13068@redhat.com> <527D0D50.6010607@zytor.com> <20131111152948.GA11547@redhat.com> <469ce80c-c6a0-4238-aab5-9a4d8c562387@email.android.com> <20131111155711.GB11547@redhat.com>
+In-Reply-To: <20131111155711.GB11547@redhat.com>
 X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -24,23 +28,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 12:29 AM, Ingo Molnar wrote:
+On 11/11/2013 07:57 AM, Vivek Goyal wrote:
+> On Mon, Nov 11, 2013 at 07:39:18AM -0800, H. Peter Anvin wrote:
+>> Yes, unless there is a better path for it since it is not x86-specific.  I am fine taking it, though.
 > 
-> Nice!
+> Generally Andrew Morton routes kexec/kdump patches through his tree. Andrew,
+> do you think it should go through your tree?
 > 
-> It would be nice to change this to hierarchical naming:
-> 
->    page_fault_user
->    page_fault_kernel
-> 
-> I.e. the higher level concept named first and go to the left, details go 
-> to the right.
-> 
-> (That way x86_exceptions.page_fault_user has the names ordered correctly 
-> as well.)
-> 
+> Thanks
+> Vivek
 
-Seiji - are you okay with this?  If so I'll just make a quick patch now.
+If so, you can have my:
+
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
 
 	-hpa
 
