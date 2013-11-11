@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab3KKJh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 04:37:56 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:64031 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417Ab3KKJhv (ORCPT
+	id S1753135Ab3KKJi5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 04:38:57 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:39090 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776Ab3KKJiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 04:37:51 -0500
-Date: Mon, 11 Nov 2013 10:37:47 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf record: Delete file if a failure occurs writing the
- perf data file
-Message-ID: <20131111093747.GA14810@gmail.com>
-References: <1383928906-31470-1-git-send-email-dsahern@gmail.com>
+	Mon, 11 Nov 2013 04:38:51 -0500
+X-Originating-IP: 109.242.53.127
+Date: Mon, 11 Nov 2013 11:38:43 +0200
+From: Aldo Iljazi <mail@aldo.io>
+To: linux-kernel@vger.kernel.org
+Subject: Re: Are you interested in a Linux Kernel Off-topic Mailing List?
+Message-ID: <20131111093843.GB8417@elementary>
+References: <20131108124848.GA16826@linux>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1383928906-31470-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <20131108124848.GA16826@linux>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ Aldo Iljazi wrote:
 
-* David Ahern <dsahern@gmail.com> wrote:
-
-> If perf fails to write data to the data file (e.g., ENOSPC error) it fails
-> with the message:
->   failed to write perf data, error: No space left on device
+> Hello everyone. I am thinking of creating a Mailing List for our
+> community but for unofficial topics. I think it would help to know each
+> other and it would expand our conversation into different areas.
 > 
-> and stops — killing the workload too. The file is an unknown state. 
-> Trying to read it (e.g., perf report) fails with a SIGBUS error.
+> Politics and Religion are prohibited topics. I was thinking the areas of
+> discussion to be more on Science, Sports, Life, Philosophy etc.
+> 
+> What do you think?
+> 
+> I also created a poll here: http://poll.fm/4hqba
+> -- 
+> Aldo Iljazi
 
-Ouch - guys please first investiage that SIGBUS, we should not behave 
-unexpectedly on _any_ (read: random) perf.data file contents. The SIGBUS 
-likely suggests that the parsing isn't robust enough.
+This poll is going to run for another 24 hours. So please vote if you
+are interested (or not).
 
-> Fix by deleting the file on a failure.
-
-That only works around the issue - if the same data file is produced by 
-some other method (or maliciously) then perf report will still SIGBUS ...
-
-Thanks,
-
-	Ingo
+Thanks.
+-- 
+Aldo Iljazi
