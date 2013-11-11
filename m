@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab3KKTwn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 14:52:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50527 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755311Ab3KKTwX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 14:52:23 -0500
-Date: Mon, 11 Nov 2013 11:52:21 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: mm-factor-commit-limit-calculation-fix broken on ARM-nommu
-Message-Id: <20131111115221.7582f4d924d5ca16bb2c1100@linux-foundation.org>
-In-Reply-To: <20131111092815.GJ14892@pengutronix.de>
-References: <20131111092815.GJ14892@pengutronix.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755291Ab3KKTyY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 14:54:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48054 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754081Ab3KKTyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 14:54:18 -0500
+Message-ID: <528135D8.3040205@zytor.com>
+Date: Mon, 11 Nov 2013 11:54:00 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        d.hatayama@jp.fujitsu.com, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/bsp-hotplug] x86, apic: Disable BSP if boot cpu is AP
+References: <20130829092804.5476.95588.stgit@localhost6.localdomain6> <tip-1d79e607332d67d9132c176d99b5e7fabe1b6b7f@git.kernel.org> <52598770.6090309@zytor.com> <20131012174206.GD18437@gmail.com>
+In-Reply-To: <20131012174206.GD18437@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Nov 2013 10:28:15 +0100 Uwe Kleine-K__nig <u.kleine-koenig@pengutronix.de> wrote:
-
-> Hello Andrew,
+On 10/12/2013 10:42 AM, Ingo Molnar wrote:
 > 
-> in mm-factor-commit-limit-calculation-fix you move vm_commit_limit to
-> mm/mmap.c. This file is only compiled with CONFIG_MMU on though. So my
-> build fails here.
+> * H. Peter Anvin <hpa@zytor.com> wrote:
 > 
-> There are some more problems that I didn't look into yet, but if you
-> want to look into it, efm32_defconfig for ARCH=arm is what I'm seeing
-> broken.
+>> On 10/09/2013 04:16 PM, tip-bot for HATAYAMA Daisuke wrote:
+>>> Commit-ID:  1d79e607332d67d9132c176d99b5e7fabe1b6b7f
+>>> Gitweb:     http://git.kernel.org/tip/1d79e607332d67d9132c176d99b5e7fabe1b6b7f
+>>> Author:     HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+>>> AuthorDate: Thu, 29 Aug 2013 18:28:04 +0900
+>>> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+>>> CommitDate: Wed, 9 Oct 2013 15:41:11 -0700
+>>>
+>>> x86, apic: Disable BSP if boot cpu is AP
+>>
+>> This patch seems to trigger build failures in some configurations.
+>> Specifically:
+>>
+>> (.init.text+0x1307): undefined reference to `boot_cpu_is_bsp_init'
+>>
+>> Unfortunately I don't have the specific configuration which triggers the 
+>> failure, as this was discovered by Fengguang's robot.
+> 
+> I have triggered that too and have such a config, it's attached.
 
-yup.  Hopefully mm-factor-commit-limit-calculation-fix-fix.patch
-fix-fixes this.
+Okay, thinking about this again, this patchset is in fact broken on:
 
+1. Any configuration which has CONFIG_SMP=n and CONFIG_X86_UP_APIC=n.
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: mm-factor-commit-limit-calculation-fix-fix
+This is a built-time problem.
 
-Cc: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
+2. Any CPU which is old enough that MSR_IA32_APICBASE doesn't exist.
 
- mm/mmap.c |    9 ---------
- mm/util.c |   13 +++++++++++++
- 2 files changed, 13 insertions(+), 9 deletions(-)
+This is a fatal runtime bug.
 
-diff -puN mm/mmap.c~mm-factor-commit-limit-calculation-fix-fix mm/mmap.c
---- a/mm/mmap.c~mm-factor-commit-limit-calculation-fix-fix
-+++ a/mm/mmap.c
-@@ -110,15 +110,6 @@ unsigned long vm_memory_committed(void)
- EXPORT_SYMBOL_GPL(vm_memory_committed);
- 
- /*
-- * Commited memory limit enforced when OVERCOMMIT_NEVER policy is used
-- */
--unsigned long vm_commit_limit(void)
--{
--	return ((totalram_pages - hugetlb_total_pages())
--		* sysctl_overcommit_ratio / 100) + total_swap_pages;
--}
--
--/*
-  * Check that a process has enough memory to allocate a new virtual
-  * mapping. 0 means there is enough memory for the allocation to
-  * succeed and -ENOMEM implies there is not.
-diff -puN mm/util.c~mm-factor-commit-limit-calculation-fix-fix mm/util.c
---- a/mm/util.c~mm-factor-commit-limit-calculation-fix-fix
-+++ a/mm/util.c
-@@ -7,6 +7,9 @@
- #include <linux/security.h>
- #include <linux/swap.h>
- #include <linux/swapops.h>
-+#include <linux/mman.h>
-+#include <linux/hugetlb.h>
-+
- #include <asm/uaccess.h>
- 
- #include "internal.h"
-@@ -398,6 +401,16 @@ struct address_space *page_mapping(struc
- 	return mapping;
- }
- 
-+/*
-+ * Commited memory limit enforced when OVERCOMMIT_NEVER policy is used
-+ */
-+unsigned long vm_commit_limit(void)
-+{
-+	return ((totalram_pages - hugetlb_total_pages())
-+		* sysctl_overcommit_ratio / 100) + total_swap_pages;
-+}
-+
-+
- /* Tracepoints definitions. */
- EXPORT_TRACEPOINT_SYMBOL(kmalloc);
- EXPORT_TRACEPOINT_SYMBOL(kmem_cache_alloc);
-_
+3. Any clustered solution which involves a third-party cluster
+controller such that MSR_IA32_APICBASE may not reflect the reality of
+the system.
+
+This is a less critical issue as "all" it ought to make happen is to
+disable some CPUs which didn't need it.
+
+Hatayama-san, you got this build bug report almost a month ago.  It
+looks like it is going to need a fair bit of cleanup, so I fear this is
+going to be dropped for v3.13.
+
+	-hpa
 
