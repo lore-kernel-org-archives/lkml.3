@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab3KKLfO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:35:14 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:45145 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab3KKLfG (ORCPT
+	id S1753609Ab3KKLgL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:36:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:37794 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752800Ab3KKLgB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:35:06 -0500
-Date: Mon, 11 Nov 2013 12:35:03 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Olof Johansson <olof@lixom.net>,
+	Mon, 11 Nov 2013 06:36:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="406753873"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Corrupted low memory in v3.9+
-Message-ID: <20131111113503.GA16090@gmail.com>
-References: <CAOesGMgV2UsBffPveaE+j1s-mDZ+cQvvQGLGAXjWSAv+a_56Fw@mail.gmail.com>
- <52603CD6.6080507@linux.intel.com>
- <CAOesGMjgvPWpZssrepDszTr0EexHtDXznWA4XYoZ6O_U=XJGAg@mail.gmail.com>
- <CAOesGMgiUbJF01+BPBDgJT3J-Sn6ewE04aMyCTYrwjKwY4S2SQ@mail.gmail.com>
- <527BEA91.6050603@linux.intel.com>
+Subject: RE: [char-misc-next 0/3]  mei: driver cleanups 
+Thread-Topic: [char-misc-next 0/3]  mei: driver cleanups 
+Thread-Index: AQHO3tEQrZTfdSJRZ0uubMxWx+eGDJof5o2w
+Date: Mon, 11 Nov 2013 11:35:40 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AF0913E@HASMSX106.ger.corp.intel.com>
+References: <1384169168-30281-1-git-send-email-tomas.winkler@intel.com>
+In-Reply-To: <1384169168-30281-1-git-send-email-tomas.winkler@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <527BEA91.6050603@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* H. Peter Anvin <hpa@linux.intel.com> wrote:
 
-> On 11/07/2013 11:02 AM, Olof Johansson wrote:
-> >> [    0.000000] reserving inaccessible SNB gfx pages
-> >> [    0.000000] memblock_reserve: [0x00000000000000-0x00000000100000]
 > 
-> This is on a Sandy Bridge system, which I guess I managed to miss the 
-> first time.  Unfortunately low memory corruption is expected with SNB 
-> graphics... this is why we unconditionally reserve all low memory on 
-> SNB.
-> 
-> >> setup_arch+0xa2d/0xa41
-> >> [...]
-> >>
-> >> Unfortunately x86 doesn't keep the memblock structures around, so 
-> >> there's no way to verify after booting in debugfs, but based on the 
-> >> above it should have been reserved properly.
-> > 
-> > *prod*
-> > 
-> > So, got a preference on solution for this? The warning seems harmless 
-> > but still annoying to get used to ignoring false positives, etc.
-> > 
-> > Disable the low memory checker by default? Hide it behind a debug 
-> > option (runtime or build time)?
-> 
-> I'm inclined to say disable it by default, but I'll let Ingo comment. 
-> These days we default to reserving all of low memory other than the 
-> trampoline (which we really can't avoid); leaving it in as a debug 
-> option seems reasonable, but it is really questionable to me how much it 
-> is useful to a general user.
+> *** BLURB HERE ***
+Oops, sorry for that.
+Tomas
 
-If we reserve everything in low memory, all the time (which I very much 
-argue we should do) then the checker becomes a no-op and can be removed.
-
-Thanks,
-
-	Ingo
