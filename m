@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab3KKXOG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 18:14:06 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:48790 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753035Ab3KKXN4 (ORCPT
+	id S1753752Ab3KKXRe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 18:17:34 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:44786 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab3KKXRZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 18:13:56 -0500
-Message-ID: <528164AA.4070300@hurleysoftware.com>
-Date: Mon, 11 Nov 2013 18:13:46 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, gregkh@linuxfoundation.org
-CC: jirislaby@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] TTY: tty_buffer, warn on leaks
-References: <1384200359-31356-1-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1384200359-31356-1-git-send-email-jslaby@suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+	Mon, 11 Nov 2013 18:17:25 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
+Subject: Re: pull request: bluetooth 2013-11-11
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20131111182738.GB5648@joana>
+Date: Tue, 12 Nov 2013 08:17:15 +0900
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D2BE5A4D-1193-4E8A-AA03-47221248C736@holtmann.org>
+References: <20131111182738.GB5648@joana>
+To: "Gustavo F. Padovan" <gustavo@padovan.org>
+X-Mailer: Apple Mail (2.1822)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 03:05 PM, Jiri Slaby wrote:
-> When we leak something, warn about that. For that we need to account
-> the memory used also in the free_all method. It is handled elsewhere
-> correctly.
+Hi Gustavo,
 
-Hi Jiri,
-
-Good idea.
-
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> A few fixes for 3.13. There is 3 fixes to the RFCOMM protocol. One crash fix to
+> L2CAP. A simple fix to a bad behaviour in the SMP protocol, and last, an
+> revert, that I sent in the last pull request but doesn't seem to be in your
+> tree.
+> 
+> Please pull or let me know of any issues. Thanks!
+> 
+> 
+> 	Gustavo
+> 
 > ---
->   drivers/tty/tty_buffer.c | 10 ++++++++--
->   1 file changed, 8 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-> index 5f08c39e76ab..20cb9492dbf8 100644
-> --- a/drivers/tty/tty_buffer.c
-> +++ b/drivers/tty/tty_buffer.c
-> @@ -115,21 +115,27 @@ void tty_buffer_free_all(struct tty_port *port)
->   	struct tty_bufhead *buf = &port->buf;
->   	struct tty_buffer *p, *next;
->   	struct llist_node *llist;
-> +	int zero = 0;
->
->   	while ((p = buf->head) != NULL) {
->   		buf->head = p->next;
-> +		atomic_sub(p->size, &buf->memory_used);
+> The following changes since commit 8ce9beac4661f576ea0d518b9f086bb52a171a37:
+> 
+>  drivers: net: wireless: b43: Fix possible NULL ptr dereference (2013-10-18 13:41:11 -0400)
+> 
+> are available in the git repository at:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
+> 
+> for you to fetch changes up to 3244d4a55c95708b0fa6fd820a9009534ed08a5f:
+> 
+>  Bluetooth: Fix rejecting SMP security request in slave role (2013-11-11 15:48:36 -0200)
+> 
+> ----------------------------------------------------------------
+> Hans de Goede (1):
+>      Bluetooth: revert: "Bluetooth: Add missing reset_resume dev_pm_ops”
 
-buf->memory_used doesn't need to be treated atomically here,
-and doing so implies that it's necessary.
+this one is already in net-next actually. John pushed bluetooth and bluetooth-next to Dave at the same time.
 
-Accumulating p->size in a non-atomic local is probably better.
+> Johan Hedberg (1):
+>      Bluetooth: Fix rejecting SMP security request in slave role
+> 
+> Marcel Holtmann (1):
+>      Bluetooth: Fix issue with RFCOMM getsockopt operation
+> 
+> Seung-Woo Kim (3):
+>      Bluetooth: Fix RFCOMM bind fail for L2CAP sock
+>      Bluetooth: Fix to set proper bdaddr_type for RFCOMM connect
+>      Bluetooth: Fix crash in l2cap_chan_send after l2cap_chan_del
 
->   		if (p->size > 0)
->   			kfree(p);
->   	}
->   	llist = llist_del_all(&buf->free);
-> -	llist_for_each_entry_safe(p, next, llist, free)
-> +	llist_for_each_entry_safe(p, next, llist, free) {
-> +		atomic_sub(p->size, &buf->memory_used);
+These 5 fixes are still needed.
 
-Same here.
+Regards
 
->   		kfree(p);
-> +	}
-> +
->
->   	tty_buffer_reset(&buf->sentinel, 0);
->   	buf->head = &buf->sentinel;
->   	buf->tail = &buf->sentinel;
->
-> -	atomic_set(&buf->memory_used, 0);
-> +	atomic_xchg(&buf->memory_used, zero);
-> +	WARN_ON(zero != 0);
-
-Then,
-
-WARN_ON(atomic_read(&buf->memory_used) != <local accum>);
-atomic_set(&buf->memory_used, 0);
-
-?
-
-Regards,
-Peter Hurley
+Marcel
 
