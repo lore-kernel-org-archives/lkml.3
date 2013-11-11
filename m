@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab3KKRxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 12:53:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46623 "EHLO
+	id S1755110Ab3KKRxW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 12:53:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46639 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755026Ab3KKRws (ORCPT
+	with ESMTP id S1754984Ab3KKRxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 12:52:48 -0500
-Date: Mon, 11 Nov 2013 09:52:15 -0800
-From: tip-bot for Rik van Riel <tipbot@zytor.com>
-Message-ID: <tip-7053ea1a34fa8567cb5e3c39e04ace4c5d0fbeaa@git.kernel.org>
+	Mon, 11 Nov 2013 12:53:00 -0500
+Date: Mon, 11 Nov 2013 09:52:24 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-e5137b50a0640009fd63a3e65c14bc6e1be8796a@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, riel@redhat.com, mgorman@suse.de,
-        tglx@linutronix.de, prarit@redhat.com
+        peterz@infradead.org, ying.huang@intel.com,
+        yuanhan.liu@linux.intel.com, rostedt@goodmis.org, tglx@linutronix.de,
+        fengguang.wu@intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, riel@redhat.com, mgorman@suse.de,
-        tglx@linutronix.de, prarit@redhat.com
-In-Reply-To: <20131101104146.03d1e043@annuminas.surriel.com>
-References: <20131101104146.03d1e043@annuminas.surriel.com>
+        peterz@infradead.org, ying.huang@intel.com,
+        yuanhan.liu@linux.intel.com, rostedt@goodmis.org, tglx@linutronix.de,
+        fengguang.wu@intel.com
+In-Reply-To: <20131004152826.GP3081@twins.programming.kicks-ass.net>
+References: <20131004152826.GP3081@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] stop_machine: Fix race between stop_two_cpus()
-  and stop_cpus()
-Git-Commit-ID: 7053ea1a34fa8567cb5e3c39e04ace4c5d0fbeaa
+Subject: [tip:sched/core] ftrace, sched: Add TRACE_FLAG_PREEMPT_RESCHED
+Git-Commit-ID: e5137b50a0640009fd63a3e65c14bc6e1be8796a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,93 +31,113 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 11 Nov 2013 09:52:21 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 11 Nov 2013 09:52:31 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7053ea1a34fa8567cb5e3c39e04ace4c5d0fbeaa
-Gitweb:     http://git.kernel.org/tip/7053ea1a34fa8567cb5e3c39e04ace4c5d0fbeaa
-Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Fri, 1 Nov 2013 10:41:46 -0400
+Commit-ID:  e5137b50a0640009fd63a3e65c14bc6e1be8796a
+Gitweb:     http://git.kernel.org/tip/e5137b50a0640009fd63a3e65c14bc6e1be8796a
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 4 Oct 2013 17:28:26 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 11 Nov 2013 12:43:38 +0100
+CommitDate: Mon, 11 Nov 2013 12:43:39 +0100
 
-stop_machine: Fix race between stop_two_cpus() and stop_cpus()
+ftrace, sched: Add TRACE_FLAG_PREEMPT_RESCHED
 
-There is a race between stop_two_cpus, and the global stop_cpus.
+Since the introduction of PREEMPT_NEED_RESCHED in:
 
-It is possible for two CPUs to get their stopper functions queued
-"backwards" from one another, resulting in the stopper threads
-getting stuck, and the system hanging. This can happen because
-queuing up stoppers is not synchronized.
+  f27dde8deef3 ("sched: Add NEED_RESCHED to the preempt_count")
 
-This patch adds synchronization between stop_cpus (a rare operation),
-and stop_two_cpus.
+we need to be able to look at both TIF_NEED_RESCHED and
+PREEMPT_NEED_RESCHED to understand the full preemption behaviour.
 
-Reported-and-Tested-by: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
+Add it to the trace output.
+
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Link: http://lkml.kernel.org/r/20131101104146.03d1e043@annuminas.surriel.com
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Huang Ying <ying.huang@intel.com>
+Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Link: http://lkml.kernel.org/r/20131004152826.GP3081@twins.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/stop_machine.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ Documentation/trace/ftrace.txt |  6 +++++-
+ kernel/trace/trace.c           |  3 ++-
+ kernel/trace/trace.h           |  1 +
+ kernel/trace/trace_output.c    | 19 +++++++++++++++++--
+ 4 files changed, 25 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index c530bc5..84571e0 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -20,6 +20,7 @@
- #include <linux/kallsyms.h>
- #include <linux/smpboot.h>
- #include <linux/atomic.h>
-+#include <linux/lglock.h>
+diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+index ea2d35d..bd36598 100644
+--- a/Documentation/trace/ftrace.txt
++++ b/Documentation/trace/ftrace.txt
+@@ -655,7 +655,11 @@ explains which is which.
+ 		  read the irq flags variable, an 'X' will always
+ 		  be printed here.
  
- /*
-  * Structure to determine completion condition and record errors.  May
-@@ -43,6 +44,14 @@ static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
- static DEFINE_PER_CPU(struct task_struct *, cpu_stopper_task);
- static bool stop_machine_initialized = false;
+-  need-resched: 'N' task need_resched is set, '.' otherwise.
++  need-resched:
++	'N' both TIF_NEED_RESCHED and PREEMPT_NEED_RESCHED is set,
++	'n' only TIF_NEED_RESCHED is set,
++	'p' only PREEMPT_NEED_RESCHED is set,
++	'.' otherwise.
  
-+/*
-+ * Avoids a race between stop_two_cpus and global stop_cpus, where
-+ * the stoppers could get queued up in reverse order, leading to
-+ * system deadlock. Using an lglock means stop_two_cpus remains
-+ * relatively cheap.
-+ */
-+DEFINE_STATIC_LGLOCK(stop_cpus_lock);
-+
- static void cpu_stop_init_done(struct cpu_stop_done *done, unsigned int nr_todo)
- {
- 	memset(done, 0, sizeof(*done));
-@@ -276,6 +285,7 @@ int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *
- 		return -ENOENT;
- 	}
- 
-+	lg_local_lock(&stop_cpus_lock);
- 	/*
- 	 * Queuing needs to be done by the lowest numbered CPU, to ensure
- 	 * that works are always queued in the same order on every CPU.
-@@ -284,6 +294,7 @@ int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *
- 	smp_call_function_single(min(cpu1, cpu2),
- 				 &irq_cpu_stop_queue_work,
- 				 &call_args, 0);
-+	lg_local_unlock(&stop_cpus_lock);
- 	preempt_enable();
- 
- 	wait_for_completion(&done.completion);
-@@ -335,10 +346,10 @@ static void queue_stop_cpus_work(const struct cpumask *cpumask,
- 	 * preempted by a stopper which might wait for other stoppers
- 	 * to enter @fn which can lead to deadlock.
- 	 */
--	preempt_disable();
-+	lg_global_lock(&stop_cpus_lock);
- 	for_each_cpu(cpu, cpumask)
- 		cpu_stop_queue_work(cpu, &per_cpu(stop_cpus_work, cpu));
--	preempt_enable();
-+	lg_global_unlock(&stop_cpus_lock);
+   hardirq/softirq:
+ 	'H' - hard irq occurred inside a softirq.
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 7974ba2..d9fea7d 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1509,7 +1509,8 @@ tracing_generic_entry_update(struct trace_entry *entry, unsigned long flags,
+ #endif
+ 		((pc & HARDIRQ_MASK) ? TRACE_FLAG_HARDIRQ : 0) |
+ 		((pc & SOFTIRQ_MASK) ? TRACE_FLAG_SOFTIRQ : 0) |
+-		(need_resched() ? TRACE_FLAG_NEED_RESCHED : 0);
++		(tif_need_resched() ? TRACE_FLAG_NEED_RESCHED : 0) |
++		(test_preempt_need_resched() ? TRACE_FLAG_PREEMPT_RESCHED : 0);
  }
+ EXPORT_SYMBOL_GPL(tracing_generic_entry_update);
  
- static int __stop_cpus(const struct cpumask *cpumask,
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 10c86fb..73d08aa 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -124,6 +124,7 @@ enum trace_flag_type {
+ 	TRACE_FLAG_NEED_RESCHED		= 0x04,
+ 	TRACE_FLAG_HARDIRQ		= 0x08,
+ 	TRACE_FLAG_SOFTIRQ		= 0x10,
++	TRACE_FLAG_PREEMPT_RESCHED	= 0x20,
+ };
+ 
+ #define TRACE_BUF_SIZE		1024
+diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+index 34e7cba..ed32284 100644
+--- a/kernel/trace/trace_output.c
++++ b/kernel/trace/trace_output.c
+@@ -618,8 +618,23 @@ int trace_print_lat_fmt(struct trace_seq *s, struct trace_entry *entry)
+ 		(entry->flags & TRACE_FLAG_IRQS_OFF) ? 'd' :
+ 		(entry->flags & TRACE_FLAG_IRQS_NOSUPPORT) ? 'X' :
+ 		'.';
+-	need_resched =
+-		(entry->flags & TRACE_FLAG_NEED_RESCHED) ? 'N' : '.';
++
++	switch (entry->flags & (TRACE_FLAG_NEED_RESCHED |
++				TRACE_FLAG_PREEMPT_RESCHED)) {
++	case TRACE_FLAG_NEED_RESCHED | TRACE_FLAG_PREEMPT_RESCHED:
++		need_resched = 'N';
++		break;
++	case TRACE_FLAG_NEED_RESCHED:
++		need_resched = 'n';
++		break;
++	case TRACE_FLAG_PREEMPT_RESCHED:
++		need_resched = 'p';
++		break;
++	default:
++		need_resched = '.';
++		break;
++	}
++
+ 	hardsoft_irq =
+ 		(hardirq && softirq) ? 'H' :
+ 		hardirq ? 'h' :
