@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab3KKMHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 07:07:06 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:38959 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752890Ab3KKMHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 07:07:01 -0500
-Date: Mon, 11 Nov 2013 13:06:55 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Adrian Hunter <adrian.hunter@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V3 06/11] perf record: Add an option to force per-cpu
- mmaps
-Message-ID: <20131111120655.GC21291@gmail.com>
-References: <1383313899-15987-1-git-send-email-adrian.hunter@intel.com>
- <1383313899-15987-7-git-send-email-adrian.hunter@intel.com>
- <20131104152942.GA4004@krava.brq.redhat.com>
- <5278AC36.1020702@intel.com>
- <20131105094220.GA1071@krava.brq.redhat.com>
- <5278EE0A.1080108@intel.com>
- <20131105133024.GE1071@krava.brq.redhat.com>
- <20131105142545.GD22912@ghostprotocols.net>
- <20131105173152.GB7329@ghostprotocols.net>
- <20131108084001.GG19203@twins.programming.kicks-ass.net>
+	id S1753470Ab3KKMH3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 07:07:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58680 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752890Ab3KKMH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 07:07:26 -0500
+Message-ID: <5280C87A.5050606@suse.cz>
+Date: Mon, 11 Nov 2013 13:07:22 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131108084001.GG19203@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Joe Mario <jmario@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [kallsyms] general protection fault: 0000 [#1] PREEMPT DEBUG_PAGEALLOC
+References: <20131110094005.GA21916@localhost> <20131110152338.GN29695@two.firstfloor.org>
+In-Reply-To: <20131110152338.GN29695@two.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Tue, Nov 05, 2013 at 02:31:52PM -0300, Arnaldo Carvalho de Melo wrote:
-> > PeterZ,
-> > 
-> > 	Can I have your Acked-by for this one? I guess now the goal is
-> > achieved, no?
+On 10.11.2013 16:23, Andi Kleen wrote:
+> On Sun, Nov 10, 2013 at 05:40:05PM +0800, Fengguang Wu wrote:
+>> Hi Joe,
+>>
+>> FYI. Here is another bisect result.
 > 
-> So this option allows -t/-p/-u to create one buffer per cpu and attach
-> all the various thread/process/user tasks' their counters to that one
-> buffer?
+> I bet it's that strncpy() in kallsyms.c and someone passing in a too
+> short buffer on a 32bit kernel.
 > 
-> As opposed to the current state where each such counter would have its
-> own buffer.
-> 
-> If this is what the patch does, then yes, although I would prefer a
-> slightly clearer Changelog.
-> 
-> Acked-by: Peter Zijlstra <peterz@infradead.org>
+> We should really kill strncpy(), it's just evil.
 
-Is there any reason why we wouldn't want to make this the default 
-behavior?
+I'm testing a patch for include/linux/pci.h to use line numbers instead
+of the PCI ID macros to declare the __pci_fixup_* symbols. If that
+works, we can revert the limit back to 128 and only keep the check in
+kallsyms.c.
 
-That way we could also lose the somewhat suboptimal 'force' naming: 
-there's nothing forced really, we simply switch to another ring-buffer 
-setup ...
-
-Thanks,
-
-	Ingo
+Michal
