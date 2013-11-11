@@ -1,129 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab3KKTdF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 14:33:05 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:49891 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754838Ab3KKTcz (ORCPT
+	id S1755300Ab3KKTdR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 14:33:17 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42620 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270Ab3KKTdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 14:32:55 -0500
+	Mon, 11 Nov 2013 14:33:00 -0500
+Date: Mon, 11 Nov 2013 19:32:36 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jonathan Austin <jonathan.austin@arm.com>
+Cc: Ming Lei <tom.leiming@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Axel Lin <axel.lin@ingics.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: kernel BUG at kernel/kallsyms.c:222!
+Message-ID: <20131111193236.GB16735@n2100.arm.linux.org.uk>
+References: <CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com> <CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com> <CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com> <87y54vzszo.fsf@rustcorp.com.au> <CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com> <CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com> <CAFRkauCW3FDSuh4t0gvmSWH1m0+qaG0XSoBxmk30Wq1FMy7iFw@mail.gmail.com> <CACVXFVMzOzD+D-MQCUBvC80d4zS-TJfcucKuUvzerGs6gT1fEg@mail.gmail.com> <CACVXFVOnVXcVdRCm=OfPjpvvWCiXi8GRV+9ViOGmSZ3tTf6WDg@mail.gmail.com> <528110B1.4060402@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <20131111183101.GA16051@gmail.com>
-References: <1381450698-28710-4-git-send-email-keescook@chromium.org>
-	<tip-5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3@git.kernel.org>
-	<20131111182046.GA14961@gmail.com>
-	<20131111183101.GA16051@gmail.com>
-Date: Mon, 11 Nov 2013 11:32:53 -0800
-X-Google-Sender-Auth: mD4Dg5NQMgCauiofJOCg4xUoF2c
-Message-ID: <CAGXu5jL96B4+McO=K9dptu81m+bdKWOZ8YS9x7+SZxkjfUsg9Q@mail.gmail.com>
-Subject: Re: [tip:x86/kaslr] x86, kaslr: Provide randomness functions
-From: Kees Cook <keescook@chromium.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528110B1.4060402@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 10:31 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Ingo Molnar <mingo@kernel.org> wrote:
->
->>
->> * tip-bot for Kees Cook <tipbot@zytor.com> wrote:
->>
->> > Commit-ID:  5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3
->> > Gitweb:     http://git.kernel.org/tip/5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3
->> > Author:     Kees Cook <keescook@chromium.org>
->> > AuthorDate: Thu, 10 Oct 2013 17:18:15 -0700
->> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
->> > CommitDate: Sun, 13 Oct 2013 03:12:12 -0700
->> >
->> > x86, kaslr: Provide randomness functions
->> >
->> > Adds potential sources of randomness: RDRAND, RDTSC, or the i8254.
->> >
->> > This moves the pre-alternatives inline rdrand function into the header so
->> > both pieces of code can use it. Availability of RDRAND is then controlled
->> > by CONFIG_ARCH_RANDOM, if someone wants to disable it even for kASLR.
->>
->> While reviewing this as a pre-pull-request, I noticed the following
->> detail:
->>
->> > +static unsigned long get_random_long(void)
->> > +{
->> > +   unsigned long random;
->> > +
->> > +   if (has_cpuflag(X86_FEATURE_RDRAND)) {
->> > +           debug_putstr("KASLR using RDRAND...\n");
->> > +           if (rdrand_long(&random))
->> > +                   return random;
->> > +   }
->> > +
->> > +   if (has_cpuflag(X86_FEATURE_TSC)) {
->> > +           uint32_t raw;
->> > +
->> > +           debug_putstr("KASLR using RDTSC...\n");
->> > +           rdtscl(raw);
->> > +
->> > +           /* Only use the low bits of rdtsc. */
->> > +           random = raw & 0xffff;
->> > +   } else {
->> > +           debug_putstr("KASLR using i8254...\n");
->> > +           random = i8254();
->> > +   }
->> > +
->> > +   /* Extend timer bits poorly... */
->> > +   random |= (random << 16);
->> > +#ifdef CONFIG_X86_64
->> > +   random |= (random << 32);
->> > +#endif
->> > +   return random;
->> > +}
->>
->> Why aren't the 3 sources of entropy XOR-ed together?
+On Mon, Nov 11, 2013 at 05:15:29PM +0000, Jonathan Austin wrote:
+> I've tested the patch below and it solves the ARM side of things - so
+> gives you an option other than a complete revert. Happy to put this in to
+> RMK's patch system if you'd prefer not to have to revert and he's happy
+> with the patch.
 
-Ah, excellent suggestion. There's no reason they couldn't be. I can
-rework that function to do that.
-
->> Also, we talked about also adding system dependent entropy sources, such
->> as memory layout or the DMI table - none of that seems to have happened.
-
-It seemed like those things didn't contribute as much entropy as the 3
-already in use, but I could investigate how to distill those things
-down into entropy. Perhaps just XORing the start and length of every
-e820 area? DMI I'll need to dig into...
-
->> It's not like this function should be performance critical, it's run once
->> per bootup, right? There's just no excuse for not maximizing available
->> entropy in such a situation ...
-
-Fair point. Is memory layout and DMI used for system entropy later in boot?
-
-> Another problem I noticed is that the RANDOMIZE_BASE Kconfig text does not
-> match the actual sources of entropy:
->
->            Entropy is generated using the RDRAND instruction if it
->            is supported.  If not, then RDTSC is used, if supported. If
->            neither RDRAND nor RDTSC are supported, then no randomness
->            is introduced.
->
-> (i8254 is missing.)
-
-Ah! Yes, thanks for catching that. I will fix that.
-
-> Nor does the help text explain an important detail: what granularity does
-> the randomization have and roughly how many bits of the address are
-> randomized if people use the default values?
-
-Yeah, true -- that seems like a good place to describe the limits.
-
-Would you like the series updated, or patches on top?
-
--- 
-Kees Cook
-Chrome OS Security
+I think this is the right solution because it then means that this symbol
+has the same meaning whether on MMU or !MMU - and getting rid of these
+kinds of gratuitous variances are the only way that !MMU is going to
+become less fragile.
