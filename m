@@ -1,88 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab3KKX4u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 18:56:50 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:32327 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753583Ab3KKX4p (ORCPT
+	id S1754178Ab3KKX5h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 18:57:37 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:55088 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754123Ab3KKX5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 18:56:45 -0500
-X-AuditID: cbfee61b-b7fd56d000001fc6-be-52816ebbc64a
-Date: Tue, 12 Nov 2013 08:57:00 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org, kay@vrfy.org
-Subject: [PATCH] video: backlight: Remove backlight sysfs uevent
-Message-id: <20131111235700.GA29987@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t9jQd3deY1BBvNvCltcXniJ1eLWqufs
-	Fif6PrBaXN41h81i966nrA6sHnvm/2D16NuyitHj8yY5j4/rPQNYorhsUlJzMstSi/TtErgy
-	Xj9pYivYwF8xZcJm5gbG9zxdjJwcEgImEvv2fWSHsMUkLtxbz9bFyMUhJDCdUWJ7YxsjhPOF
-	UWLF7x1sIFVCAr4SZ6ZtAOtgEVCVWH/xGlicTUBL4sqHPWBxEQEPienPjjKB2MwC3hKHp8xi
-	BbGFBRwkPvZeYASxeQU0Jd7s3soMYQtK/Jh8jwWiXkti/c7jUL3SEo/+zgCbKSqgIjHl5Da2
-	CYz8s5C0zELSMgtJywJG5lWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYweH6THoH46oGi0OM
-	AhyMSjy8O7gag4RYE8uKK3MPMUpwMCuJ8JrnAoV4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1
-	DhQSSE8sSc1OTS1ILYLJMnFwSjUwtmWyugipyH+WPff57Jwnl+Ltlu/1TSjIqHr5fr3xuU07
-	f3sZSFfP8m3XtrE32dG4rWW7UfsHz1r/yW92bL7Za2lhsSzlDZvM4XDHS6dWRfyQO/zv1K2s
-	lzck35hN7ttwVuH1nr/vVT/H/7RYWPLu37+tmeesY0vMkyX+v1Be/nij8Ny7ERe1/JRYijMS
-	DbWYi4oTAag9n5NTAgAA
+	Mon, 11 Nov 2013 18:57:25 -0500
+From: Michal Nazarewicz <mina86@mina86.com>
+To: David Cohen <david.a.cohen@linux.intel.com>, balbi@ti.com,
+        gregkh@linuxfoundation.org
+Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCHv5.1 3/5] usb: gadget: f_fs: remove loop from I/O function
+In-Reply-To: <1384201011-11114-4-git-send-email-david.a.cohen@linux.intel.com>
+Organization: http://mina86.com/
+References: <1384201011-11114-1-git-send-email-david.a.cohen@linux.intel.com> <1384201011-11114-4-git-send-email-david.a.cohen@linux.intel.com>
+User-Agent: Notmuch/0.15.2+55~geb6e9d8 (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:131111:linux-kernel@vger.kernel.org::SBV59BMOFrgX843z:00000000000000000000000000000000015wu
+X-Hashcash: 1:20:131111:balbi@ti.com::z6IvUFp1KCjKoQWh:000000NH9
+X-Hashcash: 1:20:131111:david.a.cohen@linux.intel.com::61QxmR54+OzsdlcD:000000000000000000000000000000002Y9t
+X-Hashcash: 1:20:131111:stern@rowland.harvard.edu::m8tOE9MRBkQS+L8j:000000000000000000000000000000000000239J
+X-Hashcash: 1:20:131111:david.a.cohen@linux.intel.com::8XhvY7pn6Y3tP1O1:000000000000000000000000000000004z7A
+X-Hashcash: 1:20:131111:linux-usb@vger.kernel.org::MSz+n//D7xwaeeM/:000000000000000000000000000000000000554s
+X-Hashcash: 1:20:131111:gregkh@linuxfoundation.org::+MMu0sYbO8Hgp1ID:000000000000000000000000000000000005JKe
+Date: Tue, 12 Nov 2013 00:57:22 +0100
+Message-ID: <xa1twqkewkyl.fsf@mina86.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+When endpoint changes (due to it being disabled or alt setting changed),
+mimic the action as if the change happened after the request has been
+queued, instead of retrying with the new endpoint.
 
-The most mobile phones have Ambient Light Sensors and it changes brightness according lux.
-It means it changes backlight brightness frequently by just writing sysfs node, so it generates uevent.
- 
-Usually there's no user to use this backlight changes. But it forks udev worker threads and it takes about 5ms. The main problem is that it hurts other process activities. so remove it.
-
-Kay said 
-"Uevents are for the major, low-frequent, global device state-changes,
- not for carrying-out any sort of measurement data. Subsystems which
- need that should use other facilities like poll()-able sysfs file or
- any other subscription-based, client-tracking interface which does not
- cause overhead if it isn't used. Uevents are not the right thing to
- use here, and upstream udev should not paper-over broken kernel
- subsystems."
-
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Cc: David Cohen <david.a.cohen@linux.intel.com>
 ---
-diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
-index 94a403a..441272d 100644
---- a/drivers/video/backlight/backlight.c
-+++ b/drivers/video/backlight/backlight.c
-@@ -88,9 +88,6 @@ static void backlight_generate_event(struct backlight_device *bd,
- 	char *envp[2];
+ drivers/usb/gadget/f_fs.c | 94 ++++++++++++++++++++---------------------------
+ 1 file changed, 40 insertions(+), 54 deletions(-)
+
+Fixed checkpatch.pl issues pointed out by David.
+
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index 0658908..6cb0b22 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -758,73 +758,59 @@ static ssize_t ffs_epfile_io(struct file *file,
+ 	ssize_t ret;
+ 	int halt;
  
- 	switch (reason) {
--	case BACKLIGHT_UPDATE_SYSFS:
--		envp[0] = "SOURCE=sysfs";
--		break;
- 	case BACKLIGHT_UPDATE_HOTKEY:
- 		envp[0] = "SOURCE=hotkey";
- 		break;
-@@ -172,8 +169,6 @@ static ssize_t brightness_store(struct device *dev,
- 	}
- 	mutex_unlock(&bd->ops_lock);
+-	goto first_try;
+-	do {
+-		spin_unlock_irq(&epfile->ffs->eps_lock);
+-		mutex_unlock(&epfile->mutex);
++	/* Are we still active? */
++	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE)) {
++		ret = -ENODEV;
++		goto error;
++	}
  
--	backlight_generate_event(bd, BACKLIGHT_UPDATE_SYSFS);
+-first_try:
+-		/* Are we still active? */
+-		if (WARN_ON(epfile->ffs->state != FFS_ACTIVE)) {
+-			ret = -ENODEV;
++	/* Wait for endpoint to be enabled */
++	ep = epfile->ep;
++	if (!ep) {
++		if (file->f_flags & O_NONBLOCK) {
++			ret = -EAGAIN;
+ 			goto error;
+ 		}
+ 
+-		/* Wait for endpoint to be enabled */
+-		ep = epfile->ep;
+-		if (!ep) {
+-			if (file->f_flags & O_NONBLOCK) {
+-				ret = -EAGAIN;
+-				goto error;
+-			}
 -
- 	return rc;
- }
- static DEVICE_ATTR_RW(brightness);
-diff --git a/include/linux/backlight.h b/include/linux/backlight.h
-index 53b7794..d2a27dd 100644
---- a/include/linux/backlight.h
-+++ b/include/linux/backlight.h
-@@ -29,7 +29,6 @@
+-			if (wait_event_interruptible(epfile->wait,
+-						     (ep = epfile->ep))) {
+-				ret = -EINTR;
+-				goto error;
+-			}
+-		}
+-
+-		/* Do we halt? */
+-		halt = !read == !epfile->in;
+-		if (halt && epfile->isoc) {
+-			ret = -EINVAL;
++		ret = wait_event_interruptible(epfile->wait, (ep = epfile->ep));
++		if (ret) {
++			ret = -EINTR;
+ 			goto error;
+ 		}
++	}
  
- enum backlight_update_reason {
- 	BACKLIGHT_UPDATE_HOTKEY,
--	BACKLIGHT_UPDATE_SYSFS,
- };
+-		/* Allocate & copy */
+-		if (!halt && !data) {
+-			data = kzalloc(len, GFP_KERNEL);
+-			if (unlikely(!data))
+-				return -ENOMEM;
++	/* Do we halt? */
++	halt = !read == !epfile->in;
++	if (halt && epfile->isoc) {
++		ret = -EINVAL;
++		goto error;
++	}
  
- enum backlight_type {
+-			if (!read &&
+-			    unlikely(__copy_from_user(data, buf, len))) {
+-				ret = -EFAULT;
+-				goto error;
+-			}
+-		}
++	/* Allocate & copy */
++	if (!halt) {
++		data = kmalloc(len, GFP_KERNEL);
++		if (unlikely(!data))
++			return -ENOMEM;
+ 
+-		/* We will be using request */
+-		ret = ffs_mutex_lock(&epfile->mutex,
+-				     file->f_flags & O_NONBLOCK);
+-		if (unlikely(ret))
++		if (!read && unlikely(copy_from_user(data, buf, len))) {
++			ret = -EFAULT;
+ 			goto error;
++		}
++	}
+ 
+-		/*
+-		 * We're called from user space, we can use _irq rather then
+-		 * _irqsave
+-		 */
+-		spin_lock_irq(&epfile->ffs->eps_lock);
++	/* We will be using request */
++	ret = ffs_mutex_lock(&epfile->mutex, file->f_flags & O_NONBLOCK);
++	if (unlikely(ret))
++		goto error;
+ 
+-		/*
+-		 * While we were acquiring mutex endpoint got disabled
+-		 * or changed?
+-		 */
+-	} while (unlikely(epfile->ep != ep));
++	spin_lock_irq(&epfile->ffs->eps_lock);
+ 
+-	/* Halt */
+-	if (unlikely(halt)) {
++	if (epfile->ep != ep) {
++		/* In the meantime, endpoint got disabled or changed. */
++		ret = -ESHUTDOWN;
++		spin_unlock_irq(&epfile->ffs->eps_lock);
++	} else if (halt) {
++		/* Halt */
+ 		if (likely(epfile->ep == ep) && !WARN_ON(!ep->ep))
+ 			usb_ep_set_halt(ep->ep);
+ 		spin_unlock_irq(&epfile->ffs->eps_lock);
+-- 
+1.8.4.1
+
