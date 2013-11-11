@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab3KKUjF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 15:39:05 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:56561 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab3KKUjA (ORCPT
+	id S1751554Ab3KKUkC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 15:40:02 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:36201 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab3KKUj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 15:39:00 -0500
-Message-ID: <52814060.9000104@gmail.com>
-Date: Mon, 11 Nov 2013 13:38:56 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Bill Gray <bgray@redhat.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Joe Mario <jmario@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Richard Fowles <rfowles@redhat.com>,
-        Stephane Eranian <eranian@google.com>, vincent.weaver@maine.edu
-Subject: Re: [PATCH 03/10] perf record: Synthesize non-exec MMAP records when
- --data used
-References: <1384201353-23863-1-git-send-email-acme@infradead.org> <1384201353-23863-4-git-send-email-acme@infradead.org>
-In-Reply-To: <1384201353-23863-4-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Nov 2013 15:39:56 -0500
+Date: Mon, 11 Nov 2013 21:39:54 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Kamala R <kamala@aristanetworks.com>
+Cc: davem@davemloft.net, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: IPv6: Blackhole route support partial ?
+Message-ID: <20131111203954.GB3043@order.stressinduktion.org>
+Mail-Followup-To: Kamala R <kamala@aristanetworks.com>, davem@davemloft.net,
+	linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+References: <CAP8BHkGZ5EFxW4BNervKrOiEaQTNdSh9s2YOrFoexzQCOR=AqQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAP8BHkGZ5EFxW4BNervKrOiEaQTNdSh9s2YOrFoexzQCOR=AqQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Added Vince]
+Hello!
 
-On 11/11/13, 1:22 PM, Arnaldo Carvalho de Melo wrote:
-> When perf_event_attr.mmap_data is set the kernel will generate
-> PERF_RECORD_MMAP events when non-exec (data, SysV mem) mmaps are
-> created, so we need to synthesize from /proc/pid/maps for existing
-> threads
+On Mon, Nov 11, 2013 at 07:25:14PM +0530, Kamala R wrote:
+> On adding IPv6 blackhole routes, ICMP unreachable messages are being
+> sent back to source. According to the definition, packets destined to
+> a blackhole address must be dropped silently.
 
-Seems like that should be documented in the man pages:
+Yes, this is a bug.
 
-[dsa@MacBook perf]$ egrep -r mmap_data Documentation/
-[dsa@MacBook perf]$
+> I applied the patch submitted to the 3.7 kernel that indicates that it
+> supports blackhole and prohibit routes correctly. However, the patch
+> only sets the error code and route type correctly, so the show command
+> displays the appropriate output.
+> 
+> 
+> It seems to me that the input and output function pointers of the dst
+> variable, which determine packet processing, need to be set to
+> dst_discard. This would enable correct behaviour for blackhole routes.
+> Am I on the right path here ?
 
-Vince: where are you keeping the man page you are putting together?
+I think you are. ip6_pkt_discard is not the correct input/output
+function for blackhole routes. In ip6_route_add simply set up the
+function pointers in the switch instead to just initializing them to
+ip6_pkt_discard. dst_discard is fine. Looks like prohibit rules are not
+handled correctly either. They should go to ip6_pkt_prohibit. (Just look at
+how the templates are initialized.)
 
-David
+Could you cook a patch?
+
+Thanks,
+
+  Hannes
+
