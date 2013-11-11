@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab3KKRLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 12:11:48 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:45336 "EHLO comal.ext.ti.com"
+	id S1754791Ab3KKRNJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 12:13:09 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55240 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753784Ab3KKRLk convert rfc822-to-8bit (ORCPT
+	id S1753694Ab3KKRNC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 12:11:40 -0500
+	Mon, 11 Nov 2013 12:13:02 -0500
 From: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>
 To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
         Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
@@ -21,14 +21,14 @@ CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
         "Strashko, Grygorii" <grygorii.strashko@ti.com>
-Subject: [PATCH 10/12] mtd: nand: davinci: don't set timings if AEMIF is used
-Thread-Topic: [PATCH 10/12] mtd: nand: davinci: don't set timings if AEMIF
- is used
-Thread-Index: AQHO3vrjIGD+7RTiekG2UEZPLijDWpogQ8eQ
-Date: Mon, 11 Nov 2013 17:10:53 +0000
-Message-ID: <4F5844B3A985794BA902E12C070812375F8D53@DNCE04.ent.ti.com>
-References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>,<1384187188-5776-11-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1384187188-5776-11-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [PATCH 11/12] mtd: nand: davinci: don't request AEMIF address range
+Thread-Topic: [PATCH 11/12] mtd: nand: davinci: don't request AEMIF address
+ range
+Thread-Index: AQHO3vrrQt+2vfDvxUGUP5iWwJ95X5ogRBx3
+Date: Mon, 11 Nov 2013 17:12:24 +0000
+Message-ID: <4F5844B3A985794BA902E12C070812375F8D64@DNCE04.ent.ti.com>
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>,<1384187188-5776-12-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1384187188-5776-12-git-send-email-ivan.khoronzhuk@ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -42,61 +42,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If Davinci AEMIF is used we don't need to set timings and bus width.
-It is done by AEMIF driver (drivers/memory/davinci-aemfi.c).
+The AEMIF driver registers are used to setup timings for each chip
+select. The same registers range is used to setup NAND settings.
+The AEMIF and NAND drivers not use the same registers in this range.
+
+In case with AEMIF driver, the memory address range is requested
+already by AEMIF, so we cannot request it twice, just ioremap.
 
 Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
- drivers/mtd/nand/davinci_nand.c |   22 +++++++++++++++-------
- 1 file changed, 15 insertions(+), 7 deletions(-)
+ drivers/mtd/nand/davinci_nand.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-index 4705214..879e915 100644
+index 879e915..bb6b7e5 100644
 --- a/drivers/mtd/nand/davinci_nand.c
 +++ b/drivers/mtd/nand/davinci_nand.c
-@@ -742,27 +742,35 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
-                goto err_clk_enable;
-        }
+@@ -639,9 +639,11 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+        if (IS_ERR(vaddr))
+                return PTR_ERR(vaddr);
 
-+#if !IS_ENABLED(CONFIG_TI_DAVINCI_AEMIF)
-        /*
--        * Setup Async configuration register in case we did not boot from
--        * NAND and so bootloader did not bother to set it up.
-+        * Setup Async configuration register in case we did not boot
-+        * from NAND and so bootloader did not bother to set it up.
-         */
--       val = davinci_nand_readl(info, A1CR_OFFSET + info->core_chipsel * 4);
-+       val = davinci_nand_readl(info, A1CR_OFFSET +
-+                                info->core_chipsel * 4);
+-       base = devm_ioremap_resource(&pdev->dev, res2);
+-       if (IS_ERR(base))
+-               return PTR_ERR(base);
++       base = devm_ioremap(&pdev->dev, res2->start, resource_size(res2));
++       if (!base) {
++               dev_err(&pdev->dev, "ioremap failed for resource %pR\n", res2);
++               return -EADDRNOTAVAIL;
++       }
 
--       /* Extended Wait is not valid and Select Strobe mode is not used */
-+       /*
-+        * Extended Wait is not valid and Select Strobe mode is not
-+        * used
-+        */
-        val &= ~(ACR_ASIZE_MASK | ACR_EW_MASK | ACR_SS_MASK);
-        if (info->chip.options & NAND_BUSWIDTH_16)
-                val |= 0x1;
-
--       davinci_nand_writel(info, A1CR_OFFSET + info->core_chipsel * 4, val);
-+       davinci_nand_writel(info, A1CR_OFFSET +
-+                           info->core_chipsel * 4, val);
-
-        ret = 0;
-        if (info->timing)
--               ret = davinci_aemif_setup_timing(info->timing, info->base,
--                                                       info->core_chipsel);
-+               ret = davinci_aemif_setup_timing(info->timing,
-+                                                info->base,
-+                                                info->core_chipsel);
-        if (ret < 0) {
-                dev_dbg(&pdev->dev, "NAND timing values setup fail\n");
-                goto err;
-        }
-+#endif
-
-        spin_lock_irq(&davinci_nand_lock);
-
+        info->dev               = &pdev->dev;
+        info->base              = base;
 --
 1.7.9.5
 
