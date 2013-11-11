@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab3KKMoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 07:44:30 -0500
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:42854 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab3KKMoW (ORCPT
+	id S1753654Ab3KKMop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 07:44:45 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:52057 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3KKMoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 07:44:22 -0500
-Date: Mon, 11 Nov 2013 13:44:19 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: perf/tracepoint: another fuzzer generated lockup
-Message-ID: <20131111124419.GA6740@gmail.com>
-References: <alpine.DEB.2.10.1311081440440.7281@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu>
- <20131108200244.GB14606@localhost.localdomain>
- <alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu>
- <20131108204839.GD14606@localhost.localdomain>
- <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu>
- <20131108223657.GF14606@localhost.localdomain>
- <20131109141039.GM16117@laptop.programming.kicks-ass.net>
- <20131109142056.GA26079@localhost.localdomain>
+	Mon, 11 Nov 2013 07:44:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131109142056.GA26079@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131111113218.GF15810@gmail.com>
+References: <1383871600-3831-1-git-send-email-felipe.contreras@gmail.com>
+	<1383871600-3831-3-git-send-email-felipe.contreras@gmail.com>
+	<20131111113218.GF15810@gmail.com>
+Date: Mon, 11 Nov 2013 06:44:35 -0600
+Message-ID: <CAMP44s0AVy=ef1k95bXsRJizW6zsPApFe9KPrRcg09ORo=2mQA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] panic: improve panic_timeout calculation
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 11, 2013 at 5:32 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
+>
+>> We want to calculate the blinks per second, and instead of making it 5
+>> (1000 / (3600 / 18)), let's make it 4, so the user can see two blinks
+>> per second.
+>
+> Please use the customary changelog style we use in the kernel:
+>
+>   " Current code does (A), this has a problem when (B).
+>     We can improve this doing (C), because (D)."
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+A is explained, B is empty, C is explained, D is because it makes sense.
 
-> > That said, I'm not sure what kernel you're running, but there were 
-> > some issues with time-keeping hereabouts, but more importantly that 
-> > second timing includes the printk() call of the first -- so that's 
-> > always going to be fucked.
-> 
-> It's a recent tip:master. So the delta debug printout is certainly 
-> buggy, meanwhile these lockup only happen with Vince selftests, and they 
-> trigger a lot of these NMI-too-long issues, or may be that's the other 
-> way round :)...
-> 
-> I'm trying to narrow down the issue, lets hope the lockup is not 
-> actually due to printk itself.
+>> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+>> ---
+>>  kernel/panic.c | 6 +++---
+>>  1 file changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/kernel/panic.c b/kernel/panic.c
+>> index 46e37ff..5a0bdaa 100644
+>> --- a/kernel/panic.c
+>> +++ b/kernel/panic.c
+>> @@ -25,7 +25,7 @@
+>>  #include <linux/nmi.h>
+>>
+>>  #define PANIC_TIMER_STEP 100
+>> -#define PANIC_BLINK_SPD 18
+>> +#define PANIC_BLINK_SPD 4
+>
+> Please while at it also do another patch that renames it to a sane name,
+> PANIC_BLINK_SPEED or so.
 
-I'd _very_ strongly suggest to not include the printk() overhead in the 
-execution time delta! What that function wants to report is pure NMI 
-execution overhead, not problem reporting overhead.
+If I can do that, I would rather use PANIC_BLINK_PER_SECOND.
 
-That way any large number reported there is always a bug somewhere, 
-somehow.
+>>  int panic_on_oops = CONFIG_PANIC_ON_OOPS_VALUE;
+>>  static unsigned long tainted_mask;
+>> @@ -147,7 +147,7 @@ void panic(const char *fmt, ...)
+>>                       touch_nmi_watchdog();
+>>                       if (i >= i_next) {
+>>                               i += panic_blink(state ^= 1);
+>> -                             i_next = i + 3600 / PANIC_BLINK_SPD;
+>> +                             i_next = i + 1000 / PANIC_BLINK_SPD;
+>
+> This changes a magic value to another magic value.
 
-Thanks,
+A magic value that is used all over the kernel, including
+kernel/time.c and include/linux/delay.h. I'll change it to
+MSEC_PER_SEC if that makes you happy.
 
-	Ingo
+-- 
+Felipe Contreras
