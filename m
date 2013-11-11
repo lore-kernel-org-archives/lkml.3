@@ -1,71 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab3KKIXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 03:23:39 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49657 "EHLO
+	id S1752757Ab3KKIaG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 03:30:06 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56126 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab3KKIXf (ORCPT
+	with ESMTP id S1751533Ab3KKI37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 03:23:35 -0500
-Date: Mon, 11 Nov 2013 09:23:30 +0100
+	Mon, 11 Nov 2013 03:29:59 -0500
+Date: Mon, 11 Nov 2013 09:29:55 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: wangbiao <biao.wang@intel.com>
-Cc: oneukum@suse.de, netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
-        a.p.zijlstra@chello.nl, rusty@rustcorp.com.au,
-        william.douglas@intel.com
-Subject: Re: [PATCH] usbnet: fix race condition caused spinlock bad magic
- issue
-Message-ID: <20131111082330.GA12405@gmail.com>
-References: <1384139315.2179.9.camel@wangbiao>
+To: hpa@zytor.com, linux-kernel@vger.kernel.org, seiji.aguchi@hds.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/trace] x86, trace: Add page fault tracepoints
+Message-ID: <20131111082955.GB12405@gmail.com>
+References: <52716E67.6090705@hds.com>
+ <tip-d34603b07c4255b2b00a546d34f297ccd50ae4c6@git.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384139315.2179.9.camel@wangbiao>
+In-Reply-To: <tip-d34603b07c4255b2b00a546d34f297ccd50ae4c6@git.kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* wangbiao <biao.wang@intel.com> wrote:
+* tip-bot for Seiji Aguchi <tipbot@zytor.com> wrote:
 
-> @@ -1448,8 +1448,10 @@ static void usbnet_bh (unsigned long param)
->  
->  	// waiting for all pending urbs to complete?
->  	if (dev->wait) {
-> +		wait_queue_head_t *wait_d = dev->wait;
->  		if ((dev->txq.qlen + dev->rxq.qlen + dev->done.qlen) == 0) {
-> -			wake_up (dev->wait);
-> +			if (wait_d)
-> +				wake_up(wait_d);
->  		}
->  
->  	// or are we maybe short a few urbs?
+> Commit-ID:  d34603b07c4255b2b00a546d34f297ccd50ae4c6
+> Gitweb:     http://git.kernel.org/tip/d34603b07c4255b2b00a546d34f297ccd50ae4c6
+> Author:     Seiji Aguchi <seiji.aguchi@hds.com>
+> AuthorDate: Wed, 30 Oct 2013 16:39:03 -0400
+> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Fri, 8 Nov 2013 14:15:49 -0800
+> 
+> x86, trace: Add page fault tracepoints
+> 
+> This patch introduces page fault tracepoints to x86 architecture
+> by switching IDT.
+> 
+>   Two events, for user and kernel spaces, are introduced at the beginning
+>   of page fault handler for tracing.
+> 
+>   - User space event
+>     There is a request of page fault event for user space as below.
+> 
+>     https://lkml.kernel.org/r/1368079520-11015-2-git-send-email-fdeslaur+()+gmail+!+com
+>     https://lkml.kernel.org/r/1368079520-11015-1-git-send-email-fdeslaur+()+gmail+!+com
+> 
+>   - Kernel space event:
+>     When we measure an overhead in kernel space for investigating performance
+>     issues, we can check if it comes from the page fault events.
+> 
+> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+> Link: http://lkml.kernel.org/r/52716E67.6090705@hds.com
+> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> ---
+>  arch/x86/include/asm/trace/exceptions.h | 52 +++++++++++++++++++++++++++++++++
+>  arch/x86/mm/Makefile                    |  2 ++
+>  arch/x86/mm/fault.c                     | 13 +++++++++
+>  3 files changed, 67 insertions(+)
+> 
+> diff --git a/arch/x86/include/asm/trace/exceptions.h b/arch/x86/include/asm/trace/exceptions.h
+> new file mode 100644
+> index 0000000..86540c0
+> --- /dev/null
+> +++ b/arch/x86/include/asm/trace/exceptions.h
+> @@ -0,0 +1,52 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM exceptions
+> +
+> +#if !defined(_TRACE_PAGE_FAULT_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_PAGE_FAULT_H
+> +
+> +#include <linux/tracepoint.h>
+> +
+> +extern void trace_irq_vector_regfunc(void);
+> +extern void trace_irq_vector_unregfunc(void);
+> +
+> +DECLARE_EVENT_CLASS(x86_exceptions,
+> +
+> +	TP_PROTO(unsigned long address, struct pt_regs *regs,
+> +		 unsigned long error_code),
+> +
+> +	TP_ARGS(address, regs, error_code),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(		unsigned long, address	)
+> +		__field(		unsigned long, ip	)
+> +		__field(		unsigned long, error_code )
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->address = address;
+> +		__entry->ip = regs->ip;
+> +		__entry->error_code = error_code;
+> +	),
+> +
+> +	TP_printk("address=%pf ip=%pf error_code=0x%lx",
+> +		  (void *)__entry->address, (void *)__entry->ip,
+> +		  __entry->error_code) );
+> +
+> +#define DEFINE_PAGE_FAULT_EVENT(name)				\
+> +DEFINE_EVENT_FN(x86_exceptions, name,				\
+> +	TP_PROTO(unsigned long address,	struct pt_regs *regs,	\
+> +		 unsigned long error_code),			\
+> +	TP_ARGS(address, regs, error_code),			\
+> +	trace_irq_vector_regfunc,				\
+> +	trace_irq_vector_unregfunc);
+> +
+> +DEFINE_PAGE_FAULT_EVENT(user_page_fault);
+> +DEFINE_PAGE_FAULT_EVENT(kernel_page_fault);
 
-1)
+Nice!
 
-Nit: the scope of 'wait_d' is unnecessarily broad, it could be moved to 
-the block that uses it.
+It would be nice to change this to hierarchical naming:
 
-2)
+   page_fault_user
+   page_fault_kernel
 
-Also, the changelog mentions that dev->wait can race - it would be nice to 
-add to the changelog what exact synchronization mechanism protects 
-usbnet_terminate_urbs() and usbnet_bh() from seeing/modifying that value 
-at once - as the code was clearly written without such interaction in 
-mind.
+I.e. the higher level concept named first and go to the left, details go 
+to the right.
 
-> @@ -1602,6 +1604,7 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
->  	init_timer (&dev->delay);
->  	mutex_init (&dev->phy_mutex);
->  	mutex_init(&dev->interrupt_mutex);
-> +	init_waitqueue_head(&unlink_wakeup);
-
-3)
-
-Can that runtime initialization be avoided by using 
-DECLARE_WAIT_QUEUE_HEAD()?
+(That way x86_exceptions.page_fault_user has the names ordered correctly 
+as well.)
 
 Thanks,
 
