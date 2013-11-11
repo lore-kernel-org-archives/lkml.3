@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab3KKOYv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 09:24:51 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:15005
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753910Ab3KKOYp (ORCPT
+	id S1754002Ab3KKO1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 09:27:13 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:38014 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab3KKO1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 09:24:45 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1155h)
-Date: Mon, 11 Nov 2013 22:02:36 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: <alexander.shishkin@linux.intel.com>, <gregkh@linuxfoundation.org>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <davidb@codeaurora.org>,
-        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] usb: chipidea: msm: Clean and fix glue layer driver
-Message-ID: <20131111140235.GC21746@shlinux1.ap.freescale.net>
-References: <1384176937-1658-1-git-send-email-iivanov@mm-sol.com>
+	Mon, 11 Nov 2013 09:27:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1384176937-1658-1-git-send-email-iivanov@mm-sol.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <1378898048-25205-1-git-send-email-yadi.brar@samsung.com>
+References: <1378898048-25205-1-git-send-email-yadi.brar@samsung.com>
+Date: Mon, 11 Nov 2013 23:27:08 +0900
+Message-ID: <CAKew6eUK9ZtoVgVu_b13Bn20iMNWzHnWjSHMjxD1Y+zDtvoCWw@mail.gmail.com>
+Subject: Re: [RFC 0/4] Add basic support for ASV
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 03:35:33PM +0200, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> Hi, 
-> 
-> This series intend to fixup driver, which was broken for a while. It is 
-> used to create peripheral role device, which in coordination with
-> phy-usb-msm driver (still some cleanups pending) will provide again
-> USB2.0 gadget support for MSM targets.
-> 
+gentle ping for suggestions/reviews ..
 
-We haven't seen msm chipidea patch for a long time, good news they appear.
-Any plans to use the whole chipidea function for msm controller driver
-(otg, host and peripheral)?
 
--- 
-
-Best Regards,
-Peter Chen
-
+On Wed, Sep 11, 2013 at 8:14 PM, Yadwinder Singh Brar
+<yadi.brar@samsung.com> wrote:
+> This series is to add basic common infrastructure for ASV.
+>  Basically ASV is a technique used on samsung SoCs, which provides the
+> recommended supply voltage for dvfs of arm, mif etc. For a given operating
+> frequency, the voltage is recommended based on SoC's ASV group.
+> ASV group gets fussed on SoCs during process of mass production.
+>
+> This series includes:
+>  - basic common infrastructue for ASV. It provides common APIs for user drivers
+> like cpufreq & devfreq and and an interface for SoC specific drivers to
+> register ASV members(instances)
+>  - a common platform driver to register ASV members for exynos SoCs
+>  - an example providing minimal support (only for ARM ASV) for exynos5250 chips
+>
+> Its just basic skelton which I wanted to get it reviewed or discussed in
+> early stage, before going ahead on further development based on it.
+>  Presently example is based on static ASV table provided in SoC specific file,
+> which I expects to go into DT. But exactly how and where needs to be discussed,
+> may be in next revisions once we get through the basic skelton.
+>  Also the location of driver in kernel may also seem odd to someone and
+> many more things :).
+>
+> Looking for your valuable reviews and suggestions.
+>
+> Thanks
+>
+> Yadwinder Singh Brar (4):
+>   power: asv: Add common ASV support for samsung SoCs
+>   power: asv: Add a common asv driver for exynos SoCs.
+>   power: asv: Add support for exynos5250
+>   arm: exynos5: Register static platform device for ASV.
+>
+>  arch/arm/mach-exynos/mach-exynos5-dt.c   |    3 +
+>  drivers/power/Kconfig                    |    1 +
+>  drivers/power/Makefile                   |    1 +
+>  drivers/power/asv/Kconfig                |   24 ++++
+>  drivers/power/asv/Makefile               |    2 +
+>  drivers/power/asv/exynos-asv.c           |   81 ++++++++++++++
+>  drivers/power/asv/exynos-asv.h           |   22 ++++
+>  drivers/power/asv/exynos5250-asv.c       |  141 ++++++++++++++++++++++++
+>  drivers/power/asv/samsung-asv.c          |  175 ++++++++++++++++++++++++++++++
+>  include/linux/power/samsung-asv-driver.h |   61 +++++++++++
+>  include/linux/power/samsung-asv.h        |   37 +++++++
+>  11 files changed, 548 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/power/asv/Kconfig
+>  create mode 100644 drivers/power/asv/Makefile
+>  create mode 100644 drivers/power/asv/exynos-asv.c
+>  create mode 100644 drivers/power/asv/exynos-asv.h
+>  create mode 100644 drivers/power/asv/exynos5250-asv.c
+>  create mode 100644 drivers/power/asv/samsung-asv.c
+>  create mode 100644 include/linux/power/samsung-asv-driver.h
+>  create mode 100644 include/linux/power/samsung-asv.h
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
