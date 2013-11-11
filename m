@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab3KKIfm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 03:35:42 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:47282 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab3KKIfh convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Mon, 11 Nov 2013 03:35:37 -0500
-Message-Id: <5280A4E30200007800101A2C@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Mon, 11 Nov 2013 08:35:31 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Kyungsik Lee" <kyungsik.lee@lge.com>
-Cc: "Matthew Daley" <mattjd@gmail.com>, <chan.jeong@lge.com>,
-        <hyojun.im@lge.com>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] unlz4: always set an error return code on failures
-References: <527CBC7D020000780010117C@nat28.tlf.novell.com>
- <20131111024924.GA23164@hulk>
-In-Reply-To: <20131111024924.GA23164@hulk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753005Ab3KKIhS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 03:37:18 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:40331 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab3KKIhP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 03:37:15 -0500
+MIME-Version: 1.0
+X-Originating-IP: [218.164.130.80]
+In-Reply-To: <CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com>
+References: <1383789208.5970.1.camel@phoenix>
+	<CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
+	<CAFRkauAEt-YhBt11opj_GVCLrxGsTSd2LowWGmukTSmGuJkd3A@mail.gmail.com>
+	<CACVXFVO=QA-R1+twCL9fc_3vASg6Ap-3ezi=tU1MV1pdPYrfWw@mail.gmail.com>
+	<CAFRkauAdR3=ByE0_B3OsqOBjmbz2a02EXb+6g-vn=1TJ7AZc8Q@mail.gmail.com>
+	<CACVXFVMaLOfDvzdn_1NryQY59cgtLdMMqHL-_ZAa95MPz4p56Q@mail.gmail.com>
+	<CAFRkauDe7V3N0AbfvE_=GEXHZ_Fw62VsA8p50wSUYE1-TRqMfw@mail.gmail.com>
+	<87zjpf4w0j.fsf@rustcorp.com.au>
+	<CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com>
+	<CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com>
+	<CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com>
+	<87y54vzszo.fsf@rustcorp.com.au>
+	<CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com>
+	<CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com>
+Date: Mon, 11 Nov 2013 16:37:15 +0800
+Message-ID: <CAFRkauCW3FDSuh4t0gvmSWH1m0+qaG0XSoBxmk30Wq1FMy7iFw@mail.gmail.com>
+Subject: Re: kernel BUG at kernel/kallsyms.c:222!
+From: Axel Lin <axel.lin@ingics.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 11.11.13 at 03:49, Kyungsik Lee <kyungsik.lee@lge.com> wrote:
-> Hello Jan,
-> 
-> Thanks for the patch.
-> 
-> On Fri, Nov 08, 2013 at 09:27:09AM +0000, Jan Beulich wrote:
->> "ret", being set to -1 early on, gets cleared by the first invocation
->> of lz4_decompress()/lz4_decompress_unknownoutputsize(), and hence
->> subsequent failures wouldn't be noticed by the caller without setting
->> it back to -1 right after those calls.
->> 
->> Reported-by: Matthew Daley <mattjd@gmail.com>
->> Signed-off-by: Jan Beulich <jbeulich@suse.com>
->> Cc: Kyungsik Lee <kyungsik.lee@lge.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> 
->> --- a/lib/decompress_unlz4.c
->> +++ b/lib/decompress_unlz4.c
->> @@ -141,6 +141,7 @@ STATIC inline int INIT unlz4(u8 *input, 
->>  			goto exit_2;
->>  		}
->>  
->> +		ret = -1;
->>  		if (flush && flush(outp, dest_len) != dest_len)
->>  			goto exit_2;
->>  		if (output)
+2013/11/11 Ming Lei <tom.leiming@gmail.com>:
+> Hi,
+>
+> On Mon, Nov 11, 2013 at 2:43 PM, Axel Lin <axel.lin@ingics.com> wrote:
+>> 2013/11/11 Rusty Russell <rusty@rustcorp.com.au>:
 >>
-> What do you think of adding "ret2" for keeping "ret" error status
-> which is set by lz4_decompress*() like below.
+>> Hi Rusty,
+>>
+>> I don't have other noMMU platform to test.
+>> But I think this issue impacts various !CONFIG_MMU platforms:
+>> We have CONFIG_PAGE_OFFSET=0xC0000000 in various default configs.
+>> For !CONFIG_MMU case, it just don't use the CONFIG_PAGE_OFFSET setting.
+>> So use CONFIG_PAGE_OFFSET to filter symbols looks wrong to me for all
+>> !CONFIG_MMU cases.
+>>
+>> Below is PAGE_OFFSET setting for !CONFIG_MMU case:
+>> (arch/arm/include/asm/memory.h)
+>>
+>> #ifndef PHYS_OFFSET
+>> #define PHYS_OFFSET             UL(CONFIG_DRAM_BASE)
+>> #endif
+>>
+>> #ifndef END_MEM
+>> #define END_MEM                 (UL(CONFIG_DRAM_BASE) + CONFIG_DRAM_SIZE)
+>> #endif
+>>
+>> #ifndef PAGE_OFFSET
+>> #define PAGE_OFFSET             (PHYS_OFFSET)
+>> #endif
+>>
+>> My patchs for gpl327xx SoC is still in very early stage.
+>> I think you should send your fix upstream because I think it impacts other
+>> noMMU platforms (for above reason).
+>
+> I suggest to do it when we are clear behind the break.
+>
+> As I mentioned, no matter what PAGE_OFFSET is, if you link vmlinux
+> from the address of PAGE_OFFSET(that is what arm's link script in tree
+> does), the filter won't break anything.
 
-I'd be fine with that too, but preferred to submit the smallest
-possible (read: one line) patch in this case.
+Hi Ming,
 
-Jan
+commit f6537f2f "scripts/kallsyms: filter symbols not in kernel address space",
+uses CONFIG_PAGE_OFFSET as kernel_start_addr.
+However, for !CONFIG_MMU case we have :
+    PAGE_OFFSET != CONFIG_PAGE_OFFSET.
 
+That is why I think the filter breaks !MMU platforms.
+
+Regards,
+Axel
