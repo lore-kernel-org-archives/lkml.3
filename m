@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab3KKPlb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 10:41:31 -0500
-Received: from m53-178.qiye.163.com ([123.58.178.53]:52799 "EHLO
+	id S1754547Ab3KKPlz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 10:41:55 -0500
+Received: from m53-178.qiye.163.com ([123.58.178.53]:52878 "EHLO
 	m53-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689Ab3KKPlX (ORCPT
+	with ESMTP id S1754477Ab3KKPl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 10:41:23 -0500
+	Mon, 11 Nov 2013 10:41:29 -0500
 From: Li Wang <liwang@ubuntukylin.com>
 To: linux-kernel@vger.kernel.org
 Cc: ceph-devel@vger.kernel.org, Sage Weil <sage@inktank.com>,
         linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
         Milosz Tanski <milosz@adfin.com>, Li Wang <liwang@ubuntukylin.com>
-Subject: [PATCH 0/7] Cifs and Ceph: Uncache single no-data page in readpage()
-Date: Mon, 11 Nov 2013 23:27:22 +0800
-Message-Id: <cover.1384183054.git.liwang@ubuntukylin.com>
+Subject: [PATCH 7/7] Cifs: Uncaching no-data page in readpage()
+Date: Mon, 11 Nov 2013 23:27:29 +0800
+Message-Id: <00261f7875c015f1a466ec69745d695efe43ac5d.1384183054.git.liwang@ubuntukylin.com>
 X-Mailer: git-send-email 1.7.9.5
-X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUhVQ0lCQkJCQklITEtNS05PTFdZCQ4XHghZQV
-	koKz0kKzooKCQyNSQzPjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQiPigkMjUkMz
-	46Pz4pQUtVS0A4NC41LykiJDg1QUtVS0ApPjwyNDUkOigyOkFLVUtAKyk0LTI1OD4kPC46NTw*ND
-	U8QUtVS0A*IjU6NjI4JDIrJDU0JDI1JDM#Oj8#KUFLVUtANi43LzIkKTgrLyQ*Mj09Pik#NS8kMj
-	UkMz46Pz4pQUlVS0AyKyQvND86IiQ4NS8kSyRKS0tBS1VLQDIrJE4kNjI1Li8#JDg1LyRLJEpLQU
-	tVS0AyKyRISyQ2MjUuLz4kODUvJEskTktBS1VLQDIrJEokMzQuKSQ4NS8kSyRKS0tBS1VLQDIrJE
-	okNjI1Li8#JDg1LyRLJEpLQUtVS0AoLjkkPkFKVU5OQD01JCguOSQ#NSw0KT8oJDM3MSRKS0tJS0
-	pBS1VJQ1kG
+In-Reply-To: <cover.1384183054.git.liwang@ubuntukylin.com>
+References: <cover.1384183054.git.liwang@ubuntukylin.com>
+In-Reply-To: <cover.1384183054.git.liwang@ubuntukylin.com>
+References: <cover.1384183054.git.liwang@ubuntukylin.com>
+X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQU5VQ0hLS0tLT0tLTk9ISUpIV1kJDhceCFlBWS
+	grPSQoND0vPToyNyQyNSQzPjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQ1NCQyNS
+	QzPjo*PilBSVVLQDg0LjUvKSIkODVBS1VLQCk#PDI0NSQ6KDI6QUtVS0ArKTQtMjU4PiQ8Ljo1PD
+	80NTxBS1VLQD8iNTo2MjgkMiskNTQkMjUkMz46Pz4pQUtVS0A2LjcvMiQpOCsvJD8yPT0#KT41Ly
+	QyNSQzPjo*PilBSVVLQDIrJC80PzoiJDg1LyRLJEpLS0FLVUtAMiskTiQ2MjUuLz4kODUvJEskSk
+	tBS1VLQDIrJEhLJDYyNS4vPiQ4NS8kSyROS0FLVUtAMiskSiQzNC4pJDg1LyRLJEpLS0FLVUtAMi
+	skSiQ2MjUuLz4kODUvJEskSktBS1VLQCguOSQ#QUpVTk5APTUkKC45JD41LDQpPygkMzcxJEpLS0
+	lLSkFLVUlDWQY+
 X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSENP
-	SkNPT0NLT0tJVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
-	QUpCT043V1kSC1lBWUpJSlVISFVJTk5VSktZBg++
+	SkNPT0NMS0JDVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
+	QUlLQko3V1kSC1lBWUpJSlVISFVJTk5VSktZBg++
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the page allocated into fscache in readpage() 
-for Cifs and Ceph does not be uncached if no data read due
-to io error. This patch fixes this. fscache_readpages_cancel() 
-is for this kind of job but taking list read * as input, so
-a new routine take page * as input is introduced. 
+Currently, if one page allocated into fscache in readpage(), however, with
+no-data read, it is not uncached. This patch fixes this.
 
-Li Wang (7):
-  Fscache: Introduce new API fscache_readpage_cancel()
-  Fscache: Implement uncaching single no-data page
-  Ceph: Introduce routine for uncaching single no-data page
-  Ceph: Uncaching no-data page in readpage()
-  Cifs: Introduce routine for uncaching single no-data page
-  Cifs: Implement uncaching single no-data page
-  Cifs: Uncaching no-data page in readpage()
+Signed-off-by: Li Wang <liwang@ubuntukylin.com>
+---
+ fs/cifs/file.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
- fs/ceph/addr.c          |    1 +
- fs/ceph/cache.h         |   13 +++++++++++++
- fs/cifs/file.c          |    4 +++-
- fs/cifs/fscache.c       |    7 +++++++
- fs/cifs/fscache.h       |   13 +++++++++++++
- fs/fscache/page.c       |    8 ++++++++
- include/linux/fscache.h |   11 +++++++++++
- 7 files changed, 56 insertions(+), 1 deletion(-)
-
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 7ddddf2..153bc58 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -3406,8 +3406,10 @@ static int cifs_readpage_worker(struct file *file, struct page *page,
+ 
+ 	rc = cifs_read(file, read_data, PAGE_CACHE_SIZE, poffset);
+ 
+-	if (rc < 0)
++	if (rc < 0) {
++		cifs_fscache_readpage_cancel(file_inode(file), page);
+ 		goto io_error;
++	}
+ 	else
+ 		cifs_dbg(FYI, "Bytes read %d\n", rc);
+ 
 -- 
 1.7.9.5
 
