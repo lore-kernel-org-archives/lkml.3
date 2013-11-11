@@ -1,94 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab3KKOhY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 09:37:24 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:58407 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751244Ab3KKOhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 09:37:18 -0500
-Message-ID: <1384180569.23605.21.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH 4/4] usb: chipidea: msm: Use USB PHY API to control PHY
- state
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: alexander.shishkin@linux.intel.com, gregkh@linuxfoundation.org,
-        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
-        davidb@codeaurora.org, linux-usb@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 11 Nov 2013 16:36:09 +0200
-In-Reply-To: <20131111135931.GB21746@shlinux1.ap.freescale.net>
-References: <1384176937-1658-1-git-send-email-iivanov@mm-sol.com>
-	 <1384176937-1658-5-git-send-email-iivanov@mm-sol.com>
-	 <20131111135931.GB21746@shlinux1.ap.freescale.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754206Ab3KKOhe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 09:37:34 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:64941 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244Ab3KKOh1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 09:37:27 -0500
+From: Evgeny Boger <eugenyboger@gmail.com>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: linux-kernel@vger.kernel.org, Evgeny Boger <eugenyboger@gmail.com>,
+        Evgeny Boger <boger@contactless.ru>
+Subject: [PATCH 1/1] Add strong pullup emulation to w1-gpio master driver.
+Date: Mon, 11 Nov 2013 18:36:54 +0400
+Message-Id: <1384180614-9025-1-git-send-email-boger@contactless.ru>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi Peter,
-
-On Mon, 2013-11-11 at 21:59 +0800, Peter Chen wrote: 
-> On Mon, Nov 11, 2013 at 03:35:37PM +0200, Ivan T. Ivanov wrote:
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > 
-> > PHY drivers keep track of the current state of the hardware,
-> > so don't change PHY settings under it.
-> > 
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > ---
-> >  drivers/usb/chipidea/ci_hdrc_msm.c |    9 ++-------
-> >  1 file changed, 2 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
-> > index e9624f3..338b209 100644
-> > --- a/drivers/usb/chipidea/ci_hdrc_msm.c
-> > +++ b/drivers/usb/chipidea/ci_hdrc_msm.c
-> > @@ -20,13 +20,11 @@
-> >  static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
-> >  {
-> >  	struct device *dev = ci->gadget.dev.parent;
-> > -	int val;
-> >  
-> >  	switch (event) {
-> >  	case CI_HDRC_CONTROLLER_RESET_EVENT:
-> >  		dev_dbg(dev, "CI_HDRC_CONTROLLER_RESET_EVENT received\n");
-> > -		writel(0, USB_AHBBURST);
-> > -		writel(0, USB_AHBMODE);
-> > +		usb_phy_init(ci->transceiver);
-> 
-> It will reset the PHY,  but your comment is "don't change PHY settings under it"
-
-:-). This function is exported by PHY drivers, so they will know how
-to handle this change.
-
-> 
-> >  		break;
-> >  	case CI_HDRC_CONTROLLER_STOPPED_EVENT:
-> >  		dev_dbg(dev, "CI_HDRC_CONTROLLER_STOPPED_EVENT received\n");
-> > @@ -34,10 +32,7 @@ static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
-> >  		 * Put the transceiver in non-driving mode. Otherwise host
-> >  		 * may not detect soft-disconnection.
-> >  		 */
-> > -		val = usb_phy_io_read(ci->transceiver, ULPI_FUNC_CTRL);
-> > -		val &= ~ULPI_FUNC_CTRL_OPMODE_MASK;
-> > -		val |= ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
-> > -		usb_phy_io_write(ci->transceiver, val, ULPI_FUNC_CTRL);
-> > +		usb_phy_notify_disconnect(ci->transceiver, USB_SPEED_UNKNOWN);
-> 
-> Where you have implemented .notify_disconnect?
-> I have not found it at your phy driver.
-
-Yep, I will post PHY driver changes shortly. Meanwhile this should
-not break existing board file based platforms, because not of them
-could be compiled (HTC Dream, Halibut Board) and DT based platforms 
-are sill work in progress.
-
-Regards,
-Ivan
+ Strong pullup is emulated by driving pin logic high after write command when
+ using tri-state push-pull GPIO.
 
 
+Signed-off-by: Evgeny Boger <boger@contactless.ru>
+---
+ drivers/w1/masters/w1-gpio.c | 22 ++++++++++++++++++++++
+ drivers/w1/w1_int.c          | 12 ------------
+ include/linux/w1-gpio.h      |  1 +
+ 3 files changed, 23 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
+index f54ece2..cb7f89b 100644
+--- a/drivers/w1/masters/w1-gpio.c
++++ b/drivers/w1/masters/w1-gpio.c
+@@ -18,10 +18,31 @@
+ #include <linux/of_gpio.h>
+ #include <linux/err.h>
+ #include <linux/of.h>
++#include <linux/delay.h>
+
+ #include "../w1.h"
+ #include "../w1_int.h"
+
++static u8 w1_gpio_set_pullup(void *data, int delay)
++{
++	struct w1_gpio_platform_data *pdata = data;
++
++	if (delay) {
++		pdata->pullup_duration = delay;
++	} else {
++		if (pdata->pullup_duration) {
++			gpio_direction_output(pdata->pin, 1);
++
++			msleep(pdata->pullup_duration);
++
++			gpio_direction_input(pdata->pin);
++		}
++		pdata->pullup_duration = 0;
++	}
++
++	return 0;
++}
++
+ static void w1_gpio_write_bit_dir(void *data, u8 bit)
+ {
+	struct w1_gpio_platform_data *pdata = data;
+@@ -125,6 +146,7 @@ static int w1_gpio_probe(struct platform_device *pdev)
+	} else {
+		gpio_direction_input(pdata->pin);
+		master->write_bit = w1_gpio_write_bit_dir;
++		master->set_pullup = w1_gpio_set_pullup;
+	}
+
+	err = w1_add_master_device(master);
+diff --git a/drivers/w1/w1_int.c b/drivers/w1/w1_int.c
+index 5a98649..590bd8a 100644
+--- a/drivers/w1/w1_int.c
++++ b/drivers/w1/w1_int.c
+@@ -117,18 +117,6 @@ int w1_add_master_device(struct w1_bus_master *master)
+		printk(KERN_ERR "w1_add_master_device: invalid function set\n");
+		return(-EINVAL);
+         }
+-	/* While it would be electrically possible to make a device that
+-	 * generated a strong pullup in bit bang mode, only hardware that
+-	 * controls 1-wire time frames are even expected to support a strong
+-	 * pullup.  w1_io.c would need to support calling set_pullup before
+-	 * the last write_bit operation of a w1_write_8 which it currently
+-	 * doesn't.
+-	 */
+-	if (!master->write_byte && !master->touch_bit && master->set_pullup) {
+-		printk(KERN_ERR "w1_add_master_device: set_pullup requires "
+-			"write_byte or touch_bit, disabling\n");
+-		master->set_pullup = NULL;
+-	}
+
+	/* Lock until the device is added (or not) to w1_masters. */
+	mutex_lock(&w1_mlock);
+diff --git a/include/linux/w1-gpio.h b/include/linux/w1-gpio.h
+index 065e3ae..d58594a 100644
+--- a/include/linux/w1-gpio.h
++++ b/include/linux/w1-gpio.h
+@@ -20,6 +20,7 @@ struct w1_gpio_platform_data {
+	unsigned int is_open_drain:1;
+	void (*enable_external_pullup)(int enable);
+	unsigned int ext_pullup_enable_pin;
++	unsigned int pullup_duration;
+ };
+
+ #endif /* _LINUX_W1_GPIO_H */
+--
+1.8.1.2
