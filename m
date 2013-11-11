@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab3KKLcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:32:06 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:47376 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752867Ab3KKLb4 convert rfc822-to-8bit (ORCPT
+	id S1753449Ab3KKLc2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:32:28 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:36031 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab3KKLcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:31:56 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ian Abbott <abbotti@mev.co.uk>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv2] staging: comedi: fix potentially uninitialised variable
-In-Reply-To: <20131110212835.GB5302@mwanda>
-Organization: http://mina86.com/
-References: <1384108669-23392-1-git-send-email-mpn@google.com> <20131110212835.GB5302@mwanda>
-User-Agent: Notmuch/0.15.2+55~geb6e9d8 (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:131111:gregkh@linuxfoundation.org::hgL6fuW+kiIQENg8:000000000000000000000000000000000000X08
-X-Hashcash: 1:20:131111:dan.carpenter@oracle.com::vqiRcmNlunES6a4a:00000000000000000000000000000000000000Gd7
-X-Hashcash: 1:20:131111:abbotti@mev.co.uk::sZWuXdfKgOVGac4t:000000000000000000000000000000000000000000002bZz
-X-Hashcash: 1:20:131111:linux-kernel@vger.kernel.org::t0aMUWsSqGyu5BQY:0000000000000000000000000000000003w4A
-X-Hashcash: 1:20:131111:hsweeten@visionengravers.com::9MLjG1VfDkxJQOGx:000000000000000000000000000000000DUsO
-X-Hashcash: 1:20:131111:devel@driverdev.osuosl.org::T/L7iKiXhR3YB/SQ:00000000000000000000000000000000000Cyb0
-Date: Mon, 11 Nov 2013 12:31:51 +0100
-Message-ID: <xa1t38n3yy1k.fsf@mina86.com>
+	Mon, 11 Nov 2013 06:32:21 -0500
+Date: Mon, 11 Nov 2013 12:32:18 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/3] panic: improve panic_timeout calculation
+Message-ID: <20131111113218.GF15810@gmail.com>
+References: <1383871600-3831-1-git-send-email-felipe.contreras@gmail.com>
+ <1383871600-3831-3-git-send-email-felipe.contreras@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383871600-3831-3-git-send-email-felipe.contreras@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If none of the if conditions take a true path, the ret variable will
-never be assigned a value.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- drivers/staging/comedi/drivers/vmk80xx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+* Felipe Contreras <felipe.contreras@gmail.com> wrote:
 
-On Sun, Nov 10 2013, Dan Carpenter wrote:
-> Don't use a From: unless you are sending it on behalf of another sender.
->
-> You need a Signed-off-by line and it has to match your email address
-> which you used to send the email.
+> We want to calculate the blinks per second, and instead of making it 5 
+> (1000 / (3600 / 18)), let's make it 4, so the user can see two blinks 
+> per second.
 
-Sorry about that, forgot about “-s”.
+Please use the customary changelog style we use in the kernel:
 
-> Otherwise, the patch is good an fixes an important bug.
+  " Current code does (A), this has a problem when (B).
+    We can improve this doing (C), because (D)."
 
-diff --git a/drivers/staging/comedi/drivers/vmk80xx.c b/drivers/staging/comedi/drivers/vmk80xx.c
-index 933b01a..0adf3cf 100644
---- a/drivers/staging/comedi/drivers/vmk80xx.c
-+++ b/drivers/staging/comedi/drivers/vmk80xx.c
-@@ -465,7 +465,7 @@ static int vmk80xx_do_insn_bits(struct comedi_device *dev,
- 	unsigned char *rx_buf = devpriv->usb_rx_buf;
- 	unsigned char *tx_buf = devpriv->usb_tx_buf;
- 	int reg, cmd;
--	int ret;
-+	int ret = 0;
- 
- 	if (devpriv->model == VMK8061_MODEL) {
- 		reg = VMK8061_DO_REG;
--- 
-1.8.3.2
+> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+> ---
+>  kernel/panic.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/panic.c b/kernel/panic.c
+> index 46e37ff..5a0bdaa 100644
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -25,7 +25,7 @@
+>  #include <linux/nmi.h>
+>  
+>  #define PANIC_TIMER_STEP 100
+> -#define PANIC_BLINK_SPD 18
+> +#define PANIC_BLINK_SPD 4
+
+Please while at it also do another patch that renames it to a sane name, 
+PANIC_BLINK_SPEED or so.
+
+>  
+>  int panic_on_oops = CONFIG_PANIC_ON_OOPS_VALUE;
+>  static unsigned long tainted_mask;
+> @@ -147,7 +147,7 @@ void panic(const char *fmt, ...)
+>  			touch_nmi_watchdog();
+>  			if (i >= i_next) {
+>  				i += panic_blink(state ^= 1);
+> -				i_next = i + 3600 / PANIC_BLINK_SPD;
+> +				i_next = i + 1000 / PANIC_BLINK_SPD;
+
+This changes a magic value to another magic value.
+
+>  			}
+>  			mdelay(PANIC_TIMER_STEP);
+>  		}
+> @@ -181,7 +181,7 @@ void panic(const char *fmt, ...)
+>  		touch_softlockup_watchdog();
+>  		if (i >= i_next) {
+>  			i += panic_blink(state ^= 1);
+> -			i_next = i + 3600 / PANIC_BLINK_SPD;
+> +			i_next = i + 1000 / PANIC_BLINK_SPD;
+
+Ditto.
+
+Thanks,
+
+	Ingo
