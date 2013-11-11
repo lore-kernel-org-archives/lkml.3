@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab3KKR6n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 12:58:43 -0500
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:32103 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab3KKR6g (ORCPT
+	id S1754876Ab3KKSCU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 13:02:20 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:36998 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab3KKSCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 12:58:36 -0500
-X-AuditID: cbfec37a-b7fb76d000006e93-33-52811acab325
-Message-id: <52811AC8.4060804@samsung.com>
-Date: Mon, 11 Nov 2013 10:58:32 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.4 00/26] 3.4.69-stable review
-References: <20131109065050.089866597@linuxfoundation.org>
-In-reply-to: <20131109065050.089866597@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9hP93TUo1BBnOOsVrMWb+GzaJ58Xo2
-	i8u75rBZfP3pYLFg4yNGi0d9b9kd2Dx2zrrL7nFixm8Wj/1z17B7fN4kF8ASxWWTkpqTWZZa
-	pG+XwJVx7OBUtoL5HBVXFlxkbWDcytbFyMkhIWAicWPZD1YIW0ziwr31QHEuDiGBZYwS09pX
-	s0A4vUwSTUemQDkbGSX2Lu9hAWnhFdCSOHL1FzOIzSKgKnFi9UGwsWwC6hKfX+9gB7GFBOQk
-	mpasBqsRFYiQOLr6GStEr6DEj8n3wOaICARLrP26kBFkAbPACkaJ4y9fgg0SFjCW+P/kCjPE
-	ICuJP7tPgjVwClhLHP9/mQnEZhYwk3jUso4ZwpaX2LzmLVS9ssSfy6eAajiAflOU2L7aagKj
-	yCwkq2ch6Z6FpHsBI/MqRrHS4uSC4qT01ApDveLE3OLSvHS95PzcTYyQqKnawXjnq80hRgEO
-	RiUe3h1cjUFCrIllxZW5hxglOJiVRHjdeIFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGIW7LlqF
-	9qrnOJpe2bHfUKNs+r3+fRuV3R2d1OzNhTgZrqx4nRf9TcMme+ki16w3+9y6lNOuMd6sXG7S
-	nHbQecPxdguLwAdX22vE9tyz9LsXemua6sWqXZ6PHXddY7l2xCGaKzxZ4JbX3RSJhYlC1c+M
-	7bam7v10fdE/vdBHuz89sZK86yR7R4mlOCPRUIu5qDgRAN1yTUB4AgAA
+	Mon, 11 Nov 2013 13:02:12 -0500
+Date: Mon, 11 Nov 2013 19:02:09 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/iommu changes for v3.13
+Message-ID: <20131111180209.GA14936@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2013 11:51 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.69 release.
-> There are 26 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Mon Nov 11 06:50:22 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.69-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+Linus,
 
-3.4.69
+Please pull the latest x86-iommu-for-linus git tree from:
 
-Patch applied cleanly    yes
-Compile test        passed
-Boot test        passed
-dmesg regression test    passed
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-iommu-for-linus
 
-dmesgs look good. No regressions compared to the previous dmesgs for 
-this release. dmesg emerg, crit, alert, err are clean. No regressions in 
-warn.
+   # HEAD: ced3c42c9fcba049ec9c76c8461ac194cafb20ba x86/iommu: Clean up the CONFIG_GART_IOMMU config option a bit
 
--- Shuah
+Make it easier to turn off the old AMD GART code.
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+ Thanks,
+
+	Ingo
+
+------------------>
+Andi Kleen (1):
+      x86/iommu: Don't make AMD_GART depend on EXPERT and default y
+
+Ingo Molnar (1):
+      x86/iommu: Clean up the CONFIG_GART_IOMMU config option a bit
+
+
+ arch/x86/Kconfig | 27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ee2fb9d..7081958 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -756,20 +756,25 @@ config DMI
+ 	  BIOS code.
+ 
+ config GART_IOMMU
+-	bool "GART IOMMU support" if EXPERT
+-	default y
++	bool "Old AMD GART IOMMU support"
+ 	select SWIOTLB
+ 	depends on X86_64 && PCI && AMD_NB
+ 	---help---
+-	  Support for full DMA access of devices with 32bit memory access only
+-	  on systems with more than 3GB. This is usually needed for USB,
+-	  sound, many IDE/SATA chipsets and some other devices.
+-	  Provides a driver for the AMD Athlon64/Opteron/Turion/Sempron GART
+-	  based hardware IOMMU and a software bounce buffer based IOMMU used
+-	  on Intel systems and as fallback.
+-	  The code is only active when needed (enough memory and limited
+-	  device) unless CONFIG_IOMMU_DEBUG or iommu=force is specified
+-	  too.
++	  Provides a driver for older AMD Athlon64/Opteron/Turion/Sempron
++	  GART based hardware IOMMUs.
++
++	  The GART supports full DMA access for devices with 32-bit access
++	  limitations, on systems with more than 3 GB. This is usually needed
++	  for USB, sound, many IDE/SATA chipsets and some other devices.
++
++	  Newer systems typically have a modern AMD IOMMU, supported via
++	  the CONFIG_AMD_IOMMU=y config option.
++
++	  In normal configurations this driver is only active when needed:
++	  there's more than 3 GB of memory and the system contains a
++	  32-bit limited device.
++
++	  If unsure, say Y.
+ 
+ config CALGARY_IOMMU
+ 	bool "IBM Calgary IOMMU support"
