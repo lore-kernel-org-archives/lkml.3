@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab3KKQHb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 11:07:31 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:43970 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058Ab3KKQHW (ORCPT
+	id S1754563Ab3KKQJK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 11:09:10 -0500
+Received: from usindpps04.hds.com ([207.126.252.17]:51491 "EHLO
+	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793Ab3KKQJD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 11:07:22 -0500
+	Mon, 11 Nov 2013 11:09:03 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>
+CC: "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: RE: [tip:x86/trace] x86, trace: Add page fault tracepoints
+Thread-Topic: [tip:x86/trace] x86, trace: Add page fault tracepoints
+Thread-Index: AQHO3Ne5JH//O9og7ESA5GR79xhCwZogCoiAgAB+MAD//6xZoA==
+Date: Mon, 11 Nov 2013 16:02:44 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D47F9EC03A@USINDEM103.corp.hds.com>
+References: <52716E67.6090705@hds.com>
+ <tip-d34603b07c4255b2b00a546d34f297ccd50ae4c6@git.kernel.org>
+ <20131111082955.GB12405@gmail.com> <5280FF5E.2090009@zytor.com>
+In-Reply-To: <5280FF5E.2090009@zytor.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20131111155905.GM19203@twins.programming.kicks-ass.net>
-References: <1383939963-7750-1-git-send-email-eranian@google.com>
-	<1383939963-7750-4-git-send-email-eranian@google.com>
-	<20131111155905.GM19203@twins.programming.kicks-ass.net>
-Date: Mon, 11 Nov 2013 17:07:22 +0100
-Message-ID: <CABPqkBRZ84Hc9oAU6zFxNWMv9hT+zMu3Od7_b5fhHRgbG3MXPA@mail.gmail.com>
-Subject: Re: [PATCH v6 3/4] perf,x86: add Intel RAPL PMU support
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-11-11_02:2013-11-09,2013-11-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1311110097
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 4:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, Nov 08, 2013 at 08:46:02PM +0100, Stephane Eranian wrote:
+
+> Seiji - are you okay with this?  If so I'll just make a quick patch now.
 >
->
->> +static DEFINE_SPINLOCK(rapl_hotplug_lock);
->
-> What is this thing protecting?
->
-> Like last time it appears to be used only from hotplug notifier
-> callbacks and those are already fully serialized.
->
-I thought you or somebody else had said, that hotplug in now parallel.
+
+I'm OK with it.
+
+Seiji
