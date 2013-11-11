@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3KKMnd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 07:43:33 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:40608 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094Ab3KKMn1 (ORCPT
+	id S1753530Ab3KKMoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 07:44:30 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:42854 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3KKMoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 07:43:27 -0500
-Date: Mon, 11 Nov 2013 16:43:21 +0400
-From: Vasily Kulikov <segoon@openwall.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>, bfields@fieldses.org,
-        bharrosh@panasas.com, devel@openvz.org, oleg@redhat.com
-Subject: Re: [Devel] call_usermodehelper in containers
-Message-ID: <20131111124321.GA18028@cachalot>
-References: <20131111071825.62da01d1@tlielax.poochiereds.net>
+	Mon, 11 Nov 2013 07:44:22 -0500
+Date: Mon, 11 Nov 2013 13:44:19 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: perf/tracepoint: another fuzzer generated lockup
+Message-ID: <20131111124419.GA6740@gmail.com>
+References: <alpine.DEB.2.10.1311081440440.7281@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu>
+ <20131108200244.GB14606@localhost.localdomain>
+ <alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu>
+ <20131108204839.GD14606@localhost.localdomain>
+ <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu>
+ <20131108223657.GF14606@localhost.localdomain>
+ <20131109141039.GM16117@laptop.programming.kicks-ass.net>
+ <20131109142056.GA26079@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131111071825.62da01d1@tlielax.poochiereds.net>
+In-Reply-To: <20131109142056.GA26079@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
 
-On Mon, Nov 11, 2013 at 07:18 -0500, Jeff Layton wrote:
-> What's the correct approach to fix this? One possibility would be to
-> keep a kernel thread around that sits in the correct namespace(s) and
-> has the right privileges, and then use that to launch UMH programs.
-> That thread could be spawned whenever someone runs rpc.nfsd inside a
-> container.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> > That said, I'm not sure what kernel you're running, but there were 
+> > some issues with time-keeping hereabouts, but more importantly that 
+> > second timing includes the printk() call of the first -- so that's 
+> > always going to be fucked.
 > 
-> Not very elegant, but it seems like something that would work.
+> It's a recent tip:master. So the delta debug printout is certainly 
+> buggy, meanwhile these lockup only happen with Vince selftests, and they 
+> trigger a lot of these NMI-too-long issues, or may be that's the other 
+> way round :)...
 > 
-> Are there better approaches?
+> I'm trying to narrow down the issue, lets hope the lockup is not 
+> actually due to printk itself.
 
-What's the reasoning behind this?  I mean, it is not very obvious what
-we should keep here.  Compare 2 cases:
+I'd _very_ strongly suggest to not include the printk() overhead in the 
+execution time delta! What that function wants to report is pure NMI 
+execution overhead, not problem reporting overhead.
 
-1) root process with all caps spawns new ns, then drops some of caps;
-
-2) root process with all caps drops some of his caps and then spawns new ns.
-
->From the programmer's POV both cases are valid and lead to absolutely
-the same limitations inside of the new namespace.  However, from kernel
-POV they differ -- if save cap set when ns is created then in (1) we'll
-have cap'ed UMH, in (2) we'll have UMH with only several caps.  It might
-significantly influence on ability of UMH to do its job and ability of
-this limited ns to escape from the sandbox.
-
-So, what semantic should UMH privileges have?
-
-
-Also, an orthogonal addition: you might want to keep only minimum
-information about capabilities or something -- keep only cap_t field in
-namespace structure without explicit kernel thread for each ns.  When UMH is
-created, just fill the required caps in it.
+That way any large number reported there is always a bug somewhere, 
+somehow.
 
 Thanks,
 
--- 
-Vasily Kulikov
-http://www.openwall.com - bringing security into open computing environments
+	Ingo
