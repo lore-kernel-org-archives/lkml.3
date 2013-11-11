@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058Ab3KKWQB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 17:16:01 -0500
-Received: from mga02.intel.com ([134.134.136.20]:48043 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751716Ab3KKWPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 17:15:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="433481773"
-Message-ID: <528156E4.1030409@intel.com>
-Date: Mon, 11 Nov 2013 14:15:00 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Zhi Yong Wu <zwu.kernel@gmail.com>, viro@zeniv.linux.org.uk
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Chandra Seetharaman <sekharan@us.ibm.com>
-Subject: Re: [PATCH v6 07/11] VFS hot tracking: Add a /proc interface to control
- memory usage
-References: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com> <1383745544-391-8-git-send-email-zwu.kernel@gmail.com>
-In-Reply-To: <1383745544-391-8-git-send-email-zwu.kernel@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753301Ab3KKWQH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 17:16:07 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:60368 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752311Ab3KKWPy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 17:15:54 -0500
+Date: Mon, 11 Nov 2013 17:15:46 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: [for-next][PATCH] tracing: Add rcu annotation for syscall trace
+ descriptors
+Message-ID: <20131111171546.30b49fbf@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2013 05:45 AM, Zhi Yong Wu wrote:
-> Introduce a /proc interface hot-mem-high-thresh and
-> to cap the memory which is consumed by hot_inode_item
-> and hot_range_item, and they will be in the unit of
-> 1M bytes.
 
-You don't seem to have any documentation for this, btw... :(
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+for-next
 
-> +		.procname       = "hot-mem-high-thresh",
+Head SHA1: 3a81a5210b7d33bb6d836b4c4952a54166a336f3
 
-*Always* put units on these.  I know you mention it in a code comment,
-but please also include it in the proc filename too.
 
-In general, why do you have to control the number of these statically?
-Shouldn't you just define a shrinker and let memory pressure determine
-how many of these we allow to exist?
+Steven Rostedt (Red Hat) (1):
+      tracing: Add rcu annotation for syscall trace descriptors
+
+----
+ kernel/trace/trace.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+---------------------------
+commit 3a81a5210b7d33bb6d836b4c4952a54166a336f3
+Author: Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+Date:   Mon Nov 11 11:47:06 2013 -0500
+
+    tracing: Add rcu annotation for syscall trace descriptors
+    
+    sparse complains about the enter/exit_sysycall_files[] variables being
+    dereferenced with rcu_dereference_sched(). The fields need to be
+    annotated with __rcu.
+    
+    Reported-by: kbuild test robot <fengguang.wu@intel.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 11a04d6..7ca1993 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -192,8 +192,8 @@ struct trace_array {
+ #ifdef CONFIG_FTRACE_SYSCALLS
+ 	int			sys_refcount_enter;
+ 	int			sys_refcount_exit;
+-	struct ftrace_event_file *enter_syscall_files[NR_syscalls];
+-	struct ftrace_event_file *exit_syscall_files[NR_syscalls];
++	struct ftrace_event_file __rcu *enter_syscall_files[NR_syscalls];
++	struct ftrace_event_file __rcu *exit_syscall_files[NR_syscalls];
+ #endif
+ 	int			stop_count;
+ 	int			clock_id;
