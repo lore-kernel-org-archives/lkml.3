@@ -1,301 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab3KKVjI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 16:39:08 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:33677 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab3KKVi5 (ORCPT
+	id S1752701Ab3KKVoG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 16:44:06 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63163 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751595Ab3KKVn4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 16:38:57 -0500
-Date: Mon, 11 Nov 2013 14:38:54 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [GIT PULL] PCI changes for v3.13
-Message-ID: <20131111213854.GA30350@google.com>
+	Mon, 11 Nov 2013 16:43:56 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Lan Tianyu <tianyu.lan@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] ACPI / driver core: Store a device pointer in struct acpi_dev_node
+Date: Mon, 11 Nov 2013 22:56:22 +0100
+Message-ID: <2685417.pyXg99Yvkt@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20131111150318.GB16112@kroah.com>
+References: <3268437.YsusHvklcv@vostro.rjw.lan> <1683079.zjqzsOAjXB@vostro.rjw.lan> <20131111150318.GB16112@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 4a10c2ac2f368583138b774ca41fac4207911983:
+On Monday, November 11, 2013 07:03:18 AM Greg Kroah-Hartman wrote:
+> On Mon, Nov 11, 2013 at 02:45:39PM +0100, Rafael J. Wysocki wrote:
+> > On Monday, November 11, 2013 09:21:40 AM Lan Tianyu wrote:
+> > > On 2013年11月10日 08:58, Rafael J. Wysocki wrote:
+> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > 
+> > > > Modify struct acpi_dev_node to contain a pointer to struct device
+> > > > ambedded in the struct acpi_device associated with the given device
+> > > > object (that is, its ACPI companion device) instead of an ACPI handle
+> > > > corresponding to that struct acpi_device.  Introduce two new macros
+> > > > for manipulating that pointer in a CONFIG_ACPI-safe way,
+> > > > ACPI_COMPANION() and ACPI_COMPANION_SET(), and rework the
+> > > > ACPI_HANDLE() macro to take the above changes into account.
+> > > > Drop the ACPI_HANDLE_SET() macro entirely and rework its users to
+> > > > use ACPI_COMPANION_SET() instead.  For some of them who used to
+> > > > pass the result of acpi_get_child() directly to ACPI_HANDLE_SET()
+> > > > introduce a helper routine acpi_preset_companion() doing an
+> > > > equivalent thing.
+> > > > 
+> > > > The rationale for using a struct device pointer instead of a
+> > > > struct acpi_device one as the member of struct acpi_dev_node is
+> > > > that it allows device.h to avoid including linux/acpi.h which would
+> > > > introduce quite a bit of compilation overhead for stuff that doesn't
+> > > > care about ACPI.
+> > > > In turn, moving the macros to linux/acpi.h forces
+> > > > the stuff that does care about ACPI to include that file as
+> > > > appropriate anyway.
+> > > 
+> > > How about declaring "struct acpi_device" in the device.h? This can help
+> > > to use struct acpi_device without including linux/acpi.h.
+> > > 
+> > > struct iommu_ops and struct iommu_group have been used by the same way
+> > > in the device.h.
+> > 
+> > Yes, they are.  Well, that appears to work too.
+> > 
+> > Updated patch is appended.  It also contains some fixes for problems reported
+> > by the auto build system and it's been tested on x86-64 now, so it should be
+> > reasonably close to final.
+> > 
+> > Thanks,
+> > Rafael
+> > 
+> > 
+> > ---
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Subject: ACPI / driver core: Store an ACPI device pointer in struct acpi_dev_node
+> > 
+> > Modify struct acpi_dev_node to contain a pointer to struct acpi_device
+> > associated with the given device object (that is, its ACPI companion
+> > device) instead of an ACPI handle corresponding to it.  Introduce two
+> > new macros for manipulating that pointer in a CONFIG_ACPI-safe way,
+> > ACPI_COMPANION() and ACPI_COMPANION_SET(), and rework the
+> > ACPI_HANDLE() macro to take the above changes into account.
+> > Drop the ACPI_HANDLE_SET() macro entirely and rework its users to
+> > use ACPI_COMPANION_SET() instead.  For some of them who used to
+> > pass the result of acpi_get_child() directly to ACPI_HANDLE_SET()
+> > introduce a helper routine acpi_preset_companion() doing an
+> > equivalent thing.
+> > 
+> > The main motivation for doing this is that there are things
+> > represented by struct acpi_device objects that don't have valid
+> > ACPI handles (so called fixed ACPI hardware features, such as
+> > power and sleep buttons) and we would like to create platform
+> > device objects for them and "glue" them to their ACPI companions
+> > in the usual way (which currently is impossible due to the
+> > lack of valid ACPI handles).  However, there are more reasons
+> > why it may be useful.
+> > 
+> > First, struct acpi_device pointers allow of much better type checking
+> > than void pointers which are ACPI handles, so it should be more
+> > difficult to write buggy code using modified struct acpi_dev_node
+> > and the new macros.  Second, the change should help to reduce (over
+> > time) the number of places in which the result of ACPI_HANDLE() is
+> > passed to acpi_bus_get_device() in order to obtain a pointer to the
+> > struct acpi_device associated with the given "physical" device,
+> > because now that pointer is returned by ACPI_COMPANION() directly.
+> > Finally, the change should make it easier to write generic code that
+> > will build both for CONFIG_ACPI set and unset without adding explicit
+> > compiler directives to it.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-  Linux 3.12-rc2 (2013-09-23 15:41:09 -0700)
+Thanks!
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.13-changes
-
-for you to fetch changes up to eaaeb1cb33310dea6c3fa45d8bfc63e5a1d0a846:
-
-  Merge branch 'pci/misc' into next (2013-11-07 15:02:04 -0700)
-
-----------------------------------------------------------------
-
-PCI changes for the v3.13 merge window:
-
-  Resource management
-    - Fix host bridge window coalescing (Alexey Neyman)
-    - Pass type, width, and prefetchability for window alignment (Wei Yang)
-
-  PCI device hotplug
-    - Convert acpiphp, acpiphp_ibm to dynamic debug (Lan Tianyu)
-
-  Power management
-    - Remove pci_pm_complete() (Liu Chuansheng)
-
-  MSI
-    - Fail initialization if device is not in PCI_D0 (Yijing Wang)
-
-  MPS (Max Payload Size)
-    - Use pcie_get_mps() and pcie_set_mps() to simplify code (Yijing Wang)
-    - Use pcie_set_readrq() to simplify code (Yijing Wang)
-    - Use cached pci_dev->pcie_mpss to simplify code (Yijing Wang)
-
-  SR-IOV
-    - Enable upstream bridges even for VFs on virtual buses (Bjorn Helgaas)
-    - Use pci_is_root_bus() to avoid catching virtual buses (Wei Yang)
-
-  Virtualization
-    - Add x86 MSI masking ops (Konrad Rzeszutek Wilk)
-
-  Freescale i.MX6
-    - Support i.MX6 PCIe controller (Sean Cross)
-    - Increase link startup timeout (Marek Vasut)
-    - Probe PCIe in fs_initcall() (Marek Vasut)
-    - Fix imprecise abort handler (Tim Harvey)
-    - Remove redundant of_match_ptr (Sachin Kamat)
-
-  Renesas R-Car
-    - Support Gen2 internal PCIe controller (Valentine Barshak)
-
-  Samsung Exynos
-    - Add MSI support (Jingoo Han)
-    - Turn off power when link fails (Jingoo Han)
-    - Add Jingoo Han as maintainer (Jingoo Han)
-    - Add clk_disable_unprepare() on error path (Wei Yongjun)
-    - Remove redundant of_match_ptr (Sachin Kamat)
-
-  Synopsys DesignWare
-    - Add irq_create_mapping() (Pratyush Anand)
-    - Add header guards (Seungwon Jeon)
-
-  Miscellaneous
-    - Enable native PCIe services by default on non-ACPI (Andrew Murray)
-    - Cleanup _OSC usage and messages (Bjorn Helgaas)
-    - Remove pcibios_last_bus boot option on non-x86 (Bjorn Helgaas)
-    - Convert bus code to use bus_, drv_, and dev_groups (Greg Kroah-Hartman)
-    - Remove unused pci_mem_start (Myron Stowe)
-    - Make sysfs functions static (Sachin Kamat)
-    - Warn on invalid return from driver probe (Stephen M. Cameron)
-    - Remove Intel Haswell D3 delays (Todd E Brandt)
-    - Call pci_set_master() in core if driver doesn't do it (Yinghai Lu)
-    - Use pci_is_pcie() to simplify code (Yijing Wang)
-    - Use PCIe capability accessors to simplify code (Yijing Wang)
-    - Use cached pci_dev->pcie_cap to simplify code (Yijing Wang)
-    - Removed unused "is_pcie" from struct pci_dev (Yijing Wang)
-    - Simplify sysfs CPU affinity implementation (Yijing Wang))
-
-----------------------------------------------------------------
-Alexey Neyman (1):
-      x86/PCI: Coalesce multiple overlapping host bridge windows
-
-Andrew Murray (1):
-      PCI: Update pcie_ports 'auto' behavior for non-ACPI platforms
-
-Bjorn Helgaas (41):
-      ACPI: Write _OSC bit field definitions in hex
-      ACPI: Rename OSC_QUERY_TYPE to OSC_QUERY_DWORD
-      ACPI: Tidy acpi_run_osc() declarations
-      ACPI: Remove unused OSC_PCI_NATIVE_HOTPLUG
-      ACPI: Write OSC_PCI_CONTROL_MASKS like OSC_PCI_SUPPORT_MASKS
-      PCI/ACPI: Name _OSC #defines more consistently
-      PCI/ACPI: Drop unnecessary _OSC existence tests
-      PCI/ACPI: Move _OSC stuff from acpi_pci_root_add() to negotiate_os_control()
-      PCI/ACPI: Split _OSC "support" and "control" flags into separate variables
-      PCI/ACPI: Run _OSC only once for OSPM feature support
-      PCI/ACPI: Skip _OSC control tests if _OSC support call failed
-      PCI/ACPI: Separate out _OSC "PCIe port services disabled" path
-      PCI/ACPI: Separate out _OSC "we don't support enough services" path
-      PCI/ACPI: Decode _OSC bitmasks symbolically
-      Merge branch 'pci/bjorn-osc' into next
-      Merge branch 'pci/yijing-pci_is_pcie-v2' into next
-      PCI: Drop "setting latency timer" messages
-      [SCSI] qla2xxx: Use standard PCIe Capability Link register field names
-      PCI: Document reason for using pci_is_root_bus()
-      Merge branch 'pci/host-exynos' into next
-      Merge branch 'pci/host-imx6' into next
-      Merge branch 'pci/host-tegra' into next
-      Merge branch 'pci/misc' into next
-      IB/qib: Drop qib_tune_pcie_caps() and qib_tune_pcie_coalesce() return values
-      PCI: designware: Make dw_pcie_rd_own_conf(), etc., static
-      MAINTAINERS: Add arch/x86/pci to PCI file patterns
-      frv/PCI: Remove pcibios_last_bus
-      mn10300/PCI: Remove useless pcibios_last_bus
-      PCI: Report pci_pme_active() kmalloc failure
-      Merge branch 'pci/gregkh-driver-core' into next
-      Merge branch 'pci/host-exynos' into next
-      Merge branch 'pci/host-imx6' into next
-      Merge branch 'pci/host-rcar' into next
-      Merge branch 'pci/yijing-mps-v1' into next
-      Merge branch 'pci/misc' into next
-      Merge branch 'pci/yijing-pci_is_pcie-v2' into next
-      PCI: Drop warning about drivers that don't use pci_set_master()
-      Merge branch 'pci/misc' into next
-      PCI: Add pci_upstream_bridge()
-      PCI: Enable upstream bridges even for VFs on virtual buses
-      Merge branch 'pci/misc' into next
-
-Greg Kroah-Hartman (3):
-      PCI: convert bus code to use bus_groups
-      PCI: convert bus code to use drv_groups
-      PCI: convert bus code to use dev_groups
-
-Jingoo Han (4):
-      MAINTAINERS: Add Jingoo Han as Samsung Exynos PCIe driver maintainer
-      PCI: exynos: Add support for MSI
-      PCI: exynos: Turn off power of phy block when link failed
-      PCI: tegra: Add missing __iomem annotation
-
-Joe Perches (1):
-      PCI: Fix comment typo, remove unnecessary !! in pci_is_pcie()
-
-Konrad Rzeszutek Wilk (1):
-      PCI: Add x86_msi.msi_mask_irq() and msix_mask_irq()
-
-Lan Tianyu (2):
-      PCI: acpiphp: Convert to dynamic debug
-      PCI: acpiphp_ibm: Convert to dynamic debug
-
-Liu Chuansheng (1):
-      PCI/PM: Remove pci_pm_complete()
-
-Marek Vasut (2):
-      PCI: imx6: Increase link startup timeout
-      PCI: imx6: Probe the PCIe in fs_initcall()
-
-Myron Stowe (2):
-      cris/PCI: Remove unused pci_mem_start
-      mn10300/PCI: Remove unused pci_mem_start
-
-Pratyush Anand (1):
-      PCI: designware: Add irq_create_mapping()
-
-Sachin Kamat (4):
-      PCI: Make pci_bus_attrs, pci_dev_attrs, dev_rescan_attr, dev_remove_attr, vga_attr static
-      PCI: Make pci_dev_pm_ops static
-      PCI: exynos: Remove redundant of_match_ptr
-      PCI: imx6: Remove redundant of_match_ptr
-
-Sean Cross (2):
-      ARM: imx6q: Add PCIe bits to GPR syscon definition
-      PCI: imx6: Add support for i.MX6 PCIe controller
-
-Seungwon Jeon (1):
-      PCI: designware: Add header guards
-
-Stephen M. Cameron (1):
-      PCI: Warn on driver probe return value greater than zero
-
-Tim Harvey (1):
-      PCI: imx6: Fix imprecise abort handler
-
-Todd E Brandt (1):
-      PCI: Remove Intel Haswell D3 delays
-
-Valentine Barshak (1):
-      PCI: Add R-Car Gen2 internal PCI support
-
-Wei Yang (2):
-      PCI: Use pci_is_root_bus() to check for root bus
-      PCI: Pass type, width, and prefetchability for window alignment
-
-Wei Yongjun (2):
-      PCI: exynos: Add missing clk_disable_unprepare() on error path
-      PCI: imx6: Remove redundant dev_err() in imx6_pcie_probe()
-
-Yijing Wang (18):
-      PCI: Use pci_is_pcie() to simplify code
-      x86/pci: Use cached pci_dev->pcie_cap to simplify code
-      [SCSI] bfa: Use pcie_set()/get_readrq() to simplify code
-      [SCSI] csiostor: Use pcie_capability_clear_and_set_word() to simplify code
-      [SCSI] qla2xxx: Use pcie_is_pcie() to simplify code
-      powerpc/pci: Use pci_is_pcie() to simplify code
-      PCI: Export pcie_set_mps() and pcie_get_mps()
-      tile/PCI: use cached pci_dev->pcie_mpss to simplify code
-      IB/qib: Use pci_is_root_bus() to check whether it is a root bus
-      IB/qib: Use pcie_set_mps() and pcie_get_mps() to simplify code
-      PCI: Update pci_find_slot() description in pci.txt
-      PCI: Remove unused "is_pcie" from pci_dev structure
-      PCI: Remove unused PCI_MSIX_FLAGS_BIRMASK definition
-      staging: et131x: Use pci_dev->pcie_mpss and pcie_set_readrq() to simplify code
-      drm/radeon: use pcie_get_readrq() and pcie_set_readrq() to simplify code
-      PCI: Add pci_dev_show_local_cpu() to simplify code
-      PCI: Fail MSI/MSI-X initialization if device is not in PCI_D0
-      powerpc/pci: Use pci_is_pcie() to simplify code [fix]
-
-Yinghai Lu (1):
-      PCI: Workaround missing pci_set_master in pci drivers
-
- Documentation/PCI/pci.txt                          |   8 +-
- .../devicetree/bindings/pci/designware-pcie.txt    |   7 +-
- MAINTAINERS                                        |   7 +
- arch/cris/include/asm/pci.h                        |   1 -
- arch/frv/mb93090-mb00/pci-frv.h                    |   1 -
- arch/frv/mb93090-mb00/pci-vdk.c                    |  36 --
- arch/mn10300/include/asm/pci.h                     |   1 -
- arch/mn10300/kernel/setup.c                        |   3 -
- arch/mn10300/unit-asb2305/pci-asb2305.h            |   1 -
- arch/mn10300/unit-asb2305/pci.c                    |   5 -
- arch/powerpc/kernel/eeh.c                          |   5 +-
- arch/powerpc/sysdev/fsl_pci.c                      |   2 +-
- arch/tile/kernel/pci.c                             |   7 +-
- arch/x86/include/asm/x86_init.h                    |   3 +
- arch/x86/kernel/x86_init.c                         |  10 +
- arch/x86/pci/acpi.c                                |   8 +-
- arch/x86/pci/fixup.c                               |  18 +-
- arch/x86/pci/xen.c                                 |  13 +-
- drivers/acpi/apei/apei-base.c                      |   6 +-
- drivers/acpi/bus.c                                 |  18 +-
- drivers/acpi/pci_root.c                            | 246 +++++----
- drivers/gpu/drm/radeon/evergreen.c                 |  19 +-
- drivers/infiniband/hw/qib/qib_pcie.c               | 126 ++---
- drivers/pci/host/Kconfig                           |  14 +
- drivers/pci/host/Makefile                          |   2 +
- drivers/pci/host/pci-exynos.c                      | 132 ++++-
- drivers/pci/host/pci-imx6.c                        | 568 +++++++++++++++++++++
- drivers/pci/host/pci-rcar-gen2.c                   | 333 ++++++++++++
- drivers/pci/host/pci-tegra.c                       |   4 +-
- drivers/pci/host/pcie-designware.c                 | 257 +++++++++-
- drivers/pci/host/pcie-designware.h                 |  26 +-
- drivers/pci/hotplug/acpi_pcihp.c                   |   2 +-
- drivers/pci/hotplug/acpiphp.h                      |  10 -
- drivers/pci/hotplug/acpiphp_core.c                 |  37 +-
- drivers/pci/hotplug/acpiphp_glue.c                 |  23 +-
- drivers/pci/hotplug/acpiphp_ibm.c                  |  58 +--
- drivers/pci/hotplug/shpchp.h                       |   2 +-
- drivers/pci/msi.c                                  |  28 +-
- drivers/pci/pci-driver.c                           |  40 +-
- drivers/pci/pci-sysfs.c                            | 132 +++--
- drivers/pci/pci.c                                  |  30 +-
- drivers/pci/pci.h                                  |   4 +-
- drivers/pci/pcie/portdrv_core.c                    |  15 +-
- drivers/pci/probe.c                                |   4 +-
- drivers/pci/quirks.c                               |  23 +
- drivers/pci/setup-bus.c                            |   4 +-
- drivers/scsi/bfa/bfad.c                            |  53 +-
- drivers/scsi/csiostor/csio_hw.c                    |  22 +-
- drivers/scsi/qla2xxx/qla_mr.c                      |   6 +-
- drivers/scsi/qla2xxx/qla_os.c                      |  14 +-
- drivers/staging/et131x/et131x.c                    |  14 +-
- include/linux/acpi.h                               |  81 ++-
- include/linux/mfd/syscon/imx6q-iomuxc-gpr.h        |   8 +
- include/linux/msi.h                                |   2 +
- include/linux/pci.h                                |  19 +-
- include/uapi/linux/pci_regs.h                      |   4 +-
- 56 files changed, 1906 insertions(+), 616 deletions(-)
- create mode 100644 drivers/pci/host/pci-imx6.c
- create mode 100644 drivers/pci/host/pci-rcar-gen2.c
