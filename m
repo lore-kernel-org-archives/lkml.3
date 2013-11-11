@@ -1,130 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab3KKSxw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 13:53:52 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:33866 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754985Ab3KKSxo (ORCPT
+	id S1755227Ab3KKSyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 13:54:01 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58520 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754952Ab3KKSxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 13:53:44 -0500
-Date: Mon, 11 Nov 2013 19:53:40 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-        travis@sgi.com, a.p.zijlstra@chello.nl, jason.wessel@windriver.com,
-        acme@ghostprotocols.net, hedi@sgi.com, sivanich@sgi.com,
-        tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/uv] x86/UV: Add uvtrace support
-Message-ID: <20131111185340.GA15854@gmail.com>
-References: <20130923212501.185052551@asylum.americas.sgi.com>
- <tip-8eba18428ac926f436064ac281e76d36d51bd631@git.kernel.org>
+	Mon, 11 Nov 2013 13:53:45 -0500
+Message-ID: <528127B2.80109@wwwdotorg.org>
+Date: Mon, 11 Nov 2013 11:53:38 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-8eba18428ac926f436064ac281e76d36d51bd631@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gerlando Falauto <gerlando.falauto@keymile.com>,
+        Mark Brown <broonie@kernel.org>
+CC: Lars Poeschel <poeschel@lemonage.de>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <1521079.WSLhhfqBXl@lem-wkst-02> <52261BF0.4090106@wwwdotorg.org> <3144247.j2q6H0KWZx@lem-wkst-02> <52279524.8090006@wwwdotorg.org> <20130909161924.GT29403@sirena.org.uk> <528121D5.40403@keymile.com>
+In-Reply-To: <528121D5.40403@keymile.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* tip-bot for Mike Travis <tipbot@zytor.com> wrote:
-
-> Commit-ID:  8eba18428ac926f436064ac281e76d36d51bd631
-> Gitweb:     http://git.kernel.org/tip/8eba18428ac926f436064ac281e76d36d51bd631
-> Author:     Mike Travis <travis@sgi.com>
-> AuthorDate: Mon, 23 Sep 2013 16:25:06 -0500
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Tue, 24 Sep 2013 09:02:04 +0200
+On 11/11/2013 11:28 AM, Gerlando Falauto wrote:
+> Hi everyone,
 > 
-> x86/UV: Add uvtrace support
+> [jumping in on an old discussion]
 > 
-> This patch adds support for the uvtrace module by providing a
-> skeleton call to the registered trace function.  It also
-> provides another separate 'NMI' tracer that is triggered by the
-> system wide 'power nmi' command.
+> On 09/09/2013 06:19 PM, Mark Brown wrote:
+>> On Wed, Sep 04, 2013 at 02:16:36PM -0600, Stephen Warren wrote:
+>>> On 09/04/2013 03:05 AM, Lars Poeschel wrote:
+>>
+>>>> The driver that tries to use the GPIO requested by this patch before
+>>>> HAS to
+>>>> fail. This is exactly the intention of this patch. We don't want the
+>>>> GPIO to
+>>>> be requested any more, if it is used as an interrupt pin.
+>>
+>>> That will break existing drivers. There are drivers that request the
+>>> same GPIO and IRQ. IIRC, the SDHCI CD (Card Detect) GPIO is requested
+>>> that way.
+>>
+>> Yes, plus input devices and audio jack detection among others.  This
+>> pattern is very common if the GPIO is actually being used as a GPIO, an
+>> edge triggered interrupt is used to flag when something happens and the
+>> state is determined by reading the GPIO state (often with some
+>> debounce).
 > 
-> Signed-off-by: Mike Travis <travis@sgi.com>
-> Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
-> Reviewed-by: Hedi Berriche <hedi@sgi.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Jason Wessel <jason.wessel@windriver.com>
-> Link: http://lkml.kernel.org/r/20130923212501.185052551@asylum.americas.sgi.com
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  arch/x86/include/asm/uv/uv.h  |  8 ++++++++
->  arch/x86/platform/uv/uv_nmi.c | 13 ++++++++++++-
->  2 files changed, 20 insertions(+), 1 deletion(-)
+> I actually came across this thread while looking for an answer to the
+> following (apparently trivial) question:
+> 
+> If you were to write a new driver & binding, what would be, in general,
+> the recommended DT binding for a cascade interrupt controller (or any
+> other peripheral, for that matter), which is connected through a GPIO
+> (to be used as IRQ)?
+> 
+> a) Through gpios = <&gpio0 N>
+> b) through interrupt-parent = <&gpio0> & interrupts <N
+> IRQ_TYPE_LEVEL_LOW>, or
+> c) both?
 
-So I only noticed this too late:
+(b) alone.
 
-> diff --git a/arch/x86/include/asm/uv/uv.h b/arch/x86/include/asm/uv/uv.h
-> index 6b964a0..8b1283d 100644
-> --- a/arch/x86/include/asm/uv/uv.h
-> +++ b/arch/x86/include/asm/uv/uv.h
-> @@ -14,6 +14,13 @@ extern void uv_cpu_init(void);
->  extern void uv_nmi_init(void);
->  extern void uv_register_nmi_notifier(void);
->  extern void uv_system_init(void);
-> +extern void (*uv_trace_nmi_func)(unsigned int reason, struct pt_regs *regs);
-> +extern void (*uv_trace_func)(const char *f, const int l, const char *fmt, ...);
-> +#define uv_trace(fmt, ...)						\
-> +do {									\
-> +	if (unlikely(uv_trace_func))					\
-> +		(uv_trace_func)(__func__, __LINE__, fmt, ##__VA_ARGS__);\
-> +} while (0)
->  extern const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
->  						 struct mm_struct *mm,
->  						 unsigned long start,
-> @@ -26,6 +33,7 @@ static inline enum uv_system_type get_uv_system_type(void) { return UV_NONE; }
->  static inline int is_uv_system(void)	{ return 0; }
->  static inline void uv_cpu_init(void)	{ }
->  static inline void uv_system_init(void)	{ }
-> +static inline void uv_trace(void *fmt, ...)	{ }
->  static inline void uv_register_nmi_notifier(void) { }
->  static inline const struct cpumask *
->  uv_flush_tlb_others(const struct cpumask *cpumask, struct mm_struct *mm,
-> diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
-> index 2579fbd..c171ca5 100644
-> --- a/arch/x86/platform/uv/uv_nmi.c
-> +++ b/arch/x86/platform/uv/uv_nmi.c
-> @@ -1,5 +1,5 @@
->  /*
-> - * SGI NMI support routines
-> + * SGI NMI/TRACE support routines
->   *
->   *  This program is free software; you can redistribute it and/or modify
->   *  it under the terms of the GNU General Public License as published by
-> @@ -36,6 +36,13 @@
->  #include <asm/uv/uv_hub.h>
->  #include <asm/uv/uv_mmrs.h>
->  
-> +void (*uv_trace_func)(const char *f, const int l, const char *fmt, ...);
-> +EXPORT_SYMBOL(uv_trace_func);
-> +
-> +void (*uv_trace_nmi_func)(unsigned int reason, struct pt_regs *regs);
-> +EXPORT_SYMBOL(uv_trace_nmi_func);
-> +
-> +
->  /*
->   * UV handler for NMI
->   *
-> @@ -551,6 +558,10 @@ int uv_handle_nmi(unsigned int reason, struct pt_regs *regs)
->  		return NMI_DONE;
->  	}
->  
-> +	/* Call possible NMI trace function */
-> +	if (unlikely(uv_trace_nmi_func))
-> +		(uv_trace_nmi_func)(reason, regs);
-
-Nothing actually uses the uv_trace() methods, plus nobody actually sets 
-uv_trace_func.
-
-Whatever hack this is, it has no place in the upstream kernel. I'll queue 
-up a revert to make this pushable in this merge window.
-
-Thanks,
-
-	Ingo
+>From the perspective of the child interrupt controller, its output is
+purely an interrupt. The fact that the parent interrupt controller could
+use that pin as a GPIO in some other context (e.g. on a different board)
+isn't something that the child interrupt controller should know/care about.
