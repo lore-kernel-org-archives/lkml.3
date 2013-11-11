@@ -1,63 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab3KKThZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 14:37:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47909 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755081Ab3KKThW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 14:37:22 -0500
-Message-ID: <528131E7.2060509@zytor.com>
-Date: Mon, 11 Nov 2013 11:37:11 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755341Ab3KKTiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 14:38:14 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:48333 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755038Ab3KKTiF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 14:38:05 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
+        Mark Brown <broonie@kernel.org>, Lars Poeschel <poeschel@lemonage.de>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+Date: Mon, 11 Nov 2013 20:38:02 +0100
+Message-ID: <1867149.UUx9fK3YLD@flatron>
+User-Agent: KMail/4.11.3 (Linux/3.12.0-gentoo; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <52813100.1060500@wwwdotorg.org>
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <52812D3A.2070107@keymile.com> <52813100.1060500@wwwdotorg.org>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/kaslr] x86, kaslr: Provide randomness functions
-References: <1381450698-28710-4-git-send-email-keescook@chromium.org>	<tip-5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3@git.kernel.org>	<20131111182046.GA14961@gmail.com>	<20131111183101.GA16051@gmail.com> <CAGXu5jL96B4+McO=K9dptu81m+bdKWOZ8YS9x7+SZxkjfUsg9Q@mail.gmail.com>
-In-Reply-To: <CAGXu5jL96B4+McO=K9dptu81m+bdKWOZ8YS9x7+SZxkjfUsg9Q@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 11:32 AM, Kees Cook wrote:
->>>
->>> Why aren't the 3 sources of entropy XOR-ed together?
+On Monday 11 of November 2013 12:33:20 Stephen Warren wrote:
+> On 11/11/2013 12:17 PM, Gerlando Falauto wrote:
+> > Hi Stephan,
+> > 
+> > On 11/11/2013 07:53 PM, Stephen Warren wrote:
+> >> On 11/11/2013 11:28 AM, Gerlando Falauto wrote:
+> >>> Hi everyone,
+> >>>
+> >>> [jumping in on an old discussion]
+> >>>
+> >>> On 09/09/2013 06:19 PM, Mark Brown wrote:
+> >>>> On Wed, Sep 04, 2013 at 02:16:36PM -0600, Stephen Warren wrote:
+> >>>>> On 09/04/2013 03:05 AM, Lars Poeschel wrote:
+> >>>>
+> >>>>>> The driver that tries to use the GPIO requested by this patch before
+> >>>>>> HAS to
+> >>>>>> fail. This is exactly the intention of this patch. We don't want the
+> >>>>>> GPIO to
+> >>>>>> be requested any more, if it is used as an interrupt pin.
+> >>>>
+> >>>>> That will break existing drivers. There are drivers that request the
+> >>>>> same GPIO and IRQ. IIRC, the SDHCI CD (Card Detect) GPIO is requested
+> >>>>> that way.
+> >>>>
+> >>>> Yes, plus input devices and audio jack detection among others.  This
+> >>>> pattern is very common if the GPIO is actually being used as a GPIO, an
+> >>>> edge triggered interrupt is used to flag when something happens and the
+> >>>> state is determined by reading the GPIO state (often with some
+> >>>> debounce).
+> >>>
+> >>> I actually came across this thread while looking for an answer to the
+> >>> following (apparently trivial) question:
+> >>>
+> >>> If you were to write a new driver & binding, what would be, in general,
+> >>> the recommended DT binding for a cascade interrupt controller (or any
+> >>> other peripheral, for that matter), which is connected through a GPIO
+> >>> (to be used as IRQ)?
+> >>>
+> >>> a) Through gpios = <&gpio0 N>
+> >>> b) through interrupt-parent = <&gpio0> & interrupts <N
+> >>> IRQ_TYPE_LEVEL_LOW>, or
+> >>> c) both?
+> >>
+> >> (b) alone.
+> >>
+> >>  From the perspective of the child interrupt controller, its output is
+> >> purely an interrupt. The fact that the parent interrupt controller could
+> >> use that pin as a GPIO in some other context (e.g. on a different board)
+> >> isn't something that the child interrupt controller should know/care
+> >> about.
+> >>
+> > 
+> > Thanks for your answer. So it should be the parent driver to proactively
+> > configure the GPIO as input, active high etc..., when an IRQ for its
+> > GPIOs is requested, right?
 > 
-> Ah, excellent suggestion. There's no reason they couldn't be. I can
-> rework that function to do that.
-> 
->>> Also, we talked about also adding system dependent entropy sources, such
->>> as memory layout or the DMI table - none of that seems to have happened.
-> 
-> It seemed like those things didn't contribute as much entropy as the 3
-> already in use, but I could investigate how to distill those things
-> down into entropy. Perhaps just XORing the start and length of every
-> e820 area? DMI I'll need to dig into...
-> 
+> That was the conclusion of this thread, or a similar thread, yes.
 
-DMI and ACPI are relatively straightforward: they are really just blocks
-of memory with magic pointers.  Since you don't actually need to parse
-them, it is mostly just a matter of finding those blocks of memory and
-hashing them.
+I would only add that settings, such as pull up/down control that depends
+on the chip that drives the interrupt pin (i.e. the child interrupt
+controller), are usually configured using pin control bindings.
 
-You could also hash the BDA - the first 0x500 bytes of memory - although
-that starts to get into the "what about weird nontraditional platforms"
-space.
-
-A *MAJOR* issue with DMI and ACPI is that the way they are located is
-firmware dependent: there is a search algorithm defined for BIOS
-platforms, whereas on EFI I believe it requires doing runtime calls to
-find things.
-
-Of course, perhaps we could just hash struct boot_params as a starting
-point?
-
-	-hpa
+Best regards,
+Tomasz
 
