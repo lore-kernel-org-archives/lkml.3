@@ -1,150 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467Ab3KKDt2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 22:49:28 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:59362 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003Ab3KKDtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 22:49:21 -0500
-Date: Sun, 10 Nov 2013 21:49:16 -0600
-From: Ben Myers <bpm@sgi.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Zhi Yong Wu <zwu.kernel@gmail.com>, elder@kernel.org,
-        Mark Tinguely <tinguely@sgi.com>, NeilBrown <neilb@suse.de>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xfstests <xfs@oss.sgi.com>, Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] update xfs maintainers
-Message-ID: <20131111034916.GE1935@sgi.com>
-References: <20131108180337.GO10553@sgi.com>
- <20131108193424.GA11052@infradead.org>
- <20131108204605.GA1935@sgi.com>
- <527D4E8D.3000109@redhat.com>
- <20131108220309.GB1935@sgi.com>
- <CAEH94LidwFnLX7cxetBAAzYzRGL+pc96egDNKPFKuPYcqKOtNg@mail.gmail.com>
- <20131109104424.45b71dac@notabene.brown>
- <20131109235130.GS10553@sgi.com>
- <20131110003049.GD1935@sgi.com>
- <20131110231241.GQ6188@dastard>
+	id S1752487Ab3KKEAp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 23:00:45 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:48817 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751003Ab3KKEAh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 23:00:37 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(zz154dIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
+From: Nicolin Chen <b42378@freescale.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <s.hauer@pengutronix.de>, <timur@tabi.org>, <shawn.guo@linaro.org>,
+        <broonie@kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <dmaengine@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
+        <ijc+devicetree@hellion.org.uk>
+Subject: [PATCH v6 0/4] Add dual-fifo mode support of i.MX ssi
+Date: Mon, 11 Nov 2013 12:00:22 +0800
+Message-ID: <cover.1384136268.git.b42378@freescale.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131110231241.GQ6188@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Dave,
+ * ! This series of patches has a direct dependency between them. When
+ * ! applying them, we need to apply to one single branch. Otherwise,
+ * ! it would break currect branches.
 
-On Mon, Nov 11, 2013 at 10:12:41AM +1100, Dave Chinner wrote:
-> On Sat, Nov 09, 2013 at 06:30:49PM -0600, Ben Myers wrote:
-> > On Sat, Nov 09, 2013 at 05:51:30PM -0600, Ben Myers wrote:
-> > > On Sat, Nov 09, 2013 at 10:44:24AM +1100, NeilBrown wrote:
-> > > > On Sat, 9 Nov 2013 06:59:00 +0800 Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
-> > > > > On Sat, Nov 9, 2013 at 6:03 AM, Ben Myers <bpm@sgi.com> wrote:
-> > > > > > On Fri, Nov 08, 2013 at 03:50:21PM -0500, Ric Wheeler wrote:
-> > > > > >> On 11/08/2013 03:46 PM, Ben Myers wrote:
-> > > > > >> >Hey Christoph,
-> > > > > >> >
-> > > > > >> >On Fri, Nov 08, 2013 at 11:34:24AM -0800, Christoph Hellwig wrote:
-> > > > > >> >>On Fri, Nov 08, 2013 at 12:03:37PM -0600, Ben Myers wrote:
-> > > > > >> >>>Mark is replacing Alex as my backup because Alex is really busy at
-> > > > > >> >>>Linaro and asked to be taken off awhile ago.  The holiday season is
-> > > > > >> >>>coming up and I fully intend to go off my meds, turn in to Fonzy the
-> > > > > >> >>>bear, and eat my hat.  I need someone to watch the shop while I'm off
-> > > > > >> >>>exploring on Mars.  I trust Mark to do that because he is totally
-> > > > > >> >>>awesome.
-> > > > > >> >>
-> > > > > >> >>Doing this as an unilateral decisions is not something that will win you
-> > > > > >> >>a fan base.
-> > > > > >> >It's posted for review.
-> > > > > >> >
-> > > > > >> >>While we never had anything reassembling a democracy in Linux Kernel
-> > > > > >> >>development making decisions without even contacting the major
-> > > > > >> >>contributor is wrong, twice so if the maintainer is a relatively minor
-> > > > > >> >>contributor to start with.
-> > > > > >> >>
-> > > > > >> >>Just because it recent came up elsewhere I'd like to recite the
-> > > > > >> >>definition from Trond here again:
-> > > > > >> >>
-> > > > > >> >>    http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-June/000066.html
-> 
-> Yup, and my take on the role of a Maintainer is here:
-> 
-> http://oss.sgi.com/archives/xfs/2013-08/msg00633.html
-> 
-> > > > > >  P:     Silicon Graphics Inc
-> > > > > > +M:     Dave Chinner <dchinner@fromorbit.com>
-> 
-> I flattered by this, but there is a reason I've resisted taking this
-> position for a long time. Mainly for the reasons already mentioned:
-> 
-> > > > Indeed.  And does he even want the job?  I heard Linus say in a recent
-> > > > interview that being a maintainer is a $#!+ job. 
-> > > 
-> > > I've found that it can be a little bit stressful sometimes and it tends to
-> > > crowd out feature work, so I guess I agree with him.  It turns out to be an
-> > > excellent weight loss plan.
-> 
-> which are all true, but I'm already pulling most patches off the
-> list, applying them to my own trees, testing them and reviewing
-> them. Hence juggling them into a stable, non-rebasing git tree
-> branch on a server somewhere isn't a huge amount of extra work...
-> 
-> > > > Is it really best for the
-> > > > most active developers to be burdened with that extra work?
-> > > > 
-> > > > (hmm.. maybe I should add Dave to the Cc here .. but no-one else did so best
-> > > > leave him alone to code in peace).
-> > > 
-> > > Dave, what do you want to do here?  Which email?  What sort of arrangement?  I
-> > > gather that you probably do want the job, and I know you'll be fantastic.  Do
-> > > you want to do it all yourself?  Maybe split it up?
-> > 
-> > I should have also suggested that we can add you to this file and just keep our
-> > existing arrangements.  That seems appropriate to me, befitting of your
-> > achievements, the work you've been doing, and I'm willing to keep on as I am.
-> 
-> OK, I've read the thread and had a think about it. My thoughts are
-> as follows....
-> 
-> I'm not interested in being a co-maintainer in name only or only as
-> a backup to only be used when Ben goes on holidays.
-> 
-> Co-maintainer means SGI is giving me all the access and admin rights
-> needed to commit and maintain git trees on oss.sgi.com (including
-> creating new trees) at any time, at any point in a release cycle,
-> etc. i.e. I can do anything that Ben can currently do on
-> oss.sgi.com from XFS POV...
-> 
-> Co-maintainer is not a kernel-tree only deal. It's for everything
-> XFS related: kernel code, xfsprogs, xfstests and xfsdump.
-> 
-> Co-maintainer does not mean "Dave does everything". Yes, I can do a
-> lot of the heavy lifting, but I'm very happy for Ben to continue
-> committing patches he reviews and handling userspace releases and
-> pushing stuff to Linus and so on.  There's some logistics we need to
-> work out here so we aren't going to step on each other's toes, but
-> there's no unsolvable issues here.
-> 
-> Co-maintainer is not a role I will perform with a Red Hat on. I will
-> review and sign off on anything in my co-maintainer role as
-> "david@fromorbit.com". Hence I hope to be able to maintain a clear
-> distinction between the duties I perform on behalf of the community
-> and code that I write on Red Hat's behalf.
-> 
-> Lastly, being a maintainer doesn't solve the problem of review
-> latency of the code I write. I'm hoping that everyone understands
-> that maintainers are still dependent on the receiving help from the
-> community they serve to get their own work done.
-> 
-> Ben, let's talk more about the logistics of this offline first
-> before making anything official....
+Changelog
+v6:
+ * PATCH-1: Use goto err_firmware instead of return directly.
+ *
+ * Nothing changes for the other three ack-ed patches
+v5:
+ * PATCH-3: Add period size constraint when using dual fifo mode
+ *
+ * Nothing changes for the other three patches
+v4:
+ * PATCH-3: Drop useless register configuration.
+ *
+ * Nothing changes for the other three patches
+v3:
+ * PATCH-1: Add comments to indicate the end of v1 and v2 array.
+ * PATCH-3: Use better way to keep watermark as even number.
+ *
+ * Nothing changes for PATCH-2 and PATCH-4
+v2:
+ * Instead of adding rogue scripts to current SDMA driver based on firmware
+ * V1, we define the new SDMA firmware as version 2 and bisect the PATCH-1
+ * to two patches: The first is to add version check code to the SDMA driver;
+ * And the second is to add SSI dual FIFO DMATYPE.
+ *
+ * Nothing changes for the last two patches.
+v1:
+ * SSI can reduce hardware overrun/underrun possibility when using dual
+ * fifo mode. To support this mode, we need to first update sdma sciprt
+ * list, and then enable dual fifo BIT in SSI driver, and last update DT
+ * bindings of i.MX series.
 
-Sounds good.  I'm AFK on Monday, so I'll ping you later in the week and
-we can get together.  ;)
+Nicolin Chen (4):
+  dma: imx-sdma: Add sdma firmware version 2 support
+  dma: imx-sdma: Add new dma type for ssi dual fifo script
+  ASoC: fsl_ssi: Add dual fifo mode support
+  ARM: dts: imx: use dual-fifo sdma script for ssi
 
-Regards,
-	Ben
+ .../devicetree/bindings/dma/fsl-imx-sdma.txt       |  1 +
+ arch/arm/boot/dts/imx51.dtsi                       |  4 ++--
+ arch/arm/boot/dts/imx53.dtsi                       |  4 ++--
+ arch/arm/boot/dts/imx6qdl.dtsi                     | 12 +++++-----
+ arch/arm/boot/dts/imx6sl.dtsi                      | 12 +++++-----
+ drivers/dma/imx-sdma.c                             | 19 ++++++++++++++-
+ include/linux/platform_data/dma-imx-sdma.h         |  5 ++++
+ include/linux/platform_data/dma-imx.h              |  1 +
+ sound/soc/fsl/fsl_ssi.c                            | 27 +++++++++++++++++++++-
+ 9 files changed, 67 insertions(+), 18 deletions(-)
+
+-- 
+1.8.4
+
+
