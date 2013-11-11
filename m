@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab3KKUyl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 15:54:41 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:60962 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab3KKUyd (ORCPT
+	id S1752618Ab3KKUzI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 15:55:08 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:38272 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751369Ab3KKUzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 15:54:33 -0500
-Date: Mon, 11 Nov 2013 16:02:47 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: David Ahern <dsahern@gmail.com>
-cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Bill Gray <bgray@redhat.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Joe Mario <jmario@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Richard Fowles <rfowles@redhat.com>,
-        Stephane Eranian <eranian@google.com>, vincent.weaver@maine.edu
-Subject: Re: [PATCH 03/10] perf record: Synthesize non-exec MMAP records when
- --data used
-In-Reply-To: <52814060.9000104@gmail.com>
-Message-ID: <alpine.DEB.2.10.1311111557060.26131@vincent-weaver-1.um.maine.edu>
-References: <1384201353-23863-1-git-send-email-acme@infradead.org> <1384201353-23863-4-git-send-email-acme@infradead.org> <52814060.9000104@gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 11 Nov 2013 15:55:04 -0500
+Date: Mon, 11 Nov 2013 21:54:01 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: mturquette@linaro.org, james.hogan@imgtec.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, luca@coelho.fi,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: add flags to distinguish xtal clocks
+Message-ID: <20131111205401.GZ26440@lukather>
+References: <1382528150.21526.25.camel@porter.coelho.fi>
+ <1383933648-28595-1-git-send-email-balbi@ti.com>
+ <20131110113716.GN26440@lukather>
+ <20131111194247.GB19212@saruman.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OHFW44Kv8gQ39vd8"
+Content-Disposition: inline
+In-Reply-To: <20131111194247.GB19212@saruman.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Nov 2013, David Ahern wrote:
 
-> [Added Vince]
-> 
-> On 11/11/13, 1:22 PM, Arnaldo Carvalho de Melo wrote:
-> > When perf_event_attr.mmap_data is set the kernel will generate
-> > PERF_RECORD_MMAP events when non-exec (data, SysV mem) mmaps are
-> > created, so we need to synthesize from /proc/pid/maps for existing
-> > threads
-> 
-> Seems like that should be documented in the man pages:
-> 
-> [dsa@MacBook perf]$ egrep -r mmap_data Documentation/
-> [dsa@MacBook perf]$
-> 
-> Vince: where are you keeping the man page you are putting together?
+--OHFW44Kv8gQ39vd8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's in the official linux manpage git tree (perf_event_open.2) and
-has been included in the last few manpage releases.  
+On Mon, Nov 11, 2013 at 01:42:47PM -0600, Felipe Balbi wrote:
+> > > +	if (of_property_read_bool(node, "clock-xtal"))
+> > > +		flags |=3D CLK_IS_TYPE_XTAL;
+> > > +
+> >=20
+> > Introducing a new compatible instead of a property would make more
+> > sense here I think.
+> >=20
+> > Do you have a reason not to do so?
+>=20
+> As you can see, this is original work from Luca but I disagree that
+> adding a new compatible makes more sense. This still related to a fixed
+> rate clock, we're just giving it one extra metadata which will
+> differentiate between crystal and oscilator fixed rate clocks.
 
-There is a blurb on PERF_RECORD_MMAP, though it definitely could use a 
-bit more elaboration.
+I don't know, I think it's more a matter of consistency.
 
-Vince
+If we turn the problem the other way around. Let's say we have a
+crystal that for some reason can't be used with clk-fixed-rate. You'd
+add a new driver for it, with a compatible of its own, and you'd put
+that XTAL flag in there, without any extra metadata in the DT, right?
+
+And I'm pretty sure having a compatible like "clk-xtal" would make it
+pretty obvious that it's still a fixed rate clock.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--OHFW44Kv8gQ39vd8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSgUPpAAoJEBx+YmzsjxAgHcgP/RBickPG2EHTBEAxjK6uVhUr
+EN83m2U51xOtcREqH3PfwZOyWi3e2UOjujzgF8UA67gFzlF2p1Rei5Wr8r5cyTUx
+LA34E01QrNliNXxA6C8uym6i4JmhLDxzUPgqgks77FRp5kzlikISNqIFSSpNby1c
+GANbyNvV7j+8YIwXtg9AzQyl2xBaTMiUDgFVnYiPfarQXZtYCXLBc2iQezEdxqbo
+rdhjOl/J8lKtj62SUQmtShkURRk3xcg0S/ZhY6I6FiQCcE+pXb6ZiGnce78XYmTL
+0c/4spuKdGMVYhKNpiec1SyN5L2yvF4zR06WfVMJtR1r89Jn08OfKzyTcqNj0Pn1
+5974vCBGFevvDbEg0Waebn9rgPbtn1Xw5jg7cC31qHCmzZ9+STxfoMu0q0iDRoCx
+EqGBcvE5KWLllEMOWB7kxr1UX6NuzJ2y4AOIP8eAroXxXs5iyPcq5RnBOkLiHFtI
+LYMG/deLbqa9+ACcBze8Mxi9cVri5lzB9Ku5JbeaG1odnNuOraOoXDpEGz2BmxBu
+pYInB7MO6NNqoNQ0fDwDlG7YMKiwmMjmuHI85a8Iql/jrxpy7/HBPC+yC6C/8euv
+3ek2+Fy//IG0ddqVRLA5af0IpIC09tazrbfVXaqtS3et4H1DNmNSLugM1gJUWBID
+Y0h+q6xaLFh20NY0inqj
+=yPrt
+-----END PGP SIGNATURE-----
+
+--OHFW44Kv8gQ39vd8--
