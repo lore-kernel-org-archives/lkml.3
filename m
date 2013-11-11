@@ -1,126 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab3KKHRK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 02:17:10 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:47196 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3KKHRE (ORCPT
+	id S1752679Ab3KKHZn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 02:25:43 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41257 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab3KKHZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 02:17:04 -0500
-Date: Mon, 11 Nov 2013 12:41:51 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes: Add uprobe_task->dup_work/dup_addr
-Message-ID: <20131111071151.GA2559@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20131108190003.GA12755@redhat.com>
+	Mon, 11 Nov 2013 02:25:36 -0500
+Date: Mon, 11 Nov 2013 07:25:06 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: ????????? <gxt@pku.edu.cn>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, aswin@hp.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: converting unicore32 to gate_vma as done for arm (was Re:??
+ [PATCH] mm: cache largest vma)
+Message-ID: <20131111072506.GW13318@ZenIV.linux.org.uk>
+References: <20131104044844.GN13318@ZenIV.linux.org.uk>
+ <289468516.24288.1383619755331.JavaMail.root@bj-mail03.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131108190003.GA12755@redhat.com>
+In-Reply-To: <289468516.24288.1383619755331.JavaMail.root@bj-mail03.pku.edu.cn>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111107-7164-0000-0000-0000032FB24D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2013-11-08 20:00:03]:
+On Tue, Nov 05, 2013 at 10:49:15AM +0800, ????????? wrote:
+> The patch is ok for unicore32. Thanks Al.
+> 
+> While testing this patch, a bug is found in arch/unicore32/include/asm/pgtable.h:
+> 
+> @@ -96,7 +96,7 @@ extern pgprot_t pgprot_kernel;
+>                                                                 | PTE_EXEC)
+>  #define PAGE_READONLY          __pgprot(pgprot_val(pgprot_user | PTE_READ)
+>  #define PAGE_READONLY_EXEC     __pgprot(pgprot_val(pgprot_user | PTE_READ \
+> -                                                               | PTE_EXEC)
+> +                                                               | PTE_EXEC))
+> 
+> In fact, all similar macros are wrong. I'll post an bug-fix patch for this obvious error.
 
-> uprobe_task->vaddr is a bit strange. First of all it is not really
-> needed, we can move it into arch_uprobe_task. The generic code uses
-> it only to pass the additional argument to arch_uprobe_pre_xol(),
-> and since it is always equal to instruction_pointer() this looks
-> even more strange.
-> 
-
-While the code changes look good, I would disagree with the above
-statement.  uprobe_task->vaddr is a bit strange only in
-uprobe_copy_process() and not in arch_uprobe_pre_xol() context.
-uprobe_task->vaddr was used to refer to the actual instruction pointer
-and do the necessary fixups after single stepping out of line.
-
-The casual reading of this commit message, one can get an impression
-that vaddr is never needed.  Your change still retains it. So can we
-modify the commit message accordingly? 
-
-> And both utask->vaddr and and utask->autask have the same scope,
-> they only have the meaning when the task executes the probed insn
-> out-of-line. This means it is safe to reuse both in UTASK_RUNNING
-> state.
-> 
-> OTOH, it is also used by uprobe_copy_process() and dup_xol_work()
-> for another purpose, this doesn't look clean and doesn't allow to
-> move this member into arch_uprobe_task.
-> 
-> This patch adds the union with 2 anonymous structs into uprobe_task.
-> 
-> The first struct is autask + vaddr, this way we "almost" move vaddr
-> into autask.
-> 
-> The second struct has 2 new members for uprobe_copy_process() paths:
-> ->dup_addr which can be used instead ->vaddr, and ->dup_work which
-> can be used to avoid kmalloc() and simplify the code.
-> 
-> Note that this union will likely have another member(s), we need
-> something like "private_data_for_handlers" so that the tracing
-> handlers could use it to communicate with call_fetch() methods.
-
-One nit below + request for change in the above commit message. 
-Otherwise 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  include/linux/uprobes.h |   21 ++++++++++++++++-----
->  kernel/events/uprobes.c |   16 ++++------------
->  2 files changed, 20 insertions(+), 17 deletions(-)
-> 
-> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-> index 319eae7..366b8b2 100644
-> --- a/include/linux/uprobes.h
-> +++ b/include/linux/uprobes.h
-> @@ -26,6 +26,7 @@
-> 
->  #include <linux/errno.h>
->  #include <linux/rbtree.h>
-> +#include <linux/types.h>
-> 
->  struct vm_area_struct;
->  struct mm_struct;
-> @@ -72,14 +73,24 @@ enum uprobe_task_state {
->   */
->  struct uprobe_task {
->  	enum uprobe_task_state		state;
-> -	struct arch_uprobe_task		autask;
-> 
-> -	struct return_instance		*return_instances;
-> -	unsigned int			depth;
-> -	struct uprobe			*active_uprobe;
-> +	union {
-> +		struct {
-> +			struct arch_uprobe_task	autask;
-> +			unsigned long		vaddr;
-> +		};
-> +
-> +		struct {
-> +			struct callback_head	dup_work;
-> +			unsigned long		dup_addr;
-
-Nit:
-Can we rename dup_addr to mean that it refers to the xol; something like
-dup_xol_addr or even xol_addr. So that its more clear what address it
-refers to.
-
-
--- 
-Thanks and Regards
-Srikar Dronamraju
-
+BTW, another missing thing is an analog of commit 9b61a4 (ARM: prevent
+VM_GROWSDOWN mmaps extending below FIRST_USER_ADDRESS); I'm not sure why
+does unicore32 have FIRST_USER_ADDRESS set to PAGE_SIZE (some no-MMU
+arm variants really need that, what with the vectors page living at
+address 0 on those), but since you have it set that way, you'd probably
+better not allow a mapping to grow down there...
