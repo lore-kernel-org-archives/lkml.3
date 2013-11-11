@@ -1,219 +1,520 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab3KKRGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 12:06:14 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:50853 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab3KKRGD (ORCPT
+	id S1754806Ab3KKRH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 12:07:56 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:45146 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754106Ab3KKRHt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 12:06:03 -0500
-Date: Mon, 11 Nov 2013 18:05:58 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/boot changes for v3.13
-Message-ID: <20131111170558.GA12741@gmail.com>
+	Mon, 11 Nov 2013 12:07:49 -0500
+From: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>
+Subject: [PATCH 07/12] memory: davinci-aemif: introduce AEMIF driver
+Thread-Topic: [PATCH 07/12] memory: davinci-aemif: introduce AEMIF driver
+Thread-Index: AQHO3vrfdYNvn4pGXEW2PUsjB6iPrJogQUs5
+Date: Mon, 11 Nov 2013 17:06:59 +0000
+Message-ID: <4F5844B3A985794BA902E12C070812375F8D2E@DNCE04.ent.ti.com>
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>,<1384187188-5776-8-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1384187188-5776-8-git-send-email-ivan.khoronzhuk@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.56]
+x-exclaimer-md-config: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Add new AEMIF driver for EMIF16 davinci controller. The EMIF16 module
+is intended to provide a glue-less interface to a variety of
+asynchronous memory devices like ASRA M, NOR and NAND memory. A total
+of 256M bytes of any of these memories can be accessed at any given
+time via four chip selects with 64M byte access per chip select.
 
-Please pull the latest x86-boot-for-linus git tree from:
+Synchronous memories such as DDR1 SD RAM, SDR SDRAM and Mobile SDR
+are not supported.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-boot-for-linus
+See http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
 
-   # HEAD: a17bce4d1dce8f3cf714bc2e5d8e4bac009dc077 x86/boot: Further compress CPUs bootup message
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ drivers/memory/Kconfig         |   11 ++
+ drivers/memory/Makefile        |    1 +
+ drivers/memory/davinci-aemif.c |  415 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 427 insertions(+)
+ create mode 100644 drivers/memory/davinci-aemif.c
 
-Two changes that prettify and compactify the SMP bootup output from:
+diff --git a/drivers/memory/Kconfig b/drivers/memory/Kconfig
+index 29a11db..010e75e 100644
+--- a/drivers/memory/Kconfig
++++ b/drivers/memory/Kconfig
+@@ -7,6 +7,17 @@ menuconfig MEMORY
 
- [    0.371169] smpboot: Booting Node   0, Processors  #1 #2 #3 OK
- [    0.417339] smpboot: Booting Node   1, Processors  #4 #5 #6 #7 OK
- [    0.554805] smpboot: Booting Node   2, Processors  #8 #9 #10 #11 OK
- [    0.692323] smpboot: Booting Node   3, Processors  #12 #13 #14 #15 OK
- [    0.829039] Brought up 16 CPUs
+ if MEMORY
 
-to something like:
-
-[    0.379167] x86: Booting SMP configuration:
-[    0.383506] .... node  #0, CPUs:        #1  #2  #3
-[    0.429207] .... node  #1, CPUs:    #4  #5  #6  #7
-[    0.565353] .... node  #2, CPUs:    #8  #9 #10 #11
-[    0.701898] .... node  #3, CPUs:   #12 #13 #14 #15
-[    0.837695] x86: Booted up 4 nodes, 16 CPUs
-
-  out-of-topic modifications in x86-boot-for-linus:
-  ---------------------------------------------------
-  kernel/smp.c                       # a17bce4: x86/boot: Further compress CPUs b
-
- Thanks,
-
-	Ingo
-
------------------->
-Borislav Petkov (2):
-      x86: Improve the printout of the SMP bootup CPU table
-      x86/boot: Further compress CPUs bootup message
-
-
- arch/x86/include/asm/misc.h |  6 ++++++
- arch/x86/kernel/smpboot.c   | 37 ++++++++++++++++++++++++++++++-------
- arch/x86/lib/Makefile       |  2 +-
- arch/x86/lib/misc.c         | 21 +++++++++++++++++++++
- kernel/smp.c                |  7 ++++++-
- 5 files changed, 64 insertions(+), 9 deletions(-)
- create mode 100644 arch/x86/include/asm/misc.h
- create mode 100644 arch/x86/lib/misc.c
-
-diff --git a/arch/x86/include/asm/misc.h b/arch/x86/include/asm/misc.h
++config TI_DAVINCI_AEMIF
++       bool "Texas Instruments DaVinci AEMIF driver"
++       depends on (ARCH_DAVINCI || ARCH_KEYSTONE) && OF
++       help
++         This driver is for the AEMIF module available in Texas Instruments
++         SoCs. AEMIF stands for Asynchronous External Memory Interface and
++         is intended to provide a glue-less interface to a variety of
++         asynchronuous memory devices like ASRAM, NOR and NAND memory. A total
++         of 256M bytes of any of these memories can be accessed at a given
++         time via four chip selects with 64M byte access per chip select.
++
+ config TI_EMIF
+        tristate "Texas Instruments EMIF driver"
+        depends on ARCH_OMAP2PLUS
+diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
+index 969d923..af14126 100644
+--- a/drivers/memory/Makefile
++++ b/drivers/memory/Makefile
+@@ -5,6 +5,7 @@
+ ifeq ($(CONFIG_DDR),y)
+ obj-$(CONFIG_OF)               += of_memory.o
+ endif
++obj-$(CONFIG_TI_DAVINCI_AEMIF) += davinci-aemif.o
+ obj-$(CONFIG_TI_EMIF)          += emif.o
+ obj-$(CONFIG_MVEBU_DEVBUS)     += mvebu-devbus.o
+ obj-$(CONFIG_TEGRA20_MC)       += tegra20-mc.o
+diff --git a/drivers/memory/davinci-aemif.c b/drivers/memory/davinci-aemif.c
 new file mode 100644
-index 0000000..475f5bb
+index 0000000..e36b74b
 --- /dev/null
-+++ b/arch/x86/include/asm/misc.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_X86_MISC_H
-+#define _ASM_X86_MISC_H
-+
-+int num_digits(int val);
-+
-+#endif /* _ASM_X86_MISC_H */
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 6cacab6..2a16558 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -73,11 +73,10 @@
- #include <asm/setup.h>
- #include <asm/uv/uv.h>
- #include <linux/mc146818rtc.h>
--
- #include <asm/smpboot_hooks.h>
- #include <asm/i8259.h>
--
- #include <asm/realmode.h>
-+#include <asm/misc.h>
- 
- /* State of each CPU */
- DEFINE_PER_CPU(int, cpu_state) = { 0 };
-@@ -648,22 +647,46 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
- 	return (send_status | accept_status);
- }
- 
-+void smp_announce(void)
-+{
-+	int num_nodes = num_online_nodes();
-+
-+	printk(KERN_INFO "x86: Booted up %d node%s, %d CPUs\n",
-+	       num_nodes, (num_nodes > 1 ? "s" : ""), num_online_cpus());
-+}
-+
- /* reduce the number of lines printed when booting a large cpu count system */
- static void announce_cpu(int cpu, int apicid)
- {
- 	static int current_node = -1;
- 	int node = early_cpu_to_node(cpu);
--	int max_cpu_present = find_last_bit(cpumask_bits(cpu_present_mask), NR_CPUS);
-+	static int width, node_width;
-+
-+	if (!width)
-+		width = num_digits(num_possible_cpus()) + 1; /* + '#' sign */
-+
-+	if (!node_width)
-+		node_width = num_digits(num_possible_nodes()) + 1; /* + '#' */
-+
-+	if (cpu == 1)
-+		printk(KERN_INFO "x86: Booting SMP configuration:\n");
- 
- 	if (system_state == SYSTEM_BOOTING) {
- 		if (node != current_node) {
- 			if (current_node > (-1))
--				pr_cont(" OK\n");
-+				pr_cont("\n");
- 			current_node = node;
--			pr_info("Booting Node %3d, Processors ", node);
-+
-+			printk(KERN_INFO ".... node %*s#%d, CPUs:  ",
-+			       node_width - num_digits(node), " ", node);
- 		}
--		pr_cont(" #%4d%s", cpu, cpu == max_cpu_present ? " OK\n" : "");
--		return;
-+
-+		/* Add padding for the BSP */
-+		if (cpu == 1)
-+			pr_cont("%*s", width + 1, " ");
-+
-+		pr_cont("%*s#%d", width - num_digits(cpu), " ", cpu);
-+
- 	} else
- 		pr_info("Booting Node %d Processor %d APIC 0x%x\n",
- 			node, cpu, apicid);
-diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
-index 96b2c66..992d63b 100644
---- a/arch/x86/lib/Makefile
-+++ b/arch/x86/lib/Makefile
-@@ -16,7 +16,7 @@ clean-files := inat-tables.c
- 
- obj-$(CONFIG_SMP) += msr-smp.o cache-smp.o
- 
--lib-y := delay.o
-+lib-y := delay.o misc.o
- lib-y += thunk_$(BITS).o
- lib-y += usercopy_$(BITS).o usercopy.o getuser.o putuser.o
- lib-y += memcpy_$(BITS).o
-diff --git a/arch/x86/lib/misc.c b/arch/x86/lib/misc.c
-new file mode 100644
-index 0000000..76b373a
---- /dev/null
-+++ b/arch/x86/lib/misc.c
-@@ -0,0 +1,21 @@
++++ b/drivers/memory/davinci-aemif.c
+@@ -0,0 +1,415 @@
 +/*
-+ * Count the digits of @val including a possible sign.
++ * DaVinci/Keystone AEMIF driver
 + *
-+ * (Typed on and submitted from hpa's mobile phone.)
++ * Copyright (C) 2010 - 2013 Texas Instruments Incorporated. http://www.ti.com/
++ * Copyright (C) Heiko Schocher <hs@denx.de>
++ * Copyright (C) Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
-+int num_digits(int val)
++
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
++#include <linux/platform_device.h>
++
++#define TA_SHIFT       2
++#define RHOLD_SHIFT    4
++#define RSTROBE_SHIFT  7
++#define RSETUP_SHIFT   13
++#define WHOLD_SHIFT    17
++#define WSTROBE_SHIFT  20
++#define WSETUP_SHIFT   26
++#define EW_SHIFT       30
++#define SS_SHIFT       31
++
++#define TA(x)          ((x) << TA_SHIFT)
++#define RHOLD(x)       ((x) << RHOLD_SHIFT)
++#define RSTROBE(x)     ((x) << RSTROBE_SHIFT)
++#define RSETUP(x)      ((x) << RSETUP_SHIFT)
++#define WHOLD(x)       ((x) << WHOLD_SHIFT)
++#define WSTROBE(x)     ((x) << WSTROBE_SHIFT)
++#define WSETUP(x)      ((x) << WSETUP_SHIFT)
++#define EW(x)          ((x) << EW_SHIFT)
++#define SS(x)          ((x) << SS_SHIFT)
++
++#define ASIZE_MAX      0x1
++#define TA_MAX         0x3
++#define RHOLD_MAX      0x7
++#define RSTROBE_MAX    0x3f
++#define RSETUP_MAX     0xf
++#define WHOLD_MAX      0x7
++#define WSTROBE_MAX    0x3f
++#define WSETUP_MAX     0xf
++#define EW_MAX         0x1
++#define SS_MAX         0x1
++#define NUM_CS         4
++
++#define TA_VAL(x)      (((x) & TA(TA_MAX)) >> TA_SHIFT)
++#define RHOLD_VAL(x)   (((x) & RHOLD(RHOLD_MAX)) >> RHOLD_SHIFT)
++#define RSTROBE_VAL(x) (((x) & RSTROBE(RSTROBE_MAX)) >> RSTROBE_SHIFT)
++#define RSETUP_VAL(x)  (((x) & RSETUP(RSETUP_MAX)) >> RSETUP_SHIFT)
++#define WHOLD_VAL(x)   (((x) & WHOLD(WHOLD_MAX)) >> WHOLD_SHIFT)
++#define WSTROBE_VAL(x) (((x) & WSTROBE(WSTROBE_MAX)) >> WSTROBE_SHIFT)
++#define WSETUP_VAL(x)  (((x) & WSETUP(WSETUP_MAX)) >> WSETUP_SHIFT)
++#define EW_VAL(x)      (((x) & EW(EW_MAX)) >> EW_SHIFT)
++#define SS_VAL(x)      (((x) & SS(SS_MAX)) >> SS_SHIFT)
++
++#define NRCSR_OFFSET   0x00
++#define AWCCR_OFFSET   0x04
++#define A1CR_OFFSET    0x10
++
++#define ACR_ASIZE_MASK 0x3
++#define ACR_EW_MASK    BIT(30)
++#define ACR_SS_MASK    BIT(31)
++#define ASIZE_16BIT    1
++
++#define CONFIG_MASK    (TA(TA_MAX) | \
++                               RHOLD(RHOLD_MAX) | \
++                               RSTROBE(RSTROBE_MAX) |  \
++                               RSETUP(RSETUP_MAX) | \
++                               WHOLD(WHOLD_MAX) | \
++                               WSTROBE(WSTROBE_MAX) | \
++                               WSETUP(WSETUP_MAX) | \
++                               EW(EW_MAX) | SS(SS_MAX) | \
++                               ASIZE_MAX)
++
++#define DRV_NAME       "davinci-aemif"
++
++/**
++ * structure to hold cs parameters
++ * @cs: chip-select number
++ * @wstrobe: write strobe width, ns
++ * @rstrobe: read strobe width, ns
++ * @wsetup: write setup width, ns
++ * @whold: write hold width, ns
++ * @rsetup: read setup width, ns
++ * @rhold: read hold width, ns
++ * @ta: minimum turn around time, ns
++ * @enable_ss: enable/disable select strobe mode
++ * @enable_ew: enable/disable extended wait mode
++ * @asize: width of the asynchronous device's data bus
++ */
++struct davinci_aemif_cs_data {
++       u8      cs;
++       u16     wstrobe;
++       u16     rstrobe;
++       u8      wsetup;
++       u8      whold;
++       u8      rsetup;
++       u8      rhold;
++       u8      ta;
++       u8      enable_ss;
++       u8      enable_ew;
++       u8      asize;
++};
++
++/**
++ * structure to hold device data
++ * @base: base address of AEMIF registers
++ * @clk: source clock
++ * @clk_rate: clock's rate in kHz
++ * @num_cs: number of assigned chip-selects
++ * @cs_data: array of chip-select settings
++ */
++struct davinci_aemif_device {
++       struct device *dev;
++       void __iomem *base;
++       struct clk *clk;
++       unsigned long clk_rate;
++       u8 num_cs;
++       int cs_offset;
++       struct davinci_aemif_cs_data cs_data[NUM_CS];
++};
++
++static struct davinci_aemif_device *aemif;
++/**
++ * davinci_aemif_calc_rate - calculate timing data.
++ * @wanted: The cycle time needed in nanoseconds.
++ * @clk: The input clock rate in kHz.
++ * @max: The maximum divider value that can be programmed.
++ *
++ * On success, returns the calculated timing value minus 1 for easy
++ * programming into AEMIF timing registers, else negative errno.
++ */
++static int davinci_aemif_calc_rate(int wanted, unsigned long clk, int max)
 +{
-+	int m = 10;
-+	int d = 1;
++       int result;
 +
-+	if (val < 0) {
-+		d++;
-+		val = -val;
-+	}
++       result = DIV_ROUND_UP((wanted * clk), NSEC_PER_MSEC) - 1;
 +
-+	while (val >= m) {
-+		m *= 10;
-+		d++;
-+	}
-+	return d;
++       dev_dbg(aemif->dev, "%s: result %d from %ld, %d\n", __func__, result,
++               clk, wanted);
++
++       /* It is generally OK to have a more relaxed timing than requested... */
++       if (result < 0)
++               result = 0;
++
++       /* ... But configuring tighter timings is not an option. */
++       else if (result > max)
++               result = -EINVAL;
++
++       return result;
 +}
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 0564571..f5768b0 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -524,6 +524,11 @@ void __init setup_nr_cpu_ids(void)
- 	nr_cpu_ids = find_last_bit(cpumask_bits(cpu_possible_mask),NR_CPUS) + 1;
- }
- 
-+void __weak smp_announce(void)
++
++/**
++ * davinci_aemif_config_abus - configure async bus parameters
++ * @data: aemif chip select configuration
++ *
++ * This function programs the given timing values (in real clock) into the
++ * AEMIF registers taking the AEMIF clock into account.
++ *
++ * This function does not use any locking while programming the AEMIF
++ * because it is expected that there is only one user of a given
++ * chip-select.
++ *
++ * Returns 0 on success, else negative errno.
++ */
++static int davinci_aemif_config_abus(struct davinci_aemif_cs_data *data)
 +{
-+	printk(KERN_INFO "Brought up %d CPUs\n", num_online_cpus());
++       int ta, rhold, rstrobe, rsetup, whold, wstrobe, wsetup;
++       unsigned offset;
++       u32 set, val;
++
++       offset = A1CR_OFFSET + (data->cs - aemif->cs_offset) * 4;
++
++       ta      = davinci_aemif_calc_rate(data->ta, aemif->clk_rate, TA_MAX);
++       rhold   = davinci_aemif_calc_rate(data->rhold, aemif->clk_rate,
++                                         RHOLD_MAX);
++       rstrobe = davinci_aemif_calc_rate(data->rstrobe, aemif->clk_rate,
++                                         RSTROBE_MAX);
++       rsetup  = davinci_aemif_calc_rate(data->rsetup, aemif->clk_rate,
++                                         RSETUP_MAX);
++       whold   = davinci_aemif_calc_rate(data->whold, aemif->clk_rate,
++                                         WHOLD_MAX);
++       wstrobe = davinci_aemif_calc_rate(data->wstrobe, aemif->clk_rate,
++                                         WSTROBE_MAX);
++       wsetup  = davinci_aemif_calc_rate(data->wsetup, aemif->clk_rate,
++                                         WSETUP_MAX);
++
++       if (ta < 0 || rhold < 0 || rstrobe < 0 || rsetup < 0 ||
++                       whold < 0 || wstrobe < 0 || wsetup < 0) {
++               dev_err(aemif->dev, "%s: cannot get suitable timings\n",
++                       __func__);
++               return -EINVAL;
++       }
++
++       set = TA(ta) | RHOLD(rhold) | RSTROBE(rstrobe) | RSETUP(rsetup) |
++               WHOLD(whold) | WSTROBE(wstrobe) | WSETUP(wsetup);
++
++       set |= (data->asize & ACR_ASIZE_MASK);
++       if (data->enable_ew)
++               set |= ACR_EW_MASK;
++       if (data->enable_ss)
++               set |= ACR_SS_MASK;
++
++       val = readl(aemif->base + offset);
++       val &= ~CONFIG_MASK;
++       val |= set;
++       writel(val, aemif->base + offset);
++
++       return 0;
 +}
 +
- /* Called by boot processor to activate the rest. */
- void __init smp_init(void)
- {
-@@ -540,7 +545,7 @@ void __init smp_init(void)
- 	}
- 
- 	/* Any cleanup work */
--	printk(KERN_INFO "Brought up %ld CPUs\n", (long)num_online_cpus());
-+	smp_announce();
- 	smp_cpus_done(setup_max_cpus);
- }
- 
++inline int davinci_aemif_cycles_to_nsec(int val)
++{
++       return ((val + 1) * NSEC_PER_MSEC) / aemif->clk_rate;
++}
++
++/**
++ * davinci_aemif_get_hw_params - function to read hw register values
++ * @data: ptr to cs data
++ *
++ * This function reads the defaults from the registers and update
++ * the timing values. Required for get/set commands and also for
++ * the case when driver needs to use defaults in hardware.
++ */
++static void davinci_aemif_get_hw_params(struct davinci_aemif_cs_data *data)
++{
++       u32 val, offset;
++       offset = A1CR_OFFSET + (data->cs - aemif->cs_offset) * 4;
++
++       val = readl(aemif->base + offset);
++       data->ta = davinci_aemif_cycles_to_nsec(TA_VAL(val));
++       data->rhold = davinci_aemif_cycles_to_nsec(RHOLD_VAL(val));
++       data->rstrobe = davinci_aemif_cycles_to_nsec(RSTROBE_VAL(val));
++       data->rsetup = davinci_aemif_cycles_to_nsec(RSETUP_VAL(val));
++       data->whold = davinci_aemif_cycles_to_nsec(WHOLD_VAL(val));
++       data->wstrobe = davinci_aemif_cycles_to_nsec(WSTROBE_VAL(val));
++       data->wsetup = davinci_aemif_cycles_to_nsec(WSETUP_VAL(val));
++       data->enable_ew = EW_VAL(val);
++       data->enable_ss = SS_VAL(val);
++       data->asize = val & ASIZE_MAX;
++}
++
++/**
++ * of_davinci_aemif_parse_abus_config - parse CS configuration from DT
++ * @np: device node ptr
++ *
++ * This function update the emif async bus configuration based on the values
++ * configured in a cs device binding node.
++ */
++static int of_davinci_aemif_parse_abus_config(struct device_node *np)
++{
++       struct davinci_aemif_cs_data *data;
++       unsigned long cs;
++       u32 val;
++
++       if (kstrtoul(np->name + 2, 10, &cs) < 0) {
++               dev_dbg(aemif->dev, "cs name is incorrect");
++               return -EINVAL;
++       }
++
++       if (cs - aemif->cs_offset >= NUM_CS || cs < aemif->cs_offset) {
++               dev_dbg(aemif->dev, "cs number is incorrect %lu", cs);
++               return -EINVAL;
++       }
++
++       if (aemif->num_cs >= NUM_CS) {
++               dev_dbg(aemif->dev, "cs count is more than %d", NUM_CS);
++               return -EINVAL;
++       }
++
++       data = &aemif->cs_data[aemif->num_cs++];
++       data->cs = cs;
++
++       /* read the current value in the hw register */
++       davinci_aemif_get_hw_params(data);
++
++       /* override the values from device node */
++       of_property_read_u8(np, "ti,davinci-cs-ta", &data->ta);
++       of_property_read_u8(np, "ti,davinci-cs-rhold", &data->rhold);
++       of_property_read_u16(np, "ti,davinci-cs-rstrobe", &data->rstrobe);
++       of_property_read_u8(np, "ti,davinci-cs-rsetup", &data->rsetup);
++       of_property_read_u8(np, "ti,davinci-cs-whold", &data->whold);
++       of_property_read_u16(np, "ti,davinci-cs-wstrobe", &data->wstrobe);
++       of_property_read_u8(np, "ti,davinci-cs-wsetup", &data->wsetup);
++       if (!of_property_read_u32(np, "ti,bus-width", &val))
++               if (val == 16)
++                       data->asize = 1;
++       data->enable_ew = of_property_read_bool(np, "ti,davinci-cs-ew");
++       data->enable_ss = of_property_read_bool(np, "ti,davinci-cs-ss");
++       return 0;
++}
++
++static const struct of_device_id davinci_aemif_of_match[] = {
++       { .compatible = "ti,davinci-aemif", },
++       { .compatible = "ti,keystone-aemif", },
++       { .compatible = "ti,omap-L138-aemif", },
++       {},
++};
++
++static const struct of_device_id davinci_cs_of_match[] = {
++       { .compatible = "ti,davinci-cs", },
++       {},
++};
++
++static int davinci_aemif_probe(struct platform_device *pdev)
++{
++       int ret  = -ENODEV, i;
++       struct resource *res;
++       struct device *dev = &pdev->dev;
++       struct device_node *np = dev->of_node;
++
++       if (np == NULL)
++               return 0;
++
++       if (aemif) {
++               dev_err(dev, "davinci_aemif driver is in use currently\n");
++               return -EBUSY;
++       }
++
++       aemif = devm_kzalloc(dev, sizeof(*aemif), GFP_KERNEL);
++
++       if (!aemif) {
++               dev_err(dev, "cannot allocate memory for aemif\n");
++               return -ENOMEM;
++       }
++
++       aemif->clk = devm_clk_get(dev, "aemif");
++       if (IS_ERR(aemif->clk)) {
++               dev_err(dev, "cannot get clock 'aemif'\n");
++               return PTR_ERR(aemif->clk);
++       }
++
++       clk_prepare_enable(aemif->clk);
++       aemif->clk_rate = clk_get_rate(aemif->clk) / 1000;
++
++       aemif->dev = dev;
++
++       if (of_device_is_compatible(np, "ti,omap-L138-aemif"))
++               aemif->cs_offset = 2;
++
++       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++       aemif->base = devm_ioremap_resource(dev, res);
++       if (IS_ERR(aemif->base)) {
++               ret = PTR_ERR(aemif->base);
++               goto error;
++       }
++
++       /*
++        * For every controller device node, there is a cs device node that
++        * describe the bus configuration parameters. This functions iterate
++        * over these nodes and update the cs data array.
++        */
++       for_each_matching_node(np, of_match_ptr(davinci_cs_of_match)) {
++               ret = of_davinci_aemif_parse_abus_config(np);
++               if (ret < 0)
++                       goto error;
++       }
++
++       for (i = 0; i < aemif->num_cs; i++) {
++               ret = davinci_aemif_config_abus(&aemif->cs_data[i]);
++               if (ret < 0) {
++                       dev_err(dev, "Error configuring chip select %d\n",
++                               aemif->cs_data[i].cs);
++                       goto error;
++               }
++       }
++
++       /*
++        * Create a child devices explicitly from here to
++        * guarantee that the child will be probed after the AEMIF timing
++        * parameters are set.
++        */
++       for_each_matching_node(np, of_match_ptr(davinci_cs_of_match)) {
++               ret = of_platform_populate(np, NULL, NULL, dev);
++               if (ret < 0)
++                       goto error;
++       }
++
++       return 0;
++error:
++       clk_disable_unprepare(aemif->clk);
++       return ret;
++}
++
++static int davinci_aemif_remove(struct platform_device *pdev)
++{
++       clk_disable_unprepare(aemif->clk);
++       return 0;
++}
++
++static struct platform_driver davinci_aemif_driver = {
++       .probe = davinci_aemif_probe,
++       .remove = davinci_aemif_remove,
++       .driver = {
++               .name = DRV_NAME,
++               .owner = THIS_MODULE,
++               .of_match_table = of_match_ptr(davinci_aemif_of_match),
++       },
++};
++
++module_platform_driver(davinci_aemif_driver);
++
++MODULE_AUTHOR("Murali Karicheri <m-karicheri2@ti.com>");
++MODULE_AUTHOR("Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>");
++MODULE_DESCRIPTION("Texas Instruments AEMIF driver");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:" DRV_NAME);
+--
+1.7.9.5
+
