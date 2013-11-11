@@ -1,116 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab3KKOhv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 09:37:51 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:36076 "EHLO comal.ext.ti.com"
+	id S1754281Ab3KKOiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 09:38:21 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:36111 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754178Ab3KKOh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 09:37:28 -0500
-Message-ID: <5280EB9F.1050003@ti.com>
-Date: Mon, 11 Nov 2013 20:07:19 +0530
+	id S1754055Ab3KKOiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 09:38:12 -0500
+Message-ID: <5280EB5C.1040001@ti.com>
+Date: Mon, 11 Nov 2013 20:06:12 +0530
 From: Kishon Vijay Abraham I <kishon@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [patch] drivers: phy: tweaks to phy_create()
-References: <20131106075412.GB13475@elgon.mountain>
-In-Reply-To: <20131106075412.GB13475@elgon.mountain>
+To: <balbi@ti.com>
+CC: <gregkh@linuxfoundation.org>, <rob.herring@calxeda.com>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
+        <bcousson@baylibre.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
+        <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v2 1/7] usb: dwc3: get "usb_phy" only if the platform
+ indicates the presence of PHY's
+References: <1381866857-3861-1-git-send-email-kishon@ti.com> <1381866857-3861-2-git-send-email-kishon@ti.com> <20131017163828.GH11611@gimli>
+In-Reply-To: <20131017163828.GH11611@gimli>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+Hi Felipe,
 
-On Wednesday 06 November 2013 01:24 PM, Dan Carpenter wrote:
-> If this was called with a NULL "dev" then it lead to a NULL dereference
-> when we called dev_WARN().  I have changed it to WARN_ON() so that we
-> get a stack dump and can fix the caller.
+On Thursday 17 October 2013 10:08 PM, Felipe Balbi wrote:
+> Hi,
 > 
-> If ida_simple_get() failed then there was a missing call to kfree(phy).
+> On Wed, Oct 16, 2013 at 01:24:11AM +0530, Kishon Vijay Abraham I wrote:
+>> There can be systems which does not have a external usb_phy, so get
+>> usb_phy only if dt data indicates the presence of PHY in the case of dt boot or
+>> if platform_data indicates the presence of PHY. Also remove checking if
+>> return value is -ENXIO since it's now changed to always enable usb_phy layer.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 > 
-> The rest of this patch is just cleanup like returning directly instead
-> of having do-nothing gotos.  Using descriptive labels instead of
-> GW-BASIC style "err0" and "err1".  I also flipped the order of
-> put_device() and ida_remove() so they are a mirror reflection of the
-> order they were allocated.
+> I'm fine with this patch, but one comment below:
 > 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>> @@ -387,16 +388,49 @@ static int dwc3_probe(struct platform_device *pdev)
+>>  	if (node) {
+>>  		dwc->maximum_speed = of_usb_get_maximum_speed(node);
+>>  
+>> -		dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
+>> -		dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
+>> +		count = of_count_phandle_with_args(node, "usb-phy", NULL);
+>> +		switch (count) {
+>> +		case 2:
+>> +			dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev,
+>> +				"usb-phy", 1);
+>> +			if (IS_ERR(dwc->usb3_phy)) {
+>> +				dev_err(dev, "usb3 phy not found\n");
+>> +				return PTR_ERR(dwc->usb3_phy);
+>> +			}
+>> +		case 1:
+>> +			dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev,
+>> +				"usb-phy", 0);
+>> +			if (IS_ERR(dwc->usb2_phy)) {
+>> +				dev_err(dev, "usb2 phy not found\n");
+>> +				return PTR_ERR(dwc->usb2_phy);
+>> +			}
+>> +			break;
+>> +		default:
+>> +			dev_err(dev, "usb phy nodes not configured\n");
+>> +		}
+>>  
+>>  		dwc->needs_fifo_resize = of_property_read_bool(node, "tx-fifo-resize");
+>>  		dwc->dr_mode = of_usb_get_dr_mode(node);
+>>  	} else if (pdata) {
+>>  		dwc->maximum_speed = pdata->maximum_speed;
+>>  
+>> -		dwc->usb2_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+>> -		dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
+>> +		if (pdata->usb2_phy) {
+>> +			dwc->usb2_phy = devm_usb_get_phy(dev,
+>> +				USB_PHY_TYPE_USB2);
+>> +			if (IS_ERR(dwc->usb2_phy)) {
+>> +				dev_err(dev, "usb2 phy not found\n");
+>> +				return PTR_ERR(dwc->usb2_phy);
+>> +			}
+>> +		}
+>> +
+>> +		if (pdata->usb3_phy) {
+>> +			dwc->usb3_phy = devm_usb_get_phy(dev,
+>> +				USB_PHY_TYPE_USB3);
+>> +			if (IS_ERR(dwc->usb3_phy)) {
+>> +				dev_err(dev, "usb3 phy not found\n");
+>> +				return PTR_ERR(dwc->usb3_phy);
+>> +			}
+>> +		}
+>>  
+>>  		dwc->needs_fifo_resize = pdata->tx_fifo_resize;
+>>  		dwc->dr_mode = pdata->dr_mode;
+>> @@ -409,36 +443,6 @@ static int dwc3_probe(struct platform_device *pdev)
+>>  	if (dwc->maximum_speed == USB_SPEED_UNKNOWN)
+>>  		dwc->maximum_speed = USB_SPEED_SUPER;
+>>  
+>> -	if (IS_ERR(dwc->usb2_phy)) {
+>> -		ret = PTR_ERR(dwc->usb2_phy);
+>> -
+>> -		/*
+>> -		 * if -ENXIO is returned, it means PHY layer wasn't
+>> -		 * enabled, so it makes no sense to return -EPROBE_DEFER
+>> -		 * in that case, since no PHY driver will ever probe.
+>> -		 */
+>> -		if (ret == -ENXIO)
+>> -			return ret;
+>> -
+>> -		dev_err(dev, "no usb2 phy configured\n");
+>> -		return -EPROBE_DEFER;
+>> -	}
+>> -
+>> -	if (IS_ERR(dwc->usb3_phy)) {
+>> -		ret = PTR_ERR(dwc->usb3_phy);
+>> -
+>> -		/*
+>> -		 * if -ENXIO is returned, it means PHY layer wasn't
+>> -		 * enabled, so it makes no sense to return -EPROBE_DEFER
+>> -		 * in that case, since no PHY driver will ever probe.
+>> -		 */
+>> -		if (ret == -ENXIO)
+>> -			return ret;
+>> -
+>> -		dev_err(dev, "no usb3 phy configured\n");
+>> -		return -EPROBE_DEFER;
+>> -	}
+> 
+> the idea for doing the error checking here was actually to avoid
+> duplicating it in all previous cases, as you did. Please keep the error
+> checking here and you're good to go.
+> 
+>> -
+>>  	dwc->xhci_resources[0].start = res->start;
+>>  	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
+>>  					DWC3_XHCI_REGS_END;
+>> diff --git a/drivers/usb/dwc3/platform_data.h b/drivers/usb/dwc3/platform_data.h
+>> index 7db34f0..49ffa6d 100644
+>> --- a/drivers/usb/dwc3/platform_data.h
+>> +++ b/drivers/usb/dwc3/platform_data.h
+>> @@ -24,4 +24,6 @@ struct dwc3_platform_data {
+>>  	enum usb_device_speed maximum_speed;
+>>  	enum usb_dr_mode dr_mode;
+>>  	bool tx_fifo_resize;
+>> +	bool usb2_phy;
+>> +	bool usb3_phy;
+> 
+> This would look better as a quirks flag, then we could:
+> 
+> unsigned long quirks;
+> #define DWC3_QUIRK_NO_USB3_PHY	BIT(0)
+> #define DWC3_QUIRK_NO_USB2_PHY	BIT(1)
 
-Can you create this patch on top of
-git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git fixes ?
+Should this quirk be used for dt also? Currently we find if it has usb3 phy or
+usb2 phy from the dt data only. But if we add a quirk, we'll have to add a
+property to populate the quirk no?
 
 Thanks
 Kishon
 
 > 
-> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-> index 03cf8fb..18b9de7 100644
-> --- a/drivers/phy/phy-core.c
-> +++ b/drivers/phy/phy-core.c
-> @@ -437,23 +437,18 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
->  	int id;
->  	struct phy *phy;
->  
-> -	if (!dev) {
-> -		dev_WARN(dev, "no device provided for PHY\n");
-> -		ret = -EINVAL;
-> -		goto err0;
-> -	}
-> +	if (WARN_ON(!dev))
-> +		return ERR_PTR(-EINVAL);
->  
->  	phy = kzalloc(sizeof(*phy), GFP_KERNEL);
-> -	if (!phy) {
-> -		ret = -ENOMEM;
-> -		goto err0;
-> -	}
-> +	if (!phy)
-> +		return ERR_PTR(-ENOMEM);
->  
->  	id = ida_simple_get(&phy_ida, 0, 0, GFP_KERNEL);
->  	if (id < 0) {
->  		dev_err(dev, "unable to get id\n");
->  		ret = id;
-> -		goto err0;
-> +		goto free_phy;
->  	}
->  
->  	device_initialize(&phy->dev);
-> @@ -468,11 +463,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
->  
->  	ret = dev_set_name(&phy->dev, "phy-%s.%d", dev_name(dev), id);
->  	if (ret)
-> -		goto err1;
-> +		goto put_dev;
->  
->  	ret = device_add(&phy->dev);
->  	if (ret)
-> -		goto err1;
-> +		goto put_dev;
->  
->  	if (pm_runtime_enabled(dev)) {
->  		pm_runtime_enable(&phy->dev);
-> @@ -481,12 +476,12 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
->  
->  	return phy;
->  
-> -err1:
-> -	ida_remove(&phy_ida, phy->id);
-> +put_dev:
->  	put_device(&phy->dev);
-> +	ida_remove(&phy_ida, phy->id);
-> +free_phy:
->  	kfree(phy);
->  
-> -err0:
->  	return ERR_PTR(ret);
->  }
->  EXPORT_SYMBOL_GPL(phy_create);
+> ...
+> 
+> if (!test_bit(DWC3_QUIRK_NO_USB3_PHY), &dwc->quirks &&
+> 	dwc->has_usb3_phy) {
+> 	grab_usb3_phy();
+> }
+> 
+> cheers
 > 
 
