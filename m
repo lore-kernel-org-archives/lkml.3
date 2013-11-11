@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab3KKS3A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 13:29:00 -0500
-Received: from mail-de.keymile.com ([195.8.104.250]:59131 "EHLO
-	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754171Ab3KKS2w (ORCPT
+	id S1755155Ab3KKSbN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 13:31:13 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:33323 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab3KKSbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 13:28:52 -0500
-Message-ID: <528121D5.40403@keymile.com>
-Date: Mon, 11 Nov 2013 19:28:37 +0100
-From: Gerlando Falauto <gerlando.falauto@keymile.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
+	Mon, 11 Nov 2013 13:31:04 -0500
+Date: Mon, 11 Nov 2013 19:31:01 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: hpa@zytor.com, linux-kernel@vger.kernel.org, keescook@chromium.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/kaslr] x86, kaslr: Provide randomness functions
+Message-ID: <20131111183101.GA16051@gmail.com>
+References: <1381450698-28710-4-git-send-email-keescook@chromium.org>
+ <tip-5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3@git.kernel.org>
+ <20131111182046.GA14961@gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Lars Poeschel <poeschel@lemonage.de>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
-References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <1521079.WSLhhfqBXl@lem-wkst-02> <52261BF0.4090106@wwwdotorg.org> <3144247.j2q6H0KWZx@lem-wkst-02> <52279524.8090006@wwwdotorg.org> <20130909161924.GT29403@sirena.org.uk>
-In-Reply-To: <20130909161924.GT29403@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131111182046.GA14961@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
 
-[jumping in on an old discussion]
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-On 09/09/2013 06:19 PM, Mark Brown wrote:
-> On Wed, Sep 04, 2013 at 02:16:36PM -0600, Stephen Warren wrote:
->> On 09/04/2013 03:05 AM, Lars Poeschel wrote:
->
->>> The driver that tries to use the GPIO requested by this patch before HAS to
->>> fail. This is exactly the intention of this patch. We don't want the GPIO to
->>> be requested any more, if it is used as an interrupt pin.
->
->> That will break existing drivers. There are drivers that request the
->> same GPIO and IRQ. IIRC, the SDHCI CD (Card Detect) GPIO is requested
->> that way.
->
-> Yes, plus input devices and audio jack detection among others.  This
-> pattern is very common if the GPIO is actually being used as a GPIO, an
-> edge triggered interrupt is used to flag when something happens and the
-> state is determined by reading the GPIO state (often with some
-> debounce).
+> 
+> * tip-bot for Kees Cook <tipbot@zytor.com> wrote:
+> 
+> > Commit-ID:  5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3
+> > Gitweb:     http://git.kernel.org/tip/5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3
+> > Author:     Kees Cook <keescook@chromium.org>
+> > AuthorDate: Thu, 10 Oct 2013 17:18:15 -0700
+> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> > CommitDate: Sun, 13 Oct 2013 03:12:12 -0700
+> > 
+> > x86, kaslr: Provide randomness functions
+> > 
+> > Adds potential sources of randomness: RDRAND, RDTSC, or the i8254.
+> > 
+> > This moves the pre-alternatives inline rdrand function into the header so
+> > both pieces of code can use it. Availability of RDRAND is then controlled
+> > by CONFIG_ARCH_RANDOM, if someone wants to disable it even for kASLR.
+> 
+> While reviewing this as a pre-pull-request, I noticed the following 
+> detail:
+> 
+> > +static unsigned long get_random_long(void)
+> > +{
+> > +	unsigned long random;
+> > +
+> > +	if (has_cpuflag(X86_FEATURE_RDRAND)) {
+> > +		debug_putstr("KASLR using RDRAND...\n");
+> > +		if (rdrand_long(&random))
+> > +			return random;
+> > +	}
+> > +
+> > +	if (has_cpuflag(X86_FEATURE_TSC)) {
+> > +		uint32_t raw;
+> > +
+> > +		debug_putstr("KASLR using RDTSC...\n");
+> > +		rdtscl(raw);
+> > +
+> > +		/* Only use the low bits of rdtsc. */
+> > +		random = raw & 0xffff;
+> > +	} else {
+> > +		debug_putstr("KASLR using i8254...\n");
+> > +		random = i8254();
+> > +	}
+> > +
+> > +	/* Extend timer bits poorly... */
+> > +	random |= (random << 16);
+> > +#ifdef CONFIG_X86_64
+> > +	random |= (random << 32);
+> > +#endif
+> > +	return random;
+> > +}
+> 
+> Why aren't the 3 sources of entropy XOR-ed together?
+> 
+> Also, we talked about also adding system dependent entropy sources, such 
+> as memory layout or the DMI table - none of that seems to have happened.
+> 
+> It's not like this function should be performance critical, it's run once 
+> per bootup, right? There's just no excuse for not maximizing available 
+> entropy in such a situation ...
 
-I actually came across this thread while looking for an answer to the 
-following (apparently trivial) question:
+Another problem I noticed is that the RANDOMIZE_BASE Kconfig text does not 
+match the actual sources of entropy:
 
-If you were to write a new driver & binding, what would be, in general, 
-the recommended DT binding for a cascade interrupt controller (or any 
-other peripheral, for that matter), which is connected through a GPIO 
-(to be used as IRQ)?
+           Entropy is generated using the RDRAND instruction if it
+           is supported.  If not, then RDTSC is used, if supported. If
+           neither RDRAND nor RDTSC are supported, then no randomness
+           is introduced.
 
-a) Through gpios = <&gpio0 N>
-b) through interrupt-parent = <&gpio0> & interrupts <N 
-IRQ_TYPE_LEVEL_LOW>, or
-c) both?
+(i8254 is missing.)
 
-Thanks!
-Gerlando
+Nor does the help text explain an important detail: what granularity does 
+the randomization have and roughly how many bits of the address are 
+randomized if people use the default values?
+
+Thanks,
+
+	Ingo
