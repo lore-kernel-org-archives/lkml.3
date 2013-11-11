@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab3KKWSP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 17:18:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34777 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752913Ab3KKWSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 17:18:11 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH] FS-Cache: Fix handling of an attempt to store a page that
- is now beyond EOF
-To: torvalds@linux-foundation.org
-From: David Howells <dhowells@redhat.com>
-Cc: linux-cachefs@redhat.com, linux-kernel@vger.kernel.org,
-        Milosz Tanski <milosz@adfin.com>
-Date: Mon, 11 Nov 2013 22:18:04 +0000
-Message-ID: <20131111221804.23212.30560.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.16
+	id S1753470Ab3KKWTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 17:19:51 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42677 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab3KKWTm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 17:19:42 -0500
+Date: Mon, 11 Nov 2013 23:19:41 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, linux-input@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 1/2] Input: twl4030-keypad - add device tree support
+Message-ID: <20131111221941.GB23331@amd.pavel.ucw.cz>
+References: <1383948866-32672-1-git-send-email-sre@debian.org>
+ <1383948866-32672-2-git-send-email-sre@debian.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383948866-32672-2-git-send-email-sre@debian.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the handling of an attempt to store a page that is now beyond EOF.  This
-may happen, for example, if the page got pushed for storage before the netfs
-file got truncated on the server.  In such a case, we should just remove the
-excessive pages from the cookie->stores radix tree and wake up the waiter.
+Hi!
 
-This can be seen in /proc/fs/fscache/stats on this line:
+> +	if (of_get_property(np, "linux,input-no-autorepeat", NULL))
+> +		keypad_data->no_autorepeat = true;
 
-	Stores : ops=350 run=1895 pgs=1545 rxd=1727 olm=9
+>From 2/2:
 
-where olm=N has N > 0.
++Optional Properties specific to linux:
++- linux,keypad-no-autorepeat: do not enable autorepeat feature.
 
-Reported-by: Milosz Tanski <milosz@adfin.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Milosz Tanski <milosz@adfin.com>
----
+I'm confused now.
 
- fs/fscache/page.c |   37 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 36 insertions(+), 1 deletion(-)
-
-diff --git a/fs/fscache/page.c b/fs/fscache/page.c
-index 7f5c658af755..b4730cf52aec 100644
---- a/fs/fscache/page.c
-+++ b/fs/fscache/page.c
-@@ -755,6 +755,7 @@ static void fscache_write_op(struct fscache_operation *_op)
- 	struct fscache_object *object = op->op.object;
- 	struct fscache_cookie *cookie;
- 	struct page *page;
-+	pgoff_t index;
- 	unsigned n;
- 	void *results[1];
- 	int ret;
-@@ -803,7 +804,7 @@ static void fscache_write_op(struct fscache_operation *_op)
- 	_debug("gang %d [%lx]", n, page->index);
- 	if (page->index > op->store_limit) {
- 		fscache_stat(&fscache_n_store_pages_over_limit);
--		goto superseded;
-+		goto page_beyond_limit;
- 	}
- 
- 	radix_tree_tag_set(&cookie->stores, page->index,
-@@ -829,6 +830,40 @@ static void fscache_write_op(struct fscache_operation *_op)
- 	_leave("");
- 	return;
- 
-+page_beyond_limit:
-+	spin_unlock(&object->lock);
-+
-+page_beyond_limit_unlocked:
-+	/* pages that are now beyond the end of the storage object must have
-+	 * their pending storage records cleared.
-+	 */
-+	index = page->index;
-+	radix_tree_tag_clear(&cookie->stores, page->index,
-+			     FSCACHE_COOKIE_PENDING_TAG);
-+	if (!radix_tree_tag_get(&cookie->stores, page->index,
-+				FSCACHE_COOKIE_STORING_TAG)) {
-+		fscache_stat(&fscache_n_store_radix_deletes);
-+		radix_tree_delete(&cookie->stores, page->index);
-+		page_cache_release(page);
-+	}
-+	if (!need_resched()) {
-+		n = radix_tree_gang_lookup_tag(&cookie->stores, results,
-+					       index + 1, 1,
-+					       FSCACHE_COOKIE_PENDING_TAG);
-+		if (n == 1) {
-+			page = results[0];
-+			goto page_beyond_limit_unlocked;
-+		}
-+		spin_unlock(&cookie->stores_lock);
-+		wake_up_bit(&cookie->flags, 0);
-+	} else {
-+		spin_unlock(&cookie->stores_lock);
-+	}
-+
-+	fscache_enqueue_operation(&op->op);
-+	_leave("");
-+	return;
-+
- superseded:
- 	/* this writer is going away and there aren't any more things to
- 	 * write */
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
