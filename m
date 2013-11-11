@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350Ab3KKQWH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 11:22:07 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:33900 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753911Ab3KKQV4 (ORCPT
+	id S1754678Ab3KKQWl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 11:22:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44994 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904Ab3KKQWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 11:21:56 -0500
-Date: Mon, 11 Nov 2013 17:21:52 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/apic change for v3.13
-Message-ID: <20131111162152.GA11580@gmail.com>
+	Mon, 11 Nov 2013 11:22:33 -0500
+Date: Mon, 11 Nov 2013 08:22:10 -0800
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-a4f61dec55c1bdebb84ba77212ebf98f7247736c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        seiji.aguchi@hds.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        seiji.aguchi@hds.com, tglx@linutronix.de
+In-Reply-To: <20131111082955.GB12405@gmail.com>
+References: <20131111082955.GB12405@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/trace] x86, trace:
+  Change user|kernel_page_fault to page_fault_user|kernel
+Git-Commit-ID: a4f61dec55c1bdebb84ba77212ebf98f7247736c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 11 Nov 2013 08:22:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Commit-ID:  a4f61dec55c1bdebb84ba77212ebf98f7247736c
+Gitweb:     http://git.kernel.org/tip/a4f61dec55c1bdebb84ba77212ebf98f7247736c
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Mon, 11 Nov 2013 08:15:40 -0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Mon, 11 Nov 2013 08:15:40 -0800
 
-Please pull the latest x86-apic-for-linus git tree from:
+x86, trace: Change user|kernel_page_fault to page_fault_user|kernel
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-apic-for-linus
+Tracepoints are named hierachially, and it makes more sense to keep a
+general flow of information level from general to specific from left
+to right, i.e.
 
-   # HEAD: 522e66464467543c0d88d023336eec4df03ad40b x86/apic: Disable I/O APIC before shutdown of the local APIC
+	x86_exceptions.page_fault_user|kernel
 
-A single fix to the IO-APIC / local-APIC shutdown sequence.
+rather than
 
- Thanks,
+	x86_exceptions.user|kernel_page_fault
 
-	Ingo
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/20131111082955.GB12405@gmail.com
+---
+ arch/x86/include/asm/trace/exceptions.h | 4 ++--
+ arch/x86/mm/fault.c                     | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
------------------->
-Fenghua Yu (1):
-      x86/apic: Disable I/O APIC before shutdown of the local APIC
-
-
- arch/x86/kernel/crash.c  | 2 +-
- arch/x86/kernel/reboot.c | 8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-index e0e0841..18677a9 100644
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -127,12 +127,12 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
- 	cpu_emergency_vmxoff();
- 	cpu_emergency_svm_disable();
+diff --git a/arch/x86/include/asm/trace/exceptions.h b/arch/x86/include/asm/trace/exceptions.h
+index 86540c0..2fbc66c 100644
+--- a/arch/x86/include/asm/trace/exceptions.h
++++ b/arch/x86/include/asm/trace/exceptions.h
+@@ -40,8 +40,8 @@ DEFINE_EVENT_FN(x86_exceptions, name,				\
+ 	trace_irq_vector_regfunc,				\
+ 	trace_irq_vector_unregfunc);
  
--	lapic_shutdown();
- #ifdef CONFIG_X86_IO_APIC
- 	/* Prevent crash_kexec() from deadlocking on ioapic_lock. */
- 	ioapic_zap_locks();
- 	disable_IO_APIC();
- #endif
-+	lapic_shutdown();
- #ifdef CONFIG_HPET_TIMER
- 	hpet_disable();
- #endif
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 7e920bf..618ce26 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -550,6 +550,10 @@ static void native_machine_emergency_restart(void)
- void native_machine_shutdown(void)
+-DEFINE_PAGE_FAULT_EVENT(user_page_fault);
+-DEFINE_PAGE_FAULT_EVENT(kernel_page_fault);
++DEFINE_PAGE_FAULT_EVENT(page_fault_user);
++DEFINE_PAGE_FAULT_EVENT(page_fault_kernel);
+ 
+ #undef TRACE_INCLUDE_PATH
+ #define TRACE_INCLUDE_PATH .
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index f2730cbc..e532230 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -1239,9 +1239,9 @@ static void trace_page_fault_entries(struct pt_regs *regs,
+ 				     unsigned long error_code)
  {
- 	/* Stop the cpus and apics */
-+#ifdef CONFIG_X86_IO_APIC
-+	disable_IO_APIC();
-+#endif
-+
- #ifdef CONFIG_SMP
- 	/*
- 	 * Stop all of the others. Also disable the local irq to
-@@ -562,10 +566,6 @@ void native_machine_shutdown(void)
+ 	if (user_mode(regs))
+-		trace_user_page_fault(read_cr2(), regs, error_code);
++		trace_page_fault_user(read_cr2(), regs, error_code);
+ 	else
+-		trace_kernel_page_fault(read_cr2(), regs, error_code);
++		trace_page_fault_kernel(read_cr2(), regs, error_code);
+ }
  
- 	lapic_shutdown();
- 
--#ifdef CONFIG_X86_IO_APIC
--	disable_IO_APIC();
--#endif
--
- #ifdef CONFIG_HPET_TIMER
- 	hpet_disable();
- #endif
+ dotraplinkage void __kprobes
