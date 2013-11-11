@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab3KKLMN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:12:13 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39642 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752670Ab3KKLMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:12:07 -0500
-Message-ID: <5280BB65.5040305@ti.com>
-Date: Mon, 11 Nov 2013 16:41:33 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1753242Ab3KKLPQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:15:16 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:40336 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752800Ab3KKLPK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 06:15:10 -0500
+Date: Mon, 11 Nov 2013 11:15:03 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, myungjoo.ham@samsung.com,
+        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] extcon: arizona: Add defines for microphone
+ detection levels
+Message-ID: <20131111111503.GC22184@lee--X1>
+References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <5280AAAF.8040005@samsung.com>
+ <20131111105356.GB22184@lee--X1>
+ <20131111110652.GD6549@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Vivek Gautam'" <gautamvivek1987@gmail.com>,
-        "'Kamil Debski'" <k.debski@samsung.com>,
-        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
-        "'Linux USB Mailing List'" <linux-usb@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-doc@vger.kernel.org>, "'Greg KH'" <gregkh@linuxfoundation.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
-        "'Tomasz Figa'" <t.figa@samsung.com>, "'Felipe Balbi'" <balbi@ti.com>,
-        "'Julius Werner'" <jwerner@chromium.org>
-Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
-References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com> <1383205544-32244-2-git-send-email-gautam.vivek@samsung.com> <527744B2.4090303@ti.com> <030d01ced946$d6e23490$84a69db0$%debski@samsung.com> <52779D28.9000905@ti.com> <CAFp+6iH7vQ-OtMFL4pyr4tFDRchH4oh1Z0753WNgrHiUzj+kzw@mail.gmail.com> <00fe01ceda0a$941957a0$bc4c06e0$%debski@samsung.com> <000001ceda17$f41c2030$dc546090$%han@samsung.com> <000101ceda1f$04ca6f20$0e5f4d60$%han@samsung.com> <CAFp+6iFAZab35F-MOOZHcHpzSEOL=51gWBK2KZbOJS+0731GJQ@mail.gmail.com> <000301ceda84$1d648bf0$582da3d0$%han@samsung.com>
-In-Reply-To: <000301ceda84$1d648bf0$582da3d0$%han@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131111110652.GD6549@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 11 Nov 2013, Charles Keepax wrote:
 
-On Wednesday 06 November 2013 05:37 AM, Jingoo Han wrote:
-> On Wednesday, November 06, 2013 2:58 AM, Vivek Gautam wrote:
->> On Tue, Nov 5, 2013 at 5:33 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+> On Mon, Nov 11, 2013 at 10:53:56AM +0000, Lee Jones wrote:
+> > > On 11/08/2013 10:19 PM, Charles Keepax wrote:
+> > > > Improve readability by creating a define for each microphone detection
+> > > > level.
+> > > > 
+> > > > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> > > > ---
+> > > >  drivers/extcon/extcon-arizona.c       |   21 ++++++++++++++++-----
+> > > >  include/linux/mfd/arizona/registers.h |    9 +++++++++
+> > > >  2 files changed, 25 insertions(+), 5 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> > > > index 3c55ec8..6d914ba 100644
+> > > > --- a/drivers/extcon/extcon-arizona.c
+> > > > +++ b/drivers/extcon/extcon-arizona.c
+> > > > @@ -44,6 +44,17 @@
+> > > >  #define HPDET_DEBOUNCE 500
+> > > >  #define DEFAULT_MICD_TIMEOUT 2000
+> > > >  
+> > > > +enum {
+> > > > +	MICD_LVL_1_TO_7 = ARIZONA_MICD_LVL_1 | ARIZONA_MICD_LVL_2 |
+> > > > +			  ARIZONA_MICD_LVL_3 | ARIZONA_MICD_LVL_4 |
+> > > > +			  ARIZONA_MICD_LVL_5 | ARIZONA_MICD_LVL_6 |
+> > > > +			  ARIZONA_MICD_LVL_7,
+> > > > +
+> > > > +	MICD_LVL_0_TO_7 = ARIZONA_MICD_LVL_0 | MICD_LVL_1_TO_7,
+> > > > +
+> > > > +	MICD_LVL_0_TO_8 = MICD_LVL_0_TO_7 | ARIZONA_MICD_LVL_8,
+> > > > +};
+> > > 
+> > > MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8 haven't the sequential value.
+> > > I prefer '#define' keyword to define MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8
+> > > instead of enum keyword.
 > 
-> [.....]
 > 
->>> USB3.0 PHY consists of two blocks such as 3.0 block and 2.0 block.
->>> This USB3.0 PHY can support UTMI+ and PIPE3 interface for 3.0 block
->>> and 2.0 block, respectively.
->>>
->>> Conclusion:
->>>
->>>    1) USB2.0 PHY: USB2.0 HOST, USB2.0 Device
->>>                        Base address: 0x1213 0000
->>>
->>>    2) USB3.0 PHY: USB3.0 DRD (3.0 HOST & 3.0 Device)
->>>                        Base address: 0x1210 0000
->>>                        2.0 block(UTMI+) & 3.0 block(PIPE3)
->>
->> And this is of course the PHY used by DWC3 controller, which works at
->> both High speed as well as Super Speed.
->> Right ?
+> I will do an incremental patch to update them to defines.
 > 
-> Right.
 > 
-> While 3.0 block(PIPE3) can be used for Super Speed, 2.0 block(UTMI+)
-> can be used for High speed.
+> > Actually Charles has already sent me this patch and I applied it a
+> > while ago.
+> > 
+> > I'm inclined to agree with you though, so if you want to send a patch
+> > based on v3.14-rc1 I'd be happy to accept it.
+> 
+> Apologies for causing confusion here I checked your tree for the
+> patch and didn't see it, so I assumed you had decided not to
+> apply it. I must have missed it some how.
 
-It should then come under *single IP muliple PHY* category similar to what
-Sylwester has done.
+So I am partly to blame here. My public repos sometimes aren't as
+up-to-date and my private ones, but if I've replied to a patch and
+said I've applied it, I inevitably have.
 
-Thanks
-Kishon
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
