@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab3KKJsQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 04:48:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27975 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752796Ab3KKJr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 04:47:59 -0500
-References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at> <527CB013.30200@jp.fujitsu.com> <527CB0F4.8080606@nod.at> <527CBC05.6080505@jp.fujitsu.com> <527CBD01.1000908@nod.at> <527CBDD3.2020609@jp.fujitsu.com> <20131108143421.GB22636@console-pimps.org> <52809AEB.9080100@jp.fujitsu.com>
-User-agent: mu4e 0.9.9.5; emacs 24.3.1
-From: Madper Xie <cxie@redhat.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Matt Fleming <matt@console-pimps.org>, Richard Weinberger <richard@nod.at>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        matt.fleming@intel.com, matthew.garrett@nebula.com, jlee@suse.com
-Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia parameter to efi_storage_paranoia
-Message-ID: <87eh6ngthv.fsf@redhat.com>
-In-reply-to: <52809AEB.9080100@jp.fujitsu.com>
-Date: Mon, 11 Nov 2013 17:47:30 +0800
+	id S1752905Ab3KKJ5f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 04:57:35 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:37591 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab3KKJ53 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 04:57:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAFRkauCW3FDSuh4t0gvmSWH1m0+qaG0XSoBxmk30Wq1FMy7iFw@mail.gmail.com>
+References: <1383789208.5970.1.camel@phoenix>
+	<CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
+	<CAFRkauAEt-YhBt11opj_GVCLrxGsTSd2LowWGmukTSmGuJkd3A@mail.gmail.com>
+	<CACVXFVO=QA-R1+twCL9fc_3vASg6Ap-3ezi=tU1MV1pdPYrfWw@mail.gmail.com>
+	<CAFRkauAdR3=ByE0_B3OsqOBjmbz2a02EXb+6g-vn=1TJ7AZc8Q@mail.gmail.com>
+	<CACVXFVMaLOfDvzdn_1NryQY59cgtLdMMqHL-_ZAa95MPz4p56Q@mail.gmail.com>
+	<CAFRkauDe7V3N0AbfvE_=GEXHZ_Fw62VsA8p50wSUYE1-TRqMfw@mail.gmail.com>
+	<87zjpf4w0j.fsf@rustcorp.com.au>
+	<CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com>
+	<CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com>
+	<CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com>
+	<87y54vzszo.fsf@rustcorp.com.au>
+	<CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com>
+	<CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com>
+	<CAFRkauCW3FDSuh4t0gvmSWH1m0+qaG0XSoBxmk30Wq1FMy7iFw@mail.gmail.com>
+Date: Mon, 11 Nov 2013 17:57:29 +0800
+Message-ID: <CACVXFVMzOzD+D-MQCUBvC80d4zS-TJfcucKuUvzerGs6gT1fEg@mail.gmail.com>
+Subject: Re: kernel BUG at kernel/kallsyms.c:222!
+From: Ming Lei <tom.leiming@gmail.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howdy Yasuaki,
-  I know some boxes with small NVRAM (less than 64kb?) will meet many
-  issues if we always keep ~5kb free space.
-  But if we really do not keep some free space as default, many box will
-  become a brick. (In fact, I just fixed a bricked dell xps 8500 last
-  week. 5kb is not enough for dell xps...)
-  So maybe the better way is: we check the size of nvram and decide how
-  many space we retain.
-  
-isimatu.yasuaki@jp.fujitsu.com writes:
+Hi,
 
-> Hi Matt,
+On Mon, Nov 11, 2013 at 4:37 PM, Axel Lin <axel.lin@ingics.com> wrote:
+> 2013/11/11 Ming Lei <tom.leiming@gmail.com>:
 >
-> I uses FUJITSU's x86 box.
-> This does not become bricked even if I use all efi variable storage.
-> Thus I want a way to not need to specify efi_no_storage_paranoia
-> parameter.
+> Hi Ming,
 >
-> Thanks,
-> Yasuaki Ishimatsu
->
->
-> (2013/11/08 23:34), Matt Fleming wrote:
->> On Fri, 08 Nov, at 07:32:51PM, Yasuaki Ishimatsu wrote:
->>>> Everything started with an issue that killed Samsung laptops:
->>>> http://mjg59.dreamwidth.org/22855.html
->>>>
->>>> Later it was found that if you write too much into UEFI variables many
->>>> UEFI implementations will do bad things.
->>>
->>> Thanks for the information.
->>> I will read it.
->>
->> Out of curiosity, what hardware are you using?
->>
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-efi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> commit f6537f2f "scripts/kallsyms: filter symbols not in kernel address space",
+> uses CONFIG_PAGE_OFFSET as kernel_start_addr.
+> However, for !CONFIG_MMU case we have :
+>     PAGE_OFFSET != CONFIG_PAGE_OFFSET.
+
+Yes, it is the cause, and strictly speaking, commit f6537f2f is wrong,
+but triggered with bogus CONFIG_PAGE_OFFSET if !CONFIG_MMU.
+
+We can fix it either by Rusty's patch or removing the bogus
+CONFIG_PAGE_OFFSET for !CONFIG_MMU.
 
 
+Thanks,
 -- 
-Best,
-Madper Xie.
+Ming Lei
