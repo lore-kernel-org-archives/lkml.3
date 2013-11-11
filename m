@@ -1,190 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab3KLGf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 01:35:28 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:27827 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab3KLGfR (ORCPT
+	id S1753288Ab3KLGfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 01:35:32 -0500
+Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.106]:59801
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751264Ab3KLGfR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Nov 2013 01:35:17 -0500
-X-AuditID: cbfee691-b7f866d000001b8c-e6-5281cc187272
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-pm@vger.kernel.org
-Cc: naveenkrishna.ch@gmail.com, rui.zhang@intel.com, eduardo.valentin@ti.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        amit.daniel@samsung.com, kgene.kim@samsung.com,
-        devicetree@vger.kernel.org, b.zolnierkie@samsung.com, cpgs@samsung.com,
-        t.figa@samsung.com
-Subject: [PATCH 2/4 v9] thermal: samsung: change base_common to more meaningful
- base_second
-Date: Tue, 12 Nov 2013 12:06:35 +0530
-Message-id: <1384238195-24592-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1378268629-2886-2-git-send-email-ch.naveen@samsung.com>
-References: <1378268629-2886-2-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42JZI2JSrStxpjHI4EW/iUXD1RCLjTPWs1q8
-	PKRpMf/IOVaLNft/Mln0LrjKZnF51xw2i8+9RxgtZpzfx2SxaNt/ZosnD/vYLNbPeM3iwOOx
-	c9Zddo/Fe14yefRtWcXocfzGdiaPz5vkAlijuGxSUnMyy1KL9O0SuDLm/+1iLzinU3HuVDNL
-	A+NtlS5GTg4JAROJA9+7WSFsMYkL99azgdhCAksZJbr3BcLUrN66iqmLkQsoPp1RYveKrywQ
-	Tg+TxKprU5lAqtgEzCQOLlrNDmKLCMhITL2ynxWkiFlgPpPEoT9rgRIcHMICsRKvnoBtYBFQ
-	lfi+8QALiM0r4Cqx4lsP1BWKEt3PJoDVcALFPz7/wQhxkYvE/pdrmEFmSggcYpd4/OE8M8Qg
-	AYlvkw+xgMyXEJCV2HSAGWKOpMTBFTdYJjAKL2BkWMUomlqQXFCclF5kqlecmFtcmpeul5yf
-	u4kRGBWn/z2buIPx/gHrQ4zJQOMmMkuJJucDoyqvJN7Q2MzIwtTE1NjI3NKMNGElcd70R0lB
-	QgLpiSWp2ampBalF8UWlOanFhxiZODilGhi3v9vCNsnEsFy7T3Jd9a6Fjm1FEktZX+t+z2f8
-	9W2ZmPUvwYAd5t8NKp7anTTZ3ttlrOnF+k5et11Q20E0UEDF3cZ66bZ4nrOOrp51lvs3PPSa
-	dGqreXnStZ3Jj3aqFtxmy7heEcAb27BsdnR89J5flpyveCe+K9O8mHF8uWR1VprW508+q5VY
-	ijMSDbWYi4oTAX+5GlugAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t9jQV2JM41BBtPXqFg0XA2x2DhjPavF
-	y0OaFvOPnGO1WLP/J5NF74KrbBaXd81hs/jce4TRYsb5fUwWi7b9Z7Z48rCPzWL9jNcsDjwe
-	O2fdZfdYvOclk0ffllWMHsdvbGfy+LxJLoA1qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7U
-	zMBQ19DSwlxJIS8xN9VWycUnQNctMwfoPCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFB
-	cD1GBmggYQ1jxvy/XewF53Qqzp1qZmlgvK3SxcjJISFgIrF66yomCFtM4sK99WxdjFwcQgLT
-	GSV2r/jKAuH0MEmsujYVrIpNwEzi4KLV7CC2iICMxNQr+1lBipgF5jNJHPqzFijBwSEsECvx
-	6gkbSA2LgKrE940HWEBsXgFXiRXfelghtilKdD+bAFbDCRT/+PwHI4gtJOAisf/lGuYJjLwL
-	GBlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgRH3TOpHYwrGywOMQpwMCrx8O7gagwSYk0s
-	K67MPcQowcGsJMIbvhgoxJuSWFmVWpQfX1Sak1p8iDEZ6KqJzFKiyfnAhJBXEm9obGJuamxq
-	aWJhYmZJmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYzHFjpvr/x3X36p3dTQBXeq2q8J
-	Lcssk1/f5cx4Vbc8dvtZv1Wfrfauy1vjkXfB5PCsO29WTI7tYdg9p9aGI6hStfXRCqmLbn83
-	CUkUhK08WKN8YwZD48/QqmAli40+UcvO/70hsmHDArY7rDqyL77NWygntFOvU5PplPjUsj1H
-	o50KJZekuhUpsRRnJBpqMRcVJwIAaU3dkv4CAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: CONGRATULATIONS
+To: Recipients <035242@changloan812.onmicrosoft.com>
+From: CHEVROLET MOTORS <035242@changloan812.onmicrosoft.com>
+Date: Mon, 11 Nov 2013 22:25:12 +0530
+Reply-To: <che010@live.com>
+Message-ID: <fd49fe7d-6b55-41cc-b066-a55c17ac9372@AMXPR03MB102.eurprd03.prod.outlook.com>
+X-Forefront-PRVS: 00286C0CA6
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(189002)(199002)(81342001)(76176001)(76796001)(221733001)(76786001)(76576001)(69226001)(65816001)(81816001)(77096001)(31686002)(56816003)(23756003)(81542001)(83072001)(64872004)(87976001)(80022001)(74366001)(33646001)(47776003)(43066001)(83322001)(19580395003)(85306002)(56776001)(54316002)(80976001)(76482001)(74316001)(63696002)(561614003)(47976001)(74706001)(47446002)(53256004)(46102001)(47736001)(50466002)(54356001)(81686001)(4396001)(87266001)(50986001)(74502001)(77982001)(79102001)(74662001)(74876001)(51856001)(59766001)(49866001)(84722001);DIR:OUT;SFP:1501;SCL:5;SRVR:AMXPR03MB102;H:DB3PR03MB107.eurprd03.prod.outlook.com;CLIP:10.242.128.151;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: changloan812.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Exynos5440 and Exynos5420 there are registers common
-across the TMU channels.
+YOUR EMAIL ID HAS WON 1000,000.00/GBP AND 2013 CHEVROLET CAR in the satellite software email lottery.On line Sweepstakes International program Conducted by CHEVROLET LOTTERY BOARD UK in which your e-mail address was picking up randomly by software powered by the Internet.
+Forward the following details to enable us clear your file for immediate payment and delivery of your winnings:
 
-To support that, we introduced a ADDRESS_MULTIPLE flag in the
-driver and the 2nd set of register base and size are provided
-in the "reg" property of the node.
+1.Full Names:
+2.Home Address:
+3.Age:
+4.Sex:
+5.Occupation:
+6.Phone Numbers:
+7.Country:
+8.State:
 
-As per Amit's suggestion, this patch changes the base_common
-to base_second and SHARED_MEMORY to ADDRESS_MULTIPLE.
-
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
----
-Changes since v8:
- None
- .../devicetree/bindings/thermal/exynos-thermal.txt       |    4 ++--
- drivers/thermal/samsung/exynos_tmu.c                     |   14 +++++++-------
- drivers/thermal/samsung/exynos_tmu.h                     |    4 ++--
- drivers/thermal/samsung/exynos_tmu_data.c                |    2 +-
- 4 files changed, 12 insertions(+), 12 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-index 284f530..116cca0 100644
---- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-+++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-@@ -11,8 +11,8 @@
- - reg : Address range of the thermal registers. For soc's which has multiple
- 	instances of TMU and some registers are shared across all TMU's like
- 	interrupt related then 2 set of register has to supplied. First set
--	belongs	to each instance of TMU and second set belongs to common TMU
--	registers.
-+	belongs	to each instance of TMU and second set belongs to second set
-+	of common TMU registers.
- - interrupts : Should contain interrupt for thermal system
- - clocks : The main clock for TMU device
- - clock-names : Thermal system clock name
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index c493245..bbd0fc3 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -41,7 +41,7 @@
-  * @id: identifier of the one instance of the TMU controller.
-  * @pdata: pointer to the tmu platform/configuration data
-  * @base: base address of the single instance of the TMU controller.
-- * @base_common: base address of the common registers of the TMU controller.
-+ * @base_second: base address of the common registers of the TMU controller.
-  * @irq: irq number of the TMU controller.
-  * @soc: id of the SOC type.
-  * @irq_work: pointer to the irq work structure.
-@@ -56,7 +56,7 @@ struct exynos_tmu_data {
- 	int id;
- 	struct exynos_tmu_platform_data *pdata;
- 	void __iomem *base;
--	void __iomem *base_common;
-+	void __iomem *base_second;
- 	int irq;
- 	enum soc_type soc;
- 	struct work_struct irq_work;
-@@ -297,7 +297,7 @@ skip_calib_data:
- 	}
- 	/*Clear the PMIN in the common TMU register*/
- 	if (reg->tmu_pmin && !data->id)
--		writel(0, data->base_common + reg->tmu_pmin);
-+		writel(0, data->base_second + reg->tmu_pmin);
- out:
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
-@@ -454,7 +454,7 @@ static void exynos_tmu_work(struct work_struct *work)
- 
- 	/* Find which sensor generated this interrupt */
- 	if (reg->tmu_irqstatus) {
--		val_type = readl(data->base_common + reg->tmu_irqstatus);
-+		val_type = readl(data->base_second + reg->tmu_irqstatus);
- 		if (!((val_type >> data->id) & 0x1))
- 			goto out;
- 	}
-@@ -579,7 +579,7 @@ static int exynos_map_dt_data(struct platform_device *pdev)
- 	 * Check if the TMU shares some registers and then try to map the
- 	 * memory of common registers.
- 	 */
--	if (!TMU_SUPPORTS(pdata, SHARED_MEMORY))
-+	if (!TMU_SUPPORTS(pdata, ADDRESS_MULTIPLE))
- 		return 0;
- 
- 	if (of_address_to_resource(pdev->dev.of_node, 1, &res)) {
-@@ -587,9 +587,9 @@ static int exynos_map_dt_data(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	data->base_common = devm_ioremap(&pdev->dev, res.start,
-+	data->base_second = devm_ioremap(&pdev->dev, res.start,
- 					resource_size(&res));
--	if (!data->base_common) {
-+	if (!data->base_second) {
- 		dev_err(&pdev->dev, "Failed to ioremap memory\n");
- 		return -ENOMEM;
- 	}
-diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-index 980859a..0d6b32f 100644
---- a/drivers/thermal/samsung/exynos_tmu.h
-+++ b/drivers/thermal/samsung/exynos_tmu.h
-@@ -60,7 +60,7 @@ enum soc_type {
-  *			state(active/idle) can be checked.
-  * TMU_SUPPORT_EMUL_TIME - This features allows to set next temp emulation
-  *			sample time.
-- * TMU_SUPPORT_SHARED_MEMORY - This feature tells that the different TMU
-+ * TMU_SUPPORT_ADDRESS_MULTIPLE - This feature tells that the different TMU
-  *			sensors shares some common registers.
-  * TMU_SUPPORT - macro to compare the above features with the supplied.
-  */
-@@ -70,7 +70,7 @@ enum soc_type {
- #define TMU_SUPPORT_FALLING_TRIP		BIT(3)
- #define TMU_SUPPORT_READY_STATUS		BIT(4)
- #define TMU_SUPPORT_EMUL_TIME			BIT(5)
--#define TMU_SUPPORT_SHARED_MEMORY		BIT(6)
-+#define TMU_SUPPORT_ADDRESS_MULTIPLE		BIT(6)
- 
- #define TMU_SUPPORTS(a, b)	(a->features & TMU_SUPPORT_ ## b)
- 
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index 7cdb04e..1d27069 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.c
-+++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -255,7 +255,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
- 	.type = SOC_ARCH_EXYNOS5440, \
- 	.registers = &exynos5440_tmu_registers, \
- 	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
--			TMU_SUPPORT_MULTI_INST | TMU_SUPPORT_SHARED_MEMORY),
-+			TMU_SUPPORT_MULTI_INST | TMU_SUPPORT_ADDRESS_MULTIPLE),
- 
- struct exynos_tmu_init_data const exynos5440_default_tmu_data = {
- 	.tmu_data = {
--- 
-1.7.10.4
-
+MR. A. ADAMS
+(CLAIMS DIRECTOR)
+MOBILE NUMBER: +448719156689
+CHEVROLET LOTTERY DEPARTMENT
