@@ -1,150 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab3KKKbT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 05:31:19 -0500
-Received: from bgl-iport-1.cisco.com ([72.163.197.25]:55627 "EHLO
-	bgl-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804Ab3KKKbI (ORCPT
+	id S1752968Ab3KKKmA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 05:42:00 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:63324 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab3KKKl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 05:31:08 -0500
-X-IronPort-AV: E=Sophos;i="4.93,676,1378857600"; 
-   d="scan'208";a="36516591"
-Date: Mon, 11 Nov 2013 16:01:22 +0530 (IST)
-From: Govindarajulu Varadarajan <gvaradar@cisco.com>
-X-X-Sender: hydrogen@as-rtp-nw.cisco.com
-To: David Miller <davem@davemloft.net>
-cc: govindarajulu90@gmail.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        schwidefsky@de.ibm.com, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        IvDoorn@gmail.com, sbhatewara@vmware.com, samuel@sortiz.org,
-        chas@cmf.nrl.navy.mil, roland@kernel.org, isdn@linux-pingi.de,
-        jcliburn@gmail.com, benve@cisco.com, ssujith@cisco.com,
-        jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
-        shahed.shaikh@qlogic.com, joe@perches.com, apw@canonical.com
-Subject: Re: [PATCH net-next 02/13] driver: net: remove unnecessary skb NULL
- check before calling dev_kfree_skb_irq
-In-Reply-To: <20131104.151230.1978898006990867916.davem@davemloft.net>
-Message-ID: <alpine.LNX.2.03.1311111537020.2363@cisco.com>
-References: <1383400074-30555-1-git-send-email-govindarajulu90@gmail.com> <1383400074-30555-3-git-send-email-govindarajulu90@gmail.com> <20131104.151230.1978898006990867916.davem@davemloft.net>
-User-Agent: Alpine 2.03 (LNX 1266 2009-07-14)
+	Mon, 11 Nov 2013 05:41:57 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Authenticated-User: gvaradar@cisco.com
+In-Reply-To: <CACVXFVMzOzD+D-MQCUBvC80d4zS-TJfcucKuUvzerGs6gT1fEg@mail.gmail.com>
+References: <1383789208.5970.1.camel@phoenix>
+	<CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
+	<CAFRkauAEt-YhBt11opj_GVCLrxGsTSd2LowWGmukTSmGuJkd3A@mail.gmail.com>
+	<CACVXFVO=QA-R1+twCL9fc_3vASg6Ap-3ezi=tU1MV1pdPYrfWw@mail.gmail.com>
+	<CAFRkauAdR3=ByE0_B3OsqOBjmbz2a02EXb+6g-vn=1TJ7AZc8Q@mail.gmail.com>
+	<CACVXFVMaLOfDvzdn_1NryQY59cgtLdMMqHL-_ZAa95MPz4p56Q@mail.gmail.com>
+	<CAFRkauDe7V3N0AbfvE_=GEXHZ_Fw62VsA8p50wSUYE1-TRqMfw@mail.gmail.com>
+	<87zjpf4w0j.fsf@rustcorp.com.au>
+	<CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com>
+	<CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com>
+	<CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com>
+	<87y54vzszo.fsf@rustcorp.com.au>
+	<CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com>
+	<CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com>
+	<CAFRkauCW3FDSuh4t0gvmSWH1m0+qaG0XSoBxmk30Wq1FMy7iFw@mail.gmail.com>
+	<CACVXFVMzOzD+D-MQCUBvC80d4zS-TJfcucKuUvzerGs6gT1fEg@mail.gmail.com>
+Date: Mon, 11 Nov 2013 18:41:56 +0800
+Message-ID: <CACVXFVOnVXcVdRCm=OfPjpvvWCiXi8GRV+9ViOGmSZ3tTf6WDg@mail.gmail.com>
+Subject: Re: kernel BUG at kernel/kallsyms.c:222!
+From: Ming Lei <tom.leiming@gmail.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-
-On Mon, 4 Nov 2013, David Miller wrote:
-
-> From: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-> Date: Sat,  2 Nov 2013 19:17:43 +0530
+On Mon, Nov 11, 2013 at 5:57 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+> Hi,
 >
->> @@ -1030,10 +1030,8 @@ static void ni65_xmit_intr(struct net_device *dev,int csr0)
->>  		}
+> On Mon, Nov 11, 2013 at 4:37 PM, Axel Lin <axel.lin@ingics.com> wrote:
+>> 2013/11/11 Ming Lei <tom.leiming@gmail.com>:
 >>
->>  #ifdef XMT_VIA_SKB
->> -		if(p->tmd_skb[p->tmdlast]) {
->> -			 dev_kfree_skb_irq(p->tmd_skb[p->tmdlast]);
->> -			 p->tmd_skb[p->tmdlast] = NULL;
->> -		}
->> +		 dev_kfree_skb_irq(p->tmd_skb[p->tmdlast]);
->> +		 p->tmd_skb[p->tmdlast] = NULL;
->>  #endif
->
-> I absolutely disagree with this kind of change.
->
-> There is a non-trivial cost for NULL'ing out that array entry
-> unconditionally.  It's a dirtied cache line and this is in the
-> fast path of TX SKB reclaim of this driver.
->
-> You've made several changes of this kind.
->
-> And it sort-of shows that the places that do check for NULL,
-> are getting something in return for that test, namely avoidance
-> of an unnecessary cpu store in the fast path of the driver.
->
-
-True, in case of dev_kfree_skb_irq. If you look at patch 06-12, at many
-places we do
-
-if (s->skb) {
- 	dev_kfree_skb_any(s->skb);
- 	s->skb = NULL)
-}
-
-This is in fast path. If the code is not running in hardirq,
-dev_kfree_skb_any calls dev_kfree_skb. Which again check if skb is NULL.
-So we are checking if skb is null twice. That is what this patch is
-trying to fix. (sorry I should have mentioned this in cover letter).
-
-I am not sure if you have read my previous mail. I am pasting it below.
-
->> On Sun, 3 Nov 2013, Brandeburg, Jesse wrote: 
->> Thanks for this work, I'm a little concerned that there is a
->> non-trivial 
->> overhead to this patch.
->> 
->> when doing (for example in the Intel drivers): 
->> if (s->skb) {
->>      dev_kfree_skb(s->skb);
->>      s->skb = NULL; 
->> }
+>> Hi Ming,
 >>
-> 
->In current code, dev_kfree_skb is NULL safe. Which means skb is
->checked for NULL inside dev_kfree_skb. dev_kfree_skb_any is also NULL safe
->when the code is running in non-hardirq.
+>> commit f6537f2f "scripts/kallsyms: filter symbols not in kernel address space",
+>> uses CONFIG_PAGE_OFFSET as kernel_start_addr.
+>> However, for !CONFIG_MMU case we have :
+>>     PAGE_OFFSET != CONFIG_PAGE_OFFSET.
 >
->Lets consider two cases
-> 
->1. skb is not NULL:
->      * Without my patch:
->           In the code above, we check for skb!=NULL twice. (once
->           before calling dev_kfree_skb, once by dev_kfree_skb). And
->           then we do assignment.
->       * With this patch:
->           we check for skb!=NULL once, And then we do assignment.
+> Yes, it is the cause, and strictly speaking, commit f6537f2f is wrong,
+> but triggered with bogus CONFIG_PAGE_OFFSET if !CONFIG_MMU.
 >
->       To fix the twice NULL check, we either have to remove the check
->       which is inside dev_kfree_skb (1). Or do whats done in this
->       patch.
->
->       (1) is not an option because a lot of kernel code already
->       assumes that dev_kfree_skb is NULL safe.
->
->2. skb is NULL:
->       * Without this patch:
->           One if statement is executed.
->       * With this patch:
->           One if statement and one assignment is executed.
-> 
-> From my observation most of the dev_kfree_skb calls are from
-> e1000_unmap_and_free_tx_resource, e1000_put_txbuf,
-> atl1_clean_tx_ring, alx_free_txbuf etc. in clean up functions.
->
-> Is is quite unlikely thats skb is NULL. So it comes down to one extra
-> if-branching statement or one extra assignment. I would prefer extra
-> assignment to branching statement. In my opinion extra assignment is
-> very little price we pay.
->
-> //govind
+> We can fix it either by Rusty's patch or removing the bogus
+> CONFIG_PAGE_OFFSET for !CONFIG_MMU.
 
-Another way to solve the double NULL check is to define a new function
-something like this
+Rusty, maybe we need revert commit f6537f2f "scripts/kallsyms: filter
+symbols not in kernel address space", since CONFIG_PAGE_OFFSET
+may be bogus on !MMU or not defined on ARCHs(most of 64bit arch,
+no regression report because scripts/kallsyms may get zero
+kernel_start_addr)
 
-dev_kfree_skb_NULL(struct sk_buff **skb)
-{
- 	if(*skb) {
- 		free_skb(*skb);
- 		*skb=NULL;
- 	}
-}
+As I thought of, another way for fixing original problem is to define a RO
+global variable in kernel and set its value as PAGE_OFFSET, then let
+scripts/kallsyms use it as kernel start address, or do you other
+suggestions?
 
-and use this if you want to free a skb and make it NULL.
-Is this approach better?
 
-//govind
-
+Thanks,
+-- 
+Ming Lei
