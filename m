@@ -1,214 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab3KKLdW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:33:22 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:55438 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616Ab3KKLdO (ORCPT
+	id S1753395Ab3KKLeR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:34:17 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:53895 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab3KKLeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:33:14 -0500
-Date: Mon, 11 Nov 2013 11:33:08 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] mfd: Patches due for v3.13 merge window
-Message-ID: <20131111113308.GG22184@lee--X1>
+	Mon, 11 Nov 2013 06:34:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
+References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Mon, 11 Nov 2013 11:33:45 +0000
+X-Google-Sender-Auth: JNNeac86jmK7jWDq2j1_FhyY8DQ
+Message-ID: <CAHkRjk69GNYtLGBSWCNcsCzkBHywKrD0qQQbNkJRpMbcdsCPyw@mail.gmail.com>
+Subject: Re: [RFC][PATCH v5 00/14] sched: packing tasks
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Tony Luck <tony.luck@intel.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "len.brown@intel.com" <len.brown@intel.com>, l.majewski@samsung.com,
+        Jonathan Corbet <corbet@lwn.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
+Hi Vincent,
 
-The following changes since commit 61e6cfa80de5760bbe406f4e815b7739205754d2:
+(cross-posting to linux-pm as it was agreed to follow up on this list)
 
-  Linux 3.12-rc5 (2013-10-13 15:41:28 -0700)
+On 18 October 2013 12:52, Vincent Guittot <vincent.guittot@linaro.org> wrote:
+> This is the 5th version of the previously named "packing small tasks" patchset.
+> "small" has been removed because the patchset doesn't only target small tasks
+> anymore.
+>
+> This patchset takes advantage of the new per-task load tracking that is
+> available in the scheduler to pack the tasks in a minimum number of
+> CPU/Cluster/Core. The packing mechanism takes into account the power gating
+> topology of the CPUs to minimize the number of power domains that need to be
+> powered on simultaneously.
 
-are available in the git repository at:
+As a general comment, it's not clear how this set of patches address
+the bigger problem of energy aware scheduling, mainly because we
+haven't yet defined _what_ we want from the scheduler, what the
+scenarios are, constraints, are we prepared to give up some
+performance (speed, latency) for power, how much.
 
-  git://git.linaro.org/people/ljones/mfd.git tags/mfd-lee-3.13-3
+This packing heuristics may work for certain SoCs and workloads but,
+for example, there are modern ARM SoCs where the P-state has a much
+bigger effect on power and it's more energy-efficient to keep two CPUs
+in lower P-state than packing all tasks onto one, even though they may
+be gated independently. In such cases _small_ task packing (for some
+definition of 'small') would be more useful than general packing but
+even this is just heuristics that saves power for particular workloads
+without fully defining/addressing the problem.
 
-for you to fetch changes up to 9a46847aeac1148d8b15f0db629c8bbd754dfe24:
+I would rather start by defining the main goal and working backwards
+to an algorithm. We may as well find that task packing based on this
+patch set is sufficient but we may also get packing-like behaviour as
+a side effect of a broader approach (better energy cost awareness). An
+important aspect even in the mobile space is keeping the performance
+as close as possible to the standard scheduler while saving a bit more
+power. Just trying to reduce the number of non-idle CPUs may not meet
+this requirement.
 
-  Documentation: mfd: Update s2mps11.txt (2013-11-11 11:22:22 +0000)
 
-----------------------------------------------------------------
-mfd-lee-3.13-3
+So, IMO, defining the power topology is a good starting point and I
+think it's better to separate the patches from the energy saving
+algorithms like packing. We need to agree on what information we have
+(C-state details, coupling, power gating) and what we can/need to
+expose to the scheduler. This can be revisited once we start
+implementing/refining the energy awareness.
 
-MFD patches due for v3.13.
-----------------------------------------------------------------
-Andrzej Hajda (2):
-      mfd: max77693: Remove device wakeup from driver
-      mfd: max77693: Added device tree support
+2nd step is how the _current_ scheduler could use such information
+while keeping the current overall system behaviour (how much of
+cpuidle we should move into the scheduler).
 
-Charles Keepax (6):
-      mfd: arizona: Update registers for WM5110 DSP
-      mfd: wm5110: Update noise gate default to match the patch file
-      mfd: arizona: Correct register definition for FLL2_SYNC_BW
-      mfd: arizona: Correct handling of device tree gpio defaults
-      mfd: arizona: Mark missing AOD registers as volatile
-      mfd: wm5110: Enable micd clamp functionality
+Question for Peter/Ingo: do you want the scheduler to decide on which
+C-state a CPU should be in or we still leave this to a cpuidle
+layer/driver?
 
-Dan Carpenter (1):
-      mfd: pm8921: Potential NULL dereference in pm8921_remove()
+My understanding from the recent discussions is that the scheduler
+should decide directly on the C-state (or rather the deepest C-state
+possible since we don't want to duplicate the backend logic for
+synchronising CPUs going up or down). This means that the scheduler
+needs to know about C-state target residency, wake-up latency (I think
+we can leave coupled C-states to the backend, there is some complex
+synchronisation which I wouldn't duplicate).
 
-David Jander (1):
-      mfd: da9052: Avoid multiwrite mode due to silicon errata
+Alternatively (my preferred approach), we get the scheduler to predict
+and pass the expected residency and latency requirements down to a
+power driver and read back the actual C-states for making task
+placement decisions. Some of the menu governor prediction logic could
+be turned into a library and used by the scheduler. Basically what
+this tries to achieve is better scheduler awareness of the current
+C-states decided by a cpuidle/power driver based on the scheduler
+constraints.
 
-Geert Uytterhoeven (2):
-      mfd: Stop setting refcounting pointers in original mfd_cell arrays
-      mfd: Fix memory leak in mfd_add_devices()
+3rd step is optimising the scheduler for energy saving, taking into
+account the information added by the previous steps and possibly
+adding some more. This stage however has several sub-steps (that can
+be worked on in parallel to the steps above):
 
-Guenter Roeck (1):
-      mfd: sm501: dbg_regs attribute must be read-only
+a) Define use-cases, typical workloads, acceptance criteria
+(performance, latency requirements).
 
-Jingoo Han (3):
-      mfd: lpc_ich: Remove unnecessary pci_set_drvdata()
-      mfd: sm501: Remove unnecessary pci_set_drvdata()
-      mfd: timberdale: Remove unnecessary pci_set_drvdata()
+b) Set of benchmarks simulating the scenarios above. I wouldn't bother
+with linsched since a power model is never realistic enough. It's
+better to run those benchmarks on real hardware and either estimate
+the energy based on the C/P states or, depending on SoC, read some
+sensors, energy probes. If the scheduler maintainers want to reproduce
+the numbers, I'm pretty sure we can ship some boards.
 
-Johannes Thumshirn (1):
-      mfd: lpc_sch: Ignore resource conflicts when adding mfd cells
+c) Start defining/implementing scheduler algorithm to do optimal task placement.
 
-Laxman Dewangan (5):
-      mfd: palmas: Remove call of mfd_remove_devices
-      mfd: palmas: Add MODULE_DEVICE_TABLE for of_device table
-      mfd: palmas: Reset pm_power_off if it is set for the device
-      mfd: palmas: Fix resource leak of i2c_dummy devices
-      mfd: Add support for ams AS3722 PMIC
+d) Assess the implementation against benchmarks at (b) *and* other
+typical performance benchmarks (whether it's for servers, mobile,
+Android etc). At this point we'll most likely go back and refine the
+previous steps.
 
-Lee Jones (1):
-      mfd: arizona: Only attempt to parse DT if platform data was not passed
+So far we've jumped directly to (c) because we had some scenarios in
+mind that needed optimising but those haven't been written down and we
+don't have a clear way to assess the impact. There is more here than
+simply maximising the idle time. Ideally the scheduler should have an
+estimate of the overall energy cost, the cost per task, run-queue, the
+energy implications of moving the tasks to another run-queue, possibly
+taking the P-state into account (but not 'picking' a P-state).
 
-Linus Walleij (2):
-      mfd: Add STw481x driver
-      mfd: tc3589x: Detect the precise version
+Anyway, I think we need to address the first steps and think about the
+algorithm once we have the bigger picture of what we try to solve.
 
-Mark Brown (4):
-      mfd: wm8994: Inline register I/O functions
-      mfd: wm8994: Remove unused irq_lock
-      mfd: mc13xxx: Don't require lock for simple register I/O
-      mfd: mc13xxx: Move SPI erratum workaround into SPI I/O function
-
-Matthias Kaehlcke (2):
-      mfd: ti_am335x_tscadc: Fix idle timeout value
-      mfd: ti_am335x_tscadc: Restore clock divider on resume
-
-Peter Chen (1):
-      mfd: syscon: Return -ENOSYS if CONFIG_MFD_SYSCON is not enabled
-
-Roger Quadros (1):
-      mfd: omap-usb: prepare/unprepare clock while enable/disable
-
-Sachin Kamat (19):
-      mfd: aat2870: Fix sparse error
-      mfd: mc12xx-i2c: rtsx_pcr: ti-ssp: Remove redundant dev_set_drvdata
-      mfd: max8925: Remove redundant of_match_ptr
-      mfd: tps65217: Remove redundant of_match_ptr
-      mfd: 88pm860x: Remove redundant of_match_ptr
-      mfd: ti_am335x_tscadc: Remove redundant of_match_ptr
-      mfd: omap-usb: Remove redundant of_match_ptr
-      mfd: palmas: Remove redundant of_match_ptr
-      mfd: as3711: Include linux/of.h header
-      mfd: arizona: Include linux/of.h header
-      mfd: tps65910: Include linux/of.h header
-      mfd: tps6586x: Include linux/of.h header
-      mfd: tps6507x: Include linux/of.h header
-      mfd: sec-core: Include linux/of.h header
-      mfd: max8997: Include linux/of.h header
-      mfd: max8907: Include linux/of.h header
-      mfd: max77686: Include linux/of.h header
-      mfd: max77693: Include linux/of.h header
-      Documentation: mfd: Update s2mps11.txt
-
-Sebastian Andrzej Siewior (1):
-      mfd: ti_am335x_tscadc: Avoid possible deadlock of reg_lock
-
-Stephen Warren (1):
-      mfd: tps6586x: Implement irq_set_wake
-
-Wei WANG (1):
-      mfd: rtsx: Modify rts5249_optimize_phy
-
-Wei Yongjun (3):
-      mfd: ucb1x00-core: Fix error return code in ucb1x00_probe()
-      mfd: ezx-pcap: Drop devm_free_irq of devm_ allocated irq
-      mfd: twl6040: Drop devm_free_irq of devm_ allocated irq
-
- Documentation/devicetree/bindings/mfd/as3722.txt  | 194 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- Documentation/devicetree/bindings/mfd/s2mps11.txt |  13 ++--
- drivers/mfd/88pm860x-core.c                       |   2 +-
- drivers/mfd/Kconfig                               |  22 ++++++
- drivers/mfd/Makefile                              |   2 +
- drivers/mfd/aat2870-core.c                        |   2 +-
- drivers/mfd/arizona-core.c                        |   6 +-
- drivers/mfd/arizona-i2c.c                         |   1 +
- drivers/mfd/arizona-spi.c                         |   1 +
- drivers/mfd/as3711.c                              |   1 +
- drivers/mfd/as3722.c                              | 449 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/mfd/da9052-i2c.c                          |  12 ++--
- drivers/mfd/ezx-pcap.c                            |   8 +--
- drivers/mfd/lpc_ich.c                             |   2 -
- drivers/mfd/lpc_sch.c                             |   3 +
- drivers/mfd/max77686.c                            |   1 +
- drivers/mfd/max77693.c                            |  19 +++---
- drivers/mfd/max8907.c                             |   1 +
- drivers/mfd/max8925-i2c.c                         |   2 +-
- drivers/mfd/max8997.c                             |   1 +
- drivers/mfd/mc13xxx-core.c                        |   5 --
- drivers/mfd/mc13xxx-i2c.c                         |   1 -
- drivers/mfd/mc13xxx-spi.c                         |   5 ++
- drivers/mfd/mfd-core.c                            |  29 ++++----
- drivers/mfd/omap-usb-host.c                       |  18 ++---
- drivers/mfd/omap-usb-tll.c                        |   6 +-
- drivers/mfd/palmas.c                              |  30 ++++++---
- drivers/mfd/pm8921-core.c                         |   9 +--
- drivers/mfd/rts5249.c                             |  48 ++++++++++++-
- drivers/mfd/rtsx_pcr.c                            |   5 +-
- drivers/mfd/sec-core.c                            |   1 +
- drivers/mfd/sm501.c                               |   4 +-
- drivers/mfd/stw481x.c                             | 250 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/mfd/tc3589x.c                             |  37 +++++++++-
- drivers/mfd/ti-ssp.c                              |   1 -
- drivers/mfd/ti_am335x_tscadc.c                    |  24 ++++---
- drivers/mfd/timberdale.c                          |   6 +-
- drivers/mfd/tps6507x.c                            |   1 +
- drivers/mfd/tps65217.c                            |   2 +-
- drivers/mfd/tps6586x.c                            |  19 +++++-
- drivers/mfd/tps65910.c                            |   1 +
- drivers/mfd/twl6040.c                             |  10 +--
- drivers/mfd/ucb1x00-core.c                        |   1 +
- drivers/mfd/wm5102-tables.c                       |   1 -
- drivers/mfd/wm5110-tables.c                       |  47 +++++++++++--
- drivers/mfd/wm8994-core.c                         |  78 ---------------------
- include/dt-bindings/mfd/as3722.h                  |  52 ++++++++++++++
- include/linux/mfd/arizona/registers.h             |   2 +-
- include/linux/mfd/as3722.h                        | 423 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/core.h                          |   2 +-
- include/linux/mfd/da9052/da9052.h                 |  20 ++++--
- include/linux/mfd/max77693-private.h              |   1 -
- include/linux/mfd/max77693.h                      |   2 -
- include/linux/mfd/mc13xxx.h                       |   7 ++
- include/linux/mfd/rtsx_pci.h                      |  53 +++++++++++++++
- include/linux/mfd/stw481x.h                       |  56 +++++++++++++++
- include/linux/mfd/syscon.h                        |  25 +++++++
- include/linux/mfd/ti_am335x_tscadc.h              |  20 ++++--
- include/linux/mfd/wm8994/core.h                   |  47 ++++++++++---
- sound/soc/codecs/mc13783.c                        |   4 --
- 60 files changed, 1864 insertions(+), 231 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/as3722.txt
- create mode 100644 drivers/mfd/as3722.c
- create mode 100644 drivers/mfd/stw481x.c
- create mode 100644 include/dt-bindings/mfd/as3722.h
- create mode 100644 include/linux/mfd/as3722.h
- create mode 100644 include/linux/mfd/stw481x.h
+Thanks.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Catalin
