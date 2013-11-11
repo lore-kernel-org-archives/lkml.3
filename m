@@ -1,119 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab3KKVoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 16:44:06 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63163 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751595Ab3KKVn4 convert rfc822-to-8bit (ORCPT
+	id S1752115Ab3KKVwP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 16:52:15 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:63580 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751531Ab3KKVwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 16:43:56 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] ACPI / driver core: Store a device pointer in struct acpi_dev_node
-Date: Mon, 11 Nov 2013 22:56:22 +0100
-Message-ID: <2685417.pyXg99Yvkt@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131111150318.GB16112@kroah.com>
-References: <3268437.YsusHvklcv@vostro.rjw.lan> <1683079.zjqzsOAjXB@vostro.rjw.lan> <20131111150318.GB16112@kroah.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Mon, 11 Nov 2013 16:52:06 -0500
+Date: Mon, 11 Nov 2013 16:52:04 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Bharath Ravi <rbharath@google.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        David Sharp <dhsharp@google.com>, Laurent Chavey <chavey@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tracing: Allow changing default ring buffer size for
+ ftrace instances.
+Message-ID: <20131111165204.513a72cd@gandalf.local.home>
+In-Reply-To: <1383784982-27482-1-git-send-email-rbharath@google.com>
+References: <1383784982-27482-1-git-send-email-rbharath@google.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 11, 2013 07:03:18 AM Greg Kroah-Hartman wrote:
-> On Mon, Nov 11, 2013 at 02:45:39PM +0100, Rafael J. Wysocki wrote:
-> > On Monday, November 11, 2013 09:21:40 AM Lan Tianyu wrote:
-> > > On 2013年11月10日 08:58, Rafael J. Wysocki wrote:
-> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > 
-> > > > Modify struct acpi_dev_node to contain a pointer to struct device
-> > > > ambedded in the struct acpi_device associated with the given device
-> > > > object (that is, its ACPI companion device) instead of an ACPI handle
-> > > > corresponding to that struct acpi_device.  Introduce two new macros
-> > > > for manipulating that pointer in a CONFIG_ACPI-safe way,
-> > > > ACPI_COMPANION() and ACPI_COMPANION_SET(), and rework the
-> > > > ACPI_HANDLE() macro to take the above changes into account.
-> > > > Drop the ACPI_HANDLE_SET() macro entirely and rework its users to
-> > > > use ACPI_COMPANION_SET() instead.  For some of them who used to
-> > > > pass the result of acpi_get_child() directly to ACPI_HANDLE_SET()
-> > > > introduce a helper routine acpi_preset_companion() doing an
-> > > > equivalent thing.
-> > > > 
-> > > > The rationale for using a struct device pointer instead of a
-> > > > struct acpi_device one as the member of struct acpi_dev_node is
-> > > > that it allows device.h to avoid including linux/acpi.h which would
-> > > > introduce quite a bit of compilation overhead for stuff that doesn't
-> > > > care about ACPI.
-> > > > In turn, moving the macros to linux/acpi.h forces
-> > > > the stuff that does care about ACPI to include that file as
-> > > > appropriate anyway.
-> > > 
-> > > How about declaring "struct acpi_device" in the device.h? This can help
-> > > to use struct acpi_device without including linux/acpi.h.
-> > > 
-> > > struct iommu_ops and struct iommu_group have been used by the same way
-> > > in the device.h.
-> > 
-> > Yes, they are.  Well, that appears to work too.
-> > 
-> > Updated patch is appended.  It also contains some fixes for problems reported
-> > by the auto build system and it's been tested on x86-64 now, so it should be
-> > reasonably close to final.
-> > 
-> > Thanks,
-> > Rafael
-> > 
-> > 
-> > ---
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Subject: ACPI / driver core: Store an ACPI device pointer in struct acpi_dev_node
-> > 
-> > Modify struct acpi_dev_node to contain a pointer to struct acpi_device
-> > associated with the given device object (that is, its ACPI companion
-> > device) instead of an ACPI handle corresponding to it.  Introduce two
-> > new macros for manipulating that pointer in a CONFIG_ACPI-safe way,
-> > ACPI_COMPANION() and ACPI_COMPANION_SET(), and rework the
-> > ACPI_HANDLE() macro to take the above changes into account.
-> > Drop the ACPI_HANDLE_SET() macro entirely and rework its users to
-> > use ACPI_COMPANION_SET() instead.  For some of them who used to
-> > pass the result of acpi_get_child() directly to ACPI_HANDLE_SET()
-> > introduce a helper routine acpi_preset_companion() doing an
-> > equivalent thing.
-> > 
-> > The main motivation for doing this is that there are things
-> > represented by struct acpi_device objects that don't have valid
-> > ACPI handles (so called fixed ACPI hardware features, such as
-> > power and sleep buttons) and we would like to create platform
-> > device objects for them and "glue" them to their ACPI companions
-> > in the usual way (which currently is impossible due to the
-> > lack of valid ACPI handles).  However, there are more reasons
-> > why it may be useful.
-> > 
-> > First, struct acpi_device pointers allow of much better type checking
-> > than void pointers which are ACPI handles, so it should be more
-> > difficult to write buggy code using modified struct acpi_dev_node
-> > and the new macros.  Second, the change should help to reduce (over
-> > time) the number of places in which the result of ACPI_HANDLE() is
-> > passed to acpi_bus_get_device() in order to obtain a pointer to the
-> > struct acpi_device associated with the given "physical" device,
-> > because now that pointer is returned by ACPI_COMPANION() directly.
-> > Finally, the change should make it easier to write generic code that
-> > will build both for CONFIG_ACPI set and unset without adding explicit
-> > compiler directives to it.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Wed,  6 Nov 2013 16:43:02 -0800
+Bharath Ravi <rbharath@google.com> wrote:
 
-Thanks!
+> It is often memory efficient to start instances off with a smaller ring
+> buffer size than the current default. This is particularly true on
+> systems with many cores, or when multiple ftrace instances are created,
+> where the current (higher) default value results in allocation failures.
+> 
+> To allow instances to start off with custom ring buffer sizes, a new
+> debugfs file named "instance_default_buffer_size_kb" is added in the
+
+I don't mind the patch, but I hate the interface.
+"instance_default_buffer_size_kb", can we get a bigger name?
+
+"instance_buffer_size_kb" may be sufficient, even though I don't even
+care for that.
+
+I wonder if we add it to the tracing/options directory, if that would
+be better. Grant you, this would be the first option that's not an on
+off switch, but I'm not sure that's a bad thing.
+
+Have any better ideas?
+
+-- Steve
+
+> root ftrace directory. A size in kilobytes may be written to this. Any
+> ftrace instances created will be initialized with ring buffers of the
+> size specified in this file.
+> 
+> This change also modifies allocate_trace_buffer() to use the "size"
+> parameter while setting set_buffer_entries(), instead of the actual ring
+> ring buffer size (which is "size" rounded up to the nearest page size).
+> This makes it consistent with the way writing to the buffer_size_kb
+> files works (using ring_buffer_resize()), and ensures that the
+> buffer_size_kb value of a newly created instance matches that written
+> to the instance_default_buffer_size file, instead of the rounded up
+> value.
+> 
+> Tested: Booted into a kernel with these changes, verified reading and
+> writing to the new file. Ensured that new ftrace instances created
+> used the size specified in instance_default_buffer_size_kb as their
+> initial ring buffer size.
+> 
+> Signed-off-by: Bharath Ravi <rbharath@google.com>
+> ---
+>  kernel/trace/trace.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 54 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 7974ba2..d10afea 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -296,6 +296,14 @@ int tracing_is_enabled(void)
+>  
+>  static unsigned long		trace_buf_size = TRACE_BUF_SIZE_DEFAULT;
+>  
+> +/*
+> + * instance_default_buf_size is the size in bytes that is allocated for an
+> + * instance's buffer when it is first created. This is initially set to
+> + * TRACE_BUF_SIZE_DEFAULT but may be modified by writing to the
+> + * "instance_default_buffer_size_kb" file.
+> + */
+> +static unsigned long instance_default_buf_size = TRACE_BUF_SIZE_DEFAULT;
+> +
+>  /* trace_types holds a link list of available tracers. */
+>  static struct tracer		*trace_types __read_mostly;
+>  
+> @@ -3165,6 +3173,48 @@ static const struct file_operations show_traces_fops = {
+>  	.llseek		= seq_lseek,
+>  };
+>  
+> +static ssize_t
+> +instance_default_buffer_size_read(struct file *filp, char __user *ubuf,
+> +				  size_t cnt, loff_t *ppos)
+> +{
+> +	int r = 0;
+> +	char buf[64];
+> +	ssize_t ret;
+> +
+> +	r = sprintf(buf, "%lu\n", instance_default_buf_size >> 10);
+> +	ret = simple_read_from_buffer(ubuf, cnt, ppos, buf, r);
+> +
+> +	return ret;
+> +}
+> +
+> +static ssize_t
+> +instance_default_buffer_size_write(struct file *filp, const char __user *ubuf,
+> +				   size_t cnt, loff_t *ppos)
+> +{
+> +	unsigned long val;
+> +	int ret;
+> +
+> +	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* ubuf must have at least 1 entry */
+> +	if (!val)
+> +		return -EINVAL;
+> +
+> +	/* val is in KB */
+> +	instance_default_buf_size = val << 10;
+> +
+> +	return cnt;
+> +}
+> +
+> +static const struct file_operations instance_default_buffer_size_fops = {
+> +	.open		= tracing_open_generic,
+> +	.read		= instance_default_buffer_size_read,
+> +	.write		= instance_default_buffer_size_write,
+> +	.llseek		= generic_file_llseek,
+> +};
+> +
+>  /*
+>   * The tracer itself will not take this lock, but still we want
+>   * to provide a consistent cpumask to user-space:
+> @@ -5880,8 +5930,7 @@ allocate_trace_buffer(struct trace_array *tr, struct trace_buffer *buf, int size
+>  	}
+>  
+>  	/* Allocate the first page for all buffers */
+> -	set_buffer_entries(&tr->trace_buffer,
+> -			   ring_buffer_size(tr->trace_buffer.buffer, 0));
+> +	set_buffer_entries(&tr->trace_buffer, size);
+>  
+>  	return 0;
+>  }
+> @@ -5947,7 +5996,7 @@ static int new_instance_create(const char *name)
+>  	INIT_LIST_HEAD(&tr->systems);
+>  	INIT_LIST_HEAD(&tr->events);
+>  
+> -	if (allocate_trace_buffers(tr, trace_buf_size) < 0)
+> +	if (allocate_trace_buffers(tr, instance_default_buf_size) < 0)
+>  		goto out_free_tr;
+>  
+>  	tr->dir = debugfs_create_dir(name, trace_instance_dir);
+> @@ -6177,6 +6226,8 @@ static __init int tracer_init_debugfs(void)
+>  	trace_create_file("dyn_ftrace_total_info", 0444, d_tracer,
+>  			&ftrace_update_tot_cnt, &tracing_dyn_info_fops);
+>  #endif
+> +	trace_create_file("instance_default_buffer_size_kb", 0444, d_tracer,
+> +			NULL, &instance_default_buffer_size_fops);
+>  
+>  	create_trace_instances(d_tracer);
+>  
 
