@@ -1,91 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab3KKSCU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 13:02:20 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:36998 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784Ab3KKSCM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 13:02:12 -0500
-Date: Mon, 11 Nov 2013 19:02:09 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/iommu changes for v3.13
-Message-ID: <20131111180209.GA14936@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755006Ab3KKSDF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 13:03:05 -0500
+Received: from mga09.intel.com ([134.134.136.24]:61731 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754885Ab3KKSC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 13:02:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="406953384"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        eranian@google.com, peterz@infradead.org
+Subject: [PATCH] perf: Document perf event data padding
+Date: Mon, 11 Nov 2013 10:02:49 -0800
+Message-Id: <1384192969-2562-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+From: Andi Kleen <ak@linux.intel.com>
 
-Please pull the latest x86-iommu-for-linus git tree from:
+__output_copy always pads byte sized fields to a multiple
+of u64. This was not documented in the perf_event.h documentation.
+Explicitly mention this in the comments.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-iommu-for-linus
+Also add notes that the strings are 0 terminated.
 
-   # HEAD: ced3c42c9fcba049ec9c76c8461ac194cafb20ba x86/iommu: Clean up the CONFIG_GART_IOMMU config option a bit
+Only comments are changed.
 
-Make it easier to turn off the old AMD GART code.
+Cc: eranian@google.com
+Cc: peterz@infradead.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/uapi/linux/perf_event.h | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
- Thanks,
-
-	Ingo
-
------------------->
-Andi Kleen (1):
-      x86/iommu: Don't make AMD_GART depend on EXPERT and default y
-
-Ingo Molnar (1):
-      x86/iommu: Clean up the CONFIG_GART_IOMMU config option a bit
-
-
- arch/x86/Kconfig | 27 ++++++++++++++++-----------
- 1 file changed, 16 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index ee2fb9d..7081958 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -756,20 +756,25 @@ config DMI
- 	  BIOS code.
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 2fc1602..06b2c8a 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -525,6 +525,7 @@ enum perf_event_type {
+ 	/*
+ 	 * The MMAP events record the PROT_EXEC mappings so that we can
+ 	 * correlate userspace IPs to code. They have the following structure:
++	 * filename is zero terminated and padded to 8 bytes.
+ 	 *
+ 	 * struct {
+ 	 *	struct perf_event_header	header;
+@@ -533,7 +534,7 @@ enum perf_event_type {
+ 	 *	u64				addr;
+ 	 *	u64				len;
+ 	 *	u64				pgoff;
+-	 *	char				filename[];
++	 *	char				filename[ALIGN(len, 8)];
+ 	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+@@ -549,12 +550,13 @@ enum perf_event_type {
+ 	 */
+ 	PERF_RECORD_LOST			= 2,
  
- config GART_IOMMU
--	bool "GART IOMMU support" if EXPERT
--	default y
-+	bool "Old AMD GART IOMMU support"
- 	select SWIOTLB
- 	depends on X86_64 && PCI && AMD_NB
- 	---help---
--	  Support for full DMA access of devices with 32bit memory access only
--	  on systems with more than 3GB. This is usually needed for USB,
--	  sound, many IDE/SATA chipsets and some other devices.
--	  Provides a driver for the AMD Athlon64/Opteron/Turion/Sempron GART
--	  based hardware IOMMU and a software bounce buffer based IOMMU used
--	  on Intel systems and as fallback.
--	  The code is only active when needed (enough memory and limited
--	  device) unless CONFIG_IOMMU_DEBUG or iommu=force is specified
--	  too.
-+	  Provides a driver for older AMD Athlon64/Opteron/Turion/Sempron
-+	  GART based hardware IOMMUs.
-+
-+	  The GART supports full DMA access for devices with 32-bit access
-+	  limitations, on systems with more than 3 GB. This is usually needed
-+	  for USB, sound, many IDE/SATA chipsets and some other devices.
-+
-+	  Newer systems typically have a modern AMD IOMMU, supported via
-+	  the CONFIG_AMD_IOMMU=y config option.
-+
-+	  In normal configurations this driver is only active when needed:
-+	  there's more than 3 GB of memory and the system contains a
-+	  32-bit limited device.
-+
-+	  If unsure, say Y.
- 
- config CALGARY_IOMMU
- 	bool "IBM Calgary IOMMU support"
+-	/*
++	/* comm is 0 terminated and padded to 8 bytes.
++	 *
+ 	 * struct {
+ 	 *	struct perf_event_header	header;
+ 	 *
+ 	 *	u32				pid, tid;
+-	 *	char				comm[];
++	 *	char				comm[ALIGN(len, 8)];
+ 	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+@@ -637,12 +639,14 @@ enum perf_event_type {
+ 	 *	# the stability of its content, it may vary depending
+ 	 *	# on event, hardware, kernel version and phase of
+ 	 *	# the moon.
++	 * 	# 
++	 * 	# data[size] is padded to 8 bytes.
+ 	 *	#
+ 	 *	# In other words, PERF_SAMPLE_RAW contents are not an ABI.
+ 	 *	#
+ 	 *
+ 	 *	{ u32			size;
+-	 *	  char                  data[size];}&& PERF_SAMPLE_RAW
++	 *	  char                  data[ALIGN(size, 8)];}&& PERF_SAMPLE_RAW
+ 	 *
+ 	 *	{ u64                   nr;
+ 	 *        { u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
+@@ -651,7 +655,7 @@ enum perf_event_type {
+ 	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
+ 	 *
+ 	 * 	{ u64			size;
+-	 * 	  char			data[size];
++	 * 	  char			data[ALIGN(size, 8)];
+ 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
+ 	 *
+ 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+@@ -663,6 +667,7 @@ enum perf_event_type {
+ 	/*
+ 	 * The MMAP2 records are an augmented version of MMAP, they add
+ 	 * maj, min, ino numbers to be used to uniquely identify each mapping
++	 * filename is 0 terminated and padded to 8 bytes.
+ 	 *
+ 	 * struct {
+ 	 *	struct perf_event_header	header;
+@@ -675,7 +680,7 @@ enum perf_event_type {
+ 	 *	u32				min;
+ 	 *	u64				ino;
+ 	 *	u64				ino_generation;
+-	 *	char				filename[];
++	 *	char				filename[ALIGN(len, 8)];
+ 	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+-- 
+1.8.3.1
+
