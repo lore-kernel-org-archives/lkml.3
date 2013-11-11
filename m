@@ -1,149 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944Ab3KKQ7z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 11:59:55 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:45767 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754910Ab3KKQ7l convert rfc822-to-8bit (ORCPT
+	id S1754815Ab3KKRAe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 12:00:34 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:53857 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab3KKRA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 11:59:41 -0500
-From: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>
-Subject: [PATCH 05/12] mtd: nand: davinci: extend description of bindings
-Thread-Topic: [PATCH 05/12] mtd: nand: davinci: extend description of
- bindings
-Thread-Index: AQHO3vrUmYET3apGXkizoofXzPT/jZogP6ZW
-Date: Mon, 11 Nov 2013 16:58:54 +0000
-Message-ID: <4F5844B3A985794BA902E12C070812375F8D14@DNCE04.ent.ti.com>
-References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>,<1384187188-5776-6-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1384187188-5776-6-git-send-email-ivan.khoronzhuk@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.56]
-x-exclaimer-md-config: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Nov 2013 12:00:28 -0500
+Date: Mon, 11 Nov 2013 18:00:24 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Jan Beulich <JBeulich@suse.com>
+Subject: [GIT PULL] x86/asm changes for v3.13
+Message-ID: <20131111170024.GA12091@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend bindings for davinci_nand driver to be more clear.
+Linus,
 
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
----
- .../devicetree/bindings/mtd/davinci-nand.txt       |   77 ++++++++++++++------
- 1 file changed, 54 insertions(+), 23 deletions(-)
+Please pull the latest x86-asm-for-linus git tree from:
 
-diff --git a/Documentation/devicetree/bindings/mtd/davinci-nand.txt b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-index 3545ea7..d2a3fc0 100644
---- a/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-+++ b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-@@ -1,36 +1,67 @@
--* Texas Instruments Davinci NAND
-+Device tree bindings for Texas instruments Davinci NAND controller
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-asm-for-linus
 
--This file provides information, what the device node for the
--davinci nand interface contain.
-+This file provides information, what the device node for the davinci NAND
-+interface contains.
+   # HEAD: 7a3d9b0f3abbea957b829cdfff8169872c575642 x86: Unify copy_to_user() and add size checking to it
+
+This tree contains two copy_[from/to]_user() build time checking 
+changes/enhancements from Jan Beulich.
+
+The desired outcome is to get better compiler warnings with 
+CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y, to keep people from introducing 
+bugs such as overflows and information leaks.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Jan Beulich (2):
+      x86: Unify copy_from_user() size checking
+      x86: Unify copy_to_user() and add size checking to it
+
+
+ arch/x86/include/asm/uaccess.h    | 98 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/uaccess_32.h | 29 ------------
+ arch/x86/include/asm/uaccess_64.h | 28 -----------
+ arch/x86/lib/usercopy_32.c        |  8 ++--
+ 4 files changed, 101 insertions(+), 62 deletions(-)
+
+diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
+index 5838fa9..8ec57c0 100644
+--- a/arch/x86/include/asm/uaccess.h
++++ b/arch/x86/include/asm/uaccess.h
+@@ -542,5 +542,103 @@ extern struct movsl_mask {
+ # include <asm/uaccess_64.h>
+ #endif
+ 
++unsigned long __must_check _copy_from_user(void *to, const void __user *from,
++					   unsigned n);
++unsigned long __must_check _copy_to_user(void __user *to, const void *from,
++					 unsigned n);
 +
-+Documentation:
-+Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
-
- Required properties:
--- compatible: "ti,davinci-nand";
--- reg : contain 2 offset/length values:
--        - offset and length for the access window
--        - offset and length for accessing the aemif control registers
--- ti,davinci-chipselect: Indicates on the davinci_nand driver which
--                         chipselect is used for accessing the nand.
++#ifdef CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
++# define copy_user_diag __compiletime_error
++#else
++# define copy_user_diag __compiletime_warning
++#endif
 +
-+- compatible:                  "ti,davinci-nand"
++extern void copy_user_diag("copy_from_user() buffer size is too small")
++copy_from_user_overflow(void);
++extern void copy_user_diag("copy_to_user() buffer size is too small")
++copy_to_user_overflow(void) __asm__("copy_from_user_overflow");
 +
-+- reg:                         Contains 2 offset/length values:
-+                               - offset and length for the access window.
-+                               - offset and length for accessing the AEMIF
-+                               control registers.
++#undef copy_user_diag
 +
-+- ti,davinci-chipselect:       number of chipselect. Indicates on the
-+                               davinci_nand driver which chipselect is used
-+                               for accessing the nand.
-+                               Can be in the range [0-3].
-
- Recommended properties :
--- ti,davinci-mask-ale: mask for ale
--- ti,davinci-mask-cle: mask for cle
--- ti,davinci-mask-chipsel: mask for chipselect
--- ti,davinci-ecc-mode: ECC mode valid values for davinci driver:
--               - "none"
--               - "soft"
--               - "hw"
--- ti,davinci-ecc-bits: used ECC bits, currently supported 1 or 4.
--- ti,davinci-nand-buswidth: buswidth 8 or 16
--- ti,davinci-nand-use-bbt: use flash based bad block table support.
++#ifdef CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
++
++extern void
++__compiletime_warning("copy_from_user() buffer size is not provably correct")
++__copy_from_user_overflow(void) __asm__("copy_from_user_overflow");
++#define __copy_from_user_overflow(size, count) __copy_from_user_overflow()
++
++extern void
++__compiletime_warning("copy_to_user() buffer size is not provably correct")
++__copy_to_user_overflow(void) __asm__("copy_from_user_overflow");
++#define __copy_to_user_overflow(size, count) __copy_to_user_overflow()
++
++#else
++
++static inline void
++__copy_from_user_overflow(int size, unsigned long count)
++{
++	WARN(1, "Buffer overflow detected (%d < %lu)!\n", size, count);
++}
++
++#define __copy_to_user_overflow __copy_from_user_overflow
++
++#endif
++
++static inline unsigned long __must_check
++copy_from_user(void *to, const void __user *from, unsigned long n)
++{
++	int sz = __compiletime_object_size(to);
++
++	might_fault();
++
++	/*
++	 * While we would like to have the compiler do the checking for us
++	 * even in the non-constant size case, any false positives there are
++	 * a problem (especially when DEBUG_STRICT_USER_COPY_CHECKS, but even
++	 * without - the [hopefully] dangerous looking nature of the warning
++	 * would make people go look at the respecitive call sites over and
++	 * over again just to find that there's no problem).
++	 *
++	 * And there are cases where it's just not realistic for the compiler
++	 * to prove the count to be in range. For example when multiple call
++	 * sites of a helper function - perhaps in different source files -
++	 * all doing proper range checking, yet the helper function not doing
++	 * so again.
++	 *
++	 * Therefore limit the compile time checking to the constant size
++	 * case, and do only runtime checking for non-constant sizes.
++	 */
++
++	if (likely(sz < 0 || sz >= n))
++		n = _copy_from_user(to, from, n);
++	else if(__builtin_constant_p(n))
++		copy_from_user_overflow();
++	else
++		__copy_from_user_overflow(sz, n);
++
++	return n;
++}
++
++static inline unsigned long __must_check
++copy_to_user(void __user *to, const void *from, unsigned long n)
++{
++	int sz = __compiletime_object_size(from);
++
++	might_fault();
++
++	/* See the comment in copy_from_user() above. */
++	if (likely(sz < 0 || sz >= n))
++		n = _copy_to_user(to, from, n);
++	else if(__builtin_constant_p(n))
++		copy_to_user_overflow();
++	else
++		__copy_to_user_overflow(sz, n);
++
++	return n;
++}
++
++#undef __copy_from_user_overflow
++#undef __copy_to_user_overflow
++
+ #endif /* _ASM_X86_UACCESS_H */
+ 
+diff --git a/arch/x86/include/asm/uaccess_32.h b/arch/x86/include/asm/uaccess_32.h
+index 7f760a9..3c03a5d 100644
+--- a/arch/x86/include/asm/uaccess_32.h
++++ b/arch/x86/include/asm/uaccess_32.h
+@@ -184,33 +184,4 @@ __copy_from_user_inatomic_nocache(void *to, const void __user *from,
+        return __copy_from_user_ll_nocache_nozero(to, from, n);
+ }
+ 
+-unsigned long __must_check copy_to_user(void __user *to,
+-					const void *from, unsigned long n);
+-unsigned long __must_check _copy_from_user(void *to,
+-					  const void __user *from,
+-					  unsigned long n);
 -
--nand device bindings may contain additional sub-nodes describing
--partitions of the address space. See partition.txt for more detail.
-+
-+- ti,davinci-mask-ale:         mask for ALE. Needed for executing address
-+                               phase. These offset will be added to the base
-+                               address for the chip select space the NAND Flash
-+                               device is connected to.
-+                               If not set equal to 0x08.
-+
-+- ti,davinci-mask-cle:         mask for CLE. Needed for executing command
-+                               phase. These offset will be added to the base
-+                               address for the chip select space the NAND Flash
-+                               device is connected to.
-+                               If not set equal to 0x10.
-+
-+- ti,davinci-mask-chipsel:     mask for chipselect address. Needed to mask
-+                               addresses for given chipselect.
-+
-+- ti,davinci-ecc-mode:         operation mode of the NAND ecc mode. ECC mode
-+                               valid values for davinci driver:
-+                               - "none"
-+                               - "soft"
-+                               - "hw"
-+
-+- ti,davinci-ecc-bits:         used ECC bits, currently supported 1 or 4.
-+
-+- ti,davinci-nand-buswidth:    buswidth 8 or 16.
-+
-+- ti,davinci-nand-use-bbt:     use flash based bad block table support. OOB
-+                               identifier is saved in OOB area.
-+
-+Nand device bindings may contain additional sub-nodes describing partitions of
-+the address space. See partition.txt for more detail. The NAND Flash timing
-+values must be programmed in the chip select’s node of AEMIF
-+memory-controller (see Documentation/devicetree/bindings/memory-controllers/
-+davinci-aemif.txt).
-
- Example(da850 EVM ):
-+
- nand_cs3@62000000 {
-        compatible = "ti,davinci-nand";
-        reg = <0x62000000 0x807ff
--               0x68000000 0x8000>;
-+              0x68000000 0x8000>;
-        ti,davinci-chipselect = <1>;
-        ti,davinci-mask-ale = <0>;
-        ti,davinci-mask-cle = <0>;
---
-1.7.9.5
-
+-
+-extern void copy_from_user_overflow(void)
+-#ifdef CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
+-	__compiletime_error("copy_from_user() buffer size is not provably correct")
+-#else
+-	__compiletime_warning("copy_from_user() buffer size is not provably correct")
+-#endif
+-;
+-
+-static inline unsigned long __must_check copy_from_user(void *to,
+-					  const void __user *from,
+-					  unsigned long n)
+-{
+-	int sz = __compiletime_object_size(to);
+-
+-	if (likely(sz == -1 || sz >= n))
+-		n = _copy_from_user(to, from, n);
+-	else
+-		copy_from_user_overflow();
+-
+-	return n;
+-}
+-
+ #endif /* _ASM_X86_UACCESS_32_H */
+diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
+index 4f7923d..0acae71 100644
+--- a/arch/x86/include/asm/uaccess_64.h
++++ b/arch/x86/include/asm/uaccess_64.h
+@@ -46,36 +46,8 @@ copy_user_generic(void *to, const void *from, unsigned len)
+ }
+ 
+ __must_check unsigned long
+-_copy_to_user(void __user *to, const void *from, unsigned len);
+-__must_check unsigned long
+-_copy_from_user(void *to, const void __user *from, unsigned len);
+-__must_check unsigned long
+ copy_in_user(void __user *to, const void __user *from, unsigned len);
+ 
+-static inline unsigned long __must_check copy_from_user(void *to,
+-					  const void __user *from,
+-					  unsigned long n)
+-{
+-	int sz = __compiletime_object_size(to);
+-
+-	might_fault();
+-	if (likely(sz == -1 || sz >= n))
+-		n = _copy_from_user(to, from, n);
+-#ifdef CONFIG_DEBUG_VM
+-	else
+-		WARN(1, "Buffer overflow detected!\n");
+-#endif
+-	return n;
+-}
+-
+-static __always_inline __must_check
+-int copy_to_user(void __user *dst, const void *src, unsigned size)
+-{
+-	might_fault();
+-
+-	return _copy_to_user(dst, src, size);
+-}
+-
+ static __always_inline __must_check
+ int __copy_from_user(void *dst, const void __user *src, unsigned size)
+ {
+diff --git a/arch/x86/lib/usercopy_32.c b/arch/x86/lib/usercopy_32.c
+index 3eb18ac..e2f5e21 100644
+--- a/arch/x86/lib/usercopy_32.c
++++ b/arch/x86/lib/usercopy_32.c
+@@ -654,14 +654,13 @@ EXPORT_SYMBOL(__copy_from_user_ll_nocache_nozero);
+  * Returns number of bytes that could not be copied.
+  * On success, this will be zero.
+  */
+-unsigned long
+-copy_to_user(void __user *to, const void *from, unsigned long n)
++unsigned long _copy_to_user(void __user *to, const void *from, unsigned n)
+ {
+ 	if (access_ok(VERIFY_WRITE, to, n))
+ 		n = __copy_to_user(to, from, n);
+ 	return n;
+ }
+-EXPORT_SYMBOL(copy_to_user);
++EXPORT_SYMBOL(_copy_to_user);
+ 
+ /**
+  * copy_from_user: - Copy a block of data from user space.
+@@ -679,8 +678,7 @@ EXPORT_SYMBOL(copy_to_user);
+  * If some data could not be copied, this function will pad the copied
+  * data to the requested size using zero bytes.
+  */
+-unsigned long
+-_copy_from_user(void *to, const void __user *from, unsigned long n)
++unsigned long _copy_from_user(void *to, const void __user *from, unsigned n)
+ {
+ 	if (access_ok(VERIFY_READ, from, n))
+ 		n = __copy_from_user(to, from, n);
