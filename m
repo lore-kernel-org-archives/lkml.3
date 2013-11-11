@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735Ab3KKN4s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 08:56:48 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:46965 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753429Ab3KKN4l (ORCPT
+	id S1754005Ab3KKN46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 08:56:58 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:46126 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753891Ab3KKN4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 08:56:41 -0500
-Date: Mon, 11 Nov 2013 14:56:37 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist
- periods (v2)
-Message-ID: <20131111135637.GD8781@gmail.com>
-References: <20131105074650.GA2855@gmail.com>
- <87txfrxlq8.fsf@sejong.aot.lge.com>
- <20131105115802.GA12045@gmail.com>
- <87ppqex8tj.fsf@sejong.aot.lge.com>
- <20131106083046.GA4655@gmail.com>
- <87r4atx51i.fsf@sejong.aot.lge.com>
- <20131106114701.GA20249@gmail.com>
- <20131106121440.GB7919@localhost.localdomain>
- <20131111121352.GB21397@gmail.com>
- <20131111130844.GB26853@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131111130844.GB26853@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Nov 2013 08:56:46 -0500
+From: Julian Andres Klode <jak@jak-linux.org>
+To: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Julian Andres Klode <jak@jak-linux.org>,
+        ibm-acpi-devel@lists.sourceforge.net (open list:THINKPAD ACPI EXT...),
+        platform-driver-x86@vger.kernel.org (open list:THINKPAD ACPI EXT...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 0/4] thinkpad_acpi: Add support for controlling charge thresholds
+Date: Mon, 11 Nov 2013 14:56:29 +0100
+Message-Id: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series adds support for specifying charging thresholds,
+forcing a battery to discharge, and inhibiting charging, on ThinkPad
+Laptops using Sandy Bridge or newer processors.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+The first two patches should be stable now, the third one does not work on
+my test system (but I'd appreciate if anyone with something other than an
+X230 tests it). 
 
-> On Mon, Nov 11, 2013 at 01:13:52PM +0100, Ingo Molnar wrote:
-> > 
-> > It's not an irrelevant feature at all! :-)
-> > 
-> > It's just that for any sort of longer profile it was pretty 
-> > difficult/frustrating to use, which I think held back adoption.
-> > 
-> > That performance problem got fixed now by you and Namhyung, so I think 
-> > we'll see even wider adoption of call-graph profiling...
-> 
-> Ah I see now. At the time Linus reported his issue, I had the feeling 
-> his usecase was a bit "extreme", but I actually have no idea how far 
-> perf can be used given that I'm mostly used to short benchmarks, 
-> typically hackbench, perf bench sched messaging et al. Thing is I don't 
-> use it enough for my real usecases :)
+The inhibit charging part is a bit unprecise, and I can obviously not test
+that -1 really means permanently, but I assume it does. I don't know whether
+this one should be merged.
 
-Well, it's a bit of a catch-22: if there are severe scalability problems 
-for a usecase then people won't use it because they cannot use it. So 
-developers should usually try to over-measure things and go for extreme 
-uses and such.
+Changes since the RFC PATCH:
+  - Define batteries more dynamically instead of statically using large
+    macros. Added support for up to 3 batteries, unsupported ones will not
+    be exported.
+  - Added 3 more new patches with more features
 
-Thanks,
+Julian Andres Klode (4):
+  thinkpad_acpi: Add support for controlling charge thresholds
+  thinkpad_acpi: battery: Add force_discharge attribute
+  thinkpad_acpi: battery: Add force_discharge_ac_break attribute
+  thinkpad_acpi: battery: Add inhibit_charge_minutes attribute
 
-	Ingo
+ Documentation/laptops/thinkpad-acpi.txt |  37 ++++
+ drivers/platform/x86/thinkpad_acpi.c    | 300 ++++++++++++++++++++++++++++++++
+ 2 files changed, 337 insertions(+)
+
+-- 
+1.8.4.2
+
