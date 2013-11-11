@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab3KKH0t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 02:26:49 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:57856 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3KKH0n (ORCPT
+	id S1752569Ab3KKHmr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 02:42:47 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:46545 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab3KKHmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 02:26:43 -0500
-Date: Mon, 11 Nov 2013 12:45:55 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes: Cleanup !CONFIG_UPROBES decls, unexport xol_area
-Message-ID: <20131111071555.GB2559@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20131109190344.GA32281@redhat.com>
+	Mon, 11 Nov 2013 02:42:37 -0500
+Date: Sun, 10 Nov 2013 23:42:34 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Cc: kernel@pengutronix.de, linux@arm.linux.org.uk, a.zummo@towertech.it,
+        airlied@linux.ie, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, dri-devel@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH] Input: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
+Message-ID: <20131111074234.GF7645@core.coreip.homeip.net>
+References: <1383724472-15475-1-git-send-email-duanj.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131109190344.GA32281@redhat.com>
+In-Reply-To: <1383724472-15475-1-git-send-email-duanj.fnst@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111107-6688-0000-0000-0000035C54F3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2013-11-09 20:03:44]:
+On Wed, Nov 06, 2013 at 03:54:32PM +0800, Duan Jiong wrote:
+> This patch fixes coccinelle error regarding usage of IS_ERR and
+> PTR_ERR instead of PTR_ERR_OR_ZERO.
+> 
+> Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 
-> 1. Don't include asm/uprobes.h unconditionally, we only need
->    it if CONFIG_UPROBES.
-> 
-> 2. Move the definition of "struct xol_area" into uprobes.c.
-> 
->    Perhaps we should simply kill struct uprobes_state, it buys
->    nothing.
-> 
-> 3. Kill the dummy definition of uprobe_get_swbp_addr(), nobody
->    except handle_swbp() needs it.
-> 
-> 4. Purely cosmetic, but move the decl of uprobe_get_swbp_addr()
->    up, close to other __weak helpers.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Applied, thank you.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> ---
+>  drivers/input/touchscreen/cyttsp4_spi.c | 5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/cyttsp4_spi.c b/drivers/input/touchscreen/cyttsp4_spi.c
+> index a71e114..b19434c 100644
+> --- a/drivers/input/touchscreen/cyttsp4_spi.c
+> +++ b/drivers/input/touchscreen/cyttsp4_spi.c
+> @@ -171,10 +171,7 @@ static int cyttsp4_spi_probe(struct spi_device *spi)
+>  	ts = cyttsp4_probe(&cyttsp_spi_bus_ops, &spi->dev, spi->irq,
+>  			  CY_SPI_DATA_BUF_SIZE);
+>  
+> -	if (IS_ERR(ts))
+> -		return PTR_ERR(ts);
+> -
+> -	return 0;
+> +	return PTR_ERR_OR_ZERO(ts);
+>  }
+>  
+>  static int cyttsp4_spi_remove(struct spi_device *spi)
+> -- 
+> 1.8.3.1
+> 
 
+-- 
+Dmitry
