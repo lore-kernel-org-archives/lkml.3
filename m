@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab3KKLTX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:19:23 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:43519 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845Ab3KKLTT (ORCPT
+	id S1753402Ab3KKLUZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:20:25 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:32802 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753024Ab3KKLUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:19:19 -0500
-Date: Mon, 11 Nov 2013 11:19:13 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        myungjoo.ham@samsung.com, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] extcon: arizona: Add defines for microphone
- detection levels
-Message-ID: <20131111111913.GD22184@lee--X1>
-References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <5280AAAF.8040005@samsung.com>
- <20131111105356.GB22184@lee--X1>
- <5280B836.2050203@samsung.com>
+	Mon, 11 Nov 2013 06:20:17 -0500
+Date: Mon, 11 Nov 2013 12:20:13 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf tools: Prevent condition that all sort keys are
+ elided
+Message-ID: <20131111112013.GC15810@gmail.com>
+References: <1383900822-14609-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5280B836.2050203@samsung.com>
+In-Reply-To: <1383900822-14609-1-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Nov 2013, Chanwoo Choi wrote:
 
-> On 11/11/2013 07:53 PM, Lee Jones wrote:
-> >> On 11/08/2013 10:19 PM, Charles Keepax wrote:
-> >>> Improve readability by creating a define for each microphone detection
-> >>> level.
-> >>>
-> >>> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> >>> ---
-> >>>  drivers/extcon/extcon-arizona.c       |   21 ++++++++++++++++-----
-> >>>  include/linux/mfd/arizona/registers.h |    9 +++++++++
-> >>>  2 files changed, 25 insertions(+), 5 deletions(-)
-> >>>
-> >>> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-> >>> index 3c55ec8..6d914ba 100644
-> >>> --- a/drivers/extcon/extcon-arizona.c
-> >>> +++ b/drivers/extcon/extcon-arizona.c
-> >>> @@ -44,6 +44,17 @@
-> >>>  #define HPDET_DEBOUNCE 500
-> >>>  #define DEFAULT_MICD_TIMEOUT 2000
-> >>>  
-> >>> +enum {
-> >>> +	MICD_LVL_1_TO_7 = ARIZONA_MICD_LVL_1 | ARIZONA_MICD_LVL_2 |
-> >>> +			  ARIZONA_MICD_LVL_3 | ARIZONA_MICD_LVL_4 |
-> >>> +			  ARIZONA_MICD_LVL_5 | ARIZONA_MICD_LVL_6 |
-> >>> +			  ARIZONA_MICD_LVL_7,
-> >>> +
-> >>> +	MICD_LVL_0_TO_7 = ARIZONA_MICD_LVL_0 | MICD_LVL_1_TO_7,
-> >>> +
-> >>> +	MICD_LVL_0_TO_8 = MICD_LVL_0_TO_7 | ARIZONA_MICD_LVL_8,
-> >>> +};
-> >>
-> >> MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8 haven't the sequential value.
-> >> I prefer '#define' keyword to define MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8
-> >> instead of enum keyword.
-> > 
-> > Actually Charles has already sent me this patch and I applied it a
-> > while ago.
+* Namhyung Kim <namhyung@kernel.org> wrote:
+
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> Why did you applied extcon driver patch on your tree?
+> If given sort keys are all elided there'll be no output except for the
+> overhead column - actually the TUI shows a noisy output.  In this case
+> it'd be better to show up the sort keys rather than elide.
+> 
+> Before:
+> 
+>   $ perf report -s comm -c perf
+>   (...)
+>   # Overhead
+>   # ........
+>   #
+>      100.00%
+> 
+> After:
+> 
+>   $ perf report -s comm -c perf
+>   (...)
+>   # Overhead  Command
+>   # ........  .......
+>   #
+>      100.00%     perf
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/util/sort.c | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+> index 3c1b75c8b9a6..fb7d556ad721 100644
+> --- a/tools/perf/util/sort.c
+> +++ b/tools/perf/util/sort.c
+> @@ -1137,6 +1137,8 @@ static void sort_entry__setup_elide(struct sort_entry *se,
+>  
+>  void sort__setup_elide(FILE *output)
+>  {
+> +	struct sort_entry *se;
+> +
+>  	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
+>  				"dso", output);
+>  	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list,
+> @@ -1172,4 +1174,14 @@ void sort__setup_elide(FILE *output)
+>  					"snoop", output);
+>  	}
+>  
+> +	/*
+> +	 * It makes no sense to elide all of sort entries.
+> +	 * Just revert them to show up again.
+> +	 */
+> +	list_for_each_entry(se, &hist_entry__sort_list, list)
+> +		if (!se->elide)
+> +			return;
 
-Good point, well presented!
+(Nit: please use curly braces around multi-line statements.)
 
-I should have just Acked the MFD parts in this case.
+> +
+> +	list_for_each_entry(se, &hist_entry__sort_list, list)
+> +		se->elide = false;
 
-It's not too late to pull it back - I'll do just that.
+Looks good otherwise - this is the first step in the sort/key behavior 
+improvements that we talked about a few days ago, right?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+
+	Ingo
