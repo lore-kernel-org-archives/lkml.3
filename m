@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278Ab3KKK6G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 05:58:06 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:38432 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752890Ab3KKK6A (ORCPT
+	id S1753308Ab3KKK6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 05:58:23 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38784 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752894Ab3KKK6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 05:58:00 -0500
-X-AuditID: cbfee68f-b7f836d000001b39-7b-5280b8364d8c
-Message-id: <5280B836.2050203@samsung.com>
-Date: Mon, 11 Nov 2013 19:57:58 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        myungjoo.ham@samsung.com, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] extcon: arizona: Add defines for microphone detection
- levels
-References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <5280AAAF.8040005@samsung.com> <20131111105356.GB22184@lee--X1>
-In-reply-to: <20131111105356.GB22184@lee--X1>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsWyRsSkWNdsR0OQwflpJhb/ptxgt7j/9Sij
-	xeVdc9gsbjeuYLNY/vY/m8XpblYHNo871/awecw7GejxcuJvNo++LasYPT5vkgtgjeKySUnN
-	ySxLLdK3S+DKWPJNueAed8W2+UINjNc5uxg5OSQETCSezP/DDmGLSVy4t56ti5GLQ0hgKaPE
-	6oOrWWGKvu9eyAKRmM4o8XHyWijnFaPEtB+HwNp5BbQkzr1ZDWazCKhKLFp6AMxmA4rvf3GD
-	DcQWFQiTWDn9CgtEvaDEj8n3gGwODhEBFaBec5CZzAIbGCVW/t8E1issEC5x8UwvWD3Y5mnz
-	RUBsTgFdiS8zIc5mFlCXmDRvETOELS+xec1bZpBBEgL72CUefj3JCnGQgMS3yYfAlkkIyEps
-	OsAM8ZmkxMEVN1gmMIrNQnLSLCRjZyEZu4CReRWjaGpBckFxUnqRsV5xYm5xaV66XnJ+7iZG
-	YJyd/vesfwfj3QPWhxiTgVZOZJYSTc4HxmleSbyhsZmRhamJqbGRuaUZacJK4rz3HyYFCQmk
-	J5akZqemFqQWxReV5qQWH2Jk4uCUamCcejmLbXGWm6+hbsMq3f3J6rPmrDPO83C2Lmg3nHSP
-	PYZ5S/LvuXk+LhLzZbosT33Z182jIJMnaly9/2PhzW8MPzwfm3K9/hyTcvRYyt4Qh+3SkmF3
-	ZxeZzWrfITDzxoq8yC6pkq7LDhkzOaecOqYW4OV7LvrnWwPv6YssZ9Z/1fCuqtt2+aMSS3FG
-	oqEWc1FxIgCRWMK1yQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t9jQV2zHQ1BBsuX6Fr8m3KD3eL+16OM
-	Fpd3zWGzuN24gs1i+dv/bBanu1kd2DzuXNvD5jHvZKDHy4m/2Tz6tqxi9Pi8SS6ANaqB0SYj
-	NTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6AAlhbLEnFKg
-	UEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8aSb8oF97grts0XamC8ztnFyMkhIWAi
-	8X33QhYIW0ziwr31bF2MXBxCAtMZJT5OXssC4bxilJj24xA7SBWvgJbEuTerwWwWAVWJRUsP
-	gNlsQPH9L26wgdiiAmESK6dfYYGoF5T4MfkekM3BISKgAtRrDjKTWWADo8TK/5vAeoUFwiUu
-	nukFqwfbPG2+CIjNKaAr8WXmH7AaZgF1iUnzFjFD2PISm9e8ZZ7AKDALyYpZSMpmISlbwMi8
-	ilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4ip9J72Bc1WBxiFGAg1GJhzdCoSFIiDWxrLgy
-	9xCjBAezkgjvvSVAId6UxMqq1KL8+KLSnNTiQ4zJwBCYyCwlmpwPTDB5JfGGxiZmRpZG5oYW
-	RsbmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cBorer38vqavZUn+Zx3Bu9X1bnmyJe7
-	50bPdBtr5sR3wRIzP1nfZ4m88St0Vue/ieb7ak79n/2j5czE29G35i199GDJqYkpTFeuPP9j
-	ulNbPrWD3TLR7byueDbjrU9XhfNe3dq+K97RpjvKQ2r/lZcXcu0bDn968Lz8yuyaiz0f7qfe
-	WXxKmenBAyWW4oxEQy3mouJEAAbxvHUmAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 11 Nov 2013 05:58:20 -0500
+Date: Mon, 11 Nov 2013 10:58:12 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
+        Jiang Liu <liuj97@gmail.com>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping support
+Message-ID: <20131111105812.GC28302@mudshark.cambridge.arm.com>
+References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
+ <1382008671-4515-3-git-send-email-sandeepa.prabhu@linaro.org>
+ <20131108165639.GD15074@mudshark.cambridge.arm.com>
+ <527DFC1C.1020107@hitachi.com>
+ <CA+b37P3U=cAbUvs=2B9wA4F7S9o49vh7d-KamjPsHcz-b9ZYLA@mail.gmail.com>
+ <52808D53.7080904@hitachi.com>
+ <5280B6C8.7050807@hitachi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5280B6C8.7050807@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 07:53 PM, Lee Jones wrote:
->> On 11/08/2013 10:19 PM, Charles Keepax wrote:
->>> Improve readability by creating a define for each microphone detection
->>> level.
->>>
->>> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
->>> ---
->>>  drivers/extcon/extcon-arizona.c       |   21 ++++++++++++++++-----
->>>  include/linux/mfd/arizona/registers.h |    9 +++++++++
->>>  2 files changed, 25 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
->>> index 3c55ec8..6d914ba 100644
->>> --- a/drivers/extcon/extcon-arizona.c
->>> +++ b/drivers/extcon/extcon-arizona.c
->>> @@ -44,6 +44,17 @@
->>>  #define HPDET_DEBOUNCE 500
->>>  #define DEFAULT_MICD_TIMEOUT 2000
->>>  
->>> +enum {
->>> +	MICD_LVL_1_TO_7 = ARIZONA_MICD_LVL_1 | ARIZONA_MICD_LVL_2 |
->>> +			  ARIZONA_MICD_LVL_3 | ARIZONA_MICD_LVL_4 |
->>> +			  ARIZONA_MICD_LVL_5 | ARIZONA_MICD_LVL_6 |
->>> +			  ARIZONA_MICD_LVL_7,
->>> +
->>> +	MICD_LVL_0_TO_7 = ARIZONA_MICD_LVL_0 | MICD_LVL_1_TO_7,
->>> +
->>> +	MICD_LVL_0_TO_8 = MICD_LVL_0_TO_7 | ARIZONA_MICD_LVL_8,
->>> +};
->>
->> MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8 haven't the sequential value.
->> I prefer '#define' keyword to define MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8
->> instead of enum keyword.
+On Mon, Nov 11, 2013 at 10:51:52AM +0000, Masami Hiramatsu wrote:
+> (2013/11/11 16:54), Masami Hiramatsu wrote:
+> >>>> In fact, how do you avoid a race with hardware breakpoints? E.g., somebody
+> >>>> places a hardware breakpoint on an instruction in the kernel for which
+> >>>> kprobes has patched in a brk. We take the hardware breakpoint, disable the
+> >>>> breakpoint and set up a single step before returning to the brk. The brk
+> >>>> then traps, but we must take care not to disable single-step and/or unmask
+> >>>> debug exceptions, because that will cause the hardware breakpoint code to
+> >>>> re-arm its breakpoint before we've stepped off the brk instruction.
+> >>>
+> >>> Hmm, frankly to say, this kind of race issue is not seriously discussed
+> >>> on x86 too, since kgdb is still a special tool (not used on the production
+> >>> system).
+> >>> I think under such situation kgdb operator must have full control of the
+> >>> system, and he can (and has to) avoid such kind of race.
+> >> Masami,
+> >>
+> >> Hmm I think in same lines, but not sure if we expect kprobes to be
+> >> able to work fool-proof along with kgdb or hw breakpoints ?
+> > 
+> > For hw breakpoint, yes, we finally get check each other to safely
+> > use it even if one rejects the other one at some points(address).
+> > Since the hw breakpoint is already open for normal user via perf,
+> > we should do it. But the policy still needs to be discussed.
 > 
-> Actually Charles has already sent me this patch and I applied it a
-> while ago.
-> 
+> OK, I've ensured that the hw_breakpoint (from perf) can work
+> with kprobes (from ftrace) at the same address on x86.
+> So if arm64 already support hw_breakpoint on perf, kprobes should
+> work with it.
 
-Why did you applied extcon driver patch on your tree?
+Single-stepping on x86 is different to the step behaviour on arm64 afaik. On
+ARM, we have to manually remove the breakpoint, perform a single-step, then
+add the breakpoint again. If we re-enable debug exceptions in the kprobe
+handler, the step will complete early and we'll never step off the
+breakpoint.
 
+Sandeepa: I think you need to retry Masami's test on the arm64 model, since
+I'm fairly sure it won't work as expected without some additional code.
 
-
+Will
