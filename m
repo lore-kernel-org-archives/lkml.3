@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab3KKVSh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 16:18:37 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:39084 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3KKVS2 (ORCPT
+	id S1752604Ab3KKVUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 16:20:44 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:60796 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab3KKVUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 16:18:28 -0500
-Date: Mon, 11 Nov 2013 22:18:25 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Joe Perches <joe@perches.com>, Dave Jones <davej@redhat.com>,
-        linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH v2 2/2] x86: add prefetching to do_csum
-Message-ID: <20131111211825.GB19316@gmail.com>
-References: <1383751399-10298-1-git-send-email-nhorman@tuxdriver.com>
- <1383751399-10298-3-git-send-email-nhorman@tuxdriver.com>
- <20131106153429.GA26336@redhat.com>
- <20131106155445.GB6357@neilslaptop.think-freely.org>
- <1383758363.7940.19.camel@joe-AO722>
- <20131108190136.GB16052@hmsreliant.think-freely.org>
- <1383939193.2639.39.camel@joe-AO722>
- <20131108201459.GE16052@hmsreliant.think-freely.org>
- <1383942547.2639.49.camel@joe-AO722>
- <20131111194020.GB6355@hmsreliant.think-freely.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131111194020.GB6355@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Nov 2013 16:20:38 -0500
+Message-ID: <1384204833.12281.9.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH 0/5] percpu_ida: Various tweaks
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 11 Nov 2013 13:20:33 -0800
+In-Reply-To: <20131111193947.GD25231@kernel.dk>
+References: <20131028100440.GA5744@dhcp-26-207.brq.redhat.com>
+	 <1382995746.19256.756.camel@haakon3.risingtidesystems.com>
+	 <20131111193433.GA9679@dhcp-26-207.brq.redhat.com>
+	 <20131111193947.GD25231@kernel.dk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2013-11-11 at 12:39 -0700, Jens Axboe wrote:
+> On Mon, Nov 11 2013, Alexander Gordeev wrote:
+> > On Mon, Oct 28, 2013 at 02:29:06PM -0700, Nicholas A. Bellinger wrote:
+> > > I'll wait for Kent's feedback on these, and end-up dropping the
+> > > blk-mq-tag part from Patch #5 for the moment..
+> > 
+> > Hi Nicholas,
+> > 
+> > I am bit uncertain regarding the process concerning your and Jens trees.
+> > Are you planning to pull Shaohua's percpu_ida conversion?
+> 
+> The submitted blk-mq bits have the conversion, the old tagging is no
+> longer active/maintained. So any work on this going forward will have to
+> be based on the percpu ida conversion.
+> 
 
-* Neil Horman <nhorman@tuxdriver.com> wrote:
+What Jen's said..
 
-> Ingo, does that seem reasonable to you?
+I'll be updating the scsi-mq working branch soon after blk-mq is pulled
+into v3.13-rc1 code.
 
-FYI, in the past few days I've been busy due to the merge window, but 
-everything I've seen so far in this portion of the thread gave me warm 
-fuzzy feelings, so I definitely like the direction.
+--nab
 
-(More once I get around to looking at the code in detail.)
-
-Thanks,
-
-	Ingo
