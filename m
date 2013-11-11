@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab3KKS4T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 13:56:19 -0500
-Received: from mail-bl2lp0206.outbound.protection.outlook.com ([207.46.163.206]:37728
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754927Ab3KKS4K convert rfc822-to-8bit (ORCPT
+	id S1755252Ab3KKS5m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 13:57:42 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:54645 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753520Ab3KKS5f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 13:56:10 -0500
-X-Greylist: delayed 944 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Nov 2013 13:56:10 EST
-From: "Abhishek Gupta (LIS)" <abgupta@microsoft.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Use of Floppy Drive with Linux Virtual Machines
-Thread-Topic: Use of Floppy Drive with Linux Virtual Machines
-Thread-Index: Ac7fDWNFO7CFPfOZR1CPa7JA5pHJGA==
-Date: Mon, 11 Nov 2013 18:40:04 +0000
-Message-ID: <58b8cbf5f01648f3804deb85e0faae2a@BL2PR03MB210.namprd03.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:4898:80e8:ed31::3]
-x-forefront-prvs: 0027ED21E7
-x-forefront-antispam-report: SFV:NSPM;SFS:(53754006)(189002)(199002)(164054003)(81542001)(81816001)(53806001)(51856001)(80022001)(85806002)(69226001)(83072001)(63696002)(2656002)(56776001)(83322001)(87266001)(74876001)(54356001)(46102001)(80976001)(87936001)(76796001)(76786001)(85306002)(65816001)(74366001)(76176001)(76576001)(79102001)(81686001)(4396001)(76482001)(47736001)(77096001)(31966008)(33646001)(74706001)(59766001)(77982001)(74662001)(47446002)(74502001)(558084003)(49866001)(54316002)(81342001)(56816003)(74316001)(50986001)(47976001)(24736002)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB211;H:BL2PR03MB210.namprd03.prod.outlook.com;CLIP:2001:4898:80e8:ed31::3;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Nov 2013 13:57:35 -0500
+Message-ID: <528128A8.9060400@arm.com>
+Date: Mon, 11 Nov 2013 18:57:44 +0000
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Sudeep.KarkadaNagesha@arm.com,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/7] arm: dt: zynq: Add 'cpus' node
+References: <1383945677-29674-1-git-send-email-soren.brinkmann@xilinx.com> <1383945677-29674-3-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1383945677-29674-3-git-send-email-soren.brinkmann@xilinx.com>
+X-OriginalArrivalTime: 11 Nov 2013 18:57:31.0085 (UTC) FILETIME=[DFB297D0:01CEDF0F]
+X-MC-Unique: 113111118573204401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On 08/11/13 21:21, Soren Brinkmann wrote:
+> Add a 'cpus' node to describe the CPU cores of Zynq.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> Acked-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+> ---
+>  arch/arm/boot/dts/zynq-7000.dtsi | 27 +++++++++++++++++++++++++++
+>  1 file changed, 27 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+> index 27ebc1ba9671..37fc04525142 100644
+> --- a/arch/arm/boot/dts/zynq-7000.dtsi
+> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
+> @@ -15,6 +15,33 @@
+>  / {
+>  	compatible = "xlnx,zynq-7000";
+>  
+> +	cpus {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		cpu@0 {
+> +			compatible = "arm,cortex-a9";
+> +			device_type = "cpu";
+> +			reg = <0>;
+> +			clocks = <&clkc 3>;
+> +			i-cache-size = <0x8000>;
+> +			i-cache-line-size = <0x20>;
+> +			d-cache-size = <0x8000>;
+> +			d-cache-line-size = <0x20>;
 
-Is anybody using floppy disk drives with virtual machines on Hyper-V or any other hypervisor? I would be interested in knowing both common and obscure scenarios. Please let me know if you have any thoughts in this direction.
- 
-Thanks,
-Abhishek Gupta
-Program Manager, Microsoft Corporation
+These cache properties can be identified through CCSIDR(Cache Size ID Registers)
+on ARMv7 Cortex implementations. It's better not to have these in DT if they can
+be identified runtime.
+
+Regards,
+Sudeep
+
 
