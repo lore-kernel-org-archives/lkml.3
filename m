@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab3KKN1e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 08:27:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31168 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753376Ab3KKN10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 08:27:26 -0500
-Message-ID: <5280DB2D.2080202@redhat.com>
-Date: Mon, 11 Nov 2013 08:27:09 -0500
-From: Joe Mario <jmario@redhat.com>
-Reply-To: jmario@redhat.com
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	id S1753838Ab3KKN2Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 08:28:24 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:61893 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753488Ab3KKN2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 08:28:15 -0500
+Date: Mon, 11 Nov 2013 14:28:12 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/3] panic: improve panic_timeout calculation
+Message-ID: <20131111132812.GB7258@gmail.com>
+References: <1383871600-3831-1-git-send-email-felipe.contreras@gmail.com>
+ <1383871600-3831-3-git-send-email-felipe.contreras@gmail.com>
+ <20131111113218.GF15810@gmail.com>
+ <CAMP44s0AVy=ef1k95bXsRJizW6zsPApFe9KPrRcg09ORo=2mQA@mail.gmail.com>
+ <20131111124953.GA6765@gmail.com>
+ <CAMP44s07Ub=G5mD_zkMvPkwcPWm6psZ-8L32dScy1txQkU_9Nw@mail.gmail.com>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [kallsyms] general protection fault: 0000 [#1] PREEMPT DEBUG_PAGEALLOC
-References: <20131110094005.GA21916@localhost> <20131110152338.GN29695@two.firstfloor.org> <5280C87A.5050606@suse.cz>
-In-Reply-To: <5280C87A.5050606@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMP44s07Ub=G5mD_zkMvPkwcPWm6psZ-8L32dScy1txQkU_9Nw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 07:07 AM, Michal Marek wrote:
-> On 10.11.2013 16:23, Andi Kleen wrote:
->> On Sun, Nov 10, 2013 at 05:40:05PM +0800, Fengguang Wu wrote:
->>> Hi Joe,
->>>
->>> FYI. Here is another bisect result.
->>
->> I bet it's that strncpy() in kallsyms.c and someone passing in a too
->> short buffer on a 32bit kernel.
->>
->> We should really kill strncpy(), it's just evil.
->
-> I'm testing a patch for include/linux/pci.h to use line numbers instead
-> of the PCI ID macros to declare the __pci_fixup_* symbols. If that
-> works, we can revert the limit back to 128 and only keep the check in
-> kallsyms.c.
->
-> Michal
 
-Michal:
-  That would be great.
+* Felipe Contreras <felipe.contreras@gmail.com> wrote:
 
-  I found six locations which were still using an array size hardwired to "128" instead of KSYM_NAME_LEN.  But none of them were related to the crash Fengguang Wu reported.  We built a 32-bit kernel from his config (with a few issues) but were unable to reproduce the crash.  Still trying.
+> On Mon, Nov 11, 2013 at 6:49 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Felipe Contreras <felipe.contreras@gmail.com> wrote:
+> >
+> >> On Mon, Nov 11, 2013 at 5:32 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >> >
+> >> > * Felipe Contreras <felipe.contreras@gmail.com> wrote:
+> >> >
+> >> >> We want to calculate the blinks per second, and instead of making it 5
+> >> >> (1000 / (3600 / 18)), let's make it 4, so the user can see two blinks
+> >> >> per second.
+> >> >
+> >> > Please use the customary changelog style we use in the kernel:
+> >> >
+> >> >   " Current code does (A), this has a problem when (B).
+> >> >     We can improve this doing (C), because (D)."
+> >>
+> >> A is explained, B is empty, C is explained, D is because it makes sense.
 
-  Whatever happens, I agree the check in kallsyms.c for kernel symbols whose length exceeds the buffer size, needs to be in place.
+So one problem with your changelog is that you describe the change but 
+don't explain a couple of things - for example why you changed '3600' to 
+'1000'.
 
-Joe
+I know why you did it because I've read the diff and the related code, but 
+such kind of information is best put into changelogs.
 
+This is standard review feedback.
+
+> >
+> > NAKed-by: Ingo Molnar <mingo@kernel.org>
+> 
+> Suit yourself, stay with your buggy code then.
+
+I NAK-ed your patch because your patch has several technical problems. To 
+lift the NAK you'll need to address my review feedback constructively.
+
+Thanks,
+
+	Ingo
