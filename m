@@ -1,45 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab3KKJ21 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 04:28:27 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53916 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab3KKJ2T (ORCPT
+	id S1752815Ab3KKJad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 04:30:33 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:47880 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab3KKJaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 04:28:19 -0500
-Date: Mon, 11 Nov 2013 10:28:15 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: mm-factor-commit-limit-calculation-fix broken on ARM-nommu
-Message-ID: <20131111092815.GJ14892@pengutronix.de>
+	Mon, 11 Nov 2013 04:30:23 -0500
+Date: Mon, 11 Nov 2013 10:30:11 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Li Xiubo <Li.Xiubo@freescale.com>
+Cc: Shawn Guo <Shawn.Guo@freescale.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "t.figa@samsung.com" <t.figa@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFCv2][PATCHv5 0/4] Add Freescale FTM PWM driver.
+Message-ID: <20131111093008.GH3884@ulmo.nvidia.com>
+References: <1383114204-17264-1-git-send-email-Li.Xiubo@freescale.com>
+ <1DD289F6464F0949A2FCA5AA6DC23F82878657@039-SN2MPN1-013.039d.mgd.msft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oyqLL/JqMvClXZi1"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1DD289F6464F0949A2FCA5AA6DC23F82878657@039-SN2MPN1-013.039d.mgd.msft.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
 
-in mm-factor-commit-limit-calculation-fix you move vm_commit_limit to
-mm/mmap.c. This file is only compiled with CONFIG_MMU on though. So my
-build fails here.
+--oyqLL/JqMvClXZi1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There are some more problems that I didn't look into yet, but if you
-want to look into it, efm32_defconfig for ARCH=arm is what I'm seeing
-broken.
+On Thu, Nov 07, 2013 at 07:00:41AM +0000, Li Xiubo wrote:
+> Hi Thierry,
+>=20
+> The document binding patch of this patch series has been acked.
+> And other patches have been acked before.
+>=20
+> Should I send a V6 patch series ?
 
-best regards
-Uwe
+Yes, it'd be great if you can collect the various Acked-by's and send
+them as part of v6.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Thanks,
+Thierry
+
+--oyqLL/JqMvClXZi1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSgKOgAAoJEN0jrNd/PrOhkicQAI5nzusu7/A0797KN+UxXD3V
+ssvBtMKbpUaIGRmYB2+2BGTvA/d8TyVOERAzp8E6fnEvvmiVCpBggwlT+q+ExG0q
+tVMpMtyN4BUV/9D34fwAY5dCcrcj4ThyyOaezFtN/wurU1HgGGj2S+MdTSnvP7sQ
+Ov0ve7/aU6G/pGrF/uqI7dzWdTf/9jPGR78bPM1sts9Kr9gKEGaseDKVSPRCoHTO
+Ug9S4v/gea+CCk3A03eUQ/wgDEs1DujMIjq47Wan1IUKZ+5TV/wamKg8tdPzOByh
+2L6wkiPuwo2oeGNuqAMoG9KT0SPmw9MdsoZ99UP7C52dGAoFU41LqNpJxyofFtOb
+p7lKMwnN43s0r9vPht/Zt6dxRlwtWRp8yIKoneoZX98iGe01YWHSRGXvBGOy7VAS
+4jF0FyQy97Qi9pRAovhHyvQNDIRd5GZLWO9CmaLPI2607BEADmYSbLXfNQGHnrJJ
+201oc/tdUnxsNTvSyC980LkoUuFwwXyxLHENVZre1Jqi89ATxO72hakTrWbUh0LN
+lMLaXVa2t4dl7BuqBNmkNDfubkC0YodC5O+Fw2yusgq7uY9vTunvN4yC9KQaWHJu
+Pmpf5HCngMYphAi1F9hwRAKYNTNyxepNJvtRBzz9MYXe++/hBg0or80BlQycuw8H
+lZjxxIPrQuWJQ8ZvI2jn
+=okwO
+-----END PGP SIGNATURE-----
+
+--oyqLL/JqMvClXZi1--
