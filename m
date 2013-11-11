@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab3KKThL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 14:37:11 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:39384 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197Ab3KKThF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 14:37:05 -0500
+	id S1755243Ab3KKThZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 14:37:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47909 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755081Ab3KKThW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 14:37:22 -0500
+Message-ID: <528131E7.2060509@zytor.com>
+Date: Mon, 11 Nov 2013 11:37:11 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <52812F92.1020006@zytor.com>
-References: <1381450698-28710-4-git-send-email-keescook@chromium.org>
-	<tip-5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3@git.kernel.org>
-	<20131111182046.GA14961@gmail.com>
-	<52812F92.1020006@zytor.com>
-Date: Mon, 11 Nov 2013 11:37:04 -0800
-X-Google-Sender-Auth: LO82R9_U5IJ2shEgJxExPxIx61w
-Message-ID: <CAGXu5j+66dfv_048iDp+ZAv4_sS4si9cHG-8L_4zJ1OHHLxaUw@mail.gmail.com>
-Subject: Re: [tip:x86/kaslr] x86, kaslr: Provide randomness functions
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+To: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@linux.intel.com>,
         "linux-tip-commits@vger.kernel.org" 
 	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [tip:x86/kaslr] x86, kaslr: Provide randomness functions
+References: <1381450698-28710-4-git-send-email-keescook@chromium.org>	<tip-5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3@git.kernel.org>	<20131111182046.GA14961@gmail.com>	<20131111183101.GA16051@gmail.com> <CAGXu5jL96B4+McO=K9dptu81m+bdKWOZ8YS9x7+SZxkjfUsg9Q@mail.gmail.com>
+In-Reply-To: <CAGXu5jL96B4+McO=K9dptu81m+bdKWOZ8YS9x7+SZxkjfUsg9Q@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 11:27 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 11/11/2013 10:20 AM, Ingo Molnar wrote:
->>
->> Why aren't the 3 sources of entropy XOR-ed together?
->>
->
-> Note we don't want to poke i8254 if we have any other sources, as the
-> i8254 may not be present on newer systems and in some other cases not
-> safe to touch.  We can XOR in the TSC with RDRAND although it seems a
-> bit odd.
+On 11/11/2013 11:32 AM, Kees Cook wrote:
+>>>
+>>> Why aren't the 3 sources of entropy XOR-ed together?
+> 
+> Ah, excellent suggestion. There's no reason they couldn't be. I can
+> rework that function to do that.
+> 
+>>> Also, we talked about also adding system dependent entropy sources, such
+>>> as memory layout or the DMI table - none of that seems to have happened.
+> 
+> It seemed like those things didn't contribute as much entropy as the 3
+> already in use, but I could investigate how to distill those things
+> down into entropy. Perhaps just XORing the start and length of every
+> e820 area? DMI I'll need to dig into...
+> 
 
-I await the final decision! :)
+DMI and ACPI are relatively straightforward: they are really just blocks
+of memory with magic pointers.  Since you don't actually need to parse
+them, it is mostly just a matter of finding those blocks of memory and
+hashing them.
 
-> HOWEVER...
->
-> +               /* Only use the low bits of rdtsc. */
-> +               random = raw & 0xffff;
->
-> Why?!  All that can do is throw away randomness...
+You could also hash the BDA - the first 0x500 bytes of memory - although
+that starts to get into the "what about weird nontraditional platforms"
+space.
 
-Due to the 2GiB addressing and 2MiB alignment, we can never use more
-than 10 bits of entropy at maximum. The existing patches only use 9
-bits (due to page table layouts) on 64-bit and 8 bits on 32-bit.
+A *MAJOR* issue with DMI and ACPI is that the way they are located is
+firmware dependent: there is a search algorithm defined for BIOS
+platforms, whereas on EFI I believe it requires doing runtime calls to
+find things.
 
-> +       /* Extend timer bits poorly... */
-> +       random |= (random << 16);
-> +#ifdef CONFIG_X86_64
-> +       random |= (random << 32);
-> +#endif
+Of course, perhaps we could just hash struct boot_params as a starting
+point?
 
-I did this so that any portion of the returned value could be used for
-the 10 bit mask.
+	-hpa
 
-> For smearing out bits, a better way is usually to multiply with a large
-> prime number (preferably a circular multiply.)
-
-This shouldn't be needed since we're only using the low 10 bits.
-
-How would you like to see this function updated to make that more
-clear? More comments?
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
