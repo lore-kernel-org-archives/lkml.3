@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab3KKI4B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 03:56:01 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:47031 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab3KKIzz (ORCPT
+	id S1753268Ab3KKI6P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 03:58:15 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:33126 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752418Ab3KKI6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 03:55:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <52808CFC.6060701@linaro.org>
-References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
-	<1382008671-4515-5-git-send-email-sandeepa.prabhu@linaro.org>
-	<20131108170448.GF15074@mudshark.cambridge.arm.com>
-	<CA+b37P2aeXs4Cy_HxF24HQAYAnYzZ19PgV6rqrQLY9SMpZHDJg@mail.gmail.com>
-	<52808CFC.6060701@linaro.org>
-Date: Mon, 11 Nov 2013 14:25:54 +0530
-Message-ID: <CA+b37P27CiozHnARndFGsESrxPDNvXwNKRX2wWzLVPCGtVfH0w@mail.gmail.com>
-Subject: Re: [PATCH RFC 4/6] arm64: Add kernel return probes support(kretprobes)
-From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 11 Nov 2013 03:58:04 -0500
+From: Thomas Hellstrom <thellstrom@vmware.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Hellstrom <thellstrom@vmware.com>
+Subject: [PATCH RFC RESEND] dma-buf/fs Add get_[file|dma_buf]_unless_doomed
+Date: Mon, 11 Nov 2013 00:57:47 -0800
+Message-Id: <1384160267-3389-1-git-send-email-thellstrom@vmware.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 November 2013 13:23, AKASHI Takahiro <takahiro.akashi@linaro.org> wrote:
-> On 11/11/2013 01:29 PM, Sandeepa Prabhu wrote:
->>
->> On 8 November 2013 22:34, Will Deacon <will.deacon@arm.com> wrote:
->>>>
->>>> +static inline long regs_return_value(struct pt_regs *regs)
->>>> +{
->>>> +     return regs->regs[0];
->>>> +}
->>>
->>>
->>> This is also being implemented by another patch series (I think the audit
->>> stuff?).
->>
->> Not sure, I did not see this being implemented in audit(audit adds for
->> 'syscallno',  not for return value in x0)
->> I can rebase my code if this change is implemented and queued in other
->> patchset.
->
->
-> Yes, my audit patch has it.
-> The definition is referred to in include/linux/audit.h (and ptrace.h),
-> too.
-Thanks, I will rebase kprobes code to use your API.
->
-> -Takahiro AKASHI
+Resending since it appears this RFC never got to the dri-devel lkml lists.
+
+In this context, a "doomed" object is an object whose refcount has reached
+zero, but that has not yet been freed.
+
+To avoid mutual refcounting vmwgfx need to have a non-refcounted pointer to
+a dma-buf in a lookup structure. The pointer is removed in the dma-buf
+destructor. To allow lookup-structure private locks we need
+get_dma_buf_unless_doomed(). This common refcounting scenario is described
+with examples in detail in the kref documentaion.
+The solution with local locks is under kref_get_unless_zero().
+See also kobject_get_unless_zero() and its commit message.
+Since dma-bufs are using the attached file for refcounting,
+get_dma_buf_unless_doomed maps directly to a get_file_unless_doomed.
+
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+---
+ include/linux/dma-buf.h |   16 ++++++++++++++++
+ include/linux/fs.h      |   15 +++++++++++++++
+ 2 files changed, 31 insertions(+)
+
+diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
+index dfac5ed..6e58144 100644
+--- a/include/linux/dma-buf.h
++++ b/include/linux/dma-buf.h
+@@ -162,6 +162,22 @@ static inline void get_dma_buf(struct dma_buf *dmabuf)
+ 	get_file(dmabuf->file);
+ }
+ 
++/**
++ * get_dma_buf_unless_doomed - convenience wrapper for get_file_unless_doomed
++ *
++ * @dmabuf:	[in]	pointer to dma_buf
++ *
++ * Obtain a dma-buf reference from a lookup structure that doesn't refcount
++ * the dma-buf, but synchronizes with its release method to make sure it has
++ * not been freed yet. See for example kref_get_unless_zero documentation.
++ * Returns true if refcounting succeeds, false otherwise.
++ */
++static inline bool __must_check
++get_dma_buf_unless_doomed(struct dma_buf *dmabuf)
++{
++	return get_file_unless_doomed(dmabuf->file);
++}
++
+ struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+ 							struct device *dev);
+ void dma_buf_detach(struct dma_buf *dmabuf,
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 3f40547..a96c333 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -824,6 +824,21 @@ static inline struct file *get_file(struct file *f)
+ 	atomic_long_inc(&f->f_count);
+ 	return f;
+ }
++
++/**
++ * get_file_unless_doomed - convenience wrapper for get_file_unless_doomed
++ * @file:	[in]	pointer to file
++ *
++ * Obtain a file reference from a lookup structure that doesn't refcount
++ * the file, but synchronizes with its release method to make sure it has
++ * not been freed yet. See for example kref_get_unless_zero documentation.
++ * Returns true if refcounting succeeds, false otherwise.
++ */
++static inline bool __must_check get_file_unless_doomed(struct file *f)
++{
++	return atomic_long_inc_not_zero(&f->f_count) != 0L;
++}
++
+ #define fput_atomic(x)	atomic_long_add_unless(&(x)->f_count, -1, 1)
+ #define file_count(x)	atomic_long_read(&(x)->f_count)
+ 
+-- 
+1.7.10.4
