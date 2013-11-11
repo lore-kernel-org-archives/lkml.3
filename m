@@ -1,87 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab3KKSyB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 13:54:01 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58520 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754952Ab3KKSxp (ORCPT
+	id S1755231Ab3KKS4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 13:56:19 -0500
+Received: from mail-bl2lp0206.outbound.protection.outlook.com ([207.46.163.206]:37728
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754927Ab3KKS4K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 13:53:45 -0500
-Message-ID: <528127B2.80109@wwwdotorg.org>
-Date: Mon, 11 Nov 2013 11:53:38 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 11 Nov 2013 13:56:10 -0500
+X-Greylist: delayed 944 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Nov 2013 13:56:10 EST
+From: "Abhishek Gupta (LIS)" <abgupta@microsoft.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Use of Floppy Drive with Linux Virtual Machines
+Thread-Topic: Use of Floppy Drive with Linux Virtual Machines
+Thread-Index: Ac7fDWNFO7CFPfOZR1CPa7JA5pHJGA==
+Date: Mon, 11 Nov 2013 18:40:04 +0000
+Message-ID: <58b8cbf5f01648f3804deb85e0faae2a@BL2PR03MB210.namprd03.prod.outlook.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e8:ed31::3]
+x-forefront-prvs: 0027ED21E7
+x-forefront-antispam-report: SFV:NSPM;SFS:(53754006)(189002)(199002)(164054003)(81542001)(81816001)(53806001)(51856001)(80022001)(85806002)(69226001)(83072001)(63696002)(2656002)(56776001)(83322001)(87266001)(74876001)(54356001)(46102001)(80976001)(87936001)(76796001)(76786001)(85306002)(65816001)(74366001)(76176001)(76576001)(79102001)(81686001)(4396001)(76482001)(47736001)(77096001)(31966008)(33646001)(74706001)(59766001)(77982001)(74662001)(47446002)(74502001)(558084003)(49866001)(54316002)(81342001)(56816003)(74316001)(50986001)(47976001)(24736002)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB211;H:BL2PR03MB210.namprd03.prod.outlook.com;CLIP:2001:4898:80e8:ed31::3;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Gerlando Falauto <gerlando.falauto@keymile.com>,
-        Mark Brown <broonie@kernel.org>
-CC: Lars Poeschel <poeschel@lemonage.de>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
-References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <1521079.WSLhhfqBXl@lem-wkst-02> <52261BF0.4090106@wwwdotorg.org> <3144247.j2q6H0KWZx@lem-wkst-02> <52279524.8090006@wwwdotorg.org> <20130909161924.GT29403@sirena.org.uk> <528121D5.40403@keymile.com>
-In-Reply-To: <528121D5.40403@keymile.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 11:28 AM, Gerlando Falauto wrote:
-> Hi everyone,
-> 
-> [jumping in on an old discussion]
-> 
-> On 09/09/2013 06:19 PM, Mark Brown wrote:
->> On Wed, Sep 04, 2013 at 02:16:36PM -0600, Stephen Warren wrote:
->>> On 09/04/2013 03:05 AM, Lars Poeschel wrote:
->>
->>>> The driver that tries to use the GPIO requested by this patch before
->>>> HAS to
->>>> fail. This is exactly the intention of this patch. We don't want the
->>>> GPIO to
->>>> be requested any more, if it is used as an interrupt pin.
->>
->>> That will break existing drivers. There are drivers that request the
->>> same GPIO and IRQ. IIRC, the SDHCI CD (Card Detect) GPIO is requested
->>> that way.
->>
->> Yes, plus input devices and audio jack detection among others.  This
->> pattern is very common if the GPIO is actually being used as a GPIO, an
->> edge triggered interrupt is used to flag when something happens and the
->> state is determined by reading the GPIO state (often with some
->> debounce).
-> 
-> I actually came across this thread while looking for an answer to the
-> following (apparently trivial) question:
-> 
-> If you were to write a new driver & binding, what would be, in general,
-> the recommended DT binding for a cascade interrupt controller (or any
-> other peripheral, for that matter), which is connected through a GPIO
-> (to be used as IRQ)?
-> 
-> a) Through gpios = <&gpio0 N>
-> b) through interrupt-parent = <&gpio0> & interrupts <N
-> IRQ_TYPE_LEVEL_LOW>, or
-> c) both?
+Hi everyone,
 
-(b) alone.
+Is anybody using floppy disk drives with virtual machines on Hyper-V or any other hypervisor? I would be interested in knowing both common and obscure scenarios. Please let me know if you have any thoughts in this direction.
+ 
+Thanks,
+Abhishek Gupta
+Program Manager, Microsoft Corporation
 
->From the perspective of the child interrupt controller, its output is
-purely an interrupt. The fact that the parent interrupt controller could
-use that pin as a GPIO in some other context (e.g. on a different board)
-isn't something that the child interrupt controller should know/care about.
