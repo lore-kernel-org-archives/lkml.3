@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab3KKQhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 11:37:04 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38454 "EHLO
+	id S1754612Ab3KKQjd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 11:39:33 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38506 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753782Ab3KKQg4 (ORCPT
+	with ESMTP id S1753946Ab3KKQjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 11:36:56 -0500
-Date: Mon, 11 Nov 2013 17:36:30 +0100
+	Mon, 11 Nov 2013 11:39:24 -0500
+Date: Mon, 11 Nov 2013 17:38:59 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Vincent Guittot <vincent.guittot@linaro.org>,
@@ -23,7 +23,7 @@ Cc: Vincent Guittot <vincent.guittot@linaro.org>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Arjan van de Ven <arjan@linux.intel.com>, linux-pm@vger.kernel.org
 Subject: Re: [RFC][PATCH v5 00/14] sched: packing tasks
-Message-ID: <20131111163630.GD26898@twins.programming.kicks-ass.net>
+Message-ID: <20131111163859.GE26898@twins.programming.kicks-ass.net>
 References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
  <CAHkRjk69GNYtLGBSWCNcsCzkBHywKrD0qQQbNkJRpMbcdsCPyw@mail.gmail.com>
 MIME-Version: 1.0
@@ -36,23 +36,28 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Nov 11, 2013 at 11:33:45AM +0000, Catalin Marinas wrote:
+> My understanding from the recent discussions is that the scheduler
+> should decide directly on the C-state (or rather the deepest C-state
+> possible since we don't want to duplicate the backend logic for
+> synchronising CPUs going up or down). This means that the scheduler
+> needs to know about C-state target residency, wake-up latency (I think
+> we can leave coupled C-states to the backend, there is some complex
+> synchronisation which I wouldn't duplicate).
+> 
+> Alternatively (my preferred approach), we get the scheduler to predict
+> and pass the expected residency and latency requirements down to a
+> power driver and read back the actual C-states for making task
+> placement decisions. Some of the menu governor prediction logic could
+> be turned into a library and used by the scheduler. Basically what
+> this tries to achieve is better scheduler awareness of the current
+> C-states decided by a cpuidle/power driver based on the scheduler
+> constraints.
 
-tl;dr :-) Still trying to wrap my head around how to do that weird
-topology Vincent raised..
+Ah yes.. so I _think_ the scheduler wants to eventually know about idle
+topology constraints. But we can get there in a gradual fashion I hope.
 
-> Question for Peter/Ingo: do you want the scheduler to decide on which
-> C-state a CPU should be in or we still leave this to a cpuidle
-> layer/driver?
+Like the package C states on x86 -- for those to be effective the
+scheduler needs to pack tasks and keep entire packages idle for as long
+as possible.
 
-I think the can leave most of that in a driver; right along with how to
-prod the hardware to actually get into that state.
 
-I think the most important parts are what is now 'generic' code; stuff
-that guestimates the idle-time and so forth.
-
-I think the scheduler simply wants to say: we expect to go idle for X
-ns, we want a guaranteed wakeup latency of Y ns -- go do your thing.
-
-I think you also raised the point in that we do want some feedback as to
-the cost of waking up particular cores to better make decisions on which
-to wake. That is indeed so.
