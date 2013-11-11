@@ -1,44 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068Ab3KKR6A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 12:58:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60568 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755009Ab3KKR5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 12:57:52 -0500
-Date: Mon, 11 Nov 2013 18:59:02 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes: Add uprobe_task->dup_work/dup_addr
-Message-ID: <20131111175902.GA15457@redhat.com>
-References: <20131108190003.GA12755@redhat.com> <20131111071151.GA2559@linux.vnet.ibm.com> <20131111165543.GA12233@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131111165543.GA12233@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755164Ab3KKR6H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 12:58:07 -0500
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:56635 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab3KKR54 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 12:57:56 -0500
+X-AuditID: cbfec37d-b7f0e6d00000657c-1f-52811aa2cea1
+Message-id: <52811AA0.5090605@samsung.com>
+Date: Mon, 11 Nov 2013 10:57:52 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.11 00/94] 3.11.8-stable review
+References: <20131109065204.252462489@linuxfoundation.org>
+In-reply-to: <20131109065204.252462489@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9hP93FUo1BBhsOMFnMWb+GzaJ58Xo2
+	i8u75rBZfP3pYLFg4yNGi0d9b9kd2Dx2zrrL7nFixm8Wj/1z17B7fN4kF8ASxWWTkpqTWZZa
+	pG+XwJUx5d9/1oJFHBVzfixib2DcxtbFyMkhIWAi0Xh4HROELSZx4d56oDgXh5DAMkaJ5VtO
+	M0E4vUwSfVcnMUI4GxklZh2fD9bOK6AlsXnCOWYQm0VAVWLZ0jZ2EJtNQF3i8+sdYLaQgJxE
+	05LVYDWiAhESR1c/Y4XoFZT4MfkeC4gtIhAssfbrQrAFzAKHGSXO7b8GViQMdN/hXWugBllJ
+	zJ10EayBU8Ba4tTkiWBxZgEziUct65ghbHmJzWveMkPUK0v8uXwK6AUOoN8UJbavtprAKDIL
+	yepZSLpnIelewMi8ilGstDi5oDgpPbXCRK84Mbe4NC9dLzk/dxMjJGpqdzDe/2pziFGAg1GJ
+	h3cHV2OQEGtiWXFl7iFGCQ5mJRFeN16gEG9KYmVValF+fFFpTmrxIUYmDk6pBkZhhTDRqVs/
+	xgmezOrr9vwmPNWkYMWk22/9z8s0nDK5rvdiaYHHaZ09jK0chyKizx78E1/CU7xhP5eV1Fep
+	7VMap0ndePrP/jGTb9KFa5OnbVu36NKdnc3XVhu/C1VJjLpcGV9grry8+75Sz3/hSxqBd58e
+	TV/YsczlpGhC39+U31IeeVuZ/B4psRRnJBpqMRcVJwIA9J2eEXgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11, Oleg Nesterov wrote:
+On 11/08/2013 11:51 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.11.8 release.
+> There are 94 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 >
-> On 11/11, Srikar Dronamraju wrote:
-> >
-> > Nit:
-> > Can we rename dup_addr to mean that it refers to the xol; something like
-> > dup_xol_addr or even xol_addr. So that its more clear what address it
-> > refers to.
+> Responses should be made by Mon Nov 11 06:51:44 UTC 2013.
+> Anything received after that time might be too late.
 >
-> OK. How about dup_xol_work/dup_xol_vaddr ?
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.8-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-I didn't notice you suggested the same naming ;) OK, will rename to
-dup_xol_work/addr.
 
-Oleg.
+3.11.8:
 
+Patch applied cleanly    yes
+Compile test        passed
+Boot test        passed
+dmesg regression test    passed
+
+dmesgs look good. No regressions compared to the previous dmesgs for 
+this release. dmesg emerg, crit, alert, err are clean. No regressions in 
+warn.
+
+-- Shuah
+
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
