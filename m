@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab3KKVyY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 16:54:24 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42079 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab3KKVyR (ORCPT
+	id S1753128Ab3KKVzm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 16:55:42 -0500
+Received: from mail-1.atlantis.sk ([80.94.52.57]:37203 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab3KKVzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 16:54:17 -0500
-Date: Mon, 11 Nov 2013 22:54:15 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jan Kara <jack@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
- too much
-Message-ID: <20131111215415.GA23331@amd.pavel.ucw.cz>
-References: <1383860919-1883-1-git-send-email-jack@suse.cz>
- <1383860919-1883-4-git-send-email-jack@suse.cz>
- <CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
- <20131107225733.GE2054@quack.suse.cz>
+	Mon, 11 Nov 2013 16:55:36 -0500
+From: Ondrej Zary <linux@rainbow-software.org>
+To: linux-scsi@vger.kernel.org
+Subject: [RFC PATCH 0/2] wd719x: Introduce Western Digital WD7193/7197/7296 PCI SCSI card driver
+Date: Mon, 11 Nov 2013 22:55:04 +0100
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20131107225733.GE2054@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201311112255.04967.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hello,
+this is an attempt to provide a new driver for Western Digital WD7193, WD7197 
+and WD7296 PCI SCSI controllers based on WD33C296A chip.
 
-> > > A CPU can be caught in console_unlock() for a long time (tens of seconds
-> > > are reported by our customers) when other CPUs are using printk heavily
-> > > and serial console makes printing slow. Despite serial console drivers
-> > > are calling touch_nmi_watchdog() this triggers softlockup warnings
-> > > because interrupts are disabled for the whole time console_unlock() runs
-> > > (e.g. vprintk() calls console_unlock() with interrupts disabled). Thus
-> > > IPIs cannot be processed and other CPUs get stuck spinning in calls like
-> > > smp_call_function_many(). Also RCU eventually starts reporting lockups.
-> > >
-> > > In my artifical testing I can also easily trigger a situation when disk
-> > > disappears from the system apparently because interrupt from it wasn't
-> > > served for too long. This is why just silencing watchdogs isn't a
-> > > reliable solution to the problem and we simply have to avoid spending
-> > > too long in console_unlock() with interrupts disabled.
-> > >
-> > > The solution this patch works toward is to postpone printing to a later
-> > > moment / different CPU when we already printed over X characters in
-> > > current console_unlock() invocation. This is a crude heuristic but
-> > > measuring time we spent printing doesn't seem to be really viable - we
-> > > cannot rely on high resolution time being available and with interrupts
-> > > disabled jiffies are not updated. User can tune the value X via
-> > > printk.offload_chars kernel parameter.
-> > >
-> > > Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-> > > Signed-off-by: Jan Kara <jack@suse.cz>
-> > 
-> > When a message takes tens of seconds to be printed, it usually means
-> > we are in trouble somehow :)
-> > I wonder what printk source can trigger such a high volume.
->   Machines with tens of processors and thousands of scsi devices. When
-> device discovery happens on boot, all processors are busily reporting new
-> scsi devices and one poor looser is bound to do the printing for ever and
-> ever until the machine dies...
+It's based on old and ugly wd719x driver written back in 2.0 days, then hacked 
+to 2.2 and finally to 2.4 kernels. Most of the code is rewritten: from ~4100 
+lines to ~1200.
 
-Dunno. In these cases, would it make sense to:
+I've tested the driver on a WD7193 card with some hard drives and CD-ROMs:
+QUANTUM  LP240S GM240S01X 4.6
+IBM      0663L12          e g
+IBM      DORS-32160       WA0A
+SONY     CD-ROM CDU-55S   1.0t
+SONY     CD-ROM CDU-415   1.1g
 
-1) reduce amount of text printed
+The card supports TCQ and linked commands (for cmd_per_lun > 1?) but I don't 
+know how it should be implemented in a driver.
 
-2) just print [XXX characters lost] on overruns?
+Device/bus/host resets seem to work fine when tested by sg_reset.
+But don't know how to test command abort.
 
-									Pavel
+The card requires firmware that can be cut out of the Windows NT driver that 
+can be downloaded from WD at: 
+http://support.wdc.com/product/download.asp?groupid=801&sid=27&lang=en
+There is no license anywhere in the file or on the page - so I guess that the 
+firmware cannot be added to linux-firmware.
+
+This script downloads and extracts the firmware:
+
+#!/bin/sh
+wget http://support.wdc.com/download/archive/pciscsi.exe
+lha xi pciscsi.exe pci-scsi.exe
+lha xi pci-scsi.exe nt/wd7296a.sys
+rm pci-scsi.exe
+dd if=wd7296a.sys of=wd719x-risc.bin bs=1 skip=5760 count=14336
+dd if=wd7296a.sys of=wd719x-wcs.bin bs=1 skip=20096 count=514
+rm wd7296a.sys
+
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Ondrej Zary
