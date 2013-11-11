@@ -1,186 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab3KKWKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 17:10:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49875 "EHLO mail.zytor.com"
+	id S1753058Ab3KKWQB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 17:16:01 -0500
+Received: from mga02.intel.com ([134.134.136.20]:48043 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751531Ab3KKWKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 17:10:30 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131111213619.GA3230@www.outflux.net>
-References: <20131111213619.GA3230@www.outflux.net>
+	id S1751716Ab3KKWPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 17:15:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="433481773"
+Message-ID: <528156E4.1030409@intel.com>
+Date: Mon, 11 Nov 2013 14:15:00 -0800
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v3] x86, kaslr: mix entropy sources together as needed
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 11 Nov 2013 14:10:06 -0800
-To: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@redhat.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Message-ID: <19e05481-b28e-4ee8-ae5b-be62a36c0492@email.android.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>, viro@zeniv.linux.org.uk
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Chandra Seetharaman <sekharan@us.ibm.com>
+Subject: Re: [PATCH v6 07/11] VFS hot tracking: Add a /proc interface to control
+ memory usage
+References: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com> <1383745544-391-8-git-send-email-zwu.kernel@gmail.com>
+In-Reply-To: <1383745544-391-8-git-send-email-zwu.kernel@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You probably want to rotate by an odd number of bits... the point is to spread out any pattern in the bytes.
+On 11/06/2013 05:45 AM, Zhi Yong Wu wrote:
+> Introduce a /proc interface hot-mem-high-thresh and
+> to cap the memory which is consumed by hot_inode_item
+> and hot_range_item, and they will be in the unit of
+> 1M bytes.
 
-Kees Cook <keescook@chromium.org> wrote:
->Depending on availability, mix the RDRAND and RDTSC entropy together
->with
->XOR. Only when neither is available should the i8254 be used. Update
->the Kconfig documentation to reflect this. Additionally, since bits
->used for entropy is masked elsewhere, drop the needless masking in
->the get_random_long(). Similarly, use the entire TSC, not just the low
->32 bits.
->
->Finally, to improve the starting entropy, do a simple hashing of a
->build-time versions string and the boot-time boot_params structure for
->some additional level of unpredictability.
->
->Signed-off-by: Kees Cook <keescook@chromium.org>
->---
->v3:
-> - do not limit ourself to the low 32 bits of TSC; Ingo Molnar.
->v2:
-> - added build-time string to add to starting entropy; Ingo Molnar.
->---
-> arch/x86/Kconfig                |   14 +++++---
->arch/x86/boot/compressed/aslr.c |   73
->++++++++++++++++++++++++++++++---------
-> 2 files changed, 65 insertions(+), 22 deletions(-)
->
->diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
->index ee3b38363063..119455802d57 100644
->--- a/arch/x86/Kconfig
->+++ b/arch/x86/Kconfig
->@@ -1736,13 +1736,17 @@ config RANDOMIZE_BASE
-> 	   deters exploit attempts relying on knowledge of the location
-> 	   of kernel internals.
-> 
->-	   Entropy is generated using the RDRAND instruction if it
->-	   is supported.  If not, then RDTSC is used, if supported. If
->-	   neither RDRAND nor RDTSC are supported, then no randomness
->-	   is introduced.
->+	   Entropy is generated using the RDRAND instruction if it is
->+	   supported. If RDTSC is supported, it is used as well. If
->+	   neither RDRAND nor RDTSC are supported, then randomness is
->+	   read from the i8254 timer.
-> 
-> 	   The kernel will be offset by up to RANDOMIZE_BASE_MAX_OFFSET,
->-	   and aligned according to PHYSICAL_ALIGN.
->+	   and aligned according to PHYSICAL_ALIGN. Since the kernel is
->+	   built using 2GiB addressing, and PHYSICAL_ALGIN must be at a
->+	   minimum of 2MiB, only 10 bits of entropy is theoretically
->+	   possible. At best, due to page table layouts, 64-bit can use
->+	   9 bits of entropy and 32-bit uses 8 bits.
-> 
-> config RANDOMIZE_BASE_MAX_OFFSET
-> 	hex "Maximum ASLR offset allowed"
->diff --git a/arch/x86/boot/compressed/aslr.c
->b/arch/x86/boot/compressed/aslr.c
->index 05957986d123..0981227bc3f0 100644
->--- a/arch/x86/boot/compressed/aslr.c
->+++ b/arch/x86/boot/compressed/aslr.c
->@@ -5,6 +5,17 @@
-> #include <asm/archrandom.h>
-> #include <asm/e820.h>
-> 
->+#include <generated/compile.h>
->+#include <linux/module.h>
->+#include <linux/uts.h>
->+#include <linux/utsname.h>
->+#include <generated/utsrelease.h>
->+#include <linux/version.h>
->+
->+/* Simplified build-specific string for starting entropy. */
->+static const char *build_str = UTS_RELEASE " (" LINUX_COMPILE_BY "@"
->+		LINUX_COMPILE_HOST ") (" LINUX_COMPILER ") " UTS_VERSION;
->+
-> #define I8254_PORT_CONTROL	0x43
-> #define I8254_PORT_COUNTER0	0x40
-> #define I8254_CMD_READBACK	0xC0
->@@ -25,34 +36,62 @@ static inline u16 i8254(void)
-> 	return timer;
-> }
-> 
->+static unsigned long rotate_xor(unsigned long hash, const void *area,
->+				size_t size)
->+{
->+	size_t i;
->+	unsigned long *ptr = (unsigned long *)area;
->+
->+	for (i = 0; i < size / sizeof(hash); i++) {
->+		/* Rotate and XOR */
->+		hash = (hash << ((sizeof(hash) - 1) * 8)) | (hash >> 8);
->+		hash ^= ptr[i];
->+	}
->+
->+	return hash;
->+}
->+
->+/* Attempt to create a simple but unpredictable starting entropy. */
->+static unsigned long get_random_boot(void)
->+{
->+	unsigned long hash = 0;
->+
->+	hash = rotate_xor(hash, build_str, sizeof(build_str));
->+	hash = rotate_xor(hash, real_mode, sizeof(*real_mode));
->+
->+	return hash;
->+}
->+
-> static unsigned long get_random_long(void)
-> {
->-	unsigned long random;
->+	unsigned long raw, random = get_random_boot();
->+	bool use_i8254 = true;
->+
->+	debug_putstr("KASLR using");
-> 
-> 	if (has_cpuflag(X86_FEATURE_RDRAND)) {
->-		debug_putstr("KASLR using RDRAND...\n");
->-		if (rdrand_long(&random))
->-			return random;
->+		debug_putstr(" RDRAND");
->+		if (rdrand_long(&raw)) {
->+			random ^= raw;
->+			use_i8254 = false;
->+		}
-> 	}
-> 
-> 	if (has_cpuflag(X86_FEATURE_TSC)) {
->-		uint32_t raw;
->+		debug_putstr(" RDTSC");
->+		rdtscll(raw);
-> 
->-		debug_putstr("KASLR using RDTSC...\n");
->-		rdtscl(raw);
->+		random ^= raw;
->+		use_i8254 = false;
->+	}
-> 
->-		/* Only use the low bits of rdtsc. */
->-		random = raw & 0xffff;
->-	} else {
->-		debug_putstr("KASLR using i8254...\n");
->-		random = i8254();
->+	if (use_i8254) {
->+		debug_putstr(" i8254");
->+		random ^= i8254();
-> 	}
-> 
->-	/* Extend timer bits poorly... */
->-	random |= (random << 16);
->-#ifdef CONFIG_X86_64
->-	random |= (random << 32);
->-#endif
->+	debug_putstr("...\n");
->+
-> 	return random;
-> }
-> 
+You don't seem to have any documentation for this, btw... :(
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+> +		.procname       = "hot-mem-high-thresh",
+
+*Always* put units on these.  I know you mention it in a code comment,
+but please also include it in the proc filename too.
+
+In general, why do you have to control the number of these statically?
+Shouldn't you just define a shrinker and let memory pressure determine
+how many of these we allow to exist?
