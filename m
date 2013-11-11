@@ -1,122 +1,501 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab3KKSDF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 13:03:05 -0500
-Received: from mga09.intel.com ([134.134.136.24]:61731 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754885Ab3KKSC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 13:02:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="406953384"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        eranian@google.com, peterz@infradead.org
-Subject: [PATCH] perf: Document perf event data padding
-Date: Mon, 11 Nov 2013 10:02:49 -0800
-Message-Id: <1384192969-2562-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
+	id S1755069Ab3KKSDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 13:03:14 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:33941 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755034Ab3KKSDI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 13:03:08 -0500
+Message-ID: <52811BDA.2090705@google.com>
+Date: Mon, 11 Nov 2013 13:03:06 -0500
+From: Tristan Schmelcher <tschmelcher@google.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Richard Weinberger <richard@nod.at>
+CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: [PATCH] uml: Simplify tempdir logic.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Tristan Schmelcher <tschmelcher@google.com>
 
-__output_copy always pads byte sized fields to a multiple
-of u64. This was not documented in the perf_event.h documentation.
-Explicitly mention this in the comments.
+Inferring the mount hierarchy correctly from /proc/mounts is hard when MS_MOVE
+may have been used, and the previous code did it wrongly. This change simplifies
+the logic to only require that /dev/shm be _on_ tmpfs (which can be checked
+trivially with statfs) rather than that it be a _mountpoint_ of tmpfs, since
+there isn't a compelling reason to be that strict. We also now check for tmpfs
+on whatever directory we ultimately use so that the user is better informed.
 
-Also add notes that the strings are 0 terminated.
+This change also moves the more standard TMPDIR environment variable check ahead
+of the others.
 
-Only comments are changed.
+Applies to 3.12.
 
-Cc: eranian@google.com
-Cc: peterz@infradead.org
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Tristan Schmelcher <tschmelcher@google.com>
 ---
- include/uapi/linux/perf_event.h | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ arch/um/os-Linux/mem.c | 372 ++++++++++---------------------------------------
+ 1 file changed, 75 insertions(+), 297 deletions(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 2fc1602..06b2c8a 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -525,6 +525,7 @@ enum perf_event_type {
- 	/*
- 	 * The MMAP events record the PROT_EXEC mappings so that we can
- 	 * correlate userspace IPs to code. They have the following structure:
-+	 * filename is zero terminated and padded to 8 bytes.
- 	 *
- 	 * struct {
- 	 *	struct perf_event_header	header;
-@@ -533,7 +534,7 @@ enum perf_event_type {
- 	 *	u64				addr;
- 	 *	u64				len;
- 	 *	u64				pgoff;
--	 *	char				filename[];
-+	 *	char				filename[ALIGN(len, 8)];
- 	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
-@@ -549,12 +550,13 @@ enum perf_event_type {
- 	 */
- 	PERF_RECORD_LOST			= 2,
+diff --git a/arch/um/os-Linux/mem.c b/arch/um/os-Linux/mem.c
+index 3c4af77..897e9ad 100644
+--- a/arch/um/os-Linux/mem.c
++++ b/arch/um/os-Linux/mem.c
+@@ -12,337 +12,117 @@
+ #include <string.h>
+ #include <sys/stat.h>
+ #include <sys/mman.h>
+-#include <sys/param.h>
++#include <sys/vfs.h>
++#include <linux/magic.h>
+ #include <init.h>
+ #include <os.h>
  
+-/* Modified by which_tmpdir, which is called during early boot */
+-static char *default_tmpdir = "/tmp";
+-
+-/*
+- *  Modified when creating the physical memory file and when checking
+- * the tmp filesystem for usability, both happening during early boot.
+- */
++/* Set by make_tempfile() during early boot. */
+ static char *tempdir = NULL;
+ 
+-static void __init find_tempdir(void)
++/* Check if dir is on tmpfs. Return 0 if yes, -1 if no or error. */
++static int __init check_tmpfs(const char *dir)
+ {
+-	const char *dirs[] = { "TMP", "TEMP", "TMPDIR", NULL };
+-	int i;
+-	char *dir = NULL;
+-
+-	if (tempdir != NULL)
+-		/* We've already been called */
+-		return;
+-	for (i = 0; dirs[i]; i++) {
+-		dir = getenv(dirs[i]);
+-		if ((dir != NULL) && (*dir != '\0'))
+-			break;
+-	}
+-	if ((dir == NULL) || (*dir == '\0'))
+-		dir = default_tmpdir;
++	struct statfs st;
+ 
+-	tempdir = malloc(strlen(dir) + 2);
+-	if (tempdir == NULL) {
+-		fprintf(stderr, "Failed to malloc tempdir, "
+-			"errno = %d\n", errno);
+-		return;
+-	}
+-	strcpy(tempdir, dir);
+-	strcat(tempdir, "/");
+-}
+-
+-/*
+- * Remove bytes from the front of the buffer and refill it so that if there's a
+- * partial string that we care about, it will be completed, and we can recognize
+- * it.
+- */
+-static int pop(int fd, char *buf, size_t size, size_t npop)
+-{
+-	ssize_t n;
+-	size_t len = strlen(&buf[npop]);
+-
+-	memmove(buf, &buf[npop], len + 1);
+-	n = read(fd, &buf[len], size - len - 1);
+-	if (n < 0)
+-		return -errno;
+-
+-	buf[len + n] = '\0';
+-	return 1;
+-}
+-
+-/*
+- * This will return 1, with the first character in buf being the
+- * character following the next instance of c in the file.  This will
+- * read the file as needed.  If there's an error, -errno is returned;
+- * if the end of the file is reached, 0 is returned.
+- */
+-static int next(int fd, char *buf, size_t size, char c)
+-{
+-	ssize_t n;
+-	char *ptr;
+-
+-	while ((ptr = strchr(buf, c)) == NULL) {
+-		n = read(fd, buf, size - 1);
+-		if (n == 0)
+-			return 0;
+-		else if (n < 0)
+-			return -errno;
+-
+-		buf[n] = '\0';
++	printf("Checking if %s is on tmpfs...", dir);
++	if (statfs(dir, &st) < 0) {
++		printf("%s\n", strerror(errno));
++	} else if (st.f_type != TMPFS_MAGIC) {
++		printf("no\n");
++	} else {
++		printf("OK\n");
++		return 0;
+ 	}
+-
+-	return pop(fd, buf, size, ptr - buf + 1);
++	return -1;
+ }
+ 
+ /*
+- * Decode an octal-escaped and space-terminated path of the form used by
+- * /proc/mounts. May be used to decode a path in-place. "out" must be at least
+- * as large as the input. The output is always null-terminated. "len" gets the
+- * length of the output, excluding the trailing null. Returns 0 if a full path
+- * was successfully decoded, otherwise an error.
++ * Choose the tempdir to use. We want something on tmpfs so that our memory is
++ * not subject to the host's vm.dirty_ratio. If a tempdir is specified in the
++ * environment, we use that even if it's not on tmpfs, but we warn the user.
++ * Otherwise, we try common tmpfs locations, and if no tmpfs directory is found
++ * then we fall back to /tmp.
+  */
+-static int decode_path(const char *in, char *out, size_t *len)
++static char * __init choose_tempdir(void)
+ {
+-	char *first = out;
+-	int c;
++	static const char * const vars[] = {
++		"TMPDIR",
++		"TMP",
++		"TEMP",
++		NULL
++	};
++	static const char fallback_dir[] = "/tmp";
++	static const char * const tmpfs_dirs[] = {
++		"/dev/shm",
++		fallback_dir,
++		NULL
++	};
+ 	int i;
+-	int ret = -EINVAL;
+-	while (1) {
+-		switch (*in) {
+-		case '\0':
+-			goto out;
+-
+-		case ' ':
+-			ret = 0;
+-			goto out;
+-
+-		case '\\':
+-			in++;
+-			c = 0;
+-			for (i = 0; i < 3; i++) {
+-				if (*in < '0' || *in > '7')
+-					goto out;
+-				c = (c << 3) | (*in++ - '0');
+-			}
+-			*(unsigned char *)out++ = (unsigned char) c;
+-			break;
+-
+-		default:
+-			*out++ = *in++;
+-			break;
++	const char *dir;
++
++	printf("Checking environment variables for a tempdir...");
++	for (i = 0; vars[i]; i++) {
++		dir = getenv(vars[i]);
++		if ((dir != NULL) && (*dir != '\0')) {
++			printf("%s\n", dir);
++			if (check_tmpfs(dir) >= 0)
++				goto done;
++			else
++				goto warn;
+ 		}
+ 	}
++	printf("none found\n");
+ 
+-out:
+-	*out = '\0';
+-	*len = out - first;
+-	return ret;
+-}
+-
+-/*
+- * Computes the length of s when encoded with three-digit octal escape sequences
+- * for the characters in chars.
+- */
+-static size_t octal_encoded_length(const char *s, const char *chars)
+-{
+-	size_t len = strlen(s);
+-	while ((s = strpbrk(s, chars)) != NULL) {
+-		len += 3;
+-		s++;
+-	}
+-
+-	return len;
+-}
+-
+-enum {
+-	OUTCOME_NOTHING_MOUNTED,
+-	OUTCOME_TMPFS_MOUNT,
+-	OUTCOME_NON_TMPFS_MOUNT,
+-};
+-
+-/* Read a line of /proc/mounts data looking for a tmpfs mount at "path". */
+-static int read_mount(int fd, char *buf, size_t bufsize, const char *path,
+-		      int *outcome)
+-{
+-	int found;
+-	int match;
+-	char *space;
+-	size_t len;
+-
+-	enum {
+-		MATCH_NONE,
+-		MATCH_EXACT,
+-		MATCH_PARENT,
+-	};
+-
+-	found = next(fd, buf, bufsize, ' ');
+-	if (found != 1)
+-		return found;
+-
 -	/*
-+	/* comm is 0 terminated and padded to 8 bytes.
-+	 *
- 	 * struct {
- 	 *	struct perf_event_header	header;
- 	 *
- 	 *	u32				pid, tid;
--	 *	char				comm[];
-+	 *	char				comm[ALIGN(len, 8)];
- 	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
-@@ -637,12 +639,14 @@ enum perf_event_type {
- 	 *	# the stability of its content, it may vary depending
- 	 *	# on event, hardware, kernel version and phase of
- 	 *	# the moon.
-+	 * 	# 
-+	 * 	# data[size] is padded to 8 bytes.
- 	 *	#
- 	 *	# In other words, PERF_SAMPLE_RAW contents are not an ABI.
- 	 *	#
- 	 *
- 	 *	{ u32			size;
--	 *	  char                  data[size];}&& PERF_SAMPLE_RAW
-+	 *	  char                  data[ALIGN(size, 8)];}&& PERF_SAMPLE_RAW
- 	 *
- 	 *	{ u64                   nr;
- 	 *        { u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
-@@ -651,7 +655,7 @@ enum perf_event_type {
- 	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
- 	 *
- 	 * 	{ u64			size;
--	 * 	  char			data[size];
-+	 * 	  char			data[ALIGN(size, 8)];
- 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
- 	 *
- 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
-@@ -663,6 +667,7 @@ enum perf_event_type {
- 	/*
- 	 * The MMAP2 records are an augmented version of MMAP, they add
- 	 * maj, min, ino numbers to be used to uniquely identify each mapping
-+	 * filename is 0 terminated and padded to 8 bytes.
- 	 *
- 	 * struct {
- 	 *	struct perf_event_header	header;
-@@ -675,7 +680,7 @@ enum perf_event_type {
- 	 *	u32				min;
- 	 *	u64				ino;
- 	 *	u64				ino_generation;
--	 *	char				filename[];
-+	 *	char				filename[ALIGN(len, 8)];
- 	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
+-	 * If there's no following space in the buffer, then this path is
+-	 * truncated, so it can't be the one we're looking for.
+-	 */
+-	space = strchr(buf, ' ');
+-	if (space) {
+-		match = MATCH_NONE;
+-		if (!decode_path(buf, buf, &len)) {
+-			if (!strcmp(buf, path))
+-				match = MATCH_EXACT;
+-			else if (!strncmp(buf, path, len)
+-				 && (path[len] == '/' || !strcmp(buf, "/")))
+-				match = MATCH_PARENT;
+-		}
+-
+-		found = pop(fd, buf, bufsize, space - buf + 1);
+-		if (found != 1)
+-			return found;
+-
+-		switch (match) {
+-		case MATCH_EXACT:
+-			if (!strncmp(buf, "tmpfs", strlen("tmpfs")))
+-				*outcome = OUTCOME_TMPFS_MOUNT;
+-			else
+-				*outcome = OUTCOME_NON_TMPFS_MOUNT;
+-			break;
+-
+-		case MATCH_PARENT:
+-			/* This mount obscures any previous ones. */
+-			*outcome = OUTCOME_NOTHING_MOUNTED;
+-			break;
+-		}
++	for (i = 0; tmpfs_dirs[i]; i++) {
++		dir = tmpfs_dirs[i];
++		if (check_tmpfs(dir) >= 0)
++			goto done;
+ 	}
+ 
+-	return next(fd, buf, bufsize, '\n');
++	dir = fallback_dir;
++warn:
++	printf("Warning: tempdir %s is not on tmpfs\n", dir);
++done:
++	/* Make a copy since getenv results may not remain valid forever. */
++	return strdup(dir);
+ }
+ 
+-/* which_tmpdir is called only during early boot */
+-static int checked_tmpdir = 0;
+-
+ /*
+- * Look for a tmpfs mounted at /dev/shm.  I couldn't find a cleaner
+- * way to do this than to parse /proc/mounts.  statfs will return the
+- * same filesystem magic number and fs id for both /dev and /dev/shm
+- * when they are both tmpfs, so you can't tell if they are different
+- * filesystems.  Also, there seems to be no other way of finding the
+- * mount point of a filesystem from within it.
+- *
+- * If a /dev/shm tmpfs entry is found, then we switch to using it.
+- * Otherwise, we stay with the default /tmp.
++ * Create an unlinked tempfile in a suitable tempdir. template must be the
++ * basename part of the template with a leading '/'.
+  */
+-static void which_tmpdir(void)
++static int __init make_tempfile(const char *template)
+ {
++	char *tempname;
+ 	int fd;
+-	int found;
+-	int outcome;
+-	char *path;
+-	char *buf;
+-	size_t bufsize;
+ 
+-	if (checked_tmpdir)
+-		return;
+-
+-	checked_tmpdir = 1;
+-
+-	printf("Checking for tmpfs mount on /dev/shm...");
+-
+-	path = realpath("/dev/shm", NULL);
+-	if (!path) {
+-		printf("failed to check real path, errno = %d\n", errno);
+-		return;
+-	}
+-	printf("%s...", path);
+-
+-	/*
+-	 * The buffer needs to be able to fit the full octal-escaped path, a
+-	 * space, and a trailing null in order to successfully decode it.
+-	 */
+-	bufsize = octal_encoded_length(path, " \t\n\\") + 2;
+-
+-	if (bufsize < 128)
+-		bufsize = 128;
+-
+-	buf = malloc(bufsize);
+-	if (!buf) {
+-		printf("malloc failed, errno = %d\n", errno);
+-		goto out;
+-	}
+-	buf[0] = '\0';
+-
+-	fd = open("/proc/mounts", O_RDONLY);
+-	if (fd < 0) {
+-		printf("failed to open /proc/mounts, errno = %d\n", errno);
+-		goto out1;
+-	}
+-
+-	outcome = OUTCOME_NOTHING_MOUNTED;
+-	while (1) {
+-		found = read_mount(fd, buf, bufsize, path, &outcome);
+-		if (found != 1)
+-			break;
+-	}
+-
+-	if (found < 0) {
+-		printf("read returned errno %d\n", -found);
+-	} else {
+-		switch (outcome) {
+-		case OUTCOME_TMPFS_MOUNT:
+-			printf("OK\n");
+-			default_tmpdir = "/dev/shm";
+-			break;
+-
+-		case OUTCOME_NON_TMPFS_MOUNT:
+-			printf("not tmpfs\n");
+-			break;
+-
+-		default:
+-			printf("nothing mounted on /dev/shm\n");
+-			break;
++	if (tempdir == NULL) {
++		tempdir = choose_tempdir();
++		if (tempdir == NULL) {
++			fprintf(stderr, "Failed to choose tempdir: %s\n",
++				strerror(errno));
++			return -1;
+ 		}
+ 	}
+ 
+-	close(fd);
+-out1:
+-	free(buf);
+-out:
+-	free(path);
+-}
+-
+-static int __init make_tempfile(const char *template, char **out_tempname,
+-				int do_unlink)
+-{
+-	char *tempname;
+-	int fd;
+-
+-	which_tmpdir();
+-	tempname = malloc(MAXPATHLEN);
++	tempname = malloc(strlen(tempdir) + strlen(template) + 1);
+ 	if (tempname == NULL)
+ 		return -1;
+ 
+-	find_tempdir();
+-	if ((tempdir == NULL) || (strlen(tempdir) >= MAXPATHLEN))
+-		goto out;
+-
+-	if (template[0] != '/')
+-		strcpy(tempname, tempdir);
+-	else
+-		tempname[0] = '\0';
+-	strncat(tempname, template, MAXPATHLEN-1-strlen(tempname));
++	strcpy(tempname, tempdir);
++	strcat(tempname, template);
+ 	fd = mkstemp(tempname);
+ 	if (fd < 0) {
+ 		fprintf(stderr, "open - cannot create %s: %s\n", tempname,
+ 			strerror(errno));
+ 		goto out;
+ 	}
+-	if (do_unlink && (unlink(tempname) < 0)) {
++	if (unlink(tempname) < 0) {
+ 		perror("unlink");
+ 		goto close;
+ 	}
+-	if (out_tempname) {
+-		*out_tempname = tempname;
+-	} else
+-		free(tempname);
++	free(tempname);
+ 	return fd;
+ close:
+ 	close(fd);
+@@ -351,14 +131,14 @@ out:
+ 	return -1;
+ }
+ 
+-#define TEMPNAME_TEMPLATE "vm_file-XXXXXX"
++#define TEMPNAME_TEMPLATE "/vm_file-XXXXXX"
+ 
+ static int __init create_tmp_file(unsigned long long len)
+ {
+ 	int fd, err;
+ 	char zero;
+ 
+-	fd = make_tempfile(TEMPNAME_TEMPLATE, NULL, 1);
++	fd = make_tempfile(TEMPNAME_TEMPLATE);
+ 	if (fd < 0)
+ 		exit(1);
+ 
+@@ -402,7 +182,6 @@ int __init create_mem_file(unsigned long long len)
+ 	return fd;
+ }
+ 
+-
+ void __init check_tmpexec(void)
+ {
+ 	void *addr;
+@@ -410,14 +189,13 @@ void __init check_tmpexec(void)
+ 
+ 	addr = mmap(NULL, UM_KERN_PAGE_SIZE,
+ 		    PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, fd, 0);
+-	printf("Checking PROT_EXEC mmap in %s...",tempdir);
+-	fflush(stdout);
++	printf("Checking PROT_EXEC mmap in %s...", tempdir);
+ 	if (addr == MAP_FAILED) {
+ 		err = errno;
+-		perror("failed");
++		printf("%s\n", strerror(err));
+ 		close(fd);
+ 		if (err == EPERM)
+-			printf("%s must be not mounted noexec\n",tempdir);
++			printf("%s must be not mounted noexec\n", tempdir);
+ 		exit(1);
+ 	}
+ 	printf("OK\n");
 -- 
-1.8.3.1
+1.8.4.1
 
