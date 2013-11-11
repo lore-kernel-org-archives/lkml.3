@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719Ab3KKUcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 15:32:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48585 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751360Ab3KKUcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 15:32:06 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAGXu5jJuNRuU99DS0gWvFw71roJUPNdtFimqvuw9qungNE8ZBw@mail.gmail.com>
-References: <1381450698-28710-4-git-send-email-keescook@chromium.org> <tip-5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3@git.kernel.org> <20131111182046.GA14961@gmail.com> <20131111183101.GA16051@gmail.com> <CAGXu5jL96B4+McO=K9dptu81m+bdKWOZ8YS9x7+SZxkjfUsg9Q@mail.gmail.com> <528131E7.2060509@zytor.com> <20131111200748.GB17408@gmail.com> <CAGXu5jJuNRuU99DS0gWvFw71roJUPNdtFimqvuw9qungNE8ZBw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [tip:x86/kaslr] x86, kaslr: Provide randomness functions
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 11 Nov 2013 12:16:12 -0800
-To: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Message-ID: <8fc0bcac-b07e-47e9-9cf8-e71e9a603c51@email.android.com>
+	id S1752041Ab3KKUfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 15:35:06 -0500
+Received: from bband-dyn22.95-103-149.t-com.sk ([95.103.149.22]:10101 "EHLO
+	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751961Ab3KKUe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 15:34:59 -0500
+X-Greylist: delayed 1732 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Nov 2013 15:34:58 EST
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 1/1] TTY: tty_buffer, warn on leaks
+Date: Mon, 11 Nov 2013 21:05:59 +0100
+Message-Id: <1384200359-31356-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-XOR and rotate is probably a good start.
+When we leak something, warn about that. For that we need to account
+the memory used also in the free_all method. It is handled elsewhere
+correctly.
 
-Kees Cook <keescook@chromium.org> wrote:
->On Mon, Nov 11, 2013 at 12:07 PM, Ingo Molnar <mingo@kernel.org> wrote:
->>
->> * H. Peter Anvin <hpa@zytor.com> wrote:
->>
->>> Of course, perhaps we could just hash struct boot_params as a
->starting
->>> point?
->>
->> Yeah, that would be a good first step, before trying to parse DMI or
->ACPI.
->> Anything that is reasonably system dependent and gives at least some
->> amount of unpredicability.
->
->Given the very limited nature of the early boot environment, what
->would you recommend for the hashing routine itself? There's nothing in
->boot/ that does any kind of "real" crypto hashing. Should I just XOR
->the entire contents of boot_params together?
->
->-Kees
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/tty/tty_buffer.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index 5f08c39e76ab..20cb9492dbf8 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -115,21 +115,27 @@ void tty_buffer_free_all(struct tty_port *port)
+ 	struct tty_bufhead *buf = &port->buf;
+ 	struct tty_buffer *p, *next;
+ 	struct llist_node *llist;
++	int zero = 0;
+ 
+ 	while ((p = buf->head) != NULL) {
+ 		buf->head = p->next;
++		atomic_sub(p->size, &buf->memory_used);
+ 		if (p->size > 0)
+ 			kfree(p);
+ 	}
+ 	llist = llist_del_all(&buf->free);
+-	llist_for_each_entry_safe(p, next, llist, free)
++	llist_for_each_entry_safe(p, next, llist, free) {
++		atomic_sub(p->size, &buf->memory_used);
+ 		kfree(p);
++	}
++
+ 
+ 	tty_buffer_reset(&buf->sentinel, 0);
+ 	buf->head = &buf->sentinel;
+ 	buf->tail = &buf->sentinel;
+ 
+-	atomic_set(&buf->memory_used, 0);
++	atomic_xchg(&buf->memory_used, zero);
++	WARN_ON(zero != 0);
+ }
+ 
+ /**
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+1.8.4.2
+
