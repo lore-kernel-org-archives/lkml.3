@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360Ab3KKTnu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 14:43:50 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:47939 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323Ab3KKTnm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 14:43:42 -0500
-Date: Mon, 11 Nov 2013 13:42:47 -0600
+	id S1755372Ab3KKTot (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 14:44:49 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52979 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753476Ab3KKTon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 14:44:43 -0500
+Date: Mon, 11 Nov 2013 13:43:55 -0600
 From: Felipe Balbi <balbi@ti.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
 CC: Felipe Balbi <balbi@ti.com>, <mturquette@linaro.org>,
-        <james.hogan@imgtec.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>, <luca@coelho.fi>,
         Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <james.hogan@imgtec.com>, <luca@coelho.fi>
 Subject: Re: [PATCH] clk: add flags to distinguish xtal clocks
-Message-ID: <20131111194247.GB19212@saruman.home>
+Message-ID: <20131111194355.GC19212@saruman.home>
 Reply-To: <balbi@ti.com>
 References: <1382528150.21526.25.camel@porter.coelho.fi>
  <1383933648-28595-1-git-send-email-balbi@ti.com>
- <20131110113716.GN26440@lukather>
+ <5281058E.5050607@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Fba/0zbH8Xs+Fj9o"
+	protocol="application/pgp-signature"; boundary="96YOpH+ONegL0A3E"
 Content-Disposition: inline
-In-Reply-To: <20131110113716.GN26440@lukather>
+In-Reply-To: <5281058E.5050607@wwwdotorg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Fba/0zbH8Xs+Fj9o
+--96YOpH+ONegL0A3E
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-On Sun, Nov 10, 2013 at 12:37:16PM +0100, Maxime Ripard wrote:
-> Hi Felipe,
->=20
-> On Fri, Nov 08, 2013 at 12:00:48PM -0600, Felipe Balbi wrote:
+On Mon, Nov 11, 2013 at 09:27:58AM -0700, Stephen Warren wrote:
+> On 11/08/2013 11:00 AM, Felipe Balbi wrote:
 > > From: Luciano Coelho <luca@coelho.fi>
 > >=20
 > > Add a flag that indicate whether the clock is a crystal or not.
@@ -55,83 +52,38 @@ On Sun, Nov 10, 2013 at 12:37:16PM +0100, Maxime Ripard wrote:
 > > right now which is Texas Instruments' WiLink devices which need to know
 > > details about the clock in order to initialize the underlying WiFi HW
 > > correctly.
-> >=20
-> > Signed-off-by: Luciano Coelho <luca@coelho.fi>
-> > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > ---
-> >=20
-> > Dropped CLK_IS_TYPE_DEFINED flag and just assume that if the flag
-> > isn't there, default behavior will be taken.
-> >=20
-> >  Documentation/devicetree/bindings/clock/fixed-clock.txt | 1 +
-> >  drivers/clk/clk-fixed-rate.c                            | 6 +++++-
-> >  include/linux/clk-provider.h                            | 1 +
-> >  3 files changed, 7 insertions(+), 1 deletion(-)
-> >=20
-> > diff --git a/Documentation/devicetree/bindings/clock/fixed-clock.txt b/=
-Documentation/devicetree/bindings/clock/fixed-clock.txt
-> > index 0b1fe78..3036dfe 100644
-> > --- a/Documentation/devicetree/bindings/clock/fixed-clock.txt
-> > +++ b/Documentation/devicetree/bindings/clock/fixed-clock.txt
-> > @@ -12,6 +12,7 @@ Required properties:
-> >  Optional properties:
-> >  - gpios : From common gpio binding; gpio connection to clock enable pi=
-n.
-> >  - clock-output-names : From common clock binding.
-> > +- clock-xtal: true when a clock is provided by a crystal
-> > =20
-> >  Example:
-> >  	clock {
-> > diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
-> > index 1ed591a..5db9bf0 100644
-> > --- a/drivers/clk/clk-fixed-rate.c
-> > +++ b/drivers/clk/clk-fixed-rate.c
-> > @@ -91,13 +91,17 @@ void of_fixed_clk_setup(struct device_node *node)
-> >  	struct clk *clk;
-> >  	const char *clk_name =3D node->name;
-> >  	u32 rate;
-> > +	unsigned long flags =3D CLK_IS_ROOT;
-> > =20
-> >  	if (of_property_read_u32(node, "clock-frequency", &rate))
-> >  		return;
-> > =20
-> > +	if (of_property_read_bool(node, "clock-xtal"))
-> > +		flags |=3D CLK_IS_TYPE_XTAL;
-> > +
 >=20
-> Introducing a new compatible instead of a property would make more
-> sense here I think.
->=20
-> Do you have a reason not to do so?
+> Why on earth does it care? Surely the WiFi HW doesn't care about
+> crystal-vs-non-crystal, but rather some facet of the clock signal that
+> the type of source implies. Shouldn't the DT property describe that
+> facet of the signal, rather than the reason why it has that facet?
 
-As you can see, this is original work from Luca but I disagree that
-adding a new compatible makes more sense. This still related to a fixed
-rate clock, we're just giving it one extra metadata which will
-differentiate between crystal and oscilator fixed rate clocks.
+well, if you can figure out what that facet is, then _do_ tell. Luca has
+tried for months to get that information with no success.
 
 --=20
 balbi
 
---Fba/0zbH8Xs+Fj9o
+--96YOpH+ONegL0A3E
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSgTM3AAoJEIaOsuA1yqREI9wQAKb8luTtqRqzci4iZXe3qHx3
-6nbM3qtDE67TcoMr5wSt/rQk27lnhO1RRw7HxOqHFkrq9BSzJMJBda4gJdnYteD1
-fGuKTn+nK0lF8kJbyI9fsnVna3D3gULXN/vnzCKhQ50Yw2wpkIakmq+eLCmLy93a
-ahEmjswG9GKDHdAG3A6KtY9BKvLNKrNK+Ev8xH5i4HTKn/9WVGyj7eVhCFRdFC/U
-8elbFdBPOQwb9IhreY/c7s81MGgEU9n/ahQ14GKFcmMYPFVYxLn2IHLJOuHoKh5b
-5TMT7n1WJ2Z/azckO9Zh0UzDQVKvNcGxJfOxfa6Ny7O7f1nJW4gxMluvCQU2Xl7P
-VhwLZjunwQ4SWkzMoRVju+7lN4LpZVPQYtXfGWgv/K0W1Kh6axrnF5z2m2/TpZ9M
-HNaKZineupE2wnRa4RH6Nl8350UR5qen8f3AobplY6+q2XHvsNHOLo0xmarGfE++
-8pmVpEP0PFI/qALrdSs1rqviqv+nXdRG5AY/6c0DN4pXerT4E2TnQ+CPUAcKAVo5
-1XAZjTC7joanrgjL/YZoFydUQeDYOcZolNAxN7R2dFZk80pBvKADjwZJRsbhzuLF
-9sCCOmVhJVtGScZMo6eanKJEVExC/EbfJo0kJE4Xn92uYqOo8lGr+TWcDFGcvohK
-gp04MArxiDrhk1qN0rc5
-=oiBX
+iQIcBAEBAgAGBQJSgTN7AAoJEIaOsuA1yqREllEP/1a/xP7xi3rTdHjbJAkNAOjW
+sc4pxSRnx8YF9b7Gmxkx30sJjcbsPejhKB8Vup4FfXQVXbTN8YwQ+M+KYclsgXDS
+A2dia2/Fde70QkKyf5lu5oHHdENTBt7b51y+FYpJpOslFS01uMUQ3DAi68jCs/Kx
+BeKzBIBK17Jx9oLNhL7kl0EDefrHo/KoyBSPpe4CCS4N4pHInZLsmjlNqZLXuhjg
+W72BxaJA636hB0rWWPF5tJt7JpM2r1A/hOYp/K4RZF+ACPn39d8z5nUAR3sZsQwG
+36ecFFFM18O4Cus+IRkg2zuAQxW1et/PlDK84OC6TjMRK3KREJStrFH7eZ0cmq0N
+3N4+ltfKtRRW4bcB2/CpjJpolPxxmCqU3GxGAOzXBK7LmDe7Ac2CrLXEw/fVQbVU
+luUfiqaAqjmsAD2fqCuWgO2eqQ9Jpy4aobFik6c5c2L2fKmVLimhW/sFl5f2Vlo+
+giAWkPwC7r6whFoJLlTrX1KYnoQWrQQPaQAVtygxDyUHVQSvPDhmh1fHmXeMtx9S
+FXix4z4h9SRuEAqg3ziOTsE4WgH3jSLxLqgglum/ERbxsuFPoFfINosLRgMPkS4t
+6NJ54Vxw/NktCbnGdgnIJZPnMTVV7by8gKkVqha5oSxx4/KeQ2K5ShmntLQPi+Ez
+WlfJgpL/6L1Ov3Di359L
+=ZMTS
 -----END PGP SIGNATURE-----
 
---Fba/0zbH8Xs+Fj9o--
+--96YOpH+ONegL0A3E--
