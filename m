@@ -1,97 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab3KKQzO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 11:55:14 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:56647 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753984Ab3KKQzH (ORCPT
+	id S1754842Ab3KKQzT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 11:55:19 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:44475 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754827Ab3KKQzO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 11:55:07 -0500
-Date: Mon, 11 Nov 2013 12:03:21 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>
-Subject: perf/tracepoint yet another lockup
-Message-ID: <alpine.DEB.2.10.1311111158420.25509@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 11 Nov 2013 11:55:14 -0500
+From: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>
+Subject: [PATCH 03/12] mtd: nand: davinci: simplify error handling
+Thread-Topic: [PATCH 03/12] mtd: nand: davinci: simplify error handling
+Thread-Index: AQHO3vrXvz/5yA6GakO/Kv07OFV5HJogPx29
+Date: Mon, 11 Nov 2013 16:54:23 +0000
+Message-ID: <4F5844B3A985794BA902E12C070812375F8CFB@DNCE04.ent.ti.com>
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>,<1384187188-5776-4-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1384187188-5776-4-git-send-email-ivan.khoronzhuk@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.56]
+x-exclaimer-md-config: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+There is not needed to use a lot of names for err handling.
+It complicates code support and reading.
 
-so I modified my perf_fuzzer to not try tracepoint event 0x18 
-(irq_work_exit which is the event causing problems in the other thread).
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ drivers/mtd/nand/davinci_nand.c |   46 +++++++++++++++------------------------
+ 1 file changed, 17 insertions(+), 29 deletions(-)
 
-But I got another lockup, presumbaly with a different trace event.  
-I'll try to narrow down which one caused it.
+diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+index 8e1c88e..9bcbaa9 100644
+--- a/drivers/mtd/nand/davinci_nand.c
++++ b/drivers/mtd/nand/davinci_nand.c
+@@ -617,8 +617,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+        info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+        if (!info) {
+                dev_err(&pdev->dev, "unable to allocate memory\n");
+-               ret = -ENOMEM;
+-               goto err_nomem;
++               return -ENOMEM;
+        }
 
-Should we just be disabling the perf/tracepoint interface if not run as 
-root at this point?
+        platform_set_drvdata(pdev, info);
+@@ -627,20 +626,16 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+        res2 = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+        if (!res1 || !res2) {
+                dev_err(&pdev->dev, "resource missing\n");
+-               ret = -EINVAL;
+-               goto err_nomem;
++               return -EINVAL;
+        }
 
-Vince
+        vaddr = devm_ioremap_resource(&pdev->dev, res1);
+-       if (IS_ERR(vaddr)) {
+-               ret = PTR_ERR(vaddr);
+-               goto err_ioremap;
+-       }
++       if (IS_ERR(vaddr))
++               return PTR_ERR(vaddr);
++
+        base = devm_ioremap_resource(&pdev->dev, res2);
+-       if (IS_ERR(base)) {
+-               ret = PTR_ERR(base);
+-               goto err_ioremap;
+-       }
++       if (IS_ERR(base))
++               return PTR_ERR(base);
 
+        info->dev               = &pdev->dev;
+        info->base              = base;
+@@ -707,7 +702,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+                        spin_unlock_irq(&davinci_nand_lock);
 
-[243573.968001] ------------[ cut here ]------------
-[243573.968001] WARNING: CPU: 0 PID: 4159 at kernel/watchdog.c:245 watchdog_ove)
-[243573.968001] Watchdog detected hard LOCKUP on cpu 0
-[243573.968001] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powen
-[243573.968001] CPU: 0 PID: 4159 Comm: perf_fuzzer Tainted: G        W    3.12.2
-[243573.968001] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, B2
-[243573.968001]  00000000000000f5 ffff88011fc07c48 ffffffff8151aad6 ffff88011fc8
-[243573.968001]  ffffffff8103cd68 0000000100000000 ffffffff810a101c ffff88011b30
-[243573.968001]  ffff88011fc07ef8 ffff88011fc07d58 0000000000000000 ffff88011fc8
-[243573.968001] Call Trace:
-[243573.968001]  <NMI>  [<ffffffff8151aad6>] ? dump_stack+0x41/0x53
-[243573.968001]  [<ffffffff8103cd68>] ? warn_slowpath_common+0x81/0x9c
-[243573.968001]  [<ffffffff810a101c>] ? watchdog_overflow_callback+0x9b/0xa6
-[243573.968001]  [<ffffffff8103ce25>] ? warn_slowpath_fmt+0x46/0x48
-[243573.968001]  [<ffffffff810c9ced>] ? perf_prepare_sample+0x62/0x2f4
-[243573.968001]  [<ffffffff810a101c>] ? watchdog_overflow_callback+0x9b/0xa6
-[243573.968001]  [<ffffffff810ca4a2>] ? __perf_event_overflow+0x12e/0x1ab
-[243573.968001]  [<ffffffff810167d3>] ? intel_pmu_lbr_read+0x253/0x349
-[243573.968001]  [<ffffffff81018c95>] ? intel_pmu_handle_irq+0x2b8/0x34d
-[243573.968001]  [<ffffffff810c79e3>] ? perf_event_context_sched_in+0x70/0x8d
-[243573.968001]  [<ffffffff8151edfc>] ? nmi_handle+0xa8/0x13a
-[243573.968001]  [<ffffffff8151f473>] ? perf_event_nmi_handler+0x24/0x3d
-[243573.968001]  [<ffffffff8151edb2>] ? nmi_handle+0x5e/0x13a
-[243573.968001]  [<ffffffff8151ef35>] ? do_nmi+0xa7/0x2bd
-[243573.968001]  [<ffffffff8151e537>] ? end_repeat_nmi+0x1e/0x2e
-[243573.968001]  [<ffffffff81526160>] ? irq_work_interrupt+0x70/0x70
-[243573.968001]  [<ffffffff81526160>] ? irq_work_interrupt+0x70/0x70
-[243573.968001]  [<ffffffff81526160>] ? irq_work_interrupt+0x70/0x70
-[243573.968001]  <<EOE>>  [<ffffffff8106658c>] ? finish_task_switch+0x57/0x98
-[243573.968001]  [<ffffffff8106657b>] ? finish_task_switch+0x46/0x98
-[243573.968001]  [<ffffffff8151c9ee>] ? __schedule+0x4f7/0x54b
-[243573.968001]  [<ffffffff8151ab1e>] ? schedule_timeout+0x36/0xe5
-[243573.968001]  [<ffffffff8106657b>] ? finish_task_switch+0x46/0x98
-[243573.968001]  [<ffffffff8151ca13>] ? __schedule+0x51c/0x54b
-[243573.968001]  [<ffffffff8151aae8>] ? dump_stack+0x53/0x53
-[243573.968001]  [<ffffffff8151cb96>] ? __wait_for_common+0xce/0x14a
-[243573.968001]  [<ffffffff810664d6>] ? try_to_wake_up+0x1ab/0x1ab
-[243573.968001]  [<ffffffff810a2fff>] ? T.901+0x1e4/0x1e4
-[243573.968001]  [<ffffffff810561db>] ? wait_rcu_gp+0x4b/0x54
-[243573.968001]  [<ffffffff810561e4>] ? wait_rcu_gp+0x54/0x54
-[243573.968001]  [<ffffffff810be94a>] ? perf_trace_event_unreg+0x2e/0xbd
-[243573.968001]  [<ffffffff810bea07>] ? perf_trace_destroy+0x2e/0x3b
-[243573.968001]  [<ffffffff810c6f9e>] ? __free_event+0x2d/0x52
-[243573.968001]  [<ffffffff810c8116>] ? perf_event_release_kernel+0x74/0x7b
-[243573.968001]  [<ffffffff810c8358>] ? perf_release+0x10/0x14
-[243573.968001]  [<ffffffff811133c5>] ? __fput+0xfa/0x1be
-[243573.968001]  [<ffffffff81055ebd>] ? task_work_run+0x88/0xa0
-[243573.968001]  [<ffffffff81524ea0>] ? int_signal+0x12/0x17
-[243573.968001] ---[ end trace 199b386ed4ca91db ]---
-[243573.968001] perf samples too long (7436949 > 10000), lowering kernel.perf_e0
-[243573.968001] INFO: NMI handler (perf_event_nmi_handler) took too long to runs
-[243589.024001] perf samples too long (7378854 > 20000), lowering kernel.perf_e0
-[243589.844001] perf samples too long (7321212 > 40000), lowering kernel.perf_e0
-[243590.692001] perf samples too long (7264020 > 76923), lowering kernel.perf_e0
-[243591.540001] perf samples too long (7207276 > 142857), lowering kernel.perf_0
-[243592.388001] perf samples too long (7150974 > 250000), lowering kernel.perf_0
-[243593.236001] perf samples too long (7095112 > 500000), lowering kernel.perf_0
+                        if (ret == -EBUSY)
+-                               goto err_ecc;
++                               return ret;
+
+                        info->chip.ecc.calculate = nand_davinci_calculate_4bit;
+                        info->chip.ecc.correct = nand_davinci_correct_4bit;
+@@ -723,8 +718,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+                info->chip.ecc.strength = pdata->ecc_bits;
+                break;
+        default:
+-               ret = -EINVAL;
+-               goto err_ecc;
++               return -EINVAL;
+        }
+        info->chip.ecc.mode = ecc_mode;
+
+@@ -732,7 +726,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+        if (IS_ERR(info->clk)) {
+                ret = PTR_ERR(info->clk);
+                dev_dbg(&pdev->dev, "unable to get AEMIF clock, err %d\n", ret);
+-               goto err_clk;
++               return ret;
+        }
+
+        ret = clk_prepare_enable(info->clk);
+@@ -761,7 +755,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+                                                        info->core_chipsel);
+        if (ret < 0) {
+                dev_dbg(&pdev->dev, "NAND timing values setup fail\n");
+-               goto err_timing;
++               goto err;
+        }
+
+        spin_lock_irq(&davinci_nand_lock);
+@@ -777,7 +771,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+        ret = nand_scan_ident(&info->mtd, pdata->mask_chipsel ? 2 : 1, NULL);
+        if (ret < 0) {
+                dev_dbg(&pdev->dev, "no NAND chip(s) found\n");
+-               goto err_scan;
++               goto err;
+        }
+
+        /* Update ECC layout if needed ... for 1-bit HW ECC, the default
+@@ -791,7 +785,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+                if (!chunks || info->mtd.oobsize < 16) {
+                        dev_dbg(&pdev->dev, "too small\n");
+                        ret = -EINVAL;
+-                       goto err_scan;
++                       goto err;
+                }
+
+                /* For small page chips, preserve the manufacturer's
+@@ -822,7 +816,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+                dev_warn(&pdev->dev, "no 4-bit ECC support yet "
+                                "for 4KiB-page NAND\n");
+                ret = -EIO;
+-               goto err_scan;
++               goto err;
+
+ syndrome_done:
+                info->chip.ecc.layout = &info->ecclayout;
+@@ -830,7 +824,7 @@ syndrome_done:
+
+        ret = nand_scan_tail(&info->mtd);
+        if (ret < 0)
+-               goto err_scan;
++               goto err;
+
+        if (pdata->parts)
+                ret = mtd_device_parse_register(&info->mtd, NULL, NULL,
+@@ -843,7 +837,7 @@ syndrome_done:
+                                                NULL, 0);
+        }
+        if (ret < 0)
+-               goto err_scan;
++               goto err;
+
+        val = davinci_nand_readl(info, NRCSR_OFFSET);
+        dev_info(&pdev->dev, "controller rev. %d.%d\n",
+@@ -851,8 +845,7 @@ syndrome_done:
+
+        return 0;
+
+-err_scan:
+-err_timing:
++err:
+        clk_disable_unprepare(info->clk);
+
+ err_clk_enable:
+@@ -860,11 +853,6 @@ err_clk_enable:
+        if (ecc_mode == NAND_ECC_HW_SYNDROME)
+                ecc4_busy = false;
+        spin_unlock_irq(&davinci_nand_lock);
+-
+-err_ecc:
+-err_clk:
+-err_ioremap:
+-err_nomem:
+        return ret;
+ }
+
+--
+1.7.9.5
 
