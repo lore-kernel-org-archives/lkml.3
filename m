@@ -1,207 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab3KKRPO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 12:15:14 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:59901 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab3KKRPG (ORCPT
+	id S1754900Ab3KKRQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 12:16:12 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:35118 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab3KKRQE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 12:15:06 -0500
-Date: Mon, 11 Nov 2013 18:15:03 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/build changes for v3.13
-Message-ID: <20131111171503.GA12932@gmail.com>
+	Mon, 11 Nov 2013 12:16:04 -0500
+Message-ID: <528110B1.4060402@arm.com>
+Date: Mon, 11 Nov 2013 17:15:29 +0000
+From: Jonathan Austin <jonathan.austin@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ming Lei <tom.leiming@gmail.com>
+CC: Axel Lin <axel.lin@ingics.com>, Michal Marek <mmarek@suse.cz>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        =?UTF-8?B?VXdlIA==?= =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: kernel BUG at kernel/kallsyms.c:222!
+References: <1383789208.5970.1.camel@phoenix> <CACVXFVO=QA-R1+twCL9fc_3vASg6Ap-3ezi=tU1MV1pdPYrfWw@mail.gmail.com> <CAFRkauAdR3=ByE0_B3OsqOBjmbz2a02EXb+6g-vn=1TJ7AZc8Q@mail.gmail.com> <CACVXFVMaLOfDvzdn_1NryQY59cgtLdMMqHL-_ZAa95MPz4p56Q@mail.gmail.com> <CAFRkauDe7V3N0AbfvE_=GEXHZ_Fw62VsA8p50wSUYE1-TRqMfw@mail.gmail.com> <87zjpf4w0j.fsf@rustcorp.com.au> <CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com> <CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com> <CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com> <87y54vzszo.fsf@rustcorp.com.au> <CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com> <CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com> <CAFRkauCW3FDSuh4t0gvmSWH1m0+qaG0XSoBxmk30Wq1FMy7iFw@mail.gmail.com> <CACVXFVMzOzD+D-MQCUBvC80d4zS-TJfcucKuUvzerGs6gT1fEg@mail.gmail.com> <CACVXFVOnVXcVdRCm=OfPjpvvWCiXi8GRV+9ViOGmSZ3tTf6WDg@mail.gmail.com>
+In-Reply-To: <CACVXFVOnVXcVdRCm=OfPjpvvWCiXi8GRV+9ViOGmSZ3tTf6WDg@mail.gmail.com>
+X-OriginalArrivalTime: 11 Nov 2013 17:16:02.0087 (UTC) FILETIME=[B25F3B70:01CEDF01]
+X-MC-Unique: 113111117160203901
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 11/11/13 10:41, Ming Lei wrote:
+> Hi,
+> 
+> On Mon, Nov 11, 2013 at 5:57 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+>> Hi,
+>>
+>> On Mon, Nov 11, 2013 at 4:37 PM, Axel Lin <axel.lin@ingics.com> wrote:
+>>> 2013/11/11 Ming Lei <tom.leiming@gmail.com>:
+>>>
+>>> Hi Ming,
+>>>
+>>> commit f6537f2f "scripts/kallsyms: filter symbols not in kernel address space",
+>>> uses CONFIG_PAGE_OFFSET as kernel_start_addr.
+>>> However, for !CONFIG_MMU case we have :
+>>>      PAGE_OFFSET != CONFIG_PAGE_OFFSET.
+>>
+>> Yes, it is the cause, and strictly speaking, commit f6537f2f is wrong,
+>> but triggered with bogus CONFIG_PAGE_OFFSET if !CONFIG_MMU.
+>>
+>> We can fix it either by Rusty's patch or removing the bogus
+>> CONFIG_PAGE_OFFSET for !CONFIG_MMU.
+> 
+> Rusty, maybe we need revert commit f6537f2f "scripts/kallsyms: filter
+> symbols not in kernel address space", since CONFIG_PAGE_OFFSET
+> may be bogus on !MMU or not defined on ARCHs(most of 64bit arch,
+> no regression report because scripts/kallsyms may get zero
+> kernel_start_addr)
+> 
 
-Please pull the latest x86-build-for-linus git tree from:
+For me on Cortex-R7 (nommu) f6537f2f breaks boot (Oops very early on...)
+and reverting it fixes the problem... However, as you note, we have a
+'bogus' CONFIG_PAGE_OFFSET (0xC0000000) for !MMU so another approach would
+be to fix that...
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-build-for-linus
+I've tested the patch below and it solves the ARM side of things - so
+gives you an option other than a complete revert. Happy to put this in to
+RMK's patch system if you'd prefer not to have to revert and he's happy
+with the patch.
 
-   # HEAD: 7f71be4c9f9a334e7bd0adc66225db4eb88c3bc4 x86, defconfig: Add DEVTMPFS and DEVTMPFS_MOUNT to *86*_defconfig
+Jonny
 
-Two small changes.
+-------->8-----------
 
- Thanks,
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index d601be3..6756651 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1609,6 +1609,7 @@ endchoice
+ 
+ config PAGE_OFFSET
+        hex
++       default PHYS_OFFSET if !MMU
+        default 0x40000000 if VMSPLIT_1G
+        default 0x80000000 if VMSPLIT_2G
+        default 0xC0000000
 
-	Ingo
-
------------------->
-Chen Gang (1):
-      x86, defconfig: Add DEVTMPFS and DEVTMPFS_MOUNT to *86*_defconfig
-
-Kees Cook (1):
-      x86, build: move build output statistics away from stderr
 
 
- arch/x86/boot/Makefile            |  3 ++-
- arch/x86/boot/tools/build.c       | 40 +++++++++++++++++++++++----------------
- arch/x86/configs/i386_defconfig   |  2 ++
- arch/x86/configs/x86_64_defconfig |  2 ++
- 4 files changed, 30 insertions(+), 17 deletions(-)
-
-diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
-index 379814b..dce69a2 100644
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -71,7 +71,8 @@ GCOV_PROFILE := n
- $(obj)/bzImage: asflags-y  := $(SVGA_MODE)
- 
- quiet_cmd_image = BUILD   $@
--cmd_image = $(obj)/tools/build $(obj)/setup.bin $(obj)/vmlinux.bin $(obj)/zoffset.h > $@
-+cmd_image = $(obj)/tools/build $(obj)/setup.bin $(obj)/vmlinux.bin \
-+			       $(obj)/zoffset.h $@
- 
- $(obj)/bzImage: $(obj)/setup.bin $(obj)/vmlinux.bin $(obj)/tools/build FORCE
- 	$(call if_changed,image)
-diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
-index c941d6a..8e15b22 100644
---- a/arch/x86/boot/tools/build.c
-+++ b/arch/x86/boot/tools/build.c
-@@ -5,14 +5,15 @@
-  */
- 
- /*
-- * This file builds a disk-image from two different files:
-+ * This file builds a disk-image from three different files:
-  *
-  * - setup: 8086 machine code, sets up system parm
-  * - system: 80386 code for actual system
-+ * - zoffset.h: header with ZO_* defines
-  *
-- * It does some checking that all files are of the correct type, and
-- * just writes the result to stdout, removing headers and padding to
-- * the right amount. It also writes some system data to stderr.
-+ * It does some checking that all files are of the correct type, and writes
-+ * the result to the specified destination, removing headers and padding to
-+ * the right amount. It also writes some system data to stdout.
-  */
- 
- /*
-@@ -136,7 +137,7 @@ static void die(const char * str, ...)
- 
- static void usage(void)
- {
--	die("Usage: build setup system [zoffset.h] [> image]");
-+	die("Usage: build setup system zoffset.h image");
- }
- 
- #ifdef CONFIG_EFI_STUB
-@@ -265,7 +266,7 @@ int main(int argc, char ** argv)
- 	int c;
- 	u32 sys_size;
- 	struct stat sb;
--	FILE *file;
-+	FILE *file, *dest;
- 	int fd;
- 	void *kernel;
- 	u32 crc = 0xffffffffUL;
-@@ -280,10 +281,13 @@ int main(int argc, char ** argv)
- 	startup_64 = 0x200;
- #endif
- 
--	if (argc == 4)
--		parse_zoffset(argv[3]);
--	else if (argc != 3)
-+	if (argc != 5)
- 		usage();
-+	parse_zoffset(argv[3]);
-+
-+	dest = fopen(argv[4], "w");
-+	if (!dest)
-+		die("Unable to write `%s': %m", argv[4]);
- 
- 	/* Copy the setup code */
- 	file = fopen(argv[1], "r");
-@@ -318,7 +322,7 @@ int main(int argc, char ** argv)
- 	/* Set the default root device */
- 	put_unaligned_le16(DEFAULT_ROOT_DEV, &buf[508]);
- 
--	fprintf(stderr, "Setup is %d bytes (padded to %d bytes).\n", c, i);
-+	printf("Setup is %d bytes (padded to %d bytes).\n", c, i);
- 
- 	/* Open and stat the kernel file */
- 	fd = open(argv[2], O_RDONLY);
-@@ -327,7 +331,7 @@ int main(int argc, char ** argv)
- 	if (fstat(fd, &sb))
- 		die("Unable to stat `%s': %m", argv[2]);
- 	sz = sb.st_size;
--	fprintf (stderr, "System is %d kB\n", (sz+1023)/1024);
-+	printf("System is %d kB\n", (sz+1023)/1024);
- 	kernel = mmap(NULL, sz, PROT_READ, MAP_SHARED, fd, 0);
- 	if (kernel == MAP_FAILED)
- 		die("Unable to mmap '%s': %m", argv[2]);
-@@ -348,27 +352,31 @@ int main(int argc, char ** argv)
- #endif
- 
- 	crc = partial_crc32(buf, i, crc);
--	if (fwrite(buf, 1, i, stdout) != i)
-+	if (fwrite(buf, 1, i, dest) != i)
- 		die("Writing setup failed");
- 
- 	/* Copy the kernel code */
- 	crc = partial_crc32(kernel, sz, crc);
--	if (fwrite(kernel, 1, sz, stdout) != sz)
-+	if (fwrite(kernel, 1, sz, dest) != sz)
- 		die("Writing kernel failed");
- 
- 	/* Add padding leaving 4 bytes for the checksum */
- 	while (sz++ < (sys_size*16) - 4) {
- 		crc = partial_crc32_one('\0', crc);
--		if (fwrite("\0", 1, 1, stdout) != 1)
-+		if (fwrite("\0", 1, 1, dest) != 1)
- 			die("Writing padding failed");
- 	}
- 
- 	/* Write the CRC */
--	fprintf(stderr, "CRC %x\n", crc);
-+	printf("CRC %x\n", crc);
- 	put_unaligned_le32(crc, buf);
--	if (fwrite(buf, 1, 4, stdout) != 4)
-+	if (fwrite(buf, 1, 4, dest) != 4)
- 		die("Writing CRC failed");
- 
-+	/* Catch any delayed write failures */
-+	if (fclose(dest))
-+		die("Writing image failed");
-+
- 	close(fd);
- 
- 	/* Everything is OK */
-diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
-index 9444708..a7fef26 100644
---- a/arch/x86/configs/i386_defconfig
-+++ b/arch/x86/configs/i386_defconfig
-@@ -142,6 +142,8 @@ CONFIG_MAC80211=y
- CONFIG_MAC80211_LEDS=y
- CONFIG_RFKILL=y
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
- CONFIG_DEBUG_DEVRES=y
- CONFIG_CONNECTOR=y
- CONFIG_BLK_DEV_LOOP=y
-diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
-index 671524d..c1119d4 100644
---- a/arch/x86/configs/x86_64_defconfig
-+++ b/arch/x86/configs/x86_64_defconfig
-@@ -141,6 +141,8 @@ CONFIG_MAC80211=y
- CONFIG_MAC80211_LEDS=y
- CONFIG_RFKILL=y
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
- CONFIG_DEBUG_DEVRES=y
- CONFIG_CONNECTOR=y
- CONFIG_BLK_DEV_LOOP=y
