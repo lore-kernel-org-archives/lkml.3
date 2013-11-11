@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab3KKB72 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 20:59:28 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:43302 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab3KKB7X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 20:59:23 -0500
-Date: Mon, 11 Nov 2013 12:59:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the aio-direct tree with the vfs
- tree
-Message-Id: <20131111125920.0d6f6937cc64b96d516a960c@canb.auug.org.au>
-In-Reply-To: <20131111125328.ef8f0641ccdbb28a0d0564da@canb.auug.org.au>
-References: <20131111125328.ef8f0641ccdbb28a0d0564da@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__11_Nov_2013_12_59_20_+1100_XT3dShF/dOTW=60T"
+	id S1751978Ab3KKCHA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 21:07:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35315 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003Ab3KKCGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 21:06:51 -0500
+Message-ID: <52803BA2.2080908@zytor.com>
+Date: Sun, 10 Nov 2013 18:06:26 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>, linux-arch <linux-arch@vger.kernel.org>
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        james.t.kukunas@intel.com, hpa@linux.intel.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [tip:x86/asm] x86, bitops:  Change bitops to be native operand
+ size
+References: <tip-z61ofiwe90xeyb461o72h8ya@git.kernel.org>	 <1384117768.3081.10.camel@joe-AO722>	 <5ac67859-a0b2-47f5-bdc2-c2a52b8d6885@email.android.com> <1384123457.3081.33.camel@joe-AO722>
+In-Reply-To: <1384123457.3081.33.camel@joe-AO722>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__11_Nov_2013_12_59_20_+1100_XT3dShF/dOTW=60T
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/10/2013 02:44 PM, Joe Perches wrote:
+> (adding linux-arch, and possible patch below)
+> 
+> On Sun, 2013-11-10 at 14:10 -0800, H. Peter Anvin wrote:
+>> Yes, on the generic it is int.
+>>
+>> The problem is in part that some architectures have bitop
+>> instructions with specific behavior.
+> 
+> I think that all bitop indices should be changed
+> to unsigned (int or long, probably long) for all
+> arches.
+> 
+> Is there any impediment to that?
+> 
 
-On Mon, 11 Nov 2013 12:53:28 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> There may be some question as to whether file_readable() needs to check
-> its filp argument for NULL, but that would require auditing all its call
-> sites.
+It is at the very best misleading.  On x86 bit indicies will be signed
+no matter what the data type says, and having an unsigned data type
+being interpreted as signed seems like really dangerous.
 
-Ignore that ...
+On the other hand, for the generic implementation unsigned long makes sense.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+We might need a bitindex_t or something like that for it to be clean.
 
---Signature=_Mon__11_Nov_2013_12_59_20_+1100_XT3dShF/dOTW=60T
-Content-Type: application/pgp-signature
+	-hpa
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSgDn4AAoJEMDTa8Ir7ZwVzTcP/Aur08WqgsnVbftEVA3zA0Mq
-dMz8gcR255BIwUemySsGZlTpi7Zn9NqM0A7PzxCnm+ycapcrvFwZk6n84342nmxB
-AD2MHyUMiBxupycKQAqFyyPBLMwoqp6SSWaiAQYjo064Ppd2RNVjuCs3uUZHZFyf
-UgRSV0lH96b3GF3vKqY7BNJj4VTsGs334O18Err9y41fRTLV/38NkjYsaHNcVLDr
-GKlCC2cJ4Ma3UjhrC5cjgMyQHot74/WACj4l2DbahdnayhejSDMDyr+UZyGn0Njp
-Q+As5CmuK+83WKUNGp+be0WgLthxOgupCOQM+FGKBMeFRBH4uK5qkRD7zMKJRNBu
-VCd1aaEhgZ7dccbHQP9Wuxik284CS3reMKE+nV2llr2S0PHVkkBkIE8Cb9HVZlDk
-jShlUfLvBwnTd6ZuFXL+bflbN67YPMgA3R6JLXW5Wnq3pA7cE0BlOupMpwO6r+Ln
-KIqA9ajOpWoZuGgJncRcvmMpWDLAPr4AvhHUcsU1MIrlrXa3JJU9FSWkwGDyXyz5
-4LI+d4oX66LUcVtjg2/BzMxcug4wuK3UIiE00xAS9eTvFFIwGG/t5bgR4BOnp7Am
-XAsEEkxYx5bwhmJPSXepZQlqcnBpfeISiAKxe/Dv8OMKm0CXSDhbsW8PzUbrqpJs
-n/5j7XdT0mrJvObrp/+9
-=P4sK
------END PGP SIGNATURE-----
-
---Signature=_Mon__11_Nov_2013_12_59_20_+1100_XT3dShF/dOTW=60T--
