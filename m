@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab3KKL0v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:26:51 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:52748 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab3KKL0o (ORCPT
+	id S1753317Ab3KKL1E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:27:04 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:43177 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab3KKL0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:26:44 -0500
-Date: Mon, 11 Nov 2013 11:26:38 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        myungjoo.ham@samsung.com, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] extcon: arizona: Add defines for microphone
- detection levels
-Message-ID: <20131111112638.GE22184@lee--X1>
-References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <5280AAAF.8040005@samsung.com>
- <20131111105356.GB22184@lee--X1>
- <20131111110652.GD6549@opensource.wolfsonmicro.com>
- <20131111111503.GC22184@lee--X1>
- <5280BE00.8030002@samsung.com>
+	Mon, 11 Nov 2013 06:26:47 -0500
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] crypto: make sure *blkcipher_walk_init properly initialises walk
+In-Reply-To: <20131111012809.GA5091@gondor.apana.org.au>
+Organization: http://mina86.com/
+References: <1384108681-23519-1-git-send-email-mpn@google.com> <20131111012809.GA5091@gondor.apana.org.au>
+User-Agent: Notmuch/0.15.2+55~geb6e9d8 (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:131111:herbert@gondor.apana.org.au::II2N+oTL1ma7yBvv:0000000000000000000000000000000000087Z
+X-Hashcash: 1:20:131111:linux-kernel@vger.kernel.org::dYioa5v/KsCi2XfJ:0000000000000000000000000000000002UD5
+X-Hashcash: 1:20:131111:linux-crypto@vger.kernel.org::G+jRb4EccmXApxmD:0000000000000000000000000000000005qIW
+X-Hashcash: 1:20:131111:davem@davemloft.net::y3/JF4tlNfdTSzBz:0000000000000000000000000000000000000000003hz6
+Date: Mon, 11 Nov 2013 12:26:38 +0100
+Message-ID: <xa1t61rzyya9.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5280BE00.8030002@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>> I'm inclined to agree with you though, so if you want to send a patch
-> >>> based on v3.14-rc1 I'd be happy to accept it.
-> >>
-> >> Apologies for causing confusion here I checked your tree for the
-> >> patch and didn't see it, so I assumed you had decided not to
-> >> apply it. I must have missed it some how.
-> > 
-> > So I am partly to blame here. My public repos sometimes aren't as
-> > up-to-date and my private ones, but if I've replied to a patch and
-> > said I've applied it, I inevitably have.
-> > 
-> But this patch has only the dependency of extcon subsystem.
-> At least, you have to get 'Acked-by' or 'Signed-off-by' from
-> subsystem maintainer. I didn't agree applying this patch on mainline tree.
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Please see my other mail.
+On Mon, Nov 11 2013, Herbert Xu <herbert@gondor.apana.org.au> wrote:
+> Nack.  The field flags is used as a bit-field and all bits other
+> than those initialised that you see are used internally by the
+> walker function and will be initialised on demand.
+>
+> Please do not just rely on tools such as coverity and actually
+> read the code when submitting patches.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I have read the code which is why I concluded that it is safe to replace
+the bit operations with a simple assignment.  Since, as you described,
+all other bit fields are initialised on demand anyway, there is no harm
+in setting them to zero here.  Especially since I see no advantages of
+the current approach, but instead see two disadvantages: longer machine
+code (load-modiy-store vs. store) and confusion of tools such as
+Coverity.
+
+But of course, if you want it as it is, I won't be bothering you.
+
+--=20
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
+..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
+ (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
+
+--==-=-=
+Content-Type: text/plain
+
+
+--==-=-=
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSgL7uAAoJECBgQBJQdR/0nxYP/2mR7DEkC9yE4zKXb5CK5eCH
+hfwoCzCInvcBP0M6fM0aNRyDMpoOKF8lAoOUb/5CYyoPrdxFzh5R2xx4kPsK76cn
+rO9zmhez4uQsuqT6tlolk/l51koVa/uQq4VPjZaZKigd+1G+2mwyzVjs8Zh+biGO
+2O5xzXF6U3aV26JGdtfpY/DEZENxr505VfI2UGXUUFjWEg8TrWFcJN80/1HXTkOC
+irP+6b8oG4HsnRhWHMEUmVrJzq1ZOiytiMMjglCOmz3Y9xYnHHXs2LxE1FJpB5TC
+JTrw5mCcbMI0GC77/KOoJsT6w/gOgdKTUh5uJfg/W3Y8s0oZSFIjd2idnqkIzXAt
+ZlCrKbPsqS5h2iWucMTc7iiSiKC0yjO1M44uXIna+qF2uD5QDZwvJlJ8hxQrgOKu
++auA6kOQMkx7yJX243on6qjnxjGMfOesjTVqndvdPlnhWUBrkOdaStzzdPj2nZjG
+36ttn1x4UwqYh3BuJpU5NW29vV8xtxfpldwE65327o0n4WpmhrUt4D4ZB8nQGaOb
+eH7a9ibraG8ddl8ZLC141wEhpsHa03fs1FEv5GLnY8rO4A8+djzfGN+1oiIUy7PP
+UdicxpThacxSBU6R0yyHPvcYXeks8jFYp3t/FCVkRyLL1ezXL4AzME7Hcb6U0NQB
+B2i9G0t47QTh8JOLKTmo
+=jUH5
+-----END PGP SIGNATURE-----
+--==-=-=--
+
+--=-=-=--
