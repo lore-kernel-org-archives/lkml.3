@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab3KKHsx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 02:48:53 -0500
-Received: from mga03.intel.com ([143.182.124.21]:21562 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979Ab3KKHsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 02:48:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="387586803"
-Message-ID: <52808D81.70308@intel.com>
-Date: Mon, 11 Nov 2013 09:55:45 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752699Ab3KKHxq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 02:53:46 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:40202 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab3KKHxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 02:53:40 -0500
+Message-ID: <52808CFC.6060701@linaro.org>
+Date: Mon, 11 Nov 2013 16:53:32 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] perf tool: Round mmap pages to power 2
-References: <1383885392-31082-1-git-send-email-dsahern@gmail.com> <527CAAAB.3000900@intel.com> <527CF7FF.7060001@gmail.com>
-In-Reply-To: <527CF7FF.7060001@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Will Deacon <will.deacon@arm.com>
+CC: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>
+Subject: Re: [PATCH RFC 4/6] arm64: Add kernel return probes support(kretprobes)
+References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org> <1382008671-4515-5-git-send-email-sandeepa.prabhu@linaro.org> <20131108170448.GF15074@mudshark.cambridge.arm.com> <CA+b37P2aeXs4Cy_HxF24HQAYAnYzZ19PgV6rqrQLY9SMpZHDJg@mail.gmail.com>
+In-Reply-To: <CA+b37P2aeXs4Cy_HxF24HQAYAnYzZ19PgV6rqrQLY9SMpZHDJg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/13 16:41, David Ahern wrote:
-> On 11/8/13, 2:11 AM, Adrian Hunter wrote:
->> This prevents:
+On 11/11/2013 01:29 PM, Sandeepa Prabhu wrote:
+> On 8 November 2013 22:34, Will Deacon <will.deacon@arm.com> wrote:
+>>> +static inline long regs_return_value(struct pt_regs *regs)
+>>> +{
+>>> +     return regs->regs[0];
+>>> +}
 >>
->>      --out-pages=0
->>
->> from working e.g.
->>
->>      tools/perf/perf record -vv --out-pages=0 uname
->>      rounding mmap pages size to 4096 (1 pages)
->>
->> Although without this patch:
->>
->>      tools/perf/perf record -vv --out-pages=0 uname
->>      --mmap_pages/-m value must be a power of two.
->>       usage: perf record [<options>] [<command>]
->>          or: perf record [<options>] -- <command> [<options>]
->>
->>              --out-pages <pages>
->>                            Number of pages or size with units to use for
->> output (default 64M)
->>
->> Also there is:
->>
->>      tools/perf/perf record -vv --no-out-pages uname
->>      Segmentation fault (core dumped)
->
-> This is problem with perf_evlist__parse_mmap_pages(); same thing happens
-> with --no-map-pages.
->
-> With the attached both round a 0 up to 1 page:
->
-> [daahern@nxos-vdc-dev3 perf]$ perf record --out-pages 0 uname
-> rounding mmap pages size to 4096 (1 pages)
+>> This is also being implemented by another patch series (I think the audit
+>> stuff?).
+> Not sure, I did not see this being implemented in audit(audit adds for
+> 'syscallno',  not for return value in x0)
+> I can rebase my code if this change is implemented and queued in other patchset.
 
+Yes, my audit patch has it.
+The definition is referred to in include/linux/audit.h (and ptrace.h),
+too.
 
-Your code looks like out_pages = 0 selects write() instead of mmap().
-So it you can't set out_pages = 0, how do you select write()?
-
-
-> Linux
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.008 MB perf.data (~339 samples) ]
->
-> [daahern@nxos-vdc-dev3 perf]$ perf record --mmap-pages 0 uname
-> rounding mmap pages size to 4096 (1 pages)
-> Linux
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.008 MB perf.data (~339 samples) ]
->
-> [daahern@nxos-vdc-dev3 perf]$ perf record --no-mmap-pages uname
->
->  usage: perf record [<options>] [<command>]
->     or: perf record [<options>] -- <command> [<options>]
->
->     -m, --mmap-pages <pages>
->                           number of mmap data pages
-> David
->
-
+-Takahiro AKASHI
