@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab3KKQQD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 11:16:03 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:36139 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753782Ab3KKQQA (ORCPT
+	id S1754568Ab3KKQRH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 11:17:07 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37929 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497Ab3KKQQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 11:16:00 -0500
-Message-ID: <528102BD.90207@vmware.com>
-Date: Mon, 11 Nov 2013 17:15:57 +0100
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 11 Nov 2013 11:16:58 -0500
+Date: Mon, 11 Nov 2013 17:16:31 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Subject: Re: [PATCH v6 3/4] perf,x86: add Intel RAPL PMU support
+Message-ID: <20131111161631.GA21461@twins.programming.kicks-ass.net>
+References: <1383939963-7750-1-git-send-email-eranian@google.com>
+ <1383939963-7750-4-git-send-email-eranian@google.com>
+ <20131111155905.GM19203@twins.programming.kicks-ass.net>
+ <CABPqkBRZ84Hc9oAU6zFxNWMv9hT+zMu3Od7_b5fhHRgbG3MXPA@mail.gmail.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC RESEND] dma-buf/fs Add get_[file|dma_buf]_unless_doomed
-References: <1384160267-3389-1-git-send-email-thellstrom@vmware.com> <20131111151704.GX13318@ZenIV.linux.org.uk>
-In-Reply-To: <20131111151704.GX13318@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBRZ84Hc9oAU6zFxNWMv9hT+zMu3Od7_b5fhHRgbG3MXPA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 04:17 PM, Al Viro wrote:
-> On Mon, Nov 11, 2013 at 12:57:47AM -0800, Thomas Hellstrom wrote:
->> Resending since it appears this RFC never got to the dri-devel lkml lists.
->>
->> In this context, a "doomed" object is an object whose refcount has reached
->> zero, but that has not yet been freed.
->>
->> To avoid mutual refcounting vmwgfx need to have a non-refcounted pointer to
->> a dma-buf in a lookup structure. The pointer is removed in the dma-buf
->> destructor. To allow lookup-structure private locks we need
->> get_dma_buf_unless_doomed(). This common refcounting scenario is described
->> with examples in detail in the kref documentaion.
->> The solution with local locks is under kref_get_unless_zero().
->> See also kobject_get_unless_zero() and its commit message.
->> Since dma-bufs are using the attached file for refcounting,
->> get_dma_buf_unless_doomed maps directly to a get_file_unless_doomed.
-> NAK for struct file.  This kind of stuff is for implementing primitives,
-> not as a public API.
+On Mon, Nov 11, 2013 at 05:07:22PM +0100, Stephane Eranian wrote:
+> On Mon, Nov 11, 2013 at 4:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Fri, Nov 08, 2013 at 08:46:02PM +0100, Stephane Eranian wrote:
+> >
+> >
+> >> +static DEFINE_SPINLOCK(rapl_hotplug_lock);
+> >
+> > What is this thing protecting?
+> >
+> > Like last time it appears to be used only from hotplug notifier
+> > callbacks and those are already fully serialized.
+> >
+> I thought you or somebody else had said, that hotplug in now parallel.
 
-That's only partially correct. Public access (through in this case a 
-release callback) to the object destructor validates a public 
-ref_unless_doomed method. It's particularly useful if an external user 
-wants to implement a lookup table for objects that are removed from the 
-table in the object destructor or, (which doesn't apply in this case) 
-using RCU locks for lookups.
+There's a little something about hotplug here I think:
 
-Still want to NAK this, could you please elaborate a bit more why you 
-don't want it in? Fear of misuse or general dislike of this
-lookup method?
+ http://marc.info/?l=linux-kernel&m=138118235612441
 
->   BTW, as for dmabuf...  dma_buf_fd() calling conventions
-> are seriously misguided - we are trying to transfer the reference we hold
-> into something (in this case - descriptor table), so the failure exit
-> should be dropping the reference, not leaving that to caller
+But I'm not entirely sure that's the origin of this lock.
 
-You're probably right, though I'm only a dma_buf API user, trying to 
-extend the dma_buf API useful for my use-case.
+Andi seems worried about the IPI vs hotplug/migrate. I'm not entrely
+sure the lock as proposed actually fixes that.
 
-Thanks,
-Thomas
+The 'easy' way would be to put a synchronize_sched() right after the
+migrate code, that forces all CPUs to have scheduled once and thus also
+ensures all pending/running interrupts are serviced.
+
+But I don't think that's strictly required as I seem to recall hotplug
+actually already does something like this -- it pretty much has to.
