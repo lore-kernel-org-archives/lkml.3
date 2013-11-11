@@ -1,175 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab3KKDWq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 22:22:46 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:46137 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751016Ab3KKDWh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 22:22:37 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AroGALpMgFJ5LGc//2dsb2JhbABZgweDf7ZchUCBLBd0giUBAQQBIw8BIyMFCwgDDgoCAgUhAgIPBSUDIRMbh2AFq0eSFhaBE4x0DIE+B4JrgUUDmA6SC4M6KIEt
-Date: Mon, 11 Nov 2013 14:22:11 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andreas Dilger <adilger@dilger.ca>,
-        "Artem S. Tashkinov" <t.artem@lycos.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, linux-mm <linux-mm@kvack.org>
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-Message-ID: <20131111032211.GT6188@dastard>
-References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
- <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
- <89AE8FE8-5B15-41DB-B9CE-DFF73531D821@dilger.ca>
- <20131105041245.GY6188@dastard>
- <20131107134806.GB30832@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131107134806.GB30832@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752488Ab3KKD1E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 22:27:04 -0500
+Received: from mga03.intel.com ([143.182.124.21]:33696 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003Ab3KKD05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 22:26:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="319633038"
+Subject: [PATCH] usbnet: fix race condition caused spinlock bad magic issue
+From: wangbiao <biao.wang@intel.com>
+To: oneukum@suse.de, netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        rusty@rustcorp.com.au, william.douglas@intel.com, biao.wang@intel.com
+Content-Type: text/plain; charset="us-ascii"
+Date: Mon, 11 Nov 2013 11:08:35 +0800
+Message-ID: <1384139315.2179.9.camel@wangbiao>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 02:48:06PM +0100, Jan Kara wrote:
-> On Tue 05-11-13 15:12:45, Dave Chinner wrote:
-> > On Mon, Nov 04, 2013 at 05:50:13PM -0700, Andreas Dilger wrote:
-> > > Something simple like “start writing at 16MB dirty on a single file”
-> > > would probably avoid a lot of complexity at little real-world cost.
-> > > That shouldn’t throttle dirtying memory above 16MB, but just start
-> > > writeout much earlier than it does today.
-> > 
-> > That doesn't solve the "slow device, large file" problem. We can
-> > write data into the page cache at rates of over a GB/s, so it's
-> > irrelevant to a device that can write at 5MB/s whether we start
-> > writeback immediately or a second later when there is 500MB of dirty
-> > pages in memory.  AFAIK, the only way to avoid that problem is to
-> > use write-through caching for such devices - where they throttle to
-> > the IO rate at very low levels of cached data.
->   Agreed.
-> 
-> > Realistically, there is no "one right answer" for all combinations
-> > of applications, filesystems and hardware, but writeback caching is
-> > the best *general solution* we've got right now.
-> > 
-> > However, IMO users should not need to care about tuning BDI dirty
-> > ratios or even have to understand what a BDI dirty ratio is to
-> > select the rigth caching method for their devices and/or workload.
-> > The difference between writeback and write through caching is easy
-> > to explain and AFAICT those two modes suffice to solve the problems
-> > being discussed here.  Further, if two modes suffice to solve the
-> > problems, then we should be able to easily define a trigger to
-> > automatically switch modes.
-> > 
-> > /me notes that if we look at random vs sequential IO and the impact
-> > that has on writeback duration, then it's very similar to suddenly
-> > having a very slow device. IOWs, fadvise(RANDOM) could be used to
-> > switch an *inode* to write through mode rather than writeback mode
-> > to solve the problem aggregating massive amounts of random write IO
-> > in the page cache...
->   I disagree here. Writeback cache is also useful for aggregating random
-> writes and making semi-sequential writes out of them. There are quite some
-> applications which rely on the fact that they can write a file in a rather
-> random manner (Berkeley DB, linker, ...) but the files are written out in
-> one large linear sweep. That is actually the reason why SLES (and I believe
-> RHEL as well) tune dirty_limit even higher than what's the default value.
+From: wang, biao <biao.wang@intel.com>
+Date: Mon, 11 Nov 2013 10:23:40 +0800
+Subject: [PATCH] usbnet: fix race condition caused spinlock bad magic issue
 
-Right - but the correct behaviour really depends on the pattern of
-randomness. The common case we get into trouble with is when no
-clustering occurs and we end up with small, random IO for gigabytes
-of cached data. That's the case where write-through caching for
-random data is better.
+there is race between usbnet_terminate_urbs and usbnet_bh, when
+unlink_wakeup used in usbnet_bh, it may be already freed and used by
+other function as unlink_wakeup was a local var on stack.
 
-It's also questionable whether writeback caching for aggregation is
-faster for random IO on high-IOPS devices or not. Again, I think it
-woul depend very much on how random the patterns are...
+btw, dev->wait should be judged again before use it as there is race
+too.
 
-> So I think it's rather the other way around: If you can detect the file is
-> being written in a streaming manner, there's not much point in caching too
-> much data for it.
+Signed-off-by: wang, biao <biao.wang@intel.com>
+---
+ drivers/net/usb/usbnet.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-But we're not talking about how much data we cache here - we are
-considering how much data we allow to get dirty before writing it
-back.  It doesn't matter if we use writeback or write through
-caching, the page cache footprint for a given workload is likely to
-be similar, but without any data we can't draw any conclusions here.
-
-> And I agree with you that we also have to be careful not
-> to cache too few because otherwise two streaming writes would be
-> interleaved too much. Currently, we have writeback_chunk_size() which
-> determines how much we ask to write from a single inode. So streaming
-> writers are going to be interleaved at this chunk size anyway (currently
-> that number is "measured bandwidth / 2"). So it would make sense to also
-> limit amount of dirty cache for each file with streaming pattern at this
-> number.
-
-My experience says that for streaming IO we typically need at least
-5s of cached *dirty* data to even out delays and latencies in the
-writeback IO pipeline. Hence limiting a file to what we can write in
-a second given we might only write a file once a second is likely
-going to result in pipeline stalls...
-
-Remember, writeback caching is about maximising throughput, not
-minimising latency. The "sync latency" problem with caching too much
-dirty data on slow block devices is really a corner case behaviour
-and should not compromise the common case for bulk writeback
-throughput.
-
-> > Indeed, the above implies that we need the caching behaviour to be a
-> > property of the address space, not just a property of the backing
-> > device.
->   Yes, and that would be interesting to implement and not make a mess out
-> of the whole writeback logic because the way we currently do writeback is
-> inherently BDI based. When we introduce some special per-inode limits,
-> flusher threads would have to pick more carefully what to write and what
-> not. We might be forced to go that way eventually anyway because of memcg
-> aware writeback but it's not a simple step.
-
-Agreed, it's not simple, and that's why we need to start working
-from the architectural level....
-
-> > IOWs, the implementation needs to trickle down from a coherent high
-> > level design - that will define the knobs that we need to expose to
-> > userspace. We should not be adding new writeback behaviours by
-> > adding knobs to sysfs without first having some clue about whether
-> > we are solving the right problem and solving it in a sane manner...
->   Agreed. But the ability to limit amount of dirty pages outstanding
-> against a particular BDI seems as a sane one to me. It's not as flexible
-> and automatic as the approach you suggested but it's much simpler and
-> solves most of problems we currently have.
-
-That's true, but....
-
-> The biggest objection against the sysfs-tunable approach is that most
-> people won't have a clue meaning that the tunable is useless for them.
-
-.... that's the big problem I see - nobody is going to know how to
-use it, when to use it, or be able to tell if it's the root cause of
-some weird performance problem they are seeing.
-
-> But I
-> wonder if something like:
-> 1) turn on strictlimit by default
-> 2) don't allow dirty cache of BDI to grow over 5s of measured writeback
->    speed
-> 
-> won't go a long way into solving our current problems without too much
-> complication...
-
-Turning on strict limit by default is going to change behaviour
-quite markedly. Again, it's not something I'd want to see done
-without a bunch of data showing that it doesn't cause regressions
-for common workloads...
-
-Cheers,
-
-Dave.
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index 90a429b..22fc27f 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -86,6 +86,7 @@ static const char driver_name [] = "usbnet";
+ 
+ /* use ethtool to change the level for any given device */
+ static int msg_level = -1;
++static wait_queue_head_t unlink_wakeup;
+ module_param (msg_level, int, 0);
+ MODULE_PARM_DESC (msg_level, "Override default message level");
+ 
+@@ -761,7 +762,6 @@ EXPORT_SYMBOL_GPL(usbnet_unlink_rx_urbs);
+ // precondition: never called in_interrupt
+ static void usbnet_terminate_urbs(struct usbnet *dev)
+ {
+-	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(unlink_wakeup);
+ 	DECLARE_WAITQUEUE(wait, current);
+ 	int temp;
+ 
+@@ -1448,8 +1448,10 @@ static void usbnet_bh (unsigned long param)
+ 
+ 	// waiting for all pending urbs to complete?
+ 	if (dev->wait) {
++		wait_queue_head_t *wait_d = dev->wait;
+ 		if ((dev->txq.qlen + dev->rxq.qlen + dev->done.qlen) == 0) {
+-			wake_up (dev->wait);
++			if (wait_d)
++				wake_up(wait_d);
+ 		}
+ 
+ 	// or are we maybe short a few urbs?
+@@ -1602,6 +1604,7 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
+ 	init_timer (&dev->delay);
+ 	mutex_init (&dev->phy_mutex);
+ 	mutex_init(&dev->interrupt_mutex);
++	init_waitqueue_head(&unlink_wakeup);
+ 	dev->interrupt_count = 0;
+ 
+ 	dev->net = net;
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.0.4
+
+
+
