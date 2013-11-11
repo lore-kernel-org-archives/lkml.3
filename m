@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab3KKUyI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 15:54:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27846 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751591Ab3KKUyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 15:54:06 -0500
-Date: Mon, 11 Nov 2013 15:53:41 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Kexec Mailing List <kexec@lists.infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Kexec query about what makes sure control pages/page tables are not
- overwritten
-Message-ID: <20131111205341.GE11547@redhat.com>
+	id S1752436Ab3KKUyl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 15:54:41 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:60962 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab3KKUyd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 15:54:33 -0500
+Date: Mon, 11 Nov 2013 16:02:47 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: David Ahern <dsahern@gmail.com>
+cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, Bill Gray <bgray@redhat.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Richard Fowles <rfowles@redhat.com>,
+        Stephane Eranian <eranian@google.com>, vincent.weaver@maine.edu
+Subject: Re: [PATCH 03/10] perf record: Synthesize non-exec MMAP records when
+ --data used
+In-Reply-To: <52814060.9000104@gmail.com>
+Message-ID: <alpine.DEB.2.10.1311111557060.26131@vincent-weaver-1.um.maine.edu>
+References: <1384201353-23863-1-git-send-email-acme@infradead.org> <1384201353-23863-4-git-send-email-acme@infradead.org> <52814060.9000104@gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 11 Nov 2013, David Ahern wrote:
 
-I am staring at control page allocation logic in case of kdump and
-wondering what makes sure that these pages are not overwritten by 
-next kernel.
+> [Added Vince]
+> 
+> On 11/11/13, 1:22 PM, Arnaldo Carvalho de Melo wrote:
+> > When perf_event_attr.mmap_data is set the kernel will generate
+> > PERF_RECORD_MMAP events when non-exec (data, SysV mem) mmaps are
+> > created, so we need to synthesize from /proc/pid/maps for existing
+> > threads
+> 
+> Seems like that should be documented in the man pages:
+> 
+> [dsa@MacBook perf]$ egrep -r mmap_data Documentation/
+> [dsa@MacBook perf]$
+> 
+> Vince: where are you keeping the man page you are putting together?
 
-I see that for 64bit entry, control pages have the page tables needed
-for second kernel. In case of crash these pages from from crash kernel
-reserved region. Page allocator is very simple and that is start from
-lowest crash reserved range and move higher and allocate first available
-page which is not allocated to segments. What makes sure that these pages
-are not overwritten by second kernel.
+It's in the official linux manpage git tree (perf_event_open.2) and
+has been included in the last few manpage releases.  
 
-I guess it becomes a general bootloader question. How do we make sure
-bootloader prepared page tables/gdt will not be overwritten by kernel
-(till kernel sets up its own page tables and gdt) and how should we do the
-allocation and placement.
+There is a blurb on PERF_RECORD_MMAP, though it definitely could use a 
+bit more elaboration.
 
-Thanks
-Vivek
+Vince
