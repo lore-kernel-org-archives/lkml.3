@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435Ab3KKPkr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 10:40:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44142 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753314Ab3KKPki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 10:40:38 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131111152948.GA11547@redhat.com>
-References: <1383642967-12595-1-git-send-email-bhe@redhat.com> <20131108151416.GA13068@redhat.com> <527D0D50.6010607@zytor.com> <20131111152948.GA11547@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] x86: make reboot task only run on the appropriate processor
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 11 Nov 2013 07:39:18 -0800
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        akpm@linux-foundation.org, davej@fedoraproject.org,
-        rmk+kernel@arm.linux.org.uk, chaowang@redhat.com, mwhitehe@redhat.com,
-        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Robin Holt <robinmholt@linux.com>, Robin Holt <robinmholt@gmail.com>
-Message-ID: <469ce80c-c6a0-4238-aab5-9a4d8c562387@email.android.com>
+	id S1754528Ab3KKPlo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 10:41:44 -0500
+Received: from m53-178.qiye.163.com ([123.58.178.53]:52863 "EHLO
+	m53-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464Ab3KKPl2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 10:41:28 -0500
+From: Li Wang <liwang@ubuntukylin.com>
+To: linux-kernel@vger.kernel.org
+Cc: ceph-devel@vger.kernel.org, Sage Weil <sage@inktank.com>,
+        linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        Milosz Tanski <milosz@adfin.com>, Li Wang <liwang@ubuntukylin.com>
+Subject: [PATCH 5/7] Cifs: Introduce routine for uncaching single no-data page
+Date: Mon, 11 Nov 2013 23:27:27 +0800
+Message-Id: <b4c84ba0eeeda3bf915524c8173d44abb30506ff.1384183054.git.liwang@ubuntukylin.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1384183054.git.liwang@ubuntukylin.com>
+References: <cover.1384183054.git.liwang@ubuntukylin.com>
+In-Reply-To: <cover.1384183054.git.liwang@ubuntukylin.com>
+References: <cover.1384183054.git.liwang@ubuntukylin.com>
+X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQU5VQ0hLS0tLT0tLTk9ISUpIV1kJDhceCFlBWS
+	grPSQoND0vPToyNyQyNSQzPjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQ1NCQyNS
+	QzPjo*PilBSVVLQDg0LjUvKSIkODVBS1VLQCk#PDI0NSQ6KDI6QUtVS0ArKTQtMjU4PiQ8Ljo1PD
+	80NTxBS1VLQD8iNTo2MjgkMiskNTQkMjUkMz46Pz4pQUtVS0A2LjcvMiQpOCsvJD8yPT0#KT41Ly
+	QyNSQzPjo*PilBSVVLQDIrJC80PzoiJDg1LyRLJEpLS0FLVUtAMiskTiQ2MjUuLz4kODUvJEskSk
+	tBS1VLQDIrJEhLJDYyNS4vPiQ4NS8kSyROS0FLVUtAMiskSiQzNC4pJDg1LyRLJEpLS0FLVUtAMi
+	skSiQ2MjUuLz4kODUvJEskSktBS1VLQCguOSQ#QUpVTk5APTUkKC45JD41LDQpPygkMzcxJEpLS0
+	lLSkFLVUlDWQY+
+X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSENP
+	SkNPT0NNS0NIVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
+	QUlCQko3V1kSC1lBWUpJSlVISFVJTk5VSktZBg++
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, unless there is a better path for it since it is not x86-specific.  I am fine taking it, though.
+Introduce a routine for uncaching single no-data page, typically
+in readpage().
 
-Vivek Goyal <vgoyal@redhat.com> wrote:
->On Fri, Nov 08, 2013 at 08:12:00AM -0800, H. Peter Anvin wrote:
->> On 11/08/2013 07:14 AM, Vivek Goyal wrote:
->> > 
->> > Hi Bao,
->> > 
->> > This patch fixes the issue for me too. I noticed that we have
->generic
->> > function migrate_to_reboot_cpu() to achieve what we want and rest
->of
->> > the reboot paths are using it. So how about using that function. I 
->> > wrote the new patch below. It works for me. Can you please give it
->> > a try.
->> > 
->> > Thanks
->> > Vivek
->> > 
->> 
->> Is this path exercised for the kdump flow?  migrate_to_reboot_cpu()
->is
->> unsafe in that case.
->
->Hi Peter,
->
->Can you please consider queuing up this patch for next release.
->
->Thanks
->Vivek
->
->> 
->> > Index: linux-2.6/kernel/kexec.c
->> > ===================================================================
->> > --- linux-2.6.orig/kernel/kexec.c	2013-10-16 00:30:50.000000000
->-0400
->> > +++ linux-2.6/kernel/kexec.c	2013-11-08 21:34:02.492072375 -0500
->> > @@ -1676,6 +1676,7 @@ int kernel_kexec(void)
->> >  #endif
->> >  	{
->> >  		kernel_restart_prepare(NULL);
->> > +		migrate_to_reboot_cpu();
->> >  		printk(KERN_EMERG "Starting new kernel\n");
->> >  		machine_shutdown();
->> >  	}
->> > 
+Signed-off-by: Li Wang <liwang@ubuntukylin.com>
+---
+ fs/cifs/fscache.h |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
+diff --git a/fs/cifs/fscache.h b/fs/cifs/fscache.h
+index 24794b6..c712f42 100644
+--- a/fs/cifs/fscache.h
++++ b/fs/cifs/fscache.h
+@@ -54,6 +54,7 @@ extern int __cifs_readpages_from_fscache(struct inode *,
+ 					 struct address_space *,
+ 					 struct list_head *,
+ 					 unsigned *);
++extern void __cifs_fscache_readpage_cancel(struct inode *, struct page *);
+ extern void __cifs_fscache_readpages_cancel(struct inode *, struct list_head *);
+ 
+ extern void __cifs_readpage_to_fscache(struct inode *, struct page *);
+@@ -92,6 +93,13 @@ static inline void cifs_readpage_to_fscache(struct inode *inode,
+ 		__cifs_readpage_to_fscache(inode, page);
+ }
+ 
++static inline void cifs_fscache_readpage_cancel(struct inode *inode,
++						struct page *page)
++{
++	if (CIFS_I(inode)->fscache)
++		return __cifs_fscache_readpage_cancel(inode, page);
++}
++
+ static inline void cifs_fscache_readpages_cancel(struct inode *inode,
+ 						 struct list_head *pages)
+ {
+@@ -139,6 +147,11 @@ static inline int cifs_readpages_from_fscache(struct inode *inode,
+ static inline void cifs_readpage_to_fscache(struct inode *inode,
+ 			struct page *page) {}
+ 
++static inline void cifs_fscache_readpage_cancel(struct inode *inode,
++						struct page *page)
++{
++}
++
+ static inline void cifs_fscache_readpages_cancel(struct inode *inode,
+ 						 struct list_head *pages)
+ {
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+1.7.9.5
+
