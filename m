@@ -1,186 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745Ab3KKU7q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 15:59:46 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:12481 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab3KKU7j (ORCPT
+	id S1752817Ab3KKVAU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 16:00:20 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:38306 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751256Ab3KKVAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 15:59:39 -0500
-Message-ID: <1384203573.6940.67.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] mm: cache largest vma
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+	Mon, 11 Nov 2013 16:00:13 -0500
+Date: Mon, 11 Nov 2013 21:59:10 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Luca Coelho <luca@coelho.fi>
+Cc: balbi@ti.com, mturquette@linaro.org, james.hogan@imgtec.com,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Date: Mon, 11 Nov 2013 12:59:33 -0800
-In-Reply-To: <20131111204702.GD18886@gmail.com>
-References: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFwrtOaFtwGc6xyZH6-1j3f--AG1JS-iZM8-pZPnwRHBow@mail.gmail.com>
-	 <1383537862.2373.14.camel@buesod1.americas.hpqcorp.net>
-	 <20131104073640.GF13030@gmail.com>
-	 <1384143129.6940.32.camel@buesod1.americas.hpqcorp.net>
-	 <20131111120116.GA21291@gmail.com>
-	 <1384194271.6940.40.camel@buesod1.americas.hpqcorp.net>
-	 <20131111204702.GD18886@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: add flags to distinguish xtal clocks
+Message-ID: <20131111205910.GA26440@lukather>
+References: <1382528150.21526.25.camel@porter.coelho.fi>
+ <1383933648-28595-1-git-send-email-balbi@ti.com>
+ <20131110113716.GN26440@lukather>
+ <20131111194247.GB19212@saruman.home>
+ <1384199456.12583.27.camel@porter.coelho.fi>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bMDD5T6Tp9Yu3dvb"
+Content-Disposition: inline
+In-Reply-To: <1384199456.12583.27.camel@porter.coelho.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-11 at 21:47 +0100, Ingo Molnar wrote:
-> * Davidlohr Bueso <davidlohr@hp.com> wrote:
-> 
-> > On Mon, 2013-11-11 at 13:01 +0100, Ingo Molnar wrote:
-> > > * Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > > 
-> > > > Hi Ingo,
-> > > > 
-> > > > On Mon, 2013-11-04 at 08:36 +0100, Ingo Molnar wrote:
-> > > > > * Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > > > > 
-> > > > > > I will look into doing the vma cache per thread instead of mm (I hadn't 
-> > > > > > really looked at the problem like this) as well as Ingo's suggestion on 
-> > > > > > the weighted LRU approach. However, having seen that we can cheaply and 
-> > > > > > easily reach around ~70% hit rate in a lot of workloads, makes me wonder 
-> > > > > > how good is good enough?
-> > > > > 
-> > > > > So I think it all really depends on the hit/miss cost difference. It makes 
-> > > > > little sense to add a more complex scheme if it washes out most of the 
-> > > > > benefits!
-> > > > > 
-> > > > > Also note the historic context: the _original_ mmap_cache, that I 
-> > > > > implemented 16 years ago, was a front-line cache to a linear list walk 
-> > > > > over all vmas (!).
-> > > > > 
-> > > > > This is the relevant 2.1.37pre1 code in include/linux/mm.h:
-> > > > > 
-> > > > > /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
-> > > > > static inline struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr)
-> > > > > {
-> > > > >         struct vm_area_struct *vma = NULL;
-> > > > > 
-> > > > >         if (mm) {
-> > > > >                 /* Check the cache first. */
-> > > > >                 vma = mm->mmap_cache;
-> > > > >                 if(!vma || (vma->vm_end <= addr) || (vma->vm_start > addr)) {
-> > > > >                         vma = mm->mmap;
-> > > > >                         while(vma && vma->vm_end <= addr)
-> > > > >                                 vma = vma->vm_next;
-> > > > >                         mm->mmap_cache = vma;
-> > > > >                 }
-> > > > >         }
-> > > > >         return vma;
-> > > > > }
-> > > > > 
-> > > > > See that vma->vm_next iteration? It was awful - but back then most of us 
-> > > > > had at most a couple of megs of RAM with just a few vmas. No RAM, no SMP, 
-> > > > > no worries - the mm was really simple back then.
-> > > > > 
-> > > > > Today we have the vma rbtree, which is self-balancing and a lot faster 
-> > > > > than your typical linear list walk search ;-)
-> > > > > 
-> > > > > So I'd _really_ suggest to first examine the assumptions behind the cache, 
-> > > > > it being named 'cache' and it having a hit rate does in itself not 
-> > > > > guarantee that it gives us any worthwile cost savings when put in front of 
-> > > > > an rbtree ...
-> > > > 
-> > > > So having mmap_cache around, in whatever form, is an important
-> > > > optimization for find_vma() - even to this day. It can save us at least
-> > > > 50% cycles that correspond to this function. [...]
-> > > 
-> > > I'm glad it still helps! :-)
-> > > 
-> > > > [...] I ran a variety of mmap_cache alternatives over two workloads that 
-> > > > are heavy on page faults (as opposed to Java based ones I had tried 
-> > > > previously, which really don't trigger enough for it to be worthwhile).  
-> > > > So we now have a comparison of 5 different caching schemes -- note that 
-> > > > the 4 element hash table is quite similar to two elements, with a hash 
-> > > > function of (addr % hash_size).
-> > > > 
-> > > > 1) Kernel build
-> > > > +------------------------+----------+------------------+---------+
-> > > > |    mmap_cache type     | hit-rate | cycles (billion) | stddev  |
-> > > > +------------------------+----------+------------------+---------+
-> > > > | no mmap_cache          | -        | 15.85            | 0.10066 |
-> > > > | current mmap_cache     | 72.32%   | 11.03            | 0.01155 |
-> > > > | mmap_cache+largest VMA | 84.55%   |  9.91            | 0.01414 |
-> > > > | 4 element hash table   | 78.38%   | 10.52            | 0.01155 |
-> > > > | per-thread mmap_cache  | 78.84%   | 10.69            | 0.01325 |
-> > > > +------------------------+----------+------------------+---------+
-> > > > 
-> > > > In this particular workload the proposed patch benefits the most and 
-> > > > current alternatives, while they do help some, aren't really worth 
-> > > > bothering with as the current implementation already does a nice enough 
-> > > > job.
-> > > 
-> > > Interesting.
-> > > 
-> > > > 2) Oracle Data mining (4K pages)
-> > > > +------------------------+----------+------------------+---------+
-> > > > |    mmap_cache type     | hit-rate | cycles (billion) | stddev  |
-> > > > +------------------------+----------+------------------+---------+
-> > > > | no mmap_cache          | -        | 63.35            | 0.20207 |
-> > > > | current mmap_cache     | 65.66%   | 19.55            | 0.35019 |
-> > > > | mmap_cache+largest VMA | 71.53%   | 15.84            | 0.26764 |
-> > > > | 4 element hash table   | 70.75%   | 15.90            | 0.25586 |
-> > > > | per-thread mmap_cache  | 86.42%   | 11.57            | 0.29462 |
-> > > > +------------------------+----------+------------------+---------+
-> > > > 
-> > > > This workload sure makes the point of how much we can benefit of caching 
-> > > > the vma, otherwise find_vma() can cost more than 220% extra cycles. We 
-> > > > clearly win here by having a per-thread cache instead of per address 
-> > > > space. I also tried the same workload with 2Mb hugepages and the results 
-> > > > are much more closer to the kernel build, but with the per-thread vma 
-> > > > still winning over the rest of the alternatives.
-> > > 
-> > > That's also very interesting, and it's exactly the kind of data we need to 
-> > > judge such matters. Kernel builds and DB loads are two very different, yet 
-> > > important workloads, so if we improve both cases then the probability that 
-> > > we improve all other workloads as well increases substantially.
-> > > 
-> > > Do you have any data on the number of find_vma() calls performed in these 
-> > > two cases, so that we can know the per function call average cost?
-> > > 
-> > 
-> > For the kernel build we get around 140 million calls to find_vma(), and 
-> > for Oracle around 27 million. So the function ends up costing 
-> > significantly more for the DB workload.
-> 
-> Hm, mind tabulating that into per function call (cycles) and such, for an 
-> easier overview?
-> 
-> I do think the Oracle case might be pinpointing a separate 
-> bug/problem/property: unless it's using an obscene number of vmas its 
-> rbtree should have a manageable depth, what is the average (accessed) 
-> depth of the rbtree, and is it properly balanced?
 
-That is something I didn't measure. However, by judging the huge
-increase of cycles when we remove the mmap_cache, it must be an enormous
-tree and/or the way the tree is sorted by address really isn't helping
-the workload.
+--bMDD5T6Tp9Yu3dvb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> Or is access to varied in the Oracle case that it's missing the cache all 
-> the time, because the rbtree causes many cachemisses as the separate nodes 
-> are accessed during an rb-walk?
+Hi Luca,
 
-Similar to get_cycles(), is there anyway to quickly measure the amount
-of executed instructions? Getting the IPC for the mmap_cache (this of
-course is constant) and the treewalk could give us a nice overview of
-the function's cost. I was thinking of stealing some perf-stat
-functionality for this but didn't get around to it. Hopefully there's an
-easier way...
+On Mon, Nov 11, 2013 at 09:50:56PM +0200, Luca Coelho wrote:
+> On Mon, 2013-11-11 at 13:42 -0600, Felipe Balbi wrote:
+> > > > +	if (of_property_read_bool(node, "clock-xtal"))
+> > > > +		flags |=3D CLK_IS_TYPE_XTAL;
+> > > > +
+> > >=20
+> > > Introducing a new compatible instead of a property would make more
+> > > sense here I think.
+> > >=20
+> > > Do you have a reason not to do so?
+> >=20
+> > As you can see, this is original work from Luca but I disagree that
+> > adding a new compatible makes more sense. This still related to a fixed
+> > rate clock, we're just giving it one extra metadata which willAnd t
+> > differentiate between crystal and oscilator fixed rate clocks.
+>=20
+> I agree with Felipe.  This was discussed before [1].  While still at TI,
+> I tried to figure out the exact need for the firmware to know whether it
+> was an oscillator or not.  It was mostly because the stabilization time
+> and such things differ with oscillators, but I wasn't able to find out
+> how exactly this affected things.
+>=20
+> In any case, as I concluded earlier (but it's not really my call), being
+> a crystal or an oscillator *is* a characteristic of the hardware,
+> regardless of whether that information is useful or not.  In the WiLink
+> case it is, at least it can differentiate the clocks that are used in
+> the HW modules it uses.
+>=20
+> So IMHO it doesn't really hurt and it's not really against the DT
+> principles.
 
-Thanks,
-Davidlohr
+Just to be clear, I'm not against your patch. If you need this to make
+your driver work, then it's fine for me. Mike will probably know
+better if we actually need some extra metadata.
 
+What I'm not really convinced about is *how* you carry that metadata
+in the DT, that's all, nothing more.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--bMDD5T6Tp9Yu3dvb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSgUUeAAoJEBx+YmzsjxAg+CYP/3c99NW8DUaTbwbzgA9BSnua
+xKoNIIU40+llr/eZC+yuf5wGzNPkn6qtjGdA8v3EJblUutA6AsUt0ZxnzgJJciLK
+wmG0Owl4zR8Red8lAyxeJEbdL/QEU/eJPfDxMH5nmOb9Hc4UYMrp53juA1cYAhkq
+MoPLoAdyGr5FW9sPSwgx3AdwyDjBp79P59z62k4jzO9Ez9XgRYYDTOZT90gWzI2z
+VYa3W8hrncpoJ+QKv9apB4+o4qH5xJ4VdnOVZ7cY26svrNAsTgnJCAE5YX5Ruhqg
+SIipJ20elMZ1I6yZC5nbCZknl/9jDeXpc2PZTgC0I3dkDG8zHpgPQFnPyCHbmGqo
+1Oz+uzB1lmWeqQ65A74diC7/ZiORwwWv1bC6CrUW7kKGrbAjvNNX6yB6F7snoBvX
+6KvDx/irFSH4fNzUbE+ZmZxXOrxV36PZaFkkwzHOrcEBKa7tI32DvnqrBscdFlIH
++dskaGtwyuAUDR5GDDdpm0yDer01X2kJHnSrgzn+pEoY4r6UgqRRyGdbSSy62Mc/
+k2aD6hjxrXIAtIbXMXzjCWufkN8N1Vujh73rVi0d7lMOz64JDvYNJNUwNkMsi0BS
+sgIz9+YRdKxf5EGeZoW14fsYH1w9RyBzf8cZAnimalY8hEa9Bw2Zw6C4c+Fr+9AV
+qltzl1Oa45BhsAf3xLcS
+=z+GS
+-----END PGP SIGNATURE-----
+
+--bMDD5T6Tp9Yu3dvb--
