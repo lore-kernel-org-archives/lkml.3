@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab3KKJ0G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 04:26:06 -0500
-Received: from exprod5og110.obsmtp.com ([64.18.0.20]:38451 "HELO
-	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753072Ab3KKJZy (ORCPT
+	id S1753319Ab3KKJ21 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 04:28:27 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53916 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab3KKJ2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 04:25:54 -0500
+	Mon, 11 Nov 2013 04:28:19 -0500
+Date: Mon, 11 Nov 2013 10:28:15 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Subject: mm-factor-commit-limit-calculation-fix broken on ARM-nommu
+Message-ID: <20131111092815.GJ14892@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <527D8A17.9020208@codeaurora.org>
-References: <1383739658-10036-1-git-send-email-vkale@apm.com>
-	<527D8A17.9020208@codeaurora.org>
-Date: Mon, 11 Nov 2013 14:55:53 +0530
-Message-ID: <CAPrCYkcEVqL3Bt-FQEmQe3oC7pTx3psjPEncH3BwYTyLPQr29A@mail.gmail.com>
-Subject: Re: [PATCH 0/2] genirq: arm64: perf: support for percpu pmu interrupt
-From: Vinayak Kale <vkale@apm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        patches <patches@apm.com>, tglx <tglx@linutronix.de>,
-        Will Deacon <will.deacon@arm.com>, jcm@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 9, 2013 at 6:34 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 11/06/13 04:07, Vinayak Kale wrote:
->> This patch series adds support to handle interrupt registration/deregistration
->> in arm64 pmu driver when pmu interrupt type is percpu.
->>
->> Patches in this patch series were previously sent out as separate patches [1].
->> This patch series incorporates comments/fixes suggested for original patches.
->>
->> [1]
->> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/205888.html
->> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/204414.html
->>
->> Vinayak Kale (2):
->>   genirq: error reporting in request_percpu_irq() and
->>     request_threaded_irq()
->>   arm64: perf: add support for percpu pmu interrupt
->>
->>  arch/arm64/kernel/perf_event.c |  109 +++++++++++++++++++++++++++++-----------
->>  kernel/irq/manage.c            |   12 +++--
->>  2 files changed, 89 insertions(+), 32 deletions(-)
->>
->
-> What ever happened to the approach here[1]? It doesn't look very nice to
-> have to request the irq first as a per-cpu interrupt and then try as a
-> non-percpu interrupt when genirq already knows if its per-cpu or not.
->
-> [1] http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/02955.html
-I don't see any discussions on mailing list on approach taken in above patch.
+Hello Andrew,
 
-IMO, if fixing up minor error reporting in existing functions can do
-the job then we should avoid adding a new function.
+in mm-factor-commit-limit-calculation-fix you move vm_commit_limit to
+mm/mmap.c. This file is only compiled with CONFIG_MMU on though. So my
+build fails here.
+
+There are some more problems that I didn't look into yet, but if you
+want to look into it, efm32_defconfig for ARCH=arm is what I'm seeing
+broken.
+
+best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
