@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab3KKOpQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 09:45:16 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:40265 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754140Ab3KKOpJ (ORCPT
+	id S1754356Ab3KKOpt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 09:45:49 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:33238 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753990Ab3KKOpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 09:45:09 -0500
-Message-ID: <5280ED55.3080107@gmail.com>
-Date: Mon, 11 Nov 2013 07:44:37 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 11 Nov 2013 09:45:41 -0500
 MIME-Version: 1.0
+In-Reply-To: <20131111142253.GA10129@gmail.com>
+References: <1383871600-3831-1-git-send-email-felipe.contreras@gmail.com>
+	<1383871600-3831-2-git-send-email-felipe.contreras@gmail.com>
+	<20131111134459.GA8781@gmail.com>
+	<CAMP44s3fm+DhHfGZG2SFL8gV2rZbbUHHpfYajhqDUeTJ_-AcAg@mail.gmail.com>
+	<20131111142253.GA10129@gmail.com>
+Date: Mon, 11 Nov 2013 08:45:39 -0600
+Message-ID: <CAMP44s30aeq+ZRKwNXUv6YdS06A20jE8iTXHSRM7MQum+PdkMA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] panic: setup panic_timeout early
+From: Felipe Contreras <felipe.contreras@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
-CC: Namhyung Kim <namhyung@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist
- periods (v2)
-References: <20131101092759.GC27063@gmail.com> <87bo1zz4mu.fsf@sejong.aot.lge.com> <20131105074650.GA2855@gmail.com> <87txfrxlq8.fsf@sejong.aot.lge.com> <20131105115802.GA12045@gmail.com> <87ppqex8tj.fsf@sejong.aot.lge.com> <20131106083046.GA4655@gmail.com> <87r4atx51i.fsf@sejong.aot.lge.com> <20131106114701.GA20249@gmail.com> <527A613A.20404@gmail.com> <20131111121900.GD21397@gmail.com>
-In-Reply-To: <20131111121900.GD21397@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/13, 5:19 AM, Ingo Molnar wrote:
+On Mon, Nov 11, 2013 at 8:22 AM, Ingo Molnar <mingo@kernel.org> wrote:
 >
-> In what way is call-graph profiling utilized typically?
+> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
 >
-> Is it system-wide, i.e. something like:
+>> On Mon, Nov 11, 2013 at 7:44 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>> >
+>> > * Felipe Contreras <felipe.contreras@gmail.com> wrote:
+>> >
+>> >> Otherwise we might not reboot when the user needs it the most (early
+>> >> on).
+>> >>
+>> >> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+>> >> ---
+>> >>  kernel/panic.c | 14 +++++++++++++-
+>> >>  1 file changed, 13 insertions(+), 1 deletion(-)
+>> >>
+>> >> diff --git a/kernel/panic.c b/kernel/panic.c
+>> >> index b6c482c..46e37ff 100644
+>> >> --- a/kernel/panic.c
+>> >> +++ b/kernel/panic.c
+>> >> @@ -468,9 +468,21 @@ EXPORT_SYMBOL(__stack_chk_fail);
+>> >>
+>> >>  #endif
+>> >>
+>> >> -core_param(panic, panic_timeout, int, 0644);
+>> >>  core_param(pause_on_oops, pause_on_oops, int, 0644);
+>> >>
+>> >> +static int __init set_panic_timeout(char *str)
+>> >> +{
+>> >> +     int timeout;
+>> >> +
+>> >> +     if (!get_option(&str, &timeout))
+>> >> +             return -EINVAL;
+>> >> +
+>> >> +     panic_timeout = timeout;
+>> >> +     return 0;
+>> >> +}
+>> >> +
+>> >> +early_param("panic_timeout", set_panic_timeout);
+>> >> +
+>> >
+>> > For simple integer parameters simple_strtol() is better and (a tiny bit)
+>> > faster.
+>>
+>> simple_strtol() is deprecated in favor of kstrtol().
 >
-> 	perf record -a -g sleep 10
->
-> ? If yes then that would explain why scalability problems rarely surfaced,
-> it takes a longer user-space profile to get to the event counts where
-> scalability started hurting.
+> Yes, true - my main point is that get_option() isn't the right choice
+> here, you need to use a single-integer parsing function.
 
-Both. But not time periods long enough to generate GB sized files 
-(limitations in the product). I get various reports of hung commands 
-(usually perf-not terminated properly (now fixed) or the file is 
-corrupted on transfer), but noone has complained to me about perf-report 
-appearing to hang or for 20-30 minutes to generate a result.
+Then somebody made the wrong choice for 'loglevel'.
 
-David
+-- 
+Felipe Contreras
