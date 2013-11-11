@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab3KKLkH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:40:07 -0500
-Received: from hermes.synopsys.com ([198.182.44.81]:40066 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab3KKLj7 convert rfc822-to-8bit (ORCPT
+	id S1753297Ab3KKLqC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:46:02 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:64485 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059Ab3KKLpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:39:59 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Linus Walleij <linus.walleij@linaro.org>, arnd Bergmann <arnd@arndb.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "christian.ruppert@abilis.com" <christian.ruppert@abilis.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [GIT PULL] pin control bulk changes for v3.13
-Thread-Topic: [GIT PULL] pin control bulk changes for v3.13
-Thread-Index: AQHO3sEiKrO36hVs10O31J+CRXvZFg==
-Date: Mon, 11 Nov 2013 11:39:54 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA23075155DCE@IN01WEMBXA.internal.synopsys.com>
-References: <CACRpkdYpuZec_JRAPYZHmB5qTYebKR6iBy5=RvBUUEXsuOu97Q@mail.gmail.com>
-	<52808D34.70309@synopsys.com>
-	<CACRpkdaRGKBWr+rtOD3tWBUA452yApF838ufZ6nPOhzMZGDzfg@mail.gmail.com>
-	<C2D7FE5348E1B147BCA15975FBA23075155D9F@IN01WEMBXA.internal.synopsys.com>
- <CACRpkdYPgNK=bODvTo8+KHG7Yz448rw10Mqov8AjRB5RGMcqhg@mail.gmail.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.15.84.232]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Nov 2013 06:45:54 -0500
+Date: Mon, 11 Nov 2013 12:45:51 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Marek Majkowski <marek@cloudflare.com>, Jiri Slaby <jslaby@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Wrong symbol resolved for RIP on OOPS/BUG
+Message-ID: <20131111114551.GA19720@gmail.com>
+References: <1383767997-20765-1-git-send-email-marek@cloudflare.com>
+ <20131107075448.GA31926@gmail.com>
+ <527BBEDD.60407@zytor.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527BBEDD.60407@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 03:53 PM, Linus Walleij wrote:
-> On Mon, Nov 11, 2013 at 11:00 AM, Vineet Gupta
-> <Vineet.Gupta1@synopsys.com> wrote:
->> On 11/11/2013 03:03 PM, Linus Walleij wrote:
->>> Actually I think device tree changes - if you mean changes to this platform's
->>> DTS/DTSI files, should go through the ARC arch tree.
->> But current workflow is prone to broken bisectability - arch maintainers need to
->> make sure that the core/driver changes hit mainline before the actual dts/dtsi
->> files in arch/*
-> No. This is *not* a bisectability problem, as it has been established
-> that device trees and kernel code shall *not* be built and deployed
-> together.
 
-Well that is a fine design *goal*. But in reality (at least his patch) is making a
-driver change and then enabling arch via DT to access it. I can't fathom what is
-the issue with having both the changes routed via the same tree - other than
-possible merge hassles - which can can PITA for arches such as ARM. So you can say
-that as a general *practice* subsys guys don't prefer what I'm asking for and I'm
-OK if you reason it that way. But saying that it is not a bisectability problem
-and is design goal etc is bogus IMO.
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-> Consider:
->
-> - Just subsystem changes are merged: OK you can still take your
->   DTS from somewhere and boot this kernel with it.
->
-> - Just the arch/*/*.dts[i] changes are merged: OK these new DT
->   nodes remain unused, presumably the system survives anyway?
->
-> It only becomes a problem if you also start to apply patches deleting
-> functionality that has been moved over to the device tree in the same
-> merge window - don't do that. Take a sweep with the broomstick
-> next time instead.
+> On 11/06/2013 11:54 PM, Ingo Molnar wrote:
+> > 
+> > There's a recent commit from Jiri Slaby that I think tries to address the 
+> > same problem:
+> > 
+> >   8d4c812a3e5f x86/dumpstack: Fix printk_address for direct addresses
+> > 
+> > You can find it in the -tip tree:
+> > 
+> >   git remote add tip git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
+> > 
+> 
+> The only difference seems to be in the handling of the "reliable" flag.
+> 
+> I am wondering if we shouldn't promote this patch to urgent/stable, 
+> though, since misleading oops messages could be very disruptive.
 
-Ya Ya I see, but the patch under consideration don't fall in either of those
-buckets. We have 1 change in each of arch and subsys.
+Sure, no objections.
 
--Vineet
+Thanks,
+
+	Ingo
