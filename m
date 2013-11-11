@@ -1,145 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab3KKRtp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 12:49:45 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:60358 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753789Ab3KKRti (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 12:49:38 -0500
-Date: Mon, 11 Nov 2013 18:49:34 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/hyperv changes for v3.13
-Message-ID: <20131111174934.GA14141@gmail.com>
+	id S1754907Ab3KKRu2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 12:50:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34096 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754721Ab3KKRuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 12:50:22 -0500
+Date: Mon, 11 Nov 2013 18:51:31 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: suravee.suthikulpanit@amd.com, mingo@kernel.org, mingo@redhat.com,
+        jacob.w.shin@gmail.com, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, hpa@zytor.com, tgl@domain.invalid,
+        linux-kernel@vger.kernel.org, sherry.hurwitz@amd.com
+Subject: Re: [PATCH 1/3] perf/x86/amd: AMD support for bp_len >
+	HW_BREAKPOINT_LEN_8
+Message-ID: <20131111175131.GA14906@redhat.com>
+References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com> <1380730268-25807-2-git-send-email-suravee.suthikulpanit@amd.com> <20131108194122.GA14606@localhost.localdomain> <20131109151156.GA14249@redhat.com> <20131109153236.GE26079@localhost.localdomain> <20131109155428.GA15649@redhat.com> <20131111154417.GD26853@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131111154417.GD26853@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 11/11, Frederic Weisbecker wrote:
+>
+> On Sat, Nov 09, 2013 at 04:54:28PM +0100, Oleg Nesterov wrote:
+> >
+> > Up to you and Suravee, but can't we cleanup this later?
+> >
+> > This series was updated many times to address a lot of (sometimes
+> > contradictory) complaints.
+>
+> Sure. But I'm confident that we can solve the conflicting mask / len issue easily beside.
+> I mean, I don't feel confident with merging things as is, otoh it should be easy to fix up.
 
-Please pull the latest x86-hyperv-for-linus git tree from:
+I do not really understand where do you see the conflict...
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-hyperv-for-linus
+I can be easily wrong, but afaics currently mask / len issue is simply
+the implementation detail.
 
-   # HEAD: 4c08edd305019061bf1ac95ce089497bdbb8b8ac x86, hyperv: Move a variable to avoid an unused variable warning
+> > > I mean, that doesn't look right to me,
+> > > it's two units basically measuring the same thing, so that's asking for conflicting troubles.
+> >
+> > Yes. And we can kill either _len or _mask, not sure what would be more
+> > clean.
+> >
+> > At least with the current implementation (again, iirc) mask == len -1.
+> > Although amd supports the more generic masks (but I can't recall the
+> > details).
+>
+> Right. I think len is probably more powerful. Unless the mask could be used to define
+> multiple ranges of breakpoints, not sure it's ever going to be used that way though.
 
-These changes enable Linux guests to boot as 'Modern VM' guest kernels on 
-MS-Hyperv hosts.
+Actually, mask is more powerfull. And initial versions of this patches
+(iirc) tried to use mask as an argument which comes from the userspace
+(tools/perf, perf_event_attr, etc). But one of reviewers nacked this
+interfacer, so we still use len.
 
- Thanks,
+> But we
+> can still extend the interface if we need a mask later.
 
-	Ingo
+Yes, agreed.
 
------------------->
-David Rientjes (1):
-      x86, hyperv: Fix build error due to missing <asm/apic.h> include
+> > > I'm just not sure how to reuse the len to express breakpoint ranges (that was in fact the
+> > > initial purpose of it) without breaking the tools.
+> >
+> > Confused... user-space still uses len to express the range? Just
+> > the kernel "switches" to mask if len > 8 ?
+>
+> Right but what if we want breakpoints having a size below 8? Like break on instructions
+> from 0x1000 to 0x1008 ?
+>
+> Or should we ignore range instruction breakpoints when len < 8?
 
-H. Peter Anvin (1):
-      x86, hyperv: Move a variable to avoid an unused variable warning
+In this case the new code has no effect (iirc), we simply use
+X86_BREAKPOINT_LEN_* and "tell the hardware about extended range/mask"
+code is never called. IIRC, currently we simply check bp_mask != 0
+to distinguish.
 
-K. Y. Srinivasan (2):
-      x86, hyperv: Get the local APIC timer frequency from the hypervisor
-      x86, hyperv: Correctly guard the local APIC calibration code
+Oleg.
 
-
- arch/x86/include/uapi/asm/hyperv.h | 19 +++++++++++++++++++
- arch/x86/kernel/cpu/mshyperv.c     | 27 +++++++++++++++++++++++++++
- 2 files changed, 46 insertions(+)
-
-diff --git a/arch/x86/include/uapi/asm/hyperv.h b/arch/x86/include/uapi/asm/hyperv.h
-index b80420b..b8f1c01 100644
---- a/arch/x86/include/uapi/asm/hyperv.h
-+++ b/arch/x86/include/uapi/asm/hyperv.h
-@@ -27,6 +27,19 @@
- #define HV_X64_MSR_VP_RUNTIME_AVAILABLE		(1 << 0)
- /* Partition Reference Counter (HV_X64_MSR_TIME_REF_COUNT) available*/
- #define HV_X64_MSR_TIME_REF_COUNT_AVAILABLE	(1 << 1)
-+
-+/*
-+ * There is a single feature flag that signifies the presence of the MSR
-+ * that can be used to retrieve both the local APIC Timer frequency as
-+ * well as the TSC frequency.
-+ */
-+
-+/* Local APIC timer frequency MSR (HV_X64_MSR_APIC_FREQUENCY) is available */
-+#define HV_X64_MSR_APIC_FREQUENCY_AVAILABLE (1 << 11)
-+
-+/* TSC frequency MSR (HV_X64_MSR_TSC_FREQUENCY) is available */
-+#define HV_X64_MSR_TSC_FREQUENCY_AVAILABLE (1 << 11)
-+
- /*
-  * Basic SynIC MSRs (HV_X64_MSR_SCONTROL through HV_X64_MSR_EOM
-  * and HV_X64_MSR_SINT0 through HV_X64_MSR_SINT15) available
-@@ -136,6 +149,12 @@
- /* MSR used to read the per-partition time reference counter */
- #define HV_X64_MSR_TIME_REF_COUNT		0x40000020
- 
-+/* MSR used to retrieve the TSC frequency */
-+#define HV_X64_MSR_TSC_FREQUENCY		0x40000022
-+
-+/* MSR used to retrieve the local APIC timer frequency */
-+#define HV_X64_MSR_APIC_FREQUENCY		0x40000023
-+
- /* Define the virtual APIC registers */
- #define HV_X64_MSR_EOI				0x40000070
- #define HV_X64_MSR_ICR				0x40000071
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 71a39f3..9f7ca26 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -15,6 +15,7 @@
- #include <linux/clocksource.h>
- #include <linux/module.h>
- #include <linux/hardirq.h>
-+#include <linux/efi.h>
- #include <linux/interrupt.h>
- #include <asm/processor.h>
- #include <asm/hypervisor.h>
-@@ -23,6 +24,8 @@
- #include <asm/desc.h>
- #include <asm/idle.h>
- #include <asm/irq_regs.h>
-+#include <asm/i8259.h>
-+#include <asm/apic.h>
- 
- struct ms_hyperv_info ms_hyperv;
- EXPORT_SYMBOL_GPL(ms_hyperv);
-@@ -76,6 +79,30 @@ static void __init ms_hyperv_init_platform(void)
- 	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
- 	       ms_hyperv.features, ms_hyperv.hints);
- 
-+#ifdef CONFIG_X86_LOCAL_APIC
-+	if (ms_hyperv.features & HV_X64_MSR_APIC_FREQUENCY_AVAILABLE) {
-+		/*
-+		 * Get the APIC frequency.
-+		 */
-+		u64	hv_lapic_frequency;
-+
-+		rdmsrl(HV_X64_MSR_APIC_FREQUENCY, hv_lapic_frequency);
-+		hv_lapic_frequency = div_u64(hv_lapic_frequency, HZ);
-+		lapic_timer_frequency = hv_lapic_frequency;
-+		printk(KERN_INFO "HyperV: LAPIC Timer Frequency: %#x\n",
-+				lapic_timer_frequency);
-+
-+		/*
-+		 * On Hyper-V, when we are booting off an EFI firmware stack,
-+		 * we do not have many legacy devices including PIC, PIT etc.
-+		 */
-+		if (efi_enabled(EFI_BOOT)) {
-+			printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
-+			legacy_pic = &null_legacy_pic;
-+		}
-+	}
-+#endif
-+
- 	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
- 		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
- }
