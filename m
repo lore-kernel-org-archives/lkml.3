@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab3KKXLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 18:11:21 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55272 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752569Ab3KKXLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 18:11:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="407121828"
-Message-ID: <52816521.7030908@linux.intel.com>
-Date: Mon, 11 Nov 2013 15:15:45 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1753604Ab3KKXOG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 18:14:06 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:48790 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753035Ab3KKXN4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 18:13:56 -0500
+Message-ID: <528164AA.4070300@hurleysoftware.com>
+Date: Mon, 11 Nov 2013 18:13:46 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>
-CC: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 2/2] check quirk to pad epout buf size when not aligned
- to maxpacketsize
-References: <1384102237-19784-1-git-send-email-mpn@google.com> <1384102237-19784-2-git-send-email-mpn@google.com> <5280567C.2060004@linux.intel.com> <xa1t8uwvyyia.fsf@mina86.com>
-In-Reply-To: <xa1t8uwvyyia.fsf@mina86.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jiri Slaby <jslaby@suse.cz>, gregkh@linuxfoundation.org
+CC: jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] TTY: tty_buffer, warn on leaks
+References: <1384200359-31356-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1384200359-31356-1-git-send-email-jslaby@suse.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 03:21 AM, Michal Nazarewicz wrote:
-> Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
-> to be aligned to maxpacketsize of an out endpoint.  ffs_epfile_io() needs
-> to pad epout buffer to match above condition if quirk is found.
->
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+On 11/11/2013 03:05 PM, Jiri Slaby wrote:
+> When we leak something, warn about that. For that we need to account
+> the memory used also in the free_all method. It is handled elsewhere
+> correctly.
+
+Hi Jiri,
+
+Good idea.
+
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 > ---
->   drivers/usb/gadget/f_fs.c | 23 +++++++++++++++++++----
->   1 file changed, 19 insertions(+), 4 deletions(-)
+>   drivers/tty/tty_buffer.c | 10 ++++++++--
+>   1 file changed, 8 insertions(+), 2 deletions(-)
 >
->> On 11/10/2013 08:50 AM, Michal Nazarewicz wrote:
->>> @@ -787,6 +788,13 @@ static ssize_t ffs_epfile_io(struct file *file,
->>>
->>>   	/* Allocate & copy */
->>>   	if (!halt) {
->>> +		/*
->>> +		 * Controller requires buffer size to be aligned to
->>> +		 * maxpacketsize of an out endpoint.
->>> +		 */
->>> +		data_len = read && gadget->quirk_ep_out_aligned_size ?
->>> +			usb_ep_align_maxpacketsize(ep->ep, len) : len;
->>> +
->>>   		data = kmalloc(len, GFP_KERNEL);
+> diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+> index 5f08c39e76ab..20cb9492dbf8 100644
+> --- a/drivers/tty/tty_buffer.c
+> +++ b/drivers/tty/tty_buffer.c
+> @@ -115,21 +115,27 @@ void tty_buffer_free_all(struct tty_port *port)
+>   	struct tty_bufhead *buf = &port->buf;
+>   	struct tty_buffer *p, *next;
+>   	struct llist_node *llist;
+> +	int zero = 0;
 >
-> On Mon, Nov 11 2013, David Cohen <david.a.cohen@linux.intel.com> wrote:
->> Shouldn't this kmalloc() allocate 'data_len' bytes, instead of 'len'?
+>   	while ((p = buf->head) != NULL) {
+>   		buf->head = p->next;
+> +		atomic_sub(p->size, &buf->memory_used);
+
+buf->memory_used doesn't need to be treated atomically here,
+and doing so implies that it's necessary.
+
+Accumulating p->size in a non-atomic local is probably better.
+
+>   		if (p->size > 0)
+>   			kfree(p);
+>   	}
+>   	llist = llist_del_all(&buf->free);
+> -	llist_for_each_entry_safe(p, next, llist, free)
+> +	llist_for_each_entry_safe(p, next, llist, free) {
+> +		atomic_sub(p->size, &buf->memory_used);
+
+Same here.
+
+>   		kfree(p);
+> +	}
+> +
 >
-> Yes, of coures.
+>   	tty_buffer_reset(&buf->sentinel, 0);
+>   	buf->head = &buf->sentinel;
+>   	buf->tail = &buf->sentinel;
 >
-> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-> index e496b72..fd769a8 100644
-> --- a/drivers/usb/gadget/f_fs.c
-> +++ b/drivers/usb/gadget/f_fs.c
+> -	atomic_set(&buf->memory_used, 0);
+> +	atomic_xchg(&buf->memory_used, zero);
+> +	WARN_ON(zero != 0);
 
-[snip]
+Then,
 
->   			ret = ep->status;
->   			if (read && ret > 0 &&
-> -			    unlikely(copy_to_user(buf, data, ret)))
-> +			    unlikely(copy_to_user(buf, data, min(ret, len))))
+WARN_ON(atomic_read(&buf->memory_used) != <local accum>);
+atomic_set(&buf->memory_used, 0);
 
-You need to replace min(ret, len) by min_t(size_t, ret, len) to avoid
-this warning:
-drivers/usb/gadget/f_fs.c:858:124: warning: comparison of distinct 
-pointer types lacks a cast [enabled by default]
+?
 
-Once again, you (or me) need to reply to my v5 patch set.
+Regards,
+Peter Hurley
 
-Br, David
