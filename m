@@ -1,98 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab3KKWVQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 17:21:16 -0500
-Received: from mga01.intel.com ([192.55.52.88]:49903 "EHLO mga01.intel.com"
+	id S1753032Ab3KKW3K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 17:29:10 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:49632 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752905Ab3KKWVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 17:21:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,680,1378882800"; 
-   d="scan'208";a="425833768"
-Message-ID: <5281595D.9030602@linux.intel.com>
-Date: Mon, 11 Nov 2013 14:25:33 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1751109Ab3KKW3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 17:29:01 -0500
+Date: Mon, 11 Nov 2013 14:28:39 -0800
+From: Kees Cook <keescook@chromium.org>
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org
+Subject: [PATCH v4] x86, kaslr: mix entropy sources together as needed
+Message-ID: <20131111222839.GA28616@www.outflux.net>
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>
-CC: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 2/2] check quirk to pad epout buf size when not aligned
- to maxpacketsize
-References: <Pine.LNX.4.44L0.1311111517160.17105-100000@netrider.rowland.org> <xa1thabiy7a4.fsf@mina86.com>
-In-Reply-To: <xa1thabiy7a4.fsf@mina86.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan, Michal,
+Depending on availability, mix the RDRAND and RDTSC entropy together with
+XOR. Only when neither is available should the i8254 be used. Update
+the Kconfig documentation to reflect this. Additionally, since bits
+used for entropy is masked elsewhere, drop the needless masking in
+the get_random_long(). Similarly, use the entire TSC, not just the low
+32 bits.
 
-On 11/11/2013 01:09 PM, Michal Nazarewicz wrote:
-> On Mon, Nov 11 2013, Alan Stern wrote:
->> On Mon, 11 Nov 2013, Michal Nazarewicz wrote:
->>
->>> Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
->>> to be aligned to maxpacketsize of an out endpoint.  ffs_epfile_io() needs
->>> to pad epout buffer to match above condition if quirk is found.
->>>
->>> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
->>
->> I think this is still wrong.
->>
->>> @@ -824,7 +832,7 @@ static ssize_t ffs_epfile_io(struct file *file,
->>>   		req->context  = &done;
->>>   		req->complete = ffs_epfile_io_complete;
->>>   		req->buf      = data;
->>> -		req->length   = len;
->>> +		req->length   = data_len;
->>
->> IIUC, req->length should still be set to len, not to data_len.
+Finally, to improve the starting entropy, do a simple hashing of a
+build-time versions string and the boot-time boot_params structure for
+some additional level of unpredictability.
 
-I misunderstood the first time I read it:
-In order to avoid DWC3 to stall, we need to update req->length (this is
-the most important fix). kmalloc() is updated too to prevent USB
-controller to overflow buffer boundaries.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+v4:
+ - rotate by odd bit count; HPA.
+v3:
+ - do not limit ourself to the low 32 bits of TSC; Ingo Molnar.
+v2:
+ - added build-time string to add to starting entropy; Ingo Molnar.
+---
+ arch/x86/Kconfig                |   14 +++++---
+ arch/x86/boot/compressed/aslr.c |   73 ++++++++++++++++++++++++++++++---------
+ 2 files changed, 65 insertions(+), 22 deletions(-)
 
->>
->>>
->>>   		ret = usb_ep_queue(ep->ep, req, GFP_ATOMIC);
->>>
->>> @@ -836,9 +844,16 @@ static ssize_t ffs_epfile_io(struct file *file,
->>>   			ret = -EINTR;
->>>   			usb_ep_dequeue(ep->ep, req);
->>>   		} else {
->>> +			/*
->>> +			 * XXX We may end up silently droping data here.
->>> +			 * Since data_len (i.e. req->length) may be bigger
->>> +			 * than len (after being rounded up to maxpacketsize),
->>> +			 * we may end up with more data then user space has
->>> +			 * space for.
->>> +			 */
->>
->> Then this will never come up.  If the host sends a packet that's too
->> long, you'll get a -EOVERFLOW error.
->>
->>>   			ret = ep->status;
->>>   			if (read && ret > 0 &&
->>> -			    unlikely(copy_to_user(buf, data, ret)))
->>> +			    unlikely(copy_to_user(buf, data, min(ret, len))))
->>>   				ret = -EFAULT;
->>>   		}
->>>   	}
->>
->> The reason for the quirk is that the controller may write all the
->> incoming data to the buffer, even if this is more data than the driver
->> requested.
->
-> If that's the case, then it indeed solves the problem of silently
-> throwing away data.  I guess it makes more sense then my understanding
-> of the quirk.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ee3b38363063..119455802d57 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1736,13 +1736,17 @@ config RANDOMIZE_BASE
+ 	   deters exploit attempts relying on knowledge of the location
+ 	   of kernel internals.
+ 
+-	   Entropy is generated using the RDRAND instruction if it
+-	   is supported.  If not, then RDTSC is used, if supported. If
+-	   neither RDRAND nor RDTSC are supported, then no randomness
+-	   is introduced.
++	   Entropy is generated using the RDRAND instruction if it is
++	   supported. If RDTSC is supported, it is used as well. If
++	   neither RDRAND nor RDTSC are supported, then randomness is
++	   read from the i8254 timer.
+ 
+ 	   The kernel will be offset by up to RANDOMIZE_BASE_MAX_OFFSET,
+-	   and aligned according to PHYSICAL_ALIGN.
++	   and aligned according to PHYSICAL_ALIGN. Since the kernel is
++	   built using 2GiB addressing, and PHYSICAL_ALGIN must be at a
++	   minimum of 2MiB, only 10 bits of entropy is theoretically
++	   possible. At best, due to page table layouts, 64-bit can use
++	   9 bits of entropy and 32-bit uses 8 bits.
+ 
+ config RANDOMIZE_BASE_MAX_OFFSET
+ 	hex "Maximum ASLR offset allowed"
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index 05957986d123..8746487fa916 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -5,6 +5,17 @@
+ #include <asm/archrandom.h>
+ #include <asm/e820.h>
+ 
++#include <generated/compile.h>
++#include <linux/module.h>
++#include <linux/uts.h>
++#include <linux/utsname.h>
++#include <generated/utsrelease.h>
++#include <linux/version.h>
++
++/* Simplified build-specific string for starting entropy. */
++static const char *build_str = UTS_RELEASE " (" LINUX_COMPILE_BY "@"
++		LINUX_COMPILE_HOST ") (" LINUX_COMPILER ") " UTS_VERSION;
++
+ #define I8254_PORT_CONTROL	0x43
+ #define I8254_PORT_COUNTER0	0x40
+ #define I8254_CMD_READBACK	0xC0
+@@ -25,34 +36,62 @@ static inline u16 i8254(void)
+ 	return timer;
+ }
+ 
++static unsigned long rotate_xor(unsigned long hash, const void *area,
++				size_t size)
++{
++	size_t i;
++	unsigned long *ptr = (unsigned long *)area;
++
++	for (i = 0; i < size / sizeof(hash); i++) {
++		/* Rotate by odd number of bits and XOR. */
++		hash = (hash << ((sizeof(hash) * 8) - 7)) | (hash >> 7);
++		hash ^= ptr[i];
++	}
++
++	return hash;
++}
++
++/* Attempt to create a simple but unpredictable starting entropy. */
++static unsigned long get_random_boot(void)
++{
++	unsigned long hash = 0;
++
++	hash = rotate_xor(hash, build_str, sizeof(build_str));
++	hash = rotate_xor(hash, real_mode, sizeof(*real_mode));
++
++	return hash;
++}
++
+ static unsigned long get_random_long(void)
+ {
+-	unsigned long random;
++	unsigned long raw, random = get_random_boot();
++	bool use_i8254 = true;
++
++	debug_putstr("KASLR using");
+ 
+ 	if (has_cpuflag(X86_FEATURE_RDRAND)) {
+-		debug_putstr("KASLR using RDRAND...\n");
+-		if (rdrand_long(&random))
+-			return random;
++		debug_putstr(" RDRAND");
++		if (rdrand_long(&raw)) {
++			random ^= raw;
++			use_i8254 = false;
++		}
+ 	}
+ 
+ 	if (has_cpuflag(X86_FEATURE_TSC)) {
+-		uint32_t raw;
++		debug_putstr(" RDTSC");
++		rdtscll(raw);
+ 
+-		debug_putstr("KASLR using RDTSC...\n");
+-		rdtscl(raw);
++		random ^= raw;
++		use_i8254 = false;
++	}
+ 
+-		/* Only use the low bits of rdtsc. */
+-		random = raw & 0xffff;
+-	} else {
+-		debug_putstr("KASLR using i8254...\n");
+-		random = i8254();
++	if (use_i8254) {
++		debug_putstr(" i8254");
++		random ^= i8254();
+ 	}
+ 
+-	/* Extend timer bits poorly... */
+-	random |= (random << 16);
+-#ifdef CONFIG_X86_64
+-	random |= (random << 32);
+-#endif
++	debug_putstr("...\n");
++
+ 	return random;
+ }
+ 
+-- 
+1.7.9.5
 
-The main reason of this quirk it to prevent DWC3 to stall or to
-overflow buffer after usb_ep_queue() above. Since req->length has to be
-updated, I disagree with Alan in this case and give my ack to this
-Michal's approach.
 
-Br, David Cohen
+-- 
+Kees Cook
+Chrome OS Security
