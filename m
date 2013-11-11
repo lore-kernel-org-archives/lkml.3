@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab3KKLsy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:48:54 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37864 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab3KKLsp (ORCPT
+	id S1753448Ab3KKLvC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:51:02 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:49744 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189Ab3KKLux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:48:45 -0500
-Date: Mon, 11 Nov 2013 14:48:27 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia@diku.dk>
-Subject: Re: [patch] vlynq: fix another resource size off by 1 error
-Message-ID: <20131111114827.GE5443@mwanda>
-References: <20130823081949.GD31293@elgon.mountain>
+	Mon, 11 Nov 2013 06:50:53 -0500
+Date: Mon, 11 Nov 2013 12:50:50 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] perf: Fix version when building out of tree
+Message-ID: <20131111115050.GB19720@gmail.com>
+References: <1383699213-23981-1-git-send-email-dsahern@gmail.com>
+ <20131106053654.GA23746@gmail.com>
+ <527A582D.4000301@gmail.com>
+ <20131107083035.GB32542@gmail.com>
+ <527BA420.6000403@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130823081949.GD31293@elgon.mountain>
+In-Reply-To: <527BA420.6000403@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We still need to apply this fix.
 
-regards,
-dan carpenter
+* David Ahern <dsahern@gmail.com> wrote:
 
-On Fri, Aug 23, 2013 at 11:19:49AM +0300, Dan Carpenter wrote:
-> We fixed the call to request_mem_region() patch
-> 3354f73 ('drivers/vlynq/vlynq.c: fix resource size off by 1 error').
-> But we need to fix the call the release_mem_region() as well.
+> On 11/7/13, 1:30 AM, Ingo Molnar wrote:
+> >
+> >* David Ahern <dsahern@gmail.com> wrote:
+> >
+> >>On 11/5/13, 10:36 PM, Ingo Molnar wrote:
+> >>>I think you could avoid the 'short' complication altogether by doing
+> >>>something like this:
+> >>>
+> >>>>+elif test -f ../../PERF-VERSION-FILE
+> >>>>+then
+> >>>>+	TAG=$(cut -d' ' -f3 ../../PERF-VERSION-FILE)
+> >>>
+> >>>That extracts 'TAG' as a true sha1 and makes GVF correct on out of tree
+> >>>builds as well.
+> >>
+> >>Certainly. I was trying to make PERF-VERSION-FILE readable as a
+> >>standalone file -- a better version descriptor than HEAD file.
+> >
+> >Do you mean that instead of:
+> >
+> >   comet:~/tip/tools/perf> cat PERF-VERSION-FILE
+> >   #define PERF_VERSION "3.12.g953bfb"
 > 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ---
-> Static checker stuff.
+> no. I was thinking instead of
+> cat PERF-VERSION-FILE
+> #define PERF_VERSION "3.12.g953bfb"
 > 
-> diff --git a/drivers/vlynq/vlynq.c b/drivers/vlynq/vlynq.c
-> index 7b07135..c0227f9 100644
-> --- a/drivers/vlynq/vlynq.c
-> +++ b/drivers/vlynq/vlynq.c
-> @@ -762,7 +762,8 @@ static int vlynq_remove(struct platform_device *pdev)
->  
->  	device_unregister(&dev->dev);
->  	iounmap(dev->local);
-> -	release_mem_region(dev->regs_start, dev->regs_end - dev->regs_start);
-> +	release_mem_region(dev->regs_start,
-> +			   dev->regs_end - dev->regs_start + 1);
->  
->  	kfree(dev);
->  
+> you have
+> cat PERF-VERSION-FILE
+> 3.12.g953bfb
+> 
+> But remember this is a new PERF-VERSION-FILE at the top of tree --
+> just like the HEAD file that contains the top commit id. Both are
+> generated as part of the make perf-tar-src-pkg to keep track of the
+> origin of the source. The new file becomes the basis of
+> $(OUTPUT)PERF-VERSION-FILE.
+
+Hm, I think this is confusing.
+
+I think this should be a special file name, only generated into the 
+tarball, one which never shows up in a regular build.
+
+It must be possible to build perf in a read-only source repository (with 
+O= pointing elsewhere) for example.
+
+Thanks,
+
+	Ingo
