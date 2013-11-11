@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060Ab3KKKwD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 05:52:03 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:37772 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab3KKKvz (ORCPT
+	id S1753200Ab3KKKyO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 05:54:14 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:36986 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab3KKKyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 05:51:55 -0500
-Message-ID: <5280B6C8.7050807@hitachi.com>
-Date: Mon, 11 Nov 2013 19:51:52 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 11 Nov 2013 05:54:04 -0500
+Date: Mon, 11 Nov 2013 10:53:56 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        myungjoo.ham@samsung.com, sameo@linux.intel.com,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] extcon: arizona: Add defines for microphone
+ detection levels
+Message-ID: <20131111105356.GB22184@lee--X1>
+References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <5280AAAF.8040005@samsung.com>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping support
-References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org> <1382008671-4515-3-git-send-email-sandeepa.prabhu@linaro.org> <20131108165639.GD15074@mudshark.cambridge.arm.com> <527DFC1C.1020107@hitachi.com> <CA+b37P3U=cAbUvs=2B9wA4F7S9o49vh7d-KamjPsHcz-b9ZYLA@mail.gmail.com> <52808D53.7080904@hitachi.com>
-In-Reply-To: <52808D53.7080904@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5280AAAF.8040005@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/11 16:54), Masami Hiramatsu wrote:
->>>> In fact, how do you avoid a race with hardware breakpoints? E.g., somebody
->>>> places a hardware breakpoint on an instruction in the kernel for which
->>>> kprobes has patched in a brk. We take the hardware breakpoint, disable the
->>>> breakpoint and set up a single step before returning to the brk. The brk
->>>> then traps, but we must take care not to disable single-step and/or unmask
->>>> debug exceptions, because that will cause the hardware breakpoint code to
->>>> re-arm its breakpoint before we've stepped off the brk instruction.
->>>
->>> Hmm, frankly to say, this kind of race issue is not seriously discussed
->>> on x86 too, since kgdb is still a special tool (not used on the production
->>> system).
->>> I think under such situation kgdb operator must have full control of the
->>> system, and he can (and has to) avoid such kind of race.
->> Masami,
->>
->> Hmm I think in same lines, but not sure if we expect kprobes to be
->> able to work fool-proof along with kgdb or hw breakpoints ?
+> On 11/08/2013 10:19 PM, Charles Keepax wrote:
+> > Improve readability by creating a define for each microphone detection
+> > level.
+> > 
+> > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> > ---
+> >  drivers/extcon/extcon-arizona.c       |   21 ++++++++++++++++-----
+> >  include/linux/mfd/arizona/registers.h |    9 +++++++++
+> >  2 files changed, 25 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> > index 3c55ec8..6d914ba 100644
+> > --- a/drivers/extcon/extcon-arizona.c
+> > +++ b/drivers/extcon/extcon-arizona.c
+> > @@ -44,6 +44,17 @@
+> >  #define HPDET_DEBOUNCE 500
+> >  #define DEFAULT_MICD_TIMEOUT 2000
+> >  
+> > +enum {
+> > +	MICD_LVL_1_TO_7 = ARIZONA_MICD_LVL_1 | ARIZONA_MICD_LVL_2 |
+> > +			  ARIZONA_MICD_LVL_3 | ARIZONA_MICD_LVL_4 |
+> > +			  ARIZONA_MICD_LVL_5 | ARIZONA_MICD_LVL_6 |
+> > +			  ARIZONA_MICD_LVL_7,
+> > +
+> > +	MICD_LVL_0_TO_7 = ARIZONA_MICD_LVL_0 | MICD_LVL_1_TO_7,
+> > +
+> > +	MICD_LVL_0_TO_8 = MICD_LVL_0_TO_7 | ARIZONA_MICD_LVL_8,
+> > +};
 > 
-> For hw breakpoint, yes, we finally get check each other to safely
-> use it even if one rejects the other one at some points(address).
-> Since the hw breakpoint is already open for normal user via perf,
-> we should do it. But the policy still needs to be discussed.
+> MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8 haven't the sequential value.
+> I prefer '#define' keyword to define MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8
+> instead of enum keyword.
 
-OK, I've ensured that the hw_breakpoint (from perf) can work
-with kprobes (from ftrace) at the same address on x86.
-So if arm64 already support hw_breakpoint on perf, kprobes should
-work with it.
+Actually Charles has already sent me this patch and I applied it a
+while ago.
 
-Thank you,
+I'm inclined to agree with you though, so if you want to send a patch
+based on v3.14-rc1 I'd be happy to accept it.
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
