@@ -1,142 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab3KKL2B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:28:01 -0500
-Received: from mga09.intel.com ([134.134.136.24]:12027 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753343Ab3KKL1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:27:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="406751035"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 1/3] mei: remove flash_work_queue
-Date: Mon, 11 Nov 2013 13:26:06 +0200
-Message-Id: <1384169168-30281-2-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1384169168-30281-1-git-send-email-tomas.winkler@intel.com>
-References: <1384169168-30281-1-git-send-email-tomas.winkler@intel.com>
+	id S1753458Ab3KKL2G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:28:06 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:60453 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383Ab3KKL15 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 06:27:57 -0500
+Date: Mon, 11 Nov 2013 12:27:54 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] perf tool: Round mmap pages to power 2
+Message-ID: <20131111112754.GD15810@gmail.com>
+References: <1383885392-31082-1-git-send-email-dsahern@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383885392-31082-1-git-send-email-dsahern@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cancel each work properly and remove flash_work_queue.
 
-Quoting documentation:
+* David Ahern <dsahern@gmail.com> wrote:
 
-In most situations flushing the entire workqueue is overkill; you merely
-need to know that a particular work item isn't queued and isn't running.
-In such cases you should use cancel_delayed_work_sync() or
-cancel_work_sync() instead.
+> Currently perf requires the -m / --mmap_pages option to be a power of 2.
+> To be more user friendly perf should automatically round this up to the
+> next power of 2.
+> 
+> Currently:
+>   $ perf record -m 3 -a -- sleep 1
+>   --mmap_pages/-m value must be a power of two.sleep: Terminated
+> 
+> With patch:
+>   $ perf record -m 3 -a -- sleep 1
+>   rounding mmap pages size to 16384 (4 pages)
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/init.c    | 17 ++++++++++++-----
- drivers/misc/mei/mei_dev.h |  3 ++-
- drivers/misc/mei/nfc.c     |  6 +++++-
- drivers/misc/mei/pci-me.c  |  2 +-
- 4 files changed, 20 insertions(+), 8 deletions(-)
+Please add 'bytes'.
 
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index 7dfc7a4..f83da33 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -131,6 +131,15 @@ err:
- }
- EXPORT_SYMBOL_GPL(mei_start);
- 
-+
-+void mei_cancel_work(struct mei_device *dev)
-+{
-+	cancel_work_sync(&dev->init_work);
-+
-+	cancel_delayed_work(&dev->timer_work);
-+}
-+EXPORT_SYMBOL_GPL(mei_cancel_work);
-+
- /**
-  * mei_reset - resets host and fw.
-  *
-@@ -216,16 +225,14 @@ void mei_stop(struct mei_device *dev)
- {
- 	dev_dbg(&dev->pdev->dev, "stopping the device.\n");
- 
--	flush_scheduled_work();
-+	mei_cancel_work(dev);
- 
--	mutex_lock(&dev->device_lock);
-+	mei_nfc_host_exit(dev);
- 
--	cancel_delayed_work(&dev->timer_work);
-+	mutex_lock(&dev->device_lock);
- 
- 	mei_wd_stop(dev);
- 
--	mei_nfc_host_exit();
--
- 	dev->dev_state = MEI_DEV_POWER_DOWN;
- 	mei_reset(dev, 0);
- 
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 406f68e..6f577bf 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -463,6 +463,7 @@ void mei_device_init(struct mei_device *dev);
- void mei_reset(struct mei_device *dev, int interrupts);
- int mei_start(struct mei_device *dev);
- void mei_stop(struct mei_device *dev);
-+void mei_cancel_work(struct mei_device *dev);
- 
- /*
-  *  MEI interrupt functions prototype
-@@ -510,7 +511,7 @@ int mei_amthif_irq_read(struct mei_device *dev, s32 *slots);
-  * NFC functions
-  */
- int mei_nfc_host_init(struct mei_device *dev);
--void mei_nfc_host_exit(void);
-+void mei_nfc_host_exit(struct mei_device *dev);
- 
- /*
-  * NFC Client UUID
-diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
-index 994ca4a..0a89220 100644
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -547,12 +547,16 @@ err:
- 	return ret;
- }
- 
--void mei_nfc_host_exit(void)
-+void mei_nfc_host_exit(struct mei_device *dev)
- {
- 	struct mei_nfc_dev *ndev = &nfc_dev;
- 
-+	cancel_work_sync(&ndev->init_work);
-+
-+	mutex_lock(&dev->device_lock);
- 	if (ndev->cl && ndev->cl->device)
- 		mei_cl_remove_device(ndev->cl->device);
- 
- 	mei_nfc_free(ndev);
-+	mutex_unlock(&dev->device_lock);
- }
-diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
-index b96205a..3bfae38 100644
---- a/drivers/misc/mei/pci-me.c
-+++ b/drivers/misc/mei/pci-me.c
-@@ -195,8 +195,8 @@ static int mei_me_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	return 0;
- 
- release_irq:
-+	mei_cancel_work(dev);
- 	mei_disable_interrupts(dev);
--	flush_scheduled_work();
- 	free_irq(pdev->irq, dev);
- disable_msi:
- 	pci_disable_msi(pdev);
--- 
-1.8.3.1
+I'd also suggest generally prefixing tooling messages with some sort of 
+'subsystem' prefix, so that in the great and rich network of perf tooling 
+subsystems the user knows roughly where the message comes from.
 
+Here it should probably be something like:
+
+    INFO: ring-buffer: Rounding mmap pages size to 16384 bytes (4 pages)
+
+?
+
+While if the message was related to evlists for example and was a hard 
+error, it would have this pattern:
+
+    ERROR: event-list: ...
+
+while if it's a warning, it would say:
+
+    WARNING: event-list: ...
+
+I.e. we could match how the kernel handled printk()d message types, 
+priorities and subsystems.
+
+Thanks,
+
+	Ingo
