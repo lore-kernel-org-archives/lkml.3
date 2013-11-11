@@ -1,114 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab3KKNgB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 08:36:01 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:43743 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355Ab3KKNfx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 08:35:53 -0500
-Date: Mon, 11 Nov 2013 10:35:44 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, a.p.zijlstra@chello.nl, namhyung@kernel.org,
-        linux-kernel@vger.kernel.org, Maynard Johnson <mpjohn@us.ibm.com>
-Subject: Re: [RFC][PATCH] Fix inhert with perf record --pid
-Message-ID: <20131111133544.GA18956@ghostprotocols.net>
-References: <20131109020233.GA10009@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131109020233.GA10009@us.ibm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753780Ab3KKNlH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 08:41:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34577 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753314Ab3KKNk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 08:40:59 -0500
+From: Michal Marek <mmarek@suse.cz>
+To: linux-kernel@vger.kernel.org
+Cc: linux-kbuild@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Joe Mario <jmario@redhat.com>
+Subject: [PATCH 1/2] PCI: Do not use PCI ID macros in quirk names
+Date: Mon, 11 Nov 2013 14:40:35 +0100
+Message-Id: <1384177236-8371-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Nov 08, 2013 at 06:02:33PM -0800, Sukadev Bhattiprolu escreveu:
-> A gently tested RFC patch...
+Pasting the verbatim PCI_(VENDOR|DEVICE)_* macros in the __pci_fixup_*
+symbol names results in insanely long names such as
 
-Can you please check recent threads with patches by Adrian Hunter and
-Jiri Olsa, both probably addressing this problem, at some point there is
-an explanation about the inherit scalability issues and how to overcome
-it with a proposed new patch.
+__pci_fixup_resumePCI_VENDOR_ID_SERVERWORKSPCI_DEVICE_ID_SERVERWORKS_HT1000SBquirk_disable_broadcom_boot_interrupt
 
-I'll probably merge today after trying to improve the changelog.
+When LTO adds its numeric suffix to such symbol, it overflows the
+namebuf[KSYM_NAME_LEN] array. Use the line number instead to create
+(nearly) unique symbol names.
 
-Look for:
+Reported-by: Joe Mario <jmario@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Joe Mario <jmario@redhat.com>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ include/linux/pci.h | 30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
- [PATCH V3 06/11] perf record: Add an option to force per-cpu mmaps
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index da172f9..1ff4dec 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1557,65 +1557,65 @@ enum pci_fixup_pass {
+ /* Anonymous variables would be nice... */
+ #define DECLARE_PCI_FIXUP_SECTION(section, name, vendor, device, class,	\
+ 				  class_shift, hook)			\
+-	static const struct pci_fixup __pci_fixup_##name __used		\
++	static const struct pci_fixup __PASTE(__pci_fixup_##name,__LINE__) __used	\
+ 	__attribute__((__section__(#section), aligned((sizeof(void *)))))    \
+ 		= { vendor, device, class, class_shift, hook };
+ 
+ #define DECLARE_PCI_FIXUP_CLASS_EARLY(vendor, device, class,		\
+ 					 class_shift, hook)		\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_early,			\
+-		vendor##device##hook, vendor, device, class, class_shift, hook)
++		hook, vendor, device, class, class_shift, hook)
+ #define DECLARE_PCI_FIXUP_CLASS_HEADER(vendor, device, class,		\
+ 					 class_shift, hook)		\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_header,			\
+-		vendor##device##hook, vendor, device, class, class_shift, hook)
++		hook, vendor, device, class, class_shift, hook)
+ #define DECLARE_PCI_FIXUP_CLASS_FINAL(vendor, device, class,		\
+ 					 class_shift, hook)		\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_final,			\
+-		vendor##device##hook, vendor, device, class, class_shift, hook)
++		hook, vendor, device, class, class_shift, hook)
+ #define DECLARE_PCI_FIXUP_CLASS_ENABLE(vendor, device, class,		\
+ 					 class_shift, hook)		\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_enable,			\
+-		vendor##device##hook, vendor, device, class, class_shift, hook)
++		hook, vendor, device, class, class_shift, hook)
+ #define DECLARE_PCI_FIXUP_CLASS_RESUME(vendor, device, class,		\
+ 					 class_shift, hook)		\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_resume,			\
+-		resume##vendor##device##hook, vendor, device, class,	\
++		resume##hook, vendor, device, class,	\
+ 		class_shift, hook)
+ #define DECLARE_PCI_FIXUP_CLASS_RESUME_EARLY(vendor, device, class,	\
+ 					 class_shift, hook)		\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_resume_early,		\
+-		resume_early##vendor##device##hook, vendor, device,	\
++		resume_early##hook, vendor, device,	\
+ 		class, class_shift, hook)
+ #define DECLARE_PCI_FIXUP_CLASS_SUSPEND(vendor, device, class,		\
+ 					 class_shift, hook)		\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_suspend,			\
+-		suspend##vendor##device##hook, vendor, device, class,	\
++		suspend##hook, vendor, device, class,	\
+ 		class_shift, hook)
+ 
+ #define DECLARE_PCI_FIXUP_EARLY(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_early,			\
+-		vendor##device##hook, vendor, device, PCI_ANY_ID, 0, hook)
++		hook, vendor, device, PCI_ANY_ID, 0, hook)
+ #define DECLARE_PCI_FIXUP_HEADER(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_header,			\
+-		vendor##device##hook, vendor, device, PCI_ANY_ID, 0, hook)
++		hook, vendor, device, PCI_ANY_ID, 0, hook)
+ #define DECLARE_PCI_FIXUP_FINAL(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_final,			\
+-		vendor##device##hook, vendor, device, PCI_ANY_ID, 0, hook)
++		hook, vendor, device, PCI_ANY_ID, 0, hook)
+ #define DECLARE_PCI_FIXUP_ENABLE(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_enable,			\
+-		vendor##device##hook, vendor, device, PCI_ANY_ID, 0, hook)
++		hook, vendor, device, PCI_ANY_ID, 0, hook)
+ #define DECLARE_PCI_FIXUP_RESUME(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_resume,			\
+-		resume##vendor##device##hook, vendor, device,		\
++		resume##hook, vendor, device,		\
+ 		PCI_ANY_ID, 0, hook)
+ #define DECLARE_PCI_FIXUP_RESUME_EARLY(vendor, device, hook)		\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_resume_early,		\
+-		resume_early##vendor##device##hook, vendor, device,	\
++		resume_early##hook, vendor, device,	\
+ 		PCI_ANY_ID, 0, hook)
+ #define DECLARE_PCI_FIXUP_SUSPEND(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_suspend,			\
+-		suspend##vendor##device##hook, vendor, device,		\
++		suspend##hook, vendor, device,		\
+ 		PCI_ANY_ID, 0, hook)
+ 
+ #ifdef CONFIG_PCI_QUIRKS
+-- 
+1.8.1.4
 
-- ARnaldo
-
-> ---
-> 
-> 
-> From 38554891fc41082b767f24ce3293658f7329a691 Mon Sep 17 00:00:00 2001
-> From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-> Date: Fri, 8 Nov 2013 17:14:06 -0800
-> Subject: [PATCH] Fix inhert with perf record --pid
-> 
-> If a target process is identified by its pid:
-> 
-> 	perf record --pid 1234
-> 
-> perf record does not follow any _newly_ created children of the
-> process. perf_evlist__config() clears the ->inherit flag.
-> 
->         if (evlist->cpus->map[0] < 0)
-> 		opts->no_inherit = true;
-> 
-> It can be fixed and descendants can be followed, by this change
-> below, but is this behavior by design ?
-> 
-> We do follow the children if the same process is started by perf:
-> 
-> 	perf record ./a.out
-> 
-> This was reported by Maynard Johnson <mpjohn@us.ibm.com>
-> 
-> On a related note, perf_target__validate() has this:
-> 
->         /* CPU and PID are mutually exclusive */
->         if (target->tid && target->cpu_list) {
->                 target->cpu_list = NULL;
->                 if (ret == PERF_ERRNO_TARGET__SUCCESS)
->                         ret = PERF_ERRNO_TARGET__PID_OVERRIDE_CPU;
->         }
-> 
-> Again, its not clear why pid and cpu are exclusive in this case:
-> 
-> 	perf record --pid 1234 -C 0,1,2
-> 
-> The system call allows the both pid and cpu to be specified.
-> 
-> Looking at commit, I see that this check was pulled in from builtin-top.c.
-> 
-> 	commit 4bd0f2d2c0cf14de9c84c2fe689120c6b0f667c8
-> 	Author: Namhyung Kim <namhyung.kim@lge.com>
-> 	Date:   Thu Apr 26 14:15:18 2012 +0900
-> 
-> Does that check apply to 'perf record' or only 'perf top' ?
-> 
-> Appreciate any comments.
-> 
-> ---
->  tools/perf/util/evlist.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-> index e584cd3..c81d01a 100644
-> --- a/tools/perf/util/evlist.c
-> +++ b/tools/perf/util/evlist.c
-> @@ -742,7 +742,7 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
->  		return -1;
->  
->  	if (perf_target__has_task(target))
-> -		evlist->cpus = cpu_map__dummy_new();
-> +		evlist->cpus = cpu_map__new(target->cpu_list);
->  	else if (!perf_target__has_cpu(target) && !target->uses_mmap)
->  		evlist->cpus = cpu_map__dummy_new();
->  	else
-> -- 
-> 1.7.1
