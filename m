@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978Ab3KKCHA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 21:07:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35315 "EHLO mail.zytor.com"
+	id S1751904Ab3KKCPI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 21:15:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33422 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003Ab3KKCGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 21:06:51 -0500
-Message-ID: <52803BA2.2080908@zytor.com>
-Date: Sun, 10 Nov 2013 18:06:26 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751003Ab3KKCPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 21:15:02 -0500
+Date: Mon, 11 Nov 2013 10:13:56 +0800
+From: Dave Young <dyoung@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de
+Subject: Re: [patch 0/7 v2] kexec kernel efi runtime support
+Message-ID: <20131111021356.GC4407@dhcp-16-126.nay.redhat.com>
+References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com>
+ <20131108143118.GA22636@console-pimps.org>
+ <20131109035739.GB4294@dhcp-16-126.nay.redhat.com>
+ <527DC1BE.6030107@zytor.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, linux-arch <linux-arch@vger.kernel.org>
-CC: mingo@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        james.t.kukunas@intel.com, hpa@linux.intel.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [tip:x86/asm] x86, bitops:  Change bitops to be native operand
- size
-References: <tip-z61ofiwe90xeyb461o72h8ya@git.kernel.org>	 <1384117768.3081.10.camel@joe-AO722>	 <5ac67859-a0b2-47f5-bdc2-c2a52b8d6885@email.android.com> <1384123457.3081.33.camel@joe-AO722>
-In-Reply-To: <1384123457.3081.33.camel@joe-AO722>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527DC1BE.6030107@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2013 02:44 PM, Joe Perches wrote:
-> (adding linux-arch, and possible patch below)
+On 11/08/13 at 09:01pm, H. Peter Anvin wrote:
+> On 11/08/2013 07:57 PM, Dave Young wrote:
+> > 
+> > Hmm, if CONFIG_DEBUG_BOOT_PARAMS is not set, then kexec-tools should
+> > fail getting efi_info, so I will fix kexec-tools patch about this.
+> > 
+> > Also CONFIG_EFI_RUNTIME_MAP should select CONFIG_DEBUG_BOOT_PARAMS.
+> > In future will try to move the boot params data out of debugfs. 
+> > 
 > 
-> On Sun, 2013-11-10 at 14:10 -0800, H. Peter Anvin wrote:
->> Yes, on the generic it is int.
->>
->> The problem is in part that some architectures have bitop
->> instructions with specific behavior.
-> 
-> I think that all bitop indices should be changed
-> to unsigned (int or long, probably long) for all
-> arches.
-> 
-> Is there any impediment to that?
+> Honestly, if we need debugfs to get actual functionality, it shouldn't
+> be in sploit^Wdebugfs...
 > 
 
-It is at the very best misleading.  On x86 bit indicies will be signed
-no matter what the data type says, and having an unsigned data type
-being interpreted as signed seems like really dangerous.
+Huang Ying <ying.huang@intel.com> created the debugfs file for boot_params.
+His first version patch tried sysfs, but sysfs is not designed for such
+binary blobs so finally it go to debugfs.
 
-On the other hand, for the generic implementation unsigned long makes sense.
+Any idea for this is welcome, till now I have no better idea for such kind
+of data. We should have another *fs instead of using debugfs.
 
-We might need a bitindex_t or something like that for it to be clean.
-
-	-hpa
-
+Thanks
+Dave
