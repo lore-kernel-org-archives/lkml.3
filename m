@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab3KKQl3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 11:41:29 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:57221 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611Ab3KKQlU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 11:41:20 -0500
-Message-ID: <1384187558.18684.109.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [RFC][PATCH 0/9] encrypted keys & key control op
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: d.kasatkin@samsung.com, zohar@us.ibm.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>
-Date: Mon, 11 Nov 2013 11:32:38 -0500
-In-Reply-To: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
-References: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1754731Ab3KKQlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 11:41:45 -0500
+Received: from mga03.intel.com ([143.182.124.21]:51449 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754611Ab3KKQlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 11:41:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,679,1378882800"; 
+   d="scan'208";a="425651204"
+Message-ID: <52810851.4090907@linux.intel.com>
+Date: Mon, 11 Nov 2013 08:39:45 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+CC: Vincent Guittot <vincent.guittot@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Tony Luck <tony.luck@intel.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "len.brown@intel.com" <len.brown@intel.com>, l.majewski@samsung.com,
+        Jonathan Corbet <corbet@lwn.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, linux-pm@vger.kernel.org
+Subject: Re: [RFC][PATCH v5 00/14] sched: packing tasks
+References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org> <CAHkRjk69GNYtLGBSWCNcsCzkBHywKrD0qQQbNkJRpMbcdsCPyw@mail.gmail.com> <20131111163630.GD26898@twins.programming.kicks-ass.net>
+In-Reply-To: <20131111163630.GD26898@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111116-0928-0000-0000-000003895F1B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-04 at 16:22 +0000, David Howells wrote:
-> 
-> The control op could also be used for other things like pushing a key
-> into a TPM.
-> 
-> What do you think?
 
-Trusted keys already creates a symmetric key based on the TPM RNG. 
-What type of key would I be interested in pushing to the TPM?   What
-usecase scenario would this solve?
+> I think the scheduler simply wants to say: we expect to go idle for X
+> ns, we want a guaranteed wakeup latency of Y ns -- go do your thing.
 
-thanks,
+as long as Y normally is "large" or "infinity" that is ok ;-)
+(a smaller Y will increase power consumption and decrease system performance)
 
-Mimi
+
+
+> I think you also raised the point in that we do want some feedback as to
+> the cost of waking up particular cores to better make decisions on which
+> to wake. That is indeed so.
+
+having a hardware driver give a prefered CPU ordering for wakes can indeed be useful.
+(I'm doubtful that changing the recommendation for each idle is going to pay off,
+but proof is in the pudding; there are certainly long term effects where this can help)
+
+>
 
