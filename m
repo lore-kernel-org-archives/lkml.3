@@ -1,132 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab3KKKOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 05:14:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52767 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730Ab3KKKOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 05:14:12 -0500
-Date: Mon, 11 Nov 2013 11:14:09 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andiry Xu <andiry@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Wang Shilong <wangsl-fnst@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Andiry Xu <andiry.xu@gmail.com>
-Subject: Re: [BUG][ext2] XIP does not work on ext2
-Message-ID: <20131111101409.GB19893@quack.suse.cz>
-References: <CAOvWMLZ6_boRgQi2L9kqR_bWcnLDHY+uFo9g4DP=zxeGtT+dag@mail.gmail.com>
- <20131105143221.GA30006@quack.suse.cz>
- <CAOvWMLY9HAeQTsEwCchKNjL+1=-grBQrDO6-KCYcS-mxMYyRpw@mail.gmail.com>
- <20131106211858.GB20477@quack.suse.cz>
- <CAOvWMLa38zOigzVkcF78ivtszd6F02aNKsB28=Sd58OMeqb9sQ@mail.gmail.com>
- <20131107210715.GA20104@quack.suse.cz>
- <CAOvWMLYXUcYUnnzPzMTJZF8iZ73a+BuC+YRePjRZhY_WtL5Jfw@mail.gmail.com>
- <20131107222042.GC2054@quack.suse.cz>
- <CAOvWMLbZF41QrY32AxMPRAJ2mSTKP3xMNZA=q7P5zj_saMNhag@mail.gmail.com>
- <CAOvWMLbtBa4XSOJytZLR-=YMkF=RUMHZTYT+Gt+ZBKpHTYyw0A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOvWMLbtBa4XSOJytZLR-=YMkF=RUMHZTYT+Gt+ZBKpHTYyw0A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753088Ab3KKKTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 05:19:51 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:46203 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752804Ab3KKKTn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 05:19:43 -0500
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, catalin.marinas@arm.com, hpa@zytor.com,
+        steve.capper@linaro.org, ak@linux.intel.com, dave.martin@arm.com,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: [PATCH 0/4] wire up CPU features to udev based module loading
+Date: Mon, 11 Nov 2013 11:19:31 +0100
+Message-Id: <1384165175-16134-1-git-send-email-ard.biesheuvel@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 08-11-13 16:28:15, Andiry Xu wrote:
-> On Thu, Nov 7, 2013 at 2:45 PM, Andiry Xu <andiry@gmail.com> wrote:
-> > On Thu, Nov 7, 2013 at 2:20 PM, Jan Kara <jack@suse.cz> wrote:
-> >> On Thu 07-11-13 13:50:09, Andiry Xu wrote:
-> >>> On Thu, Nov 7, 2013 at 1:07 PM, Jan Kara <jack@suse.cz> wrote:
-> >>> > On Thu 07-11-13 12:14:13, Andiry Xu wrote:
-> >>> >> On Wed, Nov 6, 2013 at 1:18 PM, Jan Kara <jack@suse.cz> wrote:
-> >>> >> > On Tue 05-11-13 17:28:35, Andiry Xu wrote:
-> >>> >> >> >> Do you know the reason why write() outperforms mmap() in some cases? I
-> >>> >> >> >> know it's not related the thread but I really appreciate if you can
-> >>> >> >> >> answer my question.
-> >>> >> >> >   Well, I'm not completely sure. mmap()ed memory always works on page-by-page
-> >>> >> >> > basis - you first access the page, it gets faulted in and you can further
-> >>> >> >> > access it. So for small (sub page size) accesses this is a win because you
-> >>> >> >> > don't have an overhead of syscall and fs write path. For accesses larger
-> >>> >> >> > than page size the overhead of syscall and some initial checks is well
-> >>> >> >> > hidden by other things. I guess write() ends up being more efficient
-> >>> >> >> > because write path taken for each page is somewhat lighter than full page
-> >>> >> >> > fault. But you'd need to look into perf data to get some hard numbers on
-> >>> >> >> > where the time is spent.
-> >>> >> >> >
-> >>> >> >>
-> >>> >> >> Thanks for the reply. However I have filled up the whole RAM disk
-> >>> >> >> before doing the test, i.e. asked the brd driver to allocate all the
-> >>> >> >> pages initially.
-> >>> >> >   Well, pages in ramdisk are always present, that's not an issue. But you
-> >>> >> > will get a page fault to map a particular physical page in process'
-> >>> >> > virtual address space when you first access that virtual address in the
-> >>> >> > mapping from the process. The cost of setting up this virtual->physical
-> >>> >> > mapping is what I'm talking about.
-> >>> >> >
-> >>> >>
-> >>> >> Yes, you are right, there are page faults observed with perf. I
-> >>> >> misunderstood page fault as copying pages between backing store and
-> >>> >> physical memory.
-> >>> >>
-> >>> >> > If you had a process which first mmaps the file and writes to all pages in
-> >>> >> > the mapping and *then* measure the cost of another round of writing to the
-> >>> >> > mapping, I would expect you should see speeds close to those of memory bus.
-> >>> >> >
-> >>> >>
-> >>> >> I've tried this as well. mmap() performance improves but still not as
-> >>> >> good as write().
-> >>> >> I used the perf report to compare write() and mmap() applications. For
-> >>> >> write() version, top of perf report shows as:
-> >>> >> 33.33%  __copy_user_nocache
-> >>> >> 4.72%    ext2_get_blocks
-> >>> >> 4.42%    mutex_unlock
-> >>> >> 3.59%    __find_get_block
-> >>> >>
-> >>> >> which looks reasonable.
-> >>> >>
-> >>> >> However, for mmap() version, the perf report looks strange:
-> >>> >> 94.98% libc-2.15.so       [.] 0x000000000014698d
-> >>> >> 2.25%   page_fault
-> >>> >> 0.18%   handle_mm_fault
-> >>> >>
-> >>> >> I don't know what the first item is but it took the majority of cycles.
-> >>> >   The first item means that it's some userspace code in libc. My guess
-> >>> > would be that it's libc's memcpy() function (or whatever you use to write
-> >>> > to mmap). How do you access the mmap?
-> >>> >
-> >>>
-> >>> Like this:
-> >>>
-> >>> fd = open(file_name, O_CREAT | O_RDWR | O_DIRECT, 0755);
-> >>> dest = (char *)mmap(NULL, FILE_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
-> >>> for (i = 0; i < count; i++)
-> >>> {
-> >>>        memcpy(dest, src, request_size);
-> >>>        dest += request_size;
-> >>> }
-> >>   OK, maybe libc memcpy isn't very well optimized for you cpu? Not sure how
-> >> to tune that though...
-> >>
-> >
-> > Hmm, I will try some different kinds of memcpy to see if there is a
-> > difference. Just want to make sure I do not make some stupid mistakes
-> > before trying that.
-> > Thanks a lot for your help!
-> >
-> 
-> Your advice does makes difference. I use a optimized version of memcpy
-> and it does improve the mmap application performance: on a Ramdisk
-> with Ext2 xip, mmap() version now achieves 11GB/s of bandwidth,
-> comparing to posix write version with 7GB/s.
-  Good :).
+This series implements automatic module loading based on optional CPU features,
+and tries to do so in a generic way.
 
-> Now I wonder if they have a plan to update the memcpy() in libc..
-  You better ask at glibc devel list... I've google for a while whether
-memcpy() in glibc can be somehow tuned (for a particular instruction set)
-but didn't find anything useful.
+Typical usage would look like this:
 
-								Honza
+static struct cpu_feature mod_cpu_feature[] = {
+	{ HWCAP_CRC32 },
+	{}
+};
+MODULE_DEVICE_TABLE(cpu, mod_cpu_feature);
+
+where (on the arm64 arch) the module in question would be loaded automatically
+if the CPU has support for the optional CRC instructions. [Note that the example
+is based on a pending patch by Steve Capper: 'arm64: Add hwcaps for crypto and
+CRC32 extensions']
+
+Changes wrt RFC version of this series:
+- this time, instead of doing something entirely separate for non-x86 archs, the
+  new generic modalias version allocates enough bits to cover all x86 features
+  (320+), and the x86 version was tweaked to resemble the generic one more
+  closely (i.e., both use 'cpu:type:...:feature:...' now)
+- removed the weak and alias GCC attribute foo
+
+Ard Biesheuvel (4):
+  x86: move arch_cpu_uevent() to generic code
+  cpu: advertise CPU features over udev in a generic way
+  x86: align with generic cpu modalias
+  arm64: advertise CPU features for modalias matching
+
+ arch/arm64/Kconfig                |  3 +++
+ arch/arm64/kernel/setup.c         | 20 ++++++++++++++++++++
+ arch/x86/kernel/cpu/match.c       | 14 +-------------
+ drivers/base/cpu.c                | 15 ++++++++++++++-
+ include/linux/cpu.h               |  1 -
+ include/linux/mod_devicetable.h   | 11 +++++++++++
+ scripts/mod/devicetable-offsets.c |  3 +++
+ scripts/mod/file2alias.c          | 20 +++++++++++++++-----
+ 8 files changed, 67 insertions(+), 20 deletions(-)
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.3.2
+
