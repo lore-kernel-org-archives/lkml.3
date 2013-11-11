@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab3KKMTY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 07:19:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52956 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753499Ab3KKMTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 07:19:14 -0500
-Date: Mon, 11 Nov 2013 07:18:25 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: devel@openvz.org, ebiederm@xmission.com, oleg@redhat.com,
-        bfields@fieldses.org, bharrosh@panasas.com
-Subject: call_usermodehelper in containers
-Message-ID: <20131111071825.62da01d1@tlielax.poochiereds.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753575Ab3KKMVi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 07:21:38 -0500
+Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:39140
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753058Ab3KKMVd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 07:21:33 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(zzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzd2iz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h129fi1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: <shh.xie@gmail.com>
+To: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+CC: <madalin.bucur@freescale.com>, <Shruti@freescale.com>,
+        Shaohui Xie <Shaohui.Xie@freescale.com>
+Subject: [PATCH 1/4] phylib: Add Clause 45 read/write functions
+Date: Mon, 11 Nov 2013 19:04:02 +0800
+Message-ID: <1384167864-2457-1-git-send-email-shh.xie@gmail.com>
+X-Mailer: git-send-email 1.8.4.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a bit of a problem wrt to upcalls that use call_usermodehelper
-with containers and I'd like to bring this to some sort of resolution...
+From: Andy Fleming
 
-A particularly problematic case (though there are others) is the
-nfsdcltrack upcall. It basically uses call_usermodehelper to run a
-program in userland to track some information on stable storage for
-nfsd.
+You need an extra parameter to read or write Clause 45 PHYs, so
+we need a different API with the extra parameter.
 
-One could envision nfsd running on a machine with several containers,
-and each would need to track its own database of info on stable
-storage. When processing RPCs that come into the network address within
-a certain container, we want to ensure that it tracks this info inside
-the mount namespace within that container as well.
+Signed-off-by: Andy Fleming
+Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+---
+ include/linux/phy.h | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-So, we ideally need to ensure that when this upcall is run, that we run
-the correct binary in the container *and* that it does all of its file
-I/O within the correct mount namespace. We might also need other
-namespace swapping as well.
-
-Stanislav posted a patch a few months ago that tried to address this:
-
-    https://lkml.org/lkml/2013/5/22/80
-
-However, it failed to address some problems -- namely that we have to
-consider the case where a container may be running with reduced
-capabilities. We want to ensure that the UMH upcall inherits the
-correct capability set for its container as well.
-
-What's the correct approach to fix this? One possibility would be to
-keep a kernel thread around that sits in the correct namespace(s) and
-has the right privileges, and then use that to launch UMH programs.
-That thread could be spawned whenever someone runs rpc.nfsd inside a
-container.
-
-Not very elegant, but it seems like something that would work.
-
-Are there better approaches?
-
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index 64ab823..684925a 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -498,6 +498,21 @@ static inline int phy_read(struct phy_device *phydev, u32 regnum)
+ }
+ 
+ /**
++ * phy_read_mmd - Convenience function for reading a register
++ *   from an MMD on a given PHY.
++ * @phydev: The phy_device struct
++ * @devad: The MMD to read from
++ * @regnum: The register on the MMD to read
++ *
++ * Same rules as for phy_read();
++ */
++static inline int phy_read_mmd(struct phy_device *phydev, int devad, u32 regnum)
++{
++	return mdiobus_read(phydev->bus, phydev->addr,
++		MII_ADDR_C45 | (devad << 16) | (regnum & 0xffff));
++}
++
++/**
+  * phy_write - Convenience function for writing a given PHY register
+  * @phydev: the phy_device struct
+  * @regnum: register number to write
+@@ -533,6 +548,24 @@ static inline bool phy_is_internal(struct phy_device *phydev)
+ 	return phydev->is_internal;
+ }
+ 
++/**
++ * phy_write_mmd - Convenience function for writing a register
++ *   on an MMD on a given PHY.
++ * @phydev: The phy_device struct
++ * @devad: The MMD to read from
++ * @regnum: The register on the MMD to read
++ * @val: value to write to @regnum
++ *
++ * Same rules as for phy_write();
++ */
++static inline int phy_write_mmd(struct phy_device *phydev, int devad,
++		u32 regnum, u16 val)
++{
++	regnum = MII_ADDR_C45 | ((devad & 0x1f) << 16) | (regnum & 0xffff);
++
++	return mdiobus_write(phydev->bus, phydev->addr, regnum, val);
++}
++
+ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int phy_id,
+ 		bool is_c45, struct phy_c45_device_ids *c45_ids);
+ struct phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45);
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.8.4.1
+
+
