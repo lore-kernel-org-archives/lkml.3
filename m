@@ -1,139 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab3KKPWG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 10:22:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40171 "EHLO mx2.suse.de"
+	id S1754561Ab3KKPWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 10:22:24 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38221 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754429Ab3KKPVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 10:21:21 -0500
-From: Takashi Iwai <tiwai@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        amd64-microcode@amd64.org
-Subject: [PATCH v2 1/3] firmware: Introduce request_firmware_direct()
-Date: Mon, 11 Nov 2013 16:21:16 +0100
-Message-Id: <1384183278-19787-2-git-send-email-tiwai@suse.de>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1384183278-19787-1-git-send-email-tiwai@suse.de>
-References: <1384183278-19787-1-git-send-email-tiwai@suse.de>
+	id S1754503Ab3KKPVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 10:21:46 -0500
+Message-ID: <5280F545.3040406@ti.com>
+Date: Mon, 11 Nov 2013 17:18:29 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>, Sekhar Nori <nsekhar@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        <linux-gpio@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v5 5/7] gpio: davinci: add OF support
+References: <1383905510-31760-1-git-send-email-prabhakar.csengg@gmail.com> <1383905510-31760-6-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1383905510-31760-6-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_FW_LOADER_USER_HELPER is set, request_firmware() falls
-back to the usermode helper for loading via udev when the direct
-loading fails.  But the recent udev takes way too long timeout (60
-seconds) for non-existing firmware.  This is unacceptable for the
-drivers like microcode loader where they load firmwares optionally,
-i.e. it's no error even if no requested file exists.
+On 11/08/2013 12:11 PM, Prabhakar Lad wrote:
+> From: KV Sujith <sujithkv@ti.com>
+> 
+> This patch adds OF parser support for davinci gpio
+> driver and also appropriate documentation in gpio-davinci.txt
+> located at Documentation/devicetree/bindings/gpio/.
+> 
+> Signed-off-by: KV Sujith <sujithkv@ti.com>
+> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> [prabhakar.csengg@gmail.com: simplified the OF code, removed
+> 		unnecessary DT property and also simplified
+> 		the commit message]
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>   .../devicetree/bindings/gpio/gpio-davinci.txt      |   39 ++++++++++++++
+>   drivers/gpio/gpio-davinci.c                        |   54 ++++++++++++++++++--
+>   2 files changed, 90 insertions(+), 3 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+> new file mode 100644
+> index 0000000..d677bbe
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+> @@ -0,0 +1,39 @@
+> +Davinci GPIO controller bindings
+> +
+> +Required Properties:
+> +- compatible: should be "ti,dm6441-gpio"
+> +
+> +- reg: Physical base address of the controller and the size of memory mapped
+> +       registers.
+> +
+> +- gpio-controller : Marks the device node as a gpio controller.
+> +
+> +- interrupt-parent: phandle of the parent interrupt controller.
+> +
+> +- interrupts: Array of GPIO interrupt number. Only banked or unbanked IRQs are
+> +	      supported at a time.
+> +
+> +- ti,ngpio: The number of GPIO pins supported.
+> +
+> +- ti,davinci-gpio-unbanked: The number of GPIOs that have an individual interrupt
+> +		             line to processor.
+> +
+> +The GPIO controller also acts as an interrupt controller. It uses the default
+> +two cells specifier as described in Documentation/devicetree/bindings/
+> +interrupt-controller/interrupts.txt.
+> +
+> +Example:
+> +
+> +gpio: gpio@1e26000 {
+> +	compatible = "ti,dm6441-gpio";
+> +	gpio-controller;
+> +	reg = <0x226000 0x1000>;
+> +	interrupt-parent = <&intc>;
+> +	interrupts = <42 IRQ_TYPE_EDGE_BOTH 43 IRQ_TYPE_EDGE_BOTH
+> +		44 IRQ_TYPE_EDGE_BOTH 45 IRQ_TYPE_EDGE_BOTH
+> +		46 IRQ_TYPE_EDGE_BOTH 47 IRQ_TYPE_EDGE_BOTH
+> +		48 IRQ_TYPE_EDGE_BOTH 49 IRQ_TYPE_EDGE_BOTH
+> +		50 IRQ_TYPE_EDGE_BOTH>;
+> +	ti,ngpio = <144>;
+> +	ti,davinci-gpio-unbanked = <0>;
+> +};
+> diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
+> index b149239..ed04835 100644
+> --- a/drivers/gpio/gpio-davinci.c
+> +++ b/drivers/gpio/gpio-davinci.c
+> @@ -17,6 +17,9 @@
+>   #include <linux/io.h>
+>   #include <linux/irq.h>
+>   #include <linux/irqdomain.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+>   #include <linux/platform_device.h>
+>   #include <linux/platform_data/gpio-davinci.h>
+>   
+> @@ -134,6 +137,40 @@ davinci_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+>   	writel((1 << offset), value ? &g->set_data : &g->clr_data);
+>   }
+>   
+> +static struct davinci_gpio_platform_data *
+> +davinci_gpio_get_pdata(struct platform_device *pdev)
 
-This patch provides a new helper function, request_firmware_direct().
-It behaves as same as request_firmware() except for that it doesn't
-fall back to usermode helper but returns an error immediately if the
-f/w can't be loaded directly in kernel.
+Minor: usually such functions have "_of" in their names:
+ davinci_gpio_of_get_pdata()
 
-Without CONFIG_FW_LOADER_USER_HELPER=y, request_firmware_direct() is
-just an alias of request_firmware(), due to obvious reason.
+> +{
+> +	struct device_node *dn = pdev->dev.of_node;
+> +	struct davinci_gpio_platform_data *pdata;
+> +	int ret;
+> +	u32 val;
+> +
+> +	if (!IS_ENABLED(CONFIG_OF) || !pdev->dev.of_node)
+> +		return pdev->dev.platform_data;
+> +
+> +	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+> +	if (!pdata)
+> +		return NULL;
+> +
+> +	ret = of_property_read_u32(dn, "ti,ngpio", &val);
+> +	if (ret)
+> +		goto of_err;
+> +
+> +	pdata->ngpio = val;
+> +
+> +	ret = of_property_read_u32(dn, "ti,davinci-gpio-unbanked", &val);
+> +	if (ret)
+> +		goto of_err;
+> +
+> +	pdata->gpio_unbanked = val;
+> +
+> +	return pdata;
+> +
+> +of_err:
+> +	dev_err(&pdev->dev, "Populating pdata from DT failed: err %d\n", ret);
+> +	return NULL;
+> +}
+> +
+>   static int davinci_gpio_probe(struct platform_device *pdev)
+>   {
+>   	int i, base;
+> @@ -144,12 +181,14 @@ static int davinci_gpio_probe(struct platform_device *pdev)
+>   	struct device *dev = &pdev->dev;
+>   	struct resource *res;
+>   
+> -	pdata = dev->platform_data;
+> +	pdata = davinci_gpio_get_pdata(pdev);
+>   	if (!pdata) {
+>   		dev_err(dev, "No platform data found\n");
+>   		return -EINVAL;
+>   	}
+>   
+> +	dev->platform_data = pdata;
+> +
 
-Tested-by: Prarit Bhargava <prarit@redhat.com>
-Acked-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
----
- drivers/base/firmware_class.c | 36 +++++++++++++++++++++++++++++++-----
- include/linux/firmware.h      |  7 +++++++
- 2 files changed, 38 insertions(+), 5 deletions(-)
+Pls, add following code to GPIO chip initialization:
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index eb8fb94ae2c5..7f48a6ffb0df 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -1061,7 +1061,7 @@ static int assign_firmware_buf(struct firmware *fw, struct device *device,
- /* called from request_firmware() and request_firmware_work_func() */
- static int
- _request_firmware(const struct firmware **firmware_p, const char *name,
--		  struct device *device, bool uevent, bool nowait)
-+		  struct device *device, bool uevent, bool nowait, bool fallback)
- {
- 	struct firmware *fw;
- 	long timeout;
-@@ -1097,9 +1097,11 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
- 	if (ret) {
- 		dev_warn(device, "Direct firmware load failed with error %d\n",
- 			 ret);
--		dev_warn(device, "Falling back to user helper\n");
--		ret = fw_load_from_user_helper(fw, name, device,
-+		if (fallback) {
-+			dev_warn(device, "Falling back to user helper\n");
-+			ret = fw_load_from_user_helper(fw, name, device,
- 					       uevent, nowait, timeout);
-+		}
- 	}
- 
- 	/* don't cache firmware handled without uevent */
-@@ -1146,12 +1148,36 @@ request_firmware(const struct firmware **firmware_p, const char *name,
- 
- 	/* Need to pin this module until return */
- 	__module_get(THIS_MODULE);
--	ret = _request_firmware(firmware_p, name, device, true, false);
-+	ret = _request_firmware(firmware_p, name, device, true, false, true);
- 	module_put(THIS_MODULE);
- 	return ret;
- }
- EXPORT_SYMBOL(request_firmware);
- 
-+#ifdef CONFIG_FW_LOADER_USER_HELPER
-+/**
-+ * request_firmware: - load firmware directly without usermode helper
-+ * @firmware_p: pointer to firmware image
-+ * @name: name of firmware file
-+ * @device: device for which firmware is being loaded
-+ *
-+ * This function works pretty much like request_firmware(), but this doesn't
-+ * fall back to usermode helper even if the firmware couldn't be loaded
-+ * directly from fs.  Hence it's useful for loading optional firmwares, which
-+ * aren't always present, without extra long timeouts of udev.
-+ **/
-+int request_firmware_direct(const struct firmware **firmware_p,
-+			    const char *name, struct device *device)
-+{
-+	int ret;
-+	__module_get(THIS_MODULE);
-+	ret = _request_firmware(firmware_p, name, device, true, false, false);
-+	module_put(THIS_MODULE);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(request_firmware_direct);
+@@ -233,6 +245,9 @@ static int davinci_gpio_probe(struct platform_device *pdev)
+                chips[i].chip.ngpio = ngpio - base;
+                if (chips[i].chip.ngpio > 32)
+                        chips[i].chip.ngpio = 32;
++#ifdef CONFIG_OF_GPIO
++               chips[i].chip.of_node = dev->of_node;
 +#endif
-+
- /**
-  * release_firmware: - release the resource associated with a firmware image
-  * @fw: firmware resource to release
-@@ -1185,7 +1211,7 @@ static void request_firmware_work_func(struct work_struct *work)
- 	fw_work = container_of(work, struct firmware_work, work);
- 
- 	_request_firmware(&fw, fw_work->name, fw_work->device,
--			  fw_work->uevent, true);
-+			  fw_work->uevent, true, true);
- 	fw_work->cont(fw, fw_work->context);
- 	put_device(fw_work->device); /* taken in request_firmware_nowait() */
- 
-diff --git a/include/linux/firmware.h b/include/linux/firmware.h
-index e154c1005cd1..59529330efd6 100644
---- a/include/linux/firmware.h
-+++ b/include/linux/firmware.h
-@@ -68,4 +68,11 @@ static inline void release_firmware(const struct firmware *fw)
- 
- #endif
- 
-+#ifdef CONFIG_FW_LOADER_USER_HELPER
-+int request_firmware_direct(const struct firmware **fw, const char *name,
-+			    struct device *device);
-+#else
-+#define request_firmware_direct	request_firmware
-+#endif
-+
- #endif
--- 
-1.8.4.2
+
+
+
+>   	/*
+>   	 * The gpio banks conceptually expose a segmented bitmap,
+>   	 * and "ngpio" is one more than the largest zero-based
+> @@ -496,11 +535,20 @@ done:
+>   	return 0;
+>   }
+>   
+> +#if IS_ENABLED(CONFIG_OF)
+> +static const struct of_device_id davinci_gpio_ids[] = {
+> +	{ .compatible = "ti,dm6441-gpio", },
+> +	{ /* sentinel */ },
+> +};
+> +MODULE_DEVICE_TABLE(of, davinci_gpio_ids);
+> +#endif
+> +
+>   static struct platform_driver davinci_gpio_driver = {
+>   	.probe		= davinci_gpio_probe,
+>   	.driver		= {
+> -		.name	= "davinci_gpio",
+> -		.owner	= THIS_MODULE,
+> +		.name		= "davinci_gpio",
+> +		.owner		= THIS_MODULE,
+> +		.of_match_table	= of_match_ptr(davinci_gpio_ids),
+>   	},
+>   };
+>   
+> 
+Regards,
+- grygorii
+
 
