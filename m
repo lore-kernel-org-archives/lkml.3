@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab3KKLJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:09:15 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:52252 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab3KKLJK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:09:10 -0500
-Date: Mon, 11 Nov 2013 12:09:04 +0100
-From: Robert Richter <rric@kernel.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org
-Subject: Re: [PATCH] edac, highbank: remove dependency on ARCH_HIGHBANK
-Message-ID: <20131111110904.GQ7429@rric.localhost>
-References: <1383708352-19527-1-git-send-email-robherring2@gmail.com>
+	id S1753167Ab3KKLMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:12:13 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39642 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752670Ab3KKLMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 06:12:07 -0500
+Message-ID: <5280BB65.5040305@ti.com>
+Date: Mon, 11 Nov 2013 16:41:33 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383708352-19527-1-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Vivek Gautam'" <gautamvivek1987@gmail.com>,
+        "'Kamil Debski'" <k.debski@samsung.com>,
+        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
+        "'Linux USB Mailing List'" <linux-usb@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-doc@vger.kernel.org>, "'Greg KH'" <gregkh@linuxfoundation.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
+        "'Tomasz Figa'" <t.figa@samsung.com>, "'Felipe Balbi'" <balbi@ti.com>,
+        "'Julius Werner'" <jwerner@chromium.org>
+Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
+References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com> <1383205544-32244-2-git-send-email-gautam.vivek@samsung.com> <527744B2.4090303@ti.com> <030d01ced946$d6e23490$84a69db0$%debski@samsung.com> <52779D28.9000905@ti.com> <CAFp+6iH7vQ-OtMFL4pyr4tFDRchH4oh1Z0753WNgrHiUzj+kzw@mail.gmail.com> <00fe01ceda0a$941957a0$bc4c06e0$%debski@samsung.com> <000001ceda17$f41c2030$dc546090$%han@samsung.com> <000101ceda1f$04ca6f20$0e5f4d60$%han@samsung.com> <CAFp+6iFAZab35F-MOOZHcHpzSEOL=51gWBK2KZbOJS+0731GJQ@mail.gmail.com> <000301ceda84$1d648bf0$582da3d0$%han@samsung.com>
+In-Reply-To: <000301ceda84$1d648bf0$582da3d0$%han@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.11.13 21:25:52, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> In order to enable on arm64 and improve the build coverage, remove the
-> dependency on ARCH_HIGHBANK.
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Doug Thompson <dougthompson@xmission.com>
-> Cc: Robert Richter <rric@kernel.org>
-> Cc: linux-edac@vger.kernel.org
+Hi,
 
-Rob, I will apply your patch with the changes we discussed if this is
-ok for you.
-
--Robert
-
-> ---
->  drivers/edac/Kconfig | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+On Wednesday 06 November 2013 05:37 AM, Jingoo Han wrote:
+> On Wednesday, November 06, 2013 2:58 AM, Vivek Gautam wrote:
+>> On Tue, Nov 5, 2013 at 5:33 PM, Jingoo Han <jg1.han@samsung.com> wrote:
 > 
-> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
-> index 878f090..fc8aaaf 100644
-> --- a/drivers/edac/Kconfig
-> +++ b/drivers/edac/Kconfig
-> @@ -328,14 +328,14 @@ config EDAC_TILE
->  
->  config EDAC_HIGHBANK_MC
->  	tristate "Highbank Memory Controller"
-> -	depends on EDAC_MM_EDAC && ARCH_HIGHBANK
-> +	depends on EDAC_MM_EDAC
->  	help
->  	  Support for error detection and correction on the
->  	  Calxeda Highbank memory controller.
->  
->  config EDAC_HIGHBANK_L2
->  	tristate "Highbank L2 Cache"
-> -	depends on EDAC_MM_EDAC && ARCH_HIGHBANK
-> +	depends on EDAC_MM_EDAC
->  	help
->  	  Support for error detection and correction on the
->  	  Calxeda Highbank memory controller.
-> -- 
-> 1.8.1.2
+> [.....]
 > 
+>>> USB3.0 PHY consists of two blocks such as 3.0 block and 2.0 block.
+>>> This USB3.0 PHY can support UTMI+ and PIPE3 interface for 3.0 block
+>>> and 2.0 block, respectively.
+>>>
+>>> Conclusion:
+>>>
+>>>    1) USB2.0 PHY: USB2.0 HOST, USB2.0 Device
+>>>                        Base address: 0x1213 0000
+>>>
+>>>    2) USB3.0 PHY: USB3.0 DRD (3.0 HOST & 3.0 Device)
+>>>                        Base address: 0x1210 0000
+>>>                        2.0 block(UTMI+) & 3.0 block(PIPE3)
+>>
+>> And this is of course the PHY used by DWC3 controller, which works at
+>> both High speed as well as Super Speed.
+>> Right ?
+> 
+> Right.
+> 
+> While 3.0 block(PIPE3) can be used for Super Speed, 2.0 block(UTMI+)
+> can be used for High speed.
+
+It should then come under *single IP muliple PHY* category similar to what
+Sylwester has done.
+
+Thanks
+Kishon
