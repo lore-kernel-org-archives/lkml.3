@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385Ab3KKVI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 16:08:27 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:18896 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750961Ab3KKVIU (ORCPT
+	id S1751931Ab3KKVJg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 16:09:36 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:48272 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab3KKVJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 16:08:20 -0500
-Date: Mon, 11 Nov 2013 16:08:10 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] tools lib traceevent: Add direct access to dynamic arrays
-Message-ID: <20131111160810.0ba9df7d@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Mon, 11 Nov 2013 16:09:28 -0500
+Date: Mon, 11 Nov 2013 22:09:24 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] mm: cache largest vma
+Message-ID: <20131111210924.GA19284@gmail.com>
+References: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
+ <CA+55aFwrtOaFtwGc6xyZH6-1j3f--AG1JS-iZM8-pZPnwRHBow@mail.gmail.com>
+ <1383537862.2373.14.camel@buesod1.americas.hpqcorp.net>
+ <20131104073640.GF13030@gmail.com>
+ <1384143129.6940.32.camel@buesod1.americas.hpqcorp.net>
+ <20131111120116.GA21291@gmail.com>
+ <1384194271.6940.40.camel@buesod1.americas.hpqcorp.net>
+ <20131111204702.GD18886@gmail.com>
+ <1384203573.6940.67.camel@buesod1.americas.hpqcorp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384203573.6940.67.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Jiri Olsa was writing a plugin for the cfg80211_tx_mlme_mgmt trace
-event, and was not able to get the implemented function working.
-The event's print fmt looks like:
+* Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-   "netdev:%s(%d), ftype:0x%.2x", REC->name, REC->ifindex,
-            __le16_to_cpup((__le16 *)__get_dynamic_array(frame))
+> > Or is access to varied in the Oracle case that it's missing the cache 
+> > all the time, because the rbtree causes many cachemisses as the 
+> > separate nodes are accessed during an rb-walk?
+> 
+> Similar to get_cycles(), is there anyway to quickly measure the amount 
+> of executed instructions? Getting the IPC for the mmap_cache (this of 
+> course is constant) and the treewalk could give us a nice overview of 
+> the function's cost. I was thinking of stealing some perf-stat 
+> functionality for this but didn't get around to it. Hopefully there's an 
+> easier way...
 
-As there's no helper function for __le16_to_cpup(), Jiri was creating one
-with a plugin. But unfortunately, it would not work even though he set
-up the plugin correctly.
+There's no such easy method I'm afraid (Frederic's probe based trigger 
+facility will give us that and more - but it's not ready yet) - but you 
+could try profiling the workload for significant cache-misses:
 
-The problem is that the function parameters do not handle the helper
-function "__get_dynamic_array()", and that passes in a NULL pointer.
+  perf record -e cache-misses ...
 
-Adding PRINT_DYNAMIC_ARRAY direct support to eval_num_arg() allows the
-use of __get_dynamic_array() in function parameters.
+I _think_ if it's really catastrophic cache-misses then the rbtree walk 
+should light up on the perf radar like crazy.
 
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- tools/lib/traceevent/event-parse.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+Thanks,
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 8f450ad..0362d57 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -3435,6 +3435,19 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
- 			goto out_warning_op;
- 		}
- 		break;
-+	case PRINT_DYNAMIC_ARRAY:
-+		/* Without [], we pass the address to the dynamic data */
-+		offset = pevent_read_number(pevent,
-+					    data + arg->dynarray.field->offset,
-+					    arg->dynarray.field->size);
-+		/*
-+		 * The actual length of the dynamic array is stored
-+		 * in the top half of the field, and the offset
-+		 * is in the bottom half of the 32 bit field.
-+		 */
-+		offset &= 0xffff;
-+		val = (unsigned long long)(data + offset);
-+		break;
- 	default: /* not sure what to do there */
- 		return 0;
- 	}
--- 
-1.8.4.rc3
-
+	Ingo
