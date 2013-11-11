@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab3KKIlS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 03:41:18 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:43789 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751477Ab3KKIlK convert rfc822-to-8bit (ORCPT
+	id S1752954Ab3KKImA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 03:42:00 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:36640 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab3KKIlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 03:41:10 -0500
-X-IronPort-AV: E=Sophos;i="4.93,676,1378828800"; 
-   d="scan'208";a="8999769"
-Message-ID: <528097A3.9040908@cn.fujitsu.com>
-Date: Mon, 11 Nov 2013 16:38:59 +0800
-From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 11 Nov 2013 03:41:52 -0500
+Date: Mon, 11 Nov 2013 09:41:49 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes: Cleanup !CONFIG_UPROBES decls, unexport xol_area
+Message-ID: <20131111084149.GC12405@gmail.com>
+References: <20131109190344.GA32281@redhat.com>
 MIME-Version: 1.0
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
-References: <1383300583-6953-1-git-send-email-duanj.fnst@cn.fujitsu.com> <CAPgLHd_p+LJmBX6FCy1+mF3VTHkBoPa83SNXciqb28pa3QE7TA@mail.gmail.com>
-In-Reply-To: <CAPgLHd_p+LJmBX6FCy1+mF3VTHkBoPa83SNXciqb28pa3QE7TA@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/11 16:39:21,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/11 16:39:24
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131109190344.GA32281@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年11月11日 15:43, Wei Yongjun 写道:
-> On 11/01/2013 06:09 PM, Duan Jiong wrote:
->> This patch fixes coccinelle error regarding usage of IS_ERR and
->> PTR_ERR instead of PTR_ERR_OR_ZERO.
->>
->> Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
->> ---
->>  drivers/misc/carma/carma-fpga.c | 5 +----
->>  1 file changed, 1 insertion(+), 4 deletions(-)
->>
->> diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
->> index 08b18f3..9a32e98 100644
->> --- a/drivers/misc/carma/carma-fpga.c
->> +++ b/drivers/misc/carma/carma-fpga.c
->> @@ -956,10 +956,7 @@ static int data_debugfs_init(struct fpga_device *priv)
->>  {
->>  	priv->dbg_entry = debugfs_create_file(drv_name, S_IRUGO, NULL, priv,
->>  					      &data_debug_fops);
->> -	if (IS_ERR(priv->dbg_entry))
->> -		return PTR_ERR(priv->dbg_entry);
->> -
->> -	return 0;
->> +	return PTR_ERR_OR_ZERO(priv->dbg_entry);
->>  }
-> 
-> Those code has make sure that CONFIG_DEBUG_FS is enabled, so
-> debugfs_create_file() never return PTR_ERR(), only NULL will
-> be returned when error occurs.
-> 
->
 
-You can see the definition about PTR_ERR_OR_ZERO in include/linux/err.h,
-it is merely used to simplify the code.
+* Oleg Nesterov <oleg@redhat.com> wrote:
+
+> +++ b/kernel/events/uprobes.c
+> @@ -86,6 +86,25 @@ struct return_instance {
+>  };
+>  
+>  /*
+> + * On a breakpoint hit, thread contests for a slot.  It frees the
+> + * slot after singlestep. Currently a fixed number of slots are
+> + * allocated.
+> + */
+> +struct xol_area {
+
+So, my main complaint about the uprobes code isn't functional but 
+documentational, similar to what I outlined a few days ago: what this 
+comment does not explain is exactly what a 'XOL area' is.
+
+You guys are changing code that reads like gobbledygook to people reading 
+it for the first time. It's understandable that you want to use 
+abbreviations and I don't object against that, but please explain key 
+concepts and data structures when they first come up - a very good place 
+to do that is in places where key structures are declared.
+
+I didn't find any high level description of the XOL code, one which makes 
+clear that how we manage these out of line execution areas:
+
+ comet:~/tip> git grep -i 'out of line' $(find . -name '*uprobe*.[ch]')
+ arch/powerpc/kernel/uprobes.c: * arch_uprobe_pre_xol - prepare to execute out of line.
+ arch/x86/kernel/uprobes.c: * arch_uprobe_pre_xol - prepare to execute out of line.
+ arch/x86/kernel/uprobes.c: * address pushed by a call instruction executed out of line.
+ kernel/events/uprobes.c: * This area will be used for storing instructions for execution out of line.
+ kernel/events/uprobes.c:/* Prepare to single-step probed instruction out of line. */
+
+The one that comes closest is:
+
+          * This area will be used for storing instructions for execution out of line.
+
+... but that is a single sentence and deep inside the XOL code already.
+
+Really, please make a better job of introducing other kernel hackers to 
+the code you are writing ...
+
+Maybe even split the XOL code out into kernel/events/uprobes_xol.c or so? 
+That will give a natural place to explain yourselves at the beginning of 
+the file.
 
 Thanks,
-  Duan
 
+	Ingo
