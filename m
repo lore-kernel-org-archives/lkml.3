@@ -1,123 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab3KKLWA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:22:00 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:62502 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab3KKLVx (ORCPT
+	id S1753510Ab3KKLWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:22:50 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:41063 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753197Ab3KKLWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:21:53 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv2 2/2] check quirk to pad epout buf size when not aligned to maxpacketsize
-In-Reply-To: <5280567C.2060004@linux.intel.com>
-Organization: http://mina86.com/
-References: <1384102237-19784-1-git-send-email-mpn@google.com> <1384102237-19784-2-git-send-email-mpn@google.com> <5280567C.2060004@linux.intel.com>
-User-Agent: Notmuch/0.15.2+55~geb6e9d8 (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:131111:linux-usb@vger.kernel.org::Z+4xjiXFSAF8HhfK:0000000000000000000000000000000000000FX6
-X-Hashcash: 1:20:131111:david.a.cohen@linux.intel.com::HwIfexCwUGkUO1il:000000000000000000000000000000000CIz
-X-Hashcash: 1:20:131111:stern@rowland.harvard.edu::hFwt3u73VSLMbGzo:00000000000000000000000000000000000011O6
-X-Hashcash: 1:20:131111:linux-kernel@vger.kernel.org::Dxnl2ffYeU6/clMk:0000000000000000000000000000000001NTs
-Date: Mon, 11 Nov 2013 12:21:49 +0100
-Message-ID: <xa1t8uwvyyia.fsf@mina86.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 11 Nov 2013 06:22:42 -0500
+X-AuditID: cbfee691-b7f866d000001b8c-63-5280be018d09
+Message-id: <5280BE00.8030002@samsung.com>
+Date: Mon, 11 Nov 2013 20:22:40 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        myungjoo.ham@samsung.com, sameo@linux.intel.com,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] extcon: arizona: Add defines for microphone detection
+ levels
+References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <5280AAAF.8040005@samsung.com> <20131111105356.GB22184@lee--X1>
+ <20131111110652.GD6549@opensource.wolfsonmicro.com>
+ <20131111111503.GC22184@lee--X1>
+In-reply-to: <20131111111503.GC22184@lee--X1>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsWyRsSkSJdxX0OQweI3XBb/ptxgt7j/9Sij
+	xeVdc9gsbjeuYLNY/vY/m8XpblYHNo871/awecw7GejxcuJvNo++LasYPT5vkgtgjeKySUnN
+	ySxLLdK3S+DK+LD4DFPBS6GKo3MeMTcwruDvYuTkkBAwkXi5eSY7hC0mceHeerYuRi4OIYGl
+	jBLdL44ywxR9X/+JBSKxiFFiTes5VgjnFaPEoclb2UCqeAW0JJ7s6ATrYBFQlVg14yYriM0G
+	FN//4gZYjahAmMTK6VdYIOoFJX5Mvgdkc3CICKhInHtjDjKTWWADo8TK/5vAThIWCJe4eKYX
+	avMHRonp53eAJTgFdCV+X94NZjMLqEtMmreIGcKWl9i85i3U2afYJY5Oy4A4SEDi2+RDYMsk
+	BGQlNh2AKpGUOLjiBssERrFZSE6ahWTqLCRTFzAyr2IUTS1ILihOSi8y1StOzC0uzUvXS87P
+	3cQIjLXT/55N3MF4/4D1IcZkoJUTmaVEk/OBsZpXEm9obGZkYWpiamxkbmlGmrCSOG/6o6Qg
+	IYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwVWf3sV5+fK/3+aubdjBXKP18YxP97adq5oVdD
+	S32VqtTXqVNKFxhU2bEYSzUcFuL2ncx9+ova7uW/uE5P3P5c5VrQzAJj43UhD2NUwqWvaL0W
+	6zi4x27NcyXtpytf+kucSt/8br5g0Zdmx1X6E3fnT7Ps2yhzgGn2pMDpZXfkHOwqX0ofXJGs
+	xFKckWioxVxUnAgA8UI+H8sCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsVy+t9jAV3GfQ1BBj9PM1n8m3KD3eL+16OM
+	Fpd3zWGzuN24gs1i+dv/bBanu1kd2DzuXNvD5jHvZKDHy4m/2Tz6tqxi9Pi8SS6ANaqB0SYj
+	NTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6AAlhbLEnFKg
+	UEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8aHxWeYCl4KVRyd84i5gXEFfxcjJ4eE
+	gInE9/WfWCBsMYkL99azdTFycQgJLGKUWNN6jhXCecUocWjyVjaQKl4BLYknOzqZQWwWAVWJ
+	VTNusoLYbEDx/S9ugNWICoRJrJx+hQWiXlDix+R7QDYHh4iAisS5N+YgM5kFNjBKrPy/iR2k
+	RlggXOLimV4WiGUfGCWmn98BluAU0JX4fXk3mM0soC4xad4iZghbXmLzmrfMExgFZiHZMQtJ
+	2SwkZQsYmVcxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBMfyM6kdjCsbLA4xCnAwKvHwRig0
+	BAmxJpYVV+YeYpTgYFYS4b23BCjEm5JYWZValB9fVJqTWnyIMRkYBBOZpUST84FpJq8k3tDY
+	xMzI0sjc0MLI2Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGJfX3q/mn7J+/7UlvNmG
+	e2Z8+b7sYe5GTcHVu5xPZchtv6zwU31eg3J7kXoxu/OGLeyXjizc7rX1VNntx1x6lQreZUI/
+	j+cJbO+dtcvAYCLr3MsfPaYdZdyp8Sxwofa6yQzzdgXZbH1wrXHK05rc4rxUnhZerg9OUg8K
+	qxf8TX2/5R23W6qG50QlluKMREMt5qLiRAC/cvC2KQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
-to be aligned to maxpacketsize of an out endpoint.  ffs_epfile_io() needs
-to pad epout buffer to match above condition if quirk is found.
+On 11/11/2013 08:15 PM, Lee Jones wrote:
+> On Mon, 11 Nov 2013, Charles Keepax wrote:
+> 
+>> On Mon, Nov 11, 2013 at 10:53:56AM +0000, Lee Jones wrote:
+>>>> On 11/08/2013 10:19 PM, Charles Keepax wrote:
+>>>>> Improve readability by creating a define for each microphone detection
+>>>>> level.
+>>>>>
+>>>>> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+>>>>> ---
+>>>>>  drivers/extcon/extcon-arizona.c       |   21 ++++++++++++++++-----
+>>>>>  include/linux/mfd/arizona/registers.h |    9 +++++++++
+>>>>>  2 files changed, 25 insertions(+), 5 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+>>>>> index 3c55ec8..6d914ba 100644
+>>>>> --- a/drivers/extcon/extcon-arizona.c
+>>>>> +++ b/drivers/extcon/extcon-arizona.c
+>>>>> @@ -44,6 +44,17 @@
+>>>>>  #define HPDET_DEBOUNCE 500
+>>>>>  #define DEFAULT_MICD_TIMEOUT 2000
+>>>>>  
+>>>>> +enum {
+>>>>> +	MICD_LVL_1_TO_7 = ARIZONA_MICD_LVL_1 | ARIZONA_MICD_LVL_2 |
+>>>>> +			  ARIZONA_MICD_LVL_3 | ARIZONA_MICD_LVL_4 |
+>>>>> +			  ARIZONA_MICD_LVL_5 | ARIZONA_MICD_LVL_6 |
+>>>>> +			  ARIZONA_MICD_LVL_7,
+>>>>> +
+>>>>> +	MICD_LVL_0_TO_7 = ARIZONA_MICD_LVL_0 | MICD_LVL_1_TO_7,
+>>>>> +
+>>>>> +	MICD_LVL_0_TO_8 = MICD_LVL_0_TO_7 | ARIZONA_MICD_LVL_8,
+>>>>> +};
+>>>>
+>>>> MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8 haven't the sequential value.
+>>>> I prefer '#define' keyword to define MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8
+>>>> instead of enum keyword.
+>>
+>>
+>> I will do an incremental patch to update them to defines.
+>>
+>>
+>>> Actually Charles has already sent me this patch and I applied it a
+>>> while ago.
+>>>
+>>> I'm inclined to agree with you though, so if you want to send a patch
+>>> based on v3.14-rc1 I'd be happy to accept it.
+>>
+>> Apologies for causing confusion here I checked your tree for the
+>> patch and didn't see it, so I assumed you had decided not to
+>> apply it. I must have missed it some how.
+> 
+> So I am partly to blame here. My public repos sometimes aren't as
+> up-to-date and my private ones, but if I've replied to a patch and
+> said I've applied it, I inevitably have.
+> 
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- drivers/usb/gadget/f_fs.c | 23 +++++++++++++++++++----
- 1 file changed, 19 insertions(+), 4 deletions(-)
+But this patch has only the dependency of extcon subsystem.
+At least, you have to get 'Acked-by' or 'Signed-off-by' from
+subsystem maintainer. I didn't agree applying this patch on mainline tree.
 
-> On 11/10/2013 08:50 AM, Michal Nazarewicz wrote:
->> @@ -787,6 +788,13 @@ static ssize_t ffs_epfile_io(struct file *file,
->>  
->>  	/* Allocate & copy */
->>  	if (!halt) {
->> +		/*
->> +		 * Controller requires buffer size to be aligned to
->> +		 * maxpacketsize of an out endpoint.
->> +		 */
->> +		data_len = read && gadget->quirk_ep_out_aligned_size ?
->> +			usb_ep_align_maxpacketsize(ep->ep, len) : len;
->> +
->>  		data = kmalloc(len, GFP_KERNEL);
 
-On Mon, Nov 11 2013, David Cohen <david.a.cohen@linux.intel.com> wrote:
-> Shouldn't this kmalloc() allocate 'data_len' bytes, instead of 'len'?
 
-Yes, of coures.
 
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index e496b72..fd769a8 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -753,8 +753,9 @@ static ssize_t ffs_epfile_io(struct file *file,
- 			     char __user *buf, size_t len, int read)
- {
- 	struct ffs_epfile *epfile = file->private_data;
-+	struct usb_gadget *gadget = epfile->ffs->gadget;
- 	struct ffs_ep *ep;
--	ssize_t ret;
-+	ssize_t ret, data_len;
- 	char *data;
- 	int halt;
- 
-@@ -787,7 +788,14 @@ static ssize_t ffs_epfile_io(struct file *file,
- 
- 	/* Allocate & copy */
- 	if (!halt) {
--		data = kmalloc(len, GFP_KERNEL);
-+		/*
-+		 * Controller requires buffer size to be aligned to
-+		 * maxpacketsize of an out endpoint.
-+		 */
-+		data_len = read && gadget->quirk_ep_out_aligned_size ?
-+			usb_ep_align_maxpacketsize(ep->ep, len) : len;
-+
-+		data = kmalloc(data_len, GFP_KERNEL);
- 		if (unlikely(!data))
- 			return -ENOMEM;
- 
-@@ -824,7 +832,7 @@ static ssize_t ffs_epfile_io(struct file *file,
- 		req->context  = &done;
- 		req->complete = ffs_epfile_io_complete;
- 		req->buf      = data;
--		req->length   = len;
-+		req->length   = data_len;
- 
- 		ret = usb_ep_queue(ep->ep, req, GFP_ATOMIC);
- 
-@@ -836,9 +844,16 @@ static ssize_t ffs_epfile_io(struct file *file,
- 			ret = -EINTR;
- 			usb_ep_dequeue(ep->ep, req);
- 		} else {
-+			/*
-+			 * XXX We may end up silently droping data here.
-+			 * Since data_len (i.e. req->length) may be bigger
-+			 * than len (after being rounded up to maxpacketsize),
-+			 * we may end up with more data then user space has
-+			 * space for.
-+			 */
- 			ret = ep->status;
- 			if (read && ret > 0 &&
--			    unlikely(copy_to_user(buf, data, ret)))
-+			    unlikely(copy_to_user(buf, data, min(ret, len))))
- 				ret = -EFAULT;
- 		}
- 	}
--- 
-1.8.4.1
+
 
