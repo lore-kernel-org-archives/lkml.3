@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab3KKOgI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 09:36:08 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50401 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753345Ab3KKOgF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 09:36:05 -0500
-Date: Mon, 11 Nov 2013 14:35:32 +0000
-From: Dave Martin <Dave.Martin@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/11] devicetree: bindings: Document cpu enable-method
- for ARM CPUs
-Message-ID: <20131111143532.GB3166@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754175Ab3KKOhY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 09:37:24 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:58407 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751244Ab3KKOhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 09:37:18 -0500
+Message-ID: <1384180569.23605.21.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH 4/4] usb: chipidea: msm: Use USB PHY API to control PHY
+ state
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: alexander.shishkin@linux.intel.com, gregkh@linuxfoundation.org,
+        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
+        davidb@codeaurora.org, linux-usb@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 11 Nov 2013 16:36:09 +0200
+In-Reply-To: <20131111135931.GB21746@shlinux1.ap.freescale.net>
+References: <1384176937-1658-1-git-send-email-iivanov@mm-sol.com>
+	 <1384176937-1658-5-git-send-email-iivanov@mm-sol.com>
+	 <20131111135931.GB21746@shlinux1.ap.freescale.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 03:08:49PM -0700, Stephen Boyd wrote:
-> From: Rohit Vaswani <rvaswani@codeaurora.org>
+
+Hi Peter,
+
+On Mon, 2013-11-11 at 21:59 +0800, Peter Chen wrote: 
+> On Mon, Nov 11, 2013 at 03:35:37PM +0200, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > 
+> > PHY drivers keep track of the current state of the hardware,
+> > so don't change PHY settings under it.
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > ---
+> >  drivers/usb/chipidea/ci_hdrc_msm.c |    9 ++-------
+> >  1 file changed, 2 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
+> > index e9624f3..338b209 100644
+> > --- a/drivers/usb/chipidea/ci_hdrc_msm.c
+> > +++ b/drivers/usb/chipidea/ci_hdrc_msm.c
+> > @@ -20,13 +20,11 @@
+> >  static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
+> >  {
+> >  	struct device *dev = ci->gadget.dev.parent;
+> > -	int val;
+> >  
+> >  	switch (event) {
+> >  	case CI_HDRC_CONTROLLER_RESET_EVENT:
+> >  		dev_dbg(dev, "CI_HDRC_CONTROLLER_RESET_EVENT received\n");
+> > -		writel(0, USB_AHBBURST);
+> > -		writel(0, USB_AHBMODE);
+> > +		usb_phy_init(ci->transceiver);
 > 
-> According to the ePAPR CPUs should have an enable method. On ARM
-> the enable-method property has not been used so far, so document
-> this property as an optional property and add the spin-table
-> method as one value
+> It will reset the PHY,  but your comment is "don't change PHY settings under it"
+
+:-). This function is exported by PHY drivers, so they will know how
+to handle this change.
+
 > 
-> Cc: <devicetree@vger.kernel.org>
-> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
-> [sboyd: Split off into separate patch]
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  Documentation/devicetree/bindings/arm/cpus.txt | 8 ++++++++
->  1 file changed, 8 insertions(+)
+> >  		break;
+> >  	case CI_HDRC_CONTROLLER_STOPPED_EVENT:
+> >  		dev_dbg(dev, "CI_HDRC_CONTROLLER_STOPPED_EVENT received\n");
+> > @@ -34,10 +32,7 @@ static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
+> >  		 * Put the transceiver in non-driving mode. Otherwise host
+> >  		 * may not detect soft-disconnection.
+> >  		 */
+> > -		val = usb_phy_io_read(ci->transceiver, ULPI_FUNC_CTRL);
+> > -		val &= ~ULPI_FUNC_CTRL_OPMODE_MASK;
+> > -		val |= ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
+> > -		usb_phy_io_write(ci->transceiver, val, ULPI_FUNC_CTRL);
+> > +		usb_phy_notify_disconnect(ci->transceiver, USB_SPEED_UNKNOWN);
 > 
-> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-> index f32494d..37258f9 100644
-> --- a/Documentation/devicetree/bindings/arm/cpus.txt
-> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
-> @@ -45,6 +45,14 @@ For the ARM architecture every CPU node must contain the following properties:
->  		"marvell,xsc3"
->  		"marvell,xscale"
->  
-> +And the following optional properties:
-> +
-> +- enable-method: Specifies the method used to enable or take the secondary cores
-> +		 out of reset. This allows different reset sequence for
-> +		 different types of cpus.
-> +		 This should be one of:
-> +		 "spin-table"
-> +
+> Where you have implemented .notify_disconnect?
+> I have not found it at your phy driver.
 
-If you've not already done so, take a look at the changes to this
-documentation in linux-next.
+Yep, I will post PHY driver changes shortly. Meanwhile this should
+not break existing board file based platforms, because not of them
+could be compiled (HTC Dream, Halibut Board) and DT based platforms 
+are sill work in progress.
 
-There is some documentation about what the spin-table should actually
-mean for ARM in Documentation/arm64/booting.txt.
+Regards,
+Ivan
 
-We might need to add pointers from Documentation/arm/Booting?
 
-Cheers
----Dave
