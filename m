@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab3KKMwW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 07:52:22 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:37500 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222Ab3KKMwP (ORCPT
+	id S1753635Ab3KKMyS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 07:54:18 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:34296 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059Ab3KKMyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 07:52:15 -0500
+	Mon, 11 Nov 2013 07:54:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAE3RKNng9A6Bp7wa4+6iCprwEQpzGueagLc8iob+aFabJW4nnw@mail.gmail.com>
-References: <CAEPa5ym2Xz3F19fJJqNawkRLOKk6Ao6oXrzSrHU051V7p=9otA@mail.gmail.com>
-	<CAE3RKNng9A6Bp7wa4+6iCprwEQpzGueagLc8iob+aFabJW4nnw@mail.gmail.com>
-Date: Mon, 11 Nov 2013 13:52:13 +0100
-Message-ID: <CAEPa5y=tgdGpDMBGY0ijyWSgQ0m5SZW8EMP072OF=sZZUjqN1g@mail.gmail.com>
-Subject: Re: bridge not getting ip since 3.11.5 and 3.4.66
-From: Mark Trompell <mark@foresightlinux.org>
-To: Veaceslav Falico <veaceslav@falico.eu>
-Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20131111124953.GA6765@gmail.com>
+References: <1383871600-3831-1-git-send-email-felipe.contreras@gmail.com>
+	<1383871600-3831-3-git-send-email-felipe.contreras@gmail.com>
+	<20131111113218.GF15810@gmail.com>
+	<CAMP44s0AVy=ef1k95bXsRJizW6zsPApFe9KPrRcg09ORo=2mQA@mail.gmail.com>
+	<20131111124953.GA6765@gmail.com>
+Date: Mon, 11 Nov 2013 06:54:03 -0600
+Message-ID: <CAMP44s07Ub=G5mD_zkMvPkwcPWm6psZ-8L32dScy1txQkU_9Nw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] panic: improve panic_timeout calculation
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 12:07 PM, Veaceslav Falico <veaceslav@falico.eu> wrote:
-> On Mon, Nov 11, 2013 at 11:29 AM, Mark Trompell <mark@foresightlinux.org> wrote:
->> my bridge br0 doesn't get an ip from dhcp anymore after 3.11.5 and 3.4.66,
->> What information would be helpful and required to find out what's going wrong.
+On Mon, Nov 11, 2013 at 6:49 AM, Ingo Molnar <mingo@kernel.org> wrote:
 >
-> CC netdev
+> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
 >
-> First thing would be to provide the network scheme. Do you use vlans?
-> Which network
-> cards/drivers are you using? Do you use some kind of virtualization?
-> Is bonding involved?
+>> On Mon, Nov 11, 2013 at 5:32 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>> >
+>> > * Felipe Contreras <felipe.contreras@gmail.com> wrote:
+>> >
+>> >> We want to calculate the blinks per second, and instead of making it 5
+>> >> (1000 / (3600 / 18)), let's make it 4, so the user can see two blinks
+>> >> per second.
+>> >
+>> > Please use the customary changelog style we use in the kernel:
+>> >
+>> >   " Current code does (A), this has a problem when (B).
+>> >     We can improve this doing (C), because (D)."
+>>
+>> A is explained, B is empty, C is explained, D is because it makes sense.
 >
-Actually this is my desktop machine using kvm for a virtual machine
-that uses eth0 which is connected to the bridge
-which is used as interface for the host.
+> NAKed-by: Ingo Molnar <mingo@kernel.org>
 
-$ ip addr
-2. eth0: <BROADCAST,MULTICAST,UP,10000> mtu 1500 qdisc pfifo_fast
-master br0 qlen 1000
-...
-3. br0: <BROADCAST,MULTICAST,UP,10000> mtu 1500 qdisc noqueue
-...
+Suit yourself, stay with your buggy code then.
 
-Anything else?
+Patch #1 is the important one anyway.
 
-Greetings
-Mark
+-- 
+Felipe Contreras
