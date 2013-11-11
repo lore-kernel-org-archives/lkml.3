@@ -1,119 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab3KKLB2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:01:28 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38875 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752845Ab3KKLBO (ORCPT
+	id S1753112Ab3KKLHA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:07:00 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40778 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752800Ab3KKLGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:01:14 -0500
-Date: Mon, 11 Nov 2013 11:01:06 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] doc: devicetree: Add bindings documentation for
- omap-des driver
-Message-ID: <20131111110106.GC21201@e106331-lin.cambridge.arm.com>
-References: <1383871035-16608-1-git-send-email-joelf@ti.com>
+	Mon, 11 Nov 2013 06:06:54 -0500
+Date: Mon, 11 Nov 2013 11:06:52 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, myungjoo.ham@samsung.com,
+        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] extcon: arizona: Add defines for microphone
+	detection levels
+Message-ID: <20131111110652.GD6549@opensource.wolfsonmicro.com>
+References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <5280AAAF.8040005@samsung.com> <20131111105356.GB22184@lee--X1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383871035-16608-1-git-send-email-joelf@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131111105356.GB22184@lee--X1>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joel,
+On Mon, Nov 11, 2013 at 10:53:56AM +0000, Lee Jones wrote:
+> > On 11/08/2013 10:19 PM, Charles Keepax wrote:
+> > > Improve readability by creating a define for each microphone detection
+> > > level.
+> > > 
+> > > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> > > ---
+> > >  drivers/extcon/extcon-arizona.c       |   21 ++++++++++++++++-----
+> > >  include/linux/mfd/arizona/registers.h |    9 +++++++++
+> > >  2 files changed, 25 insertions(+), 5 deletions(-)
+> > > 
+> > > diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> > > index 3c55ec8..6d914ba 100644
+> > > --- a/drivers/extcon/extcon-arizona.c
+> > > +++ b/drivers/extcon/extcon-arizona.c
+> > > @@ -44,6 +44,17 @@
+> > >  #define HPDET_DEBOUNCE 500
+> > >  #define DEFAULT_MICD_TIMEOUT 2000
+> > >  
+> > > +enum {
+> > > +	MICD_LVL_1_TO_7 = ARIZONA_MICD_LVL_1 | ARIZONA_MICD_LVL_2 |
+> > > +			  ARIZONA_MICD_LVL_3 | ARIZONA_MICD_LVL_4 |
+> > > +			  ARIZONA_MICD_LVL_5 | ARIZONA_MICD_LVL_6 |
+> > > +			  ARIZONA_MICD_LVL_7,
+> > > +
+> > > +	MICD_LVL_0_TO_7 = ARIZONA_MICD_LVL_0 | MICD_LVL_1_TO_7,
+> > > +
+> > > +	MICD_LVL_0_TO_8 = MICD_LVL_0_TO_7 | ARIZONA_MICD_LVL_8,
+> > > +};
+> > 
+> > MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8 haven't the sequential value.
+> > I prefer '#define' keyword to define MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8
+> > instead of enum keyword.
 
-I realise I'm a little late in replying to this, but there are a few
-things that would be nice to fix up.
 
-On Fri, Nov 08, 2013 at 12:37:09AM +0000, Joel Fernandes wrote:
-> Add documentation for the generic OMAP DES crypto module describing the device
-> tree bindings.
+I will do an incremental patch to update them to defines.
+
+
+> Actually Charles has already sent me this patch and I applied it a
+> while ago.
 > 
-> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> ---
->  .../devicetree/bindings/crypto/omap-des.txt        | 28 ++++++++++++++++++++++
->  1 file changed, 28 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/crypto/omap-des.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/crypto/omap-des.txt b/Documentation/devicetree/bindings/crypto/omap-des.txt
-> new file mode 100644
-> index 0000000..0637647
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/crypto/omap-des.txt
-> @@ -0,0 +1,28 @@
-> +OMAP SoC DES crypto Module
-> +
-> +Required properties:
-> +
-> +- compatible : Should be "ti,omap4-des"
+> I'm inclined to agree with you though, so if you want to send a patch
+> based on v3.14-rc1 I'd be happy to accept it.
 
-Nit: s/Should be/Should contain/
 
-> +- ti,hwmods: Name of the hwmod associated with the DES module
-> +- reg : Offset and length of the register set for the module
-> +- interrupts : the interrupt-specifier for the DES module
+Apologies for causing confusion here I checked your tree for the
+patch and didn't see it, so I assumed you had decided not to
+apply it. I must have missed it some how.
 
-Just to check: there's only one interrupt?
-
-> +- clocks : phandle to the functional clock node of the DES module
-> +- clock-names : Name of the functional clock
-
-What name is expected here? The intent of clock-names is to describe
-which clock input lines the clocks are wired to, so this should be
-well-defined.
-
->From the looks of the example, the clock input is called "fck". Is that
-correct?
-
-When you have clock-names, the nicest thing to do is to define clocks
-in terms of clock-names. Something like:
-
-- clocks: A phandle + clock-specifier pair for each entry in
-  clock-names.
-
-- clock-names: Should contain:
-  * "fck" for the functional clock
-
-Which implies that the correct way to find clocks is to look in
-clock-names first to find the clock's index, rather than grabbing the
-clock by index. This makes it far easier to add/remove/change clocks in
-future.
-
-> +
-> +Optional properties:
-> +- dmas: DMA specifiers for tx and rx dma. See the DMA client binding,
-> +	Documentation/devicetree/bindings/dma/dma.txt
-
-Similarly here it would be nice to have dmas refer to dma-names for
-the description of which dmas exist.
-
-> +- dma-names: DMA request names should include "tx" and "rx" if present
-> +
-> +Example:
-> +	/* DRA7xx SoC */
-> +	des: des@480a5000 {
-> +		compatible = "ti,omap4-des";
-> +		ti,hwmods = "des";
-> +		reg = <0x480a5000 0xa0>;
-> +		interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
-> +		dmas = <&sdma 117>, <&sdma 116>;
-> +		dma-names = "tx", "rx";
-> +		clocks = <&l3_iclk_div>;
-> +		clock-names = "fck";
-> +	};
-
-Cheers,
-Mark.
+Thanks,
+Charles
