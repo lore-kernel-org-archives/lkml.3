@@ -1,81 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab3KKHx7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 02:53:59 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:51945 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab3KKHxw (ORCPT
+	id S1752817Ab3KKHyt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 02:54:49 -0500
+Received: from alvesta.synopsys.com ([198.182.60.77]:45005 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab3KKHym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 02:53:52 -0500
+	Mon, 11 Nov 2013 02:54:42 -0500
+Message-ID: <52808D34.70309@synopsys.com>
+Date: Mon, 11 Nov 2013 13:24:28 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com>
-References: <1383789208.5970.1.camel@phoenix>
-	<CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
-	<CAFRkauAEt-YhBt11opj_GVCLrxGsTSd2LowWGmukTSmGuJkd3A@mail.gmail.com>
-	<CACVXFVO=QA-R1+twCL9fc_3vASg6Ap-3ezi=tU1MV1pdPYrfWw@mail.gmail.com>
-	<CAFRkauAdR3=ByE0_B3OsqOBjmbz2a02EXb+6g-vn=1TJ7AZc8Q@mail.gmail.com>
-	<CACVXFVMaLOfDvzdn_1NryQY59cgtLdMMqHL-_ZAa95MPz4p56Q@mail.gmail.com>
-	<CAFRkauDe7V3N0AbfvE_=GEXHZ_Fw62VsA8p50wSUYE1-TRqMfw@mail.gmail.com>
-	<87zjpf4w0j.fsf@rustcorp.com.au>
-	<CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com>
-	<CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com>
-	<CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com>
-	<87y54vzszo.fsf@rustcorp.com.au>
-	<CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com>
-Date: Mon, 11 Nov 2013 15:53:51 +0800
-Message-ID: <CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com>
-Subject: Re: kernel BUG at kernel/kallsyms.c:222!
-From: Ming Lei <tom.leiming@gmail.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "christian.ruppert@abilis.com" <christian.ruppert@abilis.com>
+Subject: Re: [GIT PULL] pin control bulk changes for v3.13
+References: <CACRpkdYpuZec_JRAPYZHmB5qTYebKR6iBy5=RvBUUEXsuOu97Q@mail.gmail.com>
+In-Reply-To: <CACRpkdYpuZec_JRAPYZHmB5qTYebKR6iBy5=RvBUUEXsuOu97Q@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 11/11/2013 12:14 PM, Linus Walleij wrote:
+> - Add the Abilis TB10x pin control driver used on the ARC
+>   architecture. Also the corresponding GPIO driver is merged
+>   through this tree, so the ARC has full support for pins
+>   and GPIOs after this.
 
-On Mon, Nov 11, 2013 at 2:43 PM, Axel Lin <axel.lin@ingics.com> wrote:
-> 2013/11/11 Rusty Russell <rusty@rustcorp.com.au>:
->
-> Hi Rusty,
->
-> I don't have other noMMU platform to test.
-> But I think this issue impacts various !CONFIG_MMU platforms:
-> We have CONFIG_PAGE_OFFSET=0xC0000000 in various default configs.
-> For !CONFIG_MMU case, it just don't use the CONFIG_PAGE_OFFSET setting.
-> So use CONFIG_PAGE_OFFSET to filter symbols looks wrong to me for all
-> !CONFIG_MMU cases.
->
-> Below is PAGE_OFFSET setting for !CONFIG_MMU case:
-> (arch/arm/include/asm/memory.h)
->
-> #ifndef PHYS_OFFSET
-> #define PHYS_OFFSET             UL(CONFIG_DRAM_BASE)
-> #endif
->
-> #ifndef END_MEM
-> #define END_MEM                 (UL(CONFIG_DRAM_BASE) + CONFIG_DRAM_SIZE)
-> #endif
->
-> #ifndef PAGE_OFFSET
-> #define PAGE_OFFSET             (PHYS_OFFSET)
-> #endif
->
-> My patchs for gpl327xx SoC is still in very early stage.
-> I think you should send your fix upstream because I think it impacts other
-> noMMU platforms (for above reason).
+Only the actual DT changes in arch/arc/plat-tb10x are missing which will require a
+2nd pull request for ARC for rc1 which could have been avoided had I bitched about
+it earlier.
 
-I suggest to do it when we are clear behind the break.
-
-As I mentioned, no matter what PAGE_OFFSET is, if you link vmlinux
-from the address of PAGE_OFFSET(that is what arm's link script in tree
-does), the filter won't break anything.
-
-
-Thanks,
--- 
-Ming Lei
+-Vineet
