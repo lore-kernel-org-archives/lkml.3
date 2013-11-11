@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab3KKWAe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 17:00:34 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:59524 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab3KKWA1 (ORCPT
+	id S1753088Ab3KKWBd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 17:01:33 -0500
+Received: from mga01.intel.com ([192.55.52.88]:38245 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751264Ab3KKWB1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 17:00:27 -0500
+	Mon, 11 Nov 2013 17:01:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,680,1378882800"; 
+   d="scan'208";a="431615427"
+From: "Dixit, Ashutosh" <ashutosh.dixit@intel.com>
+To: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+CC: "Anvin, H Peter" <h.peter.anvin@intel.com>,
+        "Dutt, Sudeep" <sudeep.dutt@intel.com>,
+        "Yokoyama, Caz" <caz.yokoyama@intel.com>,
+        "Chandramouli, Dasaratharaman" 
+	<dasaratharaman.chandramouli@intel.com>,
+        "Rao, Nikhil" <nikhil.rao@intel.com>,
+        "Kharche, Harshavardhan R" <harshavardhan.r.kharche@intel.com>,
+        "Dong, Eddie" <eddie.dong@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] checkpatch: Don't require kernel style __attribute__
+ shortcuts in uapi paths
+Thread-Topic: [PATCH] checkpatch: Don't require kernel style __attribute__
+ shortcuts in uapi paths
+Thread-Index: AQHO3l+RIm7575CVbUa4le511mDsu5oglZ3Q
+Date: Mon, 11 Nov 2013 22:01:10 +0000
+Message-ID: <6DC2528F945B4149AB6566DFB5F22ED38AAA1DC8@ORSMSX109.amr.corp.intel.com>
+References: <527D5646.9010005@intel.com>
+	 <6DC2528F945B4149AB6566DFB5F22ED38AAA18B7@ORSMSX109.amr.corp.intel.com>
+ <1384120524.3081.18.camel@joe-AO722>
+In-Reply-To: <1384120524.3081.18.camel@joe-AO722>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20131111164917.GN15154@atomide.com>
-References: <1381784555-18344-1-git-send-email-marek@goldelico.com>
-	<1381784555-18344-2-git-send-email-marek@goldelico.com>
-	<20131111164917.GN15154@atomide.com>
-Date: Mon, 11 Nov 2013 23:00:26 +0100
-Message-ID: <CAAfyv37LRb_Q=UZVgtKdOAz_r6_qThewAU90W7nrqHdB5fDA_g@mail.gmail.com>
-Subject: Re: [PATCH 1/3] arm: omap2: Export devconf1 bypass and acbias.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fbdev@vger.kernel.org,
-        NeilBrown <neilb@suse.de>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+> -----Original Message-----
+> From: Joe Perches [mailto:joe@perches.com]
+> Sent: Sunday, November 10, 2013 1:55 PM
+> Subject: [PATCH] checkpatch: Don't require kernel style __attribute__ shortcuts
+> in uapi paths
+> 
+> Avoid proscribing kernel styled shortcuts for
+> gcc extensions of __attribute__((foo)) in the
+> uapi include paths.
+ 
+Thanks Joe. This works for us nicely.
 
-On Mon, Nov 11, 2013 at 5:49 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * Marek Belisko <marek@goldelico.com> [131014 14:11]:
->> devconf1 reg access is localized only in mach-omap2 and we need to export
->> updating of devconf1 from omapdss venc driver (bypass and acbias bits).
->> Add simple api call which update only necessary bits.
-> ...
->
->> +void update_bypass_acbias(bool bypass, bool acbias)
->> +{
->> +#ifdef CONFIG_ARCH_OMAP3
->> +     int val = omap_ctrl_readl(OMAP343X_CONTROL_DEVCONF1);
->> +
->> +     if (bypass)
->> +             val |= OMAP2_TVOUTBYPASS;
->> +     else
->> +             val &= ~OMAP2_TVOUTBYPASS;
->> +
->> +     if (acbias)
->> +             val |= OMAP2_TVACEN;
->> +     else
->> +             val &= ~OMAP2_TVACEN;
->> +
->> +     omap_ctrl_writel(val, OMAP343X_CONTROL_DEVCONF1);
->> +#endif
->
-> If this is truly a pinmux, you could already access this
-> using pinctrl-single,bits device tree driver.
->
-> But I guess that won't work yet, so it's best to set this
-> up as a separate driver like we've done for the USB PHY
-> registers.
-Can you please point me to that driver directly? I cannot see benefit
-of new driver as as it will be only dummy driver
-with export_symbol_gpl of upper function. Can it sit then in dss
-directory or somewhere else? Thanks.
->
-> Regards,
->
-> Tony
-
-BR,
-
-marek
-
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
