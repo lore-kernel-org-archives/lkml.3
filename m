@@ -1,90 +1,400 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab3KLCha (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 21:37:30 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:45815 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032Ab3KLChH (ORCPT
+	id S1754107Ab3KLChg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 21:37:36 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:58070 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753073Ab3KLChI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 21:37:07 -0500
+	Mon, 11 Nov 2013 21:37:08 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Rob Herring <robherring2@gmail.com>,
+Subject: Re: [PATCH v3 3/3] DT: proc: Add runtime overlay interface in /proc
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Rob Herring <robherring2@gmail.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Matt Porter <matt.porter@linaro.org>,
         Koen Kooi <koen@dominion.thruhere.net>,
         Alison Chaiken <Alison_Chaiken@mentor.com>,
         Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
         Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
         Alan Tull <delicious.quinoa@gmail.com>,
         Sascha Hauer <s.hauer@pengutronix.de>,
         Michael Bohan <mbohan@codeaurora.org>,
         Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20131107204626.GA11746@breakpoint.cc>
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com> <20131106190152.GA8662@breakpoint.cc> <20131106193041.GA26796@roeck-us.net> <20131106203821.GC8662@breakpoint.cc> <20131106211754.GA29300@roeck-us.net> <20131107192558.GA11453@breakpoint.cc> <4F47D5F8-F3C7-45CA-9D88-2D814BDC1BC7@antoniou-consulting.com> <20131107204626.GA11746@breakpoint.cc>
-Date: Mon, 11 Nov 2013 17:04:53 +0000
-Message-Id: <20131111170453.4D999C42336@trevor.secretlab.ca>
+        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <1383923170-24914-4-git-send-email-panto@antoniou-consulting.com>
+References: <1383923170-24914-1-git-send-email-panto@antoniou-consulting.com> <1383923170-24914-4-git-send-email-panto@antoniou-consulting.com>
+Date: Mon, 11 Nov 2013 18:47:36 +0000
+Message-Id: <20131111184736.3DE20C4234E@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Nov 2013 21:46:26 +0100, Sebastian Andrzej Siewior <sebastian@breakpoint.cc> wrote:
-> On 07.11.13, Pantelis Antoniou wrote:
-> > Hi Sebastian,
-> Hi Pantelis,
+On Fri,  8 Nov 2013 17:06:10 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+> Add a runtime interface to /proc to enable generic device tree overlay
+> usage.
 > 
-> > FWIW DT has been ported to x86. And is present on arm/powerpc/mips/arc and possibly
-> > others.
+> Two new /proc files are added:
 > 
-> Yes, I know. I am the one that did the work for CE4100, the first one
-> that boots with DT on x86.
+> /proc/device-tree-overlay & /proc/device-tree-overlay-status
 > 
-> > So what are we talking about again? If you care about the non-DT case, why
-> > don't you make a patch about how you could support Guenter's use case on
-> > the x86.
+> /proc/device-tree-overlay accepts a stream of a device tree objects and
+> applies it to the running kernel's device tree.
 > 
-> I am only saying that this "hot-plug a device at a non hot-plugagle bus at
-> runtime" is not limited to DT but this solution is. X86 + ACPI is not
-> the only limitation. ARM is (forced) going to ACPI as well as far I
-> know. And this solution is limited to DT. This is what I am pointing
-> out.
-
-I'm going to nip this in the bud before it spreads...  No.
-
-ARM is not going wholesale to ACPI.  ACPI will be implemented on ARMv8
-servers. Don't expect the rest of the ARM world to go there anytime
-soon, if at all.
-
-As for being limited to DT, that is correct currently, just as SSDT is
-an ACPI specific way of doing mostly the same thing. However, I'm not sure
-it needs to be a limitation. As long as there is well definied
-segregation between the base tree and the overlay (ie. it would be
-useful to filter which nodes can be attached to, there are security
-implications here too) then it would be fine for a DT overlay to pull in
-additional devices on top of an ACPI base tree.
-
-> > His use case is not uncommon, believe it or not, and x86 would benefit from
-> > something this flexible.
+> 	$ cat ~/BB-UART2-00A0.dtbo >device-tree-overlay
+> 	overlay_proc_release: Applied #2 overlay segments @0
 > 
-> I *think* a more flexible solution would be something like bus_type which is
-> exposed via configfs. It would be attached behind a certain device/bus where
-> the "physical" hotplug interface is. The user would then be able to read the
-> configuration based on whatever information he has and could then create
-> devices he likes at runtime. This wouldn't depend much on the firmware that is
-> used but would require a little more work I think.
+> /proc/device-tree-overlay-status displays the the overlays added using
+> the /proc interface
+> 
+> 	$ cat device-tree-overlay-status
+> 	0: 861 bytes BB-UART2:00A0
+> 
+> The format of the status line is
+> 	<ID>: <SIZE> bytes <part-number>:<version>
+> 
+> <ID> is the id of the overlay
+> <SIZE> is the size of the overlay in bytes
+> <part-number>, <version> are (optional) root level properties of the DTBO
+> 
+> You can remove an overlay by echoing the <ID> number of the overlay
+> precedded with a '-'
+> 
+> So
+> 	$ echo "-0" >device-tree-overlay-status
+> 
+> Removes the overlay.
+> 
+> Note that this seldom works on most platforms since platform_device
+> removal is something that almost never works without extra patches.
+> 
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 
-I'm certainly fine with investigating the above (modulo security
-concerns of creating arbitrary devices). However, that is only one
-use-case. There still needs to be the mechanism of passing the kernel a
-blob all at once and say, "Here is the layout of this new hunk of
-hardware".  For instance, you don't want to have to build up a set of
-devices from scratch every time a new device is passed in. Xilinx for
-instance has a tool which creates a FDT for an FPGA bitstream right from
-the FPGA tools.
+Why /proc? Did you consider using the firmware loading mechanism? While
+I expressed concerned about the capebus approach, the loading of
+overlays needs to remain under the control of either a driver or the
+platform. By default it should not be possible to drop an arbitrary
+overlay into /proc/device-tree-overlay and have things change in the
+base tree. Along the same lines, I would expect for the device driver or
+platform to be able to filter or limit the parts of the tree that are
+allowed to be modified.
+
+A side benefit of the firmware loader is that the kernel can obtain the
+overlay on its own if needed at boot time without userspace involvement.
 
 g.
+
+> ---
+>  fs/proc/proc_devtree.c | 278 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 278 insertions(+)
+> 
+> diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+> index 106a835..48f7925 100644
+> --- a/fs/proc/proc_devtree.c
+> +++ b/fs/proc/proc_devtree.c
+> @@ -16,6 +16,9 @@
+>  #include <linux/slab.h>
+>  #include <asm/prom.h>
+>  #include <asm/uaccess.h>
+> +#include <linux/of_fdt.h>
+> +#include <linux/idr.h>
+> +
+>  #include "internal.h"
+>  
+>  static inline void set_node_proc_entry(struct device_node *np,
+> @@ -28,6 +31,275 @@ static inline void set_node_proc_entry(struct device_node *np,
+>  
+>  static struct proc_dir_entry *proc_device_tree;
+>  
+> +#if defined(CONFIG_OF_OVERLAY)
+> +static struct proc_dir_entry *proc_device_tree_overlay;
+> +static struct proc_dir_entry *proc_device_tree_overlay_status;
+> +static DEFINE_MUTEX(overlay_lock);
+> +static DEFINE_IDR(overlay_idr);
+> +
+> +struct proc_overlay_data {
+> +	void			*buf;
+> +	size_t			alloc;
+> +	size_t			size;
+> +
+> +	int 			id;
+> +	struct device_node	*overlay;
+> +	int			ovinfo_cnt;
+> +	struct of_overlay_info	*ovinfo;
+> +	unsigned int		failed : 1;
+> +	unsigned int		applied : 1;
+> +	unsigned int		removing : 1;
+> +};
+> +
+> +static int overlay_proc_open(struct inode *inode, struct file *file)
+> +{
+> +	struct proc_overlay_data *od;
+> +
+> +	od = kzalloc(sizeof(*od), GFP_KERNEL);
+> +	if (od == NULL)
+> +		return -ENOMEM;
+> +
+> +	od->id = -1;
+> +
+> +	/* save it */
+> +	file->private_data = od;
+> +
+> +	return 0;
+> +}
+> +
+> +static ssize_t overlay_proc_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+> +{
+> +	struct proc_overlay_data *od = file->private_data;
+> +	void *new_buf;
+> +
+> +	/* need to alloc? */
+> +	if (od->size + size > od->alloc) {
+> +
+> +		/* start at 256K at first */
+> +		if (od->alloc == 0)
+> +			od->alloc = SZ_256K / 2;
+> +
+> +		/* double buffer */
+> +		od->alloc <<= 1;
+> +		new_buf = kzalloc(od->alloc, GFP_KERNEL);
+> +		if (new_buf == NULL) {
+> +			pr_err("%s: failed to grow buffer\n", __func__);
+> +			od->failed = 1;
+> +			return -ENOMEM;
+> +		}
+> +
+> +		/* copy all we had previously */
+> +		memcpy(new_buf, od->buf, od->size);
+> +
+> +		/* free old buffer and assign new */
+> +		kfree(od->buf);
+> +		od->buf = new_buf;
+> +	}
+> +
+> +	if (unlikely(copy_from_user(od->buf + od->size, buf, size))) {
+> +		pr_err("%s: fault copying from userspace\n", __func__);
+> +		return -EFAULT;
+> +	}
+> +
+> +	od->size += size;
+> +	*ppos += size;
+> +
+> +	return size;
+> +}
+> +
+> +static int overlay_proc_release(struct inode *inode, struct file *file)
+> +{
+> +	struct proc_overlay_data *od = file->private_data;
+> +	int id;
+> +	int err = 0;
+> +
+> +	/* perfectly normal when not loading */
+> +	if (od == NULL)
+> +		return 0;
+> +
+> +	if (od->failed)
+> +		goto out_free;
+> +
+> +	of_fdt_unflatten_tree(od->buf, &od->overlay);
+> +	if (od->overlay == NULL) {
+> +		pr_err("%s: failed to unflatten tree\n", __func__);
+> +		err = -EINVAL;
+> +		goto out_free;
+> +	}
+> +	pr_debug("%s: unflattened OK\n", __func__);
+> +
+> +	/* mark it as detached */
+> +	of_node_set_flag(od->overlay, OF_DETACHED);
+> +
+> +	/* perform resolution */
+> +	err = of_resolve(od->overlay);
+> +	if (err != 0) {
+> +		pr_err("%s: Failed to resolve tree\n", __func__);
+> +		goto out_free;
+> +	}
+> +	pr_debug("%s: resolved OK\n", __func__);
+> +
+> +	/* now build an overlay info array */
+> +	err = of_build_overlay_info(od->overlay,
+> +			&od->ovinfo_cnt, &od->ovinfo);
+> +	if (err != 0) {
+> +		pr_err("%s: Failed to build overlay info\n", __func__);
+> +		goto out_free;
+> +	}
+> +
+> +	pr_debug("%s: built %d overlay segments\n", __func__,
+> +			od->ovinfo_cnt);
+> +
+> +	err = of_overlay(od->ovinfo_cnt, od->ovinfo);
+> +	if (err != 0) {
+> +		pr_err("%s: Failed to apply overlay\n", __func__);
+> +		goto out_free;
+> +	}
+> +
+> +	od->applied = 1;
+> +
+> +	mutex_lock(&overlay_lock);
+> +	idr_preload(GFP_KERNEL);
+> +	id = idr_alloc(&overlay_idr, od, 0, -1, GFP_KERNEL);
+> +	idr_preload_end();
+> +	mutex_unlock(&overlay_lock);
+> +
+> +	if (id < 0) {
+> +		err = id;
+> +		pr_err("%s: failed to get id for overlay\n", __func__);
+> +		goto out_free;
+> +	}
+> +	od->id = id;
+> +
+> +	pr_info("%s: Applied #%d overlay segments @%d\n", __func__,
+> +			od->ovinfo_cnt, od->id);
+> +
+> +	return 0;
+> +
+> +out_free:
+> +	if (od->id != -1)
+> +		idr_remove(&overlay_idr, od->id);
+> +	if (od->applied)
+> +		of_overlay_revert(od->ovinfo_cnt, od->ovinfo);
+> +	if (od->ovinfo)
+> +		of_free_overlay_info(od->ovinfo_cnt, od->ovinfo);
+> +	/* release memory */
+> +	kfree(od->buf);
+> +	kfree(od);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct file_operations overlay_proc_fops = {
+> +	.owner		= THIS_MODULE,
+> +	.open		= overlay_proc_open,
+> +	.write		= overlay_proc_write,
+> +	.release	= overlay_proc_release,
+> +};
+> +
+> +/*
+> + * Supply data on a read from /proc/device-tree-overlay-status
+> + */
+> +static int overlay_status_proc_show(struct seq_file *m, void *v)
+> +{
+> +	int err, id;
+> +	struct proc_overlay_data *od;
+> +	const char *part_number, *version;
+> +
+> +	rcu_read_lock();
+> +	idr_for_each_entry(&overlay_idr, od, id) {
+> +		seq_printf(m, "%d: %d bytes", id, od->size);
+> +		/* TODO Make this standardized? */
+> +		err = of_property_read_string(od->overlay, "part-number",
+> +					&part_number);
+> +		if (err != 0)
+> +			part_number = NULL;
+> +		err = of_property_read_string(od->overlay, "version",
+> +					&version);
+> +		if (err != 0)
+> +			version = NULL;
+> +		if (part_number) {
+> +			seq_printf(m, " %s", part_number);
+> +			if (version)
+> +				seq_printf(m, ":%s", version);
+> +		}
+> +		seq_printf(m, "\n");
+> +	}
+> +	rcu_read_unlock();
+> +
+> +	return 0;
+> +}
+> +
+> +static int overlay_status_proc_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, overlay_status_proc_show, __PDE_DATA(inode));
+> +}
+> +
+> +static ssize_t overlay_status_proc_write(struct file *file, const char __user *buf,
+> +			     size_t size, loff_t *ppos)
+> +{
+> +	struct proc_overlay_data *od;
+> +	char buffer[PROC_NUMBUF + 1];
+> +	char *ptr;
+> +	int id, err, count;
+> +
+> +	memset(buffer, 0, sizeof(buffer));
+> +	count = size;
+> +	if (count > sizeof(buffer) - 1)
+> +		count = sizeof(buffer) - 1;
+> +
+> +	if (copy_from_user(buffer, buf, count)) {
+> +		err = -EFAULT;
+> +		goto out;
+> +	}
+> +
+> +	ptr = buffer;
+> +	if (*ptr != '-') {	/* only removal supported */
+> +		err = -EINVAL;
+> +		goto out;
+> +	}
+> +	ptr++;
+> +	err = kstrtoint(strstrip(ptr), 0, &id);
+> +	if (err)
+> +		goto out;
+> +
+> +	/* find it */
+> +	mutex_lock(&overlay_lock);
+> +	od = idr_find(&overlay_idr, id);
+> +	if (od == NULL) {
+> +		mutex_unlock(&overlay_lock);
+> +		err = -EINVAL;
+> +		goto out;
+> +	}
+> +	/* remove it */
+> +	idr_remove(&overlay_idr, id);
+> +	mutex_unlock(&overlay_lock);
+> +
+> +	err = of_overlay_revert(od->ovinfo_cnt, od->ovinfo);
+> +	if (err != 0) {
+> +		pr_err("%s: of_overlay_revert failed\n", __func__);
+> +		goto out;
+> +	}
+> +	/* release memory */
+> +	of_free_overlay_info(od->ovinfo_cnt, od->ovinfo);
+> +	kfree(od->buf);
+> +	kfree(od);
+> +
+> +	pr_info("%s: Removed overlay with id %d\n", __func__, id);
+> +out:
+> +	return err < 0 ? err : count;
+> +}
+> +
+> +static const struct file_operations overlay_status_proc_fops = {
+> +	.owner		= THIS_MODULE,
+> +	.open		= overlay_status_proc_open,
+> +	.read		= seq_read,
+> +	.write		= overlay_status_proc_write,
+> +	.llseek		= seq_lseek,
+> +	.release	= single_release,
+> +};
+> +#endif
+> +
+>  /*
+>   * Supply data on a read from /proc/device-tree/node/property.
+>   */
+> @@ -239,5 +511,11 @@ void __init proc_device_tree_init(void)
+>  		return;
+>  	}
+>  	proc_device_tree_add_node(root, proc_device_tree);
+> +#if defined(CONFIG_OF_OVERLAY)
+> +	proc_device_tree_overlay = proc_create_data("device-tree-overlay",
+> +			       S_IWUSR, NULL, &overlay_proc_fops, NULL);
+> +	proc_device_tree_overlay_status = proc_create_data("device-tree-overlay-status",
+> +			       S_IRUSR| S_IWUSR, NULL, &overlay_status_proc_fops, NULL);
+> +#endif
+>  	of_node_put(root);
+>  }
+> -- 
+> 1.7.12
+> 
+
