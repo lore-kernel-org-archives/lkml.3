@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab3KKXbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 18:31:31 -0500
-Received: from mga02.intel.com ([134.134.136.20]:35026 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752913Ab3KKXbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 18:31:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="407131469"
-Message-ID: <528168CB.7070602@linux.intel.com>
-Date: Mon, 11 Nov 2013 15:31:23 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753911Ab3KKXcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 18:32:13 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:35000 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438Ab3KKXcD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 18:32:03 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+hmXr21R6cQQSRT1m0MyaF
+Date: Mon, 11 Nov 2013 15:31:52 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fbdev@vger.kernel.org,
+        NeilBrown <neilb@suse.de>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Subject: Re: [PATCH 1/3] arm: omap2: Export devconf1 bypass and acbias.
+Message-ID: <20131111233152.GR15154@atomide.com>
+References: <1381784555-18344-1-git-send-email-marek@goldelico.com>
+ <1381784555-18344-2-git-send-email-marek@goldelico.com>
+ <20131111164917.GN15154@atomide.com>
+ <CAAfyv37LRb_Q=UZVgtKdOAz_r6_qThewAU90W7nrqHdB5fDA_g@mail.gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Corrupted low memory in v3.9+
-References: <CAOesGMgV2UsBffPveaE+j1s-mDZ+cQvvQGLGAXjWSAv+a_56Fw@mail.gmail.com> <52603CD6.6080507@linux.intel.com> <CAOesGMjgvPWpZssrepDszTr0EexHtDXznWA4XYoZ6O_U=XJGAg@mail.gmail.com> <CAOesGMgiUbJF01+BPBDgJT3J-Sn6ewE04aMyCTYrwjKwY4S2SQ@mail.gmail.com> <527BEA91.6050603@linux.intel.com> <20131111113503.GA16090@gmail.com>
-In-Reply-To: <20131111113503.GA16090@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAfyv37LRb_Q=UZVgtKdOAz_r6_qThewAU90W7nrqHdB5fDA_g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 03:35 AM, Ingo Molnar wrote:
+* Belisko Marek <marek.belisko@gmail.com> [131111 14:01]:
+> Hi Tony,
 > 
-> If we reserve everything in low memory, all the time (which I very much 
-> argue we should do) then the checker becomes a no-op and can be removed.
-> 
+> On Mon, Nov 11, 2013 at 5:49 PM, Tony Lindgren <tony@atomide.com> wrote:
+> > * Marek Belisko <marek@goldelico.com> [131014 14:11]:
+> >> devconf1 reg access is localized only in mach-omap2 and we need to export
+> >> updating of devconf1 from omapdss venc driver (bypass and acbias bits).
+> >> Add simple api call which update only necessary bits.
+> > ...
+> >
+> >> +void update_bypass_acbias(bool bypass, bool acbias)
+> >> +{
+> >> +#ifdef CONFIG_ARCH_OMAP3
+> >> +     int val = omap_ctrl_readl(OMAP343X_CONTROL_DEVCONF1);
+> >> +
+> >> +     if (bypass)
+> >> +             val |= OMAP2_TVOUTBYPASS;
+> >> +     else
+> >> +             val &= ~OMAP2_TVOUTBYPASS;
+> >> +
+> >> +     if (acbias)
+> >> +             val |= OMAP2_TVACEN;
+> >> +     else
+> >> +             val &= ~OMAP2_TVACEN;
+> >> +
+> >> +     omap_ctrl_writel(val, OMAP343X_CONTROL_DEVCONF1);
+> >> +#endif
+> >
+> > If this is truly a pinmux, you could already access this
+> > using pinctrl-single,bits device tree driver.
+> >
+> > But I guess that won't work yet, so it's best to set this
+> > up as a separate driver like we've done for the USB PHY
+> > registers.
+>
+> Can you please point me to that driver directly? I cannot see benefit
+> of new driver as as it will be only dummy driver
+> with export_symbol_gpl of upper function. Can it sit then in dss
+> directory or somewhere else? Thanks.
 
-Oops!  I had misunderstood how the checker worked -- I thought it
-checked the *reserved* memory, but it in fact reserves memory
-*independently* and then checks it.
+You can take a look at drivers/usb/phy/phy-omap-control.c.
 
-The problem is fundamentally that setup_bios_corruption_check(); is
-called too early in setup_arch() -- quite possibly due to other code
-movement around it:
+Then there's a device tree using example for control_devconf0 in
+Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt.
 
-#ifdef CONFIG_X86_CHECK_BIOS_CORRUPTION
-	setup_bios_corruption_check();
-#endif
+Looks like CONTROL_DEVCONF1 contains a bunch of misc registers,
+and arch/arm/mach-omap2/hsmmc.c seems to be tinkering with it too.
 
-	reserve_real_mode();
+It would be best to set it up as omap-ctrl.c driver under drivers
+somewhere with few functions exported for DSS and MMC drivers.
 
-	trim_platform_memory_ranges();
-	trim_low_memory_range();
+The reason why it should be a separate driver is that the system
+control module can live a separate runtime PM life from the
+drivers using the CONTROL_DEVCONF register bits.
 
-	init_mem_mapping();
+Regards,
 
-
-setup_bios_corruption_check() should presumably be called between
-trim_low_memory_range() and init_mem_mapping().  I'm actually surprised
-that we don't trip on this *all the time* since the realmode trampoline
-falls in this area...
-
-At the same time, we should change the default for
-CONFIG_X86_RESERVE_LOW to 640, and perhaps move it under EXPERT.
-
-What do you guys think?
-
-	-hpa
-
+Tony
