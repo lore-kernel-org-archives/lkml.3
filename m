@@ -1,103 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab3KKSvP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 13:51:15 -0500
-Received: from mga02.intel.com ([134.134.136.20]:39259 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754241Ab3KKSvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 13:51:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,679,1378882800"; 
-   d="scan'208";a="425731742"
-Message-ID: <52812829.4080508@linux.intel.com>
-Date: Mon, 11 Nov 2013 10:55:37 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1755196Ab3KKSxw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 13:53:52 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:33866 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754985Ab3KKSxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 13:53:44 -0500
+Date: Mon, 11 Nov 2013 19:53:40 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+        travis@sgi.com, a.p.zijlstra@chello.nl, jason.wessel@windriver.com,
+        acme@ghostprotocols.net, hedi@sgi.com, sivanich@sgi.com,
+        tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/uv] x86/UV: Add uvtrace support
+Message-ID: <20131111185340.GA15854@gmail.com>
+References: <20130923212501.185052551@asylum.americas.sgi.com>
+ <tip-8eba18428ac926f436064ac281e76d36d51bd631@git.kernel.org>
 MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-CC: linux-kbuild@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mmarek@suse.cz, rostedt@goodmis.org
-Subject: Re: make oldnoconfig fix?
-References: <52811DDD.3030609@linux.intel.com> <20131111181304.GB3510@free.fr>
-In-Reply-To: <20131111181304.GB3510@free.fr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-8eba18428ac926f436064ac281e76d36d51bd631@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 10:13 AM, Yann E. MORIN wrote:
-> David, All,
 
-Hi Yann,
+* tip-bot for Mike Travis <tipbot@zytor.com> wrote:
 
->
-> On 2013-11-11 10:11 -0800, David Cohen spake thusly:
->> Is there a plan to fix 'make oldnoconfig' option?
->> I currently have need to it :)
->> I've tracked a thread fixing 'make olddefconfig' where 'oldnoconfig'
->> option is reported as a known bug, right?
->
-> Sorry, I don't understand what your problem is.
+> Commit-ID:  8eba18428ac926f436064ac281e76d36d51bd631
+> Gitweb:     http://git.kernel.org/tip/8eba18428ac926f436064ac281e76d36d51bd631
+> Author:     Mike Travis <travis@sgi.com>
+> AuthorDate: Mon, 23 Sep 2013 16:25:06 -0500
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Tue, 24 Sep 2013 09:02:04 +0200
+> 
+> x86/UV: Add uvtrace support
+> 
+> This patch adds support for the uvtrace module by providing a
+> skeleton call to the registered trace function.  It also
+> provides another separate 'NMI' tracer that is triggered by the
+> system wide 'power nmi' command.
+> 
+> Signed-off-by: Mike Travis <travis@sgi.com>
+> Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
+> Reviewed-by: Hedi Berriche <hedi@sgi.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Jason Wessel <jason.wessel@windriver.com>
+> Link: http://lkml.kernel.org/r/20130923212501.185052551@asylum.americas.sgi.com
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  arch/x86/include/asm/uv/uv.h  |  8 ++++++++
+>  arch/x86/platform/uv/uv_nmi.c | 13 ++++++++++++-
+>  2 files changed, 20 insertions(+), 1 deletion(-)
 
-Maybe I assumed it was more 'known' then it actually is :)
+So I only noticed this too late:
 
->
-> Care to explain in details what problem you have:
->    - what you start with
->    - what you do
->    - what you get
->    - what you expected
+> diff --git a/arch/x86/include/asm/uv/uv.h b/arch/x86/include/asm/uv/uv.h
+> index 6b964a0..8b1283d 100644
+> --- a/arch/x86/include/asm/uv/uv.h
+> +++ b/arch/x86/include/asm/uv/uv.h
+> @@ -14,6 +14,13 @@ extern void uv_cpu_init(void);
+>  extern void uv_nmi_init(void);
+>  extern void uv_register_nmi_notifier(void);
+>  extern void uv_system_init(void);
+> +extern void (*uv_trace_nmi_func)(unsigned int reason, struct pt_regs *regs);
+> +extern void (*uv_trace_func)(const char *f, const int l, const char *fmt, ...);
+> +#define uv_trace(fmt, ...)						\
+> +do {									\
+> +	if (unlikely(uv_trace_func))					\
+> +		(uv_trace_func)(__func__, __LINE__, fmt, ##__VA_ARGS__);\
+> +} while (0)
+>  extern const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+>  						 struct mm_struct *mm,
+>  						 unsigned long start,
+> @@ -26,6 +33,7 @@ static inline enum uv_system_type get_uv_system_type(void) { return UV_NONE; }
+>  static inline int is_uv_system(void)	{ return 0; }
+>  static inline void uv_cpu_init(void)	{ }
+>  static inline void uv_system_init(void)	{ }
+> +static inline void uv_trace(void *fmt, ...)	{ }
+>  static inline void uv_register_nmi_notifier(void) { }
+>  static inline const struct cpumask *
+>  uv_flush_tlb_others(const struct cpumask *cpumask, struct mm_struct *mm,
+> diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
+> index 2579fbd..c171ca5 100644
+> --- a/arch/x86/platform/uv/uv_nmi.c
+> +++ b/arch/x86/platform/uv/uv_nmi.c
+> @@ -1,5 +1,5 @@
+>  /*
+> - * SGI NMI support routines
+> + * SGI NMI/TRACE support routines
+>   *
+>   *  This program is free software; you can redistribute it and/or modify
+>   *  it under the terms of the GNU General Public License as published by
+> @@ -36,6 +36,13 @@
+>  #include <asm/uv/uv_hub.h>
+>  #include <asm/uv/uv_mmrs.h>
+>  
+> +void (*uv_trace_func)(const char *f, const int l, const char *fmt, ...);
+> +EXPORT_SYMBOL(uv_trace_func);
+> +
+> +void (*uv_trace_nmi_func)(unsigned int reason, struct pt_regs *regs);
+> +EXPORT_SYMBOL(uv_trace_nmi_func);
+> +
+> +
+>  /*
+>   * UV handler for NMI
+>   *
+> @@ -551,6 +558,10 @@ int uv_handle_nmi(unsigned int reason, struct pt_regs *regs)
+>  		return NMI_DONE;
+>  	}
+>  
+> +	/* Call possible NMI trace function */
+> +	if (unlikely(uv_trace_nmi_func))
+> +		(uv_trace_nmi_func)(reason, regs);
 
-The bug with 'oldnoconfig' is: 'make oldnoconfig' is just an alias to
-'olddefconfig'. Any non-existent config is defined with its default
-value instead of 'N'.
+Nothing actually uses the uv_trace() methods, plus nobody actually sets 
+uv_trace_func.
 
-I work with embedded platforms. I need to maintain a set of defconfigs
-for different products (customers some times want tailored configs, so
-creating a generic one isn't an option always).
+Whatever hack this is, it has no place in the upstream kernel. I'll queue 
+up a revert to make this pushable in this merge window.
 
-In order to have full control of the .config generated out of
-defconfigs, I don't allow any CONFIG_ to be selected implicitly. So
-everytime a Kconfig is changed in our internal tree, we need to update
-all defconfigs either with CONFIG_... = [y|n] or # CONFIG_... is not set
+Thanks,
 
-If I managed to get 'make oldnoconfig' working, I could not care about
-# CONFIG_... is not set and internal and changes to defconfigs would be
-easily to understand and review.
-
->
-> So we can try to reproduce the issue and investigate what is wrong.
-
-All we need to know is explained in this commit:
-
-commit fb16d8912db5268f29706010ecafff74b971c58d
-Author: Adam Lee <adam8157@gmail.com>
-Date:   Sat Sep 1 01:05:17 2012 +0800
-
-     kconfig: replace 'oldnoconfig' with 'olddefconfig', and keep the 
-old name as an alias
-
-     As 67d34a6a391369269a2e5dba8a5f42cc4cd50231 said, 'oldnoconfig' doesn't
-     set new symbols to 'n', but instead sets it to their default values.
-
-     So, this patch replaces 'oldnoconfig' with 'olddefconfig', stop making
-     people confused, and keep the old name 'oldnoconfig' as an alias,
-     because people already are dependent on its behavior with the
-     counter-intuitive name.
-
-     Signed-off-by: Adam Lee <adam8157@gmail.com>
-     Signed-off-by: Michal Marek <mmarek@suse.cz>
-
-
->
-> Since you mention an existing thread, please add a pointer (URL) to
-> this thread in the archives (Use: http://marc.info/?l=linux-kbuild ).
-
-This is the thread I was talking about: 
-http://comments.gmane.org/gmane.linux.kbuild.devel/8560
-
-Master Yoda promised to fix it when the problem gets bigger :)
-
-Br, David
+	Ingo
