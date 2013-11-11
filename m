@@ -1,94 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab3KKUrj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 15:47:39 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:8465 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478Ab3KKUrd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 15:47:33 -0500
-Message-ID: <1384202848.6940.59.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] mm: cache largest vma
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Michel Lespinasse <walken@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Date: Mon, 11 Nov 2013 12:47:28 -0800
-In-Reply-To: <20131111120421.GB21291@gmail.com>
-References: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFwrtOaFtwGc6xyZH6-1j3f--AG1JS-iZM8-pZPnwRHBow@mail.gmail.com>
-	 <1383537862.2373.14.camel@buesod1.americas.hpqcorp.net>
-	 <20131104073640.GF13030@gmail.com>
-	 <1384143129.6940.32.camel@buesod1.americas.hpqcorp.net>
-	 <CANN689Eauq+DHQrn8Wr=VU-PFGDOELz6HTabGDGERdDfeOK_UQ@mail.gmail.com>
-	 <20131111120421.GB21291@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753210Ab3KKUtY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 15:49:24 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:41457 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751672Ab3KKUtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 15:49:16 -0500
+Date: Mon, 11 Nov 2013 12:48:53 -0800
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org
+Subject: [PATCH] x86, kaslr: mix entropy sources together as needed
+Message-ID: <20131111204853.GA24459@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-11 at 13:04 +0100, Ingo Molnar wrote:
-> * Michel Lespinasse <walken@google.com> wrote:
-> 
-> > On Sun, Nov 10, 2013 at 8:12 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > > 2) Oracle Data mining (4K pages)
-> > > +------------------------+----------+------------------+---------+
-> > > |    mmap_cache type     | hit-rate | cycles (billion) | stddev  |
-> > > +------------------------+----------+------------------+---------+
-> > > | no mmap_cache          | -        | 63.35            | 0.20207 |
-> > > | current mmap_cache     | 65.66%   | 19.55            | 0.35019 |
-> > > | mmap_cache+largest VMA | 71.53%   | 15.84            | 0.26764 |
-> > > | 4 element hash table   | 70.75%   | 15.90            | 0.25586 |
-> > > | per-thread mmap_cache  | 86.42%   | 11.57            | 0.29462 |
-> > > +------------------------+----------+------------------+---------+
-> > >
-> > > This workload sure makes the point of how much we can benefit of 
-> > > caching the vma, otherwise find_vma() can cost more than 220% extra 
-> > > cycles. We clearly win here by having a per-thread cache instead of 
-> > > per address space. I also tried the same workload with 2Mb hugepages 
-> > > and the results are much more closer to the kernel build, but with the 
-> > > per-thread vma still winning over the rest of the alternatives.
-> > >
-> > > All in all I think that we should probably have a per-thread vma 
-> > > cache. Please let me know if there is some other workload you'd like 
-> > > me to try out. If folks agree then I can cleanup the patch and send it 
-> > > out.
-> > 
-> > Per thread cache sounds interesting - with per-mm caches there is a real 
-> > risk that some modern threaded apps pay the cost of cache updates 
-> > without seeing much of the benefit. However, how do you cheaply handle 
-> > invalidations for the per thread cache ?
-> 
-> The cheapest way to handle that would be to have a generation counter for 
-> the mm and to couple cache validity to a specific value of that. 
-> 'Invalidation' is then the free side effect of bumping the generation 
-> counter when a vma is removed/moved.
+Depending on availability, mix the RDRAND and RDTSC entropy together with
+XOR. Only when neither is available should the i8254 be used. Update
+the Kconfig documentation to reflect this. Additionally, since bits
+used for entropy is masked elsewhere, drop the needless masking in the
+get_random_long().
 
-I was basing the invalidations on the freeing of vm_area_cachep, so I
-mark current->mmap_cache = NULL whenever we call
-kmem_cache_free(vm_area_cachep, ...). But I can see this being a problem
-if more than one task's mmap_cache points to the same vma, as we end up
-invalidating only one. I'd really like to use a similar logic and base
-everything around the existence of the vma instead of adding a counting
-infrastructure. Sure we'd end up doing more reads when we do the lookup
-in find_vma() but the cost of maintaining it comes free. I just ran into
-a similar idea from 2 years ago:
-http://lkml.indiana.edu/hypermail/linux/kernel/1112.1/01352.html
+Finally, to improve the starting entropy, do a simple hashing of the
+boot_params structure for some additional level of unpredictability.
 
-While there are several things that aren't needed, it does do the
-is_kmem_cache() to verify that the vma is still a valid slab.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/x86/Kconfig                |   14 +++++++----
+ arch/x86/boot/compressed/aslr.c |   52 ++++++++++++++++++++++++++++-----------
+ 2 files changed, 46 insertions(+), 20 deletions(-)
 
-Thanks,
-Davidlohr
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ee3b38363063..119455802d57 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1736,13 +1736,17 @@ config RANDOMIZE_BASE
+ 	   deters exploit attempts relying on knowledge of the location
+ 	   of kernel internals.
+ 
+-	   Entropy is generated using the RDRAND instruction if it
+-	   is supported.  If not, then RDTSC is used, if supported. If
+-	   neither RDRAND nor RDTSC are supported, then no randomness
+-	   is introduced.
++	   Entropy is generated using the RDRAND instruction if it is
++	   supported. If RDTSC is supported, it is used as well. If
++	   neither RDRAND nor RDTSC are supported, then randomness is
++	   read from the i8254 timer.
+ 
+ 	   The kernel will be offset by up to RANDOMIZE_BASE_MAX_OFFSET,
+-	   and aligned according to PHYSICAL_ALIGN.
++	   and aligned according to PHYSICAL_ALIGN. Since the kernel is
++	   built using 2GiB addressing, and PHYSICAL_ALGIN must be at a
++	   minimum of 2MiB, only 10 bits of entropy is theoretically
++	   possible. At best, due to page table layouts, 64-bit can use
++	   9 bits of entropy and 32-bit uses 8 bits.
+ 
+ config RANDOMIZE_BASE_MAX_OFFSET
+ 	hex "Maximum ASLR offset allowed"
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index 05957986d123..41386b655acd 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -25,34 +25,56 @@ static inline u16 i8254(void)
+ 	return timer;
+ }
+ 
++/* Simple way to create an alternate starting entropy. */
++static unsigned long get_boot_hash(void)
++{
++	int i;
++	unsigned long hash = 0;
++	unsigned long *ptr = (unsigned long *)real_mode;
++
++	for (i = 0; i < sizeof(*real_mode) / sizeof(hash); i++) {
++		/* Rotate and XOR */
++		hash = (hash << ((sizeof(hash) - 1) * 8)) | (hash >> 8);
++		hash ^= ptr[i];
++	}
++
++	return hash;
++}
++
+ static unsigned long get_random_long(void)
+ {
+-	unsigned long random;
++	unsigned long random = get_boot_hash();
++	bool use_i8254 = true;
++
++	debug_putstr("KASLR using");
+ 
+ 	if (has_cpuflag(X86_FEATURE_RDRAND)) {
+-		debug_putstr("KASLR using RDRAND...\n");
+-		if (rdrand_long(&random))
+-			return random;
++		unsigned long raw;
++
++		debug_putstr(" RDRAND");
++		if (rdrand_long(&raw)) {
++			random ^= raw;
++			use_i8254 = false;
++		}
+ 	}
+ 
+ 	if (has_cpuflag(X86_FEATURE_TSC)) {
+ 		uint32_t raw;
+ 
+-		debug_putstr("KASLR using RDTSC...\n");
++		debug_putstr(" RDTSC");
+ 		rdtscl(raw);
+ 
+-		/* Only use the low bits of rdtsc. */
+-		random = raw & 0xffff;
+-	} else {
+-		debug_putstr("KASLR using i8254...\n");
+-		random = i8254();
++		random ^= raw;
++		use_i8254 = false;
+ 	}
+ 
+-	/* Extend timer bits poorly... */
+-	random |= (random << 16);
+-#ifdef CONFIG_X86_64
+-	random |= (random << 32);
+-#endif
++	if (use_i8254) {
++		debug_putstr(" i8254");
++		random ^= i8254();
++	}
++
++	debug_putstr("...\n");
++
+ 	return random;
+ }
+ 
+-- 
+1.7.9.5
 
 
+-- 
+Kees Cook
+Chrome OS Security
