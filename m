@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab3KKIhS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 03:37:18 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:40331 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895Ab3KKIhP (ORCPT
+	id S1752861Ab3KKIlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 03:41:18 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:43789 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751477Ab3KKIlK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 03:37:15 -0500
+	Mon, 11 Nov 2013 03:41:10 -0500
+X-IronPort-AV: E=Sophos;i="4.93,676,1378828800"; 
+   d="scan'208";a="8999769"
+Message-ID: <528097A3.9040908@cn.fujitsu.com>
+Date: Mon, 11 Nov 2013 16:38:59 +0800
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-X-Originating-IP: [218.164.130.80]
-In-Reply-To: <CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com>
-References: <1383789208.5970.1.camel@phoenix>
-	<CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
-	<CAFRkauAEt-YhBt11opj_GVCLrxGsTSd2LowWGmukTSmGuJkd3A@mail.gmail.com>
-	<CACVXFVO=QA-R1+twCL9fc_3vASg6Ap-3ezi=tU1MV1pdPYrfWw@mail.gmail.com>
-	<CAFRkauAdR3=ByE0_B3OsqOBjmbz2a02EXb+6g-vn=1TJ7AZc8Q@mail.gmail.com>
-	<CACVXFVMaLOfDvzdn_1NryQY59cgtLdMMqHL-_ZAa95MPz4p56Q@mail.gmail.com>
-	<CAFRkauDe7V3N0AbfvE_=GEXHZ_Fw62VsA8p50wSUYE1-TRqMfw@mail.gmail.com>
-	<87zjpf4w0j.fsf@rustcorp.com.au>
-	<CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com>
-	<CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com>
-	<CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com>
-	<87y54vzszo.fsf@rustcorp.com.au>
-	<CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com>
-	<CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com>
-Date: Mon, 11 Nov 2013 16:37:15 +0800
-Message-ID: <CAFRkauCW3FDSuh4t0gvmSWH1m0+qaG0XSoBxmk30Wq1FMy7iFw@mail.gmail.com>
-Subject: Re: kernel BUG at kernel/kallsyms.c:222!
-From: Axel Lin <axel.lin@ingics.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wei Yongjun <weiyj.lk@gmail.com>
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
+References: <1383300583-6953-1-git-send-email-duanj.fnst@cn.fujitsu.com> <CAPgLHd_p+LJmBX6FCy1+mF3VTHkBoPa83SNXciqb28pa3QE7TA@mail.gmail.com>
+In-Reply-To: <CAPgLHd_p+LJmBX6FCy1+mF3VTHkBoPa83SNXciqb28pa3QE7TA@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/11 16:39:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/11 16:39:24
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/11 Ming Lei <tom.leiming@gmail.com>:
-> Hi,
+于 2013年11月11日 15:43, Wei Yongjun 写道:
+> On 11/01/2013 06:09 PM, Duan Jiong wrote:
+>> This patch fixes coccinelle error regarding usage of IS_ERR and
+>> PTR_ERR instead of PTR_ERR_OR_ZERO.
+>>
+>> Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+>> ---
+>>  drivers/misc/carma/carma-fpga.c | 5 +----
+>>  1 file changed, 1 insertion(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
+>> index 08b18f3..9a32e98 100644
+>> --- a/drivers/misc/carma/carma-fpga.c
+>> +++ b/drivers/misc/carma/carma-fpga.c
+>> @@ -956,10 +956,7 @@ static int data_debugfs_init(struct fpga_device *priv)
+>>  {
+>>  	priv->dbg_entry = debugfs_create_file(drv_name, S_IRUGO, NULL, priv,
+>>  					      &data_debug_fops);
+>> -	if (IS_ERR(priv->dbg_entry))
+>> -		return PTR_ERR(priv->dbg_entry);
+>> -
+>> -	return 0;
+>> +	return PTR_ERR_OR_ZERO(priv->dbg_entry);
+>>  }
+> 
+> Those code has make sure that CONFIG_DEBUG_FS is enabled, so
+> debugfs_create_file() never return PTR_ERR(), only NULL will
+> be returned when error occurs.
+> 
 >
-> On Mon, Nov 11, 2013 at 2:43 PM, Axel Lin <axel.lin@ingics.com> wrote:
->> 2013/11/11 Rusty Russell <rusty@rustcorp.com.au>:
->>
->> Hi Rusty,
->>
->> I don't have other noMMU platform to test.
->> But I think this issue impacts various !CONFIG_MMU platforms:
->> We have CONFIG_PAGE_OFFSET=0xC0000000 in various default configs.
->> For !CONFIG_MMU case, it just don't use the CONFIG_PAGE_OFFSET setting.
->> So use CONFIG_PAGE_OFFSET to filter symbols looks wrong to me for all
->> !CONFIG_MMU cases.
->>
->> Below is PAGE_OFFSET setting for !CONFIG_MMU case:
->> (arch/arm/include/asm/memory.h)
->>
->> #ifndef PHYS_OFFSET
->> #define PHYS_OFFSET             UL(CONFIG_DRAM_BASE)
->> #endif
->>
->> #ifndef END_MEM
->> #define END_MEM                 (UL(CONFIG_DRAM_BASE) + CONFIG_DRAM_SIZE)
->> #endif
->>
->> #ifndef PAGE_OFFSET
->> #define PAGE_OFFSET             (PHYS_OFFSET)
->> #endif
->>
->> My patchs for gpl327xx SoC is still in very early stage.
->> I think you should send your fix upstream because I think it impacts other
->> noMMU platforms (for above reason).
->
-> I suggest to do it when we are clear behind the break.
->
-> As I mentioned, no matter what PAGE_OFFSET is, if you link vmlinux
-> from the address of PAGE_OFFSET(that is what arm's link script in tree
-> does), the filter won't break anything.
 
-Hi Ming,
+You can see the definition about PTR_ERR_OR_ZERO in include/linux/err.h,
+it is merely used to simplify the code.
 
-commit f6537f2f "scripts/kallsyms: filter symbols not in kernel address space",
-uses CONFIG_PAGE_OFFSET as kernel_start_addr.
-However, for !CONFIG_MMU case we have :
-    PAGE_OFFSET != CONFIG_PAGE_OFFSET.
+Thanks,
+  Duan
 
-That is why I think the filter breaks !MMU platforms.
-
-Regards,
-Axel
