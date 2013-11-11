@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693Ab3KLCiz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 21:38:55 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:50293 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776Ab3KLChS (ORCPT
+	id S1754731Ab3KLCjH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 21:39:07 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:40502 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759Ab3KLChS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 11 Nov 2013 21:37:18 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 5/5] OF: Introduce utility helper functions
+Subject: Re: [PATCH 4/5] OF: Export all DT proc update functions
 To: Pantelis Antoniou <panto@antoniou-consulting.com>
 Cc: Rob Herring <robherring2@gmail.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
@@ -26,422 +26,196 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <1383673816-29293-6-git-send-email-panto@antoniou-consulting.com>
-References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com> <1383673816-29293-6-git-send-email-panto@antoniou-consulting.com>
-Date: Mon, 11 Nov 2013 16:37:43 +0000
-Message-Id: <20131111163743.D136CC42330@trevor.secretlab.ca>
+In-Reply-To: <1383673816-29293-5-git-send-email-panto@antoniou-consulting.com>
+References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com> <1383673816-29293-5-git-send-email-panto@antoniou-consulting.com>
+Date: Mon, 11 Nov 2013 16:09:09 +0000
+Message-Id: <20131111160909.840EAC42311@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  5 Nov 2013 19:50:16 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> Introduce helper functions for working with the live DT tree.
-> 
-> __of_free_property() frees a dynamically created property
-> __of_free_tree() recursively frees a device node tree
-> __of_copy_property() copies a property dynamically
-> __of_create_empty_node() creates an empty node
-> __of_find_node_by_full_name() finds the node with the full name
-> and
-> of_multi_prop_cmp() performs a multi property compare but without
-> having to take locks.
+On Tue,  5 Nov 2013 19:50:15 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+> There are other users for the proc DT functions.
+> Export them.
 > 
 > Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 
-So, this all looks like private stuff, or stuff that belongs in
-drivers/of/base.c. Can you move stuff around. I've made more comments
-below.
+These are all very much internal DT APIs. There is no way that anything
+outside of drivers/of should ever be calling them. (In fact, I want to
+be rid of the /proc/devicetree implementation entirely and put it into
+sysfs, but that is a separate patch set). If they need to be broken out
+into a header file, can they be put into something like
+drivers/of/of_private.h?
 
 g.
 
 > ---
->  drivers/of/Makefile |   2 +-
->  drivers/of/util.c   | 253 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of.h  |  59 ++++++++++++
->  3 files changed, 313 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/of/util.c
+>  drivers/of/base.c  | 70 ++++++++++++++++++++++++++++++------------------------
+>  include/linux/of.h | 29 ++++++++++++++++++++++
+>  2 files changed, 68 insertions(+), 31 deletions(-)
 > 
-> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-> index efd0510..9bc6d8c 100644
-> --- a/drivers/of/Makefile
-> +++ b/drivers/of/Makefile
-> @@ -1,4 +1,4 @@
-> -obj-y = base.o device.o platform.o
-> +obj-y = base.o device.o platform.o util.o
->  obj-$(CONFIG_OF_FLATTREE) += fdt.o
->  obj-$(CONFIG_OF_PROMTREE) += pdt.o
->  obj-$(CONFIG_OF_ADDRESS)  += address.o
-> diff --git a/drivers/of/util.c b/drivers/of/util.c
-> new file mode 100644
-> index 0000000..5117e2b
-> --- /dev/null
-> +++ b/drivers/of/util.c
-> @@ -0,0 +1,253 @@
-> +/*
-> + * Utility functions for working with device tree(s)
-> + *
-> + * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
-> + * Copyright (C) 2012 Texas Instruments Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * version 2 as published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
-> +#include <linux/string.h>
-> +#include <linux/ctype.h>
-> +#include <linux/errno.h>
-> +#include <linux/string.h>
-> +#include <linux/slab.h>
-> +#include <linux/err.h>
-> +
-> +/**
-> + * __of_free_property - release the memory of an allocated property
-> + * @prop:	Property to release
-> + *
-> + * Release the memory of an allocated property only after checking
-> + * that the property has been marked as OF_DYNAMIC.
-> + * Only call on known allocated properties.
-> + */
-> +void __of_free_property(struct property *prop)
-> +{
-> +	if (prop == NULL)
-> +		return;
-> +
-> +	if (of_property_check_flag(prop, OF_DYNAMIC)) {
-> +		kfree(prop->value);
-> +		kfree(prop->name);
-> +		kfree(prop);
-> +	} else {
-> +		pr_warn("%s: property %p cannot be freed; memory is gone\n",
-> +				__func__, prop);
-> +	}
-> +}
-> +
-> +/**
-> + * __of_free_tree - release the memory of a device tree node and
-> + *		    of all it's children + properties.
-> + * @node:	Device Tree node to release
-> + *
-> + * Release the memory of a device tree node and of all it's children.
-> + * Also release the properties and the dead properties.
-> + * Only call on detached node trees, and you better be sure that
-> + * no pointer exist for any properties. Only safe to do if you 
-> + * absolutely control the life cycle of the node.
-> + * Also note that the node is not removed from the all_nodes list,
-> + * neither from the parent's child list; this should be handled before
-> + * calling this function.
-> + */
-> +void __of_free_tree(struct device_node *node)
-> +{
-> +	struct property *prop;
-> +	struct device_node *noden;
-> +
-> +	/* sanity check */
-> +	if (!node)
-> +		return;
-> +
-> +	/* free recursively any children */
-> +	while ((noden = node->child) != NULL) {
-> +		node->child = noden->sibling;
-> +		__of_free_tree(noden);
-> +	}
-> +
-> +	/* free every property already allocated */
-> +	while ((prop = node->properties) != NULL) {
-> +		node->properties = prop->next;
-> +		__of_free_property(prop);
-> +	}
-> +
-> +	/* free dead properties already allocated */
-> +	while ((prop = node->deadprops) != NULL) {
-> +		node->deadprops = prop->next;
-> +		__of_free_property(prop);
-> +	}
-> +
-> +	if (of_node_check_flag(node, OF_DYNAMIC)) {
-> +		kfree(node->type);
-> +		kfree(node->name);
-> +		kfree(node);
-> +	} else {
-> +		pr_warn("%s: node %p cannot be freed; memory is gone\n",
-> +				__func__, node);
-> +	}
-> +}
-
-All of the above is potentially dangerous. There is no way to determine
-if anything still holds a reference to a node. The proper way to handle
-removal of properties is to have a release method when the last
-of_node_put is called.
-
-> +
-> +/**
-> + * __of_copy_property - Copy a property dynamically.
-> + * @prop:	Property to copy
-> + * @flags:	Allocation flags (typically pass GFP_KERNEL)
-> + *
-> + * Copy a property by dynamically allocating the memory of both the
-> + * property stucture and the property name & contents. The property's
-> + * flags have the OF_DYNAMIC bit set so that we can differentiate between
-> + * dynamically allocated properties and not.
-> + * Returns the newly allocated property or NULL on out of memory error.
-> + */
-
-What do you intend the use-case to be for this function? Will the
-duplicated property be immediately modified? If so, what happens if the
-property needs to be grown in size?
-
-> +struct property *__of_copy_property(const struct property *prop, gfp_t flags)
-> +{
-> +	struct property *propn;
-> +
-> +	propn = kzalloc(sizeof(*prop), flags);
-> +	if (propn == NULL)
-> +		return NULL;
-> +
-> +	propn->name = kstrdup(prop->name, flags);
-> +	if (propn->name == NULL)
-> +		goto err_fail_name;
-> +
-> +	if (prop->length > 0) {
-> +		propn->value = kmalloc(prop->length, flags);
-> +		if (propn->value == NULL)
-> +			goto err_fail_value;
-> +		memcpy(propn->value, prop->value, prop->length);
-> +		propn->length = prop->length;
-> +	}
-> +
-> +	/* mark the property as dynamic */
-> +	of_property_set_flag(propn, OF_DYNAMIC);
-> +
-> +	return propn;
-> +
-> +err_fail_value:
-> +	kfree(propn->name);
-> +err_fail_name:
-> +	kfree(propn);
-> +	return NULL;
-> +}
-> +
-> +/**
-> + * __of_create_empty_node - Create an empty device node dynamically.
-> + * @name:	Name of the new device node
-> + * @type:	Type of the new device node
-> + * @full_name:	Full name of the new device node
-> + * @phandle:	Phandle of the new device node
-> + * @flags:	Allocation flags (typically pass GFP_KERNEL)
-> + *
-> + * Create an empty device tree node, suitable for further modification.
-> + * The node data are dynamically allocated and all the node flags
-> + * have the OF_DYNAMIC & OF_DETACHED bits set.
-> + * Returns the newly allocated node or NULL on out of memory error.
-> + */
-> +struct device_node *__of_create_empty_node(
-> +		const char *name, const char *type, const char *full_name,
-> +		phandle phandle, gfp_t flags)
-
-I would like to see a user of this function in the core DT paths that
-allocate nodes. It will make for less chance of breakage if the fdt and
-pdt paths change something, but this function isn't updated.
-
-g.
-
-> +{
-> +	struct device_node *node;
-> +
-> +	node = kzalloc(sizeof(*node), flags);
-> +	if (node == NULL)
-> +		return NULL;
-> +
-> +	node->name = kstrdup(name, flags);
-> +	if (node->name == NULL)
-> +		goto err_return;
-> +
-> +	node->type = kstrdup(type, flags);
-> +	if (node->type == NULL)
-> +		goto err_return;
-> +
-> +	node->full_name = kstrdup(full_name, flags);
-> +	if (node->type == NULL)
-> +		goto err_return;
-
-Again, who do you expect the user of this function to be? If it is part
-of unflattening an overlay tree, is there a reason that the passed in
-names cannot be used directly instead of kmallocing them?
-
-> +
-> +	node->phandle = phandle;
-> +	kref_init(&node->kref);
-> +	of_node_set_flag(node, OF_DYNAMIC);
-> +	of_node_set_flag(node, OF_DETACHED);
-> +
-> +	return node;
-> +
-> +err_return:
-> +	__of_free_tree(node);
-> +	return NULL;
-> +}
-> +
-> +/**
-> + * __of_find_node_by_full_name - Find a node with the full name recursively
-> + * @node:	Root of the tree to perform the search
-> + * @full_name:	Full name of the node to find.
-> + *
-> + * Find a node with the give full name by recursively following any of 
-> + * the child node links.
-> + * Returns the matching node, or NULL if not found.
-> + * Note that the devtree lock is not taken, so this function is only
-> + * safe to call on either detached trees, or when devtree lock is already
-> + * taken.
-> + */
-> +struct device_node *__of_find_node_by_full_name(struct device_node *node,
-> +		const char *full_name)
-
-Sounds like something that should be in drivers/of/base.c
-
-> +{
-> +	struct device_node *child, *found;
-> +
-> +	if (node == NULL)
-> +		return NULL;
-> +
-> +	/* check */
-> +	if (of_node_cmp(node->full_name, full_name) == 0)
-> +		return node;
-> +
-> +	__for_each_child_of_node(node, child) {
-> +		found = __of_find_node_by_full_name(child, full_name);
-> +		if (found != NULL)
-> +			return found;
-> +	}
-
-I'm not a huge fan of recursive calls. Why doesn't a slightly modified
-of_fund_node_by_name() work here?
-
-I agree that of_find_node_by_name is not particularly elegant and it
-would be good to have something more efficient, but it works and
-following the same method would be consistent.
-
-> +
-> +	return NULL;
-> +}
-> +
-> +/**
-> + * of_multi_prop_cmp - Check if a property matches a value
-> + * @prop:	Property to check
-> + * @value:	Value to check against
-> + *
-> + * Check whether a property matches a value, using the standard
-> + * of_compat_cmp() test on each string. It is similar to the test
-
-of_compat_cmp() is only for compatible strings, and it purely to paper
-over the way different OFW implementations work. Don't use the same
-function. Don't use it for any property other than compatible because
-that will just encourage bad behaviour.
-
-> + * of_device_is_compatible() makes, but it can be performed without
-> + * taking the devtree_lock, which is required in some cases.
-> + * Returns 0 on a match, -1 on no match.
-
-That's what __of_device_is_compatible() is for. It is a version of the
-function that doesn't take the lock.
-
-> + */
-> +int of_multi_prop_cmp(const struct property *prop, const char *value)
-> +{
-> +	const char *cp;
-> +	int cplen, vlen, l;
-> +
-> +	if (prop == NULL || value == NULL)
-> +		return -1;
-> +
-> +	cp = prop->value;
-> +	cplen = prop->length;
-> +	vlen = strlen(value);
-> +
-> +	while (cplen > 0) {
-> +		if (of_compat_cmp(cp, value, vlen) == 0)
-> +			return 0;
-> +		l = strlen(cp) + 1;
-> +		cp += l;
-> +		cplen -= l;
-> +	}
-> +
-> +	return -1;
-> +}
-> +
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index a56c450..9d69bd2 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -662,4 +662,63 @@ extern void proc_device_tree_update_prop(struct proc_dir_entry *pde,
->  					 struct property *oldprop);
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 0ffc5a9..c3c5391 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -1435,6 +1435,40 @@ int of_property_notify(int action, struct device_node *np,
+>  }
 >  #endif
 >  
-> +/**
-> + * General utilities for working with live trees.
-> + *
-> + * All functions with two leading underscores operate
-> + * without taking node references, so you either have to
-> + * own the devtree lock or work on detached trees only.
-> + */
+> +#ifdef CONFIG_PROC_DEVICETREE
 > +
-> +#ifdef CONFIG_OF
-> +
-> +/* iterator for internal use; not references, neither affects devtree lock */
-> +#define __for_each_child_of_node(dn, chld) \
-> +	for (chld = (dn)->child; chld != NULL; chld = chld->sibling)
-> +
-> +void __of_free_property(struct property *prop);
-> +void __of_free_tree(struct device_node *node);
-> +struct property *__of_copy_property(const struct property *prop, gfp_t flags);
-> +struct device_node *__of_create_empty_node( const char *name,
-> +		const char *type, const char *full_name,
-> +		phandle phandle, gfp_t flags);
-> +struct device_node *__of_find_node_by_full_name(struct device_node *node,
-> +		const char *full_name);
-> +int of_multi_prop_cmp(const struct property *prop, const char *value);
-> +
-> +#else /* !CONFIG_OF */
-> +
-> +#define __for_each_child_of_node(dn, chld) \
-> +	while (0)
-> +
-> +static inline void __of_free_property(struct property *prop) { }
-> +
-> +static inline void __of_free_tree(struct device_node *node) { }
-> +
-> +static inline struct property *__of_copy_property(const struct property *prop,
-> +		gfp_t flags)
+> +void of_add_proc_dt_entry(struct device_node *dn)
 > +{
-> +	return NULL;
+> +	struct proc_dir_entry *ent;
+> +
+> +	ent = proc_mkdir(strrchr(dn->full_name, '/') + 1, dn->parent->pde);
+> +	if (ent)
+> +		proc_device_tree_add_node(dn, ent);
 > +}
 > +
-> +static inline struct device_node *__of_create_empty_node( const char *name,
-> +		const char *type, const char *full_name,
-> +		phandle phandle, gfp_t flags)
+> +void of_add_proc_dt_prop_entry(struct device_node *np,
+> +		struct property *prop)
 > +{
-> +	return NULL;
+> +	if (np && prop && np->pde)
+> +		proc_device_tree_add_prop(np->pde, prop);
 > +}
 > +
-> +static inline struct device_node *__of_find_node_by_full_name(struct device_node *node,
-> +		const char *full_name)
+> +void of_remove_proc_dt_prop_entry(struct device_node *np,
+> +		struct property *prop)
 > +{
-> +	return NULL;
+> +	if (np && prop && np->pde)
+> +		proc_device_tree_remove_prop(np->pde, prop);
 > +}
 > +
-> +static inline int of_multi_prop_cmp(const struct property *prop, const char *value)
+> +void of_update_proc_dt_prop_entry(struct device_node *np,
+> +		struct property *newprop, struct property *oldprop)
 > +{
-> +	return -1;
+> +	if (np && newprop && oldprop && np->pde)
+> +		proc_device_tree_update_prop(np->pde, newprop, oldprop);
 > +}
 > +
-> +#endif	/* !CONFIG_OF */
+> +#endif /* CONFIG_PROC_DEVICETREE */
 > +
->  #endif /* _LINUX_OF_H */
+>  /**
+>   * of_add_property - Add a property to a node
+>   */
+> @@ -1462,11 +1496,8 @@ int of_add_property(struct device_node *np, struct property *prop)
+>  	*next = prop;
+>  	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  
+> -#ifdef CONFIG_PROC_DEVICETREE
+>  	/* try to add to proc as well if it was initialized */
+> -	if (np->pde)
+> -		proc_device_tree_add_prop(np->pde, prop);
+> -#endif /* CONFIG_PROC_DEVICETREE */
+> +	of_add_proc_dt_prop_entry(np, prop);
+>  
+>  	return 0;
+>  }
+> @@ -1508,11 +1539,7 @@ int of_remove_property(struct device_node *np, struct property *prop)
+>  	if (!found)
+>  		return -ENODEV;
+>  
+> -#ifdef CONFIG_PROC_DEVICETREE
+> -	/* try to remove the proc node as well */
+> -	if (np->pde)
+> -		proc_device_tree_remove_prop(np->pde, prop);
+> -#endif /* CONFIG_PROC_DEVICETREE */
+> +	of_remove_proc_dt_prop_entry(np, prop);
+>  
+>  	return 0;
+>  }
+> @@ -1562,11 +1589,8 @@ int of_update_property(struct device_node *np, struct property *newprop)
+>  	if (!found)
+>  		return -ENODEV;
+>  
+> -#ifdef CONFIG_PROC_DEVICETREE
+>  	/* try to add to proc as well if it was initialized */
+> -	if (np->pde)
+> -		proc_device_tree_update_prop(np->pde, newprop, oldprop);
+> -#endif /* CONFIG_PROC_DEVICETREE */
+> +	of_update_proc_dt_prop_entry(np, newprop, oldprop);
+>  
+>  	return 0;
+>  }
+> @@ -1602,22 +1626,6 @@ int of_reconfig_notify(unsigned long action, void *p)
+>  	return notifier_to_errno(rc);
+>  }
+>  
+> -#ifdef CONFIG_PROC_DEVICETREE
+> -static void of_add_proc_dt_entry(struct device_node *dn)
+> -{
+> -	struct proc_dir_entry *ent;
+> -
+> -	ent = proc_mkdir(strrchr(dn->full_name, '/') + 1, dn->parent->pde);
+> -	if (ent)
+> -		proc_device_tree_add_node(dn, ent);
+> -}
+> -#else
+> -static void of_add_proc_dt_entry(struct device_node *dn)
+> -{
+> -	return;
+> -}
+> -#endif
+> -
+>  /**
+>   * of_attach_node - Plug a device node into the tree and global list.
+>   */
+> @@ -1643,12 +1651,12 @@ int of_attach_node(struct device_node *np)
+>  }
+>  
+>  #ifdef CONFIG_PROC_DEVICETREE
+> -static void of_remove_proc_dt_entry(struct device_node *dn)
+> +void of_remove_proc_dt_entry(struct device_node *dn)
+>  {
+>  	proc_remove(dn->pde);
+>  }
+>  #else
+> -static void of_remove_proc_dt_entry(struct device_node *dn)
+> +void of_remove_proc_dt_entry(struct device_node *dn)
+>  {
+>  	return;
+>  }
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 6fec255..a56c450 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -318,6 +318,35 @@ static inline int of_property_notify(int action, struct device_node *np,
+>  }
+>  #endif
+>  
+> +#ifdef CONFIG_PROC_DEVICETREE
+> +
+> +extern void of_add_proc_dt_entry(struct device_node *dn);
+> +extern void of_remove_proc_dt_entry(struct device_node *dn);
+> +
+> +extern void of_add_proc_dt_prop_entry(struct device_node *np,
+> +		struct property *prop);
+> +
+> +extern void of_remove_proc_dt_prop_entry(struct device_node *np,
+> +		struct property *prop);
+> +
+> +extern void of_update_proc_dt_prop_entry(struct device_node *np,
+> +		struct property *newprop, struct property *oldprop);
+> +#else
+> +
+> +static inline void of_add_proc_dt_entry(struct device_node *dn) { }
+> +static inline void of_remove_proc_dt_entry(struct device_node *dn) { }
+> +
+> +static inline void of_add_proc_dt_prop_entry(struct device_node *np,
+> +		struct property *prop) { }
+> +
+> +static inline void of_remove_proc_dt_prop_entry(struct device_node *np,
+> +		struct property *prop) { }
+> +
+> +static inline void of_update_proc_dt_prop_entry(struct device_node *np,
+> +		struct property *newprop, struct property *oldprop) { }
+> +
+> +#endif
+> +
+>  extern void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align));
+>  extern int of_alias_get_id(struct device_node *np, const char *stem);
+>  
 > -- 
 > 1.7.12
 > 
