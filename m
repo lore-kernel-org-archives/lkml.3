@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab3KKKmA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 05:42:00 -0500
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:63324 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab3KKKl5 (ORCPT
+	id S1753124Ab3KKKpa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 05:45:30 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38507 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752670Ab3KKKpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 05:41:57 -0500
+	Mon, 11 Nov 2013 05:45:23 -0500
+Date: Mon, 11 Nov 2013 10:44:32 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Vinayak Kale <vkale@apm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@apm.com" <patches@apm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "jcm@redhat.com" <jcm@redhat.com>
+Subject: Re: [PATCH 0/2] genirq: arm64: perf: support for percpu pmu interrupt
+Message-ID: <20131111104432.GA28302@mudshark.cambridge.arm.com>
+References: <1383739658-10036-1-git-send-email-vkale@apm.com>
+ <527D8A17.9020208@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <CACVXFVMzOzD+D-MQCUBvC80d4zS-TJfcucKuUvzerGs6gT1fEg@mail.gmail.com>
-References: <1383789208.5970.1.camel@phoenix>
-	<CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
-	<CAFRkauAEt-YhBt11opj_GVCLrxGsTSd2LowWGmukTSmGuJkd3A@mail.gmail.com>
-	<CACVXFVO=QA-R1+twCL9fc_3vASg6Ap-3ezi=tU1MV1pdPYrfWw@mail.gmail.com>
-	<CAFRkauAdR3=ByE0_B3OsqOBjmbz2a02EXb+6g-vn=1TJ7AZc8Q@mail.gmail.com>
-	<CACVXFVMaLOfDvzdn_1NryQY59cgtLdMMqHL-_ZAa95MPz4p56Q@mail.gmail.com>
-	<CAFRkauDe7V3N0AbfvE_=GEXHZ_Fw62VsA8p50wSUYE1-TRqMfw@mail.gmail.com>
-	<87zjpf4w0j.fsf@rustcorp.com.au>
-	<CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com>
-	<CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com>
-	<CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com>
-	<87y54vzszo.fsf@rustcorp.com.au>
-	<CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com>
-	<CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com>
-	<CAFRkauCW3FDSuh4t0gvmSWH1m0+qaG0XSoBxmk30Wq1FMy7iFw@mail.gmail.com>
-	<CACVXFVMzOzD+D-MQCUBvC80d4zS-TJfcucKuUvzerGs6gT1fEg@mail.gmail.com>
-Date: Mon, 11 Nov 2013 18:41:56 +0800
-Message-ID: <CACVXFVOnVXcVdRCm=OfPjpvvWCiXi8GRV+9ViOGmSZ3tTf6WDg@mail.gmail.com>
-Subject: Re: kernel BUG at kernel/kallsyms.c:222!
-From: Ming Lei <tom.leiming@gmail.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527D8A17.9020208@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Nov 09, 2013 at 01:04:23AM +0000, Stephen Boyd wrote:
+> On 11/06/13 04:07, Vinayak Kale wrote:
+> > This patch series adds support to handle interrupt registration/deregistration
+> > in arm64 pmu driver when pmu interrupt type is percpu.
+> >
+> > Patches in this patch series were previously sent out as separate patches [1].
+> > This patch series incorporates comments/fixes suggested for original patches.
+> >
+> > [1] 
+> > http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/205888.html
+> > http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/204414.html 
+> >
+> > Vinayak Kale (2):
+> >   genirq: error reporting in request_percpu_irq() and
+> >     request_threaded_irq()
+> >   arm64: perf: add support for percpu pmu interrupt
+> >
+> >  arch/arm64/kernel/perf_event.c |  109 +++++++++++++++++++++++++++++-----------
+> >  kernel/irq/manage.c            |   12 +++--
+> >  2 files changed, 89 insertions(+), 32 deletions(-)
+> >
+> 
+> What ever happened to the approach here[1]? It doesn't look very nice to
+> have to request the irq first as a per-cpu interrupt and then try as a
+> non-percpu interrupt when genirq already knows if its per-cpu or not.
+> 
+> [1] http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/02955.html
 
-On Mon, Nov 11, 2013 at 5:57 PM, Ming Lei <tom.leiming@gmail.com> wrote:
-> Hi,
->
-> On Mon, Nov 11, 2013 at 4:37 PM, Axel Lin <axel.lin@ingics.com> wrote:
->> 2013/11/11 Ming Lei <tom.leiming@gmail.com>:
->>
->> Hi Ming,
->>
->> commit f6537f2f "scripts/kallsyms: filter symbols not in kernel address space",
->> uses CONFIG_PAGE_OFFSET as kernel_start_addr.
->> However, for !CONFIG_MMU case we have :
->>     PAGE_OFFSET != CONFIG_PAGE_OFFSET.
->
-> Yes, it is the cause, and strictly speaking, commit f6537f2f is wrong,
-> but triggered with bogus CONFIG_PAGE_OFFSET if !CONFIG_MMU.
->
-> We can fix it either by Rusty's patch or removing the bogus
-> CONFIG_PAGE_OFFSET for !CONFIG_MMU.
+Hmm, I'd completely forgotten about that approach. Whilst it certainly looks
+cleaner from a user perspective, I always get scared when I see
+'desc->status_use_accessors' since it tends to incur the wrath of tglx :)
 
-Rusty, maybe we need revert commit f6537f2f "scripts/kallsyms: filter
-symbols not in kernel address space", since CONFIG_PAGE_OFFSET
-may be bogus on !MMU or not defined on ARCHs(most of 64bit arch,
-no regression report because scripts/kallsyms may get zero
-kernel_start_addr)
+That said, I guess that should be fine in irqdesc.h (basically adding a new
+accessor). Chris went missing after sending those initial patches, so
+perhaps Vinayak could look at resurrecting those?
 
-As I thought of, another way for fixing original problem is to define a RO
-global variable in kernel and set its value as PAGE_OFFSET, then let
-scripts/kallsyms use it as kernel start address, or do you other
-suggestions?
-
-
-Thanks,
--- 
-Ming Lei
+Will
