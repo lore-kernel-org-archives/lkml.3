@@ -1,140 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab3KKFgZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 00:36:25 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:56143 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab3KKFfw (ORCPT
+	id S1753107Ab3KKFgn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 00:36:43 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:42222 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752973Ab3KKFgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 00:35:52 -0500
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Tejun Heo <tj@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-ide@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: [PATCH] powerpc: add explicit OF includes for ppc4xx
-Date: Sun, 10 Nov 2013 23:35:43 -0600
-Message-Id: <1384148143-14335-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 11 Nov 2013 00:36:09 -0500
+Subject: [PATCH v8 5/7] POWER/cpuidle: Generic POWERPC-BOOK3S CPUIDLE driver
+ supporting PSERIES.
+To: benh@kernel.crashing.org, linux-pm@lists.linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: b.zolnierkie@samsung.com, daniel.lezcano@linaro.org,
+        dongsheng.wang@freescale.com, michael@ellerman.id.au,
+        scottwood@freescale.com, srivatsa.bhat@linux.vnet.ibm.com,
+        preeti@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com
+Date: Mon, 11 Nov 2013 11:05:47 +0530
+Message-ID: <20131111053546.14797.61973.stgit@deepthi.in.ibm.com>
+In-Reply-To: <20131111053450.14797.75544.stgit@deepthi.in.ibm.com>
+References: <20131111053450.14797.75544.stgit@deepthi.in.ibm.com>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111105-7014-0000-0000-000003E72D56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+This patch includes cleanup and refactoring of the
+existing code to make the driver POWERPC-BOOK3S generic.
+* Re-naming the functions from pseries to generic powerpc-book3s.
+* Re-naming the backend driver from pseries_idle to
+  powerpc_book3s_idle.
 
-Commit b5b4bb3f6a11f9 (of: only include prom.h on sparc) removed implicit
-includes of of_*.h headers by powerpc's prom.h. Some PPC4xx components
-were missed in initial clean-up patch, so add the necessary includes
-to fix ppc4xx builds.
-
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-ide@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org
+Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
-I intend to send this patch to Linus with the rest of the DT clean-up
-series.
+ drivers/cpuidle/cpuidle-powerpc-book3s.c |   32 +++++++++++++++---------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-Rob
-
- arch/powerpc/sysdev/ppc4xx_ocm.c     | 1 +
- arch/powerpc/sysdev/xilinx_intc.c    | 1 +
- drivers/ata/sata_dwc_460ex.c         | 2 ++
- drivers/char/hw_random/ppc4xx-rng.c  | 1 +
- drivers/crypto/amcc/crypto4xx_core.c | 3 +++
- drivers/dma/ppc4xx/adma.c            | 2 ++
- 6 files changed, 10 insertions(+)
-
-diff --git a/arch/powerpc/sysdev/ppc4xx_ocm.c b/arch/powerpc/sysdev/ppc4xx_ocm.c
-index 1b15f93..b7c4345 100644
---- a/arch/powerpc/sysdev/ppc4xx_ocm.c
-+++ b/arch/powerpc/sysdev/ppc4xx_ocm.c
-@@ -26,6 +26,7 @@
- #include <linux/kernel.h>
- #include <linux/dma-mapping.h>
- #include <linux/of.h>
-+#include <linux/of_address.h>
- #include <asm/rheap.h>
- #include <asm/ppc4xx_ocm.h>
- #include <linux/slab.h>
-diff --git a/arch/powerpc/sysdev/xilinx_intc.c b/arch/powerpc/sysdev/xilinx_intc.c
-index f4fdc94..83f943a 100644
---- a/arch/powerpc/sysdev/xilinx_intc.c
-+++ b/arch/powerpc/sysdev/xilinx_intc.c
-@@ -24,6 +24,7 @@
- #include <linux/irq.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-+#include <linux/of_irq.h>
- #include <asm/io.h>
- #include <asm/processor.h>
- #include <asm/i8259.h>
-diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
-index 2e39173..523524b 100644
---- a/drivers/ata/sata_dwc_460ex.c
-+++ b/drivers/ata/sata_dwc_460ex.c
-@@ -31,6 +31,8 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/device.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/platform_device.h>
- #include <linux/libata.h>
-diff --git a/drivers/char/hw_random/ppc4xx-rng.c b/drivers/char/hw_random/ppc4xx-rng.c
-index 732c330..521f76b 100644
---- a/drivers/char/hw_random/ppc4xx-rng.c
-+++ b/drivers/char/hw_random/ppc4xx-rng.c
-@@ -13,6 +13,7 @@
- #include <linux/platform_device.h>
- #include <linux/hw_random.h>
- #include <linux/delay.h>
-+#include <linux/of_address.h>
- #include <linux/of_platform.h>
- #include <asm/io.h>
+diff --git a/drivers/cpuidle/cpuidle-powerpc-book3s.c b/drivers/cpuidle/cpuidle-powerpc-book3s.c
+index fe8ea0c..7b785ff 100644
+--- a/drivers/cpuidle/cpuidle-powerpc-book3s.c
++++ b/drivers/cpuidle/cpuidle-powerpc-book3s.c
+@@ -20,8 +20,8 @@
+ #include <asm/runlatch.h>
+ #include <asm/plpar_wrappers.h>
  
-diff --git a/drivers/crypto/amcc/crypto4xx_core.c b/drivers/crypto/amcc/crypto4xx_core.c
-index f88e3d8..efaf630 100644
---- a/drivers/crypto/amcc/crypto4xx_core.c
-+++ b/drivers/crypto/amcc/crypto4xx_core.c
-@@ -27,6 +27,9 @@
- #include <linux/dma-mapping.h>
- #include <linux/platform_device.h>
- #include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/slab.h>
- #include <asm/dcr.h>
-diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
-index 370ff82..e24b5ef 100644
---- a/drivers/dma/ppc4xx/adma.c
-+++ b/drivers/dma/ppc4xx/adma.c
-@@ -42,6 +42,8 @@
- #include <linux/uaccess.h>
- #include <linux/proc_fs.h>
- #include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <asm/dcr.h>
- #include <asm/dcr-regs.h>
--- 
-1.8.1.2
+-struct cpuidle_driver pseries_idle_driver = {
+-	.name             = "pseries_idle",
++struct cpuidle_driver powerpc_book3s_idle_driver = {
++	.name             = "powerpc_book3s_idle",
+ 	.owner            = THIS_MODULE,
+ };
+ 
+@@ -182,7 +182,7 @@ void update_smt_snooze_delay(int cpu, int residency)
+ 			drv->states[1].target_residency = residency;
+ }
+ 
+-static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
++static int powerpc_book3s_cpuidle_add_cpu_notifier(struct notifier_block *n,
+ 			unsigned long action, void *hcpu)
+ {
+ 	int hotcpu = (unsigned long)hcpu;
+@@ -213,16 +213,16 @@ static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
+ }
+ 
+ static struct notifier_block setup_hotplug_notifier = {
+-	.notifier_call = pseries_cpuidle_add_cpu_notifier,
++	.notifier_call = powerpc_book3s_cpuidle_add_cpu_notifier,
+ };
+ 
+ /*
+- * pseries_cpuidle_driver_init()
++ * powerpc_book3s_cpuidle_driver_init()
+  */
+-static int pseries_cpuidle_driver_init(void)
++static int powerpc_book3s_cpuidle_driver_init(void)
+ {
+ 	int idle_state;
+-	struct cpuidle_driver *drv = &pseries_idle_driver;
++	struct cpuidle_driver *drv = &powerpc_book3s_idle_driver;
+ 
+ 	drv->state_count = 0;
+ 	for (idle_state = 0; idle_state < max_idle_state; ++idle_state) {
+@@ -241,10 +241,10 @@ static int pseries_cpuidle_driver_init(void)
+ }
+ 
+ /*
+- * pseries_idle_probe()
++ * powerpc_book3s_idle_probe()
+  * Choose state table for shared versus dedicated partition
+  */
+-static int pseries_idle_probe(void)
++static int powerpc_book3s_idle_probe(void)
+ {
+ 
+ 	if (cpuidle_disable != IDLE_NO_OVERRIDE)
+@@ -264,24 +264,24 @@ static int pseries_idle_probe(void)
+ 	return 0;
+ }
+ 
+-static int __init pseries_processor_idle_init(void)
++static int __init powerpc_book3s_processor_idle_init(void)
+ {
+ 	int retval;
+ 
+-	retval = pseries_idle_probe();
++	retval = powerpc_book3s_idle_probe();
+ 	if (retval)
+ 		return retval;
+ 
+-	pseries_cpuidle_driver_init();
+-	retval = cpuidle_register(&pseries_idle_driver, NULL);
++	powerpc_book3s_cpuidle_driver_init();
++	retval = cpuidle_register(&powerpc_book3s_idle_driver, NULL);
+ 	if (retval) {
+-		printk(KERN_DEBUG "Registration of pseries driver failed.\n");
++		printk(KERN_DEBUG "Registration of powerpc_book3s_idle driver failed.\n");
+ 		return retval;
+ 	}
+ 
+ 	register_cpu_notifier(&setup_hotplug_notifier);
+-	printk(KERN_DEBUG "pseries_idle_driver registered\n");
++	printk(KERN_DEBUG "powerpc_book3s_idle registered\n");
+ 	return 0;
+ }
+ 
+-device_initcall(pseries_processor_idle_init);
++device_initcall(powerpc_book3s_processor_idle_init);
 
