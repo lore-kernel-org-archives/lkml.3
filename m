@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab3KKLIA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:08:00 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:55578 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab3KKLHv (ORCPT
+	id S1753358Ab3KKLJP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:09:15 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:52252 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab3KKLJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:07:51 -0500
+	Mon, 11 Nov 2013 06:09:10 -0500
+Date: Mon, 11 Nov 2013 12:09:04 +0100
+From: Robert Richter <rric@kernel.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org
+Subject: Re: [PATCH] edac, highbank: remove dependency on ARCH_HIGHBANK
+Message-ID: <20131111110904.GQ7429@rric.localhost>
+References: <1383708352-19527-1-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAEPa5ym2Xz3F19fJJqNawkRLOKk6Ao6oXrzSrHU051V7p=9otA@mail.gmail.com>
-References: <CAEPa5ym2Xz3F19fJJqNawkRLOKk6Ao6oXrzSrHU051V7p=9otA@mail.gmail.com>
-From: Veaceslav Falico <veaceslav@falico.eu>
-Date: Mon, 11 Nov 2013 12:07:30 +0100
-Message-ID: <CAE3RKNng9A6Bp7wa4+6iCprwEQpzGueagLc8iob+aFabJW4nnw@mail.gmail.com>
-Subject: Re: bridge not getting ip since 3.11.5 and 3.4.66
-To: Mark Trompell <mark@foresightlinux.org>
-Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383708352-19527-1-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 11:29 AM, Mark Trompell <mark@foresightlinux.org> wrote:
-> my bridge br0 doesn't get an ip from dhcp anymore after 3.11.5 and 3.4.66,
-> What information would be helpful and required to find out what's going wrong.
+On 05.11.13 21:25:52, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> In order to enable on arm64 and improve the build coverage, remove the
+> dependency on ARCH_HIGHBANK.
+> 
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Doug Thompson <dougthompson@xmission.com>
+> Cc: Robert Richter <rric@kernel.org>
+> Cc: linux-edac@vger.kernel.org
 
-CC netdev
+Rob, I will apply your patch with the changes we discussed if this is
+ok for you.
 
-First thing would be to provide the network scheme. Do you use vlans?
-Which network
-cards/drivers are you using? Do you use some kind of virtualization?
-Is bonding involved?
+-Robert
 
->
-> Greetings
-> Mark
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Best regards,
-Veaceslav Falico
+> ---
+>  drivers/edac/Kconfig | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+> index 878f090..fc8aaaf 100644
+> --- a/drivers/edac/Kconfig
+> +++ b/drivers/edac/Kconfig
+> @@ -328,14 +328,14 @@ config EDAC_TILE
+>  
+>  config EDAC_HIGHBANK_MC
+>  	tristate "Highbank Memory Controller"
+> -	depends on EDAC_MM_EDAC && ARCH_HIGHBANK
+> +	depends on EDAC_MM_EDAC
+>  	help
+>  	  Support for error detection and correction on the
+>  	  Calxeda Highbank memory controller.
+>  
+>  config EDAC_HIGHBANK_L2
+>  	tristate "Highbank L2 Cache"
+> -	depends on EDAC_MM_EDAC && ARCH_HIGHBANK
+> +	depends on EDAC_MM_EDAC
+>  	help
+>  	  Support for error detection and correction on the
+>  	  Calxeda Highbank memory controller.
+> -- 
+> 1.8.1.2
+> 
