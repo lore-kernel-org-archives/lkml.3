@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab3KKUME (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 15:12:04 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:34632 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660Ab3KKULy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 15:11:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131111200748.GB17408@gmail.com>
-References: <1381450698-28710-4-git-send-email-keescook@chromium.org>
-	<tip-5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3@git.kernel.org>
-	<20131111182046.GA14961@gmail.com>
-	<20131111183101.GA16051@gmail.com>
-	<CAGXu5jL96B4+McO=K9dptu81m+bdKWOZ8YS9x7+SZxkjfUsg9Q@mail.gmail.com>
-	<528131E7.2060509@zytor.com>
-	<20131111200748.GB17408@gmail.com>
-Date: Mon, 11 Nov 2013 12:11:54 -0800
-X-Google-Sender-Auth: hHMqmPfaWus9Rm0loSG66LAWI9U
-Message-ID: <CAGXu5jJuNRuU99DS0gWvFw71roJUPNdtFimqvuw9qungNE8ZBw@mail.gmail.com>
-Subject: Re: [tip:x86/kaslr] x86, kaslr: Provide randomness functions
-From: Kees Cook <keescook@chromium.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753019Ab3KKUMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 15:12:37 -0500
+Received: from mga09.intel.com ([134.134.136.24]:8575 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752660Ab3KKUMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 15:12:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="433422448"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: stern@rowland.harvard.edu, mina86@mina86.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH v5 1/5] usb: gadget: move bitflags to the end of usb_gadget struct
+Date: Mon, 11 Nov 2013 12:16:47 -0800
+Message-Id: <1384201011-11114-2-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1384201011-11114-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1384201011-11114-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 12:07 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * H. Peter Anvin <hpa@zytor.com> wrote:
->
->> Of course, perhaps we could just hash struct boot_params as a starting
->> point?
->
-> Yeah, that would be a good first step, before trying to parse DMI or ACPI.
-> Anything that is reasonably system dependent and gives at least some
-> amount of unpredicability.
+This patch moves all bitflags to the end of usb_gadget struct in order
+to improve readability.
 
-Given the very limited nature of the early boot environment, what
-would you recommend for the hashing routine itself? There's nothing in
-boot/ that does any kind of "real" crypto hashing. Should I just XOR
-the entire contents of boot_params together?
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
+ include/linux/usb/gadget.h | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
--Kees
-
+diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
+index 942ef5e053bf..23b3bfd0a842 100644
+--- a/include/linux/usb/gadget.h
++++ b/include/linux/usb/gadget.h
+@@ -485,6 +485,11 @@ struct usb_gadget_ops {
+  * @max_speed: Maximal speed the UDC can handle.  UDC must support this
+  *      and all slower speeds.
+  * @state: the state we are now (attached, suspended, configured, etc)
++ * @name: Identifies the controller hardware type.  Used in diagnostics
++ *	and sometimes configuration.
++ * @dev: Driver model state for this abstract device.
++ * @out_epnum: last used out ep number
++ * @in_epnum: last used in ep number
+  * @sg_supported: true if we can handle scatter-gather
+  * @is_otg: True if the USB device port uses a Mini-AB jack, so that the
+  *	gadget driver must provide a USB OTG descriptor.
+@@ -497,11 +502,6 @@ struct usb_gadget_ops {
+  *	only supports HNP on a different root port.
+  * @b_hnp_enable: OTG device feature flag, indicating that the A-Host
+  *	enabled HNP support.
+- * @name: Identifies the controller hardware type.  Used in diagnostics
+- *	and sometimes configuration.
+- * @dev: Driver model state for this abstract device.
+- * @out_epnum: last used out ep number
+- * @in_epnum: last used in ep number
+  *
+  * Gadgets have a mostly-portable "gadget driver" implementing device
+  * functions, handling all usb configurations and interfaces.  Gadget
+@@ -530,16 +530,17 @@ struct usb_gadget {
+ 	enum usb_device_speed		speed;
+ 	enum usb_device_speed		max_speed;
+ 	enum usb_device_state		state;
++	const char			*name;
++	struct device			dev;
++	unsigned			out_epnum;
++	unsigned			in_epnum;
++
+ 	unsigned			sg_supported:1;
+ 	unsigned			is_otg:1;
+ 	unsigned			is_a_peripheral:1;
+ 	unsigned			b_hnp_enable:1;
+ 	unsigned			a_hnp_support:1;
+ 	unsigned			a_alt_hnp_support:1;
+-	const char			*name;
+-	struct device			dev;
+-	unsigned			out_epnum;
+-	unsigned			in_epnum;
+ };
+ #define work_to_gadget(w)	(container_of((w), struct usb_gadget, work))
+ 
 -- 
-Kees Cook
-Chrome OS Security
+1.8.4.rc3
+
