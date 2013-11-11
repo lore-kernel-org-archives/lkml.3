@@ -1,126 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab3KKN5h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 08:57:37 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:42039 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975Ab3KKN4y (ORCPT
+	id S1754150Ab3KKN5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 08:57:52 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:17116 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754119Ab3KKN5i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 08:56:54 -0500
-From: Julian Andres Klode <jak@jak-linux.org>
-To: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Cc: Julian Andres Klode <jak@jak-linux.org>,
-        ibm-acpi-devel@lists.sourceforge.net (open list:THINKPAD ACPI EXT...),
-        platform-driver-x86@vger.kernel.org (open list:THINKPAD ACPI EXT...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 2/4] thinkpad_acpi: battery: Add force_discharge attribute
-Date: Mon, 11 Nov 2013 14:56:31 +0100
-Message-Id: <1384178195-12218-3-git-send-email-jak@jak-linux.org>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
-References: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
+	Mon, 11 Nov 2013 08:57:38 -0500
+X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat9gtPvzY0=
+X-RZG-CLASS-ID: mo00
+Subject: Re: [PATCH 0/3] omapdss: venc: Add support for bypass and acbias.
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+In-Reply-To: <5280DBA6.50303@ti.com>
+Date: Mon, 11 Nov 2013 14:57:30 +0100
+Cc: Belisko Marek <marek.belisko@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
+        NeilBrown <neilb@suse.de>, Marek Belisko <marek@goldelico.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FB10035C-B13C-4A03-BE9C-0576806F2577@goldelico.com>
+References: <1381784555-18344-1-git-send-email-marek@goldelico.com> <CAAfyv34j+YhEjtHyf7zg5oBoCV5ROEXow8VV0PQNHLTF5uDZJg@mail.gmail.com> <5280DBA6.50303@ti.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes it possible to forcefully discharge a battery.
+Hi Tomi,
 
-Signed-off-by: Julian Andres Klode <jak@jak-linux.org>
----
- Documentation/laptops/thinkpad-acpi.txt |  4 +++
- drivers/platform/x86/thinkpad_acpi.c    | 49 ++++++++++++++++++++++++++++++++-
- 2 files changed, 52 insertions(+), 1 deletion(-)
+Am 11.11.2013 um 14:29 schrieb Tomi Valkeinen:
 
-diff --git a/Documentation/laptops/thinkpad-acpi.txt b/Documentation/laptops/thinkpad-acpi.txt
-index 97b150a..72882bb 100644
---- a/Documentation/laptops/thinkpad-acpi.txt
-+++ b/Documentation/laptops/thinkpad-acpi.txt
-@@ -1370,6 +1370,10 @@ battery sysfs attribute: stop_charge_thresh
- 	A percentage value from 1-99%, controlling when charging should stop, or
- 	0 for the default value.
- 
-+battery sysfs attribute: force_discharge
-+
-+	Force discharging (0 or 1)
-+
- Multiple Commands, Module Parameters
- ------------------------------------
- 
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index 66e629e..67ce469 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -8358,7 +8358,7 @@ static struct ibm_struct fan_driver_data = {
- 
- /* Modify battery_init() if you modify them */
- #define BATTERY_MAX_COUNT 3
--#define BATTERY_MAX_ATTRS 2
-+#define BATTERY_MAX_ATTRS 3
- 
- static struct battery {
- 	char name[3 + 1 + 1];
-@@ -8437,6 +8437,46 @@ static ssize_t battery_stop_charge_thresh_show(struct device *dev,
- 	return snprintf(buf, PAGE_SIZE, "%d\n", value & 0xFF);
- }
- 
-+static ssize_t battery_force_discharge_show(struct device *dev,
-+						struct device_attribute *attr,
-+						char *buf)
-+{
-+	int bat = battery_attribute_get_battery(attr);
-+	int value;
-+
-+	if (!hkey_handle || !acpi_evalf(hkey_handle, &value, "BDSG",
-+					"dd", bat))
-+		return -EIO;
-+
-+	return snprintf(buf, PAGE_SIZE, "%d\n", value & 0x1);
-+}
-+
-+static ssize_t battery_force_discharge_store(struct device *dev,
-+						struct device_attribute *attr,
-+						const char *buf, size_t count)
-+{
-+	int bat = battery_attribute_get_battery(attr);
-+	int res = -EINVAL;
-+	unsigned long value;
-+
-+	res = kstrtoul(buf, 0, &value);
-+	if (res || value > 1)
-+		return res ? res : -EINVAL;
-+
-+	if (!hkey_handle || !acpi_evalf(hkey_handle, &res, "BDSG", "dd", bat))
-+		return -EIO;
-+
-+	/* Keep the break on AC disconnect state */
-+	value |= (res >> 1) & 0x1;
-+	/* Set the battery */
-+	value |= (bat << 8);
-+
-+	if (!hkey_handle || !acpi_evalf(hkey_handle, &res, "BDSS",
-+					"dd", (int) value) || res < 0)
-+		return -EIO;
-+	return count;
-+}
-+
- static int __init battery_init(struct ibm_init_struct *iibm)
- {
- 	int res;
-@@ -8482,6 +8522,13 @@ static int __init battery_init(struct ibm_init_struct *iibm)
- 				       battery_stop_charge_thresh_store),
- 			.var = (void *) (unsigned long) (i + 1)
- 		};
-+		batteries[i].attributes[j++] = (struct dev_ext_attribute) {
-+			.attr = __ATTR(force_discharge,
-+				       S_IWUSR | S_IRUGO,
-+				       battery_force_discharge_show,
-+				       battery_force_discharge_store),
-+			.var = (void *) (unsigned long) (i + 1)
-+		};
- 
- 		strncpy(batteries[i].name, "BAT", 3);
- 		batteries[i].name[3] = '0' + i;
--- 
-1.8.4.2
+> Hi,
+> 
+> On 2013-11-05 09:24, Belisko Marek wrote:
+>> Hi,
+>> 
+>> ping.
+>> 
+>> On Mon, Oct 14, 2013 at 11:02 PM, Marek Belisko <marek@goldelico.com> wrote:
+>>> This patches is adding bypass and acbias functionality to omapdss venc driver.
+>>> In first patch we export updatin bypass and acbias in devconf1 register. Next patch
+>>> add handling for updating in venc driver and last patch add driver for opa362 which
+>>> is used on gta04 board and set bypass + acbias.
+>> Is there a chance to get this series to 3.13? Thanks.
+> 
+> Sorry, I haven't had time to do much reviewing.
+> 
+> The code in omap3-tvout.c should be included in the display.c file,
+> which already contains some things like muxing.
+
+Ok, that might be better - but we were not sure where to place code to
+modify the DEVCONF1 registers. It is not directly DSS related but a special
+control of the OMAP3 SoC. Therefore we think it is better located in omap3-tvout.c
+
+> Also, func(bool, bool)
+> style functions are rather confusing to read. Maybe an enum would be
+> better, so you'd instead have something like:
+> 
+> func(OMAP_VENC_TVOUTBYPASS | OMAP_VENC_TVACEN)
+
+We have no special preference on that.
+
+> 
+> But the main issue is: while this series probably works well, I really
+> don't like it that the OPA driver needs to pass bypass and acbias. It
+> shouldn't know anything about such things. I'm just not certain how to
+> implement that with the current omapdss driver.
+
+Well, it must know bypass and acbias because it requires the OMAP
+CPU to be configured accordingly. I.e. it is the one who pushes the
+button. Or we get a problem that people might misconfigure it.
+
+I would see it similar as a driver must be able to control power. Here
+it must be able to control bypass and acbias in a special way that it works.
+
+> I'll try to find time to think about this more, but I don't think I can
+> merge this for 3.13.
+
+Please take your time.
+
+And please also consider the approach to merge it into 3.13 as it is
+and we can then fix it in the weeks while release candidates are pushed.
+
+But that is your decision.
+
+BR and thanks,
+Nikolaus
 
