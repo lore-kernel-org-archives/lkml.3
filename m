@@ -1,90 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab3KKWSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 17:18:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59536 "EHLO mx2.suse.de"
+	id S1753440Ab3KKWSP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 17:18:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34777 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375Ab3KKWR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 17:17:58 -0500
-Date: Mon, 11 Nov 2013 23:17:55 +0100
-From: Jan Kara <jack@suse.cz>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
- too much
-Message-ID: <20131111221755.GA31266@quack.suse.cz>
-References: <1383860919-1883-1-git-send-email-jack@suse.cz>
- <1383860919-1883-4-git-send-email-jack@suse.cz>
- <CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
- <20131107225733.GE2054@quack.suse.cz>
- <20131111215415.GA23331@amd.pavel.ucw.cz>
+	id S1752913Ab3KKWSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 17:18:11 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] FS-Cache: Fix handling of an attempt to store a page that
+ is now beyond EOF
+To: torvalds@linux-foundation.org
+From: David Howells <dhowells@redhat.com>
+Cc: linux-cachefs@redhat.com, linux-kernel@vger.kernel.org,
+        Milosz Tanski <milosz@adfin.com>
+Date: Mon, 11 Nov 2013 22:18:04 +0000
+Message-ID: <20131111221804.23212.30560.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131111215415.GA23331@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 11-11-13 22:54:15, Pavel Machek wrote:
-> Hi!
-> 
-> > > > A CPU can be caught in console_unlock() for a long time (tens of seconds
-> > > > are reported by our customers) when other CPUs are using printk heavily
-> > > > and serial console makes printing slow. Despite serial console drivers
-> > > > are calling touch_nmi_watchdog() this triggers softlockup warnings
-> > > > because interrupts are disabled for the whole time console_unlock() runs
-> > > > (e.g. vprintk() calls console_unlock() with interrupts disabled). Thus
-> > > > IPIs cannot be processed and other CPUs get stuck spinning in calls like
-> > > > smp_call_function_many(). Also RCU eventually starts reporting lockups.
-> > > >
-> > > > In my artifical testing I can also easily trigger a situation when disk
-> > > > disappears from the system apparently because interrupt from it wasn't
-> > > > served for too long. This is why just silencing watchdogs isn't a
-> > > > reliable solution to the problem and we simply have to avoid spending
-> > > > too long in console_unlock() with interrupts disabled.
-> > > >
-> > > > The solution this patch works toward is to postpone printing to a later
-> > > > moment / different CPU when we already printed over X characters in
-> > > > current console_unlock() invocation. This is a crude heuristic but
-> > > > measuring time we spent printing doesn't seem to be really viable - we
-> > > > cannot rely on high resolution time being available and with interrupts
-> > > > disabled jiffies are not updated. User can tune the value X via
-> > > > printk.offload_chars kernel parameter.
-> > > >
-> > > > Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-> > > > Signed-off-by: Jan Kara <jack@suse.cz>
-> > > 
-> > > When a message takes tens of seconds to be printed, it usually means
-> > > we are in trouble somehow :)
-> > > I wonder what printk source can trigger such a high volume.
-> >   Machines with tens of processors and thousands of scsi devices. When
-> > device discovery happens on boot, all processors are busily reporting new
-> > scsi devices and one poor looser is bound to do the printing for ever and
-> > ever until the machine dies...
-> 
-> Dunno. In these cases, would it make sense to:
-> 
-> 1) reduce amount of text printed
-  I thought about this as well. But
-a) It doesn't seem practical as you would have to modify lots of drivers
-   and keep them rather silent. That seems rather fragile. Plus you will
-   not display some potentially useful information.
-b) It doesn't address the real underlying problem that the way printk() is
-   currently implemented, there is no bound on the time CPU spends in the
-   loop printing from buffer to console. And the fact that this loop
-   sometimes happens with interrupts disabled makes the situation even
-   worse.
- 
-> 2) just print [XXX characters lost] on overruns?
-  We don't overrun the printk buffer so no characters are lost. It just
-takes too long to feed the whole printk buffer through serial console...
+Fix the handling of an attempt to store a page that is now beyond EOF.  This
+may happen, for example, if the page got pushed for storage before the netfs
+file got truncated on the server.  In such a case, we should just remove the
+excessive pages from the cookie->stores radix tree and wake up the waiter.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+This can be seen in /proc/fs/fscache/stats on this line:
+
+	Stores : ops=350 run=1895 pgs=1545 rxd=1727 olm=9
+
+where olm=N has N > 0.
+
+Reported-by: Milosz Tanski <milosz@adfin.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Milosz Tanski <milosz@adfin.com>
+---
+
+ fs/fscache/page.c |   37 ++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 36 insertions(+), 1 deletion(-)
+
+diff --git a/fs/fscache/page.c b/fs/fscache/page.c
+index 7f5c658af755..b4730cf52aec 100644
+--- a/fs/fscache/page.c
++++ b/fs/fscache/page.c
+@@ -755,6 +755,7 @@ static void fscache_write_op(struct fscache_operation *_op)
+ 	struct fscache_object *object = op->op.object;
+ 	struct fscache_cookie *cookie;
+ 	struct page *page;
++	pgoff_t index;
+ 	unsigned n;
+ 	void *results[1];
+ 	int ret;
+@@ -803,7 +804,7 @@ static void fscache_write_op(struct fscache_operation *_op)
+ 	_debug("gang %d [%lx]", n, page->index);
+ 	if (page->index > op->store_limit) {
+ 		fscache_stat(&fscache_n_store_pages_over_limit);
+-		goto superseded;
++		goto page_beyond_limit;
+ 	}
+ 
+ 	radix_tree_tag_set(&cookie->stores, page->index,
+@@ -829,6 +830,40 @@ static void fscache_write_op(struct fscache_operation *_op)
+ 	_leave("");
+ 	return;
+ 
++page_beyond_limit:
++	spin_unlock(&object->lock);
++
++page_beyond_limit_unlocked:
++	/* pages that are now beyond the end of the storage object must have
++	 * their pending storage records cleared.
++	 */
++	index = page->index;
++	radix_tree_tag_clear(&cookie->stores, page->index,
++			     FSCACHE_COOKIE_PENDING_TAG);
++	if (!radix_tree_tag_get(&cookie->stores, page->index,
++				FSCACHE_COOKIE_STORING_TAG)) {
++		fscache_stat(&fscache_n_store_radix_deletes);
++		radix_tree_delete(&cookie->stores, page->index);
++		page_cache_release(page);
++	}
++	if (!need_resched()) {
++		n = radix_tree_gang_lookup_tag(&cookie->stores, results,
++					       index + 1, 1,
++					       FSCACHE_COOKIE_PENDING_TAG);
++		if (n == 1) {
++			page = results[0];
++			goto page_beyond_limit_unlocked;
++		}
++		spin_unlock(&cookie->stores_lock);
++		wake_up_bit(&cookie->flags, 0);
++	} else {
++		spin_unlock(&cookie->stores_lock);
++	}
++
++	fscache_enqueue_operation(&op->op);
++	_leave("");
++	return;
++
+ superseded:
+ 	/* this writer is going away and there aren't any more things to
+ 	 * write */
+
