@@ -1,180 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab3KKV25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 16:28:57 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:37665 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341Ab3KKV2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 16:28:51 -0500
-Date: Mon, 11 Nov 2013 13:28:36 -0800
-From: Kees Cook <keescook@chromium.org>
-To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org
-Subject: [PATCH v2] x86, kaslr: mix entropy sources together as needed
-Message-ID: <20131111212836.GA10212@www.outflux.net>
+	id S1752699Ab3KKVal (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 16:30:41 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:37449 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab3KKVai (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 16:30:38 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: gitorious v3.12-rc1-n900 tree
+Date: Mon, 11 Nov 2013 22:30:30 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-13-generic; KDE/4.11.2; x86_64; ; )
+Cc: sre@debian.org, sre@ring0.de, Jenny TC <jenny.tc@intel.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        linux-kernel@vger.kernel.org
+References: <201310240806.49340@pali> <20131105231241.GA5065@amd.pavel.ucw.cz> <20131106224241.GA5837@amd.pavel.ucw.cz>
+In-Reply-To: <20131106224241.GA5837@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+Content-Type: multipart/signed;
+  boundary="nextPart2550193.kUsk5gY3gV";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201311112230.32438@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Depending on availability, mix the RDRAND and RDTSC entropy together with
-XOR. Only when neither is available should the i8254 be used. Update
-the Kconfig documentation to reflect this. Additionally, since bits
-used for entropy is masked elsewhere, drop the needless masking in the
-get_random_long().
+--nextPart2550193.kUsk5gY3gV
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Finally, to improve the starting entropy, do a simple hashing of a
-build-time versions string and the boot-time boot_params structure for
-some additional level of unpredictability.
+On Wednesday 06 November 2013 23:42:41 Pavel Machek wrote:
+> On Wed 2013-11-06 00:12:41, Pavel Machek wrote:
+> > Hi!
+> >=20
+> > > > I tried pulling current linux-n900 tree from gitorious.
+> > >=20
+> > > Hi, use branch v3.12-rc5-n900 (not -rc1) and consider
+> > > using rx51_defconfig.
+> >=20
+> > rx51_defconfig works for me, thanks.
+> >=20
+> > And here are fixes for the problems I hit... please apply,
+> >=20
+> > Signed-off-by: Pavel Machek <pavel@ucw.cz>
+>=20
+> (the patch is still needed with v3.12-rc5-n900 branch).
+> 									Pavel
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
-v2:
- - added build-time string to add to starting entropy; Ingo Molnar.
----
- arch/x86/Kconfig                |   14 +++++---
- arch/x86/boot/compressed/aslr.c |   73 +++++++++++++++++++++++++++++++--------
- 2 files changed, 67 insertions(+), 20 deletions(-)
+Hi, thanks for patch. I commited it to v3.12-rc5-n900 branch.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index ee3b38363063..119455802d57 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1736,13 +1736,17 @@ config RANDOMIZE_BASE
- 	   deters exploit attempts relying on knowledge of the location
- 	   of kernel internals.
- 
--	   Entropy is generated using the RDRAND instruction if it
--	   is supported.  If not, then RDTSC is used, if supported. If
--	   neither RDRAND nor RDTSC are supported, then no randomness
--	   is introduced.
-+	   Entropy is generated using the RDRAND instruction if it is
-+	   supported. If RDTSC is supported, it is used as well. If
-+	   neither RDRAND nor RDTSC are supported, then randomness is
-+	   read from the i8254 timer.
- 
- 	   The kernel will be offset by up to RANDOMIZE_BASE_MAX_OFFSET,
--	   and aligned according to PHYSICAL_ALIGN.
-+	   and aligned according to PHYSICAL_ALIGN. Since the kernel is
-+	   built using 2GiB addressing, and PHYSICAL_ALGIN must be at a
-+	   minimum of 2MiB, only 10 bits of entropy is theoretically
-+	   possible. At best, due to page table layouts, 64-bit can use
-+	   9 bits of entropy and 32-bit uses 8 bits.
- 
- config RANDOMIZE_BASE_MAX_OFFSET
- 	hex "Maximum ASLR offset allowed"
-diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-index 05957986d123..08d833b56f4c 100644
---- a/arch/x86/boot/compressed/aslr.c
-+++ b/arch/x86/boot/compressed/aslr.c
-@@ -5,6 +5,17 @@
- #include <asm/archrandom.h>
- #include <asm/e820.h>
- 
-+#include <generated/compile.h>
-+#include <linux/module.h>
-+#include <linux/uts.h>
-+#include <linux/utsname.h>
-+#include <generated/utsrelease.h>
-+#include <linux/version.h>
-+
-+/* Simplified build-specific string for starting entropy. */
-+static const char *build_str = UTS_RELEASE " (" LINUX_COMPILE_BY "@"
-+		LINUX_COMPILE_HOST ") (" LINUX_COMPILER ") " UTS_VERSION;
-+
- #define I8254_PORT_CONTROL	0x43
- #define I8254_PORT_COUNTER0	0x40
- #define I8254_CMD_READBACK	0xC0
-@@ -25,34 +36,66 @@ static inline u16 i8254(void)
- 	return timer;
- }
- 
-+static unsigned long rotate_xor(unsigned long hash, const void *area,
-+				size_t size)
-+{
-+	size_t i;
-+	unsigned long *ptr = (unsigned long *)area;
-+
-+	for (i = 0; i < size / sizeof(hash); i++) {
-+		/* Rotate and XOR */
-+		hash = (hash << ((sizeof(hash) - 1) * 8)) | (hash >> 8);
-+		hash ^= ptr[i];
-+	}
-+
-+	return hash;
-+}
-+
-+/* Attempt to create a simple but unpredictable starting entropy. */
-+static unsigned long get_random_boot(void)
-+{
-+	unsigned long hash = 0;
-+
-+	hash = rotate_xor(hash, build_str, sizeof(build_str));
-+	hash = rotate_xor(hash, real_mode, sizeof(*real_mode));
-+
-+	return hash;
-+}
-+
- static unsigned long get_random_long(void)
- {
--	unsigned long random;
-+	unsigned long random = get_random_boot();
-+	bool use_i8254 = true;
-+
-+	debug_putstr("KASLR using");
- 
- 	if (has_cpuflag(X86_FEATURE_RDRAND)) {
--		debug_putstr("KASLR using RDRAND...\n");
--		if (rdrand_long(&random))
--			return random;
-+		unsigned long raw;
-+
-+		debug_putstr(" RDRAND");
-+		if (rdrand_long(&raw)) {
-+			random ^= raw;
-+			use_i8254 = false;
-+		}
- 	}
- 
- 	if (has_cpuflag(X86_FEATURE_TSC)) {
- 		uint32_t raw;
- 
--		debug_putstr("KASLR using RDTSC...\n");
-+		debug_putstr(" RDTSC");
- 		rdtscl(raw);
- 
--		/* Only use the low bits of rdtsc. */
--		random = raw & 0xffff;
--	} else {
--		debug_putstr("KASLR using i8254...\n");
--		random = i8254();
-+		random ^= raw;
-+		use_i8254 = false;
-+	}
-+
-+	if (use_i8254) {
-+		debug_putstr(" i8254");
-+		random ^= i8254();
- 	}
- 
--	/* Extend timer bits poorly... */
--	random |= (random << 16);
--#ifdef CONFIG_X86_64
--	random |= (random << 32);
--#endif
-+	debug_putstr("...\n");
-+
- 	return random;
- }
- 
--- 
-1.7.9.5
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
+--nextPart2550193.kUsk5gY3gV
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
--- 
-Kees Cook
-Chrome OS Security
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlKBTHgACgkQi/DJPQPkQ1LqTgCgwQb/PMixnQYvVB7Jc+NeMj3R
+zwEAni5dIIWrLrydp3czSZFd9Xug/Jxd
+=yg26
+-----END PGP SIGNATURE-----
+
+--nextPart2550193.kUsk5gY3gV--
