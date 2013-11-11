@@ -1,104 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab3KKMdG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 07:33:06 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:52377 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753293Ab3KKMdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 07:33:00 -0500
-Message-ID: <5280CE62.6040404@imgtec.com>
-Date: Mon, 11 Nov 2013 12:32:34 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753737Ab3KKMdq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 07:33:46 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:38790 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355Ab3KKMdi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 07:33:38 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-metag <linux-metag@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [GIT PULL] Metag architecture changes for v3.13
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="R4lvXFbJq4JWqwSrSjGDtQSTULREN2KG3"
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_11_11_12_32_54
+In-Reply-To: <20131111104432.GA28302@mudshark.cambridge.arm.com>
+References: <1383739658-10036-1-git-send-email-vkale@apm.com>
+	<527D8A17.9020208@codeaurora.org>
+	<20131111104432.GA28302@mudshark.cambridge.arm.com>
+Date: Mon, 11 Nov 2013 18:03:38 +0530
+Message-ID: <CAFpQJXW6_VXYBkkTrQedDSR6V4TcWEO_6vsheZ1oHXvmaRy+wg@mail.gmail.com>
+Subject: Re: [PATCH 0/2] genirq: arm64: perf: support for percpu pmu interrupt
+From: Ganapat Rao P Kulkarni <gpkulkarni@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, "jcm@redhat.com" <jcm@redhat.com>,
+        "patches@apm.com" <patches@apm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Vinayak Kale <vkale@apm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---R4lvXFbJq4JWqwSrSjGDtQSTULREN2KG3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Will,
 
-Hi Linus,
+armv8pmu_read_counter() and armv8pmu_write_counter() treats cycle
+counter as 32 bit counter.
+AFAIK, the cycle counter  on ARM64 is 64 bit and overflow interrupt
+comes either 32 bit changes or when 64 bit flips.
+and HRM says, ARM deprecates use of PMCR_EL0.LC = 0   => cycle counter
+of 64 bit only
 
-Please pull the following changes since commit
-5e01dc7b26d9f24f39abace5da98ccbd6a5ceb52:
+My understanding is perf's common code designed based on 32 bit cycle counters.
+what is the plan? are we going to maintain the same logic of 32 bit
+counter with  writing 1 to upper 32 bits of 64 bit counter?
 
-  Linux 3.12 (2013-11-03 15:41:51 -0800)
+Vinayak,
 
-which are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jhogan/metag.git tags/met=
-ag-for-v3.13
-
-for you to fetch changes up to 51387306b5c2b0c9eb1e2556de1b37267bb2b583:
-
-  metag: off by one in setup_bootmem_node() (2013-11-08 11:23:00 +0000)
-
-Both changes came fairly late (hence being based on v3.12), but have
-been tested in linux-next and are relatively low risk.
-
-Thanks
-James
-
-----------------------------------------------------------------
-Metag architecture changes for v3.13
-
-- A change to remove the last dependence on bootloader exception
-  handlers so that QEMU can more easily boot an SMP Linux/Meta kernel
-  image directly.
-- A fix for a minor off by one error in a BUG_ON condition found by Dan
-  Carpenter.
-
-----------------------------------------------------------------
-Dan Carpenter (1):
-      metag: off by one in setup_bootmem_node()
-
-James Hogan (1):
-      metag: handle low level kicks directly
-
- arch/metag/include/asm/tbx.h | 19 +++++++------------
- arch/metag/kernel/setup.c    |  6 +-----
- arch/metag/kernel/traps.c    |  5 ++---
- arch/metag/mm/numa.c         |  2 +-
- arch/metag/tbx/tbidefr.S     |  2 +-
- 5 files changed, 12 insertions(+), 22 deletions(-)
+I think, it will be helpful if you mention in patch description about
+changes needed in dts file (like PMUIRQ number, PPI mode etc) to
+migrate to PMUv3 which is PPI.
 
 
---R4lvXFbJq4JWqwSrSjGDtQSTULREN2KG3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
+regards
+Ganapat
+PS: Sending again, since my previous email was not plain-text.
 
-iQIcBAEBAgAGBQJSgM51AAoJEKHZs+irPybfLXQP/Rq7gJmWJ4jjBvlkkRQPtAIf
-bS0OEoegjVzvG7xdS9iqni5S8YaEiUUU/J4wljmhMbdXB4HxfEv3KFwgovG7dBOj
-wUc/OSdRjA9wSg4NzH6ZRxppZUlR007hfYjGfsoZ/A21BFE6YFkjqXm4XVzmPqoQ
-cT0EsNmAol8KVmbdchY0HT8lo/6BZal7g58G42T5pH6lyQFJ3V5Z2Y5hJxNvmreD
-5mQq+TwZxzXdnbXSLD5Z6lNzzkCsNjd5dOcz+9nW9ySdbEOHI5U7MVPe6ahncrUf
-rhkuwT9RL9gr6hUm9CR1DolcAu1fQm5AMa/6cB+2Xa5zPLXOC0NOWLJ7DfUu367k
-OZ5+WukkuUzxwXdD7I3g557KdG+jA0O5xOsVP1vh/U2aUvODZ5x096DEcaASIdw9
-IY8aIqZlur+WES6PuBADipyVL8nwRdrInUlxXeN3mvONgFpDmrUoMfnnA1EQ0F0M
-CeAF6hbq6aMtX3jVVfsctKCdCU5epj8g/rChSvwhzmJhWUgJqiLT+OaV0Gf1UuVp
-j+c/v+6xBYaF/3ebOkioN2Nlnrlj4kTicELyGSwyQmEWtqSLyCG5HsEUy2QFUTwf
-0hlojzIKTu0HSF+P6D9LwIkSC3qm4ASAJE+OOhLLnhdnofuF8eHYOzdDsXHPUJ2W
-ltOpC4hu0+wDCMlzN05B
-=2KEV
------END PGP SIGNATURE-----
 
---R4lvXFbJq4JWqwSrSjGDtQSTULREN2KG3--
+On Mon, Nov 11, 2013 at 4:14 PM, Will Deacon <will.deacon@arm.com> wrote:
+> On Sat, Nov 09, 2013 at 01:04:23AM +0000, Stephen Boyd wrote:
+>> On 11/06/13 04:07, Vinayak Kale wrote:
+>> > This patch series adds support to handle interrupt registration/deregistration
+>> > in arm64 pmu driver when pmu interrupt type is percpu.
+>> >
+>> > Patches in this patch series were previously sent out as separate patches [1].
+>> > This patch series incorporates comments/fixes suggested for original patches.
+>> >
+>> > [1]
+>> > http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/205888.html
+>> > http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/204414.html
+>> >
+>> > Vinayak Kale (2):
+>> >   genirq: error reporting in request_percpu_irq() and
+>> >     request_threaded_irq()
+>> >   arm64: perf: add support for percpu pmu interrupt
+>> >
+>> >  arch/arm64/kernel/perf_event.c |  109 +++++++++++++++++++++++++++++-----------
+>> >  kernel/irq/manage.c            |   12 +++--
+>> >  2 files changed, 89 insertions(+), 32 deletions(-)
+>> >
+>>
+>> What ever happened to the approach here[1]? It doesn't look very nice to
+>> have to request the irq first as a per-cpu interrupt and then try as a
+>> non-percpu interrupt when genirq already knows if its per-cpu or not.
+>>
+>> [1] http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/02955.html
+>
+> Hmm, I'd completely forgotten about that approach. Whilst it certainly looks
+> cleaner from a user perspective, I always get scared when I see
+> 'desc->status_use_accessors' since it tends to incur the wrath of tglx :)
+>
+> That said, I guess that should be fine in irqdesc.h (basically adding a new
+> accessor). Chris went missing after sending those initial patches, so
+> perhaps Vinayak could look at resurrecting those?
+>
+> Will
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
+
+
+-- 
+regards,
+Ganapat
