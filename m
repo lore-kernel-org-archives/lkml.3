@@ -1,42 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab3KKO7p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 09:59:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48976 "EHLO
+	id S1754268Ab3KKPAz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 10:00:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48982 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312Ab3KKO7k (ORCPT
+	with ESMTP id S1753312Ab3KKPAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 09:59:40 -0500
-Date: Mon, 11 Nov 2013 07:02:12 -0800
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [char-misc-next 0/3]  mei: driver cleanups
-Message-ID: <20131111150212.GA16112@kroah.com>
-References: <1384169168-30281-1-git-send-email-tomas.winkler@intel.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1AF0913E@HASMSX106.ger.corp.intel.com>
+	Mon, 11 Nov 2013 10:00:46 -0500
+Date: Mon, 11 Nov 2013 07:03:18 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Lan Tianyu <tianyu.lan@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] ACPI / driver core: Store a device pointer in struct
+ acpi_dev_node
+Message-ID: <20131111150318.GB16112@kroah.com>
+References: <3268437.YsusHvklcv@vostro.rjw.lan>
+ <52803124.7000304@intel.com>
+ <1683079.zjqzsOAjXB@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AF0913E@HASMSX106.ger.corp.intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1683079.zjqzsOAjXB@vostro.rjw.lan>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 11:35:40AM +0000, Winkler, Tomas wrote:
-> 
-> 
+On Mon, Nov 11, 2013 at 02:45:39PM +0100, Rafael J. Wysocki wrote:
+> On Monday, November 11, 2013 09:21:40 AM Lan Tianyu wrote:
+> > On 2013年11月10日 08:58, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > Modify struct acpi_dev_node to contain a pointer to struct device
+> > > ambedded in the struct acpi_device associated with the given device
+> > > object (that is, its ACPI companion device) instead of an ACPI handle
+> > > corresponding to that struct acpi_device.  Introduce two new macros
+> > > for manipulating that pointer in a CONFIG_ACPI-safe way,
+> > > ACPI_COMPANION() and ACPI_COMPANION_SET(), and rework the
+> > > ACPI_HANDLE() macro to take the above changes into account.
+> > > Drop the ACPI_HANDLE_SET() macro entirely and rework its users to
+> > > use ACPI_COMPANION_SET() instead.  For some of them who used to
+> > > pass the result of acpi_get_child() directly to ACPI_HANDLE_SET()
+> > > introduce a helper routine acpi_preset_companion() doing an
+> > > equivalent thing.
+> > > 
+> > > The rationale for using a struct device pointer instead of a
+> > > struct acpi_device one as the member of struct acpi_dev_node is
+> > > that it allows device.h to avoid including linux/acpi.h which would
+> > > introduce quite a bit of compilation overhead for stuff that doesn't
+> > > care about ACPI.
+> > > In turn, moving the macros to linux/acpi.h forces
+> > > the stuff that does care about ACPI to include that file as
+> > > appropriate anyway.
 > > 
-> > *** BLURB HERE ***
-> Oops, sorry for that.
+> > How about declaring "struct acpi_device" in the device.h? This can help
+> > to use struct acpi_device without including linux/acpi.h.
+> > 
+> > struct iommu_ops and struct iommu_group have been used by the same way
+> > in the device.h.
+> 
+> Yes, they are.  Well, that appears to work too.
+> 
+> Updated patch is appended.  It also contains some fixes for problems reported
+> by the auto build system and it's been tested on x86-64 now, so it should be
+> reasonably close to final.
+> 
+> Thanks,
+> Rafael
+> 
+> 
+> ---
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: ACPI / driver core: Store an ACPI device pointer in struct acpi_dev_node
+> 
+> Modify struct acpi_dev_node to contain a pointer to struct acpi_device
+> associated with the given device object (that is, its ACPI companion
+> device) instead of an ACPI handle corresponding to it.  Introduce two
+> new macros for manipulating that pointer in a CONFIG_ACPI-safe way,
+> ACPI_COMPANION() and ACPI_COMPANION_SET(), and rework the
+> ACPI_HANDLE() macro to take the above changes into account.
+> Drop the ACPI_HANDLE_SET() macro entirely and rework its users to
+> use ACPI_COMPANION_SET() instead.  For some of them who used to
+> pass the result of acpi_get_child() directly to ACPI_HANDLE_SET()
+> introduce a helper routine acpi_preset_companion() doing an
+> equivalent thing.
+> 
+> The main motivation for doing this is that there are things
+> represented by struct acpi_device objects that don't have valid
+> ACPI handles (so called fixed ACPI hardware features, such as
+> power and sleep buttons) and we would like to create platform
+> device objects for them and "glue" them to their ACPI companions
+> in the usual way (which currently is impossible due to the
+> lack of valid ACPI handles).  However, there are more reasons
+> why it may be useful.
+> 
+> First, struct acpi_device pointers allow of much better type checking
+> than void pointers which are ACPI handles, so it should be more
+> difficult to write buggy code using modified struct acpi_dev_node
+> and the new macros.  Second, the change should help to reduce (over
+> time) the number of places in which the result of ACPI_HANDLE() is
+> passed to acpi_bus_get_device() in order to obtain a pointer to the
+> struct acpi_device associated with the given "physical" device,
+> because now that pointer is returned by ACPI_COMPANION() directly.
+> Finally, the change should make it easier to write generic code that
+> will build both for CONFIG_ACPI set and unset without adding explicit
+> compiler directives to it.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-So, any hint for what these are for?  I can't take patches until
-3.13-rc1 is out, which will be a few weeks.  But then, which should this
-be for, 3.13 as these are regression fixes, or 3.14 as they are only
-"cleanups"?
-
-thanks,
-
-greg k-h
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
