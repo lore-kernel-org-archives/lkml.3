@@ -1,81 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab3KKHM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 02:12:26 -0500
-Received: from mail.windriver.com ([147.11.1.11]:63488 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3KKHMS (ORCPT
+	id S1752617Ab3KKHRK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 02:17:10 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:47196 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab3KKHRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 02:12:18 -0500
-Message-ID: <5280833F.6010800@windriver.com>
-Date: Mon, 11 Nov 2013 15:11:59 +0800
-From: Fan Du <fan.du@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Mon, 11 Nov 2013 02:17:04 -0500
+Date: Mon, 11 Nov 2013 12:41:51 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes: Add uprobe_task->dup_work/dup_addr
+Message-ID: <20131111071151.GA2559@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20131108190003.GA12755@redhat.com>
 MIME-Version: 1.0
-To: <baker.kernel@gmail.com>
-CC: <davem@davemloft.net>, <herbert@gondor.hengli.com.au>,
-        <steffen.klassert@secunet.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 net-next] xfrm: Add check to prevent un-complete key
- manager
-References: <1384093556-8987-1-git-send-email-baker.kernel@gmail.com> <1384151951-13549-1-git-send-email-baker.kernel@gmail.com>
-In-Reply-To: <1384151951-13549-1-git-send-email-baker.kernel@gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [128.224.162.161]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20131108190003.GA12755@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111107-7164-0000-0000-0000032FB24D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Oleg Nesterov <oleg@redhat.com> [2013-11-08 20:00:03]:
 
+> uprobe_task->vaddr is a bit strange. First of all it is not really
+> needed, we can move it into arch_uprobe_task. The generic code uses
+> it only to pass the additional argument to arch_uprobe_pre_xol(),
+> and since it is always equal to instruction_pointer() this looks
+> even more strange.
+> 
 
-On 2013年11月11日 14:39, baker.kernel@gmail.com wrote:
-> From: Baker Zhang<Baker.kernel@gmail.com>
->
-> "acquire" and "compile_policy" callbacks are necessary for a key manager.
->
-> Signed-off-by: Baker Zhang<Baker.kernel@gmail.com>
+While the code changes look good, I would disagree with the above
+statement.  uprobe_task->vaddr is a bit strange only in
+uprobe_copy_process() and not in arch_uprobe_pre_xol() context.
+uprobe_task->vaddr was used to refer to the actual instruction pointer
+and do the necessary fixups after single stepping out of line.
+
+The casual reading of this commit message, one can get an impression
+that vaddr is never needed.  Your change still retains it. So can we
+modify the commit message accordingly? 
+
+> And both utask->vaddr and and utask->autask have the same scope,
+> they only have the meaning when the task executes the probed insn
+> out-of-line. This means it is safe to reuse both in UTASK_RUNNING
+> state.
+> 
+> OTOH, it is also used by uprobe_copy_process() and dup_xol_work()
+> for another purpose, this doesn't look clean and doesn't allow to
+> move this member into arch_uprobe_task.
+> 
+> This patch adds the union with 2 anonymous structs into uprobe_task.
+> 
+> The first struct is autask + vaddr, this way we "almost" move vaddr
+> into autask.
+> 
+> The second struct has 2 new members for uprobe_copy_process() paths:
+> ->dup_addr which can be used instead ->vaddr, and ->dup_work which
+> can be used to avoid kmalloc() and simplify the code.
+> 
+> Note that this union will likely have another member(s), we need
+> something like "private_data_for_handlers" so that the tracing
+> handlers could use it to communicate with call_fetch() methods.
+
+One nit below + request for change in the above commit message. 
+Otherwise 
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 > ---
-> Thanks for all reply.
->
-> V1:
-> For current kernel source, there is no problem.
->
-> In our vpn product, we need a xfrm_km in kernel module
-> to monitor the xfrm state change.
-> thus, the 'acquire' and 'compile_policy' may be NULL.
->
-> So I think we should do the check before use it.
->
-> V2:
-> Align the continuation line according the networking coding style.
->
-> V3:
-> Add check to prevent un-complete key manager at register time.
->
->   net/xfrm/xfrm_state.c | 3 +++
->   1 file changed, 3 insertions(+)
->
-> diff --git a/net/xfrm/xfrm_state.c b/net/xfrm/xfrm_state.c
-> index b9c3f9e..178283e 100644
-> --- a/net/xfrm/xfrm_state.c
-> +++ b/net/xfrm/xfrm_state.c
-> @@ -1806,6 +1806,9 @@ static DEFINE_SPINLOCK(xfrm_km_lock);
->
->   int xfrm_register_km(struct xfrm_mgr *km)
->   {
-> +	if (km->acquire == NULL || km->compile_policy == NULL)
+>  include/linux/uprobes.h |   21 ++++++++++++++++-----
+>  kernel/events/uprobes.c |   16 ++++------------
+>  2 files changed, 20 insertions(+), 17 deletions(-)
+> 
+> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+> index 319eae7..366b8b2 100644
+> --- a/include/linux/uprobes.h
+> +++ b/include/linux/uprobes.h
+> @@ -26,6 +26,7 @@
+> 
+>  #include <linux/errno.h>
+>  #include <linux/rbtree.h>
+> +#include <linux/types.h>
+> 
+>  struct vm_area_struct;
+>  struct mm_struct;
+> @@ -72,14 +73,24 @@ enum uprobe_task_state {
+>   */
+>  struct uprobe_task {
+>  	enum uprobe_task_state		state;
+> -	struct arch_uprobe_task		autask;
+> 
+> -	struct return_instance		*return_instances;
+> -	unsigned int			depth;
+> -	struct uprobe			*active_uprobe;
+> +	union {
+> +		struct {
+> +			struct arch_uprobe_task	autask;
+> +			unsigned long		vaddr;
+> +		};
+> +
+> +		struct {
+> +			struct callback_head	dup_work;
+> +			unsigned long		dup_addr;
 
-"acquire" is a MUST, "compile_policy" is not a necessity.
-
- From  the fist commit log, you probably add functionality providing SA state changes
-in your private key manager, which current implementation does not. Maybe it's worthwhile
-to elaborate the missing functionality than add those checking, because both key manage
-(pfkeyv2/netlink) in use has "acquire" and "compile_policy" at the same time.
-
+Nit:
+Can we rename dup_addr to mean that it refers to the xol; something like
+dup_xol_addr or even xol_addr. So that its more clear what address it
+refers to.
 
 
 -- 
-浮沉随浪只记今朝笑
+Thanks and Regards
+Srikar Dronamraju
 
---fan
