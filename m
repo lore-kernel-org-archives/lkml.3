@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab3KKKyO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 05:54:14 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:36986 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942Ab3KKKyE (ORCPT
+	id S1753251Ab3KKKyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 05:54:51 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:48626 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752942Ab3KKKyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 05:54:04 -0500
-Date: Mon, 11 Nov 2013 10:53:56 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        myungjoo.ham@samsung.com, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] extcon: arizona: Add defines for microphone
- detection levels
-Message-ID: <20131111105356.GB22184@lee--X1>
-References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <5280AAAF.8040005@samsung.com>
+	Mon, 11 Nov 2013 05:54:43 -0500
+Date: Mon, 11 Nov 2013 10:54:24 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Richard Weinberger <richard@nod.at>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, matt.fleming@intel.com,
+        matthew.garrett@nebula.com, jlee@suse.com
+Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia
+ parameter to efi_storage_paranoia
+Message-ID: <20131111105424.GD22636@console-pimps.org>
+References: <527C93B5.7010407@jp.fujitsu.com>
+ <527C9B5C.6040509@nod.at>
+ <527CB013.30200@jp.fujitsu.com>
+ <527CB0F4.8080606@nod.at>
+ <527CBC05.6080505@jp.fujitsu.com>
+ <527CBD01.1000908@nod.at>
+ <527CBDD3.2020609@jp.fujitsu.com>
+ <20131108143421.GB22636@console-pimps.org>
+ <52809AEB.9080100@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5280AAAF.8040005@samsung.com>
+In-Reply-To: <52809AEB.9080100@jp.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 11/08/2013 10:19 PM, Charles Keepax wrote:
-> > Improve readability by creating a define for each microphone detection
-> > level.
-> > 
-> > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> > ---
-> >  drivers/extcon/extcon-arizona.c       |   21 ++++++++++++++++-----
-> >  include/linux/mfd/arizona/registers.h |    9 +++++++++
-> >  2 files changed, 25 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-> > index 3c55ec8..6d914ba 100644
-> > --- a/drivers/extcon/extcon-arizona.c
-> > +++ b/drivers/extcon/extcon-arizona.c
-> > @@ -44,6 +44,17 @@
-> >  #define HPDET_DEBOUNCE 500
-> >  #define DEFAULT_MICD_TIMEOUT 2000
-> >  
-> > +enum {
-> > +	MICD_LVL_1_TO_7 = ARIZONA_MICD_LVL_1 | ARIZONA_MICD_LVL_2 |
-> > +			  ARIZONA_MICD_LVL_3 | ARIZONA_MICD_LVL_4 |
-> > +			  ARIZONA_MICD_LVL_5 | ARIZONA_MICD_LVL_6 |
-> > +			  ARIZONA_MICD_LVL_7,
-> > +
-> > +	MICD_LVL_0_TO_7 = ARIZONA_MICD_LVL_0 | MICD_LVL_1_TO_7,
-> > +
-> > +	MICD_LVL_0_TO_8 = MICD_LVL_0_TO_7 | ARIZONA_MICD_LVL_8,
-> > +};
+On Mon, 11 Nov, at 05:52:59PM, Yasuaki Ishimatsu wrote:
+> Hi Matt,
 > 
-> MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8 haven't the sequential value.
-> I prefer '#define' keyword to define MICD_LVL_1_TO_7 / MICD_LVL_0_TO_7 /MICD_LVL_0_TO_8
-> instead of enum keyword.
+> I uses FUJITSU's x86 box.
+> This does not become bricked even if I use all efi variable storage.
+> Thus I want a way to not need to specify efi_no_storage_paranoia
+> parameter.
 
-Actually Charles has already sent me this patch and I applied it a
-while ago.
+The efi_no_storage_paranoia parameter was introduced because some
+machines do not initiate garbage collection of the NVRAM until you
+allocate all space - basically it's a switch to turn off the "save 5KB
+of stoarge at all times" workaround that is needed to avoid bricking
+some machines. 
 
-I'm inclined to agree with you though, so if you want to send a patch
-based on v3.14-rc1 I'd be happy to accept it.
+The intention of the switch is not to allow you to fill your NVRAM just
+because you can. If that is something you want to do then I think it's
+fair to require you to explicitly turn on efi_no_storage_paranoia. But
+I'm assuming here that you are doing something like writing lots and
+lots of pstore entries and just want to write as many as your variable
+storage will allow? Or are you doing something more fundamental like
+creating BootXXXX entries?
+
+What are you doing to run into the 5KB reserve? How much NVRAM does your
+machine come with?
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Matt Fleming, Intel Open Source Technology Center
