@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab3KKLgX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 06:36:23 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:11856 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab3KKLgG convert rfc822-to-8bit (ORCPT
+	id S1753516Ab3KKLif (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 06:38:35 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:34745 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753139Ab3KKLi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 06:36:06 -0500
-From: Caizhiyong <caizhiyong@hisilicon.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        Levente Kurusa <ilevex.linux@gmail.com>,
-        Levente Kurusa <levex@linux.com>
-Subject: [PATCH] regmap: Fix 'ret' would return an uninitialized value
-Thread-Topic: [PATCH] regmap: Fix 'ret' would return an uninitialized value
-Thread-Index: Ac7e0i0Zg4F83zl0Qvm24piUvn3iEw==
-Date: Mon, 11 Nov 2013 11:35:52 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F1C08B5D7@szxeml512-mbs.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.67.223.36]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Nov 2013 06:38:27 -0500
+Date: Mon, 11 Nov 2013 11:38:09 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] EFI runtime mapping work for v3.14
+Message-ID: <20131111113809.GF22636@console-pimps.org>
+References: <20131108105719.GB2318@console-pimps.org>
+ <20131111111754.GB15810@gmail.com>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131111111754.GB15810@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cai Zhiyong <caizhiyong@huawei.com>
-Date: Mon, 11 Nov 2013 19:26:14 +0800
-Subject: [PATCH] regmap: Fix 'ret' would return an uninitialized value
+On Mon, 11 Nov, at 12:17:54PM, Ingo Molnar wrote:
+> 
+> * Matt Fleming <matt@console-pimps.org> wrote:
+> 
+> > Folks, could you queue up the following for the v3.14 merge window? It
+> > would be good to get these patches into linux-next for a full release
+> > cycle of testing. They pass all of my tests.
+> > 
+> > The following changes since commit 72548e836b0c4abbb652e791dee9c91203a9a4c6:
+> > 
+> >   x86/efi: Add EFI framebuffer earlyprintk support (2013-10-28 18:09:58 +0000)
+> > 
+> > are available in the git repository at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
+> 
+> Mind resending this in about a week or so? The merge window has just 
+> started and we don't want to potentially destabilize -next with v3.14 
+> problems.
 
- - Fix 'ret' would return an uninitialized value.
- - Add a warning avoid invalid 'num_regs' value passed in.
+Sure, no problem at all.
 
-When the num_regs parameter is zero and krealloc doesn't fail,
-then the code would return an uninitialized value. However,
-calling this function with num_regs == 0, would be a waste as it
-essentially does nothing.
-
-Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
----
- drivers/base/regmap/regmap.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 9c021d9..7b5c28a 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -2170,9 +2170,15 @@ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
- 			  int num_regs)
- {
- 	struct reg_default *p;
--	int i, ret;
-+	int i;
-+	int ret = 0;
- 	bool bypass;
- 
-+	if (num_regs <= 0) {
-+		WARN_ONCE(1, "Call regmap_register_patch with num_regs <= 0.");
-+		return 0;
-+	}
-+
- 	map->lock(map->lock_arg);
- 
- 	bypass = map->cache_bypass;
 -- 
-1.8.1.5
-
+Matt Fleming, Intel Open Source Technology Center
