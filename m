@@ -1,114 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab3KKEBa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 23:01:30 -0500
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:4815 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752558Ab3KKEAx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 23:00:53 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-From: Nicolin Chen <b42378@freescale.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <s.hauer@pengutronix.de>, <timur@tabi.org>, <shawn.guo@linaro.org>,
-        <broonie@kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
-        <ijc+devicetree@hellion.org.uk>
-Subject: [PATCH v6 3/4] ASoC: fsl_ssi: Add dual fifo mode support
-Date: Mon, 11 Nov 2013 12:00:25 +0800
-Message-ID: <3beca16849e0b817117b667b8b2213859a51ed1c.1384136268.git.b42378@freescale.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1384136268.git.b42378@freescale.com>
-References: <cover.1384136268.git.b42378@freescale.com>
+	id S1752733Ab3KKECz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 23:02:55 -0500
+Received: from mga11.intel.com ([192.55.52.93]:20242 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752558Ab3KKECt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Nov 2013 23:02:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,675,1378882800"; 
+   d="scan'208";a="431093612"
+Message-ID: <5280567C.2060004@linux.intel.com>
+Date: Sun, 10 Nov 2013 20:01:00 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Michal Nazarewicz <mpn@google.com>
+CC: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH 2/2] check quirk to pad epout buf size when not aligned
+ to maxpacketsize
+References: <1384102237-19784-1-git-send-email-mpn@google.com> <1384102237-19784-2-git-send-email-mpn@google.com>
+In-Reply-To: <1384102237-19784-2-git-send-email-mpn@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By enabling dual fifo mode, it would allow SSI enter a better performance
-to transimit/receive data without occasional hardware underrun/overrun.
+Hi Michal,
 
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
----
- sound/soc/fsl/fsl_ssi.c | 27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
+On 11/10/2013 08:50 AM, Michal Nazarewicz wrote:
+> From: Michal Nazarewicz <mina86@mina86.com>
+> 
+> Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
+> to be aligned to maxpacketsize of an out endpoint.  ffs_epfile_io() needs
+> to pad epout buffer to match above condition if quirk is found.
+> 
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> ---
+>  I'm wondering whether the len should be aligned down rather then up.
+>  This would have it's own problems, but maybe better then
+>  a possibility of silently dropping data.
+> 
+>  drivers/usb/gadget/f_fs.c | 21 ++++++++++++++++++---
+>  1 file changed, 18 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+> index f875f26..ea0b8ba 100644
+> --- a/drivers/usb/gadget/f_fs.c
+> +++ b/drivers/usb/gadget/f_fs.c
+> @@ -753,8 +753,9 @@ static ssize_t ffs_epfile_io(struct file *file,
+>  			     char __user *buf, size_t len, int read)
+>  {
+>  	struct ffs_epfile *epfile = file->private_data;
+> +	struct usb_gadget *gadget = epfile->ffs->gadget;
+>  	struct ffs_ep *ep;
+> -	ssize_t ret;
+> +	ssize_t ret, data_len;
+>  	char *data;
+>  	int halt;
+>  
+> @@ -787,6 +788,13 @@ static ssize_t ffs_epfile_io(struct file *file,
+>  
+>  	/* Allocate & copy */
+>  	if (!halt) {
+> +		/*
+> +		 * Controller requires buffer size to be aligned to
+> +		 * maxpacketsize of an out endpoint.
+> +		 */
+> +		data_len = read && gadget->quirk_ep_out_aligned_size ?
+> +			usb_ep_align_maxpacketsize(ep->ep, len) : len;
+> +
+>  		data = kmalloc(len, GFP_KERNEL);
 
-diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
-index 6b81d0c..af6640c 100644
---- a/sound/soc/fsl/fsl_ssi.c
-+++ b/sound/soc/fsl/fsl_ssi.c
-@@ -143,6 +143,7 @@ struct fsl_ssi_private {
- 	bool ssi_on_imx;
- 	bool imx_ac97;
- 	bool use_dma;
-+	bool use_dual_fifo;
- 	struct clk *clk;
- 	struct snd_dmaengine_dai_dma_data dma_params_tx;
- 	struct snd_dmaengine_dai_dma_data dma_params_rx;
-@@ -413,6 +414,12 @@ static int fsl_ssi_setup(struct fsl_ssi_private *ssi_private)
- 		write_ssi(CCSR_SSI_SOR_WAIT(3), &ssi->sor);
- 	}
- 
-+	if (ssi_private->use_dual_fifo) {
-+		write_ssi_mask(&ssi->srcr, 0, CCSR_SSI_SRCR_RFEN1);
-+		write_ssi_mask(&ssi->stcr, 0, CCSR_SSI_STCR_TFEN1);
-+		write_ssi_mask(&ssi->scr, 0, CCSR_SSI_SCR_TCH_EN);
-+	}
-+
- 	return 0;
- }
- 
-@@ -487,6 +494,15 @@ static int fsl_ssi_startup(struct snd_pcm_substream *substream,
- 		ssi_private->second_stream = substream;
- 	}
- 
-+	/* When using dual fifo mode, it is safer to ensure an even period
-+	 * size. If appearing to an odd number while DMA always starts its
-+	 * task from fifo0, fifo1 would be neglected at the end of each
-+	 * period. But SSI would still access fifo1 with an invalid data.
-+	 */
-+	if (ssi_private->use_dual_fifo)
-+		snd_pcm_hw_constraint_step(substream->runtime, 0,
-+				SNDRV_PCM_HW_PARAM_PERIOD_SIZE, 2);
-+
- 	return 0;
- }
- 
-@@ -954,7 +970,7 @@ static int fsl_ssi_probe(struct platform_device *pdev)
- 		ssi_private->fifo_depth = 8;
- 
- 	if (of_device_is_compatible(pdev->dev.of_node, "fsl,imx21-ssi")) {
--		u32 dma_events[2];
-+		u32 dma_events[2], dmas[4];
- 		ssi_private->ssi_on_imx = true;
- 
- 		ssi_private->clk = devm_clk_get(&pdev->dev, NULL);
-@@ -1008,6 +1024,15 @@ static int fsl_ssi_probe(struct platform_device *pdev)
- 			dma_events[0], shared ? IMX_DMATYPE_SSI_SP : IMX_DMATYPE_SSI);
- 		imx_pcm_dma_params_init_data(&ssi_private->filter_data_rx,
- 			dma_events[1], shared ? IMX_DMATYPE_SSI_SP : IMX_DMATYPE_SSI);
-+		if (!of_property_read_u32_array(pdev->dev.of_node, "dmas", dmas, 4)
-+				&& dmas[2] == IMX_DMATYPE_SSI_DUAL) {
-+			ssi_private->use_dual_fifo = true;
-+			/* When using dual fifo mode, we need to keep watermark
-+			 * as even numbers due to dma script limitation.
-+			 */
-+			ssi_private->dma_params_tx.maxburst &= ~0x1;
-+			ssi_private->dma_params_rx.maxburst &= ~0x1;
-+		}
- 	} else if (ssi_private->use_dma) {
- 		/* The 'name' should not have any slashes in it. */
- 		ret = devm_request_irq(&pdev->dev, ssi_private->irq,
--- 
-1.8.4
+Shouldn't this kmalloc() allocate 'data_len' bytes, instead of 'len'?
 
-
+Br, David
