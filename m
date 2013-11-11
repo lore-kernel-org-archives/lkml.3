@@ -1,78 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab3KKXRe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 18:17:34 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:44786 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab3KKXRZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 18:17:25 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
-Subject: Re: pull request: bluetooth 2013-11-11
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20131111182738.GB5648@joana>
-Date: Tue, 12 Nov 2013 08:17:15 +0900
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org Wireless" 
-	<linux-wireless@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D2BE5A4D-1193-4E8A-AA03-47221248C736@holtmann.org>
-References: <20131111182738.GB5648@joana>
-To: "Gustavo F. Padovan" <gustavo@padovan.org>
-X-Mailer: Apple Mail (2.1822)
+	id S1753949Ab3KKXRs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 18:17:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:39261 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753598Ab3KKXRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 18:17:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="433508962"
+Message-ID: <52816696.1000806@linux.intel.com>
+Date: Mon, 11 Nov 2013 15:21:58 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+MIME-Version: 1.0
+To: David Cohen <david.a.cohen@linux.intel.com>
+CC: balbi@ti.com, gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
+        mina86@mina86.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 3/5] usb: gadget: f_fs: remove loop from I/O function
+References: <1384201011-11114-1-git-send-email-david.a.cohen@linux.intel.com> <1384201011-11114-4-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <1384201011-11114-4-git-send-email-david.a.cohen@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gustavo,
-
-> A few fixes for 3.13. There is 3 fixes to the RFCOMM protocol. One crash fix to
-> L2CAP. A simple fix to a bad behaviour in the SMP protocol, and last, an
-> revert, that I sent in the last pull request but doesn't seem to be in your
-> tree.
-> 
-> Please pull or let me know of any issues. Thanks!
-> 
-> 
-> 	Gustavo
-> 
+On 11/11/2013 12:16 PM, David Cohen wrote:
+> From: Michal Nazarewicz <mina86@mina86.com>
+>
+> When endpoint changes (due to it being disabled or alt setting changed),
+> mimic the action as if the change happened after the request has been
+> queued, instead of retrying with the new endpoint.
+>
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> Cc: David Cohen <david.a.cohen@linux.intel.com>
 > ---
-> The following changes since commit 8ce9beac4661f576ea0d518b9f086bb52a171a37:
-> 
->  drivers: net: wireless: b43: Fix possible NULL ptr dereference (2013-10-18 13:41:11 -0400)
-> 
-> are available in the git repository at:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
-> 
-> for you to fetch changes up to 3244d4a55c95708b0fa6fd820a9009534ed08a5f:
-> 
->  Bluetooth: Fix rejecting SMP security request in slave role (2013-11-11 15:48:36 -0200)
-> 
-> ----------------------------------------------------------------
-> Hans de Goede (1):
->      Bluetooth: revert: "Bluetooth: Add missing reset_resume dev_pm_ops”
+>   drivers/usb/gadget/f_fs.c | 94 +++++++++++++++++++++--------------------------
+>   1 file changed, 41 insertions(+), 53 deletions(-)
+>
+> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+> index 75e4b7846a8d..f1563c47e0c2 100644
+> --- a/drivers/usb/gadget/f_fs.c
+> +++ b/drivers/usb/gadget/f_fs.c
+> @@ -756,74 +756,61 @@ static ssize_t ffs_epfile_io(struct file *file,
+>   {
+>   	struct ffs_epfile *epfile = file->private_data;
+>   	struct ffs_ep *ep;
+> -	char *data = NULL;
+>   	ssize_t ret;
+> +	char *data;
+>   	int halt;
+>
+> -	goto first_try;
+> -	do {
+> -		spin_unlock_irq(&epfile->ffs->eps_lock);
+> -		mutex_unlock(&epfile->mutex);
+> +	/* Are we still active? */
+> +	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE)) {
+> +		ret = -ENODEV;
+> +		goto error;
+> +	}
+>
+> -first_try:
+> -		/* Are we still active? */
+> -		if (WARN_ON(epfile->ffs->state != FFS_ACTIVE)) {
+> -			ret = -ENODEV;
+> +	/* Wait for endpoint to be enabled */
+> +	ep = epfile->ep;
+> +	if (!ep) {
+> +		if (file->f_flags & O_NONBLOCK) {
+> +			ret = -EAGAIN;
+>   			goto error;
+>   		}
+>
+> -		/* Wait for endpoint to be enabled */
+> -		ep = epfile->ep;
+> -		if (!ep) {
+> -			if (file->f_flags & O_NONBLOCK) {
+> -				ret = -EAGAIN;
+> -				goto error;
+> -			}
+> -
+> -			if (wait_event_interruptible(epfile->wait,
+> -						     (ep = epfile->ep))) {
+> -				ret = -EINTR;
+> -				goto error;
+> -			}
+> -		}
+> -
+> -		/* Do we halt? */
+> -		halt = !read == !epfile->in;
+> -		if (halt && epfile->isoc) {
+> -			ret = -EINVAL;
+> +		if (wait_event_interruptible(epfile->wait, (ep = epfile->ep))) {
+> +			ret = -EINTR;
+>   			goto error;
+>   		}
+> +	}
+>
+> -		/* Allocate & copy */
+> -		if (!halt && !data) {
+> -			data = kzalloc(len, GFP_KERNEL);
+> -			if (unlikely(!data))
+> -				return -ENOMEM;
+> +	/* Do we halt? */
+> +	halt = !read == !epfile->in;
 
-this one is already in net-next actually. John pushed bluetooth and bluetooth-next to Dave at the same time.
+One curiosity here. This patch prints the following warning:
 
-> Johan Hedberg (1):
->      Bluetooth: Fix rejecting SMP security request in slave role
-> 
-> Marcel Holtmann (1):
->      Bluetooth: Fix issue with RFCOMM getsockopt operation
-> 
-> Seung-Woo Kim (3):
->      Bluetooth: Fix RFCOMM bind fail for L2CAP sock
->      Bluetooth: Fix to set proper bdaddr_type for RFCOMM connect
->      Bluetooth: Fix crash in l2cap_chan_send after l2cap_chan_del
+In file included from (...)/drivers/usb/gadget/g_ffs.c:55:0:
+(...)/drivers/usb/gadget/f_fs.c: In function 'ffs_epfile_io.isra.18':
+(...)/drivers/usb/gadget/f_fs.c:837:15: warning: 'data_len' may be used 
+uninitialized in this function [-Wmaybe-uninitialized]
 
-These 5 fixes are still needed.
+But if we do this dummy change on it:
 
-Regards
+@@ -782,7 +782,10 @@ static ssize_t ffs_epfile_io(struct file *file,
+         }
 
-Marcel
+         /* Do we halt? */
+-       halt = !read == !epfile->in;
++       if (!read == !epfile->in)
++               halt = 1;
++       else
++               halt = 0;
+         if (halt && epfile->isoc) {
+                 ret = -EINVAL;
+                 goto error;
+
+The warning goes away. This false-positive warning comes out of this
+gcc version:
+$ i686-linux-android-gcc --version
+i686-linux-android-gcc (GCC) 4.7
+
+Br, David Cohen
+
+> +	if (halt && epfile->isoc) {
+> +		ret = -EINVAL;
+> +		goto error;
+> +	}
+>
+> -			if (!read &&
+> -			    unlikely(__copy_from_user(data, buf, len))) {
+> -				ret = -EFAULT;
+> -				goto error;
+> -			}
+> -		}
+> +	/* Allocate & copy */
+> +	if (!halt) {
+> +		data = kmalloc(len, GFP_KERNEL);
+> +		if (unlikely(!data))
+> +			return -ENOMEM;
+>
+> -		/* We will be using request */
+> -		ret = ffs_mutex_lock(&epfile->mutex,
+> -				     file->f_flags & O_NONBLOCK);
+> -		if (unlikely(ret))
+> +		if (!read && unlikely(copy_from_user(data, buf, len))) {
+> +			ret = -EFAULT;
+>   			goto error;
+> +		}
+> +	}
+>
+> -		/*
+> -		 * We're called from user space, we can use _irq rather then
+> -		 * _irqsave
+> -		 */
+> -		spin_lock_irq(&epfile->ffs->eps_lock);
+> +	/* We will be using request */
+> +	ret = ffs_mutex_lock(&epfile->mutex, file->f_flags & O_NONBLOCK);
+> +	if (unlikely(ret))
+> +		goto error;
+> +	spin_lock_irq(&epfile->ffs->eps_lock);
+>
+> -		/*
+> -		 * While we were acquiring mutex endpoint got disabled
+> -		 * or changed?
+> -		 */
+> -	} while (unlikely(epfile->ep != ep));
+> +	/* While we were acquiring mutex endpoint got disabled or changed. */
+> +	if (epfile->ep != ep) {
+> +		ret = -ESHUTDOWN;
+> +		spin_unlock_irq(&epfile->ffs->eps_lock);
+> +		goto error_unlock;
+> +	}
+>
+>   	/* Halt */
+>   	if (unlikely(halt)) {
+> @@ -858,6 +845,7 @@ first_try:
+>   		}
+>   	}
+>
+> +error_unlock:
+>   	mutex_unlock(&epfile->mutex);
+>   error:
+>   	kfree(data);
+>
 
