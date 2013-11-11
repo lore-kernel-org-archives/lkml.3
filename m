@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab3KKU6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 15:58:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48819 "EHLO mail.zytor.com"
+	id S1752194Ab3KKU7M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 15:59:12 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:38321 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768Ab3KKU5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 15:57:49 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131111205341.GE11547@redhat.com>
-References: <20131111205341.GE11547@redhat.com>
+	id S1750809Ab3KKU7C convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 15:59:02 -0500
+Date: Mon, 11 Nov 2013 21:58:38 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, x86-ml <x86@kernel.org>
+Subject: Re: [PATCH -v1.1] Kbuild: Ignore GREP_OPTIONS env variable
+Message-ID: <20131111205837.GA29793@pd.tnic>
+References: <20131030160635.GE13290@pd.tnic>
+ <527AB7D1.9080307@suse.cz>
+ <20131111142743.GE28219@pd.tnic>
+ <20131111170041.GA18517@pobox.suse.cz>
+ <20131111204330.GC18886@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: Kexec query about what makes sure control pages/page tables are not overwritten
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 11 Nov 2013 12:57:12 -0800
-To: Vivek Goyal <vgoyal@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Kexec Mailing List <kexec@lists.infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Message-ID: <15b29390-b535-4157-b7f2-8b1e03c919c1@email.android.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20131111204330.GC18886@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is pretty simple: the kernel exports how much text+data+bss+brk it needs, and the kernel cannot use memory outside that region until it is ready to control the address space itself.
+On Mon, Nov 11, 2013 at 09:43:30PM +0100, Ingo Molnar wrote:
+> * Michal Marek <mmarek@suse.cz> wrote:
+> > On Mon, Nov 11, 2013 at 03:27:43PM +0100, Borislav Petkov wrote:
+> > > From: Borislav Petkov <bp@suse.de>
+> > > Subject: [PATCH] Kbuild: Ignore GREP_OPTIONS env variable
+> > > 
+> > > When building the kernel in a shell which defines GREP_OPTIONS so that
+> > > grep behavior is modified, we can break the generation of the syscalls
+> > > table like so:
+> > > 
+> > > __SYSCALL_COMMON([01;31m[K0[m[K, sys_read, sys_read)
+> > > __SYSCALL_COMMON([01;31m[K1[m[K, sys_write, sys_write)
+> > > __SYSCALL_COMMON([01;31m[K1[m[K0, sys_mprotect, sys_mprotect) ...
+> > 
+> > The email had literal escape sequences and git am preserved them, so git
+> > show displayed red zeros and onces. [..]
+> 
+> Neat trick if it was intentionally!
+> 
+> > [...] That was quite scary, [...]
+> 
+> Scary if it was unintentional ;-)
 
-Vivek Goyal <vgoyal@redhat.com> wrote:
->Hi,
->
->I am staring at control page allocation logic in case of kdump and
->wondering what makes sure that these pages are not overwritten by 
->next kernel.
->
->I see that for 64bit entry, control pages have the page tables needed
->for second kernel. In case of crash these pages from from crash kernel
->reserved region. Page allocator is very simple and that is start from
->lowest crash reserved range and move higher and allocate first
->available
->page which is not allocated to segments. What makes sure that these
->pages
->are not overwritten by second kernel.
->
->I guess it becomes a general bootloader question. How do we make sure
->bootloader prepared page tables/gdt will not be overwritten by kernel
->(till kernel sets up its own page tables and gdt) and how should we do
->the
->allocation and placement.
->
->Thanks
->Vivek
+Yeah, all our computers are bleeding :-) Well, I sent the first version
+on the evening before Helloween...
+
+<scary music playing, an old door is creaking...>
 
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
