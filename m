@@ -1,212 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab3KKFep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 00:34:45 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:41384 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab3KKFeG (ORCPT
+	id S1752852Ab3KKFff (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 00:35:35 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54650 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab3KKFf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 00:34:06 -0500
-Message-ID: <52806C45.6090102@linux.vnet.ibm.com>
-Date: Mon, 11 Nov 2013 13:33:57 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 11 Nov 2013 00:35:26 -0500
+Subject: [PATCH v8 0/7] POWER/cpuidle: Generic POWERPC-BOOK3S cpuidle driver
+ enabled for PSERIES and POWERNV platforms
+To: benh@kernel.crashing.org, linux-pm@lists.linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: b.zolnierkie@samsung.com, daniel.lezcano@linaro.org,
+        dongsheng.wang@freescale.com, michael@ellerman.id.au,
+        scottwood@freescale.com, srivatsa.bhat@linux.vnet.ibm.com,
+        preeti@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com
+Date: Mon, 11 Nov 2013 11:05:03 +0530
+Message-ID: <20131111053450.14797.75544.stgit@deepthi.in.ibm.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 00/15] KVM: MMU: locklessly write-protect
-References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20131103122904.GA3963@redhat.com>
-In-Reply-To: <20131103122904.GA3963@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111105-1618-0000-0000-000004F4A3B2
+x-cbid: 13111105-4790-0000-0000-00000B46942C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2013 08:29 PM, Gleb Natapov wrote:
-> Marcelo can you review it please?
-> 
+This patch series consolidates the backend cpuidle driver for pSeries
+and powernv platforms with minimal code duplication.
 
-Ping......
+Current existing backend driver for pseries has been moved to drivers/cpuidle 
+and has been extended to accommodate powernv idle power mgmt states. 
+As seen in V1 of this patch series, having a separate powernv backend driver 
+results in too much code duplication, which is less elegant and can pose 
+maintenance problems going further.
 
-> On Wed, Oct 23, 2013 at 09:29:18PM +0800, Xiao Guangrong wrote:
->> Changelog v3:
->> - the changes from Gleb's review:
->>   1) drop the patch which fixed the count of spte number in rmap since it
->>      can not be easily fixed and it has gone after applying this patchset
->>
->> - ideas from Gleb and discussion with Marcelo is also very appreciated:
->>   2) change the way to locklessly access shadow page - use SLAB_DESTROY_BY_RCU
->>      to protect shadow page instead of conditionally using call_rcu()
->>   3) improve is_last_spte() that checks last spte by only using some bits on
->>      the spte, then it is safely used when we locklessly write-protect the
->>      shadow page table
->>
->> Changelog v2:
->>
->> - the changes from Gleb's review:
->>   1) fix calculating the number of spte in the pte_list_add()
->>   2) set iter->desc to NULL if meet a nulls desc to cleanup the code of
->>      rmap_get_next()
->>   3) fix hlist corruption due to accessing sp->hlish out of mmu-lock
->>   4) use rcu functions to access the rcu protected pointer
->>   5) spte will be missed in lockless walker if the spte is moved in a desc
->>      (remove a spte from the rmap using only one desc). Fix it by bottom-up
->>      walking the desc
->>
->> - the changes from Paolo's review
->>   1) make the order and memory barriers between update spte / add spte into
->>      rmap and dirty-log more clear
->>   
->> - the changes from Marcelo's review:
->>   1) let fast page fault only fix the spts on the last level (level = 1)
->>   2) improve some changelogs and comments
->>
->> - the changes from Takuya's review:
->>   move the patch "flush tlb if the spte can be locklessly modified" forward
->>   to make it's more easily merged
->>
->> Thank all of you very much for your time and patience on this patchset!
->>   
->> Since we use rcu_assign_pointer() to update the points in desc even if dirty
->> log is disabled, i have measured the performance:
->> Host: Intel(R) Xeon(R) CPU           X5690  @ 3.47GHz * 12 + 36G memory
->>
->> - migrate-perf (benchmark the time of get-dirty-log)
->>   before: Run 10 times, Avg time:9009483 ns.
->>   after: Run 10 times, Avg time:4807343 ns.
->>
->> - kerbench
->>   Guest: 12 VCPUs + 8G memory
->>   before:
->> EPT is enabled:
->> # cat 09-05-origin-ept | grep real       
->> real 85.58
->> real 83.47
->> real 82.95
->>
->> EPT is disabled:
->> # cat 09-05-origin-shadow | grep real
->> real 138.77
->> real 138.99
->> real 139.55
->>
->>   after:
->> EPT is enabled:
->> # cat 09-05-lockless-ept | grep real
->> real 83.40
->> real 82.81
->> real 83.39
->>
->> EPT is disabled:
->> # cat 09-05-lockless-shadow | grep real
->> real 138.91
->> real 139.71
->> real 138.94
->>
->> No performance regression!
->>
->>
->>
->> Background
->> ==========
->> Currently, when mark memslot dirty logged or get dirty page, we need to
->> write-protect large guest memory, it is the heavy work, especially, we need to
->> hold mmu-lock which is also required by vcpu to fix its page table fault and
->> mmu-notifier when host page is being changed. In the extreme cpu / memory used
->> guest, it becomes a scalability issue.
->>
->> This patchset introduces a way to locklessly write-protect guest memory.
->>
->> Idea
->> ==========
->> There are the challenges we meet and the ideas to resolve them.
->>
->> 1) How to locklessly walk rmap?
->> The first idea we got to prevent "desc" being freed when we are walking the
->> rmap is using RCU. But when vcpu runs on shadow page mode or nested mmu mode,
->> it updates the rmap really frequently.
->>
->> So we uses SLAB_DESTROY_BY_RCU to manage "desc" instead, it allows the object
->> to be reused more quickly. We also store a "nulls" in the last "desc"
->> (desc->more) which can help us to detect whether the "desc" is moved to anther
->> rmap then we can re-walk the rmap if that happened. I learned this idea from
->> nulls-list.
->>
->> Another issue is, when a spte is deleted from the "desc", another spte in the
->> last "desc" will be moved to this position to replace the deleted one. If the
->> deleted one has been accessed and we do not access the replaced one, the
->> replaced one is missed when we do lockless walk.
->> To fix this case, we do not backward move the spte, instead, we forward move
->> the entry: when a spte is deleted, we move the entry in the first desc to that
->> position.
->>
->> 2) How to locklessly access shadow page table?
->> It is easy if the handler is in the vcpu context, in that case we can use
->> walk_shadow_page_lockless_begin() and walk_shadow_page_lockless_end() that
->> disable interrupt to stop shadow page be freed. But we are on the ioctl context
->> and the paths we are optimizing for have heavy workload, disabling interrupt is
->> not good for the system performance.
->>
->> We add a indicator into kvm struct (kvm->arch.rcu_free_shadow_page), then use
->> call_rcu() to free the shadow page if that indicator is set. Set/Clear the
->> indicator are protected by slot-lock, so it need not be atomic and does not
->> hurt the performance and the scalability.
->>
->> 3) How to locklessly write-protect guest memory?
->> Currently, there are two behaviors when we write-protect guest memory, one is
->> clearing the Writable bit on spte and the another one is dropping spte when it
->> points to large page. The former is easy we only need to atomicly clear a bit
->> but the latter is hard since we need to remove the spte from rmap. so we unify
->> these two behaviors that only make the spte readonly. Making large spte
->> readonly instead of nonpresent is also good for reducing jitter.
->>
->> And we need to pay more attention on the order of making spte writable, adding
->> spte into rmap and setting the corresponding bit on dirty bitmap since
->> kvm_vm_ioctl_get_dirty_log() write-protects the spte based on the dirty bitmap,
->> we should ensure the writable spte can be found in rmap before the dirty bitmap
->> is visible. Otherwise, we cleared the dirty bitmap and failed to write-protect
->> the page.
->>
->> Performance result
->> ====================
->> The performance result and the benchmark can be found at:
->>   http://permalink.gmane.org/gmane.linux.kernel/1534876
->>
->> Xiao Guangrong (15):
->>   KVM: MMU: properly check last spte in fast_page_fault()
->>   KVM: MMU: lazily drop large spte
->>   KVM: MMU: flush tlb if the spte can be locklessly modified
->>   KVM: MMU: flush tlb out of mmu lock when write-protect the sptes
->>   KVM: MMU: update spte and add it into rmap before dirty log
->>   KVM: MMU: redesign the algorithm of pte_list
->>   KVM: MMU: introduce nulls desc
->>   KVM: MMU: introduce pte-list lockless walker
->>   KVM: MMU: initialize the pointers in pte_list_desc properly
->>   KVM: MMU: allocate shadow pages from slab
->>   KVM: MMU: locklessly access shadow page under rcu protection
->>   KVM: MMU: check last spte with unawareness of mapping level
->>   KVM: MMU: locklessly write-protect the page
->>   KVM: MMU: clean up spte_write_protect
->>   KVM: MMU: use rcu functions to access the pointer
->>
->>  arch/x86/include/asm/kvm_host.h |   7 +-
->>  arch/x86/kvm/mmu.c              | 586 ++++++++++++++++++++++++++++++----------
->>  arch/x86/kvm/mmu.h              |   6 +
->>  arch/x86/kvm/mmu_audit.c        |   6 +-
->>  arch/x86/kvm/paging_tmpl.h      |   6 +-
->>  arch/x86/kvm/x86.c              |  34 ++-
->>  6 files changed, 475 insertions(+), 170 deletions(-)
->>
->> -- 
->> 1.8.1.4
-> 
-> --
-> 			Gleb.
-> 
-> 
+Using the cpuidle framework to exploit platform low power idle states
+management can take advantage of advanced heuristics, tunables and features 
+provided by framework. The statistics and tracing infrastructure provided 
+by the cpuidle framework also helps in enabling power management 
+related tools and help tune the system and applications.
+
+Earlier in 3.3 kernel, pSeries idle state management was modified to 
+exploit the cpuidle framework and the end goal of this patch is to have powernv
+platform also to hook its idle states into cpuidle framework with minimal 
+code duplication between both platforms.  
+
+This series aims to maintain compatibility and functionality to existing pseries 
+and powernv idle cpu management code. There are no new functions or idle 
+states added as part of this series. This can be extended by adding more 
+states to this existing framework.
+
+With this patch series, the powernv cpuidle functionalities are on-par with 
+pSeries idle management.  
+
+V1 -> http://lkml.org/lkml/2013/7/23/143
+V2 -> https://lkml.org/lkml/2013/7/30/872
+V3 -> http://comments.gmane.org/gmane.linux.ports.ppc.embedded/63093 
+V4 -> https://lkml.org/lkml/2013/8/22/25
+V5 -> http://lkml.org/lkml/2013/8/22/184
+V6 -> https://lkml.org/lkml/2013/8/27/432 
+v7 -> https://lkml.org/lkml/2013/10/29/216
+
+Changes in V8:
+============
+* Renaming driver and related files from
+  ibm-power-idle to powerpc-book3s-idle
+  for clarity and to avoid confusing between ibm-power
+  systems and power mgmt.
+
+Changes in V7:
+============
+* Rebased to the latest kernel 3.12-rc7
+
+* Default idle routine to be called on POWERNV
+  is power7_idle() instead of HMT_low() routines.
+
+Changes in V6:
+=============
+* Made changes in Patch3: Generic POWER cpuidle driver in V5 by
+  breaking down to multiple patches, as there were multiple changes
+  including moving the file location.
+
+* Remove MAX_IDLE_STATE macro and kernel command line for
+  IBM-POWER systems.
+
+* Make backend driver a built-in, instead of a module.
+  As building this as a module is currently not possible. 
+
+* Generic backend driver minor cleanups.
+
+* First two patches in V5 are not a part of the series, as
+  they are generic cleanups, already pushed into the tree.
+
+Changes in V5:
+=============
+
+* As per the discussions in the community, this patch series
+  enables cpuidle backend driver only for IBM-POWER 
+  platforms. File is re-named from drivers/cpuidle/cpuidle-powerpc.c
+  to drivers/cpuidle/cpuildle-ibm-power.c
+  New back-end cpuidle driver is called IBM-POWER-Idle.
+
+* General cleanups on the accessors front that was introduced in 
+  previous version.
+
+Changes in V4:
+=============
+
+* This patch series includes generic backend driver cpuidle cleanups 
+  including, replacing the driver and device initialisation
+  routines with cpuidle_register function.
+
+* Enable CPUIDLE framework only for POWER and POWERNV platforms.
+
+Changes in V3:
+=============
+
+* This patch series does not include smt-snooze-delay fixes. 
+  This will be taken up later on.
+
+* Integrated POWERPC driver in drivers/cpuidle.  Enabled for all of 
+  POWERPC platform.  Currently has PSERIES and POWERNV support.
+  No compile time flags in .c file. This  will be one consolidated 
+  binary that does a run time detection based on platform and take 
+  decisions accordingly.
+
+* Enabled CPUIDLE framwork for all of PPC64.
+
+Changes in V2:
+=============
+
+* Merged the backend driver posted out for powernv in V1 with
+  pSeries to create a single powerpc driver but this had compile
+  time flags.
+
+ Deepthi Dharwar (7):
+      pseries/cpuidle: Move processor_idle.c to drivers/cpuidle.
+      pseries/cpuidle: Use cpuidle_register() for initialisation.
+      pseries/cpuidle: Make pseries_idle backend driver a  non-module.
+      pseries/cpuidle: Remove MAX_IDLE_STATE macro.
+      POWER/cpuidle: Generic POWERPC-BOOK3S CPUIDLE driver supporting PSERIES.
+      POWER/cpuidle: Enable powernv cpuidle support.
+      powernv/cpuidle: Enable idle powernv cpu to call into the cpuidle framework.
+
+
+ arch/powerpc/include/asm/processor.h            |    2 
+ arch/powerpc/platforms/powernv/setup.c          |   13 +
+ arch/powerpc/platforms/pseries/Kconfig          |    9 -
+ arch/powerpc/platforms/pseries/Makefile         |    1 
+ arch/powerpc/platforms/pseries/processor_idle.c |  364 -----------------------
+ drivers/cpuidle/Kconfig                         |    5 
+ drivers/cpuidle/Kconfig.powerpc                 |   10 +
+ drivers/cpuidle/Makefile                        |    4 
+ drivers/cpuidle/cpuidle-powerpc-book3s.c        |  320 ++++++++++++++++++++
+ 9 files changed, 352 insertions(+), 376 deletions(-)
+ delete mode 100644 arch/powerpc/platforms/pseries/processor_idle.c
+ create mode 100644 drivers/cpuidle/Kconfig.powerpc
+ create mode 100644 drivers/cpuidle/cpuidle-powerpc-book3s.c
+
+
+-- Deepthi
 
