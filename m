@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751024Ab3KKAnQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Nov 2013 19:43:16 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40958 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab3KKAnL (ORCPT
+	id S1751054Ab3KKAzx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Nov 2013 19:55:53 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:43477 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884Ab3KKAzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Nov 2013 19:43:11 -0500
-Date: Mon, 11 Nov 2013 00:43:09 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Shahbaz Youssefi <shabbyx@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Partially Privileged Applications
-Message-ID: <20131111004309.GU13318@ZenIV.linux.org.uk>
-References: <CALeOzZ_K0o_h4gJ4w-twL5=-0QjC1XWb=m948wXWwjndr4q_Kw@mail.gmail.com>
+	Sun, 10 Nov 2013 19:55:49 -0500
+Message-ID: <52802AE8.6070803@huawei.com>
+Date: Mon, 11 Nov 2013 08:55:04 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALeOzZ_K0o_h4gJ4w-twL5=-0QjC1XWb=m948wXWwjndr4q_Kw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Joerg Roedel <joro@8bytes.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "Vinod Koul" <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, <dmaengine@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [PATCH 1/1] IOMMU: Save pci device id instead of pci_dev* pointer
+ for DMAR devices
+References: <1383639898-48776-1-git-send-email-wangyijing@huawei.com> <1383639898-48776-2-git-send-email-wangyijing@huawei.com> <20131107180713.GA2955@google.com> <527C5D36.7050206@huawei.com> <CAErSpo73N2Th-4D5G8-60tMuGwqthfu-VNHVf3LF9+s2mQp53w@mail.gmail.com>
+In-Reply-To: <CAErSpo73N2Th-4D5G8-60tMuGwqthfu-VNHVf3LF9+s2mQp53w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 10, 2013 at 04:03:36PM +0100, Shahbaz Youssefi wrote:
-> Dear all,
+>> Hmmm, this is the thing I am most worried about. If we just only use
+>> (pci_dev *) poninter in drhd->devices array as a identification. Change
+>> (pci_dev *) pointer instead of pci device id segment:bus:devfn is safe.
+>> Or, this is a wrong way to fix this issue. I don't know IOMMU driver much now,
+>> so IOMMU guys any comments on this issue is welcome.
+>>
+>> If this is not safe, what about we both save pci device id and (pci_dev *) pointer
+>> in drhd. So we can put pci_dev ref and set pci_dev * = NULL during device removed by bus notify, and
+>> update (pci_dev *)pointer during device add.
 > 
-> First, please CC replies to myself. Second, this is an RFC.
+> I don't know the IOMMU drivers well either, but it seems like they
+> rely on notifications of device addition and removal (see
+> iommu_bus_notifier()).  It doesn't seem right for them to also use the
+> generic PCI interfaces like pci_get_domain_bus_and_slot() because the
+> IOMMU driver should already know what devices exist and their
+> lifetimes.  It seems like confusion to mix the two.  But I don't have
+> a concrete suggestion.
+
+Maybe you are right~, I will try to rework the patch and resend soon.
+
+Thanks!
+Yijing.
+
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> I've been tampering with an idea for some time now and I've done some
-> research. Finally, I wrote it down here (a terrible place as it turned
-> out):
+> .
 > 
-> http://shahbaz-youssefi.blogspot.it/2013/11/partially-privileged-applications.html
-> 
-> and would like to know what you think.
 
-That it's javashit-infested and bloody hard to read without the damn thing,
-for starters...
 
-You *can't* allow userland to call an arbitrary kernel function with
-arbitrary arguments.  Consider e.g. a syscall that validates the
-arguments and, if they are OK, calls a function that sends given
-signal to given process.  Allow to call that function directly and
-you've got a nice, shiny roothole.  The same goes for anything that
-modifies kernel data structures - you either have to keep validating the
-arguments again and again on each function call (which will cost *much*
-more than what we currently have and will depend on being unable to
-call the address other than the entry point and skip the validation) or
-you lose all protection of kernel data structures, with obvious nasty
-results.  And that is not to mention the lovely issues with stack
-switching (you really don't want to see what happens if stack page
-gets swapped out under you in the kernel), the fun with being able to
-call a function without locks it expects grabbed by callers, etc.
+-- 
+Thanks!
+Yijing
 
-You can define a bunch of "safe to call" addresses.  You will have to
-do stack switching, arguments validation, etc. on each of them and it
-won't be any prettier than what we do on syscall entry.  That's what
-the call gates are; it had been tried, the machinery is still there
-on x86 and nobody sane uses it for a lot of very good reasons.
-
-Again, flat "allow function call to any address with any arguments and
-any stack pointer value" is a non-starter - you have shared data structures
-to deal with, quite a few of those being security sensitive and the thing
-you seem to be suggesting will fuck up immediately under such conditions.
