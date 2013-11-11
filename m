@@ -1,290 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab3KKPn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 10:43:56 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:34933 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272Ab3KKPnE (ORCPT
+	id S1753995Ab3KKPob (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 10:44:31 -0500
+Received: from mail-we0-f178.google.com ([74.125.82.178]:57789 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754696Ab3KKPoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 10:43:04 -0500
+	Mon, 11 Nov 2013 10:44:22 -0500
+Date: Mon, 11 Nov 2013 16:44:18 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: suravee.suthikulpanit@amd.com, mingo@kernel.org, mingo@redhat.com,
+        jacob.w.shin@gmail.com, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, hpa@zytor.com, tgl@domain.invalid,
+        linux-kernel@vger.kernel.org, sherry.hurwitz@amd.com
+Subject: Re: [PATCH 1/3] perf/x86/amd: AMD support for bp_len >
+ HW_BREAKPOINT_LEN_8
+Message-ID: <20131111154417.GD26853@localhost.localdomain>
+References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1380730268-25807-2-git-send-email-suravee.suthikulpanit@amd.com>
+ <20131108194122.GA14606@localhost.localdomain>
+ <20131109151156.GA14249@redhat.com>
+ <20131109153236.GE26079@localhost.localdomain>
+ <20131109155428.GA15649@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com>
-References: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com>
-Date: Mon, 11 Nov 2013 23:43:03 +0800
-Message-ID: <CAEH94LgjqNKLQzR_rmaQT+jEzauJwSPoMfTU3EOKpHRUVsFO=Q@mail.gmail.com>
-Subject: Re: [PATCH v6 00/11] VFS hot tracking
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131109155428.GA15649@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping? any plan to review?
+On Sat, Nov 09, 2013 at 04:54:28PM +0100, Oleg Nesterov wrote:
+> Just in case let me repeat, I can be easily wrong because I forgot
+> how this series actually look and I don't have the patches now ;)
+> 
+> On 11/09, Frederic Weisbecker wrote:
+> >
+> > On Sat, Nov 09, 2013 at 04:11:56PM +0100, Oleg Nesterov wrote:
+> > > On 11/08, Frederic Weisbecker wrote:
+> > > >
+> > > >
+> > > > Does this feature only work on data breakpoint or is instruction breakpoint
+> > > > address range supported as well?
+> > >
+> > > IIRC, execute range is supported as well.
+> > >
+> > > But. I can't look at the code now, but iirc this can't really work until
+> > > we fix the (already discussed) problems with bp_len && X86_BREAKPOINT_LEN_X.
+> > > IOW, we should not blame these patches if it doesn't work.
+> >
+> > Yeah, don't worry I don't plan to push back these patches for the sake of that bug,
+> > that would be definetly unfair, especially as I introduced that issue :)
+> >
+> > And the patchset looks good overall, except for a few details but it's mostly ok,
+> 
+> OK,
+> 
+> > I just would like to fix that issue along the way. It would be really nice if we can
+> > avoid having a mask _and_ a len for breakpoints.
+> 
+> Up to you and Suravee, but can't we cleanup this later?
+> 
+> This series was updated many times to address a lot of (sometimes
+> contradictory) complaints.
 
-On Wed, Nov 6, 2013 at 9:45 PM, Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->
->   The patchset is trying to introduce hot tracking function in
-> VFS layer, which will keep track of real disk I/O in memory.
-> By it, you will easily know more details about disk I/O, and
-> then detect where disk I/O hot spots are. Also, specific FS
-> can take use of it to do accurate defragment, and hot relocation
-> support, etc.
->
->   Now it's time to send out its V6 for external review, and
-> any comments or ideas are appreciated, thanks.
->
-> NOTE:
->
->   The patchset can be obtained via my kernel dev git on github:
-> git://github.com/wuzhy/kernel.git hot_tracking
->   If you're interested, you can also review them via
-> https://github.com/wuzhy/kernel/commits/hot_tracking
->
->   For how to use and more other info and performance report,
-> please check hot_tracking.txt in Documentation and following
-> links:
->   1.) http://lwn.net/Articles/525651/
->   2.) https://lkml.org/lkml/2012/12/20/199
->
->   This patchset has been done scalability or performance tests
-> by fs_mark, ffsb and compilebench.
->
->   The perf testings were done on Linux 3.12.0-rc7 with Model IBM,8231-E2C
-> Big Endian PPC64 with 64 CPUs and 2 NUMA nodes, 250G RAM and 1.50 TiB
-> test hard disk where each test file size is 20G or 100G.
-> Architecture:          ppc64
-> Byte Order:            Big Endian
-> CPU(s):                64
-> On-line CPU(s) list:   0-63
-> Thread(s) per core:    4
-> Core(s) per socket:    1
-> Socket(s):             16
-> NUMA node(s):          2
-> Model:                 IBM,8231-E2C
-> Hypervisor vendor:     pHyp
-> Virtualization type:   full
-> L1d cache:             32K
-> L1i cache:             32K
-> L2 cache:              256K
-> L3 cache:              4096K
-> NUMA node0 CPU(s):     0-31
-> NUMA node1 CPU(s):     32-63
->
->   Below is the perf testing report:
->
->   Please focus on the two key points:
->   - The overall overhead which is injected by the patchset
->   - The stability of the perf results
->
-> 1. fio tests
->
->                             w/o hot tracking                               w/ hot tracking
->
-> RAM size                            32G          32G         16G           8G           4G           2G          250G
->
-> sequential-8k-1jobs-read         61260KB/s    60918KB/s    60901KB/s    62610KB/s    60992KB/s    60213KB/s    60948KB/s
->
-> sequential-8k-1jobs-write         1329KB/s     1329KB/s     1328KB/s     1329KB/s     1328KB/s     1329KB/s     1329KB/s
->
-> sequential-8k-8jobs-read         91139KB/s    92614KB/s    90907KB/s    89895KB/s    92022KB/s    90851KB/s    91877KB/s
->
-> sequential-8k-8jobs-write         2523KB/s     2522KB/s     2516KB/s     2521KB/s     2516KB/s     2518KB/s     2521KB/s
->
-> sequential-256k-1jobs-read      151432KB/s   151403KB/s   151406KB/s   151422KB/s   151344KB/s   151446KB/s   151372KB/s
->
-> sequential-256k-1jobs-write      33451KB/s    33470KB/s    33481KB/s    33470KB/s    33459KB/s    33472KB/s    33477KB/s
->
-> sequential-256k-8jobs-read      235291KB/s   234555KB/s   234251KB/s   233656KB/s   234927KB/s   236380KB/s   235535KB/s
->
-> sequential-256k-8jobs-write      62419KB/s    62402KB/s    62191KB/s    62859KB/s    62629KB/s    62720KB/s    62523KB/s
->
-> random-io-mix-8k-1jobs  [READ]    2929KB/s     2942KB/s     2946KB/s     2929KB/s     2934KB/s     2947KB/s     2946KB/s
->                         [WRITE]   1262KB/s     1266KB/s     1257KB/s     1262KB/s     1257KB/s     1257KB/s     1265KB/s
->
-> random-io-mix-8k-8jobs  [READ]    2444KB/s     2442KB/s     2436KB/s     2416KB/s     2353KB/s     2441KB/s     2442KB/s
->                         [WRITE]   1047KB/s     1044KB/s     1047KB/s     1028KB/s     1017KB/s     1034KB/s     1049KB/s
->
-> random-io-mix-8k-16jobs [READ]    2182KB/s     2184KB/s     2169KB/s     2178KB/s     2190KB/s     2184KB/s     2180KB/s
->                         [WRITE]    932KB/s      930KB/s      943KB/s      936KB/s      937KB/s      929KB/s      931KB/s
->
-> The above perf parameter is the aggregate bandwidth of threads in the group;
-> If you hope to know how about other perf parameters, or fio raw results, please let me know, thanks.
->
-> 2. Locking stat - Contention & Cacheline Bouncing
->
-> RAM size         class name         con-bounces  contentions  acq-bounces   acquisitions   cacheline bouncing  locking contention
->                                                                                                  ratio              ratio
->
->               &(&root->t_lock)->rlock:  1508        1592         157834      374639292           0.96%              0.00%
-> 250G          &(&root->m_lock)->rlock:  1469        1484         119221       43077842           1.23%              0.00%
->               &(&he->i_lock)->rlock:       0           0         101879      376755218           0.00%              0.00%
->
->               &(&root->t_lock)->rlock:  2912        2985         342575      374691186           0.85%              0.00%
-> 32G           &(&root->m_lock)->rlock:   188         193         307765        8803163           0.00%              0.00%
->               &(&he->i_lock)->rlock:       0           0         291860      376756084           0.00%              0.00%
->
->               &(&root->t_lock)->rlock:  3863        3948         298041      374727038           1.30%              0.00%
-> 16G           &(&root->m_lock)->rlock:   220         228         254451        8687057           0.00%              0.00%
->               &(&he->i_lock)->rlock:       0           0         235027      376756830           0.00%              0.00%
->
->               &(&root->t_lock)->rlock:  3283        3409         233790      374722064           1.40%              0.00%
-> 8G            &(&root->m_lock)->rlock:   136         139         203917        8684313           0.00%              0.00%
->               &(&he->i_lock)->rlock:       0           0         193746      376756438           0.00%              0.00%
->
->               &(&root->t_lock)->rlock: 15090       15705         283460      374889666           5.32%              0.00%
-> 4G            &(&root->m_lock)->rlock:   172         173         222480        8555052           0.00%              0.00%
->               &(&he->i_lock)->rlock:       0           0         206431      376759452           0.00%              0.00%
->
->               &(&root->t_lock)->rlock: 25515       27368         305129       375394828          8.36%              0.00%
-> 2G            &(&root->m_lock)->rlock:   100         101         216516        6752265           0.00%              0.00%
->               &(&he->i_lock)->rlock:       0           0         214713      376765169           0.00%              0.00%
->
-> 3. Perf test - Cacheline Ping-pong
->
->                       w/o hot tracking                                                        w/ hot tracking
->
-> RAM size                    32G                  32G                 16G                  8G                   4G                    2G                  250G
->
-> cache-references    1,264,996,437,581    1,401,504,955,577    1,398,308,614,801    1,396,525,544,527    1,384,793,467,410    1,432,042,560,409    1,571,627,148,771
->
-> cache-misses           45,424,567,057       58,432,749,807       59,200,504,032       59,762,030,933       58,104,156,576       57,283,962,840       61,963,839,419
->
-> seconds time elapsed  22956.327674298      23035.457069488      23017.232397085      23012.397142967      23008.420970731      23057.245578767      23342.456015188
->
-> cache-misses ratio            3.591 %              4.169 %              4.234 %              4.279 %              4.196 %              4.000 %              3.943 %
->
-> Changelog from v5:
->  - Also added the hook hot_freqs_update() in the page cache I/O path,
->    not only in real disk I/O path [viro]
->  - Don't export the stuff until it's used by a module [viro]
->  - Splitted hot_inode_item_lookup() [viro]
->  - Prevented hot items from being re-created after the inode was unlinked. [viro]
->  - Made hot_freqs_update() to be inline and adopt one private hot flag [viro]
->  - Killed hot_bit_shift() [viro]
->  - Used file_inode() instead of file->f_dentry->d_inode [viro]
->  - Introduced one new file hot_tracking.h in include/uapi/linux/ [viro]
->  - Made the checks for ->i_nlink to be protectd by ->i_mutex [viro]
->
-> v5:
->  - Added all kinds of perf testing report [viro]
->  - Covered mmap() now [viro]
->  - Removed list_sort() in hot_update_worker() to avoid locking contention
->    and cacheline bouncing [viro]
->  - Removed a /proc interface to control low memory usage [Chandra]
->  - Adjusted shrinker support due to the change of public shrinker APIs [zwu]
->  - Fixed the locking missing issue when hot_inode_item_put() is called
->    in ioctl_heat_info() [viro]
->  - Fixed some locking contention issues [zwu]
->
-> v4:
->  - Removed debugfs support, but leave it to TODO list [viro, Chandra]
->  - Killed HOT_DELETING and HOT_IN_LIST flag [viro]
->  - Fixed unlink issues [viro]
->  - Fixed the issue on lookups (both for inode and range)
->    leak on race with unlink  [viro]
->  - Killed hot_comm_item and split the functions which take it [virio]
->  - Fixed some other issues [zwu, Chandra]
->
-> v3:
->  - Added memory caping function for hot items [Zhiyong]
->  - Cleanup aging function [Zhiyong]
->
-> v2:
->  - Refactored to be under RCU [Chandra Seetharaman]
->   Merged some code changes [Chandra Seetharaman]
->  - Fixed some issues [Chandra Seetharaman]
->
-> v1:
->  - Solved 64 bits inode number issue. [David Sterba]
->  - Embed struct hot_type in struct file_system_type [Darrick J. Wong]
->  - Cleanup Some issues [David Sterba]
->  - Use a static hot debugfs root [Greg KH]
->
-> rfcv4:
->  - Introduce hot func registering framework [Zhiyong]
->  - Remove global variable for hot tracking [Zhiyong]
->  - Add btrfs hot tracking support [Zhiyong]
->
-> rfcv3:
->  1.) Rewritten debugfs support based seq_file operation. [Dave Chinner]
->  2.) Refactored workqueue support. [Dave Chinner]
->  3.) Turn some Micro into be tunable [Zhiyong, Liu Zheng]
->      TIME_TO_KICK, and HEAT_UPDATE_DELAY
->  4.) Cleanedup a lot of other issues [Dave Chinner]
->
->
-> rfcv2:
->  1.) Converted to Radix trees, not RB-tree [Zhiyong, Dave Chinner]
->  2.) Added memory shrinker [Dave Chinner]
->  3.) Converted to one workqueue to update map info periodically [Dave Chinner]
->  4.) Cleanedup a lot of other issues [Dave Chinner]
->
-> rfcv1:
->  1.) Reduce new files and put all in fs/hot_tracking.[ch] [Dave Chinner]
->  2.) The first three patches can probably just be flattened into one.
->                                         [Marco Stornelli , Dave Chinner]
->
->
-> Dave Chinner (1):
->   VFS hot tracking, xfs: Add hot tracking support
->
-> Zhi Yong Wu (10):
->   VFS hot tracking: Define basic data structures and functions
->   VFS hot tracking: Track IO and record heat information
->   VFS hot tracking: Add a workqueue to move items between hot maps
->   VFS hot tracking: Add shrinker functionality to curtail memory usage
->   VFS hot tracking: Add an ioctl to get hot tracking information
->   VFS hot tracking: Add a /proc interface to make the interval tunable
->   VFS hot tracking: Add a /proc interface to control memory usage
->   VFS hot tracking: Add documentation
->   VFS hot tracking, btrfs: Add hot tracking support
->   MAINTAINERS: add the maintainers for VFS hot tracking
->
->  Documentation/filesystems/00-INDEX         |   2 +
->  Documentation/filesystems/hot_tracking.txt | 207 ++++++++
->  MAINTAINERS                                |  12 +
->  fs/Makefile                                |   2 +-
->  fs/btrfs/ctree.h                           |   1 +
->  fs/btrfs/super.c                           |  22 +-
->  fs/compat_ioctl.c                          |   5 +
->  fs/dcache.c                                |   2 +
->  fs/hot_tracking.c                          | 816 +++++++++++++++++++++++++++++
->  fs/hot_tracking.h                          |  72 +++
->  fs/ioctl.c                                 |  71 +++
->  fs/namei.c                                 |   4 +
->  fs/xfs/xfs_mount.h                         |   1 +
->  fs/xfs/xfs_super.c                         |  18 +
->  include/linux/fs.h                         |   4 +
->  include/linux/hot_tracking.h               | 107 ++++
->  include/uapi/linux/fs.h                    |   1 +
->  include/uapi/linux/hot_tracking.h          |  33 ++
->  kernel/sysctl.c                            |  14 +
->  mm/filemap.c                               |  24 +-
->  mm/readahead.c                             |   6 +
->  21 files changed, 1420 insertions(+), 4 deletions(-)
->  create mode 100644 Documentation/filesystems/hot_tracking.txt
->  create mode 100644 fs/hot_tracking.c
->  create mode 100644 fs/hot_tracking.h
->  create mode 100644 include/linux/hot_tracking.h
->  create mode 100644 include/uapi/linux/hot_tracking.h
->
-> --
-> 1.7.11.7
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Sure. But I'm confident that we can solve the conflicting mask / len issue easily beside.
+I mean, I don't feel confident with merging things as is, otoh it should be easy to fix up.
 
+I can to the fixup myself BTW, no problem with that, and I don't want to hold up this patchset,
+but we just need to agree on a proper solution.
+ 
+> > I mean, that doesn't look right to me,
+> > it's two units basically measuring the same thing, so that's asking for conflicting troubles.
+> 
+> Yes. And we can kill either _len or _mask, not sure what would be more
+> clean.
+> 
+> At least with the current implementation (again, iirc) mask == len -1.
+> Although amd supports the more generic masks (but I can't recall the
+> details).
 
+Right. I think len is probably more powerful. Unless the mask could be used to define
+multiple ranges of breakpoints, not sure it's ever going to be used that way though. But we
+can still extend the interface if we need a mask later.
 
--- 
-Regards,
+> 
+> > I'm just not sure how to reuse the len to express breakpoint ranges (that was in fact the
+> > initial purpose of it) without breaking the tools.
+> 
+> Confused... user-space still uses len to express the range? Just
+> the kernel "switches" to mask if len > 8 ?
 
-Zhi Yong Wu
+Right but what if we want breakpoints having a size below 8? Like break on instructions
+from 0x1000 to 0x1008 ?
+
+Or should we ignore range instruction breakpoints when len < 8?
