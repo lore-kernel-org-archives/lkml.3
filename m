@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab3KKITg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 03:19:36 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:60269 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895Ab3KKIT2 (ORCPT
+	id S1752777Ab3KKIXj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 03:23:39 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:49657 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab3KKIXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 03:19:28 -0500
-Date: Mon, 11 Nov 2013 13:37:50 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] uprobes: Don't assume that arch_uprobe->insn/ixol is
- u8[MAX_UINSN_BYTES]
-Message-ID: <20131111080750.GD2559@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20131109175350.GA17412@redhat.com>
- <20131109175406.GA17430@redhat.com>
+	Mon, 11 Nov 2013 03:23:35 -0500
+Date: Mon, 11 Nov 2013 09:23:30 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: wangbiao <biao.wang@intel.com>
+Cc: oneukum@suse.de, netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
+        a.p.zijlstra@chello.nl, rusty@rustcorp.com.au,
+        william.douglas@intel.com
+Subject: Re: [PATCH] usbnet: fix race condition caused spinlock bad magic
+ issue
+Message-ID: <20131111082330.GA12405@gmail.com>
+References: <1384139315.2179.9.camel@wangbiao>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131109175406.GA17430@redhat.com>
+In-Reply-To: <1384139315.2179.9.camel@wangbiao>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111108-0928-0000-0000-00000348F3EF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2013-11-09 18:54:06]:
 
-> arch_uprobe should be opaque as much as possible to the generic
-> code, but currently it assumes that insn/ixol must be u8[] of the
-> known size. Remove this unnecessary dependency, we can use "&" and
-> and sizeof() with the same effect.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+* wangbiao <biao.wang@intel.com> wrote:
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+> @@ -1448,8 +1448,10 @@ static void usbnet_bh (unsigned long param)
+>  
+>  	// waiting for all pending urbs to complete?
+>  	if (dev->wait) {
+> +		wait_queue_head_t *wait_d = dev->wait;
+>  		if ((dev->txq.qlen + dev->rxq.qlen + dev->done.qlen) == 0) {
+> -			wake_up (dev->wait);
+> +			if (wait_d)
+> +				wake_up(wait_d);
+>  		}
+>  
+>  	// or are we maybe short a few urbs?
 
+1)
+
+Nit: the scope of 'wait_d' is unnecessarily broad, it could be moved to 
+the block that uses it.
+
+2)
+
+Also, the changelog mentions that dev->wait can race - it would be nice to 
+add to the changelog what exact synchronization mechanism protects 
+usbnet_terminate_urbs() and usbnet_bh() from seeing/modifying that value 
+at once - as the code was clearly written without such interaction in 
+mind.
+
+> @@ -1602,6 +1604,7 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
+>  	init_timer (&dev->delay);
+>  	mutex_init (&dev->phy_mutex);
+>  	mutex_init(&dev->interrupt_mutex);
+> +	init_waitqueue_head(&unlink_wakeup);
+
+3)
+
+Can that runtime initialization be avoided by using 
+DECLARE_WAIT_QUEUE_HEAD()?
+
+Thanks,
+
+	Ingo
