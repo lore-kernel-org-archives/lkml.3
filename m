@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab3KKPob (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 10:44:31 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:57789 "EHLO
+	id S1754755Ab3KKPpO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 10:45:14 -0500
+Received: from mail-we0-f178.google.com ([74.125.82.178]:48566 "EHLO
 	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754696Ab3KKPoW (ORCPT
+	with ESMTP id S1754020Ab3KKPpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 10:44:22 -0500
-Date: Mon, 11 Nov 2013 16:44:18 +0100
+	Mon, 11 Nov 2013 10:45:11 -0500
+Date: Mon, 11 Nov 2013 16:45:08 +0100
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: suravee.suthikulpanit@amd.com, mingo@kernel.org, mingo@redhat.com,
-        jacob.w.shin@gmail.com, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, hpa@zytor.com, tgl@domain.invalid,
-        linux-kernel@vger.kernel.org, sherry.hurwitz@amd.com
-Subject: Re: [PATCH 1/3] perf/x86/amd: AMD support for bp_len >
- HW_BREAKPOINT_LEN_8
-Message-ID: <20131111154417.GD26853@localhost.localdomain>
-References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1380730268-25807-2-git-send-email-suravee.suthikulpanit@amd.com>
- <20131108194122.GA14606@localhost.localdomain>
- <20131109151156.GA14249@redhat.com>
- <20131109153236.GE26079@localhost.localdomain>
- <20131109155428.GA15649@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
+Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist
+ periods (v2)
+Message-ID: <20131111154506.GE26853@localhost.localdomain>
+References: <87txfrxlq8.fsf@sejong.aot.lge.com>
+ <20131105115802.GA12045@gmail.com>
+ <87ppqex8tj.fsf@sejong.aot.lge.com>
+ <20131106083046.GA4655@gmail.com>
+ <87r4atx51i.fsf@sejong.aot.lge.com>
+ <20131106114701.GA20249@gmail.com>
+ <20131106121440.GB7919@localhost.localdomain>
+ <20131111121352.GB21397@gmail.com>
+ <20131111130844.GB26853@localhost.localdomain>
+ <20131111135637.GD8781@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131109155428.GA15649@redhat.com>
+In-Reply-To: <20131111135637.GD8781@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 09, 2013 at 04:54:28PM +0100, Oleg Nesterov wrote:
-> Just in case let me repeat, I can be easily wrong because I forgot
-> how this series actually look and I don't have the patches now ;)
+On Mon, Nov 11, 2013 at 02:56:37PM +0100, Ingo Molnar wrote:
 > 
-> On 11/09, Frederic Weisbecker wrote:
-> >
-> > On Sat, Nov 09, 2013 at 04:11:56PM +0100, Oleg Nesterov wrote:
-> > > On 11/08, Frederic Weisbecker wrote:
-> > > >
-> > > >
-> > > > Does this feature only work on data breakpoint or is instruction breakpoint
-> > > > address range supported as well?
-> > >
-> > > IIRC, execute range is supported as well.
-> > >
-> > > But. I can't look at the code now, but iirc this can't really work until
-> > > we fix the (already discussed) problems with bp_len && X86_BREAKPOINT_LEN_X.
-> > > IOW, we should not blame these patches if it doesn't work.
-> >
-> > Yeah, don't worry I don't plan to push back these patches for the sake of that bug,
-> > that would be definetly unfair, especially as I introduced that issue :)
-> >
-> > And the patchset looks good overall, except for a few details but it's mostly ok,
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
 > 
-> OK,
+> > On Mon, Nov 11, 2013 at 01:13:52PM +0100, Ingo Molnar wrote:
+> > > 
+> > > It's not an irrelevant feature at all! :-)
+> > > 
+> > > It's just that for any sort of longer profile it was pretty 
+> > > difficult/frustrating to use, which I think held back adoption.
+> > > 
+> > > That performance problem got fixed now by you and Namhyung, so I think 
+> > > we'll see even wider adoption of call-graph profiling...
+> > 
+> > Ah I see now. At the time Linus reported his issue, I had the feeling 
+> > his usecase was a bit "extreme", but I actually have no idea how far 
+> > perf can be used given that I'm mostly used to short benchmarks, 
+> > typically hackbench, perf bench sched messaging et al. Thing is I don't 
+> > use it enough for my real usecases :)
 > 
-> > I just would like to fix that issue along the way. It would be really nice if we can
-> > avoid having a mask _and_ a len for breakpoints.
-> 
-> Up to you and Suravee, but can't we cleanup this later?
-> 
-> This series was updated many times to address a lot of (sometimes
-> contradictory) complaints.
+> Well, it's a bit of a catch-22: if there are severe scalability problems 
+> for a usecase then people won't use it because they cannot use it. So 
+> developers should usually try to over-measure things and go for extreme 
+> uses and such.
 
-Sure. But I'm confident that we can solve the conflicting mask / len issue easily beside.
-I mean, I don't feel confident with merging things as is, otoh it should be easy to fix up.
-
-I can to the fixup myself BTW, no problem with that, and I don't want to hold up this patchset,
-but we just need to agree on a proper solution.
- 
-> > I mean, that doesn't look right to me,
-> > it's two units basically measuring the same thing, so that's asking for conflicting troubles.
-> 
-> Yes. And we can kill either _len or _mask, not sure what would be more
-> clean.
-> 
-> At least with the current implementation (again, iirc) mask == len -1.
-> Although amd supports the more generic masks (but I can't recall the
-> details).
-
-Right. I think len is probably more powerful. Unless the mask could be used to define
-multiple ranges of breakpoints, not sure it's ever going to be used that way though. But we
-can still extend the interface if we need a mask later.
-
-> 
-> > I'm just not sure how to reuse the len to express breakpoint ranges (that was in fact the
-> > initial purpose of it) without breaking the tools.
-> 
-> Confused... user-space still uses len to express the range? Just
-> the kernel "switches" to mask if len > 8 ?
-
-Right but what if we want breakpoints having a size below 8? Like break on instructions
-from 0x1000 to 0x1008 ?
-
-Or should we ignore range instruction breakpoints when len < 8?
+Agreed :)
