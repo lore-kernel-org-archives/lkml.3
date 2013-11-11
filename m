@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab3KKOf7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 09:35:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54635 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753345Ab3KKOfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 09:35:52 -0500
-Date: Mon, 11 Nov 2013 09:08:15 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+	id S1754111Ab3KKOgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 09:36:08 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50401 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753345Ab3KKOgF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 09:36:05 -0500
+Date: Mon, 11 Nov 2013 14:35:32 +0000
+From: Dave Martin <Dave.Martin@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] lib/cpumask: Make CPUMASK_OFFSTACK usable without debug
- dependency
-Message-ID: <20131111140815.GB20328@hansolo.jdub.homelinux.org>
+Subject: Re: [PATCH 01/11] devicetree: bindings: Document cpu enable-method
+ for ARM CPUs
+Message-ID: <20131111143532.GB3166@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,32 +25,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CPUMASK_OFFSTACK was added in 2008, it was dependent upon
-DEBUG_PER_CPU_MAPS being enabled, or an architecture could select it.
-The debug dependency adds additional overhead that isn't required for
-operation of the feature, and we need CPUMASK_OFFSTACK to increase the
-NR_CPUS value beyond 512 on x86.  We drop the current dependency and make
-sure SMP is set.
+On Fri, Nov 01, 2013 at 03:08:49PM -0700, Stephen Boyd wrote:
+> From: Rohit Vaswani <rvaswani@codeaurora.org>
+> 
+> According to the ePAPR CPUs should have an enable method. On ARM
+> the enable-method property has not been used so far, so document
+> this property as an optional property and add the spin-table
+> method as one value
+> 
+> Cc: <devicetree@vger.kernel.org>
+> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+> [sboyd: Split off into separate patch]
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  Documentation/devicetree/bindings/arm/cpus.txt | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+> index f32494d..37258f9 100644
+> --- a/Documentation/devicetree/bindings/arm/cpus.txt
+> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+> @@ -45,6 +45,14 @@ For the ARM architecture every CPU node must contain the following properties:
+>  		"marvell,xsc3"
+>  		"marvell,xscale"
+>  
+> +And the following optional properties:
+> +
+> +- enable-method: Specifies the method used to enable or take the secondary cores
+> +		 out of reset. This allows different reset sequence for
+> +		 different types of cpus.
+> +		 This should be one of:
+> +		 "spin-table"
+> +
 
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
----
- lib/Kconfig | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+If you've not already done so, take a look at the changes to this
+documentation in linux-next.
 
-diff --git a/lib/Kconfig b/lib/Kconfig
-index b3c8be0..50b47cd 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -342,7 +342,8 @@ config CHECK_SIGNATURE
- 	bool
- 
- config CPUMASK_OFFSTACK
--	bool "Force CPU masks off stack" if DEBUG_PER_CPU_MAPS
-+	bool "Force CPU masks off stack"
-+	depends on SMP
- 	help
- 	  Use dynamic allocation for cpumask_var_t, instead of putting
- 	  them on the stack.  This is a bit more expensive, but avoids
--- 
-1.8.3.1
+There is some documentation about what the spin-table should actually
+mean for ARM in Documentation/arm64/booting.txt.
 
+We might need to add pointers from Documentation/arm/Booting?
+
+Cheers
+---Dave
