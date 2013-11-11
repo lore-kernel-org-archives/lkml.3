@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab3KKKBI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 05:01:08 -0500
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:38538 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab3KKKA6 convert rfc822-to-8bit (ORCPT
+	id S1753186Ab3KKKBO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 05:01:14 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:51331 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab3KKKBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 05:00:58 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "christian.ruppert@abilis.com" <christian.ruppert@abilis.com>
-Subject: Re: [GIT PULL] pin control bulk changes for v3.13
-Thread-Topic: [GIT PULL] pin control bulk changes for v3.13
-Thread-Index: AQHO3sEiKrO36hVs10O31J+CRXvZFg==
-Date: Mon, 11 Nov 2013 10:00:53 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA23075155D9F@IN01WEMBXA.internal.synopsys.com>
-References: <CACRpkdYpuZec_JRAPYZHmB5qTYebKR6iBy5=RvBUUEXsuOu97Q@mail.gmail.com>
-	<52808D34.70309@synopsys.com>
- <CACRpkdaRGKBWr+rtOD3tWBUA452yApF838ufZ6nPOhzMZGDzfg@mail.gmail.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.15.84.232]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Nov 2013 05:01:03 -0500
 MIME-Version: 1.0
+In-Reply-To: <527C3080.5050202@broadcom.com>
+References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
+	<051069C10411E24D9749790C498526FA1BE0B7D7@SJEXCHMB12.corp.ad.broadcom.com>
+	<CACRpkdYSLxp2M4HghcUdjEYGh-UQ+DaiCGp6yee+Qds6DR9poA@mail.gmail.com>
+	<201311050026.56321.heiko@sntech.de>
+	<527835FE.2030102@wwwdotorg.org>
+	<5279A319.5060701@broadcom.com>
+	<CACRpkdaxPv6CLMjab_4umyUvbBVYcazjmwx_LGRK76vxT4VUqA@mail.gmail.com>
+	<527C3080.5050202@broadcom.com>
+Date: Mon, 11 Nov 2013 11:01:02 +0100
+Message-ID: <CACRpkdaf9dVqpE5uFQ5L64n+wXO0AYr5-e1WvYc4rWjVTsTg1w@mail.gmail.com>
+Subject: Re: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sherman Yin <syin@broadcom.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 03:03 PM, Linus Walleij wrote:
-> On Mon, Nov 11, 2013 at 8:54 AM, Vineet Gupta
-> <Vineet.Gupta1@synopsys.com> wrote:
->> On 11/11/2013 12:14 PM, Linus Walleij wrote:
->>> - Add the Abilis TB10x pin control driver used on the ARC
->>>   architecture. Also the corresponding GPIO driver is merged
->>>   through this tree, so the ARC has full support for pins
->>>   and GPIOs after this.
->> Only the actual DT changes in arch/arc/plat-tb10x are missing which will require a
->> 2nd pull request for ARC for rc1 which could have been avoided had I bitched about
->> it earlier.
-> Actually I think device tree changes - if you mean changes to this platform's
-> DTS/DTSI files, should go through the ARC arch tree.
+On Fri, Nov 8, 2013 at 1:29 AM, Sherman Yin <syin@broadcom.com> wrote:
+> [Me]
+>> On Wed, Nov 6, 2013 at 3:02 AM, Sherman Yin <syin@broadcom.com> wrote:
 
-But current workflow is prone to broken bisectability - arch maintainers need to
-make sure that the core/driver changes hit mainline before the actual dts/dtsi
-files in arch/*
+>> You would have to patch the OF core to do something like that:
+>>
+>> bias-pull-up = <true true false>;
+>>
+>> 1/0 isn't so good I think, what should the parser do with e.g. 2?
+>> This is more to the point.
+>
+> I would imagine that the platform-specific device tree bindings would need
+> to clearly explain what the valid values are, as they should.
 
-> As the idea is to eventually move the DTS stuff out of the kernel we should
-> not try to couple these into the subsystem trees.
+But this is not a platform-specific binding. These are the
+generic pin configuration bindings we're talking about.
 
-IMHO putting the 2 parts in a patch series and routing via the same subsys tree
-will not really couple them. I fail to see how u would use the commits in driver/*
-(or not use the commits in arch/*) to do the proposed seperation of future.
+> If we're
+> using integers, we could either have a) !0 and 0, or b) just 1 and 0, and
+> everything else is an error.  Or c) the platform could decide that the value
+> provides addition info like pull-up-strength, so 0 = no pull up, >0 = pull
+> up enabled and the number is the pull up strength in Ohm (bindings should
+> indicate which values are valid), and everything else is an error.
 
-> Bindings Documentation/devicetree/bindings/* should go through the
-> subsystem trees though.
+That seems to make sense, I've just not seen any system (using
+device tree) that can actually set the pull up/down resistance.
 
-Agreed !
+>> That said, if you can patch the OF core and the generic pin config
+>> parser to do what you want with lists like that, it's your pick.
+>> It may take some time though.
+>
+> I don't mind patching the generic pin config, and I don't think the core
+> needs to change,
 
--Vineet
+If you want arrays of booleans that is a matter for the OF core
+parser I think.
 
+>> What about you patch include/linux/pinctrl/pinconf-generic.h
+>> to add PIN_CONFIG_INPUT_DISABLE with this semantic
+>> and also patch the generic pinconf parser in
+>> drivers/pinctrl/pinconf-generic.c
+>> to handle this?
+>
+> Sure, I can add PIN_CONFIG_INPUT_DISABLE.  However I suspect people might be
+> confused by this and PIN_CONFIG_OUTPUT.
 
+Just make sure you put in good documentation in that file
+right there, it's using kerneldoc and for a good reason...
+
+Yours,
+Linus Walleij
