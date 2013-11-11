@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab3KKPRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 10:17:14 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41582 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753598Ab3KKPRH (ORCPT
+	id S1754365Ab3KKPRn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 10:17:43 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:37141 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753640Ab3KKPRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 10:17:07 -0500
-Date: Mon, 11 Nov 2013 15:17:04 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC RESEND] dma-buf/fs Add
- get_[file|dma_buf]_unless_doomed
-Message-ID: <20131111151704.GX13318@ZenIV.linux.org.uk>
-References: <1384160267-3389-1-git-send-email-thellstrom@vmware.com>
+	Mon, 11 Nov 2013 10:17:38 -0500
+Message-ID: <5280F50E.6010700@gmail.com>
+Date: Mon, 11 Nov 2013 08:17:34 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384160267-3389-1-git-send-email-thellstrom@vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, jolsa@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/2] perf record: mmap output file - v4
+References: <1383884605-30968-1-git-send-email-dsahern@gmail.com> <1383884605-30968-3-git-send-email-dsahern@gmail.com> <20131111112906.GE15810@gmail.com> <20131111145804.GB27198@ghostprotocols.net>
+In-Reply-To: <20131111145804.GB27198@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 12:57:47AM -0800, Thomas Hellstrom wrote:
-> Resending since it appears this RFC never got to the dri-devel lkml lists.
-> 
-> In this context, a "doomed" object is an object whose refcount has reached
-> zero, but that has not yet been freed.
-> 
-> To avoid mutual refcounting vmwgfx need to have a non-refcounted pointer to
-> a dma-buf in a lookup structure. The pointer is removed in the dma-buf
-> destructor. To allow lookup-structure private locks we need
-> get_dma_buf_unless_doomed(). This common refcounting scenario is described
-> with examples in detail in the kref documentaion.
-> The solution with local locks is under kref_get_unless_zero().
-> See also kobject_get_unless_zero() and its commit message.
-> Since dma-bufs are using the attached file for refcounting,
-> get_dma_buf_unless_doomed maps directly to a get_file_unless_doomed.
+On 11/11/13, 7:58 AM, Arnaldo Carvalho de Melo wrote:
+>
+>> Looks very clean now!
+>
+>> Acked-by: Ingo Molnar <mingo@kernel.org>
+>
+> Applied the prep patch, but waiting for v5 as stated by David when
+> answering Jiri's concerns.
 
-NAK for struct file.  This kind of stuff is for implementing primitives,
-not as a public API.  BTW, as for dmabuf...  dma_buf_fd() calling conventions
-are seriously misguided - we are trying to transfer the reference we hold
-into something (in this case - descriptor table), so the failure exit
-should be dropping the reference, not leaving that to caller.
+I'll re-send - giving some time for comments on the use of 
+setjmp/longjmp to bounce out of memcpy and error exit when filesystem 
+runs out of space.
+
+David
