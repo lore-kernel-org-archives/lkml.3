@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab3KLVzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 16:55:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40035 "EHLO
+	id S932169Ab3KLVzp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 16:55:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40081 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756604Ab3KLVzC (ORCPT
+	with ESMTP id S1753470Ab3KLVzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:55:02 -0500
-Date: Tue, 12 Nov 2013 13:54:35 -0800
-From: tip-bot for Patrick Palka <tipbot@zytor.com>
-Message-ID: <tip-d53e57d039c323fe3a43630e9f729df48134e2c9@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        patrick@parcs.ath.cx, namhyung@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, patrick@parcs.ath.cx,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, tglx@linutronix.de
-In-Reply-To: <1382747149-9716-1-git-send-email-patrick@parcs.ath.cx>
-References: <1382747149-9716-1-git-send-email-patrick@parcs.ath.cx>
+	Tue, 12 Nov 2013 16:55:37 -0500
+Date: Tue, 12 Nov 2013 13:54:45 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-zy9tskx6jqm2rmw7468zze2a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf ui tui progress: Don'
- t force a refresh during progress update
-Git-Commit-ID: d53e57d039c323fe3a43630e9f729df48134e2c9
+Subject: [tip:perf/urgent] perf evsel: Remove idx parm from constructor
+Git-Commit-ID: ef503831d8d64e12c6dad5547875cfcd4c5d043c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,71 +29,332 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 13:54:42 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 13:54:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d53e57d039c323fe3a43630e9f729df48134e2c9
-Gitweb:     http://git.kernel.org/tip/d53e57d039c323fe3a43630e9f729df48134e2c9
-Author:     Patrick Palka <patrick@parcs.ath.cx>
-AuthorDate: Fri, 25 Oct 2013 20:25:49 -0400
+Commit-ID:  ef503831d8d64e12c6dad5547875cfcd4c5d043c
+Gitweb:     http://git.kernel.org/tip/ef503831d8d64e12c6dad5547875cfcd4c5d043c
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 7 Nov 2013 16:41:19 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Mon, 11 Nov 2013 15:56:39 -0300
 
-perf ui tui progress: Don't force a refresh during progress update
+perf evsel: Remove idx parm from constructor
 
-Each call to tui_progress__update() would forcibly refresh the entire
-screen.  This is somewhat inefficient and causes noticable flickering
-during the startup of perf-report, especially on large/slow terminals.
+Most uses of the evsel constructor are followed by a call to
+perf_evlist__add with an idex of evlist->nr_entries, so make rename
+the current constructor to perf_evsel__new_idx and remove the need
+for passing the constructor for the common case.
 
-It looks like the force-refresh in tui_progress__update() serves no
-purpose other than to clear the screen so that the progress bar of a
-previous operation does not subsume that of a subsequent operation.  But
-we can do just that in a much more efficient manner by clearing only the
-region that a previous progress bar may have occupied before repainting
-the new progress bar.  Then the force-refresh could be removed with no
-change in visuals.
+We still need the new_idx variant because the way groups are handled,
+with evsel->nr_members holding the number of entries in an evlist,
+partitioning the evlist into sublists inside a single linked list.
 
-This patch disables the slow force-refresh in tui_progress__update() and
-instead calls SLsmg_fill_region() on the entire area that the progress
-bar may occupy before repainting it.  This change makes the startup of
-perf-report much faster and appear much "smoother".
+This asks for a clarifying refactoring, but for now simplify the non
+parser cases, so that tool writers don't have to bother with evsel idx
+setting.
 
-It turns out that this was a big bottleneck in the startup speed of
-perf-report -- with this patch, perf-report starts up ~2x faster (1.1s
-vs 0.55s) on my machines.  (These numbers were measured by running "time
-perf report" on an 8MB perf.data and pressing 'q' immediately.)
-
-Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1382747149-9716-1-git-send-email-patrick@parcs.ath.cx
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-zy9tskx6jqm2rmw7468zze2a@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/tui/progress.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ tools/perf/builtin-trace.c                | 13 +++++--------
+ tools/perf/tests/evsel-tp-sched.c         |  4 ++--
+ tools/perf/tests/mmap-basic.c             |  2 +-
+ tools/perf/tests/open-syscall-all-cpus.c  |  2 +-
+ tools/perf/tests/open-syscall-tp-fields.c |  2 +-
+ tools/perf/tests/open-syscall.c           |  2 +-
+ tools/perf/tests/sw-clock.c               |  2 +-
+ tools/perf/util/evlist.c                  |  9 +++++----
+ tools/perf/util/evsel.c                   |  4 ++--
+ tools/perf/util/evsel.h                   | 15 +++++++++++++--
+ tools/perf/util/header.c                  |  4 ++--
+ tools/perf/util/parse-events.c            |  6 +++---
+ 12 files changed, 37 insertions(+), 28 deletions(-)
 
-diff --git a/tools/perf/ui/tui/progress.c b/tools/perf/ui/tui/progress.c
-index 3e2d936..c61d14b 100644
---- a/tools/perf/ui/tui/progress.c
-+++ b/tools/perf/ui/tui/progress.c
-@@ -18,13 +18,14 @@ static void tui_progress__update(struct ui_progress *p)
- 	if (p->total == 0)
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 329b783..68943ca 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -149,10 +149,9 @@ static void perf_evsel__delete_priv(struct perf_evsel *evsel)
+ 	perf_evsel__delete(evsel);
+ }
+ 
+-static struct perf_evsel *perf_evsel__syscall_newtp(const char *direction,
+-						    void *handler, int idx)
++static struct perf_evsel *perf_evsel__syscall_newtp(const char *direction, void *handler)
+ {
+-	struct perf_evsel *evsel = perf_evsel__newtp("raw_syscalls", direction, idx);
++	struct perf_evsel *evsel = perf_evsel__newtp("raw_syscalls", direction);
+ 
+ 	if (evsel) {
+ 		evsel->priv = malloc(sizeof(struct syscall_tp));
+@@ -186,17 +185,16 @@ static int perf_evlist__add_syscall_newtp(struct perf_evlist *evlist,
+ 					  void *sys_exit_handler)
+ {
+ 	int ret = -1;
+-	int idx = evlist->nr_entries;
+ 	struct perf_evsel *sys_enter, *sys_exit;
+ 
+-	sys_enter = perf_evsel__syscall_newtp("sys_enter", sys_enter_handler, idx++);
++	sys_enter = perf_evsel__syscall_newtp("sys_enter", sys_enter_handler);
+ 	if (sys_enter == NULL)
+ 		goto out;
+ 
+ 	if (perf_evsel__init_sc_tp_ptr_field(sys_enter, args))
+ 		goto out_delete_sys_enter;
+ 
+-	sys_exit = perf_evsel__syscall_newtp("sys_exit", sys_exit_handler, idx++);
++	sys_exit = perf_evsel__syscall_newtp("sys_exit", sys_exit_handler);
+ 	if (sys_exit == NULL)
+ 		goto out_delete_sys_enter;
+ 
+@@ -1824,8 +1822,7 @@ static size_t trace__fprintf_thread_summary(struct trace *trace, FILE *fp);
+ 
+ static void perf_evlist__add_vfs_getname(struct perf_evlist *evlist)
+ {
+-	struct perf_evsel *evsel = perf_evsel__newtp("probe", "vfs_getname",
+-						     evlist->nr_entries);
++	struct perf_evsel *evsel = perf_evsel__newtp("probe", "vfs_getname");
+ 	if (evsel == NULL)
  		return;
  
--	ui__refresh_dimensions(true);
-+	ui__refresh_dimensions(false);
- 	pthread_mutex_lock(&ui__lock);
- 	y = SLtt_Screen_Rows / 2 - 2;
- 	SLsmg_set_color(0);
- 	SLsmg_draw_box(y, 0, 3, SLtt_Screen_Cols);
- 	SLsmg_gotorc(y++, 1);
- 	SLsmg_write_string((char *)p->title);
-+	SLsmg_fill_region(y, 1, 1, SLtt_Screen_Cols - 2, ' ');
- 	SLsmg_set_color(HE_COLORSET_SELECTED);
- 	bar = ((SLtt_Screen_Cols - 2) * p->curr) / p->total;
- 	SLsmg_fill_region(y, 1, 1, bar, ' ');
+diff --git a/tools/perf/tests/evsel-tp-sched.c b/tools/perf/tests/evsel-tp-sched.c
+index 9b98c15..4774f7f 100644
+--- a/tools/perf/tests/evsel-tp-sched.c
++++ b/tools/perf/tests/evsel-tp-sched.c
+@@ -32,7 +32,7 @@ static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
+ 
+ int test__perf_evsel__tp_sched_test(void)
+ {
+-	struct perf_evsel *evsel = perf_evsel__newtp("sched", "sched_switch", 0);
++	struct perf_evsel *evsel = perf_evsel__newtp("sched", "sched_switch");
+ 	int ret = 0;
+ 
+ 	if (evsel == NULL) {
+@@ -63,7 +63,7 @@ int test__perf_evsel__tp_sched_test(void)
+ 
+ 	perf_evsel__delete(evsel);
+ 
+-	evsel = perf_evsel__newtp("sched", "sched_wakeup", 0);
++	evsel = perf_evsel__newtp("sched", "sched_wakeup");
+ 
+ 	if (perf_evsel__test_field(evsel, "comm", 16, true))
+ 		ret = -1;
+diff --git a/tools/perf/tests/mmap-basic.c b/tools/perf/tests/mmap-basic.c
+index a7232c2..d64ab79 100644
+--- a/tools/perf/tests/mmap-basic.c
++++ b/tools/perf/tests/mmap-basic.c
+@@ -65,7 +65,7 @@ int test__basic_mmap(void)
+ 		char name[64];
+ 
+ 		snprintf(name, sizeof(name), "sys_enter_%s", syscall_names[i]);
+-		evsels[i] = perf_evsel__newtp("syscalls", name, i);
++		evsels[i] = perf_evsel__newtp("syscalls", name);
+ 		if (evsels[i] == NULL) {
+ 			pr_debug("perf_evsel__new\n");
+ 			goto out_free_evlist;
+diff --git a/tools/perf/tests/open-syscall-all-cpus.c b/tools/perf/tests/open-syscall-all-cpus.c
+index b0657a9..5fecdbd 100644
+--- a/tools/perf/tests/open-syscall-all-cpus.c
++++ b/tools/perf/tests/open-syscall-all-cpus.c
+@@ -26,7 +26,7 @@ int test__open_syscall_event_on_all_cpus(void)
+ 
+ 	CPU_ZERO(&cpu_set);
+ 
+-	evsel = perf_evsel__newtp("syscalls", "sys_enter_open", 0);
++	evsel = perf_evsel__newtp("syscalls", "sys_enter_open");
+ 	if (evsel == NULL) {
+ 		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
+ 		goto out_thread_map_delete;
+diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
+index 524b221..41cc0ba 100644
+--- a/tools/perf/tests/open-syscall-tp-fields.c
++++ b/tools/perf/tests/open-syscall-tp-fields.c
+@@ -27,7 +27,7 @@ int test__syscall_open_tp_fields(void)
+ 		goto out;
+ 	}
+ 
+-	evsel = perf_evsel__newtp("syscalls", "sys_enter_open", 0);
++	evsel = perf_evsel__newtp("syscalls", "sys_enter_open");
+ 	if (evsel == NULL) {
+ 		pr_debug("%s: perf_evsel__newtp\n", __func__);
+ 		goto out_delete_evlist;
+diff --git a/tools/perf/tests/open-syscall.c b/tools/perf/tests/open-syscall.c
+index befc067..c1dc7d2 100644
+--- a/tools/perf/tests/open-syscall.c
++++ b/tools/perf/tests/open-syscall.c
+@@ -15,7 +15,7 @@ int test__open_syscall_event(void)
+ 		return -1;
+ 	}
+ 
+-	evsel = perf_evsel__newtp("syscalls", "sys_enter_open", 0);
++	evsel = perf_evsel__newtp("syscalls", "sys_enter_open");
+ 	if (evsel == NULL) {
+ 		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
+ 		goto out_thread_map_delete;
+diff --git a/tools/perf/tests/sw-clock.c b/tools/perf/tests/sw-clock.c
+index 6e2b44e..73c5c37 100644
+--- a/tools/perf/tests/sw-clock.c
++++ b/tools/perf/tests/sw-clock.c
+@@ -42,7 +42,7 @@ static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
+ 		return -1;
+ 	}
+ 
+-	evsel = perf_evsel__new(&attr, 0);
++	evsel = perf_evsel__new(&attr);
+ 	if (evsel == NULL) {
+ 		pr_debug("perf_evsel__new\n");
+ 		goto out_free_evlist;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index b939221..99dc58e 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -117,6 +117,8 @@ void perf_evlist__delete(struct perf_evlist *evlist)
+ void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry)
+ {
+ 	list_add_tail(&entry->node, &evlist->entries);
++	entry->idx = evlist->nr_entries;
++
+ 	if (!evlist->nr_entries++)
+ 		perf_evlist__set_id_pos(evlist);
+ }
+@@ -165,7 +167,7 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
+ 
+ 	event_attr_init(&attr);
+ 
+-	evsel = perf_evsel__new(&attr, 0);
++	evsel = perf_evsel__new(&attr);
+ 	if (evsel == NULL)
+ 		goto error;
+ 
+@@ -190,7 +192,7 @@ static int perf_evlist__add_attrs(struct perf_evlist *evlist,
+ 	size_t i;
+ 
+ 	for (i = 0; i < nr_attrs; i++) {
+-		evsel = perf_evsel__new(attrs + i, evlist->nr_entries + i);
++		evsel = perf_evsel__new_idx(attrs + i, evlist->nr_entries + i);
+ 		if (evsel == NULL)
+ 			goto out_delete_partial_list;
+ 		list_add_tail(&evsel->node, &head);
+@@ -249,9 +251,8 @@ perf_evlist__find_tracepoint_by_name(struct perf_evlist *evlist,
+ int perf_evlist__add_newtp(struct perf_evlist *evlist,
+ 			   const char *sys, const char *name, void *handler)
+ {
+-	struct perf_evsel *evsel;
++	struct perf_evsel *evsel = perf_evsel__newtp(sys, name);
+ 
+-	evsel = perf_evsel__newtp(sys, name, evlist->nr_entries);
+ 	if (evsel == NULL)
+ 		return -1;
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 5280820..f95653a 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -168,7 +168,7 @@ void perf_evsel__init(struct perf_evsel *evsel,
+ 	perf_evsel__calc_id_pos(evsel);
+ }
+ 
+-struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
++struct perf_evsel *perf_evsel__new_idx(struct perf_event_attr *attr, int idx)
+ {
+ 	struct perf_evsel *evsel = zalloc(sizeof(*evsel));
+ 
+@@ -219,7 +219,7 @@ out:
+ 	return format;
+ }
+ 
+-struct perf_evsel *perf_evsel__newtp(const char *sys, const char *name, int idx)
++struct perf_evsel *perf_evsel__newtp_idx(const char *sys, const char *name, int idx)
+ {
+ 	struct perf_evsel *evsel = zalloc(sizeof(*evsel));
+ 
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 64ec8e1..0178233 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -96,8 +96,19 @@ struct thread_map;
+ struct perf_evlist;
+ struct perf_record_opts;
+ 
+-struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx);
+-struct perf_evsel *perf_evsel__newtp(const char *sys, const char *name, int idx);
++struct perf_evsel *perf_evsel__new_idx(struct perf_event_attr *attr, int idx);
++
++static inline struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr)
++{
++	return perf_evsel__new_idx(attr, 0);
++}
++
++struct perf_evsel *perf_evsel__newtp_idx(const char *sys, const char *name, int idx);
++
++static inline struct perf_evsel *perf_evsel__newtp(const char *sys, const char *name)
++{
++	return perf_evsel__newtp_idx(sys, name, 0);
++}
+ 
+ struct event_format *event_format__new(const char *sys, const char *name);
+ 
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 26d9520..369c036 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2797,7 +2797,7 @@ int perf_session__read_header(struct perf_session *session)
+ 			perf_event__attr_swap(&f_attr.attr);
+ 
+ 		tmp = lseek(fd, 0, SEEK_CUR);
+-		evsel = perf_evsel__new(&f_attr.attr, i);
++		evsel = perf_evsel__new(&f_attr.attr);
+ 
+ 		if (evsel == NULL)
+ 			goto out_delete_evlist;
+@@ -2916,7 +2916,7 @@ int perf_event__process_attr(struct perf_tool *tool __maybe_unused,
+ 			return -ENOMEM;
+ 	}
+ 
+-	evsel = perf_evsel__new(&event->attr.attr, evlist->nr_entries);
++	evsel = perf_evsel__new(&event->attr.attr);
+ 	if (evsel == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index c90e55c..6de6f89 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -277,7 +277,7 @@ static int __add_event(struct list_head *list, int *idx,
+ 
+ 	event_attr_init(attr);
+ 
+-	evsel = perf_evsel__new(attr, (*idx)++);
++	evsel = perf_evsel__new_idx(attr, (*idx)++);
+ 	if (!evsel)
+ 		return -ENOMEM;
+ 
+@@ -378,7 +378,7 @@ static int add_tracepoint(struct list_head *list, int *idx,
+ {
+ 	struct perf_evsel *evsel;
+ 
+-	evsel = perf_evsel__newtp(sys_name, evt_name, (*idx)++);
++	evsel = perf_evsel__newtp_idx(sys_name, evt_name, (*idx)++);
+ 	if (!evsel)
+ 		return -ENOMEM;
+ 
+@@ -1097,7 +1097,7 @@ static bool is_event_supported(u8 type, unsigned config)
+ 		.threads = { 0 },
+ 	};
+ 
+-	evsel = perf_evsel__new(&attr, 0);
++	evsel = perf_evsel__new(&attr);
+ 	if (evsel) {
+ 		ret = perf_evsel__open(evsel, NULL, &tmap.map) >= 0;
+ 		perf_evsel__delete(evsel);
