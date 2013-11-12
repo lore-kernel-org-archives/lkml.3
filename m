@@ -1,61 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab3KLHqY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 02:46:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30963 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979Ab3KLHqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 02:46:17 -0500
-Message-ID: <5281DC82.8010704@redhat.com>
-Date: Tue, 12 Nov 2013 15:45:06 +0800
-From: Zhouping Liu <zliu@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753852Ab3KLHsf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 02:48:35 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:33876 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731Ab3KLHs2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 02:48:28 -0500
+X-Originating-IP: 109.242.35.210
+Date: Tue, 12 Nov 2013 09:48:19 +0200
+From: Aldo Iljazi <mail@aldo.io>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: marek.belisko@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: ft1000: ft1000_download: fixed coding style
+ issues
+Message-ID: <20131112074819.GA19657@elementary>
+References: <1384091060-29915-1-git-send-email-mail@aldo.io>
+ <20131112002709.GA7709@kroah.com>
 MIME-Version: 1.0
-To: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-CC: Mel Gorman <mgorman@suse.de>, netdev@vger.kernel.org
-Subject: Re: WARNING: CPU: 8 PID: 12860 at net/core/sock.c:313 sk_clear_memalloc+0x49/0x70()
-References: <988917896.22733181.1384226183266.JavaMail.root@redhat.com>
-In-Reply-To: <988917896.22733181.1384226183266.JavaMail.root@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112002709.GA7709@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC'ing netdev@ to make more relative people know it.
+ Greg KH wrote:
 
-On 11/12/2013 11:16 AM, Zhouping Liu wrote:
-> Hi All,
->
-> I found the WARNING in the latest mainline with commint 8b5baa460b.
->
-> [61323.305424] ------------[ cut here ]------------
-> [61323.310562] WARNING: CPU: 8 PID: 12860 at net/core/sock.c:313 sk_clear_memalloc+0x49/0x70()
-> [61323.319779] Modules linked in: rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache sg nfsd netxen_nic hpilo sp5100_tco auth_rpcgss hpwdt amd64_edac_mod edac_mce_amd microcode pcspkr shpchp serio_raw i2c_piix4 edac_core ipmi_si k10temp nfs_acl lockd ipmi_msghandler acpi_power_meter acpi_cpufreq sunrpc xfs libcrc32c radeon i2c_algo_bit drm_kms_helper ttm sd_mod crc_t10dif ata_generic crct10dif_common drm pata_acpi ahci libahci pata_atiixp libata i2c_core hpsa dm_mirror dm_region_hash dm_log dm_mod
-> [61323.368625] CPU: 8 PID: 12860 Comm: swapoff Not tainted 3.12.0+ #1
-> [61323.375452] Hardware name: HP ProLiant DL585 G7, BIOS A16 12/17/2012
-> [61323.382463]  0000000000000009 ffff882dfce43e68 ffffffff816204b7 0000000000000000
-> [61323.390692]  ffff882dfce43ea0 ffffffff8106495d ffff88190b551d00 ffff88080ff0b600
-> [61323.398940]  ffff88080ff0b650 0000000000000001 ffff880810fe64a0 ffff882dfce43eb0
-> [61323.407188] Call Trace:
-> [61323.409916]  [] dump_stack+0x45/0x56
-> [61323.415616]  [] warn_slowpath_common+0x7d/0xa0
-> [61323.422257]  [] warn_slowpath_null+0x1a/0x20
-> [61323.428705]  [] sk_clear_memalloc+0x49/0x70
-> [61323.435094]  [] xs_swapper+0x41/0x60 [sunrpc]
-> [61323.441671]  [] nfs_swap_deactivate+0x2d/0x30 [nfs]
-> [61323.448796]  [] destroy_swap_extents+0x61/0x70
-> [61323.455436]  [] SyS_swapoff+0x220/0x610
-> [61323.461420]  [] ? do_page_fault+0x1a/0x70
-> [61323.467582]  [] system_call_fastpath+0x16/0x1b
-> [61323.474215] ---[ end trace 919f685513b38356 ]---
->
-> I found the warning during doing swapoff the swap over NFS mount, so if you need to reproduce it,
-> you should do the following:
-> 1. Open CONFIG_NFS_SWAP in testing machine
-> 2. Create a NFS server, and create a swap file in NFS server
->     in NFS server: # dd if=/dev/zero of=/NFS_FOLDER/swapfile bs=1M count=1024; mkswap swapfile
-> 3. Inside testing machine, setup a swap over NFS, then swapoff it, the swapoff action will
->     trigger the WARNING.
->
+> On Sun, Nov 10, 2013 at 03:44:20PM +0200, Aldo Iljazi wrote:
+> > Fixed the following coding style issues:
+> 
+> Note that I added the filename to the Subject:, please do so in the
+> future to make it easier to see what exactly you are changing.
 
+You are right. I'll do that.
+-- 
+Aldo Iljazi
