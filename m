@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab3KLNYB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 08:24:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35435 "EHLO mx1.redhat.com"
+	id S1755377Ab3KLNYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 08:24:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10103 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755239Ab3KLNXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 08:23:55 -0500
+	id S1755239Ab3KLNYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 08:24:09 -0500
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Mark Salter <msalter@redhat.com>, James Hogan <james.hogan@imgtec.com>,
-        linux-metag@vger.kernel.org
-Subject: [PATCH 05/11] metag: use generic fixmap.h
-Date: Tue, 12 Nov 2013 08:22:19 -0500
-Message-Id: <1384262545-20875-6-git-send-email-msalter@redhat.com>
+Cc: Mark Salter <msalter@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org
+Subject: [PATCH 09/11] sh: use generic fixmap.h
+Date: Tue, 12 Nov 2013 08:22:23 -0500
+Message-Id: <1384262545-20875-10-git-send-email-msalter@redhat.com>
 In-Reply-To: <1384262545-20875-1-git-send-email-msalter@redhat.com>
 References: <1384262545-20875-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,24 +20,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Mark Salter <msalter@redhat.com>
-CC: James Hogan <james.hogan@imgtec.com>
-CC: linux-metag@vger.kernel.org
+CC: Paul Mundt <lethal@linux-sh.org>
+CC: linux-sh@vger.kernel.org
 ---
- arch/metag/include/asm/fixmap.h | 32 +-------------------------------
- 1 file changed, 1 insertion(+), 31 deletions(-)
+ arch/sh/include/asm/fixmap.h | 39 ++-------------------------------------
+ 1 file changed, 2 insertions(+), 37 deletions(-)
 
-diff --git a/arch/metag/include/asm/fixmap.h b/arch/metag/include/asm/fixmap.h
-index 3331275..af621b0 100644
---- a/arch/metag/include/asm/fixmap.h
-+++ b/arch/metag/include/asm/fixmap.h
-@@ -51,37 +51,7 @@ enum fixed_addresses {
+diff --git a/arch/sh/include/asm/fixmap.h b/arch/sh/include/asm/fixmap.h
+index cbe0186..4daf91c 100644
+--- a/arch/sh/include/asm/fixmap.h
++++ b/arch/sh/include/asm/fixmap.h
+@@ -79,13 +79,6 @@ extern void __set_fixmap(enum fixed_addresses idx,
+ 			 unsigned long phys, pgprot_t flags);
+ extern void __clear_fixmap(enum fixed_addresses idx, pgprot_t flags);
+ 
+-#define set_fixmap(idx, phys) \
+-		__set_fixmap(idx, phys, PAGE_KERNEL)
+-/*
+- * Some hardware wants to get fixmapped without caching.
+- */
+-#define set_fixmap_nocache(idx, phys) \
+-		__set_fixmap(idx, phys, PAGE_KERNEL_NOCACHE)
+ /*
+  * used by vmalloc.c.
+  *
+@@ -101,36 +94,8 @@ extern void __clear_fixmap(enum fixed_addresses idx, pgprot_t flags);
  #define FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
- #define FIXADDR_START	((FIXADDR_TOP - FIXADDR_SIZE) & PMD_MASK)
+ #define FIXADDR_START	(FIXADDR_TOP - FIXADDR_SIZE)
  
 -#define __fix_to_virt(x)	(FIXADDR_TOP - ((x) << PAGE_SHIFT))
 -#define __virt_to_fix(x)	((FIXADDR_TOP - ((x)&PAGE_MASK)) >> PAGE_SHIFT)
 -
 -extern void __this_fixmap_does_not_exist(void);
+-
 -/*
 - * 'index to address' translation. If anyone tries to use the idx
 - * directly without tranlation, we catch the bug with a NULL-deference
@@ -56,19 +71,18 @@ index 3331275..af621b0 100644
 -	 */
 -	if (idx >= __end_of_fixed_addresses)
 -		__this_fixmap_does_not_exist();
--
--	return __fix_to_virt(idx);
++#define FIXMAP_PAGE_NOCACHE PAGE_KERNEL_NOCACHE
+ 
+-        return __fix_to_virt(idx);
 -}
--
++#include <asm-generic/fixmap.h>
+ 
 -static inline unsigned long virt_to_fix(const unsigned long vaddr)
 -{
 -	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
 -	return __virt_to_fix(vaddr);
 -}
-+#include <asm-generic/fixmap.h>
- 
- #define kmap_get_fixmap_pte(vaddr) \
- 	pte_offset_kernel( \
+ #endif
 -- 
 1.8.3.1
 
