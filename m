@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab3KLMnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 07:43:32 -0500
-Received: from imap.thunk.org ([74.207.234.97]:57027 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752657Ab3KLMnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 07:43:25 -0500
-Date: Mon, 11 Nov 2013 19:30:18 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: David Turner <novalis@novalis.org>
-Cc: Mark Harris <mhlk@osj.us>, Andreas Dilger <adilger@dilger.ca>,
-        Jan Kara <jack@suse.cz>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ext4: explain encoding of 34-bit a,c,mtime values
-Message-ID: <20131112003018.GA30281@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	David Turner <novalis@novalis.org>, Mark Harris <mhlk@osj.us>,
-	Andreas Dilger <adilger@dilger.ca>, Jan Kara <jack@suse.cz>,
-	Ext4 Developers List <linux-ext4@vger.kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <1383808590.23882.13.camel@chiang>
- <20131107160341.GA3850@quack.suse.cz>
- <1383864864.23882.33.camel@chiang>
- <20131107231445.GG2054@quack.suse.cz>
- <1383866807.23882.41.camel@chiang>
- <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
- <1383981551.8994.27.camel@chiang>
- <CADQUmxULoLgXRyoPpJJMJLqJPsZ8M4oPP8ScGxWp+Np8-efq3g@mail.gmail.com>
- <1384070214.8994.47.camel@chiang>
+	id S1755113Ab3KLMou (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 07:44:50 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:65228 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164Ab3KLMoq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 07:44:46 -0500
+Date: Tue, 12 Nov 2013 13:44:42 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 04/10] perf machine: Introduce synthesize_threads method
+ out of open coded equivalent
+Message-ID: <20131112124442.GB13057@gmail.com>
+References: <1384201353-23863-1-git-send-email-acme@infradead.org>
+ <1384201353-23863-5-git-send-email-acme@infradead.org>
+ <528140DB.90301@gmail.com>
+ <20131111205045.GE18886@gmail.com>
+ <20131112113427.GA4053@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384070214.8994.47.camel@chiang>
+In-Reply-To: <20131112113427.GA4053@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 10, 2013 at 02:56:54AM -0500, David Turner wrote:
-> b. Use Andreas's encoding, which is incompatible with pre-1970 files
-> written on 64-bit systems.
->
-> I don't care about currently-existing post-2038 files, because I believe
-> that nobody has a valid reason to have such files.  However, I do
-> believe that pre-1970 files are probably important to someone.
+
+* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+
+> Em Mon, Nov 11, 2013 at 09:50:45PM +0100, Ingo Molnar escreveu:
+> > * David Ahern <dsahern@gmail.com> wrote:
 > 
-> Despite this, I prefer option (b), because I think the simplicity is
-> valuable, and because I hate to give up date ranges (even ones that I
-> think we'll "never" need). Option (b) is not actually lossy, because we
-> could correct pre-1970 files with e2fsck; under Andreas's encoding,
-> their dates would be in the far future (and thus cannot be legitimate).
+> > > On 11/11/13, 1:22 PM, Arnaldo Carvalho de Melo wrote:
+> > > >+	if (perf_target__has_task(target))
+> > > >+		return perf_event__synthesize_thread_map(tool, threads, process, machine, data_mmap);
+> > > >+	else if (perf_target__has_cpu(target))
+> > > >+		return perf_event__synthesize_threads(tool, process, machine, data_mmap);
 > 
-> Would a patch that does (b) be accepted?  I would accompany it with a
-> patch to e2fsck (which I assume would also go to the ext4 developers
-> mailing list?).
+> > > Getting kind of long on the line lengths...
+> 
+> > Maybe we could start losing most of the perf_ prefixes - it's all about 
+> > perf here, so it does not really add much information, does it?
+> 
+> In some cases that is ok, that is why I didn't call it 'perf_machine', 
+> just 'machine', in others, like 'perf_event', I thought 'event' would be 
+> too general when somebody tries to use this code together with other 
+> libraries.
 
-I agree, I think this is the best way to go.  I'm going to drop your
-earlier patch, and wait for an updated patch from you.  It may miss
-this merge window, but as Andreas has pointed out, we still have a few
-years to get this right.  :-)
+I think 'event' as a variable name is generally unused by libraries, 
+exactly because so much random code uses it.
 
-Thanks!!
+The only unfortunate C library land grabs I've run into are 'time' [by 
+glibc] and 'y0' [by libm].
 
-					- Ted
+What I was suggesting here was more like an event__*() namespace - there 
+shouldn't be any collision with public functions from libraries, public 
+functions are generally either well established, or prefixed with a 
+library name.
+
+These are perf-internal function names, so using event__*() should be fine 
+- assuming there are no counter arguments.
+
+Thanks,
+
+	Ingo
