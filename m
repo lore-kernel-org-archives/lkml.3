@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab3KLRf3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:35:29 -0500
-Received: from www.sr71.net ([198.145.64.142]:49913 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754002Ab3KLRf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:35:26 -0500
-Message-ID: <528266A9.2040901@sr71.net>
-Date: Tue, 12 Nov 2013 09:34:33 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1756572Ab3KLRjP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:39:15 -0500
+Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:12761
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755892Ab3KLRjN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 12:39:13 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzzz2dh839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h1155h)
+X-WSS-ID: 0MW5VNB-07-DPL-02
+X-M-MSG: 
+Subject: [PATCH 00/10] AMD Cryptographic Coprocessor support
+To: <davem@davemloft.net>, <linux-crytpo@vger.kernel.org>,
+        <herbert@gondor.hengli.com.au>
+From: Tom Lendacky <thomas.lendacky@amd.com>
+CC: <linux-kernel@vger.kernel.org>
+Date: Tue, 12 Nov 2013 11:39:01 -0600
+Message-ID: <20131112173900.18862.68623.stgit@tlendack-t1.amdoffice.net>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: mgorman@suse.de, hannes@cmpxchg.org, tony.luck@intel.com,
-        matthew.garrett@nebula.com, riel@redhat.com, arjan@linux.intel.com,
-        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
-        gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
-        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
-        kosaki.motohiro@gmail.com, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        maxime.coquelin@stericsson.com, loic.pallardy@stericsson.com,
-        amit.kachhap@linaro.org, thomas.abraham@linaro.org,
-        markgross@thegnar.org
-Subject: Re: [Results] [RFC PATCH v4 00/40] mm: Memory Power Management
-References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com> <52437128.7030402@linux.vnet.ibm.com> <20130925164057.6bbaf23bdc5057c42b2ab010@linux-foundation.org> <52442F6F.5020703@linux.vnet.ibm.com> <5281E09B.3060303@linux.vnet.ibm.com>
-In-Reply-To: <5281E09B.3060303@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2013 12:02 AM, Srivatsa S. Bhat wrote:
-> I performed experiments on an IBM POWER 7 machine and got actual power-savings
-> numbers (upto 2.6% of total system power) from this patchset. I presented them
-> at the Kernel Summit but forgot to post them on LKML. So here they are:
+The following series implements support for the AMD Cryptographic
+Coprocessor (CCP).  The AMD CCP provides hardware encryption, hashing
+and other related operations.
 
-"upto"?  What was it, actually?  Essentially what you've told us here is
-that you have a patch that tries to do some memory power management and
-that it accomplishes that.  But, to what degree?
+This patch series is based on the 3.12 kernel.
 
-Was your baseline against a kernel also booted with numa=fake=1, or was
-it a kernel booted normally?
+---
 
-1. What is the theoretical power savings from memory?
-2. How much of the theoretical numbers can your patch reach?
-3. What is the performance impact?  Does it hurt ebizzy?
+Tom Lendacky (10):
+      crypto: authenc - Find proper IV address in ablkcipher callback
+      crypto: scatterwalk - Set the chain pointer indication bit
+      crypto: CCP device driver and interface support
+      crypto: crypto API interface to the CCP device driver
+      crypto: CCP AES crypto API support
+      crypto: CCP AES CMAC mode crypto API support
+      crypto: CCP XTS-AES crypto API support
+      crypto: CCP SHA crypto API support
+      crytpo: CCP device driver build files
+      crypto: CCP maintainer information
 
-You also said before:
-> On page 40, the paper shows the power-consumption breakdown for an IBM p670
-> machine, which shows that as much as 40% of the system energy is consumed by
-> the memory sub-system in a mid-range server.
 
-2.6% seems pretty awful for such an invasive patch set if you were
-expecting 40%.
+ MAINTAINERS                              |    7 
+ crypto/authenc.c                         |    7 
+ drivers/crypto/Kconfig                   |   12 
+ drivers/crypto/Makefile                  |    1 
+ drivers/crypto/ccp/Kconfig               |   23 
+ drivers/crypto/ccp/Makefile              |   10 
+ drivers/crypto/ccp/ccp-crypto-aes-cmac.c |  355 +++++
+ drivers/crypto/ccp/ccp-crypto-aes-xts.c  |  285 ++++
+ drivers/crypto/ccp/ccp-crypto-aes.c      |  375 ++++++
+ drivers/crypto/ccp/ccp-crypto-main.c     |  432 ++++++
+ drivers/crypto/ccp/ccp-crypto-sha.c      |  497 +++++++
+ drivers/crypto/ccp/ccp-crypto.h          |  191 +++
+ drivers/crypto/ccp/ccp-dev.c             |  582 +++++++++
+ drivers/crypto/ccp/ccp-dev.h             |  272 ++++
+ drivers/crypto/ccp/ccp-ops.c             | 2020 ++++++++++++++++++++++++++++++
+ drivers/crypto/ccp/ccp-pci.c             |  360 +++++
+ include/crypto/scatterwalk.h             |    1 
+ include/linux/ccp.h                      |  525 ++++++++
+ 18 files changed, 5952 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/crypto/ccp/Kconfig
+ create mode 100644 drivers/crypto/ccp/Makefile
+ create mode 100644 drivers/crypto/ccp/ccp-crypto-aes-cmac.c
+ create mode 100644 drivers/crypto/ccp/ccp-crypto-aes-xts.c
+ create mode 100644 drivers/crypto/ccp/ccp-crypto-aes.c
+ create mode 100644 drivers/crypto/ccp/ccp-crypto-main.c
+ create mode 100644 drivers/crypto/ccp/ccp-crypto-sha.c
+ create mode 100644 drivers/crypto/ccp/ccp-crypto.h
+ create mode 100644 drivers/crypto/ccp/ccp-dev.c
+ create mode 100644 drivers/crypto/ccp/ccp-dev.h
+ create mode 100644 drivers/crypto/ccp/ccp-ops.c
+ create mode 100644 drivers/crypto/ccp/ccp-pci.c
+ create mode 100644 include/linux/ccp.h
+
+-- 
+Tom Lendacky
+
