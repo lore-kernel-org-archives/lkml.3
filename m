@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab3KLObv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:31:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33850 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751554Ab3KLObu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:31:50 -0500
-Date: Tue, 12 Nov 2013 15:31:47 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Shawn Bohrer <shawn.bohrer@gmail.com>
-Cc: Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Markus Blank-Burian <burian@muenster.de>
-Subject: Re: 3.10.16 cgroup_mutex deadlock
-Message-ID: <20131112143147.GB6049@dhcp22.suse.cz>
-References: <20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com>
- <52820030.6000806@huawei.com>
+	id S1755480Ab3KLOcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:32:04 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60358 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab3KLOcB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 09:32:01 -0500
+Date: Tue, 12 Nov 2013 15:31:52 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipvs: Remove unused variable ret from
+ sync_thread_master()
+Message-ID: <20131112143152.GS5056@laptop.programming.kicks-ass.net>
+References: <1384264396-14550-1-git-send-email-geert@linux-m68k.org>
+ <20131112141314.GQ5056@laptop.programming.kicks-ass.net>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52820030.6000806@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 12-11-13 18:17:20, Li Zefan wrote:
-> Cc more people
-> 
-> On 2013/11/12 6:06, Shawn Bohrer wrote:
-> > Hello,
+On Tue, Nov 12, 2013 at 02:21:39PM -0000, David Laight wrote:
+> > > @@ -1637,7 +1637,7 @@ static int sync_thread_master(void *data)
+> > >  			continue;
+> > >  		}
+> > >  		while (ip_vs_send_sync_msg(tinfo->sock, sb->mesg) < 0) {
+> > > -			int ret = __wait_event_interruptible(*sk_sleep(sk),
 > > 
-> > This morning I had a machine running 3.10.16 go unresponsive but
-> > before we killed it we were able to get the information below.  I'm
-> > not an expert here but it looks like most of the tasks below are
-> > blocking waiting on the cgroup_mutex.  You can see that the
-> > resource_alloca:16502 task is holding the cgroup_mutex and that task
-> > appears to be waiting on a lru_add_drain_all() to complete.
+> > So ideally there's be a comment here why we're using interruptible but
+> > then ignore interruptions.
+> > 
+> > Julian said (
+> > http://lkml.kernel.org/r/alpine.LFD.2.00.1310012245020.1782@ja.ssi.bg ):
+> > 
+> > " Yes, your patch looks ok to me. In the past
+> > we used ssleep() but IPVS users were confused why
+> > IPVS threads increase the load average. So, we
+> > switched to _interruptible calls and later the socket
+> > polling was added.  "
+> 
+> I've done this in the past so that the code sleeps interruptibly
+> unless there is a signal pending - which would cause it to return
+> early.
+> 
+>     /* Tell scheduler we are going to sleep... */
+>     if (signal_pending(current))
+>         /* We don't want waking immediately (again) */
+>         sleep_state = TASK_UNINTERRUPTIBLE;
+>     else
+>         sleep_state = TASK_INTERRUPTIBLE;
+>     set_current_state(sleep_state);
 
-Do you have sysrq+l output as well by any chance? That would tell
-us what the current CPUs are doing. Dumping all kworker stacks
-might be helpful as well. We know that lru_add_drain_all waits for
-schedule_on_each_cpu to return so it is waiting for workers to finish.
-I would be really curious why some of lru_add_drain_cpu cannot finish
-properly. The only reason would be that some work item(s) do not get CPU
-or somebody is holding lru_lock.
-
--- 
-Michal Hocko
-SUSE Labs
+If this is for kernel threads, I think you can wipe the pending state;
+not entirely sure how signals interact with kthreads; Oleg will know.
