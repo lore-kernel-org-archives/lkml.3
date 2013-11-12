@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab3KLTvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:51:40 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59246 "EHLO arroyo.ext.ti.com"
+	id S1757394Ab3KLTvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:51:55 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52634 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757235Ab3KLTvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:51:19 -0500
+	id S1755274Ab3KLTvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 14:51:37 -0500
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
@@ -19,9 +19,9 @@ CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCHv5 18/20] arm: dts: make OMAP443x bandgap node to belong to OCP
-Date: Tue, 12 Nov 2013 15:46:20 -0400
-Message-ID: <1384285582-16933-19-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCHv5 19/20] arm: dts: make OMAP4460 bandgap node to belong to OCP
+Date: Tue, 12 Nov 2013 15:46:21 -0400
+Message-ID: <1384285582-16933-20-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
 References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
@@ -49,26 +49,32 @@ Cc: linux-kernel@vger.kernel.org
 Suggested-by: Nishanth Menon <nm@ti.com>
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/arm/boot/dts/omap443x.dtsi | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ arch/arm/boot/dts/omap4460.dtsi | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
-index 930ab47..2fca4e5 100644
---- a/arch/arm/boot/dts/omap443x.dtsi
-+++ b/arch/arm/boot/dts/omap443x.dtsi
-@@ -34,11 +34,13 @@
+diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/omap4460.dtsi
+index dc22719..def8183 100644
+--- a/arch/arm/boot/dts/omap4460.dtsi
++++ b/arch/arm/boot/dts/omap4460.dtsi
+@@ -39,14 +39,16 @@
  		#include "omap4-cpu-thermal.dtsi"
  	};
  
 -	bandgap: bandgap {
 -		reg = <0x4a002260 0x4
--		       0x4a00232C 0x4>;
--		compatible = "ti,omap4430-bandgap";
+-		       0x4a00232C 0x4
+-		       0x4a002378 0x18>;
+-		compatible = "ti,omap4460-bandgap";
+-		interrupts = <0 126 IRQ_TYPE_LEVEL_HIGH>; /* talert */
+-		gpios = <&gpio3 22 0>; /* tshut */
 +	ocp {
 +		bandgap: bandgap {
 +			reg = <0x4a002260 0x4
-+			       0x4a00232C 0x4>;
-+			compatible = "ti,omap4430-bandgap";
++			       0x4a00232C 0x4
++			       0x4a002378 0x18>;
++			compatible = "ti,omap4460-bandgap";
++			interrupts = <0 126 IRQ_TYPE_LEVEL_HIGH>; /* talert */
++			gpios = <&gpio3 22 0>; /* tshut */
  
 -		#thermal-sensor-cells = <0>;
 +			#thermal-sensor-cells = <0>;
