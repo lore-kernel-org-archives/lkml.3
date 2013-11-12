@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab3KLPui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:50:38 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:59807 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752556Ab3KLPug (ORCPT
+	id S1756107Ab3KLPuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:50:54 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:36328 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134Ab3KLPuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:50:36 -0500
-Date: Tue, 12 Nov 2013 10:50:35 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: David Cohen <david.a.cohen@linux.intel.com>
-cc: Michal Nazarewicz <mina86@mina86.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 2/2] check quirk to pad epout buf size when not aligned
- to maxpacketsize
-In-Reply-To: <5281595D.9030602@linux.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1311121046200.1200-100000@iolanthe.rowland.org>
+	Tue, 12 Nov 2013 10:50:51 -0500
+Message-ID: <52824E2F.9090302@ti.com>
+Date: Tue, 12 Nov 2013 10:50:07 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>
+CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>
+Subject: Re: [PATCH 02/12] mtd: nand: davinci: check required ti,davinci-chipselect
+ property
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>,<1384187188-5776-3-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8CEF@DNCE04.ent.ti.com>
+In-Reply-To: <4F5844B3A985794BA902E12C070812375F8CEF@DNCE04.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Nov 2013, David Cohen wrote:
-
-> Hi Alan, Michal,
+On Monday 11 November 2013 11:53 AM, Khoronzhuk, Ivan wrote:
+> The property "ti,davinci-chipselect" is required. So we have to check
+> if it is set.
 > 
-> On 11/11/2013 01:09 PM, Michal Nazarewicz wrote:
-> > On Mon, Nov 11 2013, Alan Stern wrote:
-> >> On Mon, 11 Nov 2013, Michal Nazarewicz wrote:
-> >>
-> >>> Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
-> >>> to be aligned to maxpacketsize of an out endpoint.  ffs_epfile_io() needs
-> >>> to pad epout buffer to match above condition if quirk is found.
-> >>>
-> >>> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> >>
-> >> I think this is still wrong.
-> >>
-> >>> @@ -824,7 +832,7 @@ static ssize_t ffs_epfile_io(struct file *file,
-> >>>   		req->context  = &done;
-> >>>   		req->complete = ffs_epfile_io_complete;
-> >>>   		req->buf      = data;
-> >>> -		req->length   = len;
-> >>> +		req->length   = data_len;
-> >>
-> >> IIUC, req->length should still be set to len, not to data_len.
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> ---
+>  drivers/mtd/nand/davinci_nand.c |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
 > 
-> I misunderstood the first time I read it:
-> In order to avoid DWC3 to stall, we need to update req->length (this is
-> the most important fix). kmalloc() is updated too to prevent USB
-> controller to overflow buffer boundaries.
+> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+> index d87213f..8e1c88e 100644
+> --- a/drivers/mtd/nand/davinci_nand.c
+> +++ b/drivers/mtd/nand/davinci_nand.c
+> @@ -541,10 +541,14 @@ static struct davinci_nand_pdata
+>                                 GFP_KERNEL);
+>                 pdev->dev.platform_data = pdata;
+>                 if (!pdata)
+> -                       return NULL;
+> +                       return ERR_PTR(-ENOMEM);
+> +
+This change don't follow commit message.
 
-Here I disagree.
+>                 if (!of_property_read_u32(pdev->dev.of_node,
+>                         "ti,davinci-chipselect", &prop))
+>                         pdev->id = prop;
+> +               else
+> +                       return ERR_PTR(-EINVAL);
+> +
+So the check already exist but the error case wasn't handled.
+This should be reflected in change log.
 
-If the DWC3 hardware stalls, it is up to the DWC3 UDC driver to fix it.  
-Gadget drivers should not have to worry.  Most especially, gadget 
-drivers should not lie about a request length.
+>                 if (!of_property_read_u32(pdev->dev.of_node,
+>                         "ti,davinci-mask-ale", &prop))
+>                         pdata->mask_ale = prop;
+> @@ -598,6 +602,10 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+>         nand_ecc_modes_t                ecc_mode;
+> 
+>         pdata = nand_davinci_get_pdata(pdev);
+> +       if (IS_ERR(pdata)) {
+> +               return PTR_ERR(pdata);
+> +       }
+> +
+Again not related to commit log. You might want to split this patch
+then.
 
-If the UDC driver decides to round up req->length before sending it to
-the hardware, that's okay.  But req->length should be set to len, not
-data_len.  And if the hardware receives more than len bytes of data,
-the UDC driver should set req->status to -EOVERFLOW.
-
-Alan Stern
+Regards,
+Santosh
 
