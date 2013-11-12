@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab3KLHTg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 02:19:36 -0500
-Received: from david.siemens.de ([192.35.17.14]:27509 "EHLO david.siemens.de"
+	id S1756436Ab3KLHTs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 02:19:48 -0500
+Received: from david.siemens.de ([192.35.17.14]:27490 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754847Ab3KLHPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 02:15:15 -0500
+	id S1754646Ab3KLHPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 02:15:13 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
@@ -13,9 +13,9 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v7 16/21] scripts/gdb: Add get_gdbserver_type helper
-Date: Tue, 12 Nov 2013 08:14:34 +0100
-Message-Id: <d46ab44709e7e5af7be000514e803b3676dec05d.1384240478.git.jan.kiszka@siemens.com>
+Subject: [PATCH v7 07/21] scripts/gdb: Add automatic symbol reloading on module insertion
+Date: Tue, 12 Nov 2013 08:14:25 +0100
+Message-Id: <f2d9e0cf6d6599c1f17eb3a407dca218f2b28b8f.1384240478.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1384240478.git.jan.kiszka@siemens.com>
 References: <cover.1384240478.git.jan.kiszka@siemens.com>
@@ -25,58 +25,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helper probes the type of the gdb server. Supported are QEMU and
-KGDB so far. Knowledge about the gdb server is required e.g. to retrieve
-the current CPU or current task.
+This installs a silent breakpoint on the do_init_module function. The
+breakpoint handler will try to load symbols from the module files found
+during lx-symbols execution. This way, breakpoints can be set to module
+initialization functions, and there is no need to explicitly call
+lx-symbols after (re-)loading a module.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/utils.py | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ scripts/gdb/linux/symbols.py | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
-diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
-index 71ee48c..a4a1640 100644
---- a/scripts/gdb/linux/utils.py
-+++ b/scripts/gdb/linux/utils.py
-@@ -119,3 +119,38 @@ def is_target_arch(arch):
-         if target_arch is None:
-             target_arch = gdb.execute("show architecture", to_string=True)
-         return arch in target_arch
+diff --git a/scripts/gdb/linux/symbols.py b/scripts/gdb/linux/symbols.py
+index bd21a96..139841f 100644
+--- a/scripts/gdb/linux/symbols.py
++++ b/scripts/gdb/linux/symbols.py
+@@ -19,6 +19,30 @@ import string
+ from linux import modules, utils
+ 
+ 
++if hasattr(gdb, 'Breakpoint'):
++    class LoadModuleBreakpoint(gdb.Breakpoint):
++        def __init__(self, spec, gdb_command):
++            super(LoadModuleBreakpoint, self).__init__(spec, internal=True)
++            self.silent = True
++            self.gdb_command = gdb_command
 +
++        def stop(self):
++            module = gdb.parse_and_eval("mod")
++            module_name = module['name'].string()
++            cmd = self.gdb_command
 +
-+GDBSERVER_QEMU = 0
-+GDBSERVER_KGDB = 1
-+gdbserver_type = None
++            # enforce update if object file is not found
++            cmd.module_files_updated = False
 +
-+
-+def get_gdbserver_type():
-+    def exit_handler(event):
-+        global gdbserver_type
-+        gdbserver_type = None
-+        gdb.events.exited.disconnect(exit_handler)
-+
-+    def probe_qemu():
-+        try:
-+            return gdb.execute("monitor info version", to_string=True) != ""
-+        except:
++            if module_name in cmd.loaded_modules:
++                gdb.write("refreshing all symbols to reload module "
++                          "'{0}'\n".format(module_name))
++                cmd.load_all_symbols()
++            else:
++                cmd.load_module_symbols(module)
 +            return False
 +
-+    def probe_kgdb():
-+        try:
-+            thread_info = gdb.execute("info thread 2", to_string=True)
-+            return "shadowCPU0" in thread_info
-+        except:
-+            return False
 +
-+    global gdbserver_type
-+    if gdbserver_type is None:
-+        if probe_qemu():
-+            gdbserver_type = GDBSERVER_QEMU
-+        elif probe_kgdb():
-+            gdbserver_type = GDBSERVER_KGDB
-+        if not gdbserver_type is None and hasattr(gdb, 'events'):
-+            gdb.events.exited.connect(exit_handler)
-+    return gdbserver_type
+ class LxSymbols(gdb.Command):
+     """(Re-)load symbols of Linux kernel and currently loaded modules.
+ 
+@@ -30,6 +54,8 @@ lx-symbols command."""
+     module_paths = []
+     module_files = []
+     module_files_updated = False
++    loaded_modules = []
++    breakpoint = None
+ 
+     def __init__(self):
+         super(LxSymbols, self).__init__("lx-symbols", gdb.COMMAND_FILES,
+@@ -87,6 +113,8 @@ lx-symbols command."""
+                 addr=module_addr,
+                 sections=self._section_arguments(module))
+             gdb.execute(cmdline, to_string=True)
++            if not module_name in self.loaded_modules:
++                self.loaded_modules.append(module_name)
+         else:
+             gdb.write("no module object found for '{0}'\n".format(module_name))
+ 
+@@ -104,6 +132,7 @@ lx-symbols command."""
+         gdb.execute("symbol-file", to_string=True)
+         gdb.execute("symbol-file vmlinux")
+ 
++        self.loaded_modules = []
+         module_list = modules.ModuleList()
+         if not module_list:
+             gdb.write("no modules found\n")
+@@ -123,5 +152,15 @@ lx-symbols command."""
+ 
+         self.load_all_symbols()
+ 
++        if hasattr(gdb, 'Breakpoint'):
++            if not self.breakpoint is None:
++                self.breakpoint.delete()
++                self.breakpoint = None
++            self.breakpoint = LoadModuleBreakpoint(
++                "kernel/module.c:do_init_module", self)
++        else:
++            gdb.write("Note: symbol update on module loading not supported "
++                      "with this gdb version\n")
++
+ 
+ LxSymbols()
 -- 
 1.8.1.1.298.ge7eed54
 
