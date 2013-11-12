@@ -1,253 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab3KLMb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 07:31:27 -0500
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:4988
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755122Ab3KLMbZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 07:31:25 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(z1039mz9371I542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216hbe9i1155h)
-From: Shaohui Xie <Shaohui.Xie@freescale.com>
-To: "shh.xie@gmail.com" <shh.xie@gmail.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Madalin-Cristian Bucur <madalin.bucur@freescale.com>,
-        Shruti Kanetkar <Shruti@freescale.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "f.fainelli@gmail.com" <f.fainelli@gmail.com>,
-        "peppe.cavallaro@st.com" <peppe.cavallaro@st.com>,
-        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCH 2/4] phylib: Add generic 10G driver
-Thread-Topic: [PATCH 2/4] phylib: Add generic 10G driver
-Thread-Index: AQHO3tjzTgQX+U6lMUa4aXTRguqMV5ohiGLQ
-Date: Tue, 12 Nov 2013 12:31:21 +0000
-Message-ID: <ED492CCEAF882048BC2237DE806547C915117384@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1384168049-2899-1-git-send-email-shh.xie@gmail.com>
-In-Reply-To: <1384168049-2899-1-git-send-email-shh.xie@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.53]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755199Ab3KLMbj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 07:31:39 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:45562 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842Ab3KLMbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 07:31:35 -0500
+Date: Tue, 12 Nov 2013 21:31:14 +0000
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 2/2] perf trace: Fix segfault on perf trace -i perf.data
+Message-ID: <20131112213114.GB14439@danjae>
+References: <1384237500-22991-1-git-send-email-namhyung@kernel.org>
+ <1384237500-22991-2-git-send-email-namhyung@kernel.org>
+ <20131112114609.GB4053@ghostprotocols.net>
+ <20131112115700.GC4053@ghostprotocols.net>
+ <20131112121508.GE4053@ghostprotocols.net>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131112121508.GE4053@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added more people and list.
+On Tue, Nov 12, 2013 at 09:15:08AM -0300, Arnaldo Carvalho de Melo wrote:
+> Second part, just rewrote the changelog a bit:
+> 
+> commit 4e8a6e566fc611b9cbec2978a52266f29cb65785
+> Author: Namhyung Kim <namhyung.kim@lge.com>
+> Date:   Tue Nov 12 15:25:00 2013 +0900
+> 
+>     perf trace: Fix segfault on perf trace -i perf.data
+>     
+>     When replaying a previous record session, it'll get a segfault since it
+>     doesn't initialize raw_syscalls enter/exit tracepoint's evsel->priv for
+>     caching the format fields.
+>     
+>     So fix it by properly initializing sys_enter/exit evsels that comes from
+>     reading the perf.data file header.
 
-Best Regards, 
-Shaohui Xie
+Looks good to me!
 
+Thanks for doing this, Arnaldo.  I'll try to avoid this kind of thing
+again in the future.
 
-> -----Original Message-----
-> From: shh.xie@gmail.com [mailto:shh.xie@gmail.com]
-> Sent: Monday, November 11, 2013 7:07 PM
-> To: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-> Cc: Bucur Madalin-Cristian-B32716; Kanetkar Shruti-B44454; Xie Shaohui-B21989
-> Subject: [PATCH 2/4] phylib: Add generic 10G driver
-> 
-> From: Andy Fleming
-> 
-> Very incomplete, but will allow for binding an ethernet controller to it.
-> 
-> Also, Add XGMII interface type
-> 
-> Signed-off-by: Andy Fleming
-> Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
-> ---
->  drivers/net/phy/phy_device.c | 101 ++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/phy.h          |   1 +
->  2 files changed, 101 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c index
-> 74630e9..30bf2d5 100644
-> --- a/drivers/net/phy/phy_device.c
-> +++ b/drivers/net/phy/phy_device.c
-> @@ -32,6 +32,7 @@
->  #include <linux/module.h>
->  #include <linux/mii.h>
->  #include <linux/ethtool.h>
-> +#include <linux/mdio.h>
->  #include <linux/phy.h>
-> 
->  #include <asm/io.h>
-> @@ -689,6 +690,13 @@ static int genphy_config_advert(struct phy_device *phydev)
->  	return changed;
->  }
-> 
-> +int gen10g_config_advert(struct phy_device *dev) {
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(gen10g_config_advert);
-> +
-> +
->  /**
->   * genphy_setup_forced - configures/forces speed/duplex from @phydev
->   * @phydev: target phy_device struct
-> @@ -742,6 +750,12 @@ int genphy_restart_aneg(struct phy_device *phydev)  }
-> EXPORT_SYMBOL(genphy_restart_aneg);
-> 
-> +int gen10g_restart_aneg(struct phy_device *phydev) {
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(gen10g_restart_aneg);
-> +
-> 
->  /**
->   * genphy_config_aneg - restart auto-negotiation or write BMCR @@ -784,6
-> +798,13 @@ int genphy_config_aneg(struct phy_device *phydev)  }
-> EXPORT_SYMBOL(genphy_config_aneg);
-> 
-> +int gen10g_config_aneg(struct phy_device *phydev) {
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(gen10g_config_aneg);
-> +
-> +
->  /**
->   * genphy_update_link - update link status in @phydev
->   * @phydev: target phy_device struct
-> @@ -913,6 +934,35 @@ int genphy_read_status(struct phy_device *phydev)  }
-> EXPORT_SYMBOL(genphy_read_status);
-> 
-> +int gen10g_read_status(struct phy_device *phydev) {
-> +	int devad, reg;
-> +	u32 mmd_mask = phydev->c45_ids.devices_in_package;
-> +
-> +	phydev->link = 1;
-> +
-> +	/* For now just lie and say it's 10G all the time */
-> +	phydev->speed = 10000;
-> +	phydev->duplex = DUPLEX_FULL;
-> +
-> +	for (devad = 0; mmd_mask; devad++, mmd_mask = mmd_mask >> 1) {
-> +		if (!(mmd_mask & 1))
-> +			continue;
-> +
-> +		/* Read twice because link state is latched and a
-> +		 * read moves the current state into the register
-> +		 */
-> +		phy_read_mmd(phydev, devad, MDIO_STAT1);
-> +		reg = phy_read_mmd(phydev, devad, MDIO_STAT1);
-> +		if (reg < 0 || !(reg & MDIO_STAT1_LSTATUS))
-> +			phydev->link = 0;
-> +	}
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(gen10g_read_status);
-> +
-> +
->  static int genphy_config_init(struct phy_device *phydev)  {
->  	int val;
-> @@ -959,6 +1009,15 @@ static int genphy_config_init(struct phy_device *phydev)
-> 
->  	return 0;
->  }
-> +
-> +static int gen10g_config_init(struct phy_device *phydev) {
-> +	/* Temporarily just say we support everything */
-> +	phydev->supported = phydev->advertising = SUPPORTED_10000baseT_Full;
-> +
-> +	return 0;
-> +}
-> +
->  int genphy_suspend(struct phy_device *phydev)  {
->  	int value;
-> @@ -974,6 +1033,13 @@ int genphy_suspend(struct phy_device *phydev)  }
-> EXPORT_SYMBOL(genphy_suspend);
-> 
-> +int gen10g_suspend(struct phy_device *phydev) {
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(gen10g_suspend);
-> +
-> +
->  int genphy_resume(struct phy_device *phydev)  {
->  	int value;
-> @@ -989,6 +1055,13 @@ int genphy_resume(struct phy_device *phydev)  }
-> EXPORT_SYMBOL(genphy_resume);
-> 
-> +int gen10g_resume(struct phy_device *phydev) {
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(gen10g_resume);
-> +
-> +
->  /**
->   * phy_probe - probe and init a PHY device
->   * @dev: device to probe and init
-> @@ -1129,6 +1202,20 @@ static struct phy_driver genphy_driver = {
->  	.driver		= {.owner= THIS_MODULE, },
->  };
-> 
-> +static struct phy_driver gen10g_driver = {
-> +	.phy_id         = 0xffffffff,
-> +	.phy_id_mask    = 0xffffffff,
-> +	.name           = "Generic 10G PHY",
-> +	.config_init    = gen10g_config_init,
-> +	.features       = 0,
-> +	.config_aneg    = gen10g_config_aneg,
-> +	.read_status    = gen10g_read_status,
-> +	.suspend        = gen10g_suspend,
-> +	.resume         = gen10g_resume,
-> +	.driver         = {.owner = THIS_MODULE, },
-> +};
-> +
-> +
->  static int __init phy_init(void)
->  {
->  	int rc;
-> @@ -1139,13 +1226,25 @@ static int __init phy_init(void)
-> 
->  	rc = phy_driver_register(&genphy_driver);
->  	if (rc)
-> -		mdio_bus_exit();
-> +		goto genphy_register_failed;
-> +
-> +	rc = phy_driver_register(&gen10g_driver);
-> +	if (rc)
-> +		goto gen10g_register_failed;
-> +
-> +	return rc;
-> +
-> +gen10g_register_failed:
-> +	phy_driver_unregister(&genphy_driver);
-> +genphy_register_failed:
-> +	mdio_bus_exit();
-> 
->  	return rc;
->  }
-> 
->  static void __exit phy_exit(void)
->  {
-> +	phy_driver_unregister(&gen10g_driver);
->  	phy_driver_unregister(&genphy_driver);
->  	mdio_bus_exit();
->  }
-> diff --git a/include/linux/phy.h b/include/linux/phy.h index 684925a..f864004
-> 100644
-> --- a/include/linux/phy.h
-> +++ b/include/linux/phy.h
-> @@ -66,6 +66,7 @@ typedef enum {
->  	PHY_INTERFACE_MODE_RGMII_TXID,
->  	PHY_INTERFACE_MODE_RTBI,
->  	PHY_INTERFACE_MODE_SMII,
-> +	PHY_INTERFACE_MODE_XGMII,
->  } phy_interface_t;
-> 
-> 
-> --
-> 1.8.4.1
-
-
+Thanks,
+Namhyung
