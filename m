@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab3KLQsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 11:48:46 -0500
-Received: from mga11.intel.com ([192.55.52.93]:15784 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754213Ab3KLQsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 11:48:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,686,1378882800"; 
-   d="scan'208";a="426314104"
-Message-ID: <52825BE9.2080605@linux.intel.com>
-Date: Tue, 12 Nov 2013 08:48:41 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Tony Luck <tony.luck@intel.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "l.majewski@samsung.com" <l.majewski@samsung.com>,
-        Jonathan Corbet <corbet@lwn.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [RFC][PATCH v5 00/14] sched: packing tasks
-References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org> <CAHkRjk69GNYtLGBSWCNcsCzkBHywKrD0qQQbNkJRpMbcdsCPyw@mail.gmail.com> <20131111163630.GD26898@twins.programming.kicks-ass.net> <52810851.4090907@linux.intel.com> <20131111181805.GE29572@arm.com>
-In-Reply-To: <20131111181805.GE29572@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754188Ab3KLQv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 11:51:56 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:32940 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554Ab3KLQvu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 11:51:50 -0500
+Message-ID: <1384275104.5754.33.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: scripts: checkpatch.pl & Lindent (minor complaint)
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 12 Nov 2013 11:51:44 -0500
+In-Reply-To: <1384273839.4771.49.camel@joe-AO722>
+References: <1384267377.5754.25.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <1384271045.4771.47.camel@joe-AO722>
+	 <1384272557.5754.30.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <1384273839.4771.49.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111216-6688-0000-0000-000003697B8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 10:18 AM, Catalin Marinas wrote:
-> The ordering is based on the actual C-state, so a simple way is to wake
-> up the CPU in the shallowest C-state. With asymmetric configurations
-> (big.LITTLE) we have different costs for the same C-state, so this would
-> come in handy.
+On Tue, 2013-11-12 at 08:30 -0800, Joe Perches wrote:
+> On Tue, 2013-11-12 at 11:09 -0500, Mimi Zohar wrote:
+> > On Tue, 2013-11-12 at 07:44 -0800, Joe Perches wrote:
+> > > On Tue, 2013-11-12 at 09:42 -0500, Mimi Zohar wrote: 
+> > > > scripts/Lindent and scripts/checkpatch disagree whether the fields in a
+> > > > statically initialized array should be blank separated.  
+> > > > 
+> > > > static struct ima_rule_entry default_rules[] = {
+> > > >         {.action = DONT_MEASURE,.fsmagic = PROC_SUPER_MAGIC,.flags = IMA_FSMAGIC},
+> > > > 
+> > > > Lindent adds a blank before '.fsmagic', which checkpatch then complains
+> > > > about (eg. commit 75834fc3).
+> > > 
+> > > Perhaps I don't understand what you mean.
+> > 
+> > > Lindent _doesn't_add a blank and checkpatch
+> > > seems to do the right thing here.
+> > 
+> > Sorry, my mistake.  It's the reverse.  Checkpatch complains about the
+> > missing blank, which Lindent then removes.
+> 
+> My suggestion is not to use Lindent.
+> 
+> If you want a semi-automated source-code reformatting tool,
+> use scripts/checkpatch.pl --fix
 
-btw I was considering something else; in practice CPUs will be in the deepest state..
-... at which point I was going to go with some other metrics of what is best from a platform level
+Thanks, perhaps this suggestion should be reflected in
+Documentation/CodingStyle.
+
+Mimi
 
