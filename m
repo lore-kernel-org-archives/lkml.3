@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3KLNDG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 08:03:06 -0500
-Received: from relay.parallels.com ([195.214.232.42]:45549 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab3KLNDE (ORCPT
+	id S1755141Ab3KLNXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 08:23:12 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:30051 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754002Ab3KLNXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 08:03:04 -0500
-Message-ID: <528226EC.4050701@parallels.com>
-Date: Tue, 12 Nov 2013 17:02:36 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 12 Nov 2013 08:23:08 -0500
+X-IronPort-AV: E=Sophos;i="4.93,684,1378857600"; 
+   d="scan'208";a="70996559"
+Date: Tue, 12 Nov 2013 13:21:44 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH] of: set dma_mask to point to coherent_dma_mask
+In-Reply-To: <20131112101955.GF16735@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1311121315460.26077@kaball.uk.xensource.com>
+References: <1383109522-6879-1-git-send-email-robherring2@gmail.com> <20131102180724.D8FC5C40F02@trevor.secretlab.ca> <alpine.DEB.2.02.1311061642270.26077@kaball.uk.xensource.com> <alpine.DEB.2.02.1311111658100.26077@kaball.uk.xensource.com>
+ <20131112101955.GF16735@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>, Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-nfs@vger.kernel.org>, <devel@openvz.org>,
-        <ebiederm@xmission.com>, <oleg@redhat.com>, <bfields@fieldses.org>,
-        <bharrosh@panasas.com>
-Subject: Re: call_usermodehelper in containers
-References: <20131111071825.62da01d1@tlielax.poochiereds.net>	<20131112004703.GB15377@kroah.com> <20131112061201.04cf25ab@tlielax.poochiereds.net>
-In-Reply-To: <20131112061201.04cf25ab@tlielax.poochiereds.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.31.245]
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-12.11.2013 15:12, Jeff Layton пишет:
-> On Mon, 11 Nov 2013 16:47:03 -0800
-> Greg KH <gregkh@linuxfoundation.org> wrote:
->
->> On Mon, Nov 11, 2013 at 07:18:25AM -0500, Jeff Layton wrote:
->>> We have a bit of a problem wrt to upcalls that use call_usermodehelper
->>> with containers and I'd like to bring this to some sort of resolution...
->>>
->>> A particularly problematic case (though there are others) is the
->>> nfsdcltrack upcall. It basically uses call_usermodehelper to run a
->>> program in userland to track some information on stable storage for
->>> nfsd.
->>
->> I thought the discussion at the kernel summit about this issue was:
->> 	- don't do this.
->> 	- don't do it.
->> 	- if you really need to do this, fix nfsd
->>
->
-> Sorry, I couldn't make the kernel summit so I missed that discussion. I
-> guess LWN didn't cover it?
->
-> In any case, I guess then that we'll either have to come up with some
-> way to fix nfsd here, or simply ensure that nfsd can never be started
-> unless root in the container has a full set of a full set of
-> capabilities.
->
-> One sort of Rube Goldberg possibility to fix nfsd is:
->
-> - when we start nfsd in a container, fork off an extra kernel thread
->    that just sits idle. That thread would need to be a descendant of the
->    userland process that started nfsd, so we'd need to create it with
->    kernel_thread().
->
-> - Have the kernel just start up the UMH program in the init_ns mount
->    namespace as it currently does, but also pass the pid of the idle
->    kernel thread to the UMH upcall.
->
-> - The program will then use /proc/<pid>/root and /proc/<pid>/ns/* to set
->    itself up for doing things properly.
->
-> Note that with this mechanism we can't actually run a different binary
-> per container, but that's probably fine for most purposes.
->
+On Tue, 12 Nov 2013, Russell King - ARM Linux wrote:
+> On Mon, Nov 11, 2013 at 04:59:14PM +0000, Stefano Stabellini wrote:
+> > On Wed, 6 Nov 2013, Stefano Stabellini wrote:
+> > > On Sat, 2 Nov 2013, Grant Likely wrote:
+> > > > On Wed, 30 Oct 2013 00:05:22 -0500, Rob Herring <robherring2@gmail.com> wrote:
+> > > > > From: Rob Herring <rob.herring@calxeda.com>
+> > > > > 
+> > > > > Platform devices created by DT code don't initialize dma_mask pointer to
+> > > > > anything. Set it to coherent_dma_mask by default if the architecture
+> > > > > code has not set it.
+> > > > > 
+> > > > > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> > > > 
+> > > > I believe this is okay. I haven't done any testing to back up that
+> > > > opinion though.
+> > > 
+> > > Tested-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > 
+> > BTW I hope you are planning on sending this upstream soon, because
+> > without it I can very easily corrupt my root fs by simply booting the system.
+> 
+> What's the mechanism for that corruption?  Having the DMA mask not set
+> should not cause DMA corruption - that hints at something else being
+> wrong, and that needs to be investigated.
 
-Hmmm... Why we can't? We can go a bit further with userspace idea.
-
-We use UMH some very limited number of user programs. For 2, actually:
-1) /sbin/nfs_cache_getent
-2) /sbin/nfsdcltrack
-
-If we convert them into proxies, which use /proc/<pid>/root and /proc/<pid>/ns/*, this will allow us to lookup the right binary.
-The only limitation here is presence of this "proxy" binaries on "host".
-
-And we don't need any significant changes in kernel.
-
-BTW, Jeff, could you remind me, please, why exactly we need to use UMH to run the binary?
-What are this capabilities, which force us to do so?
-
--- 
-Best regards,
-Stanislav Kinsbursky
+Russell, you are right.
+I went through the swiotlb-xen code and I realized that I missed a
+map_page call on one of the (usually unused) fallback paths.
+Thanks!!
