@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab3KLCv7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 21:51:59 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:44436 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3KLCvw convert rfc822-to-8bit (ORCPT
+	id S1753054Ab3KLCxI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 21:53:08 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:58013 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab3KLCw7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 21:51:52 -0500
+	Mon, 11 Nov 2013 21:52:59 -0500
 MIME-Version: 1.0
-In-Reply-To: <x498uwuhjrb.fsf@segfault.boston.devel.redhat.com>
-References: <CAK2Ky6wEUDS0bQbbYSKv+hX=f6sCjJM7Fu4zOzAR_ftVX1obUg@mail.gmail.com>
-	<x498uwuhjrb.fsf@segfault.boston.devel.redhat.com>
-Date: Tue, 12 Nov 2013 10:51:52 +0800
-Message-ID: <CAK2Ky6ygXiHamJS_u0hGyZYvG0sUrSkWcEQ+VSRYbq9M-tHu-A@mail.gmail.com>
-Subject: Re: About read/write requests in IO scheduler
+In-Reply-To: <CAK2Ky6wxDJnz3t9zK_Mumad4bsQnM_kzKds1bvhwYKQ98v3adw@mail.gmail.com>
+References: <CAK2Ky6yh6U1wiAAPC9TgWduzO4NS9Km0FGgRvMntTm=qYkWt7A@mail.gmail.com>
+	<20131111150507.0bb1083e@mdontu-l>
+	<CAK2Ky6wxDJnz3t9zK_Mumad4bsQnM_kzKds1bvhwYKQ98v3adw@mail.gmail.com>
+Date: Tue, 12 Nov 2013 10:52:58 +0800
+Message-ID: <CAK2Ky6wGwLV1uT-tkjw0=xUutsNtGVZGjLwShaT3C9zgGHSxzw@mail.gmail.com>
+Subject: Re: Linux kernel API about sector count
 From: =?GB2312?B?uqvA2g==?= <bonben1989@gmail.com>
-To: Jeff Moyer <jmoyer@redhat.com>
+To: =?UTF-8?B?TWloYWkgRG9uyJt1?= <mihai.dontu@gmail.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=GB2312
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you very much!
+ I need a API in linux kernel about the disk's total count of
+sector,not the sector size.
+thank you!
 
-2013/11/12 Jeff Moyer <jmoyer@redhat.com>:
-> º«ÀÚ <bonben1989@gmail.com> writes:
+
+2013/11/11 éŸ©ç£Š <bonben1989@gmail.com>:
+> Thank you! I need disk's total count of sector,not the sector size.
 >
->> In IO scheduler level, whether all the read requests are synchronous?
->
-> Generically, yes, I/O schedulers (and the whole block layer, in fact)
-> consider READs synchronous:
->
-> /*
->  * We regard a request as sync, if either a read or a sync write
->  */
-> static inline bool rw_is_sync(unsigned int rw_flags)
-> {
->         return !(rw_flags & REQ_WRITE) || (rw_flags & REQ_SYNC);
-> }
+> 2013/11/11 Mihai DonÈ›u <mihai.dontu@gmail.com>:
+>> On Mon, 11 Nov 2013 20:31:14 +0800 éŸ©ç£Š wrote:
+>>> Can you tell me the API about the count of sector in linux kernel?
+>>>
+>>> which .h file and function?
+>>>
+>>
+>> Looking at fdisk (util-linux) there are several ioctls:
+>>  * HDIO_GETGEO  (linux/hdreg.h)
+>>  * BLKGETSIZE64 (linux/fs.h), sector size is assumed 512
+>>
+>> The HDIO interface *seems* to be legacy:
+>> http://www.mjmwired.net/kernel/Documentation/ioctl/hdio.txt
+>>
+>> Also see:
+>> https://git.kernel.org/cgit/utils/util-linux/util-linux.git/tree/fdisks/fdisk.c
+>>
+>> I hope this helps a bit.
+>>
+>> --
+>> Mihai DonÈ›u
