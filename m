@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394Ab3KLTvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:51:55 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:52634 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755274Ab3KLTvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:51:37 -0500
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
-        <linux@roeck-us.net>, <rui.zhang@intel.com>
-CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCHv5 19/20] arm: dts: make OMAP4460 bandgap node to belong to OCP
-Date: Tue, 12 Nov 2013 15:46:21 -0400
-Message-ID: <1384285582-16933-20-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
-In-Reply-To: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
-References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
+	id S1757407Ab3KLTwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:52:12 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757169Ab3KLTvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 14:51:33 -0500
+Message-ID: <528286C2.70908@nod.at>
+Date: Tue, 12 Nov 2013 20:51:30 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH 17/17] um: Remove unused declarations from <as-layout.h>
+References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org> <1384285347-13506-18-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1384285347-13506-18-git-send-email-geert@linux-m68k.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Small fix on representation. Bandgap node belongs to OCP.
+Am 12.11.2013 20:42, schrieb Geert Uytterhoeven:
+> _end is used, but it's already provided by <asm/sections.h>, so use that.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Richard Weinberger <richard@nod.at>
+> Cc: user-mode-linux-devel@lists.sourceforge.net
 
-Cc: "Benoît Cousson" <bcousson@baylibre.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-omap@vger.kernel.org
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Suggested-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
----
- arch/arm/boot/dts/omap4460.dtsi | 18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+Geert, do you want me to pickup this patch or takes Andrew the whole series?
 
-diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/omap4460.dtsi
-index dc22719..def8183 100644
---- a/arch/arm/boot/dts/omap4460.dtsi
-+++ b/arch/arm/boot/dts/omap4460.dtsi
-@@ -39,14 +39,16 @@
- 		#include "omap4-cpu-thermal.dtsi"
- 	};
- 
--	bandgap: bandgap {
--		reg = <0x4a002260 0x4
--		       0x4a00232C 0x4
--		       0x4a002378 0x18>;
--		compatible = "ti,omap4460-bandgap";
--		interrupts = <0 126 IRQ_TYPE_LEVEL_HIGH>; /* talert */
--		gpios = <&gpio3 22 0>; /* tshut */
-+	ocp {
-+		bandgap: bandgap {
-+			reg = <0x4a002260 0x4
-+			       0x4a00232C 0x4
-+			       0x4a002378 0x18>;
-+			compatible = "ti,omap4460-bandgap";
-+			interrupts = <0 126 IRQ_TYPE_LEVEL_HIGH>; /* talert */
-+			gpios = <&gpio3 22 0>; /* tshut */
- 
--		#thermal-sensor-cells = <0>;
-+			#thermal-sensor-cells = <0>;
-+		};
- 	};
- };
--- 
-1.8.2.1.342.gfa7285d
+Acked-by: Richard Weinberger <richard@nod.at>
+
+Thanks,
+//richard
+
+> ---
+>  arch/um/include/shared/as-layout.h |    3 ---
+>  arch/um/kernel/um_arch.c           |    1 +
+>  2 files changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/arch/um/include/shared/as-layout.h b/arch/um/include/shared/as-layout.h
+> index 694c792bab4e..41c8c774ec10 100644
+> --- a/arch/um/include/shared/as-layout.h
+> +++ b/arch/um/include/shared/as-layout.h
+> @@ -44,7 +44,6 @@ struct cpu_task {
+>  
+>  extern struct cpu_task cpu_tasks[];
+>  
+> -extern unsigned long low_physmem;
+>  extern unsigned long high_physmem;
+>  extern unsigned long uml_physmem;
+>  extern unsigned long uml_reserved;
+> @@ -52,8 +51,6 @@ extern unsigned long end_vm;
+>  extern unsigned long start_vm;
+>  extern unsigned long long highmem;
+>  
+> -extern unsigned long _stext, _etext, _sdata, _edata, __bss_start, _end;
+> -extern unsigned long _unprotected_end;
+>  extern unsigned long brk_start;
+>  
+>  extern unsigned long host_task_size;
+> diff --git a/arch/um/kernel/um_arch.c b/arch/um/kernel/um_arch.c
+> index 9fce866b0416..c44139833212 100644
+> --- a/arch/um/kernel/um_arch.c
+> +++ b/arch/um/kernel/um_arch.c
+> @@ -17,6 +17,7 @@
+>  #include <asm/byteorder.h>
+>  #include <asm/pgtable.h>
+>  #include <asm/processor.h>
+> +#include <asm/sections.h>
+>  #include <asm/setup.h>
+>  #include <as-layout.h>
+>  #include <arch.h>
+> 
 
