@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab3KLKBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 05:01:38 -0500
-Received: from mga11.intel.com ([192.55.52.93]:22169 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752488Ab3KLKBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 05:01:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,684,1378882800"; 
-   d="scan'208";a="431918039"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] mmc: sdhci-acpi: add new ACPI ID
-Date: Tue, 12 Nov 2013 12:01:33 +0200
-Message-Id: <1384250493-11232-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.2
+	id S1754501Ab3KLKBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 05:01:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54731 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754347Ab3KLKBt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 05:01:49 -0500
+Date: Tue, 12 Nov 2013 11:01:40 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [seqcount] INFO: trying to register non-static key.
+Message-ID: <20131112100140.GM5056@laptop.programming.kicks-ass.net>
+References: <20131111012927.GA404@localhost>
+ <20131111154551.GJ19203@twins.programming.kicks-ass.net>
+ <20131112094147.GA32441@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112094147.GA32441@localhost>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Newer Intel PCHs with LPSS have the same SDHCI controller than Haswell but
-ACPI ID is different. Add this ID to the driver list.
+On Tue, Nov 12, 2013 at 05:41:47PM +0800, Fengguang Wu wrote:
+> On Mon, Nov 11, 2013 at 04:45:51PM +0100, Peter Zijlstra wrote:
+> > On Mon, Nov 11, 2013 at 09:29:27AM +0800, Fengguang Wu wrote:
+> > > Greetings,
+> > > 
+> > > I got the below dmesg and the first bad commit is
+> > > 
+> > > commit 1ca7d67cf5d5a2aef26a8d9afd789006fa098347
+> > > Author: John Stultz <john.stultz@linaro.org>
+> > > Date:   Mon Oct 7 15:51:59 2013 -0700
+> > > 
+> > >     seqcount: Add lockdep functionality to seqcount/seqlock structures
+> > >
+> > 
+> > > [    4.124336] uli526x: ULi M5261/M5263 net driver, version 0.9.3 (2005-7-29)
+> > > [    4.128027] Call Trace:
+> > > [    4.128027]  [<7908e744>] ? console_unlock+0x353/0x380
+> > > [    4.128027]  [<79dc7cf2>] dump_stack+0x48/0x60
+> > > [    4.128027]  [<7908953e>] __lock_acquire.isra.26+0x7e3/0xceb
+> > > [    4.128027]  [<7908a1c5>] lock_acquire+0x71/0x9a
+> > > [    4.128027]  [<794079aa>] ? blk_throtl_bio+0x1c3/0x485
+> > > [    4.128027]  [<7940658b>] throtl_update_dispatch_stats+0x7c/0x153
+> > 
+> > The below seems to compile with i386-defconfig + CONFIG_CFQ_GROUP_IOSCHED=y
+> > 
+> > No idea if it runs properly or not; I seem to have misplaced my i386
+> > root filesystem.
+> > 
+> > ---
+> > Subject: block: Employ u64_stats_init()
+> > 
+> > Now that seqcounts are lockdep tracked thingies, we need to properly
+> > initialize them, otherwise bad stuff happens.
+> 
+> FYI the warning is still there:
+> 
+> /kernel/i386-randconfig-j7-11082318/d3516a7318f8e22f5462888fdf9edc8f0f128024
+> 
+> +-------------------------------------------------+-------+--------------+--------------+
+> |                                                 | v3.12 | 838cc7b488f8 | d3516a7318f8 |
+> +-------------------------------------------------+-------+--------------+--------------+
+> | boot_successes                                  | 129   | 0            | 0            |
+> | boot_failures                                   | 1     | 100          | 100          |
+> | BUG:kernel_early_hang_without_any_printk_output | 1     |              |              |
+> | INFO:trying_to_register_non-static_key          | 0     | 100          | 100          |
+> +-------------------------------------------------+-------+--------------+--------------+
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/mmc/host/sdhci-acpi.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
-index cdd4ce0d7c90..d94fa1467c79 100644
---- a/drivers/mmc/host/sdhci-acpi.c
-+++ b/drivers/mmc/host/sdhci-acpi.c
-@@ -144,6 +144,7 @@ static const struct sdhci_acpi_uid_slot sdhci_acpi_uids[] = {
- 	{ "80860F14" , "3" , &sdhci_acpi_slot_int_sd   },
- 	{ "INT33BB"  , "2" , &sdhci_acpi_slot_int_sdio },
- 	{ "INT33C6"  , NULL, &sdhci_acpi_slot_int_sdio },
-+	{ "INT3436"  , NULL, &sdhci_acpi_slot_int_sdio },
- 	{ "PNP0D40"  },
- 	{ },
- };
-@@ -152,6 +153,7 @@ static const struct acpi_device_id sdhci_acpi_ids[] = {
- 	{ "80860F14" },
- 	{ "INT33BB"  },
- 	{ "INT33C6"  },
-+	{ "INT3436"  },
- 	{ "PNP0D40"  },
- 	{ },
- };
--- 
-1.8.4.2
-
+Is that from the exact same spot as before
+(throtl_update_dispatch_stats) or did we hit another one?
