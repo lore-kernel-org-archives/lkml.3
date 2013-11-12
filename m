@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab3KLPGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:06:10 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42692 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753073Ab3KLPGG (ORCPT
+	id S1755452Ab3KLPID (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:08:03 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:40744 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab3KLPH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:06:06 -0500
-Date: Tue, 12 Nov 2013 15:05:41 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>, konrad@kernel.org,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Xen-devel] [PATCH 2/2] swiotlb-xen: xen_swiotlb_map_page: do
-	not error out if dma_capable fails
-Message-ID: <20131112150540.GN16735@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.02.1311121404590.26077@kaball.uk.xensource.com> <1384265520-6833-2-git-send-email-stefano.stabellini@eu.citrix.com> <20131112144832.GC9435@phenom.dumpdata.com>
+	Tue, 12 Nov 2013 10:07:59 -0500
+Date: Tue, 12 Nov 2013 12:07:51 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, jolsa@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
+Message-ID: <20131112150751.GA19321@ghostprotocols.net>
+References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
+ <1384267617-3446-5-git-send-email-dsahern@gmail.com>
+ <20131112145707.GV5056@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131112144832.GC9435@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20131112145707.GV5056@laptop.programming.kicks-ass.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 09:48:32AM -0500, Konrad Rzeszutek Wilk wrote:
-> On Tue, Nov 12, 2013 at 02:12:00PM +0000, Stefano Stabellini wrote:
-> > Many ARM devices do not set the dma_mask correctly today.
-> > As a consequence dma_capable fails for them regardless of the address
-> > passed to it.
+Em Tue, Nov 12, 2013 at 03:57:07PM +0100, Peter Zijlstra escreveu:
+> On Tue, Nov 12, 2013 at 07:46:56AM -0700, David Ahern wrote:
+> > When recording raw_syscalls for the entire system, e.g.,
+> >     perf record -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
+> > 
+> > you end up with a negative feedback loop as perf itself calls write() fairly
+> > often. This patch handles the problem by mmap'ing the file in chunks of 64M at
+> > a time and copies events from the event buffers to the file avoiding write
+> > system calls.
 > 
-> Wouldn't the DMA API debug warn of bad usage.
+> You know this completely fails the moment you trace faults, because
+> every new access to one of those pages (to mark it dirty) will trigger a
+> fault. And we'll take a bunch more faults -- one for each page -- than
+> we ever did write() syscalls.
 
-No.  The problem is that dev->dma_mask is NULL, and that's generally
-interpreted as "this device doesn't do DMA".
-
-ARM drivers have been particularly bad in respect of getting this right:
-there's an overwhelming problem here of "I don't need to do that so I'm
-not going to do it" rather than taking the attitude of "it's good
-practice to do X because it will save me hastles in the future".
-
-I'll admit that even I'm guilty of the former in this regard to some
-extent: I've not added the necessary dma_set_mask/dma_set_coherent_mask()
-calls to the various drivers because they haven't been a concern.  That
-was wrong, because the DMA API technically requires it.
-
-However, not having a DMA mask set when the device is created is
-something I'm not guilty of - I always ensured with the old board
-files that a DMA capabable device had a DMA mask set and those which
-weren't capable didn't: this causes the DMA API to behave correctly
-and report according to the way the device was declared whether it is
-DMA capable or not.
-
-Unfortunately, others decided (especially post DT) that the solution
-to this was to have the driver code - which could be modular - do things
-like this:
-
-static u64 mask = blah;
-
-foo_probe(dev)
-{
-	if (!dev->dma_mask)
-		dev->dma_mask = &mask;
-}
-
-which works nicely until you reload the module.
-
-I strongly suggest _not_ working around this problem in subsystem code
-but raising bug reports against the buggy drivers.  All drivers without
-exception using DMA should have something like this pattern:
-
-foo_probe(dev)
-{
-	int rc;
-
-	rc = dma_set_mask(dev, DMA_BIT_MASK(bits));
-	if (rc)
-		return rc;
-	dma_set_coherent_mask(dev, DMA_BIT_MASK(bits));
-	...
-}
-
-The first call is required if the driver uses dma_map_*, the second call
-is required if it makes use of coherent allocations and can be of the
-above form if it's previously used dma_set_mask with the same mask.
-Otherwise, the return value of dma_set_coherent_mask() must be checked.
-
-Of course, dma_set_mask() will fail if dev->dma_mask is NULL - and that's
-something which must be fixed where the device was created, not by the
-driver.
+So we should provide a neon lettered warning when doing that, no? :-)
+ 
+> Anyway the over all performance improvements still make it worth it. But
+> the above seems like a false argument in favour of this.
