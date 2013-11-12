@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419Ab3KLTt2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:49:28 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:55497 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756335Ab3KLTsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:48:55 -0500
+	id S1756891Ab3KLTtj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:49:39 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47886 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756835Ab3KLTsw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 14:48:52 -0500
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
@@ -13,10 +14,11 @@ To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
 CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
         <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCHv5 08/20] thermal: ti-soc-thermal: use thermal DT infrastructure
-Date: Tue, 12 Nov 2013 15:46:10 -0400
-Message-ID: <1384285582-16933-9-git-send-email-eduardo.valentin@ti.com>
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [PATCHv5 07/20] hwmon: tmp102: expose to thermal fw via DT nodes
+Date: Tue, 12 Nov 2013 15:46:09 -0400
+Message-ID: <1384285582-16933-8-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
 References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
@@ -26,189 +28,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch improves the ti-soc-thermal driver by adding the
-support to build the thermal zones based on DT nodes.
+This patch adds to tmp102 temperature sensor the possibility
+to expose itself as thermal zone device, registered on the
+thermal framework.
 
-The driver will have two options now to build the thermal
-zones. The first option is the zones originally coded
-in this driver. So, the driver behavior will be same
-if there is no DT node describing the zones. The second
-option, when it is found a DT node with thermal data,
-will used the common infrastructure to build the thermal
-zone and bind its cooling devices.
+The thermal zone is built only if a device tree node
+describing a thermal zone for this sensor is present
+inside the tmp102 DT node. Otherwise, the driver behavior
+will be the same.
 
-In case the driver loads thermal data using the legacy
-mode, this driver still adds to the system
-a cpufreq cooling device. Loading the thermal data from
-DT, the driver assumes someone else will add the cpufreq
-cooling device, like the cpufreq driver.
-
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-pm@vger.kernel.org
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: lm-sensors@lm-sensors.org
 Cc: linux-kernel@vger.kernel.org
+Acked-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- drivers/thermal/ti-soc-thermal/ti-thermal-common.c | 77 +++++++++++++++++-----
- 1 file changed, 62 insertions(+), 15 deletions(-)
+ drivers/hwmon/tmp102.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
-index 5a47cc8..9eec26d 100644
---- a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
-+++ b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
-@@ -31,6 +31,7 @@
- #include <linux/cpufreq.h>
- #include <linux/cpumask.h>
- #include <linux/cpu_cooling.h>
+diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
+index d7b47ab..6748b45 100644
+--- a/drivers/hwmon/tmp102.c
++++ b/drivers/hwmon/tmp102.c
+@@ -27,6 +27,8 @@
+ #include <linux/mutex.h>
+ #include <linux/device.h>
+ #include <linux/jiffies.h>
++#include <linux/thermal.h>
 +#include <linux/of.h>
  
- #include "ti-thermal.h"
- #include "ti-bandgap.h"
-@@ -44,6 +45,7 @@ struct ti_thermal_data {
- 	enum thermal_device_mode mode;
- 	struct work_struct thermal_wq;
- 	int sensor_id;
-+	bool our_zone;
- };
+ #define	DRIVER_NAME "tmp102"
  
- static void ti_thermal_work(struct work_struct *work)
-@@ -75,11 +77,10 @@ static inline int ti_thermal_hotspot_temperature(int t, int s, int c)
+@@ -50,6 +52,7 @@
  
- /* thermal zone ops */
- /* Get temperature callback function for thermal zone*/
--static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
--				      unsigned long *temp)
-+static inline int __ti_thermal_get_temp(void *devdata, long *temp)
- {
- 	struct thermal_zone_device *pcb_tz = NULL;
--	struct ti_thermal_data *data = thermal->devdata;
-+	struct ti_thermal_data *data = devdata;
- 	struct ti_bandgap *bgp;
- 	const struct ti_temp_sensor *s;
- 	int ret, tmp, slope, constant;
-@@ -118,6 +119,14 @@ static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
- 	return ret;
+ struct tmp102 {
+ 	struct device *hwmon_dev;
++	struct thermal_zone_device *tz;
+ 	struct mutex lock;
+ 	u16 config_orig;
+ 	unsigned long last_update;
+@@ -93,6 +96,15 @@ static struct tmp102 *tmp102_update_device(struct i2c_client *client)
+ 	return tmp102;
  }
  
-+static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
-+				      unsigned long *temp)
++static int tmp102_read_temp(void *dev, long *temp)
 +{
-+	struct ti_thermal_data *data = thermal->devdata;
++	struct tmp102 *tmp102 = tmp102_update_device(to_i2c_client(dev));
 +
-+	return __ti_thermal_get_temp(data, temp);
-+}
-+
- /* Bind callback functions for thermal zone */
- static int ti_thermal_bind(struct thermal_zone_device *thermal,
- 			   struct thermal_cooling_device *cdev)
-@@ -230,11 +239,9 @@ static int ti_thermal_get_trip_temp(struct thermal_zone_device *thermal,
- 	return 0;
- }
- 
--/* Get the temperature trend callback functions for thermal zone */
--static int ti_thermal_get_trend(struct thermal_zone_device *thermal,
--				int trip, enum thermal_trend *trend)
-+static int __ti_thermal_get_trend(void *p, long *trend)
- {
--	struct ti_thermal_data *data = thermal->devdata;
-+	struct ti_thermal_data *data = p;
- 	struct ti_bandgap *bgp;
- 	int id, tr, ret = 0;
- 
-@@ -245,6 +252,22 @@ static int ti_thermal_get_trend(struct thermal_zone_device *thermal,
- 	if (ret)
- 		return ret;
- 
-+	*trend = tr;
++	*temp = tmp102->temp[0];
 +
 +	return 0;
 +}
 +
-+/* Get the temperature trend callback functions for thermal zone */
-+static int ti_thermal_get_trend(struct thermal_zone_device *thermal,
-+				int trip, enum thermal_trend *trend)
-+{
-+	int ret;
-+	long tr;
-+
-+	ret = __ti_thermal_get_trend(thermal->devdata, &tr);
-+	if (ret)
-+		return ret;
-+
- 	if (tr > 0)
- 		*trend = THERMAL_TREND_RAISING;
- 	else if (tr < 0)
-@@ -308,16 +331,23 @@ int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id,
- 	if (!data)
- 		return -EINVAL;
- 
--	/* Create thermal zone */
--	data->ti_thermal = thermal_zone_device_register(domain,
-+	/* in case this is specified by DT */
-+	data->ti_thermal = thermal_zone_of_sensor_register(bgp->dev, id,
-+					data, __ti_thermal_get_temp,
-+					__ti_thermal_get_trend);
-+	if (IS_ERR(data->ti_thermal)) {
-+		/* Create thermal zone */
-+		data->ti_thermal = thermal_zone_device_register(domain,
- 				OMAP_TRIP_NUMBER, 0, data, &ti_thermal_ops,
- 				NULL, FAST_TEMP_MONITORING_RATE,
- 				FAST_TEMP_MONITORING_RATE);
--	if (IS_ERR(data->ti_thermal)) {
--		dev_err(bgp->dev, "thermal zone device is NULL\n");
--		return PTR_ERR(data->ti_thermal);
-+		if (IS_ERR(data->ti_thermal)) {
-+			dev_err(bgp->dev, "thermal zone device is NULL\n");
-+			return PTR_ERR(data->ti_thermal);
-+		}
-+		data->ti_thermal->polling_delay = FAST_TEMP_MONITORING_RATE;
-+		data->our_zone = true;
+ static ssize_t tmp102_show_temp(struct device *dev,
+ 				struct device_attribute *attr,
+ 				char *buf)
+@@ -204,6 +216,12 @@ static int tmp102_probe(struct i2c_client *client,
+ 		goto fail_remove_sysfs;
  	}
--	data->ti_thermal->polling_delay = FAST_TEMP_MONITORING_RATE;
- 	ti_bandgap_set_sensor_data(bgp, id, data);
- 	ti_bandgap_write_update_interval(bgp, data->sensor_id,
- 					data->ti_thermal->polling_delay);
-@@ -331,7 +361,13 @@ int ti_thermal_remove_sensor(struct ti_bandgap *bgp, int id)
  
- 	data = ti_bandgap_get_sensor_data(bgp, id);
- 
--	thermal_zone_device_unregister(data->ti_thermal);
-+	if (data && data->ti_thermal) {
-+		if (data->our_zone)
-+			thermal_zone_device_unregister(data->ti_thermal);
-+		else
-+			thermal_zone_of_sensor_unregister(bgp->dev,
-+							  data->ti_thermal);
-+	}
++	tmp102->tz = thermal_zone_of_sensor_register(&client->dev, 0,
++						     &client->dev,
++						     tmp102_read_temp, NULL);
++	if (IS_ERR(tmp102->tz))
++		tmp102->tz = NULL;
++
+ 	dev_info(&client->dev, "initialized\n");
  
  	return 0;
- }
-@@ -350,6 +386,15 @@ int ti_thermal_report_sensor_temperature(struct ti_bandgap *bgp, int id)
- int ti_thermal_register_cpu_cooling(struct ti_bandgap *bgp, int id)
+@@ -220,6 +238,7 @@ static int tmp102_remove(struct i2c_client *client)
  {
- 	struct ti_thermal_data *data;
-+	struct device_node *np = bgp->dev->of_node;
-+
-+	/*
-+	 * We are assuming here that if one deploys the zone
-+	 * using DT, then it must be aware that the cooling device
-+	 * loading has to happen via cpufreq driver.
-+	 */
-+	if (of_find_property(np, "#thermal-sensor-cells", NULL))
-+		return 0;
+ 	struct tmp102 *tmp102 = i2c_get_clientdata(client);
  
- 	data = ti_bandgap_get_sensor_data(bgp, id);
- 	if (!data || IS_ERR(data))
-@@ -380,7 +425,9 @@ int ti_thermal_unregister_cpu_cooling(struct ti_bandgap *bgp, int id)
- 	struct ti_thermal_data *data;
++	thermal_zone_of_sensor_unregister(&client->dev, tmp102->tz);
+ 	hwmon_device_unregister(tmp102->hwmon_dev);
+ 	sysfs_remove_group(&client->dev.kobj, &tmp102_attr_group);
  
- 	data = ti_bandgap_get_sensor_data(bgp, id);
--	cpufreq_cooling_unregister(data->cool_dev);
-+
-+	if (data && data->cool_dev)
-+		cpufreq_cooling_unregister(data->cool_dev);
- 
- 	return 0;
- }
 -- 
 1.8.2.1.342.gfa7285d
 
