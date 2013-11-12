@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab3KLKe4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 05:34:56 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55232 "EHLO
+	id S1754780Ab3KLKgW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 05:36:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55265 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754178Ab3KLKew (ORCPT
+	with ESMTP id S1752508Ab3KLKgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 05:34:52 -0500
-Date: Tue, 12 Nov 2013 11:34:40 +0100
+	Tue, 12 Nov 2013 05:36:20 -0500
+Date: Tue, 12 Nov 2013 11:36:10 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Vincent Guittot <vincent.guittot@linaro.org>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
@@ -17,27 +17,36 @@ Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
         paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
         len.brown@intel.com, arjan@linux.intel.com, amit.kucheria@linaro.org,
         l.majewski@samsung.com
-Subject: Re: [RFC][PATCH v5 06/14] sched: create a new field with available
- capacity
-Message-ID: <20131112103440.GF4971@laptop.programming.kicks-ass.net>
+Subject: Re: [RFC][PATCH v5 07/14] sched: get CPU's activity statistic
+Message-ID: <20131112103610.GG4971@laptop.programming.kicks-ass.net>
 References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
- <1382097147-30088-6-git-send-email-vincent.guittot@linaro.org>
+ <1382097147-30088-7-git-send-email-vincent.guittot@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382097147-30088-6-git-send-email-vincent.guittot@linaro.org>
+In-Reply-To: <1382097147-30088-7-git-send-email-vincent.guittot@linaro.org>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 01:52:19PM +0200, Vincent Guittot wrote:
-> This new field power_available reflects the available capacity of a CPU
-> unlike the cpu_power which reflects the current capacity.
+On Fri, Oct 18, 2013 at 01:52:20PM +0200, Vincent Guittot wrote:
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index db9b871..7e26f65 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -179,6 +179,11 @@ void sched_init_granularity(void)
+>  }
+>  
+>  #ifdef CONFIG_SMP
+> +static unsigned long available_of(int cpu)
+> +{
+> +	return cpu_rq(cpu)->cpu_available;
+> +}
+> +
+>  #ifdef CONFIG_SCHED_PACKING_TASKS
+>  /*
+>   * Save the id of the optimal CPU that should be used to pack small tasks
 
-> -	sdg->sgp->power_orig = sdg->sgp->power = power;
-> +	sdg->sgp->power_orig = sdg->sgp->power_available = available;
-> +	sdg->sgp->power = power;
-
-This patch leaves me confused as to power_available vs power_orig and
-the Changelog doesn't really clarify anything much at all.
+This hunk wants to be in the previous patch, as I'm fairly sure I saw
+this function used there.
