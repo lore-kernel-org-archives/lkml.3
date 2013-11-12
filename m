@@ -1,56 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab3KLOsD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:48:03 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:54430 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516Ab3KLOrN (ORCPT
+	id S1755659Ab3KLOtj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:49:39 -0500
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:20797 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554Ab3KLOtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:47:13 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, jolsa@redhat.com, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH 1/5] perf record: Fix segfault with --no-mmap-pages
-Date: Tue, 12 Nov 2013 07:46:53 -0700
-Message-Id: <1384267617-3446-2-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
-In-Reply-To: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
-References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
+	Tue, 12 Nov 2013 09:49:36 -0500
+From: Waiman Long <Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v6 0/5] qrwlock: Introducing a queue read/write lock implementation
+Date: Tue, 12 Nov 2013 09:48:49 -0500
+Message-Id: <1384267735-43213-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adrian reported a segfault when using --no-out-pages:
-$ tools/perf/perf record -vv --no-out-pages uname
-Segmentation fault (core dumped)
+v5->v6:
+ - Modify queue_read_can_lock() to avoid false positive result.
+ - Move the two slowpath functions' performance tuning change from
+   patch 4 to patch 1.
+ - Add a new optional patch to use the new smp_store_release() function 
+   if that is merged.
 
-The same occurs with --no-mmap-pages. Fix by checking that str is non-NULL
-before parsing it.
+v4->v5:
+ - Fix wrong definitions for QW_MASK_FAIR & QW_MASK_UNFAIR macros.
+ - Add an optional patch 4 which should only be applied after the
+   mcs_spinlock.h header file is merged.
 
-Reported-by: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/evlist.c | 3 +++
- 1 file changed, 3 insertions(+)
+v3->v4:
+ - Optimize the fast path with better cold cache behavior and
+   performance.
+ - Removing some testing code.
+ - Make x86 use queue rwlock with no user configuration.
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 99dc58e5dcc3..3960560f873a 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -719,6 +719,9 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
- 		{ .tag  = 0 },
- 	};
- 
-+	if (str == NULL)
-+		return -1;
-+
- 	val = parse_tag_value(str, tags);
- 	if (val != (unsigned long) -1) {
- 		/* we got file size value */
--- 
-1.8.3.4 (Apple Git-47)
+v2->v3:
+ - Make read lock stealing the default and fair rwlock an option with
+   a different initializer.
+ - In queue_read_lock_slowpath(), check irq_count() and force spinning
+   and lock stealing in interrupt context.
+ - Unify the fair and classic read-side code path, and make write-side
+   to use cmpxchg with 2 different writer states. This slows down the
+   write lock fastpath to make the read side more efficient, but is
+   still slightly faster than a spinlock.
+
+v1->v2:
+ - Improve lock fastpath performance.
+ - Optionally provide classic read/write lock behavior for backward
+   compatibility.
+ - Use xadd instead of cmpxchg for fair reader code path to make it
+   immute to reader contention.
+ - Run more performance testing.
+
+As mentioned in the LWN article http://lwn.net/Articles/364583/,
+the read/write lock suffer from an unfairness problem that it is
+possible for a stream of incoming readers to block a waiting writer
+from getting the lock for a long time. Also, a waiting reader/writer
+contending a rwlock in local memory will have a higher chance of
+acquiring the lock than a reader/writer in remote node.
+
+This patch set introduces a queue-based read/write lock implementation
+that can largely solve this unfairness problem if the lock owners
+choose to use the fair variant of the lock.
+
+The queue rwlock has two variants selected at initialization time
+- unfair (with read lock stealing) and fair (to both readers and
+writers). The unfair rwlock is the default.
+
+The read lock slowpath will check if the reader is in an interrupt
+context. If so, it will force lock spinning and stealing without
+waiting in a queue. This is to ensure the read lock will be granted
+as soon as possible.
+
+Even the unfair rwlock is fairer than the current version as there
+is a higher chance for writers to get the lock and is fair among
+the writers.
+
+The queue write lock can also be used as a replacement for ticket
+spinlocks that are highly contended if lock size increase is not
+an issue.
+
+This patch set currently provides queue read/write lock support on
+x86 architecture only. Support for other architectures can be added
+later on once architecture specific support infrastructure is added
+and proper testing is done.
+
+The optional patch 4 has a dependency on the the mcs_spinlock.h
+header file which has not been merged yet. So this patch should only
+be applied after the mcs_spinlock.h header file is merged.
+
+The optional patch 5 use the new smp_store_release() and
+smp_load_acquire() functions which are being reviewed & not merged yet.
+
+Waiman Long (5):
+  qrwlock: A queue read/write lock implementation
+  qrwlock x86: Enable x86 to use queue read/write lock
+  qrwlock: Enable fair queue read/write lock
+  qrwlock: Use the mcs_spinlock helper functions for MCS queuing
+  qrwlock: Use smp_store_release() in write_unlock()
+
+ arch/x86/Kconfig                      |    1 +
+ arch/x86/include/asm/spinlock.h       |    2 +
+ arch/x86/include/asm/spinlock_types.h |    4 +
+ include/asm-generic/qrwlock.h         |  245 +++++++++++++++++++++++++++++++++
+ include/linux/rwlock.h                |   15 ++
+ include/linux/rwlock_types.h          |   13 ++
+ kernel/Kconfig.locks                  |    7 +
+ lib/Makefile                          |    1 +
+ lib/qrwlock.c                         |  205 +++++++++++++++++++++++++++
+ lib/spinlock_debug.c                  |   19 +++
+ 10 files changed, 512 insertions(+), 0 deletions(-)
+ create mode 100644 include/asm-generic/qrwlock.h
+ create mode 100644 lib/qrwlock.c
 
