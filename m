@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab3KLLM5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 06:12:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19398 "EHLO mx1.redhat.com"
+	id S1754371Ab3KLLRS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 06:17:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4035 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751472Ab3KLLMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 06:12:55 -0500
-Date: Tue, 12 Nov 2013 06:12:01 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>, devel@openvz.org,
-        ebiederm@xmission.com, oleg@redhat.com, bfields@fieldses.org,
-        bharrosh@panasas.com
-Subject: Re: call_usermodehelper in containers
-Message-ID: <20131112061201.04cf25ab@tlielax.poochiereds.net>
-In-Reply-To: <20131112004703.GB15377@kroah.com>
-References: <20131111071825.62da01d1@tlielax.poochiereds.net>
-	<20131112004703.GB15377@kroah.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751214Ab3KLLRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 06:17:15 -0500
+Date: Tue, 12 Nov 2013 13:20:09 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stefanha@redhat.com
+Subject: Re: [PATCH net 1/2] tuntap: limit head length of skb allocated
+Message-ID: <20131112112008.GA28597@redhat.com>
+References: <1384250577-20330-1-git-send-email-jasowang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384250577-20330-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Nov 2013 16:47:03 -0800
-Greg KH <gregkh@linuxfoundation.org> wrote:
-
-> On Mon, Nov 11, 2013 at 07:18:25AM -0500, Jeff Layton wrote:
-> > We have a bit of a problem wrt to upcalls that use call_usermodehelper
-> > with containers and I'd like to bring this to some sort of resolution...
-> > 
-> > A particularly problematic case (though there are others) is the
-> > nfsdcltrack upcall. It basically uses call_usermodehelper to run a
-> > program in userland to track some information on stable storage for
-> > nfsd.
+On Tue, Nov 12, 2013 at 06:02:56PM +0800, Jason Wang wrote:
+> We currently use hdr_len as a hint of head length which is advertised by
+> guest. But when guest advertise a very big value, it can lead to an 64K+
+> allocating of kmalloc() which has a very high possibility of failure when host
+> memory is fragmented or under heavy stress. The huge hdr_len also reduce the
+> effect of zerocopy or even disable if a gso skb is linearized in guest.
 > 
-> I thought the discussion at the kernel summit about this issue was:
-> 	- don't do this.
-> 	- don't do it.
-> 	- if you really need to do this, fix nfsd
+> To solves those issues, this patch introduces an upper limit (PAGE_SIZE) of the
+> head, which guarantees an order 0 allocation each time.
 > 
+> Cc: Stefan Hajnoczi <stefanha@redhat.com>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Sorry, I couldn't make the kernel summit so I missed that discussion. I
-guess LWN didn't cover it?
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-In any case, I guess then that we'll either have to come up with some
-way to fix nfsd here, or simply ensure that nfsd can never be started
-unless root in the container has a full set of a full set of
-capabilities.
-
-One sort of Rube Goldberg possibility to fix nfsd is:
-
-- when we start nfsd in a container, fork off an extra kernel thread
-  that just sits idle. That thread would need to be a descendant of the
-  userland process that started nfsd, so we'd need to create it with
-  kernel_thread().
-
-- Have the kernel just start up the UMH program in the init_ns mount
-  namespace as it currently does, but also pass the pid of the idle
-  kernel thread to the UMH upcall.
-
-- The program will then use /proc/<pid>/root and /proc/<pid>/ns/* to set
-  itself up for doing things properly.
-
-Note that with this mechanism we can't actually run a different binary
-per container, but that's probably fine for most purposes.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+> ---
+> The patch was needed for stable.
+> ---
+>  drivers/net/tun.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index 7cb105c..5537b65 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -954,6 +954,11 @@ static struct sk_buff *tun_alloc_skb(struct tun_file *tfile,
+>  	struct sock *sk = tfile->socket.sk;
+>  	struct sk_buff *skb;
+>  	int err;
+> +	int good_linear = SKB_MAX_HEAD(prepad);
+> +
+> +	/* Don't use huge linear part */
+> +	if (linear > good_linear)
+> +		linear = good_linear;
+>  
+>  	/* Under a page?  Don't bother with paged skb. */
+>  	if (prepad + len < PAGE_SIZE || !linear)
+> -- 
+> 1.8.3.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
