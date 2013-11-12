@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab3KLONV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:13:21 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59805 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755606Ab3KLONS (ORCPT
+	id S1755692Ab3KLONe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:13:34 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:61746 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755638Ab3KLONa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:13:18 -0500
-Date: Tue, 12 Nov 2013 15:13:14 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipvs: Remove unused variable ret from
- sync_thread_master()
-Message-ID: <20131112141314.GQ5056@laptop.programming.kicks-ass.net>
-References: <1384264396-14550-1-git-send-email-geert@linux-m68k.org>
+	Tue, 12 Nov 2013 09:13:30 -0500
+X-IronPort-AV: E=Sophos;i="4.93,685,1378857600"; 
+   d="scan'208";a="71018577"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <Stefano.Stabellini@eu.citrix.com>, <konrad@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 1/2] swiotlb-xen: add missing xen_dma_map_page call
+Date: Tue, 12 Nov 2013 14:11:59 +0000
+Message-ID: <1384265520-6833-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1311121404590.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1311121404590.26077@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384264396-14550-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 02:53:16PM +0100, Geert Uytterhoeven wrote:
-> net/netfilter/ipvs/ip_vs_sync.c: In function 'sync_thread_master':
-> net/netfilter/ipvs/ip_vs_sync.c:1640:8: warning: unused variable 'ret' [-Wunused-variable]
-> 
-> Introduced by commit 35a2af94c7ce7130ca292c68b1d27fcfdb648f6b ("sched/wait:
-> Make the __wait_event*() interface more friendly")
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  net/netfilter/ipvs/ip_vs_sync.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
-> index f63c2388f38d..d258125c4202 100644
-> --- a/net/netfilter/ipvs/ip_vs_sync.c
-> +++ b/net/netfilter/ipvs/ip_vs_sync.c
-> @@ -1637,7 +1637,7 @@ static int sync_thread_master(void *data)
->  			continue;
->  		}
->  		while (ip_vs_send_sync_msg(tinfo->sock, sb->mesg) < 0) {
-> -			int ret = __wait_event_interruptible(*sk_sleep(sk),
+swiotlb-xen is missing a xen_dma_map_page call in
+xen_swiotlb_map_sg_attrs, in the slow path.
 
-So ideally there's be a comment here why we're using interruptible but
-then ignore interruptions.
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ drivers/xen/swiotlb-xen.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Julian said (
-http://lkml.kernel.org/r/alpine.LFD.2.00.1310012245020.1782@ja.ssi.bg ):
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index a224bc7..1eac073 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -555,6 +555,11 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+ 				sg_dma_len(sgl) = 0;
+ 				return 0;
+ 			}
++			xen_dma_map_page(hwdev, pfn_to_page(map >> PAGE_SHIFT),
++						map & ~PAGE_MASK,
++						sg->length,
++						dir,
++						attrs);
+ 			sg->dma_address = xen_phys_to_bus(map);
+ 		} else {
+ 			/* we are not interested in the dma_addr returned by
+-- 
+1.7.2.5
 
-" Yes, your patch looks ok to me. In the past
-we used ssleep() but IPVS users were confused why
-IPVS threads increase the load average. So, we
-switched to _interruptible calls and later the socket
-polling was added.  "
-
-So maybe add something like
-
-			/*
-			 * (Ab)use interruptible sleep to avoid increasing
-			 * the load avg.
-			 */
-
-> +			__wait_event_interruptible(*sk_sleep(sk),
->  						   sock_writeable(sk) ||
->  						   kthread_should_stop());
->  			if (unlikely(kthread_should_stop()))
-> -- 
-> 1.7.9.5
-> 
