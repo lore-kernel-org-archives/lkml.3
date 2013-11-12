@@ -1,58 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab3KLQag (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 11:30:36 -0500
-Received: from smtprelay0020.hostedemail.com ([216.40.44.20]:38120 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753869Ab3KLQae (ORCPT
+	id S1756262Ab3KLQbW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 11:31:22 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:38444 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327Ab3KLQbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 11:30:34 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2692:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:3873:4321:4605:5007:7652:7903:10004:10400:10848:11026:11232:11473:11658:11914:12517:12519:12555:12740:13069:13160:13229:13311:13357:13848,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: brake31_78fee9b922e04
-X-Filterd-Recvd-Size: 1930
-Message-ID: <1384273839.4771.49.camel@joe-AO722>
-Subject: Re: scripts: checkpatch.pl & Lindent (minor complaint)
-From: Joe Perches <joe@perches.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 12 Nov 2013 08:30:39 -0800
-In-Reply-To: <1384272557.5754.30.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <1384267377.5754.25.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <1384271045.4771.47.camel@joe-AO722>
-	 <1384272557.5754.30.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Nov 2013 11:31:20 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH] perf trace: Add summary only option
+Date: Tue, 12 Nov 2013 09:31:15 -0700
+Message-Id: <1384273875-3751-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-12 at 11:09 -0500, Mimi Zohar wrote:
-> On Tue, 2013-11-12 at 07:44 -0800, Joe Perches wrote:
-> > On Tue, 2013-11-12 at 09:42 -0500, Mimi Zohar wrote: 
-> > > scripts/Lindent and scripts/checkpatch disagree whether the fields in a
-> > > statically initialized array should be blank separated.  
-> > > 
-> > > static struct ima_rule_entry default_rules[] = {
-> > >         {.action = DONT_MEASURE,.fsmagic = PROC_SUPER_MAGIC,.flags = IMA_FSMAGIC},
-> > > 
-> > > Lindent adds a blank before '.fsmagic', which checkpatch then complains
-> > > about (eg. commit 75834fc3).
-> > 
-> > Perhaps I don't understand what you mean.
-> 
-> > Lindent _doesn't_add a blank and checkpatch
-> > seems to do the right thing here.
-> 
-> Sorry, my mistake.  It's the reverse.  Checkpatch complains about the
-> missing blank, which Lindent then removes.
+Per request from Pekka make --summary a summary only option meaning do not
+show the individual system calls. Add another option to see all syscalls
+along with the summary. In addition use 's' and 'S' as shortcuts for the
+options.
 
-My suggestion is not to use Lindent.
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/Documentation/perf-trace.txt | 10 ++++++++--
+ tools/perf/builtin-trace.c              | 16 +++++++++++++---
+ 2 files changed, 21 insertions(+), 5 deletions(-)
 
-If you want a semi-automated source-code reformatting tool,
-use scripts/checkpatch.pl --fix
-
+diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
+index 7b0497f95a75..fae38d9a44a4 100644
+--- a/tools/perf/Documentation/perf-trace.txt
++++ b/tools/perf/Documentation/perf-trace.txt
+@@ -93,9 +93,15 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
+ --comm::
+         Show process COMM right beside its ID, on by default, disable with --no-comm.
+ 
++-s::
+ --summary::
+-	Show a summary of syscalls by thread with min, max, and average times (in
+-    msec) and relative stddev.
++	Show only a summary of syscalls by thread with min, max, and average times
++    (in msec) and relative stddev.
++
++-S::
++--with-summary::
++	Show all syscalls followed by a summary by thread with min, max, and
++    average times (in msec) and relative stddev.
+ 
+ --tool_stats::
+ 	Show tool stats such as number of times fd->pathname was discovered thru
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index c3008b1c369c..9da374cdc23a 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1155,6 +1155,7 @@ struct trace {
+ 	bool			sched;
+ 	bool			multiple_threads;
+ 	bool			summary;
++	bool			summary_only;
+ 	bool			show_comm;
+ 	bool			show_tool_stats;
+ 	double			duration_filter;
+@@ -1598,7 +1599,7 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
+ 					   args, trace, thread);
+ 
+ 	if (!strcmp(sc->name, "exit_group") || !strcmp(sc->name, "exit")) {
+-		if (!trace->duration_filter) {
++		if (!trace->duration_filter && !trace->summary_only) {
+ 			trace__fprintf_entry_head(trace, thread, 1, sample->time, trace->output);
+ 			fprintf(trace->output, "%-70s\n", ttrace->entry_str);
+ 		}
+@@ -1651,6 +1652,9 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
+ 	} else if (trace->duration_filter)
+ 		goto out;
+ 
++	if (trace->summary_only)
++		goto out;
++
+ 	trace__fprintf_entry_head(trace, thread, duration, sample->time, trace->output);
+ 
+ 	if (ttrace->entry_pending) {
+@@ -2265,8 +2269,10 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_INCR('v', "verbose", &verbose, "be more verbose"),
+ 	OPT_BOOLEAN('T', "time", &trace.full_time,
+ 		    "Show full timestamp, not time relative to first start"),
+-	OPT_BOOLEAN(0, "summary", &trace.summary,
+-		    "Show syscall summary with statistics"),
++	OPT_BOOLEAN('s', "summary", &trace.summary_only,
++		    "Show only syscall summary with statistics"),
++	OPT_BOOLEAN('S', "with-summary", &trace.summary,
++		    "Show all syscalls and summary with statistics"),
+ 	OPT_END()
+ 	};
+ 	int err;
+@@ -2277,6 +2283,10 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	argc = parse_options(argc, argv, trace_options, trace_usage, 0);
+ 
++	/* summary_only implies summary option, but don't overwrite summary if set */
++	if (trace.summary_only)
++		trace.summary = trace.summary_only;
++
+ 	if (output_name != NULL) {
+ 		err = trace__open_output(&trace, output_name);
+ 		if (err < 0) {
+-- 
+1.8.3.4 (Apple Git-47)
 
