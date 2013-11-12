@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246Ab3KLWJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 17:09:16 -0500
+	id S1757333Ab3KLWJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 17:09:20 -0500
 Received: from mga02.intel.com ([134.134.136.20]:4632 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756298Ab3KLWJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756786Ab3KLWJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Nov 2013 17:09:10 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="434167693"
+   d="scan'208";a="434167695"
 From: David Cohen <david.a.cohen@linux.intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, lenb@kernel.org,
         David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH 0/3] Bring SFI support to out-of-tree driver modules on Intel Mid
-Date: Tue, 12 Nov 2013 14:13:37 -0800
-Message-Id: <1384294420-9124-1-git-send-email-david.a.cohen@linux.intel.com>
+Subject: [PATCH 2/3] x86: intel-mid: struct devs_id.name should have 'SFI_NAME_LEN' length
+Date: Tue, 12 Nov 2013 14:13:39 -0800
+Message-Id: <1384294420-9124-3-git-send-email-david.a.cohen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1384294420-9124-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1384294420-9124-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch fixes struct devs_id.name to match size of
+struct sfi_device_table_entry.size.
+Correct size if SFI_NAME_LEN instead of SFI_NAME_LEN + 1.
 
-This patchset extends sfi_device() macro support to driver modules.
-The main use case is to allow external driver modules to be enumerated by SFI
-on Intel Mid platforms.
-
-Br, David Cohen
-
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 ---
-David Cohen (3):
-  sfi: add private data to sfi_parse_table()
-  x86: intel-mid: struct devs_id.name should have 'SFI_NAME_LEN' length
-  x86: intel-mid: allow sfi_device() to be used by modules
+ arch/x86/include/asm/intel-mid.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- arch/x86/include/asm/intel-mid.h             | 19 ++++++--
- arch/x86/platform/intel-mid/intel-mid.c      |  2 +-
- arch/x86/platform/intel-mid/intel_mid_vrtc.c |  2 +-
- arch/x86/platform/intel-mid/sfi.c            | 70 +++++++++++++++++++++-------
- arch/x86/platform/sfi/sfi.c                  |  8 ++--
- drivers/sfi/sfi_acpi.c                       |  5 +-
- drivers/sfi/sfi_core.c                       |  4 +-
- include/linux/sfi.h                          |  8 ++--
- 8 files changed, 84 insertions(+), 34 deletions(-)
-
+diff --git a/arch/x86/include/asm/intel-mid.h b/arch/x86/include/asm/intel-mid.h
+index c810abd5178c..971cbb1abab3 100644
+--- a/arch/x86/include/asm/intel-mid.h
++++ b/arch/x86/include/asm/intel-mid.h
+@@ -28,7 +28,7 @@ extern struct sfi_rtc_table_entry sfi_mrtc_array[];
+  * its platform data.
+  */
+ struct devs_id {
+-	char name[SFI_NAME_LEN + 1];
++	char name[SFI_NAME_LEN];
+ 	u8 type;
+ 	u8 delay;
+ 	void *(*get_platform_data)(void *info);
 -- 
 1.8.4.2
 
