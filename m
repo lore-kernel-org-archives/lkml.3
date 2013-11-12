@@ -1,112 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab3KLLw0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 06:52:26 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:53527 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab3KLLwY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 06:52:24 -0500
-From: Evgeny Boger <boger@contactless.ru>
-To: Evgeny Boger <boger@contactless.ru>, Evgeniy Polyakov <zbr@ioremap.net>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] Add strong pullup emulation to w1-gpio master driver.
-Date: Mon, 11 Nov 2013 03:27:12 +0400
-Message-Id: <1384126032-3738-1-git-send-email-boger@contactless.ru>
-X-Mailer: git-send-email 1.8.1.2
+	id S1754815Ab3KLLw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 06:52:57 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44472 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751709Ab3KLLwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 06:52:55 -0500
+Date: Tue, 12 Nov 2013 12:52:30 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/boot changes for v3.13
+Message-ID: <20131112115230.GD12849@pd.tnic>
+References: <20131111170558.GA12741@gmail.com>
+ <CAE9FiQWrzZB+wpSXGeQTPKi2o7MKvONFkk0_POe-E+wco07Erw@mail.gmail.com>
+ <20131112103422.GA12849@pd.tnic>
+ <20131112112338.GA12801@gmail.com>
+ <20131112113208.GC12849@pd.tnic>
+ <20131112113710.GA12998@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131112113710.GA12998@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Strong pullup is emulated by driving pin logic high after write command when
- using tri-state push-pull GPIO.
+On Tue, Nov 12, 2013 at 12:37:10PM +0100, Ingo Molnar wrote:
+> Hm, I think it's actually a bonus that we see the individual CPUs
+> printed as they boot up. That way if there's a hang, the place where
+> it hangs is apparent, etc.
 
+Ok, good point.
 
-Signed-off-by: Evgeny Boger <boger@contactless.ru>
----
- drivers/w1/masters/w1-gpio.c | 22 ++++++++++++++++++++++
- drivers/w1/w1_int.c          | 12 ------------
- include/linux/w1-gpio.h      |  1 +
- 3 files changed, 23 insertions(+), 12 deletions(-)
+We can do something like that then:
 
-diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
-index f54ece2..cb7f89b 100644
---- a/drivers/w1/masters/w1-gpio.c
-+++ b/drivers/w1/masters/w1-gpio.c
-@@ -18,10 +18,31 @@
- #include <linux/of_gpio.h>
- #include <linux/err.h>
- #include <linux/of.h>
-+#include <linux/delay.h>
+[    0.068574] x86: Booting SMP configuration:
+[    0.069006] .... node  #1, CPUs:      #1
+[    0.147005] .... node  #0, CPUs:   #2 #3
+[    0.147005] .... node  #1, CPUs:   #4 #5
+[    0.445273] x86: Booted up 2 nodes, 6 CPUs
 
- #include "../w1.h"
- #include "../w1_int.h"
+and report (node, core) in the order they appear.
 
-+static u8 w1_gpio_set_pullup(void *data, int delay)
-+{
-+	struct w1_gpio_platform_data *pdata = data;
-+
-+	if (delay) {
-+		pdata->pullup_duration = delay;
-+	} else {
-+		if (pdata->pullup_duration) {
-+			gpio_direction_output(pdata->pin, 1);
-+
-+			msleep(pdata->pullup_duration);
-+
-+			gpio_direction_input(pdata->pin);
-+		}
-+		pdata->pullup_duration = 0;
-+	}
-+
-+	return 0;
-+}
-+
- static void w1_gpio_write_bit_dir(void *data, u8 bit)
- {
-	struct w1_gpio_platform_data *pdata = data;
-@@ -125,6 +146,7 @@ static int w1_gpio_probe(struct platform_device *pdev)
-	} else {
-		gpio_direction_input(pdata->pin);
-		master->write_bit = w1_gpio_write_bit_dir;
-+		master->set_pullup = w1_gpio_set_pullup;
-	}
+-- 
+Regards/Gruss,
+    Boris.
 
-	err = w1_add_master_device(master);
-diff --git a/drivers/w1/w1_int.c b/drivers/w1/w1_int.c
-index 5a98649..590bd8a 100644
---- a/drivers/w1/w1_int.c
-+++ b/drivers/w1/w1_int.c
-@@ -117,18 +117,6 @@ int w1_add_master_device(struct w1_bus_master *master)
-		printk(KERN_ERR "w1_add_master_device: invalid function set\n");
-		return(-EINVAL);
-         }
--	/* While it would be electrically possible to make a device that
--	 * generated a strong pullup in bit bang mode, only hardware that
--	 * controls 1-wire time frames are even expected to support a strong
--	 * pullup.  w1_io.c would need to support calling set_pullup before
--	 * the last write_bit operation of a w1_write_8 which it currently
--	 * doesn't.
--	 */
--	if (!master->write_byte && !master->touch_bit && master->set_pullup) {
--		printk(KERN_ERR "w1_add_master_device: set_pullup requires "
--			"write_byte or touch_bit, disabling\n");
--		master->set_pullup = NULL;
--	}
-
-	/* Lock until the device is added (or not) to w1_masters. */
-	mutex_lock(&w1_mlock);
-diff --git a/include/linux/w1-gpio.h b/include/linux/w1-gpio.h
-index 065e3ae..d58594a 100644
---- a/include/linux/w1-gpio.h
-+++ b/include/linux/w1-gpio.h
-@@ -20,6 +20,7 @@ struct w1_gpio_platform_data {
-	unsigned int is_open_drain:1;
-	void (*enable_external_pullup)(int enable);
-	unsigned int ext_pullup_enable_pin;
-+	unsigned int pullup_duration;
- };
-
- #endif /* _LINUX_W1_GPIO_H */
+Sent from a fat crate under my desk. Formatting is fine.
 --
-1.8.1.2
