@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959Ab3KLTuB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:50:01 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:55542 "EHLO comal.ext.ti.com"
+	id S1756998Ab3KLTuK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:50:10 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55558 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756879Ab3KLTtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:49:35 -0500
+	id S1756913Ab3KLTtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 14:49:49 -0500
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
@@ -18,9 +18,9 @@ CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
         Tony Lindgren <tony@atomide.com>,
         Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCHv5 09/20] arm: dts: add omap4 CPU thermal data
-Date: Tue, 12 Nov 2013 15:46:11 -0400
-Message-ID: <1384285582-16933-10-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCHv5 11/20] arm: dts: add omap4460 thermal data
+Date: Tue, 12 Nov 2013 15:46:13 -0400
+Message-ID: <1384285582-16933-12-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
 References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
@@ -31,12 +31,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes a dtsi file to contain the thermal data
-for MPU domain on OMAP4 and later SoCs. This data will
-enable the passive cooling with CPUfreq cooling device
-at 100C and the system will do a thermal shutdown at 125C.
-
-This thermal data can be reused across TI SoC devices.
+This patch changes the dtsi entry on omap4460 to contain
+the thermal data. This data will enable the passive
+cooling with CPUfreq cooling device at 100C and the
+system will do a thermal shutdown at 125C.
 
 Cc: "Benoît Cousson" <bcousson@baylibre.com>
 Cc: Tony Lindgren <tony@atomide.com>
@@ -52,60 +50,42 @@ Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
-Change from v4:
-- Using string constants instead of macros on trip types
+ arch/arm/boot/dts/omap4460.dtsi | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
- arch/arm/boot/dts/omap4-cpu-thermal.dtsi | 41 ++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
- create mode 100644 arch/arm/boot/dts/omap4-cpu-thermal.dtsi
-
-diff --git a/arch/arm/boot/dts/omap4-cpu-thermal.dtsi b/arch/arm/boot/dts/omap4-cpu-thermal.dtsi
-new file mode 100644
-index 0000000..cb9458f
---- /dev/null
-+++ b/arch/arm/boot/dts/omap4-cpu-thermal.dtsi
-@@ -0,0 +1,41 @@
-+/*
-+ * Device Tree Source for OMAP4/5 SoC CPU thermal
-+ *
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-+ * Contact: Eduardo Valentin <eduardo.valentin@ti.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2.  This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
-+
-+#include <dt-bindings/thermal/thermal.h>
-+
-+cpu_thermal: cpu_thermal {
-+	polling-delay-passive = <250>; /* milliseconds */
-+	polling-delay = <1000>; /* milliseconds */
-+
-+			/* sensor       ID */
-+        thermal-sensors = <&bandgap     0>;
-+
-+        trips {
-+                cpu_alert0: cpu_alert {
-+                        temperature = <100000>; /* millicelsius */
-+                        hysteresis = <2000>; /* millicelsius */
-+                        type = "passive";
-+                };
-+                cpu_crit: cpu_crit {
-+                        temperature = <125000>; /* millicelsius */
-+                        hysteresis = <2000>; /* millicelsius */
-+                        type = "critical";
-+                };
-+        };
-+
-+	cooling-maps {
-+		map0 {
-+			trip = <&cpu_alert0>;
-+			cooling-device =
-+				<&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
-+		};
+diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/omap4460.dtsi
+index c2f0f39..4d93aba 100644
+--- a/arch/arm/boot/dts/omap4460.dtsi
++++ b/arch/arm/boot/dts/omap4460.dtsi
+@@ -12,7 +12,7 @@
+ / {
+ 	cpus {
+ 		/* OMAP446x 'standard device' variants OPP50 to OPPTurbo */
+-		cpu@0 {
++		cpu0: cpu@0 {
+ 			operating-points = <
+ 				/* kHz    uV */
+ 				350000  1025000
+@@ -30,12 +30,18 @@
+ 		ti,hwmods = "debugss";
+ 	};
+ 
+-	bandgap {
++	thermal-zones{
++		#include "omap4-cpu-thermal.dtsi"
 +	};
-+};
++
++	bandgap: bandgap {
+ 		reg = <0x4a002260 0x4
+ 		       0x4a00232C 0x4
+ 		       0x4a002378 0x18>;
+ 		compatible = "ti,omap4460-bandgap";
+ 		interrupts = <0 126 IRQ_TYPE_LEVEL_HIGH>; /* talert */
+ 		gpios = <&gpio3 22 0>; /* tshut */
++
++		#thermal-sensor-cells = <0>;
+ 	};
+ };
 -- 
 1.8.2.1.342.gfa7285d
 
