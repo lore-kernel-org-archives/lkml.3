@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab3KLOIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:08:11 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50572 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754727Ab3KLOIJ (ORCPT
+	id S1755506Ab3KLOJq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:09:46 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:58868 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab3KLOJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:08:09 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] ACPI / driver core: Store a device pointer in struct acpi_dev_node
-Date: Tue, 12 Nov 2013 15:20:37 +0100
-Message-ID: <3448237.NUtWjlv2Mb@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131112092402.GO22916@intel.com>
-References: <3268437.YsusHvklcv@vostro.rjw.lan> <1683079.zjqzsOAjXB@vostro.rjw.lan> <20131112092402.GO22916@intel.com>
+	Tue, 12 Nov 2013 09:09:43 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <alpine.DEB.2.02.1311112031220.30673@ionos.tec.linutronix.de>
+References: <20130917082838.218329307@infradead.org>
+	<20130917183628.534494408@linutronix.de>
+	<CAMuHMdWgrQf+ULDrZyY5R+vT3GtiWEgpsWxmfk0b5pivN7wBmg@mail.gmail.com>
+	<alpine.DEB.2.02.1309172315550.4089@ionos.tec.linutronix.de>
+	<alpine.DEB.2.02.1309181159520.4089@ionos.tec.linutronix.de>
+	<alpine.DEB.2.02.1309191652480.4089@ionos.tec.linutronix.de>
+	<87txhg3ftx.fsf@igel.home>
+	<CAMuHMdW-YBroi6GezUP-KQBVRAcmYtUQERvBC=ekmemopDhVow@mail.gmail.com>
+	<alpine.DEB.2.02.1311041305540.28335@ionos.tec.linutronix.de>
+	<alpine.DEB.2.02.1311042032130.16975@ayla.of.borg>
+	<alpine.DEB.2.02.1311061237430.23353@ionos.tec.linutronix.de>
+	<CAMuHMdXDA2MRbR3GmD3KWC-iE6jnWX4uvbf1qeMd7RYX3O8f_g@mail.gmail.com>
+	<alpine.DEB.2.02.1311071655240.23353@ionos.tec.linutronix.de>
+	<ecf977d9ccbd241723a606423267bb2d@biophys.uni-duesseldorf.de>
+	<CAMuHMdVXk0NpinvqEszqL63fZEt3rOk6ZR9ogz0aHEzmEaW22A@mail.gmail.com>
+	<alpine.DEB.2.02.1311111421400.30673@ionos.tec.linutronix.de>
+	<alpine.DEB.2.02.1311112031220.30673@ionos.tec.linutronix.de>
+Date: Tue, 12 Nov 2013 15:09:42 +0100
+X-Google-Sender-Auth: gLSD5CqT454ubS5MWHwphcGZOpQ
+Message-ID: <CAMuHMdX+dGkOK==kfJAzmnfjz35gTNCazB84nhL4SmxTWX9tjQ@mail.gmail.com>
+Subject: Re: [patch 1/6] hardirq: Make hardirq bits generic
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Michael Schmitz <schmitz@biophys.uni-duesseldorf.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 12, 2013 11:24:02 AM Mika Westerberg wrote:
-> On Mon, Nov 11, 2013 at 02:45:39PM +0100, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Subject: ACPI / driver core: Store an ACPI device pointer in struct acpi_dev_node
-> > 
-> > Modify struct acpi_dev_node to contain a pointer to struct acpi_device
-> > associated with the given device object (that is, its ACPI companion
-> > device) instead of an ACPI handle corresponding to it.  Introduce two
-> > new macros for manipulating that pointer in a CONFIG_ACPI-safe way,
-> > ACPI_COMPANION() and ACPI_COMPANION_SET(), and rework the
-> > ACPI_HANDLE() macro to take the above changes into account.
-> > Drop the ACPI_HANDLE_SET() macro entirely and rework its users to
-> > use ACPI_COMPANION_SET() instead.  For some of them who used to
-> > pass the result of acpi_get_child() directly to ACPI_HANDLE_SET()
-> > introduce a helper routine acpi_preset_companion() doing an
-> > equivalent thing.
-> > 
-> > The main motivation for doing this is that there are things
-> > represented by struct acpi_device objects that don't have valid
-> > ACPI handles (so called fixed ACPI hardware features, such as
-> > power and sleep buttons) and we would like to create platform
-> > device objects for them and "glue" them to their ACPI companions
-> > in the usual way (which currently is impossible due to the
-> > lack of valid ACPI handles).  However, there are more reasons
-> > why it may be useful.
-> > 
-> > First, struct acpi_device pointers allow of much better type checking
-> > than void pointers which are ACPI handles, so it should be more
-> > difficult to write buggy code using modified struct acpi_dev_node
-> > and the new macros.  Second, the change should help to reduce (over
-> > time) the number of places in which the result of ACPI_HANDLE() is
-> > passed to acpi_bus_get_device() in order to obtain a pointer to the
-> > struct acpi_device associated with the given "physical" device,
-> > because now that pointer is returned by ACPI_COMPANION() directly.
-> > Finally, the change should make it easier to write generic code that
-> > will build both for CONFIG_ACPI set and unset without adding explicit
-> > compiler directives to it.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> I tested this on Haswell as well and it works fine with ACPI enumerated
-> platform, I2C and SPI devices.
-> 
-> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com> (on Haswell)
-> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Hi Thomas,
 
-Thanks!
+On Mon, Nov 11, 2013 at 8:34 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Finally found the issue. The patch below fixes the problem here. The
+> little missing detail is, that I zapped GET_CURRENT() assuming blindly
+> that this is only needed for the preempt_count hackery. But in fact
+> the world and some more depends on it which leads to interesting
+> explosions.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Yes, GET_CURRENT() sets up the current task in %a2.
+
+Many thanks for tracking this down!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
