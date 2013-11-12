@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab3KLO4j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:56:39 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:51909 "EHLO extserv.mm-sol.com"
+	id S1756197Ab3KLO45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:56:57 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:51908 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756067Ab3KLOyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756066Ab3KLOyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Nov 2013 09:54:24 -0500
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: balbi@ti.com
@@ -13,10 +13,10 @@ Cc: gregkh@linuxfoundation.org, rob.herring@calxeda.com, pawel.moll@arm.com,
         ijc+devicetree@hellion.org.uk, davidb@codeaurora.org,
         linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-kernel@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        devicetree@vger.kernel.org
-Subject: [PATCH v4 11/15] usb: phy: msm: Use reset framework for LINK and PHY resets
-Date: Tue, 12 Nov 2013 16:51:46 +0200
-Message-Id: <1384267910-32066-12-git-send-email-iivanov@mm-sol.com>
+        Manu Gautam <mgautam@codeaurora.org>, devicetree@vger.kernel.org
+Subject: [PATCH v4 12/15] usb: phy: msm: Add support for secondary PHY control
+Date: Tue, 12 Nov 2013 16:51:47 +0200
+Message-Id: <1384267910-32066-13-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384267910-32066-1-git-send-email-iivanov@mm-sol.com>
 References: <1384267910-32066-1-git-send-email-iivanov@mm-sol.com>
@@ -26,121 +26,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
+Allow support to use 2nd HSPHY with USB2 Core.
+Some platforms may have configuration to allow USB controller
+work with any of the two HSPHYs present. By default driver
+configures USB core to use primary HSPHY. Add support to allow
+user select 2nd HSPHY using DT parameter.
+
 Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Cc: Manu Gautam <mgautam@codeaurora.org>
 Cc: devicetree@vger.kernel.org
 ---
- .../devicetree/bindings/usb/msm-hsusb.txt          |    9 ++++++
- drivers/usb/phy/phy-msm-usb.c                      |   30 ++++++++++++++------
- include/linux/usb/msm_hsusb.h                      |    3 ++
- 3 files changed, 34 insertions(+), 8 deletions(-)
+ .../devicetree/bindings/usb/msm-hsusb.txt          |    6 +++++
+ drivers/usb/phy/phy-msm-usb.c                      |   24 ++++++++++++++++++--
+ include/linux/usb/msm_hsusb.h                      |    1 +
+ include/linux/usb/msm_hsusb_hw.h                   |    1 +
+ 4 files changed, 30 insertions(+), 2 deletions(-)
 
 diff --git a/Documentation/devicetree/bindings/usb/msm-hsusb.txt b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-index f1045e3..3f21204 100644
+index 3f21204..d105ba9 100644
 --- a/Documentation/devicetree/bindings/usb/msm-hsusb.txt
 +++ b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-@@ -57,6 +57,12 @@ Required properties:
- - v1p8-supply:	phandle to the regulator for the 1.8V supply
- - v3p3-supply:	phandle to the regulator for the 3.3V supply
+@@ -72,6 +72,12 @@ Optional properties:
+ - qcom,phy-init-sequence: PHY configuration sequence. val, reg pairs
+ 				terminate with -1
  
-+- resets:		A list of phandle + reset-specifier pairs for the
-+				resets listed in reset-names
-+- reset-names:	Should contain the following:
-+  "phy"			USB PHY controller reset
-+  "link"		USB LINK controller reset
++- qcom,phy-num:	Select number of pyco-phy to use, can be one of
++				0 - PHY one, default
++				1 - Second PHY
++				Some platforms may have configuration to allow USB
++				controller work with any of the two HSPHYs present.
 +
- - qcom,otg-control: OTG control (VBUS and ID notifications) can be one of
- 				1 - PHY control
- 				2 - PMIC control
-@@ -83,6 +89,9 @@ Example HSUSB OTG controller device node:
- 		v1p8-supply = <&pm8941_l6>;
- 		v3p3-supply = <&pm8941_l24>;
+ Example HSUSB OTG controller device node:
  
-+		resets = <&gcc GCC_USB2A_PHY_BCR>, <&gcc GCC_USB_HS_BCR>;
-+		reset-names = "phy", "link";
-+
- 		qcom,otg-control = <1>;
- 		qcom,phy-init-sequence = <0x01 0x90 0xffffffff>;
- 	};
+ 	usb@f9a55000 {
 diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index cc230c8..53fc645 100644
+index 53fc645..01b571ff 100644
 --- a/drivers/usb/phy/phy-msm-usb.c
 +++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -32,6 +32,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/reset.h>
+@@ -340,6 +340,9 @@ static int msm_otg_phy_reset(struct msm_otg *motg)
+ 	if (!retries)
+ 		return -ETIMEDOUT;
  
- #include <linux/usb.h>
- #include <linux/usb/otg.h>
-@@ -260,12 +261,16 @@ static void ulpi_init(struct msm_otg *motg)
- 
- static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
- {
--	int ret = 0;
-+	int ret;
- 
--	if (!motg->pdata->link_clk_reset)
--		return ret;
-+	if (motg->pdata->link_clk_reset)
-+		ret = motg->pdata->link_clk_reset(motg->clk, assert);
-+	else
-+		if (assert)
-+			ret = reset_control_assert(motg->link_rst);
-+		else
-+			ret = reset_control_deassert(motg->link_rst);
- 
--	ret = motg->pdata->link_clk_reset(motg->clk, assert);
- 	if (ret)
- 		dev_err(motg->phy.dev, "usb link clk reset %s failed\n",
- 			assert ? "assert" : "deassert");
-@@ -275,12 +280,13 @@ static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
- 
- static int msm_otg_phy_clk_reset(struct msm_otg *motg)
- {
--	int ret = 0;
-+	int ret;
- 
--	if (!motg->pdata->phy_clk_reset)
--		return ret;
-+	if (motg->pdata->phy_clk_reset)
-+		ret = motg->pdata->phy_clk_reset(motg->phy_reset_clk);
-+	else
-+		ret = reset_control_reset(motg->phy_rst);
- 
--	ret = motg->pdata->phy_clk_reset(motg->phy_reset_clk);
- 	if (ret)
- 		dev_err(motg->phy.dev, "usb phy clk reset failed\n");
- 
-@@ -1373,6 +1379,14 @@ static int msm_otg_read_dt(struct platform_device *pdev, struct msm_otg *motg)
- 	id = of_match_device(msm_otg_dt_match, &pdev->dev);
- 	pdata->phy_type = (int) id->data;
- 
-+	motg->link_rst = devm_reset_control_get(&pdev->dev, "link");
-+	if (IS_ERR(motg->link_rst))
-+		return PTR_ERR(motg->link_rst);
++	if (motg->phy_number)
++		writel(readl(USB_PHY_CTRL2) | BIT(16), USB_PHY_CTRL2);
 +
-+	motg->phy_rst = devm_reset_control_get(&pdev->dev, "phy");
-+	if (IS_ERR(motg->phy_rst))
-+		return PTR_ERR(motg->phy_rst);
+ 	dev_info(motg->phy.dev, "phy_reset: success\n");
+ 	return 0;
+ }
+@@ -394,6 +397,9 @@ static int msm_otg_reset(struct usb_phy *phy)
+ 		ulpi_write(phy, ulpi_val, ULPI_USB_INT_EN_FALL);
+ 	}
+ 
++	if (motg->phy_number)
++		writel(readl(USB_PHY_CTRL2) | BIT(16), USB_PHY_CTRL2);
 +
- 	pdata->mode = of_usb_get_dr_mode(node);
- 	if (pdata->mode == USB_DR_MODE_UNKNOWN)
- 		pdata->mode = USB_DR_MODE_OTG;
+ 	return 0;
+ }
+ 
+@@ -406,6 +412,7 @@ static int msm_otg_suspend(struct msm_otg *motg)
+ 	struct usb_phy *phy = &motg->phy;
+ 	struct usb_bus *bus = phy->otg->host;
+ 	struct msm_otg_platform_data *pdata = motg->pdata;
++	void __iomem *addr;
+ 	int cnt = 0;
+ 
+ 	if (atomic_read(&motg->in_lpm))
+@@ -465,9 +472,13 @@ static int msm_otg_suspend(struct msm_otg *motg)
+ 	 */
+ 	writel(readl(USB_USBCMD) | ASYNC_INTR_CTRL | ULPI_STP_CTRL, USB_USBCMD);
+ 
++	addr = USB_PHY_CTRL;
++	if (motg->phy_number)
++		addr = USB_PHY_CTRL2;
++
+ 	if (motg->pdata->phy_type == SNPS_28NM_INTEGRATED_PHY &&
+ 			motg->pdata->otg_control == OTG_PMIC_CONTROL)
+-		writel(readl(USB_PHY_CTRL) | PHY_RETEN, USB_PHY_CTRL);
++		writel(readl(addr) | PHY_RETEN, addr);
+ 
+ 	clk_disable_unprepare(motg->pclk);
+ 	clk_disable_unprepare(motg->clk);
+@@ -497,6 +508,7 @@ static int msm_otg_resume(struct msm_otg *motg)
+ {
+ 	struct usb_phy *phy = &motg->phy;
+ 	struct usb_bus *bus = phy->otg->host;
++	void __iomem *addr;
+ 	int cnt = 0;
+ 	unsigned temp;
+ 
+@@ -510,9 +522,14 @@ static int msm_otg_resume(struct msm_otg *motg)
+ 
+ 	if (motg->pdata->phy_type == SNPS_28NM_INTEGRATED_PHY &&
+ 			motg->pdata->otg_control == OTG_PMIC_CONTROL) {
++
++		addr = USB_PHY_CTRL;
++		if (motg->phy_number)
++			addr = USB_PHY_CTRL2;
++
+ 		msm_hsusb_ldo_set_mode(motg, 1);
+ 		msm_hsusb_config_vddcx(motg, 1);
+-		writel(readl(USB_PHY_CTRL) & ~PHY_RETEN, USB_PHY_CTRL);
++		writel(readl(addr) & ~PHY_RETEN, addr);
+ 	}
+ 
+ 	temp = readl(USB_USBCMD);
+@@ -1395,6 +1412,9 @@ static int msm_otg_read_dt(struct platform_device *pdev, struct msm_otg *motg)
+ 	if (!of_property_read_u32(node, "qcom,otg-control", &val))
+ 		pdata->otg_control = val;
+ 
++	if (!of_property_read_u32(node, "qcom,phy-num", &val))
++		motg->phy_number = val;
++
+ 	if (!of_get_property(node, "qcom,phy-init-sequence", &len) || !len)
+ 		return 0;
+ 
 diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
-index 262ed80..9bf8943 100644
+index 9bf8943..da3a974 100644
 --- a/include/linux/usb/msm_hsusb.h
 +++ b/include/linux/usb/msm_hsusb.h
-@@ -163,6 +163,9 @@ struct msm_otg {
- 	struct regulator *v3p3;
- 	struct regulator *v1p8;
- 	struct regulator *vddcx;
-+
-+	struct reset_control *phy_rst;
-+	struct reset_control *link_rst;
- };
+@@ -156,6 +156,7 @@ struct msm_otg {
+ 	atomic_t in_lpm;
+ 	int async_int;
+ 	unsigned cur_power;
++	int phy_number;
+ 	struct delayed_work chg_work;
+ 	enum usb_chg_state chg_state;
+ 	enum usb_chg_type chg_type;
+diff --git a/include/linux/usb/msm_hsusb_hw.h b/include/linux/usb/msm_hsusb_hw.h
+index 6e97a2d..e6d7035 100644
+--- a/include/linux/usb/msm_hsusb_hw.h
++++ b/include/linux/usb/msm_hsusb_hw.h
+@@ -25,6 +25,7 @@
+ #define USB_OTGSC            (MSM_USB_BASE + 0x01A4)
+ #define USB_USBMODE          (MSM_USB_BASE + 0x01A8)
+ #define USB_PHY_CTRL         (MSM_USB_BASE + 0x0240)
++#define USB_PHY_CTRL2        (MSM_USB_BASE + 0x0278)
  
- #endif
+ #define USBCMD_RESET   2
+ #define USB_USBINTR          (MSM_USB_BASE + 0x0148)
 -- 
 1.7.9.5
 
