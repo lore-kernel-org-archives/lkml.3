@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127Ab3KLG0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 01:26:14 -0500
+	id S1753233Ab3KLG0V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 01:26:21 -0500
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52060 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab3KLG0F (ORCPT
+	with ESMTP id S1751423Ab3KLG0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 01:26:05 -0500
-X-AuditID: 9c93016f-b7c75ae00000244e-32-5281c9fa429f
+	Tue, 12 Nov 2013 01:26:06 -0500
+X-AuditID: 9c93016f-b7c75ae00000244e-39-5281c9fba41d
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 1/2] perf trace: Beautify fifth argument of mmap() as fd
-Date: Tue, 12 Nov 2013 15:24:59 +0900
-Message-Id: <1384237500-22991-1-git-send-email-namhyung@kernel.org>
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 2/2] perf trace: Fix segfault on perf trace -i perf.data
+Date: Tue, 12 Nov 2013 15:25:00 +0900
+Message-Id: <1384237500-22991-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1384237500-22991-1-git-send-email-namhyung@kernel.org>
+References: <1384237500-22991-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,30 +27,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The fifth argument of mmap syscall is fd and it often contains -1 as a
-value for anon mappings.  Without this patch it doesn't show the file
-name as well as it shows -1 as 4294967295.
+When replaying a previous record session, it'll get a segfault since
+it doesn't initialize evsel->priv for finding syscall id.  So fix it
+by initialize sys_enter/exit evsel manually.
+
+While at it, factor out perf_evsel__init_syscall_tp() to init a
+syscall evsel and remove unused perf_session__has_tp().
 
 Cc: David Ahern <dsahern@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-trace.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ tools/perf/builtin-trace.c | 63 ++++++++++++++++++++++++++++------------------
+ 1 file changed, 38 insertions(+), 25 deletions(-)
 
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index c3008b1c369c..aeb6296a76bd 100644
+index aeb6296a76bd..6a18ed0a3e2a 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -951,7 +951,8 @@ static struct syscall_fmt {
- 	{ .name	    = "mmap",	    .hexret = true,
- 	  .arg_scnprintf = { [0] = SCA_HEX,	  /* addr */
- 			     [2] = SCA_MMAP_PROT, /* prot */
--			     [3] = SCA_MMAP_FLAGS, /* flags */ }, },
-+			     [3] = SCA_MMAP_FLAGS, /* flags */
-+			     [4] = SCA_FD, 	  /* fd */ }, },
- 	{ .name	    = "mprotect",   .errmsg = true,
- 	  .arg_scnprintf = { [0] = SCA_HEX, /* start */
- 			     [2] = SCA_MMAP_PROT, /* prot */ }, },
+@@ -149,20 +149,28 @@ static void perf_evsel__delete_priv(struct perf_evsel *evsel)
+ 	perf_evsel__delete(evsel);
+ }
+ 
+-static struct perf_evsel *perf_evsel__syscall_newtp(const char *direction, void *handler)
++static int perf_evsel__init_syscall_tp(struct perf_evsel *evsel, void *handler)
+ {
+-	struct perf_evsel *evsel = perf_evsel__newtp("raw_syscalls", direction);
++	evsel->priv = malloc(sizeof(struct syscall_tp));
+ 
+-	if (evsel) {
+-		evsel->priv = malloc(sizeof(struct syscall_tp));
++	if (evsel->priv == NULL)
++		return -ENOMEM;
+ 
+-		if (evsel->priv == NULL)
+-			goto out_delete;
++	if (perf_evsel__init_sc_tp_uint_field(evsel, id))
++		return -1;
+ 
+-		if (perf_evsel__init_sc_tp_uint_field(evsel, id))
+-			goto out_delete;
++	evsel->handler = handler;
++	return 0;
++}
++
++static struct perf_evsel *perf_evsel__syscall_newtp(const char *direction,
++						    void *handler)
++{
++	struct perf_evsel *evsel = perf_evsel__newtp("raw_syscalls", direction);
+ 
+-		evsel->handler = handler;
++	if (evsel) {
++		if (perf_evsel__init_syscall_tp(evsel, handler) < 0)
++			goto out_delete;
+ 	}
+ 
+ 	return evsel;
+@@ -1754,16 +1762,6 @@ static int trace__process_sample(struct perf_tool *tool,
+ 	return err;
+ }
+ 
+-static bool
+-perf_session__has_tp(struct perf_session *session, const char *name)
+-{
+-	struct perf_evsel *evsel;
+-
+-	evsel = perf_evlist__find_tracepoint_by_name(session->evlist, name);
+-
+-	return evsel != NULL;
+-}
+-
+ static int parse_target_str(struct trace *trace)
+ {
+ 	if (trace->opts.target.pid) {
+@@ -2000,8 +1998,6 @@ out_error:
+ static int trace__replay(struct trace *trace)
+ {
+ 	const struct perf_evsel_str_handler handlers[] = {
+-		{ "raw_syscalls:sys_enter",  trace__sys_enter, },
+-		{ "raw_syscalls:sys_exit",   trace__sys_exit, },
+ 		{ "probe:vfs_getname",	     trace__vfs_getname, },
+ 	};
+ 	struct perf_data_file file = {
+@@ -2009,6 +2005,7 @@ static int trace__replay(struct trace *trace)
+ 		.mode  = PERF_DATA_MODE_READ,
+ 	};
+ 	struct perf_session *session;
++	struct perf_evsel *evsel;
+ 	int err = -1;
+ 
+ 	trace->tool.sample	  = trace__process_sample;
+@@ -2040,13 +2037,29 @@ static int trace__replay(struct trace *trace)
+ 	if (err)
+ 		goto out;
+ 
+-	if (!perf_session__has_tp(session, "raw_syscalls:sys_enter")) {
+-		pr_err("Data file does not have raw_syscalls:sys_enter events\n");
++	evsel = perf_evlist__find_tracepoint_by_name(session->evlist,
++						     "raw_syscalls:sys_enter");
++	if (evsel == NULL) {
++		pr_err("Data file does not have raw_syscalls:sys_enter event\n");
++		goto out;
++	}
++
++	if (perf_evsel__init_syscall_tp(evsel, trace__sys_enter) < 0 ||
++	    perf_evsel__init_sc_tp_ptr_field(evsel, args)) {
++		pr_err("Error during initialize raw_syscalls:sys_enter event\n");
++		goto out;
++	}
++
++	evsel = perf_evlist__find_tracepoint_by_name(session->evlist,
++						     "raw_syscalls:sys_exit");
++	if (evsel == NULL) {
++		pr_err("Data file does not have raw_syscalls:sys_exit event\n");
+ 		goto out;
+ 	}
+ 
+-	if (!perf_session__has_tp(session, "raw_syscalls:sys_exit")) {
+-		pr_err("Data file does not have raw_syscalls:sys_exit events\n");
++	if (perf_evsel__init_syscall_tp(evsel, trace__sys_exit) < 0 ||
++	    perf_evsel__init_sc_tp_uint_field(evsel, ret)) {
++		pr_err("Error during initialize raw_syscalls:sys_exit event\n");
+ 		goto out;
+ 	}
+ 
 -- 
 1.7.11.7
 
