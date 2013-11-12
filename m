@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab3KLTys (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:54:48 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:40058 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755695Ab3KLTyj (ORCPT
+	id S1756686Ab3KLT4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:56:53 -0500
+Received: from jacques.telenet-ops.be ([195.130.132.50]:44616 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755194Ab3KLT4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:54:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
-References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
-Date: Tue, 12 Nov 2013 20:54:38 +0100
-X-Google-Sender-Auth: MEGeZf6m5pUCehmSgYIkV0aMzbc
-Message-ID: <CAMuHMdXC_bkBPvhF4ZM6oTS3kxsaU8-hYhOSQNY8thgF-xJC8A@mail.gmail.com>
-Subject: Re: [PATCH 00/17] <asm/sections.h> related cleanups
+	Tue, 12 Nov 2013 14:56:44 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Andrew Morton <akpm@linux-foundation.org>, Jonas Bonn <jonas@southpole.se>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux@openrisc.net
-Content-Type: text/plain; charset=UTF-8
+Cc: linux@openrisc.net, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 2/2] openrisc: Remove unused declaration of __initramfs_start
+Date: Tue, 12 Nov 2013 20:56:21 +0100
+Message-Id: <1384286181-16137-2-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384286181-16137-1-git-send-email-geert@linux-m68k.org>
+References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
+ <1384286181-16137-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 8:42 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> This started as a small cleanup in the OpenRISC code, but then I got
-> pulled into the pool of all section-related symbols, many of which are
-> different or duplicated.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/openrisc/kernel/vmlinux.h |    1 -
+ 1 file changed, 1 deletion(-)
 
-Bummer, I forgot the two OpenRISC commits that started it all
-(too high up in my commit chain). Will send...
+diff --git a/arch/openrisc/kernel/vmlinux.h b/arch/openrisc/kernel/vmlinux.h
+index 6c0b24772f85..bbcdf21b0b35 100644
+--- a/arch/openrisc/kernel/vmlinux.h
++++ b/arch/openrisc/kernel/vmlinux.h
+@@ -3,7 +3,6 @@
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ extern char __initrd_start, __initrd_end;
+-extern char __initramfs_start;
+ #endif
+ 
+ #endif
+-- 
+1.7.9.5
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
