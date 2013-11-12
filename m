@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597Ab3KLWBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 17:01:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40168 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932335Ab3KLV41 (ORCPT
+	id S932609Ab3KLWBj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 17:01:39 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:40464 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932332Ab3KLV40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:56:27 -0500
-Date: Tue, 12 Nov 2013 13:55:47 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-6qy8ljkn0e9hm7bh7keo5z68@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tests:
-  Check return of perf_evlist__open sw clock event period test
-Git-Commit-ID: d0b849e9bced36cf279881294c07c43b0b9dce86
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 12 Nov 2013 16:56:26 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 13:55:52 -0800 (PST)
+In-Reply-To: <52829751.2090105@intel.com>
+References: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com>
+	<1383745544-391-8-git-send-email-zwu.kernel@gmail.com>
+	<528156E4.1030409@intel.com>
+	<CAEH94LjoY6L6zDwTh3XKim17VgRTkdqBKpm7TgX0HGok==p+kg@mail.gmail.com>
+	<52825FBE.9060006@intel.com>
+	<CAEH94Lis9wwgrcnJrJO3LtLoEc07Ze9T_LwpsjVy_yE4XEydyQ@mail.gmail.com>
+	<52829751.2090105@intel.com>
+Date: Wed, 13 Nov 2013 05:56:24 +0800
+Message-ID: <CAEH94LjbKRCvVyd_532gfF4o583tNH7RFE6G0HehWRTV+YGxhA@mail.gmail.com>
+Subject: Re: [PATCH v6 07/11] VFS hot tracking: Add a /proc interface to
+ control memory usage
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Chandra Seetharaman <sekharan@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d0b849e9bced36cf279881294c07c43b0b9dce86
-Gitweb:     http://git.kernel.org/tip/d0b849e9bced36cf279881294c07c43b0b9dce86
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 11 Nov 2013 16:28:42 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 11 Nov 2013 16:28:42 -0300
+On Wed, Nov 13, 2013 at 5:02 AM, Dave Hansen <dave.hansen@intel.com> wrote:
+> On 11/12/2013 12:38 PM, Zhi Yong Wu wrote:
+>> On Wed, Nov 13, 2013 at 1:05 AM, Dave Hansen <dave.hansen@intel.com> wrote:
+>>> The on/off knob seems to me to be something better left to a mount
+>>> option, not a global tunable.
+>> If it is left to a mount option, the user or admin can't change it
+>> *dynamically*.
+>
+> Really?
+>
+> man mount.  Look at "Mount options for tmpfs".  Try this on an existing
+> tmpfs mount:
+>
+>         mount -o remount,size=$foo tmpfsmount
+>
+> How would that be different from your tunable?
+Is it light weight? I thought that remount will have more overhead and
+effect on the applications running on filesystem.
 
-perf tests: Check return of perf_evlist__open sw clock event period test
+>
+>>> If this were true, why don't we have similar knobs for the dentry, inode
+>>> and page caches?
+>> This is not be controlled by memory controller(mem_cgroup)?
+>
+> That's a good point.  There is a 'kmem' cgroup controller for
+> controlling the in-kernel structures (not page cache which is controlled
+> by a separate one).  I believe the 'kmem' one would (could?) apply to
+> the hot tracking data structures as well, which would obviate the need
+> for this tunable.
+>
+> At least for the dentry and inode caches, they represent kernel-internal
+> cache structures and are the same as your hot-data-tracking structures.
+>  We don't have explicit /proc controls for the size of the dentry and
+> inode caches, so I'm arguing that we should do the same for these new
+> hot-data-tracking structures.
+If 'kmem' cgroup controller is applied to VFS hot tracking, need we do
+some additional coding work in kernel? If yes, we should put it to
+TODO list. You know, we should push VFS hot tracking core to get
+merged ASAP at first. Like this interface, we can develop and improve
+it later.
+I don't know what Viro's opinion is, If he also agree, we can really
+put it to TODO list.
 
-We were not checking if we successfully opened the counters, i.e. if
-sys_perf_event_open worked, when it doesn't in this test, we were
-continuing anyway and then segfaulting when trying to access the file
-descriptor array, that at that point had been freed in perf_evlist__open
-error path:
 
-[root@ssdandy ~]# perf test -v 19
-19: Test software clock events have valid period values    :
---- start ---
-Segmentation fault (core dumped)
-[root@ssdandy ~]#
+>
 
-Do the check and bail out instead.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-6qy8ljkn0e9hm7bh7keo5z68@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/tests/sw-clock.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/tests/sw-clock.c b/tools/perf/tests/sw-clock.c
-index 73c5c37..ed77772 100644
---- a/tools/perf/tests/sw-clock.c
-+++ b/tools/perf/tests/sw-clock.c
-@@ -57,7 +57,11 @@ static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
- 		goto out_delete_maps;
- 	}
- 
--	perf_evlist__open(evlist);
-+	if (perf_evlist__open(evlist)) {
-+		err = -errno;
-+		pr_debug("Couldn't open evlist: %s\n", strerror(errno));
-+		goto out_delete_maps;
-+	}
- 
- 	err = perf_evlist__mmap(evlist, 128, true);
- 	if (err < 0) {
+-- 
+Regards,
+
+Zhi Yong Wu
