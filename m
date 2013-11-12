@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915Ab3KLPaL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:30:11 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34026 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755825Ab3KLPaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:30:07 -0500
-Date: Tue, 12 Nov 2013 16:29:56 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [seqcount] INFO: trying to register non-static key.
-Message-ID: <20131112152956.GY5056@laptop.programming.kicks-ass.net>
-References: <20131111012927.GA404@localhost>
- <20131111154551.GJ19203@twins.programming.kicks-ass.net>
- <20131112094147.GA32441@localhost>
- <20131112100140.GM5056@laptop.programming.kicks-ass.net>
- <20131112151541.GD24980@redhat.com>
+	id S1755976Ab3KLPbR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:31:17 -0500
+Received: from ring0.de ([91.143.88.219]:46426 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754213Ab3KLPbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 10:31:13 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
+	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+	*      for more information.
+	*      [URIs: lkml.org]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Tue, 12 Nov 2013 16:30:57 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: devicetree@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 4/5 v2] input: tc3589x-keypad: support probing from
+ device tree
+Message-ID: <20131112153057.GA9683@earth.universe>
+Mail-Followup-To: Linus Walleij <linus.walleij@linaro.org>,
+	devicetree@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+	Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+	linux-arm-kernel@lists.infradead.org,
+	Mark Rutland <mark.rutland@arm.com>
+References: <1384265618-10590-1-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
 Content-Disposition: inline
-In-Reply-To: <20131112151541.GD24980@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1384265618-10590-1-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 10:15:41AM -0500, Vivek Goyal wrote:
-> I see that we allocate per cpu stats but don't do any initializations.
-> 
-> static void tg_stats_alloc_fn(struct work_struct *work)
-> {
->         static struct tg_stats_cpu *stats_cpu;  /* this fn is non-reentrant */
->         struct delayed_work *dwork = to_delayed_work(work);
->         bool empty = false;
-> 
-> alloc_stats:
->         if (!stats_cpu) {
->                 stats_cpu = alloc_percpu(struct tg_stats_cpu);
->                 if (!stats_cpu) {
->                         /* allocation failed, try again after some time */
->                         schedule_delayed_work(dwork, msecs_to_jiffies(10));
->                         return;
->                 }
->         }
-> 
->         spin_lock_irq(&tg_stats_alloc_lock);
 
-Absolutely!
+--J/dobhs11T7y2rNN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Something like this perhaps? Did I miss more blkg_[rw]stats? If I read
-the git grep output right, this was the last one.
+Hi,
 
----
- block/blk-throttle.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+On Tue, Nov 12, 2013 at 03:13:38PM +0100, Linus Walleij wrote:
+> +	plat->no_autorepeat = of_property_read_bool(np, "linux,no-autorepeat");
+> +	plat->enable_wakeup = of_property_read_bool(np, "linux,wakeup");
 
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 8331aba9426f..fd743d98c41d 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -256,6 +256,12 @@ static struct throtl_data *sq_to_td(struct throtl_service_queue *sq)
- 	}								\
- } while (0)
- 
-+static void tg_stats_init(struct tg_stats_cpu *tg_stats)
-+{
-+	blkg_rwstat_init(&tg_stats->service_bytes);
-+	blkg_rwstat_init(&tg_stats->serviced);
-+}
-+
- /*
-  * Worker for allocating per cpu stat for tgs. This is scheduled on the
-  * system_wq once there are some groups on the alloc_list waiting for
-@@ -269,12 +275,16 @@ static void tg_stats_alloc_fn(struct work_struct *work)
- 
- alloc_stats:
- 	if (!stats_cpu) {
-+		int cpu;
-+
- 		stats_cpu = alloc_percpu(struct tg_stats_cpu);
- 		if (!stats_cpu) {
- 			/* allocation failed, try again after some time */
- 			schedule_delayed_work(dwork, msecs_to_jiffies(10));
- 			return;
- 		}
-+		for_each_possible_cpu(cpu)
-+			tg_stats_init(per_cpu(stats_cpu, cpu));
- 	}
- 
- 	spin_lock_irq(&tg_stats_alloc_lock);
+There is currently discussion going on for the property name of
+autorepeat:
+
+https://lkml.org/lkml/2013/11/11/680
+
+-- Sebastian
+
+--J/dobhs11T7y2rNN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSgkmwAAoJENju1/PIO/qa5MkQAJ0tXLRMZ+AnZ7K7NDkK7cQa
+De6wGZJzA7wu07NqrZ4nwXR5uuDP54jASK8lLkIqV/sL4gUvCEj+54JcB2UB5jYC
+TS87JOAhafrvd9E8gxv4kIZ1aTMRMUs+yr7Fo1WDRaaVfEzu7Ktvtia+AyqrI8zZ
+eFqk4OqdEDxZKW/LM0ywPvxTNWpPiEP2zpCqVXTgyZ9gB1ATfXq9+FZHemHl4h8n
+s4kyuJdtUlq0m43zvQQvrCyLeP0/oguKKNeAyeMFMIK7GMU/ruI0dKWPWV/mGh9x
+XpQQMTt0fT4dhJmLoOk/IutZtyzoZ++BSPyrEm0PRON7yf60lbMjozDcLl0wen85
+Ypg6P++zUslArSBptlXP1IZojNnOKBJYa3oDQwbvXnnYl9muKEVdRb20omvdENsK
+ga85OYQfsiETLcyfNsvAw+lA0f388Rnfghc89239krDGJZRibr50aVBtwwWMXfLg
+APofa0YT6jdAFKaP9g1n3afVzfJmlEvdJQZAvpFqduFadMhsNp5YPwfzDiqNfNJH
+E3K1DWdJ45JDBXAufcxPUIXpNIEisG9SBWxFWGjbR8v8KNbSgz6ndjfXheh3c09J
+8hdEV4z8exkJU9dPuBDHF1vBS8EC2SXbxScoi7DgM9s1Pi/Mt9OTnEC05BC6tGju
+Fac0okK4pFQrUHLlLRtD
+=Fpzk
+-----END PGP SIGNATURE-----
+
+--J/dobhs11T7y2rNN--
