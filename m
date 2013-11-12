@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab3KLKoT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 05:44:19 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:57740 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409Ab3KLKoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 05:44:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131112103228.GE4971@laptop.programming.kicks-ass.net>
-References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
-	<1382097147-30088-5-git-send-email-vincent.guittot@linaro.org>
-	<20131112103228.GE4971@laptop.programming.kicks-ass.net>
-Date: Tue, 12 Nov 2013 11:44:15 +0100
-Message-ID: <CAKfTPtBymfyQC7=oTscrZVByHmFcgcZM5fPJRssqP9YEQjDECA@mail.gmail.com>
-Subject: Re: [RFC][PATCH v5 05/14] sched: add a packing level knob
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Lukasz Majewski <l.majewski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754760Ab3KLKoh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 05:44:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51943 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754347Ab3KLKoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 05:44:34 -0500
+Subject: Re: [PATCH v2 1/8] x86: speed up int3-based patching using less
+ paranoid write
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+In-Reply-To: <20131108074336.29dfbc15@gandalf.local.home>
+References: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
+	 <1383901932-1945-3-git-send-email-pmladek@suse.cz>
+	 <527CD34A.30406@hitachi.com>  <20131108074336.29dfbc15@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Nov 2013 11:44:32 +0100
+Message-ID: <1384253072.1296.21.camel@pathway.suse.cz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 November 2013 11:32, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, Oct 18, 2013 at 01:52:18PM +0200, Vincent Guittot wrote:
->> +int sched_proc_update_packing(struct ctl_table *table, int write,
->> +             void __user *buffer, size_t *lenp,
->> +             loff_t *ppos)
->> +{
->> +     int ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
->> +     if (ret || !write)
->> +             return ret;
->> +
->> +     if (sysctl_sched_packing_level)
->> +             sd_pack_threshold = (100 * 1024) / sysctl_sched_packing_level;
->> +
->> +     return 0;
->> +}
->
->> +#ifdef CONFIG_SCHED_PACKING_TASKS
->> +static int min_sched_packing_level;
->> +static int max_sched_packing_level = 100;
->> +#endif /* CONFIG_SMP */
->
->> +#ifdef CONFIG_SCHED_PACKING_TASKS
->> +     {
->> +             .procname       = "sched_packing_level",
->> +             .data           = &sysctl_sched_packing_level,
->> +             .maxlen         = sizeof(int),
->> +             .mode           = 0644,
->> +             .proc_handler   = sched_proc_update_packing,
->> +             .extra1         = &min_sched_packing_level,
->> +             .extra2         = &max_sched_packing_level,
->> +     },
->> +#endif
->
-> Shouldn't min_sched_packing_level be 1? Userspace can now write 0 and
-> expect something; but then we don't update sd_pack_threshold so nothing
-> really changed.
+Steven Rostedt píše v Pá 08. 11. 2013 v 07:43 -0500:
+> On Fri, 08 Nov 2013 21:04:26 +0900
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+> > (2013/11/08 18:12), Petr Mladek wrote:
+> > > This change is inspired by the int3-based patching code used in
+> > > ftrace. See the commit fd4363fff3d9 (x86: Introduce int3
+> > > (breakpoint)-based instruction patching).
+> > > 
+> > > When trying to use text_poke_bp in ftrace, the result was slower than
+> > > the original implementation.
+> > > 
+> > > It turned out that one difference was in text_poke vs. ftrace_write.
+> > > text_poke did many extra operations to make sure that the change
+> > > was atomic.
+> > 
+> > AFAIK, the main reason why text_poke is used is avoiding
+> > RODATA protection (by alias mapping).
+> 
+> That is correct, and the reason ftrace didn't do that is because it
+> would be quite expensive to map 22,000 addresses for each change.
 
-value 0 is used to disable to packing feature and the scheduler falls
-back to default behavior. This value is tested when setting which cpus
-will be used by the scheduler.
+I see. I am going to prepare v3 with the following changes:
+
+	+ use text_poke in text_poke_bp back again because it is not
+          effective to make the pages rw only for a single address;
+          the alias mapping is faster here
+
+	+ use the faster text_poke_part only in text_poke_bp_iter;
+          the caller of this function will be responsible for
+          making the code rw
+
+	+ I will rework the error handling as suggested in the other
+          mails; I will try to add some also for text_poke.
+
+Thanks a lot for hints.
+
+Best Regards,
+Petr
+
