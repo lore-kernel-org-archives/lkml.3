@@ -1,126 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab3KLPbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:31:13 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:50469 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590Ab3KLPbK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:31:10 -0500
-From: Linus Walleij <linus.walleij@linaro.org>
-To: devicetree@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 4/5 v3] input: tc3589x-keypad: support probing from device tree
-Date: Tue, 12 Nov 2013 16:31:01 +0100
-Message-Id: <1384270261-15889-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.8.3.1
+	id S1755660Ab3KLPcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:32:43 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41150 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752027Ab3KLPck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 10:32:40 -0500
+Message-ID: <528249EE.6080109@ti.com>
+Date: Tue, 12 Nov 2013 10:31:58 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+CC: <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <galak@kernel.crashing.org>, <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Fwd: [PATCH 1/8] watchdog: davinci: change driver to use WDT
+ core
+References: <1383680783-12114-2-git-send-email-ivan.khoronzhuk@ti.com> <527A287C.2090401@ti.com>
+In-Reply-To: <527A287C.2090401@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement device tree probing for the tc3589x keypad driver.
-This is modeled on the STMPE keypad driver and tested on the
-Ux500 TVK1281618 UIB.
+On Wednesday 06 November 2013 06:31 AM, ivan.khoronzhuk wrote:
+> To reduce code duplicate and increase code readability use WDT core
+> code to handle WDT interface.
+> 
+> Remove io_lock as the WDT core uses mutex to lock each wdt device.
+> Remove wdt_state as the WDT core track state with its own variable.
+> 
+> The watchdog_init_timeout() can read timeout value from timeout-sec
+> property if the passed value is out of bounds. So set initial
+> heartbeat value more than max value in order to initialize heartbeat
+> in next way. If heartbeat is not set thought module parameter, try
+> to read it's value from WDT node timeout-sec property. If node has
+> no one, use default value.
+> 
+> The heartbeat is hold in wdd->timeout by WDT core, so use it in
+> order to set timeout period.
+> 
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> ---
+>  drivers/watchdog/Kconfig       |    1 +
+>  drivers/watchdog/davinci_wdt.c |  150 ++++++++++------------------------------
+>  2 files changed, 38 insertions(+), 113 deletions(-)
+> 
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index d1d53f3..2c954b5 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -271,6 +271,7 @@ config IOP_WATCHDOG
+>  config DAVINCI_WATCHDOG
+>  	tristate "DaVinci watchdog"
+>  	depends on ARCH_DAVINCI
+> +	select WATCHDOG_CORE
+>  	help
+>  	  Say Y here if to include support for the watchdog timer
+>  	  in the DaVinci DM644x/DM646x processors.
+> diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
+> index bead774..a6eef71 100644
+> --- a/drivers/watchdog/davinci_wdt.c
+> +++ b/drivers/watchdog/davinci_wdt.c
+> @@ -3,7 +3,7 @@
+>   *
+>   * Watchdog driver for DaVinci DM644x/DM646x processors
+>   *
+> - * Copyright (C) 2006 Texas Instruments.
+> + * Copyright (C) 2013 Texas Instruments.
+s/2013/2006-2013
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-ChangeLog v2->v3:
-- Use two local u32 variables to avoid weirdness in u8 casting
-  of the resulting values to the pointers.
-ChangeLog v1->v2:
-- Fix rows/columns binding to read two u32's insead of two
-  u8 /bits/ as noted by Mark Rutland.
----
- drivers/input/keyboard/tc3589x-keypad.c | 66 ++++++++++++++++++++++++++++++++-
- 1 file changed, 64 insertions(+), 2 deletions(-)
+Apart from the minor nit, this is really nice clean-up and
+more aligned with wdt coer leayer.
 
-diff --git a/drivers/input/keyboard/tc3589x-keypad.c b/drivers/input/keyboard/tc3589x-keypad.c
-index 208de7cbb7fa..7f36e7addb86 100644
---- a/drivers/input/keyboard/tc3589x-keypad.c
-+++ b/drivers/input/keyboard/tc3589x-keypad.c
-@@ -297,6 +297,65 @@ static void tc3589x_keypad_close(struct input_dev *input)
- 	tc3589x_keypad_disable(keypad);
- }
- 
-+#ifdef CONFIG_OF
-+static const struct tc3589x_keypad_platform_data *
-+tc3589x_keypad_of_probe(struct device *dev)
-+{
-+	struct device_node *np = dev->of_node;
-+	struct tc3589x_keypad_platform_data *plat;
-+	u32 cols, rows;
-+	u32 debounce_ms;
-+	int proplen;
-+
-+	if (!np)
-+		return ERR_PTR(-ENODEV);
-+
-+	plat = devm_kzalloc(dev, sizeof(*plat), GFP_KERNEL);
-+	if (!plat)
-+		return ERR_PTR(-ENOMEM);
-+
-+	of_property_read_u32(np, "keypad,num-columns", &cols);
-+	of_property_read_u32(np, "keypad,num-rows", &rows);
-+	plat->kcol = (u8) cols;
-+	plat->krow = (u8) rows;
-+	if (!plat->krow || !plat->kcol ||
-+	     plat->krow > TC_KPD_ROWS || plat->kcol > TC_KPD_COLUMNS) {
-+		dev_err(dev,
-+			"keypad columns/rows not properly specified (%ux%u)\n",
-+			plat->kcol, plat->krow);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	if (!of_get_property(np, "linux,keymap", &proplen)) {
-+		dev_err(dev, "property linux,keymap not found\n");
-+		return ERR_PTR(-ENOENT);
-+	}
-+
-+	plat->no_autorepeat = of_property_read_bool(np, "linux,no-autorepeat");
-+	plat->enable_wakeup = of_property_read_bool(np, "linux,wakeup");
-+
-+	/* The custom delay format is ms/16 */
-+	of_property_read_u32(np, "debounce-delay-ms", &debounce_ms);
-+	if (debounce_ms)
-+		plat->debounce_period = debounce_ms * 16;
-+	else
-+		plat->debounce_period = TC_KPD_DEBOUNCE_PERIOD;
-+
-+	plat->settle_time = TC_KPD_SETTLE_TIME;
-+	/* FIXME: should be property of the IRQ resource? */
-+	plat->irqtype = IRQF_TRIGGER_FALLING;
-+
-+	return plat;
-+}
-+#else
-+static inline const struct tc3589x_keypad_platform_data *
-+tc3589x_keypad_of_probe(struct device *dev)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+#endif
-+
-+
- static int tc3589x_keypad_probe(struct platform_device *pdev)
- {
- 	struct tc3589x *tc3589x = dev_get_drvdata(pdev->dev.parent);
-@@ -307,8 +366,11 @@ static int tc3589x_keypad_probe(struct platform_device *pdev)
- 
- 	plat = tc3589x->pdata->keypad;
- 	if (!plat) {
--		dev_err(&pdev->dev, "invalid keypad platform data\n");
--		return -EINVAL;
-+		plat = tc3589x_keypad_of_probe(&pdev->dev);
-+		if (IS_ERR(plat)) {
-+			dev_err(&pdev->dev, "invalid keypad platform data\n");
-+			return PTR_ERR(plat);
-+		}
- 	}
- 
- 	irq = platform_get_irq(pdev, 0);
--- 
-1.8.3.1
-
+FWIW, Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
