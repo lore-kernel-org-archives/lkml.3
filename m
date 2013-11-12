@@ -1,26 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932569Ab3KLWBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 17:01:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40225 "EHLO
+	id S932582Ab3KLWBX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 17:01:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40217 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373Ab3KLV5A (ORCPT
+	with ESMTP id S1757366Ab3KLV4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:57:00 -0500
-Date: Tue, 12 Nov 2013 13:56:48 -0800
-From: tip-bot for Pekka Enberg <tipbot@zytor.com>
-Message-ID: <tip-99ff7150547382ee612c40d8d6a0670ddec7c9fc@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        hpa@zytor.com, mingo@kernel.org, penberg@kernel.org, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, penberg@kernel.org,
+	Tue, 12 Nov 2013 16:56:53 -0500
+Date: Tue, 12 Nov 2013 13:56:13 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-96695d440242aca871ef8d797bd98d9cbd7ad8a0@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, efault@gmx.de, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
         dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1384267334-18953-1-git-send-email-penberg@kernel.org>
-References: <1384267334-18953-1-git-send-email-penberg@kernel.org>
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        efault@gmx.de, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <20131112115700.GC4053@ghostprotocols.net>
+References: <20131112115700.GC4053@ghostprotocols.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf trace: Simplify '--summary' output
-Git-Commit-ID: 99ff7150547382ee612c40d8d6a0670ddec7c9fc
+Subject: [tip:perf/urgent] perf trace:
+  Separate tp syscall field caching into init routine to be reused
+Git-Commit-ID: 96695d440242aca871ef8d797bd98d9cbd7ad8a0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,117 +34,84 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 13:56:54 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 13:56:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  99ff7150547382ee612c40d8d6a0670ddec7c9fc
-Gitweb:     http://git.kernel.org/tip/99ff7150547382ee612c40d8d6a0670ddec7c9fc
-Author:     Pekka Enberg <penberg@kernel.org>
-AuthorDate: Tue, 12 Nov 2013 16:42:14 +0200
+Commit-ID:  96695d440242aca871ef8d797bd98d9cbd7ad8a0
+Gitweb:     http://git.kernel.org/tip/96695d440242aca871ef8d797bd98d9cbd7ad8a0
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Tue, 12 Nov 2013 08:51:45 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 12 Nov 2013 13:00:38 -0300
+CommitDate: Tue, 12 Nov 2013 13:00:36 -0300
 
-perf trace: Simplify '--summary' output
+perf trace: Separate tp syscall field caching into init routine to be reused
 
-The output of 'perf trace --summary' tries to be too cute with
-formatting and makes it very hard to read.  Simplify it in the spirit of
-"strace -c":
+We need to set this in evsels coming out of a perf.data file header, not
+just for new ones created for live sessions.
 
-[penberg@localhost libtrading]$ perf trace -a --duration 10000 --summary -- sleep 1
-^C
- Summary of events:
+So separate the code that caches the syscall entry/exit tracepoint
+format fields into a new function that will be used in the next
+changeset.
 
- dbus-daemon (555), 10 events, 0.0%, 0.000 msec
-
-                                                    msec/call
-   syscall            calls      min      avg      max stddev
-   --------------- -------- -------- -------- -------- ------
-   sendmsg                2    0.002    0.005    0.008  55.00
-   recvmsg                2    0.002    0.003    0.005  44.00
-   epoll_wait             1    0.000    0.000    0.000   0.00
-
- NetworkManager (667), 56 events, 0.0%, 0.000 msec
-
-                                                    msec/call
-   syscall            calls      min      avg      max stddev
-   --------------- -------- -------- -------- -------- ------
-   poll                   2    0.000    0.002    0.003 100.00
-   sendmsg               10    0.004    0.007    0.016  15.41
-   recvmsg               16    0.002    0.003    0.005   8.24
-
- zfs-fuse (669), 4 events, 0.0%, 0.000 msec
-
-                                                    msec/call
-   syscall            calls      min      avg      max stddev
-   --------------- -------- -------- -------- -------- ------
-   futex                  2    0.000    0.001    0.002 100.00
-
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Link: http://lkml.kernel.org/r/1384267334-18953-1-git-send-email-penberg@kernel.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/20131112115700.GC4053@ghostprotocols.net
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
+ tools/perf/builtin-trace.c | 28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
 
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 8990fbe..0964c0c 100644
+index aeb6296..3fa1dce 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -2090,12 +2090,7 @@ static size_t trace__fprintf_threads_header(FILE *fp)
- {
- 	size_t printed;
- 
--	printed  = fprintf(fp, "\n _____________________________________________________________________________\n");
--	printed += fprintf(fp, " __)    Summary of events    (__\n\n");
--	printed += fprintf(fp, "              [ task - pid ]     [ events ] [ ratio ]  [ runtime ]\n");
--	printed += fprintf(fp, "                                  syscall  count    min     avg    max  stddev\n");
--	printed += fprintf(fp, "                                                   msec    msec   msec     %%\n");
--	printed += fprintf(fp, " _____________________________________________________________________________\n\n");
-+	printed  = fprintf(fp, "\n Summary of events:\n\n");
- 
- 	return printed;
+@@ -149,20 +149,32 @@ static void perf_evsel__delete_priv(struct perf_evsel *evsel)
+ 	perf_evsel__delete(evsel);
  }
-@@ -2113,6 +2108,10 @@ static size_t thread__dump_stats(struct thread_trace *ttrace,
  
- 	printed += fprintf(fp, "\n");
- 
-+	printed += fprintf(fp, "                                                    msec/call\n");
-+	printed += fprintf(fp, "   syscall            calls      min      avg      max stddev\n");
-+	printed += fprintf(fp, "   --------------- -------- -------- -------- -------- ------\n");
++static int perf_evsel__init_syscall_tp(struct perf_evsel *evsel, void *handler)
++{
++	evsel->priv = malloc(sizeof(struct syscall_tp));
++	if (evsel->priv != NULL) {
++		if (perf_evsel__init_sc_tp_uint_field(evsel, id))
++			goto out_delete;
 +
- 	/* each int_node is a syscall */
- 	while (inode) {
- 		stats = inode->priv;
-@@ -2127,10 +2126,10 @@ static size_t thread__dump_stats(struct thread_trace *ttrace,
- 			avg /= NSEC_PER_MSEC;
++		evsel->handler = handler;
++		return 0;
++	}
++
++	return -ENOMEM;
++
++out_delete:
++	free(evsel->priv);
++	evsel->priv = NULL;
++	return -ENOENT;
++}
++
+ static struct perf_evsel *perf_evsel__syscall_newtp(const char *direction, void *handler)
+ {
+ 	struct perf_evsel *evsel = perf_evsel__newtp("raw_syscalls", direction);
  
- 			sc = &trace->syscalls.table[inode->i];
--			printed += fprintf(fp, "%24s  %14s : ", "", sc->name);
--			printed += fprintf(fp, "%5" PRIu64 "  %8.3f  %8.3f",
-+			printed += fprintf(fp, "   %-15s", sc->name);
-+			printed += fprintf(fp, " %8" PRIu64 " %8.3f %8.3f",
- 					   n, min, avg);
--			printed += fprintf(fp, "  %8.3f  %6.2f\n", max, pct);
-+			printed += fprintf(fp, " %8.3f %6.2f\n", max, pct);
- 		}
+ 	if (evsel) {
+-		evsel->priv = malloc(sizeof(struct syscall_tp));
+-
+-		if (evsel->priv == NULL)
++		if (perf_evsel__init_syscall_tp(evsel, handler))
+ 			goto out_delete;
+-
+-		if (perf_evsel__init_sc_tp_uint_field(evsel, id))
+-			goto out_delete;
+-
+-		evsel->handler = handler;
+ 	}
  
- 		inode = intlist__next(inode);
-@@ -2171,10 +2170,10 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
- 	else if (ratio > 5.0)
- 		color = PERF_COLOR_YELLOW;
- 
--	printed += color_fprintf(fp, color, "%20s", thread__comm_str(thread));
--	printed += fprintf(fp, " - %-5d :%11lu   [", thread->tid, ttrace->nr_events);
--	printed += color_fprintf(fp, color, "%5.1f%%", ratio);
--	printed += fprintf(fp, " ] %10.3f ms\n", ttrace->runtime_ms);
-+	printed += color_fprintf(fp, color, " %s (%d), ", thread__comm_str(thread), thread->tid);
-+	printed += fprintf(fp, "%lu events, ", ttrace->nr_events);
-+	printed += color_fprintf(fp, color, "%.1f%%", ratio);
-+	printed += fprintf(fp, ", %.3f msec\n", ttrace->runtime_ms);
- 	printed += thread__dump_stats(ttrace, trace, fp);
- 
- 	data->printed += printed;
+ 	return evsel;
