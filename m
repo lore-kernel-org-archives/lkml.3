@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab3KLNuB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 08:50:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59704 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753516Ab3KLNt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 08:49:59 -0500
-Date: Mon, 4 Nov 2013 16:16:20 +0100
-From: David Sterba <dsterba@suse.cz>
-To: Aldo Iljazi <mail@aldo.io>
-Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] FS: BTRFS: fixed coding style issues
-Message-ID: <20131104151619.GB16999@twin.jikos.cz>
-Reply-To: dsterba@suse.cz
-Mail-Followup-To: dsterba@suse.cz, Aldo Iljazi <mail@aldo.io>,
-	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1383571658-7440-1-git-send-email-mail@aldo.io>
+	id S1755371Ab3KLNuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 08:50:11 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37178 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521Ab3KLNuG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 08:50:06 -0500
+Date: Tue, 12 Nov 2013 14:50:04 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org,
+        cody@linux.vnet.ibm.com, schwidefsky@de.ibm.com, utz.bacher@de.ibm.com,
+        mmarek@suse.cz, rmallon@gmail.com, jsvogt@de.ibm.com,
+        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de
+Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v4)
+Message-ID: <20131112135004.GA31957@amd.pavel.ucw.cz>
+References: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383571658-7440-1-git-send-email-mail@aldo.io>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 03:27:38PM +0200, Aldo Iljazi wrote:
-> Fixed three coding style issues. Replaced spaces with tabs.
-> 
-> Signed-off-by: Aldo Iljazi <mail@aldo.io>
-> ---
->  fs/btrfs/dev-replace.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/btrfs/dev-replace.c b/fs/btrfs/dev-replace.c
-> index 9efb94e..b2fe609 100644
-> --- a/fs/btrfs/dev-replace.c
-> +++ b/fs/btrfs/dev-replace.c
-> @@ -377,7 +377,7 @@ int btrfs_dev_replace_start(struct btrfs_root *root,
->  	printk_in_rcu(KERN_INFO
->  		      "btrfs: dev_replace from %s (devid %llu) to %s) started\n",
->  		      src_device->missing ? "<missing disk>" :
-> -		        rcu_str_deref(src_device->name),
-> +			rcu_str_deref(src_device->name),
+Hi!
 
-What's the change here? I don't think we need to fix whitespace, this
-makes searching in patch history more boring, namely in case where the
-code looks exactly the same before and after the patch.
+> The GenWQE device is a PCIe card used to acclerate different tasks.
+> Since it is configurable, it can be adjusted to different purposes.
+> Our initial task for the card is to do zlib style compression/decompression
+> RFC1950, RFC1951, and RFC1952.
 
-The style issues should be best fixed when the patch is about to be
-merged, doing it later like this is kind of not welcome, speaking for
-myself. There are lots of opportunities to do real code cleanups.
+Is it similar to the Intel's Xeon Phi? They basically many-core have
+computer on PCI card...
 
-
-david
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
