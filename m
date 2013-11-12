@@ -1,94 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab3KLFLY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 00:11:24 -0500
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:47281 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab3KLFLS (ORCPT
+	id S1751487Ab3KLFQL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 00:16:11 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:9948 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848Ab3KLFQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 00:11:18 -0500
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20131112040039.GE8834@intel.com>
-References: <20131017142755.GA4477@breakpoint.cc>
-	<20131017134846.GG14013@intel.com>
-	<Pine.LNX.4.64.1310242326500.2900@axis700.grange>
-	<20131025042310.GC21230@intel.com>
-	<Pine.LNX.4.64.1310250813370.6186@axis700.grange>
-	<20131025054321.GD21230@intel.com>
-	<Pine.LNX.4.64.1310250840350.6186@axis700.grange>
-	<CAOesGMivD_3zSL503R0OaqyGv4Rj8qJqnbM2TdmjtxR2U63ztw@mail.gmail.com>
-	<20131030130325.GA18788@intel.com>
-	<20131111191339.GA10328@quad.lixom.net>
-	<20131112040039.GE8834@intel.com>
-Date: Mon, 11 Nov 2013 21:11:18 -0800
-Message-ID: <CAOesGMiDt3d6Q3yXZ2QRENHeoNsAG=5HijbhJM36oUT9QDzucA@mail.gmail.com>
-Subject: Re: [PATCH 01/28] dmaengine: use DMA_COMPLETE for dma completion status
-From: Olof Johansson <olof@lixom.net>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Joel Fernandes <joelf@ti.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Sekhar Nori <nsekhar@ti.com>, Matt Porter <matt.porter@linaro.org>,
-        Mark Brown <broonie@kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Nov 2013 00:16:06 -0500
+X-AuditID: cbfee61b-b7fd56d000001fc6-6e-5281b994b7f0
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
+Subject: [f2fs-dev] [PATCH 1/2] f2fs: add a new function to support for merging
+ contiguous read
+Date: Tue, 12 Nov 2013 13:15:08 +0800
+Message-id: <000001cedf66$46a9bb70$d3fd3250$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac7euU/d+/pUuq7ZR/6UBwBCf9FB2Q==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd0pOxuDDGae0Le4vusvk8WlRe4W
+	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujN4rs9kK
+	dglV3Fi9ia2BsZm/i5GTQ0LARGLGjjYmCFtM4sK99WxdjFwcQgKLGCUWHd7HAuH8YJTYevEJ
+	G0gVm4CKxPKO/2AdIgKKEhveb2AHKWIWmMEocXjuP9YuRg4OYYFEiVebAkBqWARUJd4cPAxW
+	zytgKbFtUwsbhC0o8WPyPRYQm1lAQ6J/0QY2CFteYvOat8wQFylI7Dj7mhFil55E65tDrBA1
+	4hIbj9ximcAoMAvJqFlIRs1CMmoWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYKD
+	+pn0DsZVDRaHGAU4GJV4eHdwNQYJsSaWFVfmHmKU4GBWEuENXwwU4k1JrKxKLcqPLyrNSS0+
+	xCjNwaIkznuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwFgy+WJC+o0pP2decfp47g1XgGe3ftKF
+	mYqyK24UhDDO+rcgLPPNv8xfJ5Uze1IT2EQdVpwUD7zWI1pjqvDD4IxL82Rl/SCRDtl3/9Ti
+	z5ZkzXodd/qw+4MPGw6bFzo4Ji37sSiqqMzS5orPs7eiWyp99A2vlPMLPZP+8ybKhZORo51h
+	v3T4CyWW4oxEQy3mouJEANhDrPpmAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 8:00 PM, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Mon, Nov 11, 2013 at 11:13:39AM -0800, Olof Johansson wrote:
->> On Wed, Oct 30, 2013 at 06:33:25PM +0530, Vinod Koul wrote:
->> > On Tue, Oct 29, 2013 at 09:47:55AM -0700, Olof Johansson wrote:
->> > > This patch broke some TI platforms (using edma) due to namespace
->> > > conflicts. The error is:
->> > >
->> > > ../../include/linux/dmaengine.h:54:2: error: expected identifier
->> > > before numeric constant   (for DMA_COMPLETE)
->> > >
->> > > .. it's because they define DMA_COMPLETE in include/platform_data/edma.h.
->> > >
->> > > The edma driver seems to overall lack prefixes and thus pollutes
->> > > global namespaces, so it should be fixed up.
->> > Yup this needs some work.
->> >
->> > I fixed up the error with below, can you pls verify. Pls note this is compile
->> > tested only!
->> >
->> > -----><8---------------------------
->> >
->> > From: Vinod Koul <vinod.koul@intel.com>
->> > Date: Wed, 30 Oct 2013 18:22:30 +0530
->> > Subject: [PATCH] dmanengine: fix edma driver to not define DMA_COMPLETE
->> >
->> > edma header defines DMA_COMPLETE, this causes issues as commit adfedd9a32e4 move
->> > DMA_SUCCESS to DMA_COMPLETE. edma should properly namespace its defines and
->> > needs a future fix
->> >
->> > Reported-by: Olof Johansson <olof@lixom.net>
->> > Signed-off-by: Vinod Koul <vinod.koul@intel.com>
->>
->> Thanks, I've applied this to fixes together with the follow-up from
->> Sebastian. Cc:ing Mark since it touches drivers/soc.
-> I had applied this a while back and pushed only thing remaining was Sebastian's
-> patch.  Since this is dependent on the series I am sending to Linus in a day ro
-> two, would prefer things to go thru this tree only.
->
-> Let me know if you are okay and will apply Sebastian fix on my next
+For better read performance, we add a new function to support for merging contiguous read as the one for write.
 
-Ah, go ahead -- I thought it hadn't been picked up yet since there
-were still failures (i.e. due to Sebastian's fixes). Feel free to add
-my Acked-by where you still can. :-)
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/data.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ fs/f2fs/f2fs.h |    2 ++
+ 2 files changed, 47 insertions(+)
 
-I have a couple of small fixes to take care of warnings with LPAE
-configs that I hope to get out tonight or tomorrow morning, it'd be
-nice to see them go in too (just printk format warning fixes).
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index aa3438c..f30060b 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -404,6 +404,51 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct page *page,
+ 	return 0;
+ }
+ 
++void f2fs_submit_read_bio(struct f2fs_sb_info *sbi, int rw)
++{
++	down_read(&sbi->bio_sem);
++	if (sbi->read_bio) {
++		submit_bio(rw, sbi->read_bio);
++		sbi->read_bio = NULL;
++	}
++	up_read(&sbi->bio_sem);
++}
++
++void submit_read_page(struct f2fs_sb_info *sbi, struct page *page,
++					block_t blk_addr, int rw)
++{
++	struct block_device *bdev = sbi->sb->s_bdev;
++	int bio_blocks;
++
++	verify_block_addr(sbi, blk_addr);
++
++	down_read(&sbi->bio_sem);
++
++	if (sbi->read_bio && sbi->last_read_block != blk_addr - 1) {
++		submit_bio(rw, sbi->read_bio);
++		sbi->read_bio = NULL;
++	}
++
++alloc_new:
++	if (sbi->read_bio == NULL) {
++		bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
++		sbi->read_bio = f2fs_bio_alloc(bdev, bio_blocks);
++		sbi->read_bio->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
++		sbi->read_bio->bi_end_io = read_end_io;
++	}
++
++	if (bio_add_page(sbi->read_bio, page, PAGE_CACHE_SIZE, 0) <
++							PAGE_CACHE_SIZE) {
++		submit_bio(rw, sbi->read_bio);
++		sbi->read_bio = NULL;
++		goto alloc_new;
++	}
++
++	sbi->last_read_block = blk_addr;
++
++	up_read(&sbi->bio_sem);
++}
++
+ /*
+  * This function should be used by the data read flow only where it
+  * does not check the "create" flag that indicates block allocation.
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 89dc750..0afdcec 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -359,6 +359,8 @@ struct f2fs_sb_info {
+ 
+ 	/* for segment-related operations */
+ 	struct f2fs_sm_info *sm_info;		/* segment manager */
++	struct bio *read_bio;			/* read bios to merge */
++	sector_t last_read_block;		/* last read block number */
+ 	struct bio *bio[NR_PAGE_TYPE];		/* bios to merge */
+ 	sector_t last_block_in_bio[NR_PAGE_TYPE];	/* last block number */
+ 	struct rw_semaphore bio_sem;		/* IO semaphore */
+-- 
+1.7.9.5
 
-
--Olof
