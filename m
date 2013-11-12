@@ -1,179 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab3KLQ6t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 11:58:49 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:42818 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756503Ab3KLQ6c (ORCPT
+	id S932096Ab3KLQ7n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 11:59:43 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:58578 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753603Ab3KLQ7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 11:58:32 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
-        maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v7 4/4] perf,x86: add RAPL hrtimer support
-Date: Tue, 12 Nov 2013 17:58:51 +0100
-Message-Id: <1384275531-10892-5-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1384275531-10892-1-git-send-email-eranian@google.com>
-References: <1384275531-10892-1-git-send-email-eranian@google.com>
+	Tue, 12 Nov 2013 11:59:41 -0500
+Date: Tue, 12 Nov 2013 11:59:35 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
+        Jiang Liu <liuj97@gmail.com>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping support
+Message-ID: <20131112115935.23d05236@gandalf.local.home>
+In-Reply-To: <CA+b37P1xLYWA-a0PwgxT7S7dNr5TdGFscLYFeQhAQUyO_E=Mzw@mail.gmail.com>
+References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
+	<1382008671-4515-3-git-send-email-sandeepa.prabhu@linaro.org>
+	<20131108165639.GD15074@mudshark.cambridge.arm.com>
+	<527DFC1C.1020107@hitachi.com>
+	<CA+b37P3U=cAbUvs=2B9wA4F7S9o49vh7d-KamjPsHcz-b9ZYLA@mail.gmail.com>
+	<52808D53.7080904@hitachi.com>
+	<5280B6C8.7050807@hitachi.com>
+	<20131111105812.GC28302@mudshark.cambridge.arm.com>
+	<528114C4.5000506@hitachi.com>
+	<CA+b37P08cLAvBYAXSkozLPzrpuXn=N0SUetwL6N8JL+10AtYjQ@mail.gmail.com>
+	<5281D848.7000502@hitachi.com>
+	<CA+b37P2EgB0toYwhLny8k-cbrziBVXURST5kHNXcY7AF-CNVLg@mail.gmail.com>
+	<52820043.6090107@hitachi.com>
+	<CA+b37P1xLYWA-a0PwgxT7S7dNr5TdGFscLYFeQhAQUyO_E=Mzw@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RAPL PMU counters do not interrupt on overflow.
-Therefore, the kernel needs to poll the counters
-to avoid missing an overflow. This patch adds
-the hrtimer code to do this.
+On Tue, 12 Nov 2013 16:25:26 +0530
+Sandeepa Prabhu <sandeepa.prabhu@linaro.org> wrote:
 
-The timer interval is calculated at boot time
-based on the power unit used by the HW.
 
-There is one hrtimer per-cpu to handle the case
-of multiple simultaneous use across cores on
-the same package + hotplug CPU.
+> >
+> > BTW, I'm currently trying a general housecleaning of __kprobes
+> > annotations. It may also have impact on your patch.
+> > https://lkml.org/lkml/2013/11/8/187
+> Hmm, we can help testing your patchset on arm64 platforms. Also have
+> many doubts on the changes you are working [blacklisting probes etc]
+> 
+> Basically I had tried placing kprobe on memcpy() and the model hung
+> (insmod never returned back!). Fast-model I have does not have option
+> of any debug so no clue what happened!.
+> memcpy() is low-level call being used internally within kprobes, so
+> probably we cannot handle probe on that routine, but then how to make
+> sure all such API are rejected by kprobe sub-system ?
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- arch/x86/kernel/cpu/perf_event_intel_rapl.c |   74 ++++++++++++++++++++++++++-
- 1 file changed, 72 insertions(+), 2 deletions(-)
+Working on ports of ftrace, I found that many of the functions in lib/
+are used by several locations that just can't be traced, due to how
+low level they are. I just simply blacklisted the entire lib/
+directory (See the top of lib/Makefile)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-index cfcd386..a6f16ca 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-@@ -96,6 +96,8 @@ struct rapl_pmu {
- 	int		 n_active; /* number of active events */
- 	struct list_head active_list;
- 	struct pmu	 *pmu; /* pointer to rapl_pmu_class */
-+	ktime_t		 timer_interval; /* in ktime_t unit */
-+	struct hrtimer   hrtimer;
- };
- 
- static struct pmu rapl_pmu_class;
-@@ -158,6 +160,48 @@ static u64 rapl_event_update(struct perf_event *event)
- 	return new_raw_count;
- }
- 
-+static void rapl_start_hrtimer(struct rapl_pmu *pmu)
-+{
-+	__hrtimer_start_range_ns(&pmu->hrtimer,
-+			pmu->timer_interval, 0,
-+			HRTIMER_MODE_REL_PINNED, 0);
-+}
-+
-+static void rapl_stop_hrtimer(struct rapl_pmu *pmu)
-+{
-+	hrtimer_cancel(&pmu->hrtimer);
-+}
-+
-+static enum hrtimer_restart rapl_hrtimer_handle(struct hrtimer *hrtimer)
-+{
-+	struct rapl_pmu *pmu = __get_cpu_var(rapl_pmu);
-+	struct perf_event *event;
-+	unsigned long flags;
-+
-+	if (!pmu->n_active)
-+		return HRTIMER_NORESTART;
-+
-+	spin_lock_irqsave(&pmu->lock, flags);
-+
-+	list_for_each_entry(event, &pmu->active_list, active_entry) {
-+		rapl_event_update(event);
-+	}
-+
-+	spin_unlock_irqrestore(&pmu->lock, flags);
-+
-+	hrtimer_forward_now(hrtimer, pmu->timer_interval);
-+
-+	return HRTIMER_RESTART;
-+}
-+
-+static void rapl_hrtimer_init(struct rapl_pmu *pmu)
-+{
-+	struct hrtimer *hr = &pmu->hrtimer;
-+
-+	hrtimer_init(hr, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	hr->function = rapl_hrtimer_handle;
-+}
-+
- static void __rapl_pmu_event_start(struct rapl_pmu *pmu,
- 				   struct perf_event *event)
- {
-@@ -171,6 +215,8 @@ static void __rapl_pmu_event_start(struct rapl_pmu *pmu,
- 	local64_set(&event->hw.prev_count, rapl_read_counter(event));
- 
- 	pmu->n_active++;
-+	if (pmu->n_active == 1)
-+		rapl_start_hrtimer(pmu);
- }
- 
- static void rapl_pmu_event_start(struct perf_event *event, int mode)
-@@ -195,6 +241,8 @@ static void rapl_pmu_event_stop(struct perf_event *event, int mode)
- 	if (!(hwc->state & PERF_HES_STOPPED)) {
- 		WARN_ON_ONCE(pmu->n_active <= 0);
- 		pmu->n_active--;
-+		if (pmu->n_active == 0)
-+			rapl_stop_hrtimer(pmu);
- 
- 		list_del(&event->active_entry);
- 
-@@ -423,6 +471,9 @@ static void rapl_cpu_exit(int cpu)
- 	 */
- 	if (target >= 0)
- 		perf_pmu_migrate_context(pmu->pmu, cpu, target);
-+
-+	/* cancel overflow polling timer for CPU */
-+	rapl_stop_hrtimer(pmu);
- }
- 
- static void rapl_cpu_init(int cpu)
-@@ -442,6 +493,7 @@ static int rapl_cpu_prepare(int cpu)
- {
- 	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
- 	int phys_id = topology_physical_package_id(cpu);
-+	u64 ms;
- 
- 	if (pmu)
- 		return 0;
-@@ -466,6 +518,22 @@ static int rapl_cpu_prepare(int cpu)
- 	pmu->hw_unit = (pmu->hw_unit >> 8) & 0x1FULL;
- 	pmu->pmu = &rapl_pmu_class;
- 
-+	/*
-+	 * use reference of 200W for scaling the timeout
-+	 * to avoid missing counter overflows.
-+	 * 200W = 200 Joules/sec
-+	 * divide interval by 2 to avoid lockstep (2 * 100)
-+	 * if hw unit is 32, then we use 2 ms 1/200/2
-+	 */
-+	if (pmu->hw_unit < 32)
-+		ms = 1000 * (1ULL << (32 - pmu->hw_unit - 1)) / (2 * 100);
-+	else
-+		ms = 2;
-+
-+	pmu->timer_interval = ms_to_ktime(ms);
-+
-+	rapl_hrtimer_init(pmu);
-+
- 	/* set RAPL pmu for this cpu for now */
- 	per_cpu(rapl_pmu, cpu) = pmu;
- 	per_cpu(rapl_pmu_to_free, cpu) = NULL;
-@@ -580,9 +648,11 @@ static int __init rapl_pmu_init(void)
- 
- 	pr_info("RAPL PMU detected, hw unit 2^-%d Joules,"
- 		" API unit is 2^-32 Joules,"
--		" %d fixed counters\n",
-+		" %d fixed counters"
-+		" %llu ms ovfl timer\n",
- 		pmu->hw_unit,
--		hweight32(rapl_cntr_mask));
-+		hweight32(rapl_cntr_mask),
-+		ktime_to_ms(pmu->timer_interval));
- 
- 	put_online_cpus();
- 
--- 
-1.7.9.5
+I wonder if there's an easy way to blacklist entire directories from
+being used by kprobes too. Or at least do it by a file per file basis.
 
+-- Steve
