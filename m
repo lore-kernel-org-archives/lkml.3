@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869Ab3KLPT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:19:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33772 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab3KLPTz (ORCPT
+	id S1755902Ab3KLPUQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:20:16 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:44573 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab3KLPUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:19:55 -0500
-Date: Tue, 12 Nov 2013 16:19:44 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, jolsa@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
-Message-ID: <20131112151944.GX5056@laptop.programming.kicks-ass.net>
-References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
- <1384267617-3446-5-git-send-email-dsahern@gmail.com>
- <20131112145707.GV5056@laptop.programming.kicks-ass.net>
- <20131112150751.GA19321@ghostprotocols.net>
+	Tue, 12 Nov 2013 10:20:12 -0500
+Date: Tue, 12 Nov 2013 10:20:10 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: =?ISO-8859-15?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+cc: Ben Dooks <ben.dooks@codethink.co.uk>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Christopher Covington <cov@codeaurora.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] ARM: Use udiv/sdiv for __aeabi_{u}idiv library
+ functions
+In-Reply-To: <alpine.LFD.2.10.1311120948000.9667@knanqh.ubzr>
+Message-ID: <alpine.LFD.2.10.1311121014530.9667@knanqh.ubzr>
+References: <1383951632-6090-1-git-send-email-sboyd@codeaurora.org> <alpine.LFD.2.10.1311092357090.2314@knanqh.ubzr> <528193A0.7050505@codeaurora.org> <alpine.LFD.2.10.1311120839310.9667@knanqh.ubzr> <20131112140436.GK16735@n2100.arm.linux.org.uk>
+ <52823877.60806@codethink.co.uk> <alpine.LFD.2.10.1311120924330.9667@knanqh.ubzr> <yw1x8uwtvg3i.fsf@unicorn.mansr.com> <alpine.LFD.2.10.1311120948000.9667@knanqh.ubzr>
+User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131112150751.GA19321@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1089545557-1384269611=:9667"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 12:07:51PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Nov 12, 2013 at 03:57:07PM +0100, Peter Zijlstra escreveu:
-> > On Tue, Nov 12, 2013 at 07:46:56AM -0700, David Ahern wrote:
-> > > When recording raw_syscalls for the entire system, e.g.,
-> > >     perf record -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
-> > > 
-> > > you end up with a negative feedback loop as perf itself calls write() fairly
-> > > often. This patch handles the problem by mmap'ing the file in chunks of 64M at
-> > > a time and copies events from the event buffers to the file avoiding write
-> > > system calls.
-> > 
-> > You know this completely fails the moment you trace faults, because
-> > every new access to one of those pages (to mark it dirty) will trigger a
-> > fault. And we'll take a bunch more faults -- one for each page -- than
-> > we ever did write() syscalls.
-> 
-> So we should provide a neon lettered warning when doing that, no? :-)
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Dunno.. it _should_ all work. Try it and see what it does.. Once the
-events are bigger than a page things might get 'interesting' though.
+--8323328-1089545557-1384269611=:9667
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Tue, 12 Nov 2013, Nicolas Pitre wrote:
+
+> On Tue, 12 Nov 2013, Måns Rullgård wrote:
+> 
+> > It might be possible to extract this information from relocation tables.
+> 
+> True, but only for individual .o files.  Once the linker puts them 
+> together the information is lost, and trying to infer what the linker 
+> has done is insane.
+> 
+> Filtering the compiler output to annotate idiv calls before it is 
+> assembled would probably be a better solution.
+
+Another solution is to patch the call site from within __aeabi_idiv at 
+run time using lr.  That wouldn't work in the presence of tail call 
+optimization though.
+
+Again this might not be worth it and patching __aeabi_idiv instead might 
+be a good enough compromize.
+
+
+Nicolas
+--8323328-1089545557-1384269611=:9667--
