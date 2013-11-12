@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab3KLTw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:52:28 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:63510 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756724Ab3KLTwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:52:21 -0500
+	id S1757427Ab3KLTw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:52:57 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55682 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757310Ab3KLTvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 14:51:24 -0500
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>
+CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: [PATCHv5 20/20] MAINTAINERS: add maintainer entry for thermal bindings
+Date: Tue, 12 Nov 2013 15:46:22 -0400
+Message-ID: <1384285582-16933-21-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+In-Reply-To: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
+References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <528286C2.70908@nod.at>
-References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
-	<1384285347-13506-18-git-send-email-geert@linux-m68k.org>
-	<528286C2.70908@nod.at>
-Date: Tue, 12 Nov 2013 20:52:20 +0100
-X-Google-Sender-Auth: YrV955kRCW3yneGW5s0emAM2STY
-Message-ID: <CAMuHMdWfvFt0PBxEzNXF1zRQ1Xed10yz4E44FNMhovOy-uu9Eg@mail.gmail.com>
-Subject: Re: [PATCH 17/17] um: Remove unused declarations from <as-layout.h>
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+After discussion and agreement of thermal device tree bindings,
+it is desirable to properly maintain thermal bindings for
+existing and upcoming devices.
 
-On Tue, Nov 12, 2013 at 8:51 PM, Richard Weinberger <richard@nod.at> wrote:
-> Am 12.11.2013 20:42, schrieb Geert Uytterhoeven:
->> _end is used, but it's already provided by <asm/sections.h>, so use that.
->>
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> Cc: Richard Weinberger <richard@nod.at>
->> Cc: user-mode-linux-devel@lists.sourceforge.net
->
-> Geert, do you want me to pickup this patch or takes Andrew the whole series?
->
-> Acked-by: Richard Weinberger <richard@nod.at>
+As original author of thermal device tree bindings, I am
+volunteering to maintain them.
 
-Feel free to pick it up. Less work for (overworked?) Andrew.
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+---
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
 
-Gr{oetje,eeting}s,
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3438384..94bfc46 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6178,6 +6178,7 @@ M:	Pawel Moll <pawel.moll@arm.com>
+ M:	Mark Rutland <mark.rutland@arm.com>
+ M:	Stephen Warren <swarren@wwwdotorg.org>
+ M:	Ian Campbell <ijc+devicetree@hellion.org.uk>
++M:	Eduardo Valentin <eduardo.valentin@ti.com>
+ L:	devicetree@vger.kernel.org
+ S:	Maintained
+ F:	Documentation/devicetree/
+-- 
+1.8.2.1.342.gfa7285d
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
