@@ -1,121 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab3KLQUe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 11:20:34 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37751 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932123Ab3KLQUc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 11:20:32 -0500
-Message-ID: <5282552B.4000801@ti.com>
-Date: Tue, 12 Nov 2013 11:19:55 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932179Ab3KLQUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 11:20:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64291 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932123Ab3KLQUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 11:20:51 -0500
+Date: Tue, 12 Nov 2013 17:21:36 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipvs: Remove unused variable ret from
+	sync_thread_master()
+Message-ID: <20131112162136.GA29065@redhat.com>
+References: <1384264396-14550-1-git-send-email-geert@linux-m68k.org> <20131112141314.GQ5056@laptop.programming.kicks-ass.net> <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com> <20131112145243.GU5056@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>
-CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>
-Subject: Re: [PATCH 12/12] arm: dts: keystone: add AEMIF/NAND device entry
-References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>,<1384187188-5776-13-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D71@DNCE04.ent.ti.com>
-In-Reply-To: <4F5844B3A985794BA902E12C070812375F8D71@DNCE04.ent.ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112145243.GU5056@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 November 2013 12:13 PM, Khoronzhuk, Ivan wrote:
-> Add AEMIF/NAND device entry.
-> 
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> ---
->  arch/arm/boot/dts/keystone.dts |   63 ++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 63 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/keystone.dts b/arch/arm/boot/dts/keystone.dts
-> index 100bdf5..998da98 100644
-> --- a/arch/arm/boot/dts/keystone.dts
-> +++ b/arch/arm/boot/dts/keystone.dts
-> @@ -179,5 +179,68 @@
->                         interrupts = <GIC_SPI 300 IRQ_TYPE_EDGE_RISING>;
->                         clocks = <&clkspi>;
->                 };
-> +
-> +               aemif@021000A00 {
-> +                       compatible = "ti,keystone-aemif";
-> +                       #address-cells = <2>;
-> +                       #size-cells = <1>;
-> +                       clocks = <&clkaemif>;
-> +                       clock-names = "aemif";
-> +                       clock-ranges;
-> +
-> +                       reg = <0x2100A00 0x00000100>;
-> +                       ranges = <0 0 0x30000000 0x10000000
-> +                                 1 0 0x21000A00 0x00000100>;
-> +
-> +                       nand:cs0 {
-> +                               compatible = "ti,davinci-cs";
-> +                               #address-cells = <2>;
-> +                               #size-cells = <1>;
-> +                               clock-ranges;
-> +                               ranges;
-> +
-> +                               /* all timings in nanoseconds */
-> +                               ti,davinci-cs-ta = <12>;
-> +                               ti,davinci-cs-rhold = <6>;
-> +                               ti,davinci-cs-rstrobe = <23>;
-> +                               ti,davinci-cs-rsetup = <9>;
-> +                               ti,davinci-cs-whold = <8>;
-> +                               ti,davinci-cs-wstrobe = <23>;
-> +                               ti,davinci-cs-wsetup = <8>;
-> +
-> +                               nand@0,0 {
-> +                                       compatible = "ti,keystone-nand";
-> +                                       #address-cells = <1>;
-> +                                       #size-cells = <1>;
-> +                                       reg = <0 0 0x4000000
-> +                                              1 0 0x0000100>;
-> +
-> +                                       ti,davinci-chipselect = <0>;
-> +                                       ti,davinci-mask-ale = <0x2000>;
-> +                                       ti,davinci-mask-cle = <0x4000>;
-> +                                       ti,davinci-mask-chipsel = <0>;
-> +                                       nand-ecc-mode = "hw";
-> +                                       ti,davinci-ecc-bits = <4>;
-> +                                       nand-on-flash-bbt;
-> +
-> +                                       partition@0 {
-> +                                               label = "u-boot";
-> +                                               reg = <0x0 0x100000>;
-> +                                               read-only;
-> +                                       };
-> +
-> +                                       partition@100000 {
-> +                                               label = "params";
-> +                                               reg = <0x100000 0x80000>;
-> +                                               read-only;
-> +                                       };
-> +
-> +                                       partition@180000 {
-> +                                               label = "ubifs";
-> +                                               reg = <0x180000 0x7E80000>;
-> +                                       };
-Lets create now board specific k2hk-evm.dts and rename keystone.dts
-to keystone.dtsi and include that in boards. That way you can add the
-board specific stuff in board files and common soc stuff in keystone.dtsi.
+On 11/12, Peter Zijlstra wrote:
+>
+> On Tue, Nov 12, 2013 at 02:21:39PM -0000, David Laight wrote:
+> > Shame there isn't a process flag to indicate that the process
+> > will sleep uninterruptibly and that it doesn't matter.
+> > So don't count to the load average and don't emit a warning
+> > if it has been sleeping for a long time.
+>
+> A process flag wouldn't work, because the task could block waiting for
+> actual work to complete in other sleeps.
+>
+> However, we could do something like the below; which would allow us
+> writing things like:
+>
+> 	(void)___wait_event(*sk_sleep(sk),
+> 			    sock_writeable(sk) || kthread_should_stop(),
+> 			    TASK_UNINTERRUPTIBLE | TASK_IDLE, 0, 0,
+> 			    schedule());
+>
+> Marking the one wait-for-more-work as TASK_IDLE such that it doesn't
+> contribute to the load avg.
 
-You can update that once the bindings are blessed by DT folks.
+Agreed, I thought about additional bit too.
 
-Regards,
-Santosh
+>  static const char * const task_state_array[] = {
+> -	"R (running)",		/*   0 */
+> -	"S (sleeping)",		/*   1 */
+> -	"D (disk sleep)",	/*   2 */
+> -	"T (stopped)",		/*   4 */
+> -	"t (tracing stop)",	/*   8 */
+> -	"Z (zombie)",		/*  16 */
+> -	"X (dead)",		/*  32 */
+> -	"x (dead)",		/*  64 */
+> -	"K (wakekill)",		/* 128 */
+> -	"W (waking)",		/* 256 */
+> -	"P (parked)",		/* 512 */
+> +	"R (running)",		/*    0 */
+> +	"S (sleeping)",		/*    1 */
+> +	"D (disk sleep)",	/*    2 */
+> +	"T (stopped)",		/*    4 */
+> +	"t (tracing stop)",	/*    8 */
+> +	"Z (zombie)",		/*   16 */
+> +	"X (dead)",		/*   32 */
+> +	"x (dead)",		/*   64 */
+> +	"K (wakekill)",		/*  128 */
+> +	"W (waking)",		/*  256 */
+> +	"P (parked)",		/*  512 */
+> +	"I (idle)",		/* 1024 */
+>  };
+
+but I am not sure about what /proc/ should report in this case...
+
+>  #define task_contributes_to_load(task)	\
+>  				((task->state & TASK_UNINTERRUPTIBLE) != 0 && \
+> -				 (task->flags & PF_FROZEN) == 0)
+> +				 (task->flags & PF_FROZEN) == 0 && \
+> +				 (task->state & TASK_IDLE) == 0)
+
+perhaps
+
+	(task->state & (TASK_UNINTERRUPTIBLE | TASK_IDLE)) == TASK_UNINTERRUPTIBLE
+
+can save an insn.
+
+I am also wondering if it makes any sense to turn PF_FROZEN into
+TASK_FROZEN, something like (incomplete, probably racy) patch below.
+Note that it actually adds the new state, not the the qualifier.
+
+Oleg.
+
+--- x/include/linux/freezer.h
++++ x/include/linux/freezer.h
+@@ -23,7 +23,7 @@ extern unsigned int freeze_timeout_msecs
+  */
+ static inline bool frozen(struct task_struct *p)
+ {
+-	return p->flags & PF_FROZEN;
++	return p->state & TASK_FROZEN;
+ }
+ 
+ extern bool freezing_slow_path(struct task_struct *p);
+--- x/kernel/freezer.c
++++ x/kernel/freezer.c
+@@ -57,16 +57,13 @@ bool __refrigerator(bool check_kthr_stop
+ 	pr_debug("%s entered refrigerator\n", current->comm);
+ 
+ 	for (;;) {
+-		set_current_state(TASK_UNINTERRUPTIBLE);
+-
+ 		spin_lock_irq(&freezer_lock);
+-		current->flags |= PF_FROZEN;
+-		if (!freezing(current) ||
+-		    (check_kthr_stop && kthread_should_stop()))
+-			current->flags &= ~PF_FROZEN;
++		if (freezing(current) &&
++		    !(check_kthr_stop && kthread_should_stop()))
++			set_current_state(TASK_FROZEN);
+ 		spin_unlock_irq(&freezer_lock);
+ 
+-		if (!(current->flags & PF_FROZEN))
++		if (!(current->state & TASK_FROZEN))
+ 			break;
+ 		was_frozen = true;
+ 		schedule();
+@@ -148,8 +145,7 @@ void __thaw_task(struct task_struct *p)
+ 	 * refrigerator.
+ 	 */
+ 	spin_lock_irqsave(&freezer_lock, flags);
+-	if (frozen(p))
+-		wake_up_process(p);
++	try_to_wake_up(p, TASK_FROZEN, 0);
+ 	spin_unlock_irqrestore(&freezer_lock, flags);
+ }
+ 
 
