@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab3KLHTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 02:19:05 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:21244 "EHLO
+	id S1756343Ab3KLHTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 02:19:11 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:21246 "EHLO
 	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab3KLHPP (ORCPT
+	with ESMTP id S1754678Ab3KLHPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Nov 2013 02:15:15 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
@@ -13,11 +13,10 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Kay Sievers <kay@vrfy.org>
-Subject: [PATCH v7 11/21] scripts/gdb: Add lx-dmesg command
-Date: Tue, 12 Nov 2013 08:14:29 +0100
-Message-Id: <158947dc257ca878b17cb36109f34753a6a54244.1384240478.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
+Subject: [PATCH v7 08/21] scripts/gdb: Add internal helper and convenience function to look up a module
+Date: Tue, 12 Nov 2013 08:14:26 +0100
+Message-Id: <37b0912dabd0dc7e7d4d4dd33be24e9024f03468.1384240478.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1384240478.git.jan.kiszka@siemens.com>
 References: <cover.1384240478.git.jan.kiszka@siemens.com>
@@ -27,97 +26,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This pokes into the log buffer of the debugged kernel, dumping it to the
-gdb console. Helping in case the target should or can no longer execute
-dmesg itself.
+Add the internal helper get_module_by_name to obtain the module
+structure corresponding to the given name. Also export this service as a
+convenience function.
 
-CC: Kay Sievers <kay@vrfy.org>
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/dmesg.py | 64 ++++++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py |  1 +
- 2 files changed, 65 insertions(+)
- create mode 100644 scripts/gdb/linux/dmesg.py
+ scripts/gdb/linux/modules.py | 28 ++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py   |  1 +
+ 2 files changed, 29 insertions(+)
 
-diff --git a/scripts/gdb/linux/dmesg.py b/scripts/gdb/linux/dmesg.py
-new file mode 100644
-index 0000000..7650f24
---- /dev/null
-+++ b/scripts/gdb/linux/dmesg.py
-@@ -0,0 +1,64 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  kernel log buffer dump
-+#
-+# Copyright (c) Siemens AG, 2011, 2012
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
-+import string
-+
-+from linux import utils
+diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
+index 8a65c3d..531f763 100644
+--- a/scripts/gdb/linux/modules.py
++++ b/scripts/gdb/linux/modules.py
+@@ -37,3 +37,31 @@ class ModuleList:
+             return utils.container_of(entry, self.module_ptr_type, "list")
+         else:
+             raise StopIteration
 +
 +
-+class LxDmesg(gdb.Command):
-+    """Print Linux kernel log buffer."""
++def find_module_by_name(name):
++    for module in ModuleList():
++        if module['name'].string() == name:
++            return module
++    return None
++
++
++class LxModule(gdb.Function):
++    """Find module by name and return the module variable.
++
++$lx_module("MODULE"): Given the name MODULE, iterate over all loaded modules
++of the target and return that module variable which MODULE matches."""
 +
 +    def __init__(self):
-+        super(LxDmesg, self).__init__("lx-dmesg", gdb.COMMAND_DATA)
++        super(LxModule, self).__init__("lx_module")
 +
-+    def invoke(self, arg, from_tty):
-+        log_buf_addr = int(str(gdb.parse_and_eval("log_buf")).split()[0], 16)
-+        log_first_idx = int(gdb.parse_and_eval("log_first_idx"))
-+        log_next_idx = int(gdb.parse_and_eval("log_next_idx"))
-+        log_buf_len = int(gdb.parse_and_eval("log_buf_len"))
-+
-+        inf = gdb.inferiors()[0]
-+        start = log_buf_addr + log_first_idx
-+        if log_first_idx < log_next_idx:
-+            log_buf_2nd_half = -1
-+            length = log_next_idx - log_first_idx
-+            log_buf = inf.read_memory(start, length)
++    def invoke(self, mod_name):
++        mod_name = mod_name.string()
++        module = find_module_by_name(mod_name)
++        if module:
++            return module.dereference()
 +        else:
-+            log_buf_2nd_half = log_buf_len - log_first_idx
-+            log_buf = inf.read_memory(start, log_buf_2nd_half) + \
-+                inf.read_memory(log_buf_addr, log_next_idx)
-+
-+        pos = 0
-+        while pos < log_buf.__len__():
-+            length = utils.read_u16(log_buf[pos + 8:pos + 10])
-+            if length == 0:
-+                if log_buf_2nd_half == -1:
-+                    gdb.write("Corrupted log buffer!\n")
-+                    break
-+                pos = log_buf_2nd_half
-+                continue
-+
-+            text_len = utils.read_u16(log_buf[pos + 10:pos + 12])
-+            time_stamp = utils.read_u64(log_buf[pos:pos + 8])
-+
-+            for line in log_buf[pos + 16:pos + 16 + text_len].splitlines():
-+                gdb.write("[{time:12.6f}] {line}\n".format(
-+                    time=time_stamp / 1000000000.0,
-+                    line=line))
-+
-+            pos += length
++            raise gdb.GdbError("Unable to find MODULE " + mod_name)
 +
 +
-+LxDmesg()
++LxModule()
 diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index cf2e716..fa66d23 100644
+index 0b0faa4..cf2e716 100644
 --- a/scripts/gdb/vmlinux-gdb.py
 +++ b/scripts/gdb/vmlinux-gdb.py
-@@ -25,3 +25,4 @@ else:
+@@ -24,3 +24,4 @@ except:
+ else:
      import linux.utils
      import linux.symbols
-     import linux.modules
-+    import linux.dmesg
++    import linux.modules
 -- 
 1.8.1.1.298.ge7eed54
 
