@@ -1,80 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab3KLHGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 02:06:15 -0500
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:19807
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755515Ab3KLHF6 (ORCPT
+	id S1755745Ab3KLHJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 02:09:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57190 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754882Ab3KLHJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 02:05:58 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh1155h)
-Message-ID: <5281D347.3020903@freescale.com>
-Date: Tue, 12 Nov 2013 15:05:43 +0800
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 12 Nov 2013 02:09:50 -0500
+Date: Mon, 11 Nov 2013 23:09:35 -0800
+From: tip-bot for Kees Cook <tipbot@zytor.com>
+Message-ID: <tip-a653f3563c51c7bb7de63d607bef09d3baddaeb8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        keescook@chromium.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, tglx@linutronix.de
+In-Reply-To: <20131111222839.GA28616@www.outflux.net>
+References: <20131111222839.GA28616@www.outflux.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/kaslr] x86, kaslr:
+  Mix entropy sources together as needed
+Git-Commit-ID: a653f3563c51c7bb7de63d607bef09d3baddaeb8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Dan Williams <dan.j.williams@intel.com>
-CC: "Koul, Vinod" <vinod.koul@intel.com>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
-        <devicetree@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>
-Subject: Re: [PATCH v11 3/3] DMA: Freescale: update driver to support 8-channel
- DMA engine
-References: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com> <1380188023-3936-4-git-send-email-hongbo.zhang@freescale.com> <525F7C18.3010409@freescale.com> <5278587F.7090500@freescale.com> <CAA9_cme3c7SjH3iio0oR3FHpfoMzgrBDO-2k_Yf68G-AgFNqfA@mail.gmail.com> <52809F67.20901@freescale.com> <CAPcyv4h00zGc2=ZLwnCpP3WTQ8JbFteV-torU+qCo98YXrfq5A@mail.gmail.com>
-In-Reply-To: <CAPcyv4h00zGc2=ZLwnCpP3WTQ8JbFteV-torU+qCo98YXrfq5A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 11 Nov 2013 23:09:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2013 08:09 AM, Dan Williams wrote:
-> On Mon, Nov 11, 2013 at 1:12 AM, Hongbo Zhang
-> <hongbo.zhang@freescale.com> wrote:
->>>>>> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
->>>>>> index 49e8fbd..16a9a48 100644
->>>>>> --- a/drivers/dma/fsldma.c
->>>>>> +++ b/drivers/dma/fsldma.c
->>>>>> @@ -1261,7 +1261,9 @@ static int fsl_dma_chan_probe(struct
->>>>>> fsldma_device
->>>>>> *fdev,
->>>>>>         WARN_ON(fdev->feature != chan->feature);
->>>>>>           chan->dev = fdev->dev;
->>>>>> -    chan->id = ((res.start - 0x100) & 0xfff) >> 7;
->>>>>> +    chan->id = (res.start & 0xfff) < 0x300 ?
->>>>>> +           ((res.start - 0x100) & 0xfff) >> 7 :
->>>>>> +           ((res.start - 0x200) & 0xfff) >> 7;
->>>>>>         if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
->>> Isn't it a bit fragile to have this based on the resource address?
->>> Can't device tree tell you the channel id directly by an index into
->>> the "dma0: dma@100300" node?
->>
->> Yes, both this way and putting a "cell-index" into device tree work.
->> This won't be fragile, because the resource address should always be defined
->> correctly, otherwise even if we can tell a channel id by "cell-index" but
->> with wrong resource address, nothing will work.
->> This piece of code only doesn't seem as neat as using "cell-index", but we
->> prefer the style that let the device tree describes as true as what hardware
->> really has. This doesn't mean "cell-index" isn't acceptable, if it is
->> necessary and unavoidable, we can send another patch to add it, but
->> currently there is no need and we don't have to do this.
->>
-> I'm pointing it out because we just had a bug fix to another driver
-> motivated by the fact that resource addresses may move from one
-> implementation to another, whereas the cell index provided by device
-> tree is static.  Just a note, no need to fix it now.
+Commit-ID:  a653f3563c51c7bb7de63d607bef09d3baddaeb8
+Gitweb:     http://git.kernel.org/tip/a653f3563c51c7bb7de63d607bef09d3baddaeb8
+Author:     Kees Cook <keescook@chromium.org>
+AuthorDate: Mon, 11 Nov 2013 14:28:39 -0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Mon, 11 Nov 2013 22:29:44 -0800
 
-Get it, and will remember it, thank you Dan.
-> --
-> Dan
->
+x86, kaslr: Mix entropy sources together as needed
 
+Depending on availability, mix the RDRAND and RDTSC entropy together with
+XOR. Only when neither is available should the i8254 be used. Update
+the Kconfig documentation to reflect this. Additionally, since bits
+used for entropy is masked elsewhere, drop the needless masking in
+the get_random_long(). Similarly, use the entire TSC, not just the low
+32 bits.
 
+Finally, to improve the starting entropy, do a simple hashing of a
+build-time versions string and the boot-time boot_params structure for
+some additional level of unpredictability.
 
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: http://lkml.kernel.org/r/20131111222839.GA28616@www.outflux.net
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/Kconfig                | 14 +++++---
+ arch/x86/boot/compressed/aslr.c | 73 +++++++++++++++++++++++++++++++----------
+ 2 files changed, 65 insertions(+), 22 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 51f4399..596cd9e 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1735,13 +1735,17 @@ config RANDOMIZE_BASE
+ 	   deters exploit attempts relying on knowledge of the location
+ 	   of kernel internals.
+ 
+-	   Entropy is generated using the RDRAND instruction if it
+-	   is supported.  If not, then RDTSC is used, if supported. If
+-	   neither RDRAND nor RDTSC are supported, then no randomness
+-	   is introduced.
++	   Entropy is generated using the RDRAND instruction if it is
++	   supported. If RDTSC is supported, it is used as well. If
++	   neither RDRAND nor RDTSC are supported, then randomness is
++	   read from the i8254 timer.
+ 
+ 	   The kernel will be offset by up to RANDOMIZE_BASE_MAX_OFFSET,
+-	   and aligned according to PHYSICAL_ALIGN.
++	   and aligned according to PHYSICAL_ALIGN. Since the kernel is
++	   built using 2GiB addressing, and PHYSICAL_ALGIN must be at a
++	   minimum of 2MiB, only 10 bits of entropy is theoretically
++	   possible. At best, due to page table layouts, 64-bit can use
++	   9 bits of entropy and 32-bit uses 8 bits.
+ 
+ config RANDOMIZE_BASE_MAX_OFFSET
+ 	hex "Maximum ASLR offset allowed"
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index 0595798..8746487 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -5,6 +5,17 @@
+ #include <asm/archrandom.h>
+ #include <asm/e820.h>
+ 
++#include <generated/compile.h>
++#include <linux/module.h>
++#include <linux/uts.h>
++#include <linux/utsname.h>
++#include <generated/utsrelease.h>
++#include <linux/version.h>
++
++/* Simplified build-specific string for starting entropy. */
++static const char *build_str = UTS_RELEASE " (" LINUX_COMPILE_BY "@"
++		LINUX_COMPILE_HOST ") (" LINUX_COMPILER ") " UTS_VERSION;
++
+ #define I8254_PORT_CONTROL	0x43
+ #define I8254_PORT_COUNTER0	0x40
+ #define I8254_CMD_READBACK	0xC0
+@@ -25,34 +36,62 @@ static inline u16 i8254(void)
+ 	return timer;
+ }
+ 
++static unsigned long rotate_xor(unsigned long hash, const void *area,
++				size_t size)
++{
++	size_t i;
++	unsigned long *ptr = (unsigned long *)area;
++
++	for (i = 0; i < size / sizeof(hash); i++) {
++		/* Rotate by odd number of bits and XOR. */
++		hash = (hash << ((sizeof(hash) * 8) - 7)) | (hash >> 7);
++		hash ^= ptr[i];
++	}
++
++	return hash;
++}
++
++/* Attempt to create a simple but unpredictable starting entropy. */
++static unsigned long get_random_boot(void)
++{
++	unsigned long hash = 0;
++
++	hash = rotate_xor(hash, build_str, sizeof(build_str));
++	hash = rotate_xor(hash, real_mode, sizeof(*real_mode));
++
++	return hash;
++}
++
+ static unsigned long get_random_long(void)
+ {
+-	unsigned long random;
++	unsigned long raw, random = get_random_boot();
++	bool use_i8254 = true;
++
++	debug_putstr("KASLR using");
+ 
+ 	if (has_cpuflag(X86_FEATURE_RDRAND)) {
+-		debug_putstr("KASLR using RDRAND...\n");
+-		if (rdrand_long(&random))
+-			return random;
++		debug_putstr(" RDRAND");
++		if (rdrand_long(&raw)) {
++			random ^= raw;
++			use_i8254 = false;
++		}
+ 	}
+ 
+ 	if (has_cpuflag(X86_FEATURE_TSC)) {
+-		uint32_t raw;
++		debug_putstr(" RDTSC");
++		rdtscll(raw);
+ 
+-		debug_putstr("KASLR using RDTSC...\n");
+-		rdtscl(raw);
++		random ^= raw;
++		use_i8254 = false;
++	}
+ 
+-		/* Only use the low bits of rdtsc. */
+-		random = raw & 0xffff;
+-	} else {
+-		debug_putstr("KASLR using i8254...\n");
+-		random = i8254();
++	if (use_i8254) {
++		debug_putstr(" i8254");
++		random ^= i8254();
+ 	}
+ 
+-	/* Extend timer bits poorly... */
+-	random |= (random << 16);
+-#ifdef CONFIG_X86_64
+-	random |= (random << 32);
+-#endif
++	debug_putstr("...\n");
++
+ 	return random;
+ }
+ 
