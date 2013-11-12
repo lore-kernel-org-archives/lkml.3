@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294Ab3KLWVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 17:21:21 -0500
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:43551 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757249Ab3KLWVL (ORCPT
+	id S1756901Ab3KLWjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 17:39:01 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:42851 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab3KLWiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 17:21:11 -0500
-X-AuditID: cbfec37b-b7fa96d00000716e-11-5282a9d5a4d1
-Message-id: <5282A9C8.9050304@samsung.com>
-Date: Tue, 12 Nov 2013 15:20:56 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.0
-MIME-version: 1.0
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: akpm@linux-foundation.org, joro@8bytes.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com, Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH] dma-debug: enhance dma_debug_device_change() to check for
- mapping errors
-References: <1384289478-9899-1-git-send-email-shuah.kh@samsung.com>
- <5282A7D5.7050406@intel.com>
-In-reply-to: <5282A7D5.7050406@intel.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9hP92rK5uCDJ6ssLCYs34Nm8XJZb+Z
-	LTpnb2C3uLxrDpvF158ODqweTw7OY/LYOesuu8fiPS+ZPE7M+M3i8XmTXABrFJdNSmpOZllq
-	kb5dAlfG8Q3fmQpuslZs77zO3sC4j6WLkZNDQsBEYvHVR2wQtpjEhXvrgWwuDiGBZYwSt27O
-	YIFwepkkZv35yAxSJSSwkVFi8f16EJtXQEvi/uUrYJNYBFQlHt39xAhiswmoS3x+vYMdol5O
-	omnJarBeUYEIiaOrn7FC9ApK/Jh8D6xXRMBQYtu1t6wgy5gF2hglnvS1gp0kLBAvsfrCIhaI
-	QUkSh1fuA2vmFNCUWLZyOdhQZgFriZWTtjFC2PISm9e8hTpUWeLP5VNMXYwcQK8pSmxfbTWB
-	UWQWktWzkHTPQtK9gJF5FaNYaXFyQXFSemqFkV5xYm5xaV66XnJ+7iZGSMxU72C8+9XmEKMA
-	B6MSD69FTFOQEGtiWXFl7iFGCQ5mJRFeh1qgEG9KYmVValF+fFFpTmrxIUYmDk6pBsYZpvM7
-	+x8wz7Syt7rxdd61lxY32i5PXmkhE5KW++fxZFeetze8s9ILvkm8VTmXXl+uU/OS9+hXhaM/
-	eyT/SIefPvJxz5yn8cV1EZo70hK4r240yFv42UG60+/FxoWbJ8r94Fez/KhmIcqxQ/ylzPrb
-	hQfkNO+/s+44prI+bS3397qmqw5LfvQpsRRnJBpqMRcVJwIA5AVT1ncCAAA=
+	Tue, 12 Nov 2013 17:38:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131112210641.GB23241@kroah.com>
+References: <1384281793-4733-1-git-send-email-alexandre.f.demers@gmail.com>
+	<52827E16.1030001@lwfinger.net>
+	<20131112210641.GB23241@kroah.com>
+Date: Tue, 12 Nov 2013 17:38:49 -0500
+Message-ID: <CAPEhTTFRW02A+4cgOB_gQ=Q_VJ9z-NjF_Jyw1rogiqebg5hA=Q@mail.gmail.com>
+Subject: Re: [PATCH] Silence r8712u info and add verbose option v2
+From: Alexandre Demers <alexandre.f.demers@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2013 03:12 PM, Alexander Duyck wrote:
-> I think this might be overdoing the error checking by a bit.  I would
-> much rather have the DMA leaked error be visible than have it buried
-> under messages about the failure to check for DMA errors.  In my mind
-> the DMA buffer leak is much more serious than the failure to check for
-> mapping errors.
+Hi Larry and Greg,
+You are right about the v2 thing and the Signed-off-by. It's the first
+time I submit a patch directly to the kernel list, I didn't go to the
+bottom of the SubmittingPatches, I should have read the whole document
+and not stop in the middle of it. I'll finish reading it and do what
+is expected. Greg, I understand your comment: I would have had the
+answer if I had read the whole document (it's in there, I've just seen
+it).
+
+However, I'll take the opportunity you are offering me, Larry, with
+your last question: I was asking myself the same question about simply
+deleting the statement which seems pretty useless to me. On the other
+hand, should we continue writing patches against r8712u? I'm not aware
+of the conclusion about replacing r8712u by r92su. Was there any
+decision taken on the subject?
+
+Thank you,
+Alexandre D
+
+
+On Tue, Nov 12, 2013 at 4:06 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Tue, Nov 12, 2013 at 01:14:30PM -0600, Larry Finger wrote:
+>> On 11/12/2013 12:43 PM, Alexandre Demers wrote:
+>> > r8712u pollutes dmesg and logs. Silence it and add a verbose option to KConfig if we ever
+>> > really want to hear about it.
+>> >
+>> > v2: keep netdev_info instead of replacing it by a KERN_NOTICE
+>> >
+>> > ---
+>> >   drivers/staging/rtl8712/Kconfig        | 7 +++++++
+>> >   drivers/staging/rtl8712/rtl871x_mlme.c | 7 ++++---
+>> >   2 files changed, 11 insertions(+), 3 deletions(-)
+>>
+>> Do you really want the "v2" to be part of the patch title in the git repos? I
+>> expect not, thus you should put it inside the []. All that stuff is stripped off
+>> when the patch is merged.
+>>
+>> Similarly, do you want the v2 line in the patch description to be part of the
+>> permanent record? If not, move it below the --- line.
+>>
+>> You are also missing a Signed-off-by: line. Have you read
+>> Documentation/SubmittingPatches? At least you should run every patch through
+>> scripts/checkpatch.pl before submitting it.
+>>
+>> Finally, why do you want to add another Kconfig variable? I suggest either
+>> deleting the logging statement, or commenting it out. I'm not sure that this
+>> info would ever need logging.
 >
-
-I agree DMA leak message is more important. Would you like to see just 
-one message if mapping errors are found? Instead of printing the entire 
-stacktrace like it does now, it could just do warn.
-
--- Shuah
-
-
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+> To be a bit more clear here, we are activly _removing_ driver and
+> subsystem specific DEBUG configuration flags, and moving everything to
+> using the dynamic debug infrastructure in the kernel, as no user ever
+> rebuilds their kernels/drivers, and we want to be able to get debugging
+> information from them at times.
+>
+> thanks,
+>
+> greg k-h
