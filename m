@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200Ab3KLAVB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 19:21:01 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:37898 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552Ab3KLAUw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 19:20:52 -0500
+	id S1754132Ab3KLA01 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 19:26:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59852 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753807Ab3KLA0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 19:26:18 -0500
+Date: Mon, 11 Nov 2013 22:25:59 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v3 01/15] KVM: MMU: properly check last spte in
+ fast_page_fault()
+Message-ID: <20131112002559.GA8251@amt.cnet>
+References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1382534973-13197-2-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 11 Nov 2013 16:20:30 -0800
-Message-ID: <CAK5ve-LOqn9gpxuvZ=Zx9deHGpuwXt=f-jRARe94wqj54k8Ybw@mail.gmail.com>
-Subject: [GIT PULL] leds: updates for 3.13
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382534973-13197-2-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On Wed, Oct 23, 2013 at 09:29:19PM +0800, Xiao Guangrong wrote:
+> Using sp->role.level instead of @level since @level is not got from the
+> page table hierarchy
+> 
+> There is no issue in current code since the fast page fault currently only
+> fixes the fault caused by dirty-log that is always on the last level
+> (level = 1)
+> 
+> This patch makes the code more readable and avoids potential issue in the
+> further development
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 40772ef..d2aacc2 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2798,9 +2798,9 @@ static bool page_fault_can_be_fast(u32 error_code)
+>  }
+>  
+>  static bool
+> -fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, u64 *sptep, u64 spte)
+> +fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+> +			u64 *sptep, u64 spte)
+>  {
+> -	struct kvm_mmu_page *sp = page_header(__pa(sptep));
+>  	gfn_t gfn;
+>  
+>  	WARN_ON(!sp->role.direct);
+> @@ -2826,6 +2826,7 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+>  			    u32 error_code)
+>  {
+>  	struct kvm_shadow_walk_iterator iterator;
+> +	struct kvm_mmu_page *sp;
+>  	bool ret = false;
+>  	u64 spte = 0ull;
+>  
+> @@ -2846,7 +2847,8 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+>  		goto exit;
+>  	}
+>  
+> -	if (!is_last_spte(spte, level))
+> +	sp = page_header(__pa(iterator.sptep));
+> +	if (!is_last_spte(spte, sp->role.level))
+>  		goto exit;
+>  
+>  	/*
+> @@ -2872,7 +2874,7 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+>  	 * the gfn is not stable for indirect shadow page.
+>  	 * See Documentation/virtual/kvm/locking.txt to get more detail.
+>  	 */
+> -	ret = fast_pf_fix_direct_spte(vcpu, iterator.sptep, spte);
+> +	ret = fast_pf_fix_direct_spte(vcpu, sp, iterator.sptep, spte);
+>  exit:
+>  	trace_fast_page_fault(vcpu, gva, error_code, iterator.sptep,
+>  			      spte, ret);
+> -- 
+> 1.8.1.4
 
-LED subsystem updates for 3.13 are basically cleanup and also add a
-new driver for PCA9685.
 
-So please consider the following changes since commit
-31d141e3a666269a3b6fcccddb0351caf7454240:
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
 
-  Linux 3.12-rc6 (2013-10-19 12:28:15 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git for-next
-
-for you to fetch changes up to 30dae2f98612d7c8cd855861b9de205ebd9ef4fa:
-
-  leds: lp55xx: handle enable pin in driver (2013-10-25 10:13:25 -0700)
-
-----------------------------------------------------------------
-Bryan Wu (1):
-      of: introduce of_get_available_child_count
-
-Josh Wu (1):
-      leds-gpio: of: led should not be created if its status is disabled
-
-Linus Walleij (1):
-      leds: lp55xx: enable setting default trigger
-
-Maximilian Güntner (1):
-      leds: Added driver for the NXP PCA9685 I2C chip
-
-Sachin Kamat (4):
-      leds: blinkm: Remove redundant break
-      leds: dac124s085: Remove redundant spi_set_drvdata
-      leds: Include linux/of.h header
-      leds: pwm: Remove redundant of_match_ptr
-
-Sebastian Reichel (1):
-      leds: lp55xx: handle enable pin in driver
-
- .../devicetree/bindings/leds/leds-lp55xx.txt       |  11 +-
- arch/arm/mach-omap2/board-rx51-peripherals.c       |  20 +-
- arch/arm/mach-ux500/board-mop500.c                 |   2 +
- drivers/leds/Kconfig                               |  10 +
- drivers/leds/Makefile                              |   1 +
- drivers/leds/leds-blinkm.c                         |   3 -
- drivers/leds/leds-dac124s085.c                     |   3 -
- drivers/leds/leds-gpio.c                           |   7 +-
- drivers/leds/leds-lp5523.c                         |   1 +
- drivers/leds/leds-lp5562.c                         |   1 +
- drivers/leds/leds-lp55xx-common.c                  |  28 +--
- drivers/leds/leds-lp8501.c                         |   1 +
- drivers/leds/leds-ns2.c                            |   1 +
- drivers/leds/leds-pca9685.c                        | 213 +++++++++++++++++++++
- drivers/leds/leds-pwm.c                            |   2 +-
- include/linux/of.h                                 |  16 ++
- include/linux/platform_data/leds-lp55xx.h          |   7 +-
- include/linux/platform_data/leds-pca9685.h         |  35 ++++
- 18 files changed, 314 insertions(+), 48 deletions(-)
- create mode 100644 drivers/leds/leds-pca9685.c
- create mode 100644 include/linux/platform_data/leds-pca9685.h
