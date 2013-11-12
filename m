@@ -1,185 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab3KLFu6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 00:50:58 -0500
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:51657
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750979Ab3KLFuu (ORCPT
+	id S1752194Ab3KLGAq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 01:00:46 -0500
+Received: from exprod5og115.obsmtp.com ([64.18.0.246]:54775 "HELO
+	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751378Ab3KLGAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 00:50:50 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VS-7(zcb8kz1403Rzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-From: Jason Liu <r64343@freescale.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <linville@tuxdriver.com>, <kvalo@qca.qualcomm.com>,
-        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ath6kl: sdio: fix system panic when doing wifi stress test
-Date: Tue, 12 Nov 2013 09:53:05 +0800
-Message-ID: <1384221185-8645-1-git-send-email-r64343@freescale.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 12 Nov 2013 01:00:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20131111104432.GA28302@mudshark.cambridge.arm.com>
+References: <1383739658-10036-1-git-send-email-vkale@apm.com>
+	<527D8A17.9020208@codeaurora.org>
+	<20131111104432.GA28302@mudshark.cambridge.arm.com>
+Date: Tue, 12 Nov 2013 11:30:38 +0530
+Message-ID: <CAPrCYkf60+9RJ2aJ5ep3-j+ThdniJQHnUj_8POrCr7X2veKRZQ@mail.gmail.com>
+Subject: Re: [PATCH 0/2] genirq: arm64: perf: support for percpu pmu interrupt
+From: Vinayak Kale <vkale@apm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@apm.com" <patches@apm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "jcm@redhat.com" <jcm@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When did the wifi iperf test, meet one following kernel panic:
-command: iperf -c $TARGET_IP -i 5 -t 50 -w 1M
-
-Unable to handle kernel paging request at virtual address 1a480000
-pgd = 80004000
-[1a480000] *pgd=00000000
-Internal error: Oops: 805 [#1] SMP ARM
-Modules linked in: ath6kl_sdio ath6kl_core [last unloaded: ath6kl_core]
-CPU: 0 PID: 1953 Comm: kworker/u4:0 Not tainted 3.10.9-1.0.0_alpha+dbf364b #1
-Workqueue: ath6kl ath6kl_sdio_write_async_work [ath6kl_sdio]
-task: dcc9a680 ti: dc9ae000 task.ti: dc9ae000
-PC is at v7_dma_clean_range+0x20/0x38
-LR is at dma_cache_maint_page+0x50/0x54
-pc : [<8001a6f8>]    lr : [<800170fc>]    psr: 20000093
-sp : dc9afcf8  ip : 8001a748  fp : 00000004
-r10: 00000000  r9 : 00000001  r8 : 00000000
-r7 : 00000001  r6 : 00000000  r5 : 80cb7000  r4 : 03f9a480
-r3 : 0000001f  r2 : 00000020  r1 : 1a480000  r0 : 1a480000
-Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c53c7d  Table: 6cc5004a  DAC: 00000015
-Process kworker/u4:0 (pid: 1953, stack limit = 0xdc9ae238)
-Stack: (0xdc9afcf8 to 0xdc9b0000)
-fce0:                                                       80c9b29c 00000000
-fd00: 00000000 80017134 8001a748 dc302ac0 00000000 00000000 dc454a00 80c12ed8
-fd20: dc115410 80017238 00000000 dc454a10 00000001 80017588 00000001 00000000
-fd40: 00000000 dc302ac0 dc9afe38 dc9afe68 00000004 80c12ed8 00000000 dc454a00
-fd60: 00000004 80436f88 00000000 00000000 00000600 0000ffff 0000000c 80c113c4
-fd80: 80c9b29c 00000001 00000004 dc115470 60000013 dc302ac0 dc46e000 dc302800
-fda0: dc9afe10 dc302b78 60000013 dc302ac0 dc46e000 00000035 dc46e5b0 80438c90
-fdc0: dc9afe10 dc302800 dc302800 dc9afe68 dc9afe38 80424cb4 00000005 dc9afe10
-fde0: dc9afe20 80424de8 dc9afe10 dc302800 dc46e910 80424e90 dc473c00 dc454f00
-fe00: 000001b5 7f619d64 dcc7c830 00000000 00000000 dc9afe38 dc9afe68 00000000
-fe20: 00000000 00000000 dc9afe28 dc9afe28 80424d80 00000000 00000035 9cac0034
-fe40: 00000000 00000000 00000000 00000000 000001b5 00000000 00000000 00000000
-fe60: dc9afe68 dc9afe10 3b9aca00 00000000 00000080 00000034 00000000 00000100
-fe80: 00000000 00000000 dc9afe10 00000004 dc454a00 00000000 dc46e010 dc46e96c
-fea0: dc46e000 dc46e964 00200200 00100100 dc46e910 7f619ec0 00000600 80c0e770
-fec0: dc15a900 dcc7c838 00000000 dc46e954 8042d434 dcc44680 dc46e954 dc004400
-fee0: dc454500 00000000 00000000 dc9ae038 dc004400 8003c450 dcc44680 dc004414
-ff00: dc46e954 dc454500 00000001 dcc44680 dc004414 dcc44698 dc9ae000 dc9ae030
-ff20: 00000001 dc9ae000 dc004400 8003d158 8003d020 00000000 00000000 80c53941
-ff40: dc9aff64 dcb71ea0 00000000 dcc44680 8003d020 00000000 00000000 00000000
-ff60: 00000000 80042480 00000000 00000000 000000f8 dcc44680 00000000 00000000
-ff80: dc9aff80 dc9aff80 00000000 00000000 dc9aff90 dc9aff90 dc9affac dcb71ea0
-ffa0: 800423cc 00000000 00000000 8000e018 00000000 00000000 00000000 00000000
-ffc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-ffe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 00000000
-[<8001a6f8>] (v7_dma_clean_range+0x20/0x38) from [<800170fc>] (dma_cache_maint_page+0x50/0x54)
-[<800170fc>] (dma_cache_maint_page+0x50/0x54) from [<80017134>] (__dma_page_cpu_to_dev+0x34/0x9c)
-[<80017134>] (__dma_page_cpu_to_dev+0x34/0x9c) from [<80017238>] (arm_dma_map_page+0x64/0x68)
-[<80017238>] (arm_dma_map_page+0x64/0x68) from [<80017588>] (arm_dma_map_sg+0x7c/0xf4)
-[<80017588>] (arm_dma_map_sg+0x7c/0xf4) from [<80436f88>] (sdhci_send_command+0x894/0xe00)
-[<80436f88>] (sdhci_send_command+0x894/0xe00) from [<80438c90>] (sdhci_request+0xc0/0x1ec)
-[<80438c90>] (sdhci_request+0xc0/0x1ec) from [<80424cb4>] (mmc_start_request+0xb8/0xd4)
-[<80424cb4>] (mmc_start_request+0xb8/0xd4) from [<80424de8>] (__mmc_start_req+0x60/0x84)
-[<80424de8>] (__mmc_start_req+0x60/0x84) from [<80424e90>] (mmc_wait_for_req+0x10/0x20)
-[<80424e90>] (mmc_wait_for_req+0x10/0x20) from [<7f619d64>] (ath6kl_sdio_scat_rw.isra.10+0x1dc/0x240 [ath6kl_sdio])
-[<7f619d64>] (ath6kl_sdio_scat_rw.isra.10+0x1dc/0x240 [ath6kl_sdio]) from [<7f619ec0>] (ath6kl_sdio_write_async_work+0x5c/0x104 [ath6kl_sdio])
-[<7f619ec0>] (ath6kl_sdio_write_async_work+0x5c/0x104 [ath6kl_sdio]) from [<8003c450>] (process_one_work+0x10c/0x370)
-[<8003c450>] (process_one_work+0x10c/0x370) from [<8003d158>] (worker_thread+0x138/0x3fc)
-[<8003d158>] (worker_thread+0x138/0x3fc) from [<80042480>] (kthread+0xb4/0xb8)
-[<80042480>] (kthread+0xb4/0xb8) from [<8000e018>] (ret_from_fork+0x14/0x3c)
-Code: e1a02312 e2423001 e1c00003 f57ff04f (ee070f3a)
----[ end trace 0c038f0b8e0b67a3 ]---
-Kernel panic - not syncing: Fatal exception
-
-The kernel panic is caused by the sg_buf is not set correctly with the
-following code when compiled with Yocto GCC 4.8.1:
-
-drivers/net/wireless/ath/ath6kl/hif.h:
-struct hif_scatter_req {
-        struct list_head list;
-        /* address for the read/write operation */
-        u32 addr;
-	...
-
-        /* bounce buffer for upper layers to copy to/from */
-        u8 *virt_dma_buf;
-
-        struct hif_scatter_item scat_list[1];
-
-        u32 scat_q_depth;
-};
-
-(Note: the scat_req.scat_list[] will dynamiclly grow with run-time)
-
-drivers/net/wireless/ath/ath6kl/sdio.c: ath6kl_sdio_setup_scat_data(...)
-/* assemble SG list */
-for (i = 0; i < scat_req->scat_entries; i++, sg++) {
-	ath6kl_dbg(ATH6KL_DBG_SCATTER, "%d: addr:0x%p, len:%d\n",
-		   i, scat_req->scat_list[i].buf,
-		   scat_req->scat_list[i].len);
-
-	sg_set_buf(sg, scat_req->scat_list[i].buf,
-		   scat_req->scat_list[i].len);
-}
-
-The GCC 4.8.1 compiler will not do the for-loop till scat_entries, instead,
-it only run one round loop. This may be caused by that the GCC 4.8.1 thought
-that the scat_list only have one item and then no need to do full iteration,
-but this is simply wrong by looking at the assebly code. This will cause the
-sg buffer not get set when scat_entries > 1 and thus lead to kernel panic.
-
-This patch is a workaround to the GCC 4.8.1 complier issue by passing the
-entry address of the scat_req->scat_list to the for-loop and interate it,
-then, GCC 4.8.1 will do the full for-loop correctly.
-(Note: This issue not observed with GCC 4.7.2, only found on the GCC 4.8.1)
-
-This patch does not change any function logic and no any performance downgrade.
-
-Cc: Kalle Valo <kvalo@qca.qualcomm.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Jason Liu <r64343@freescale.com>
----
- drivers/net/wireless/ath/ath6kl/sdio.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath6kl/sdio.c b/drivers/net/wireless/ath/ath6kl/sdio.c
-index 7126bdd..c31df7e 100644
---- a/drivers/net/wireless/ath/ath6kl/sdio.c
-+++ b/drivers/net/wireless/ath/ath6kl/sdio.c
-@@ -222,6 +222,7 @@ static void ath6kl_sdio_setup_scat_data(struct hif_scatter_req *scat_req,
- 					struct mmc_data *data)
- {
- 	struct scatterlist *sg;
-+	struct hif_scatter_item *scat_list;
- 	int i;
- 
- 	data->blksz = HIF_MBOX_BLOCK_SIZE;
-@@ -240,14 +241,14 @@ static void ath6kl_sdio_setup_scat_data(struct hif_scatter_req *scat_req,
- 	sg = scat_req->sgentries;
- 	sg_init_table(sg, scat_req->scat_entries);
- 
-+	scat_list = &scat_req->scat_list[0];
-+
- 	/* assemble SG list */
--	for (i = 0; i < scat_req->scat_entries; i++, sg++) {
-+	for (i = 0; i < scat_req->scat_entries; i++, sg++, scat_list++) {
- 		ath6kl_dbg(ATH6KL_DBG_SCATTER, "%d: addr:0x%p, len:%d\n",
--			   i, scat_req->scat_list[i].buf,
--			   scat_req->scat_list[i].len);
-+			   i, scat_list->buf, scat_list->len);
- 
--		sg_set_buf(sg, scat_req->scat_list[i].buf,
--			   scat_req->scat_list[i].len);
-+		sg_set_buf(sg, scat_list->buf, scat_list->len);
- 	}
- 
- 	/* set scatter-gather table for request */
--- 
-1.7.10.4
-
-
+On Mon, Nov 11, 2013 at 4:14 PM, Will Deacon <will.deacon@arm.com> wrote:
+> On Sat, Nov 09, 2013 at 01:04:23AM +0000, Stephen Boyd wrote:
+>> On 11/06/13 04:07, Vinayak Kale wrote:
+>> > This patch series adds support to handle interrupt registration/deregistration
+>> > in arm64 pmu driver when pmu interrupt type is percpu.
+>> >
+>> > Patches in this patch series were previously sent out as separate patches [1].
+>> > This patch series incorporates comments/fixes suggested for original patches.
+>> >
+>> > [1]
+>> > http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/205888.html
+>> > http://lists.infradead.org/pipermail/linux-arm-kernel/2013-October/204414.html
+>> >
+>> > Vinayak Kale (2):
+>> >   genirq: error reporting in request_percpu_irq() and
+>> >     request_threaded_irq()
+>> >   arm64: perf: add support for percpu pmu interrupt
+>> >
+>> >  arch/arm64/kernel/perf_event.c |  109 +++++++++++++++++++++++++++++-----------
+>> >  kernel/irq/manage.c            |   12 +++--
+>> >  2 files changed, 89 insertions(+), 32 deletions(-)
+>> >
+>>
+>> What ever happened to the approach here[1]? It doesn't look very nice to
+>> have to request the irq first as a per-cpu interrupt and then try as a
+>> non-percpu interrupt when genirq already knows if its per-cpu or not.
+>>
+>> [1] http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/02955.html
+>
+> Hmm, I'd completely forgotten about that approach. Whilst it certainly looks
+> cleaner from a user perspective, I always get scared when I see
+> 'desc->status_use_accessors' since it tends to incur the wrath of tglx :)
+>
+> That said, I guess that should be fine in irqdesc.h (basically adding a new
+> accessor). Chris went missing after sending those initial patches, so
+> perhaps Vinayak could look at resurrecting those?
+>
+Okay, in next patch revision I will use that approach.
