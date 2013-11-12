@@ -1,59 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3KLR2e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:28:34 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:61926 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375Ab3KLR23 (ORCPT
+	id S1756405Ab3KLRcO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:32:14 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:18454 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756161Ab3KLRcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:28:29 -0500
-X-IronPort-AV: E=Sophos;i="4.93,686,1378857600"; 
-   d="scan'208";a="71129161"
-Date: Tue, 12 Nov 2013 17:27:05 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <konrad@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH 2/2] swiotlb-xen: xen_swiotlb_map_page: do
- not error out if dma_capable fails
-In-Reply-To: <20131112144832.GC9435@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1311121704590.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1311121404590.26077@kaball.uk.xensource.com> <1384265520-6833-2-git-send-email-stefano.stabellini@eu.citrix.com> <20131112144832.GC9435@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+	Tue, 12 Nov 2013 12:32:12 -0500
+Date: Tue, 12 Nov 2013 12:32:10 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com
+Subject: Re: [PATCH 02/14] sched: add extended scheduling interface.
+Message-ID: <20131112123210.63d338d1@gandalf.local.home>
+In-Reply-To: <1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
+References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
+	<1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell gave a great explanation of the issue so I am just going to
-limit myself to answering to:
+On Thu,  7 Nov 2013 14:43:36 +0100
+Juri Lelli <juri.lelli@gmail.com> wrote:
 
-On Tue, 12 Nov 2013, Konrad Rzeszutek Wilk wrote:
-> > Considering that we know that the swiotlb buffer has a low address,
-> > skip the check.
-> 
-> I am not following that sentence. Could you please explain to me
-> how the SWIOTLB buffer low address guarantees that we don't need
-> the check?
+  
+> +static int
+> +do_sched_setscheduler2(pid_t pid, int policy,
+> +			 struct sched_param2 __user *param2)
+> +{
+> +	struct sched_param2 lparam2;
+> +	struct task_struct *p;
+> +	int retval;
+> +
+> +	if (!param2 || pid < 0)
+> +		return -EINVAL;
+> +
+> +	memset(&lparam2, 0, sizeof(struct sched_param2));
+> +	if (copy_from_user(&lparam2, param2, sizeof(struct sched_param2)))
+> +		return -EFAULT;
 
-xen_swiotlb_fixup makes sure that the swiotlb buffer is lower than 4GB,
-probably lower than 3GB, by passing dma_bits to
-xen_create_contiguous_region.
-This meets the requirements of most devices out there.
-In fact we are not even running this check under the same conditions in
-swiotlb_map_sg_attrs.
-I admit that it is possible to come up with a scenario where the check
-would be useful, but it is far easier to come up with scenarios where
-not only is unneeded but it is even harmful.
+Why the memset() before the copy_from_user()? We are copying
+sizeof(sched_param2) anyway, and should overwrite anything that was on
+the stack. I'm not aware of any possible leak from copying from
+userspace. I could understand it if we were copying to userspace.
 
-Alternatively (without Rob's "of: set dma_mask to point to
-coherent_dma_mask") Linux 3.13 is going to fail to get the network
-running on Midway. It is going to avoid fs mounting failures just
-because we don't do the same check in swiotlb_map_sg_attrs.
+do_sched_setscheduler() doesn't do that either.
 
-FYI given that Rob's patch is probably going upstream soon anyway, I
-don't feel so strongly about this.
+> +
+> +	rcu_read_lock();
+> +	retval = -ESRCH;
+> +	p = find_process_by_pid(pid);
+> +	if (p != NULL)
+> +		retval = sched_setscheduler2(p, policy, &lparam2);
+> +	rcu_read_unlock();
+> +
+> +	return retval;
+> +}
+> +
+>  /**
+>   * sys_sched_setscheduler - set/change the scheduler policy and RT priority
+>   * @pid: the pid in question.
+> @@ -3514,6 +3553,21 @@ SYSCALL_DEFINE3(sched_setscheduler, pid_t, pid, int, policy,
+>  }
+>  
+>  /**
+> + * sys_sched_setscheduler2 - same as above, but with extended sched_param
+> + * @pid: the pid in question.
+> + * @policy: new policy (could use extended sched_param).
+> + * @param: structure containg the extended parameters.
+> + */
+> +SYSCALL_DEFINE3(sched_setscheduler2, pid_t, pid, int, policy,
+> +		struct sched_param2 __user *, param2)
+> +{
+> +	if (policy < 0)
+> +		return -EINVAL;
+> +
+> +	return do_sched_setscheduler2(pid, policy, param2);
+> +}
+> +
+> +/**
+>   * sys_sched_setparam - set/change the RT priority of a thread
+>   * @pid: the pid in question.
+>   * @param: structure containing the new RT priority.
+> @@ -3526,6 +3580,17 @@ SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
+>  }
+>  
+>  /**
+> + * sys_sched_setparam2 - same as above, but with extended sched_param
+> + * @pid: the pid in question.
+> + * @param2: structure containing the extended parameters.
+> + */
+> +SYSCALL_DEFINE2(sched_setparam2, pid_t, pid,
+> +		struct sched_param2 __user *, param2)
+> +{
+> +	return do_sched_setscheduler2(pid, -1, param2);
+> +}
+> +
+> +/**
+>   * sys_sched_getscheduler - get the policy (scheduling class) of a thread
+>   * @pid: the pid in question.
+>   *
+> @@ -3595,6 +3660,45 @@ out_unlock:
+>  	return retval;
+>  }
+>  
+> +/**
+> + * sys_sched_getparam2 - same as above, but with extended sched_param
+> + * @pid: the pid in question.
+> + * @param2: structure containing the extended parameters.
+> + */
+> +SYSCALL_DEFINE2(sched_getparam2, pid_t, pid,
+> +		struct sched_param2 __user *, param2)
+> +{
+> +	struct sched_param2 lp;
+> +	struct task_struct *p;
+> +	int retval;
+> +
+> +	if (!param2 || pid < 0)
+> +		return -EINVAL;
+> +
+> +	rcu_read_lock();
+> +	p = find_process_by_pid(pid);
+> +	retval = -ESRCH;
+> +	if (!p)
+> +		goto out_unlock;
+> +
+> +	retval = security_task_getscheduler(p);
+> +	if (retval)
+> +		goto out_unlock;
+> +
+> +	lp.sched_priority = p->rt_priority;
+> +	rcu_read_unlock();
+> +
+
+OK, now we are missing the memset(). This does leak info, as lp never
+was set to zero, it just contains anything on the stack, and the only
+value you updated was sched_priority. We just copied to user memory
+from the kernel stack.
+
+-- Steve
+
+
+
+> +	retval = copy_to_user(param2, &lp,
+> +			sizeof(struct sched_param2)) ? -EFAULT : 0;
+> +
+> +	return retval;
+> +
+> +out_unlock:
+> +	rcu_read_unlock();
+> +	return retval;
+> +
+> +}
+> +
+>  long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+>  {
+>  	cpumask_var_t cpus_allowed, new_mask;
+
