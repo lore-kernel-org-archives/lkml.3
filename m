@@ -1,122 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab3KLIlE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 03:41:04 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:54248 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753530Ab3KLIks convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 03:40:48 -0500
-Subject: Re: [PATCH v3 3/3] DT: proc: Add runtime overlay interface in /proc
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20131111184736.3DE20C4234E@trevor.secretlab.ca>
-Date: Tue, 12 Nov 2013 09:40:38 +0100
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <86657251-2872-4FB2-B71A-519A685B458A@antoniou-consulting.com>
-References: <1383923170-24914-1-git-send-email-panto@antoniou-consulting.com> <1383923170-24914-4-git-send-email-panto@antoniou-consulting.com> <20131111184736.3DE20C4234E@trevor.secretlab.ca>
-To: Grant Likely <grant.likely@secretlab.ca>
-X-Mailer: Apple Mail (2.1085)
+	id S1753673Ab3KLIm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 03:42:58 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:53839 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751423Ab3KLIm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 03:42:57 -0500
+Message-ID: <5281E950.5090506@ti.com>
+Date: Tue, 12 Nov 2013 10:39:44 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Sekhar Nori <nsekhar@ti.com>, Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, <linux-gpio@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/2] DaVinci: GPIO: fixes
+References: <1383893156-28010-1-git-send-email-prabhakar.csengg@gmail.com> <5280FB19.4020204@ti.com> <5281C839.8070100@ti.com>
+In-Reply-To: <5281C839.8070100@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Hi Sekhar,
 
-On Nov 11, 2013, at 7:47 PM, Grant Likely wrote:
-
-> On Fri,  8 Nov 2013 17:06:10 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
->> Add a runtime interface to /proc to enable generic device tree overlay
->> usage.
->> 
->> Two new /proc files are added:
->> 
->> /proc/device-tree-overlay & /proc/device-tree-overlay-status
->> 
->> /proc/device-tree-overlay accepts a stream of a device tree objects and
->> applies it to the running kernel's device tree.
->> 
->> 	$ cat ~/BB-UART2-00A0.dtbo >device-tree-overlay
->> 	overlay_proc_release: Applied #2 overlay segments @0
->> 
->> /proc/device-tree-overlay-status displays the the overlays added using
->> the /proc interface
->> 
->> 	$ cat device-tree-overlay-status
->> 	0: 861 bytes BB-UART2:00A0
->> 
->> The format of the status line is
->> 	<ID>: <SIZE> bytes <part-number>:<version>
->> 
->> <ID> is the id of the overlay
->> <SIZE> is the size of the overlay in bytes
->> <part-number>, <version> are (optional) root level properties of the DTBO
->> 
->> You can remove an overlay by echoing the <ID> number of the overlay
->> precedded with a '-'
->> 
->> So
->> 	$ echo "-0" >device-tree-overlay-status
->> 
->> Removes the overlay.
->> 
->> Note that this seldom works on most platforms since platform_device
->> removal is something that almost never works without extra patches.
->> 
->> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+On 11/12/2013 08:18 AM, Sekhar Nori wrote:
+> On Monday 11 November 2013 09:13 PM, Grygorii Strashko wrote:
+>> Hi Sekhar, Prabhakar Lad
+>>
+>> On 11/08/2013 08:45 AM, Prabhakar Lad wrote:> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>>>
+>>> This patch series fixes gpio driver regestration
+>>> and offset check for unbanked gpio.
+>>>
+>>> Lad, Prabhakar (2):
+>>>     gpio: davinci: Fix a check for unbanked gpio
+>>>     ARM: davinci: Fix number of resources passed to
+>>>       davinci_gpio_register() call
+>>
+>> I've verified both patches - looks ok.
+>> Patch 1 - restores unbanked GPIO IRQs functionality
+>> Patch 2 - allows to register GPIO Platform devices and boot without issues.
+>>
+>> Could we move forward with these patches?
 > 
-> Why /proc? Did you consider using the firmware loading mechanism? While
-> I expressed concerned about the capebus approach, the loading of
-> overlays needs to remain under the control of either a driver or the
-> platform. By default it should not be possible to drop an arbitrary
-> overlay into /proc/device-tree-overlay and have things change in the
-> base tree. Along the same lines, I would expect for the device driver or
-> platform to be able to filter or limit the parts of the tree that are
-> allowed to be modified.
+> Prabhakar, both patches look good to me. Thanks for the fixes.
 > 
+> Also Grygorii, have you actually verified that the unbanked IRQ support
+> works? Only DM365 uses it.
 
-The firmware loading mechanism is the preferred way to handle it, and is
-in fact what is used in practice by the whole cape manager mechanism.
-But that's part of specific board support, and this is more like a general
-way to use overlays, in any kind of DT enabled system.
+Yes, I've verified it, but on Keystone which has similar GPIO IP
+which supports only unbanked IRQs.
 
-I agree this is a) completely dangerous and b) /proc is a bad place to put
-it. I put it here in order to get the ball rolling, about the proper place
-to put device tree related interfaces.
-
-The good thing about this interface is that it's always available, and
-it is good for debugging (especially loading/unloading debugging).
- 
-
-> A side benefit of the firmware loader is that the kernel can obtain the
-> overlay on its own if needed at boot time without userspace involvement.
 > 
+> What do I add for you? Tested-by: or Acked-by:
 
-Yes, that is correct, and it is the way we use it on the beaglebone.
-The root fs device is present on a overlay, which is built into the kernel's
-firmware.
+Reported-and-Reviewed-and-Tested-by: Grygorii Strashko <grygorii.strashko@ti.com> :P
+^Up to you :), but if I understand things right "Acked-by:" included all above
 
-
-> g.
-> 
-
-Regards
-
--- Pantelis
-
+Regards,
+- grygorii
