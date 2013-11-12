@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3KLOag (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:30:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60315 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038Ab3KLOac (ORCPT
+	id S1754929Ab3KLOaf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:30:35 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54892 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752010Ab3KLOac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Nov 2013 09:30:32 -0500
-Date: Tue, 12 Nov 2013 15:30:24 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
-Cc: paulus@samba.org, Ingo Molnar <mingo@redhat.com>, acme@ghostprotocols.net,
-        kernel-br <kernel-br@googlegroups.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Coverity 1128445 - Reliance on integer endianness
-Message-ID: <20131112143024.GR5056@laptop.programming.kicks-ass.net>
-References: <CAGG-pUQrN6D_iSsWVptjQSA4B_oGn5NhbhBp+aLT0GJCFSmYRA@mail.gmail.com>
+Date: Tue, 12 Nov 2013 14:30:31 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: myungjoo.ham@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] extcon: arizona: Eliminate dead error handling code
+Message-ID: <20131112143031.GF6549@opensource.wolfsonmicro.com>
+References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <1383916783-17921-4-git-send-email-ckeepax@opensource.wolfsonmicro.com> <52817321.9040505@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGG-pUQrN6D_iSsWVptjQSA4B_oGn5NhbhBp+aLT0GJCFSmYRA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <52817321.9040505@samsung.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 12:19:13PM -0200, Geyslan Gregório Bem wrote:
-> Hi,
+On Tue, Nov 12, 2013 at 09:15:29AM +0900, Chanwoo Choi wrote:
+> Hi CHarles,
 > 
-> Coverity detected in 'arch/x86/kernel/cpu/perf_event_intel_uncore.c' a
-> possible reliance on integer endianness. Is that a positive one?
+> On 11/08/2013 10:19 PM, Charles Keepax wrote:
+> > As a small disclaimer I would personally prefer to not merge this patch.
+> > I have added it based on previous code review of the other patches in
+> > this chain.
+> > 
+> > arizona_hpdet_do_id currently can only return 0 or -EAGAIN making the
+> > else if clause handling error codes redundant, this patch removes this
+> > clause.
+> > 
+> > Whilst this clause is not currently hit removing it makes the code
+> > fragile. It will not be obvious whilst editing arizona_hpdet_do_id that
+> > you shouldn't add a return value other than 0 or -EAGAIN.
+> > 
+> > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> > ---
+> >  drivers/extcon/extcon-arizona.c |    5 +++--
+> >  1 files changed, 3 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> > index 0d70bf6..2313b1e 100644
+> > --- a/drivers/extcon/extcon-arizona.c
+> > +++ b/drivers/extcon/extcon-arizona.c
+> > @@ -476,6 +476,9 @@ static int arizona_hpdet_read(struct arizona_extcon_info *info)
+> >  	return val;
+> >  }
+> >  
+> > +/* This function should only return 0 or -EAGAIN, if other return values are
+> > + * added additional handling should be added in arizona_hpdet_irq.
+> > + */
 > 
-> static u64 ivt_uncore_irp_read_counter(struct intel_uncore_box *box,
-> struct perf_event *event)
-> 1369{
-> 1370        struct pci_dev *pdev = box->pci_dev;
-> 1371        struct hw_perf_event *hwc = &event->hw;
-> 1372        u64 count = 0;
-> 1373
-> 
-> CID 1128445 (#1 of 1): Reliance on integer endianness
-> (INCOMPATIBLE_CAST)incompatible_cast: Pointer "&count" points to an
-> object whose effective type is "unsigned long long" (64 bits,
-> unsigned) but is dereferenced as a narrower "unsigned int" (32 bits,
-> unsigned). This may lead to unexpected results depending on machine
-> endianness.[show details]
-> 
-> 1374        pci_read_config_dword(pdev, ivt_uncore_irp_ctrs[hwc->idx],
-> (u32 *)&count);
-> 1375        pci_read_config_dword(pdev, ivt_uncore_irp_ctrs[hwc->idx]
-> + 4, (u32 *)&count + 1);
-> 1376
-> 1377        return count;
-> 1378}
+> As Lee Jones commented, you should modify this comment of arizona_hpdet_do_id() and add
+> the description of return value. Because arizoa_hpdet_do_id() has different meaning
+> between -EAGAIN and other minus value.
 
-Right, its a bit ugly but since its all arch code (x86) we can indeed
-assume endianness (little).
+I take it you are still very keen on applying a patch for this
+dead code elimination? I really do feel it would be better to
+leave this part of the code as it currently is, the extra safety
+clearly outweights the cost of a redundant else if.
 
-So yes Coverity is right but we can also ignore it since machine
-endianness is fixed here.
-
-The code loads the u64 in two pci dword reads and assumes the high dword
-lives at the higher address, this is correct for little endian.
+Thanks,
+Charles
