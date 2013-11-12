@@ -1,71 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab3KLHtj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 02:49:39 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61516 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab3KLHtc (ORCPT
+	id S1754436Ab3KLHtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 02:49:49 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:52011 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754206Ab3KLHtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 02:49:32 -0500
-X-AuditID: 9c930197-b7c73ae0000025c6-4d-5281dd8a949b
-From: Namhyung Kim <namhyung@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v6)
-References: <20131104155131.GD4440@redhat.com>
-	<20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com>
-	<87sivbz65t.fsf@sejong.aot.lge.com> <20131105174535.GA6385@redhat.com>
-	<20131105192401.GA772@redhat.com> <87vc05x5zf.fsf@sejong.aot.lge.com>
-	<20131106173754.GA11299@redhat.com>
-	<20131106182408.GA12922@redhat.com>
-	<8761s4wprj.fsf@sejong.aot.lge.com>
-	<20131108170017.GB28753@redhat.com>
-Date: Tue, 12 Nov 2013 16:49:30 +0900
-In-Reply-To: <20131108170017.GB28753@redhat.com> (Oleg Nesterov's message of
-	"Fri, 8 Nov 2013 18:00:17 +0100")
-Message-ID: <87wqkeukj9.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 12 Nov 2013 02:49:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20131112065405.C75E8C42024@trevor.secretlab.ca>
+References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
+	<1381869563-16083-10-git-send-email-grant.likely@linaro.org>
+	<CAEgOgz6=HhBkb2KtxcmHpNdE_0sNngw0NaL2SnLWj1opZkO3SA@mail.gmail.com>
+	<20131112065405.C75E8C42024@trevor.secretlab.ca>
+Date: Tue, 12 Nov 2013 17:49:37 +1000
+X-Google-Sender-Auth: wlQ16Xe6fCigVDDj_B84jVEirDc
+Message-ID: <CAEgOgz6j8YsvFgq8ZbE20ocHPA0C-eUGBb7F1gNiVBvJXLa8_g@mail.gmail.com>
+Subject: Re: [RFC 9/9] of/irq: create interrupts-extended property
+From: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
+Hi Grant,
 
-On Fri, 8 Nov 2013 18:00:17 +0100, Oleg Nesterov wrote:
-> On 11/07, Namhyung Kim wrote:
+On Tue, Nov 12, 2013 at 4:54 PM, Grant Likely <grant.likely@linaro.org> wrote:
+> On Tue, 12 Nov 2013 08:58:15 +1000, Peter Crosthwaite <peter.crosthwaite@xilinx.com> wrote:
+>> Hi Grant,
 >>
->> On Wed, 6 Nov 2013 19:24:08 +0100, Oleg Nesterov wrote:
+>> On Wed, Oct 16, 2013 at 6:39 AM, Grant Likely <grant.likely@linaro.org> wrote:
+>> > The standard interrupts property in device tree can only handle
+>> > interrupts coming from a single interrupt parent. If a device is wired
+>> > to multiple interrupt controllers, then it needs to be attached to a
+>> > node with an interrupt-map property to demux the interrupt specifiers
+>> > which is confusing. It would be a lot easier if there was a form of the
+>> > interrupts property that allows for a separate interrupt phandle for
+>> > each interrupt specifier.
 >> >
->> > Note that instruction_pointer_set() is not really nice in any case,
->> > this can obviously confuse FETCH_MTD_reg("ip").
->>
->> Yes.
->>
+>> > This patch does exactly that by creating a new interrupts-extended
+>> > property which reuses the phandle+arguments pattern used by GPIOs and
+>> > other core bindings.
 >> >
->> > But lets ignore this. The solution is simple, we can pass/use this
->> > info via current->utask. We can either add the new member, or add
->> > a union. Or simply reuse xol_vaddr. Doesn't matter.
+>> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
+>> > Cc: Rob Herring <rob.herring@calxeda.com>
+>> > ---
+>> >  .../bindings/interrupt-controller/interrupts.txt   | 29 +++++++--
+>> >  arch/arm/boot/dts/testcases/tests-interrupts.dtsi  | 16 +++++
+>> >  arch/arm/boot/dts/versatile-ab.dts                 |  2 +-
+>> >  arch/arm/boot/dts/versatile-pb.dts                 |  2 +-
+>> >  drivers/of/irq.c                                   | 16 +++--
+>> >  drivers/of/selftest.c                              | 70 ++++++++++++++++++++++
+>> >  6 files changed, 122 insertions(+), 13 deletions(-)
+>> >
+>> > diff --git a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+>> > index 72a06c0..1486497 100644
+>> > --- a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+>> > +++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+>> > @@ -4,16 +4,33 @@ Specifying interrupt information for devices
+>> >  1) Interrupt client nodes
+>> >  -------------------------
+>> >
+>> > -Nodes that describe devices which generate interrupts must contain an
+>> > -"interrupts" property. This property must contain a list of interrupt
+>> > -specifiers, one per output interrupt. The format of the interrupt specifier is
+>> > -determined by the interrupt controller to which the interrupts are routed; see
+>> > -section 2 below for details.
+>> > +Nodes that describe devices which generate interrupts must contain an either an
+>> > +"interrupts" property or an "interrupts-extended" property. These properties
+>> > +contain a list of interrupt specifiers, one per output interrupt. The format of
+>> > +the interrupt specifier is determined by the interrupt controller to which the
+>> > +interrupts are routed; see section 2 below for details.
+>> > +
+>> > +  Example:
+>> > +       interrupt-parent = <&intc1>;
+>> > +       interrupts = <5 0>, <6 0>;
+>> >
+>> >  The "interrupt-parent" property is used to specify the controller to which
+>> >  interrupts are routed and contains a single phandle referring to the interrupt
+>> >  controller node. This property is inherited, so it may be specified in an
+>> > -interrupt client node or in any of its parent nodes.
+>> > +interrupt client node or in any of its parent nodes. Interrupts listed in the
+>> > +"interrupts" property are always in reference to the node's interrupt parent.
+>> > +
+>> > +The "interrupts-extended" property is a special form for use when a node needs
+>> > +to reference multiple interrupt parents. Each entry in this property contains
+>> > +both the parent phandle and the interrupt specifier. "interrupts-extended"
+>> > +should only be used when a device has multiple interrupt parents.
+>> > +
+>> > +  Example:
+>> > +       interrupts-extended = <&intc1 5 1>, <&intc2 1 0>;
+>> > +
 >>
->> Okay, I'll take a look.
+>> A slightly different but related problem I am trying to solve with
+>> interrupt bindings, is to describe connection of a single device
+>> interrupt line to multiple interrupts controller, whereas this binding
+>> seems to be describing connection of different interrupt lines to
+>> different controllers. Can this syntax accommodate my case is any way?
+>>
+>> Bascially I think I'm asking for multiple interrupt specifiers for a
+>> single IRQ output if that's possible.
+>>
+>> Should I just be using the interrupt map syntax instead?
+>>
+>> interrupt-map-mask = < 0 0 63>;
+>> interrupt-map = < 0 0 25 &intc0 ... >, < 0 0 25 &intc1 ... >,
 >
-> I guess we need the union in uprobe_task anyway... I'll send the patch
-> soon.
+> Interrupt map doesn't actually help you here either since the core code
+> doesn't know what to do with it. It will probably only match and return
+> one of the options.
 >
-> Until we have the new members in uprobe_task, you can reuse utask->vaddr,
-> this is safe.
->
-> IOW, you can use current->utask->vaddr instead of regs->ip (as we did
-> in the previous discussin) to pass the necessary info to ->fetch().
 
-Thanks for the info!
-Namhyung
+Yes I noticed that. Although we are a fair way off Linux patches for
+this just yet and all I want to solve near-term is the hardware
+description problem (what core Linux IRQ code is actually supposed to
+do when given such a wiring setup is probably an open question).
+
+> What I would do is describe both in your interrupts property and make
+> the driver know that the extra interrupt specifier is for the same
+> interrupt output.
+>
+
+So this is a little annoying, as ideally device drivers should not be
+aware of their external connections. I'm trying to describe board (or
+SoC) level wiring in hopefully a way that doesn't require individual
+driver awareness. It also gets very messy when you have multiple
+interrupt outputs that are each in themselves connected to multiple
+interrupt controllers (which happens to be my situation). The meaning
+of multiple tuples becomes ambiguous.
+
+Is the interrupt-map system I proposed acceptable long-term from just
+a pure binding acceptability standpoint? The driver side solution is
+also a large change pattern as I'm using this with Xilinx Zynq which
+has a large number of peripherals, any of which could be
+multiply-connected to both A9GIC and soft intc's in FPGA fabric.
+
+Thanks and Regards,
+Peter
+
+> g.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
