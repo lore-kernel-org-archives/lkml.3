@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab3KLOZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:25:59 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57028 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755321Ab3KLOZ5 (ORCPT
+	id S1755363Ab3KLOag (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:30:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60315 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038Ab3KLOac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:25:57 -0500
-Date: Tue, 12 Nov 2013 14:25:54 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, myungjoo.ham@samsung.com,
-        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] extcon: arizona: Add defines for microphone
-	detection levels
-Message-ID: <20131112142554.GE6549@opensource.wolfsonmicro.com>
-References: <1383916783-17921-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <5280AAAF.8040005@samsung.com> <20131111105356.GB22184@lee--X1> <20131111110652.GD6549@opensource.wolfsonmicro.com> <20131111111503.GC22184@lee--X1> <5280BE00.8030002@samsung.com> <20131111112638.GE22184@lee--X1>
+	Tue, 12 Nov 2013 09:30:32 -0500
+Date: Tue, 12 Nov 2013 15:30:24 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
+Cc: paulus@samba.org, Ingo Molnar <mingo@redhat.com>, acme@ghostprotocols.net,
+        kernel-br <kernel-br@googlegroups.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Coverity 1128445 - Reliance on integer endianness
+Message-ID: <20131112143024.GR5056@laptop.programming.kicks-ass.net>
+References: <CAGG-pUQrN6D_iSsWVptjQSA4B_oGn5NhbhBp+aLT0GJCFSmYRA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20131111112638.GE22184@lee--X1>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGG-pUQrN6D_iSsWVptjQSA4B_oGn5NhbhBp+aLT0GJCFSmYRA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 11:26:38AM +0000, Lee Jones wrote:
-> > >>> I'm inclined to agree with you though, so if you want to send a patch
-> > >>> based on v3.14-rc1 I'd be happy to accept it.
-> > >>
-> > >> Apologies for causing confusion here I checked your tree for the
-> > >> patch and didn't see it, so I assumed you had decided not to
-> > >> apply it. I must have missed it some how.
-> > > 
-> > > So I am partly to blame here. My public repos sometimes aren't as
-> > > up-to-date and my private ones, but if I've replied to a patch and
-> > > said I've applied it, I inevitably have.
-> > > 
-> > But this patch has only the dependency of extcon subsystem.
-> > At least, you have to get 'Acked-by' or 'Signed-off-by' from
-> > subsystem maintainer. I didn't agree applying this patch on mainline tree.
+On Tue, Nov 12, 2013 at 12:19:13PM -0200, Geyslan Gregório Bem wrote:
+> Hi,
 > 
-> Please see my other mail.
+> Coverity detected in 'arch/x86/kernel/cpu/perf_event_intel_uncore.c' a
+> possible reliance on integer endianness. Is that a positive one?
+> 
+> static u64 ivt_uncore_irp_read_counter(struct intel_uncore_box *box,
+> struct perf_event *event)
+> 1369{
+> 1370        struct pci_dev *pdev = box->pci_dev;
+> 1371        struct hw_perf_event *hwc = &event->hw;
+> 1372        u64 count = 0;
+> 1373
+> 
+> CID 1128445 (#1 of 1): Reliance on integer endianness
+> (INCOMPATIBLE_CAST)incompatible_cast: Pointer "&count" points to an
+> object whose effective type is "unsigned long long" (64 bits,
+> unsigned) but is dereferenced as a narrower "unsigned int" (32 bits,
+> unsigned). This may lead to unexpected results depending on machine
+> endianness.[show details]
+> 
+> 1374        pci_read_config_dword(pdev, ivt_uncore_irp_ctrs[hwc->idx],
+> (u32 *)&count);
+> 1375        pci_read_config_dword(pdev, ivt_uncore_irp_ctrs[hwc->idx]
+> + 4, (u32 *)&count + 1);
+> 1376
+> 1377        return count;
+> 1378}
 
-Sorry for the sake of clarity, we are backing out the patch and I
-should send a fresh one?
+Right, its a bit ugly but since its all arch code (x86) we can indeed
+assume endianness (little).
 
-Thanks,
-Charles
+So yes Coverity is right but we can also ignore it since machine
+endianness is fixed here.
+
+The code loads the u64 in two pci dword reads and assumes the high dword
+lives at the higher address, this is correct for little endian.
