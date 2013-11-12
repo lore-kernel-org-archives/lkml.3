@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab3KLOzH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:55:07 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:7107 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756093Ab3KLOy4 (ORCPT
+	id S1756147Ab3KLOzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:55:19 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:33234 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755951Ab3KLOzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:54:56 -0500
-Message-ID: <52824130.5030404@hp.com>
-Date: Tue, 12 Nov 2013 09:54:40 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Tue, 12 Nov 2013 09:55:11 -0500
+Date: Tue, 12 Nov 2013 09:55:09 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: =?ISO-8859-15?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+cc: Ben Dooks <ben.dooks@codethink.co.uk>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Christopher Covington <cov@codeaurora.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] ARM: Use udiv/sdiv for __aeabi_{u}idiv library
+ functions
+In-Reply-To: <yw1x8uwtvg3i.fsf@unicorn.mansr.com>
+Message-ID: <alpine.LFD.2.10.1311120948000.9667@knanqh.ubzr>
+References: <1383951632-6090-1-git-send-email-sboyd@codeaurora.org> <alpine.LFD.2.10.1311092357090.2314@knanqh.ubzr> <528193A0.7050505@codeaurora.org> <alpine.LFD.2.10.1311120839310.9667@knanqh.ubzr> <20131112140436.GK16735@n2100.arm.linux.org.uk>
+ <52823877.60806@codethink.co.uk> <alpine.LFD.2.10.1311120924330.9667@knanqh.ubzr> <yw1x8uwtvg3i.fsf@unicorn.mansr.com>
+User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-Subject: Re: [PATCH v5 4/4] MCS Lock: Barrier corrections
-References: <cover.1383935697.git.tim.c.chen@linux.intel.com>  <1383940358.11046.417.camel@schen9-DESK>  <20131111181049.GL28302@mudshark.cambridge.arm.com> <1384204673.10046.6.camel@schen9-mobl3>
-In-Reply-To: <1384204673.10046.6.camel@schen9-mobl3>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-823665987-1384268110=:9667"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 04:17 PM, Tim Chen wrote:
->> You could then augment that with [cmp]xchg_{acquire,release} as
->> appropriate.
->>
->>> +/*
->>>    * In order to acquire the lock, the caller should declare a local node and
->>>    * pass a reference of the node to this function in addition to the lock.
->>>    * If the lock has already been acquired, then this will proceed to spin
->>> @@ -37,15 +62,19 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
->>>   	node->locked = 0;
->>>   	node->next   = NULL;
->>>
->>> -	prev = xchg(lock, node);
->>> +	/* xchg() provides a memory barrier */
->>> +	prev = xchg_acquire(lock, node);
->>>   	if (likely(prev == NULL)) {
->>>   		/* Lock acquired */
->>>   		return;
->>>   	}
->>>   	ACCESS_ONCE(prev->next) = node;
->>> -	smp_wmb();
->>> -	/* Wait until the lock holder passes the lock down */
->>> -	while (!ACCESS_ONCE(node->locked))
->>> +	/*
->>> +	 * Wait until the lock holder passes the lock down.
->>> +	 * Using smp_load_acquire() provides a memory barrier that
->>> +	 * ensures subsequent operations happen after the lock is acquired.
->>> +	 */
->>> +	while (!(smp_load_acquire(&node->locked)))
->>>   		arch_mutex_cpu_relax();
-> An alternate implementation is
-> 	while (!ACCESS_ONCE(node->locked))
-> 		arch_mutex_cpu_relax();
-> 	smp_load_acquire(&node->locked);
->
-> Leaving the smp_load_acquire at the end to provide appropriate barrier.
-> Will that be acceptable?
->
-> Tim
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I second Tim's opinion. It will be help to have a smp_mb_load_acquire() 
-function that provide a memory barrier with load-acquire semantic. I 
-don't think we need one for store-release as that will not be in a loop.
+--8323328-823665987-1384268110=:9667
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
-Peter, what do you think about adding that to your patch?
+On Tue, 12 Nov 2013, Måns Rullgård wrote:
 
--Longman
+> Nicolas Pitre <nicolas.pitre@linaro.org> writes:
+> 
+> > On Tue, 12 Nov 2013, Ben Dooks wrote:
+> >
+> >> Given these are single instructoins for ARM, is it possible we could
+> >> make a table of all the callers and fix them up when we initialise
+> >> as we do for the SMP/UP case and for page-offset?
+> >
+> > Not really.  Calls to those functions are generated by the compiler 
+> > implicitly when a divisor operand is used and therefore we cannot 
+> > annotate those calls.  We'd have to use special accessors everywhere to 
+> > replace the standard division operand (like we do for 64 by 32 bit 
+> > divisions) but I doubt that people would accept that.
+> 
+> It might be possible to extract this information from relocation tables.
+
+True, but only for individual .o files.  Once the linker puts them 
+together the information is lost, and trying to infer what the linker 
+has done is insane.
+
+Filtering the compiler output to annotate idiv calls before it is 
+assembled would probably be a better solution.
+
+Is it worth it?  I'm not sure.
+
+
+Nicolas
+--8323328-823665987-1384268110=:9667--
