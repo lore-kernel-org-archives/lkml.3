@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab3KLSYk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 13:24:40 -0500
-Received: from alt-proxy24.mail.unifiedlayer.com ([69.89.16.13]:36582 "HELO
-	alt-proxy24.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751972Ab3KLSYg (ORCPT
+	id S1755370Ab3KLS0e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 13:26:34 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38656 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755271Ab3KLS0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 13:24:36 -0500
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Nov 2013 13:24:36 EST
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: hpa@zytor.com
-Subject: [PATCH] x86/early quirk: use gen6 stolen detection for VLV
-Date: Tue, 12 Nov 2013 10:17:39 -0800
-Message-Id: <1384280259-800-1-git-send-email-jbarnes@virtuousgeek.org>
-X-Mailer: git-send-email 1.8.4.2
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Tue, 12 Nov 2013 13:26:32 -0500
+Date: Tue, 12 Nov 2013 19:26:17 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Does Itanium permit speculative stores?
+Message-ID: <20131112182617.GG21461@twins.programming.kicks-ass.net>
+References: <20131111171307.GA27002@linux.vnet.ibm.com>
+ <3908561D78D1C84285E8C5FCA982C28F31D5DB28@ORSMSX106.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31D5DB28@ORSMSX106.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've always been able to use either method on VLV, but it appears more
-recent BIOSes only support the gen6 method, so switch over to that.
+On Tue, Nov 12, 2013 at 06:00:26PM +0000, Luck, Tony wrote:
+> > Does Itanium permit speculative stores?  For example, on Itanium what are
+> > the permitted outcomes of the following litmus test, where both x and y
+> > are initially zero?
+> 
+> We have a complier visible speculative read via the "ld.s" and "chk" instructions. But
+> there is no speculative write ("st.s") instruction.  I think you are asking "can out of order
+> writes become visible in this scenario?"
+> 
+> 	CPU 0				CPU 1
+> 
+> 	r1 = ACCESS_ONCE(x);		r2 = ACCESS_ONCE(y);
+> 	if (r1)				if (r2)
+> 		ACCESS_ONCE(y) = 1;		ACCESS_ONCE(x) = 1;
+> 
+> > In particular, is the outcome (r1 == 1 && r2 == 1) possible on Itanium
+> > given this litmus test?
+> 
+> The "ACCESS_ONCE" macro casts to volatile - which will make gcc generate
+> ordered "ld.acq" and "st.rel" instructions for your code snippets. So I think
+> you should be fine.
 
-References: https://bugs.freedesktop.org/show_bug.cgi?id=71370
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- arch/x86/kernel/early-quirks.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Cute that volatile generates barrier instructions.
 
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index 96f958d..bc4a088 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -330,8 +330,8 @@ static struct pci_device_id intel_stolen_ids[] __initdata = {
- 	INTEL_I915GM_IDS(gen3_stolen_size),
- 	INTEL_I945G_IDS(gen3_stolen_size),
- 	INTEL_I945GM_IDS(gen3_stolen_size),
--	INTEL_VLV_M_IDS(gen3_stolen_size),
--	INTEL_VLV_D_IDS(gen3_stolen_size),
-+	INTEL_VLV_M_IDS(gen6_stolen_size),
-+	INTEL_VLV_D_IDS(gen6_stolen_size),
- 	INTEL_PINEVIEW_IDS(gen3_stolen_size),
- 	INTEL_I965G_IDS(gen3_stolen_size),
- 	INTEL_G33_IDS(gen3_stolen_size),
--- 
-1.8.4.2
+But no; I think Paul accidentally formulated his question in C (since we
+all speak C) but meant to ask an architectural question.
 
+So the point we're having a discussion on is if any architecture has
+visible speculative STORES and if there's an architecture that doesn't
+have control dependencies.
+
+On the visible speculative STORES; can, if in the above example we have
+regular loads/stores:
+
+  LOAD r1, x			LOAD r2, y
+  IF (r1)			IF (r2)
+	STORE y, 1			STORE x, 1
+
+we observe: r1==1 && r2==1
+
+In order for that to be true; we must be able to observe the stores
+before the loads are complete -- and therefore before the branches are a
+certainty.
+
+Typically if an architecture speculates on branches the result doesn't
+become visible/committed until the branch is a certainty -- ie. linear
+branch history.
+
+Alternatively:
+
+	x:=0
+
+	IF (cond)			LOAD r1,x
+		STORE x,1
+	STORE x,2
+
+Can r1 ever be 1 if we know 'cond' will never be true (runtime
+constraint, not compile time so the branch cannot be omitted).
