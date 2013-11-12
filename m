@@ -1,109 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab3KLIM2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 03:12:28 -0500
-Received: from SpacedOut.fries.net ([67.64.210.234]:40866 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab3KLIMV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 03:12:21 -0500
-X-Greylist: delayed 614 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Nov 2013 03:12:21 EST
-Date: Tue, 12 Nov 2013 02:01:46 -0600
-From: David Fries <david@fries.net>
-To: Evgeny Boger <eugenyboger@gmail.com>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Add strong pullup emulation to w1-gpio master driver.
-Message-ID: <20131112080146.GF5509@spacedout.fries.net>
-References: <1384180614-9025-1-git-send-email-boger@contactless.ru>
- <10261384211376@web11j.yandex.ru>
- <5281691F.4060604@gmail.com>
- <37621384218204@web11j.yandex.ru>
- <52817F42.2080706@gmail.com>
-MIME-Version: 1.0
+	id S1753863Ab3KLIRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 03:17:06 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:37133 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751939Ab3KLIQ5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 03:16:57 -0500
+Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
+Mime-Version: 1.0 (Apple Message framework v1085)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52817F42.2080706@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Tue, 12 Nov 2013 02:01:47 -0600 (CST)
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20131111170453.4D999C42336@trevor.secretlab.ca>
+Date: Tue, 12 Nov 2013 09:16:39 +0100
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <89F4284F-DB71-41ED-9B53-663539446128@antoniou-consulting.com>
+References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com> <20131106190152.GA8662@breakpoint.cc> <20131106193041.GA26796@roeck-us.net> <20131106203821.GC8662@breakpoint.cc> <20131106211754.GA29300@roeck-us.net> <20131107192558.GA11453@breakpoint.cc> <4F47D5F8-F3C7-45CA-9D88-2D814BDC1BC7@antoniou-consulting.com> <20131107204626.GA11746@breakpoint.cc> <20131111170453.4D999C42336@trevor.secretlab.ca>
+To: Grant Likely <grant.likely@secretlab.ca>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 05:07:14AM +0400, Evgeny Boger wrote:
-> +David Fries <david@fries.net>
+Hi Grant,
+
+On Nov 11, 2013, at 6:04 PM, Grant Likely wrote:
+
+> On Thu, 7 Nov 2013 21:46:26 +0100, Sebastian Andrzej Siewior <sebastian@breakpoint.cc> wrote:
+>> On 07.11.13, Pantelis Antoniou wrote:
+>>> Hi Sebastian,
+>> Hi Pantelis,
+>> 
+>>> FWIW DT has been ported to x86. And is present on arm/powerpc/mips/arc and possibly
+>>> others.
+>> 
+>> Yes, I know. I am the one that did the work for CE4100, the first one
+>> that boots with DT on x86.
+>> 
+>>> So what are we talking about again? If you care about the non-DT case, why
+>>> don't you make a patch about how you could support Guenter's use case on
+>>> the x86.
+>> 
+>> I am only saying that this "hot-plug a device at a non hot-plugagle bus at
+>> runtime" is not limited to DT but this solution is. X86 + ACPI is not
+>> the only limitation. ARM is (forced) going to ACPI as well as far I
+>> know. And this solution is limited to DT. This is what I am pointing
+>> out.
 > 
-> Hi David,
+> I'm going to nip this in the bud before it spreads...  No.
 > 
-> Would you please comment on this?
-
-
-On Mon, Nov 11, 2013 at 06:36:54PM +0400, Evgeny Boger wrote:
->  Strong pullup is emulated by driving pin logic high after write
->  command when
->  using tri-state push-pull GPIO.
-
-Not knowing the hardware involved, is driving the logic high a
-stronger pullup than the normal weak pullup input high?  Meaning it
-was already being left high, just with a lessor pullup and this will
-provide a stronger one?
-
-On Tue, Nov 12, 2013 at 03:09:36AM +0400, Evgeniy Polyakov wrote:
-> > + msleep(pdata->pullup_duration);
+> ARM is not going wholesale to ACPI.  ACPI will be implemented on ARMv8
+> servers. Don't expect the rest of the ARM world to go there anytime
+> soon, if at all.
 > 
-> This doesn't look like a good idea - kernel will sleep for that long
-> not doing usual w1 job
+> As for being limited to DT, that is correct currently, just as SSDT is
+> an ACPI specific way of doing mostly the same thing. However, I'm not sure
+> it needs to be a limitation. As long as there is well definied
+> segregation between the base tree and the overlay (ie. it would be
+> useful to filter which nodes can be attached to, there are security
+> implications here too) then it would be fine for a DT overlay to pull in
+> additional devices on top of an ACPI base tree.
+> 
 
-Not speaking for Evgeny Boger, but I'm thinking that's intended here.
-The original strong pullup code change 6a158c0de791a81 I wrote will
-msleep in w1_post_write when a hardware pullup isn't available, while
-the hardware ds2490 ds9490r_set_pullup sleeps for the strong pullup
-using spu_sleep variable.  The user requests a strong pullup for a
-given time and any other operations on the bus will interrupt the
-strong pullup, so locking any other operations sounds desired.
+Well, this can be pretty radical, but what about converting the ACPI base tree
+in DT format and then take it from there.
 
-> 11/12/2013 05:03 AM, Evgeniy Polyakov:
-> >Hi
-> >
-> >12.11.2013, 03:32, "Evgeny Boger" <eugenyboger@gmail.com>:
-> >>>Why did you drop this check? It has nothing with w1-gpio driver
-> >>This check prevents master from implementing "set_pullup"  provided it does support only "write_bit" method.
-> >>The comment above states that
-> >>>  w1_io.c would need to support calling set_pullup before - * the last write_bit operation of a w1_write_8 which it currently - * doesn't.
-> >>which is kind of strange, since it describes what w1_io.c actually does support.
-> >>
-> >>w1_write_8 (w1_io.c:154, https://github.com/torvalds/linux/blob/master/drivers/w1/w1_io.c#L154):
-> >>>                 for (i = 0; i < 8; ++i) {
-> >>>                         if (i == 7)
-> >>>                                 w1_pre_write(dev);
-> >>>                         w1_touch_bit(dev, (byte >> i) & 0x1);
-> >>>                 }
-> >>It seems like w1_write_8() calls w1_pre_write(), which in turn calls set_pullup() just before the last write_bit().
+I'm sure the state of DT encompasses most of what ACPI does ATM, modulo the
+whole craziness of calling in firmware/interpreting bytecode to do stuff like
+turn on a GPIO.
 
-I'm not seeing any harm in removing this check and clear
-master->set_pullup.  It doesn't seem correct for this code to override
-a master that claims to provide something of a stronger pullup.  It's
-been about five years since I wrote that code, I think it was just to
-protect against a stupid master.
+I might be in the minority, but it took us so many years on not having to rely
+on weird firmware to get our systems to work, and ACPI seems to be heading back
+into the old ways on having to rely on firmware quirks to patch firmware we 
+are dependent on.
 
-With this patch the last w1_write_bit will go logic 1, for 64 or 10 us
-before returning, then w1_gpio_set_pullup is called to enable the
-strong pullup.  What I wouldn't know is if in that last bit if the
-logic 1 would be a go up to the strong pullup, or if it would finish
-that time slot with a weak pullup and then go to a strong pullup.  I
-would have to dig into the timing specifications much more than I have
-time to right now to say what is supposed to happen.  The 18b20
-datasheet lists, "The DQ line must be switched over to the strong
-pullup within 10 us maximum after issuing any protocol that involves
-copying the E2 memory or initiates temperature conversions."  It isn't
-clear where that 10 us starts from.  You might try to dig around and
-see if that last bit written should go to weak pullup 1 or strong
-pullup 1.  It would take more changes if it should go right to a
-strong pullup.
+DT way of describing only, may be not to the liking of everyone, but I certainly
+prefer it.
 
-> >>I'm not sure why this check was there in the first place.
-> >Please add author of those lines to clarify things.
-> >This doesn't look obvious to me
+>>> His use case is not uncommon, believe it or not, and x86 would benefit from
+>>> something this flexible.
+>> 
+>> I *think* a more flexible solution would be something like bus_type which is
+>> exposed via configfs. It would be attached behind a certain device/bus where
+>> the "physical" hotplug interface is. The user would then be able to read the
+>> configuration based on whatever information he has and could then create
+>> devices he likes at runtime. This wouldn't depend much on the firmware that is
+>> used but would require a little more work I think.
+> 
+> I'm certainly fine with investigating the above (modulo security
+> concerns of creating arbitrary devices). However, that is only one
+> use-case. There still needs to be the mechanism of passing the kernel a
+> blob all at once and say, "Here is the layout of this new hunk of
+> hardware".  For instance, you don't want to have to build up a set of
+> devices from scratch every time a new device is passed in. Xilinx for
+> instance has a tool which creates a FDT for an FPGA bitstream right from
+> the FPGA tools.
+> 
+> g.
 
--- 
-David Fries <david@fries.net>    PGP pub CB1EE8F0
-http://fries.net/~david/
+Regards
+
+-- Pantelis
+
