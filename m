@@ -1,64 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab3KLONd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:13:33 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:61746 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755640Ab3KLONa (ORCPT
+	id S1755743Ab3KLONt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:13:49 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:51673 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755708Ab3KLONp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:13:30 -0500
-X-IronPort-AV: E=Sophos;i="4.93,685,1378857600"; 
-   d="scan'208";a="71018578"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <Stefano.Stabellini@eu.citrix.com>, <konrad@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 2/2] swiotlb-xen: xen_swiotlb_map_page: do not error out if dma_capable fails
-Date: Tue, 12 Nov 2013 14:12:00 +0000
-Message-ID: <1384265520-6833-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1311121404590.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1311121404590.26077@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+	Tue, 12 Nov 2013 09:13:45 -0500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: devicetree@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 4/5 v2] input: tc3589x-keypad: support probing from device tree
+Date: Tue, 12 Nov 2013 15:13:38 +0100
+Message-Id: <1384265618-10590-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many ARM devices do not set the dma_mask correctly today.
-As a consequence dma_capable fails for them regardless of the address
-passed to it.
-In xen_swiotlb_map_page we currently use dma_capable to check if the
-address returned by the swiotlb is good for dma for the device.
-However the check would often fail even if the address is correct.
-Considering that we know that the swiotlb buffer has a low address,
-skip the check.
+Implement device tree probing for the tc3589x keypad driver.
+This is modeled on the STMPE keypad driver and tested on the
+Ux500 TVK1281618 UIB.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/xen/swiotlb-xen.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+ChangeLog v1->v2:
+- Fix rows/columns binding to read two u32's insead of two
+  u8 /bits/ as noted by Mark Rutland.
+---
+ drivers/input/keyboard/tc3589x-keypad.c | 63 +++++++++++++++++++++++++++++++--
+ 1 file changed, 61 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 1eac073..543e30b 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -402,13 +402,6 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 					map & ~PAGE_MASK, size, dir, attrs);
- 	dev_addr = xen_phys_to_bus(map);
- 
--	/*
--	 * Ensure that the address returned is DMA'ble
--	 */
--	if (!dma_capable(dev, dev_addr, size)) {
--		swiotlb_tbl_unmap_single(dev, map, size, dir);
--		dev_addr = 0;
--	}
- 	return dev_addr;
+diff --git a/drivers/input/keyboard/tc3589x-keypad.c b/drivers/input/keyboard/tc3589x-keypad.c
+index 208de7cbb7fa..7b6637d8cfbc 100644
+--- a/drivers/input/keyboard/tc3589x-keypad.c
++++ b/drivers/input/keyboard/tc3589x-keypad.c
+@@ -297,6 +297,62 @@ static void tc3589x_keypad_close(struct input_dev *input)
+ 	tc3589x_keypad_disable(keypad);
  }
- EXPORT_SYMBOL_GPL(xen_swiotlb_map_page);
+ 
++#ifdef CONFIG_OF
++static const struct tc3589x_keypad_platform_data *
++tc3589x_keypad_of_probe(struct device *dev)
++{
++	struct device_node *np = dev->of_node;
++	struct tc3589x_keypad_platform_data *plat;
++	u32 debounce_ms;
++	int proplen;
++
++	if (!np)
++		return ERR_PTR(-ENODEV);
++
++	plat = devm_kzalloc(dev, sizeof(*plat), GFP_KERNEL);
++	if (!plat)
++		return ERR_PTR(-ENOMEM);
++
++	of_property_read_u32(np, "keypad,num-columns", &plat->kcol);
++	of_property_read_u32(np, "keypad,num-rows", &plat->krow);
++	if (!plat->krow || !plat->kcol ||
++	     plat->krow > TC_KPD_ROWS || plat->kcol > TC_KPD_COLUMNS) {
++		dev_err(dev,
++			"keypad columns/rows not properly specified (%ux%u)\n",
++			plat->kcol, plat->krow);
++		return ERR_PTR(-EINVAL);
++	}
++
++	if (!of_get_property(np, "linux,keymap", &proplen)) {
++		dev_err(dev, "property linux,keymap not found\n");
++		return ERR_PTR(-ENOENT);
++	}
++
++	plat->no_autorepeat = of_property_read_bool(np, "linux,no-autorepeat");
++	plat->enable_wakeup = of_property_read_bool(np, "linux,wakeup");
++
++	/* The custom delay format is ms/16 */
++	of_property_read_u32(np, "debounce-delay-ms", &debounce_ms);
++	if (debounce_ms)
++		plat->debounce_period = debounce_ms * 16;
++	else
++		plat->debounce_period = TC_KPD_DEBOUNCE_PERIOD;
++
++	plat->settle_time = TC_KPD_SETTLE_TIME;
++	/* FIXME: should be property of the IRQ resource? */
++	plat->irqtype = IRQF_TRIGGER_FALLING;
++
++	return plat;
++}
++#else
++static inline const struct tc3589x_keypad_platform_data *
++tc3589x_keypad_of_probe(struct device *dev)
++{
++	return ERR_PTR(-ENODEV);
++}
++#endif
++
++
+ static int tc3589x_keypad_probe(struct platform_device *pdev)
+ {
+ 	struct tc3589x *tc3589x = dev_get_drvdata(pdev->dev.parent);
+@@ -307,8 +363,11 @@ static int tc3589x_keypad_probe(struct platform_device *pdev)
+ 
+ 	plat = tc3589x->pdata->keypad;
+ 	if (!plat) {
+-		dev_err(&pdev->dev, "invalid keypad platform data\n");
+-		return -EINVAL;
++		plat = tc3589x_keypad_of_probe(&pdev->dev);
++		if (IS_ERR(plat)) {
++			dev_err(&pdev->dev, "invalid keypad platform data\n");
++			return PTR_ERR(plat);
++		}
+ 	}
+ 
+ 	irq = platform_get_irq(pdev, 0);
 -- 
-1.7.2.5
+1.8.3.1
 
