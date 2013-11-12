@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab3KLJql (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 04:46:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3950 "EHLO mx1.redhat.com"
+	id S1754086Ab3KLJsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 04:48:25 -0500
+Received: from mga02.intel.com ([134.134.136.20]:30431 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751618Ab3KLJqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 04:46:39 -0500
-Date: Tue, 12 Nov 2013 10:46:28 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] tools lib traceevent: Add direct access to dynamic arrays
-Message-ID: <20131112094628.GA1427@krava.brq.redhat.com>
-References: <20131111160810.0ba9df7d@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131111160810.0ba9df7d@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751724Ab3KLJsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 04:48:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="407367738"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] ACPI / LPSS: add ACPI IDs for newer Intel PCHs
+Date: Tue, 12 Nov 2013 11:48:19 +0200
+Message-Id: <1384249699-9493-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 04:08:10PM -0500, Steven Rostedt wrote:
-> 
-> Jiri Olsa was writing a plugin for the cfg80211_tx_mlme_mgmt trace
-> event, and was not able to get the implemented function working.
-> The event's print fmt looks like:
-> 
->    "netdev:%s(%d), ftype:0x%.2x", REC->name, REC->ifindex,
->             __le16_to_cpup((__le16 *)__get_dynamic_array(frame))
-> 
-> As there's no helper function for __le16_to_cpup(), Jiri was creating one
-> with a plugin. But unfortunately, it would not work even though he set
-> up the plugin correctly.
-> 
-> The problem is that the function parameters do not handle the helper
-> function "__get_dynamic_array()", and that passes in a NULL pointer.
-> 
-> Adding PRINT_DYNAMIC_ARRAY direct support to eval_num_arg() allows the
-> use of __get_dynamic_array() in function parameters.
-> 
-> Reported-by: Jiri Olsa <jolsa@redhat.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Some recent Intel PCHs with LPSS have different ACPI IDs for the LPSS
+devices, so add these to the list as well.
 
-cool, thanks
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/acpi/acpi_lpss.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-Tested-by: Jiri Olsa <jolsa@redhat.com>
+diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+index fb78bb9ad8f6..242885715331 100644
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -157,6 +157,15 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+ 	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
+ 	{ "INT33B2", },
+ 
++	{ "INT3430", (unsigned long)&lpt_dev_desc },
++	{ "INT3431", (unsigned long)&lpt_dev_desc },
++	{ "INT3432", (unsigned long)&lpt_dev_desc },
++	{ "INT3433", (unsigned long)&lpt_dev_desc },
++	{ "INT3434", (unsigned long)&lpt_uart_dev_desc },
++	{ "INT3435", (unsigned long)&lpt_uart_dev_desc },
++	{ "INT3436", (unsigned long)&lpt_sdio_dev_desc },
++	{ "INT3437", },
++
+ 	{ }
+ };
+ 
+-- 
+1.8.4.2
 
-
-jirka
