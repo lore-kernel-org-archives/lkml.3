@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab3KLKc7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 05:32:59 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55172 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab3KLKc5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 05:32:57 -0500
-Date: Tue, 12 Nov 2013 11:32:28 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
-        Morten.Rasmussen@arm.com, cmetcalf@tilera.com, tony.luck@intel.com,
-        alex.shi@intel.com, preeti@linux.vnet.ibm.com,
-        linaro-kernel@lists.linaro.org, rjw@sisk.pl,
-        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
-        len.brown@intel.com, arjan@linux.intel.com, amit.kucheria@linaro.org,
-        l.majewski@samsung.com
-Subject: Re: [RFC][PATCH v5 05/14] sched: add a packing level knob
-Message-ID: <20131112103228.GE4971@laptop.programming.kicks-ass.net>
-References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
- <1382097147-30088-5-git-send-email-vincent.guittot@linaro.org>
+	id S1754669Ab3KLKdi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 05:33:38 -0500
+Received: from mga11.intel.com ([192.55.52.93]:50241 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753327Ab3KLKdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 05:33:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,684,1378882800"; 
+   d="scan'208";a="431932693"
+Message-ID: <528205A5.4020105@intel.com>
+Date: Tue, 12 Nov 2013 12:40:37 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382097147-30088-5-git-send-email-vincent.guittot@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: sdhci-acpi: add new ACPI ID
+References: <1384250493-11232-1-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <1384250493-11232-1-git-send-email-mika.westerberg@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 18, 2013 at 01:52:18PM +0200, Vincent Guittot wrote:
-> +int sched_proc_update_packing(struct ctl_table *table, int write,
-> +		void __user *buffer, size_t *lenp,
-> +		loff_t *ppos)
-> +{
-> +	int ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
-> +	if (ret || !write)
-> +		return ret;
-> +
-> +	if (sysctl_sched_packing_level)
-> +		sd_pack_threshold = (100 * 1024) / sysctl_sched_packing_level;
-> +
-> +	return 0;
-> +}
+On 12/11/13 12:01, Mika Westerberg wrote:
+> Newer Intel PCHs with LPSS have the same SDHCI controller than Haswell but
+> ACPI ID is different. Add this ID to the driver list.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-> +#ifdef CONFIG_SCHED_PACKING_TASKS
-> +static int min_sched_packing_level;
-> +static int max_sched_packing_level = 100;
-> +#endif /* CONFIG_SMP */
+Acked-by: Adrian Hunter <adrian.hunter@intel.com>
 
-> +#ifdef CONFIG_SCHED_PACKING_TASKS
-> +	{
-> +		.procname	= "sched_packing_level",
-> +		.data		= &sysctl_sched_packing_level,
-> +		.maxlen		= sizeof(int),
-> +		.mode		= 0644,
-> +		.proc_handler	= sched_proc_update_packing,
-> +		.extra1		= &min_sched_packing_level,
-> +		.extra2		= &max_sched_packing_level,
-> +	},
-> +#endif
+> ---
+>  drivers/mmc/host/sdhci-acpi.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
+> index cdd4ce0d7c90..d94fa1467c79 100644
+> --- a/drivers/mmc/host/sdhci-acpi.c
+> +++ b/drivers/mmc/host/sdhci-acpi.c
+> @@ -144,6 +144,7 @@ static const struct sdhci_acpi_uid_slot sdhci_acpi_uids[] = {
+>  	{ "80860F14" , "3" , &sdhci_acpi_slot_int_sd   },
+>  	{ "INT33BB"  , "2" , &sdhci_acpi_slot_int_sdio },
+>  	{ "INT33C6"  , NULL, &sdhci_acpi_slot_int_sdio },
+> +	{ "INT3436"  , NULL, &sdhci_acpi_slot_int_sdio },
+>  	{ "PNP0D40"  },
+>  	{ },
+>  };
+> @@ -152,6 +153,7 @@ static const struct acpi_device_id sdhci_acpi_ids[] = {
+>  	{ "80860F14" },
+>  	{ "INT33BB"  },
+>  	{ "INT33C6"  },
+> +	{ "INT3436"  },
+>  	{ "PNP0D40"  },
+>  	{ },
+>  };
+> 
 
-Shouldn't min_sched_packing_level be 1? Userspace can now write 0 and
-expect something; but then we don't update sd_pack_threshold so nothing
-really changed.
