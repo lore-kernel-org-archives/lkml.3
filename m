@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab3KLXAg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 18:00:36 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:51857 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864Ab3KLXA2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 18:00:28 -0500
-Date: Wed, 13 Nov 2013 00:00:16 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@suse.de>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tglx@linutronix.de, trenn@suse.de, linux-tip-commits@vger.kernel.org
+	id S1757349Ab3KLXCN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 18:02:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52861 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757243Ab3KLXCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 18:02:06 -0500
+Date: Wed, 13 Nov 2013 00:01:38 +0100
+From: Borislav Petkov <bp@suse.de>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, tglx@linutronix.de, trenn@suse.de,
+        linux-tip-commits@vger.kernel.org
 Subject: Re: [tip:x86/urgent] x86/microcode/amd: Tone down printk(), don' t
  treat a missing firmware file as an error
-Message-ID: <20131112230016.GA30674@gmail.com>
+Message-ID: <20131112230138.GL12854@pd.tnic>
 References: <1384274383-43510-1-git-send-email-trenn@suse.de>
  <tip-11f918d3e2d3861b6931e97b3aa778e4984935aa@git.kernel.org>
  <20131112224511.GJ12854@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 In-Reply-To: <20131112224511.GJ12854@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
@@ -27,9 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(fixed stable@vger).
 
-* Borislav Petkov <bp@suse.de> wrote:
-
+On Tue, Nov 12, 2013 at 11:45:11PM +0100, Borislav Petkov wrote:
 > On Tue, Nov 12, 2013 at 01:58:00PM -0800, tip-bot for Thomas Renninger wrote:
 > > Commit-ID:  11f918d3e2d3861b6931e97b3aa778e4984935aa
 > > Gitweb:     http://git.kernel.org/tip/11f918d3e2d3861b6931e97b3aa778e4984935aa
@@ -55,14 +54,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > 
 > Shouldn't that be <stable@vger.kernel.org> ?
 
-Indeed that is the documented alias, although stable@kernel.org works as 
-well and is used frequently:
+Yes, it should:
 
-  comet:~/tip> git log v3.0..v3.12 | grep 'stable@kernel.org' | wc -l
-  1390
-  comet:~/tip> git log v3.0..v3.12 | grep 'stable@vger.kernel.org' | wc -l
-  4750
+Final-Recipient: rfc822; stable@kernel.org
+Action: failed
+Status: 5.0.0
+Diagnostic-Code: X-Postfix; host mail.kernel.org[198.145.19.201] said: 550
+    5.1.1 <stable@kernel.org>: Recipient address rejected: User unknown in
+    local recipient table (in reply to RCPT TO command)
 
-Thanks,
+-- 
+Regards/Gruss,
+    Boris.
 
-	Ingo
+Sent from a fat crate under my desk. Formatting is fine.
+--
