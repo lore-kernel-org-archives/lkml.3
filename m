@@ -1,94 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab3KLIGe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 03:06:34 -0500
-Received: from emh01.mail.saunalahti.fi ([62.142.5.107]:51803 "EHLO
-	emh01.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab3KLIG0 (ORCPT
+	id S1754818Ab3KLIHR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 03:07:17 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:49326 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754750Ab3KLIHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 03:06:26 -0500
-Message-ID: <1384243549.12583.36.camel@porter.coelho.fi>
-Subject: Re: [PATCH] clk: add flags to distinguish xtal clocks
-From: Luca Coelho <luca@coelho.fi>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: balbi@ti.com, mturquette@linaro.org, james.hogan@imgtec.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 12 Nov 2013 10:05:49 +0200
-In-Reply-To: <20131111205910.GA26440@lukather>
-References: <1382528150.21526.25.camel@porter.coelho.fi>
-	 <1383933648-28595-1-git-send-email-balbi@ti.com>
-	 <20131110113716.GN26440@lukather> <20131111194247.GB19212@saruman.home>
-	 <1384199456.12583.27.camel@porter.coelho.fi>
-	 <20131111205910.GA26440@lukather>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2 
-Mime-Version: 1.0
+	Tue, 12 Nov 2013 03:07:11 -0500
+Message-ID: <5281E09B.3060303@linux.vnet.ibm.com>
+Date: Tue, 12 Nov 2013 13:32:35 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: mgorman@suse.de, dave@sr71.net, hannes@cmpxchg.org, tony.luck@intel.com,
+        matthew.garrett@nebula.com, riel@redhat.com, arjan@linux.intel.com,
+        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
+        gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
+        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
+        kosaki.motohiro@gmail.com, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@stericsson.com, loic.pallardy@stericsson.com,
+        amit.kachhap@linaro.org, thomas.abraham@linaro.org,
+        markgross@thegnar.org
+Subject: Re: [Results] [RFC PATCH v4 00/40] mm: Memory Power Management
+References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com> <52437128.7030402@linux.vnet.ibm.com> <20130925164057.6bbaf23bdc5057c42b2ab010@linux-foundation.org> <52442F6F.5020703@linux.vnet.ibm.com>
+In-Reply-To: <52442F6F.5020703@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111208-2000-0000-0000-00000E7FA374
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-11 at 21:59 +0100, Maxime Ripard wrote:
-> Hi Luca,
+On 09/26/2013 06:28 PM, Srivatsa S. Bhat wrote:
+> On 09/26/2013 05:10 AM, Andrew Morton wrote:
+>> On Thu, 26 Sep 2013 04:56:32 +0530 "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>
+>>> Experimental Results:
+>>> ====================
+>>>
+>>> Test setup:
+>>> ----------
+>>>
+>>> x86 Sandybridge dual-socket quad core HT-enabled machine, with 128GB RAM.
+>>> Memory Region size = 512MB.
+>>
+>> Yes, but how much power was saved ;)
+>>
 > 
-> On Mon, Nov 11, 2013 at 09:50:56PM +0200, Luca Coelho wrote:
-> > On Mon, 2013-11-11 at 13:42 -0600, Felipe Balbi wrote:
-> > > > > +	if (of_property_read_bool(node, "clock-xtal"))
-> > > > > +		flags |= CLK_IS_TYPE_XTAL;
-> > > > > +
-> > > > 
-> > > > Introducing a new compatible instead of a property would make more
-> > > > sense here I think.
-> > > > 
-> > > > Do you have a reason not to do so?
-> > > 
-> > > As you can see, this is original work from Luca but I disagree that
-> > > adding a new compatible makes more sense. This still related to a fixed
-> > > rate clock, we're just giving it one extra metadata which willAnd t
-> > > differentiate between crystal and oscilator fixed rate clocks.
-> > 
-> > I agree with Felipe.  This was discussed before [1].  While still at TI,
-> > I tried to figure out the exact need for the firmware to know whether it
-> > was an oscillator or not.  It was mostly because the stabilization time
-> > and such things differ with oscillators, but I wasn't able to find out
-> > how exactly this affected things.
-> > 
-> > In any case, as I concluded earlier (but it's not really my call), being
-> > a crystal or an oscillator *is* a characteristic of the hardware,
-> > regardless of whether that information is useful or not.  In the WiLink
-> > case it is, at least it can differentiate the clocks that are used in
-> > the HW modules it uses.
-> > 
-> > So IMHO it doesn't really hurt and it's not really against the DT
-> > principles.
+> I don't have those numbers yet, but I'll be able to get them going forward.
 > 
-> Just to be clear, I'm not against your patch. If you need this to make
-> your driver work, then it's fine for me. Mike will probably know
-> better if we actually need some extra metadata.
 
-:)
+Hi,
 
-I understand, we should really try to make this as clean as possible, DT
-should really be a good description of the hardware.
+I performed experiments on an IBM POWER 7 machine and got actual power-savings
+numbers (upto 2.6% of total system power) from this patchset. I presented them
+at the Kernel Summit but forgot to post them on LKML. So here they are:
+
+Hardware-setup:
+--------------
+IBM POWER 7 machine: 4 socket (NUMA), 32 cores, 128GB RAM
+
+ - 4 NUMA nodes with 32 GB RAM each
+ - Booted with numa=fake=1 and treated them as 4 memory regions
 
 
-> What I'm not really convinced about is *how* you carry that metadata
-> in the DT, that's all, nothing more.
+Software setup:
+--------------
+Workload: Run modified ebizzy for half an hour, which allocates and frees large
+quantities of memory frequently. The modified ebizzy touches every allocated
+page a number of times (4 times) before freeing it up. This ensures that
+allocating a page in the "wrong" memory region makes it very costly in terms
+of power-savings, since every allocated page is accessed before getting
+freed (and accesses cause energy consumption). Thus, with this modified
+benchmark, sub-optimal MM decisions (in terms of memory power-savings) get
+magnified and hence become noticeable.
 
-Okay, I get you.  My point is that being a crystal or not *is* a
-characteristic of the clock, so I think it could be part of the flags
-that describe it.
 
-In any case, it's not really my call.  This is about the clock and it's
-not even my home turf (wireless). ;)
+Power-savings compared to mainline (3.12-rc4):
+---------------------------------------------
+With this patchset applied, the average power of the system reduced by 2.6%
+compared to the mainline kernel during the benchmark run. The total system
+power is an excellent metric for such evaluations, since it brings out the
+overall power-efficiency of the patchset. (IOW, if the patchset shoots up the
+CPU or disk power-consumption while causing memory power savings, then the
+total system power will not show much difference). So these numbers indicate
+that the patchset performs quite well in reducing the power-consumption of
+the system as a whole.
 
-Thanks for your comments.  And I'm sorry if the tone of my previous
-email sounded harsh, it was not supposed to. :)
+This is not the most ideal hardware configuration to test on, since I had
+only 4 memory regions to play with, but this gives a good initial indication
+of the kind of power savings that can be achieved with this patchset.
 
---
-Cheers,
-Luca.
+I am expecting the same patchset to give us power-savings of upto 5% of the
+total system power on a newer prototype hardware that I have (since it has
+more memory regions and lower base power consumption).
+
+
+Regards,
+Srivatsa S. Bhat
 
