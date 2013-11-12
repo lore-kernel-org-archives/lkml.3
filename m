@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab3KLSel (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 13:34:41 -0500
-Received: from old.lon-b.elastichosts.com ([84.45.121.3]:46980 "EHLO
-	lon-b.elastichosts.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753616Ab3KLSei (ORCPT
+	id S1755732Ab3KLSgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 13:36:03 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45606 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756Ab3KLSgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 13:34:38 -0500
-X-Greylist: delayed 1710 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Nov 2013 13:34:38 EST
-Message-ID: <52826DF3.5080207@elastichosts.com>
-Date: Tue, 12 Nov 2013 18:05:39 +0000
-From: Alin Dobre <alin.dobre@elastichosts.com>
-Organization: Elastichosts Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 12 Nov 2013 13:36:00 -0500
+Date: Tue, 12 Nov 2013 19:35:53 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] clockevents/clocksource: 3.12 fixes
+Message-ID: <20131112183553.GQ14892@pengutronix.de>
+References: <528234B9.7080402@linaro.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: Re: unused swap offset / bad page map.
-References: <lJQeu-5tO-9@gated-at.bofh.it> <lJQHv-5W5-3@gated-at.bofh.it> <lJQHv-5W5-1@gated-at.bofh.it> <lKVYt-5fo-1@gated-at.bofh.it> <lLakO-6hD-15@gated-at.bofh.it> <lLbqy-7B9-31@gated-at.bofh.it> <lLbTA-824-19@gated-at.bofh.it> <lLd90-1jl-19@gated-at.bofh.it> <lLdsl-1BG-15@gated-at.bofh.it> <lLmYF-4Sc-1@gated-at.bofh.it> <lLujx-5DP-31@gated-at.bofh.it>
-In-Reply-To: <lLujx-5DP-31@gated-at.bofh.it>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <528234B9.7080402@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/08/13 17:30, Dave Jones wrote:
-> Seems to do the trick.
+Hello,
 
-We are running many virtualization hosts with Linux 3.11.3, qemu 1.6.1 + 
-kvm and ksm. The hosts have 128GB RAM, 10GB swap and 24x AMD Opteron 
-6238 cores.
+On Tue, Nov 12, 2013 at 03:01:29PM +0100, Daniel Lezcano wrote:
+> 
+> Hi Ingo and Thomas,
+> 
+> this pull request has the following contain:
+> 
+>  * Laurent Pinchard fixed a missing a clk_put in case the
+> registering of the sh_mtu[2] drivers fails.
+> 
+>  * Uwe Kleine-König reuse clockevents_config_and_register for the
+> at91rm9200_time timer as it was depending on the patch (commit
+> a4578ea (clockevents: Sanitize ticks to nsec conversion).
+> 
+> I don't know why Thomas's patch "clockevents: Sanitize ticks to nsec
+> conversion" appears in the request log because it is not part of the
+> patches interval I specified for git request pull. The diffstat does
+> not show the files which should have been changed by the patch. In
+> any case I kept the changelog untouched since it is what gives me
+> git and maybe someone can tell me why it appears.
+Look at:
 
-Several times few weeks ago, we have seen the OOM killer come to life 
-and quickly kill a large number of VMs on a host, even when there 
-appears to be free memory on that host at the start of this.
+	git log --oneline --graph --boundary 97b9410..42ab380
 
-However the OOM killings are preceded by some other traces, similar to 
-the ones that were reported by Dave couple of months ago in this very 
-thread (https://lkml.org/lkml/2013/8/7/27).
+Then you see that there is Thomas' patch twice. Once the version he
+committed and sent to Linus (97b9410) and once the version that you get
+as part of my pull request (a4578ea). To fix this (assuming you don't
+care much about a stable tree), simply do:
 
-The relevant kernel log lines read:
+	git rebase 97b9410 42ab380
 
-20:30:44 kernel: swap_free: Unused swap file entry 200000000000200
-20:30:44 kernel: BUG: Bad page map in process qemu-system-x86 
-pte:00040002 pmd:1ecc0d4067
-20:30:44 kernel: addr:00007f5b8b404000 vm_flags:80100073 
-anon_vma:ffff880ff0e9df00 mapping:          (null) index:7f5b8b404
-20:30:44 kernel: CPU: 9 PID: 22652 Comm: qemu-system-x86 Not tainted 
-3.11.2-elastic #2
-20:30:44 kernel: Hardware name: Supermicro H8DG6/H8DGi/H8DG6/H8DGi, BIOS 
-2.0b       03/01/2012
-20:30:44 kernel: 00007f5b8b404000 ffff8807b76b1ab8 ffffffff817ee7a6 
-00000000000400f6
-20:30:44 kernel: ffff880ea36a0e60 ffff8807b76b1b08 ffffffff81135ed5 
-000000000000000e
-20:30:44 kernel: 00000007f5b8b404 ffff8807b76b1b08 00007f5b8b404000 
-ffff880ea36a0e60
-20:30:44 kernel: Call Trace:
-20:30:44 kernel: [<ffffffff817ee7a6>] dump_stack+0x55/0x86
-20:30:44 kernel: [<ffffffff81135ed5>] print_bad_pte+0x1f5/0x213
-20:30:44 kernel: [<ffffffff811379fd>] unmap_single_vma+0x509/0x6d6
-20:30:44 kernel: [<ffffffff81138291>] unmap_vmas+0x4d/0x80
-20:30:44 kernel: [<ffffffff8113e615>] exit_mmap+0x93/0x11e
-20:30:44 kernel: [<ffffffff810bc2fb>] mmput+0x51/0xdb
-20:30:44 kernel: [<ffffffff810c00b1>] do_exit+0x33c/0x8a2
-20:30:44 kernel: [<ffffffff810f58ab>] ? get_futex_key+0x87/0x20c
-20:30:44 kernel: [<ffffffff810c7215>] ? __dequeue_signal+0x16/0x114
-20:30:44 kernel: [<ffffffff810c06af>] do_group_exit+0x6a/0x9d
-20:30:44 kernel: [<ffffffff810c956a>] get_signal_to_deliver+0x488/0x4a7
-20:30:44 kernel: [<ffffffff81032db9>] do_signal+0x47/0x48f
-20:30:44 kernel: [<ffffffff8110dc29>] ? rcu_eqs_enter+0x7d/0x82
-20:30:44 kernel: [<ffffffff810e0ff4>] ? account_user_time+0x6a/0x95
-20:30:44 kernel: [<ffffffff810e13b6>] ? vtime_account_user+0x5d/0x65
-20:30:44 kernel: [<ffffffff81033229>] do_notify_resume+0x28/0x6a
-20:30:44 kernel: [<ffffffff817f6358>] int_signal+0x12/0x17
-20:30:44 kernel: Disabling lock debugging due to kernel taint
-20:30:44 kernel: 33550335 pages RAM
-20:30:44 kernel: 561601 pages reserved
-20:30:44 kernel: 24628376 pages shared
-20:30:44 kernel: 7190750 pages non-shared
+and let the result pull.
 
-Since we are using a 3.11.3 kernel, it already contains Cyrill's fix. 
-However, our kernel log is very similar to Dave's report, so we are 
-wondering if our mass OOM kill is another problem in the same area?
+Best regards
+Uwe
 
-Any thoughts on this? I can provide more information from the logs, if 
-necessary, and my colleague Richard originally reported the mass OOM 
-kill in detail at http://article.gmane.org/gmane.linux.kernel.mm/108703.
-
-Cheers,
-Alin.
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
