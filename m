@@ -1,35 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091Ab3KLQm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 11:42:56 -0500
-Received: from mail.ucuenca.edu.ec ([192.188.48.2]:42471 "EHLO
-	mail.ucuenca.edu.ec" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641Ab3KLQmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 11:42:54 -0500
-X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Nov 2013 11:42:54 EST
-Date: Tue, 12 Nov 2013 11:35:52 -0500 (ECT)
-From: Web Security <pablo.pesantezh@ucuenca.edu.ec>
-Message-ID: <1537525519.10393.1384274152817.JavaMail.root@mail.ucuenca.edu.ec>
-Subject: Attention!
+	id S1755734Ab3KLQsq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 11:48:46 -0500
+Received: from mga11.intel.com ([192.55.52.93]:15784 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754213Ab3KLQsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 11:48:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,686,1378882800"; 
+   d="scan'208";a="426314104"
+Message-ID: <52825BE9.2080605@linux.intel.com>
+Date: Tue, 12 Nov 2013 08:48:41 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Tony Luck <tony.luck@intel.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "l.majewski@samsung.com" <l.majewski@samsung.com>,
+        Jonathan Corbet <corbet@lwn.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [RFC][PATCH v5 00/14] sched: packing tasks
+References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org> <CAHkRjk69GNYtLGBSWCNcsCzkBHywKrD0qQQbNkJRpMbcdsCPyw@mail.gmail.com> <20131111163630.GD26898@twins.programming.kicks-ass.net> <52810851.4090907@linux.intel.com> <20131111181805.GE29572@arm.com>
+In-Reply-To: <20131111181805.GE29572@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.190.3.7]
-X-Mailer: Zimbra 6.0.7_GA_2473.RHEL5_64 (zclient/6.0.7_GA_2473.RHEL5_64)
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/11/2013 10:18 AM, Catalin Marinas wrote:
+> The ordering is based on the actual C-state, so a simple way is to wake
+> up the CPU in the shallowest C-state. With asymmetric configurations
+> (big.LITTLE) we have different costs for the same C-state, so this would
+> come in handy.
 
+btw I was considering something else; in practice CPUs will be in the deepest state..
+... at which point I was going to go with some other metrics of what is best from a platform level
 
-Dear Email User,
-
-Your mailbox has exceeded the storage limit which is 20.00 GB as set by your administrator, you are currently running on 19.99 GB, you may not be able to send or receive new mail until you re-validate your email box. Kindly click the link below to re-validate your email account, If the page does not appear on your browser, you can copy and paste the link into your browser and fill in your account details, Click on "Submit" for account update.
-
-http://tiny.cc/wjqe5w
-
-Thanks!
-Mail Administrator!
-Case Number: 894162/2013
