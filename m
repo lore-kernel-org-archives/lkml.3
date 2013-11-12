@@ -1,112 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab3KLCQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 21:16:33 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:9879 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699Ab3KLCQQ (ORCPT
+	id S1753926Ab3KLCQq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 21:16:46 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:55778 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616Ab3KLCQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 21:16:16 -0500
-From: Jerry Hoemann <jerry.hoemann@hp.com>
-To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, matt.fleming@intel.com, yinghai@kernel.org,
-        penberg@kernel.org, akpm@linux-foundation.org,
-        linux-doc@vger.kernel.org, linux-efi@vger.kernel.org,
-        vgoyal@redhat.com
-Cc: linux-kernel@vger.kernel.org, jerry.hoemann@hp.com
-Subject: [PATCH 3/3] x86, efi: Early use of boot service memory
-Date: Mon, 11 Nov 2013 19:15:58 -0700
-Message-Id: <1384222558-38527-4-git-send-email-jerry.hoemann@hp.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com>
-References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com>
+	Mon, 11 Nov 2013 21:16:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <1384220059.13547.17.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <CABawtvN+PEzm_h4Gg5uYtJCjVC5yPjikwwMepkZNZR=cQ+YQmg@mail.gmail.com>
+	<1383233136.4857.77.camel@edumazet-glaptop.roam.corp.google.com>
+	<CABawtvPSjm7LnE=nn6siJyoR+gf31iNA=ywSLz_0BR6rp_iK=w@mail.gmail.com>
+	<1384220059.13547.17.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Tue, 12 Nov 2013 10:16:33 +0800
+Message-ID: <CABawtvMpjy_=CS91g=9R3eJtdctRET9E4DZ=G_WrZaLtE89CGw@mail.gmail.com>
+Subject: Re: Got iperf regression while intel_iommu is on, how to cut the cost
+ of cache flushing
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ashok Raj <ashok.raj@intel.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend the kernel parameter add_efi_memmap to have additional
-optional arguement "correct."   EFI memmaps that are "correct"
-aren't accessed by platform firmware after a call to Exit Boot
-Services.
+Eric,
+    I do think it is the IO_MMMU reason that brought such performance
+down, while TSO/TSQ are not the way to cure such wounded performance.
+I might misunderstand the purpose of TSO/TSQ---get rid of the
+extra cache flushing pain of mapping and unmapping operation done by
+Intel IOMMU. (sorry for last HTML mail, resend txt )
 
-Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
----
- Documentation/kernel-parameters.txt |  8 ++++++++
- arch/x86/platform/efi/efi.c         | 13 +++++++++++--
- 2 files changed, 19 insertions(+), 2 deletions(-)
+Ethan
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index fcbb736..ae1bde6 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -346,6 +346,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	add_efi_memmap	[EFI; X86] Include EFI memory map in
- 			kernel's map of available physical RAM.
- 
-+	add_efi_memmap=	[EFI; X86] Include EFI memory map in
-+			kernel's map of available physical RAM.
-+			Additional Modifies:
-+
-+			correct: Platform firmware correctly doesn't reuse
-+			boot service code or data segments after Exit Boot
-+			Services.
-+
- 	agp=		[AGP]
- 			{ off | try_unsupported }
- 			off: disable AGP support
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index c7e22ab..0cb1cce 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -103,6 +103,10 @@ EXPORT_SYMBOL(add_efi_memmap);
- static int __init setup_add_efi_memmap(char *arg)
- {
- 	add_efi_memmap = 1;
-+	if (arg && strstr(arg, "correct")) {
-+		pr_info("%s: setting EFI_MEMMAP_CORRECT\n", __func__);
-+		set_bit(EFI_MEMMAP_CORRECT, &x86_efi_facility);
-+	}
- 	return 0;
- }
- early_param("add_efi_memmap", setup_add_efi_memmap);
-@@ -422,6 +426,8 @@ static void __init print_efi_memmap(void)
- }
- #endif  /*  EFI_DEBUG  */
- 
-+static int	efi_boot_services_reservations;
-+
- void __init efi_reserve_boot_services(void)
- {
- 	void *p;
-@@ -449,8 +455,10 @@ void __init efi_reserve_boot_services(void)
- 			memblock_dbg("Could not reserve boot range "
- 					"[0x%010llx-0x%010llx]\n",
- 						start, start+size-1);
--		} else
-+		} else {
- 			memblock_reserve(start, size);
-+			efi_boot_services_reservations++;
-+		}
- 	}
- }
- 
-@@ -467,7 +475,7 @@ void __init efi_free_boot_services(void)
- {
- 	void *p;
- 
--	if (!efi_is_native())
-+	if (!efi_is_native() || !efi_boot_services_reservations)
- 		return;
- 
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
-@@ -484,6 +492,7 @@ void __init efi_free_boot_services(void)
- 			continue;
- 
- 		free_bootmem_late(start, size);
-+		efi_boot_services_reservations--;
- 	}
- 
- 	efi_unmap_memmap();
--- 
-1.7.11.3
-
+On Tue, Nov 12, 2013 at 9:34 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Tue, 2013-11-12 at 09:03 +0800, Ethan Zhao wrote:
+>> Eric,
+>>     We have tested the performance with the TSO and TSQ patches
+>> merged, the result not good, even worse than kernel without those two
+>> patches. any idea ?
+>>
+>> kernel   : 3.11.x with TSO & TSQ merged.  ( CONFIG_INTEL_IOMMU_DEFAULT_ON=y )
+>> Network Interface : eth4
+>> Network driver    : be2net
+>>
+>> Average Bandwidth for :
+>>    1.tcp-unidirectional test    : 4385 Mbits/sec
+>>    2.tcp-unidirectional-parallel: 9383 Mbits/sec
+>>    3.tcp-bidirectonal test      : 2755 Mbits/sec
+>>
+>> vs
+>>
+>> kernel   :  3.11.x without TSO & TSQ patches.
+>> (CONFIG_INTEL_IOMMU_DEFAULT_ON is not set)
+>> Network Interface : eth4
+>> Network driver    : be2net
+>>
+>> Average Bandwidth for :
+>>    1.tcp-unidirectional test    : 7992 Mbits/sec
+>>    2.tcp-unidirectional-parallel: 9403 Mbits/sec
+>>    3.tcp-bidirectonal test      : 5802 Mbits/sec
+>>
+>
+> So it seems its not the TSO/TSQ changes, but
+> CONFIG_INTEL_IOMMU_DEFAULT_ON being on instead of off.
+>
+>
+>
