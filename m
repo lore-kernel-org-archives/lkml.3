@@ -1,121 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab3KLUQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 15:16:17 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:49033 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225Ab3KLUQK (ORCPT
+	id S1756182Ab3KLUTD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 15:19:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38259 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755541Ab3KLUSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 15:16:10 -0500
-Message-ID: <52828C31.2050604@ti.com>
-Date: Tue, 12 Nov 2013 16:14:41 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 12 Nov 2013 15:18:53 -0500
+Date: Tue, 12 Nov 2013 12:18:26 -0800
+From: tip-bot for Jiri Slaby <tipbot@zytor.com>
+Message-ID: <tip-5f01c98859073cb512b01d4fad74b5f4e047be0b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        namhyung@gmail.com, jslaby@suse.cz, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jslaby@suse.cz, namhyung@gmail.com, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1382706418-8435-1-git-send-email-jslaby@suse.cz>
+References: <1382706418-8435-1-git-send-email-jslaby@suse.cz>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/dumpstack:
+  Fix printk_address for direct addresses
+Git-Commit-ID: 5f01c98859073cb512b01d4fad74b5f4e047be0b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Guenter Roeck <linux@roeck-us.net>, <rui.zhang@intel.com>,
-        <wni@nvidia.com>, Grant Likely <grant.likely@linaro.org>,
-        <durgadoss.r@intel.com>, <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCHv5 20/20] MAINTAINERS: add maintainer entry for thermal
- bindings
-References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com> <1384285582-16933-21-git-send-email-eduardo.valentin@ti.com> <CAOesGMiCh-nGPqJQd4NPz9st7mBT0JkZ9nEK1gfyF2RmnrXZog@mail.gmail.com>
-In-Reply-To: <CAOesGMiCh-nGPqJQd4NPz9st7mBT0JkZ9nEK1gfyF2RmnrXZog@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="f56BqfqqbEW80qud7ROafavhrG6UELiBc"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 12:18:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f56BqfqqbEW80qud7ROafavhrG6UELiBc
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  5f01c98859073cb512b01d4fad74b5f4e047be0b
+Gitweb:     http://git.kernel.org/tip/5f01c98859073cb512b01d4fad74b5f4e047be0b
+Author:     Jiri Slaby <jslaby@suse.cz>
+AuthorDate: Fri, 25 Oct 2013 15:06:58 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 12 Nov 2013 21:06:06 +0100
 
-On 12-11-2013 15:59, Olof Johansson wrote:
-> On Tue, Nov 12, 2013 at 11:46 AM, Eduardo Valentin
-> <eduardo.valentin@ti.com> wrote:
->> After discussion and agreement of thermal device tree bindings,
->> it is desirable to properly maintain thermal bindings for
->> existing and upcoming devices.
->>
->> As original author of thermal device tree bindings, I am
->> volunteering to maintain them.
->>
->> Cc: Rob Herring <rob.herring@calxeda.com>
->> Cc: Pawel Moll <pawel.moll@arm.com>
->> Cc: Mark Rutland <mark.rutland@arm.com>
->> Cc: Stephen Warren <swarren@wwwdotorg.org>
->> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
->> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->> ---
->>  MAINTAINERS | 1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index 3438384..94bfc46 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -6178,6 +6178,7 @@ M:        Pawel Moll <pawel.moll@arm.com>
->>  M:     Mark Rutland <mark.rutland@arm.com>
->>  M:     Stephen Warren <swarren@wwwdotorg.org>
->>  M:     Ian Campbell <ijc+devicetree@hellion.org.uk>
->> +M:     Eduardo Valentin <eduardo.valentin@ti.com>
->>  L:     devicetree@vger.kernel.org
->>  S:     Maintained
->>  F:     Documentation/devicetree/
->=20
-> The number of device-tree maintainers is getting to be somewhat silly.
-> You don't have to be a maintainer to be a reviewer, and the number is
-> getting large enough that it might get hard for one maintainer to know
-> what another is doing.
->=20
-> So, soft nack, but it's really up to the DT guys.
+x86/dumpstack: Fix printk_address for direct addresses
 
-Hello Olof,
+Consider a kernel crash in a module, simulated the following way:
 
-No issues on my side. As I stated in the patch description, I am
-volunteering. The motivation comes from the fact that it's been hard to
-get DT maintainers attention, so I am assuming they are not having
-enough bandwidth to pay attention to an extra class of bindings.
+ static int my_init(void)
+ {
+         char *map = (void *)0x5;
+         *map = 3;
+         return 0;
+ }
+ module_init(my_init);
 
-I agree with you, this is up to the DT folks.
+When we turn off FRAME_POINTERs, the very first instruction in
+that function causes a BUG. The problem is that we print IP in
+the BUG report using %pB (from printk_address). And %pB
+decrements the pointer by one to fix printing addresses of
+functions with tail calls.
 
+This was added in commit 71f9e59800e5ad4 ("x86, dumpstack: Use
+%pB format specifier for stack trace") to fix the call stack
+printouts.
 
->=20
->=20
-> -Olof
->=20
->=20
+So instead of correct output:
 
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000005
+  IP: [<ffffffffa01ac000>] my_init+0x0/0x10 [pb173]
 
---=20
-You have got to be excited about what you are doing. (L. Lamport)
+We get:
 
-Eduardo Valentin
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000005
+  IP: [<ffffffffa0152000>] 0xffffffffa0151fff
 
+To fix that, we use %pS only for stack addresses printouts (via
+newly added printk_stack_address) and %pB for regs->ip (via
+printk_address). I.e. we revert to the old behaviour for all
+except call stacks. And since from all those reliable is 1, we
+remove that parameter from printk_address.
 
---f56BqfqqbEW80qud7ROafavhrG6UELiBc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: joe@perches.com
+Cc: jirislaby@gmail.com
+Link: http://lkml.kernel.org/r/1382706418-8435-1-git-send-email-jslaby@suse.cz
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/include/asm/kdebug.h |  2 +-
+ arch/x86/kernel/dumpstack.c   | 11 ++++++++---
+ arch/x86/kernel/process_64.c  |  2 +-
+ arch/x86/mm/fault.c           |  2 +-
+ arch/x86/platform/uv/uv_nmi.c |  2 +-
+ 5 files changed, 12 insertions(+), 7 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlKCjD4ACgkQCXcVR3XQvP2MdwD/SEGaGTglYxEMz7+GH81ShNQ9
-/80YSr5UHanZY02HA7oA/R+SZ8lrWwyGFUYWzziqk4zsFmJseZciL7A7mmMgZtDf
-=TWz8
------END PGP SIGNATURE-----
-
---f56BqfqqbEW80qud7ROafavhrG6UELiBc--
+diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
+index 2c37aad..32ce713 100644
+--- a/arch/x86/include/asm/kdebug.h
++++ b/arch/x86/include/asm/kdebug.h
+@@ -21,7 +21,7 @@ enum die_val {
+ 	DIE_NMIUNKNOWN,
+ };
+ 
+-extern void printk_address(unsigned long address, int reliable);
++extern void printk_address(unsigned long address);
+ extern void die(const char *, struct pt_regs *,long);
+ extern int __must_check __die(const char *, struct pt_regs *, long);
+ extern void show_trace(struct task_struct *t, struct pt_regs *regs,
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index deb6421..d9c12d3 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -25,12 +25,17 @@ unsigned int code_bytes = 64;
+ int kstack_depth_to_print = 3 * STACKSLOTS_PER_LINE;
+ static int die_counter;
+ 
+-void printk_address(unsigned long address, int reliable)
++static void printk_stack_address(unsigned long address, int reliable)
+ {
+ 	pr_cont(" [<%p>] %s%pB\n",
+ 		(void *)address, reliable ? "" : "? ", (void *)address);
+ }
+ 
++void printk_address(unsigned long address)
++{
++	pr_cont(" [<%p>] %pS\n", (void *)address, (void *)address);
++}
++
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ static void
+ print_ftrace_graph_addr(unsigned long addr, void *data,
+@@ -151,7 +156,7 @@ static void print_trace_address(void *data, unsigned long addr, int reliable)
+ {
+ 	touch_nmi_watchdog();
+ 	printk(data);
+-	printk_address(addr, reliable);
++	printk_stack_address(addr, reliable);
+ }
+ 
+ static const struct stacktrace_ops print_trace_ops = {
+@@ -281,7 +286,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
+ #else
+ 	/* Executive summary in case the oops scrolled away */
+ 	printk(KERN_ALERT "RIP ");
+-	printk_address(regs->ip, 1);
++	printk_address(regs->ip);
+ 	printk(" RSP <%016lx>\n", regs->sp);
+ #endif
+ 	return 0;
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 45ab4d6..176ad94 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -63,7 +63,7 @@ void __show_regs(struct pt_regs *regs, int all)
+ 	unsigned int ds, cs, es;
+ 
+ 	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->ip);
+-	printk_address(regs->ip, 1);
++	printk_address(regs->ip);
+ 	printk(KERN_DEFAULT "RSP: %04lx:%016lx  EFLAGS: %08lx\n", regs->ss,
+ 			regs->sp, regs->flags);
+ 	printk(KERN_DEFAULT "RAX: %016lx RBX: %016lx RCX: %016lx\n",
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 7a517bb..e7e1cac 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -596,7 +596,7 @@ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
+ 
+ 	printk(KERN_CONT " at %p\n", (void *) address);
+ 	printk(KERN_ALERT "IP:");
+-	printk_address(regs->ip, 1);
++	printk_address(regs->ip);
+ 
+ 	dump_pagetable(address);
+ }
+diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
+index 2e863ad..8eeccba 100644
+--- a/arch/x86/platform/uv/uv_nmi.c
++++ b/arch/x86/platform/uv/uv_nmi.c
+@@ -399,7 +399,7 @@ static void uv_nmi_dump_cpu_ip(int cpu, struct pt_regs *regs)
+ 	printk(KERN_DEFAULT "UV: %4d %6d %-32.32s ",
+ 		cpu, current->pid, current->comm);
+ 
+-	printk_address(regs->ip, 1);
++	printk_address(regs->ip);
+ }
+ 
+ /* Dump this cpu's state */
