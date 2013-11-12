@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab3KLT5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:57:03 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:44134 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756456Ab3KLT4p (ORCPT
+	id S1756639Ab3KLT7c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:59:32 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:44622 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755959Ab3KLT7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:56:45 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>, Jonas Bonn <jonas@southpole.se>
-Cc: linux@openrisc.net, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 1/2] openrisc: Use the declarations provided by <asm/sections.h>
-Date: Tue, 12 Nov 2013 20:56:20 +0100
-Message-Id: <1384286181-16137-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
-References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
+	Tue, 12 Nov 2013 14:59:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131106234737.8971.37405.sendpatchset@w520>
+References: <20131106234737.8971.37405.sendpatchset@w520>
+Date: Tue, 12 Nov 2013 20:59:21 +0100
+Message-ID: <CACRpkdZC+hvChpDMasj0avRTTbprVn8ro7NxywNUPw+SOr10bw@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Renesas RZ GPIO driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Openrisc's private vmlinux.h duplicates a few definitions that are already
-provided by asm-generic/sections.h. The former is used by setup.c only,
-while the latter is already used everywhere else.
+On Thu, Nov 7, 2013 at 12:47 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
 
-Convert setup.c to use the generic version:
-  - Include <asm/sections.h>,
-  - Remove the (slightly different) extern declarations,
-  - Remove the no longer needed address-of ('&') operators.
+> From: Magnus Damm <damm@opensource.se>
+>
+> This patch adds a GPIO driver for the RZ series of SoCs from
+> Renesas. The driver can be used as platform device with dynamic
+> or static GPIO assignment or via DT using dynamic GPIOs.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/openrisc/kernel/setup.c   |   11 ++++++-----
- arch/openrisc/kernel/vmlinux.h |    1 -
- 2 files changed, 6 insertions(+), 6 deletions(-)
+So given that this is for a new system which should only ever
+be booted using device tree, why are we bothering with supporting
+platform data passing at all?
 
-diff --git a/arch/openrisc/kernel/setup.c b/arch/openrisc/kernel/setup.c
-index ecc1c8850a11..c9b880d64bb8 100644
---- a/arch/openrisc/kernel/setup.c
-+++ b/arch/openrisc/kernel/setup.c
-@@ -40,6 +40,7 @@
- #include <linux/device.h>
- #include <linux/of_platform.h>
- 
-+#include <asm/sections.h>
- #include <asm/segment.h>
- #include <asm/pgtable.h>
- #include <asm/types.h>
-@@ -75,7 +76,7 @@ static unsigned long __init setup_memory(void)
- 
- 	ram_start_pfn = PFN_UP(memory_start);
- 	/* free_ram_start_pfn is first page after kernel */
--	free_ram_start_pfn = PFN_UP(__pa(&_end));
-+	free_ram_start_pfn = PFN_UP(__pa(_end));
- 	ram_end_pfn = PFN_DOWN(memblock_end_of_DRAM());
- 
- 	max_pfn = ram_end_pfn;
-@@ -288,10 +289,10 @@ void __init setup_arch(char **cmdline_p)
- 	setup_cpuinfo();
- 
- 	/* process 1's initial memory region is the kernel code/data */
--	init_mm.start_code = (unsigned long)&_stext;
--	init_mm.end_code = (unsigned long)&_etext;
--	init_mm.end_data = (unsigned long)&_edata;
--	init_mm.brk = (unsigned long)&_end;
-+	init_mm.start_code = (unsigned long)_stext;
-+	init_mm.end_code = (unsigned long)_etext;
-+	init_mm.end_data = (unsigned long)_edata;
-+	init_mm.brk = (unsigned long)_end;
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 	initrd_start = (unsigned long)&__initrd_start;
-diff --git a/arch/openrisc/kernel/vmlinux.h b/arch/openrisc/kernel/vmlinux.h
-index 653728abcc7c..6c0b24772f85 100644
---- a/arch/openrisc/kernel/vmlinux.h
-+++ b/arch/openrisc/kernel/vmlinux.h
-@@ -1,7 +1,6 @@
- #ifndef __OPENRISC_VMLINUX_H_
- #define __OPENRISC_VMLINUX_H_
- 
--extern char _stext, _etext, _edata, _end;
- #ifdef CONFIG_BLK_DEV_INITRD
- extern char __initrd_start, __initrd_end;
- extern char __initramfs_start;
--- 
-1.7.9.5
+Is it so that arch/sh is more soft on this for example...?
+Can some arch maintainer like SH/Paul ACK this approach?
 
+Read: SH is not moving to device tree...?
+
+(...)
+> Tested with yet-to-be-posted platform device and DT devices on
+> r7s72100 and Genmai using LEDs, DIP switches and I2C bitbang.
+
+Do you think the maintainers will merge the platform
+device approach?
+
+> --- /dev/null
+> +++ work/include/linux/platform_data/gpio-rz.h  2013-11-06 14:18:46.000000000 +0900
+> @@ -0,0 +1,13 @@
+> +#ifndef __GPIO_RZ_H__
+> +#define __GPIO_RZ_H__
+> +
+> +struct gpio_rz_config {
+> +       int gpio_base;
+
+Passing these static base offsets around is not good for the
+kernel and we're trying to get rid of it :-(
+
+> +       const char *pctl_name;
+
+Ho hum... This needs some kerneldoc describing that this is
+used to map the GPIO range to the right pin controller.
+
+> +};
+> +
+> +#define RZ_GPIOS_PER_PORT 16
+
+This is only used in the driver so move it into the driver.
+
+> +#define RZ_PORT_PIN(bank, pin) (((bank) * RZ_GPIOS_PER_PORT) + (pin))
+
+This is not used anywhere so delete it.
+
+If it is to be kept I'd like "pin" replaced with "line" to avoid
+confusion with the pin control business.
+
+Yours,
+Linus Walleij
