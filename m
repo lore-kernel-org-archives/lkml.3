@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327Ab3KLV4W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 16:56:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40120 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216Ab3KLVzw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:55:52 -0500
-Date: Tue, 12 Nov 2013 13:55:29 -0800
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-410f17860318f36b999a90138f50350e3dc49933@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1383906470-21002-1-git-send-email-adrian.hunter@intel.com>
-References: <1383906470-21002-1-git-send-email-adrian.hunter@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf record: Use correct return type for write(
- )
-Git-Commit-ID: 410f17860318f36b999a90138f50350e3dc49933
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S932348Ab3KLV4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 16:56:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44519 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932205Ab3KLVzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 16:55:51 -0500
+Message-ID: <5282A3E2.30103@redhat.com>
+Date: Tue, 12 Nov 2013 16:55:46 -0500
+From: Joe Mario <jmario@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 13:55:35 -0800 (PST)
+To: Andi Kleen <ak@linux.intel.com>, Michal Marek <mmarek@suse.cz>
+CC: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Don Zickus <dzickus@redhat.com>
+Subject: Re: [PATCH 2/2] kallsyms: Revert back to 128 max symbol length
+References: <1384177236-8371-1-git-send-email-mmarek@suse.cz> <1384177236-8371-2-git-send-email-mmarek@suse.cz> <20131111141715.GM1962@tassilo.jf.intel.com>
+In-Reply-To: <20131111141715.GM1962@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  410f17860318f36b999a90138f50350e3dc49933
-Gitweb:     http://git.kernel.org/tip/410f17860318f36b999a90138f50350e3dc49933
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Fri, 8 Nov 2013 12:27:50 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 11 Nov 2013 15:56:40 -0300
+On 11/11/2013 09:17 AM, Andi Kleen wrote:
+> On Mon, Nov 11, 2013 at 02:40:36PM +0100, Michal Marek wrote:
+>> This reverts commits
+>> f3462aa (Kbuild: Handle longer symbols in kallsyms.c) and
+>> eea0e9c (kbuild: Increase kallsyms max symbol length)
+>> except for the added overflow check. The reason is a regression caused
+>> by increasing the buffer:
+>> http://marc.info/?l=linux-kernel&m=138387700415675.
+>
+> Can you please wait a bit until we tracked down the problem?
+>
+>
+> -Andi
+>
 
-perf record: Use correct return type for write()
+Andi:
+  Don Zickus and I have been trying to reproduce the problem with
+  the config file Fengguang Wu sent to us, but so far have been unsuccessful.
 
-write() returns a 'ssize_t' not an 'int'.
+  Given there are 5 other locations in the code that need to be changed
+  from [128] to [KSYM_NAME_LEN], and that we still haven't found Fengguang's
+  problem yet, I'd be in favor of letting Michal's revert patch 2/2 go forward.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1383906470-21002-1-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-record.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+  That would give us time to find the issue Fengguang reported.
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index fc68b26..8f5af32 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -81,7 +81,7 @@ static int write_output(struct perf_record *rec, void *buf, size_t size)
- 	struct perf_data_file *file = &rec->file;
- 
- 	while (size) {
--		int ret = write(file->fd, buf, size);
-+		ssize_t ret = write(file->fd, buf, size);
- 
- 		if (ret < 0) {
- 			pr_err("failed to write perf data, error: %m\n");
+Joe  
+
+
+
+
