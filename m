@@ -1,117 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231Ab3KLXLL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 18:11:11 -0500
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:38902 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756329Ab3KLXLD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 18:11:03 -0500
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        David Cohen <david.a.cohen@linux.intel.com>
-CC: Michal Nazarewicz <mina86@mina86.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv2 2/2] check quirk to pad epout buf size when not
- aligned to maxpacketsize
-Thread-Topic: [PATCHv2 2/2] check quirk to pad epout buf size when not
- aligned to maxpacketsize
-Thread-Index: AQHO3tBOeLMhVoTiIk+6n1TA9pz2Zpog/4kAgAANr4CAABUigIABI/uA///nnfA=
-Date: Tue, 12 Nov 2013 23:09:19 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030458E24316@US01WEMBX2.internal.synopsys.com>
-References: <5281595D.9030602@linux.intel.com>
- <Pine.LNX.4.44L0.1311121046200.1200-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1311121046200.1200-100000@iolanthe.rowland.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932275Ab3KLXLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 18:11:16 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60415 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932128Ab3KLXLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 18:11:06 -0500
+Message-ID: <5282B570.8020802@ti.com>
+Date: Tue, 12 Nov 2013 17:10:40 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
+To: Kevin Hilman <khilman@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>, <paul@pwsan.com>, <rnayak@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: OMAP2+: omap_device: maintain sane runtime pm status
+ around suspend/resume
+References: <1383857942-23630-1-git-send-email-nm@ti.com>	<87iow3rd3y.fsf@linaro.org> <527C2B78.2070201@ti.com>	<874n7npw1e.fsf@linaro.org> <20131111162358.GA6451@kahuna> <878uwtnwfc.fsf@linaro.org>
+In-Reply-To: <878uwtnwfc.fsf@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Alan Stern
-> Sent: Tuesday, November 12, 2013 7:51 AM
+On 11/12/2013 03:26 PM, Kevin Hilman wrote:
+[..]
+> Yes, the updated version looks much more sensible.  Please repost in its
+> own thread so it gets a better chance at broader review, and feel free
+> to add
 > 
-> On Mon, 11 Nov 2013, David Cohen wrote:
-> 
-> > Hi Alan, Michal,
-> >
-> > On 11/11/2013 01:09 PM, Michal Nazarewicz wrote:
-> > > On Mon, Nov 11 2013, Alan Stern wrote:
-> > >> On Mon, 11 Nov 2013, Michal Nazarewicz wrote:
-> > >>
-> > >>> Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
-> > >>> to be aligned to maxpacketsize of an out endpoint.  ffs_epfile_io() needs
-> > >>> to pad epout buffer to match above condition if quirk is found.
-> > >>>
-> > >>> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> > >>
-> > >> I think this is still wrong.
-> > >>
-> > >>> @@ -824,7 +832,7 @@ static ssize_t ffs_epfile_io(struct file *file,
-> > >>>   		req->context  = &done;
-> > >>>   		req->complete = ffs_epfile_io_complete;
-> > >>>   		req->buf      = data;
-> > >>> -		req->length   = len;
-> > >>> +		req->length   = data_len;
-> > >>
-> > >> IIUC, req->length should still be set to len, not to data_len.
-> >
-> > I misunderstood the first time I read it:
-> > In order to avoid DWC3 to stall, we need to update req->length (this is
-> > the most important fix). kmalloc() is updated too to prevent USB
-> > controller to overflow buffer boundaries.
-> 
-> Here I disagree.
-> 
-> If the DWC3 hardware stalls, it is up to the DWC3 UDC driver to fix it.
-> Gadget drivers should not have to worry.  Most especially, gadget
-> drivers should not lie about a request length.
+> Acked-by: Kevin Hilman <khilman@linaro.org>
 
-The whole point of this quirk is to lie to the DWC3 driver. The quirk is
-only enabled for the DWC3 driver.
+Thanks. this is done[1]
 
-> If the UDC driver decides to round up req->length before sending it to
-> the hardware, that's okay.
+[1] https://patchwork.kernel.org/patch/3176501/
 
-Not really. If the DWC3 driver unconditionally rounds up req->length,
-then in the case where the buffer has not been expanded to a multiple of
-maxpacket, by this quirk or otherwise, there is the potential to write
-beyond the end of the allocation.
-
-If we do what you suggest, then all the gadgets will have to be audited
-to make sure an OUT buffer with a non-aligned length is never passed to
-the DWC3 driver.
-
-I still think that's the best solution anyway. Just make that the rule,
-and then there is no need for this quirk at all. And there is no need to
-round up req->length in the DWC3 driver either.
-
-> But req->length should be set to len, not data_len.
-
-According to gadget.h:
-
-	@buf: Buffer used for data
-	@length: Length of that data
-
-So why shouldn't length be the length of the allocated data buffer?
-Remember, this is for the OUT direction only, so the host has control
-over how much data is actually sent. You could even argue that an OUT
-data buffer should always be a multiple of the max packet size, given
-how USB works.
-
-> And if the hardware receives more than len bytes of data,
-> the UDC driver should set req->status to -EOVERFLOW.
-
-That would be nice, but I don't see how to accomplish that given the
-above.
 
 -- 
-Paul
-
+Regards,
+Nishanth Menon
