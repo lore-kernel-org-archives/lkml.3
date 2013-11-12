@@ -1,57 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab3KLPZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:25:09 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:59153 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab3KLPZG (ORCPT
+	id S1755640Ab3KLP14 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:27:56 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:52937 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753537Ab3KLP1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:25:06 -0500
-Message-ID: <5282484E.9010206@gmail.com>
-Date: Tue, 12 Nov 2013 08:25:02 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 12 Nov 2013 10:27:52 -0500
+Date: Tue, 12 Nov 2013 10:27:47 -0500
+From: Matt Porter <matt.porter@linaro.org>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] DT: proc: Add runtime overlay interface in /proc
+Message-ID: <20131112152747.GL8585@beef>
+References: <1383923170-24914-1-git-send-email-panto@antoniou-consulting.com>
+ <1383923170-24914-4-git-send-email-panto@antoniou-consulting.com>
+ <20131111184736.3DE20C4234E@trevor.secretlab.ca>
+ <86657251-2872-4FB2-B71A-519A685B458A@antoniou-consulting.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, acme@ghostprotocols.net,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf record: Delete file if a failure occurs writing
- the perf data file
-References: <1383928906-31470-1-git-send-email-dsahern@gmail.com> <20131111093747.GA14810@gmail.com> <5280ECFF.10103@gmail.com> <52824064.4060100@gmail.com> <20131112150410.GW5056@laptop.programming.kicks-ass.net>
-In-Reply-To: <20131112150410.GW5056@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <86657251-2872-4FB2-B71A-519A685B458A@antoniou-consulting.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/13, 8:04 AM, Peter Zijlstra wrote:
-> On Tue, Nov 12, 2013 at 07:51:16AM -0700, David Ahern wrote:
->>>  From man mmap:
->>>         SIGBUS Attempted access to a portion of the buffer that
->>>         does not correspond  to  the  file (for  example, beyond
->>>         the end of the file, ...
->
-> SIGBUS is basically the std fail for any fault; there's a ton more
-> reasons than listed in that manpage.
->
-> Failing to dirty a page due to -ENOSPACE is one reason we'll
-> trigger SIGBUS -- as you already found in that memcpy to mmap() instead
-> of write() patch.
+On Tue, Nov 12, 2013 at 09:40:38AM +0100, Pantelis Antoniou wrote:
+> Hi Grant,
+> 
+> On Nov 11, 2013, at 7:47 PM, Grant Likely wrote:
+> 
+> > On Fri,  8 Nov 2013 17:06:10 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+> >> Add a runtime interface to /proc to enable generic device tree overlay
+> >> usage.
+> >> 
+> >> Two new /proc files are added:
+> >> 
+> >> /proc/device-tree-overlay & /proc/device-tree-overlay-status
+> >> 
+> >> /proc/device-tree-overlay accepts a stream of a device tree objects and
+> >> applies it to the running kernel's device tree.
+> >> 
+> >> 	$ cat ~/BB-UART2-00A0.dtbo >device-tree-overlay
+> >> 	overlay_proc_release: Applied #2 overlay segments @0
+> >> 
+> >> /proc/device-tree-overlay-status displays the the overlays added using
+> >> the /proc interface
+> >> 
+> >> 	$ cat device-tree-overlay-status
+> >> 	0: 861 bytes BB-UART2:00A0
+> >> 
+> >> The format of the status line is
+> >> 	<ID>: <SIZE> bytes <part-number>:<version>
+> >> 
+> >> <ID> is the id of the overlay
+> >> <SIZE> is the size of the overlay in bytes
+> >> <part-number>, <version> are (optional) root level properties of the DTBO
+> >> 
+> >> You can remove an overlay by echoing the <ID> number of the overlay
+> >> precedded with a '-'
+> >> 
+> >> So
+> >> 	$ echo "-0" >device-tree-overlay-status
+> >> 
+> >> Removes the overlay.
+> >> 
+> >> Note that this seldom works on most platforms since platform_device
+> >> removal is something that almost never works without extra patches.
+> >> 
+> >> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> > 
+> > Why /proc? Did you consider using the firmware loading mechanism? While
+> > I expressed concerned about the capebus approach, the loading of
+> > overlays needs to remain under the control of either a driver or the
+> > platform. By default it should not be possible to drop an arbitrary
+> > overlay into /proc/device-tree-overlay and have things change in the
+> > base tree. Along the same lines, I would expect for the device driver or
+> > platform to be able to filter or limit the parts of the tree that are
+> > allowed to be modified.
+> > 
+> 
+> The firmware loading mechanism is the preferred way to handle it, and is
+> in fact what is used in practice by the whole cape manager mechanism.
+> But that's part of specific board support, and this is more like a general
+> way to use overlays, in any kind of DT enabled system.
+> 
+> I agree this is a) completely dangerous and b) /proc is a bad place to put
+> it. I put it here in order to get the ball rolling, about the proper place
+> to put device tree related interfaces.
+> 
+> The good thing about this interface is that it's always available, and
+> it is good for debugging (especially loading/unloading debugging).
 
-Sure. Lots of mmaps flying around, so to make sure we are on the same 
-page in this case we are talking about perf-report reading a file via mmap.
+As was pointed out earlier in the thread, /proc just isn't the place to
+add these configuration interfaces any longer.
+>  
+> 
+> > A side benefit of the firmware loader is that the kernel can obtain the
+> > overlay on its own if needed at boot time without userspace involvement.
+> > 
+> 
+> Yes, that is correct, and it is the way we use it on the beaglebone.
+> The root fs device is present on a overlay, which is built into the kernel's
+> firmware.
 
-If the file creation (be it memcpy to mmap() or write()) has a failure 
-due to lack of space, then only a partial event is in the file -- e.g., 
-perf-header only. Trying to read the rest of the event leads to 
-perf-report terminating due to SIGBUS. How should that condition be handled?
+Let's be clear that there are two use cases here
 
-The patch in this thread deletes the file. Another option is to rewind 
-the file to the last known good write (ie., length after last successful 
-call to write_output).
+1) kernel driven overlay loading
+  - root device configuration, other early devices, kernel-based h/w
+    detection
 
-David
+2) userspace driven overlay loading
+  - s/w defined h/w, hobbyist connecting stuff on a breadboard,
+    userspace arduino support
 
+Combining a configfs api for userspace configuration of the overlay to
+load with the firmware loader interface would address both of these.
+
+As Grant noted, you want the firmware loader support to handle the
+standard kernel driver initiated case which you were doing with capebus
+already. But for userspace we have configuration to hand to the kernel
+in the form of the name of an overlay. This configuration should be
+provided via configfs.
+
+Instantiate an overlay:
+
+	mkdir /config/dto/0
+
+would create the following attributes:
+
+        /config/dto/0/overlay
+	/config/dto/0/status
+
+Start a firmware load of an overlay:
+
+	echo "foo.dtbo" > /config/dto/0/overlay
+	[loads /lib/firmware/foo.dtbo]
+
+Status of overlay:
+
+	cat /config/dto/0/status
+	0:  861 bytes FOO:BAR0
+
+Remove an overlay:
+
+	rmdir /config/dto/0
+
+-Matt
