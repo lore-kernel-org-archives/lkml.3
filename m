@@ -1,78 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab3KLP34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:29:56 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:56831 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904Ab3KLP3y (ORCPT
+	id S1755915Ab3KLPaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:30:11 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34026 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755825Ab3KLPaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:29:54 -0500
-Message-ID: <52824971.5060203@linaro.org>
-Date: Tue, 12 Nov 2013 16:29:53 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 12 Nov 2013 10:30:07 -0500
+Date: Tue, 12 Nov 2013 16:29:56 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [seqcount] INFO: trying to register non-static key.
+Message-ID: <20131112152956.GY5056@laptop.programming.kicks-ass.net>
+References: <20131111012927.GA404@localhost>
+ <20131111154551.GJ19203@twins.programming.kicks-ass.net>
+ <20131112094147.GA32441@localhost>
+ <20131112100140.GM5056@laptop.programming.kicks-ass.net>
+ <20131112151541.GD24980@redhat.com>
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/7] arm: dt: zynq: Remove 'clock-ranges' from TTC nodes
-References: <1383945677-29674-1-git-send-email-soren.brinkmann@xilinx.com> <1383945677-29674-2-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1383945677-29674-2-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112151541.GD24980@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2013 10:21 PM, Soren Brinkmann wrote:
-> The bindings for the TTC changed in commit 'arm: zynq: Use standard
-> timer binding' (e932900a3279b5dbb6d8f43c7b369003620e137c). That change
-> removed possible subnodes from this driver rendering the 'clock-ranges'
-> property invalid for this node.
->
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Acked-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+On Tue, Nov 12, 2013 at 10:15:41AM -0500, Vivek Goyal wrote:
+> I see that we allocate per cpu stats but don't do any initializations.
+> 
+> static void tg_stats_alloc_fn(struct work_struct *work)
+> {
+>         static struct tg_stats_cpu *stats_cpu;  /* this fn is non-reentrant */
+>         struct delayed_work *dwork = to_delayed_work(work);
+>         bool empty = false;
+> 
+> alloc_stats:
+>         if (!stats_cpu) {
+>                 stats_cpu = alloc_percpu(struct tg_stats_cpu);
+>                 if (!stats_cpu) {
+>                         /* allocation failed, try again after some time */
+>                         schedule_delayed_work(dwork, msecs_to_jiffies(10));
+>                         return;
+>                 }
+>         }
+> 
+>         spin_lock_irq(&tg_stats_alloc_lock);
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Absolutely!
 
-> ---
->   arch/arm/boot/dts/zynq-7000.dtsi | 2 --
->   1 file changed, 2 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-> index e32b92b949d2..27ebc1ba9671 100644
-> --- a/arch/arm/boot/dts/zynq-7000.dtsi
-> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
-> @@ -98,7 +98,6 @@
->   			compatible = "cdns,ttc";
->   			clocks = <&clkc 6>;
->   			reg = <0xF8001000 0x1000>;
-> -			clock-ranges;
->   		};
->
->   		ttc1: ttc1@f8002000 {
-> @@ -107,7 +106,6 @@
->   			compatible = "cdns,ttc";
->   			clocks = <&clkc 6>;
->   			reg = <0xF8002000 0x1000>;
-> -			clock-ranges;
->   		};
->   		scutimer: scutimer@f8f00600 {
->   			interrupt-parent = <&intc>;
->
+Something like this perhaps? Did I miss more blkg_[rw]stats? If I read
+the git grep output right, this was the last one.
 
+---
+ block/blk-throttle.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 8331aba9426f..fd743d98c41d 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -256,6 +256,12 @@ static struct throtl_data *sq_to_td(struct throtl_service_queue *sq)
+ 	}								\
+ } while (0)
+ 
++static void tg_stats_init(struct tg_stats_cpu *tg_stats)
++{
++	blkg_rwstat_init(&tg_stats->service_bytes);
++	blkg_rwstat_init(&tg_stats->serviced);
++}
++
+ /*
+  * Worker for allocating per cpu stat for tgs. This is scheduled on the
+  * system_wq once there are some groups on the alloc_list waiting for
+@@ -269,12 +275,16 @@ static void tg_stats_alloc_fn(struct work_struct *work)
+ 
+ alloc_stats:
+ 	if (!stats_cpu) {
++		int cpu;
++
+ 		stats_cpu = alloc_percpu(struct tg_stats_cpu);
+ 		if (!stats_cpu) {
+ 			/* allocation failed, try again after some time */
+ 			schedule_delayed_work(dwork, msecs_to_jiffies(10));
+ 			return;
+ 		}
++		for_each_possible_cpu(cpu)
++			tg_stats_init(per_cpu(stats_cpu, cpu));
+ 	}
+ 
+ 	spin_lock_irq(&tg_stats_alloc_lock);
