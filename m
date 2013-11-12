@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab3KLJMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 04:12:38 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22396 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab3KLJMg (ORCPT
+	id S1753530Ab3KLJOW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 04:14:22 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:59764 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab3KLJOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 04:12:36 -0500
-Message-ID: <5281F0B4.8060902@oracle.com>
-Date: Tue, 12 Nov 2013 17:11:16 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 12 Nov 2013 04:14:17 -0500
 MIME-Version: 1.0
-To: Dan Streetman <ddstreet@ieee.org>
-CC: sjennings@variantweb.net, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, minchan@kernel.org,
-        weijie.yang@samsung.com, k.kozlowski@samsung.com,
-        konrad.wilk@oracle.com
-Subject: Re: mm/zswap: change to writethrough
-References: <CALZtONAxsYxLizARV3Aam_n7534g5gh_FFkTz6jb-0Q9gThuBQ@mail.gmail.com>
-In-Reply-To: <CALZtONAxsYxLizARV3Aam_n7534g5gh_FFkTz6jb-0Q9gThuBQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Originating-IP: [72.73.18.11]
+In-Reply-To: <528178B8.4000704@fnarfbargle.com>
+References: <000f01ced948$2fbab140$8f3013c0$@lucidpixels.com>
+	<CAO9zADxbiW_OBiewAY8JQQjxS51Ydrm8Rj1=MWXCA+Xo9K3=2Q@mail.gmail.com>
+	<528178B8.4000704@fnarfbargle.com>
+Date: Tue, 12 Nov 2013 04:14:15 -0500
+Message-ID: <CAO9zADwwhw9qQ7GMh45-4AXktp8UmsVOLDVVwSfc5gQS1QTENQ@mail.gmail.com>
+Subject: Re: 3.12: raid-1 mismatch_cnt question
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Brad Campbell <lists2009@fnarfbargle.com>
+Cc: open list <linux-kernel@vger.kernel.org>,
+        linux-raid <linux-raid@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 11, 2013 at 7:39 PM, Brad Campbell
+<lists2009@fnarfbargle.com> wrote:
+> On 11/07/2013 06:54 PM, Justin Piszcz wrote:
+>>
+>> On Mon, Nov 4, 2013 at 5:25 AM, Justin Piszcz <jpiszcz@lucidpixels.com>
+>> wrote:
+>>>
+>>> Hi,
+>>>
+>>> I run two SSDs in a RAID-1 configuration and I have a swap partition on a
+>>> third SSD.  Over time, the mismatch_cnt between the two devices grows
+>>> higher
+>>> and higher.
+>>>
+>
+> Are both SSD's identical? Do you have discard enabled on the filesystem?
+Yes (2 x Intel SSDSC2CW240A3) & yes )/dev/root on / type ext4
+(rw,relatime,discard,data=ordered))
 
-On 11/12/2013 03:12 AM, Dan Streetman wrote:
-> Seth, have you (or anyone else) considered making zswap a writethrough
-> cache instead of writeback?  I think that it would significantly help
-> the case where zswap fills up and starts writing back its oldest pages
-> to disc - all the decompression work would be avoided since zswap
-> could just evict old pages and forget about them, and it seems likely
-> that when zswap is full that's probably the worst time to add extra
-> work/delay, while adding extra disc IO (presumably using dma) before
-> zswap is full doesn't seem to me like it would have much impact,
-> except in the case where zswap isn't full but there is so little free
-> memory that new allocs are waiting on swap-out.
-> 
-> Besides the additional disc IO that obviously comes with making zswap
-> writethrough (additional only before zswap fills up), are there any
-> other disadvantages?  Is it a common situation for there to be no
-> memory left and get_free_page actively waiting on swap-out, but before
-> zswap fills up?
-> 
-> Making it writethrough also could open up other possible improvements,
-> like making the compression and storage of new swap-out pages async,
-> so the compression doesn't delay the write out to disc.
-> 
+>
+> The reason I ask is I have a RAID10 comprised of 3 Intel and 3 Samsung
+> SSD's. The Intel return 0 after TRIM while the Samsung don't, so I _always_
+> have a massive mismatch_cnt after I run fstrim. I never use a repair
+> operation as it's just going to re-write the already trimmed sectors.
+Very interesting and good to know!
 
-I like this idea and those benefits, the only question I'm not sure is
-would it be too complicate to implement this feature? It sounds like we
-need to reimplement something like swapcache to handle zswap write through.
-
--- 
-Regards,
--Bob
+Justin.
