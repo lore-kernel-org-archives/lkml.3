@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab3KLRDP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:03:15 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37041 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641Ab3KLRDL (ORCPT
+	id S1756292Ab3KLRFK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:05:10 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:64812 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753648Ab3KLRFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:03:11 -0500
-Date: Tue, 12 Nov 2013 18:03:02 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mikey@neuling.org,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH v2] sched: Check sched_domain before computing group
- power.
-Message-ID: <20131112170302.GC16796@laptop.programming.kicks-ass.net>
-References: <tip-db2pe0vxwunv37plc7onnugj@git.kernel.org>
- <20131112105547.GA27310@linux.vnet.ibm.com>
- <20131112115736.GO5056@laptop.programming.kicks-ass.net>
- <20131112164126.GF2559@linux.vnet.ibm.com>
+	Tue, 12 Nov 2013 12:05:06 -0500
+X-IronPort-AV: E=Sophos;i="4.93,686,1378857600"; 
+   d="scan'208";a="71118995"
+Date: Tue, 12 Nov 2013 17:03:42 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <konrad@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 1/2] swiotlb-xen: add missing xen_dma_map_page
+ call
+In-Reply-To: <20131112144500.GB9435@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1311121703340.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1311121404590.26077@kaball.uk.xensource.com> <1384265520-6833-1-git-send-email-stefano.stabellini@eu.citrix.com> <20131112144500.GB9435@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131112164126.GF2559@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 10:11:26PM +0530, Srikar Dronamraju wrote:
-> After Commit-id 863bffc80898 (sched/fair: Fix group power_orig
-> computation), we might end up computing group power before the
-> sched_domain for a cpu is updated.
+On Tue, 12 Nov 2013, Konrad Rzeszutek Wilk wrote:
+> On Tue, Nov 12, 2013 at 02:11:59PM +0000, Stefano Stabellini wrote:
+> > swiotlb-xen is missing a xen_dma_map_page call in
+> > xen_swiotlb_map_sg_attrs, in the slow path.
 > 
-> Update with cpu_power, if rq->sd is not yet updated.
-> 
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
-> Changelog since v1: Fix divide by zero errors that can result because
-> power/power_orig was set to 0.
+> s/slow/bounce buffer/ I believe?
 
-Hurm.. can you provide the actual topology of the machine that triggers
-this? My brain hurts trying to thing through the weird cases of this
-code.
+right
+
+
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  drivers/xen/swiotlb-xen.c |    5 +++++
+> >  1 files changed, 5 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> > index a224bc7..1eac073 100644
+> > --- a/drivers/xen/swiotlb-xen.c
+> > +++ b/drivers/xen/swiotlb-xen.c
+> > @@ -555,6 +555,11 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+> >  				sg_dma_len(sgl) = 0;
+> >  				return 0;
+> >  			}
+> > +			xen_dma_map_page(hwdev, pfn_to_page(map >> PAGE_SHIFT),
+> > +						map & ~PAGE_MASK,
+> > +						sg->length,
+> > +						dir,
+> > +						attrs);
+> >  			sg->dma_address = xen_phys_to_bus(map);
+> >  		} else {
+> >  			/* we are not interested in the dma_addr returned by
+> > -- 
+> > 1.7.2.5
+> > 
+> > 
+> > _______________________________________________
+> > Xen-devel mailing list
+> > Xen-devel@lists.xen.org
+> > http://lists.xen.org/xen-devel
+> 
