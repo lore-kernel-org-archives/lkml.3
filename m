@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757736Ab3KLXkB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 18:40:01 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54781 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757667Ab3KLXjz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 18:39:55 -0500
-Date: Tue, 12 Nov 2013 23:39:11 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: "Markus Mayer" <markus.mayer@linaro.org>
-Cc: "Wim Van Sebroeck" <wim@iguana.be>, "Christian Daudt" <bcm@fixthebug.org>,
-        "Linaro Patches" <patches@linaro.org>,
-        "Matt Porter" <matt.porter@linaro.org>,
-        "Linux Watchdog List" <linux-watchdog@vger.kernel.org>,
-        "ARM Kernel List" <linux-arm-kernel@lists.infradead.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] watchdog: bcm281xx: Watchdog Driver
-Message-ID: <20131112233911.16eba130@alan.etchedpixels.co.uk>
-In-Reply-To: <1383943488-6537-2-git-send-email-markus.mayer@linaro.org>
-References: <1383943488-6537-1-git-send-email-markus.mayer@linaro.org>
-	<1383943488-6537-2-git-send-email-markus.mayer@linaro.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757419Ab3KLXrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 18:47:10 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:52617 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754169Ab3KLXrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 18:47:02 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Amit Pundir <amit.pundir@linaro.org>
+Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>
+Subject: Re: [RFC][PATCH v2] epoll: allow EPOLLWAKEUP flag if PM_SLEEP is enabled
+Date: Wed, 13 Nov 2013 00:59:27 +0100
+Message-ID: <44678154.uI915mOzGH@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1384289548-26015-1-git-send-email-amit.pundir@linaro.org>
+References: <1384289548-26015-1-git-send-email-amit.pundir@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, November 13, 2013 02:22:28 AM Amit Pundir wrote:
+> ep_create_wakeup_source() reports ENOMEM
 
-> +static int bcm_kona_wdt_set_resolution_reg(struct bcm_kona_wdt *wdt)
+That needs to be fixed too.  I suppose we can make the wakeup_source_register()
+stub for CONFIG_PM_SLEEP unset return ERR_PTR(-ENOSYS) or something like that
+and ep_create_wakeup_source() return that instead of -ENOMEM.  It looks like
+eventpoll.c is the only user of it built for CONFIG_PM_SLEEP unset, but that
+needs to be double checked.
+
+> if wakeup_source_register()
+> returns NULL. ep_create_wakeup_source() assumes that NULL is only
+> returned if we run into ENOMEM but NULL is also returned when
+> CONFIG_PM_SLEEP is disabled.
+> 
+> Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
+> ---
+> Changed in v2:
+> Using static inline functions instead of #ifdefs
+> ---
+>  fs/eventpoll.c                 |    3 +--
+>  include/uapi/linux/eventpoll.h |   12 ++++++++++++
+>  2 files changed, 13 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+> index 473e09d..10f9c43 100644
+> --- a/fs/eventpoll.c
+> +++ b/fs/eventpoll.c
+> @@ -1820,8 +1820,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+>  		goto error_tgt_fput;
+>  
+>  	/* Check if EPOLLWAKEUP is allowed */
+> -	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_BLOCK_SUSPEND))
+> -		epds.events &= ~EPOLLWAKEUP;
+> +	ep_epollwakeup_check(&epds.events);
+
+The "check" part of the name kind of suggests that the function will not change
+things.  What about ep_adjust_epollwakeup() or something along these lines?
+
+And why don't you pass a pointer to epds to it?  Wouldn't it be cleaner this way?
+
+>  
+>  	/*
+>  	 * We have to check that the file structure underneath the file descriptor
+> diff --git a/include/uapi/linux/eventpoll.h b/include/uapi/linux/eventpoll.h
+> index 2c267bc..1d139c2 100644
+> --- a/include/uapi/linux/eventpoll.h
+> +++ b/include/uapi/linux/eventpoll.h
+> @@ -62,4 +62,16 @@ struct epoll_event {
+>  } EPOLL_PACKED;
+>  
+>  
+> +#ifdef CONFIG_PM_SLEEP
+> +static inline void ep_epollwakeup_check(__u32 *epev)
 > +{
-> +	uint32_t val;
-> +	int timeout;
-> +	unsigned long flags;
-> +	int ret = 0;
-> +
-> +	if (wdt->resolution > SECWDOG_MAX_RES)
-> +		return -EINVAL;
-> +
-> +	spin_lock_irqsave(&wdt->lock, flags);
-> +
-> +	val = secure_register_read(wdt->base + SECWDOG_CTRL_REG, &timeout);
-> +	if (!timeout) {
-> +		val &= ~SECWDOG_RES_MASK;
-> +		val |= wdt->resolution << SECWDOG_CLKS_SHIFT;
-> +		writel_relaxed(val, wdt->base + SECWDOG_CTRL_REG);
-> +	} else {
-> +		ret = -EAGAIN;
+> +	if ((*epev & EPOLLWAKEUP) && !capable(CAP_BLOCK_SUSPEND))
+> +		*epev &= ~EPOLLWAKEUP;
+> +}
+> +#else
+> +static inline void ep_epollwakeup_check(__u32 *epev)
+> +{
+> +	*epev &= ~EPOLLWAKEUP;
+> +}
+> +#endif
+>  #endif /* _UAPI_LINUX_EVENTPOLL_H */
 
-This is I think the wrong choice of return. If the register fails to read
-then presumably the device is b*ggered ? In which case return something
-like -EIO and log something nasty.
+Thanks!
 
-EAGAIN has fairly specific semantics around signals and/or specific
-requests for an I/O operation not to wait.
-
-> +	spin_lock_irqsave(&wdt->lock, flags);
-> +
-> +	val = secure_register_read(wdt->base + SECWDOG_CTRL_REG, &timeout);
-> +	if (!timeout) {
-> +		val &= ~SECWDOG_COUNT_MASK;
-> +		val |= SECS_TO_TICKS(wdog->timeout, wdt);
-> +		writel_relaxed(val, wdt->base + SECWDOG_CTRL_REG);
-> +	} else {
-> +		ret = -EAGAIN;
-> +	}
-> +
-> +	spin_unlock_irqrestore(&wdt->lock, flags);
-
-As an aside you could fold most of these functions into one single helper
-method that read CTRL_REG, did the and and or and wrote the result back
-rather than repeating yourself. But hey if you like typing...
-
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-
-What if there is no resource present ?
-
-> +	dev_info(dev, "Broadcom Kona Watchdog Timer");
-
-The module load succeeded - the user knows it loaded from that. Likewise
-the unload spewage is unwanted and the kernel would just drown in such
-messages if we didn't keep them in check. If you need the for debug then
-mark them dev_dbg but otherwise bin them.
-
-Alan
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
