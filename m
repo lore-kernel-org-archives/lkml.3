@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab3KLKld (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 05:41:33 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:61203 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab3KLKlc (ORCPT
+	id S1754747Ab3KLKln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 05:41:43 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55390 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754495Ab3KLKlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 05:41:32 -0500
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH] MAINTAINERS: Add maintainer for the ARM Ux500 clock driver
-Date: Tue, 12 Nov 2013 11:41:12 +0100
-Message-Id: <1384252872-5717-1-git-send-email-ulf.hansson@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 12 Nov 2013 05:41:40 -0500
+Date: Tue, 12 Nov 2013 11:41:29 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
+        Morten.Rasmussen@arm.com, cmetcalf@tilera.com, tony.luck@intel.com,
+        alex.shi@intel.com, preeti@linux.vnet.ibm.com,
+        linaro-kernel@lists.linaro.org, rjw@sisk.pl,
+        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
+        len.brown@intel.com, arjan@linux.intel.com, amit.kucheria@linaro.org,
+        l.majewski@samsung.com
+Subject: Re: [RFC][PATCH v5 07/14] sched: get CPU's activity statistic
+Message-ID: <20131112104129.GH4971@laptop.programming.kicks-ass.net>
+References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
+ <1382097147-30088-7-git-send-email-vincent.guittot@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382097147-30088-7-git-send-email-vincent.guittot@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mike Turquette <mturquette@linaro.org>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
----
- MAINTAINERS |    8 ++++++++
- 1 file changed, 8 insertions(+)
+On Fri, Oct 18, 2013 at 01:52:20PM +0200, Vincent Guittot wrote:
+> +static int get_cpu_activity(int cpu)
+> +{
+> +	struct rq *rq = cpu_rq(cpu);
+> +	u32 sum = rq->avg.runnable_avg_sum;
+> +	u32 period = rq->avg.runnable_avg_period;
+> +
+> +	sum = min(sum, period);
+> +
+> +	if (sum == period) {
+> +		u32 overload = rq->nr_running > 1 ? 1 : 0;
+> +		return available_of(cpu) + overload;
+> +	}
+> +
+> +	return (sum * available_of(cpu)) / period;
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 284969f..1d0ae30 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1296,6 +1296,14 @@ F:	drivers/rtc/rtc-ab8500.c
- F:	drivers/rtc/rtc-pl031.c
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-stericsson.git
- 
-+ARM/Ux500 CLOCK FRAMEWORK SUPPORT
-+M:	Ulf Hansson <ulf.hansson@linaro.org>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+T:	git git://git.linaro.org/people/ulfh/clk.git
-+S:	Maintained
-+F:	drivers/clk/ux500/
-+F:	include/linux/platform_data/clk-ux500.h
-+
- ARM/VFP SUPPORT
- M:	Russell King <linux@arm.linux.org.uk>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
--- 
-1.7.9.5
+I'm thinking this has a fair potential to overflow our u32, no?
 
+> +}
