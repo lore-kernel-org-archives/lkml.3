@@ -1,105 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab3KLPSf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:18:35 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:53260 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754002Ab3KLPS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:18:28 -0500
-Message-ID: <528246BA.10607@imgtec.com>
-Date: Tue, 12 Nov 2013 09:18:18 -0600
-From: "Steven J. Hill" <Steven.Hill@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755869Ab3KLPT6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:19:58 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33772 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab3KLPTz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 10:19:55 -0500
+Date: Tue, 12 Nov 2013 16:19:44 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, jolsa@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
+Message-ID: <20131112151944.GX5056@laptop.programming.kicks-ass.net>
+References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
+ <1384267617-3446-5-git-send-email-dsahern@gmail.com>
+ <20131112145707.GV5056@laptop.programming.kicks-ass.net>
+ <20131112150751.GA19321@ghostprotocols.net>
 MIME-Version: 1.0
-To: LMOL <linux-mips@linux-mips.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Release of Linux MTI-3.10-LTS kernel.
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.159.176]
-X-SEF-Processed: 7_3_0_01192__2013_11_12_15_18_27
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112150751.GA19321@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Imagination Technologies is pleased to announce the release of its 3.10 
-LTS (Long-Term Support) MIPS kernel. The changelog below is based off 
-the stable Linux 3.10.14 release done by Greg Kroah-Hartman in commit
-8c15abc94c737f9120d3d4a550abbcbb9be121f6 back on October 1st. The code 
-repository is hosted at the Linux/MIPS project GIT:
+On Tue, Nov 12, 2013 at 12:07:51PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Nov 12, 2013 at 03:57:07PM +0100, Peter Zijlstra escreveu:
+> > On Tue, Nov 12, 2013 at 07:46:56AM -0700, David Ahern wrote:
+> > > When recording raw_syscalls for the entire system, e.g.,
+> > >     perf record -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
+> > > 
+> > > you end up with a negative feedback loop as perf itself calls write() fairly
+> > > often. This patch handles the problem by mmap'ing the file in chunks of 64M at
+> > > a time and copies events from the event buffers to the file avoiding write
+> > > system calls.
+> > 
+> > You know this completely fails the moment you trace faults, because
+> > every new access to one of those pages (to mark it dirty) will trigger a
+> > fault. And we'll take a bunch more faults -- one for each page -- than
+> > we ever did write() syscalls.
+> 
+> So we should provide a neon lettered warning when doing that, no? :-)
 
-http://git.linux-mips.org/?p=linux-mti.git;a=summary
-
-We look forward to any comments or feedback.
-
-         The Imagination MIPS Kernel Team
-
-
----
-Upstream:
-* Move to Linux 3.10.14
-
-Userland visible changes:
-* Fix ability to perform a soft reset on SEAD-3.
-* Add 64-bit FP register support on 32-bit platforms.
-* Add FPU2 IEEE754-2008 SNaN support.
-* Support proAptiv/interAptiv core Perf-events.
-
-Boot setup related changes:
-* Update GCMP detection on Malta.
-* Disable L2 cache on SEAD-3.
-* Always register R4K clock when selected.
-* Set cpu_has_mmips only if SYS_SUPPORTS_MICROMIPS is defined.
-* Do not write EVA bit in the config5 CP0 register.
-
-New drivers and features:
-* Add interAptiv CPU support.
-* Add proAPTIV CPU support.
-* Add EVA to support 3GB virtual addressing for MIPS32 cores.
-* Add ERLite-3 platform support.
-* Add 64-bit address support on MIPS64R2 cores.
-* Add uImage build target.
-* Add MIPS32R2 SYNC optimization.
-* Send IPIs using the GIC.
-
-Developer visible changes:
-* Move declaration of Octeon function fixup_irqs() to header.
-* Drop obsolete NR_CPUS_DEFAULT_{1,2} config options.
-* Remove -fstack-protector from CFLAGS when building images.
-* CMP support needs to select SMP as well.
-* Add printing of ES bit when cache error occurs.
-* Enable DEVTMPFS on Malta.
-* Remove ttyS2 serial support on Malta.
-
-Fixes:
-* Fix IDE PIO size calculation in IDE driver.
-* Fix TLBR-use hazards for R2 cores in the TLB reload handlers.
-* Fix execution hazard during watchpoint register probe.
-* Fix POOL16C minor opcode enumerations for microMIPS.
-* Fix gic_set_affinity infinite loop for GIC controller.
-* Fix improper definition of ISA exception bit for microMIPS.
-* Skip walking indirection page for crashkernels for kdump.
-* Fix random crashes while loading crashkernel for kexec.
-* Fix SMP core calculations when using MT support.
-* Fix accessing to per-cpu data when flushing the cache.
-* Fix VGA_MAP_MEM macro.
-* 74K/1074K erratum workarounds.
-* Bugfix of stack trace dump.
-* MIPS HIGHMEM fixes for cache aliasing and non-DMA I/O.
-* Revert fixrange_init() limiting to the FIXMAP region.
-* Bugfix of Malta PCI bridges loop.
-* Fix forgotten preempt_enable() when CPU has inclusive pcaches.
-* Fix GIC interrupt offsets for Malta.
-* Fix bug in using flush_cache_vunmap.
-* Fix encoding for UUSK AM bits on the SegCtl registers for EVA.
-
-Cleanups and refactors:
-* Refactor boot and boot/compressed rules.
-* Refactor load/entry address calculations.
-* Drop FRAME_POINTER codepath in mcount.S file.
-* Rearrange PTE bits into fixed positions for MIPS32R2.
-* Remove X bit in page tables for HEAP/BSS.
-* Rework cache flush functions.
-* Re-implement VPE functionality as writes to a pseudo-device.
-* Fix more section mismatch warnings.
-* Remove platform_set_drvdata() in SEAD-3 USB driver.
-
+Dunno.. it _should_ all work. Try it and see what it does.. Once the
+events are bigger than a page things might get 'interesting' though.
