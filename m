@@ -1,75 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657Ab3KLUjI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 15:39:08 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:65029 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756417Ab3KLUiy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 15:38:54 -0500
+	id S1756702Ab3KLUkZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 15:40:25 -0500
+Received: from ring0.de ([91.143.88.219]:47746 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756659Ab3KLUkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 15:40:19 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Tue, 12 Nov 2013 21:40:14 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 4/5 v2] input: tc3589x-keypad: support probing from
+ device tree
+Message-ID: <20131112204013.GA17674@earth.universe>
+Mail-Followup-To: Linus Walleij <linus.walleij@linaro.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Samuel Ortiz <sameo@linux.intel.com>,
+	Lee Jones <lee.jones@linaro.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	Mark Rutland <mark.rutland@arm.com>
+References: <1384265618-10590-1-git-send-email-linus.walleij@linaro.org>
+ <20131112153057.GA9683@earth.universe>
+ <CACRpkdb_bryGJo7CKGP5tj3RFGv=Gh+Q5m9ucVKqJ068tjPC2g@mail.gmail.com>
+ <20131112200514.GA15413@earth.universe>
+ <CACRpkdaAaLjm_b+OLj3tobxBN8YGUcTPnXJ=qtBqd02=FTxhjQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <52825FBE.9060006@intel.com>
-References: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com>
-	<1383745544-391-8-git-send-email-zwu.kernel@gmail.com>
-	<528156E4.1030409@intel.com>
-	<CAEH94LjoY6L6zDwTh3XKim17VgRTkdqBKpm7TgX0HGok==p+kg@mail.gmail.com>
-	<52825FBE.9060006@intel.com>
-Date: Wed, 13 Nov 2013 04:38:53 +0800
-Message-ID: <CAEH94Lis9wwgrcnJrJO3LtLoEc07Ze9T_LwpsjVy_yE4XEydyQ@mail.gmail.com>
-Subject: Re: [PATCH v6 07/11] VFS hot tracking: Add a /proc interface to
- control memory usage
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Chandra Seetharaman <sekharan@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="cWoXeonUoKmBZSoM"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdaAaLjm_b+OLj3tobxBN8YGUcTPnXJ=qtBqd02=FTxhjQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 1:05 AM, Dave Hansen <dave.hansen@intel.com> wrote:
-> On 11/11/2013 02:45 PM, Zhi Yong Wu wrote:
->> On Tue, Nov 12, 2013 at 6:15 AM, Dave Hansen <dave.hansen@intel.com> wrote:
->>> In general, why do you have to control the number of these statically?
->> It gives the user or admin one optional chance to control the amount
->> of memory consumed by VFS hot tracking. And you can choose not to use
->> it.
->
-> The on/off knob seems to me to be something better left to a mount
-> option, not a global tunable.
-If it is left to a mount option, the user or admin can't change it
-*dynamically*.
 
->
->>> Shouldn't you just define a shrinker and let memory pressure determine
->>> how many of these we allow to exist?
->> How about if the user and admin hope to control the amount of the
->> memory consumed by VFS hot tracking? e.g. If the host has several
->> hundred of G or T memory, but the user or admin hope that the memory
->> size consumed by VFS hot tracking is under several G, In the case,
->> maybe a shrinker of VFS hot tracking will never be invoked by system
->> memory module, so this interface will make sense.
->
-> If the shrinker is not invoked, that means that there is lots of memory
-> free.  In the case that there is lots of memory free, are you arguing
-> that a user would rather see memory go *unused* than be put to use for
-> this hot tracking data?
-At first, some user or admin has a lot of use cases which you can't imagine.
-If he hope that the usage of memory consumed by VFS hot tracking
-doesn't affect other key applications, how about it? This only give
-one fine-grained control to the usage of memory consumed by VFS hot
-tracking.
->
-> If this were true, why don't we have similar knobs for the dentry, inode
-> and page caches?
-This is not be controlled by memory controller(mem_cgroup)?
+--cWoXeonUoKmBZSoM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, Nov 12, 2013 at 09:11:40PM +0100, Linus Walleij wrote:
+> > I could find two boards using "gpio-matrix-keypad" in the mainline
+> > kernel and not a single instance of "linux,no-autorepeat":
+>=20
+> In things connected to GPIO, I don't expect the in-kernel
+> device trees to be a good way so survey the usage of these
+> bindings. Anyone doing device trees on any system with a
+> few GPIOs can be using this.
+>=20
+> But maybe we're lucky and won't break anyone's setup if
+> we change this?
 
+AFAIK Device Tree property names are considered as ABI, so existing
+property names must not be removed.
 
--- 
-Regards,
+But I guess we can add the standardized property name in addition
+to the deprecated one. New drivers can use the standardized property
+name from the beginning.
 
-Zhi Yong Wu
+Thus I guess we should not use the name, which has the most adopters
+in kernel (or out of kernel). Instead the most fitting name should
+be used. Current suggestions (taken from kernel) are:
+
+* <<vendor>>,no-autorepeat
+* keypad,autorepeat
+* linux,keypad-no-autorepeat
+* linux,input-no-autorepeat
+* linux,no-autorepeat
+* autorepeat
+
+I do not really care, which one is chosen, except for two things:
+
+* <<vendor>> seems wrong. This is not vendor specific.
+* I would prefer "input-" over "keypad-", since then the same name
+  can be used for single keys, buttons, etc.
+
+-- Sebastian
+
+--cWoXeonUoKmBZSoM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSgpItAAoJENju1/PIO/qaKRcP/RTtmfW85fAGrj0QKc6e4uWl
+l2m3JbyTe3td3BYpTnHaewGH9HARMxRKszcy04qXAXqClTmI/R9Qbr8hzEp9+Do7
+UpXxqOamKZPaGpWs4ESazyDogh3pp98tsixX+fHvDaVwsH5IRJdeQMaTvbeXQ0ey
+WEZDMH00GjfUiU2w6CHyHaIr0nQtV/dzG5OgsVCG5hw1+lDkpkLhLUGCNJLqXvwt
+HJ1xiW3Cm0L2F+DnVLL3XvYwZfFQgCiPracMNT5seGUsdUBKeXCErJAGcOw0IWFT
+2/har3c3F2ZnZoGgt+Q00Yq9B/cCoLtx42kVURLiVpoWacxyTehTn8IX6pk/MH8l
+JCU36g2HGpiFgc54hVNaYTJHLwa6W0nUkTNMvlrNAQFMCx7i8ufeJBduFT/2Z03k
+ZnkXwL/q8K78A1pZyR3THcxQK6972DD3J1M7/PRpks1HjvpstOzNo/fHmgUGianb
+y+ttBKwGsCCnRaznlWwm73e3fpnvLRkBIt4KGKLt2HbflO9E0xXRT2fWl53LEJD7
+oNOJPOfZ5uV9k9BGPCXM9ybkHS/4Fxs9q8eW1D1qIMlQVBHaz2p1dvIaGnL31VCZ
+ceqnB81THgVzxkbWNFeYfXML5g0Nq+ZUxQFWJX5CcDnfshd/zvlo+xoPBd6YTeBu
+0AEJgt2xxZ4F7MSOThz1
+=VKPM
+-----END PGP SIGNATURE-----
+
+--cWoXeonUoKmBZSoM--
