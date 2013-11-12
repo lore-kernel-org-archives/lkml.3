@@ -1,38 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab3KLQ5H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 11:57:07 -0500
-Received: from a9-92.smtp-out.amazonses.com ([54.240.9.92]:47317 "EHLO
-	a9-92.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756314Ab3KLQ5E (ORCPT
+	id S1756399Ab3KLQ5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 11:57:53 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:40626 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754838Ab3KLQ5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 11:57:04 -0500
-X-Greylist: delayed 1008 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Nov 2013 11:57:04 EST
-Date: Tue, 12 Nov 2013 16:40:15 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: vmstat: On demand vmstat workers V3
-In-Reply-To: <000001417f6834f1-32b83f22-8bde-4b9e-b591-bc31329660e4-000000@email.amazonses.com>
-Message-ID: <000001424d2f4f0f-a7611966-71b6-432a-9f2e-adaa2c04f324-000000@email.amazonses.com>
-References: <000001417f6834f1-32b83f22-8bde-4b9e-b591-bc31329660e4-000000@email.amazonses.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 12 Nov 2013 11:57:51 -0500
+X-Originating-IP: 109.242.35.210
+Date: Tue, 12 Nov 2013 18:57:43 +0200
+From: Aldo Iljazi <mail@aldo.io>
+To: dsterba@suse.cz, chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] FS: BTRFS: fixed coding style issues
+Message-ID: <20131112165743.GA12521@elementary>
+References: <1383571658-7440-1-git-send-email-mail@aldo.io>
+ <20131104151619.GB16999@twin.jikos.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.11.12-54.240.9.92
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131104151619.GB16999@twin.jikos.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmmm... This has been sitting there for over a month. What I can I do to
-to make progress on merging this?
+ David Sterba wrote:
 
+> On Mon, Nov 04, 2013 at 03:27:38PM +0200, Aldo Iljazi wrote:
+> > Fixed three coding style issues. Replaced spaces with tabs.
+> > 
+> > Signed-off-by: Aldo Iljazi <mail@aldo.io>
+> > ---
+> >  fs/btrfs/dev-replace.c | 6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/fs/btrfs/dev-replace.c b/fs/btrfs/dev-replace.c
+> > index 9efb94e..b2fe609 100644
+> > --- a/fs/btrfs/dev-replace.c
+> > +++ b/fs/btrfs/dev-replace.c
+> > @@ -377,7 +377,7 @@ int btrfs_dev_replace_start(struct btrfs_root *root,
+> >  	printk_in_rcu(KERN_INFO
+> >  		      "btrfs: dev_replace from %s (devid %llu) to %s) started\n",
+> >  		      src_device->missing ? "<missing disk>" :
+> > -		        rcu_str_deref(src_device->name),
+> > +			rcu_str_deref(src_device->name),
+> 
+> What's the change here? I don't think we need to fix whitespace, this
+> makes searching in patch history more boring, namely in case where the
+> code looks exactly the same before and after the patch.
+> 
+> The style issues should be best fixed when the patch is about to be
+> merged, doing it later like this is kind of not welcome, speaking for
+> myself. There are lots of opportunities to do real code cleanups.
+> 
+> 
+> david
+
+Okay thanks.
+-- 
+Aldo Iljazi
