@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757670Ab3KLX0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 18:26:21 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:62589 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327Ab3KLX0O (ORCPT
+	id S1757542Ab3KLX2w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 18:28:52 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:56723 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756715Ab3KLX2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 18:26:14 -0500
-Date: Wed, 13 Nov 2013 00:26:09 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: perf top -u <uid> does not seem to be working
-Message-ID: <20131112232609.GA31474@gmail.com>
-References: <20131112232249.GA31384@gmail.com>
+	Tue, 12 Nov 2013 18:28:46 -0500
+Message-ID: <5282B9AC.8050200@lwfinger.net>
+Date: Tue, 12 Nov 2013 17:28:44 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131112232249.GA31384@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Demers <alexandre.f.demers@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Silence r8712u info and add verbose option v2
+References: <1384281793-4733-1-git-send-email-alexandre.f.demers@gmail.com>	<52827E16.1030001@lwfinger.net>	<20131112210641.GB23241@kroah.com> <CAPEhTTFRW02A+4cgOB_gQ=Q_VJ9z-NjF_Jyw1rogiqebg5hA=Q@mail.gmail.com>
+In-Reply-To: <CAPEhTTFRW02A+4cgOB_gQ=Q_VJ9z-NjF_Jyw1rogiqebg5hA=Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/12/2013 04:38 PM, Alexandre Demers wrote:
+> Hi Larry and Greg,
+> You are right about the v2 thing and the Signed-off-by. It's the first
+> time I submit a patch directly to the kernel list, I didn't go to the
+> bottom of the SubmittingPatches, I should have read the whole document
+> and not stop in the middle of it. I'll finish reading it and do what
+> is expected. Greg, I understand your comment: I would have had the
+> answer if I had read the whole document (it's in there, I've just seen
+> it).
+>
+> However, I'll take the opportunity you are offering me, Larry, with
+> your last question: I was asking myself the same question about simply
+> deleting the statement which seems pretty useless to me. On the other
+> hand, should we continue writing patches against r8712u? I'm not aware
+> of the conclusion about replacing r8712u by r92su. Was there any
+> decision taken on the subject?
 
-an unrelated bug is a missing newline if the 'uid' is invalid:
+I am not involved in the r92su project. My impression is that the latest 
+proponent of that change was not happy with the information that r92su would 
+still be in staging, but without mac80211 there is no other choice.
 
-  hubble:~> perf top --stdio -u help
-  Error:
-  Invalid User: helphubble:~> 
+If there are parts of r8712u that are problems for you, then patch them. I will 
+review them, but I am not likely to contribute other than for things that are bugs.
 
-Fixed by the patch below.
+Larry
 
-  comet:~/tip/tools/perf> perf top --stdio -u help
-  Error:
-  Invalid User: help
-  comet:~/tip/tools/perf> 
-
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
- tools/perf/builtin-top.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index b8f8e29..71e6402 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1172,7 +1172,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	status = target__validate(target);
- 	if (status) {
- 		target__strerror(target, status, errbuf, BUFSIZ);
--		ui__warning("%s", errbuf);
-+		ui__warning("%s\n", errbuf);
- 	}
- 
- 	status = target__parse_uid(target);
-@@ -1180,7 +1180,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 		int saved_errno = errno;
- 
- 		target__strerror(target, status, errbuf, BUFSIZ);
--		ui__error("%s", errbuf);
-+		ui__error("%s\n", errbuf);
- 
- 		status = -saved_errno;
- 		goto out_delete_evlist;
 
