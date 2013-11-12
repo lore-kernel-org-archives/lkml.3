@@ -1,33 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab3KLOHh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:07:37 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52918 "HELO
+	id S1755495Ab3KLOIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:08:11 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50572 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754839Ab3KLOHe (ORCPT
+	with SMTP id S1754727Ab3KLOIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:07:34 -0500
+	Tue, 12 Nov 2013 09:08:09 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: srinivas.kandagatla@st.com
-Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Stuart Menefy <stuart.menefy@st.com>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, stephen.gallimore@st.com,
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Lan Tianyu <tianyu.lan@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, linux-pm@vger.kernel.org
-Subject: Re: [PATCH RFC 07/10] PM / wakeup : Introduce device_child_may_wakeup
-Date: Tue, 12 Nov 2013 15:20:01 +0100
-Message-ID: <4093206.klj58BXQv3@vostro.rjw.lan>
+        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] ACPI / driver core: Store a device pointer in struct acpi_dev_node
+Date: Tue, 12 Nov 2013 15:20:37 +0100
+Message-ID: <3448237.NUtWjlv2Mb@vostro.rjw.lan>
 User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1384264377-7609-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1384264311-7308-1-git-send-email-srinivas.kandagatla@st.com> <1384264377-7609-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <20131112092402.GO22916@intel.com>
+References: <3268437.YsusHvklcv@vostro.rjw.lan> <1683079.zjqzsOAjXB@vostro.rjw.lan> <20131112092402.GO22916@intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -35,74 +30,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 12, 2013 01:52:57 PM srinivas.kandagatla@st.com wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+On Tuesday, November 12, 2013 11:24:02 AM Mika Westerberg wrote:
+> On Mon, Nov 11, 2013 at 02:45:39PM +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Subject: ACPI / driver core: Store an ACPI device pointer in struct acpi_dev_node
+> > 
+> > Modify struct acpi_dev_node to contain a pointer to struct acpi_device
+> > associated with the given device object (that is, its ACPI companion
+> > device) instead of an ACPI handle corresponding to it.  Introduce two
+> > new macros for manipulating that pointer in a CONFIG_ACPI-safe way,
+> > ACPI_COMPANION() and ACPI_COMPANION_SET(), and rework the
+> > ACPI_HANDLE() macro to take the above changes into account.
+> > Drop the ACPI_HANDLE_SET() macro entirely and rework its users to
+> > use ACPI_COMPANION_SET() instead.  For some of them who used to
+> > pass the result of acpi_get_child() directly to ACPI_HANDLE_SET()
+> > introduce a helper routine acpi_preset_companion() doing an
+> > equivalent thing.
+> > 
+> > The main motivation for doing this is that there are things
+> > represented by struct acpi_device objects that don't have valid
+> > ACPI handles (so called fixed ACPI hardware features, such as
+> > power and sleep buttons) and we would like to create platform
+> > device objects for them and "glue" them to their ACPI companions
+> > in the usual way (which currently is impossible due to the
+> > lack of valid ACPI handles).  However, there are more reasons
+> > why it may be useful.
+> > 
+> > First, struct acpi_device pointers allow of much better type checking
+> > than void pointers which are ACPI handles, so it should be more
+> > difficult to write buggy code using modified struct acpi_dev_node
+> > and the new macros.  Second, the change should help to reduce (over
+> > time) the number of places in which the result of ACPI_HANDLE() is
+> > passed to acpi_bus_get_device() in order to obtain a pointer to the
+> > struct acpi_device associated with the given "physical" device,
+> > because now that pointer is returned by ACPI_COMPANION() directly.
+> > Finally, the change should make it easier to write generic code that
+> > will build both for CONFIG_ACPI set and unset without adding explicit
+> > compiler directives to it.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> This patch introduces device_child_may_wakeup function, which will be
-> useful for wrapper or SoC level driver power management code.
-> Without this patch each driver has to write this same code to get the
-> functionality.
+> I tested this on Haswell as well and it works fine with ACPI enumerated
+> platform, I2C and SPI devices.
 > 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> ---
->  drivers/base/power/wakeup.c |   23 +++++++++++++++++++++++
->  include/linux/pm_wakeup.h   |    1 +
->  2 files changed, 24 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
-> index 2d56f41..270f000 100644
-> --- a/drivers/base/power/wakeup.c
-> +++ b/drivers/base/power/wakeup.c
-> @@ -342,6 +342,29 @@ int device_set_wakeup_enable(struct device *dev, bool enable)
->  }
->  EXPORT_SYMBOL_GPL(device_set_wakeup_enable);
->  
-> +/* callback for device_child_may_wakeup */
-> +static int __device_child_may_wakeup(struct device *dev, void *c)
-> +{
-> +	return device_may_wakeup(dev);
-> +}
-
-This doesn't have anything to do with children in principle, so please call
-it differently.  Something like device_may_wakeup_cb() would work for me (and
-then you may not need the comment even).
+> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com> (on Haswell)
+> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
 Thanks!
 
-> +
-> +/**
-> + * device_child_may_wakeup - Check if any of the child devices are wakeup
-> + * sources.
-> + * @dev: parent device to handle.
-> + *
-> + * Function to check if any of the children of a given parent are wakeup
-> + * sources.
-> + *
-> + * This function will return true if any one of the children of given parent
-> + * are wakeup sources, else it returns false.
-> + */
-> +bool device_child_may_wakeup(struct device *parent)
-> +{
-> +	return device_for_each_child(parent, NULL, __device_child_may_wakeup);
-> +}
-> +EXPORT_SYMBOL_GPL(device_child_may_wakeup);
-> +
->  /*
->   * The functions below use the observation that each wakeup event starts a
->   * period in which the system should not be suspended.  The moment this period
-> diff --git a/include/linux/pm_wakeup.h b/include/linux/pm_wakeup.h
-> index a0f7080..b376584 100644
-> --- a/include/linux/pm_wakeup.h
-> +++ b/include/linux/pm_wakeup.h
-> @@ -93,6 +93,7 @@ extern int device_wakeup_disable(struct device *dev);
->  extern void device_set_wakeup_capable(struct device *dev, bool capable);
->  extern int device_init_wakeup(struct device *dev, bool val);
->  extern int device_set_wakeup_enable(struct device *dev, bool enable);
-> +bool device_child_may_wakeup(struct device *parent);
->  extern void __pm_stay_awake(struct wakeup_source *ws);
->  extern void pm_stay_awake(struct device *dev);
->  extern void __pm_relax(struct wakeup_source *ws);
-> 
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
