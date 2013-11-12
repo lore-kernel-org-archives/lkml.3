@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab3KLV3G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 16:29:06 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:52897 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755984Ab3KLV3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:29:03 -0500
-Date: Tue, 12 Nov 2013 15:29:02 -0600
-From: Alex Thorlton <athorlton@sgi.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: BUG: mm, numa: test segfaults, only when NUMA balancing is on
-Message-ID: <20131112212902.GA4725@sgi.com>
-References: <20131016155429.GP25735@sgi.com>
- <20131104145828.GA1218@suse.de>
- <20131104200346.GA3066@sgi.com>
- <20131106131048.GC4877@suse.de>
- <20131107214838.GY3066@sgi.com>
- <20131108112054.GB5040@suse.de>
- <20131108221329.GD4236@sgi.com>
+	id S1756896Ab3KLVaR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 16:30:17 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:57162 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134Ab3KLVaK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 16:30:10 -0500
+Date: Tue, 12 Nov 2013 13:29:04 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Does Itanium permit speculative stores?
+Message-ID: <20131112212904.GR4138@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131111171307.GA27002@linux.vnet.ibm.com>
+ <3908561D78D1C84285E8C5FCA982C28F31D5DB28@ORSMSX106.amr.corp.intel.com>
+ <20131112182617.GG21461@twins.programming.kicks-ass.net>
+ <3908561D78D1C84285E8C5FCA982C28F31D5DF47@ORSMSX106.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131108221329.GD4236@sgi.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31D5DF47@ORSMSX106.amr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111221-9332-0000-0000-00000220CEE8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 04:13:29PM -0600, Alex Thorlton wrote:
-> On Fri, Nov 08, 2013 at 11:20:54AM +0000, Mel Gorman wrote:
-> > On Thu, Nov 07, 2013 at 03:48:38PM -0600, Alex Thorlton wrote:
-> > > > Try the following patch on top of 3.12. It's a patch that is expected to
-> > > > be merged for 3.13. On its own it'll hurt automatic NUMA balancing in
-> > > > -stable but corruption trumps performance and the full series is not
-> > > > going to be considered acceptable for -stable
-> > > 
-> > > I gave this patch a shot, and it didn't seem to solve the problem.
-> > > Actually I'm running into what appear to be *worse* problems on the 3.12
-> > > kernel.  Here're a couple stack traces of what I get when I run the test
-> > > on 3.12, 512 cores:
-> > > 
-> > 
-> > Ok, so there are two issues at least. Whatever is causing your
-> > corruption (which I still cannot reproduce) and the fact that 3.12 is
-> > worse. The largest machine I've tested with is 40 cores. I'm trying to
-> > get time on a 60 core machine to see if has a better chance. I will not
-> > be able to get access to anything resembling 512 cores.
+On Tue, Nov 12, 2013 at 06:46:20PM +0000, Luck, Tony wrote:
+> > So the point we're having a discussion on is if any architecture has
+> > visible speculative STORES and if there's an architecture that doesn't
+> > have control dependencies.
+> >
+> > On the visible speculative STORES; can, if in the above example we have
+> > regular loads/stores:
+> >
+> >  LOAD r1, x			LOAD r2, y
+> >  IF (r1)			IF (r2)
+> >	STORE y, 1			STORE x, 1
+> >
+> > we observe: r1==1 && r2==1
+> >
+> > In order for that to be true; we must be able to observe the stores
+> > before the loads are complete -- and therefore before the branches are a
+> > certainty.
 > 
-> At this point, the smallest machine I've been able to recreate this
-> issue on has been a 128 core, but it's rare on a machine that small.
-> I'll kick off a really long run on a 64 core over the weekend and see if
-> I can hit it on there at all, but I haven't been able to previously.
+> Even without the ".acq" and ".rel" this code is still safe.
+> 
+> Quoting ia64 SDM vol 1, Section 4.4.7 Memory Access Ordering"
+> "In addition, memory writes and flushes must observe control dependencies"
+> 
+> which I take to mean that the STORE can't be visible until we are certain of
+> the outcome of the conditional.
 
-Just a quick update, I ran this test 500 times on 64 cores, allocating
-512m per core, and every single test completed successfully.  At this
-point, it looks like you definitely need at least 128 cores to reproduce
-the issue.
+Even better!
 
-- Alex
+							Thanx, Paul
+
