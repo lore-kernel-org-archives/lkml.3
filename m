@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab3KLBHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 20:07:23 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:45965 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563Ab3KLBHR (ORCPT
+	id S1754607Ab3KLBHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 20:07:43 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:38937 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753924Ab3KLBHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 20:07:17 -0500
-Message-ID: <52817F42.2080706@gmail.com>
-Date: Tue, 12 Nov 2013 05:07:14 +0400
-From: Evgeny Boger <eugenyboger@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 11 Nov 2013 20:07:37 -0500
 MIME-Version: 1.0
-To: Evgeniy Polyakov <zbr@ioremap.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Fries <david@fries.net>
-Subject: Re: [PATCH 1/1] Add strong pullup emulation to w1-gpio master driver.
-References: <1384180614-9025-1-git-send-email-boger@contactless.ru> <10261384211376@web11j.yandex.ru> <5281691F.4060604@gmail.com> <37621384218204@web11j.yandex.ru>
-In-Reply-To: <37621384218204@web11j.yandex.ru>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131112005628.GA2914@khazad-dum.debian.net>
+References: <20131111235700.GA29987@july>
+	<002901cedf3c$a7e77a00$f7b66e00$%han@samsung.com>
+	<20131112005628.GA2914@khazad-dum.debian.net>
+Date: Tue, 12 Nov 2013 10:07:36 +0900
+X-Google-Sender-Auth: vFjISeIc3w1qUBvZulOhqKHuQIE
+Message-ID: <CAH9JG2Wa_QXo3CZPmEyfDrHkZAGLVwhANoFAz6GZEC7mX48UGQ@mail.gmail.com>
+Subject: Re: [PATCH] video: backlight: Remove backlight sysfs uevent
+From: Kyungmin Park <kmpark@infradead.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kay@vrfy.org, Richard Purdie <rpurdie@rpsys.net>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+David Fries <david@fries.net>
-
-Hi David,
-
-Would you please comment on this?
-
-
-11/12/2013 05:03 AM, Evgeniy Polyakov:
-> Hi
+On Tue, Nov 12, 2013 at 9:56 AM, Henrique de Moraes Holschuh
+<hmh@hmh.eng.br> wrote:
+> On Tue, 12 Nov 2013, Jingoo Han wrote:
+>> On Tuesday, November 12, 2013 8:57 AM, Kyungmin Park wrote:
+>> > From: Kyungmin Park <kyungmin.park@samsung.com>
+>> >
+>> > The most mobile phones have Ambient Light Sensors and it changes brightness according lux.
+>> > It means it changes backlight brightness frequently by just writing sysfs node, so it generates uevent.
+>> >
+>> > Usually there's no user to use this backlight changes. But it forks udev worker threads and it takes
+>> > about 5ms. The main problem is that it hurts other process activities. so remove it.
+>> >
+>> > Kay said
+>> > "Uevents are for the major, low-frequent, global device state-changes,
+>> >  not for carrying-out any sort of measurement data. Subsystems which
+>> >  need that should use other facilities like poll()-able sysfs file or
+>> >  any other subscription-based, client-tracking interface which does not
+>> >  cause overhead if it isn't used. Uevents are not the right thing to
+>> >  use here, and upstream udev should not paper-over broken kernel
+>> >  subsystems."
 >
-> 12.11.2013, 03:32, "Evgeny Boger" <eugenyboger@gmail.com>:
->>> Why did you drop this check? It has nothing with w1-gpio driver
->> This check prevents master from implementing "set_pullup"  provided it does support only "write_bit" method.
->> The comment above states that
->>>   w1_io.c would need to support calling set_pullup before - * the last write_bit operation of a w1_write_8 which it currently - * doesn't.
->> which is kind of strange, since it describes what w1_io.c actually does support.
->>
->> w1_write_8 (w1_io.c:154, https://github.com/torvalds/linux/blob/master/drivers/w1/w1_io.c#L154):
->>>                  for (i = 0; i < 8; ++i) {
->>>                          if (i == 7)
->>>                                  w1_pre_write(dev);
->>>                          w1_touch_bit(dev, (byte >> i) & 0x1);
->>>                  }
->> It seems like w1_write_8() calls w1_pre_write(), which in turn calls set_pullup() just before the last write_bit().
->>
->> I'm not sure why this check was there in the first place.
-> Please add author of those lines to clarify things.
-> This doesn't look obvious to me
+> True.
+>
+> Now, let's take a look at reality: should you poll()/select() on a sysfs
+> node that doesn't suport it, it will wait until the poll/select timeout
+> happens (or EINTR happens), and userspace has absolutely NO way to detect
+> whether a sysfs node has poll/select support.
+>
+> What happens if the sysfs interface did not provide poll/select support
+> since day one, but rather added it later?  Nobody will use it for a *long*
+> time, if ever... unless you actually took pains to version the sysfs
+> interface, and people actually care.
+>
+>> 'thinkpad_acpi.c' uses the 'BACKLIGHT_UPDATE_SYSFS'.
+>> Henrique, can we remove it?
+>
+> Can't you fix this by rate-limiting, or otherwise adding an attribute that
+> backlight devices should set when they need to supress change events?
 
+other way is that just remove sysfs node store update then you can use
+current API, force_update as is.
+
+are there any other good ideas?
+
+Thank you,
+Kyungmin Park
+>
+> Is there a proper on-screen-display support path for the backlight class
+> nowadays?  Otherwise, you'd be removing the only way userspace ever had to
+> do proper OSD of backlight changes...
+>
+> --
+>   "One disk to rule them all, One disk to find them. One disk to bring
+>   them all and in the darkness grind them. In the Land of Redmond
+>   where the shadows lie." -- The Silicon Valley Tarot
+>   Henrique Holschuh
