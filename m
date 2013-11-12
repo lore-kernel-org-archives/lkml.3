@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab3KLUA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 15:00:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3263 "EHLO mx1.redhat.com"
+	id S1756803Ab3KLUBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 15:01:10 -0500
+Received: from mga09.intel.com ([134.134.136.24]:43874 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753735Ab3KLUAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 15:00:50 -0500
-Date: Tue, 12 Nov 2013 21:01:56 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Sameer Nanda <snanda@chromium.org>
-Cc: akpm@linux-foundation.org, mhocko@suse.cz, rientjes@google.com,
-        hannes@cmpxchg.org, rusty@rustcorp.com.au, semenzato@google.com,
-        murzin.v@gmail.com, dserrg@gmail.com, msb@chromium.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] mm, oom: Fix race when selecting process to kill
-Message-ID: <20131112200156.GA9820@redhat.com>
-References: <20131109151639.GB14249@redhat.com> <1384215717-2389-1-git-send-email-snanda@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384215717-2389-1-git-send-email-snanda@chromium.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753735Ab3KLUBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 15:01:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="434107371"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH] x86: intel-mid: remove deprecated X86_MDFLD and X86_WANT_INTEL_MID configs
+Date: Tue, 12 Nov 2013 12:05:34 -0800
+Message-Id: <1384286734-23848-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11, Sameer Nanda wrote:
->
-> The selection of the process to be killed happens in two spots:
-> first in select_bad_process and then a further refinement by
-> looking for child processes in oom_kill_process. Since this is
-> a two step process, it is possible that the process selected by
-> select_bad_process may get a SIGKILL just before oom_kill_process
-> executes. If this were to happen, __unhash_process deletes this
-> process from the thread_group list. This results in oom_kill_process
-> getting stuck in an infinite loop when traversing the thread_group
-> list of the selected process.
->
-> Fix this race by adding a pid_alive check for the selected process
-> with tasklist_lock held in oom_kill_process.
+We want to support all Intel Mid platforms with a single config
+selection. This patch removes deprecated CONFIG_X86_MDFLD and
+X86_WANT_INTEL_MID options in favor of having CONFIG_X86_INTEL_MID only.
 
-OK, looks correct to me. Thanks.
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
+ arch/x86/Kconfig | 30 +++++-------------------------
+ 1 file changed, 5 insertions(+), 25 deletions(-)
 
-
-Yes, this is a step backwards, hopefully we will revert this patch soon.
-I am starting to think something like while_each_thread_lame_but_safe()
-makes sense before we really fix this nasty (and afaics not simple)
-problem with with while_each_thread() (which should die).
-
-Oleg.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index f67e839f06c8..c5f3414e453d 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -440,42 +440,22 @@ config X86_INTEL_CE
+ 	  This option compiles in support for the CE4100 SOC for settop
+ 	  boxes and media devices.
+ 
+-config X86_WANT_INTEL_MID
++config X86_INTEL_MID
+ 	bool "Intel MID platform support"
+ 	depends on X86_32
+ 	depends on X86_EXTENDED_PLATFORM
+-	---help---
+-	  Select to build a kernel capable of supporting Intel MID platform
+-	  systems which do not have the PCI legacy interfaces (Moorestown,
+-	  Medfield). If you are building for a PC class system say N here.
+-
+-if X86_WANT_INTEL_MID
+-
+-config X86_INTEL_MID
+-	bool
+-
+-config X86_MDFLD
+-       bool "Medfield MID platform"
+ 	depends on PCI
+ 	depends on PCI_GOANY
+ 	depends on X86_IO_APIC
+-	select X86_INTEL_MID
+-	select SFI
+ 	select DW_APB_TIMER
+ 	select APB_TIMER
+-	select I2C
+-	select SPI
+ 	select INTEL_SCU_IPC
+-	select X86_PLATFORM_DEVICES
+ 	select MFD_INTEL_MSIC
+-	---help---
+-	  Medfield is Intel's Low Power Intel Architecture (LPIA) based Moblin
+-	  Internet Device(MID) platform. 
+-	  Unlike standard x86 PCs, Medfield does not have many legacy devices
+-	  nor standard legacy replacement devices/features. e.g. Medfield does
+-	  not contain i8259, i8254, HPET, legacy BIOS, most of the io ports.
+ 
+-endif
++	---help---
++	  Select to build a kernel capable of supporting Intel MID platform
++	  systems which do not have the PCI legacy interfaces (Moorestown,
++	  Medfield). If you are building for a PC class system say N here.
+ 
+ config X86_INTEL_LPSS
+ 	bool "Intel Low Power Subsystem Support"
+-- 
+1.8.4.2
 
