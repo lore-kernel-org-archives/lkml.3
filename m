@@ -1,24 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab3KLMnZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 07:43:25 -0500
-Received: from imap.thunk.org ([74.207.234.97]:57015 "EHLO imap.thunk.org"
+	id S1755162Ab3KLMnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 07:43:32 -0500
+Received: from imap.thunk.org ([74.207.234.97]:57027 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752657Ab3KLMnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 07:43:22 -0500
-Date: Mon, 11 Nov 2013 23:24:44 -0500
+	id S1752657Ab3KLMnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 07:43:25 -0500
+Date: Mon, 11 Nov 2013 19:30:18 -0500
 From: "Theodore Ts'o" <tytso@mit.edu>
-To: Greg Price <price@mit.edu>
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 00/11] random: code cleanups
-Message-ID: <20131112042444.GC30281@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Greg Price <price@MIT.EDU>,
-	linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
-References: <cover.1383868558.git.price@mit.edu>
+To: David Turner <novalis@novalis.org>
+Cc: Mark Harris <mhlk@osj.us>, Andreas Dilger <adilger@dilger.ca>,
+        Jan Kara <jack@suse.cz>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ext4: explain encoding of 34-bit a,c,mtime values
+Message-ID: <20131112003018.GA30281@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	David Turner <novalis@novalis.org>, Mark Harris <mhlk@osj.us>,
+	Andreas Dilger <adilger@dilger.ca>, Jan Kara <jack@suse.cz>,
+	Ext4 Developers List <linux-ext4@vger.kernel.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <1383808590.23882.13.camel@chiang>
+ <20131107160341.GA3850@quack.suse.cz>
+ <1383864864.23882.33.camel@chiang>
+ <20131107231445.GG2054@quack.suse.cz>
+ <1383866807.23882.41.camel@chiang>
+ <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
+ <1383981551.8994.27.camel@chiang>
+ <CADQUmxULoLgXRyoPpJJMJLqJPsZ8M4oPP8ScGxWp+Np8-efq3g@mail.gmail.com>
+ <1384070214.8994.47.camel@chiang>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1383868558.git.price@mit.edu>
+In-Reply-To: <1384070214.8994.47.camel@chiang>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: tytso@thunk.org
@@ -27,29 +41,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 06:57:25PM -0500, Greg Price wrote:
+On Sun, Nov 10, 2013 at 02:56:54AM -0500, David Turner wrote:
+> b. Use Andreas's encoding, which is incompatible with pre-1970 files
+> written on 64-bit systems.
+>
+> I don't care about currently-existing post-2038 files, because I believe
+> that nobody has a valid reason to have such files.  However, I do
+> believe that pre-1970 files are probably important to someone.
 > 
-> I recently read through the random number generator's code.
-> This series has fixes for some minor things I spotted.
+> Despite this, I prefer option (b), because I think the simplicity is
+> valuable, and because I hate to give up date ranges (even ones that I
+> think we'll "never" need). Option (b) is not actually lossy, because we
+> could correct pre-1970 files with e2fsck; under Andreas's encoding,
+> their dates would be in the far future (and thus cannot be legitimate).
 > 
-> Four of the patches touch comments only.  Four simplify code without
-> changing its behavior (total diffstat: 35 insertions, 73 deletions),
-> and one is a trivial signedness fix.  Two patches change the locking
-> and lockless concurrency control in account(), including one bugfix.
-> The bug is related to the one Jiri found and fixed in May.
+> Would a patch that does (b) be accepted?  I would accompany it with a
+> patch to e2fsck (which I assume would also go to the ext4 developers
+> mailing list?).
 
-Hi Greg,
+I agree, I think this is the best way to go.  I'm going to drop your
+earlier patch, and wait for an updated patch from you.  It may miss
+this merge window, but as Andreas has pointed out, we still have a few
+years to get this right.  :-)
 
-My apologies for not being able to get to this patch series before the
-patch window opened --- this week has been crazy.  None of the changes
-seem to be especially critical, and a number of the patches don't
-apply cleanly to the random.git tree (some of the spelling fixes have
-already been fixed, for example), which has patches queued up for the
-upcoming merge window.  So I'm going to defer applying these patches
-for 2.13, and I'd ask you if you'd be willing to rebase these patches
-against the random.git tree, so they can be pulled in after the merge
-window closes.
-
-Thanks,
+Thanks!!
 
 					- Ted
