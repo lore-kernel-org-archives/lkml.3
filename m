@@ -1,120 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487Ab3KLFQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 00:16:11 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:9948 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab3KLFQG (ORCPT
+	id S1751616Ab3KLFTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 00:19:38 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:30083 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab3KLFTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 00:16:06 -0500
-X-AuditID: cbfee61b-b7fd56d000001fc6-6e-5281b994b7f0
+	Tue, 12 Nov 2013 00:19:30 -0500
+X-AuditID: cbfee61b-b7fd56d000001fc6-49-5281ba6089cc
 From: Chao Yu <chao2.yu@samsung.com>
 To: ??? <jaegeuk.kim@samsung.com>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-f2fs-devel@lists.sourceforge.net,
         =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
-Subject: [f2fs-dev] [PATCH 1/2] f2fs: add a new function to support for merging
- contiguous read
-Date: Tue, 12 Nov 2013 13:15:08 +0800
-Message-id: <000001cedf66$46a9bb70$d3fd3250$@samsung.com>
+Subject: [f2fs-dev] [PATCH 2/2] f2fs: read contiguous sit entry pages by
+ merging for mount performance
+Date: Tue, 12 Nov 2013 13:18:40 +0800
+Message-id: <000101cedf66$c2e7ea40$48b7bec0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=gb2312
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7euU/d+/pUuq7ZR/6UBwBCf9FB2Q==
+Thread-index: Ac7euxMlaKtf0HlpR+u4biF3LvZHxg==
 Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd0pOxuDDGae0Le4vusvk8WlRe4W
-	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujN4rs9kK
-	dglV3Fi9ia2BsZm/i5GTQ0LARGLGjjYmCFtM4sK99WxdjFwcQgKLGCUWHd7HAuH8YJTYevEJ
-	G0gVm4CKxPKO/2AdIgKKEhveb2AHKWIWmMEocXjuP9YuRg4OYYFEiVebAkBqWARUJd4cPAxW
-	zytgKbFtUwsbhC0o8WPyPRYQm1lAQ6J/0QY2CFteYvOat8wQFylI7Dj7mhFil55E65tDrBA1
-	4hIbj9ximcAoMAvJqFlIRs1CMmoWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYKD
-	+pn0DsZVDRaHGAU4GJV4eHdwNQYJsSaWFVfmHmKU4GBWEuENXwwU4k1JrKxKLcqPLyrNSS0+
-	xCjNwaIkznuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwFgy+WJC+o0pP2decfp47g1XgGe3ftKF
-	mYqyK24UhDDO+rcgLPPNv8xfJ5Uze1IT2EQdVpwUD7zWI1pjqvDD4IxL82Rl/SCRDtl3/9Ti
-	z5ZkzXodd/qw+4MPGw6bFzo4Ji37sSiqqMzS5orPs7eiWyp99A2vlPMLPZP+8ybKhZORo51h
-	v3T4CyWW4oxEQy3mouJEANhDrPpmAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jAd3EXY1BBsvesFhc3/WXyeLSIneL
+	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxoIZzgXn
+	lCpO3FjM1sC4UKaLkYNDQsBEYupZlS5GTiBTTOLCvfVsXYxcHEICixgl9i79zwLh/GCU6PzZ
+	yA5SxSagIrG84z8TiC0ioCix4f0GdpAiZoEZjBKH5/5jBZkqLJAhMeVzFkgNi4CqxJQfLawg
+	Nq+ApUTbnE8sELagxI/J98BsZgENif5FG9ggbHmJzWveMkNcpCCx4+xrRohdehJvrjxkh6gR
+	l9h45BbLBEaBWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERzQ
+	z6R3MK5qsDjEKMDBqMTDu4OrMUiINbGsuDL3EKMEB7OSCG/4YqAQb0piZVVqUX58UWlOavEh
+	RmkOFiVx3oOt1oFCAumJJanZqakFqUUwWSYOTilgkP+/uch+RUCa1JH7N7msZ/M8lRE4p7Xx
+	Vc0j76OGnBoXAh49Mf9VfLr0k96looVrl+tbG788V+F8h+XZo8LFl+qCtvJk1af+NEr4wKPR
+	H8V3TnR1gv3OuO0v97pIbFnzsVQ+4rvSgdc7rOvCv75dUGdyKHBmGPsmV6/StG8c83i62ne3
+	sEx8pcRSnJFoqMVcVJwIACsps1pkAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For better read performance, we add a new function to support for merging contiguous read as the one for write.
+Previously we read sit entries page one by one, this method lost the chance of reading contiguous page together.
+So we read pages as contiguous as possible for better mount performance.
 
 Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 ---
- fs/f2fs/data.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
- fs/f2fs/f2fs.h |    2 ++
- 2 files changed, 47 insertions(+)
+ fs/f2fs/f2fs.h    |    2 ++
+ fs/f2fs/segment.c |   65 ++++++++++++++++++++++++++++++++++++++++++++++++++---
+ fs/f2fs/segment.h |    2 ++
+ 3 files changed, 66 insertions(+), 3 deletions(-)
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index aa3438c..f30060b 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -404,6 +404,51 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct page *page,
- 	return 0;
- }
- 
-+void f2fs_submit_read_bio(struct f2fs_sb_info *sbi, int rw)
-+{
-+	down_read(&sbi->bio_sem);
-+	if (sbi->read_bio) {
-+		submit_bio(rw, sbi->read_bio);
-+		sbi->read_bio = NULL;
-+	}
-+	up_read(&sbi->bio_sem);
-+}
-+
-+void submit_read_page(struct f2fs_sb_info *sbi, struct page *page,
-+					block_t blk_addr, int rw)
-+{
-+	struct block_device *bdev = sbi->sb->s_bdev;
-+	int bio_blocks;
-+
-+	verify_block_addr(sbi, blk_addr);
-+
-+	down_read(&sbi->bio_sem);
-+
-+	if (sbi->read_bio && sbi->last_read_block != blk_addr - 1) {
-+		submit_bio(rw, sbi->read_bio);
-+		sbi->read_bio = NULL;
-+	}
-+
-+alloc_new:
-+	if (sbi->read_bio == NULL) {
-+		bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
-+		sbi->read_bio = f2fs_bio_alloc(bdev, bio_blocks);
-+		sbi->read_bio->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
-+		sbi->read_bio->bi_end_io = read_end_io;
-+	}
-+
-+	if (bio_add_page(sbi->read_bio, page, PAGE_CACHE_SIZE, 0) <
-+							PAGE_CACHE_SIZE) {
-+		submit_bio(rw, sbi->read_bio);
-+		sbi->read_bio = NULL;
-+		goto alloc_new;
-+	}
-+
-+	sbi->last_read_block = blk_addr;
-+
-+	up_read(&sbi->bio_sem);
-+}
-+
- /*
-  * This function should be used by the data read flow only where it
-  * does not check the "create" flag that indicates block allocation.
 diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 89dc750..0afdcec 100644
+index 0afdcec..bfe9d87 100644
 --- a/fs/f2fs/f2fs.h
 +++ b/fs/f2fs/f2fs.h
-@@ -359,6 +359,8 @@ struct f2fs_sb_info {
+@@ -1113,6 +1113,8 @@ struct page *find_data_page(struct inode *, pgoff_t, bool);
+ struct page *get_lock_data_page(struct inode *, pgoff_t);
+ struct page *get_new_data_page(struct inode *, struct page *, pgoff_t, bool);
+ int f2fs_readpage(struct f2fs_sb_info *, struct page *, block_t, int);
++void f2fs_submit_read_bio(struct f2fs_sb_info *, int);
++void submit_read_page(struct f2fs_sb_info *, struct page *, block_t, int);
+ int do_write_data_page(struct page *);
  
- 	/* for segment-related operations */
- 	struct f2fs_sm_info *sm_info;		/* segment manager */
-+	struct bio *read_bio;			/* read bios to merge */
-+	sector_t last_read_block;		/* last read block number */
- 	struct bio *bio[NR_PAGE_TYPE];		/* bios to merge */
- 	sector_t last_block_in_bio[NR_PAGE_TYPE];	/* last block number */
- 	struct rw_semaphore bio_sem;		/* IO semaphore */
+ /*
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 86dc289..414c351 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -1474,19 +1474,72 @@ static int build_curseg(struct f2fs_sb_info *sbi)
+ 	return restore_curseg_summaries(sbi);
+ }
+ 
++static int ra_sit_pages(struct f2fs_sb_info *sbi, int start,
++					int nrpages, bool *is_order)
++{
++	struct address_space *mapping = sbi->meta_inode->i_mapping;
++	struct sit_info *sit_i = SIT_I(sbi);
++	struct page *page;
++	block_t blk_addr;
++	int blkno, readcnt = 0;
++	int sit_blk_cnt = SIT_BLK_CNT(sbi);
++
++	for (blkno = start; blkno < start + nrpages; blkno++) {
++
++		if (blkno >= sit_blk_cnt)
++			goto out;
++		if ((!f2fs_test_bit(blkno, sit_i->sit_bitmap) ^ !*is_order)) {
++			*is_order = !*is_order;
++			goto out;
++		}
++
++		blk_addr = sit_i->sit_base_addr + blkno;
++		if (*is_order)
++			blk_addr += sit_i->sit_blocks;
++repeat:
++		page = grab_cache_page(mapping, blk_addr);
++		if (!page) {
++			cond_resched();
++			goto repeat;
++		}
++		if (PageUptodate(page)) {
++			f2fs_put_page(page, 1);
++			readcnt++;
++			goto out;
++		}
++
++		submit_read_page(sbi, page, blk_addr, READ_SYNC);
++
++		page_cache_release(page);
++		readcnt++;
++	}
++out:
++	f2fs_submit_read_bio(sbi, READ_SYNC);
++	return readcnt;
++}
++
+ static void build_sit_entries(struct f2fs_sb_info *sbi)
+ {
+ 	struct sit_info *sit_i = SIT_I(sbi);
+ 	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_COLD_DATA);
+ 	struct f2fs_summary_block *sum = curseg->sum_blk;
+-	unsigned int start;
++	bool is_order = f2fs_test_bit(0, sit_i->sit_bitmap) ? true : false;
++	int sit_blk_cnt = SIT_BLK_CNT(sbi);
++	int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
++	unsigned int i, start, end;
++	unsigned int readed, start_blk = 0;
+ 
+-	for (start = 0; start < TOTAL_SEGS(sbi); start++) {
++next:
++	readed = ra_sit_pages(sbi, start_blk, bio_blocks, &is_order);
++
++	start = start_blk * sit_i->sents_per_block;
++	end = (start_blk + readed) * sit_i->sents_per_block;
++
++	for (; start < end && start < TOTAL_SEGS(sbi); start++) {
+ 		struct seg_entry *se = &sit_i->sentries[start];
+ 		struct f2fs_sit_block *sit_blk;
+ 		struct f2fs_sit_entry sit;
+ 		struct page *page;
+-		int i;
+ 
+ 		mutex_lock(&curseg->curseg_mutex);
+ 		for (i = 0; i < sits_in_cursum(sum); i++) {
+@@ -1497,6 +1550,7 @@ static void build_sit_entries(struct f2fs_sb_info *sbi)
+ 			}
+ 		}
+ 		mutex_unlock(&curseg->curseg_mutex);
++
+ 		page = get_current_sit_page(sbi, start);
+ 		sit_blk = (struct f2fs_sit_block *)page_address(page);
+ 		sit = sit_blk->entries[SIT_ENTRY_OFFSET(sit_i, start)];
+@@ -1509,6 +1563,11 @@ got_it:
+ 			e->valid_blocks += se->valid_blocks;
+ 		}
+ 	}
++
++	start_blk += readed;
++	if (start_blk >= sit_blk_cnt)
++		return;
++	goto next;
+ }
+ 
+ static void init_free_segmap(struct f2fs_sb_info *sbi)
+diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
+index 269f690..ad5b9f1 100644
+--- a/fs/f2fs/segment.h
++++ b/fs/f2fs/segment.h
+@@ -83,6 +83,8 @@
+ 	(segno / SIT_ENTRY_PER_BLOCK)
+ #define	START_SEGNO(sit_i, segno)		\
+ 	(SIT_BLOCK_OFFSET(sit_i, segno) * SIT_ENTRY_PER_BLOCK)
++#define SIT_BLK_CNT(sbi)			\
++	((TOTAL_SEGS(sbi) + SIT_ENTRY_PER_BLOCK - 1) / SIT_ENTRY_PER_BLOCK)
+ #define f2fs_bitmap_size(nr)			\
+ 	(BITS_TO_LONGS(nr) * sizeof(unsigned long))
+ #define TOTAL_SEGS(sbi)	(SM_I(sbi)->main_segments)
 -- 
 1.7.9.5
 
