@@ -1,49 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab3KLPCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:02:07 -0500
-Received: from mga09.intel.com ([134.134.136.24]:16573 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753375Ab3KLPCF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:02:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="433939025"
-Date: Tue, 12 Nov 2013 07:02:00 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Subject: Re: [PATCH v6 3/4] perf,x86: add Intel RAPL PMU support
-Message-ID: <20131112150200.GB3499@tassilo.jf.intel.com>
-References: <1383939963-7750-1-git-send-email-eranian@google.com>
- <1383939963-7750-4-git-send-email-eranian@google.com>
- <20131111155905.GM19203@twins.programming.kicks-ass.net>
- <CABPqkBRZ84Hc9oAU6zFxNWMv9hT+zMu3Od7_b5fhHRgbG3MXPA@mail.gmail.com>
- <20131111161631.GA21461@twins.programming.kicks-ass.net>
- <CABPqkBQB-35ZN_w2HNgFyWwnKaBWnCtpbxFOgMW2PKZxsdgPQw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQB-35ZN_w2HNgFyWwnKaBWnCtpbxFOgMW2PKZxsdgPQw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755785Ab3KLPDj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:03:39 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:35815 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753566Ab3KLPDh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 10:03:37 -0500
+From: Alex Ling <kasimling@gmail.com>
+To: rob.herring@calxeda.com, mark.rutland@arm.com, linux@arm.linux.org.uk,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
+        kgene.kim@samsung.com, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Alex Ling <kasimling@gmail.com>
+Subject: ARM: dts: add board dts file for EXYNOS4412 based TINY4412 board
+Date: Tue, 12 Nov 2013 23:02:52 +0800
+Message-Id: <1384268572-27055-1-git-send-email-kasimling@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I don't know where Andi got that cpu starting was parallel now.
-> Andi?
+Add a minimal board dts file for EXYNOS4412 based FriendlyARM's
+TINY4412 board. This patch including adds the node to support
+peripherals like UART, SD card on SDMMC2 port, and this patch
+adds GPIO connected LEDS and configure its properties like
+following:
+LED1: use 'heartbeat' trigger, blinking while the board is running.
+LED4: use 'mmc0' trigger, on when mmc0 is accessing.
+LED2 and LED3 can be controlled from userspace.
 
-I know there was some work on it, but maybe it hasn't been merged yet.
+Signed-off-by: Alex Ling <kasimling@gmail.com>
+---
+ arch/arm/boot/dts/Makefile                |    1 +
+ arch/arm/boot/dts/exynos4412-tiny4412.dts |   89 +++++++++++++++++++++++++++++
+ 2 files changed, 90 insertions(+)
+ create mode 100644 arch/arm/boot/dts/exynos4412-tiny4412.dts
 
-> 
-> If hotplug is not parallel, then we can drop that RAPL hotplug_lock
-> I added.
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 802720e..91671a2 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -59,6 +59,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
+ 	exynos4412-odroidx.dtb \
+ 	exynos4412-origen.dtb \
+ 	exynos4412-smdk4412.dtb \
++	exynos4412-tiny4412.dtb \
+ 	exynos4412-trats2.dtb \
+ 	exynos5250-arndale.dtb \
+ 	exynos5250-smdk5250.dtb \
+diff --git a/arch/arm/boot/dts/exynos4412-tiny4412.dts b/arch/arm/boot/dts/exynos4412-tiny4412.dts
+new file mode 100644
+index 0000000..78ace14
+--- /dev/null
++++ b/arch/arm/boot/dts/exynos4412-tiny4412.dts
+@@ -0,0 +1,89 @@
++/*
++ * FriendlyARM's Exynos4412 based TINY4412 board device tree source
++ *
++ * Copyright (c) 2013 Alex Ling <kasimling@gmail.com>
++ *
++ * Device tree source file for FriendlyARM's TINY4412 board which is based on
++ * Samsung's Exynos4412 SoC.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++*/
++
++/dts-v1/;
++#include "exynos4412.dtsi"
++
++/ {
++	model = "FriendlyARM TINY4412 board based on Exynos4412";
++	compatible = "friendlyarm,tiny4412", "samsung,exynos4412";
++
++	memory {
++		reg = <0x40000000 0x40000000>;
++	};
++
++	leds {
++		compatible = "gpio-leds";
++		led1 {
++			label = "led1:heart";
++			gpios = <&gpm4 0 1>;
++			default-state = "off";
++			linux,default-trigger = "heartbeat";
++		};
++		led2 {
++			label = "led2";
++			gpios = <&gpm4 1 1>;
++			default-state = "off";
++		};
++		led3 {
++			label = "led3";
++			gpios = <&gpm4 2 1>;
++			default-state = "off";
++		};
++		led4 {
++			label = "led4:mmc0";
++			gpios = <&gpm4 3 1>;
++			default-state = "off";
++			linux,default-trigger = "mmc0";
++		};
++	};
++
++	rtc@10070000 {
++		status = "okay";
++	};
++
++	sdhci@12530000 {
++		bus-width = <4>;
++		pinctrl-0 = <&sd2_clk &sd2_cmd &sd2_cd &sd2_bus4>;
++		pinctrl-names = "default";
++		status = "okay";
++	};
++
++	serial@13800000 {
++		status = "okay";
++	};
++
++	serial@13810000 {
++		status = "okay";
++	};
++
++	serial@13820000 {
++		status = "okay";
++	};
++
++	serial@13830000 {
++		status = "okay";
++	};
++
++	fixed-rate-clocks {
++		xxti {
++			compatible = "samsung,clock-xxti";
++			clock-frequency = <0>;
++		};
++
++		xusbxti {
++			compatible = "samsung,clock-xusbxti";
++			clock-frequency = <24000000>;
++		};
++	};
++};
+-- 
+1.7.9.5
 
-I guess your patch is ok without lock for now, sorry for the objection.
-
--Andi
