@@ -1,197 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab3KLTRF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:17:05 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42731 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab3KLTRD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:17:03 -0500
-Date: Tue, 12 Nov 2013 19:16:33 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Florian Meier <florian.meier@koalo.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        devicetree <devicetree@vger.kernel.org>, alsa-devel@alsa-project.org,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
-        dmaengine <dmaengine@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv3] dmaengine: Add support for BCM2835
-Message-ID: <20131112191633.GR16735@n2100.arm.linux.org.uk>
-References: <528154A1.1050303@koalo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528154A1.1050303@koalo.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1756361Ab3KLTRN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:17:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48156 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753400Ab3KLTRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 14:17:09 -0500
+Date: Tue, 12 Nov 2013 13:16:59 -0600
+From: Clark Williams <williams@redhat.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] 3.12.0-rt1: net: iwlwifi request only a threaded handler
+ for interrupts
+Message-ID: <20131112131659.578eb7c1@sluggy>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/jaMgZAUhrMjDh81HYHp5fDW"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 11:05:21PM +0100, Florian Meier wrote:
-> Add support for DMA controller of BCM2835 as used in the Raspberry Pi.
-> Currently it only supports cyclic DMA.
-> 
-> Signed-off-by: Florian Meier <florian.meier@koalo.de>
-> ---
-> 
-> Thank you for your comments!
-> I hope I have now removed all leftovers of the sg struct.
-> Regarding the endian-ness: I have not found any hint about that in the
-> datasheet. Therefore, I chose uint32_t. If you think fixed le32 is more
-> likely I will change it.
+--Sig_/jaMgZAUhrMjDh81HYHp5fDW
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I guess it's easy to change later if needed; there's likely a large
-number of drivers which fall into this same category.
+Sebastian,
 
-> The PAD fields do not seem to be used, but the datasheet states they
-> should be set to 0.
+I needed this for my laptop on 3.12, so tweaked it to apply properly.=20
 
-Ok.  This now looks a lot better, and is smaller too!  There's a few
-issues which need to be resolved still...
+Clark
 
-> +struct bcm2835_desc {
-> +	struct virt_dma_desc vd;
-> +	enum dma_transfer_direction dir;
-> +	dma_addr_t dev_addr;
+commit 7b1573eaa0f176731bc231b249598b6e4850babf
+Author: Clark Williams <clark.williams@gmail.com>
+Date:   Tue Nov 12 12:17:07 2013 -0600
 
-I don't think you need dev_addr here anymore - it seems to only be used
-within bcm2835_dma_prep_dma_cyclic().
+    net: iwlwifi: request only a threaded handler for interrupts
+   =20
+    On RT the trans_pcie->irq_lock lock is converted into a sleeping
+    lock and can't be used in primary irq handler. The lock is used in
+    mutliple places which means turning it into a raw lock could
+    increase the latency of the system.
+    For now both handlers are moved into the thread.
+   =20
+    Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+    Signed-off-by: Clark Williams <clark.williams@gmail.com>
 
-> +static int bcm2835_dma_alloc_chan_resources(struct dma_chan *chan)
-> +{
-> +	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
-> +	int ret;
-> +	struct bcm2835_dmadev *d = to_bcm2835_dma_dev(chan->device);
-> +	uint32_t chans = d->chans_available;
+diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c
+b/drivers/net/wireless/iwlwifi/pcie/trans.c index c3f904d..2f2345c
+100644 --- a/drivers/net/wireless/iwlwifi/pcie/trans.c
++++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
+@@ -1375,6 +1375,20 @@ static const struct iwl_trans_ops trans_ops_pcie
+=3D { .set_bits_mask =3D iwl_trans_pcie_set_bits_mask,
+ };
+=20
++#ifdef CONFIG_PREEMPT_RT_BASE
++static irqreturn_t iwl_rt_irq_handler(int irq, void *dev_id)
++{
++       irqreturn_t ret;
++
++       local_bh_disable();
++       ret =3D iwl_pcie_isr_ict(irq, dev_id);
++       local_bh_enable();
++       if (ret =3D=3D IRQ_WAKE_THREAD)
++               ret =3D iwl_pcie_irq_handler(irq, dev_id);
++       return ret;
++}
++#endif
++
+ struct iwl_trans *iwl_trans_pcie_alloc(struct pci_dev *pdev,
+                                       const struct pci_device_id *ent,
+                                       const struct iwl_cfg *cfg)
+@@ -1493,9 +1507,14 @@ struct iwl_trans *iwl_trans_pcie_alloc(struct
+pci_dev *pdev, if (iwl_pcie_alloc_ict(trans))
+                goto out_free_cmd_pool;
+=20
++#ifdef CONFIG_PREEMPT_RT_BASE
++       err =3D request_threaded_irq(pdev->irq, NULL, iwl_rt_irq_handler,
++                                IRQF_SHARED | IRQF_ONESHOT, DRV_NAME,
+trans)) +#else
+        err =3D request_threaded_irq(pdev->irq, iwl_pcie_isr_ict,
+                                   iwl_pcie_irq_handler,
+                                   IRQF_SHARED, DRV_NAME, trans);
++#endif
+        if (err) {
+                IWL_ERR(trans, "Error allocating IRQ %d\n", pdev->irq);
+                goto out_free_ict;
 
-Probably just uint32_t chans; here is sufficient.  Also, as you'll be
-touching this area again, a minor comment to order the variable
-declarations in a more tidy way here.
+--Sig_/jaMgZAUhrMjDh81HYHp5fDW
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-> +	int chanID = 0;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Is a channel ID of zero a legal channel number?
+iEYEARECAAYFAlKCfqsACgkQHyuj/+TTEp3DrwCg5ozgU2mp/weF1TOEtY99S0N4
+qRAAnilbSg8mxF1MYb8Gv6184BJ40ZFv
+=S8s4
+-----END PGP SIGNATURE-----
 
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&d->lock, flags);
-> +
-> +	chans = d->chans_available;
-> +
-> +	dev_dbg(c->vc.chan.device->dev,
-> +			"allocating channel for %u\n", c->dma_sig);
-> +
-> +	/* do not use the FIQ and BULK channels */
-> +	chans &= ~0xD;
-> +
-> +	if (!chans) {
-> +		spin_unlock_irqrestore(&d->lock, flags);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	/* return the ordinal of the first channel in the bitmap */
-> +	chanID = __ffs(chans);
-> +
-> +	/* claim the channel */
-> +	d->chans_available &= ~(1 << chanID);
-> +
-> +	c->dma_chan_base = BCM2835_DMA_CHANIO(d->dma_base, chanID);
-> +	c->dma_irq_number = d->dma_irq_numbers[chanID];
-> +	c->dma_ch = chanID;
-> +
-> +	ret = request_irq(c->dma_irq_number,
-> +			bcm2835_dma_callback, 0, "DMA IRQ", c);
-> +
-> +	spin_unlock_irqrestore(&d->lock, flags);
-
-Calling request_irq() from within a spinlocked region is not a nice thing
-to do.  May I suggest an alternative coding for this function?
-
-	int chanID = -1;
-
-	dev_dbg(c->vc.chan.device->dev,
-		"allocating channel for %u\n", c->dma_sig);
-
-	spin_lock_irqsave(&d->lock, flags);
-
-	chans = d->chans_available;
-	if (chans) {
-		/* return the ordinal of the first channel in the bitmap */
-		chanID = __ffs(chans);
-
-		d->chans_available &= ~(1 << chanID);
-	}
-
-	spin_unlock_irqrestore(&d->lock, flags);
-
-	if (chanID == -1)
-		return -ENOMEM;
-
-	c->dma_chan_base = BCM2835_DMA_CHANIO(d->dma_base, chanID);
-	c->dma_irq_number = d->dma_irq_numbers[chanID];
-	c->dma_ch = chanID;
-
-	ret = request_irq(c->dma_irq_number,
-			bcm2835_dma_callback, 0, "DMA IRQ", c);
-
-Now, don't forget to clean up if request_irq() fails...
-
-	if (ret < 0) {
-		spin_lock_irqsave(&d->lock, flags);
-		d->chans_available |= 1 << chanID;
-		spin_unlock_irqrestore(&d->lock, flags);
-	}
-
-	return ret;
-
-How does that look?
-
-> +
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static void bcm2835_dma_free_chan_resources(struct dma_chan *chan)
-> +{
-> +	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
-> +	struct bcm2835_dmadev *d = to_bcm2835_dma_dev(chan->device);
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&d->lock, flags);
-> +	vchan_free_chan_resources(&c->vc);
-> +	d->chans_available |= 1 << c->dma_ch;
-> +	free_irq(c->dma_irq_number, c);
-> +	spin_unlock_irqrestore(&d->lock, flags);
-
-A better ordering here would be:
-
-	vchan_free_chan_resources(&c->vc);
-	free_irq(c->dma_irq_number, c);
-
-	spin_lock_irqsave(&d->lock, flags);
-	d->chans_available |= 1 << c->dma_ch;
-	spin_unlock_irqrestore(&d->lock, flags);
-
-You don't need to call the first two under the spinlock - all you need to
-protect is the read-modify-write of d->chans_available here and also in
-the above function.
-
-...
-> +		/*
-> +		 * Next block is the next frame.
-> +		 * This DMA engine driver currently only supports cyclic DMA.
-> +		 * Therefore, wrap around at number of frames.
-> +		 */
-> +		control_block->next = d->control_block_base_phys +
-> +			sizeof(struct bcm2835_dma_cb) * ((frame + 1) % (d->frames));
-
-Minor comment here - the parens around d->frames isn't required, and
-wrapping this a little better would be nice.  I'd suggest moving
-((frame + 1) % d->frames) onto the next line.
-
-Other than those comments, it's looking really quite good!  Well done.
+--Sig_/jaMgZAUhrMjDh81HYHp5fDW--
