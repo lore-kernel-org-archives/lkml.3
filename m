@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab3KLTru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:47:50 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59021 "EHLO arroyo.ext.ti.com"
+	id S1756780Ab3KLTsE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:48:04 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55410 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754132Ab3KLTrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:47:42 -0500
+	id S1754861Ab3KLTrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 14:47:43 -0500
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
@@ -14,93 +14,78 @@ CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
         <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCHv5 00/20] device thermal limits represented in device tree nodes (v5)
-Date: Tue, 12 Nov 2013 15:46:02 -0400
-Message-ID: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCHv5 01/20] thermal: allow registering without .get_temp
+Date: Tue, 12 Nov 2013 15:46:03 -0400
+Message-ID: <1384285582-16933-2-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+In-Reply-To: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
+References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+This patch changes the thermal core driver to allow
+registration of thermal zones without the .get_temp callback.
 
-Here is v5 of the work of representing hardware thermal properties
-in device tree infrastructure. Previous versions can be
-found here:
-V4: https://lkml.org/lkml/2013/9/26/787
-V3: https://lkml.org/lkml/2013/9/15/122
-RFCv2: http://lkml.org/lkml/2013/8/23/594
-RFCv1: http://lkml.org/lkml/2013/7/22/319
+The idea behind this change is to allow lazy registration
+of sensor callbacks.
 
-The differences from V4 of this series are pretty minor. Here is a shortlog:
-1. Rephrased couple of sentences and improved description of a couple of properties.
-2. Removed the macro constants for trip type from the binding header file.
-3. Due to (3), patches 09/14/15 were adapted to use plain string constants
-4. As per suggestion by Nishanth M. I also included in this series two
-patches to move TI bandgap nodes to belong under OCP.
-5. I volunteered to maintain the thermal binding, so added that to MAINTAINERS.
+The thermal zone will be disabled whenever the ops
+does not contain a .get_temp callback. The sysfs interface
+will be returning -EINVAL on any temperature read operation.
 
-This specific series has been tested on OMAP4430, OMAP4460, OMAP5432 and DRA7.
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+---
+ drivers/thermal/thermal_core.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-All best,
-
-Eduardo Valentin (20):
-  thermal: allow registering without .get_temp
-  thermal: introduce device tree parser
-  thermal: core: introduce thermal_of_cooling_device_register
-  thermal: cpu_cooling: introduce of_cpufreq_cooling_register
-  cpufreq: cpufreq-cpu0: add dt node parsing for cooling device
-    properties
-  hwmon: lm75: expose to thermal fw via DT nodes
-  hwmon: tmp102: expose to thermal fw via DT nodes
-  thermal: ti-soc-thermal: use thermal DT infrastructure
-  arm: dts: add omap4 CPU thermal data
-  arm: dts: add omap4430 thermal data
-  arm: dts: add omap4460 thermal data
-  arm: dts: add cooling properties on omap4430 cpu node
-  arm: dts: add cooling properties on omap4460 cpu node
-  arm: dts: add omap5 GPU thermal data
-  arm: dts: add omap5 CORE thermal data
-  arm: dts: add omap5 thermal data
-  arm: dts: add cooling properties on omap5 cpu node
-  arm: dts: make OMAP443x bandgap node to belong to OCP
-  arm: dts: make OMAP4460 bandgap node to belong to OCP
-  MAINTAINERS: add maintainer entry for thermal bindings
-
- .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |   7 +
- .../devicetree/bindings/thermal/thermal.txt        | 586 ++++++++++++++
- MAINTAINERS                                        |   1 +
- arch/arm/boot/dts/omap4-cpu-thermal.dtsi           |  41 +
- arch/arm/boot/dts/omap443x.dtsi                    |  23 +-
- arch/arm/boot/dts/omap4460.dtsi                    |  29 +-
- arch/arm/boot/dts/omap5-core-thermal.dtsi          |  28 +
- arch/arm/boot/dts/omap5-gpu-thermal.dtsi           |  28 +
- arch/arm/boot/dts/omap5.dtsi                       |  15 +-
- drivers/cpufreq/Kconfig                            |   2 +-
- drivers/cpufreq/cpufreq-cpu0.c                     |  16 +
- drivers/hwmon/lm75.c                               |  35 +-
- drivers/hwmon/tmp102.c                             |  19 +
- drivers/thermal/Kconfig                            |  14 +
- drivers/thermal/Makefile                           |   1 +
- drivers/thermal/cpu_cooling.c                      |  56 +-
- drivers/thermal/of-thermal.c                       | 849 +++++++++++++++++++++
- drivers/thermal/thermal_core.c                     |  77 +-
- drivers/thermal/thermal_core.h                     |   9 +
- drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  77 +-
- include/dt-bindings/thermal/thermal.h              |  17 +
- include/linux/cpu_cooling.h                        |  25 +
- include/linux/thermal.h                            |  32 +-
- 23 files changed, 1936 insertions(+), 51 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/thermal/thermal.txt
- create mode 100644 arch/arm/boot/dts/omap4-cpu-thermal.dtsi
- create mode 100644 arch/arm/boot/dts/omap5-core-thermal.dtsi
- create mode 100644 arch/arm/boot/dts/omap5-gpu-thermal.dtsi
- create mode 100644 drivers/thermal/of-thermal.c
- create mode 100644 include/dt-bindings/thermal/thermal.h
-
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index 03a5671..f4c9021 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -403,7 +403,7 @@ int thermal_zone_get_temp(struct thermal_zone_device *tz, unsigned long *temp)
+ 	enum thermal_trip_type type;
+ #endif
+ 
+-	if (!tz || IS_ERR(tz))
++	if (!tz || IS_ERR(tz) || !tz->ops->get_temp)
+ 		goto exit;
+ 
+ 	mutex_lock(&tz->lock);
+@@ -456,6 +456,9 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
+ {
+ 	int count;
+ 
++	if (!tz->ops->get_temp)
++		return;
++
+ 	update_temperature(tz);
+ 
+ 	for (count = 0; count < tz->trips; count++)
+@@ -1386,7 +1389,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+ 	if (trips > THERMAL_MAX_TRIPS || trips < 0 || mask >> trips)
+ 		return ERR_PTR(-EINVAL);
+ 
+-	if (!ops || !ops->get_temp)
++	if (!ops)
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	if (trips > 0 && (!ops->get_trip_type || !ops->get_trip_temp))
+@@ -1490,6 +1493,9 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+ 
+ 	INIT_DELAYED_WORK(&(tz->poll_queue), thermal_zone_device_check);
+ 
++	if (!tz->ops->get_temp)
++		thermal_zone_device_set_polling(tz, 0);
++
+ 	thermal_zone_device_update(tz);
+ 
+ 	if (!result)
 -- 
 1.8.2.1.342.gfa7285d
 
