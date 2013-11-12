@@ -1,105 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab3KLSdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 13:33:51 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:50818 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711Ab3KLSdr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 13:33:47 -0500
-X-Auth-Info: /6r/CKMnVBDQihTZ7wbTgCuDA0MC43drfproDMdmmBo=
-From: Marek Vasut <marex@denx.de>
-To: Andreas Werner <wernerandy@gmx.de>
-Subject: Re: [PATCH] I2C: busses: Do not print error message in syslog if no ACK received
-Date: Tue, 12 Nov 2013 19:33:40 +0100
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
-Cc: wsa@the-dreams.de, jacmet@sunsite.dk, baohua.song@csr.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1384278336-3694-1-git-send-email-wernerandy@gmx.de> <201311121900.59305.marex@denx.de> <20131112182344.GA5012@thinkpad.fritz.box>
-In-Reply-To: <20131112182344.GA5012@thinkpad.fritz.box>
+	id S1755494Ab3KLSnD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 13:43:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7533 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754132Ab3KLSnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 13:43:01 -0500
+Date: Tue, 12 Nov 2013 19:44:12 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch
+	methods (v6)
+Message-ID: <20131112184412.GA2492@redhat.com>
+References: <20131104184741.GA15945@redhat.com> <87sivbz65t.fsf@sejong.aot.lge.com> <20131105174535.GA6385@redhat.com> <20131105192401.GA772@redhat.com> <87vc05x5zf.fsf@sejong.aot.lge.com> <20131106173754.GA11299@redhat.com> <87a9hgwqal.fsf@sejong.aot.lge.com> <527DA997.4080306@hitachi.com> <20131109152313.GA14630@redhat.com> <87siv2uk1q.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201311121933.41038.marex@denx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87siv2uk1q.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Andreas Werner,
+Hi Namhyung,
 
-> On Tue, Nov 12, 2013 at 07:00:59PM +0100, Marek Vasut wrote:
-> > Dear Andreas Werner,
-> > 
-> > > Using the i2c-eg20t driver and call i2cdetect or probe on the bus,
-> > > the driver will print a lot of error messages if there was no ACK
-> > > received.
-> > > 
-> > > i2cdetect normally print a table with all the available devices. If
-> > > there is no device on the address, the table will be empty.
-> > > Currently with the i2c-eg20t driver, the table is not visible because
-> > > the error messages destroy the table.
-> > > 
-> > > Error message: pch_i2c_getack return -71
-> > > 
-> > > This patch prevent the driver to print the messages to syslog if debug
-> > > is not set.
-> > > 
-> > > Tested on Intel Atom E6xx and Eg20t Chipset.
-> > > 
-> > > Signed-off-by: Andreas Werner <wernerandy@gmx.de>
-> > > ---
-> > > 
-> > >  drivers/i2c/busses/i2c-eg20t.c | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/i2c/busses/i2c-eg20t.c
-> > > b/drivers/i2c/busses/i2c-eg20t.c index 0f37529..b10c651 100644
-> > > --- a/drivers/i2c/busses/i2c-eg20t.c
-> > > +++ b/drivers/i2c/busses/i2c-eg20t.c
-> > > @@ -322,7 +322,7 @@ static s32 pch_i2c_getack(struct i2c_algo_pch_data
-> > > *adap) reg_val = ioread32(p + PCH_I2CSR) & PCH_GETACK;
-> > > 
-> > >  	if (reg_val != 0) {
-> > > 
-> > > -		pch_err(adap, "return%d\n", -EPROTO);
-> > > +		pch_dbg(adap, "return%d\n", -EPROTO);
-> > > 
-> > >  		return -EPROTO;
-> > >  	
-> > >  	}
-> > 
-> > I'd just kill the pch_err() line altogether:
->   But why? I think there a few pch_err message which are interesting to
-> have in syslog, without building the dbg driver.
+On 11/12, Namhyung Kim wrote:
+>
+> Let me clarify what I understand.
+>
+> For @addr syntax: kernel does no translation and uses given address
 
-See below for explanation why this one particular pch_err() line can go. Sorry 
-if I was not clear enough, I meant only this one particular pch_err() line, NOT 
-all of them.
+Yes,
 
-> 
-> > if (reg_val)
-> > 
-> > 	return -EPROTO;
-> > 
-> > That is because if you look at the only caller of this function, which is
-> > pch_i2c_wait_for_check_xfer(), you will see that at the only place where
-> > pch_i2c_getack() is called there is already pch_dbg():
-> > 
-> > 369         if (pch_i2c_getack(adap)) {
-> > 370                 pch_dbg(adap, "Receive NACK for slave address"
-> > 371                         "setting\n");
-> > 372                 return -EIO;
-> > 373         }
-> > 
-> > btw. (idea for subsequent patch) this pch_dbg() should be fixed to be a
-> > one- liner /wrt the text so we can grep for the error messages. Such
-> > text arg should never be split in multiple lines in kernel.
-> 
->   Ok i will wait a few days for further comments to this patch and then
->   i will resend the patch with a one liner message.
+> For @+addr syntax: user-space uses relative symbol address from a loaded
+>                    base address and kernel calculates the base address
+>                    using "current->utask->vaddr - tu->offset".
 
-Sure, wait at least for Wolfram's consent on this please ;-)
+Looks right to me.
 
-Best regards,
-Marek Vasut
+IOW, when user-space calculates the "addr" for @+ argument, it should
+assume that this binary will be mmaped at "NULL" (so that the virtual
+address of the probed function is always equal to its offset in the
+probed binary).
+
+Masami, Steven, et al, do you agree?
+
+Oleg.
+
