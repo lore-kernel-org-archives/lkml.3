@@ -1,150 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab3KLPIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:08:18 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:63501 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755660Ab3KLPIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:08:14 -0500
+	id S1754400Ab3KLPLi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:11:38 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47283 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752010Ab3KLPLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 10:11:35 -0500
+Message-ID: <52824522.7020401@ti.com>
+Date: Tue, 12 Nov 2013 09:11:30 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1311112052360.30673@ionos.tec.linutronix.de>
-References: <20130917082838.218329307@infradead.org>
-	<CAMuHMdWgrQf+ULDrZyY5R+vT3GtiWEgpsWxmfk0b5pivN7wBmg@mail.gmail.com>
-	<alpine.DEB.2.02.1309172315550.4089@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1309181159520.4089@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1309191652480.4089@ionos.tec.linutronix.de>
-	<87txhg3ftx.fsf@igel.home>
-	<CAMuHMdW-YBroi6GezUP-KQBVRAcmYtUQERvBC=ekmemopDhVow@mail.gmail.com>
-	<alpine.DEB.2.02.1311041305540.28335@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1311042032130.16975@ayla.of.borg>
-	<alpine.DEB.2.02.1311061237430.23353@ionos.tec.linutronix.de>
-	<CAMuHMdXDA2MRbR3GmD3KWC-iE6jnWX4uvbf1qeMd7RYX3O8f_g@mail.gmail.com>
-	<alpine.DEB.2.02.1311071655240.23353@ionos.tec.linutronix.de>
-	<ecf977d9ccbd241723a606423267bb2d@biophys.uni-duesseldorf.de>
-	<CAMuHMdVXk0NpinvqEszqL63fZEt3rOk6ZR9ogz0aHEzmEaW22A@mail.gmail.com>
-	<alpine.DEB.2.02.1311111421400.30673@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1311112031220.30673@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1311112052360.30673@ionos.tec.linutronix.de>
-Date: Tue, 12 Nov 2013 16:08:13 +0100
-X-Google-Sender-Auth: PxK4LQnVd4sMQrv4RsiWqUQHPLA
-Message-ID: <CAMuHMdWx68OxP__3EkpTjVnYRk9KjrVrovpk00k_vqYGpshVNw@mail.gmail.com>
-Subject: Re: [patch 1/6] hardirq: Make hardirq bits generic
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Michael Schmitz <schmitz@biophys.uni-duesseldorf.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [RFC PATCH] cpufreq: cpufreq-cpu0: do not allow transitions with
+ regulators suspended
+References: <1382638087-32054-1-git-send-email-nm@ti.com> <CAKohponJOOfGX4BHn76LTBDTm58+2QxPf_rv1i4avVfrWhfkRg@mail.gmail.com>
+In-Reply-To: <CAKohponJOOfGX4BHn76LTBDTm58+2QxPf_rv1i4avVfrWhfkRg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On 11/12/2013 12:03 AM, Viresh Kumar wrote:
+> Cc'ing Shawn as well.
+> 
+> Sorry for being really late.. I just forgot about it :(
 
-On Mon, Nov 11, 2013 at 9:52 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Some more thoughts on this.
->
-> The whole nesting check in the exisiting low level entry code and what
-> I tried to resemble with the irq_exit_nested() is pretty pointless.
->
-> Let's look at auto_inthandler and ret_from_exception
->
-> ENTRY(auto_inthandler)
->         SAVE_ALL_INT
->         GET_CURRENT(%d0)
->         movel   %d0,%a1
->         addqb   #1,%a1@(TINFO_PREEMPT+1)
->                                         |  put exception # in d0
->         bfextu  %sp@(PT_OFF_FORMATVEC){#4,#10},%d0
->         subw    #VEC_SPUR,%d0
->
->         movel   %sp,%sp@-
->         movel   %d0,%sp@-               |  put vector # on stack
-> auto_irqhandler_fixup = . + 2
->         jsr     do_IRQ                  |  process the IRQ
->         addql   #8,%sp                  |  pop parameters off stack
->
-> ret_from_interrupt:
->         movel   %curptr@(TASK_STACK),%a1
->         subqb   #1,%a1@(TINFO_PREEMPT+1)
->         jeq     ret_from_last_interrupt
-> 2:      RESTORE_ALL
->
->         ALIGN
-> ret_from_last_interrupt:
->         moveq   #(~ALLOWINT>>8)&0xff,%d0
->         andb    %sp@(PT_OFF_SR),%d0
->         jne     2b
->
->         /* check if we need to do software interrupts */
->         tstl    irq_stat+CPUSTAT_SOFTIRQ_PENDING
->         jeq     .Lret_from_exception
->         pea     ret_from_exception
->         jra     do_softirq
->
->
-> ENTRY(ret_from_exception)
-> .Lret_from_exception:
->         btst    #5,%sp@(PT_OFF_SR)      | check if returning to kernel
->         bnes    1f                      | if so, skip resched, signals
->         ....
-> 1:      RESTORE_ALL
->
-> So in every interrupt exit path we check:
->
->    1) Whether the hardirq part of preempt_count is zero
->
->    2) Whether the interrupt prio mask of SR on stack is zero
->
-> and if we finally reach ret_from_exception we have the final check:
->
->    3) whether we return to kernel or user space.
->
-> And this final check is the only one which matters, really.
->
-> If you look at the probability of the first two checks catching
-> anything, then it's pretty low. Most interrupts returns go through
-> ret_from_exception. Yes, I added counters which prove that at least on
-> the aranym, but I doubt that it will make a real difference if you run
-> this on real hardware.
->
-> So what's the point of having these checks in the hotpath? The patch
+Thanks for responding :)
 
-Most of this seems to be as old as stone-age. It was rewritten for
-v2.5.29, but the initial bookkeeping was there in v2.1, and even in some
-form in v1.3.94.
+> 
+> On 24 October 2013 23:38, Nishanth Menon <nm@ti.com> wrote:
+>> For platforms where regulators are used, regulator access tends to be
+>> disabled as part of the suspend path. In SMP systems such as OMAP,
+>> CPU1 is disabled as post suspend_noirq. This results in the following
+>> tail end sequence of actions:
+>> cpufreq_cpu_callback gets called with CPU_POST_DEAD
+>>         __cpufreq_remove_dev_finish is invoked as a result
+>>                 __cpufreq_governor(policy, CPUFREQ_GOV_START) is
+>>                 triggered
+>>
+>> At this point, with ondemand governor, if the cpu entered suspend path
+>> at a lower OPP, this triggers a transition request. However, since
+>> irqs are disabled, typically, regulator control using I2C operations
+>> are not possible either, regulator operations will naturally fail
+>> (even though clk_set_rate might succeed depending on the platform).
+>>
+>> Unfortunately, cpufreq_driver->suspend|resume is too late as well, since
+>> they are invoked as part of syscore_ops (after CPU1 is hotplugged out).
+>>
+>> The proposal here is to use pm notifier suspend to disable any
+>> requests to target, as we may very well expect this to fail at a later
+>> suspend sequence.
+> 
+> Yes the problem looks real but there are issues with this patch.
+> - It doesn't solve your problem completely, because you returned -EBUSY,
+> your suspend operation failed and we resumed immediately.
 
-> below against 3.12 vanilla works nicely on the aranym and I don't see
-> a reason why this extra hackery is necessary at all. It's just code
-> bloat in a hotpath.
->
-> Now the only valid concern might be do_softirq itself, but that's
-> pointless as well. If the softirq is interrupted, then we do not
-> invoke it again. If the nested interrupt happens before irq_exit()
-> actually disables interrupts, then we won't invoke it either as the
-> hardirq part of preempt_count is still not zero.
->
-> As a side note: The do_softirq calls in the platform/68xxx entry
-> pathes are just copied leftovers as well. Both entry code pathes are
-> not fiddling with the preempt count and both call do_IRQ() which will
-> call irq_exit() at the end which will invoke do_softirq(), so the
-> check for more softirqs in the irq return path is just pointless.
+Seems like there was an error handling miss somewhere - for some
+reason, it did suspend properly.
 
-Your reasoning sounds OK, and it works on ARAnyM, so, thanks again and
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> - We can't make this solution true for everybody using cpu0 driver, it should
+> be platform specific.
 
-BTW, do you plan to get the "make hardirq bits generic" series in 3.13?
-Or do you want me to take this patch through the m68k tree?
-So far I don't have any plans to send another pull request for 3.13.
+Agreed.
 
-Gr{oetje,eeting}s,
+> - Its not a problem of cpu0 driver but all drivers. So, probably a better idea
+> would be not calling ->target() at all when drivers have marked them unusable
+> in suspend path..
 
-                        Geert
+Ack.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> But I think the problem can/should be solved some other way.. Looking closely,
+> we got to the problem because we called
+> 
+> __cpufreq_governor(policy, CPUFREQ_GOV_START)
+> 
+> at the first place. This happened because the policy structure had more than
+> one cpu to take care of and after stopping goveronr for CPU1 it has to start it
+> again for CPU0... But this is really not required as anyway we are going to
+> suspend.
+> 
+> Can you try attached patch? I will then repost it formally...
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+I tried a equivalent of this for v3.12 tag:
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 04548f7..9ec243c 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1186,7 +1186,7 @@ static int __cpufreq_remove_dev_prepare(struct
+device *dev,
+                return -EINVAL;
+        }
+
+-       if (cpufreq_driver->target) {
++       if (cpufreq_driver->target && (!frozen ||
+policy->governor_enabled)) {
+                ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+                if (ret) {
+                        pr_err("%s: Failed to stop governor\n", __func__);
+@@ -1252,7 +1252,7 @@ static int __cpufreq_remove_dev_finish(struct
+device *dev,
+
+        /* If cpu is last user of policy, free policy */
+        if (cpus == 1) {
+-               if (cpufreq_driver->target) {
++               if (cpufreq_driver->target && !frozen) {
+                        ret = __cpufreq_governor(policy,
+                                        CPUFREQ_GOV_POLICY_EXIT);
+                        if (ret) {
+
+And I see http://pastebin.mozilla.org/3528478
+
+with a WARN patch for generating call stack.
+
+
+Finally squelched warnings with a net diff (v3.12) of
+http://pastebin.mozilla.org/3546062
+
+However, ondemand is no longer functioning on resume (governor needs a
+start after being unfrozen.. and obviously by avoiding that entirely
+in frozen case.. not sure if I missed any other)..
+
+> 
+> commit 2aecab9be85ceafdbab5f824eec5d1f81f3fa803
+> Author: Viresh Kumar <viresh.kumar@linaro.org>
+> Date:   Tue Nov 12 11:26:36 2013 +0530
+> 
+>     cpufreq: don't start governor in suspend path
+> 
+>     When we suspend our system, we remove all non-boot CPUs one by one. At this
+>     point we actually STOP/START governor for each non-boot cpu, which
+> is a total
+>     waste of time as we aren't going to use governor until the time we are back.
+> 
+>     Also, this is causing problems for some platforms (like OMAP),
+> where governor
+>     tries to change freq of core in suspend path which requires programming
+>     regulators via I2C which isn't possible then.
+> 
+>     So, to make it better for everybody don't start the governor again
+> in suspend
+>     path.
+> 
+>     Reported-by: Nishanth Menon <nm@ti.com>
+>     Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpufreq/cpufreq.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 02d534d..bec58cf 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1174,7 +1174,7 @@ static int __cpufreq_remove_dev_prepare(struct
+> device *dev,
+>                 return -EINVAL;
+>         }
+> 
+> -       if (has_target()) {
+> +       if (has_target() && (!frozen || policy->governor_enabled)) {
+>                 ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+>                 if (ret) {
+>                         pr_err("%s: Failed to stop governor\n", __func__);
+> @@ -1282,7 +1282,7 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
+>                 if (!frozen)
+>                         cpufreq_policy_free(policy);
+>         } else {
+> -               if (has_target()) {
+> +               if (has_target() && !frozen) {
+>                         if ((ret = __cpufreq_governor(policy,
+> CPUFREQ_GOV_START)) ||
+>                                         (ret =
+> __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
+>                                 pr_err("%s: Failed to start governor\n",
+> 
+> 
+
+
+
+
+-- 
+Regards,
+Nishanth Menon
