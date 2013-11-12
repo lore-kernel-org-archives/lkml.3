@@ -1,117 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab3KLKRu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 05:17:50 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:57178 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754371Ab3KLKRn (ORCPT
+	id S1754429Ab3KLKUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 05:20:33 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57720 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab3KLKUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 05:17:43 -0500
-Message-ID: <52820043.6090107@hitachi.com>
-Date: Tue, 12 Nov 2013 19:17:39 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 12 Nov 2013 05:20:30 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <528200DE.1090706@jp.fujitsu.com>
+Date: Tue, 12 Nov 2013 19:20:14 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: Re: Re: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping
- support
-References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org> <1382008671-4515-3-git-send-email-sandeepa.prabhu@linaro.org> <20131108165639.GD15074@mudshark.cambridge.arm.com> <527DFC1C.1020107@hitachi.com> <CA+b37P3U=cAbUvs=2B9wA4F7S9o49vh7d-KamjPsHcz-b9ZYLA@mail.gmail.com> <52808D53.7080904@hitachi.com> <5280B6C8.7050807@hitachi.com> <20131111105812.GC28302@mudshark.cambridge.arm.com> <528114C4.5000506@hitachi.com> <CA+b37P08cLAvBYAXSkozLPzrpuXn=N0SUetwL6N8JL+10AtYjQ@mail.gmail.com> <5281D848.7000502@hitachi.com> <CA+b37P2EgB0toYwhLny8k-cbrziBVXURST5kHNXcY7AF-CNVLg@mail.gmail.com>
-In-Reply-To: <CA+b37P2EgB0toYwhLny8k-cbrziBVXURST5kHNXcY7AF-CNVLg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/bsp-hotplug] x86, apic: Disable BSP if boot cpu is AP
+References: <20130829092804.5476.95588.stgit@localhost6.localdomain6> <tip-1d79e607332d67d9132c176d99b5e7fabe1b6b7f@git.kernel.org> <52598770.6090309@zytor.com> <20131012174206.GD18437@gmail.com> <528135D8.3040205@zytor.com>
+In-Reply-To: <528135D8.3040205@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/12 17:44), Sandeepa Prabhu wrote:
-> On 12 November 2013 12:57, Masami Hiramatsu
-> <masami.hiramatsu.pt@hitachi.com> wrote:
->> (2013/11/12 15:23), Sandeepa Prabhu wrote:
->>>>>> OK, I've ensured that the hw_breakpoint (from perf) can work
->>>>>> with kprobes (from ftrace) at the same address on x86.
->>>>>> So if arm64 already support hw_breakpoint on perf, kprobes should
->>>>>> work with it.
->>>>>
->>>>> Single-stepping on x86 is different to the step behaviour on arm64 afaik. On
->>>>> ARM, we have to manually remove the breakpoint, perform a single-step, then
->>>>> add the breakpoint again. If we re-enable debug exceptions in the kprobe
->>>>> handler, the step will complete early and we'll never step off the
->>>>> breakpoint.
->>>>
->>>> I'm unsure about arm64's debug feature behavior, what does happen when
->>>> it performs a single-step on sw-breakpoint?
->>>>
->>>>> Sandeepa: I think you need to retry Masami's test on the arm64 model, since
->>>>> I'm fairly sure it won't work as expected without some additional code.
->>>>
->>>> OK, anyway, for testing same one, we need to port ftrace first. So the next
+(2013/11/12 4:54), H. Peter Anvin wrote:
+> On 10/12/2013 10:42 AM, Ingo Molnar wrote:
 >>
->> Sorry for confusion, s/next/fallback is what I meant. Making a kprobe module
->> can be done without ftrace port.
-> Yes, got it, all my verification until now are done using sample
-> modules only,  looking out for perf (or some other mechanism: ptrace?)
-> that uses v8 hw breakpoint.
-
-Yes, kprobe vs. perf and uprobe vs. ptrace :)
-
-
->>>> plan is to make a kprobe module to put a probe (which just printk something)
->>>> on a specific function (e.g. vfs_symlink), and run perf record with
->>>> hw-breakpoint as below
->>>>
->>>> $ perf record -e "mem:0xXXXXXX:k" ln -s /dev/null /tmp/foo
->>>>
->>>> Note that 0xXXXXXX is the address of vfs_symlink.
->>>>
->>>> After that, you can see the message in dmesg and also check the perf result
->>>> with "sudo perf script --dump" (you can find a PERF_RECORD_SAMPLE entry if
->>>> it works)
->>> Thanks for steps, ARM64 ftrace patches are under review on arm mailing
->>> list, I can contact the (linaro) developer implementing ftrace on
->>> what's supported and then figure-out a way to test this concurrency of
->>> kprobes breakpoint and hardware breakpoint.
+>> * H. Peter Anvin <hpa@zytor.com> wrote:
 >>
->> Would you mean this? :)
->> http://www.spinics.net/lists/arm-kernel/msg278477.html
+>>> On 10/09/2013 04:16 PM, tip-bot for HATAYAMA Daisuke wrote:
+>>>> Commit-ID:  1d79e607332d67d9132c176d99b5e7fabe1b6b7f
+>>>> Gitweb:     http://git.kernel.org/tip/1d79e607332d67d9132c176d99b5e7fabe1b6b7f
+>>>> Author:     HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+>>>> AuthorDate: Thu, 29 Aug 2013 18:28:04 +0900
+>>>> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+>>>> CommitDate: Wed, 9 Oct 2013 15:41:11 -0700
+>>>>
+>>>> x86, apic: Disable BSP if boot cpu is AP
+>>>
+>>> This patch seems to trigger build failures in some configurations.
+>>> Specifically:
+>>>
+>>> (.init.text+0x1307): undefined reference to `boot_cpu_is_bsp_init'
+>>>
+>>> Unfortunately I don't have the specific configuration which triggers the
+>>> failure, as this was discovered by Fengguang's robot.
 >>
->> Wow, it seems that this also has some works around instruction
->> manipulation (and confusable filenames...)
-> I referred to: http://lwn.net/Articles/572323/  which is another
-> implementation and on LAKML
+>> I have triggered that too and have such a config, it's attached.
+>
+> Okay, thinking about this again, this patchset is in fact broken on:
+>
+> 1. Any configuration which has CONFIG_SMP=n and CONFIG_X86_UP_APIC=n.
+>
+> This is a built-time problem.
+>
+> 2. Any CPU which is old enough that MSR_IA32_APICBASE doesn't exist.
+>
+> This is a fatal runtime bug.
+>
+> 3. Any clustered solution which involves a third-party cluster
+> controller such that MSR_IA32_APICBASE may not reflect the reality of
+> the system.
+>
+> This is a less critical issue as "all" it ought to make happen is to
+> disable some CPUs which didn't need it.
+>
+> Hatayama-san, you got this build bug report almost a month ago.  It
+> looks like it is going to need a fair bit of cleanup, so I fear this is
+> going to be dropped for v3.13.
+>
+> 	-hpa
+>
 
-OK, I'll check that (and looks good at a glance).
-By the way, I concern about Linaro guys who looks working a bit far
-from the LKML and original feature maintainers. Please contact them,
-I'm sure they don't bite your hand :)
+Thanks for pointing out that. I think the first two issues has already been
+fixed in v3 version. I've just posted v5 version a little time ago. BTW,
+I changed the basic design at v4 where we specify the initial APIC ID of the
+processor we want to disable in the kdump 2nd kernel from the the 1st kernel
+through newly introduced disable_cpu_apicid kernel parameter; it might be
+similar to the idea you described in the patch description of tip tree.
 
-BTW, I'm currently trying a general housecleaning of __kprobes
-annotations. It may also have impact on your patch.
-https://lkml.org/lkml/2013/11/8/187
+I don't know the third issue. Could you explain what kind of things can happen
+on clustered system? Only IA32_APIC_BASE MSR is no longer trusted? Or are
+there other things we can possibly no longer trust?
 
-Thank you,
+Also, could you explain what you suggest to deal with the issue in more detail?
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Thanks.
+HATAYAMA, Daisuke
 
