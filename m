@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab3KLNXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 08:23:54 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:41356 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724Ab3KLNXu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 08:23:50 -0500
-Date: Tue, 12 Nov 2013 10:23:43 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 2/2] perf trace: Fix segfault on perf trace -i perf.data
-Message-ID: <20131112132343.GA12627@ghostprotocols.net>
-References: <1384237500-22991-1-git-send-email-namhyung@kernel.org>
- <1384237500-22991-2-git-send-email-namhyung@kernel.org>
- <20131112114609.GB4053@ghostprotocols.net>
- <20131112115700.GC4053@ghostprotocols.net>
- <20131112212723.GA14439@danjae>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131112212723.GA14439@danjae>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755313Ab3KLNYB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 08:24:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35435 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755239Ab3KLNXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 08:23:55 -0500
+From: Mark Salter <msalter@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Salter <msalter@redhat.com>, James Hogan <james.hogan@imgtec.com>,
+        linux-metag@vger.kernel.org
+Subject: [PATCH 05/11] metag: use generic fixmap.h
+Date: Tue, 12 Nov 2013 08:22:19 -0500
+Message-Id: <1384262545-20875-6-git-send-email-msalter@redhat.com>
+In-Reply-To: <1384262545-20875-1-git-send-email-msalter@redhat.com>
+References: <1384262545-20875-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 12, 2013 at 09:27:23PM +0000, Namhyung Kim escreveu:
-> Hi Arnaldo,
-> 
-> On Tue, Nov 12, 2013 at 08:57:00AM -0300, Arnaldo Carvalho de Melo wrote:
-> > So this becomes the first part of this patch, split from yours and
-> > massaged a bit so that by looking at the patch it becomes quickly clear
-> > what it is doing, please let me now if I can keep this as-is (with your
-> > authorship, etc).
-> 
-> Looks good to me.
+Signed-off-by: Mark Salter <msalter@redhat.com>
+CC: James Hogan <james.hogan@imgtec.com>
+CC: linux-metag@vger.kernel.org
+---
+ arch/metag/include/asm/fixmap.h | 32 +-------------------------------
+ 1 file changed, 1 insertion(+), 31 deletions(-)
 
-Thanks for checking!
+diff --git a/arch/metag/include/asm/fixmap.h b/arch/metag/include/asm/fixmap.h
+index 3331275..af621b0 100644
+--- a/arch/metag/include/asm/fixmap.h
++++ b/arch/metag/include/asm/fixmap.h
+@@ -51,37 +51,7 @@ enum fixed_addresses {
+ #define FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
+ #define FIXADDR_START	((FIXADDR_TOP - FIXADDR_SIZE) & PMD_MASK)
  
-> But I just have a nitpick, please see below.
+-#define __fix_to_virt(x)	(FIXADDR_TOP - ((x) << PAGE_SHIFT))
+-#define __virt_to_fix(x)	((FIXADDR_TOP - ((x)&PAGE_MASK)) >> PAGE_SHIFT)
+-
+-extern void __this_fixmap_does_not_exist(void);
+-/*
+- * 'index to address' translation. If anyone tries to use the idx
+- * directly without tranlation, we catch the bug with a NULL-deference
+- * kernel oops. Illegal ranges of incoming indices are caught too.
+- */
+-static inline unsigned long fix_to_virt(const unsigned int idx)
+-{
+-	/*
+-	 * this branch gets completely eliminated after inlining,
+-	 * except when someone tries to use fixaddr indices in an
+-	 * illegal way. (such as mixing up address types or using
+-	 * out-of-range indices).
+-	 *
+-	 * If it doesn't get removed, the linker will complain
+-	 * loudly with a reasonably clear error message..
+-	 */
+-	if (idx >= __end_of_fixed_addresses)
+-		__this_fixmap_does_not_exist();
+-
+-	return __fix_to_virt(idx);
+-}
+-
+-static inline unsigned long virt_to_fix(const unsigned long vaddr)
+-{
+-	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
+-	return __virt_to_fix(vaddr);
+-}
++#include <asm-generic/fixmap.h>
  
-> > +{
-> > +	evsel->priv = malloc(sizeof(struct syscall_tp));
-> > +	if (evsel->priv != NULL) {
-> > +		if (perf_evsel__init_sc_tp_uint_field(evsel, id))
-> > +			goto out_delete;
-> > +
-> > +		evsel->handler = handler;
-> > +		return 0;
-> > +	}
-> > +
-> > +	return -ENOMEM;
-> > +
-> > +out_delete:
-> > +	free(evsel->priv);
-> > +	evsel->priv = NULL;
- 
-> Is this part needed?  I can see that perf_evsel__delete_priv() can do
-> it for you anyway.  Yes I know it's needed for my later change, but I
-> think we do it a bit differently.
- 
-> And again, is perf_evsel__delete_priv() needed?  Isn't the ->priv is
-> not used for anything else?  Why not just letting perf_evsel__delete()
-> handle this transparently?
+ #define kmap_get_fixmap_pte(vaddr) \
+ 	pte_offset_kernel( \
+-- 
+1.8.3.1
 
-Because it may point to something not allocated via malloc, so the one
-who allocates it, frees it, furthermore, the one who allocates it, if
-fails to complete the greater init sequence of which the allocation is
-part of, frees it and leaves it as it was before the transaction
-started.
- 
-- Arnaldo
