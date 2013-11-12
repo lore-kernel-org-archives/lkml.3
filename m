@@ -1,431 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab3KLWDG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 17:03:06 -0500
-Received: from 1.mo2.mail-out.ovh.net ([46.105.63.121]:56597 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757498Ab3KLWC4 (ORCPT
+	id S1757596Ab3KLWEI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 17:04:08 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:46961 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756792Ab3KLWEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 17:02:56 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: [PATCH v5 07/17] clk: at91: add PMC master clock
-Date: Tue, 12 Nov 2013 23:00:29 +0100
-Message-Id: <1384293629-4645-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
-References: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 11857414869732391136
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 12 Nov 2013 17:04:05 -0500
+Date: Wed, 13 Nov 2013 01:01:53 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [libtraceevent] hrtimer_expire_entry unknown op '{'
+Message-ID: <20131112220153.GC5709@swordfish>
+References: <20131105093755.GB2272@swordfish.minsk.epam.com>
+ <20131105081522.1c8e2012@gandalf.local.home>
+ <20131112213152.GB5709@swordfish>
+ <20131112165237.3273f4b7@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112165237.3273f4b7@gandalf.local.home>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new at91 master clock implementation using common clk
-framework.
+On (11/12/13 16:52), Steven Rostedt wrote:
+> > On (11/05/13 08:15), Steven Rostedt wrote:
+> > > > Hello,
+> > > > 
+> > > > libtraceevent reports ` unknown op '{' ' while processing hrtimer_expire_entry event
+> > > 
+> > > Yes, we need to port the plugin code from trace-cmd to handle this and
+> > > other cases. It's a known issue.
+> > > 
+> > 
+> > Hello Steven,
+> > sorry if I'm bothering you with already known issue.
+> > 
+> > I cloned trace-cmd from
+> > git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
+> > 
+> > and there seems to be problems with hrtimer events format.
+> > 
+> > # ./trace-cmd check-events
+> > trace-cmd: No such file or directory
+> 
+> Do a make install, or copy all the *.so files into ~/.trace-cmd/plugins/
+> and that will go away.
+>
 
-The master clock layout describe the MCKR register layout.
-There are 2 master clock layouts:
-- at91rm9200
-- at91sam9x5
+oh... thanks a lot!
 
-Master clocks are given characteristics:
-- min/max clock output rate
+I just quickly went through http://lwn.net/Articles/341902/
+(' Just download it, go into the directory and run "make" ')
 
-These characteristics are checked during rate change to avoid
-over/underclocking.
+thank you once again!
 
-These characteristics are described in atmel's SoC datasheet in
-"Electrical Characteristics" paragraph.
+	-ss
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/clk/at91/Makefile     |    2 +-
- drivers/clk/at91/clk-master.c |  272 +++++++++++++++++++++++++++++++++++++++++
- drivers/clk/at91/clk-pll.c    |   10 +-
- drivers/clk/at91/pmc.c        |    9 ++
- drivers/clk/at91/pmc.h        |    5 +
- 5 files changed, 289 insertions(+), 9 deletions(-)
- create mode 100644 drivers/clk/at91/clk-master.c
-
-diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-index 902bbf1..e28fb2b 100644
---- a/drivers/clk/at91/Makefile
-+++ b/drivers/clk/at91/Makefile
-@@ -3,4 +3,4 @@
- #
- 
- obj-y += pmc.o
--obj-y += clk-main.o clk-pll.o clk-plldiv.o
-+obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
-diff --git a/drivers/clk/at91/clk-master.c b/drivers/clk/at91/clk-master.c
-new file mode 100644
-index 0000000..65b81de
---- /dev/null
-+++ b/drivers/clk/at91/clk-master.c
-@@ -0,0 +1,272 @@
-+/*
-+ * drivers/clk/at91/clk-master.c
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk/at91_pmc.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/io.h>
-+#include <linux/wait.h>
-+#include <linux/sched.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+
-+#include "pmc.h"
-+
-+#define MASTER_SOURCE_MAX	4
-+
-+#define MASTER_PRES_MASK	0x7
-+#define MASTER_PRES_MAX		MASTER_PRES_MASK
-+#define MASTER_DIV_SHIFT	8
-+#define MASTER_DIV_MASK		0x3
-+
-+struct clk_master_characteristics {
-+	struct clk_range output;
-+	u32 divisors[4];
-+	u8 have_div3_pres;
-+};
-+
-+struct clk_master_layout {
-+	u32 mask;
-+	u8 pres_shift;
-+};
-+
-+#define to_clk_master(hw) container_of(hw, struct clk_master, hw)
-+
-+struct clk_master {
-+	struct clk_hw hw;
-+	struct at91_pmc *pmc;
-+	unsigned int irq;
-+	wait_queue_head_t wait;
-+	const struct clk_master_layout *layout;
-+	const struct clk_master_characteristics *characteristics;
-+};
-+
-+static irqreturn_t clk_master_irq_handler(int irq, void *dev_id)
-+{
-+	struct clk_master *master = (struct clk_master *)dev_id;
-+
-+	wake_up(&master->wait);
-+	disable_irq_nosync(master->irq);
-+
-+	return IRQ_HANDLED;
-+}
-+static int clk_master_prepare(struct clk_hw *hw)
-+{
-+	struct clk_master *master = to_clk_master(hw);
-+	struct at91_pmc *pmc = master->pmc;
-+
-+	while (!(pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_MCKRDY)) {
-+		enable_irq(master->irq);
-+		wait_event(master->wait,
-+			   pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_MCKRDY);
-+	}
-+
-+	return 0;
-+}
-+
-+static int clk_master_is_prepared(struct clk_hw *hw)
-+{
-+	struct clk_master *master = to_clk_master(hw);
-+
-+	return !!(pmc_read(master->pmc, AT91_PMC_SR) & AT91_PMC_MCKRDY);
-+}
-+
-+static unsigned long clk_master_recalc_rate(struct clk_hw *hw,
-+					    unsigned long parent_rate)
-+{
-+	u8 pres;
-+	u8 div;
-+	unsigned long rate = parent_rate;
-+	struct clk_master *master = to_clk_master(hw);
-+	struct at91_pmc *pmc = master->pmc;
-+	const struct clk_master_layout *layout = master->layout;
-+	const struct clk_master_characteristics *characteristics =
-+						master->characteristics;
-+	u32 tmp;
-+
-+	pmc_lock(pmc);
-+	tmp = pmc_read(pmc, AT91_PMC_MCKR) & layout->mask;
-+	pmc_unlock(pmc);
-+
-+	pres = (tmp >> layout->pres_shift) & MASTER_PRES_MASK;
-+	div = (tmp >> MASTER_DIV_SHIFT) & MASTER_DIV_MASK;
-+
-+	if (characteristics->have_div3_pres && pres == MASTER_PRES_MAX)
-+		rate /= 3;
-+	else
-+		rate >>= pres;
-+
-+	rate /= characteristics->divisors[div];
-+
-+	if (rate < characteristics->output.min)
-+		pr_warn("master clk is underclocked");
-+	else if (rate > characteristics->output.max)
-+		pr_warn("master clk is overclocked");
-+
-+	return rate;
-+}
-+
-+static u8 clk_master_get_parent(struct clk_hw *hw)
-+{
-+	struct clk_master *master = to_clk_master(hw);
-+	struct at91_pmc *pmc = master->pmc;
-+
-+	return pmc_read(pmc, AT91_PMC_MCKR) & AT91_PMC_CSS;
-+}
-+
-+static const struct clk_ops master_ops = {
-+	.prepare = clk_master_prepare,
-+	.is_prepared = clk_master_is_prepared,
-+	.recalc_rate = clk_master_recalc_rate,
-+	.get_parent = clk_master_get_parent,
-+};
-+
-+static struct clk * __init
-+at91_clk_register_master(struct at91_pmc *pmc, unsigned int irq,
-+		const char *name, int num_parents,
-+		const char **parent_names,
-+		const struct clk_master_layout *layout,
-+		const struct clk_master_characteristics *characteristics)
-+{
-+	int ret;
-+	struct clk_master *master;
-+	struct clk *clk = NULL;
-+	struct clk_init_data init;
-+
-+	if (!pmc || !irq || !name || !num_parents || !parent_names)
-+		return ERR_PTR(-EINVAL);
-+
-+	master = kzalloc(sizeof(*master), GFP_KERNEL);
-+	if (!master)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &master_ops;
-+	init.parent_names = parent_names;
-+	init.num_parents = num_parents;
-+	init.flags = 0;
-+
-+	master->hw.init = &init;
-+	master->layout = layout;
-+	master->characteristics = characteristics;
-+	master->pmc = pmc;
-+	master->irq = irq;
-+	init_waitqueue_head(&master->wait);
-+	irq_set_status_flags(master->irq, IRQ_NOAUTOEN);
-+	ret = request_irq(master->irq, clk_master_irq_handler,
-+			  IRQF_TRIGGER_HIGH, "clk-master", master);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	clk = clk_register(NULL, &master->hw);
-+	if (IS_ERR(clk))
-+		kfree(master);
-+
-+	return clk;
-+}
-+
-+
-+static const struct clk_master_layout at91rm9200_master_layout = {
-+	.mask = 0x31F,
-+	.pres_shift = 2,
-+};
-+
-+static const struct clk_master_layout at91sam9x5_master_layout = {
-+	.mask = 0x373,
-+	.pres_shift = 4,
-+};
-+
-+
-+static struct clk_master_characteristics * __init
-+of_at91_clk_master_get_characteristics(struct device_node *np)
-+{
-+	struct clk_master_characteristics *characteristics;
-+
-+	characteristics = kzalloc(sizeof(*characteristics), GFP_KERNEL);
-+	if (!characteristics)
-+		return NULL;
-+
-+	if (of_at91_get_clk_range(np, "atmel,clk-output-range", &characteristics->output))
-+		goto out_free_characteristics;
-+
-+	of_property_read_u32_array(np, "atmel,clk-divisors",
-+				   characteristics->divisors, 4);
-+
-+	characteristics->have_div3_pres =
-+		of_property_read_bool(np, "atmel,master-clk-have-div3-pres");
-+
-+	return characteristics;
-+
-+out_free_characteristics:
-+	kfree(characteristics);
-+	return NULL;
-+}
-+
-+static void __init
-+of_at91_clk_master_setup(struct device_node *np, struct at91_pmc *pmc,
-+			 const struct clk_master_layout *layout)
-+{
-+	struct clk *clk;
-+	int num_parents;
-+	int i;
-+	unsigned int irq;
-+	const char *parent_names[MASTER_SOURCE_MAX];
-+	const char *name = np->name;
-+	struct clk_master_characteristics *characteristics;
-+
-+	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
-+	if (num_parents <= 0 || num_parents > MASTER_SOURCE_MAX)
-+		return;
-+
-+	for (i = 0; i < num_parents; ++i) {
-+		parent_names[i] = of_clk_get_parent_name(np, i);
-+		if (!parent_names[i])
-+			return;
-+	}
-+
-+	of_property_read_string(np, "clock-output-names", &name);
-+
-+	characteristics = of_at91_clk_master_get_characteristics(np);
-+	if (!characteristics)
-+		return;
-+
-+	irq = irq_of_parse_and_map(np, 0);
-+	if (!irq)
-+		return;
-+
-+	clk = at91_clk_register_master(pmc, irq, name, num_parents,
-+				       parent_names, layout,
-+				       characteristics);
-+	if (IS_ERR(clk))
-+		goto out_free_characteristics;
-+
-+	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	return;
-+
-+out_free_characteristics:
-+	kfree(characteristics);
-+}
-+
-+void __init of_at91rm9200_clk_master_setup(struct device_node *np,
-+					   struct at91_pmc *pmc)
-+{
-+	of_at91_clk_master_setup(np, pmc, &at91rm9200_master_layout);
-+}
-+
-+void __init of_at91sam9x5_clk_master_setup(struct device_node *np,
-+					   struct at91_pmc *pmc)
-+{
-+	of_at91_clk_master_setup(np, pmc, &at91sam9x5_master_layout);
-+}
-diff --git a/drivers/clk/at91/clk-pll.c b/drivers/clk/at91/clk-pll.c
-index 57cedb5..c4d0dc8 100644
---- a/drivers/clk/at91/clk-pll.c
-+++ b/drivers/clk/at91/clk-pll.c
-@@ -82,6 +82,8 @@ static int clk_pll_prepare(struct clk_hw *hw)
- 	struct clk_pll *pll = to_clk_pll(hw);
- 	struct at91_pmc *pmc = pll->pmc;
- 	const struct clk_pll_layout *layout = pll->layout;
-+	const struct clk_pll_characteristics *characteristics =
-+							pll->characteristics;
- 	u8 id = pll->id;
- 	u32 mask = PLL_STATUS_MASK(id);
- 	int offset = PLL_REG(id);
-@@ -271,18 +273,10 @@ static int clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
- 			    unsigned long parent_rate)
- {
- 	struct clk_pll *pll = to_clk_pll(hw);
--	struct at91_pmc *pmc = pll->pmc;
--	const struct clk_pll_layout *layout = pll->layout;
--	const struct clk_pll_characteristics *characteristics =
--						pll->characteristics;
--	u8 id = pll->id;
--	int offset = PLL_REG(id);
- 	long ret;
- 	u32 div;
- 	u32 mul;
- 	u32 index;
--	u32 tmp;
--	u8 out = 0;
- 
- 	ret = clk_pll_get_best_div_mul(pll, rate, parent_rate,
- 				       &div, &mul, &index);
-diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-index d26fdb7..d9975e7 100644
---- a/drivers/clk/at91/pmc.c
-+++ b/drivers/clk/at91/pmc.c
-@@ -257,6 +257,15 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
- 		.compatible = "atmel,at91sam9x5-clk-plldiv",
- 		.data = of_at91sam9x5_clk_plldiv_setup,
- 	},
-+	/* Master clock */
-+	{
-+		.compatible = "atmel,at91rm9200-clk-master",
-+		.data = of_at91rm9200_clk_master_setup,
-+	},
-+	{
-+		.compatible = "atmel,at91sam9x5-clk-master",
-+		.data = of_at91sam9x5_clk_master_setup,
-+	},
- 	{ /*sentinel*/ }
- };
- 
-diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
-index 15aaf38..be5c964 100644
---- a/drivers/clk/at91/pmc.h
-+++ b/drivers/clk/at91/pmc.h
-@@ -72,4 +72,9 @@ extern void __init of_sama5d3_clk_pll_setup(struct device_node *np,
- extern void __init of_at91sam9x5_clk_plldiv_setup(struct device_node *np,
- 						  struct at91_pmc *pmc);
- 
-+extern void __init of_at91rm9200_clk_master_setup(struct device_node *np,
-+						  struct at91_pmc *pmc);
-+extern void __init of_at91sam9x5_clk_master_setup(struct device_node *np,
-+						  struct at91_pmc *pmc);
-+
- #endif /* __PMC_H_ */
--- 
-1.7.9.5
-
+> -- Steve
+> 
+> >   bad op token {
+> >   bad op token {
+> >   bad op token {
+> >   bad op token {
+> >   function is_writable_pte not defined
+> >   function scsi_trace_parse_cdb not defined
+> >   function scsi_trace_parse_cdb not defined
+> >   function scsi_trace_parse_cdb not defined
+> >   function scsi_trace_parse_cdb not defined
+> >   function jiffies_to_msecs not defined
+> >   function jiffies_to_msecs not defined
+> >   unknown op '{'
+> >   unknown op '{'
+> > 
+> > 
+> > trivial strace-ing shows that 'unknown op' comes from hrtimer_expire_entry
+> > 
+> > stat("/sys/kernel/debug/tracing/events/timer/hrtimer_expire_entry/format", {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
+> > open("/sys/kernel/debug/tracing/events/timer/hrtimer_expire_entry/format", O_RDONLY) = 5
+> > read(5, "name: hrtimer_expire_entry\nID: 9"..., 8192) = 577
+> > read(5, "", 8192)                       = 0
+> > close(5)                                = 0
+> > write(2, "  ", 2)                       = 2
+> > write(2, "unknown op '{'", 14)          = 14
+> > write(2, "\n", 1)                       = 1
+> > 
+> > 
+> > ./trace-cmd record -e timer ls /bin
+> > ./trace-cmd report
+> > 
+> >      kworker/1:0-3925  [001]  1626.266585: hrtimer_cancel:       hrtimer=0xffff880157c8df80
+> >                X-2175  [000]  1626.266585: hrtimer_cancel:       hrtimer=0xffff880157c0df80
+> >                X-2175  [000]  1626.266586: hrtimer_expire_entry: [FAILED TO PARSE] hrtimer=0xffff880157c0df80 now=1625348004324 function=0xffffffff810cadf0
+> >      kworker/1:0-3925  [001]  1626.266586: hrtimer_expire_entry: [FAILED TO PARSE] hrtimer=0xffff880157c8df80 now=1625348004320 function=0xffffffff810cadf0
+> >      kworker/1:0-3925  [001]  1626.266591: hrtimer_expire_exit:  hrtimer=0xffff880157c8df80
+> >      kworker/1:0-3925  [001]  1626.266592: hrtimer_start:        [FAILED TO PARSE] hrtimer=0xffff880157c8df80 function=0xffffffff810cadf0 expires=1625352000000 softexpires=1625352000000
+> >                X-2175  [000]  1626.266593: hrtimer_expire_exit:  hrtimer=0xffff880157c0df80
+> >                X-2175  [000]  1626.266594: hrtimer_start:        [FAILED TO PARSE] hrtimer=0xffff880157c0df80 function=0xffffffff810cadf0 expires=1625352000000 softexpires=1625352000000
+> >      kworker/1:0-3925  [001]  1626.266596: timer_cancel:         timer=0xffff880157c8ff28
+> >      kworker/1:0-3925  [001]  1626.266598: timer_expire_entry:   timer=0xffff880157c8ff28 function=delayed_work_timer_fn now=4295298633
+> >                X-2175  [000]  1626.266599: timer_cancel:         timer=0xffff880157c0ff28
+> >                X-2175  [000]  1626.266599: timer_expire_entry:   timer=0xffff880157c0ff28 function=delayed_work_timer_fn now=4295298633
+> > 
+> > thank you,
+> > 
+> > 	-ss
+> > 
+> > 
+> > > -- Steve
+> > > 
+> > > > 
+> > > > cat /sys/kernel/debug/tracing/events/timer/hrtimer_expire_entry/format
+> > > > 
+> > > > name: hrtimer_expire_entry
+> > > > ID: 91
+> > > > format:
+> > > > 	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+> > > > 	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+> > > > 	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+> > > > 	field:int common_pid;	offset:4;	size:4;	signed:1;
+> > > > 
+> > > > 	field:void * hrtimer;	offset:8;	size:8;	signed:0;
+> > > > 	field:s64 now;	offset:16;	size:8;	signed:1;
+> > > > 	field:void * function;	offset:24;	size:8;	signed:0;
+> > > > 
+> > > > print fmt: "hrtimer=%p function=%pf now=%llu", REC->hrtimer, REC->function, (unsigned long long)(((ktime_t) { .tv64 = REC->now }).tv64)
+> > > > 
+> > > > 
+> > > > 	-ss
+> > > 
+> 
