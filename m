@@ -1,230 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab3KLMDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 07:03:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54493 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098Ab3KLMCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 07:02:31 -0500
-From: Takashi Iwai <tiwai@suse.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Prarit Bhargava <prarit@redhat.com>, Ming Lei <ming.lei@canonical.com>,
-        Borislav Petkov <bp@suse.de>, x86@kernel.org,
-        amd64-microcode@amd64.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 3/4] firmware: Use bit flags instead of boolean combos
-Date: Tue, 12 Nov 2013 13:02:15 +0100
-Message-Id: <1384257736-3647-4-git-send-email-tiwai@suse.de>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1384257736-3647-1-git-send-email-tiwai@suse.de>
-References: <1384257736-3647-1-git-send-email-tiwai@suse.de>
+	id S1754951Ab3KLMHl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 07:07:41 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54852 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751868Ab3KLMHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 07:07:39 -0500
+Date: Tue, 12 Nov 2013 12:06:34 +0000
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Tony Luck <tony.luck@intel.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "l.majewski@samsung.com" <l.majewski@samsung.com>,
+        Jonathan Corbet <corbet@lwn.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [RFC][PATCH v5 00/14] sched: packing tasks
+Message-ID: <20131112120634.GA5762@e103034-lin>
+References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
+ <CAHkRjk69GNYtLGBSWCNcsCzkBHywKrD0qQQbNkJRpMbcdsCPyw@mail.gmail.com>
+ <20131111163630.GD26898@twins.programming.kicks-ass.net>
+ <52810851.4090907@linux.intel.com>
+ <20131111181805.GE29572@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131111181805.GE29572@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More than two boolean arguments to a function are rather confusing and
-error-prone for callers.  Let's make the behavior bit flags instead of
-triple combos.
+On Mon, Nov 11, 2013 at 06:18:05PM +0000, Catalin Marinas wrote:
+> On Mon, Nov 11, 2013 at 04:39:45PM +0000, Arjan van de Ven wrote:
+> > having a hardware driver give a prefered CPU ordering for wakes can indeed be useful.
+> > (I'm doubtful that changing the recommendation for each idle is going to pay off,
+> > but proof is in the pudding; there are certainly long term effects where this can help)
+> 
+> The ordering is based on the actual C-state, so a simple way is to wake
+> up the CPU in the shallowest C-state. With asymmetric configurations
+> (big.LITTLE) we have different costs for the same C-state, so this would
+> come in handy.
 
-A nice suggestion by Borislav Petkov.
+Asymmetric configurations add a bit of extra fun to deal with as you
+don't want to pick the cpu in the shallowest C-state if it is the wrong
+type of cpu for the task waking up. That goes for both big and little
+cpus in big.LITTLE.
 
-Acked-by: Borislav Petkov <bp@suse.de>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Acked-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
----
- drivers/base/firmware_class.c | 51 ++++++++++++++++++++++++-------------------
- 1 file changed, 29 insertions(+), 22 deletions(-)
+So the hardware driver would need to know which cpus that are suitable
+targets for the task, or we need to somehow limit the driver query to
+suitable cpus, or the driver should return a list of cpus guaranteed to
+include cpus of all types (big, little, whatever...).
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 1af03648daf8..65797742c6b6 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -96,6 +96,11 @@ static inline long firmware_loading_timeout(void)
- 	return loading_timeout > 0 ? loading_timeout * HZ : MAX_SCHEDULE_TIMEOUT;
- }
- 
-+/* firmware behavior options */
-+#define FW_OPT_UEVENT	(1U << 0)
-+#define FW_OPT_NOWAIT	(1U << 1)
-+#define FW_OPT_FALLBACK	(1U << 2)
-+
- struct firmware_cache {
- 	/* firmware_buf instance will be added into the below list */
- 	spinlock_t lock;
-@@ -820,7 +825,7 @@ static void firmware_class_timeout_work(struct work_struct *work)
- 
- static struct firmware_priv *
- fw_create_instance(struct firmware *firmware, const char *fw_name,
--		   struct device *device, bool uevent, bool nowait)
-+		   struct device *device, unsigned int opt_flags)
- {
- 	struct firmware_priv *fw_priv;
- 	struct device *f_dev;
-@@ -832,7 +837,7 @@ fw_create_instance(struct firmware *firmware, const char *fw_name,
- 		goto exit;
- 	}
- 
--	fw_priv->nowait = nowait;
-+	fw_priv->nowait = !!(opt_flags & FW_OPT_NOWAIT);
- 	fw_priv->fw = firmware;
- 	INIT_DELAYED_WORK(&fw_priv->timeout_work,
- 		firmware_class_timeout_work);
-@@ -848,8 +853,8 @@ exit:
- }
- 
- /* load a firmware via user helper */
--static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
--				  long timeout)
-+static int _request_firmware_load(struct firmware_priv *fw_priv,
-+				  unsigned int opt_flags, long timeout)
- {
- 	int retval = 0;
- 	struct device *f_dev = &fw_priv->dev;
-@@ -885,7 +890,7 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
- 		goto err_del_bin_attr;
- 	}
- 
--	if (uevent) {
-+	if (opt_flags & FW_OPT_UEVENT) {
- 		buf->need_uevent = true;
- 		dev_set_uevent_suppress(f_dev, false);
- 		dev_dbg(f_dev, "firmware: requesting %s\n", buf->fw_id);
-@@ -911,16 +916,16 @@ err_put_dev:
- 
- static int fw_load_from_user_helper(struct firmware *firmware,
- 				    const char *name, struct device *device,
--				    bool uevent, bool nowait, long timeout)
-+				    unsigned int opt_flags, long timeout)
- {
- 	struct firmware_priv *fw_priv;
- 
--	fw_priv = fw_create_instance(firmware, name, device, uevent, nowait);
-+	fw_priv = fw_create_instance(firmware, name, device, opt_flags);
- 	if (IS_ERR(fw_priv))
- 		return PTR_ERR(fw_priv);
- 
- 	fw_priv->buf = firmware->priv;
--	return _request_firmware_load(fw_priv, uevent, timeout);
-+	return _request_firmware_load(fw_priv, opt_flags, timeout);
- }
- 
- #ifdef CONFIG_PM_SLEEP
-@@ -942,7 +947,7 @@ static void kill_requests_without_uevent(void)
- #else /* CONFIG_FW_LOADER_USER_HELPER */
- static inline int
- fw_load_from_user_helper(struct firmware *firmware, const char *name,
--			 struct device *device, bool uevent, bool nowait,
-+			 struct device *device, unsigned int opt_flags,
- 			 long timeout)
- {
- 	return -ENOENT;
-@@ -1023,7 +1028,7 @@ _request_firmware_prepare(struct firmware **firmware_p, const char *name,
- }
- 
- static int assign_firmware_buf(struct firmware *fw, struct device *device,
--				bool skip_cache)
-+			       unsigned int opt_flags)
- {
- 	struct firmware_buf *buf = fw->priv;
- 
-@@ -1040,7 +1045,8 @@ static int assign_firmware_buf(struct firmware *fw, struct device *device,
- 	 * device may has been deleted already, but the problem
- 	 * should be fixed in devres or driver core.
- 	 */
--	if (device && !skip_cache)
-+	/* don't cache firmware handled without uevent */
-+	if (device && (opt_flags & FW_OPT_UEVENT))
- 		fw_add_devm_name(device, buf->fw_id);
- 
- 	/*
-@@ -1061,7 +1067,7 @@ static int assign_firmware_buf(struct firmware *fw, struct device *device,
- /* called from request_firmware() and request_firmware_work_func() */
- static int
- _request_firmware(const struct firmware **firmware_p, const char *name,
--		  struct device *device, bool uevent, bool nowait, bool fallback)
-+		  struct device *device, unsigned int opt_flags)
- {
- 	struct firmware *fw;
- 	long timeout;
-@@ -1076,7 +1082,7 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
- 
- 	ret = 0;
- 	timeout = firmware_loading_timeout();
--	if (nowait) {
-+	if (opt_flags & FW_OPT_NOWAIT) {
- 		timeout = usermodehelper_read_lock_wait(timeout);
- 		if (!timeout) {
- 			dev_dbg(device, "firmware: %s loading timed out\n",
-@@ -1095,19 +1101,18 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
- 
- 	ret = fw_get_filesystem_firmware(device, fw->priv);
- 	if (ret) {
--		if (fallback) {
-+		if (opt_flags & FW_OPT_FALLBACK) {
- 			dev_warn(device,
- 				 "Direct firmware load failed with error %d\n",
- 				 ret);
- 			dev_warn(device, "Falling back to user helper\n");
- 			ret = fw_load_from_user_helper(fw, name, device,
--					       uevent, nowait, timeout);
-+						       opt_flags, timeout);
- 		}
- 	}
- 
--	/* don't cache firmware handled without uevent */
- 	if (!ret)
--		ret = assign_firmware_buf(fw, device, !uevent);
-+		ret = assign_firmware_buf(fw, device, opt_flags);
- 
- 	usermodehelper_read_unlock();
- 
-@@ -1149,7 +1154,8 @@ request_firmware(const struct firmware **firmware_p, const char *name,
- 
- 	/* Need to pin this module until return */
- 	__module_get(THIS_MODULE);
--	ret = _request_firmware(firmware_p, name, device, true, false, true);
-+	ret = _request_firmware(firmware_p, name, device,
-+				FW_OPT_UEVENT | FW_OPT_FALLBACK);
- 	module_put(THIS_MODULE);
- 	return ret;
- }
-@@ -1172,7 +1178,7 @@ int request_firmware_direct(const struct firmware **firmware_p,
- {
- 	int ret;
- 	__module_get(THIS_MODULE);
--	ret = _request_firmware(firmware_p, name, device, true, false, false);
-+	ret = _request_firmware(firmware_p, name, device, FW_OPT_UEVENT);
- 	module_put(THIS_MODULE);
- 	return ret;
- }
-@@ -1201,7 +1207,7 @@ struct firmware_work {
- 	struct device *device;
- 	void *context;
- 	void (*cont)(const struct firmware *fw, void *context);
--	bool uevent;
-+	unsigned int opt_flags;
- };
- 
- static void request_firmware_work_func(struct work_struct *work)
-@@ -1212,7 +1218,7 @@ static void request_firmware_work_func(struct work_struct *work)
- 	fw_work = container_of(work, struct firmware_work, work);
- 
- 	_request_firmware(&fw, fw_work->name, fw_work->device,
--			  fw_work->uevent, true, true);
-+			  fw_work->opt_flags);
- 	fw_work->cont(fw, fw_work->context);
- 	put_device(fw_work->device); /* taken in request_firmware_nowait() */
- 
-@@ -1260,7 +1266,8 @@ request_firmware_nowait(
- 	fw_work->device = device;
- 	fw_work->context = context;
- 	fw_work->cont = cont;
--	fw_work->uevent = uevent;
-+	fw_work->opt_flags = FW_OPT_NOWAIT | FW_OPT_FALLBACK |
-+		(uevent ? FW_OPT_UEVENT : 0);
- 
- 	if (!try_module_get(module)) {
- 		kfree(fw_work);
--- 
-1.8.4.2
-
+Morten
