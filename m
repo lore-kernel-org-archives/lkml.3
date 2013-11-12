@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458Ab3KLARK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 19:17:10 -0500
+	id S1754501Ab3KLARO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 19:17:14 -0500
 Received: from mga09.intel.com ([134.134.136.24]:47195 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754228Ab3KLAQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 19:16:50 -0500
+	id S1753951Ab3KLAQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 19:16:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="407152573"
+   d="scan'208";a="407152569"
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 To: Ingo Molnar <mingo@kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Cc: Olof Johansson <olof@lixom.net>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [RFC PATCH 2/3] x86, boot: Change the default for X86_RESERVE_LOW to 640K, make EXPERT
-Date: Mon, 11 Nov 2013 16:16:46 -0800
-Message-Id: <1384215407-22288-3-git-send-email-hpa@linux.intel.com>
+Cc: Olof Johansson <olof@lixom.net>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        <stable@vger.kernel.org>
+Subject: [RFC PATCH 1/3] x86, boot: Move setup_bios_corruption_check() later
+Date: Mon, 11 Nov 2013 16:16:45 -0800
+Message-Id: <1384215407-22288-2-git-send-email-hpa@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1384215407-22288-1-git-send-email-hpa@linux.intel.com>
 References: <1384215407-22288-1-git-send-email-hpa@linux.intel.com>
@@ -26,81 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-We have been able to set X86_RESERVE_LOW to 640K since checkin
+setup_bios_corruption_check() tries to claim any low memory regions
+that we haven't already reserved.  Make sure we reserve any low memory
+regions that we intend to either use or know/assume a priori is bad
+*before* we initialize the checker.
 
-95c9608478d6 x86, mm: Move reserving low memory later in initialization
+Stable team note: adding this to the list to consider for stable
+because it generates user-visible nuisance dmesg warnings in some
+configurations.  However, it is not urgent and should be allowed to
+percolate in Linus' tree for a bit first.
 
-Actually do so by default, and make overriding the default an EXPERT
-option.  It can still be overridden on the command line if someone is
-so inclined.
-
+Reported-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Olof Johansson <olof@lixom.net>
 Link: http://lkml.kernel.org/r/528168CB.7070602@linux.intel.com
+Cc: <stable@vger.kernel.org> v3.9+ [not urgent]
 ---
- arch/x86/Kconfig | 39 ++++++++++++++++++++++-----------------
- 1 file changed, 22 insertions(+), 17 deletions(-)
+ arch/x86/kernel/setup.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index ee2fb9d..7631122 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1412,33 +1412,38 @@ config X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK
- 	  on or off.
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f0de629..8c01d6e 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1080,10 +1080,6 @@ void __init setup_arch(char **cmdline_p)
+ 	/* preallocate 4k for mptable mpc */
+ 	early_reserve_e820_mpc_new();
  
- config X86_RESERVE_LOW
--	int "Amount of low memory, in kilobytes, to reserve for the BIOS"
--	default 64
-+	int "Amount of low memory, in kilobytes, to reserve for the BIOS" if EXPERT
-+	default 640
- 	range 4 640
- 	---help---
- 	  Specify the amount of low memory to reserve for the BIOS.
- 
--	  The first page contains BIOS data structures that the kernel
--	  must not use, so that page must always be reserved.
-+	  The first page (4K) contains BIOS data structures that the
-+	  kernel must not use, so that page must always be reserved.
- 
--	  By default we reserve the first 64K of physical RAM, as a
--	  number of BIOSes are known to corrupt that memory range
-+	  By default we reserve all of the first 640K of physical RAM,
-+	  as a number of BIOSes are known to corrupt that memory range
- 	  during events such as suspend/resume or monitor cable
- 	  insertion, so it must not be used by the kernel.
- 
- 	  You can set this to 4 if you are absolutely sure that you
- 	  trust the BIOS to get all its memory reservations and usages
--	  right.  If you know your BIOS have problems beyond the
--	  default 64K area, you can set this to 640 to avoid using the
--	  entire low memory range.
+-#ifdef CONFIG_X86_CHECK_BIOS_CORRUPTION
+-	setup_bios_corruption_check();
+-#endif
 -
--	  If you have doubts about the BIOS (e.g. suspend/resume does
--	  not work or there's kernel crashes after certain hardware
--	  hotplug events) then you might want to enable
--	  X86_CHECK_BIOS_CORRUPTION=y to allow the kernel to check
--	  typical corruption patterns.
--
--	  Leave this to the default value of 64 if you are unsure.
-+	  right.  More BIOSes are known to have problems with the low
-+	  64K than with the rest of the range, so if you wish to
-+	  compromise between safety and memory consumption you can set
-+	  this to 64.
-+
-+	  If you are planning to use low memory but have doubts about
-+	  the BIOS (e.g. suspend/resume does not work or there's
-+	  kernel crashes after certain hardware hotplug events) then
-+	  you might want to enable X86_CHECK_BIOS_CORRUPTION=y to
-+	  allow the kernel to check typical corruption patterns before
-+	  disabling the checker in order to actually use the memory.
-+
-+	  This option can be overridden at runtime with the
-+	  reservelow= kernel command line option.
-+
-+	  Leave this to the default value of 640 if you are unsure.
+ #ifdef CONFIG_X86_32
+ 	printk(KERN_DEBUG "initial memory mapped: [mem 0x00000000-%#010lx]\n",
+ 			(max_pfn_mapped<<PAGE_SHIFT) - 1);
+@@ -1100,6 +1096,14 @@ void __init setup_arch(char **cmdline_p)
  
- config MATH_EMULATION
- 	bool
+ 	setup_real_mode();
+ 
++	/*
++	 * At this point we should have reserved any low memory regions
++	 * we need to reserve.
++	 */
++#ifdef CONFIG_X86_CHECK_BIOS_CORRUPTION
++	setup_bios_corruption_check();
++#endif
++
+ 	memblock_set_current_limit(get_max_mapped());
+ 	dma_contiguous_reserve(0);
+ 
 -- 
 1.8.3.1
 
