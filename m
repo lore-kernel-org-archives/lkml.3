@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab3KLGXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 01:23:46 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:36069 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab3KLGXi (ORCPT
+	id S1753127Ab3KLG0O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 01:26:14 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52060 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944Ab3KLG0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 01:23:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <528114C4.5000506@hitachi.com>
-References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
-	<1382008671-4515-3-git-send-email-sandeepa.prabhu@linaro.org>
-	<20131108165639.GD15074@mudshark.cambridge.arm.com>
-	<527DFC1C.1020107@hitachi.com>
-	<CA+b37P3U=cAbUvs=2B9wA4F7S9o49vh7d-KamjPsHcz-b9ZYLA@mail.gmail.com>
-	<52808D53.7080904@hitachi.com>
-	<5280B6C8.7050807@hitachi.com>
-	<20131111105812.GC28302@mudshark.cambridge.arm.com>
-	<528114C4.5000506@hitachi.com>
-Date: Tue, 12 Nov 2013 11:53:37 +0530
-Message-ID: <CA+b37P08cLAvBYAXSkozLPzrpuXn=N0SUetwL6N8JL+10AtYjQ@mail.gmail.com>
-Subject: Re: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping support
-From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Nov 2013 01:26:05 -0500
+X-AuditID: 9c93016f-b7c75ae00000244e-32-5281c9fa429f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 1/2] perf trace: Beautify fifth argument of mmap() as fd
+Date: Tue, 12 Nov 2013 15:24:59 +0900
+Message-Id: <1384237500-22991-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> OK, I've ensured that the hw_breakpoint (from perf) can work
->>> with kprobes (from ftrace) at the same address on x86.
->>> So if arm64 already support hw_breakpoint on perf, kprobes should
->>> work with it.
->>
->> Single-stepping on x86 is different to the step behaviour on arm64 afaik. On
->> ARM, we have to manually remove the breakpoint, perform a single-step, then
->> add the breakpoint again. If we re-enable debug exceptions in the kprobe
->> handler, the step will complete early and we'll never step off the
->> breakpoint.
->
-> I'm unsure about arm64's debug feature behavior, what does happen when
-> it performs a single-step on sw-breakpoint?
->
->> Sandeepa: I think you need to retry Masami's test on the arm64 model, since
->> I'm fairly sure it won't work as expected without some additional code.
->
-> OK, anyway, for testing same one, we need to port ftrace first. So the next
-> plan is to make a kprobe module to put a probe (which just printk something)
-> on a specific function (e.g. vfs_symlink), and run perf record with
-> hw-breakpoint as below
->
-> $ perf record -e "mem:0xXXXXXX:k" ln -s /dev/null /tmp/foo
->
-> Note that 0xXXXXXX is the address of vfs_symlink.
->
-> After that, you can see the message in dmesg and also check the perf result
-> with "sudo perf script --dump" (you can find a PERF_RECORD_SAMPLE entry if
-> it works)
-Thanks for steps, ARM64 ftrace patches are under review on arm mailing
-list, I can contact the (linaro) developer implementing ftrace on
-what's supported and then figure-out a way to test this concurrency of
-kprobes breakpoint and hardware breakpoint.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Thanks,
-Sandeepa
->
-> Thank you,
->
-> --
-> Masami HIRAMATSU
-> IT Management Research Dept. Linux Technology Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
->
->
+The fifth argument of mmap syscall is fd and it often contains -1 as a
+value for anon mappings.  Without this patch it doesn't show the file
+name as well as it shows -1 as 4294967295.
+
+Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-trace.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index c3008b1c369c..aeb6296a76bd 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -951,7 +951,8 @@ static struct syscall_fmt {
+ 	{ .name	    = "mmap",	    .hexret = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX,	  /* addr */
+ 			     [2] = SCA_MMAP_PROT, /* prot */
+-			     [3] = SCA_MMAP_FLAGS, /* flags */ }, },
++			     [3] = SCA_MMAP_FLAGS, /* flags */
++			     [4] = SCA_FD, 	  /* fd */ }, },
+ 	{ .name	    = "mprotect",   .errmsg = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX, /* start */
+ 			     [2] = SCA_MMAP_PROT, /* prot */ }, },
+-- 
+1.7.11.7
+
