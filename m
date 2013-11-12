@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab3KLDQf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 22:16:35 -0500
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:53803 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab3KLDQ1 (ORCPT
+	id S1753800Ab3KLDWy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 22:22:54 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:37248 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701Ab3KLDWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 22:16:27 -0500
-Date: Mon, 11 Nov 2013 22:16:23 -0500 (EST)
-From: Zhouping Liu <zliu@redhat.com>
-To: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Message-ID: <988917896.22733181.1384226183266.JavaMail.root@redhat.com>
-In-Reply-To: <732806765.22731241.1384225623693.JavaMail.root@redhat.com>
-Subject: WARNING: CPU: 8 PID: 12860 at net/core/sock.c:313
- sk_clear_memalloc+0x49/0x70()
+	Mon, 11 Nov 2013 22:22:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF22 (Linux)/8.0.3_GA_5664)
-Thread-Topic: WARNING: CPU: 8 PID: 12860 at net/core/sock.c:313 sk_clear_memalloc+0x49/0x70()
-Thread-Index: Kbv1bBOsyq7cnxW1mBz4mJXub17Iww==
+In-Reply-To: <20131111193236.GB16735@n2100.arm.linux.org.uk>
+References: <CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com>
+	<CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com>
+	<CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com>
+	<87y54vzszo.fsf@rustcorp.com.au>
+	<CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com>
+	<CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com>
+	<CAFRkauCW3FDSuh4t0gvmSWH1m0+qaG0XSoBxmk30Wq1FMy7iFw@mail.gmail.com>
+	<CACVXFVMzOzD+D-MQCUBvC80d4zS-TJfcucKuUvzerGs6gT1fEg@mail.gmail.com>
+	<CACVXFVOnVXcVdRCm=OfPjpvvWCiXi8GRV+9ViOGmSZ3tTf6WDg@mail.gmail.com>
+	<528110B1.4060402@arm.com>
+	<20131111193236.GB16735@n2100.arm.linux.org.uk>
+Date: Tue, 12 Nov 2013 11:22:44 +0800
+Message-ID: <CACVXFVPQfUtrc4r4cS9J+6q5Z6hGZDgafH=M_6JfrzrAUGJOHw@mail.gmail.com>
+Subject: Re: kernel BUG at kernel/kallsyms.c:222!
+From: Ming Lei <tom.leiming@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jonathan Austin <jonathan.austin@arm.com>, Michal Marek <mmarek@suse.cz>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Axel Lin <axel.lin@ingics.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: multipart/mixed; boundary=047d7b344290b6698104eaf25c0b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+--047d7b344290b6698104eaf25c0b
+Content-Type: text/plain; charset=ISO-8859-1
 
-I found the WARNING in the latest mainline with commint 8b5baa460b.
+On Tue, Nov 12, 2013 at 3:32 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Mon, Nov 11, 2013 at 05:15:29PM +0000, Jonathan Austin wrote:
+>> I've tested the patch below and it solves the ARM side of things - so
+>> gives you an option other than a complete revert. Happy to put this in to
+>> RMK's patch system if you'd prefer not to have to revert and he's happy
+>> with the patch.
+>
+> I think this is the right solution because it then means that this symbol
+> has the same meaning whether on MMU or !MMU - and getting rid of these
+> kinds of gratuitous variances are the only way that !MMU is going to
+> become less fragile.
 
-[61323.305424] ------------[ cut here ]------------
-[61323.310562] WARNING: CPU: 8 PID: 12860 at net/core/sock.c:313 sk_clear_memalloc+0x49/0x70()
-[61323.319779] Modules linked in: rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache sg nfsd netxen_nic hpilo sp5100_tco auth_rpcgss hpwdt amd64_edac_mod edac_mce_amd microcode pcspkr shpchp serio_raw i2c_piix4 edac_core ipmi_si k10temp nfs_acl lockd ipmi_msghandler acpi_power_meter acpi_cpufreq sunrpc xfs libcrc32c radeon i2c_algo_bit drm_kms_helper ttm sd_mod crc_t10dif ata_generic crct10dif_common drm pata_acpi ahci libahci pata_atiixp libata i2c_core hpsa dm_mirror dm_region_hash dm_log dm_mod
-[61323.368625] CPU: 8 PID: 12860 Comm: swapoff Not tainted 3.12.0+ #1
-[61323.375452] Hardware name: HP ProLiant DL585 G7, BIOS A16 12/17/2012
-[61323.382463]  0000000000000009 ffff882dfce43e68 ffffffff816204b7 0000000000000000
-[61323.390692]  ffff882dfce43ea0 ffffffff8106495d ffff88190b551d00 ffff88080ff0b600
-[61323.398940]  ffff88080ff0b650 0000000000000001 ffff880810fe64a0 ffff882dfce43eb0
-[61323.407188] Call Trace:
-[61323.409916]  [] dump_stack+0x45/0x56
-[61323.415616]  [] warn_slowpath_common+0x7d/0xa0
-[61323.422257]  [] warn_slowpath_null+0x1a/0x20
-[61323.428705]  [] sk_clear_memalloc+0x49/0x70
-[61323.435094]  [] xs_swapper+0x41/0x60 [sunrpc]
-[61323.441671]  [] nfs_swap_deactivate+0x2d/0x30 [nfs]
-[61323.448796]  [] destroy_swap_extents+0x61/0x70
-[61323.455436]  [] SyS_swapoff+0x220/0x610
-[61323.461420]  [] ? do_page_fault+0x1a/0x70
-[61323.467582]  [] system_call_fastpath+0x16/0x1b
-[61323.474215] ---[ end trace 919f685513b38356 ]---
+The patch only fixes problem on arm, and other !MMU&&!ARM archs
+should be affected too.
 
-I found the warning during doing swapoff the swap over NFS mount, so if you need to reproduce it,
-you should do the following:
-1. Open CONFIG_NFS_SWAP in testing machine
-2. Create a NFS server, and create a swap file in NFS server
-   in NFS server: # dd if=/dev/zero of=/NFS_FOLDER/swapfile bs=1M count=1024; mkswap swapfile
-3. Inside testing machine, setup a swap over NFS, then swapoff it, the swapoff action will
-   trigger the WARNING.
+Also there is no CONFIG_PAGE_OFFSET defined for some ARCHs,
+such as 64bit ARCHs.
 
--- 
+Currently, I suggest to filter only on ARM as attachment patch if we plan
+to merge Jonathan's patch, otherwise a more complicated approach has
+to be figured out  to do the filter(such as, define a readonly symbol in
+kernel to store PAGE_OFFSET, and let scripts/kallsyms use it for
+filtering).
+
+
+
 Thanks,
-Zhouping
+-- 
+Ming Lei
+
+--047d7b344290b6698104eaf25c0b
+Content-Type: text/x-patch; charset=US-ASCII; name="filter-only-on-arm.patch"
+Content-Disposition: attachment; filename="filter-only-on-arm.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hnwkowpo0
+
+ZGlmZiAtLWdpdCBhL3NjcmlwdHMvbGluay12bWxpbnV4LnNoIGIvc2NyaXB0cy9saW5rLXZtbGlu
+dXguc2gKaW5kZXggMzJiMTBmNS4uMmRjYTk0YSAxMDA2NDQKLS0tIGEvc2NyaXB0cy9saW5rLXZt
+bGludXguc2gKKysrIGIvc2NyaXB0cy9saW5rLXZtbGludXguc2gKQEAgLTgyLDcgKzgyLDkgQEAg
+a2FsbHN5bXMoKQogCQlrYWxsc3ltb3B0PSIke2thbGxzeW1vcHR9IC0tYWxsLXN5bWJvbHMiCiAJ
+ZmkKIAotCWthbGxzeW1vcHQ9IiR7a2FsbHN5bW9wdH0gLS1wYWdlLW9mZnNldD0kQ09ORklHX1BB
+R0VfT0ZGU0VUIgorCWlmIFsgLW4gIiR7Q09ORklHX0FSTX0iIF0KKwkJa2FsbHN5bW9wdD0iJHtr
+YWxsc3ltb3B0fSAtLXBhZ2Utb2Zmc2V0PSRDT05GSUdfUEFHRV9PRkZTRVQiCisJZmkKIAogCWxv
+Y2FsIGFmbGFncz0iJHtLQlVJTERfQUZMQUdTfSAke0tCVUlMRF9BRkxBR1NfS0VSTkVMfSAgICAg
+ICAgICAgICAgIFwKIAkJICAgICAgJHtOT1NURElOQ19GTEFHU30gJHtMSU5VWElOQ0xVREV9ICR7
+S0JVSUxEX0NQUEZMQUdTfSIK
+--047d7b344290b6698104eaf25c0b--
