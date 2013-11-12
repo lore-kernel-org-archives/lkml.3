@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab3KLNAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 08:00:08 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:56609 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286Ab3KLNAE (ORCPT
+	id S1755216Ab3KLNDG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 08:03:06 -0500
+Received: from relay.parallels.com ([195.214.232.42]:45549 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab3KLNDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 08:00:04 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: balbi@ti.com, gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5.1 4/5] check quirk to pad epout buf size when not aligned to maxpacketsize
-In-Reply-To: <52817251.3040509@linux.intel.com>
-Organization: http://mina86.com/
-References: <1384201011-11114-1-git-send-email-david.a.cohen@linux.intel.com> <1384201011-11114-5-git-send-email-david.a.cohen@linux.intel.com> <xa1ttxfiwkw0.fsf@mina86.com> <52817251.3040509@linux.intel.com>
-User-Agent: Notmuch/0.15.2+55~geb6e9d8 (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:131112:gregkh@linuxfoundation.org::dJv4XaA5N1dRfL52:000000000000000000000000000000000000B6o
-X-Hashcash: 1:20:131112:linux-usb@vger.kernel.org::TvUs7XI8dNncAFrP:0000000000000000000000000000000000000ODN
-X-Hashcash: 1:20:131112:balbi@ti.com::N2d5cgzmq28hnezi:000001cMs
-X-Hashcash: 1:20:131112:stern@rowland.harvard.edu::2GiuJtZzo7MhlLRc:0000000000000000000000000000000000005r9J
-X-Hashcash: 1:20:131112:david.a.cohen@linux.intel.com::Qncgn04XI7jyb0Xe:000000000000000000000000000000004+aR
-X-Hashcash: 1:20:131112:linux-kernel@vger.kernel.org::3oyxe47yWP8Ik7wk:0000000000000000000000000000000008GDr
-Date: Tue, 12 Nov 2013 13:59:55 +0100
-Message-ID: <xa1twqkdlqr8.fsf@mina86.com>
+	Tue, 12 Nov 2013 08:03:04 -0500
+Message-ID: <528226EC.4050701@parallels.com>
+Date: Tue, 12 Nov 2013 17:02:36 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: Jeff Layton <jlayton@redhat.com>, Greg KH <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-nfs@vger.kernel.org>, <devel@openvz.org>,
+        <ebiederm@xmission.com>, <oleg@redhat.com>, <bfields@fieldses.org>,
+        <bharrosh@panasas.com>
+Subject: Re: call_usermodehelper in containers
+References: <20131111071825.62da01d1@tlielax.poochiereds.net>	<20131112004703.GB15377@kroah.com> <20131112061201.04cf25ab@tlielax.poochiereds.net>
+In-Reply-To: <20131112061201.04cf25ab@tlielax.poochiereds.net>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.31.245]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+12.11.2013 15:12, Jeff Layton пишет:
+> On Mon, 11 Nov 2013 16:47:03 -0800
+> Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+>> On Mon, Nov 11, 2013 at 07:18:25AM -0500, Jeff Layton wrote:
+>>> We have a bit of a problem wrt to upcalls that use call_usermodehelper
+>>> with containers and I'd like to bring this to some sort of resolution...
+>>>
+>>> A particularly problematic case (though there are others) is the
+>>> nfsdcltrack upcall. It basically uses call_usermodehelper to run a
+>>> program in userland to track some information on stable storage for
+>>> nfsd.
+>>
+>> I thought the discussion at the kernel summit about this issue was:
+>> 	- don't do this.
+>> 	- don't do it.
+>> 	- if you really need to do this, fix nfsd
+>>
+>
+> Sorry, I couldn't make the kernel summit so I missed that discussion. I
+> guess LWN didn't cover it?
+>
+> In any case, I guess then that we'll either have to come up with some
+> way to fix nfsd here, or simply ensure that nfsd can never be started
+> unless root in the container has a full set of a full set of
+> capabilities.
+>
+> One sort of Rube Goldberg possibility to fix nfsd is:
+>
+> - when we start nfsd in a container, fork off an extra kernel thread
+>    that just sits idle. That thread would need to be a descendant of the
+>    userland process that started nfsd, so we'd need to create it with
+>    kernel_thread().
+>
+> - Have the kernel just start up the UMH program in the init_ns mount
+>    namespace as it currently does, but also pass the pid of the idle
+>    kernel thread to the UMH upcall.
+>
+> - The program will then use /proc/<pid>/root and /proc/<pid>/ns/* to set
+>    itself up for doing things properly.
+>
+> Note that with this mechanism we can't actually run a different binary
+> per container, but that's probably fine for most purposes.
+>
 
-On Tue, Nov 12 2013, David Cohen wrote:
-> You need to update req->length otherwise it's going to crash DWC3.
-> I'd rather to keep your previous version.
+Hmmm... Why we can't? We can go a bit further with userspace idea.
 
-That's unfortunate.  Do you want me to resend it or will you just send
-a v6 of your whole series?
+We use UMH some very limited number of user programs. For 2, actually:
+1) /sbin/nfs_cache_getent
+2) /sbin/nfsdcltrack
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+If we convert them into proxies, which use /proc/<pid>/root and /proc/<pid>/ns/*, this will allow us to lookup the right binary.
+The only limitation here is presence of this "proxy" binaries on "host".
 
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+And we don't need any significant changes in kernel.
 
---==-=-=
-Content-Type: text/plain
+BTW, Jeff, could you remind me, please, why exactly we need to use UMH to run the binary?
+What are this capabilities, which force us to do so?
 
-
---==-=-=
-Content-Type: application/pgp-signature; name="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSgiZMAAoJECBgQBJQdR/0uJ8P/3Fqd/YVZd051NQk2VTovKyT
-RJ2RSQxHTv1UA7zHrnmJwmV5tfRW1R4Z+3kJb0oJzzKLduyu6wNM3Le8GTuQPRxw
-5UGhvYqLLDnK5z86MbCV3MsRC/ugnX3WvtYkT7O/+LtFUFp3AqDKHCnG0eUmo7a4
-QgHWsbrGjsTlxcsnY+Q59Jk6ZN6DNskMRmZh+BX5EWRzmH8F7h/75xEdoi8E9DAq
-Oxjc6rtKsaEn19XfyFEVCPfgXL+UwO/PQgQGFKVTNn6yFTGjw0hStw6Px1sAdj4j
-LlE4qMUqaHWdafLa5r73v6GV97S5khpvNnMisxVUFyQRjB7K3J0RHXDMHl8yTO4i
-ErukqisVwGgYuOSh0HbhWY9QQVBggtbbVMcaW7cQ0Idpg4mvqVVvOj3GBg7BL4si
-pgErW2jTigjcGQNJ7Yy1wIO2ER2IP7kZo0gEjgUnX3CksJZCAeD+AMvLeFPJx2jr
-tCvsZk+dagFTlVOdGnnXTHzCT/KJUg0vIXsB/Sc+CWoJVPMoLKYe+lwiH7U4MCAB
-MufY6J2nWZzNBoQ403ICHyv8FLqB1u5APpu+5/FlvaOKVPOlFp81Q3KR6nHv3Zi1
-xr0sSXEe+b/RaY1XnzLCECcy85Hk4VJ4S4rcvQeAkXRxx2x1tOYIfVtEJ24fjgNi
-8hmYhQFBH59h+HxrHEaV
-=qJHw
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
+-- 
+Best regards,
+Stanislav Kinsbursky
