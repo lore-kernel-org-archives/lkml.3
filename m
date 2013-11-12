@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790Ab3KLHKN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 02:10:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57205 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab3KLHJ6 (ORCPT
+	id S1754234Ab3KLHOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 02:14:17 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43416 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284Ab3KLHOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 02:09:58 -0500
-Date: Mon, 11 Nov 2013 23:09:44 -0800
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-e8236c4d9338d52d0f2fcecc0b792ac0542e4ee9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        keescook@chromium.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, tglx@linutronix.de
-In-Reply-To: <20131111222839.GA28616@www.outflux.net>
-References: <20131111222839.GA28616@www.outflux.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/kaslr] x86, kaslr:
-  Add a circular multiply for better bit diffusion
-Git-Commit-ID: e8236c4d9338d52d0f2fcecc0b792ac0542e4ee9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 12 Nov 2013 02:14:07 -0500
+X-AuditID: 9c93016f-b7c75ae00000244e-b0-5281d53d758a
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf tools: Prevent condition that all sort keys are elided
+References: <1383900822-14609-1-git-send-email-namhyung@kernel.org>
+	<20131111112013.GC15810@gmail.com>
+Date: Tue, 12 Nov 2013 16:14:04 +0900
+In-Reply-To: <20131111112013.GC15810@gmail.com> (Ingo Molnar's message of
+	"Mon, 11 Nov 2013 12:20:13 +0100")
+Message-ID: <871u2mw0qr.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 11 Nov 2013 23:09:49 -0800 (PST)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e8236c4d9338d52d0f2fcecc0b792ac0542e4ee9
-Gitweb:     http://git.kernel.org/tip/e8236c4d9338d52d0f2fcecc0b792ac0542e4ee9
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Mon, 11 Nov 2013 22:45:20 -0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Mon, 11 Nov 2013 23:05:49 -0800
+Hi Ingo,
 
-x86, kaslr: Add a circular multiply for better bit diffusion
+On Mon, 11 Nov 2013 12:20:13 +0100, Ingo Molnar wrote:
+> * Namhyung Kim <namhyung@kernel.org> wrote:
+>> +	/*
+>> +	 * It makes no sense to elide all of sort entries.
+>> +	 * Just revert them to show up again.
+>> +	 */
+>> +	list_for_each_entry(se, &hist_entry__sort_list, list)
+>> +		if (!se->elide)
+>> +			return;
+>
+> (Nit: please use curly braces around multi-line statements.)
 
-If we don't have RDRAND (in which case nothing else *should* matter),
-most sources have a highly biased entropy distribution.  Use a
-circular multiply to diffuse the entropic bits.  A circular multiply
-is a good operation for this: it is cheap on standard hardware and
-because it is symmetric (unlike an ordinary multiply) it doesn't
-introduce its own bias.
+Ah, okay.
 
-Cc: Kees Cook <keescook@chromium.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Link: http://lkml.kernel.org/r/20131111222839.GA28616@www.outflux.net
----
- arch/x86/boot/compressed/aslr.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+>
+>> +
+>> +	list_for_each_entry(se, &hist_entry__sort_list, list)
+>> +		se->elide = false;
+>
+> Looks good otherwise - this is the first step in the sort/key behavior 
+> improvements that we talked about a few days ago, right?
 
-diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-index 8746487..38a07cc 100644
---- a/arch/x86/boot/compressed/aslr.c
-+++ b/arch/x86/boot/compressed/aslr.c
-@@ -64,6 +64,11 @@ static unsigned long get_random_boot(void)
- 
- static unsigned long get_random_long(void)
- {
-+#ifdef CONFIG_X86_64
-+	const unsigned long mix_const = 0x5d6008cbf3848dd3UL;
-+#else
-+	const unsigned long mix_const = 0x3f39e593UL;
-+#endif
- 	unsigned long raw, random = get_random_boot();
- 	bool use_i8254 = true;
- 
-@@ -90,6 +95,12 @@ static unsigned long get_random_long(void)
- 		random ^= i8254();
- 	}
- 
-+	/* Circular multiply for better bit diffusion */
-+	asm("mul %3"
-+	    : "=a" (random), "=d" (raw)
-+	    : "a" (random), "rm" (mix_const));
-+	random += raw;
-+
- 	debug_putstr("...\n");
- 
- 	return random;
+Right.  And I'd like to wait bit more to hear other's opinion on this.
+
+>
+> Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+Namhyung
