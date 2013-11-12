@@ -1,147 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab3KLRRM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:17:12 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:52787 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754593Ab3KLRRJ (ORCPT
+	id S1755932Ab3KLRTK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:19:10 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:16727 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753776Ab3KLRTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:17:09 -0500
-Date: Tue, 12 Nov 2013 18:17:07 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
-        bfoster@redhat.com, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, linux-fsdevel@vger.kernel.org,
-        akpm@linux-foundation.org, fengguang.wu@intel.com, devel@openvz.org
-Subject: Re: [PATCH 07/11] fuse: restructure fuse_readpage()
-Message-ID: <20131112171707.GB10813@tucsk.piliscsaba.szeredi.hu>
-References: <20131010130718.10089.6736.stgit@dhcp-10-30-17-2.sw.ru>
- <20131010131113.10089.57270.stgit@dhcp-10-30-17-2.sw.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131010131113.10089.57270.stgit@dhcp-10-30-17-2.sw.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Nov 2013 12:19:05 -0500
+Date: Tue, 12 Nov 2013 12:19:00 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com
+Subject: Re: [PATCH 01/14] sched: add sched_class->task_dead.
+Message-ID: <20131112121900.6dcfcb0a@gandalf.local.home>
+In-Reply-To: <1383831828-15501-2-git-send-email-juri.lelli@gmail.com>
+References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
+	<1383831828-15501-2-git-send-email-juri.lelli@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 10, 2013 at 05:11:25PM +0400, Maxim Patlasov wrote:
-> Move the code filling and sending read request to a separate function. Future
-> patches will use it for .write_begin -- partial modification of a page
-> requires reading the page from the storage very similarly to what fuse_readpage
-> does.
+On Thu,  7 Nov 2013 14:43:35 +0100
+Juri Lelli <juri.lelli@gmail.com> wrote:
+
+> From: Dario Faggioli <raistlin@linux.it>
 > 
-> Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
+> Add a new function to the scheduling class interface. It is called
+> at the end of a context switch, if the prev task is in TASK_DEAD state.
+> 
+> It might be useful for the scheduling classes that want to be notified
+> when one of their task dies, e.g. to perform some cleanup actions.
+
+Nit.  s/task/tasks/
+
+-- Steve
+
+> 
+> Signed-off-by: Dario Faggioli <raistlin@linux.it>
+> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 > ---
->  fs/fuse/file.c |   55 +++++++++++++++++++++++++++++++++++++------------------
->  1 file changed, 37 insertions(+), 18 deletions(-)
+>  kernel/sched/core.c  |    3 +++
+>  kernel/sched/sched.h |    1 +
+>  2 files changed, 4 insertions(+)
 > 
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index b4d4189..77eb849 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -700,21 +700,14 @@ static void fuse_short_read(struct fuse_req *req, struct inode *inode,
->  	}
->  }
->  
-> -static int fuse_readpage(struct file *file, struct page *page)
-> +static int __fuse_readpage(struct file *file, struct page *page, size_t count,
-> +			   int *err, struct fuse_req **req_pp, u64 *attr_ver_p)
-
-Signature of this helper looks really ugly.  A quick look tells me that neither
-caller actually needs 'req'.  And fuse_get_attr_version() can be moved to the
-one caller that needs it.  And negative err can be returned.  And then all those
-ugly pointer args are gone and the whole thing is much simpler.
-
-Thanks,
-Miklos
-
-
-
->  {
->  	struct fuse_io_priv io = { .async = 0, .file = file };
->  	struct inode *inode = page->mapping->host;
->  	struct fuse_conn *fc = get_fuse_conn(inode);
->  	struct fuse_req *req;
->  	size_t num_read;
-> -	loff_t pos = page_offset(page);
-> -	size_t count = PAGE_CACHE_SIZE;
-> -	u64 attr_ver;
-> -	int err;
-> -
-> -	err = -EIO;
-> -	if (is_bad_inode(inode))
-> -		goto out;
->  
->  	/*
->  	 * Page writeback can extend beyond the lifetime of the
-> @@ -724,20 +717,45 @@ static int fuse_readpage(struct file *file, struct page *page)
->  	fuse_wait_on_page_writeback(inode, page->index);
->  
->  	req = fuse_get_req(fc, 1);
-> -	err = PTR_ERR(req);
-> +	*err = PTR_ERR(req);
->  	if (IS_ERR(req))
-> -		goto out;
-> +		return 0;
->  
-> -	attr_ver = fuse_get_attr_version(fc);
-> +	if (attr_ver_p)
-> +		*attr_ver_p = fuse_get_attr_version(fc);
->  
->  	req->out.page_zeroing = 1;
->  	req->out.argpages = 1;
->  	req->num_pages = 1;
->  	req->pages[0] = page;
->  	req->page_descs[0].length = count;
-> -	num_read = fuse_send_read(req, &io, pos, count, NULL);
-> -	err = req->out.h.error;
->  
-> +	num_read = fuse_send_read(req, &io, page_offset(page), count, NULL);
-> +	*err = req->out.h.error;
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 5ac63c9..850a02c 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1890,6 +1890,9 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+>  	if (mm)
+>  		mmdrop(mm);
+>  	if (unlikely(prev_state == TASK_DEAD)) {
+> +		if (prev->sched_class->task_dead)
+> +			prev->sched_class->task_dead(prev);
 > +
-> +	if (*err)
-> +		fuse_put_request(fc, req);
-> +	else
-> +		*req_pp = req;
-> +
-> +	return num_read;
-> +}
-> +
-> +static int fuse_readpage(struct file *file, struct page *page)
-> +{
-> +	struct inode *inode = page->mapping->host;
-> +	struct fuse_conn *fc = get_fuse_conn(inode);
-> +	struct fuse_req *req = NULL;
-> +	size_t num_read;
-> +	size_t count = PAGE_CACHE_SIZE;
-> +	u64 attr_ver = 0;
-> +	int err;
-> +
-> +	err = -EIO;
-> +	if (is_bad_inode(inode))
-> +		goto out;
-> +
-> +	num_read = __fuse_readpage(file, page, count, &err, &req, &attr_ver);
->  	if (!err) {
 >  		/*
->  		 * Short read means EOF.  If file size is larger, truncate it
-> @@ -747,10 +765,11 @@ static int fuse_readpage(struct file *file, struct page *page)
+>  		 * Remove function-return probe instances associated with this
+>  		 * task and put them back on the free list.
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index b3c5653..64eda5c 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -992,6 +992,7 @@ struct sched_class {
+>  	void (*set_curr_task) (struct rq *rq);
+>  	void (*task_tick) (struct rq *rq, struct task_struct *p, int queued);
+>  	void (*task_fork) (struct task_struct *p);
+> +	void (*task_dead) (struct task_struct *p);
 >  
->  		SetPageUptodate(page);
->  	}
-> -
-> -	fuse_put_request(fc, req);
-> -	fuse_invalidate_attr(inode); /* atime changed */
-> - out:
-> +	if (req) {
-> +		fuse_put_request(fc, req);
-> +		fuse_invalidate_attr(inode); /* atime changed */
-> +	}
-> +out:
->  	unlock_page(page);
->  	return err;
->  }
-> 
+>  	void (*switched_from) (struct rq *this_rq, struct task_struct *task);
+>  	void (*switched_to) (struct rq *this_rq, struct task_struct *task);
+
