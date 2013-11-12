@@ -1,116 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943Ab3KLVwL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 16:52:11 -0500
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:4559 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280Ab3KLVwI (ORCPT
+	id S1757204Ab3KLVwv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 16:52:51 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:35825 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755901Ab3KLVwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:52:08 -0500
-Date: Tue, 12 Nov 2013 14:52:00 -0700
-From: jerry.hoemann@hp.com
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86 maintainers <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "list@ebiederm.org:DOCUMENTATION <linux-doc@vger.kernel.org>,
-	list@ebiederm.org:MEMORY MANAGEMENT <linux-mm@kvack.org>," 
-	<linux-doc@vger.kernel.org>,
-        linux-efi@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-Message-ID: <20131112215200.GB22363@anatevka.fc.hp.com>
-Reply-To: jerry.hoemann@hp.com
-References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com>
- <CAOJsxLEoN2uYR9V3bowv2O7F8L5t+kVrdehHW151cEcfgx-oJg@mail.gmail.com>
- <20131112175500.GA22363@anatevka.fc.hp.com>
- <CAOJsxLEU1SPd=1C8QPgrZGWeOuyOVkozuMR014xBpJTxyFviKA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOJsxLEU1SPd=1C8QPgrZGWeOuyOVkozuMR014xBpJTxyFviKA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Nov 2013 16:52:44 -0500
+Date: Tue, 12 Nov 2013 16:52:37 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [libtraceevent] hrtimer_expire_entry unknown op '{'
+Message-ID: <20131112165237.3273f4b7@gandalf.local.home>
+In-Reply-To: <20131112213152.GB5709@swordfish>
+References: <20131105093755.GB2272@swordfish.minsk.epam.com>
+	<20131105081522.1c8e2012@gandalf.local.home>
+	<20131112213152.GB5709@swordfish>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 08:48:51PM +0200, Pekka Enberg wrote:
-> Hi Jerry,
+On Wed, 13 Nov 2013 00:31:52 +0300
+Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
+
+> On (11/05/13 08:15), Steven Rostedt wrote:
+> > > Hello,
+> > > 
+> > > libtraceevent reports ` unknown op '{' ' while processing hrtimer_expire_entry event
+> > 
+> > Yes, we need to port the plugin code from trace-cmd to handle this and
+> > other cases. It's a known issue.
+> > 
 > 
-> On Tue, Nov 12, 2013 at 7:55 PM,  <jerry.hoemann@hp.com> wrote:
-> > My change does not address platforms that have misbehaving firmware.
-> > It just allows platforms that don't have this issue to avoid issues
-> > that the call to efi_reserve_boot_services presents.
+> Hello Steven,
+> sorry if I'm bothering you with already known issue.
 > 
-> The problem I have with your patch is that it (1) relies on users to
-> pass a kernel option and (2) leaves machines with "faulty firmware" out
-> in the cold.  So I'm wondering if we can fix reserve_crashkernel() to
-> deal with reality that there indeed are broken firmware out there?
+> I cloned trace-cmd from
+> git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
 > 
-> If someone is able to come up with a convincing argument why crashkernel
-> cannot be fixed on such machines, we'd need to start whitelisting known
-> good firmwares, no?
+> and there seems to be problems with hrtimer events format.
 > 
->                            Pekka
+> # ./trace-cmd check-events
+> trace-cmd: No such file or directory
 
+Do a make install, or copy all the *.so files into ~/.trace-cmd/plugins/
+and that will go away.
 
-Hi Pekka,
+-- Steve
 
-I'm cc'ing Matthew Garrett who has the background in the original
-problem that efi_reserve_boot_services was used to work around.
-
-Matthew, sorry for not CC'ing you initially.
-
-Also, a more specific message from Matthew from the earlier thread:
-
-	https://lkml.org/lkml/2013/8/7/750
-
-I was anticipating this extended argument to be used by distros
-that support servers.  While technically still a problem on smaller
-systems, the crash kernel size requirement for larger systems makes
-the issue much more apparent.  Also, having this in distros could help
-enforce proper behaving platforms going forward as companies will
-want to get their platforms certified.
-
-I don't believe the proposed change "hurts" the platforms that
-efi_reserve_boot_services was added to protect.  They'll function
-as they do now,  they just shouldn't add the new argument.
-
-I've conducted a couple test previously: https://lkml.org/lkml/2013/9/18/457.
-
-Moving reserve crash_kernel after efi_free_boot_services failed.
-While moving it before efi_reserve_boot_services seems to work,
-this would also move it before trim_platform_memory_ranges, which I was
-concerned would break other platforms.
-
-
-If we were to go to a list method,  i'd rather we tried to define
-the blacklist of platforms that require the efi_reserve_boot_services
-workaround.
-
-In testing new platforms, its much easier to assume that the platform works.
-Only if it doesn't work, and the platform hardware/firmware defects
-can't be fixed, then we can black list it.
-
-The issue on how to work around EFI bugs before has been discussed,
-but I don't recall seeing a resolution.  If I missed this, point
-me in right direction.  :)
-
-thanks
-
-Jerry
-
-
--- 
-
-----------------------------------------------------------------------------
-Jerry Hoemann            Software Engineer              Hewlett-Packard/MODL
-
-3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
-Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
-                                                email:  jerry.hoemann@hp.com
-----------------------------------------------------------------------------
+>   bad op token {
+>   bad op token {
+>   bad op token {
+>   bad op token {
+>   function is_writable_pte not defined
+>   function scsi_trace_parse_cdb not defined
+>   function scsi_trace_parse_cdb not defined
+>   function scsi_trace_parse_cdb not defined
+>   function scsi_trace_parse_cdb not defined
+>   function jiffies_to_msecs not defined
+>   function jiffies_to_msecs not defined
+>   unknown op '{'
+>   unknown op '{'
+> 
+> 
+> trivial strace-ing shows that 'unknown op' comes from hrtimer_expire_entry
+> 
+> stat("/sys/kernel/debug/tracing/events/timer/hrtimer_expire_entry/format", {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
+> open("/sys/kernel/debug/tracing/events/timer/hrtimer_expire_entry/format", O_RDONLY) = 5
+> read(5, "name: hrtimer_expire_entry\nID: 9"..., 8192) = 577
+> read(5, "", 8192)                       = 0
+> close(5)                                = 0
+> write(2, "  ", 2)                       = 2
+> write(2, "unknown op '{'", 14)          = 14
+> write(2, "\n", 1)                       = 1
+> 
+> 
+> ./trace-cmd record -e timer ls /bin
+> ./trace-cmd report
+> 
+>      kworker/1:0-3925  [001]  1626.266585: hrtimer_cancel:       hrtimer=0xffff880157c8df80
+>                X-2175  [000]  1626.266585: hrtimer_cancel:       hrtimer=0xffff880157c0df80
+>                X-2175  [000]  1626.266586: hrtimer_expire_entry: [FAILED TO PARSE] hrtimer=0xffff880157c0df80 now=1625348004324 function=0xffffffff810cadf0
+>      kworker/1:0-3925  [001]  1626.266586: hrtimer_expire_entry: [FAILED TO PARSE] hrtimer=0xffff880157c8df80 now=1625348004320 function=0xffffffff810cadf0
+>      kworker/1:0-3925  [001]  1626.266591: hrtimer_expire_exit:  hrtimer=0xffff880157c8df80
+>      kworker/1:0-3925  [001]  1626.266592: hrtimer_start:        [FAILED TO PARSE] hrtimer=0xffff880157c8df80 function=0xffffffff810cadf0 expires=1625352000000 softexpires=1625352000000
+>                X-2175  [000]  1626.266593: hrtimer_expire_exit:  hrtimer=0xffff880157c0df80
+>                X-2175  [000]  1626.266594: hrtimer_start:        [FAILED TO PARSE] hrtimer=0xffff880157c0df80 function=0xffffffff810cadf0 expires=1625352000000 softexpires=1625352000000
+>      kworker/1:0-3925  [001]  1626.266596: timer_cancel:         timer=0xffff880157c8ff28
+>      kworker/1:0-3925  [001]  1626.266598: timer_expire_entry:   timer=0xffff880157c8ff28 function=delayed_work_timer_fn now=4295298633
+>                X-2175  [000]  1626.266599: timer_cancel:         timer=0xffff880157c0ff28
+>                X-2175  [000]  1626.266599: timer_expire_entry:   timer=0xffff880157c0ff28 function=delayed_work_timer_fn now=4295298633
+> 
+> thank you,
+> 
+> 	-ss
+> 
+> 
+> > -- Steve
+> > 
+> > > 
+> > > cat /sys/kernel/debug/tracing/events/timer/hrtimer_expire_entry/format
+> > > 
+> > > name: hrtimer_expire_entry
+> > > ID: 91
+> > > format:
+> > > 	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+> > > 	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+> > > 	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+> > > 	field:int common_pid;	offset:4;	size:4;	signed:1;
+> > > 
+> > > 	field:void * hrtimer;	offset:8;	size:8;	signed:0;
+> > > 	field:s64 now;	offset:16;	size:8;	signed:1;
+> > > 	field:void * function;	offset:24;	size:8;	signed:0;
+> > > 
+> > > print fmt: "hrtimer=%p function=%pf now=%llu", REC->hrtimer, REC->function, (unsigned long long)(((ktime_t) { .tv64 = REC->now }).tv64)
+> > > 
+> > > 
+> > > 	-ss
+> > 
 
