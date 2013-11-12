@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab3KLVBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 16:01:17 -0500
-Received: from mga02.intel.com ([134.134.136.20]:1968 "EHLO mga02.intel.com"
+	id S1756692Ab3KLVBY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 16:01:24 -0500
+Received: from mga02.intel.com ([134.134.136.20]:4888 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756125Ab3KLVA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755984Ab3KLVA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Nov 2013 16:00:28 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="407682051"
+   d="scan'208";a="407682069"
 From: David Cohen <david.a.cohen@linux.intel.com>
 To: balbi@ti.com, gregkh@linuxfoundation.org
 Cc: stern@rowland.harvard.edu, mina86@mina86.com, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH v6 3/5] usb: gadget: f_fs: remove loop from I/O function
-Date: Tue, 12 Nov 2013 13:04:44 -0800
-Message-Id: <1384290286-21432-4-git-send-email-david.a.cohen@linux.intel.com>
+Subject: [PATCH v6 5/5] usb: dwc3: implement gadget's quirk ep_out_align_size
+Date: Tue, 12 Nov 2013 13:04:46 -0800
+Message-Id: <1384290286-21432-6-git-send-email-david.a.cohen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1384290286-21432-1-git-send-email-david.a.cohen@linux.intel.com>
 References: <1384290286-21432-1-git-send-email-david.a.cohen@linux.intel.com>
@@ -24,136 +24,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+DWC3 requires epout to have buffer size aligned to MaxPacketSize value.
+This patch implements necessary quirk for it.
 
-When endpoint changes (due to it being disabled or alt setting changed),
-mimic the action as if the change happened after the request has been
-queued, instead of retrying with the new endpoint.
-
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Cc: David Cohen <david.a.cohen@linux.intel.com>
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 ---
- drivers/usb/gadget/f_fs.c | 94 ++++++++++++++++++++---------------------------
- 1 file changed, 40 insertions(+), 54 deletions(-)
+ drivers/usb/dwc3/core.h   |  6 ++++++
+ drivers/usb/dwc3/gadget.c | 23 +++++++++++++++++++++++
+ 2 files changed, 29 insertions(+)
 
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 75e4b7846a8d..efa1152a4c15 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -760,73 +760,59 @@ static ssize_t ffs_epfile_io(struct file *file,
- 	ssize_t ret;
- 	int halt;
+diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+index f8af8d44af85..ff42d7ddc546 100644
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -571,6 +571,12 @@ struct dwc3_request {
+ 	struct dwc3_ep		*dep;
+ 	u32			start_slot;
  
--	goto first_try;
--	do {
--		spin_unlock_irq(&epfile->ffs->eps_lock);
--		mutex_unlock(&epfile->mutex);
-+	/* Are we still active? */
-+	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE)) {
-+		ret = -ENODEV;
-+		goto error;
++	/*
++	 * If gadget/epout, we need to pad buffer size to align with
++	 * maxpacketsize.
++	 */
++	size_t			pad;
++
+ 	u8			epnum;
+ 	struct dwc3_trb		*trb;
+ 	dma_addr_t		trb_dma;
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index 5452c0fce360..7c2d36f6ad4b 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1130,6 +1130,14 @@ static int dwc3_gadget_ep_queue(struct usb_ep *ep, struct usb_request *request,
+ 	dev_vdbg(dwc->dev, "queing request %p to %s length %d\n",
+ 			request, ep->name, request->length);
+ 
++	/* If ep out, roundup request->length to epout maxpacketsize */
++	if (!(dep->number & 1)) {
++		unsigned int aligned = roundup(request->length,
++					       ep->desc->wMaxPacketSize);
++		req->pad = aligned - request->length;
++		request->length = aligned;
 +	}
++
+ 	spin_lock_irqsave(&dwc->lock, flags);
+ 	ret = __dwc3_gadget_ep_queue(dep, req);
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+@@ -1173,6 +1181,15 @@ static int dwc3_gadget_ep_dequeue(struct usb_ep *ep,
+ 	}
  
--first_try:
--		/* Are we still active? */
--		if (WARN_ON(epfile->ffs->state != FFS_ACTIVE)) {
--			ret = -ENODEV;
-+	/* Wait for endpoint to be enabled */
-+	ep = epfile->ep;
-+	if (!ep) {
-+		if (file->f_flags & O_NONBLOCK) {
-+			ret = -EAGAIN;
- 			goto error;
- 		}
- 
--		/* Wait for endpoint to be enabled */
--		ep = epfile->ep;
--		if (!ep) {
--			if (file->f_flags & O_NONBLOCK) {
--				ret = -EAGAIN;
--				goto error;
--			}
--
--			if (wait_event_interruptible(epfile->wait,
--						     (ep = epfile->ep))) {
--				ret = -EINTR;
--				goto error;
--			}
--		}
--
--		/* Do we halt? */
--		halt = !read == !epfile->in;
--		if (halt && epfile->isoc) {
--			ret = -EINVAL;
-+		ret = wait_event_interruptible(epfile->wait, (ep = epfile->ep));
-+		if (ret) {
-+			ret = -EINTR;
- 			goto error;
- 		}
+ out1:
++	if (!(dep->number & 1)) {
++		/*
++		 * Sanitize request->length after pad was applied before
++		 * queue.
++		 */
++		request->length -= req->pad;
++		req->pad = 0;
 +	}
++
+ 	/* giveback the request */
+ 	dwc3_gadget_giveback(dep, req, -ECONNRESET);
  
--		/* Allocate & copy */
--		if (!halt && !data) {
--			data = kzalloc(len, GFP_KERNEL);
--			if (unlikely(!data))
--				return -ENOMEM;
-+	/* Do we halt? */
-+	halt = !read == !epfile->in;
-+	if (halt && epfile->isoc) {
-+		ret = -EINVAL;
-+		goto error;
-+	}
+@@ -2600,6 +2617,12 @@ int dwc3_gadget_init(struct dwc3 *dwc)
+ 	dwc->gadget.name		= "dwc3-gadget";
  
--			if (!read &&
--			    unlikely(__copy_from_user(data, buf, len))) {
--				ret = -EFAULT;
--				goto error;
--			}
--		}
-+	/* Allocate & copy */
-+	if (!halt) {
-+		data = kmalloc(len, GFP_KERNEL);
-+		if (unlikely(!data))
-+			return -ENOMEM;
- 
--		/* We will be using request */
--		ret = ffs_mutex_lock(&epfile->mutex,
--				     file->f_flags & O_NONBLOCK);
--		if (unlikely(ret))
-+		if (!read && unlikely(copy_from_user(data, buf, len))) {
-+			ret = -EFAULT;
- 			goto error;
-+		}
-+	}
- 
--		/*
--		 * We're called from user space, we can use _irq rather then
--		 * _irqsave
--		 */
--		spin_lock_irq(&epfile->ffs->eps_lock);
-+	/* We will be using request */
-+	ret = ffs_mutex_lock(&epfile->mutex, file->f_flags & O_NONBLOCK);
-+	if (unlikely(ret))
-+		goto error;
- 
--		/*
--		 * While we were acquiring mutex endpoint got disabled
--		 * or changed?
--		 */
--	} while (unlikely(epfile->ep != ep));
-+	spin_lock_irq(&epfile->ffs->eps_lock);
- 
--	/* Halt */
--	if (unlikely(halt)) {
-+	if (epfile->ep != ep) {
-+		/* In the meantime, endpoint got disabled or changed. */
-+		ret = -ESHUTDOWN;
-+		spin_unlock_irq(&epfile->ffs->eps_lock);
-+	} else if (halt) {
-+		/* Halt */
- 		if (likely(epfile->ep == ep) && !WARN_ON(!ep->ep))
- 			usb_ep_set_halt(ep->ep);
- 		spin_unlock_irq(&epfile->ffs->eps_lock);
+ 	/*
++	 * Per databook, DWC3 needs buffer size to be aligned to MaxPacketSize
++	 * on ep out.
++	 */
++	dwc->gadget.quirk_ep_out_aligned_size = true;
++
++	/*
+ 	 * REVISIT: Here we should clear all pending IRQs to be
+ 	 * sure we're starting from a well known location.
+ 	 */
 -- 
 1.8.4.2
 
