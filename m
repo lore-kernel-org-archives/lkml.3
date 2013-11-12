@@ -1,778 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3KLOvy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:51:54 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:6438 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab3KLOth (ORCPT
+	id S932067Ab3KLOwy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:52:54 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33019 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab3KLOww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:49:37 -0500
-From: Waiman Long <Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v6 1/5] qrwlock: A queue read/write lock implementation
-Date: Tue, 12 Nov 2013 09:48:50 -0500
-Message-Id: <1384267735-43213-2-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1384267735-43213-1-git-send-email-Waiman.Long@hp.com>
-References: <1384267735-43213-1-git-send-email-Waiman.Long@hp.com>
+	Tue, 12 Nov 2013 09:52:52 -0500
+Date: Tue, 12 Nov 2013 15:52:43 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipvs: Remove unused variable ret from
+ sync_thread_master()
+Message-ID: <20131112145243.GU5056@laptop.programming.kicks-ass.net>
+References: <1384264396-14550-1-git-send-email-geert@linux-m68k.org>
+ <20131112141314.GQ5056@laptop.programming.kicks-ass.net>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a new read/write lock implementation that put
-waiting readers and writers into a queue instead of actively contending
-the lock like the current read/write lock implementation. This will
-improve performance in highly contended situation by reducing the
-cache line bouncing effect.
+On Tue, Nov 12, 2013 at 02:21:39PM -0000, David Laight wrote:
+> Shame there isn't a process flag to indicate that the process
+> will sleep uninterruptibly and that it doesn't matter.
+> So don't count to the load average and don't emit a warning
+> if it has been sleeping for a long time.
 
-The queue read/write lock (qrwlock) is mostly fair with respect to
-the writers, even though there is still a slight chance of write
-lock stealing.
+A process flag wouldn't work, because the task could block waiting for
+actual work to complete in other sleeps.
 
-Externally, there are two different types of readers - unfair (the
-default) and fair. A unfair reader will try to steal read lock even
-if a writer is waiting, whereas a fair reader will be waiting in
-the queue under this circumstance.  These variants are chosen at
-initialization time by using different initializers. The new *_fair()
-initializers are added for selecting the use of fair reader.
+However, we could do something like the below; which would allow us
+writing things like:
 
-Internally, there is a third type of readers which steal lock more
-aggressively than the unfair reader. They simply increments the reader
-count and wait until the writer releases the lock. The transition to
-aggressive reader happens in the read lock slowpath when
-1. In an interrupt context.
-2. when a classic reader comes to the head of the wait queue.
-3. When a fair reader comes to the head of the wait queue and sees
-   the release of a write lock.
+	(void)___wait_event(*sk_sleep(sk),
+			    sock_writeable(sk) || kthread_should_stop(),
+			    TASK_UNINTERRUPTIBLE | TASK_IDLE, 0, 0,
+			    schedule());
 
-The fair queue rwlock is more deterministic in the sense that late
-comers jumping ahead and stealing the lock is unlikely even though
-there is still a very small chance for lock stealing to happen if
-the readers or writers come at the right moment.  Other than that,
-lock granting is done in a FIFO manner.  As a result, it is possible
-to determine a maximum time period after which the waiting is over
-and the lock can be acquired.
+Marking the one wait-for-more-work as TASK_IDLE such that it doesn't
+contribute to the load avg.
 
-The queue read lock is safe to use in an interrupt context (softirq
-or hardirq) as it will switch to become an aggressive reader in such
-environment allowing recursive read lock. However, the fair readers
-will not support recursive read lock in a non-interrupt environment
-when a writer is waiting.
-
-The only downside of queue rwlock is the size increase in the lock
-structure by 4 bytes for 32-bit systems and by 12 bytes for 64-bit
-systems.
-
-This patch will replace the architecture specific implementation
-of rwlock by this generic version of queue rwlock when the
-ARCH_QUEUE_RWLOCK configuration parameter is set.
-
-In term of single-thread performance (no contention), a 256K
-lock/unlock loop was run on a 2.4GHz and 2.93Ghz Westmere x86-64
-CPUs. The following table shows the average time (in ns) for a single
-lock/unlock sequence (including the looping and timing overhead):
-
-Lock Type		    2.4GHz	2.93GHz
----------		    ------	-------
-Ticket spinlock		     14.9	 12.3
-Read lock		     17.0	 13.5
-Write lock		     17.0	 13.5
-Queue read lock	     	     16.0	 13.5
-Queue fair read lock	     16.0	 13.5
-Queue write lock	      9.2	  7.8
-Queue fair write lock	     17.5	 14.5
-
-The queue read lock is slightly slower than the spinlock, but is
-slightly faster than the read lock. The queue write lock, however,
-is the fastest of all. It is almost twice as fast as the write lock
-and about 1.5X of the spinlock. The queue fair write lock, on the
-other hand, is slightly slower than the write lock.
-
-With lock contention, the speed of each individual lock/unlock function
-is less important than the amount of contention-induced delays.
-
-To investigate the performance characteristics of the queue rwlock
-compared with the regular rwlock, Ingo's anon_vmas patch that converts
-rwsem to rwlock was applied to a 3.12 kernel. This kernel was then
-tested under the following 4 conditions:
-
- 1) Plain 3.12
- 2) Ingo's patch
- 3) Ingo's patch + unfair qrwlock (default)
- 4) Ingo's patch + fair qrwlock
-
-Each of the 4 kernels were booted up twice with and without the
-"idle=poll" kernel parameter which keeps the CPUs in C0 state while
-idling instead of a more energy-saving sleep state.  The jobs per
-minutes (JPM) results of the AIM7's high_systime workload at 1500
-users on a 8-socket 80-core DL980 (HT off) were:
-
- Kernel	    JPMs	%Change from (1)
- ------	    ----	----------------
-   1	145704/227295		-
-   2	229750/236066	    +58%/+3.8%
-   3	248144/253521	    +70%/+11.5%
-   4	240062/246251	    +65%/+8.3%
-
-The first JPM number is without the "idle=poll" kernel parameter,
-the second number is with that parameter. It can be seen that most
-of the performance benefit of converting rwsem to rwlock actually
-come from the latency improvement of not needing to wake up a CPU
-from deep sleep state when work is available.
-
-The use of non-sleeping locks did improve performance by eliminating
-the context switching cost. Using queue rwlock gave almost tripling
-of performance gain. The performance gain was reduced somewhat with
-a fair lock which was to be expected.
-
-Looking at the perf profiles (with idle=poll) below, we can clearly see
-that other bottlenecks were constraining the performance improvement.
-
-Perf profile of kernel (2):
-
- 18.65%    reaim  [kernel.kallsyms]  [k] __write_lock_failed
-  9.00%    reaim  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-  5.21%  swapper  [kernel.kallsyms]  [k] cpu_idle_loop
-  3.08%    reaim  [kernel.kallsyms]  [k] mspin_lock
-  2.50%    reaim  [kernel.kallsyms]  [k] anon_vma_interval_tree_insert
-  2.00%       ls  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-  1.29%    reaim  [kernel.kallsyms]  [k] update_cfs_rq_blocked_load
-  1.21%    reaim  [kernel.kallsyms]  [k] __read_lock_failed
-  1.12%    reaim  [kernel.kallsyms]  [k] _raw_spin_lock
-  1.10%    reaim  [kernel.kallsyms]  [k] perf_event_aux
-  1.09%     true  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-
-Perf profile of kernel (3):
-
- 20.99%  swapper  [kernel.kallsyms]  [k] cpu_idle_loop
-  7.93%    reaim  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-  5.67%    reaim  [kernel.kallsyms]  [k] mspin_lock
-  4.34%    reaim  [kernel.kallsyms]  [k] queue_write_lock_slowpath
-  2.13%    reaim  [kernel.kallsyms]  [k] update_cfs_rq_blocked_load
-  2.11%       ls  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-  2.07%    reaim  [kernel.kallsyms]  [k] anon_vma_interval_tree_insert
-  1.17%    reaim  [kernel.kallsyms]  [k] queue_write_3step_lock
-  1.10%     true  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-  0.95%    reaim  [kernel.kallsyms]  [k] mutex_spin_on_owner
-  0.74%    reaim  [kernel.kallsyms]  [k] queue_read_lock_slowpath
-
-The spinlock bottlenecks were shown below.
-
-  7.93%    reaim  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-              |--60.57%-- release_pages
-              |--36.62%-- pagevec_lru_move_fn
-              |--0.80%-- get_page_from_freelist
-              |--0.69%-- __page_cache_release
-               --1.32%-- [...]
-
-For both release_pages() & pagevec_lru_move_fn() function, the
-spinlock contention was on zone->lru_lock. With the queue spinlock
-patch, however, the contention went away with a lot more idle time
-available and the JPM number went up to 265532 which was an additional
-performance improvement.
-
- 28.40%  swapper  [kernel.kallsyms]  [k] cpu_idle_loop
-  6.89%    reaim  [kernel.kallsyms]  [k] mspin_lock
-  4.17%    reaim  [kernel.kallsyms]  [k] queue_write_lock_slowpath
-  2.10%    reaim  [kernel.kallsyms]  [k] anon_vma_interval_tree_insert
-  1.82%    reaim  [kernel.kallsyms]  [k] update_cfs_rq_blocked_load
-  1.34%    reaim  [kernel.kallsyms]  [k] entity_tick
-  1.17%    reaim  [kernel.kallsyms]  [k] queue_write_3step_lock
-  1.06%    reaim  [kernel.kallsyms]  [k] mutex_spin_on_owner
-  0.86%    reaim  [kernel.kallsyms]  [k] perf_event_aux
-  0.83%       ls  [kernel.kallsyms]  [k] mspin_lock
-   :
-  0.53%    reaim  [kernel.kallsyms]  [k] _raw_spin_lock
-  0.14%    reaim  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-
-Tim Chen also tested the qrwlock with Ingo's patch on a 4-socket
-machine.  It was found the performance improvement of 11% was the
-same with regular rwlock or queue rwlock.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- include/asm-generic/qrwlock.h |  250 +++++++++++++++++++++++++++++++++++++
- kernel/Kconfig.locks          |    7 +
- lib/Makefile                  |    1 +
- lib/qrwlock.c                 |  274 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 532 insertions(+), 0 deletions(-)
- create mode 100644 include/asm-generic/qrwlock.h
- create mode 100644 lib/qrwlock.c
+ fs/proc/array.c              | 23 ++++++++++++-----------
+ include/linux/sched.h        |  8 +++++---
+ include/trace/events/sched.h |  3 ++-
+ 3 files changed, 19 insertions(+), 15 deletions(-)
 
-diff --git a/include/asm-generic/qrwlock.h b/include/asm-generic/qrwlock.h
-new file mode 100644
-index 0000000..1f68499
---- /dev/null
-+++ b/include/asm-generic/qrwlock.h
-@@ -0,0 +1,250 @@
-+/*
-+ * Queue read/write lock
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * (C) Copyright 2013 Hewlett-Packard Development Company, L.P.
-+ *
-+ * Authors: Waiman Long <waiman.long@hp.com>
-+ */
-+#ifndef __ASM_GENERIC_QRWLOCK_H
-+#define __ASM_GENERIC_QRWLOCK_H
-+
-+#include <linux/types.h>
-+#include <asm/bitops.h>
-+#include <asm/cmpxchg.h>
-+#include <asm/barrier.h>
-+#include <asm/processor.h>
-+#include <asm/byteorder.h>
-+
-+#if !defined(__LITTLE_ENDIAN) && !defined(__BIG_ENDIAN)
-+#error "Missing either LITTLE_ENDIAN or BIG_ENDIAN definition."
-+#endif
-+
-+#if (CONFIG_NR_CPUS < 65536)
-+typedef u16 __nrcpu_t;
-+typedef u32 __nrcpupair_t;
-+#define	QRW_READER_BIAS	(1U << 16)
-+#else
-+typedef u32 __nrcpu_t;
-+typedef u64 __nrcpupair_t;
-+#define	QRW_READER_BIAS	(1UL << 32)
-+#endif
-+
-+/*
-+ * The queue read/write lock data structure
-+ *
-+ * Read lock stealing can only happen when there is at least one reader
-+ * holding the read lock. When the fair flag is not set, it mimics the
-+ * behavior of the regular rwlock at the expense that a perpetual stream
-+ * of readers could starve a writer for a long period of time. That
-+ * behavior, however, may be beneficial to a workload that is reader heavy
-+ * with slow writers, and the writers can wait without undesirable consequence.
-+ * This fair flag should only be set at initialization time.
-+ *
-+ * The layout of the structure is endian-sensitive to make sure that adding
-+ * QRW_READER_BIAS to the rw field to increment the reader count won't
-+ * disturb the writer and the fair fields.
-+ */
-+struct qrwnode {
-+	struct qrwnode *next;
-+	bool		wait;	/* Waiting flag */
-+};
-+
-+typedef struct qrwlock {
-+	union qrwcnts {
-+		struct {
-+#ifdef __LITTLE_ENDIAN
-+			u8	  writer;	/* Writer state		*/
-+			u8	  fair;		/* Fair rwlock flag	*/
-+			__nrcpu_t readers;	/* # of active readers	*/
-+#else
-+			__nrcpu_t readers;	/* # of active readers	*/
-+			u8	  fair;		/* Fair rwlock flag	*/
-+			u8	  writer;	/* Writer state		*/
-+#endif
-+		};
-+		__nrcpupair_t rw;		/* Reader/writer number pair */
-+	} cnts;
-+	struct qrwnode *waitq;			/* Tail of waiting queue */
-+} arch_rwlock_t;
-+
-+/*
-+ * Writer state values & mask
-+ */
-+#define	QW_WAITING	1			/* A writer is waiting	   */
-+#define	QW_LOCKED	0xff			/* A writer holds the lock */
-+#define QW_MASK_FAIR	((u8)~0)		/* Mask for fair reader    */
-+#define QW_MASK_UNFAIR	((u8)~QW_WAITING)	/* Mask for unfair reader  */
-+#define	QW_GET_WMASK(c) ((c).fair ? QW_MASK_FAIR : QW_MASK_UNFAIR)
-+
-+/*
-+ * External function declarations
-+ */
-+extern void queue_read_lock_slowpath(struct qrwlock *lock);
-+extern void queue_write_lock_slowpath(struct qrwlock *lock);
-+
-+/**
-+ * queue_read_can_lock- would read_trylock() succeed?
-+ * @lock: Pointer to queue rwlock structure
-+ */
-+static inline int queue_read_can_lock(struct qrwlock *lock)
-+{
-+	union qrwcnts cnts;
-+	u8 wmask;
-+
-+	cnts.rw = ACCESS_ONCE(lock->cnts.rw);
-+	wmask   = QW_GET_WMASK(cnts);
-+	return !(cnts.writer & wmask);
-+}
-+
-+/**
-+ * queue_write_can_lock- would write_trylock() succeed?
-+ * @lock: Pointer to queue rwlock structure
-+ */
-+static inline int queue_write_can_lock(struct qrwlock *lock)
-+{
-+	union qrwcnts cnts;
-+
-+	cnts.rw = ACCESS_ONCE(lock->cnts.rw);
-+	return !cnts.writer && !cnts.readers;
-+}
-+
-+/**
-+ * queue_read_trylock - try to acquire read lock of a queue rwlock
-+ * @lock : Pointer to queue rwlock structure
-+ * Return: 1 if lock acquired, 0 if failed
-+ */
-+static inline int queue_read_trylock(struct qrwlock *lock)
-+{
-+	union qrwcnts cnts;
-+	u8 wmask;
-+
-+	cnts.rw = ACCESS_ONCE(lock->cnts.rw);
-+	wmask   = QW_GET_WMASK(cnts);
-+	if (likely(!(cnts.writer & wmask))) {
-+		cnts.rw = xadd(&lock->cnts.rw, QRW_READER_BIAS);
-+		if (likely(!(cnts.writer & wmask)))
-+			return 1;
-+		add_smp(&lock->cnts.readers, -1);
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * queue_write_trylock - try to acquire write lock of a queue rwlock
-+ * @lock : Pointer to queue rwlock structure
-+ * Return: 1 if lock acquired, 0 if failed
-+ */
-+static inline int queue_write_trylock(struct qrwlock *lock)
-+{
-+	union qrwcnts old, new;
-+
-+	old.rw = ACCESS_ONCE(lock->cnts.rw);
-+	if (likely(!old.writer && !old.readers)) {
-+		new.rw = old.rw;
-+		new.writer = QW_LOCKED;
-+		if (likely(cmpxchg(&lock->cnts.rw, old.rw, new.rw) == old.rw))
-+			return 1;
-+	}
-+	return 0;
-+}
-+/**
-+ * queue_read_lock - acquire read lock of a queue rwlock
-+ * @lock: Pointer to queue rwlock structure
-+ */
-+static inline void queue_read_lock(struct qrwlock *lock)
-+{
-+	union qrwcnts cnts;
-+	u8 wmask;
-+
-+	cnts.rw = xadd(&lock->cnts.rw, QRW_READER_BIAS);
-+	wmask   = QW_GET_WMASK(cnts);
-+	if (likely(!(cnts.writer & wmask)))
-+		return;
-+	/*
-+	 * Slowpath will decrement the reader count, if necessary
-+	 */
-+	queue_read_lock_slowpath(lock);
-+}
-+
-+/**
-+ * queue_write_lock - acquire write lock of a queue rwlock
-+ * @lock : Pointer to queue rwlock structure
-+ */
-+static inline void queue_write_lock(struct qrwlock *lock)
-+{
-+	union qrwcnts old;
-+
-+	/*
-+	 * Optimize for the unfair lock case where the fair flag is 0.
-+	 */
-+	old.rw = cmpxchg(&lock->cnts.rw, 0, QW_LOCKED);
-+	if (likely(old.rw == 0))
-+		return;
-+	if (likely(!old.writer && !old.readers)) {
-+		union qrwcnts new;
-+
-+		new.rw = old.rw;
-+		new.writer = QW_LOCKED;
-+		if (likely(cmpxchg(&lock->cnts.rw, old.rw, new.rw) == old.rw))
-+			return;
-+	}
-+	queue_write_lock_slowpath(lock);
-+}
-+
-+/**
-+ * queue_read_unlock - release read lock of a queue rwlock
-+ * @lock : Pointer to queue rwlock structure
-+ */
-+static inline void queue_read_unlock(struct qrwlock *lock)
-+{
-+	/*
-+	 * Atomically decrement the reader count
-+	 */
-+	add_smp(&lock->cnts.readers, -1);
-+}
-+
-+/**
-+ * queue_write_unlock - release write lock of a queue rwlock
-+ * @lock : Pointer to queue rwlock structure
-+ */
-+static inline void queue_write_unlock(struct qrwlock *lock)
-+{
-+	/*
-+	 * Make sure that none of the critical section will be leaked out.
-+	 */
-+	smp_mb__before_clear_bit();
-+	ACCESS_ONCE(lock->cnts.writer) = 0;
-+	smp_mb__after_clear_bit();
-+}
-+
-+/*
-+ * Initializier
-+ */
-+#define	__ARCH_RW_LOCK_UNLOCKED	{ .cnts = { .rw = 0 }, .waitq = NULL }
-+#define	__ARCH_RW_LOCK_UNLOCKED_FAIR	\
-+	{ .cnts = { { .writer = 0, .fair = 1, .readers = 0 } }, .waitq = NULL }
-+
-+/*
-+ * Remapping rwlock architecture specific functions to the corresponding
-+ * queue rwlock functions.
-+ */
-+#define arch_read_can_lock(l)	queue_read_can_lock(l)
-+#define arch_write_can_lock(l)	queue_write_can_lock(l)
-+#define arch_read_lock(l)	queue_read_lock(l)
-+#define arch_write_lock(l)	queue_write_lock(l)
-+#define arch_read_trylock(l)	queue_read_trylock(l)
-+#define arch_write_trylock(l)	queue_write_trylock(l)
-+#define arch_read_unlock(l)	queue_read_unlock(l)
-+#define arch_write_unlock(l)	queue_write_unlock(l)
-+
-+#endif /* __ASM_GENERIC_QRWLOCK_H */
-diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
-index d2b32ac..b665478 100644
---- a/kernel/Kconfig.locks
-+++ b/kernel/Kconfig.locks
-@@ -223,3 +223,10 @@ endif
- config MUTEX_SPIN_ON_OWNER
- 	def_bool y
- 	depends on SMP && !DEBUG_MUTEXES
-+
-+config ARCH_QUEUE_RWLOCK
-+	bool
-+
-+config QUEUE_RWLOCK
-+	def_bool y if ARCH_QUEUE_RWLOCK
-+	depends on SMP
-diff --git a/lib/Makefile b/lib/Makefile
-index f3bb2cb..e3175db 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -189,3 +189,4 @@ quiet_cmd_build_OID_registry = GEN     $@
- clean-files	+= oid_registry_data.c
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 1bd2077187fd..da9a9c8b5bba 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -133,17 +133,18 @@ static inline void task_name(struct seq_file *m, struct task_struct *p)
+  * simple bit tests.
+  */
+ static const char * const task_state_array[] = {
+-	"R (running)",		/*   0 */
+-	"S (sleeping)",		/*   1 */
+-	"D (disk sleep)",	/*   2 */
+-	"T (stopped)",		/*   4 */
+-	"t (tracing stop)",	/*   8 */
+-	"Z (zombie)",		/*  16 */
+-	"X (dead)",		/*  32 */
+-	"x (dead)",		/*  64 */
+-	"K (wakekill)",		/* 128 */
+-	"W (waking)",		/* 256 */
+-	"P (parked)",		/* 512 */
++	"R (running)",		/*    0 */
++	"S (sleeping)",		/*    1 */
++	"D (disk sleep)",	/*    2 */
++	"T (stopped)",		/*    4 */
++	"t (tracing stop)",	/*    8 */
++	"Z (zombie)",		/*   16 */
++	"X (dead)",		/*   32 */
++	"x (dead)",		/*   64 */
++	"K (wakekill)",		/*  128 */
++	"W (waking)",		/*  256 */
++	"P (parked)",		/*  512 */
++	"I (idle)",		/* 1024 */
+ };
  
- obj-$(CONFIG_UCS2_STRING) += ucs2_string.o
-+obj-$(CONFIG_QUEUE_RWLOCK) += qrwlock.o
-diff --git a/lib/qrwlock.c b/lib/qrwlock.c
-new file mode 100644
-index 0000000..4915dc6
---- /dev/null
-+++ b/lib/qrwlock.c
-@@ -0,0 +1,274 @@
-+/*
-+ * Queue read/write lock
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * (C) Copyright 2013 Hewlett-Packard Development Company, L.P.
-+ *
-+ * Authors: Waiman Long <waiman.long@hp.com>
-+ */
-+#include <linux/smp.h>
-+#include <linux/bug.h>
-+#include <linux/cpumask.h>
-+#include <linux/percpu.h>
-+#include <linux/hardirq.h>
-+#include <asm-generic/qrwlock.h>
-+
-+/*
-+ * Compared with regular rwlock, the queue rwlock has has the following
-+ * advantages:
-+ * 1. It is more deterministic for the fair variant. Even though there is
-+ *    a slight chance of stealing the lock if come at the right moment, the
-+ *    granting of the lock is mostly in FIFO order. Even the default unfair
-+ *    variant is fairer at least among the writers.
-+ * 2. It is usually faster in high contention situation.
-+ *
-+ * The only downside is that the lock is 4 bytes larger in 32-bit systems
-+ * and 12 bytes larger in 64-bit systems.
-+ *
-+ * There are two queues for writers. The writer field of the lock is a
-+ * one-slot wait queue. The writers that follow will have to wait in the
-+ * combined reader/writer queue (waitq).
-+ *
-+ * Compared with x86 ticket spinlock, the queue rwlock is faster in high
-+ * contention situation. The writer lock is also faster in single thread
-+ * operations. Therefore, queue rwlock can be considered as a replacement
-+ * for those spinlocks that are highly contended as long as an increase
-+ * in lock size is not an issue.
-+ */
-+
-+#ifndef arch_mutex_cpu_relax
-+# define arch_mutex_cpu_relax() cpu_relax()
-+#endif
-+
-+#ifndef smp_mb__load_acquire
-+# ifdef CONFIG_X86
-+#   define smp_mb__load_acquire()	barrier()
-+# else
-+#   define smp_mb__load_acquire()	smp_mb()
-+# endif
-+#endif
-+
-+#ifndef smp_mb__store_release
-+# ifdef CONFIG_X86
-+#   define smp_mb__store_release()	barrier()
-+# else
-+#   define smp_mb__store_release()	smp_mb()
-+# endif
-+#endif
-+
-+/**
-+ * wait_in_queue - Add to queue and wait until it is at the head
-+ * @lock: Pointer to queue rwlock structure
-+ * @node: Node pointer to be added to the queue
-+ */
-+static __always_inline void
-+wait_in_queue(struct qrwlock *lock, struct qrwnode *node)
-+{
-+	struct qrwnode *prev;
-+
-+	node->next = NULL;
-+	node->wait = true;
-+	prev = xchg(&lock->waitq, node);
-+	if (prev) {
-+		prev->next = node;
-+		/*
-+		 * Wait until the waiting flag is off
-+		 */
-+		while (ACCESS_ONCE(node->wait))
-+			arch_mutex_cpu_relax();
-+		smp_mb__load_acquire();
-+	}
-+}
-+
-+/**
-+ * signal_next - Signal the next one in queue to be at the head
-+ * @lock: Pointer to queue rwlock structure
-+ * @node: Node pointer to the current head of queue
-+ */
-+static __always_inline void
-+signal_next(struct qrwlock *lock, struct qrwnode *node)
-+{
-+	struct qrwnode *next;
-+
-+	/*
-+	 * Try to notify the next node first without disturbing the cacheline
-+	 * of the lock. If that fails, check to see if it is the last node
-+	 * and so should clear the wait queue.
-+	 */
-+	next = ACCESS_ONCE(node->next);
-+	if (likely(next))
-+		goto notify_next;
-+
-+	/*
-+	 * Clear the wait queue if it is the last node
-+	 */
-+	if ((ACCESS_ONCE(lock->waitq) == node) &&
-+	    (cmpxchg(&lock->waitq, node, NULL) == node))
-+			return;
-+	/*
-+	 * Wait until the next one in queue set up the next field
-+	 */
-+	while (likely(!(next = ACCESS_ONCE(node->next))))
-+		arch_mutex_cpu_relax();
-+	/*
-+	 * The next one in queue is now at the head
-+	 */
-+notify_next:
-+	smp_mb__store_release();
-+	ACCESS_ONCE(next->wait) = false;
-+}
-+
-+/**
-+ * rspin_until_writer_unlock - inc reader count & spin until writer is gone
-+ * @lock: Pointer to queue rwlock structure
-+ * @cnts: Current queue rwlock counts structure
-+ *
-+ * In interrupt context or at the head of the queue, the reader will just
-+ * increment the reader count & wait until the writer releases the lock.
-+ */
-+static __always_inline void
-+rspin_until_writer_unlock(struct qrwlock *lock, union qrwcnts cnts)
-+{
-+	while (cnts.writer == QW_LOCKED) {
-+		arch_mutex_cpu_relax();
-+		cnts.rw = ACCESS_ONCE(lock->cnts.rw);
-+	}
-+}
-+
-+/**
-+ * queue_read_lock_slowpath - acquire read lock of a queue rwlock
-+ * @lock: Pointer to queue rwlock structure
-+ */
-+void queue_read_lock_slowpath(struct qrwlock *lock)
-+{
-+	struct qrwnode node;
-+	union qrwcnts cnts;
-+
-+	/*
-+	 * Readers come here when it cannot get the lock without waiting
-+	 */
-+	if (unlikely(irq_count())) {
-+		/*
-+		 * Readers in interrupt context will spin until the lock is
-+		 * available without waiting in the queue.
-+		 */
-+		cnts.rw = ACCESS_ONCE(lock->cnts.rw);
-+		rspin_until_writer_unlock(lock, cnts);
-+		return;
-+	}
-+	cnts.rw = xadd(&lock->cnts.rw, -QRW_READER_BIAS);
-+
-+	/*
-+	 * Put the reader into the wait queue
-+	 */
-+	wait_in_queue(lock, &node);
-+
-+	/*
-+	 * At the head of the wait queue now, try to increment the reader
-+	 * count and get the lock.
-+	 */
-+	if (unlikely(cnts.fair)) {
-+		/*
-+		 * For fair reader, wait until the writer state goes to 0
-+		 * before incrementing the reader count.
-+		 */
-+		while (ACCESS_ONCE(lock->cnts.writer))
-+			arch_mutex_cpu_relax();
-+	}
-+	cnts.rw = xadd(&lock->cnts.rw, QRW_READER_BIAS);
-+	rspin_until_writer_unlock(lock, cnts);
-+	/*
-+	 * Need to have a barrier with read-acquire semantics
-+	 */
-+	smp_mb__load_acquire();
-+	signal_next(lock, &node);
-+}
-+EXPORT_SYMBOL(queue_read_lock_slowpath);
-+
-+/**
-+ * qwrite_trylock - Try to acquire the write lock
-+ * @lock : Pointer to queue rwlock structure
-+ * @old  : The current queue rwlock count structure
-+ * Return: 1 if lock acquired, 0 otherwise
-+ */
-+static __always_inline int
-+qwrite_trylock(struct qrwlock *lock, union qrwcnts old)
-+{
-+	register union qrwcnts new;
-+
-+	new.rw     = old.rw;
-+	new.writer = QW_LOCKED;
-+	if (likely(cmpxchg(&lock->cnts.rw, old.rw, new.rw) == old.rw))
-+		return 1;
-+	return 0;
-+}
-+
-+/**
-+ * queue_write_3step_lock - acquire write lock in 3 steps
-+ * @lock : Pointer to queue rwlock structure
-+ * Return: 1 if lock acquired, 0 otherwise
-+ *
-+ * Step 1 - Try to acquire the lock directly if no reader is present
-+ * Step 2 - Set the waiting flag to notify readers that a writer is waiting
-+ * Step 3 - When the readers field goes to 0, set the locked flag
-+ *
-+ * When not in fair mode, the readers actually ignore the second step.
-+ * However, this is still necessary to force other writers to fall in line.
-+ * In x86, the use of noinline generates a slight better optimized code
-+ * with less memory access.
-+ */
-+static noinline int queue_write_3step_lock(struct qrwlock *lock)
-+{
-+	register union qrwcnts old;
-+
-+	old.rw = ACCESS_ONCE(lock->cnts.rw);
-+
-+	/* Step 1 */
-+	if (!old.writer && !old.readers && qwrite_trylock(lock, old))
-+		return 1;
-+
-+	/* Step 2 */
-+	if (old.writer || (cmpxchg(&lock->cnts.writer, 0, QW_WAITING) != 0))
-+		return 0;
-+
-+	/* Step 3 */
-+	arch_mutex_cpu_relax();
-+	old.rw = ACCESS_ONCE(lock->cnts.rw);
-+	while (old.readers || !qwrite_trylock(lock, old)) {
-+		arch_mutex_cpu_relax();
-+		old.rw = ACCESS_ONCE(lock->cnts.rw);
-+	}
-+	return 1;
-+}
-+
-+/**
-+ * queue_write_lock_slowpath - acquire write lock of a queue rwlock
-+ * @lock : Pointer to queue rwlock structure
-+ */
-+void queue_write_lock_slowpath(struct qrwlock *lock)
-+{
-+	struct qrwnode node;
-+
-+	/*
-+	 * Put the writer into the wait queue
-+	 */
-+	wait_in_queue(lock, &node);
-+
-+	/*
-+	 * At the head of the wait queue now, call queue_write_3step_lock()
-+	 * to acquire the lock until it is done.
-+	 */
-+	while (!queue_write_3step_lock(lock))
-+		arch_mutex_cpu_relax();
-+	signal_next(lock, &node);
-+}
-+EXPORT_SYMBOL(queue_write_lock_slowpath);
--- 
-1.7.1
-
+ static inline const char *get_task_state(struct task_struct *tsk)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 045b0d227846..a4a9e80688d8 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -145,9 +145,10 @@ print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq);
+ #define TASK_WAKEKILL		128
+ #define TASK_WAKING		256
+ #define TASK_PARKED		512
+-#define TASK_STATE_MAX		1024
++#define TASK_IDLE		1024
++#define TASK_STATE_MAX		2048
+ 
+-#define TASK_STATE_TO_CHAR_STR "RSDTtZXxKWP"
++#define TASK_STATE_TO_CHAR_STR "RSDTtZXxKWPI"
+ 
+ extern char ___assert_task_state[1 - 2*!!(
+ 		sizeof(TASK_STATE_TO_CHAR_STR)-1 != ilog2(TASK_STATE_MAX)+1)];
+@@ -173,7 +174,8 @@ extern char ___assert_task_state[1 - 2*!!(
+ 			((task->state & (__TASK_STOPPED | __TASK_TRACED)) != 0)
+ #define task_contributes_to_load(task)	\
+ 				((task->state & TASK_UNINTERRUPTIBLE) != 0 && \
+-				 (task->flags & PF_FROZEN) == 0)
++				 (task->flags & PF_FROZEN) == 0 && \
++				 (task->state & TASK_IDLE) == 0)
+ 
+ #define __set_task_state(tsk, state_value)		\
+ 	do { (tsk)->state = (state_value); } while (0)
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index 04c308413a5d..4553a2495c25 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -144,7 +144,8 @@ TRACE_EVENT(sched_switch,
+ 		  __print_flags(__entry->prev_state & (TASK_STATE_MAX-1), "|",
+ 				{ 1, "S"} , { 2, "D" }, { 4, "T" }, { 8, "t" },
+ 				{ 16, "Z" }, { 32, "X" }, { 64, "x" },
+-				{ 128, "K" }, { 256, "W" }, { 512, "P" }) : "R",
++				{ 128, "K" }, { 256, "W" }, { 512, "P" },
++				{ 1024, "I" }) : "R",
+ 		__entry->prev_state & TASK_STATE_MAX ? "+" : "",
+ 		__entry->next_comm, __entry->next_pid, __entry->next_prio)
+ );
