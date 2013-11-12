@@ -1,175 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405Ab3KLRcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:32:14 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:18454 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756161Ab3KLRcM (ORCPT
+	id S1756482Ab3KLRdA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:33:00 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:45208 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755827Ab3KLRc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:32:12 -0500
-Date: Tue, 12 Nov 2013 12:32:10 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com
-Subject: Re: [PATCH 02/14] sched: add extended scheduling interface.
-Message-ID: <20131112123210.63d338d1@gandalf.local.home>
-In-Reply-To: <1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
-References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
-	<1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Tue, 12 Nov 2013 12:32:59 -0500
+Date: Tue, 12 Nov 2013 09:32:53 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Ben Myers <bpm@sgi.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, elder@kernel.org,
+        Mark Tinguely <tinguely@sgi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, Ric Wheeler <rwheeler@redhat.com>
+Subject: Re: XFS leadership and a new co-maintainer candidate
+Message-ID: <20131112173253.GA15089@infradead.org>
+References: <20131107220208.GY1935@sgi.com>
+ <527C0F64.3010906@sgi.com>
+ <527C4B27.6020205@redhat.com>
+ <527CC50D.4060905@redhat.com>
+ <20131108180337.GO10553@sgi.com>
+ <20131108193424.GA11052@infradead.org>
+ <20131108204605.GA1935@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131108204605.GA1935@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  7 Nov 2013 14:43:36 +0100
-Juri Lelli <juri.lelli@gmail.com> wrote:
+On Fri, Nov 08, 2013 at 02:46:06PM -0600, Ben Myers wrote:
+> That really didn't happen Christoph.  It's not in my tree or in a pull request.
 
-  
-> +static int
-> +do_sched_setscheduler2(pid_t pid, int policy,
-> +			 struct sched_param2 __user *param2)
-> +{
-> +	struct sched_param2 lparam2;
-> +	struct task_struct *p;
-> +	int retval;
-> +
-> +	if (!param2 || pid < 0)
-> +		return -EINVAL;
-> +
-> +	memset(&lparam2, 0, sizeof(struct sched_param2));
-> +	if (copy_from_user(&lparam2, param2, sizeof(struct sched_param2)))
-> +		return -EFAULT;
+I'll take my back room complain back then, but I still think that this
+is not a useful way to discuss something like this.
 
-Why the memset() before the copy_from_user()? We are copying
-sizeof(sched_param2) anyway, and should overwrite anything that was on
-the stack. I'm not aware of any possible leak from copying from
-userspace. I could understand it if we were copying to userspace.
+> Linus, let me know what you want to do.  I do think we're doing a fair job over
+> here, and (geez) I'm just trying to add Mark as my backup since Alex is too
+> busy.  I know the RH people want more control, and that's understandable, but
+> they really don't need to replace me to get their code in.  Ouch.
 
-do_sched_setscheduler() doesn't do that either.
+I'd really like to see more diversity in XFS maintainers.  The SGI focus
+has defintively been an issue again and again because it seems when one
+SGI person is too busy the others usually are as well. As mentioned
+before there's also been historically a way too high turnover, with the
+associated transition pains.
 
-> +
-> +	rcu_read_lock();
-> +	retval = -ESRCH;
-> +	p = find_process_by_pid(pid);
-> +	if (p != NULL)
-> +		retval = sched_setscheduler2(p, policy, &lparam2);
-> +	rcu_read_unlock();
-> +
-> +	return retval;
-> +}
-> +
->  /**
->   * sys_sched_setscheduler - set/change the scheduler policy and RT priority
->   * @pid: the pid in question.
-> @@ -3514,6 +3553,21 @@ SYSCALL_DEFINE3(sched_setscheduler, pid_t, pid, int, policy,
->  }
->  
->  /**
-> + * sys_sched_setscheduler2 - same as above, but with extended sched_param
-> + * @pid: the pid in question.
-> + * @policy: new policy (could use extended sched_param).
-> + * @param: structure containg the extended parameters.
-> + */
-> +SYSCALL_DEFINE3(sched_setscheduler2, pid_t, pid, int, policy,
-> +		struct sched_param2 __user *, param2)
-> +{
-> +	if (policy < 0)
-> +		return -EINVAL;
-> +
-> +	return do_sched_setscheduler2(pid, policy, param2);
-> +}
-> +
-> +/**
->   * sys_sched_setparam - set/change the RT priority of a thread
->   * @pid: the pid in question.
->   * @param: structure containing the new RT priority.
-> @@ -3526,6 +3580,17 @@ SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
->  }
->  
->  /**
-> + * sys_sched_setparam2 - same as above, but with extended sched_param
-> + * @pid: the pid in question.
-> + * @param2: structure containing the extended parameters.
-> + */
-> +SYSCALL_DEFINE2(sched_setparam2, pid_t, pid,
-> +		struct sched_param2 __user *, param2)
-> +{
-> +	return do_sched_setscheduler2(pid, -1, param2);
-> +}
-> +
-> +/**
->   * sys_sched_getscheduler - get the policy (scheduling class) of a thread
->   * @pid: the pid in question.
->   *
-> @@ -3595,6 +3660,45 @@ out_unlock:
->  	return retval;
->  }
->  
-> +/**
-> + * sys_sched_getparam2 - same as above, but with extended sched_param
-> + * @pid: the pid in question.
-> + * @param2: structure containing the extended parameters.
-> + */
-> +SYSCALL_DEFINE2(sched_getparam2, pid_t, pid,
-> +		struct sched_param2 __user *, param2)
-> +{
-> +	struct sched_param2 lp;
-> +	struct task_struct *p;
-> +	int retval;
-> +
-> +	if (!param2 || pid < 0)
-> +		return -EINVAL;
-> +
-> +	rcu_read_lock();
-> +	p = find_process_by_pid(pid);
-> +	retval = -ESRCH;
-> +	if (!p)
-> +		goto out_unlock;
-> +
-> +	retval = security_task_getscheduler(p);
-> +	if (retval)
-> +		goto out_unlock;
-> +
-> +	lp.sched_priority = p->rt_priority;
-> +	rcu_read_unlock();
-> +
+By making sure we have a broader base for the maintainers, and a more
+open infrastructure we'll all win.  Note that we already had that sort
+of instructure on kernel.org, but gave up on it because many people
+perceived the effort to re-gain the kernel.org accounts to high.
 
-OK, now we are missing the memset(). This does leak info, as lp never
-was set to zero, it just contains anything on the stack, and the only
-value you updated was sched_priority. We just copied to user memory
-from the kernel stack.
-
--- Steve
-
-
-
-> +	retval = copy_to_user(param2, &lp,
-> +			sizeof(struct sched_param2)) ? -EFAULT : 0;
-> +
-> +	return retval;
-> +
-> +out_unlock:
-> +	rcu_read_unlock();
-> +	return retval;
-> +
-> +}
-> +
->  long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
->  {
->  	cpumask_var_t cpus_allowed, new_mask;
-
+I would also really like to get a clarification on "I know the RH people
+want more control, and that's understandable, but they really don't need
+to replace me to get their code in".  What specific people are you
+worried about an what code?  What makes "the RH people" less worthy
+to their code in than "the SGI" people.
