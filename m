@@ -1,123 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab3KLPqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:46:46 -0500
-Received: from skyrme.org ([193.175.80.135]:47962 "EHLO skyrme.org"
+	id S1756012Ab3KLPrO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:47:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54492 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755148Ab3KLPqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:46:43 -0500
-Date: 12 Nov 2013 15:46:38 +0000
-Message-Id: <1384271198-18974-1-git-send-email-oskar@scara.com>
-From: "Oskar Schirmer" <oskar@scara.com>
-To: "Liam Girdwood" <lgirdwood@gmail.com>
-Cc: "Mark Brown" <broonie@kernel.org>, "Sascha Hauer" <s.hauer@pengutronix.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Oskar Schirmer" <oskar@scara.com>
-Subject: [PATCH] ASoC: fsl: imx-pcm-fiq: omit fiq counter to avoid harm in unbalanced situations
-X-Mailer: git-send-email 1.6.0.3
+	id S1752027Ab3KLPrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 10:47:12 -0500
+Date: Tue, 12 Nov 2013 10:46:44 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [seqcount] INFO: trying to register non-static key.
+Message-ID: <20131112154643.GA26632@redhat.com>
+References: <20131111012927.GA404@localhost>
+ <20131111154551.GJ19203@twins.programming.kicks-ass.net>
+ <20131112094147.GA32441@localhost>
+ <20131112100140.GM5056@laptop.programming.kicks-ass.net>
+ <20131112151541.GD24980@redhat.com>
+ <20131112152956.GY5056@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112152956.GY5056@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unbalanced calls to snd_imx_pcm_trigger() may result in endless
-FIQ activity and thus provoke eternal sound. While on the first glance,
-the switch statement looks pretty symmetric, the SUSPEND/RESUME
-pair is not: the suspend case comes along snd_pcm_suspend_all(),
-which for fsl/imx-pcm-fiq is called only at snd_soc_suspend(),
-but the resume case originates straight from the SNDRV_PCM_IOCTL_RESUME.
-This way userland may provoke an unbalanced resume, which might cause
-the fiq_enable counter to increase and never return to zero again,
-so eventually imx_pcm_fiq is never disabled.
+On Tue, Nov 12, 2013 at 04:29:56PM +0100, Peter Zijlstra wrote:
+> On Tue, Nov 12, 2013 at 10:15:41AM -0500, Vivek Goyal wrote:
+> > I see that we allocate per cpu stats but don't do any initializations.
+> > 
+> > static void tg_stats_alloc_fn(struct work_struct *work)
+> > {
+> >         static struct tg_stats_cpu *stats_cpu;  /* this fn is non-reentrant */
+> >         struct delayed_work *dwork = to_delayed_work(work);
+> >         bool empty = false;
+> > 
+> > alloc_stats:
+> >         if (!stats_cpu) {
+> >                 stats_cpu = alloc_percpu(struct tg_stats_cpu);
+> >                 if (!stats_cpu) {
+> >                         /* allocation failed, try again after some time */
+> >                         schedule_delayed_work(dwork, msecs_to_jiffies(10));
+> >                         return;
+> >                 }
+> >         }
+> > 
+> >         spin_lock_irq(&tg_stats_alloc_lock);
+> 
+> Absolutely!
+> 
+> Something like this perhaps? Did I miss more blkg_[rw]stats? If I read
+> the git grep output right, this was the last one.
 
-Simply removing the fiq_enable will solve the problem, as long as
-one never goes play and capture game simultaneously, but beware
-trying both at once, the early TRIGGER_STOP will cut off the other
-activity prematurely. So now playing and capturing is scrutinized
-separately, instead of by counting.
+Looks good to me.
 
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
----
- sound/soc/fsl/imx-pcm-fiq.c |   29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+This should be the last one. There are only two users of stats right
+now. blk-throttle and cfq-iosched.
 
-diff --git a/sound/soc/fsl/imx-pcm-fiq.c b/sound/soc/fsl/imx-pcm-fiq.c
-index 10e3305..f00b512 100644
---- a/sound/soc/fsl/imx-pcm-fiq.c
-+++ b/sound/soc/fsl/imx-pcm-fiq.c
-@@ -42,7 +42,8 @@ struct imx_pcm_runtime_data {
- 	struct hrtimer hrt;
- 	int poll_time_ns;
- 	struct snd_pcm_substream *substream;
--	atomic_t running;
-+	atomic_t playing;
-+	atomic_t capturing;
- };
- 
- static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
-@@ -52,7 +53,7 @@ static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
- 	struct snd_pcm_substream *substream = iprtd->substream;
- 	struct pt_regs regs;
- 
--	if (!atomic_read(&iprtd->running))
-+	if (!atomic_read(&iprtd->playing) && !atomic_read(&iprtd->capturing))
- 		return HRTIMER_NORESTART;
- 
- 	get_fiq_regs(&regs);
-@@ -106,7 +107,6 @@ static int snd_imx_pcm_prepare(struct snd_pcm_substream *substream)
- 	return 0;
- }
- 
--static int fiq_enable;
- static int imx_pcm_fiq;
- 
- static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
-@@ -118,23 +118,27 @@ static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
- 	case SNDRV_PCM_TRIGGER_START:
- 	case SNDRV_PCM_TRIGGER_RESUME:
- 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
--		atomic_set(&iprtd->running, 1);
-+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-+			atomic_set(&iprtd->playing, 1);
-+		else
-+			atomic_set(&iprtd->capturing, 1);
- 		hrtimer_start(&iprtd->hrt, ns_to_ktime(iprtd->poll_time_ns),
- 		      HRTIMER_MODE_REL);
--		if (++fiq_enable == 1)
--			enable_fiq(imx_pcm_fiq);
--
-+		enable_fiq(imx_pcm_fiq);
- 		break;
- 
- 	case SNDRV_PCM_TRIGGER_STOP:
- 	case SNDRV_PCM_TRIGGER_SUSPEND:
- 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
--		atomic_set(&iprtd->running, 0);
--
--		if (--fiq_enable == 0)
-+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-+			atomic_set(&iprtd->playing, 0);
-+		else
-+			atomic_set(&iprtd->capturing, 0);
-+		if (!atomic_read(&iprtd->playing) &&
-+				!atomic_read(&iprtd->capturing))
- 			disable_fiq(imx_pcm_fiq);
--
- 		break;
-+
- 	default:
- 		return -EINVAL;
- 	}
-@@ -182,7 +186,8 @@ static int snd_imx_open(struct snd_pcm_substream *substream)
- 
- 	iprtd->substream = substream;
- 
--	atomic_set(&iprtd->running, 0);
-+	atomic_set(&iprtd->playing, 0);
-+	atomic_set(&iprtd->capturing, 0);
- 	hrtimer_init(&iprtd->hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 	iprtd->hrt.function = snd_hrtimer_callback;
- 
--- 
-1.7.9.5
+Thanks
+Vivek
 
+> 
+> ---
+>  block/blk-throttle.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index 8331aba9426f..fd743d98c41d 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -256,6 +256,12 @@ static struct throtl_data *sq_to_td(struct throtl_service_queue *sq)
+>  	}								\
+>  } while (0)
+>  
+> +static void tg_stats_init(struct tg_stats_cpu *tg_stats)
+> +{
+> +	blkg_rwstat_init(&tg_stats->service_bytes);
+> +	blkg_rwstat_init(&tg_stats->serviced);
+> +}
+> +
+>  /*
+>   * Worker for allocating per cpu stat for tgs. This is scheduled on the
+>   * system_wq once there are some groups on the alloc_list waiting for
+> @@ -269,12 +275,16 @@ static void tg_stats_alloc_fn(struct work_struct *work)
+>  
+>  alloc_stats:
+>  	if (!stats_cpu) {
+> +		int cpu;
+> +
+>  		stats_cpu = alloc_percpu(struct tg_stats_cpu);
+>  		if (!stats_cpu) {
+>  			/* allocation failed, try again after some time */
+>  			schedule_delayed_work(dwork, msecs_to_jiffies(10));
+>  			return;
+>  		}
+> +		for_each_possible_cpu(cpu)
+> +			tg_stats_init(per_cpu(stats_cpu, cpu));
+>  	}
+>  
+>  	spin_lock_irq(&tg_stats_alloc_lock);
