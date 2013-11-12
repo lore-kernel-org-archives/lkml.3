@@ -1,47 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab3KLPqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:46:15 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48917 "EHLO arroyo.ext.ti.com"
+	id S1755985Ab3KLPqq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:46:46 -0500
+Received: from skyrme.org ([193.175.80.135]:47962 "EHLO skyrme.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752448Ab3KLPqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:46:12 -0500
-Message-ID: <52824D1E.9080409@ti.com>
-Date: Tue, 12 Nov 2013 10:45:34 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>
-CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>
-Subject: Re: [PATCH 01/12] mtd: nand: davinci: fix driver registration
-References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>,<1384187188-5776-2-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8CE2@DNCE04.ent.ti.com>
-In-Reply-To: <4F5844B3A985794BA902E12C070812375F8CE2@DNCE04.ent.ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755148Ab3KLPqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 10:46:43 -0500
+Date: 12 Nov 2013 15:46:38 +0000
+Message-Id: <1384271198-18974-1-git-send-email-oskar@scara.com>
+From: "Oskar Schirmer" <oskar@scara.com>
+To: "Liam Girdwood" <lgirdwood@gmail.com>
+Cc: "Mark Brown" <broonie@kernel.org>, "Sascha Hauer" <s.hauer@pengutronix.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Oskar Schirmer" <oskar@scara.com>
+Subject: [PATCH] ASoC: fsl: imx-pcm-fiq: omit fiq counter to avoid harm in unbalanced situations
+X-Mailer: git-send-email 1.6.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 November 2013 11:52 AM, Khoronzhuk, Ivan wrote:
-> 
-> When kernel is booted using DT, there is no guarantee that Davinci
-> NAND device has been created already at the time when driver init
-> function is executed. Therefore, platform_driver_probe() can't be used
-> because this may result the Davinci NAND driver will never be probed.
-> The driver probing has to be made with core mechanism.
-> 
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> ---
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Unbalanced calls to snd_imx_pcm_trigger() may result in endless
+FIQ activity and thus provoke eternal sound. While on the first glance,
+the switch statement looks pretty symmetric, the SUSPEND/RESUME
+pair is not: the suspend case comes along snd_pcm_suspend_all(),
+which for fsl/imx-pcm-fiq is called only at snd_soc_suspend(),
+but the resume case originates straight from the SNDRV_PCM_IOCTL_RESUME.
+This way userland may provoke an unbalanced resume, which might cause
+the fiq_enable counter to increase and never return to zero again,
+so eventually imx_pcm_fiq is never disabled.
+
+Simply removing the fiq_enable will solve the problem, as long as
+one never goes play and capture game simultaneously, but beware
+trying both at once, the early TRIGGER_STOP will cut off the other
+activity prematurely. So now playing and capturing is scrutinized
+separately, instead of by counting.
+
+Signed-off-by: Oskar Schirmer <oskar@scara.com>
+---
+ sound/soc/fsl/imx-pcm-fiq.c |   29 +++++++++++++++++------------
+ 1 file changed, 17 insertions(+), 12 deletions(-)
+
+diff --git a/sound/soc/fsl/imx-pcm-fiq.c b/sound/soc/fsl/imx-pcm-fiq.c
+index 10e3305..f00b512 100644
+--- a/sound/soc/fsl/imx-pcm-fiq.c
++++ b/sound/soc/fsl/imx-pcm-fiq.c
+@@ -42,7 +42,8 @@ struct imx_pcm_runtime_data {
+ 	struct hrtimer hrt;
+ 	int poll_time_ns;
+ 	struct snd_pcm_substream *substream;
+-	atomic_t running;
++	atomic_t playing;
++	atomic_t capturing;
+ };
+ 
+ static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
+@@ -52,7 +53,7 @@ static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
+ 	struct snd_pcm_substream *substream = iprtd->substream;
+ 	struct pt_regs regs;
+ 
+-	if (!atomic_read(&iprtd->running))
++	if (!atomic_read(&iprtd->playing) && !atomic_read(&iprtd->capturing))
+ 		return HRTIMER_NORESTART;
+ 
+ 	get_fiq_regs(&regs);
+@@ -106,7 +107,6 @@ static int snd_imx_pcm_prepare(struct snd_pcm_substream *substream)
+ 	return 0;
+ }
+ 
+-static int fiq_enable;
+ static int imx_pcm_fiq;
+ 
+ static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+@@ -118,23 +118,27 @@ static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+ 	case SNDRV_PCM_TRIGGER_START:
+ 	case SNDRV_PCM_TRIGGER_RESUME:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+-		atomic_set(&iprtd->running, 1);
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++			atomic_set(&iprtd->playing, 1);
++		else
++			atomic_set(&iprtd->capturing, 1);
+ 		hrtimer_start(&iprtd->hrt, ns_to_ktime(iprtd->poll_time_ns),
+ 		      HRTIMER_MODE_REL);
+-		if (++fiq_enable == 1)
+-			enable_fiq(imx_pcm_fiq);
+-
++		enable_fiq(imx_pcm_fiq);
+ 		break;
+ 
+ 	case SNDRV_PCM_TRIGGER_STOP:
+ 	case SNDRV_PCM_TRIGGER_SUSPEND:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+-		atomic_set(&iprtd->running, 0);
+-
+-		if (--fiq_enable == 0)
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++			atomic_set(&iprtd->playing, 0);
++		else
++			atomic_set(&iprtd->capturing, 0);
++		if (!atomic_read(&iprtd->playing) &&
++				!atomic_read(&iprtd->capturing))
+ 			disable_fiq(imx_pcm_fiq);
+-
+ 		break;
++
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -182,7 +186,8 @@ static int snd_imx_open(struct snd_pcm_substream *substream)
+ 
+ 	iprtd->substream = substream;
+ 
+-	atomic_set(&iprtd->running, 0);
++	atomic_set(&iprtd->playing, 0);
++	atomic_set(&iprtd->capturing, 0);
+ 	hrtimer_init(&iprtd->hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	iprtd->hrt.function = snd_hrtimer_callback;
+ 
+-- 
+1.7.9.5
 
