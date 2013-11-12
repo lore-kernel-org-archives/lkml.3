@@ -1,149 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436Ab3KLHtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 02:49:49 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:52011 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab3KLHtj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 02:49:39 -0500
+	id S1753405Ab3KLHwm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 02:52:42 -0500
+Received: from mga09.intel.com ([134.134.136.24]:53034 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751855Ab3KLHwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 02:52:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="407322321"
+Message-ID: <5281DFE5.3000909@intel.com>
+Date: Tue, 12 Nov 2013 09:59:33 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20131112065405.C75E8C42024@trevor.secretlab.ca>
-References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
-	<1381869563-16083-10-git-send-email-grant.likely@linaro.org>
-	<CAEgOgz6=HhBkb2KtxcmHpNdE_0sNngw0NaL2SnLWj1opZkO3SA@mail.gmail.com>
-	<20131112065405.C75E8C42024@trevor.secretlab.ca>
-Date: Tue, 12 Nov 2013 17:49:37 +1000
-X-Google-Sender-Auth: wlQ16Xe6fCigVDDj_B84jVEirDc
-Message-ID: <CAEgOgz6j8YsvFgq8ZbE20ocHPA0C-eUGBb7F1gNiVBvJXLa8_g@mail.gmail.com>
-Subject: Re: [RFC 9/9] of/irq: create interrupts-extended property
-From: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: David Ahern <dsahern@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: "Test object code reading" failing, debug messages don't help
+References: <20131111195117.GI27198@ghostprotocols.net> <20131111195559.GJ27198@ghostprotocols.net> <20131111195810.GK27198@ghostprotocols.net>
+In-Reply-To: <20131111195810.GK27198@ghostprotocols.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-On Tue, Nov 12, 2013 at 4:54 PM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Tue, 12 Nov 2013 08:58:15 +1000, Peter Crosthwaite <peter.crosthwaite@xilinx.com> wrote:
->> Hi Grant,
+On 11/11/13 21:58, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Nov 11, 2013 at 04:55:59PM -0300, Arnaldo Carvalho de Melo escreveu:
+>> Em Mon, Nov 11, 2013 at 04:51:17PM -0300, Arnaldo Carvalho de Melo escreveu:
+>>> Hi Adrian,
+>>>
+>>> 	I have perf test failing here:
+>>>
+>>> [root@ssdandy ~]# perf test 21
+>>> 21: Test object code reading                               : FAILED!
+>>> [root@ssdandy ~]# 
+>>>
+>>> Try it with -v, but all messages, except for that elf header, which I
+>>> assume is for a previous entry that is not suitable and should not be
+>>> considered, seems to say all is well, except that the test fails :-\
 >>
->> On Wed, Oct 16, 2013 at 6:39 AM, Grant Likely <grant.likely@linaro.org> wrote:
->> > The standard interrupts property in device tree can only handle
->> > interrupts coming from a single interrupt parent. If a device is wired
->> > to multiple interrupt controllers, then it needs to be attached to a
->> > node with an interrupt-map property to demux the interrupt specifiers
->> > which is confusing. It would be a lot easier if there was a form of the
->> > interrupts property that allows for a separate interrupt phandle for
->> > each interrupt specifier.
->> >
->> > This patch does exactly that by creating a new interrupts-extended
->> > property which reuses the phandle+arguments pattern used by GPIOs and
->> > other core bindings.
->> >
->> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
->> > Cc: Rob Herring <rob.herring@calxeda.com>
->> > ---
->> >  .../bindings/interrupt-controller/interrupts.txt   | 29 +++++++--
->> >  arch/arm/boot/dts/testcases/tests-interrupts.dtsi  | 16 +++++
->> >  arch/arm/boot/dts/versatile-ab.dts                 |  2 +-
->> >  arch/arm/boot/dts/versatile-pb.dts                 |  2 +-
->> >  drivers/of/irq.c                                   | 16 +++--
->> >  drivers/of/selftest.c                              | 70 ++++++++++++++++++++++
->> >  6 files changed, 122 insertions(+), 13 deletions(-)
->> >
->> > diff --git a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
->> > index 72a06c0..1486497 100644
->> > --- a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
->> > +++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
->> > @@ -4,16 +4,33 @@ Specifying interrupt information for devices
->> >  1) Interrupt client nodes
->> >  -------------------------
->> >
->> > -Nodes that describe devices which generate interrupts must contain an
->> > -"interrupts" property. This property must contain a list of interrupt
->> > -specifiers, one per output interrupt. The format of the interrupt specifier is
->> > -determined by the interrupt controller to which the interrupts are routed; see
->> > -section 2 below for details.
->> > +Nodes that describe devices which generate interrupts must contain an either an
->> > +"interrupts" property or an "interrupts-extended" property. These properties
->> > +contain a list of interrupt specifiers, one per output interrupt. The format of
->> > +the interrupt specifier is determined by the interrupt controller to which the
->> > +interrupts are routed; see section 2 below for details.
->> > +
->> > +  Example:
->> > +       interrupt-parent = <&intc1>;
->> > +       interrupts = <5 0>, <6 0>;
->> >
->> >  The "interrupt-parent" property is used to specify the controller to which
->> >  interrupts are routed and contains a single phandle referring to the interrupt
->> >  controller node. This property is inherited, so it may be specified in an
->> > -interrupt client node or in any of its parent nodes.
->> > +interrupt client node or in any of its parent nodes. Interrupts listed in the
->> > +"interrupts" property are always in reference to the node's interrupt parent.
->> > +
->> > +The "interrupts-extended" property is a special form for use when a node needs
->> > +to reference multiple interrupt parents. Each entry in this property contains
->> > +both the parent phandle and the interrupt specifier. "interrupts-extended"
->> > +should only be used when a device has multiple interrupt parents.
->> > +
->> > +  Example:
->> > +       interrupts-extended = <&intc1 5 1>, <&intc2 1 0>;
->> > +
->>
->> A slightly different but related problem I am trying to solve with
->> interrupt bindings, is to describe connection of a single device
->> interrupt line to multiple interrupts controller, whereas this binding
->> seems to be describing connection of different interrupt lines to
->> different controllers. Can this syntax accommodate my case is any way?
->>
->> Bascially I think I'm asking for multiple interrupt specifiers for a
->> single IRQ output if that's possible.
->>
->> Should I just be using the interrupt map syntax instead?
->>
->> interrupt-map-mask = < 0 0 63>;
->> interrupt-map = < 0 0 25 &intc0 ... >, < 0 0 25 &intc1 ... >,
->
-> Interrupt map doesn't actually help you here either since the core code
-> doesn't know what to do with it. It will probably only match and return
-> one of the options.
->
+>> If I try gdb on test__code_reading, go on stepping thru it to try to
+>> figure out why it fails, it works :-\
+> 
+> Why this is so is still unclear, but since the other problem I had was
+> due to the kernel reducing the max sample_freq, I tried:
+> 
+> [root@ssdandy ~]# echo 10000 > /proc/sys/kernel/perf_event_max_sample_rate 
+> [root@ssdandy ~]# perf test 21
+> 21: Test object code reading                               : Ok
+> [root@ssdandy ~]# echo 7000 > /proc/sys/kernel/perf_event_max_sample_rate 
+> [root@ssdandy ~]# perf test 21
+> 21: Test object code reading                               : FAILED!
+> [root@ssdandy ~]# 
 
-Yes I noticed that. Although we are a fair way off Linux patches for
-this just yet and all I want to solve near-term is the hardware
-description problem (what core Linux IRQ code is actually supposed to
-do when given such a wiring setup is probably an open question).
 
-> What I would do is describe both in your interrupts property and make
-> the driver know that the extra interrupt specifier is for the same
-> interrupt output.
->
+From: Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH] perf tests: Handle throttle events in 'object code reading' test
 
-So this is a little annoying, as ideally device drivers should not be
-aware of their external connections. I'm trying to describe board (or
-SoC) level wiring in hopefully a way that doesn't require individual
-driver awareness. It also gets very messy when you have multiple
-interrupt outputs that are each in themselves connected to multiple
-interrupt controllers (which happens to be my situation). The meaning
-of multiple tuples becomes ambiguous.
+Unhandled events cause an error that fails the test
 
-Is the interrupt-map system I proposed acceptable long-term from just
-a pure binding acceptability standpoint? The driver side solution is
-also a large change pattern as I'm using this with Xilinx Zynq which
-has a large number of peripherals, any of which could be
-multiply-connected to both A9GIC and soft intc's in FPGA fabric.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/tests/code-reading.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-Thanks and Regards,
-Peter
+diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
+index 6d9dc19..85d4919 100644
+--- a/tools/perf/tests/code-reading.c
++++ b/tools/perf/tests/code-reading.c
+@@ -275,8 +275,19 @@ static int process_event(struct machine *machine, struct perf_evlist *evlist,
+ 	if (event->header.type == PERF_RECORD_SAMPLE)
+ 		return process_sample_event(machine, evlist, event, state);
+ 
+-	if (event->header.type < PERF_RECORD_MAX)
+-		return machine__process_event(machine, event, NULL);
++	if (event->header.type == PERF_RECORD_THROTTLE ||
++	    event->header.type == PERF_RECORD_UNTHROTTLE)
++		return 0;
++
++	if (event->header.type < PERF_RECORD_MAX) {
++		int ret;
++
++		ret = machine__process_event(machine, event, NULL);
++		if (ret < 0)
++			pr_debug("machine__process_event failed, event type %u\n",
++				 event->header.type);
++		return ret;
++	}
+ 
+ 	return 0;
+ }
+-- 
+1.7.11.7
 
-> g.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
