@@ -1,107 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab3KLIHR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 03:07:17 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:49326 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754750Ab3KLIHL (ORCPT
+	id S1754869Ab3KLIHe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 03:07:34 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:54953 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753671Ab3KLIHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 03:07:11 -0500
-Message-ID: <5281E09B.3060303@linux.vnet.ibm.com>
-Date: Tue, 12 Nov 2013 13:32:35 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: mgorman@suse.de, dave@sr71.net, hannes@cmpxchg.org, tony.luck@intel.com,
-        matthew.garrett@nebula.com, riel@redhat.com, arjan@linux.intel.com,
-        srinivas.pandruvada@linux.intel.com, willy@linux.intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
-        gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org,
-        isimatu.yasuaki@jp.fujitsu.com, santosh.shilimkar@ti.com,
-        kosaki.motohiro@gmail.com, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        maxime.coquelin@stericsson.com, loic.pallardy@stericsson.com,
-        amit.kachhap@linaro.org, thomas.abraham@linaro.org,
-        markgross@thegnar.org
-Subject: Re: [Results] [RFC PATCH v4 00/40] mm: Memory Power Management
-References: <20130925231250.26184.31438.stgit@srivatsabhat.in.ibm.com> <52437128.7030402@linux.vnet.ibm.com> <20130925164057.6bbaf23bdc5057c42b2ab010@linux-foundation.org> <52442F6F.5020703@linux.vnet.ibm.com>
-In-Reply-To: <52442F6F.5020703@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Nov 2013 03:07:22 -0500
+Message-ID: <1384243595.15180.63.camel@marge.simpson.net>
+Subject: Re: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
+From: Mike Galbraith <bitbucket@online.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Tue, 12 Nov 2013 09:06:35 +0100
+In-Reply-To: <alpine.DEB.2.02.1311071402380.23353@ionos.tec.linutronix.de>
+References: <1383228427.5272.36.camel@marge.simpson.net>
+	 <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>
+	 <1383794799.5441.16.camel@marge.simpson.net>
+	 <1383798668.5441.25.camel@marge.simpson.net>
+	 <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
+	 <20131107125923.GB24644@localhost.localdomain>
+	 <alpine.DEB.2.02.1311071402380.23353@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111208-2000-0000-0000-00000E7FA374
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:VYIb3X+PVuJoLJQbiaqympBykYuRy2Jqgdj50LGS+Zz
+ 7XKbO8ASKhgozIMFWku1rmn2HBvJpGgKRENUDIC2k46D8hthHz
+ F1VbO+e1Qeh8IbjNQOM0On1PtJ9ZMHlTDLcFnH2vk7YqyxqoNV
+ MtZf3XSavQzdI0JL/rwpw/61WIj3Ig38rSIwp5MeZZGex4AxvE
+ 4DxSDjmTNm1/GEklK2q5SigxuIvm+lLeQmeDVDAMkD6sMPZrH6
+ 5+GF0asfI8OarXMUACTr3xFyuI8RzDg59clYKhNNYayKwPqtqk
+ LFEU3KQlyqlz+gPv1hpA8UxRSdLCHXI1UZSI696mgXewUE5XqI
+ 3SzkWkJEPuQoX4lsrhyI6NO8Z7/GLaXGWrs8QnzrVuzSya5g9p
+ +M5plwecAqzGQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2013 06:28 PM, Srivatsa S. Bhat wrote:
-> On 09/26/2013 05:10 AM, Andrew Morton wrote:
->> On Thu, 26 Sep 2013 04:56:32 +0530 "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->>
->>> Experimental Results:
->>> ====================
->>>
->>> Test setup:
->>> ----------
->>>
->>> x86 Sandybridge dual-socket quad core HT-enabled machine, with 128GB RAM.
->>> Memory Region size = 512MB.
->>
->> Yes, but how much power was saved ;)
->>
+On Thu, 2013-11-07 at 14:13 +0100, Thomas Gleixner wrote: 
+> On Thu, 7 Nov 2013, Frederic Weisbecker wrote:
+> > On Thu, Nov 07, 2013 at 12:21:11PM +0100, Thomas Gleixner wrote:
+> > > Though it's not a full solution. It needs some thought versus the
+> > > softirq code of timers. Assume we have only one timer queued 1000
+> > > ticks into the future. So this change will cause the timer softirq not
+> > > to be called until that timer expires and then the timer softirq is
+> > > going to do 1000 loops until it catches up with jiffies. That's
+> > > anything but pretty ...
+> > 
+> > I see, so the problem is that we raise the timer softirq unconditionally
+> > from the tick?
 > 
-> I don't have those numbers yet, but I'll be able to get them going forward.
+> Right.
+>  
+> > Ok we definetly don't want to keep that behaviour, even if softirqs are not
+> > threaded, that's an overhead. So I'm looking at that loop in __run_timers()
+> > and I guess you mean the "base->timer_jiffies" incrementation?
+> >
+> > That's indeed not pretty. How do we handle exit from long dynticks
+> > idle periods? Are we doing that loop until we catch up with the new
+> > jiffies?
 > 
+> Right. I realized that right after I hit send :)
+>  
+> > Then it relies on the timer cascade stuff which is very obscure code to me...
+> 
+> It's not that bad, really. I have an idea how to fix that. Needs some
+> rewriting though.
 
-Hi,
+FYI, shiny new (and virgin) 3.12.0-rt1 nohz_full config is deadlock
+prone.  I was measuring fastpath cost yesterday with pinned pipe-test.. 
 
-I performed experiments on an IBM POWER 7 machine and got actual power-savings
-numbers (upto 2.6% of total system power) from this patchset. I presented them
-at the Kernel Summit but forgot to post them on LKML. So here they are:
+x3550 M3 E5620 (bloatware config)
+CONFIG_NO_HZ_IDLE - CPU3
+2.957012 usecs/loop -- avg 2.957012 676.4 KHz     1.000
 
-Hardware-setup:
---------------
-IBM POWER 7 machine: 4 socket (NUMA), 32 cores, 128GB RAM
+CONFIG_NO_HZ_FULL - CPU1 != nohz_full
+3.735279 usecs/loop -- avg 3.735279 535.4 KHz      .791
 
- - 4 NUMA nodes with 32 GB RAM each
- - Booted with numa=fake=1 and treated them as 4 memory regions
+CONFIG_NO_HZ_FULL - CPU3 == nohz_full
+5.922986 usecs/loop -- avg 5.922986 337.7 KHz      .499
 
+(ow)
 
-Software setup:
---------------
-Workload: Run modified ebizzy for half an hour, which allocates and frees large
-quantities of memory frequently. The modified ebizzy touches every allocated
-page a number of times (4 times) before freeing it up. This ensures that
-allocating a page in the "wrong" memory region makes it very costly in terms
-of power-savings, since every allocated page is accessed before getting
-freed (and accesses cause energy consumption). Thus, with this modified
-benchmark, sub-optimal MM decisions (in terms of memory power-savings) get
-magnified and hence become noticeable.
+..and noticed box eventually deadlocks, if it boots, which the instance
+below didn't.
 
+crash> bt
+PID: 11     TASK: ffff88017a27d5a0  CPU: 2   COMMAND: "rcu_preempt"
+ #0 [ffff88017b245ae0] machine_kexec at ffffffff810392f1
+ #1 [ffff88017b245b40] crash_kexec at ffffffff810cd9d5
+ #2 [ffff88017b245c10] panic at ffffffff815bea93
+ #3 [ffff88017b245c90] watchdog_overflow_callback.part.3 at ffffffff810f4fd2
+ #4 [ffff88017b245ca0] __perf_event_overflow at ffffffff8112715c
+ #5 [ffff88017b245d10] intel_pmu_handle_irq at ffffffff8101f432
+ #6 [ffff88017b245e00] perf_event_nmi_handler at ffffffff815d4732
+ #7 [ffff88017b245e20] nmi_handle.isra.4 at ffffffff815d3dad
+ #8 [ffff88017b245eb0] default_do_nmi at ffffffff815d4099
+ #9 [ffff88017b245ee0] do_nmi at ffffffff815d42b8
+#10 [ffff88017b245ef0] end_repeat_nmi at ffffffff815d31b1
+    [exception RIP: _raw_spin_lock+38]
+    RIP: ffffffff815d2596  RSP: ffff88017b243e90  RFLAGS: 00000093
+    RAX: 0000000000000010  RBX: 0000000000000010  RCX: 0000000000000093
+    RDX: ffff88017b243e90  RSI: 0000000000000018  RDI: 0000000000000001
+    RBP: ffffffff815d2596   R8: ffffffff815d2596   R9: 0000000000000018
+    R10: ffff88017b243e90  R11: 0000000000000093  R12: ffffffffffffffff
+    R13: ffff880179ef8000  R14: 0000000000000001  R15: 0000000000000eb6
+    ORIG_RAX: 0000000000000eb6  CS: 0010  SS: 0018
+--- <RT exception stack> ---
+#11 [ffff88017b243e90] _raw_spin_lock at ffffffff815d2596
+#12 [ffff88017b243e90] rt_mutex_trylock at ffffffff815d15be
+#13 [ffff88017b243eb0] get_next_timer_interrupt at ffffffff81063b42
+#14 [ffff88017b243f00] tick_nohz_stop_sched_tick at ffffffff810bd1fd
+#15 [ffff88017b243f70] tick_nohz_irq_exit at ffffffff810bd7d2
+#16 [ffff88017b243f90] irq_exit at ffffffff8105b02d
+#17 [ffff88017b243fb0] reschedule_interrupt at ffffffff815db3dd
+--- <IRQ stack> ---
+#18 [ffff88017a2a9bc8] reschedule_interrupt at ffffffff815db3dd
+    [exception RIP: task_blocks_on_rt_mutex+51]
+    RIP: ffffffff810c1ed3  RSP: ffff88017a2a9c78  RFLAGS: 00000296
+    RAX: 0000000000080000  RBX: 0000000000000001  RCX: 0000000000000000
+    RDX: ffff88017a27d5a0  RSI: ffff88017a2a9d00  RDI: ffff880179ef8000
+    RBP: ffff880179ef8000   R8: ffff880179cfef50   R9: ffff880179ef8018
+    R10: ffff880179cfef51  R11: 0000000000000002  R12: 0000000000000001
+    R13: 0000000000000001  R14: 0000000100000000  R15: 0000000100000000
+    ORIG_RAX: ffffffffffffff02  CS: 0010  SS: 0018
+#19 [ffff88017a2a9ce0] rt_spin_lock_slowlock at ffffffff815d183c
+#20 [ffff88017a2a9da0] lock_timer_base.isra.35 at ffffffff81061cbf
+#21 [ffff88017a2a9dd0] schedule_timeout at ffffffff815cf1ce
+#22 [ffff88017a2a9e50] rcu_gp_kthread at ffffffff810f9bbb
+#23 [ffff88017a2a9ed0] kthread at ffffffff810796d5
+#24 [ffff88017a2a9f50] ret_from_fork at ffffffff815da04c
+crash>
 
-Power-savings compared to mainline (3.12-rc4):
----------------------------------------------
-With this patchset applied, the average power of the system reduced by 2.6%
-compared to the mainline kernel during the benchmark run. The total system
-power is an excellent metric for such evaluations, since it brings out the
-overall power-efficiency of the patchset. (IOW, if the patchset shoots up the
-CPU or disk power-consumption while causing memory power savings, then the
-total system power will not show much difference). So these numbers indicate
-that the patchset performs quite well in reducing the power-consumption of
-the system as a whole.
-
-This is not the most ideal hardware configuration to test on, since I had
-only 4 memory regions to play with, but this gives a good initial indication
-of the kind of power savings that can be achieved with this patchset.
-
-I am expecting the same patchset to give us power-savings of upto 5% of the
-total system power on a newer prototype hardware that I have (since it has
-more memory regions and lower base power consumption).
-
-
-Regards,
-Srivatsa S. Bhat
 
