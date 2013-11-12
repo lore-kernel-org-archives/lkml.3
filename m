@@ -1,115 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757044Ab3KLVeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 16:34:08 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:53000 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755984Ab3KLVeD (ORCPT
+	id S1757119Ab3KLVfP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 16:35:15 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45058 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756125Ab3KLVfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:34:03 -0500
-Date: Wed, 13 Nov 2013 00:31:52 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [libtraceevent] hrtimer_expire_entry unknown op '{'
-Message-ID: <20131112213152.GB5709@swordfish>
-References: <20131105093755.GB2272@swordfish.minsk.epam.com>
- <20131105081522.1c8e2012@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131105081522.1c8e2012@gandalf.local.home>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Tue, 12 Nov 2013 16:35:10 -0500
+Content-Type: multipart/signed; boundary="Apple-Mail=_60C7458F-837E-41F8-8B1E-98D66CD277B4"; protocol="application/pgp-signature"; micalg=pgp-sha1
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
+Subject: Re: [PATCH] ext4: explain encoding of 34-bit a,c,mtime values
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20131112003018.GA30281@thunk.org>
+Date: Tue, 12 Nov 2013 14:35:04 -0700
+Cc: David Turner <novalis@novalis.org>, Mark Harris <mhlk@osj.us>,
+        Jan Kara <jack@suse.cz>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-Id: <6DE0AF86-98E6-4DE9-BB7F-40FB32E1BC26@dilger.ca>
+References: <1383808590.23882.13.camel@chiang> <20131107160341.GA3850@quack.suse.cz> <1383864864.23882.33.camel@chiang> <20131107231445.GG2054@quack.suse.cz> <1383866807.23882.41.camel@chiang> <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca> <1383981551.8994.27.camel@chiang> <CADQUmxULoLgXRyoPpJJMJLqJPsZ8M4oPP8ScGxWp+Np8-efq3g@mail.gmail.com> <1384070214.8994.47.camel@chiang> <20131112003018.GA30281@thunk.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+X-Mailer: Apple Mail (2.1822)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (11/05/13 08:15), Steven Rostedt wrote:
-> > Hello,
-> > 
-> > libtraceevent reports ` unknown op '{' ' while processing hrtimer_expire_entry event
-> 
-> Yes, we need to port the plugin code from trace-cmd to handle this and
-> other cases. It's a known issue.
-> 
 
-Hello Steven,
-sorry if I'm bothering you with already known issue.
+--Apple-Mail=_60C7458F-837E-41F8-8B1E-98D66CD277B4
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=windows-1252
 
-I cloned trace-cmd from
-git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
+On Nov 11, 2013, at 5:30 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Sun, Nov 10, 2013 at 02:56:54AM -0500, David Turner wrote:
+>> b. Use Andreas's encoding, which is incompatible with pre-1970 files
+>> written on 64-bit systems.
+>>=20
+>> I don't care about currently-existing post-2038 files, because I =
+believe
+>> that nobody has a valid reason to have such files.  However, I do
+>> believe that pre-1970 files are probably important to someone.
+>>=20
+>> Despite this, I prefer option (b), because I think the simplicity is
+>> valuable, and because I hate to give up date ranges (even ones that I
+>> think we'll "never" need). Option (b) is not actually lossy, because =
+we
+>> could correct pre-1970 files with e2fsck; under Andreas's encoding,
+>> their dates would be in the far future (and thus cannot be =
+legitimate).
+>>=20
+>> Would a patch that does (b) be accepted?  I would accompany it with a
+>> patch to e2fsck (which I assume would also go to the ext4 developers
+>> mailing list?).
+>=20
+> I agree, I think this is the best way to go.  I'm going to drop your
+> earlier patch, and wait for an updated patch from you.  It may miss
+> this merge window, but as Andreas has pointed out, we still have a few
+> years to get this right.  :-)
 
-and there seems to be problems with hrtimer events format.
+Since this change would immediately break files encoded with pre-1970 =
+dates
+on ext4 filesystems, should there be a transition period where both =
+pre-1970
+dates (with extra epoch bits =3D=3D 0x3 in the current encoding) and =
+post-2378
+(with extra epoch bits =3D=3D 0x3 in the new encoding) are decoded as =
+being
+pre-1970?  That could be conditional until some release in the future =
+(e.g.
+>=3D Linux 4.20, at least 5 years away) to give folks a chance to run =
+the new
+e2fsck to fix up those files.
 
-# ./trace-cmd check-events
-trace-cmd: No such file or directory
-  bad op token {
-  bad op token {
-  bad op token {
-  bad op token {
-  function is_writable_pte not defined
-  function scsi_trace_parse_cdb not defined
-  function scsi_trace_parse_cdb not defined
-  function scsi_trace_parse_cdb not defined
-  function scsi_trace_parse_cdb not defined
-  function jiffies_to_msecs not defined
-  function jiffies_to_msecs not defined
-  unknown op '{'
-  unknown op '{'
+Are there really any ext4 filesystems that have files with valid dates =
+so old?
+I don=92t want to break anyone=92s data, but if this extra complexity is =
+completely
+pointless then I=92m also fine with this minor risk of breakage.
 
-
-trivial strace-ing shows that 'unknown op' comes from hrtimer_expire_entry
-
-stat("/sys/kernel/debug/tracing/events/timer/hrtimer_expire_entry/format", {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
-open("/sys/kernel/debug/tracing/events/timer/hrtimer_expire_entry/format", O_RDONLY) = 5
-read(5, "name: hrtimer_expire_entry\nID: 9"..., 8192) = 577
-read(5, "", 8192)                       = 0
-close(5)                                = 0
-write(2, "  ", 2)                       = 2
-write(2, "unknown op '{'", 14)          = 14
-write(2, "\n", 1)                       = 1
-
-
-./trace-cmd record -e timer ls /bin
-./trace-cmd report
-
-     kworker/1:0-3925  [001]  1626.266585: hrtimer_cancel:       hrtimer=0xffff880157c8df80
-               X-2175  [000]  1626.266585: hrtimer_cancel:       hrtimer=0xffff880157c0df80
-               X-2175  [000]  1626.266586: hrtimer_expire_entry: [FAILED TO PARSE] hrtimer=0xffff880157c0df80 now=1625348004324 function=0xffffffff810cadf0
-     kworker/1:0-3925  [001]  1626.266586: hrtimer_expire_entry: [FAILED TO PARSE] hrtimer=0xffff880157c8df80 now=1625348004320 function=0xffffffff810cadf0
-     kworker/1:0-3925  [001]  1626.266591: hrtimer_expire_exit:  hrtimer=0xffff880157c8df80
-     kworker/1:0-3925  [001]  1626.266592: hrtimer_start:        [FAILED TO PARSE] hrtimer=0xffff880157c8df80 function=0xffffffff810cadf0 expires=1625352000000 softexpires=1625352000000
-               X-2175  [000]  1626.266593: hrtimer_expire_exit:  hrtimer=0xffff880157c0df80
-               X-2175  [000]  1626.266594: hrtimer_start:        [FAILED TO PARSE] hrtimer=0xffff880157c0df80 function=0xffffffff810cadf0 expires=1625352000000 softexpires=1625352000000
-     kworker/1:0-3925  [001]  1626.266596: timer_cancel:         timer=0xffff880157c8ff28
-     kworker/1:0-3925  [001]  1626.266598: timer_expire_entry:   timer=0xffff880157c8ff28 function=delayed_work_timer_fn now=4295298633
-               X-2175  [000]  1626.266599: timer_cancel:         timer=0xffff880157c0ff28
-               X-2175  [000]  1626.266599: timer_expire_entry:   timer=0xffff880157c0ff28 function=delayed_work_timer_fn now=4295298633
-
-thank you,
-
-	-ss
+Cheers, Andreas
 
 
-> -- Steve
-> 
-> > 
-> > cat /sys/kernel/debug/tracing/events/timer/hrtimer_expire_entry/format
-> > 
-> > name: hrtimer_expire_entry
-> > ID: 91
-> > format:
-> > 	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-> > 	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-> > 	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-> > 	field:int common_pid;	offset:4;	size:4;	signed:1;
-> > 
-> > 	field:void * hrtimer;	offset:8;	size:8;	signed:0;
-> > 	field:s64 now;	offset:16;	size:8;	signed:1;
-> > 	field:void * function;	offset:24;	size:8;	signed:0;
-> > 
-> > print fmt: "hrtimer=%p function=%pf now=%llu", REC->hrtimer, REC->function, (unsigned long long)(((ktime_t) { .tv64 = REC->now }).tv64)
-> > 
-> > 
-> > 	-ss
-> 
+
+
+
+
+--Apple-Mail=_60C7458F-837E-41F8-8B1E-98D66CD277B4
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename=signature.asc
+Content-Type: application/pgp-signature;
+	name=signature.asc
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - http://gpgtools.org
+
+iD8DBQFSgp8JpIg59Q01vtYRAv/CAKCLdogtXGO6X8HMSdwlbxcK2njIggCcCjsA
+XOzvl5skYbfVDyE1MkrysD0=
+=jGZQ
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_60C7458F-837E-41F8-8B1E-98D66CD277B4--
