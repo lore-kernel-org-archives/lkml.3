@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab3KLAp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 19:45:56 -0500
-Received: from smtprelay0053.hostedemail.com ([216.40.44.53]:54984 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752905Ab3KLApr (ORCPT
+	id S1754395Ab3KLAyK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 19:54:10 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:38582 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943Ab3KLAyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 19:45:47 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2198:2199:2393:2553:2559:2562:2692:2828:2892:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3873:4321:4605:5007:7652:8603:10004:10400:10848:10967:11232:11658:11914:12043:12517:12519:12740:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Ne
-X-HE-Tag: brain61_14f75d4970017
-X-Filterd-Recvd-Size: 2648
-Message-ID: <1384217148.4771.9.camel@joe-AO722>
-Subject: Re: [PATCH] block: cmdline-parser: perfect cmdline format checking
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Caizhiyong <caizhiyong@hisilicon.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Karel Zak <kzak@redhat.com>,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
-Date: Mon, 11 Nov 2013 16:45:48 -0800
-In-Reply-To: <20131111153420.d4e9c4ef2a90e70bfb01fd83@linux-foundation.org>
-References: <C3050A4DBA34F345975765E43127F10F1C08B3FB@szxeml512-mbs.china.huawei.com>
-	 <20131111153420.d4e9c4ef2a90e70bfb01fd83@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Nov 2013 19:54:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131112004436.GA30125@july>
+References: <20131112004436.GA30125@july>
+Date: Tue, 12 Nov 2013 09:54:04 +0900
+X-Google-Sender-Auth: TdnWk3Aqr2jHadk0btki3_lFFEE
+Message-ID: <CAH9JG2V0_aFdJaNcVBOYnE=s1YP8hfFhQPjdQ=+HBr0Afy5fLw@mail.gmail.com>
+Subject: Re: [PATCH] video: backlight: Remove backlight sysfs uevent
+From: Kyungmin Park <kmpark@infradead.org>
+To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org, kay@vrfy.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-11 at 15:34 -0800, Andrew Morton wrote:
-> On Sat, 9 Nov 2013 11:45:14 +0000 Caizhiyong <caizhiyong@hisilicon.com> wrote:
-[]
-> >  -perfect cmdline format checking, make the error information clear
-> >   for understand, make this lib fully equivalent to the old parser
-> >   in drivers/mtd/cmdlinepart.c
-> > 
-> > ...
-> >
-> > +#define PARSER                       "cmdline-parser: "
-> > ...
-> > -			pr_warn("cmdline partition size is invalid.");
-> > +			pr_warn(PARSER "partition '%s' size '0x%llx' too small.",
-> 
-> You can use the standard pr_fmt() mechanism instead of this.
-[]
-> diff -puN block/cmdline-parser.c~mtd-cmdlinepart-use-cmdline-partition-parser-lib-fix block/cmdline-parser.c
-[]
-> @@ -21,10 +26,12 @@ static int parse_subpart(struct cmdline_
->  	if (*partdef == '-') {
->  		new_subpart->size = (sector_t)(~0ULL);
->  		partdef++;
-> +		lastpart = 1;
->  	} else {
->  		new_subpart->size = (sector_t)memparse(partdef, &partdef);
->  		if (new_subpart->size < (sector_t)PAGE_SIZE) {
-> -			pr_warn("cmdline partition size is invalid.");
-> +			pr_warn(PARSER "partition '%s' size '0x%llx' too small.",
-> +				partorg, new_subpart->size);
+Please ignore it. strange mail system.
 
-As well, please add terminating '\n' newlines to all the formats.
-This helps avoid possible logging message interleaving.
+After feedback from previous mail, I'll re-send it.
 
+Thank you,
+Kyungmin Park
 
+On Tue, Nov 12, 2013 at 9:44 AM, Kyungmin Park <kmpark@infradead.org> wrote:
+> From: Kyungmin Park <kyungmin.park@samsung.com>
+>
+> The most mobile phones have Ambient Light Sensors and it changes brightness according lux.
+> It means it changes backlight brightness frequently by just writing sysfs node, so it generates uevent.
+>
+> Usually there's no user to use this backlight changes. But it forks udev worker threads and it takes about 5ms. The main problem is that it hurts other process activities. so remove it.
+>
+> Kay said
+> "Uevents are for the major, low-frequent, global device state-changes,
+>  not for carrying-out any sort of measurement data. Subsystems which
+>  need that should use other facilities like poll()-able sysfs file or
+>  any other subscription-based, client-tracking interface which does not
+>  cause overhead if it isn't used. Uevents are not the right thing to
+>  use here, and upstream udev should not paper-over broken kernel
+>  subsystems."
+>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+> diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+> index 94a403a..441272d 100644
+> --- a/drivers/video/backlight/backlight.c
+> +++ b/drivers/video/backlight/backlight.c
+> @@ -88,9 +88,6 @@ static void backlight_generate_event(struct backlight_device *bd,
+>         char *envp[2];
+>
+>         switch (reason) {
+> -       case BACKLIGHT_UPDATE_SYSFS:
+> -               envp[0] = "SOURCE=sysfs";
+> -               break;
+>         case BACKLIGHT_UPDATE_HOTKEY:
+>                 envp[0] = "SOURCE=hotkey";
+>                 break;
+> @@ -172,8 +169,6 @@ static ssize_t brightness_store(struct device *dev,
+>         }
+>         mutex_unlock(&bd->ops_lock);
+>
+> -       backlight_generate_event(bd, BACKLIGHT_UPDATE_SYSFS);
+> -
+>         return rc;
+>  }
+>  static DEVICE_ATTR_RW(brightness);
+> diff --git a/include/linux/backlight.h b/include/linux/backlight.h
+> index 53b7794..d2a27dd 100644
+> --- a/include/linux/backlight.h
+> +++ b/include/linux/backlight.h
+> @@ -29,7 +29,6 @@
+>
+>  enum backlight_update_reason {
+>         BACKLIGHT_UPDATE_HOTKEY,
+> -       BACKLIGHT_UPDATE_SYSFS,
+>  };
+>
+>  enum backlight_type {
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
