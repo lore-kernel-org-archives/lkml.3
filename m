@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab3KLTtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:49:15 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59088 "EHLO arroyo.ext.ti.com"
+	id S1756419Ab3KLTt2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:49:28 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55497 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756819Ab3KLTs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:48:28 -0500
+	id S1756335Ab3KLTsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 14:48:55 -0500
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
@@ -13,13 +13,10 @@ To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
 CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
         <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>, <cpufreq@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: [PATCHv5 05/20] cpufreq: cpufreq-cpu0: add dt node parsing for cooling device properties
-Date: Tue, 12 Nov 2013 15:46:07 -0400
-Message-ID: <1384285582-16933-6-git-send-email-eduardo.valentin@ti.com>
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCHv5 08/20] thermal: ti-soc-thermal: use thermal DT infrastructure
+Date: Tue, 12 Nov 2013 15:46:10 -0400
+Message-ID: <1384285582-16933-9-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
 References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
@@ -29,130 +26,189 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the cpufreq-cpu0 driver to consider if
-a cpu needs cooling (with cpufreq). In case the cooling is needed,
-the cpu0 device tree node needs to be properly configured
-with cooling device properties.
+This patch improves the ti-soc-thermal driver by adding the
+support to build the thermal zones based on DT nodes.
 
-In case these properties are present,, the driver will
-load a cpufreq cooling device in the system. The cpufreq-cpu0
-driver is not interested in determining how the system should
-be using the cooling device. The driver is responsible
-only of loading the cooling device.
+The driver will have two options now to build the thermal
+zones. The first option is the zones originally coded
+in this driver. So, the driver behavior will be same
+if there is no DT node describing the zones. The second
+option, when it is found a DT node with thermal data,
+will used the common infrastructure to build the thermal
+zone and bind its cooling devices.
 
-Describing how the cooling device will be used can be
-accomplished by setting up a thermal zone that references
-and is composed by the cpufreq cooling device.
+In case the driver loads thermal data using the legacy
+mode, this driver still adds to the system
+a cpufreq cooling device. Loading the thermal data from
+DT, the driver assumes someone else will add the cpufreq
+cooling device, like the cpufreq driver.
 
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: cpufreq@vger.kernel.org
+Cc: Zhang Rui <rui.zhang@intel.com>
 Cc: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt         |  7 +++++++
- drivers/cpufreq/Kconfig                                  |  2 +-
- drivers/cpufreq/cpufreq-cpu0.c                           | 16 ++++++++++++++++
- 3 files changed, 24 insertions(+), 1 deletion(-)
+ drivers/thermal/ti-soc-thermal/ti-thermal-common.c | 77 +++++++++++++++++-----
+ 1 file changed, 62 insertions(+), 15 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-index 051f764..f055515 100644
---- a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-+++ b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-@@ -15,6 +15,10 @@ Optional properties:
- - clock-latency: Specify the possible maximum transition latency for clock,
-   in unit of nanoseconds.
- - voltage-tolerance: Specify the CPU voltage tolerance in percentage.
-+- #cooling-cells:
-+- cooling-min-level:
-+- cooling-max-level:
-+     Please refer to Documentation/devicetree/bindings/thermal/thermal.txt.
- 
- Examples:
- 
-@@ -33,6 +37,9 @@ cpus {
- 			198000  850000
- 		>;
- 		clock-latency = <61036>; /* two CLK32 periods */
-+		#cooling-cells = <2>;
-+		cooling-min-level = <0>;
-+		cooling-max-level = <2>;
- 	};
- 
- 	cpu@1 {
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 534fcb8..fc1e9a5 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -186,7 +186,7 @@ config CPU_FREQ_GOV_CONSERVATIVE
- 
- config GENERIC_CPUFREQ_CPU0
- 	tristate "Generic CPU0 cpufreq driver"
--	depends on HAVE_CLK && REGULATOR && PM_OPP && OF
-+	depends on HAVE_CLK && REGULATOR && PM_OPP && OF && THERMAL && CPU_THERMAL
- 	select CPU_FREQ_TABLE
- 	help
- 	  This adds a generic cpufreq driver for CPU0 frequency management.
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index c522a95..568aaf3 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -13,7 +13,9 @@
- 
- #include <linux/clk.h>
- #include <linux/cpu.h>
-+#include <linux/cpu_cooling.h>
+diff --git a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
+index 5a47cc8..9eec26d 100644
+--- a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
++++ b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
+@@ -31,6 +31,7 @@
  #include <linux/cpufreq.h>
-+#include <linux/cpumask.h>
- #include <linux/err.h>
- #include <linux/module.h>
- #include <linux/of.h>
-@@ -21,6 +23,7 @@
- #include <linux/platform_device.h>
- #include <linux/regulator/consumer.h>
- #include <linux/slab.h>
-+#include <linux/thermal.h>
+ #include <linux/cpumask.h>
+ #include <linux/cpu_cooling.h>
++#include <linux/of.h>
  
- static unsigned int transition_latency;
- static unsigned int voltage_tolerance; /* in percentage */
-@@ -29,6 +32,7 @@ static struct device *cpu_dev;
- static struct clk *cpu_clk;
- static struct regulator *cpu_reg;
- static struct cpufreq_frequency_table *freq_table;
-+static struct thermal_cooling_device *cdev;
+ #include "ti-thermal.h"
+ #include "ti-bandgap.h"
+@@ -44,6 +45,7 @@ struct ti_thermal_data {
+ 	enum thermal_device_mode mode;
+ 	struct work_struct thermal_wq;
+ 	int sensor_id;
++	bool our_zone;
+ };
  
- static int cpu0_verify_speed(struct cpufreq_policy *policy)
+ static void ti_thermal_work(struct work_struct *work)
+@@ -75,11 +77,10 @@ static inline int ti_thermal_hotspot_temperature(int t, int s, int c)
+ 
+ /* thermal zone ops */
+ /* Get temperature callback function for thermal zone*/
+-static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
+-				      unsigned long *temp)
++static inline int __ti_thermal_get_temp(void *devdata, long *temp)
  {
-@@ -260,6 +264,17 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 		goto out_free_table;
- 	}
+ 	struct thermal_zone_device *pcb_tz = NULL;
+-	struct ti_thermal_data *data = thermal->devdata;
++	struct ti_thermal_data *data = devdata;
+ 	struct ti_bandgap *bgp;
+ 	const struct ti_temp_sensor *s;
+ 	int ret, tmp, slope, constant;
+@@ -118,6 +119,14 @@ static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
+ 	return ret;
+ }
  
-+	/*
-+	 * For now, just loading the cooling device;
-+	 * thermal DT code takes care of matching them.
-+	 */
-+	if (of_find_property(np, "#cooling-cells", NULL)) {
-+		cdev = of_cpufreq_cooling_register(np, cpu_present_mask);
-+		if (IS_ERR(cdev))
-+			pr_err("running cpufreq without cooling device: %ld\n",
-+			       PTR_ERR(cdev));
-+	}
++static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
++				      unsigned long *temp)
++{
++	struct ti_thermal_data *data = thermal->devdata;
 +
- 	of_node_put(np);
++	return __ti_thermal_get_temp(data, temp);
++}
++
+ /* Bind callback functions for thermal zone */
+ static int ti_thermal_bind(struct thermal_zone_device *thermal,
+ 			   struct thermal_cooling_device *cdev)
+@@ -230,11 +239,9 @@ static int ti_thermal_get_trip_temp(struct thermal_zone_device *thermal,
  	return 0;
+ }
  
-@@ -272,6 +287,7 @@ out_put_node:
- 
- static int cpu0_cpufreq_remove(struct platform_device *pdev)
+-/* Get the temperature trend callback functions for thermal zone */
+-static int ti_thermal_get_trend(struct thermal_zone_device *thermal,
+-				int trip, enum thermal_trend *trend)
++static int __ti_thermal_get_trend(void *p, long *trend)
  {
-+	cpufreq_cooling_unregister(cdev);
- 	cpufreq_unregister_driver(&cpu0_cpufreq_driver);
- 	opp_free_cpufreq_table(cpu_dev, &freq_table);
+-	struct ti_thermal_data *data = thermal->devdata;
++	struct ti_thermal_data *data = p;
+ 	struct ti_bandgap *bgp;
+ 	int id, tr, ret = 0;
  
+@@ -245,6 +252,22 @@ static int ti_thermal_get_trend(struct thermal_zone_device *thermal,
+ 	if (ret)
+ 		return ret;
+ 
++	*trend = tr;
++
++	return 0;
++}
++
++/* Get the temperature trend callback functions for thermal zone */
++static int ti_thermal_get_trend(struct thermal_zone_device *thermal,
++				int trip, enum thermal_trend *trend)
++{
++	int ret;
++	long tr;
++
++	ret = __ti_thermal_get_trend(thermal->devdata, &tr);
++	if (ret)
++		return ret;
++
+ 	if (tr > 0)
+ 		*trend = THERMAL_TREND_RAISING;
+ 	else if (tr < 0)
+@@ -308,16 +331,23 @@ int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id,
+ 	if (!data)
+ 		return -EINVAL;
+ 
+-	/* Create thermal zone */
+-	data->ti_thermal = thermal_zone_device_register(domain,
++	/* in case this is specified by DT */
++	data->ti_thermal = thermal_zone_of_sensor_register(bgp->dev, id,
++					data, __ti_thermal_get_temp,
++					__ti_thermal_get_trend);
++	if (IS_ERR(data->ti_thermal)) {
++		/* Create thermal zone */
++		data->ti_thermal = thermal_zone_device_register(domain,
+ 				OMAP_TRIP_NUMBER, 0, data, &ti_thermal_ops,
+ 				NULL, FAST_TEMP_MONITORING_RATE,
+ 				FAST_TEMP_MONITORING_RATE);
+-	if (IS_ERR(data->ti_thermal)) {
+-		dev_err(bgp->dev, "thermal zone device is NULL\n");
+-		return PTR_ERR(data->ti_thermal);
++		if (IS_ERR(data->ti_thermal)) {
++			dev_err(bgp->dev, "thermal zone device is NULL\n");
++			return PTR_ERR(data->ti_thermal);
++		}
++		data->ti_thermal->polling_delay = FAST_TEMP_MONITORING_RATE;
++		data->our_zone = true;
+ 	}
+-	data->ti_thermal->polling_delay = FAST_TEMP_MONITORING_RATE;
+ 	ti_bandgap_set_sensor_data(bgp, id, data);
+ 	ti_bandgap_write_update_interval(bgp, data->sensor_id,
+ 					data->ti_thermal->polling_delay);
+@@ -331,7 +361,13 @@ int ti_thermal_remove_sensor(struct ti_bandgap *bgp, int id)
+ 
+ 	data = ti_bandgap_get_sensor_data(bgp, id);
+ 
+-	thermal_zone_device_unregister(data->ti_thermal);
++	if (data && data->ti_thermal) {
++		if (data->our_zone)
++			thermal_zone_device_unregister(data->ti_thermal);
++		else
++			thermal_zone_of_sensor_unregister(bgp->dev,
++							  data->ti_thermal);
++	}
+ 
+ 	return 0;
+ }
+@@ -350,6 +386,15 @@ int ti_thermal_report_sensor_temperature(struct ti_bandgap *bgp, int id)
+ int ti_thermal_register_cpu_cooling(struct ti_bandgap *bgp, int id)
+ {
+ 	struct ti_thermal_data *data;
++	struct device_node *np = bgp->dev->of_node;
++
++	/*
++	 * We are assuming here that if one deploys the zone
++	 * using DT, then it must be aware that the cooling device
++	 * loading has to happen via cpufreq driver.
++	 */
++	if (of_find_property(np, "#thermal-sensor-cells", NULL))
++		return 0;
+ 
+ 	data = ti_bandgap_get_sensor_data(bgp, id);
+ 	if (!data || IS_ERR(data))
+@@ -380,7 +425,9 @@ int ti_thermal_unregister_cpu_cooling(struct ti_bandgap *bgp, int id)
+ 	struct ti_thermal_data *data;
+ 
+ 	data = ti_bandgap_get_sensor_data(bgp, id);
+-	cpufreq_cooling_unregister(data->cool_dev);
++
++	if (data && data->cool_dev)
++		cpufreq_cooling_unregister(data->cool_dev);
+ 
+ 	return 0;
+ }
 -- 
 1.8.2.1.342.gfa7285d
 
