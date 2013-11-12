@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab3KLLcg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 06:32:36 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:33640 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978Ab3KLLcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 06:32:33 -0500
-Date: Tue, 12 Nov 2013 12:32:08 +0100
-From: Borislav Petkov <bp@alien8.de>
+	id S1754162Ab3KLLei (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 06:34:38 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:57029 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab3KLLee (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 06:34:34 -0500
+Date: Tue, 12 Nov 2013 08:34:27 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/boot changes for v3.13
-Message-ID: <20131112113208.GC12849@pd.tnic>
-References: <20131111170558.GA12741@gmail.com>
- <CAE9FiQWrzZB+wpSXGeQTPKi2o7MKvONFkk0_POe-E+wco07Erw@mail.gmail.com>
- <20131112103422.GA12849@pd.tnic>
- <20131112112338.GA12801@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 04/10] perf machine: Introduce synthesize_threads method
+ out of open coded equivalent
+Message-ID: <20131112113427.GA4053@ghostprotocols.net>
+References: <1384201353-23863-1-git-send-email-acme@infradead.org>
+ <1384201353-23863-5-git-send-email-acme@infradead.org>
+ <528140DB.90301@gmail.com>
+ <20131111205045.GE18886@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131112112338.GA12801@gmail.com>
+In-Reply-To: <20131111205045.GE18886@gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 12:23:38PM +0100, Ingo Molnar wrote:
-> So I suspect what Yinghai tried to say if CPU0 and CPU1 are not on the
-> same node we do the printout incorrectly.
+Em Mon, Nov 11, 2013 at 09:50:45PM +0100, Ingo Molnar escreveu:
+> * David Ahern <dsahern@gmail.com> wrote:
 
-I hope your translation is correct :) I'd still like to get a
-confirmation from him though.
+> > On 11/11/13, 1:22 PM, Arnaldo Carvalho de Melo wrote:
+> > >+	if (perf_target__has_task(target))
+> > >+		return perf_event__synthesize_thread_map(tool, threads, process, machine, data_mmap);
+> > >+	else if (perf_target__has_cpu(target))
+> > >+		return perf_event__synthesize_threads(tool, process, machine, data_mmap);
 
-> Arguably this was a pre-existing condition, but would be nice to fix
-> it now that this code has emerged out of steady bitrot! :-)
->
-> How difficult would it be in your opinion?
+> > Getting kind of long on the line lengths...
 
-Well, I did try a weird, non-existant configuration:
+> Maybe we could start losing most of the perf_ prefixes - it's all about 
+> perf here, so it does not really add much information, does it?
 
-kvm ... -smp 6 -numa node,nodeid=0,cpus=0\;2\;3 -numa node,nodeid=1,cpus=1\;4\;5
+In some cases that is ok, that is why I didn't call it 'perf_machine',
+just 'machine', in others, like 'perf_event', I thought 'event' would be
+too general when somebody tries to use this code together with other
+libraries.
 
-and what I get is:
+In some cases, like 'perf_target', probably its ok to move to
+'target', perhaps this is ok for this problem domain, i.e.
+monitoring/profiling/etc.
+ 
+> that would turn it into:
+> 
+> 	if (target__has_task(target))
+> 		return event__synthesize_thread_map(tool, threads, process, machine, data_mmap);
+> 	else if (target__has_cpu(target))
+> 		return event__synthesize_threads(tool, process, machine, data_mmap);
+> 
+> Another trick would be to combine (tool, machine) into a single helper 
+> struct (struct context *ctx?), if that is mostly a constant combination 
+> describing tool environment, which gets passed deep inside the guts of 
+> functions.
 
-[    0.068574] x86: Booting SMP configuration:
-[    0.069006] .... node  #1, CPUs:      #1
-[    0.147005] .... node  #0, CPUs:   #2 #3 #4 #5
-[    0.445273] x86: Booted up 2 nodes, 6 CPUs
 
-Before my cleanup and after removing the "fixing up alternatives"
-message which hid things, the output looked like:
+Reducing the function signature is something that may help as well, and
+was done in this series with machine__synthesize_threads, that avoids
+passing the tool and process arguments, since they were constanty
+anyway.
 
-[    0.069621] smpboot: Booting Node   1, Processors  #   1 OK
-[    0.146006] smpboot: Booting Node   0, Processors  #   2 #   3 #   4 #   5 OK
-[    0.448320] Brought up 6 CPUs
-
-The problem is not the indentation but that the current code slaps all
-cpus on the last node, in this case node 0, because announce_cpu gets
-the cores one by one.
-
-A possible fix would be to collect the topology and dump it *only*
-*after* the last core has been announced.
-
-But before we do anything, I'd like to get a concrete system which has
-that issue and we can talk about it then.
-
-> Btw., while staring at that code once more I noticed the following
-> small nit, there's a pre-existing weird way of writing the -1 literal:
->
->                           if (current_node > (-1))
-
-It came from 2eaad1fddd7450a48ad464229775f97fbfe8af36.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+What you propose is used in some cases, like with symbol_conf, will try
+to work in that direction as time goes by, i.e. doing some refactoring
+work of this kind every once in a while, not to disrupt too much the
+patch flow.
+ 
+- Arnaldo
