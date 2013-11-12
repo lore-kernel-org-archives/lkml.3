@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab3KLONA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:13:00 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:27461 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755574Ab3KLOM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:12:58 -0500
-X-IronPort-AV: E=Sophos;i="4.93,685,1378857600"; 
-   d="scan'208";a="73570048"
-Date: Tue, 12 Nov 2013 14:11:21 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: [PATCH 0/2] swiotlb-xen fixes
-Message-ID: <alpine.DEB.2.02.1311121404590.26077@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755634Ab3KLONV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:13:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59805 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755606Ab3KLONS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 09:13:18 -0500
+Date: Tue, 12 Nov 2013 15:13:14 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipvs: Remove unused variable ret from
+ sync_thread_master()
+Message-ID: <20131112141314.GQ5056@laptop.programming.kicks-ass.net>
+References: <1384264396-14550-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384264396-14550-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this patch series is just a couple of fixes for swiotlb-xen.
+On Tue, Nov 12, 2013 at 02:53:16PM +0100, Geert Uytterhoeven wrote:
+> net/netfilter/ipvs/ip_vs_sync.c: In function 'sync_thread_master':
+> net/netfilter/ipvs/ip_vs_sync.c:1640:8: warning: unused variable 'ret' [-Wunused-variable]
+> 
+> Introduced by commit 35a2af94c7ce7130ca292c68b1d27fcfdb648f6b ("sched/wait:
+> Make the __wait_event*() interface more friendly")
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  net/netfilter/ipvs/ip_vs_sync.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
+> index f63c2388f38d..d258125c4202 100644
+> --- a/net/netfilter/ipvs/ip_vs_sync.c
+> +++ b/net/netfilter/ipvs/ip_vs_sync.c
+> @@ -1637,7 +1637,7 @@ static int sync_thread_master(void *data)
+>  			continue;
+>  		}
+>  		while (ip_vs_send_sync_msg(tinfo->sock, sb->mesg) < 0) {
+> -			int ret = __wait_event_interruptible(*sk_sleep(sk),
 
-In particular the slow path (bouncing on the swiotlb buffer for dma
-operations) on ARM has two problems, each of them fixed by a separate
-patch:
+So ideally there's be a comment here why we're using interruptible but
+then ignore interruptions.
 
-- a xen_dma_map_page call is missing in xen_swiotlb_map_sg_attrs;
+Julian said (
+http://lkml.kernel.org/r/alpine.LFD.2.00.1310012245020.1782@ja.ssi.bg ):
 
-- dma_capable often fails on ARM because devices don't set the dma_mask
-  correctly. This causes swiotlb-xen to take the slow path, and that is
-  bad enough, but in xen_swiotlb_map_page also causes the function to
-  return an error an fail.
+" Yes, your patch looks ok to me. In the past
+we used ssleep() but IPVS users were confused why
+IPVS threads increase the load average. So, we
+switched to _interruptible calls and later the socket
+polling was added.  "
 
+So maybe add something like
 
+			/*
+			 * (Ab)use interruptible sleep to avoid increasing
+			 * the load avg.
+			 */
 
-Stefano Stabellini (2):
-      swiotlb-xen: add missing xen_dma_map_page call
-      swiotlb-xen: xen_swiotlb_map_page: do not error out if dma_capable fails
-
- drivers/xen/swiotlb-xen.c |   12 +++++-------
- 1 files changed, 5 insertions(+), 7 deletions(-)
-
-
-git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git for-linus-3.13-fixes
-
-Cheers,
-
-Stefano
+> +			__wait_event_interruptible(*sk_sleep(sk),
+>  						   sock_writeable(sk) ||
+>  						   kthread_should_stop());
+>  			if (unlikely(kthread_should_stop()))
+> -- 
+> 1.7.9.5
+> 
