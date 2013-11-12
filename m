@@ -1,123 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423Ab3KLRkq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:40:46 -0500
-Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:42954
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932188Ab3KLRkE (ORCPT
+	id S932259Ab3KLRlO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:41:14 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:47690 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932182Ab3KLRlL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:40:04 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h1155h)
-X-WSS-ID: 0MW5VOR-08-4X7-02
-X-M-MSG: 
-Subject: [PATCH 09/10] crytpo: CCP device driver build files
-To: <davem@davemloft.net>, <linux-crytpo@vger.kernel.org>,
-        <herbert@gondor.hengli.com.au>
-From: Tom Lendacky <thomas.lendacky@amd.com>
-CC: <linux-kernel@vger.kernel.org>
-Date: Tue, 12 Nov 2013 11:39:53 -0600
-Message-ID: <20131112173953.18862.34075.stgit@tlendack-t1.amdoffice.net>
-In-Reply-To: <20131112173900.18862.68623.stgit@tlendack-t1.amdoffice.net>
-References: <20131112173900.18862.68623.stgit@tlendack-t1.amdoffice.net>
-User-Agent: StGit/0.15
+	Tue, 12 Nov 2013 12:41:11 -0500
+Message-ID: <52826706.2080508@arm.com>
+Date: Tue, 12 Nov 2013 17:36:06 +0000
+From: Jonathan Austin <Jonathan.Austin@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Ming Lei <tom.leiming@gmail.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Michal Marek <mmarek@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Axel Lin <axel.lin@ingics.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: kernel BUG at kernel/kallsyms.c:222!
+References: <CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com> <CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com> <CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com> <87y54vzszo.fsf@rustcorp.com.au> <CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com> <CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com> <CAFRkauCW3FDSuh4t0gvmSWH1m0+qaG0XSoBxmk30Wq1FMy7iFw@mail.gmail.com> <CACVXFVMzOzD+D-MQCUBvC80d4zS-TJfcucKuUvzerGs6gT1fEg@mail.gmail.com> <CACVXFVOnVXcVdRCm=OfPjpvvWCiXi8GRV+9ViOGmSZ3tTf6WDg@mail.gmail.com> <528110B1.4060402@arm.com>	<20131111193236.GB16735@n2100.arm.linux.org.uk> <CACVXFVPQfUtrc4r4cS9J+6q5Z6hGZDgafH=M_6JfrzrAUGJOHw@mail.gmail.com>
+In-Reply-To: <CACVXFVPQfUtrc4r4cS9J+6q5Z6hGZDgafH=M_6JfrzrAUGJOHw@mail.gmail.com>
+X-MC-Unique: 113111217363203902
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These files provide the ability to configure and build the
-AMD CCP device driver and crypto API support.
+On 12/11/13 03:22, Ming Lei wrote:
+> On Tue, Nov 12, 2013 at 3:32 AM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+>> On Mon, Nov 11, 2013 at 05:15:29PM +0000, Jonathan Austin wrote:
+>>> I've tested the patch below and it solves the ARM side of things - so
+>>> gives you an option other than a complete revert. Happy to put this in to
+>>> RMK's patch system if you'd prefer not to have to revert and he's happy
+>>> with the patch.
+>>
+>> I think this is the right solution because it then means that this symbol
+>> has the same meaning whether on MMU or !MMU - and getting rid of these
+>> kinds of gratuitous variances are the only way that !MMU is going to
+>> become less fragile.
+>
+> The patch only fixes problem on arm, and other !MMU&&!ARM archs
+> should be affected too.
+>
+> Also there is no CONFIG_PAGE_OFFSET defined for some ARCHs,
+> such as 64bit ARCHs.
+>
+> Currently, I suggest to filter only on ARM as attachment patch if we plan
+> to merge Jonathan's patch, otherwise a more complicated approach has
+> to be figured out  to do the filter(such as, define a readonly symbol in
+> kernel to store PAGE_OFFSET, and let scripts/kallsyms use it for
+> filtering).
 
-Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
----
- drivers/crypto/Kconfig      |   12 ++++++++++++
- drivers/crypto/Makefile     |    1 +
- drivers/crypto/ccp/Kconfig  |   23 +++++++++++++++++++++++
- drivers/crypto/ccp/Makefile |   10 ++++++++++
- 4 files changed, 46 insertions(+)
- create mode 100644 drivers/crypto/ccp/Kconfig
- create mode 100644 drivers/crypto/ccp/Makefile
+I'm happy with that approach, though allowing only ARM seems a bit
+conservative - is it the only architecture we actually expect to work?
 
-diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
-index f4fd837..4954d75 100644
---- a/drivers/crypto/Kconfig
-+++ b/drivers/crypto/Kconfig
-@@ -399,4 +399,16 @@ config CRYPTO_DEV_ATMEL_SHA
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called atmel-sha.
- 
-+config CRYPTO_DEV_CCP
-+	bool "Support for AMD Cryptographic Coprocessor"
-+	depends on X86
-+	default n
-+	help
-+	  The AMD Cryptographic Coprocessor provides hardware support
-+	  for encryption, hashing and related operations.
-+
-+if CRYPTO_DEV_CCP
-+	source "drivers/crypto/ccp/Kconfig"
-+endif
-+
- endif # CRYPTO_HW
-diff --git a/drivers/crypto/Makefile b/drivers/crypto/Makefile
-index b4946dd..8a6c86a 100644
---- a/drivers/crypto/Makefile
-+++ b/drivers/crypto/Makefile
-@@ -22,3 +22,4 @@ obj-$(CONFIG_CRYPTO_DEV_NX) += nx/
- obj-$(CONFIG_CRYPTO_DEV_ATMEL_AES) += atmel-aes.o
- obj-$(CONFIG_CRYPTO_DEV_ATMEL_TDES) += atmel-tdes.o
- obj-$(CONFIG_CRYPTO_DEV_ATMEL_SHA) += atmel-sha.o
-+obj-$(CONFIG_CRYPTO_DEV_CCP) += ccp/
-diff --git a/drivers/crypto/ccp/Kconfig b/drivers/crypto/ccp/Kconfig
-new file mode 100644
-index 0000000..335ed5c
---- /dev/null
-+++ b/drivers/crypto/ccp/Kconfig
-@@ -0,0 +1,23 @@
-+config CRYPTO_DEV_CCP_DD
-+	tristate "Cryptographic Coprocessor device driver"
-+	depends on CRYPTO_DEV_CCP
-+	default m
-+	help
-+	  Provides the interface to use the AMD Cryptographic Coprocessor
-+	  which can be used to accelerate or offload encryption operations
-+	  such as SHA, AES and more. If you choose 'M' here, this module
-+	  will be called ccp.
-+
-+config CRYPTO_DEV_CCP_CRYPTO
-+	tristate "Encryption and hashing acceleration support"
-+	depends on CRYPTO_DEV_CCP_DD
-+	default m
-+	select CRYPTO_ALGAPI
-+	select CRYPTO_HASH
-+	select CRYPTO_BLKCIPHER
-+	select CRYPTO_AUTHENC
-+	help
-+	  Support for using the cryptographic API with the AMD Cryptographic
-+	  Coprocessor. This module supports acceleration and offload of SHA
-+	  and AES algorithms.  If you choose 'M' here, this module will be
-+	  called ccp_crypto.
-diff --git a/drivers/crypto/ccp/Makefile b/drivers/crypto/ccp/Makefile
-new file mode 100644
-index 0000000..d3505a0
---- /dev/null
-+++ b/drivers/crypto/ccp/Makefile
-@@ -0,0 +1,10 @@
-+obj-$(CONFIG_CRYPTO_DEV_CCP_DD) += ccp.o
-+ccp-objs := ccp-dev.o ccp-ops.o
-+ccp-objs += ccp-pci.o
-+
-+obj-$(CONFIG_CRYPTO_DEV_CCP_CRYPTO) += ccp-crypto.o
-+ccp-crypto-objs := ccp-crypto-main.o \
-+		   ccp-crypto-aes.o \
-+		   ccp-crypto-aes-cmac.o \
-+		   ccp-crypto-aes-xts.o \
-+		   ccp-crypto-sha.o
+Jonny
+>
+>
+>
+> Thanks,
+>
 
+
+-- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
+
+ARM Limited, Registered office 110 Fulbourn Road, Cambridge CB1 9NJ, Registered in England & Wales, Company No:  2557590
+ARM Holdings plc, Registered office 110 Fulbourn Road, Cambridge CB1 9NJ, Registered in England & Wales, Company No:  2548782
 
