@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab3KLK3l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 05:29:41 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:37188 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab3KLK3i (ORCPT
+	id S1754423Ab3KLKax (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 05:30:53 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:57778 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab3KLKau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 05:29:38 -0500
+	Tue, 12 Nov 2013 05:30:50 -0500
 MIME-Version: 1.0
-In-Reply-To: <52813100.1060500@wwwdotorg.org>
-References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de>
-	<1521079.WSLhhfqBXl@lem-wkst-02>
-	<52261BF0.4090106@wwwdotorg.org>
-	<3144247.j2q6H0KWZx@lem-wkst-02>
-	<52279524.8090006@wwwdotorg.org>
-	<20130909161924.GT29403@sirena.org.uk>
-	<528121D5.40403@keymile.com>
-	<528127B2.80109@wwwdotorg.org>
-	<52812D3A.2070107@keymile.com>
-	<52813100.1060500@wwwdotorg.org>
-Date: Tue, 12 Nov 2013 11:29:36 +0100
-Message-ID: <CACRpkdZpwwoM3h5_rXOwbN7cC72ruvTio6Z1hzMhLCDzh5VeKQ@mail.gmail.com>
-Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
-        Mark Brown <broonie@kernel.org>, Lars Poeschel <poeschel@lemonage.de>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org>
+References: <1381441622-26215-1-git-send-email-hannes@cmpxchg.org>
+Date: Tue, 12 Nov 2013 18:30:49 +0800
+Message-ID: <CAA_GA1df0sbaBvTPjfPB0Pqyc=KtFq98Qsg=r7NPRn5z=Qsw2g@mail.gmail.com>
+Subject: Re: [patch 0/8] mm: thrash detection-based file cache sizing v5
+From: Bob Liu <lliubbo@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Tejun Heo <tj@kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 8:33 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 11/11/2013 12:17 PM, Gerlando Falauto wrote:
+Hi Johannes,
 
->> Thanks for your answer. So it should be the parent driver to proactively
->> configure the GPIO as input, active high etc..., when an IRQ for its
->> GPIOs is requested, right?
+On Fri, Oct 11, 2013 at 5:46 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+>         Future
 >
-> That was the conclusion of this thread, or a similar thread, yes.
+> Right now we have a fixed ratio (50:50) between inactive and active
+> list but we already have complaints about working sets exceeding half
+> of memory being pushed out of the cache by simple used-once streaming
+> in the background.  Ultimately, we want to adjust this ratio and allow
+> for a much smaller inactive list.  These patches are an essential step
+> in this direction because they decouple the VMs ability to detect
+> working set changes from the inactive list size.  This would allow us
+> to base the inactive list size on something more sensible, like the
+> combined readahead window size for example.
+>
 
-Yepps second that.
+I found that this patchset have the similar purpose as
+Zcache(http://lwn.net/Articles/562254/) in some way.
 
-And we added an API to that you can flag a GPIO as being
-in use by an IRQ using gpio_lock_as_irq() from your
-irq_chip callbacks.
+Zcache uses the cleancache API to compress clean file pages so as to
+keep them in memory, and only pages which used to in active file pages
+are considered. Through Zcache we can hold more active pages in memory
+and won't be effected by streaming workload.
 
-Yours,
-Linus Walleij
+Perhaps you can take a look at the way of zcache, your workloads are
+very likely to benefit from it.
+And zcache don't need so many changes to core VM/VFS subsystem because
+it's based on cleancache API. I think it's more acceptable.
+
+-- 
+Regards,
+--Bob
