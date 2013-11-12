@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab3KLIY5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 03:24:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37794 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751931Ab3KLIYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 03:24:48 -0500
-Date: Tue, 12 Nov 2013 16:24:01 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de
-Subject: Re: [patch 4/7 v2] export more efi table variable to sysfs
-Message-ID: <20131112082401.GA13899@dhcp-16-126.nay.redhat.com>
-References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com>
- <20131105082717.561020034@dhcp-16-126.nay.redhat.com>
- <20131112004014.GA15377@kroah.com>
- <20131112081937.GE6999@dhcp-16-126.nay.redhat.com>
+	id S1753571Ab3KLI0F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 03:26:05 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53184 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab3KLIZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 03:25:55 -0500
+Date: Tue, 12 Nov 2013 09:25:49 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "Zhang, Dongxing" <dongxing.zhang@intel.com>
+Subject: Re: [PATCH] [sched]: pick the NULL entity caused the panic.
+Message-ID: <20131112082549.GH5056@laptop.programming.kicks-ass.net>
+References: <1384273790.21369.15.camel@wxm-ubuntu>
+ <CAPM31RLMT583XzP=VuToFpyd1irwfRZGQsbJdby7GaUhD4b_GA@mail.gmail.com>
+ <FA47D36D6EC9FE4CB463299737C09B9901B6D847@SHSMSX102.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131112081937.GE6999@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <FA47D36D6EC9FE4CB463299737C09B9901B6D847@SHSMSX102.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/13 at 04:19pm, Dave Young wrote:
-> On 11/11/13 at 04:40pm, Greg KH wrote:
-> > On Tue, Nov 05, 2013 at 04:20:11PM +0800, dyoung@redhat.com wrote:
-> > > Export fw_vendor, runtime and config tables physical
-> > > addresses to /sys/firmware/efi/systab becaue kexec
-> > > kernel will need them.
-> > 
-> > sysfs files are one-value-per-file.
-> > 
-> > Please don't abuse this and add more values to this single file, in
-> > fact, it should be broken up into individual sysfs files as it is,
-> > because this isn't ok now.
-> > 
-> > Sorry, you don't get to abuse this anymore :(
-> 
-> Ok, I know this, just creating this without thinking about carefully.
-> Will redo the patch, thanks for catching.
+On Tue, Nov 12, 2013 at 06:38:24AM +0000, Wang, Xiaoming wrote:
+> Dear Paul
+> 	How about moving cfs_rq->nr_running into loop. What I worried is that cfs_rq->nr_running
+> may zero because cfs_rq is coming from cfs_rq = group_cfs_rq(se) again. We haven't known the 
+> reproduction exactly, panic happened only on random test and unstable. 
 
-I would like to add new files for the values used in this patchset.
-And will split the original systab later in another patchset.
+No; its just plain wrong. If this new condition can be true there's
+something fundamentally messed up and we need to figure out what causes
+that, not try and paper it over.
 
-> 
-> Thanks
-> Dave
