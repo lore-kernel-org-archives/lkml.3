@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab3KLRFK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:05:10 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:64812 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753648Ab3KLRFG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:05:06 -0500
-X-IronPort-AV: E=Sophos;i="4.93,686,1378857600"; 
-   d="scan'208";a="71118995"
-Date: Tue, 12 Nov 2013 17:03:42 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <konrad@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH 1/2] swiotlb-xen: add missing xen_dma_map_page
- call
-In-Reply-To: <20131112144500.GB9435@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1311121703340.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1311121404590.26077@kaball.uk.xensource.com> <1384265520-6833-1-git-send-email-stefano.stabellini@eu.citrix.com> <20131112144500.GB9435@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756326Ab3KLRGY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:06:24 -0500
+Received: from mga02.intel.com ([134.134.136.20]:43710 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752999Ab3KLRGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 12:06:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="434011130"
+Message-ID: <52825FBE.9060006@intel.com>
+Date: Tue, 12 Nov 2013 09:05:02 -0800
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Chandra Seetharaman <sekharan@us.ibm.com>
+Subject: Re: [PATCH v6 07/11] VFS hot tracking: Add a /proc interface to control
+ memory usage
+References: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com>	<1383745544-391-8-git-send-email-zwu.kernel@gmail.com>	<528156E4.1030409@intel.com> <CAEH94LjoY6L6zDwTh3XKim17VgRTkdqBKpm7TgX0HGok==p+kg@mail.gmail.com>
+In-Reply-To: <CAEH94LjoY6L6zDwTh3XKim17VgRTkdqBKpm7TgX0HGok==p+kg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Nov 2013, Konrad Rzeszutek Wilk wrote:
-> On Tue, Nov 12, 2013 at 02:11:59PM +0000, Stefano Stabellini wrote:
-> > swiotlb-xen is missing a xen_dma_map_page call in
-> > xen_swiotlb_map_sg_attrs, in the slow path.
-> 
-> s/slow/bounce buffer/ I believe?
+On 11/11/2013 02:45 PM, Zhi Yong Wu wrote:
+> On Tue, Nov 12, 2013 at 6:15 AM, Dave Hansen <dave.hansen@intel.com> wrote:
+>> In general, why do you have to control the number of these statically?
+> It gives the user or admin one optional chance to control the amount
+> of memory consumed by VFS hot tracking. And you can choose not to use
+> it.
 
-right
+The on/off knob seems to me to be something better left to a mount
+option, not a global tunable.
 
+>> Shouldn't you just define a shrinker and let memory pressure determine
+>> how many of these we allow to exist?
+> How about if the user and admin hope to control the amount of the
+> memory consumed by VFS hot tracking? e.g. If the host has several
+> hundred of G or T memory, but the user or admin hope that the memory
+> size consumed by VFS hot tracking is under several G, In the case,
+> maybe a shrinker of VFS hot tracking will never be invoked by system
+> memory module, so this interface will make sense.
 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  drivers/xen/swiotlb-xen.c |    5 +++++
-> >  1 files changed, 5 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> > index a224bc7..1eac073 100644
-> > --- a/drivers/xen/swiotlb-xen.c
-> > +++ b/drivers/xen/swiotlb-xen.c
-> > @@ -555,6 +555,11 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
-> >  				sg_dma_len(sgl) = 0;
-> >  				return 0;
-> >  			}
-> > +			xen_dma_map_page(hwdev, pfn_to_page(map >> PAGE_SHIFT),
-> > +						map & ~PAGE_MASK,
-> > +						sg->length,
-> > +						dir,
-> > +						attrs);
-> >  			sg->dma_address = xen_phys_to_bus(map);
-> >  		} else {
-> >  			/* we are not interested in the dma_addr returned by
-> > -- 
-> > 1.7.2.5
-> > 
-> > 
-> > _______________________________________________
-> > Xen-devel mailing list
-> > Xen-devel@lists.xen.org
-> > http://lists.xen.org/xen-devel
-> 
+If the shrinker is not invoked, that means that there is lots of memory
+free.  In the case that there is lots of memory free, are you arguing
+that a user would rather see memory go *unused* than be put to use for
+this hot tracking data?
+
+If this were true, why don't we have similar knobs for the dentry, inode
+and page caches?
