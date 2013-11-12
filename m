@@ -1,140 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab3KLIHe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 03:07:34 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:54953 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671Ab3KLIHW (ORCPT
+	id S1753568Ab3KLIM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 03:12:28 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:40866 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab3KLIMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 03:07:22 -0500
-Message-ID: <1384243595.15180.63.camel@marge.simpson.net>
-Subject: Re: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
-From: Mike Galbraith <bitbucket@online.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Tue, 12 Nov 2013 09:06:35 +0100
-In-Reply-To: <alpine.DEB.2.02.1311071402380.23353@ionos.tec.linutronix.de>
-References: <1383228427.5272.36.camel@marge.simpson.net>
-	 <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>
-	 <1383794799.5441.16.camel@marge.simpson.net>
-	 <1383798668.5441.25.camel@marge.simpson.net>
-	 <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
-	 <20131107125923.GB24644@localhost.localdomain>
-	 <alpine.DEB.2.02.1311071402380.23353@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:VYIb3X+PVuJoLJQbiaqympBykYuRy2Jqgdj50LGS+Zz
- 7XKbO8ASKhgozIMFWku1rmn2HBvJpGgKRENUDIC2k46D8hthHz
- F1VbO+e1Qeh8IbjNQOM0On1PtJ9ZMHlTDLcFnH2vk7YqyxqoNV
- MtZf3XSavQzdI0JL/rwpw/61WIj3Ig38rSIwp5MeZZGex4AxvE
- 4DxSDjmTNm1/GEklK2q5SigxuIvm+lLeQmeDVDAMkD6sMPZrH6
- 5+GF0asfI8OarXMUACTr3xFyuI8RzDg59clYKhNNYayKwPqtqk
- LFEU3KQlyqlz+gPv1hpA8UxRSdLCHXI1UZSI696mgXewUE5XqI
- 3SzkWkJEPuQoX4lsrhyI6NO8Z7/GLaXGWrs8QnzrVuzSya5g9p
- +M5plwecAqzGQ==
+	Tue, 12 Nov 2013 03:12:21 -0500
+X-Greylist: delayed 614 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Nov 2013 03:12:21 EST
+Date: Tue, 12 Nov 2013 02:01:46 -0600
+From: David Fries <david@fries.net>
+To: Evgeny Boger <eugenyboger@gmail.com>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Add strong pullup emulation to w1-gpio master driver.
+Message-ID: <20131112080146.GF5509@spacedout.fries.net>
+References: <1384180614-9025-1-git-send-email-boger@contactless.ru>
+ <10261384211376@web11j.yandex.ru>
+ <5281691F.4060604@gmail.com>
+ <37621384218204@web11j.yandex.ru>
+ <52817F42.2080706@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52817F42.2080706@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Tue, 12 Nov 2013 02:01:47 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-07 at 14:13 +0100, Thomas Gleixner wrote: 
-> On Thu, 7 Nov 2013, Frederic Weisbecker wrote:
-> > On Thu, Nov 07, 2013 at 12:21:11PM +0100, Thomas Gleixner wrote:
-> > > Though it's not a full solution. It needs some thought versus the
-> > > softirq code of timers. Assume we have only one timer queued 1000
-> > > ticks into the future. So this change will cause the timer softirq not
-> > > to be called until that timer expires and then the timer softirq is
-> > > going to do 1000 loops until it catches up with jiffies. That's
-> > > anything but pretty ...
-> > 
-> > I see, so the problem is that we raise the timer softirq unconditionally
-> > from the tick?
+On Tue, Nov 12, 2013 at 05:07:14AM +0400, Evgeny Boger wrote:
+> +David Fries <david@fries.net>
 > 
-> Right.
->  
-> > Ok we definetly don't want to keep that behaviour, even if softirqs are not
-> > threaded, that's an overhead. So I'm looking at that loop in __run_timers()
-> > and I guess you mean the "base->timer_jiffies" incrementation?
+> Hi David,
+> 
+> Would you please comment on this?
+
+
+On Mon, Nov 11, 2013 at 06:36:54PM +0400, Evgeny Boger wrote:
+>  Strong pullup is emulated by driving pin logic high after write
+>  command when
+>  using tri-state push-pull GPIO.
+
+Not knowing the hardware involved, is driving the logic high a
+stronger pullup than the normal weak pullup input high?  Meaning it
+was already being left high, just with a lessor pullup and this will
+provide a stronger one?
+
+On Tue, Nov 12, 2013 at 03:09:36AM +0400, Evgeniy Polyakov wrote:
+> > + msleep(pdata->pullup_duration);
+> 
+> This doesn't look like a good idea - kernel will sleep for that long
+> not doing usual w1 job
+
+Not speaking for Evgeny Boger, but I'm thinking that's intended here.
+The original strong pullup code change 6a158c0de791a81 I wrote will
+msleep in w1_post_write when a hardware pullup isn't available, while
+the hardware ds2490 ds9490r_set_pullup sleeps for the strong pullup
+using spu_sleep variable.  The user requests a strong pullup for a
+given time and any other operations on the bus will interrupt the
+strong pullup, so locking any other operations sounds desired.
+
+> 11/12/2013 05:03 AM, Evgeniy Polyakov:
+> >Hi
 > >
-> > That's indeed not pretty. How do we handle exit from long dynticks
-> > idle periods? Are we doing that loop until we catch up with the new
-> > jiffies?
-> 
-> Right. I realized that right after I hit send :)
->  
-> > Then it relies on the timer cascade stuff which is very obscure code to me...
-> 
-> It's not that bad, really. I have an idea how to fix that. Needs some
-> rewriting though.
+> >12.11.2013, 03:32, "Evgeny Boger" <eugenyboger@gmail.com>:
+> >>>Why did you drop this check? It has nothing with w1-gpio driver
+> >>This check prevents master from implementing "set_pullup"  provided it does support only "write_bit" method.
+> >>The comment above states that
+> >>>  w1_io.c would need to support calling set_pullup before - * the last write_bit operation of a w1_write_8 which it currently - * doesn't.
+> >>which is kind of strange, since it describes what w1_io.c actually does support.
+> >>
+> >>w1_write_8 (w1_io.c:154, https://github.com/torvalds/linux/blob/master/drivers/w1/w1_io.c#L154):
+> >>>                 for (i = 0; i < 8; ++i) {
+> >>>                         if (i == 7)
+> >>>                                 w1_pre_write(dev);
+> >>>                         w1_touch_bit(dev, (byte >> i) & 0x1);
+> >>>                 }
+> >>It seems like w1_write_8() calls w1_pre_write(), which in turn calls set_pullup() just before the last write_bit().
 
-FYI, shiny new (and virgin) 3.12.0-rt1 nohz_full config is deadlock
-prone.  I was measuring fastpath cost yesterday with pinned pipe-test.. 
+I'm not seeing any harm in removing this check and clear
+master->set_pullup.  It doesn't seem correct for this code to override
+a master that claims to provide something of a stronger pullup.  It's
+been about five years since I wrote that code, I think it was just to
+protect against a stupid master.
 
-x3550 M3 E5620 (bloatware config)
-CONFIG_NO_HZ_IDLE - CPU3
-2.957012 usecs/loop -- avg 2.957012 676.4 KHz     1.000
+With this patch the last w1_write_bit will go logic 1, for 64 or 10 us
+before returning, then w1_gpio_set_pullup is called to enable the
+strong pullup.  What I wouldn't know is if in that last bit if the
+logic 1 would be a go up to the strong pullup, or if it would finish
+that time slot with a weak pullup and then go to a strong pullup.  I
+would have to dig into the timing specifications much more than I have
+time to right now to say what is supposed to happen.  The 18b20
+datasheet lists, "The DQ line must be switched over to the strong
+pullup within 10 us maximum after issuing any protocol that involves
+copying the E2 memory or initiates temperature conversions."  It isn't
+clear where that 10 us starts from.  You might try to dig around and
+see if that last bit written should go to weak pullup 1 or strong
+pullup 1.  It would take more changes if it should go right to a
+strong pullup.
 
-CONFIG_NO_HZ_FULL - CPU1 != nohz_full
-3.735279 usecs/loop -- avg 3.735279 535.4 KHz      .791
+> >>I'm not sure why this check was there in the first place.
+> >Please add author of those lines to clarify things.
+> >This doesn't look obvious to me
 
-CONFIG_NO_HZ_FULL - CPU3 == nohz_full
-5.922986 usecs/loop -- avg 5.922986 337.7 KHz      .499
-
-(ow)
-
-..and noticed box eventually deadlocks, if it boots, which the instance
-below didn't.
-
-crash> bt
-PID: 11     TASK: ffff88017a27d5a0  CPU: 2   COMMAND: "rcu_preempt"
- #0 [ffff88017b245ae0] machine_kexec at ffffffff810392f1
- #1 [ffff88017b245b40] crash_kexec at ffffffff810cd9d5
- #2 [ffff88017b245c10] panic at ffffffff815bea93
- #3 [ffff88017b245c90] watchdog_overflow_callback.part.3 at ffffffff810f4fd2
- #4 [ffff88017b245ca0] __perf_event_overflow at ffffffff8112715c
- #5 [ffff88017b245d10] intel_pmu_handle_irq at ffffffff8101f432
- #6 [ffff88017b245e00] perf_event_nmi_handler at ffffffff815d4732
- #7 [ffff88017b245e20] nmi_handle.isra.4 at ffffffff815d3dad
- #8 [ffff88017b245eb0] default_do_nmi at ffffffff815d4099
- #9 [ffff88017b245ee0] do_nmi at ffffffff815d42b8
-#10 [ffff88017b245ef0] end_repeat_nmi at ffffffff815d31b1
-    [exception RIP: _raw_spin_lock+38]
-    RIP: ffffffff815d2596  RSP: ffff88017b243e90  RFLAGS: 00000093
-    RAX: 0000000000000010  RBX: 0000000000000010  RCX: 0000000000000093
-    RDX: ffff88017b243e90  RSI: 0000000000000018  RDI: 0000000000000001
-    RBP: ffffffff815d2596   R8: ffffffff815d2596   R9: 0000000000000018
-    R10: ffff88017b243e90  R11: 0000000000000093  R12: ffffffffffffffff
-    R13: ffff880179ef8000  R14: 0000000000000001  R15: 0000000000000eb6
-    ORIG_RAX: 0000000000000eb6  CS: 0010  SS: 0018
---- <RT exception stack> ---
-#11 [ffff88017b243e90] _raw_spin_lock at ffffffff815d2596
-#12 [ffff88017b243e90] rt_mutex_trylock at ffffffff815d15be
-#13 [ffff88017b243eb0] get_next_timer_interrupt at ffffffff81063b42
-#14 [ffff88017b243f00] tick_nohz_stop_sched_tick at ffffffff810bd1fd
-#15 [ffff88017b243f70] tick_nohz_irq_exit at ffffffff810bd7d2
-#16 [ffff88017b243f90] irq_exit at ffffffff8105b02d
-#17 [ffff88017b243fb0] reschedule_interrupt at ffffffff815db3dd
---- <IRQ stack> ---
-#18 [ffff88017a2a9bc8] reschedule_interrupt at ffffffff815db3dd
-    [exception RIP: task_blocks_on_rt_mutex+51]
-    RIP: ffffffff810c1ed3  RSP: ffff88017a2a9c78  RFLAGS: 00000296
-    RAX: 0000000000080000  RBX: 0000000000000001  RCX: 0000000000000000
-    RDX: ffff88017a27d5a0  RSI: ffff88017a2a9d00  RDI: ffff880179ef8000
-    RBP: ffff880179ef8000   R8: ffff880179cfef50   R9: ffff880179ef8018
-    R10: ffff880179cfef51  R11: 0000000000000002  R12: 0000000000000001
-    R13: 0000000000000001  R14: 0000000100000000  R15: 0000000100000000
-    ORIG_RAX: ffffffffffffff02  CS: 0010  SS: 0018
-#19 [ffff88017a2a9ce0] rt_spin_lock_slowlock at ffffffff815d183c
-#20 [ffff88017a2a9da0] lock_timer_base.isra.35 at ffffffff81061cbf
-#21 [ffff88017a2a9dd0] schedule_timeout at ffffffff815cf1ce
-#22 [ffff88017a2a9e50] rcu_gp_kthread at ffffffff810f9bbb
-#23 [ffff88017a2a9ed0] kthread at ffffffff810796d5
-#24 [ffff88017a2a9f50] ret_from_fork at ffffffff815da04c
-crash>
-
-
+-- 
+David Fries <david@fries.net>    PGP pub CB1EE8F0
+http://fries.net/~david/
