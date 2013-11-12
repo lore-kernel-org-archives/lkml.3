@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab3KLRpr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:45:47 -0500
-Received: from mout.gmx.net ([212.227.17.20]:53124 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753616Ab3KLRpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:45:43 -0500
-From: Andreas Werner <wernerandy@gmx.de>
-To: wsa@the-dreams.de
-Cc: jacmet@sunsite.dk, marex@denx.de, baohua.song@csr.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wernerandy@gmx.de
-Subject: [PATCH] I2C: busses: Do not print error message in syslog if no ACK received
-Date: Tue, 12 Nov 2013 18:45:36 +0100
-Message-Id: <1384278336-3694-1-git-send-email-wernerandy@gmx.de>
-X-Mailer: git-send-email 1.8.4
-X-Provags-ID: V03:K0:YzlqrK9yqvyeSfxIj1m1oVft2jNGsIcOwLUNzoAKUtv7xXcs7Z9
- OonCrcNtPJANNwOk4CKplkSa49+iHnWwk5MNXT9wrudgxpSxj3mUsDJ+q0uVo8MiNFOo+yC
- Np3CiT8XKbNf3SdVzpSVgDOd1u/AIE/S6fIS7p8urSvYYfO29F1IN270wRJJ45JDWvN8eSl
- Pajmf0zj9x/ENe2YU4G9w==
+	id S1754786Ab3KLRqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:46:23 -0500
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:58358
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754443Ab3KLRqT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 12:46:19 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(z579ehzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h1155h)
+X-WSS-ID: 0MW5VZ8-08-5FO-02
+X-M-MSG: 
+Subject: [PATCH 02/10] crypto: scatterwalk - Set the chain pointer indication
+ bit
+To: <davem@davemloft.net>, <linux-crypto@vger.kernel.org>,
+        <herbert@gondor.hengli.com.au>
+From: Tom Lendacky <thomas.lendacky@amd.com>
+CC: <linux-kernel@vger.kernel.org>
+Date: Tue, 12 Nov 2013 11:46:10 -0600
+Message-ID: <20131112174610.19746.91705.stgit@tlendack-t1.amdoffice.net>
+In-Reply-To: <20131112174558.19746.47262.stgit@tlendack-t1.amdoffice.net>
+References: <20131112174558.19746.47262.stgit@tlendack-t1.amdoffice.net>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the i2c-eg20t driver and call i2cdetect or probe on the bus,
-the driver will print a lot of error messages if there was no ACK
-received.
+The scatterwalk_crypto_chain function invokes the scatterwalk_sg_chain
+function to chain two scatterlists, but the chain pointer indication
+bit is not set.  When the resulting scatterlist is used, for example,
+by sg_nents to count the number of scatterlist entries, a segfault occurs
+because sg_nents does not follow the chain pointer to the chained scatterlist.
 
-i2cdetect normally print a table with all the available devices. If there
-is no device on the address, the table will be empty.
-Currently with the i2c-eg20t driver, the table is not visible because
-the error messages destroy the table.
+Update scatterwalk_sg_chain to set the chain pointer indication bit as is
+done by the sg_chain function.
 
-Error message: pch_i2c_getack return -71
-
-This patch prevent the driver to print the messages to syslog if debug is not set.
-
-Tested on Intel Atom E6xx and Eg20t Chipset.
-
-Signed-off-by: Andreas Werner <wernerandy@gmx.de>
+Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
 ---
- drivers/i2c/busses/i2c-eg20t.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/crypto/scatterwalk.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
-index 0f37529..b10c651 100644
---- a/drivers/i2c/busses/i2c-eg20t.c
-+++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -322,7 +322,7 @@ static s32 pch_i2c_getack(struct i2c_algo_pch_data *adap)
- 	reg_val = ioread32(p + PCH_I2CSR) & PCH_GETACK;
+diff --git a/include/crypto/scatterwalk.h b/include/crypto/scatterwalk.h
+index 13621cc..64ebede 100644
+--- a/include/crypto/scatterwalk.h
++++ b/include/crypto/scatterwalk.h
+@@ -36,6 +36,7 @@ static inline void scatterwalk_sg_chain(struct scatterlist *sg1, int num,
+ {
+ 	sg_set_page(&sg1[num - 1], (void *)sg2, 0, 0);
+ 	sg1[num - 1].page_link &= ~0x02;
++	sg1[num - 1].page_link |= 0x01;
+ }
  
- 	if (reg_val != 0) {
--		pch_err(adap, "return%d\n", -EPROTO);
-+		pch_dbg(adap, "return%d\n", -EPROTO);
- 		return -EPROTO;
- 	}
- 
--- 
-1.8.4
+ static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
+
 
