@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab3KLOKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:10:22 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:48326 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752482Ab3KLOKR (ORCPT
+	id S1755557Ab3KLOKi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:10:38 -0500
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:36846 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752482Ab3KLOKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:10:17 -0500
-From: Pekka Enberg <penberg@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Pekka Enberg <penberg@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH] perf trace: Fix syscall summary duration order
-Date: Tue, 12 Nov 2013 16:10:10 +0200
-Message-Id: <1384265410-12344-1-git-send-email-penberg@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
+	Tue, 12 Nov 2013 09:10:35 -0500
+Message-ID: <5282367D.1090705@st.com>
+Date: Tue, 12 Nov 2013 14:09:01 +0000
+From: srinivas kandagatla <srinivas.kandagatla@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Stuart Menefy <stuart.menefy@st.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, <stephen.gallimore@st.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kernel@stlinux.com>, <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH RFC 07/10] PM / wakeup : Introduce device_child_may_wakeup
+References: <1384264311-7308-1-git-send-email-srinivas.kandagatla@st.com> <1384264377-7609-1-git-send-email-srinivas.kandagatla@st.com> <4093206.klj58BXQv3@vostro.rjw.lan>
+In-Reply-To: <4093206.klj58BXQv3@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.51.59]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch duration order to minimum, average, maximum for the '--summary'
-command line option because it's more natural to read.
+On 12/11/13 14:20, Rafael J. Wysocki wrote:
+>>  
+>> > +/* callback for device_child_may_wakeup */
+>> > +static int __device_child_may_wakeup(struct device *dev, void *c)
+>> > +{
+>> > +	return device_may_wakeup(dev);
+>> > +}
+> This doesn't have anything to do with children in principle, so please call
+> it differently.  Something like device_may_wakeup_cb() would work for me (and
+> then you may not need the comment even).
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
----
- tools/perf/builtin-trace.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 329b783..f841d2a 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -2085,7 +2085,7 @@ static size_t trace__fprintf_threads_header(FILE *fp)
- 	printed  = fprintf(fp, "\n _____________________________________________________________________________\n");
- 	printed += fprintf(fp, " __)    Summary of events    (__\n\n");
- 	printed += fprintf(fp, "              [ task - pid ]     [ events ] [ ratio ]  [ runtime ]\n");
--	printed += fprintf(fp, "                                  syscall  count    min     max    avg  stddev\n");
-+	printed += fprintf(fp, "                                  syscall  count    min     avg    max  stddev\n");
- 	printed += fprintf(fp, "                                                   msec    msec   msec     %%\n");
- 	printed += fprintf(fp, " _____________________________________________________________________________\n\n");
- 
-@@ -2121,8 +2121,8 @@ static size_t thread__dump_stats(struct thread_trace *ttrace,
- 			sc = &trace->syscalls.table[inode->i];
- 			printed += fprintf(fp, "%24s  %14s : ", "", sc->name);
- 			printed += fprintf(fp, "%5" PRIu64 "  %8.3f  %8.3f",
--					   n, min, max);
--			printed += fprintf(fp, "  %8.3f  %6.2f\n", avg, pct);
-+					   n, min, avg);
-+			printed += fprintf(fp, "  %8.3f  %6.2f\n", max, pct);
- 		}
- 
- 		inode = intlist__next(inode);
--- 
-1.8.3.1
+Thanks Rafael, I will fix this in next version.
+> 
+> Thanks!
+> 
+>> > +
+>> > +/**
 
