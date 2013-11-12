@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab3KLJyo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 04:54:44 -0500
-Received: from mga09.intel.com ([134.134.136.24]:21524 "EHLO mga09.intel.com"
+	id S1754621Ab3KLJzY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 04:55:24 -0500
+Received: from mga14.intel.com ([143.182.124.37]:43191 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab3KLJyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 04:54:41 -0500
+	id S1751807Ab3KLJzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 04:55:20 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="433771493"
-Date: Tue, 12 Nov 2013 14:29:07 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, linux-omap@vger.kernel.org
-Subject: Re: cppi41: pending patches
-Message-ID: <20131112085907.GL8834@intel.com>
-References: <1382436846-9057-1-git-send-email-bigeasy@linutronix.de>
+X-IronPort-AV: E=Sophos;i="4.93,684,1378882800"; 
+   d="scan'208";a="426103850"
+Date: Tue, 12 Nov 2013 17:55:16 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michael wang <wangyun@linux.vnet.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [sched/get_online_cpus] INFO: task swapper/0:1 blocked for more
+ than 120 seconds.
+Message-ID: <20131112095516.GB32441@localhost>
+References: <20131110101612.GC21916@localhost>
+ <52808B7F.6000309@linux.vnet.ibm.com>
+ <20131111162022.GB21461@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382436846-9057-1-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131111162022.GB21461@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 12:14:02PM +0200, Sebastian Andrzej Siewior wrote:
-> Hi Vinod,
+On Mon, Nov 11, 2013 at 05:20:22PM +0100, Peter Zijlstra wrote:
+> On Mon, Nov 11, 2013 at 03:47:11PM +0800, Michael wang wrote:
+> > Hi, Fengguang
+> > 
+> > On 11/10/2013 06:16 PM, Fengguang Wu wrote:
+> > > Greetings,
+> > > 
+> > > I got the below dmesg and the first bad commit is
+> > 
+> > I guess this will disappear when '!CONFIG_RCU_BOOST'...
+> > 
+> > AFAIK, if the rsp was in boost mode, we count on smpboot-thread
+> > 'rcu_cpu_thread_spec' to finish the callback, which will be
+> > parked before do sync-rcu inside _cpu_down(), if that was true,
+> > then the sync will never finish...
+> > 
+> > May be some brainless fix like this?
+> > 
+> > 
+> > 
+> > diff --git a/kernel/cpu.c b/kernel/cpu.c
+> > index 63aa50d..aa24338 100644
+> > --- a/kernel/cpu.c
+> > +++ b/kernel/cpu.c
+> > @@ -306,7 +306,6 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+> >                                 __func__, cpu);
+> >                 goto out_release;
+> >         }
+> > -       smpboot_park_threads(cpu);
+> >  
+> >         /*
+> >          * By now we've cleared cpu_active_mask, wait for all preempt-disabled
+> > @@ -321,6 +320,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+> >  #endif
+> >         synchronize_rcu();
+> >  
+> > +       smpboot_park_threads(cpu);
+> > +
+> >         /*
+> >          * So now all preempt/rcu users must observe !cpu_active().
+> >          */
 > 
-> this series contains patches which are floating on the mainling list so
-> I hope it is easier to collect them. It contains two of Daniel's which
-> were not yet applied and two of mine.
-> The patch "redo descriptor collection in abort case" was posted earlier
-> and tested by Daniel, in this version here I removed an unused variable.
-> 
-> The patches are also available in a git tree based on your next tree prior
-> the the "dma_complete" merge because DMA_COMPLETE & DMA_SUCCESS contain a
-> diferent value.
-Applied, thanks
+> Good thinking.. Wu did this cure stuff?
 
---
-~Vinod
-> 
-> The following changes since commit cc94dac27e15df9211394467e13fdfa2366e3593:
-> 
->   Merge branch 'for-linus' into next (2013-10-21 12:57:31 +0530)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://breakpoint.cc/bigeasy/linux tags/cppi41-next
-> 
-> for you to fetch changes up to e389973c52dbea967a9254798600c35c8f94b2c3:
-> 
->   dma: cppi41: return code > 0 of pm_runtime_get_sync() is not an error (2013-10-22 12:00:45 +0200)
-> 
-> ----------------------------------------------------------------
-> A handfull of cppi41 patches including pm support by Daniel Mack.
-> 
-> ----------------------------------------------------------------
-> Daniel Mack (2):
->       dma: cppi41: restore more registers
->       dma: cppi41: use cppi41_pop_desc() where possible
-> 
-> Sebastian Andrzej Siewior (2):
->       dma: cppi41: redo descriptor collection in abort case
->       dma: cppi41: return code > 0 of pm_runtime_get_sync() is not an error
-> 
->  drivers/dma/cppi41.c | 82 +++++++++++++++++++++++++++-------------------------
->  1 file changed, 43 insertions(+), 39 deletions(-)
-> 
-> Sebastian
+Yes, it fixed the problem.
 
--- 
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+
+
+/kernel/i386-randconfig-j3-11101308/484f4e66a6a1102edf02407479f6f7632aade0f3
+
++--------------------------------------------------+--------------+--------------+
+|                                                  | e5137b50a064 | 484f4e66a6a1 |
++--------------------------------------------------+--------------+--------------+
+| boot_successes                                   | 42           | 100          |
+| boot_failures                                    | 58           |              |
+| INFO:task_blocked_for_more_than_seconds          | 58           |              |
+| Kernel_panic-not_syncing:hung_task:blocked_tasks | 58           |              |
++--------------------------------------------------+--------------+--------------+
+
+/kernel/x86_64-randconfig-x4-1108/484f4e66a6a1102edf02407479f6f7632aade0f3
+
++------------------------------------------------------------------------------------+-----------+--------------+--------------+
+|                                                                                    | v3.12-rc7 | e5137b50a064 | 484f4e66a6a1 |
++------------------------------------------------------------------------------------+-----------+--------------+--------------+
+| boot_successes                                                                     | 59        | 34           | 100          |
+| has_kernel_error_warning                                                           | 4         |              |              |
+| BUG:kernel_early_hang_without_any_printk_output                                    | 4         |              |              |
+| boot_failures                                                                      | 0         | 66           |              |
+| INFO:task_blocked_for_more_than_seconds                                            | 0         | 66           |              |
+| INFO:NMI_handler(arch_trigger_all_cpu_backtrace_handler)took_too_long_to_run:msecs | 0         | 55           |              |
+| Kernel_panic-not_syncing:hung_task:blocked_tasks                                   | 0         | 66           |              |
++------------------------------------------------------------------------------------+-----------+--------------+--------------+
+
