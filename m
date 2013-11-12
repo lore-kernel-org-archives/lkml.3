@@ -1,126 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab3KLQTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 11:19:46 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:44451 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754089Ab3KLQTj (ORCPT
+	id S932149Ab3KLQUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 11:20:34 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37751 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123Ab3KLQUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 11:19:39 -0500
+	Tue, 12 Nov 2013 11:20:32 -0500
+Message-ID: <5282552B.4000801@ti.com>
+Date: Tue, 12 Nov 2013 11:19:55 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CAC9WiBj554c=B3ucq41yPR9oEtSFebUwJa5z0DuD_esDwvZQqw@mail.gmail.com>
-References: <CAC9WiBj554c=B3ucq41yPR9oEtSFebUwJa5z0DuD_esDwvZQqw@mail.gmail.com>
-Date: Tue, 12 Nov 2013 17:19:38 +0100
-Message-ID: <CAC9WiBjA46h+Jab5PLE3O3OAhhrXVcHjDVaHU0fcLS8k77P5pg@mail.gmail.com>
-Subject: Re: bcache: process get stucks when doing write IOs in writeback mode
-From: Francis Moreau <francis.moro@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>
+CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>
+Subject: Re: [PATCH 12/12] arm: dts: keystone: add AEMIF/NAND device entry
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>,<1384187188-5776-13-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D71@DNCE04.ent.ti.com>
+In-Reply-To: <4F5844B3A985794BA902E12C070812375F8D71@DNCE04.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Monday 11 November 2013 12:13 PM, Khoronzhuk, Ivan wrote:
+> Add AEMIF/NAND device entry.
+> 
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> ---
+>  arch/arm/boot/dts/keystone.dts |   63 ++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 63 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/keystone.dts b/arch/arm/boot/dts/keystone.dts
+> index 100bdf5..998da98 100644
+> --- a/arch/arm/boot/dts/keystone.dts
+> +++ b/arch/arm/boot/dts/keystone.dts
+> @@ -179,5 +179,68 @@
+>                         interrupts = <GIC_SPI 300 IRQ_TYPE_EDGE_RISING>;
+>                         clocks = <&clkspi>;
+>                 };
+> +
+> +               aemif@021000A00 {
+> +                       compatible = "ti,keystone-aemif";
+> +                       #address-cells = <2>;
+> +                       #size-cells = <1>;
+> +                       clocks = <&clkaemif>;
+> +                       clock-names = "aemif";
+> +                       clock-ranges;
+> +
+> +                       reg = <0x2100A00 0x00000100>;
+> +                       ranges = <0 0 0x30000000 0x10000000
+> +                                 1 0 0x21000A00 0x00000100>;
+> +
+> +                       nand:cs0 {
+> +                               compatible = "ti,davinci-cs";
+> +                               #address-cells = <2>;
+> +                               #size-cells = <1>;
+> +                               clock-ranges;
+> +                               ranges;
+> +
+> +                               /* all timings in nanoseconds */
+> +                               ti,davinci-cs-ta = <12>;
+> +                               ti,davinci-cs-rhold = <6>;
+> +                               ti,davinci-cs-rstrobe = <23>;
+> +                               ti,davinci-cs-rsetup = <9>;
+> +                               ti,davinci-cs-whold = <8>;
+> +                               ti,davinci-cs-wstrobe = <23>;
+> +                               ti,davinci-cs-wsetup = <8>;
+> +
+> +                               nand@0,0 {
+> +                                       compatible = "ti,keystone-nand";
+> +                                       #address-cells = <1>;
+> +                                       #size-cells = <1>;
+> +                                       reg = <0 0 0x4000000
+> +                                              1 0 0x0000100>;
+> +
+> +                                       ti,davinci-chipselect = <0>;
+> +                                       ti,davinci-mask-ale = <0x2000>;
+> +                                       ti,davinci-mask-cle = <0x4000>;
+> +                                       ti,davinci-mask-chipsel = <0>;
+> +                                       nand-ecc-mode = "hw";
+> +                                       ti,davinci-ecc-bits = <4>;
+> +                                       nand-on-flash-bbt;
+> +
+> +                                       partition@0 {
+> +                                               label = "u-boot";
+> +                                               reg = <0x0 0x100000>;
+> +                                               read-only;
+> +                                       };
+> +
+> +                                       partition@100000 {
+> +                                               label = "params";
+> +                                               reg = <0x100000 0x80000>;
+> +                                               read-only;
+> +                                       };
+> +
+> +                                       partition@180000 {
+> +                                               label = "ubifs";
+> +                                               reg = <0x180000 0x7E80000>;
+> +                                       };
+Lets create now board specific k2hk-evm.dts and rename keystone.dts
+to keystone.dtsi and include that in boards. That way you can add the
+board specific stuff in board files and common soc stuff in keystone.dtsi.
 
-It doesn't seem my initial post reached LKML, maybe that's due to the
-dmesg file I initially attached. So I'm replying to this hoping that
-this is going to be fixed (since the attached file is gone).
+You can update that once the bindings are blessed by DT folks.
 
-On Mon, Nov 11, 2013 at 6:45 PM, Francis Moreau <francis.moro@gmail.com> wrote:
-> Hello,
->
-> [ Resending this issue to LKML to reach a wider audience since I've
-> got no answer so far on bcache mailing list and it seems a pretty
-> major bug in that component ]
->
-> I'm using bcache on a very basic setup: no MD or LVM involved.
-> /dev/sda4 (900Mo) is the backing device while /dev/sdb (120G) is the
-> cache device. On top of bcache0 I'm using ext4 and I'm using it as my
-> root device.
->
-> I initially created the bcache0 device with default using writethough
-> mode. I haven't (yet) experienced any issues using this mode: I
-> successfully installed my system (archlinux) on it.
->
-> I decided to switch to writeback mode and encounter several times the
-> same issue: after doing a lot of IOs (for example when installing new
-> packages) one process is stuck in D state. Currently I can see this:
->
-> # ps aux | grep D+
-> root      1080  0.0  0.0  41796  5728 pts/0    D+   12:59   0:00 gtk-update-icon
->
-> # cat /proc/1080/stack
-> [<ffffffff8113270e>] sleep_on_page+0xe/0x20
-> [<ffffffff811324bf>] wait_on_page_bit+0x7f/0x90
-> [<ffffffff8113264b>] filemap_fdatawait_range+0x11b/0x1a0
-> [<ffffffff81133d3f>] filemap_write_and_wait_range+0x3f/0x70
-> [<ffffffffa02ad4da>] ext4_sync_file+0xba/0x390 [ext4]
-> [<ffffffff811cde56>] do_fsync+0x56/0x80
-> [<ffffffff811ce0e0>] SyS_fsync+0x10/0x20
-> [<ffffffff814ea5dd>] system_call_fastpath+0x1a/0x1f
-> [<ffffffffffffffff>] 0xffffffffffffffff
->
-> From that point I'm not really sure what I should do to restore the
-> system without loosing or breaking badly my rootfs. Any advices are
-> welcome.
->
-> Please find below some additionnal information that might help to fix
-> this issue:
->
-> # mount | grep bcache
-> /dev/bcache0 on / type ext4 (rw,relatime,data=ordered)
->
-> # uname -r
-> 3.11.6-1-ARCH
->
-> # bcache-super-show /dev/sda4
-> sb.magic        ok
-> sb.first_sector        8 [match]
-> sb.csum            F828E134D5AB890C [match]
-> sb.version        1 [backing device]
->
-> dev.label        (empty)
-> dev.uuid        62839366-e5a9-43a9-9984-fc8f2aefe9de
-> dev.sectors_per_block    1
-> dev.sectors_per_bucket    1024
-> dev.data.first_sector    16
-> dev.data.cache_mode    1 [writeback]
-> dev.data.cache_state    2 [dirty]
->
-> cset.uuid        50485be4-15f7-424f-a01b-4c65fdf8487d
->
-> # bcache-super-show /dev/sdb
-> sb.magic        ok
-> sb.first_sector        8 [match]
-> sb.csum            692BB25984E31571 [match]
-> sb.version        3 [cache device]
->
-> dev.label        (empty)
-> dev.uuid        a63ec68a-6a71-497e-86db-0dd71bbfb404
-> dev.sectors_per_block    1
-> dev.sectors_per_bucket    1024
-> dev.cache.first_sector    1024
-> dev.cache.cache_sectors    234439680
-> dev.cache.total_sectors    234440704
-> dev.cache.ordered    yes
-> dev.cache.discard    yes
-> dev.cache.pos        0
-> dev.cache.replacement    0 [lru]
->
-> cset.uuid        50485be4-15f7-424f-a01b-4c65fdf8487d
->
-> I attached dmesg output which has been generated after doing "echo t
->>/proc/sysrq-trigger"
->
-> Thanks
-> --
-> Francis
->
->
-> --
-> Francis
+Regards,
+Santosh
 
-
-
--- 
-Francis
