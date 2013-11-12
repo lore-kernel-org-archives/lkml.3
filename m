@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab3KLIm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 03:42:58 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:53839 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423Ab3KLIm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 03:42:57 -0500
-Message-ID: <5281E950.5090506@ti.com>
-Date: Tue, 12 Nov 2013 10:39:44 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753440Ab3KLIoe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 03:44:34 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:50854 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab3KLIob (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 03:44:31 -0500
+Message-ID: <5281EA5F.3080604@biophys.uni-duesseldorf.de>
+Date: Tue, 12 Nov 2013 21:44:15 +1300
+From: schmitz <schmitz@biophys.uni-duesseldorf.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux ppc; en-US; rv:1.8.1.4) Gecko/20070509 Iceape/1.1.2 (Debian-1.1.2-1)
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>, Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, <linux-gpio@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 0/2] DaVinci: GPIO: fixes
-References: <1383893156-28010-1-git-send-email-prabhakar.csengg@gmail.com> <5280FB19.4020204@ti.com> <5281C839.8070100@ti.com>
-In-Reply-To: <5281C839.8070100@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [patch 1/6] hardirq: Make hardirq bits generic
+References: <20130917082838.218329307@infradead.org> <alpine.DEB.2.02.1309181159520.4089@ionos.tec.linutronix.de> <alpine.DEB.2.02.1309191652480.4089@ionos.tec.linutronix.de> <87txhg3ftx.fsf@igel.home> <CAMuHMdW-YBroi6GezUP-KQBVRAcmYtUQERvBC=ekmemopDhVow@mail.gmail.com> <alpine.DEB.2.02.1311041305540.28335@ionos.tec.linutronix.de> <alpine.DEB.2.02.1311042032130.16975@ayla.of.borg> <alpine.DEB.2.02.1311061237430.23353@ionos.tec.linutronix.de> <CAMuHMdXDA2MRbR3GmD3KWC-iE6jnWX4uvbf1qeMd7RYX3O8f_g@mail.gmail.com> <alpine.DEB.2.02.1311071655240.23353@ionos.tec.linutronix.de> <ecf977d9ccbd241723a606423267bb2d@biophys.uni-duesseldorf.de> <CAMuHMdVXk0NpinvqEszqL63fZEt3rOk6ZR9ogz0aHEzmEaW22A@mail.gmail.com> <alpine.DEB.2.02.1311111421400.30673@ionos.tec.linutronix.de> <alpine.DEB.2.02.1311112031220.30673@ionos.tec.linutronix.de> <alpine.DEB.2.02.1311112052360.30673@ionos.tec.linutronix.de> <55642d365fc4272c4f43a88ea435e360@biophys.uni-duesseldorf.de>
+In-Reply-To: <55642d365fc4272c4f43a88ea435e360@biophys.uni-duesseldorf.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.75]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
-
-On 11/12/2013 08:18 AM, Sekhar Nori wrote:
-> On Monday 11 November 2013 09:13 PM, Grygorii Strashko wrote:
->> Hi Sekhar, Prabhakar Lad
+Thomas,
+>
 >>
->> On 11/08/2013 08:45 AM, Prabhakar Lad wrote:> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
->>>
->>> This patch series fixes gpio driver regestration
->>> and offset check for unbanked gpio.
->>>
->>> Lad, Prabhakar (2):
->>>     gpio: davinci: Fix a check for unbanked gpio
->>>     ARM: davinci: Fix number of resources passed to
->>>       davinci_gpio_register() call
->>
->> I've verified both patches - looks ok.
->> Patch 1 - restores unbanked GPIO IRQs functionality
->> Patch 2 - allows to register GPIO Platform devices and boot without issues.
->>
->> Could we move forward with these patches?
-> 
-> Prabhakar, both patches look good to me. Thanks for the fixes.
-> 
-> Also Grygorii, have you actually verified that the unbanked IRQ support
-> works? Only DM365 uses it.
+>> If you look at the probability of the first two checks catching
+>> anything, then it's pretty low. Most interrupts returns go through
+>> ret_from_exception. Yes, I added counters which prove that at least on
+>> the aranym, but I doubt that it will make a real difference if you run
+>> this on real hardware.
+>
+> I'm happy to try that (indeed, verify your patch works on Atari 
+> hardware first) - I trust the patch is relative to m68k git, not your 
+> previous patches?
 
-Yes, I've verified it, but on Keystone which has similar GPIO IP
-which supports only unbanked IRQs.
+Pleased to report the patch works, as expected, on the actual hardware. 
+I doubt we still need to profile the interrupt return path, Geert?
 
-> 
-> What do I add for you? Tested-by: or Acked-by:
+Cheers,
 
-Reported-and-Reviewed-and-Tested-by: Grygorii Strashko <grygorii.strashko@ti.com> :P
-^Up to you :), but if I understand things right "Acked-by:" included all above
+    Michael
 
-Regards,
-- grygorii
