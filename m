@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab3KLLFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 06:05:49 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:41253 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab3KLLFq (ORCPT
+	id S1754542Ab3KLLJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 06:09:14 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:61384 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150Ab3KLLJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 06:05:46 -0500
+	Tue, 12 Nov 2013 06:09:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131112103440.GF4971@laptop.programming.kicks-ass.net>
-References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
-	<1382097147-30088-6-git-send-email-vincent.guittot@linaro.org>
-	<20131112103440.GF4971@laptop.programming.kicks-ass.net>
-Date: Tue, 12 Nov 2013 12:05:45 +0100
-Message-ID: <CAKfTPtBToS=_6p-005LkHzmdkspKQj9Y4_LfEmV2SLFu88w8-w@mail.gmail.com>
-Subject: Re: [RFC][PATCH v5 06/14] sched: create a new field with available capacity
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Lukasz Majewski <l.majewski@samsung.com>
+In-Reply-To: <20131111203954.GB3043@order.stressinduktion.org>
+References: <CAP8BHkGZ5EFxW4BNervKrOiEaQTNdSh9s2YOrFoexzQCOR=AqQ@mail.gmail.com>
+	<20131111203954.GB3043@order.stressinduktion.org>
+Date: Tue, 12 Nov 2013 16:39:10 +0530
+Message-ID: <CAP8BHkG6=KuU9K7=sGsZftMDe58eTYByRu2DZ+j+KNqcfsOfAA@mail.gmail.com>
+Subject: Re: IPv6: Blackhole route support partial ?
+From: Kamala R <kamala@aristanetworks.com>
+To: Kamala R <kamala@aristanetworks.com>, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 November 2013 11:34, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, Oct 18, 2013 at 01:52:19PM +0200, Vincent Guittot wrote:
->> This new field power_available reflects the available capacity of a CPU
->> unlike the cpu_power which reflects the current capacity.
->
->> -     sdg->sgp->power_orig = sdg->sgp->power = power;
->> +     sdg->sgp->power_orig = sdg->sgp->power_available = available;
->> +     sdg->sgp->power = power;
->
-> This patch leaves me confused as to power_available vs power_orig and
-> the Changelog doesn't really clarify anything much at all.
+Hi,
 
-Ok, i will add more details in the changelog
-power_ori can only modified for SMT purpose otherwise it stays to 1024
-whereas power_available take into account the modification that has
-been done by the platform.
+Sure, here it is.
 
-I can probably re-factor that and merge power_ori and power_available.
-At now,  arch_scale_smt_power and arch_scale_freq_power are not used
-simultaneously by an architecture so I can probably move the returned
-value of arch_scale_freq_power into the power_ori. This would even
-make more sense regarding the current use of it.
+--- linux-3.12/net/ipv6/route.c.orig    2013-11-12 16:23:46.000000000 +0530
++++ linux-3.12/net/ipv6/route.c 2013-11-12 16:30:51.000000000 +0530
+@@ -1570,9 +1570,13 @@ int ip6_route_add(struct fib6_config *cf
+                switch (cfg->fc_type) {
+                case RTN_BLACKHOLE:
+                        rt->dst.error = -EINVAL;
++                       rt->dst.input = dst_discard;
++                       rt->dst.discard = dst_discard;
+                        break;
+                case RTN_PROHIBIT:
+                        rt->dst.error = -EACCES;
++                       rt->dst.input = ip6_pkt_prohibit;
++                       rt->dst.output = ip6_pkt_prohibit_out;
+                        break;
+                case RTN_THROW:
+                        rt->dst.error = -EAGAIN;
+
+Is this ok ?
+
+Regards,
+Kamala
+
+
+On Tue, Nov 12, 2013 at 2:09 AM, Hannes Frederic Sowa
+<hannes@stressinduktion.org> wrote:
+> Hello!
+>
+> On Mon, Nov 11, 2013 at 07:25:14PM +0530, Kamala R wrote:
+>> On adding IPv6 blackhole routes, ICMP unreachable messages are being
+>> sent back to source. According to the definition, packets destined to
+>> a blackhole address must be dropped silently.
+>
+> Yes, this is a bug.
+>
+>> I applied the patch submitted to the 3.7 kernel that indicates that it
+>> supports blackhole and prohibit routes correctly. However, the patch
+>> only sets the error code and route type correctly, so the show command
+>> displays the appropriate output.
+>>
+>>
+>> It seems to me that the input and output function pointers of the dst
+>> variable, which determine packet processing, need to be set to
+>> dst_discard. This would enable correct behaviour for blackhole routes.
+>> Am I on the right path here ?
+>
+> I think you are. ip6_pkt_discard is not the correct input/output
+> function for blackhole routes. In ip6_route_add simply set up the
+> function pointers in the switch instead to just initializing them to
+> ip6_pkt_discard. dst_discard is fine. Looks like prohibit rules are not
+> handled correctly either. They should go to ip6_pkt_prohibit. (Just look at
+> how the templates are initialized.)
+>
+> Could you cook a patch?
+>
+> Thanks,
+>
+>   Hannes
+>
