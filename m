@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab3KLA4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 19:56:40 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54719 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753996Ab3KLA4c (ORCPT
+	id S1754123Ab3KLBDY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 20:03:24 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:63076 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753566Ab3KLBDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 19:56:32 -0500
-X-Sasl-enc: zozWQna8CSR4t4YAuy13pwpApPAyTBtCAy21ZTltEa7s 1384217790
-Date: Mon, 11 Nov 2013 22:56:28 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Kyungmin Park'" <kmpark@infradead.org>,
-        "'Henrique de Moraes Holschuh'" <ibm-acpi@hmh.eng.br>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kay@vrfy.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] video: backlight: Remove backlight sysfs uevent
-Message-ID: <20131112005628.GA2914@khazad-dum.debian.net>
-References: <20131111235700.GA29987@july>
- <002901cedf3c$a7e77a00$f7b66e00$%han@samsung.com>
+	Mon, 11 Nov 2013 20:03:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <002901cedf3c$a7e77a00$f7b66e00$%han@samsung.com>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1383233136.4857.77.camel@edumazet-glaptop.roam.corp.google.com>
+References: <CABawtvN+PEzm_h4Gg5uYtJCjVC5yPjikwwMepkZNZR=cQ+YQmg@mail.gmail.com>
+	<1383233136.4857.77.camel@edumazet-glaptop.roam.corp.google.com>
+Date: Tue, 12 Nov 2013 09:03:14 +0800
+Message-ID: <CABawtvPSjm7LnE=nn6siJyoR+gf31iNA=ywSLz_0BR6rp_iK=w@mail.gmail.com>
+Subject: Re: Got iperf regression while intel_iommu is on, how to cut the cost
+ of cache flushing
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ashok Raj <ashok.raj@intel.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Nov 2013, Jingoo Han wrote:
-> On Tuesday, November 12, 2013 8:57 AM, Kyungmin Park wrote:
-> > From: Kyungmin Park <kyungmin.park@samsung.com>
-> > 
-> > The most mobile phones have Ambient Light Sensors and it changes brightness according lux.
-> > It means it changes backlight brightness frequently by just writing sysfs node, so it generates uevent.
-> > 
-> > Usually there's no user to use this backlight changes. But it forks udev worker threads and it takes
-> > about 5ms. The main problem is that it hurts other process activities. so remove it.
-> > 
-> > Kay said
-> > "Uevents are for the major, low-frequent, global device state-changes,
-> >  not for carrying-out any sort of measurement data. Subsystems which
-> >  need that should use other facilities like poll()-able sysfs file or
-> >  any other subscription-based, client-tracking interface which does not
-> >  cause overhead if it isn't used. Uevents are not the right thing to
-> >  use here, and upstream udev should not paper-over broken kernel
-> >  subsystems."
+Eric,
+    We have tested the performance with the TSO and TSQ patches
+merged, the result not good, even worse than kernel without those two
+patches. any idea ?
 
-True.
+kernel   : 3.11.x with TSO & TSQ merged.  ( CONFIG_INTEL_IOMMU_DEFAULT_ON=y )
+Network Interface : eth4
+Network driver    : be2net
 
-Now, let's take a look at reality: should you poll()/select() on a sysfs
-node that doesn't suport it, it will wait until the poll/select timeout
-happens (or EINTR happens), and userspace has absolutely NO way to detect
-whether a sysfs node has poll/select support.
+Average Bandwidth for :
+   1.tcp-unidirectional test    : 4385 Mbits/sec
+   2.tcp-unidirectional-parallel: 9383 Mbits/sec
+   3.tcp-bidirectonal test      : 2755 Mbits/sec
 
-What happens if the sysfs interface did not provide poll/select support
-since day one, but rather added it later?  Nobody will use it for a *long*
-time, if ever... unless you actually took pains to version the sysfs
-interface, and people actually care.
+vs
 
-> 'thinkpad_acpi.c' uses the 'BACKLIGHT_UPDATE_SYSFS'.
-> Henrique, can we remove it?
+kernel   :  3.11.x without TSO & TSQ patches.
+(CONFIG_INTEL_IOMMU_DEFAULT_ON is not set)
+Network Interface : eth4
+Network driver    : be2net
 
-Can't you fix this by rate-limiting, or otherwise adding an attribute that
-backlight devices should set when they need to supress change events?
+Average Bandwidth for :
+   1.tcp-unidirectional test    : 7992 Mbits/sec
+   2.tcp-unidirectional-parallel: 9403 Mbits/sec
+   3.tcp-bidirectonal test      : 5802 Mbits/sec
 
-Is there a proper on-screen-display support path for the backlight class
-nowadays?  Otherwise, you'd be removing the only way userspace ever had to
-do proper OSD of backlight changes...
+Thanks,
+Ethan
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+On Thu, Oct 31, 2013 at 11:25 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Thu, 2013-10-31 at 10:44 +0800, Ethan Zhao wrote:
+>> Hi guys,
+>>
+>>      We got network I/O performance degradation with latest stable
+>> kernel and the be2net driver as compared to old kernel 3.0.6.   later
+>> we found even compared to
+>> the same latest stable kernel but the INTEL_IOMMU set to 'n',  still
+>> got very noticeable performance regression:
+>>
+>> Kernel   : 3.11.x with  CONFIG_INTEL_IOMMU_DEFAULT_ON not set
+>> Network driver    : be2net
+>>
+>> Average Bandwidth for :
+>>    1.tcp-unidirectional test    : 7908 Mbits/sec
+>>    2.tcp-unidirectional-parallel: 9400 Mbits/sec
+>>    3.tcp-bidirectonal test      : 5464 Mbits/sec
+>>
+>> Kernel   : 3.11.x with CONFIG_INTEL_IOMMU_DEFAULT_ON set
+>> Network driver    : be2net
+>
+> You might hit a known problem for some 10Gb links.
+>
+> 3.12-rc6 has the fixes already, and stable has some pending backports :
+>
+> commit 95bd09eb27507691520d39ee1044d6ad831c1168
+> tcp: TSO packets automatic sizing
+>
+> commit c9eeec26e32e087359160406f96e0949b3cc6f10
+> tcp: TSQ can use a dynamic limit
+>
+> Please check that current 3.12-rc6 is OK ?
+>
+>
+>
