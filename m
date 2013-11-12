@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab3KLSBD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 13:01:03 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:49565 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab3KLSA7 (ORCPT
+	id S1754419Ab3KLRqL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:46:11 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:58226
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754211Ab3KLRqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 13:00:59 -0500
-X-Auth-Info: Pu5XuTOC5xCE9VTmCtZjV/qb/IzzoZzMhMbbwR71oHU=
-From: Marek Vasut <marex@denx.de>
-To: Andreas Werner <wernerandy@gmx.de>
-Subject: Re: [PATCH] I2C: busses: Do not print error message in syslog if no ACK received
-Date: Tue, 12 Nov 2013 19:00:59 +0100
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
-Cc: wsa@the-dreams.de, jacmet@sunsite.dk, baohua.song@csr.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1384278336-3694-1-git-send-email-wernerandy@gmx.de>
-In-Reply-To: <1384278336-3694-1-git-send-email-wernerandy@gmx.de>
+	Tue, 12 Nov 2013 12:46:06 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzzz2dh839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h1155h)
+X-WSS-ID: 0MW5VYW-08-5F7-02
+X-M-MSG: 
+Subject: [PATCH 00/10] AMD Cryptographic Coprocessor support
+To: <davem@davemloft.net>, <linux-crypto@vger.kernel.org>,
+        <herbert@gondor.hengli.com.au>
+From: Tom Lendacky <thomas.lendacky@amd.com>
+CC: <linux-kernel@vger.kernel.org>
+Date: Tue, 12 Nov 2013 11:45:59 -0600
+Message-ID: <20131112174558.19746.47262.stgit@tlendack-t1.amdoffice.net>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201311121900.59305.marex@denx.de>
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Andreas Werner,
+Resending because of typo in mailing list address...
 
-> Using the i2c-eg20t driver and call i2cdetect or probe on the bus,
-> the driver will print a lot of error messages if there was no ACK
-> received.
-> 
-> i2cdetect normally print a table with all the available devices. If there
-> is no device on the address, the table will be empty.
-> Currently with the i2c-eg20t driver, the table is not visible because
-> the error messages destroy the table.
-> 
-> Error message: pch_i2c_getack return -71
-> 
-> This patch prevent the driver to print the messages to syslog if debug is
-> not set.
-> 
-> Tested on Intel Atom E6xx and Eg20t Chipset.
-> 
-> Signed-off-by: Andreas Werner <wernerandy@gmx.de>
-> ---
->  drivers/i2c/busses/i2c-eg20t.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-eg20t.c
-> b/drivers/i2c/busses/i2c-eg20t.c index 0f37529..b10c651 100644
-> --- a/drivers/i2c/busses/i2c-eg20t.c
-> +++ b/drivers/i2c/busses/i2c-eg20t.c
-> @@ -322,7 +322,7 @@ static s32 pch_i2c_getack(struct i2c_algo_pch_data
-> *adap) reg_val = ioread32(p + PCH_I2CSR) & PCH_GETACK;
-> 
->  	if (reg_val != 0) {
-> -		pch_err(adap, "return%d\n", -EPROTO);
-> +		pch_dbg(adap, "return%d\n", -EPROTO);
->  		return -EPROTO;
->  	}
+The following series implements support for the AMD Cryptographic
+Coprocessor (CCP).  The AMD CCP provides hardware encryption, hashing
+and other related operations.
 
-I'd just kill the pch_err() line altogether:
+This patch series is based on the 3.12 kernel.
 
-if (reg_val)
-	return -EPROTO;
+---
 
-That is because if you look at the only caller of this function, which is 
-pch_i2c_wait_for_check_xfer(), you will see that at the only place where 
-pch_i2c_getack() is called there is already pch_dbg():
+Tom Lendacky (10):
+      crypto: authenc - Find proper IV address in ablkcipher callback
+      crypto: scatterwalk - Set the chain pointer indication bit
+      crypto: CCP device driver and interface support
+      crypto: crypto API interface to the CCP device driver
+      crypto: CCP AES crypto API support
+      crypto: CCP AES CMAC mode crypto API support
+      crypto: CCP XTS-AES crypto API support
+      crypto: CCP SHA crypto API support
+      crytpo: CCP device driver build files
+      crypto: CCP maintainer information
 
-369         if (pch_i2c_getack(adap)) {
-370                 pch_dbg(adap, "Receive NACK for slave address"
-371                         "setting\n");
-372                 return -EIO;
-373         }
 
-btw. (idea for subsequent patch) this pch_dbg() should be fixed to be a one-
-liner /wrt the text so we can grep for the error messages. Such text arg should 
-never be split in multiple lines in kernel.
+ MAINTAINERS                              |    7 
+ crypto/authenc.c                         |    7 
+ drivers/crypto/Kconfig                   |   12 
+ drivers/crypto/Makefile                  |    1 
+ drivers/crypto/ccp/Kconfig               |   23 
+ drivers/crypto/ccp/Makefile              |   10 
+ drivers/crypto/ccp/ccp-crypto-aes-cmac.c |  355 +++++
+ drivers/crypto/ccp/ccp-crypto-aes-xts.c  |  285 ++++
+ drivers/crypto/ccp/ccp-crypto-aes.c      |  375 ++++++
+ drivers/crypto/ccp/ccp-crypto-main.c     |  432 ++++++
+ drivers/crypto/ccp/ccp-crypto-sha.c      |  497 +++++++
+ drivers/crypto/ccp/ccp-crypto.h          |  191 +++
+ drivers/crypto/ccp/ccp-dev.c             |  582 +++++++++
+ drivers/crypto/ccp/ccp-dev.h             |  272 ++++
+ drivers/crypto/ccp/ccp-ops.c             | 2020 ++++++++++++++++++++++++++++++
+ drivers/crypto/ccp/ccp-pci.c             |  360 +++++
+ include/crypto/scatterwalk.h             |    1 
+ include/linux/ccp.h                      |  525 ++++++++
+ 18 files changed, 5952 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/crypto/ccp/Kconfig
+ create mode 100644 drivers/crypto/ccp/Makefile
+ create mode 100644 drivers/crypto/ccp/ccp-crypto-aes-cmac.c
+ create mode 100644 drivers/crypto/ccp/ccp-crypto-aes-xts.c
+ create mode 100644 drivers/crypto/ccp/ccp-crypto-aes.c
+ create mode 100644 drivers/crypto/ccp/ccp-crypto-main.c
+ create mode 100644 drivers/crypto/ccp/ccp-crypto-sha.c
+ create mode 100644 drivers/crypto/ccp/ccp-crypto.h
+ create mode 100644 drivers/crypto/ccp/ccp-dev.c
+ create mode 100644 drivers/crypto/ccp/ccp-dev.h
+ create mode 100644 drivers/crypto/ccp/ccp-ops.c
+ create mode 100644 drivers/crypto/ccp/ccp-pci.c
+ create mode 100644 include/linux/ccp.h
 
-Best regards,
-Marek Vasut
+-- 
+Tom Lendacky
+
