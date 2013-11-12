@@ -1,102 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756361Ab3KLTRN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:17:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48156 "EHLO mx1.redhat.com"
+	id S1755773Ab3KLTTc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:19:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8442 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753400Ab3KLTRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:17:09 -0500
-Date: Tue, 12 Nov 2013 13:16:59 -0600
-From: Clark Williams <williams@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] 3.12.0-rt1: net: iwlwifi request only a threaded handler
- for interrupts
-Message-ID: <20131112131659.578eb7c1@sluggy>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/jaMgZAUhrMjDh81HYHp5fDW"; protocol="application/pgp-signature"
+	id S1752852Ab3KLTTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 14:19:30 -0500
+Date: Tue, 12 Nov 2013 20:20:38 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] uprobes: Add uprobe_task->dup_work/dup_addr
+Message-ID: <20131112192038.GA7748@redhat.com>
+References: <20131108190003.GA12755@redhat.com> <20131111071151.GA2559@linux.vnet.ibm.com> <20131111165543.GA12233@redhat.com> <20131112174302.GH2559@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112174302.GH2559@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/jaMgZAUhrMjDh81HYHp5fDW
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 11/12, Srikar Dronamraju wrote:
+>
+> Okay, moving to arch_uprobe_task is fine. I probably got confused by
+> "First of all it is not really needed,"
 
-Sebastian,
+OK, this doesn't look good, I agree.
 
-I needed this for my laptop on 3.12, so tweaked it to apply properly.=20
+Please see v2 below, I tried to improve the changelog.
 
-Clark
+> > OK. How about dup_xol_work/dup_xol_vaddr ?
+>
+> Yes fine with me.
 
-commit 7b1573eaa0f176731bc231b249598b6e4850babf
-Author: Clark Williams <clark.williams@gmail.com>
-Date:   Tue Nov 12 12:17:07 2013 -0600
+Done.
 
-    net: iwlwifi: request only a threaded handler for interrupts
-   =20
-    On RT the trans_pcie->irq_lock lock is converted into a sleeping
-    lock and can't be used in primary irq handler. The lock is used in
-    mutliple places which means turning it into a raw lock could
-    increase the latency of the system.
-    For now both handlers are moved into the thread.
-   =20
-    Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-    Signed-off-by: Clark Williams <clark.williams@gmail.com>
+I added your ack optimistically, please let me know if you think I
+should change something else.
 
-diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c
-b/drivers/net/wireless/iwlwifi/pcie/trans.c index c3f904d..2f2345c
-100644 --- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -1375,6 +1375,20 @@ static const struct iwl_trans_ops trans_ops_pcie
-=3D { .set_bits_mask =3D iwl_trans_pcie_set_bits_mask,
+Oleg.
+---
+
+Subject: [PATCH] uprobes: Add uprobe_task->dup_xol_work/dup_xol_addr
+
+uprobe_task->vaddr is a bit strange. The generic code uses it only
+to pass the additional argument to arch_uprobe_pre_xol(), and since
+it is always equal to instruction_pointer() this looks even more
+strange.
+
+And both utask->vaddr and and utask->autask have the same scope,
+they only have the meaning when the task executes the probed insn
+out-of-line, so it is safe to reuse both in UTASK_RUNNING state.
+
+This all means that logically ->vaddr belongs to arch_uprobe_task
+and we should probably move it there, arch_uprobe_pre_xol() can
+record instruction_pointer() itself.
+
+OTOH, it is also used by uprobe_copy_process() and dup_xol_work()
+for another purpose, this doesn't look clean and doesn't allow to
+move this member into arch_uprobe_task.
+
+This patch adds the union with 2 anonymous structs into uprobe_task.
+
+The first struct is autask + vaddr, this way we "almost" move vaddr
+into autask.
+
+The second struct has 2 new members for uprobe_copy_process() paths:
+->dup_xol_addr which can be used instead ->vaddr, and ->dup_xol_work
+which can be used to avoid kmalloc() and simplify the code.
+
+Note that this union will likely have another member(s), we need
+something like "private_data_for_handlers" so that the tracing
+handlers could use it to communicate with call_fetch() methods.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ include/linux/uprobes.h |   21 ++++++++++++++++-----
+ kernel/events/uprobes.c |   16 ++++------------
+ 2 files changed, 20 insertions(+), 17 deletions(-)
+
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 319eae7..2225542 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -26,6 +26,7 @@
+ 
+ #include <linux/errno.h>
+ #include <linux/rbtree.h>
++#include <linux/types.h>
+ 
+ struct vm_area_struct;
+ struct mm_struct;
+@@ -72,14 +73,24 @@ enum uprobe_task_state {
+  */
+ struct uprobe_task {
+ 	enum uprobe_task_state		state;
+-	struct arch_uprobe_task		autask;
+ 
+-	struct return_instance		*return_instances;
+-	unsigned int			depth;
+-	struct uprobe			*active_uprobe;
++	union {
++		struct {
++			struct arch_uprobe_task	autask;
++			unsigned long		vaddr;
++		};
++
++		struct {
++			struct callback_head	dup_xol_work;
++			unsigned long		dup_xol_addr;
++		};
++	};
+ 
++	struct uprobe			*active_uprobe;
+ 	unsigned long			xol_vaddr;
+-	unsigned long			vaddr;
++
++	struct return_instance		*return_instances;
++	unsigned int			depth;
  };
-=20
-+#ifdef CONFIG_PREEMPT_RT_BASE
-+static irqreturn_t iwl_rt_irq_handler(int irq, void *dev_id)
-+{
-+       irqreturn_t ret;
-+
-+       local_bh_disable();
-+       ret =3D iwl_pcie_isr_ict(irq, dev_id);
-+       local_bh_enable();
-+       if (ret =3D=3D IRQ_WAKE_THREAD)
-+               ret =3D iwl_pcie_irq_handler(irq, dev_id);
-+       return ret;
-+}
-+#endif
-+
- struct iwl_trans *iwl_trans_pcie_alloc(struct pci_dev *pdev,
-                                       const struct pci_device_id *ent,
-                                       const struct iwl_cfg *cfg)
-@@ -1493,9 +1507,14 @@ struct iwl_trans *iwl_trans_pcie_alloc(struct
-pci_dev *pdev, if (iwl_pcie_alloc_ict(trans))
-                goto out_free_cmd_pool;
-=20
-+#ifdef CONFIG_PREEMPT_RT_BASE
-+       err =3D request_threaded_irq(pdev->irq, NULL, iwl_rt_irq_handler,
-+                                IRQF_SHARED | IRQF_ONESHOT, DRV_NAME,
-trans)) +#else
-        err =3D request_threaded_irq(pdev->irq, iwl_pcie_isr_ict,
-                                   iwl_pcie_irq_handler,
-                                   IRQF_SHARED, DRV_NAME, trans);
-+#endif
-        if (err) {
-                IWL_ERR(trans, "Error allocating IRQ %d\n", pdev->irq);
-                goto out_free_ict;
+ 
+ /*
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 24b7d6c..df4ef09 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1403,12 +1403,10 @@ static void uprobe_warn(struct task_struct *t, const char *msg)
+ 
+ static void dup_xol_work(struct callback_head *work)
+ {
+-	kfree(work);
+-
+ 	if (current->flags & PF_EXITING)
+ 		return;
+ 
+-	if (!__create_xol_area(current->utask->vaddr))
++	if (!__create_xol_area(current->utask->dup_xol_addr))
+ 		uprobe_warn(current, "dup xol area");
+ }
+ 
+@@ -1419,7 +1417,6 @@ void uprobe_copy_process(struct task_struct *t, unsigned long flags)
+ {
+ 	struct uprobe_task *utask = current->utask;
+ 	struct mm_struct *mm = current->mm;
+-	struct callback_head *work;
+ 	struct xol_area *area;
+ 
+ 	t->utask = NULL;
+@@ -1441,14 +1438,9 @@ void uprobe_copy_process(struct task_struct *t, unsigned long flags)
+ 	if (mm == t->mm)
+ 		return;
+ 
+-	/* TODO: move it into the union in uprobe_task */
+-	work = kmalloc(sizeof(*work), GFP_KERNEL);
+-	if (!work)
+-		return uprobe_warn(t, "dup xol area");
+-
+-	t->utask->vaddr = area->vaddr;
+-	init_task_work(work, dup_xol_work);
+-	task_work_add(t, work, true);
++	t->utask->dup_xol_addr = area->vaddr;
++	init_task_work(&t->utask->dup_xol_work, dup_xol_work);
++	task_work_add(t, &t->utask->dup_xol_work, true);
+ }
+ 
+ /*
+-- 
+1.5.5.1
 
---Sig_/jaMgZAUhrMjDh81HYHp5fDW
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iEYEARECAAYFAlKCfqsACgkQHyuj/+TTEp3DrwCg5ozgU2mp/weF1TOEtY99S0N4
-qRAAnilbSg8mxF1MYb8Gv6184BJ40ZFv
-=S8s4
------END PGP SIGNATURE-----
-
---Sig_/jaMgZAUhrMjDh81HYHp5fDW--
