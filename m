@@ -1,309 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab3KLQTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 11:19:35 -0500
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.165]:46077 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752482Ab3KLQTd (ORCPT
+	id S932121Ab3KLQTq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 11:19:46 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:44451 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754089Ab3KLQTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 11:19:33 -0500
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-8.tower-38.messagelabs.com!1384273156!8997236!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.13; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Tue, 12 Nov 2013 17:19:16 +0100
-Date: Tue, 12 Nov 2013 17:19:09 +0100
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-edac@vger.kernel.org>
-Subject: [GIT PULL] mpc85xx_edac changes for 3.13
-Message-ID: <20131112161901.GA15637@jtlinux>
+	Tue, 12 Nov 2013 11:19:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
-X-OriginalArrivalTime: 12 Nov 2013 16:19:15.0838 (UTC) FILETIME=[EE80A1E0:01CEDFC2]
+In-Reply-To: <CAC9WiBj554c=B3ucq41yPR9oEtSFebUwJa5z0DuD_esDwvZQqw@mail.gmail.com>
+References: <CAC9WiBj554c=B3ucq41yPR9oEtSFebUwJa5z0DuD_esDwvZQqw@mail.gmail.com>
+Date: Tue, 12 Nov 2013 17:19:38 +0100
+Message-ID: <CAC9WiBjA46h+Jab5PLE3O3OAhhrXVcHjDVaHU0fcLS8k77P5pg@mail.gmail.com>
+Subject: Re: bcache: process get stucks when doing write IOs in writeback mode
+From: Francis Moreau <francis.moro@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hello,
 
-Please pull these changes for mpc85xx_edac. They have been around on linux-edac
-for a while.
+It doesn't seem my initial post reached LKML, maybe that's due to the
+dmesg file I initially attached. So I'm replying to this hoping that
+this is going to be fixed (since the attached file is gone).
 
-Thanks.
+On Mon, Nov 11, 2013 at 6:45 PM, Francis Moreau <francis.moro@gmail.com> wrote:
+> Hello,
+>
+> [ Resending this issue to LKML to reach a wider audience since I've
+> got no answer so far on bcache mailing list and it seems a pretty
+> major bug in that component ]
+>
+> I'm using bcache on a very basic setup: no MD or LVM involved.
+> /dev/sda4 (900Mo) is the backing device while /dev/sdb (120G) is the
+> cache device. On top of bcache0 I'm using ext4 and I'm using it as my
+> root device.
+>
+> I initially created the bcache0 device with default using writethough
+> mode. I haven't (yet) experienced any issues using this mode: I
+> successfully installed my system (archlinux) on it.
+>
+> I decided to switch to writeback mode and encounter several times the
+> same issue: after doing a lot of IOs (for example when installing new
+> packages) one process is stuck in D state. Currently I can see this:
+>
+> # ps aux | grep D+
+> root      1080  0.0  0.0  41796  5728 pts/0    D+   12:59   0:00 gtk-update-icon
+>
+> # cat /proc/1080/stack
+> [<ffffffff8113270e>] sleep_on_page+0xe/0x20
+> [<ffffffff811324bf>] wait_on_page_bit+0x7f/0x90
+> [<ffffffff8113264b>] filemap_fdatawait_range+0x11b/0x1a0
+> [<ffffffff81133d3f>] filemap_write_and_wait_range+0x3f/0x70
+> [<ffffffffa02ad4da>] ext4_sync_file+0xba/0x390 [ext4]
+> [<ffffffff811cde56>] do_fsync+0x56/0x80
+> [<ffffffff811ce0e0>] SyS_fsync+0x10/0x20
+> [<ffffffff814ea5dd>] system_call_fastpath+0x1a/0x1f
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> From that point I'm not really sure what I should do to restore the
+> system without loosing or breaking badly my rootfs. Any advices are
+> welcome.
+>
+> Please find below some additionnal information that might help to fix
+> this issue:
+>
+> # mount | grep bcache
+> /dev/bcache0 on / type ext4 (rw,relatime,data=ordered)
+>
+> # uname -r
+> 3.11.6-1-ARCH
+>
+> # bcache-super-show /dev/sda4
+> sb.magic        ok
+> sb.first_sector        8 [match]
+> sb.csum            F828E134D5AB890C [match]
+> sb.version        1 [backing device]
+>
+> dev.label        (empty)
+> dev.uuid        62839366-e5a9-43a9-9984-fc8f2aefe9de
+> dev.sectors_per_block    1
+> dev.sectors_per_bucket    1024
+> dev.data.first_sector    16
+> dev.data.cache_mode    1 [writeback]
+> dev.data.cache_state    2 [dirty]
+>
+> cset.uuid        50485be4-15f7-424f-a01b-4c65fdf8487d
+>
+> # bcache-super-show /dev/sdb
+> sb.magic        ok
+> sb.first_sector        8 [match]
+> sb.csum            692BB25984E31571 [match]
+> sb.version        3 [cache device]
+>
+> dev.label        (empty)
+> dev.uuid        a63ec68a-6a71-497e-86db-0dd71bbfb404
+> dev.sectors_per_block    1
+> dev.sectors_per_bucket    1024
+> dev.cache.first_sector    1024
+> dev.cache.cache_sectors    234439680
+> dev.cache.total_sectors    234440704
+> dev.cache.ordered    yes
+> dev.cache.discard    yes
+> dev.cache.pos        0
+> dev.cache.replacement    0 [lru]
+>
+> cset.uuid        50485be4-15f7-424f-a01b-4c65fdf8487d
+>
+> I attached dmesg output which has been generated after doing "echo t
+>>/proc/sysrq-trigger"
+>
+> Thanks
+> --
+> Francis
+>
+>
+> --
+> Francis
 
---
-The following changes since commit 10d0c9705e80bbd3d587c5fad24599aabaca6688:
-
-  Merge tag 'devicetree-for-3.13' of git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux (2013-11-12 16:52:17 +0900)
-
-are available in the git repository at:
 
 
-  git://github.com/morbidrsa/linux.git tags/mpc85xx-edac-for-3.13
-
-for you to fetch changes up to 43b5acb650587ec6495c2e3b8c2e30311e9dc8cf:
-
-  edac/85xx: Remove mpc85xx_pci_err_remove (2013-11-12 17:06:16 +0100)
-
-----------------------------------------------------------------
-mpc85xx_edac for 3.13
-
-----------------------------------------------------------------
-Chunhe Lan (1):
-      edac/85xx: Add PCIe error interrupt edac support
-
-Johannes Thumshirn (2):
-      MAINTAINERS: Add edac-mpc85xx driver to MAINTAINERS
-      edac/85xx: Remove mpc85xx_pci_err_remove
-
- MAINTAINERS                 |   7 +++
- drivers/edac/mpc85xx_edac.c | 120 ++++++++++++++++++++++++++++++++------------
- drivers/edac/mpc85xx_edac.h |   7 +++
- 3 files changed, 101 insertions(+), 33 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 051e4dc..3391279 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3129,6 +3129,13 @@ W:	bluesmoke.sourceforge.net
- S:	Maintained
- F:	drivers/edac/i82975x_edac.c
-
-+EDAC-MPC85XX
-+M:	Johannes Thumshirn <johannes.thumshirn@men.de>
-+L:	linux-edac@vger.kernel.org
-+W:	bluesmoke.sourceforge.net
-+S:	Maintained
-+F:	drivers/edac/mpc85xx_edac.[ch]
-+
- EDAC-PASEMI
- M:	Egor Martovetsky <egor@pasemi.com>
- L:	linux-edac@vger.kernel.org
-diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-index 3eb32f6..8f91821 100644
---- a/drivers/edac/mpc85xx_edac.c
-+++ b/drivers/edac/mpc85xx_edac.c
-@@ -1,6 +1,8 @@
- /*
-  * Freescale MPC85xx Memory Controller kenel module
-  *
-+ * Parts Copyrighted (c) 2013 by Freescale Semiconductor, Inc.
-+ *
-  * Author: Dave Jiang <djiang@mvista.com>
-  *
-  * 2006-2007 (c) MontaVista Software, Inc. This file is licensed under
-@@ -196,6 +198,42 @@ static void mpc85xx_pci_check(struct edac_pci_ctl_info *pci)
- 		edac_pci_handle_npe(pci, pci->ctl_name);
- }
-
-+static void mpc85xx_pcie_check(struct edac_pci_ctl_info *pci)
-+{
-+	struct mpc85xx_pci_pdata *pdata = pci->pvt_info;
-+	u32 err_detect;
-+
-+	err_detect = in_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_DR);
-+
-+	pr_err("PCIe error(s) detected\n");
-+	pr_err("PCIe ERR_DR register: 0x%08x\n", err_detect);
-+	pr_err("PCIe ERR_CAP_STAT register: 0x%08x\n",
-+			in_be32(pdata->pci_vbase + MPC85XX_PCI_GAS_TIMR));
-+	pr_err("PCIe ERR_CAP_R0 register: 0x%08x\n",
-+			in_be32(pdata->pci_vbase + MPC85XX_PCIE_ERR_CAP_R0));
-+	pr_err("PCIe ERR_CAP_R1 register: 0x%08x\n",
-+			in_be32(pdata->pci_vbase + MPC85XX_PCIE_ERR_CAP_R1));
-+	pr_err("PCIe ERR_CAP_R2 register: 0x%08x\n",
-+			in_be32(pdata->pci_vbase + MPC85XX_PCIE_ERR_CAP_R2));
-+	pr_err("PCIe ERR_CAP_R3 register: 0x%08x\n",
-+			in_be32(pdata->pci_vbase + MPC85XX_PCIE_ERR_CAP_R3));
-+
-+	/* clear error bits */
-+	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_DR, err_detect);
-+}
-+
-+static int mpc85xx_pcie_find_capability(struct device_node *np)
-+{
-+	struct pci_controller *hose;
-+
-+	if (!np)
-+		return -EINVAL;
-+
-+	hose = pci_find_hose_for_OF_device(np);
-+
-+	return early_find_capability(hose, 0, 0, PCI_CAP_ID_EXP);
-+}
-+
- static irqreturn_t mpc85xx_pci_isr(int irq, void *dev_id)
- {
- 	struct edac_pci_ctl_info *pci = dev_id;
-@@ -207,7 +245,10 @@ static irqreturn_t mpc85xx_pci_isr(int irq, void *dev_id)
- 	if (!err_detect)
- 		return IRQ_NONE;
-
--	mpc85xx_pci_check(pci);
-+	if (pdata->is_pcie)
-+		mpc85xx_pcie_check(pci);
-+	else
-+		mpc85xx_pci_check(pci);
-
- 	return IRQ_HANDLED;
- }
-@@ -239,14 +280,22 @@ int mpc85xx_pci_err_probe(struct platform_device *op)
- 	pdata = pci->pvt_info;
- 	pdata->name = "mpc85xx_pci_err";
- 	pdata->irq = NO_IRQ;
-+
-+	if (mpc85xx_pcie_find_capability(op->dev.of_node) > 0)
-+		pdata->is_pcie = true;
-+
- 	dev_set_drvdata(&op->dev, pci);
- 	pci->dev = &op->dev;
- 	pci->mod_name = EDAC_MOD_STR;
- 	pci->ctl_name = pdata->name;
- 	pci->dev_name = dev_name(&op->dev);
-
--	if (edac_op_state == EDAC_OPSTATE_POLL)
--		pci->edac_check = mpc85xx_pci_check;
-+	if (edac_op_state == EDAC_OPSTATE_POLL) {
-+		if (pdata->is_pcie)
-+			pci->edac_check = mpc85xx_pcie_check;
-+		else
-+			pci->edac_check = mpc85xx_pci_check;
-+	}
-
- 	pdata->edac_idx = edac_pci_idx++;
-
-@@ -275,16 +324,26 @@ int mpc85xx_pci_err_probe(struct platform_device *op)
- 		goto err;
- 	}
-
--	orig_pci_err_cap_dr =
--	    in_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_CAP_DR);
-+	if (pdata->is_pcie) {
-+		orig_pci_err_cap_dr =
-+		    in_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_ADDR);
-+		out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_ADDR, ~0);
-+		orig_pci_err_en =
-+		    in_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_EN);
-+		out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_EN, 0);
-+	} else {
-+		orig_pci_err_cap_dr =
-+		    in_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_CAP_DR);
-
--	/* PCI master abort is expected during config cycles */
--	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_CAP_DR, 0x40);
-+		/* PCI master abort is expected during config cycles */
-+		out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_CAP_DR, 0x40);
-
--	orig_pci_err_en = in_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_EN);
-+		orig_pci_err_en =
-+		    in_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_EN);
-
--	/* disable master abort reporting */
--	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_EN, ~0x40);
-+		/* disable master abort reporting */
-+		out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_EN, ~0x40);
-+	}
-
- 	/* clear error bits */
- 	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_DR, ~0);
-@@ -297,7 +356,8 @@ int mpc85xx_pci_err_probe(struct platform_device *op)
- 	if (edac_op_state == EDAC_OPSTATE_INT) {
- 		pdata->irq = irq_of_parse_and_map(op->dev.of_node, 0);
- 		res = devm_request_irq(&op->dev, pdata->irq,
--				       mpc85xx_pci_isr, IRQF_DISABLED,
-+				       mpc85xx_pci_isr,
-+				       IRQF_DISABLED | IRQF_SHARED,
- 				       "[EDAC] PCI err", pci);
- 		if (res < 0) {
- 			printk(KERN_ERR
-@@ -312,6 +372,22 @@ int mpc85xx_pci_err_probe(struct platform_device *op)
- 		       pdata->irq);
- 	}
-
-+	if (pdata->is_pcie) {
-+		/*
-+		 * Enable all PCIe error interrupt & error detect except invalid
-+		 * PEX_CONFIG_ADDR/PEX_CONFIG_DATA access interrupt generation
-+		 * enable bit and invalid PEX_CONFIG_ADDR/PEX_CONFIG_DATA access
-+		 * detection enable bit. Because PCIe bus code to initialize and
-+		 * configure these PCIe devices on booting will use some invalid
-+		 * PEX_CONFIG_ADDR/PEX_CONFIG_DATA, edac driver prints the much
-+		 * notice information. So disable this detect to fix ugly print.
-+		 */
-+		out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_EN, ~0
-+			 & ~PEX_ERR_ICCAIE_EN_BIT);
-+		out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_ADDR, 0
-+			 | PEX_ERR_ICCAD_DISR_BIT);
-+	}
-+
- 	devres_remove_group(&op->dev, mpc85xx_pci_err_probe);
- 	edac_dbg(3, "success\n");
- 	printk(KERN_INFO EDAC_MOD_STR " PCI err registered\n");
-@@ -327,28 +403,6 @@ err:
- }
- EXPORT_SYMBOL(mpc85xx_pci_err_probe);
-
--static int mpc85xx_pci_err_remove(struct platform_device *op)
--{
--	struct edac_pci_ctl_info *pci = dev_get_drvdata(&op->dev);
--	struct mpc85xx_pci_pdata *pdata = pci->pvt_info;
--
--	edac_dbg(0, "\n");
--
--	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_CAP_DR,
--		 orig_pci_err_cap_dr);
--
--	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_EN, orig_pci_err_en);
--
--	edac_pci_del_device(pci->dev);
--
--	if (edac_op_state == EDAC_OPSTATE_INT)
--		irq_dispose_mapping(pdata->irq);
--
--	edac_pci_free_ctl_info(pci);
--
--	return 0;
--}
--
- #endif				/* CONFIG_PCI */
-
- /**************************** L2 Err device ***************************/
-diff --git a/drivers/edac/mpc85xx_edac.h b/drivers/edac/mpc85xx_edac.h
-index 932016f..8c62564 100644
---- a/drivers/edac/mpc85xx_edac.h
-+++ b/drivers/edac/mpc85xx_edac.h
-@@ -134,13 +134,19 @@
- #define MPC85XX_PCI_ERR_DR		0x0000
- #define MPC85XX_PCI_ERR_CAP_DR		0x0004
- #define MPC85XX_PCI_ERR_EN		0x0008
-+#define   PEX_ERR_ICCAIE_EN_BIT		0x00020000
- #define MPC85XX_PCI_ERR_ATTRIB		0x000c
- #define MPC85XX_PCI_ERR_ADDR		0x0010
-+#define   PEX_ERR_ICCAD_DISR_BIT	0x00020000
- #define MPC85XX_PCI_ERR_EXT_ADDR	0x0014
- #define MPC85XX_PCI_ERR_DL		0x0018
- #define MPC85XX_PCI_ERR_DH		0x001c
- #define MPC85XX_PCI_GAS_TIMR		0x0020
- #define MPC85XX_PCI_PCIX_TIMR		0x0024
-+#define MPC85XX_PCIE_ERR_CAP_R0		0x0028
-+#define MPC85XX_PCIE_ERR_CAP_R1		0x002c
-+#define MPC85XX_PCIE_ERR_CAP_R2		0x0030
-+#define MPC85XX_PCIE_ERR_CAP_R3		0x0034
-
- struct mpc85xx_mc_pdata {
- 	char *name;
-@@ -158,6 +164,7 @@ struct mpc85xx_l2_pdata {
-
- struct mpc85xx_pci_pdata {
- 	char *name;
-+	bool is_pcie;
- 	int edac_idx;
- 	void __iomem *pci_vbase;
- 	int irq;
+-- 
+Francis
