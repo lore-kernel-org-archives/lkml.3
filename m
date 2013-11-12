@@ -1,65 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab3KLRAE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:00:04 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:41825 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753828Ab3KLQ77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 11:59:59 -0500
-Date: Tue, 12 Nov 2013 17:59:34 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Crypto Update for 3.13
-Message-ID: <20131112165934.GA13441@pd.tnic>
-References: <20110520235409.GA1722@gondor.apana.org.au>
- <20110724011752.GA14373@gondor.apana.org.au>
- <20111031040952.GA19659@gondor.apana.org.au>
- <20120106041250.GA7759@gondor.apana.org.au>
- <20121004095357.GA11777@gondor.apana.org.au>
- <20121214103156.GA5840@gondor.apana.org.au>
- <20130223023331.GA11002@gondor.apana.org.au>
- <20130907035544.GA22658@gondor.apana.org.au>
- <20131107080131.GA32307@gondor.apana.org.au>
- <20131112164151.GA22645@gondor.apana.org.au>
+	id S932143Ab3KLRA4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:00:56 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36994 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071Ab3KLRAy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 12:00:54 -0500
+Date: Tue, 12 Nov 2013 18:00:43 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, David Laight <David.Laight@ACULAB.COM>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipvs: Remove unused variable ret from
+ sync_thread_master()
+Message-ID: <20131112170043.GB16796@laptop.programming.kicks-ass.net>
+References: <1384264396-14550-1-git-send-email-geert@linux-m68k.org>
+ <20131112141314.GQ5056@laptop.programming.kicks-ass.net>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com>
+ <20131112145243.GU5056@laptop.programming.kicks-ass.net>
+ <20131112162136.GA29065@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131112164151.GA22645@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131112162136.GA29065@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 12:41:52AM +0800, Herbert Xu wrote:
-> Hi Linus:
+On Tue, Nov 12, 2013 at 05:21:36PM +0100, Oleg Nesterov wrote:
+> On 11/12, Peter Zijlstra wrote:
+> >
+> > On Tue, Nov 12, 2013 at 02:21:39PM -0000, David Laight wrote:
+> > > Shame there isn't a process flag to indicate that the process
+> > > will sleep uninterruptibly and that it doesn't matter.
+> > > So don't count to the load average and don't emit a warning
+> > > if it has been sleeping for a long time.
+> >
+> > A process flag wouldn't work, because the task could block waiting for
+> > actual work to complete in other sleeps.
+> >
+> > However, we could do something like the below; which would allow us
+> > writing things like:
+> >
+> > 	(void)___wait_event(*sk_sleep(sk),
+> > 			    sock_writeable(sk) || kthread_should_stop(),
+> > 			    TASK_UNINTERRUPTIBLE | TASK_IDLE, 0, 0,
+> > 			    schedule());
+> >
+> > Marking the one wait-for-more-work as TASK_IDLE such that it doesn't
+> > contribute to the load avg.
 > 
-> Here is the crypto update for 3.13:
+> Agreed, I thought about additional bit too.
 > 
-> * Made x86 ablk_helper generic for ARM.
-> * Phase out chainiv in favour of eseqiv (affects IPsec).
-> * Fixed aes-cbc IV corruption on s390.
-> * Added constant-time crypto_memneq which replaces memcmp.
+> >  static const char * const task_state_array[] = {
+> > -	"R (running)",		/*   0 */
+> > -	"S (sleeping)",		/*   1 */
+> > -	"D (disk sleep)",	/*   2 */
+> > -	"T (stopped)",		/*   4 */
+> > -	"t (tracing stop)",	/*   8 */
+> > -	"Z (zombie)",		/*  16 */
+> > -	"X (dead)",		/*  32 */
+> > -	"x (dead)",		/*  64 */
+> > -	"K (wakekill)",		/* 128 */
+> > -	"W (waking)",		/* 256 */
+> > -	"P (parked)",		/* 512 */
+> > +	"R (running)",		/*    0 */
+> > +	"S (sleeping)",		/*    1 */
+> > +	"D (disk sleep)",	/*    2 */
+> > +	"T (stopped)",		/*    4 */
+> > +	"t (tracing stop)",	/*    8 */
+> > +	"Z (zombie)",		/*   16 */
+> > +	"X (dead)",		/*   32 */
+> > +	"x (dead)",		/*   64 */
+> > +	"K (wakekill)",		/*  128 */
+> > +	"W (waking)",		/*  256 */
+> > +	"P (parked)",		/*  512 */
+> > +	"I (idle)",		/* 1024 */
+> >  };
 > 
-> * Fixed aes-ctr in omap-aes.
-> * Added OMAP3 ROM RNG support.
-> * Add PRNG support for MSM SoC's
-> * Add and use Job Ring API in caam.
+> but I am not sure about what /proc/ should report in this case...
+
+We have to put in something...
+
+	BUILD_BUG_ON(1 + ilog2(TASK_STATE_MAX) != ARRAY_SIZE(task_state_array));
+
+However, since we always set it together with TASK_UNINTERUPTIBLE
+userspace shouldn't actually ever see the I thing.
+
+> >  #define task_contributes_to_load(task)	\
+> >  				((task->state & TASK_UNINTERRUPTIBLE) != 0 && \
+> > -				 (task->flags & PF_FROZEN) == 0)
+> > +				 (task->flags & PF_FROZEN) == 0 && \
+> > +				 (task->state & TASK_IDLE) == 0)
 > 
-> * Misc fixes.
+> perhaps
+> 
+> 	(task->state & (TASK_UNINTERRUPTIBLE | TASK_IDLE)) == TASK_UNINTERRUPTIBLE
+> 
+> can save an insn.
 
-Maybe add this one to that:
+Fair enough.
 
-http://marc.info/?l=linux-kernel&m=138078878205385&w=2
+> I am also wondering if it makes any sense to turn PF_FROZEN into
+> TASK_FROZEN, something like (incomplete, probably racy) patch below.
+> Note that it actually adds the new state, not the the qualifier.
+> 
+> --- x/include/linux/freezer.h
+> +++ x/include/linux/freezer.h
+> @@ -23,7 +23,7 @@ extern unsigned int freeze_timeout_msecs
+>   */
+>  static inline bool frozen(struct task_struct *p)
+>  {
+> -	return p->flags & PF_FROZEN;
+> +	return p->state & TASK_FROZEN;
 
-?
+do we want == there? Does it make sense to allow it be set with other
+state flags?
 
--- 
-Regards/Gruss,
-    Boris.
+>  }
+>  
+>  extern bool freezing_slow_path(struct task_struct *p);
+> --- x/kernel/freezer.c
+> +++ x/kernel/freezer.c
+> @@ -57,16 +57,13 @@ bool __refrigerator(bool check_kthr_stop
+>  	pr_debug("%s entered refrigerator\n", current->comm);
+>  
+>  	for (;;) {
+> -		set_current_state(TASK_UNINTERRUPTIBLE);
+> -
+>  		spin_lock_irq(&freezer_lock);
+> -		current->flags |= PF_FROZEN;
+> -		if (!freezing(current) ||
+> -		    (check_kthr_stop && kthread_should_stop()))
+> -			current->flags &= ~PF_FROZEN;
+> +		if (freezing(current) &&
+> +		    !(check_kthr_stop && kthread_should_stop()))
+> +			set_current_state(TASK_FROZEN);
+>  		spin_unlock_irq(&freezer_lock);
+>  
+> -		if (!(current->flags & PF_FROZEN))
+> +		if (!(current->state & TASK_FROZEN))
+>  			break;
+>  		was_frozen = true;
+>  		schedule();
+> @@ -148,8 +145,7 @@ void __thaw_task(struct task_struct *p)
+>  	 * refrigerator.
+>  	 */
+>  	spin_lock_irqsave(&freezer_lock, flags);
+> -	if (frozen(p))
+> -		wake_up_process(p);
+> +	try_to_wake_up(p, TASK_FROZEN, 0);
+>  	spin_unlock_irqrestore(&freezer_lock, flags);
+>  }
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Should work I suppose... I'm not entirely sure why that's a PF to begin
+with.
