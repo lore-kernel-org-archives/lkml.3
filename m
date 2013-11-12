@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab3KLULt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 15:11:49 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:48518 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755317Ab3KLULl (ORCPT
+	id S1756456Ab3KLUMw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 15:12:52 -0500
+Received: from georges.telenet-ops.be ([195.130.137.68]:58226 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420Ab3KLUMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 15:11:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131112200514.GA15413@earth.universe>
-References: <1384265618-10590-1-git-send-email-linus.walleij@linaro.org>
-	<20131112153057.GA9683@earth.universe>
-	<CACRpkdb_bryGJo7CKGP5tj3RFGv=Gh+Q5m9ucVKqJ068tjPC2g@mail.gmail.com>
-	<20131112200514.GA15413@earth.universe>
-Date: Tue, 12 Nov 2013 21:11:40 +0100
-Message-ID: <CACRpkdaAaLjm_b+OLj3tobxBN8YGUcTPnXJ=qtBqd02=FTxhjQ@mail.gmail.com>
-Subject: Re: [PATCH 4/5 v2] input: tc3589x-keypad: support probing from device tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Nov 2013 15:12:43 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org
+Subject: [PATCH 06/12] staging: Remove superfluous name casts
+Date: Tue, 12 Nov 2013 20:07:19 +0100
+Message-Id: <1384283245-9419-7-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384283245-9419-1-git-send-email-geert@linux-m68k.org>
+References: <1384283245-9419-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 9:05 PM, Sebastian Reichel <sre@ring0.de> wrote:
-> On Tue, Nov 12, 2013 at 06:06:49PM +0100, Linus Walleij wrote:
+device_driver.name is "const char *"
 
->> So this binding is documented for GPIO keys in:
->> Documentation/devicetree/bindings/input/gpio-matrix-keypad.txt
->>
->> This is probably the most used binding as GPIO matrixes are
->> not uncommon. But I don't know, yes it is a mess. (As usual.)
->
-> I could find two boards using "gpio-matrix-keypad" in the mainline
-> kernel and not a single instance of "linux,no-autorepeat":
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org
+---
+ drivers/staging/dwc2/platform.c  |    2 +-
+ drivers/staging/usbip/vhci_hcd.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-In things connected to GPIO, I don't expect the in-kernel
-device trees to be a good way so survey the usage of these
-bindings. Anyone doing device trees on any system with a
-few GPIOs can be using this.
+diff --git a/drivers/staging/dwc2/platform.c b/drivers/staging/dwc2/platform.c
+index 76ae6e210f55..8f0489efdf40 100644
+--- a/drivers/staging/dwc2/platform.c
++++ b/drivers/staging/dwc2/platform.c
+@@ -134,7 +134,7 @@ MODULE_DEVICE_TABLE(of, dwc2_of_match_table);
+ 
+ static struct platform_driver dwc2_platform_driver = {
+ 	.driver = {
+-		.name = (char *)dwc2_driver_name,
++		.name = dwc2_driver_name,
+ 		.of_match_table = dwc2_of_match_table,
+ 	},
+ 	.probe = dwc2_driver_probe,
+diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
+index e810ad53e2ac..8ae1feeb36cd 100644
+--- a/drivers/staging/usbip/vhci_hcd.c
++++ b/drivers/staging/usbip/vhci_hcd.c
+@@ -1108,7 +1108,7 @@ static struct platform_driver vhci_driver = {
+ 	.suspend = vhci_hcd_suspend,
+ 	.resume	= vhci_hcd_resume,
+ 	.driver	= {
+-		.name = (char *) driver_name,
++		.name = driver_name,
+ 		.owner = THIS_MODULE,
+ 	},
+ };
+-- 
+1.7.9.5
 
-But maybe we're lucky and won't break anyone's setup if
-we change this?
-
-Yours,
-Linus Walleij
