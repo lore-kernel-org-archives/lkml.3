@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab3KLVDH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 16:03:07 -0500
-Received: from mga09.intel.com ([134.134.136.24]:42356 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755194Ab3KLVDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:03:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="434136241"
-Message-ID: <52829751.2090105@intel.com>
-Date: Tue, 12 Nov 2013 13:02:09 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S932187Ab3KLVED (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 16:04:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59568 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134Ab3KLVD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 16:03:59 -0500
+Date: Wed, 13 Nov 2013 06:06:41 +0900
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Alexandre Demers <alexandre.f.demers@gmail.com>,
+        linux-kernel@vger.kernel.org
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH] Silence r8712u info and add verbose option v2
+Message-ID: <20131112210641.GB23241@kroah.com>
+References: <1384281793-4733-1-git-send-email-alexandre.f.demers@gmail.com>
+ <52827E16.1030001@lwfinger.net>
 MIME-Version: 1.0
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-CC: Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Chandra Seetharaman <sekharan@us.ibm.com>
-Subject: Re: [PATCH v6 07/11] VFS hot tracking: Add a /proc interface to control
- memory usage
-References: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com>	<1383745544-391-8-git-send-email-zwu.kernel@gmail.com>	<528156E4.1030409@intel.com>	<CAEH94LjoY6L6zDwTh3XKim17VgRTkdqBKpm7TgX0HGok==p+kg@mail.gmail.com>	<52825FBE.9060006@intel.com> <CAEH94Lis9wwgrcnJrJO3LtLoEc07Ze9T_LwpsjVy_yE4XEydyQ@mail.gmail.com>
-In-Reply-To: <CAEH94Lis9wwgrcnJrJO3LtLoEc07Ze9T_LwpsjVy_yE4XEydyQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52827E16.1030001@lwfinger.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2013 12:38 PM, Zhi Yong Wu wrote:
-> On Wed, Nov 13, 2013 at 1:05 AM, Dave Hansen <dave.hansen@intel.com> wrote:
->> The on/off knob seems to me to be something better left to a mount
->> option, not a global tunable.
-> If it is left to a mount option, the user or admin can't change it
-> *dynamically*.
+On Tue, Nov 12, 2013 at 01:14:30PM -0600, Larry Finger wrote:
+> On 11/12/2013 12:43 PM, Alexandre Demers wrote:
+> > r8712u pollutes dmesg and logs. Silence it and add a verbose option to KConfig if we ever
+> > really want to hear about it.
+> >
+> > v2: keep netdev_info instead of replacing it by a KERN_NOTICE
+> >
+> > ---
+> >   drivers/staging/rtl8712/Kconfig        | 7 +++++++
+> >   drivers/staging/rtl8712/rtl871x_mlme.c | 7 ++++---
+> >   2 files changed, 11 insertions(+), 3 deletions(-)
+> 
+> Do you really want the "v2" to be part of the patch title in the git repos? I 
+> expect not, thus you should put it inside the []. All that stuff is stripped off 
+> when the patch is merged.
+> 
+> Similarly, do you want the v2 line in the patch description to be part of the 
+> permanent record? If not, move it below the --- line.
+> 
+> You are also missing a Signed-off-by: line. Have you read 
+> Documentation/SubmittingPatches? At least you should run every patch through 
+> scripts/checkpatch.pl before submitting it.
+> 
+> Finally, why do you want to add another Kconfig variable? I suggest either 
+> deleting the logging statement, or commenting it out. I'm not sure that this 
+> info would ever need logging.
 
-Really?
+To be a bit more clear here, we are activly _removing_ driver and
+subsystem specific DEBUG configuration flags, and moving everything to
+using the dynamic debug infrastructure in the kernel, as no user ever
+rebuilds their kernels/drivers, and we want to be able to get debugging
+information from them at times.
 
-man mount.  Look at "Mount options for tmpfs".  Try this on an existing
-tmpfs mount:
+thanks,
 
-	mount -o remount,size=$foo tmpfsmount
-
-How would that be different from your tunable?
-
->> If this were true, why don't we have similar knobs for the dentry, inode
->> and page caches?
-> This is not be controlled by memory controller(mem_cgroup)?
-
-That's a good point.  There is a 'kmem' cgroup controller for
-controlling the in-kernel structures (not page cache which is controlled
-by a separate one).  I believe the 'kmem' one would (could?) apply to
-the hot tracking data structures as well, which would obviate the need
-for this tunable.
-
-At least for the dentry and inode caches, they represent kernel-internal
-cache structures and are the same as your hot-data-tracking structures.
- We don't have explicit /proc controls for the size of the dentry and
-inode caches, so I'm arguing that we should do the same for these new
-hot-data-tracking structures.
-
+greg k-h
