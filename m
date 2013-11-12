@@ -1,129 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab3KLU7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 15:59:32 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:56480 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280Ab3KLU7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 15:59:25 -0500
-Date: Tue, 12 Nov 2013 15:59:16 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Joe Perches <joe@perches.com>
-Cc: netdev <netdev@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [Fwd: Re: [PATCH v2 2/2] x86: add prefetching to do_csum]
-Message-ID: <20131112205916.GE19780@hmsreliant.think-freely.org>
-References: <1384220542.4771.23.camel@joe-AO722>
- <20131112171239.GC19780@hmsreliant.think-freely.org>
- <1384277615.3665.10.camel@joe-AO722>
- <20131112195005.GD19780@hmsreliant.think-freely.org>
- <1384288681.3665.22.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384288681.3665.22.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	id S1756592Ab3KLVAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 16:00:35 -0500
+Received: from mga02.intel.com ([134.134.136.20]:10535 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752335Ab3KLVAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 16:00:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="407682046"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: stern@rowland.harvard.edu, mina86@mina86.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH v6 0/5] add gadget quirk to adapt f_fs for DWC3
+Date: Tue, 12 Nov 2013 13:04:41 -0800
+Message-Id: <1384290286-21432-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 12:38:01PM -0800, Joe Perches wrote:
-> On Tue, 2013-11-12 at 14:50 -0500, Neil Horman wrote:
-> > On Tue, Nov 12, 2013 at 09:33:35AM -0800, Joe Perches wrote:
-> > > On Tue, 2013-11-12 at 12:12 -0500, Neil Horman wrote:
-> []
-> > > > So, the numbers are correct now that I returned my hardware to its previous
-> > > > interrupt affinity state, but the trend seems to be the same (namely that there
-> > > > isn't a clear one).  We seem to find peak performance around a readahead of 2
-> > > > cachelines, but its very small (about 3%), and its inconsistent (larger set
-> > > > sizes fall to either side of that stride).  So I don't see it as a clear win.  I
-> > > > still think we should probably scrap the readahead for now, just take the perf
-> > > > bits, and revisit this when we can use the vector instructions or the
-> > > > independent carry chain instructions to improve this more consistently.
-> > > > 
-> > > > Thoughts
-> > > 
-> > > Perhaps a single prefetch, not of the first addr but of
-> > > the addr after PREFETCH_STRIDE would work best but only
-> > > if length is > PREFETCH_STRIDE.
-> > > 
-> > > I'd try:
-> > > 
-> > > 	if (len > PREFETCH_STRIDE)
-> > > 		prefetch(buf + PREFETCH_STRIDE);
-> > > 	while (count64) {
-> > > 		etc...
-> > > 	}
-> > > 
-> > > I still don't know how much that impacts very short lengths.
-> > > Can you please add a 20 byte length to your tests?
-> > Sure, I modified the code so that we only prefetched 2 cache lines ahead, but
-> > only if the overall length of the input buffer is more than 2 cache lines.
-> > Below are the results (all counts are the average of 1000000 iterations of the
-> > csum operation, as previous tests were, I just omitted that column).
-> > 
-> > len	set	cycles/byte	cycles/byte	improvement
-> > 		no prefetch	prefetch
-> > ===========================================================
-> > 20B	64MB	45.014989	44.402432	1.3%
-> > 20B	128MB	44.900317	46.146447	-2.7%
-> > 20B	256MB	45.303223	48.193623	-6.3%
-> > 20B	512MB	45.615301	44.486872	2.2%
-> []
-> > I'm still left thinking we should just abandon the prefetch at this point and
-> > keep the perf code until we have new instructions to help us with this further,
-> > unless you see something I dont.
-> 
-> I tend to agree but perhaps the 3% performance
-> increase with a prefetch for longer lengths is
-> actually significant and desirable.
-> 
-Maybe, but I worry that its not going to be consistent.  At least not with the
-cost of the extra comparison and jump.
+Hi,
 
-> It doesn't seem you've done the test I suggested
-> where prefetch is done only for
-> "len > PREFETCH_STRIDE".
-> 
-No, thats exactly what I did, I did this:
+These patches are a proposal to add gadget quirks in an immediate objective to
+adapt f_fs when using DWC3 controller. But the quirk solution is generic and
+can be used by other controllers to adapt gadget functions to their
+non-standard restrictions.
 
-#define PREFETCH_STRIDE (cache_line_size() * 2)
+This change is necessary to make Android's adbd service to work on Intel
+Merrifield with f_fs instead of out-of-tree android gadget.
 
-...
+This new patch set was tested and validated in my environment:
+ - Intel Merrifield was able to use DWC3/f_fs with adbd service (it wasn't
+   before).
 
-if (len > PREFETCH_STRIDE)
-	prefecth(buf + PREFETCH_STRIDE)
+Changes from v45 to v6:
+ - Updated patches from Michal Nazarewicz to address comments from Alan Stern
+   and mine.
+ - Modified patch 5/5 to apply request->length's pad internally to DWC3.
 
-while (count64) {
-	...
+---
+David Cohen (3):
+  usb: gadget: move bitflags to the end of usb_gadget struct
+  usb: gadget: add quirk_ep_out_aligned_size field to struct usb_gadget
+  usb: dwc3: implement gadget's quirk ep_out_align_size
 
-> Is it ever useful to do a prefetch of the
-> address/data being accessed by the next
-> instruction?
-> 
-Doubtful, you need to prefetch the data far enough in advance that its loaded by
-the time you need to reference it.  Otherwise you wind up stalling the data
-pipeline while the load completes.  So unless you have really fast memory, the
-prefetch is effectively a no-op for the next access.  But the next cacheline
-ahead is good, as it prevents the stall there.  Any more than that though (from
-this testing), seems to again be a no-op as modern hardware automatically issues
-the prefetch because it notices the linear data access pattern.
+Michal Nazarewicz (2):
+  usb: gadget: f_fs: remove loop from I/O function
+  check quirk to pad epout buf size when not aligned to maxpacketsize
 
-> Anyway, thanks for doing all the work.
-> 
-No worries, glad to do it.  Thanks for the review
+ drivers/usb/dwc3/core.h    |   6 +++
+ drivers/usb/dwc3/gadget.c  |  23 ++++++++++
+ drivers/usb/gadget/f_fs.c  | 102 +++++++++++++++++++++------------------------
+ include/linux/usb/gadget.h |  35 ++++++++++++----
+ 4 files changed, 103 insertions(+), 63 deletions(-)
 
-Ingo, what do you think, shall I submit the perf bits as a separate thread, or
-do you not want those any more?
+-- 
+1.8.4.2
 
-Regards
-Neil
-
-> Joe
-> 
-> 
