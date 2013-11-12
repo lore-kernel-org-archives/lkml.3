@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab3KLRq7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:46:59 -0500
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:52220
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754301Ab3KLRqw (ORCPT
+	id S1755465Ab3KLRrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:47:06 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:56211
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755402Ab3KLRq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:46:52 -0500
+	Tue, 12 Nov 2013 12:46:59 -0500
 X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VPS4(z551bizc8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h1155h)
-X-WSS-ID: 0MW5W07-07-ECY-02
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h1155h)
+X-WSS-ID: 0MW5W0D-07-ED9-02
 X-M-MSG: 
-Subject: [PATCH 08/10] crypto: CCP SHA crypto API support
+Subject: [PATCH 09/10] crytpo: CCP device driver build files
 To: <davem@davemloft.net>, <linux-crypto@vger.kernel.org>,
         <herbert@gondor.hengli.com.au>
 From: Tom Lendacky <thomas.lendacky@amd.com>
 CC: <linux-kernel@vger.kernel.org>
-Date: Tue, 12 Nov 2013 11:46:45 -0600
-Message-ID: <20131112174645.19746.3947.stgit@tlendack-t1.amdoffice.net>
+Date: Tue, 12 Nov 2013 11:46:51 -0600
+Message-ID: <20131112174651.19746.28701.stgit@tlendack-t1.amdoffice.net>
 In-Reply-To: <20131112174558.19746.47262.stgit@tlendack-t1.amdoffice.net>
 References: <20131112174558.19746.47262.stgit@tlendack-t1.amdoffice.net>
 User-Agent: StGit/0.15
@@ -31,517 +31,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines provide crypto API support for SHA1, SHA224 and SHA256
-on the AMD CCP.  HMAC support for these SHA modes is also provided.
+These files provide the ability to configure and build the
+AMD CCP device driver and crypto API support.
 
 Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
 ---
- drivers/crypto/ccp/ccp-crypto-sha.c |  497 +++++++++++++++++++++++++++++++++++
- 1 file changed, 497 insertions(+)
- create mode 100644 drivers/crypto/ccp/ccp-crypto-sha.c
+ drivers/crypto/Kconfig      |   12 ++++++++++++
+ drivers/crypto/Makefile     |    1 +
+ drivers/crypto/ccp/Kconfig  |   23 +++++++++++++++++++++++
+ drivers/crypto/ccp/Makefile |   10 ++++++++++
+ 4 files changed, 46 insertions(+)
+ create mode 100644 drivers/crypto/ccp/Kconfig
+ create mode 100644 drivers/crypto/ccp/Makefile
 
-diff --git a/drivers/crypto/ccp/ccp-crypto-sha.c b/drivers/crypto/ccp/ccp-crypto-sha.c
+diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
+index f4fd837..4954d75 100644
+--- a/drivers/crypto/Kconfig
++++ b/drivers/crypto/Kconfig
+@@ -399,4 +399,16 @@ config CRYPTO_DEV_ATMEL_SHA
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called atmel-sha.
+ 
++config CRYPTO_DEV_CCP
++	bool "Support for AMD Cryptographic Coprocessor"
++	depends on X86
++	default n
++	help
++	  The AMD Cryptographic Coprocessor provides hardware support
++	  for encryption, hashing and related operations.
++
++if CRYPTO_DEV_CCP
++	source "drivers/crypto/ccp/Kconfig"
++endif
++
+ endif # CRYPTO_HW
+diff --git a/drivers/crypto/Makefile b/drivers/crypto/Makefile
+index b4946dd..8a6c86a 100644
+--- a/drivers/crypto/Makefile
++++ b/drivers/crypto/Makefile
+@@ -22,3 +22,4 @@ obj-$(CONFIG_CRYPTO_DEV_NX) += nx/
+ obj-$(CONFIG_CRYPTO_DEV_ATMEL_AES) += atmel-aes.o
+ obj-$(CONFIG_CRYPTO_DEV_ATMEL_TDES) += atmel-tdes.o
+ obj-$(CONFIG_CRYPTO_DEV_ATMEL_SHA) += atmel-sha.o
++obj-$(CONFIG_CRYPTO_DEV_CCP) += ccp/
+diff --git a/drivers/crypto/ccp/Kconfig b/drivers/crypto/ccp/Kconfig
 new file mode 100644
-index 0000000..44ff00a
+index 0000000..335ed5c
 --- /dev/null
-+++ b/drivers/crypto/ccp/ccp-crypto-sha.c
-@@ -0,0 +1,497 @@
-+/*
-+ * AMD Cryptographic Coprocessor (CCP) SHA crypto API support
-+ *
-+ * Copyright (C) 2013 Advanced Micro Devices, Inc.
-+ *
-+ * Author: Tom Lendacky <thomas.lendacky@amd.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/delay.h>
-+#include <linux/scatterlist.h>
-+#include <linux/crypto.h>
-+#include <crypto/algapi.h>
-+#include <crypto/hash.h>
-+#include <crypto/internal/hash.h>
-+#include <crypto/sha.h>
-+#include <crypto/scatterwalk.h>
-+
-+#include "ccp-crypto.h"
-+
-+
-+struct ccp_sha_result {
-+	struct completion completion;
-+	int err;
-+};
-+
-+static void ccp_sync_hash_complete(struct crypto_async_request *req, int err)
-+{
-+	struct ccp_sha_result *result = req->data;
-+
-+	if (err == -EINPROGRESS)
-+		return;
-+
-+	result->err = err;
-+	complete(&result->completion);
-+}
-+
-+static int ccp_sync_hash(struct crypto_ahash *tfm, u8 *buf,
-+			 struct scatterlist *sg, unsigned int len)
-+{
-+	struct ccp_sha_result result;
-+	struct ahash_request *req;
-+	int ret;
-+
-+	init_completion(&result.completion);
-+
-+	req = ahash_request_alloc(tfm, GFP_KERNEL);
-+	if (!req)
-+		return -ENOMEM;
-+
-+	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
-+				   ccp_sync_hash_complete, &result);
-+	ahash_request_set_crypt(req, sg, buf, len);
-+
-+	ret = crypto_ahash_digest(req);
-+	if ((ret == -EINPROGRESS) || (ret == -EBUSY)) {
-+		ret = wait_for_completion_interruptible(&result.completion);
-+		if (!ret)
-+			ret = result.err;
-+	}
-+
-+	ahash_request_free(req);
-+
-+	return ret;
-+}
-+
-+static int ccp_sha_finish_hmac(struct crypto_async_request *async_req)
-+{
-+	struct ahash_request *req = ahash_request_cast(async_req);
-+	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
-+	struct ccp_ctx *ctx = crypto_ahash_ctx(tfm);
-+	struct scatterlist sg[2];
-+	unsigned int block_size =
-+		crypto_tfm_alg_blocksize(crypto_ahash_tfm(tfm));
-+	unsigned int digest_size = crypto_ahash_digestsize(tfm);
-+
-+	sg_init_table(sg, ARRAY_SIZE(sg));
-+	sg_set_buf(&sg[0], ctx->u.sha.opad, block_size);
-+	sg_set_buf(&sg[1], req->result, digest_size);
-+
-+	return ccp_sync_hash(ctx->u.sha.hmac_tfm, req->result, sg,
-+			     block_size + digest_size);
-+}
-+
-+static int ccp_sha_complete(struct crypto_async_request *async_req, int ret)
-+{
-+	struct ahash_request *req = ahash_request_cast(async_req);
-+	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
-+	struct ccp_ctx *ctx = crypto_ahash_ctx(tfm);
-+	struct ccp_sha_req_ctx *rctx = ahash_request_ctx(req);
-+	unsigned int digest_size = crypto_ahash_digestsize(tfm);
-+
-+	if (ret)
-+		goto e_free;
-+
-+	if (rctx->hash_rem) {
-+		/* Save remaining data to buffer */
-+		scatterwalk_map_and_copy(rctx->buf, rctx->cmd.u.sha.src,
-+					 rctx->hash_cnt, rctx->hash_rem, 0);
-+		rctx->buf_count = rctx->hash_rem;
-+	} else
-+		rctx->buf_count = 0;
-+
-+	memcpy(req->result, rctx->ctx, digest_size);
-+
-+	/* If we're doing an HMAC, we need to perform that on the final op */
-+	if (rctx->final && ctx->u.sha.key_len)
-+		ret = ccp_sha_finish_hmac(async_req);
-+
-+e_free:
-+	sg_free_table(&rctx->data_sg);
-+
-+	return ret;
-+}
-+
-+static int ccp_do_sha_update(struct ahash_request *req, unsigned int nbytes,
-+			     unsigned int final)
-+{
-+	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
-+	struct ccp_ctx *ctx = crypto_ahash_ctx(tfm);
-+	struct ccp_sha_req_ctx *rctx = ahash_request_ctx(req);
-+	struct scatterlist *sg;
-+	unsigned int block_size =
-+		crypto_tfm_alg_blocksize(crypto_ahash_tfm(tfm));
-+	unsigned int len, sg_count;
-+	int ret;
-+
-+	if (!final && ((nbytes + rctx->buf_count) <= block_size)) {
-+		scatterwalk_map_and_copy(rctx->buf + rctx->buf_count, req->src,
-+					 0, nbytes, 0);
-+		rctx->buf_count += nbytes;
-+
-+		return 0;
-+	}
-+
-+	len = rctx->buf_count + nbytes;
-+
-+	rctx->final = final;
-+	rctx->hash_cnt = final ? len : len & ~(block_size - 1);
-+	rctx->hash_rem = final ?   0 : len &  (block_size - 1);
-+	if (!final && (rctx->hash_cnt == len)) {
-+		/* CCP can't do zero length final, so keep some data around */
-+		rctx->hash_cnt -= block_size;
-+		rctx->hash_rem = block_size;
-+	}
-+
-+	/* Initialize the context scatterlist */
-+	sg_init_one(&rctx->ctx_sg, rctx->ctx, sizeof(rctx->ctx));
-+
-+	/* Build the data scatterlist table - allocate enough entries for all
-+	 * possible data pieces (hmac ipad, buffer, input data)
-+	 */
-+	sg_count = (nbytes) ? sg_nents(req->src) + 2 : 2;
-+	ret = sg_alloc_table(&rctx->data_sg, sg_count, GFP_KERNEL);
-+	if (ret)
-+		return ret;
-+
-+	sg = NULL;
-+	if (rctx->first && ctx->u.sha.key_len) {
-+		rctx->hash_cnt += block_size;
-+
-+		sg_init_one(&rctx->pad_sg, ctx->u.sha.ipad, block_size);
-+		sg = ccp_crypto_sg_table_add(&rctx->data_sg, &rctx->pad_sg);
-+	}
-+
-+	if (rctx->buf_count) {
-+		sg_init_one(&rctx->buf_sg, rctx->buf, rctx->buf_count);
-+		sg = ccp_crypto_sg_table_add(&rctx->data_sg, &rctx->buf_sg);
-+	}
-+
-+	if (nbytes)
-+		sg = ccp_crypto_sg_table_add(&rctx->data_sg, req->src);
-+
-+	if (sg)
-+		sg_mark_end(sg);
-+
-+	rctx->msg_bits += (rctx->hash_cnt << 3);	/* Total in bits */
-+
-+	memset(&rctx->cmd, 0, sizeof(rctx->cmd));
-+	INIT_LIST_HEAD(&rctx->cmd.entry);
-+	rctx->cmd.engine = CCP_ENGINE_SHA;
-+	rctx->cmd.u.sha.type = rctx->type;
-+	rctx->cmd.u.sha.ctx = &rctx->ctx_sg;
-+	rctx->cmd.u.sha.ctx_len = sizeof(rctx->ctx);
-+	rctx->cmd.u.sha.src = (sg) ? rctx->data_sg.sgl : NULL;
-+	rctx->cmd.u.sha.src_len = rctx->hash_cnt;
-+	rctx->cmd.u.sha.final = rctx->final;
-+	rctx->cmd.u.sha.msg_bits = rctx->msg_bits;
-+
-+	rctx->first = 0;
-+
-+	ret = ccp_crypto_enqueue_request(&req->base, &rctx->cmd);
-+
-+	return ret;
-+}
-+
-+static int ccp_sha_init(struct ahash_request *req)
-+{
-+	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
-+	struct ccp_sha_req_ctx *rctx = ahash_request_ctx(req);
-+	struct ccp_crypto_ahash_alg *alg =
-+		ccp_crypto_ahash_alg(crypto_ahash_tfm(tfm));
-+
-+	memset(rctx, 0, sizeof(*rctx));
-+
-+	memcpy(rctx->ctx, alg->init, sizeof(rctx->ctx));
-+	rctx->type = alg->type;
-+	rctx->first = 1;
-+
-+	return 0;
-+}
-+
-+static int ccp_sha_update(struct ahash_request *req)
-+{
-+	return ccp_do_sha_update(req, req->nbytes, 0);
-+}
-+
-+static int ccp_sha_final(struct ahash_request *req)
-+{
-+	return ccp_do_sha_update(req, 0, 1);
-+}
-+
-+static int ccp_sha_finup(struct ahash_request *req)
-+{
-+	return ccp_do_sha_update(req, req->nbytes, 1);
-+}
-+
-+static int ccp_sha_digest(struct ahash_request *req)
-+{
-+	ccp_sha_init(req);
-+
-+	return ccp_do_sha_update(req, req->nbytes, 1);
-+}
-+
-+static int ccp_sha_setkey(struct crypto_ahash *tfm, const u8 *key,
-+			  unsigned int key_len)
-+{
-+	struct ccp_ctx *ctx = crypto_tfm_ctx(crypto_ahash_tfm(tfm));
-+	struct scatterlist sg;
-+	unsigned int block_size =
-+		crypto_tfm_alg_blocksize(crypto_ahash_tfm(tfm));
-+	unsigned int digest_size = crypto_ahash_digestsize(tfm);
-+	int i, ret;
-+
-+	/* Set to zero until complete */
-+	ctx->u.sha.key_len = 0;
-+
-+	/* Clear key area to provide zero padding for keys smaller
-+	 * than the block size
-+	 */
-+	memset(ctx->u.sha.key, 0, sizeof(ctx->u.sha.key));
-+
-+	if (key_len > block_size) {
-+		/* Must hash the input key */
-+		sg_init_one(&sg, key, key_len);
-+		ret = ccp_sync_hash(tfm, ctx->u.sha.key, &sg, key_len);
-+		if (ret) {
-+			crypto_ahash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
-+			return -EINVAL;
-+		}
-+
-+		key_len = digest_size;
-+	} else
-+		memcpy(ctx->u.sha.key, key, key_len);
-+
-+	for (i = 0; i < block_size; i++) {
-+		ctx->u.sha.ipad[i] = ctx->u.sha.key[i] ^ 0x36;
-+		ctx->u.sha.opad[i] = ctx->u.sha.key[i] ^ 0x5c;
-+	}
-+
-+	ctx->u.sha.key_len = key_len;
-+
-+	return 0;
-+}
-+
-+static int ccp_sha_cra_init(struct crypto_tfm *tfm)
-+{
-+	struct ccp_ctx *ctx = crypto_tfm_ctx(tfm);
-+	struct crypto_ahash *ahash = __crypto_ahash_cast(tfm);
-+
-+	ctx->complete = ccp_sha_complete;
-+	ctx->u.sha.key_len = 0;
-+
-+	crypto_ahash_set_reqsize(ahash, sizeof(struct ccp_sha_req_ctx));
-+
-+	return 0;
-+}
-+
-+static void ccp_sha_cra_exit(struct crypto_tfm *tfm)
-+{
-+}
-+
-+static int ccp_hmac_sha_cra_init(struct crypto_tfm *tfm)
-+{
-+	struct ccp_ctx *ctx = crypto_tfm_ctx(tfm);
-+	struct ccp_crypto_ahash_alg *alg = ccp_crypto_ahash_alg(tfm);
-+	struct crypto_ahash *hmac_tfm;
-+
-+	hmac_tfm = crypto_alloc_ahash(alg->child_alg,
-+				      CRYPTO_ALG_TYPE_AHASH, 0);
-+	if (IS_ERR(hmac_tfm)) {
-+		pr_warn("could not load driver %s need for HMAC support\n",
-+			alg->child_alg);
-+		return PTR_ERR(hmac_tfm);
-+	}
-+
-+	ctx->u.sha.hmac_tfm = hmac_tfm;
-+
-+	return ccp_sha_cra_init(tfm);
-+}
-+
-+static void ccp_hmac_sha_cra_exit(struct crypto_tfm *tfm)
-+{
-+	struct ccp_ctx *ctx = crypto_tfm_ctx(tfm);
-+
-+	if (ctx->u.sha.hmac_tfm)
-+		crypto_free_ahash(ctx->u.sha.hmac_tfm);
-+
-+	ccp_sha_cra_exit(tfm);
-+}
-+
-+static const u32 sha1_init[CCP_SHA_CTXSIZE / sizeof(u32)] = {
-+	cpu_to_be32(SHA1_H0), cpu_to_be32(SHA1_H1),
-+	cpu_to_be32(SHA1_H2), cpu_to_be32(SHA1_H3),
-+	cpu_to_be32(SHA1_H4), 0, 0, 0,
-+};
-+
-+static const u32 sha224_init[CCP_SHA_CTXSIZE / sizeof(u32)] = {
-+	cpu_to_be32(SHA224_H0), cpu_to_be32(SHA224_H1),
-+	cpu_to_be32(SHA224_H2), cpu_to_be32(SHA224_H3),
-+	cpu_to_be32(SHA224_H4), cpu_to_be32(SHA224_H5),
-+	cpu_to_be32(SHA224_H6), cpu_to_be32(SHA224_H7),
-+};
-+
-+static const u32 sha256_init[CCP_SHA_CTXSIZE / sizeof(u32)] = {
-+	cpu_to_be32(SHA256_H0), cpu_to_be32(SHA256_H1),
-+	cpu_to_be32(SHA256_H2), cpu_to_be32(SHA256_H3),
-+	cpu_to_be32(SHA256_H4), cpu_to_be32(SHA256_H5),
-+	cpu_to_be32(SHA256_H6), cpu_to_be32(SHA256_H7),
-+};
-+
-+struct ccp_sha_def {
-+	const char *name;
-+	const char *drv_name;
-+	const u32 *init;
-+	enum ccp_sha_type type;
-+	u32 digest_size;
-+	u32 block_size;
-+};
-+
-+static struct ccp_sha_def sha_algs[] = {
-+	{
-+		.name		= "sha1",
-+		.drv_name	= "sha1-ccp",
-+		.init		= sha1_init,
-+		.type		= CCP_SHA_TYPE_1,
-+		.digest_size	= SHA1_DIGEST_SIZE,
-+		.block_size	= SHA1_BLOCK_SIZE,
-+	},
-+	{
-+		.name		= "sha224",
-+		.drv_name	= "sha224-ccp",
-+		.init		= sha224_init,
-+		.type		= CCP_SHA_TYPE_224,
-+		.digest_size	= SHA224_DIGEST_SIZE,
-+		.block_size	= SHA224_BLOCK_SIZE,
-+	},
-+	{
-+		.name		= "sha256",
-+		.drv_name	= "sha256-ccp",
-+		.init		= sha256_init,
-+		.type		= CCP_SHA_TYPE_256,
-+		.digest_size	= SHA256_DIGEST_SIZE,
-+		.block_size	= SHA256_BLOCK_SIZE,
-+	},
-+};
-+
-+static int ccp_register_hmac_alg(struct list_head *head,
-+				 const struct ccp_sha_def *def,
-+				 const struct ccp_crypto_ahash_alg *base_alg)
-+{
-+	struct ccp_crypto_ahash_alg *ccp_alg;
-+	struct ahash_alg *alg;
-+	struct hash_alg_common *halg;
-+	struct crypto_alg *base;
-+	int ret;
-+
-+	ccp_alg = kzalloc(sizeof(*ccp_alg), GFP_KERNEL);
-+	if (!ccp_alg)
-+		return -ENOMEM;
-+
-+	/* Copy the base algorithm and only change what's necessary */
-+	memcpy(ccp_alg, base_alg, sizeof(*ccp_alg));
-+	INIT_LIST_HEAD(&ccp_alg->entry);
-+
-+	strncpy(ccp_alg->child_alg, def->name, CRYPTO_MAX_ALG_NAME);
-+
-+	alg = &ccp_alg->alg;
-+	alg->setkey = ccp_sha_setkey;
-+
-+	halg = &alg->halg;
-+
-+	base = &halg->base;
-+	snprintf(base->cra_name, CRYPTO_MAX_ALG_NAME, "hmac(%s)", def->name);
-+	snprintf(base->cra_driver_name, CRYPTO_MAX_ALG_NAME, "hmac-%s",
-+		 def->drv_name);
-+	base->cra_init = ccp_hmac_sha_cra_init;
-+	base->cra_exit = ccp_hmac_sha_cra_exit;
-+
-+	ret = crypto_register_ahash(alg);
-+	if (ret) {
-+		pr_err("%s ahash algorithm registration error (%d)\n",
-+			base->cra_name, ret);
-+		kfree(ccp_alg);
-+		return ret;
-+	}
-+
-+	list_add(&ccp_alg->entry, head);
-+
-+	return ret;
-+}
-+
-+static int ccp_register_sha_alg(struct list_head *head,
-+				const struct ccp_sha_def *def)
-+{
-+	struct ccp_crypto_ahash_alg *ccp_alg;
-+	struct ahash_alg *alg;
-+	struct hash_alg_common *halg;
-+	struct crypto_alg *base;
-+	int ret;
-+
-+	ccp_alg = kzalloc(sizeof(*ccp_alg), GFP_KERNEL);
-+	if (!ccp_alg)
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&ccp_alg->entry);
-+
-+	ccp_alg->init = def->init;
-+	ccp_alg->type = def->type;
-+
-+	alg = &ccp_alg->alg;
-+	alg->init = ccp_sha_init;
-+	alg->update = ccp_sha_update;
-+	alg->final = ccp_sha_final;
-+	alg->finup = ccp_sha_finup;
-+	alg->digest = ccp_sha_digest;
-+
-+	halg = &alg->halg;
-+	halg->digestsize = def->digest_size;
-+
-+	base = &halg->base;
-+	snprintf(base->cra_name, CRYPTO_MAX_ALG_NAME, "%s", def->name);
-+	snprintf(base->cra_driver_name, CRYPTO_MAX_ALG_NAME, "%s",
-+		 def->drv_name);
-+	base->cra_flags = CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC |
-+			  CRYPTO_ALG_KERN_DRIVER_ONLY |
-+			  CRYPTO_ALG_NEED_FALLBACK;
-+	base->cra_blocksize = def->block_size;
-+	base->cra_ctxsize = sizeof(struct ccp_ctx);
-+	base->cra_priority = CCP_CRA_PRIORITY;
-+	base->cra_type = &crypto_ahash_type;
-+	base->cra_init = ccp_sha_cra_init;
-+	base->cra_exit = ccp_sha_cra_exit;
-+	base->cra_module = THIS_MODULE;
-+
-+	ret = crypto_register_ahash(alg);
-+	if (ret) {
-+		pr_err("%s ahash algorithm registration error (%d)\n",
-+			base->cra_name, ret);
-+		kfree(ccp_alg);
-+		return ret;
-+	}
-+
-+	list_add(&ccp_alg->entry, head);
-+
-+	ret = ccp_register_hmac_alg(head, def, ccp_alg);
-+
-+	return ret;
-+}
-+
-+int ccp_register_sha_algs(struct list_head *head)
-+{
-+	int i, ret;
-+
-+	for (i = 0; i < ARRAY_SIZE(sha_algs); i++) {
-+		ret = ccp_register_sha_alg(head, &sha_algs[i]);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
++++ b/drivers/crypto/ccp/Kconfig
+@@ -0,0 +1,23 @@
++config CRYPTO_DEV_CCP_DD
++	tristate "Cryptographic Coprocessor device driver"
++	depends on CRYPTO_DEV_CCP
++	default m
++	help
++	  Provides the interface to use the AMD Cryptographic Coprocessor
++	  which can be used to accelerate or offload encryption operations
++	  such as SHA, AES and more. If you choose 'M' here, this module
++	  will be called ccp.
++
++config CRYPTO_DEV_CCP_CRYPTO
++	tristate "Encryption and hashing acceleration support"
++	depends on CRYPTO_DEV_CCP_DD
++	default m
++	select CRYPTO_ALGAPI
++	select CRYPTO_HASH
++	select CRYPTO_BLKCIPHER
++	select CRYPTO_AUTHENC
++	help
++	  Support for using the cryptographic API with the AMD Cryptographic
++	  Coprocessor. This module supports acceleration and offload of SHA
++	  and AES algorithms.  If you choose 'M' here, this module will be
++	  called ccp_crypto.
+diff --git a/drivers/crypto/ccp/Makefile b/drivers/crypto/ccp/Makefile
+new file mode 100644
+index 0000000..d3505a0
+--- /dev/null
++++ b/drivers/crypto/ccp/Makefile
+@@ -0,0 +1,10 @@
++obj-$(CONFIG_CRYPTO_DEV_CCP_DD) += ccp.o
++ccp-objs := ccp-dev.o ccp-ops.o
++ccp-objs += ccp-pci.o
++
++obj-$(CONFIG_CRYPTO_DEV_CCP_CRYPTO) += ccp-crypto.o
++ccp-crypto-objs := ccp-crypto-main.o \
++		   ccp-crypto-aes.o \
++		   ccp-crypto-aes-cmac.o \
++		   ccp-crypto-aes-xts.o \
++		   ccp-crypto-sha.o
 
 
