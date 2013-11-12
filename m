@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252Ab3KLDPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 22:15:46 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:50904 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247Ab3KLDPh (ORCPT
+	id S1754704Ab3KLDQf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 22:16:35 -0500
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:53803 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336Ab3KLDQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 22:15:37 -0500
+	Mon, 11 Nov 2013 22:16:27 -0500
+Date: Mon, 11 Nov 2013 22:16:23 -0500 (EST)
+From: Zhouping Liu <zliu@redhat.com>
+To: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Message-ID: <988917896.22733181.1384226183266.JavaMail.root@redhat.com>
+In-Reply-To: <732806765.22731241.1384225623693.JavaMail.root@redhat.com>
+Subject: WARNING: CPU: 8 PID: 12860 at net/core/sock.c:313
+ sk_clear_memalloc+0x49/0x70()
 MIME-Version: 1.0
-In-Reply-To: <1384224883.4771.28.camel@joe-AO722>
-References: <tip-z61ofiwe90xeyb461o72h8ya@git.kernel.org>
-	<1384117768.3081.10.camel@joe-AO722>
-	<5ac67859-a0b2-47f5-bdc2-c2a52b8d6885@email.android.com>
-	<1384123457.3081.33.camel@joe-AO722>
-	<52803BA2.2080908@zytor.com>
-	<1384136570.4771.5.camel@joe-AO722>
-	<5281698F.9080808@linux.intel.com>
-	<1384224883.4771.28.camel@joe-AO722>
-Date: Tue, 12 Nov 2013 12:15:36 +0900
-X-Google-Sender-Auth: phVW-pdku0BtRQykQuhqI3nmb4o
-Message-ID: <CA+55aFxsNB0BVg-fdzsu_jkPLpiba1rgTcrUOe7W2tN-mHTnBg@mail.gmail.com>
-Subject: Re: [tip:x86/asm] x86, bitops: Change bitops to be native operand size
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, james.t.kukunas@intel.com,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF22 (Linux)/8.0.3_GA_5664)
+Thread-Topic: WARNING: CPU: 8 PID: 12860 at net/core/sock.c:313 sk_clear_memalloc+0x49/0x70()
+Thread-Index: Kbv1bBOsyq7cnxW1mBz4mJXub17Iww==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 11:54 AM, Joe Perches <joe@perches.com> wrote:
-> On Mon, 2013-11-11 at 15:34 -0800, H. Peter Anvin wrote:
->> On 11/10/2013 06:22 PM, Joe Perches wrote:
->> >
->> > Perhaps the current x86 bitops asm code is being conflated
->> > with the ideal implementation?
->> >
->> Yes, by you.
->
-> Really?  I don't think so.
+Hi All,
 
-What you think in this case doesn't really matter, does it? There are
-actual facts, and then there is your thinking, and guess which one
-matters?
+I found the WARNING in the latest mainline with commint 8b5baa460b.
 
-Peter is absolutely correct, and has shown remarkable restraint trying
-to explain it to you. The fact is, the x86 bitop instructions act on a
-signed index. Making the index be "unsigned long" would violate the
-actual *behavior* of the function, so it would be singularly stupid.
+[61323.305424] ------------[ cut here ]------------
+[61323.310562] WARNING: CPU: 8 PID: 12860 at net/core/sock.c:313 sk_clear_memalloc+0x49/0x70()
+[61323.319779] Modules linked in: rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache sg nfsd netxen_nic hpilo sp5100_tco auth_rpcgss hpwdt amd64_edac_mod edac_mce_amd microcode pcspkr shpchp serio_raw i2c_piix4 edac_core ipmi_si k10temp nfs_acl lockd ipmi_msghandler acpi_power_meter acpi_cpufreq sunrpc xfs libcrc32c radeon i2c_algo_bit drm_kms_helper ttm sd_mod crc_t10dif ata_generic crct10dif_common drm pata_acpi ahci libahci pata_atiixp libata i2c_core hpsa dm_mirror dm_region_hash dm_log dm_mod
+[61323.368625] CPU: 8 PID: 12860 Comm: swapoff Not tainted 3.12.0+ #1
+[61323.375452] Hardware name: HP ProLiant DL585 G7, BIOS A16 12/17/2012
+[61323.382463]  0000000000000009 ffff882dfce43e68 ffffffff816204b7 0000000000000000
+[61323.390692]  ffff882dfce43ea0 ffffffff8106495d ffff88190b551d00 ffff88080ff0b600
+[61323.398940]  ffff88080ff0b650 0000000000000001 ffff880810fe64a0 ffff882dfce43eb0
+[61323.407188] Call Trace:
+[61323.409916]  [] dump_stack+0x45/0x56
+[61323.415616]  [] warn_slowpath_common+0x7d/0xa0
+[61323.422257]  [] warn_slowpath_null+0x1a/0x20
+[61323.428705]  [] sk_clear_memalloc+0x49/0x70
+[61323.435094]  [] xs_swapper+0x41/0x60 [sunrpc]
+[61323.441671]  [] nfs_swap_deactivate+0x2d/0x30 [nfs]
+[61323.448796]  [] destroy_swap_extents+0x61/0x70
+[61323.455436]  [] SyS_swapoff+0x220/0x610
+[61323.461420]  [] ? do_page_fault+0x1a/0x70
+[61323.467582]  [] system_call_fastpath+0x16/0x1b
+[61323.474215] ---[ end trace 919f685513b38356 ]---
 
-Talking about "ideal implementation" is also singularly stupid.
-There's this fascinating thing called "reality", and you should try to
-re-aquaint yourself with it.
+I found the warning during doing swapoff the swap over NFS mount, so if you need to reproduce it,
+you should do the following:
+1. Open CONFIG_NFS_SWAP in testing machine
+2. Create a NFS server, and create a swap file in NFS server
+   in NFS server: # dd if=/dev/zero of=/NFS_FOLDER/swapfile bs=1M count=1024; mkswap swapfile
+3. Inside testing machine, setup a swap over NFS, then swapoff it, the swapoff action will
+   trigger the WARNING.
 
-Don't bother replying to this thread.
-
-               Linus
+-- 
+Thanks,
+Zhouping
