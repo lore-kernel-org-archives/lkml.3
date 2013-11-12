@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab3KLKWY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 05:22:24 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42642 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab3KLKWW (ORCPT
+	id S1753749Ab3KLK3l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 05:29:41 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37188 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab3KLK3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 05:22:22 -0500
-Date: Tue, 12 Nov 2013 10:19:55 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robherring2@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH] of: set dma_mask to point to coherent_dma_mask
-Message-ID: <20131112101955.GF16735@n2100.arm.linux.org.uk>
-References: <1383109522-6879-1-git-send-email-robherring2@gmail.com> <20131102180724.D8FC5C40F02@trevor.secretlab.ca> <alpine.DEB.2.02.1311061642270.26077@kaball.uk.xensource.com> <alpine.DEB.2.02.1311111658100.26077@kaball.uk.xensource.com>
+	Tue, 12 Nov 2013 05:29:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311111658100.26077@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <52813100.1060500@wwwdotorg.org>
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de>
+	<1521079.WSLhhfqBXl@lem-wkst-02>
+	<52261BF0.4090106@wwwdotorg.org>
+	<3144247.j2q6H0KWZx@lem-wkst-02>
+	<52279524.8090006@wwwdotorg.org>
+	<20130909161924.GT29403@sirena.org.uk>
+	<528121D5.40403@keymile.com>
+	<528127B2.80109@wwwdotorg.org>
+	<52812D3A.2070107@keymile.com>
+	<52813100.1060500@wwwdotorg.org>
+Date: Tue, 12 Nov 2013 11:29:36 +0100
+Message-ID: <CACRpkdZpwwoM3h5_rXOwbN7cC72ruvTio6Z1hzMhLCDzh5VeKQ@mail.gmail.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
+        Mark Brown <broonie@kernel.org>, Lars Poeschel <poeschel@lemonage.de>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 04:59:14PM +0000, Stefano Stabellini wrote:
-> On Wed, 6 Nov 2013, Stefano Stabellini wrote:
-> > On Sat, 2 Nov 2013, Grant Likely wrote:
-> > > On Wed, 30 Oct 2013 00:05:22 -0500, Rob Herring <robherring2@gmail.com> wrote:
-> > > > From: Rob Herring <rob.herring@calxeda.com>
-> > > > 
-> > > > Platform devices created by DT code don't initialize dma_mask pointer to
-> > > > anything. Set it to coherent_dma_mask by default if the architecture
-> > > > code has not set it.
-> > > > 
-> > > > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> > > 
-> > > I believe this is okay. I haven't done any testing to back up that
-> > > opinion though.
-> > 
-> > Tested-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> BTW I hope you are planning on sending this upstream soon, because
-> without it I can very easily corrupt my root fs by simply booting the system.
+On Mon, Nov 11, 2013 at 8:33 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 11/11/2013 12:17 PM, Gerlando Falauto wrote:
 
-What's the mechanism for that corruption?  Having the DMA mask not set
-should not cause DMA corruption - that hints at something else being
-wrong, and that needs to be investigated.
+>> Thanks for your answer. So it should be the parent driver to proactively
+>> configure the GPIO as input, active high etc..., when an IRQ for its
+>> GPIOs is requested, right?
+>
+> That was the conclusion of this thread, or a similar thread, yes.
+
+Yepps second that.
+
+And we added an API to that you can flag a GPIO as being
+in use by an IRQ using gpio_lock_as_irq() from your
+irq_chip callbacks.
+
+Yours,
+Linus Walleij
