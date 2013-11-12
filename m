@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab3KLBec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 20:34:32 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:42158 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754682Ab3KLBeV (ORCPT
+	id S1755149Ab3KLBkc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 20:40:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58011 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754511Ab3KLBk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 20:34:21 -0500
-Message-ID: <1384220059.13547.17.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: Got iperf regression while intel_iommu is on, how to cut the
- cost of cache flushing
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ethan Zhao <ethan.kernel@gmail.com>
-Cc: Ashok Raj <ashok.raj@intel.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 11 Nov 2013 17:34:19 -0800
-In-Reply-To: <CABawtvPSjm7LnE=nn6siJyoR+gf31iNA=ywSLz_0BR6rp_iK=w@mail.gmail.com>
-References: <CABawtvN+PEzm_h4Gg5uYtJCjVC5yPjikwwMepkZNZR=cQ+YQmg@mail.gmail.com>
-	 <1383233136.4857.77.camel@edumazet-glaptop.roam.corp.google.com>
-	 <CABawtvPSjm7LnE=nn6siJyoR+gf31iNA=ywSLz_0BR6rp_iK=w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 11 Nov 2013 20:40:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <1384183278-19787-4-git-send-email-tiwai@suse.de>
+References: <1384183278-19787-1-git-send-email-tiwai@suse.de>
+	<1384183278-19787-4-git-send-email-tiwai@suse.de>
+Date: Tue, 12 Nov 2013 09:40:24 +0800
+Message-ID: <CACVXFVOuDSRsDLJ3kvQcXgscVDtgkEhpsLxGvdRBscZd_Hmyzw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] firmware: Avoid bogus fallback warning
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        amd64-microcode <amd64-microcode@amd64.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-12 at 09:03 +0800, Ethan Zhao wrote:
-> Eric,
->     We have tested the performance with the TSO and TSQ patches
-> merged, the result not good, even worse than kernel without those two
-> patches. any idea ?
-> 
-> kernel   : 3.11.x with TSO & TSQ merged.  ( CONFIG_INTEL_IOMMU_DEFAULT_ON=y )
-> Network Interface : eth4
-> Network driver    : be2net
-> 
-> Average Bandwidth for :
->    1.tcp-unidirectional test    : 4385 Mbits/sec
->    2.tcp-unidirectional-parallel: 9383 Mbits/sec
->    3.tcp-bidirectonal test      : 2755 Mbits/sec
-> 
-> vs
-> 
-> kernel   :  3.11.x without TSO & TSQ patches.
-> (CONFIG_INTEL_IOMMU_DEFAULT_ON is not set)
-> Network Interface : eth4
-> Network driver    : be2net
-> 
-> Average Bandwidth for :
->    1.tcp-unidirectional test    : 7992 Mbits/sec
->    2.tcp-unidirectional-parallel: 9403 Mbits/sec
->    3.tcp-bidirectonal test      : 5802 Mbits/sec
-> 
+On Mon, Nov 11, 2013 at 11:21 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> The commit [3e358ac2bb5b: firmware: Be a bit more verbose about direct
+> firmware loading failure] introduced a new warning message about
+> falling back to user helper, but this isn't true when
+> CONFIG_FW_LOADER_USER_HELPER isn't set.
+>
+> For avoiding the confusion, add a proper ifdef.  And now we can remove
+> the dummy fw_load_from_user_helper(), too, since it's no longer called
+> with CONFIG_FW_LOADER_USER_HELPER=n.
+>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  drivers/base/firmware_class.c | 10 ++--------
+>  1 file changed, 2 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 7f48a6ffb0df..bb03c71bd94d 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -940,14 +940,6 @@ static void kill_requests_without_uevent(void)
+>  #endif
+>
+>  #else /* CONFIG_FW_LOADER_USER_HELPER */
+> -static inline int
+> -fw_load_from_user_helper(struct firmware *firmware, const char *name,
+> -                        struct device *device, bool uevent, bool nowait,
+> -                        long timeout)
+> -{
+> -       return -ENOENT;
+> -}
+> -
+>  /* No abort during direct loading */
+>  #define is_fw_load_aborted(buf) false
+>
+> @@ -1097,11 +1089,13 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
+>         if (ret) {
+>                 dev_warn(device, "Direct firmware load failed with error %d\n",
+>                          ret);
+> +#ifdef CONFIG_FW_LOADER_USER_HELPER
+>                 if (fallback) {
+>                         dev_warn(device, "Falling back to user helper\n");
 
-So it seems its not the TSO/TSQ changes, but
-CONFIG_INTEL_IOMMU_DEFAULT_ON being on instead of off.
+I think it is simpler to put above line at the entry of
+fw_load_from_user_helper()
+since we always do direct-loading first, and code should be cleaner.
 
-
-
+Thanks,
+--
+Ming Lei
