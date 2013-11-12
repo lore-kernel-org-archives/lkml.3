@@ -1,250 +1,535 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab3KLWJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 17:09:40 -0500
-Received: from mga02.intel.com ([134.134.136.20]:4632 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757035Ab3KLWJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 17:09:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="434167694"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH 1/3] sfi: add private data to sfi_parse_table()
-Date: Tue, 12 Nov 2013 14:13:38 -0800
-Message-Id: <1384294420-9124-2-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1384294420-9124-1-git-send-email-david.a.cohen@linux.intel.com>
-References: <1384294420-9124-1-git-send-email-david.a.cohen@linux.intel.com>
+	id S1756604Ab3KLWLD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 17:11:03 -0500
+Received: from 2.mo2.mail-out.ovh.net ([188.165.53.149]:52519 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757458Ab3KLWKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 17:10:55 -0500
+X-Greylist: delayed 4400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Nov 2013 17:10:55 EST
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH v5 09/17] clk: at91: add PMC peripheral clocks
+Date: Tue, 12 Nov 2013 23:08:29 +0100
+Message-Id: <1384294109-4798-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
+References: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 11992241384523200736
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sfi_parse_table() receives a callback as argument to call during its
-execution. This patch adds private data argument to send to such
-callback.
+This patch adds new at91 peripheral clock implementation using common clk
+framework.
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Len Brown <lenb@kernel.org>
+Almost all peripherals provided by at91 SoCs need a clock to work properly.
+This clock is enabled/disabled using PCER/PCDR resgisters.
+
+Each peripheral is given an id (see atmel's datasheets) which is used to
+define and reference peripheral clocks.
+
+Some new SoCs (at91sam9x5 and sama5d3) provide a new register (PCR) where you
+can configure the peripheral clock as a division of the master clock.
+This will help reducing the peripherals power comsumption.
+
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/x86/include/asm/intel-mid.h             |  4 ++--
- arch/x86/platform/intel-mid/intel-mid.c      |  2 +-
- arch/x86/platform/intel-mid/intel_mid_vrtc.c |  2 +-
- arch/x86/platform/intel-mid/sfi.c            | 13 +++++++------
- arch/x86/platform/sfi/sfi.c                  |  8 ++++----
- drivers/sfi/sfi_acpi.c                       |  5 +++--
- drivers/sfi/sfi_core.c                       |  4 ++--
- include/linux/sfi.h                          |  8 +++++---
- 8 files changed, 25 insertions(+), 21 deletions(-)
+ drivers/clk/at91/Makefile         |    2 +-
+ drivers/clk/at91/clk-peripheral.c |  412 +++++++++++++++++++++++++++++++++++++
+ drivers/clk/at91/pmc.c            |    9 +
+ drivers/clk/at91/pmc.h            |    5 +
+ 4 files changed, 427 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/clk/at91/clk-peripheral.c
 
-diff --git a/arch/x86/include/asm/intel-mid.h b/arch/x86/include/asm/intel-mid.h
-index e34e097b6f9d..c810abd5178c 100644
---- a/arch/x86/include/asm/intel-mid.h
-+++ b/arch/x86/include/asm/intel-mid.h
-@@ -17,8 +17,8 @@
- extern int intel_mid_pci_init(void);
- extern int get_gpio_by_name(const char *name);
- extern void intel_scu_device_register(struct platform_device *pdev);
--extern int __init sfi_parse_mrtc(struct sfi_table_header *table);
--extern int __init sfi_parse_mtmr(struct sfi_table_header *table);
-+extern int __init sfi_parse_mrtc(struct sfi_table_header *table, void *const priv);
-+extern int __init sfi_parse_mtmr(struct sfi_table_header *table, void *const priv);
- extern int sfi_mrtc_num;
- extern struct sfi_rtc_table_entry sfi_mrtc_array[];
+diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+index c2b7068..04deba3 100644
+--- a/drivers/clk/at91/Makefile
++++ b/drivers/clk/at91/Makefile
+@@ -4,4 +4,4 @@
  
-diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
-index 1bbedc4b0f88..68124ed102c3 100644
---- a/arch/x86/platform/intel-mid/intel-mid.c
-+++ b/arch/x86/platform/intel-mid/intel-mid.c
-@@ -83,7 +83,7 @@ static unsigned long __init intel_mid_calibrate_tsc(void)
+ obj-y += pmc.o
+ obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
+-obj-y += clk-system.o
++obj-y += clk-system.o clk-peripheral.o
+diff --git a/drivers/clk/at91/clk-peripheral.c b/drivers/clk/at91/clk-peripheral.c
+new file mode 100644
+index 0000000..15c9518
+--- /dev/null
++++ b/drivers/clk/at91/clk-peripheral.c
+@@ -0,0 +1,412 @@
++/*
++ * drivers/clk/at91/clk-peripheral.c
++ *
++ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ */
++
++#include <linux/clk-provider.h>
++#include <linux/clkdev.h>
++#include <linux/clk/at91_pmc.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/io.h>
++
++#include "pmc.h"
++
++#define PERIPHERAL_MAX		64
++
++#define PERIPHERAL_AT91RM9200	0
++#define PERIPHERAL_AT91SAM9X5	1
++
++#define PERIPHERAL_ID_MIN	2
++#define PERIPHERAL_ID_MAX	31
++#define PERIPHERAL_MASK(id)	(1 << ((id) & PERIPHERAL_ID_MAX))
++
++#define PERIPHERAL_RSHIFT_MASK	0x3
++#define PERIPHERAL_RSHIFT(val)	(((val) >> 16) & PERIPHERAL_RSHIFT_MASK)
++
++#define PERIPHERAL_MAX_SHIFT	4
++
++struct clk_peripheral {
++	struct clk_hw hw;
++	struct at91_pmc *pmc;
++	u32 id;
++};
++
++#define to_clk_peripheral(hw) container_of(hw, struct clk_peripheral, hw)
++
++struct clk_sam9x5_peripheral {
++	struct clk_hw hw;
++	struct at91_pmc *pmc;
++	struct clk_range range;
++	u32 id;
++	u32 div;
++	bool auto_div;
++};
++
++#define to_clk_sam9x5_peripheral(hw) \
++	container_of(hw, struct clk_sam9x5_peripheral, hw)
++
++static int clk_peripheral_enable(struct clk_hw *hw)
++{
++	struct clk_peripheral *periph = to_clk_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++	int offset = AT91_PMC_PCER;
++	u32 id = periph->id;
++
++	if (id < PERIPHERAL_ID_MIN)
++		return 0;
++	if (id > PERIPHERAL_ID_MAX)
++		offset = AT91_PMC_PCER1;
++	pmc_write(pmc, offset, PERIPHERAL_MASK(id));
++	return 0;
++}
++
++static void clk_peripheral_disable(struct clk_hw *hw)
++{
++	struct clk_peripheral *periph = to_clk_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++	int offset = AT91_PMC_PCDR;
++	u32 id = periph->id;
++
++	if (id < PERIPHERAL_ID_MIN)
++		return;
++	if (id > PERIPHERAL_ID_MAX)
++		offset = AT91_PMC_PCDR1;
++	pmc_write(pmc, offset, PERIPHERAL_MASK(id));
++}
++
++static int clk_peripheral_is_enabled(struct clk_hw *hw)
++{
++	struct clk_peripheral *periph = to_clk_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++	int offset = AT91_PMC_PCSR;
++	u32 id = periph->id;
++
++	if (id < PERIPHERAL_ID_MIN)
++		return 1;
++	if (id > PERIPHERAL_ID_MAX)
++		offset = AT91_PMC_PCSR1;
++	return !!(pmc_read(pmc, offset) & PERIPHERAL_MASK(id));
++}
++
++static const struct clk_ops peripheral_ops = {
++	.enable = clk_peripheral_enable,
++	.disable = clk_peripheral_disable,
++	.is_enabled = clk_peripheral_is_enabled,
++};
++
++static struct clk * __init
++at91_clk_register_peripheral(struct at91_pmc *pmc, const char *name,
++			     const char *parent_name, u32 id)
++{
++	struct clk_peripheral *periph;
++	struct clk *clk = NULL;
++	struct clk_init_data init;
++
++	if (!pmc || !name || !parent_name || id > PERIPHERAL_ID_MAX)
++		return ERR_PTR(-EINVAL);
++
++	periph = kzalloc(sizeof(*periph), GFP_KERNEL);
++	if (!periph)
++		return ERR_PTR(-ENOMEM);
++
++	init.name = name;
++	init.ops = &peripheral_ops;
++	init.parent_names = (parent_name ? &parent_name : NULL);
++	init.num_parents = (parent_name ? 1 : 0);
++	init.flags = 0;
++
++	periph->id = id;
++	periph->hw.init = &init;
++	periph->pmc = pmc;
++
++	clk = clk_register(NULL, &periph->hw);
++	if (IS_ERR(clk))
++		kfree(periph);
++
++	return clk;
++}
++
++static void clk_sam9x5_peripheral_autodiv(struct clk_sam9x5_peripheral *periph)
++{
++	struct clk *parent;
++	unsigned long parent_rate;
++	int shift = 0;
++
++	if (!periph->auto_div)
++		return;
++
++	if (periph->range.max) {
++		parent = clk_get_parent_by_index(periph->hw.clk, 0);
++		parent_rate = __clk_get_rate(parent);
++		if (!parent_rate)
++			return;
++
++		for (; shift < PERIPHERAL_MAX_SHIFT; shift++) {
++			if (parent_rate >> shift <= periph->range.max)
++				break;
++		}
++	}
++
++	periph->auto_div = false;
++	periph->div = shift;
++}
++
++static int clk_sam9x5_peripheral_enable(struct clk_hw *hw)
++{
++	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++
++	if (periph->id < PERIPHERAL_ID_MIN)
++		return 0;
++
++	pmc_write(pmc, AT91_PMC_PCR, (periph->id & AT91_PMC_PCR_PID) |
++				     AT91_PMC_PCR_CMD |
++				     AT91_PMC_PCR_DIV(periph->div) |
++				     AT91_PMC_PCR_EN);
++	return 0;
++}
++
++static void clk_sam9x5_peripheral_disable(struct clk_hw *hw)
++{
++	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++
++	if (periph->id < PERIPHERAL_ID_MIN)
++		return;
++
++	pmc_write(pmc, AT91_PMC_PCR, (periph->id & AT91_PMC_PCR_PID) |
++				     AT91_PMC_PCR_CMD);
++}
++
++static int clk_sam9x5_peripheral_is_enabled(struct clk_hw *hw)
++{
++	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++	int ret;
++
++	if (periph->id < PERIPHERAL_ID_MIN)
++		return 1;
++
++	pmc_lock(pmc);
++	pmc_write(pmc, AT91_PMC_PCR, (periph->id & AT91_PMC_PCR_PID));
++	ret = !!(pmc_read(pmc, AT91_PMC_PCR) & AT91_PMC_PCR_EN);
++	pmc_unlock(pmc);
++
++	return ret;
++}
++
++static unsigned long
++clk_sam9x5_peripheral_recalc_rate(struct clk_hw *hw,
++				  unsigned long parent_rate)
++{
++	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++	u32 tmp;
++
++	if (periph->id < PERIPHERAL_ID_MIN)
++		return parent_rate;
++
++	pmc_lock(pmc);
++	pmc_write(pmc, AT91_PMC_PCR, (periph->id & AT91_PMC_PCR_PID));
++	tmp = pmc_read(pmc, AT91_PMC_PCR);
++	pmc_unlock(pmc);
++
++	if (tmp & AT91_PMC_PCR_EN) {
++		periph->div = PERIPHERAL_RSHIFT(tmp);
++		periph->auto_div = false;
++	} else {
++		clk_sam9x5_peripheral_autodiv(periph);
++	}
++
++	return parent_rate >> periph->div;
++}
++
++static long clk_sam9x5_peripheral_round_rate(struct clk_hw *hw,
++					     unsigned long rate,
++					     unsigned long *parent_rate)
++{
++	int shift = 0;
++	unsigned long best_rate;
++	unsigned long best_diff;
++	unsigned long cur_rate = *parent_rate;
++	unsigned long cur_diff;
++	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
++
++	if (periph->id < PERIPHERAL_ID_MIN || !periph->range.max)
++		return *parent_rate;
++
++	if (periph->range.max) {
++		for (; shift < PERIPHERAL_MAX_SHIFT; shift++) {
++			cur_rate = *parent_rate >> shift;
++			if (cur_rate <= periph->range.max)
++				break;
++		}
++	}
++
++	if (rate >= cur_rate)
++		return cur_rate;
++
++	best_diff = cur_rate - rate;
++	best_rate = cur_rate;
++	for (; shift < PERIPHERAL_MAX_SHIFT; shift++) {
++		cur_rate = *parent_rate >> shift;
++		if (cur_rate < rate)
++			cur_diff = rate - cur_rate;
++		else
++			cur_diff = cur_rate - rate;
++
++		if (cur_diff < best_diff) {
++			best_diff = cur_diff;
++			best_rate = cur_rate;
++		}
++
++		if (!best_diff || cur_rate < rate)
++			break;
++	}
++
++	return best_rate;
++}
++
++static int clk_sam9x5_peripheral_set_rate(struct clk_hw *hw,
++					  unsigned long rate,
++					  unsigned long parent_rate)
++{
++	int shift;
++	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
++	if (periph->id < PERIPHERAL_ID_MIN || !periph->range.max) {
++		if (parent_rate == rate)
++			return 0;
++		else
++			return -EINVAL;
++	}
++
++	if (periph->range.max && rate > periph->range.max)
++		return -EINVAL;
++
++	for (shift = 0; shift < PERIPHERAL_MAX_SHIFT; shift++) {
++		if (parent_rate >> shift == rate) {
++			periph->auto_div = false;
++			periph->div = shift;
++			return 0;
++		}
++	}
++
++	return -EINVAL;
++}
++
++static const struct clk_ops sam9x5_peripheral_ops = {
++	.enable = clk_sam9x5_peripheral_enable,
++	.disable = clk_sam9x5_peripheral_disable,
++	.is_enabled = clk_sam9x5_peripheral_is_enabled,
++	.recalc_rate = clk_sam9x5_peripheral_recalc_rate,
++	.round_rate = clk_sam9x5_peripheral_round_rate,
++	.set_rate = clk_sam9x5_peripheral_set_rate,
++};
++
++static struct clk * __init
++at91_clk_register_sam9x5_peripheral(struct at91_pmc *pmc, const char *name,
++				    const char *parent_name, u32 id,
++				    const struct clk_range *range)
++{
++	struct clk_sam9x5_peripheral *periph;
++	struct clk *clk = NULL;
++	struct clk_init_data init;
++
++	if (!pmc || !name || !parent_name)
++		return ERR_PTR(-EINVAL);
++
++	periph = kzalloc(sizeof(*periph), GFP_KERNEL);
++	if (!periph)
++		return ERR_PTR(-ENOMEM);
++
++	init.name = name;
++	init.ops = &sam9x5_peripheral_ops;
++	init.parent_names = (parent_name ? &parent_name : NULL);
++	init.num_parents = (parent_name ? 1 : 0);
++	init.flags = 0;
++
++	periph->id = id;
++	periph->hw.init = &init;
++	periph->div = 0;
++	periph->pmc = pmc;
++	periph->auto_div = true;
++	periph->range = *range;
++
++	clk = clk_register(NULL, &periph->hw);
++	if (IS_ERR(clk))
++		kfree(periph);
++	else
++		clk_sam9x5_peripheral_autodiv(periph);
++
++	return clk;
++}
++
++static void __init
++of_at91_clk_periph_setup(struct device_node *np, struct at91_pmc *pmc, u8 type)
++{
++	int num;
++	u32 id;
++	struct clk *clk;
++	const char *parent_name;
++	const char *name;
++	struct device_node *periphclknp;
++
++	parent_name = of_clk_get_parent_name(np, 0);
++	if (!parent_name)
++		return;
++
++	num = of_get_child_count(np);
++	if (!num || num > PERIPHERAL_MAX)
++		return;
++
++	for_each_child_of_node(np, periphclknp) {
++		if (of_property_read_u32(periphclknp, "reg", &id))
++			continue;
++
++		if (id >= PERIPHERAL_MAX)
++			continue;
++
++		if (of_property_read_string(np, "clock-output-names", &name))
++			name = periphclknp->name;
++
++		if (type == PERIPHERAL_AT91RM9200) {
++			clk = at91_clk_register_peripheral(pmc, name,
++							   parent_name, id);
++		} else {
++			struct clk_range range = CLK_RANGE(0, 0);
++
++			of_at91_get_clk_range(periphclknp,
++					      "atmel,clk-output-range",
++					      &range);
++
++			clk = at91_clk_register_sam9x5_peripheral(pmc, name,
++								  parent_name,
++								  id, &range);
++		}
++
++		if (IS_ERR(clk))
++			continue;
++
++		of_clk_add_provider(periphclknp, of_clk_src_simple_get, clk);
++	}
++}
++
++void __init of_at91rm9200_clk_periph_setup(struct device_node *np,
++					   struct at91_pmc *pmc)
++{
++	of_at91_clk_periph_setup(np, pmc, PERIPHERAL_AT91RM9200);
++}
++
++void __init of_at91sam9x5_clk_periph_setup(struct device_node *np,
++					   struct at91_pmc *pmc)
++{
++	of_at91_clk_periph_setup(np, pmc, PERIPHERAL_AT91SAM9X5);
++}
+diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+index 6adc5be..09dfa63 100644
+--- a/drivers/clk/at91/pmc.c
++++ b/drivers/clk/at91/pmc.c
+@@ -271,6 +271,15 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
+ 		.compatible = "atmel,at91rm9200-clk-system",
+ 		.data = of_at91rm9200_clk_sys_setup,
+ 	},
++	/* Peripheral clocks */
++	{
++		.compatible = "atmel,at91rm9200-clk-peripheral",
++		.data = of_at91rm9200_clk_periph_setup,
++	},
++	{
++		.compatible = "atmel,at91sam9x5-clk-peripheral",
++		.data = of_at91sam9x5_clk_periph_setup,
++	},
+ 	{ /*sentinel*/ }
+ };
  
- static void __init intel_mid_time_init(void)
- {
--	sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr);
-+	sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr, NULL);
- 	switch (intel_mid_timer_options) {
- 	case INTEL_MID_TIMER_APBT_ONLY:
- 		break;
-diff --git a/arch/x86/platform/intel-mid/intel_mid_vrtc.c b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
-index 4762cff7facd..3afb51ad745b 100644
---- a/arch/x86/platform/intel-mid/intel_mid_vrtc.c
-+++ b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
-@@ -120,7 +120,7 @@ void __init intel_mid_rtc_init(void)
- {
- 	unsigned long vrtc_paddr;
+diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
+index 9c8a397..a09212b 100644
+--- a/drivers/clk/at91/pmc.h
++++ b/drivers/clk/at91/pmc.h
+@@ -80,4 +80,9 @@ extern void __init of_at91sam9x5_clk_master_setup(struct device_node *np,
+ extern void __init of_at91rm9200_clk_sys_setup(struct device_node *np,
+ 					       struct at91_pmc *pmc);
  
--	sfi_table_parse(SFI_SIG_MRTC, NULL, NULL, sfi_parse_mrtc);
-+	sfi_table_parse(SFI_SIG_MRTC, NULL, NULL, sfi_parse_mrtc, NULL);
- 
- 	vrtc_paddr = sfi_mrtc_array[0].phys_addr;
- 	if (!sfi_mrtc_num || !vrtc_paddr)
-diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
-index 438306ebed05..2c66024b7067 100644
---- a/arch/x86/platform/intel-mid/sfi.c
-+++ b/arch/x86/platform/intel-mid/sfi.c
-@@ -73,7 +73,7 @@ EXPORT_SYMBOL_GPL(intel_scu_notifier);
- 	((dev)->get_platform_data ? (dev)->get_platform_data(priv) : NULL)
- 
- /* parse all the mtimer info to a static mtimer array */
--int __init sfi_parse_mtmr(struct sfi_table_header *table)
-+int __init sfi_parse_mtmr(struct sfi_table_header *table, void *const priv)
- {
- 	struct sfi_table_simple *sb;
- 	struct sfi_timer_table_entry *pentry;
-@@ -146,7 +146,7 @@ void sfi_free_mtmr(struct sfi_timer_table_entry *mtmr)
- }
- 
- /* parse all the mrtc info to a global mrtc array */
--int __init sfi_parse_mrtc(struct sfi_table_header *table)
-+int __init sfi_parse_mrtc(struct sfi_table_header *table, void *const priv)
- {
- 	struct sfi_table_simple *sb;
- 	struct sfi_rtc_table_entry *pentry;
-@@ -185,7 +185,8 @@ int __init sfi_parse_mrtc(struct sfi_table_header *table)
-  * Parsing GPIO table first, since the DEVS table will need this table
-  * to map the pin name to the actual pin.
-  */
--static int __init sfi_parse_gpio(struct sfi_table_header *table)
-+static int __init sfi_parse_gpio(struct sfi_table_header *table,
-+				 void *const priv)
- {
- 	struct sfi_table_simple *sb;
- 	struct sfi_gpio_table_entry *pentry;
-@@ -427,7 +428,7 @@ static struct devs_id __init *get_device_id(u8 type, char *name)
- 	return NULL;
- }
- 
--static int __init sfi_parse_devs(struct sfi_table_header *table)
-+static int __init sfi_parse_devs(struct sfi_table_header *table, void *const priv)
- {
- 	struct sfi_table_simple *sb;
- 	struct sfi_device_table_entry *pentry;
-@@ -509,8 +510,8 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
- 
- static int __init intel_mid_platform_init(void)
- {
--	sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, sfi_parse_gpio);
--	sfi_table_parse(SFI_SIG_DEVS, NULL, NULL, sfi_parse_devs);
-+	sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, sfi_parse_gpio, NULL);
-+	sfi_table_parse(SFI_SIG_DEVS, NULL, NULL, sfi_parse_devs, NULL);
- 	return 0;
- }
- arch_initcall(intel_mid_platform_init);
-diff --git a/arch/x86/platform/sfi/sfi.c b/arch/x86/platform/sfi/sfi.c
-index bcd1a703e3e6..8b022f5e30e8 100644
---- a/arch/x86/platform/sfi/sfi.c
-+++ b/arch/x86/platform/sfi/sfi.c
-@@ -48,7 +48,7 @@ static void __init mp_sfi_register_lapic(u8 id)
- 	generic_processor_info(id, GET_APIC_VERSION(apic_read(APIC_LVR)));
- }
- 
--static int __init sfi_parse_cpus(struct sfi_table_header *table)
-+static int __init sfi_parse_cpus(struct sfi_table_header *table, void *priv)
- {
- 	struct sfi_table_simple *sb;
- 	struct sfi_cpu_table_entry *pentry;
-@@ -71,7 +71,7 @@ static int __init sfi_parse_cpus(struct sfi_table_header *table)
- 
- #ifdef CONFIG_X86_IO_APIC
- 
--static int __init sfi_parse_ioapic(struct sfi_table_header *table)
-+static int __init sfi_parse_ioapic(struct sfi_table_header *table, void *priv)
- {
- 	struct sfi_table_simple *sb;
- 	struct sfi_apic_table_entry *pentry;
-@@ -100,10 +100,10 @@ int __init sfi_platform_init(void)
- {
- #ifdef CONFIG_X86_LOCAL_APIC
- 	register_lapic_address(sfi_lapic_addr);
--	sfi_table_parse(SFI_SIG_CPUS, NULL, NULL, sfi_parse_cpus);
-+	sfi_table_parse(SFI_SIG_CPUS, NULL, NULL, sfi_parse_cpus, NULL);
- #endif
- #ifdef CONFIG_X86_IO_APIC
--	sfi_table_parse(SFI_SIG_APIC, NULL, NULL, sfi_parse_ioapic);
-+	sfi_table_parse(SFI_SIG_APIC, NULL, NULL, sfi_parse_ioapic, NULL);
- #endif
- 	return 0;
- }
-diff --git a/drivers/sfi/sfi_acpi.c b/drivers/sfi/sfi_acpi.c
-index f5b4ca581541..be71be084a5f 100644
---- a/drivers/sfi/sfi_acpi.c
-+++ b/drivers/sfi/sfi_acpi.c
-@@ -96,7 +96,8 @@ static inline struct acpi_table_header *sfi_to_acpi_th(
-  *
-  * Parse the ACPI XSDT for later access by sfi_acpi_table_parse().
-  */
--static int __init sfi_acpi_parse_xsdt(struct sfi_table_header *th)
-+static int __init
-+sfi_acpi_parse_xsdt(struct sfi_table_header *th, void *const priv)
- {
- 	struct sfi_table_key key = SFI_ANY_KEY;
- 	int tbl_cnt, i;
-@@ -119,7 +120,7 @@ int __init sfi_acpi_init(void)
- {
- 	struct sfi_table_key xsdt_key = { .sig = SFI_SIG_XSDT };
- 
--	sfi_table_parse(SFI_SIG_XSDT, NULL, NULL, sfi_acpi_parse_xsdt);
-+	sfi_table_parse(SFI_SIG_XSDT, NULL, NULL, sfi_acpi_parse_xsdt, NULL);
- 
- 	/* Only call the get_table to keep the table mapped */
- 	xsdt_va = (struct acpi_table_xsdt *)sfi_get_table(&xsdt_key);
-diff --git a/drivers/sfi/sfi_core.c b/drivers/sfi/sfi_core.c
-index 1e824fb1649b..8289d95be04a 100644
---- a/drivers/sfi/sfi_core.c
-+++ b/drivers/sfi/sfi_core.c
-@@ -278,7 +278,7 @@ void sfi_put_table(struct sfi_table_header *th)
- 
- /* Find table with signature, run handler on it */
- int sfi_table_parse(char *signature, char *oem_id, char *oem_table_id,
--			sfi_table_handler handler)
-+			sfi_table_handler handler, void *const priv)
- {
- 	struct sfi_table_header *table = NULL;
- 	struct sfi_table_key key;
-@@ -295,7 +295,7 @@ int sfi_table_parse(char *signature, char *oem_id, char *oem_table_id,
- 	if (!table)
- 		goto exit;
- 
--	ret = handler(table);
-+	ret = handler(table, priv);
- 	sfi_put_table(table);
- exit:
- 	return ret;
-diff --git a/include/linux/sfi.h b/include/linux/sfi.h
-index d9b436f09925..3d2be5c02256 100644
---- a/include/linux/sfi.h
-+++ b/include/linux/sfi.h
-@@ -170,14 +170,15 @@ struct sfi_gpio_table_entry {
- 	char	pin_name[SFI_NAME_LEN];
- } __packed;
- 
--typedef int (*sfi_table_handler) (struct sfi_table_header *table);
-+typedef int (*sfi_table_handler) (struct sfi_table_header *table,
-+				  void *const priv);
- 
- #ifdef CONFIG_SFI
- extern void __init sfi_init(void);
- extern int __init sfi_platform_init(void);
- extern void __init sfi_init_late(void);
- extern int sfi_table_parse(char *signature, char *oem_id, char *oem_table_id,
--				sfi_table_handler handler);
-+				sfi_table_handler handler, void *const priv);
- 
- extern int sfi_disabled;
- static inline void disable_sfi(void)
-@@ -199,7 +200,8 @@ static inline void sfi_init_late(void)
- 
- static inline int sfi_table_parse(char *signature, char *oem_id,
- 					char *oem_table_id,
--					sfi_table_handler handler)
-+					sfi_table_handler handler,
-+					void *const priv)
- {
- 	return -1;
- }
++extern void __init of_at91rm9200_clk_periph_setup(struct device_node *np,
++						  struct at91_pmc *pmc);
++extern void __init of_at91sam9x5_clk_periph_setup(struct device_node *np,
++						  struct at91_pmc *pmc);
++
+ #endif /* __PMC_H_ */
 -- 
-1.8.4.2
+1.7.9.5
 
