@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757015Ab3KLUsE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 15:48:04 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41938 "EHLO
+	id S1757112Ab3KLUsU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 15:48:20 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41951 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755837Ab3KLUqh (ORCPT
+	with ESMTP id S1756105Ab3KLUqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 15:46:37 -0500
+	Tue, 12 Nov 2013 15:46:38 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/13] perf tests: Compensate lower sample freq with longer test loop
-Date: Tue, 12 Nov 2013 17:46:09 -0300
-Message-Id: <1384289178-31374-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 11/13] perf tests: Handle throttle events in 'object code reading' test
+Date: Tue, 12 Nov 2013 17:46:16 -0300
+Message-Id: <1384289178-31374-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384289178-31374-1-git-send-email-acme@infradead.org>
 References: <1384289178-31374-1-git-send-email-acme@infradead.org>
@@ -31,19 +31,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Doesn't work for me:
+Unhandled events cause an error that fails the test, fix it.
 
-./perf test -v 19
-19: Test software clock events have valid period values    :
---- start ---
-mmap size 528384B
-mmap size 528384B
-All (0) samples have period value of 1!
----- end ----
-Test software clock events have valid period values: FAILED!
-
-Compensate the lower freq introduced in 67c1e4a53b17 with a longer loop,
-
+Reported-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -53,25 +43,38 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/5281D3B8.2030104@intel.com
+Link: http://lkml.kernel.org/r/5281DFE5.3000909@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/sw-clock.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/tests/code-reading.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/tests/sw-clock.c b/tools/perf/tests/sw-clock.c
-index 93a7139ff5f7..6664a7cd828c 100644
---- a/tools/perf/tests/sw-clock.c
-+++ b/tools/perf/tests/sw-clock.c
-@@ -9,7 +9,7 @@
- #include "util/cpumap.h"
- #include "util/thread_map.h"
+diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
+index 6d9dc198a200..85d4919dd623 100644
+--- a/tools/perf/tests/code-reading.c
++++ b/tools/perf/tests/code-reading.c
+@@ -275,8 +275,19 @@ static int process_event(struct machine *machine, struct perf_evlist *evlist,
+ 	if (event->header.type == PERF_RECORD_SAMPLE)
+ 		return process_sample_event(machine, evlist, event, state);
  
--#define NR_LOOPS  1000000
-+#define NR_LOOPS  10000000
+-	if (event->header.type < PERF_RECORD_MAX)
+-		return machine__process_event(machine, event, NULL);
++	if (event->header.type == PERF_RECORD_THROTTLE ||
++	    event->header.type == PERF_RECORD_UNTHROTTLE)
++		return 0;
++
++	if (event->header.type < PERF_RECORD_MAX) {
++		int ret;
++
++		ret = machine__process_event(machine, event, NULL);
++		if (ret < 0)
++			pr_debug("machine__process_event failed, event type %u\n",
++				 event->header.type);
++		return ret;
++	}
  
- /*
-  * This test will open software clock events (cpu-clock, task-clock)
+ 	return 0;
+ }
 -- 
 1.8.1.4
 
