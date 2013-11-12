@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab3KLLJO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 06:09:14 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:61384 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150Ab3KLLJL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 06:09:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131111203954.GB3043@order.stressinduktion.org>
-References: <CAP8BHkGZ5EFxW4BNervKrOiEaQTNdSh9s2YOrFoexzQCOR=AqQ@mail.gmail.com>
-	<20131111203954.GB3043@order.stressinduktion.org>
-Date: Tue, 12 Nov 2013 16:39:10 +0530
-Message-ID: <CAP8BHkG6=KuU9K7=sGsZftMDe58eTYByRu2DZ+j+KNqcfsOfAA@mail.gmail.com>
-Subject: Re: IPv6: Blackhole route support partial ?
-From: Kamala R <kamala@aristanetworks.com>
-To: Kamala R <kamala@aristanetworks.com>, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754577Ab3KLLM5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 06:12:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751472Ab3KLLMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 06:12:55 -0500
+Date: Tue, 12 Nov 2013 06:12:01 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>, devel@openvz.org,
+        ebiederm@xmission.com, oleg@redhat.com, bfields@fieldses.org,
+        bharrosh@panasas.com
+Subject: Re: call_usermodehelper in containers
+Message-ID: <20131112061201.04cf25ab@tlielax.poochiereds.net>
+In-Reply-To: <20131112004703.GB15377@kroah.com>
+References: <20131111071825.62da01d1@tlielax.poochiereds.net>
+	<20131112004703.GB15377@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 11 Nov 2013 16:47:03 -0800
+Greg KH <gregkh@linuxfoundation.org> wrote:
 
-Sure, here it is.
+> On Mon, Nov 11, 2013 at 07:18:25AM -0500, Jeff Layton wrote:
+> > We have a bit of a problem wrt to upcalls that use call_usermodehelper
+> > with containers and I'd like to bring this to some sort of resolution...
+> > 
+> > A particularly problematic case (though there are others) is the
+> > nfsdcltrack upcall. It basically uses call_usermodehelper to run a
+> > program in userland to track some information on stable storage for
+> > nfsd.
+> 
+> I thought the discussion at the kernel summit about this issue was:
+> 	- don't do this.
+> 	- don't do it.
+> 	- if you really need to do this, fix nfsd
+> 
 
---- linux-3.12/net/ipv6/route.c.orig    2013-11-12 16:23:46.000000000 +0530
-+++ linux-3.12/net/ipv6/route.c 2013-11-12 16:30:51.000000000 +0530
-@@ -1570,9 +1570,13 @@ int ip6_route_add(struct fib6_config *cf
-                switch (cfg->fc_type) {
-                case RTN_BLACKHOLE:
-                        rt->dst.error = -EINVAL;
-+                       rt->dst.input = dst_discard;
-+                       rt->dst.discard = dst_discard;
-                        break;
-                case RTN_PROHIBIT:
-                        rt->dst.error = -EACCES;
-+                       rt->dst.input = ip6_pkt_prohibit;
-+                       rt->dst.output = ip6_pkt_prohibit_out;
-                        break;
-                case RTN_THROW:
-                        rt->dst.error = -EAGAIN;
+Sorry, I couldn't make the kernel summit so I missed that discussion. I
+guess LWN didn't cover it?
 
-Is this ok ?
+In any case, I guess then that we'll either have to come up with some
+way to fix nfsd here, or simply ensure that nfsd can never be started
+unless root in the container has a full set of a full set of
+capabilities.
 
-Regards,
-Kamala
+One sort of Rube Goldberg possibility to fix nfsd is:
 
+- when we start nfsd in a container, fork off an extra kernel thread
+  that just sits idle. That thread would need to be a descendant of the
+  userland process that started nfsd, so we'd need to create it with
+  kernel_thread().
 
-On Tue, Nov 12, 2013 at 2:09 AM, Hannes Frederic Sowa
-<hannes@stressinduktion.org> wrote:
-> Hello!
->
-> On Mon, Nov 11, 2013 at 07:25:14PM +0530, Kamala R wrote:
->> On adding IPv6 blackhole routes, ICMP unreachable messages are being
->> sent back to source. According to the definition, packets destined to
->> a blackhole address must be dropped silently.
->
-> Yes, this is a bug.
->
->> I applied the patch submitted to the 3.7 kernel that indicates that it
->> supports blackhole and prohibit routes correctly. However, the patch
->> only sets the error code and route type correctly, so the show command
->> displays the appropriate output.
->>
->>
->> It seems to me that the input and output function pointers of the dst
->> variable, which determine packet processing, need to be set to
->> dst_discard. This would enable correct behaviour for blackhole routes.
->> Am I on the right path here ?
->
-> I think you are. ip6_pkt_discard is not the correct input/output
-> function for blackhole routes. In ip6_route_add simply set up the
-> function pointers in the switch instead to just initializing them to
-> ip6_pkt_discard. dst_discard is fine. Looks like prohibit rules are not
-> handled correctly either. They should go to ip6_pkt_prohibit. (Just look at
-> how the templates are initialized.)
->
-> Could you cook a patch?
->
-> Thanks,
->
->   Hannes
->
+- Have the kernel just start up the UMH program in the init_ns mount
+  namespace as it currently does, but also pass the pid of the idle
+  kernel thread to the UMH upcall.
+
+- The program will then use /proc/<pid>/root and /proc/<pid>/ns/* to set
+  itself up for doing things properly.
+
+Note that with this mechanism we can't actually run a different binary
+per container, but that's probably fine for most purposes.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
