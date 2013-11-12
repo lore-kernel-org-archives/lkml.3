@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab3KLLXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 06:23:46 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:57393 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab3KLLXn (ORCPT
+	id S1754495Ab3KLL3E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 06:29:04 -0500
+Received: from unicorn.mansr.com ([81.2.72.234]:37391 "EHLO unicorn.mansr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751521Ab3KLL3C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 06:23:43 -0500
-Date: Tue, 12 Nov 2013 12:23:38 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/boot changes for v3.13
-Message-ID: <20131112112338.GA12801@gmail.com>
-References: <20131111170558.GA12741@gmail.com>
- <CAE9FiQWrzZB+wpSXGeQTPKi2o7MKvONFkk0_POe-E+wco07Erw@mail.gmail.com>
- <20131112103422.GA12849@pd.tnic>
+	Tue, 12 Nov 2013 06:29:02 -0500
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Nicolas Pitre <nico@fluxnic.net>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        =?iso-8859-1?Q?M=E5n?= =?iso-8859-1?Q?s_Rullg=E5rd?= 
+	<mans@mansr.com>,
+        Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH v2] ARM: Use udiv/sdiv for __aeabi_{u}idiv library functions
+References: <1383951632-6090-1-git-send-email-sboyd@codeaurora.org>
+	<alpine.LFD.2.10.1311092357090.2314@knanqh.ubzr>
+	<528193A0.7050505@codeaurora.org>
+Date: Tue, 12 Nov 2013 11:28:57 +0000
+In-Reply-To: <528193A0.7050505@codeaurora.org> (Stephen Boyd's message of
+	"Mon, 11 Nov 2013 18:34:08 -0800")
+Message-ID: <yw1xli0tvoxy.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131112103422.GA12849@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Stephen Boyd <sboyd@codeaurora.org> writes:
 
-* Borislav Petkov <bp@alien8.de> wrote:
+> On 11/09/13 21:03, Nicolas Pitre wrote:
+>> Bah..... NAK. We are doing runtime patching of the kernel for many
+>> many things already. So why not do the same here?
+>
+> static keys are a form of runtime patching, albeit not as extreme as
+> you're suggesting.
+>
+>>
+>> The obvious strategy is to simply overwrite the start of the existing 
+>> __aeabi_idiv code with the "sdiv r0, r0, r1" and "bx lr" opcodes.  
+>>
+>> Similarly for the unsigned case.
+>
+> I was thinking the same thing when I wrote this, but I didn't know how
+> to tell the compiler to either inline this function or to let me inilne
+> an assembly stub with some section magic.
+>
+>>
+>> That let you test the hardware capability only once during boot instead 
+>> of everytime a divide operation is performed.
+>
+> The test for hardware capability really isn't done more than once during
+> boot. The assembly is like so at compile time
+>
+> 00000000 <__aeabi_idiv>:
+>    0:   nop     {0}
+>    4:   b       0 <___aeabi_idiv>
+>    8:   sdiv    r0, r0, r1
+>    c:   bx      lr
+>
+> and after we test and find support for the instruction it will be
+> replaced with
+>
+> 00000000 <__aeabi_idiv>:
+>    0:   b       8
+>    4:   b       0 <___aeabi_idiv>
+>    8:   sdiv    r0, r0, r1
+>    c:   bx      lr
+>
+> Unfortunately we still have to jump to this function. It would be great
+> if we could inline this function at the call site but as I already said
+> I don't know how to do that.
 
-> On Mon, Nov 11, 2013 at 01:37:48PM -0800, Yinghai Lu wrote:
-> > How do you know CPU0 and CPU1 are in same package?
-> 
-> Why is that relevant?
+Ideally the bl instruction at the call site would be patched over with
+sdiv/udiv when supported.  This would leave things exactly as they are
+for hardware without div capability and incur only the call setup cost
+(but no actual call) on div-capable hardware.  No, I don't know how to
+achieve this.
 
-So I suspect what Yinghai tried to say if CPU0 and CPU1 are not on the 
-same node we do the printout incorrectly.
-
-Arguably this was a pre-existing condition, but would be nice to fix it 
-now that this code has emerged out of steady bitrot! :-)
-
-How difficult would it be in your opinion? I think the best way to go 
-about it would be to include CPU#0 in the list - I don't think anyone will 
-be confused by the fact that it has already booted. That way the 'gap' for 
-CPU#0 would be eliminated. Or something like that.
-
-Btw., while staring at that code once more I noticed the following small 
-nit, there's a pre-existing weird way of writing the -1 literal:
-
-                          if (current_node > (-1))
-
-Thanks,
-
-	Ingo
+-- 
+Måns Rullgård
+mans@mansr.com
