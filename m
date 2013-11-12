@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab3KLOVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:21:20 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:57936 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878Ab3KLOVR convert rfc822-to-8bit (ORCPT
+	id S1755547Ab3KLOXC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:23:02 -0500
+Received: from unicorn.mansr.com ([81.2.72.234]:38225 "EHLO unicorn.mansr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751427Ab3KLOW7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:21:17 -0500
-Date: Tue, 12 Nov 2013 09:21:12 -0500 (EST)
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, stefanha@redhat.com
-Message-ID: <857673324.22319676.1384266072168.JavaMail.root@redhat.com>
-In-Reply-To: <1384250577-20330-1-git-send-email-jasowang@redhat.com>
-References: <1384250577-20330-1-git-send-email-jasowang@redhat.com>
-Subject: Re: [PATCH net 1/2] tuntap: limit head length of skb allocated
+	Tue, 12 Nov 2013 09:22:59 -0500
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH v2] ARM: Use udiv/sdiv for __aeabi_{u}idiv library functions
+References: <1383951632-6090-1-git-send-email-sboyd@codeaurora.org>
+	<alpine.LFD.2.10.1311092357090.2314@knanqh.ubzr>
+	<528193A0.7050505@codeaurora.org>
+	<alpine.LFD.2.10.1311120839310.9667@knanqh.ubzr>
+Date: Tue, 12 Nov 2013 14:22:55 +0000
+In-Reply-To: <alpine.LFD.2.10.1311120839310.9667@knanqh.ubzr> (Nicolas Pitre's
+	message of "Tue, 12 Nov 2013 09:01:16 -0500 (EST)")
+Message-ID: <yw1xhabhvgw0.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - GC28 (Win)/8.0.3_GA_5664)
-Thread-Topic: tuntap: limit head length of skb allocated
-Thread-Index: +l9Xkr6z6tXsPkKaRJlNIaBn/HXbBQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Nicolas Pitre <nicolas.pitre@linaro.org> writes:
 
+> What about this patch which I think is currently your best option.  Note 
+> it would need to use the facilities from asm/opcodes.h to make it endian 
+> agnostic.
+>
+> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> index 6a1b8a81b1..379cffe4ab 100644
+> --- a/arch/arm/kernel/setup.c
+> +++ b/arch/arm/kernel/setup.c
+> @@ -383,6 +383,34 @@ static void __init cpuid_init_hwcaps(void)
+>  		elf_hwcap |= HWCAP_IDIVT;
+>  	}
+>
+> +	/*
+> +	 * Patch our division routines with the corresponding opcode
+> +	 * if the hardware supports it.
+> +	 */
+> +	if (IS_ENABLED(CONFIG_THUMB2_KERNEL) && (elf_hwcap & HWCAP_IDIVT)) {
+> +		extern char __aeabi_uidiv, __aeabi_idiv;
 
------ 原始邮件 -----
-> We currently use hdr_len as a hint of head length which is advertised by
-> guest. But when guest advertise a very big value, it can lead to an 64K+
-> allocating of kmalloc() which has a very high possibility of failure when
-> host
-> memory is fragmented or under heavy stress. The huge hdr_len also reduce the
-> effect of zerocopy or even disable if a gso skb is linearized in guest.
-> 
-> To solves those issues, this patch introduces an upper limit (PAGE_SIZE) of
-> the
-> head, which guarantees an order 0 allocation each time.
-> 
-> Cc: Stefan Hajnoczi <stefanha@redhat.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
-> The patch was needed for stable.
-> ---
->  drivers/net/tun.c | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index 7cb105c..5537b65 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -954,6 +954,11 @@ static struct sk_buff *tun_alloc_skb(struct tun_file
-> *tfile,
->  	struct sock *sk = tfile->socket.sk;
->  	struct sk_buff *skb;
->  	int err;
-> +	int good_linear = SKB_MAX_HEAD(prepad);
-> +
-> +	/* Don't use huge linear part */
-> +	if (linear > good_linear)
-> +		linear = good_linear;
->  
->  	/* Under a page?  Don't bother with paged skb. */
->  	if (prepad + len < PAGE_SIZE || !linear)
-> --
-> 1.8.3.2
-> 
+It would be safer to declare these as arrays of unspecified size.
+Otherwise the compiler might do evil things with what to it looks like
+out of bounds indexing.
 
-Looks like reduce the linear here will cause callers' iov_pages() under estimation.
-Will send V2.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+There should also be some cache maintenance after this patching, or is
+that already happening for some other reason?
+
+-- 
+M�ns Rullg�rd
+mans@mansr.com
