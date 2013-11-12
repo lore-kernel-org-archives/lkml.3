@@ -1,92 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab3KLRNL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:13:11 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:53248 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753728Ab3KLRNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:13:04 -0500
-Date: Tue, 12 Nov 2013 12:12:39 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Joe Perches <joe@perches.com>
-Cc: netdev <netdev@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [Fwd: Re: [PATCH v2 2/2] x86: add prefetching to do_csum]
-Message-ID: <20131112171239.GC19780@hmsreliant.think-freely.org>
-References: <1384220542.4771.23.camel@joe-AO722>
+	id S1756093Ab3KLRPU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:15:20 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:57848 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753603Ab3KLRPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 12:15:16 -0500
+Date: Tue, 12 Nov 2013 22:45:07 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mikey@neuling.org,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [PATCH v2] sched: Check sched_domain before computing group
+ power.
+Message-ID: <20131112171507.GG2559@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <tip-db2pe0vxwunv37plc7onnugj@git.kernel.org>
+ <20131112105547.GA27310@linux.vnet.ibm.com>
+ <20131112115736.GO5056@laptop.programming.kicks-ass.net>
+ <20131112164126.GF2559@linux.vnet.ibm.com>
+ <20131112170302.GC16796@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1384220542.4771.23.camel@joe-AO722>
+In-Reply-To: <20131112170302.GC16796@laptop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111217-5806-0000-0000-000023650B42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 05:42:22PM -0800, Joe Perches wrote:
-> Hi again Neil.
 > 
-> Forwarding on to netdev with a concern as to how often
-> do_csum is used via csum_partial for very short headers
-> and what impact any prefetch would have there.
-> 
-> Also, what changed in your test environment?
-> 
-> Why are the new values 5+% higher cycles/byte than the
-> previous values?
-> 
-> And here is the new table reformatted:
-> 
-> len	set	iterations	Readahead cachelines vs cycles/byte
-> 			1	2	3	4	6	10	20
-> 1500B	64MB	1000000	1.4342	1.4300	1.4350	1.4350	1.4396	1.4315	1.4555
-> 1500B	128MB	1000000	1.4312	1.4346	1.4271	1.4284	1.4376	1.4318	1.4431
-> 1500B	256MB	1000000	1.4309	1.4254	1.4316	1.4308	1.4418	1.4304	1.4367
-> 1500B	512MB	1000000	1.4534	1.4516	1.4523	1.4563	1.4554	1.4644	1.4590
-> 9000B	64MB	1000000	0.8921	0.8924	0.8932	0.8949	0.8952	0.8939	0.8985
-> 9000B	128MB	1000000	0.8841	0.8856	0.8845	0.8854	0.8861	0.8879	0.8861
-> 9000B	256MB	1000000	0.8806	0.8821	0.8813	0.8833	0.8814	0.8827	0.8895
-> 9000B	512MB	1000000	0.8838	0.8852	0.8841	0.8865	0.8846	0.8901	0.8865
-> 64KB	64MB	1000000	0.8132	0.8136	0.8132	0.8150	0.8147	0.8149	0.8147
-> 64KB	128MB	1000000	0.8013	0.8014	0.8013	0.8020	0.8041	0.8015	0.8033
-> 64KB	256MB	1000000	0.7956	0.7959	0.7956	0.7976	0.7981	0.7967	0.7973
-> 64KB	512MB	1000000	0.7934	0.7932	0.7937	0.7951	0.7954	0.7943	0.7948
+> Hurm.. can you provide the actual topology of the machine that triggers
+> this? My brain hurts trying to thing through the weird cases of this
+> code.
 > 
 
+Hope this helps. Please do let me know if you were looking for pdf output.
 
-There we go, thats better:
-len   set     iterations      Readahead cachelines vs cycles/byte
-			1	2	3	4	5	10	20
-1500B 64MB	1000000	1.3638	1.3288	1.3464	1.3505	1.3586	1.3527	1.3408
-1500B 128MB	1000000	1.3394	1.3357	1.3625	1.3456	1.3536	1.3400	1.3410
-1500B 256MB	1000000 1.3773	1.3362	1.3419	1.3548	1.3543	1.3442	1.4163
-1500B 512MB	1000000 1.3442	1.3390	1.3434	1.3505	1.3767	1.3513	1.3820
-9000B 64MB	1000000 0.8505	0.8492	0.8521	0.8593	0.8566	0.8577	0.8547
-9000B 128MB	1000000 0.8507	0.8507	0.8523	0.8627	0.8593	0.8670	0.8570
-9000B 256MB	1000000 0.8516	0.8515	0.8568	0.8546	0.8549	0.8609	0.8596
-9000B 512MB	1000000 0.8517	0.8526	0.8552	0.8675	0.8547	0.8526	0.8621
-64KB  64MB	1000000 0.7679	0.7689	0.7688	0.7716	0.7714	0.7722	0.7716
-64KB  128MB	1000000 0.7683	0.7687	0.7710	0.7690	0.7717	0.7694	0.7703
-64KB  256MB	1000000 0.7680	0.7703	0.7688	0.7689	0.7726	0.7717	0.7713
-64KB  512MB	1000000 0.7692	0.7690	0.7701	0.7705	0.7698	0.7693	0.7735
+Machine (251GB)
 
 
-So, the numbers are correct now that I returned my hardware to its previous
-interrupt affinity state, but the trend seems to be the same (namely that there
-isn't a clear one).  We seem to find peak performance around a readahead of 2
-cachelines, but its very small (about 3%), and its inconsistent (larger set
-sizes fall to either side of that stride).  So I don't see it as a clear win.  I
-still think we should probably scrap the readahead for now, just take the perf
-bits, and revisit this when we can use the vector instructions or the
-independent carry chain instructions to improve this more consistently.
 
-Thoughts
-Neil
+   NUMANode P#0 (63GB)
 
 
+
+   Socket P#0
+
+
+     L3 (20MB)
+
+
+
+     L2 (256KB)         L2 (256KB)         L2 (256KB)         L2 (256KB)   L2 (256KB)   L2 (256KB)   L2 (256KB)   L2 (256KB)
+
+
+
+     L1d (32KB)         L1d (32KB)         L1d (32KB)         L1d (32KB)   L1d (32KB)   L1d (32KB)   L1d (32KB)   L1d (32KB)
+
+
+
+     L1i (32KB)         L1i (32KB)         L1i (32KB)         L1i (32KB)   L1i (32KB)   L1i (32KB)   L1i (32KB)   L1i (32KB)
+
+
+
+     Core P#0           Core P#1           Core P#2           Core P#3     Core P#4     Core P#5     Core P#6     Core P#7
+
+
+       PU P#0            PU P#1             PU P#2             PU P#3       PU P#4       PU P#5       PU P#6       PU P#7
+
+
+       PU P#32           PU P#33            PU P#34            PU P#35      PU P#36      PU P#37      PU P#38      PU P#39
+
+
+
+
+   NUMANode P#1 (63GB)
+
+
+
+   Socket P#1
+
+
+     L3 (20MB)
+
+
+
+     L2 (256KB)         L2 (256KB)         L2 (256KB)         L2 (256KB)   L2 (256KB)   L2 (256KB)   L2 (256KB)   L2 (256KB)
+
+
+
+     L1d (32KB)         L1d (32KB)         L1d (32KB)         L1d (32KB)   L1d (32KB)   L1d (32KB)   L1d (32KB)   L1d (32KB)
+
+
+
+     L1i (32KB)         L1i (32KB)         L1i (32KB)         L1i (32KB)   L1i (32KB)   L1i (32KB)   L1i (32KB)   L1i (32KB)
+
+
+
+     Core P#0           Core P#1           Core P#2           Core P#3     Core P#4     Core P#5     Core P#6     Core P#7
+
+
+       PU P#8            PU P#9             PU P#10            PU P#11      PU P#12      PU P#13      PU P#14      PU P#15
+
+
+       PU P#40           PU P#41            PU P#42            PU P#43      PU P#44      PU P#45      PU P#46      PU P#47
+
+
+
+
+   NUMANode P#2 (63GB)
+
+
+
+   Socket P#2
+
+
+     L3 (20MB)
+
+
+
+     L2 (256KB)         L2 (256KB)         L2 (256KB)         L2 (256KB)   L2 (256KB)   L2 (256KB)   L2 (256KB)   L2 (256KB)
+
+
+
+     L1d (32KB)         L1d (32KB)         L1d (32KB)         L1d (32KB)   L1d (32KB)   L1d (32KB)   L1d (32KB)   L1d (32KB)
+
+
+
+     L1i (32KB)         L1i (32KB)         L1i (32KB)         L1i (32KB)   L1i (32KB)   L1i (32KB)   L1i (32KB)   L1i (32KB)
+
+
+
+     Core P#0           Core P#1           Core P#2           Core P#3     Core P#4     Core P#5     Core P#6     Core P#7
+
+
+       PU P#16           PU P#17            PU P#18            PU P#19      PU P#20      PU P#21      PU P#22      PU P#23
+
+
+       PU P#48           PU P#49            PU P#50            PU P#51      PU P#52      PU P#53      PU P#54      PU P#55
+
+
+
+
+   NUMANode P#3 (62GB)
+
+
+
+   Socket P#3
+
+
+     L3 (20MB)
+
+
+
+     L2 (256KB)         L2 (256KB)         L2 (256KB)         L2 (256KB)   L2 (256KB)   L2 (256KB)   L2 (256KB)   L2 (256KB)
+
+
+
+     L1d (32KB)         L1d (32KB)         L1d (32KB)         L1d (32KB)   L1d (32KB)   L1d (32KB)   L1d (32KB)   L1d (32KB)
+
+
+
+     L1i (32KB)         L1i (32KB)         L1i (32KB)         L1i (32KB)   L1i (32KB)   L1i (32KB)   L1i (32KB)   L1i (32KB)
+
+
+
+     Core P#0           Core P#1           Core P#2           Core P#3     Core P#4     Core P#5     Core P#6     Core P#7
+
+
+       PU P#24           PU P#25            PU P#26            PU P#27      PU P#28      PU P#29      PU P#30      PU P#31
+
+
+       PU P#56           PU P#57            PU P#58            PU P#59      PU P#60      PU P#61      PU P#62      PU P#63
+
+
+
+
+                    PCI 1000:005b
+
+
+                        sda          sdb     sdc        sdd
+
+
+
+                        sde          sdf     sdg        sdh
+
+
+
+
+                    PCI 19a2:0710
+
+
+                        eth0
+
+
+
+
+                    PCI 19a2:0710
+
+
+                        eth1
+
+
+
+
+                    PCI 19a2:0710
+
+
+                        eth2
+
+
+
+
+                    PCI 19a2:0710
+
+
+                        eth3
+
+
+
+
+                                                      PCI 102b:0534
+
+
+
+           PCI 8086:1d02
+
+
+
+                    PCI 1000:0073
+
+
+
+Host: kong.in.ibm.com
+
+Indexes: physical
+
+Date: Tuesday 12 November 2013 10:38:18 PM IST
 
