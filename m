@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883Ab3KLPgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:36:09 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:36851 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab3KLPgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:36:07 -0500
-Message-ID: <52824AE3.4050207@gmail.com>
-Date: Tue, 12 Nov 2013 08:36:03 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1756033Ab3KLPgY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:36:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34904 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755999Ab3KLPgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 10:36:22 -0500
+Message-ID: <52824AD8.8000607@zytor.com>
+Date: Tue, 12 Nov 2013 07:35:52 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, jolsa@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
-References: <1384267617-3446-1-git-send-email-dsahern@gmail.com> <1384267617-3446-5-git-send-email-dsahern@gmail.com> <20131112145707.GV5056@laptop.programming.kicks-ass.net> <20131112150751.GA19321@ghostprotocols.net> <20131112151944.GX5056@laptop.programming.kicks-ass.net>
-In-Reply-To: <20131112151944.GX5056@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/bsp-hotplug] x86, apic: Disable BSP if boot cpu is AP
+References: <20130829092804.5476.95588.stgit@localhost6.localdomain6> <tip-1d79e607332d67d9132c176d99b5e7fabe1b6b7f@git.kernel.org> <52598770.6090309@zytor.com> <20131012174206.GD18437@gmail.com> <528135D8.3040205@zytor.com> <528200DE.1090706@jp.fujitsu.com>
+In-Reply-To: <528200DE.1090706@jp.fujitsu.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/13, 8:19 AM, Peter Zijlstra wrote:
-> On Tue, Nov 12, 2013 at 12:07:51PM -0300, Arnaldo Carvalho de Melo wrote:
->> Em Tue, Nov 12, 2013 at 03:57:07PM +0100, Peter Zijlstra escreveu:
->>> On Tue, Nov 12, 2013 at 07:46:56AM -0700, David Ahern wrote:
->>>> When recording raw_syscalls for the entire system, e.g.,
->>>>      perf record -e raw_syscalls:*,sched:sched_switch -a -- sleep 1
->>>>
->>>> you end up with a negative feedback loop as perf itself calls write() fairly
->>>> often. This patch handles the problem by mmap'ing the file in chunks of 64M at
->>>> a time and copies events from the event buffers to the file avoiding write
->>>> system calls.
->>>
->>> You know this completely fails the moment you trace faults, because
->>> every new access to one of those pages (to mark it dirty) will trigger a
->>> fault. And we'll take a bunch more faults -- one for each page -- than
->>> we ever did write() syscalls.
->>
->> So we should provide a neon lettered warning when doing that, no? :-)
->
-> Dunno.. it _should_ all work. Try it and see what it does.. Once the
-> events are bigger than a page things might get 'interesting' though.
->
+On 11/12/2013 02:20 AM, HATAYAMA Daisuke wrote:
+> 
+> Thanks for pointing out that. I think the first two issues has already been
+> fixed in v3 version. I've just posted v5 version a little time ago.
 
-one option here is not allow page faults and system wide system calls. 
-system wide tracing needs mmap; page faults for a task can use write(). 
-I left that option in case something like this came up.
+OK, I see now.  It looks like it was radically changed, so the branch in
+the -tip tree is completely stale.
 
-David
+> BTW,
+> I changed the basic design at v4 where we specify the initial APIC ID of
+> the
+> processor we want to disable in the kdump 2nd kernel from the the 1st
+> kernel
+> through newly introduced disable_cpu_apicid kernel parameter; it might be
+> similar to the idea you described in the patch description of tip tree.
+
+> I don't know the third issue. Could you explain what kind of things can
+> happen on clustered system? Only IA32_APIC_BASE MSR is no longer trusted? Or are
+> there other things we can possibly no longer trust?
+
+On a clustered system, the CPU APICIDs will duplicate, as only a
+hardware-specific method can obtain the cluster-wide ID.  That is why we
+have struct apic.get_apic_id().
+
+IA32_APIC_BASE_MSR is another matter... it doesn't even exist on older
+hardware.  It might be as simple as if IA32_APIC_BASE_MSR doesn't exist
+we ignore this whole mechanism (this applies to P5 and earlier, but also
+modern derivatives like Quark) but we can't blindly touch this register
+as it might trap.  At the very least it needs to be rdmsr_safe().
+
+> Also, could you explain what you suggest to deal with the issue in more
+> detail?
+
+I think the only thing we can do is to record in the first kernel on
+which CPU we were booted on.  Then there is no need to look at the BSP
+flag in APIC_BASE_MSR at all or anything similar.
+
+	-hpa
+
