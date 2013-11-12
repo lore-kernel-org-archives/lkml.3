@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab3KLOJq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:09:46 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:58868 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab3KLOJn (ORCPT
+	id S1755528Ab3KLOKW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:10:22 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:48326 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab3KLOKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:09:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1311112031220.30673@ionos.tec.linutronix.de>
-References: <20130917082838.218329307@infradead.org>
-	<20130917183628.534494408@linutronix.de>
-	<CAMuHMdWgrQf+ULDrZyY5R+vT3GtiWEgpsWxmfk0b5pivN7wBmg@mail.gmail.com>
-	<alpine.DEB.2.02.1309172315550.4089@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1309181159520.4089@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1309191652480.4089@ionos.tec.linutronix.de>
-	<87txhg3ftx.fsf@igel.home>
-	<CAMuHMdW-YBroi6GezUP-KQBVRAcmYtUQERvBC=ekmemopDhVow@mail.gmail.com>
-	<alpine.DEB.2.02.1311041305540.28335@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1311042032130.16975@ayla.of.borg>
-	<alpine.DEB.2.02.1311061237430.23353@ionos.tec.linutronix.de>
-	<CAMuHMdXDA2MRbR3GmD3KWC-iE6jnWX4uvbf1qeMd7RYX3O8f_g@mail.gmail.com>
-	<alpine.DEB.2.02.1311071655240.23353@ionos.tec.linutronix.de>
-	<ecf977d9ccbd241723a606423267bb2d@biophys.uni-duesseldorf.de>
-	<CAMuHMdVXk0NpinvqEszqL63fZEt3rOk6ZR9ogz0aHEzmEaW22A@mail.gmail.com>
-	<alpine.DEB.2.02.1311111421400.30673@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1311112031220.30673@ionos.tec.linutronix.de>
-Date: Tue, 12 Nov 2013 15:09:42 +0100
-X-Google-Sender-Auth: gLSD5CqT454ubS5MWHwphcGZOpQ
-Message-ID: <CAMuHMdX+dGkOK==kfJAzmnfjz35gTNCazB84nhL4SmxTWX9tjQ@mail.gmail.com>
-Subject: Re: [patch 1/6] hardirq: Make hardirq bits generic
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Michael Schmitz <schmitz@biophys.uni-duesseldorf.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 12 Nov 2013 09:10:17 -0500
+From: Pekka Enberg <penberg@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Pekka Enberg <penberg@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH] perf trace: Fix syscall summary duration order
+Date: Tue, 12 Nov 2013 16:10:10 +0200
+Message-Id: <1384265410-12344-1-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+Switch duration order to minimum, average, maximum for the '--summary'
+command line option because it's more natural to read.
 
-On Mon, Nov 11, 2013 at 8:34 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Finally found the issue. The patch below fixes the problem here. The
-> little missing detail is, that I zapped GET_CURRENT() assuming blindly
-> that this is only needed for the preempt_count hackery. But in fact
-> the world and some more depends on it which leads to interesting
-> explosions.
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ tools/perf/builtin-trace.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Yes, GET_CURRENT() sets up the current task in %a2.
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 329b783..f841d2a 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2085,7 +2085,7 @@ static size_t trace__fprintf_threads_header(FILE *fp)
+ 	printed  = fprintf(fp, "\n _____________________________________________________________________________\n");
+ 	printed += fprintf(fp, " __)    Summary of events    (__\n\n");
+ 	printed += fprintf(fp, "              [ task - pid ]     [ events ] [ ratio ]  [ runtime ]\n");
+-	printed += fprintf(fp, "                                  syscall  count    min     max    avg  stddev\n");
++	printed += fprintf(fp, "                                  syscall  count    min     avg    max  stddev\n");
+ 	printed += fprintf(fp, "                                                   msec    msec   msec     %%\n");
+ 	printed += fprintf(fp, " _____________________________________________________________________________\n\n");
+ 
+@@ -2121,8 +2121,8 @@ static size_t thread__dump_stats(struct thread_trace *ttrace,
+ 			sc = &trace->syscalls.table[inode->i];
+ 			printed += fprintf(fp, "%24s  %14s : ", "", sc->name);
+ 			printed += fprintf(fp, "%5" PRIu64 "  %8.3f  %8.3f",
+-					   n, min, max);
+-			printed += fprintf(fp, "  %8.3f  %6.2f\n", avg, pct);
++					   n, min, avg);
++			printed += fprintf(fp, "  %8.3f  %6.2f\n", max, pct);
+ 		}
+ 
+ 		inode = intlist__next(inode);
+-- 
+1.8.3.1
 
-Many thanks for tracking this down!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
