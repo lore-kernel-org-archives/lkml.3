@@ -1,120 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab3KLUF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 15:05:28 -0500
-Received: from ring0.de ([91.143.88.219]:47606 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755317Ab3KLUFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 15:05:21 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: lkml.org]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Tue, 12 Nov 2013 21:05:14 +0100
-From: Sebastian Reichel <sre@ring0.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH 4/5 v2] input: tc3589x-keypad: support probing from
- device tree
-Message-ID: <20131112200514.GA15413@earth.universe>
-Mail-Followup-To: Linus Walleij <linus.walleij@linaro.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	Samuel Ortiz <sameo@linux.intel.com>,
-	Lee Jones <lee.jones@linaro.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	Mark Rutland <mark.rutland@arm.com>
-References: <1384265618-10590-1-git-send-email-linus.walleij@linaro.org>
- <20131112153057.GA9683@earth.universe>
- <CACRpkdb_bryGJo7CKGP5tj3RFGv=Gh+Q5m9ucVKqJ068tjPC2g@mail.gmail.com>
+	id S1755996Ab3KLUJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 15:09:16 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:34457 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756Ab3KLUJG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 15:09:06 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdb_bryGJo7CKGP5tj3RFGv=Gh+Q5m9ucVKqJ068tjPC2g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131112200156.GA9820@redhat.com>
+References: <20131109151639.GB14249@redhat.com> <1384215717-2389-1-git-send-email-snanda@chromium.org>
+ <20131112200156.GA9820@redhat.com>
+From: Sameer Nanda <snanda@chromium.org>
+Date: Tue, 12 Nov 2013 12:08:44 -0800
+X-Google-Sender-Auth: dGa8csmMTtrWbT6PFMCZEc0e1sg
+Message-ID: <CANMivWZFXYGB_95WqToKEUyMsKMS2nQ4p5a_-Lte-=bhCC5u2g@mail.gmail.com>
+Subject: Re: [PATCH v4] mm, oom: Fix race when selecting process to kill
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, mhocko@suse.cz,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Luigi Semenzato <semenzato@google.com>, murzin.v@gmail.com,
+        dserrg@gmail.com, "msb@chromium.org" <msb@chromium.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 12, 2013 at 12:01 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 11/11, Sameer Nanda wrote:
+>>
+>> The selection of the process to be killed happens in two spots:
+>> first in select_bad_process and then a further refinement by
+>> looking for child processes in oom_kill_process. Since this is
+>> a two step process, it is possible that the process selected by
+>> select_bad_process may get a SIGKILL just before oom_kill_process
+>> executes. If this were to happen, __unhash_process deletes this
+>> process from the thread_group list. This results in oom_kill_process
+>> getting stuck in an infinite loop when traversing the thread_group
+>> list of the selected process.
+>>
+>> Fix this race by adding a pid_alive check for the selected process
+>> with tasklist_lock held in oom_kill_process.
+>
+> OK, looks correct to me. Thanks.
+>
+>
+> Yes, this is a step backwards, hopefully we will revert this patch soon.
+> I am starting to think something like while_each_thread_lame_but_safe()
+> makes sense before we really fix this nasty (and afaics not simple)
+> problem with with while_each_thread() (which should die).
 
---82I3+IH0IqGh5yIs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Looking forward to a real fix for the nasty problems with
+while_each_thread.  In the meanwhile, let me float one more
+(hopefully, the last) version of this patch that should address
+Michal's concern.  Thanks for your feedback!
 
-On Tue, Nov 12, 2013 at 06:06:49PM +0100, Linus Walleij wrote:
-> On Tue, Nov 12, 2013 at 4:30 PM, Sebastian Reichel <sre@ring0.de> wrote:
-> > On Tue, Nov 12, 2013 at 03:13:38PM +0100, Linus Walleij wrote:
->=20
-> >> +     plat->no_autorepeat =3D of_property_read_bool(np, "linux,no-auto=
-repeat");
-> >> +     plat->enable_wakeup =3D of_property_read_bool(np, "linux,wakeup"=
-);
-> >
-> > There is currently discussion going on for the property name of
-> > autorepeat:
-> >
-> > https://lkml.org/lkml/2013/11/11/680
->=20
-> So this binding is documented for GPIO keys in:
-> Documentation/devicetree/bindings/input/gpio-matrix-keypad.txt
->=20
-> This is probably the most used binding as GPIO matrixes are
-> not uncommon. But I don't know, yes it is a mess. (As usual.)
+>
+> Oleg.
+>
 
-I could find two boards using "gpio-matrix-keypad" in the mainline
-kernel and not a single instance of "linux,no-autorepeat":
 
-arch $ grep "gpio-matrix-keypad" **/*.dts **/*.dtsi
-arm/boot/dts/am335x-evm.dts:               compatible =3D "gpio-matrix-keyp=
-ad";
-powerpc/boot/dts/ac14xx.dts:               compatible =3D "gpio-matrix-keyp=
-ad";
 
-arch $ grep "autorepeat" **/*.dts **/*.dtsi
-arch/arm/boot/dts/am335x-evm.dts:          autorepeat;
-arch/arm/boot/dts/ea3250.dts:              autorepeat;
-arch/arm/boot/dts/exynos4210-smdkv310.dts: linux,keypad-no-autorepeat;
-arch/arm/boot/dts/exynos4412-origen.dts:   linux,keypad-no-autorepeat;
-arch/arm/boot/dts/exynos4412-smdk4412.dts: linux,keypad-no-autorepeat;
-arch/arm/boot/dts/omap4-sdp.dts:           linux,input-no-autorepeat;
-arch/arm/boot/dts/spear1310-evb.dts:       autorepeat;
-arch/arm/boot/dts/spear1340-evb.dts:       autorepeat;
-arch/arm/boot/dts/spear300-evb.dts:        autorepeat;
-arch/arm/boot/dts/ste-stuib.dtsi:          st,no-autorepeat;
-
--- Sebastian
-
---82I3+IH0IqGh5yIs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSgon6AAoJENju1/PIO/qay38P/RnuZZd7bzikUgj/fEQdfRc9
-Keb+fbiB8iWTTtTBVHl1fbA4ATxznNISNWfzAeUJkakSA/lH6iiaL6cOYsvWQHwY
-7HHLRT33yntSMq55eKSGZI4YDzNT86KinMzvuyq2y8/QsaPwSS3AmxPFVwiwQvaa
-bcoz3fEgul6Na2vkuEr98DfZ7/0glGAWsfFoz0viYSua1evBnDMgybo163UpYMAs
-VaoSQeaBY+zj5tDTctn9vy44lnqhzCuhMszyuaUzpq8SXIwEsij/yW8ghOXXtOrH
-h2cvMVwfJiNWPpV126q94v1BDWuNE4sr9+J1FlX/wyDAG9ZSBFZrdEOD0VtXbT4C
-1id+GYgpyUX281WrJyWz11kquPT/BhZtXEIaXZ3pyp9KkIzmmcMnoZdEm35X58I4
-D/Xi6R0TKVABeaTHktg/O19PX/X3DXFF7qxwCAvlxekOZ/VRVMH56mLHNrInkK5G
-kecPW+JZk5Zz8kzKPADrwIiFMrHki2C+bo4xi3KwKZHG1Dd5ivUGSW4yOMU0obZX
-7trmfPwaggs8PnR3ouHQ9o+KPedKainptwQlvjLoo0taitiW/C3jNnU/4bAb9Dv3
-dFua01FEogeHNkuj/2j+cWxkDKi2ht64TY6pLPLFWbdB3wk3XykVNfryxcUmo3iv
-wL6D9w1EDC1YHHfSxmUT
-=x9ZB
------END PGP SIGNATURE-----
-
---82I3+IH0IqGh5yIs--
+-- 
+Sameer
