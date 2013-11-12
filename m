@@ -1,48 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab3KLOFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:05:43 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:55484 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab3KLOFl (ORCPT
+	id S1755414Ab3KLOHh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:07:37 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:52918 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754839Ab3KLOHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:05:41 -0500
-Date: Tue, 12 Nov 2013 22:03:57 -0500
-From: Huang Shijie <shijie8@gmail.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Caizhiyong <caizhiyong@hisilicon.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Karel Zak <kzak@redhat.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: Re: [PATCH 2/2] mtd: cmdlinepart: support master name is not set
- when parser partition
-Message-ID: <20131113030351.GA8465@gmail.com>
-References: <C3050A4DBA34F345975765E43127F10F1C08B3EA@szxeml512-mbs.china.huawei.com>
- <20131111030657.GA9406@gmail.com>
- <20131110180900.GA2478@localhost>
+	Tue, 12 Nov 2013 09:07:34 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: srinivas.kandagatla@st.com
+Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Stuart Menefy <stuart.menefy@st.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, stephen.gallimore@st.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, linux-pm@vger.kernel.org
+Subject: Re: [PATCH RFC 07/10] PM / wakeup : Introduce device_child_may_wakeup
+Date: Tue, 12 Nov 2013 15:20:01 +0100
+Message-ID: <4093206.klj58BXQv3@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1384264377-7609-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1384264311-7308-1-git-send-email-srinivas.kandagatla@st.com> <1384264377-7609-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131110180900.GA2478@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 10, 2013 at 03:09:02PM -0300, Ezequiel Garcia wrote:
+On Tuesday, November 12, 2013 01:52:57 PM srinivas.kandagatla@st.com wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 > 
-> Can you summarize such cases? Or maybe better, just share them all :)
-I just test it with cases such as(my nand is just 1G):
-   (1) mtdparts=gpmi-nand:16m(boot),16m(kernel),600m(dtb),600m(ok),-(rootfs)
-   (2) mtdparts=gpmi-nand:16m(boot),16m(kernel),600m(ok),-(rootfs)
-   (3) mtdparts=gpmi-nand:16m(boot),16m(kernel),600m(dtb),600m(ok),600m(ok2),-(rootfs)
+> This patch introduces device_child_may_wakeup function, which will be
+> useful for wrapper or SoC level driver power management code.
+> Without this patch each driver has to write this same code to get the
+> functionality.
+> 
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> ---
+>  drivers/base/power/wakeup.c |   23 +++++++++++++++++++++++
+>  include/linux/pm_wakeup.h   |    1 +
+>  2 files changed, 24 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
+> index 2d56f41..270f000 100644
+> --- a/drivers/base/power/wakeup.c
+> +++ b/drivers/base/power/wakeup.c
+> @@ -342,6 +342,29 @@ int device_set_wakeup_enable(struct device *dev, bool enable)
+>  }
+>  EXPORT_SYMBOL_GPL(device_set_wakeup_enable);
+>  
+> +/* callback for device_child_may_wakeup */
+> +static int __device_child_may_wakeup(struct device *dev, void *c)
+> +{
+> +	return device_may_wakeup(dev);
+> +}
 
-thanks
-Huang Shijie
+This doesn't have anything to do with children in principle, so please call
+it differently.  Something like device_may_wakeup_cb() would work for me (and
+then you may not need the comment even).
+
+Thanks!
+
+> +
+> +/**
+> + * device_child_may_wakeup - Check if any of the child devices are wakeup
+> + * sources.
+> + * @dev: parent device to handle.
+> + *
+> + * Function to check if any of the children of a given parent are wakeup
+> + * sources.
+> + *
+> + * This function will return true if any one of the children of given parent
+> + * are wakeup sources, else it returns false.
+> + */
+> +bool device_child_may_wakeup(struct device *parent)
+> +{
+> +	return device_for_each_child(parent, NULL, __device_child_may_wakeup);
+> +}
+> +EXPORT_SYMBOL_GPL(device_child_may_wakeup);
+> +
+>  /*
+>   * The functions below use the observation that each wakeup event starts a
+>   * period in which the system should not be suspended.  The moment this period
+> diff --git a/include/linux/pm_wakeup.h b/include/linux/pm_wakeup.h
+> index a0f7080..b376584 100644
+> --- a/include/linux/pm_wakeup.h
+> +++ b/include/linux/pm_wakeup.h
+> @@ -93,6 +93,7 @@ extern int device_wakeup_disable(struct device *dev);
+>  extern void device_set_wakeup_capable(struct device *dev, bool capable);
+>  extern int device_init_wakeup(struct device *dev, bool val);
+>  extern int device_set_wakeup_enable(struct device *dev, bool enable);
+> +bool device_child_may_wakeup(struct device *parent);
+>  extern void __pm_stay_awake(struct wakeup_source *ws);
+>  extern void pm_stay_awake(struct device *dev);
+>  extern void __pm_relax(struct wakeup_source *ws);
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
