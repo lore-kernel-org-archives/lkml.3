@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784Ab3KLHSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 02:18:09 -0500
-Received: from david.siemens.de ([192.35.17.14]:27537 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755683Ab3KLHPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 02:15:18 -0500
+	id S1756264Ab3KLHSO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 02:18:14 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:21273 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab3KLHPR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 02:15:17 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: [PATCH v7 15/21] scripts/gdb: Add internal helper and convenience function to retrieve thread_info
-Date: Tue, 12 Nov 2013 08:14:33 +0100
-Message-Id: <107335313fc0708fb444b8e7b1e5bf7f6e4ba831.1384240478.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
+Subject: [PATCH v7 20/21] scripts/gdb: Add lx-lsmod command
+Date: Tue, 12 Nov 2013 08:14:38 +0100
+Message-Id: <03407b5ccfa851e8de11086544e7e6dfba3d4bd9.1384240478.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1384240478.git.jan.kiszka@siemens.com>
 References: <cover.1384240478.git.jan.kiszka@siemens.com>
@@ -27,63 +26,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the internal helper get_thread_info that calculates the thread_info
-from a given task variable. Also export this service as a convenience
-function.
+This adds a lsmod-like command to list all currently loaded modules of
+the target.
 
-Note: ia64 version is untested.
-
-CC: Tony Luck <tony.luck@intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>
-CC: linux-ia64@vger.kernel.org
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/tasks.py | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ scripts/gdb/linux/modules.py | 46 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 45 insertions(+), 1 deletion(-)
 
-diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
-index 13bb97c..63cd6c5 100644
---- a/scripts/gdb/linux/tasks.py
-+++ b/scripts/gdb/linux/tasks.py
-@@ -71,3 +71,38 @@ return that task_struct variable which PID matches."""
+diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
+index 531f763..e7c99e9 100644
+--- a/scripts/gdb/linux/modules.py
++++ b/scripts/gdb/linux/modules.py
+@@ -13,7 +13,7 @@
+ 
+ import gdb
+ 
+-from linux import utils
++from linux import cpus, utils
  
  
- LxTaskByPidFunc()
+ module_type = utils.CachedType("struct module")
+@@ -65,3 +65,47 @@ of the target and return that module variable which MODULE matches."""
+ 
+ 
+ LxModule()
 +
 +
-+thread_info_type = utils.CachedType("struct thread_info")
++class LxLsmod(gdb.Command):
++    """List currently loaded modules."""
 +
-+ia64_task_size = None
-+
-+
-+def get_thread_info(task):
-+    global thread_info_type
-+    thread_info_ptr_type = thread_info_type.get_type().pointer()
-+    if utils.is_target_arch("ia64"):
-+        global ia64_task_size
-+        if ia64_task_size is None:
-+            ia64_task_size = gdb.parse_and_eval("sizeof(struct task_struct)")
-+        thread_info_addr = task.address + ia64_task_size
-+        thread_info = thread_info_addr.cast(thread_info_ptr_type)
-+    else:
-+        thread_info = task['stack'].cast(thread_info_ptr_type)
-+    return thread_info.dereference()
-+
-+
-+class LxThreadInfoFunc (gdb.Function):
-+    """Calculate Linux thread_info from task variable.
-+
-+$lx_thread_info(TASK): Given TASK, return the corresponding thread_info
-+variable."""
++    _module_use_type = utils.CachedType("struct module_use")
 +
 +    def __init__(self):
-+        super(LxThreadInfoFunc, self).__init__("lx_thread_info")
++        super(LxLsmod, self).__init__("lx-lsmod", gdb.COMMAND_DATA)
 +
-+    def invoke(self, task):
-+        return get_thread_info(task)
++    def invoke(self, arg, from_tty):
++        gdb.write(
++            "Address{0}    Module                  Size  Used by\n".format(
++                "        " if utils.get_long_type().sizeof == 8 else ""))
++
++        for module in ModuleList():
++            ref = 0
++            module_refptr = module['refptr']
++            for cpu in cpus.CpuList("cpu_possible_mask"):
++                refptr = cpus.per_cpu(module_refptr, cpu)
++                ref += refptr['incs']
++                ref -= refptr['decs']
++
++            gdb.write("{address} {name:<19} {size:>8}  {ref}".format(
++                address=str(module['module_core']).split()[0],
++                name=module['name'].string(),
++                size=module['core_size'],
++                ref=ref))
++
++            source_list = module['source_list']
++            t = self._module_use_type.get_type().pointer()
++            entry = source_list['next']
++            first = True
++            while entry != source_list.address:
++                use = utils.container_of(entry, t, "source_list")
++                gdb.write("{separator}{name}".format(
++                    separator=" " if first else ",",
++                    name=use['source']['name'].string()))
++                first = False
++                entry = entry['next']
++            gdb.write("\n")
 +
 +
-+LxThreadInfoFunc()
++LxLsmod()
 -- 
 1.8.1.1.298.ge7eed54
 
