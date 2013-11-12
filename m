@@ -1,62 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab3KLOme (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:42:34 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:60269 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752027Ab3KLOm2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:42:28 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1755807Ab3KLOmv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:42:51 -0500
+Received: from [137.135.201.199] ([137.135.201.199]:2074 "EHLO mail.vps.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754419Ab3KLOmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 09:42:36 -0500
+X-Greylist: delayed 10035 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Nov 2013 09:42:34 EST
+Message-ID: <079a78dd28a38da82b11b0df95bd345d.squirrel@137.135.201.199>
+Date: Tue, 12 Nov 2013 10:52:19 -0000
+Subject: Re:Answer back
+From: "lee hyuk" <leehyuk08@mail2world.com>
+Reply-To: hyuklee1@aol.com
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] ipvs: Remove unused variable ret from sync_thread_master()
-Date: Tue, 12 Nov 2013 14:38:22 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7406@saturn3.aculab.com>
-In-Reply-To: <20131112143152.GS5056@laptop.programming.kicks-ass.net>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] ipvs: Remove unused variable ret from sync_thread_master()
-Thread-Index: Ac7fs5tLBpM5bRkpSnWp6qbTy4oONgAAJCiA
-References: <1384264396-14550-1-git-send-email-geert@linux-m68k.org> <20131112141314.GQ5056@laptop.programming.kicks-ass.net> <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com> <20131112143152.GS5056@laptop.programming.kicks-ass.net>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Peter Zijlstra" <peterz@infradead.org>
-Cc: "Geert Uytterhoeven" <geert@linux-m68k.org>,
-        "Oleg Nesterov" <oleg@redhat.com>, "Ingo Molnar" <mingo@kernel.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I've done this in the past so that the code sleeps interruptibly
-> > unless there is a signal pending - which would cause it to return
-> > early.
-> >
-> >     /* Tell scheduler we are going to sleep... */
-> >     if (signal_pending(current))
-> >         /* We don't want waking immediately (again) */
-> >         sleep_state = TASK_UNINTERRUPTIBLE;
-> >     else
-> >         sleep_state = TASK_INTERRUPTIBLE;
-> >     set_current_state(sleep_state);
-> 
-> If this is for kernel threads, I think you can wipe the pending state;
-> not entirely sure how signals interact with kthreads; Oleg will know.
-
-I did take me a while to manage to use kthreads, and we probably still
-have customers who insist on using pre 2.6.18 kernels!
-(In which case the processes are children of a daemon that only
-return to userspace in order to exit.)
-
-We also need to send signals (to get the process out of blocking
-socket calls), so I have to use force_sig() to get the signal noticed.
-
-The other issue was tidyup - I had to find module_put_and_exit().
-
-	David
 
 
+
+I would like to discuss a very important crude oil project withyou,kindly
+revert back to me if this is your valid email address forfurther
+information.
+Regards,
+Lee
 
