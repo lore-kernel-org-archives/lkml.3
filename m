@@ -1,52 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab3KLUXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 15:23:32 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40101 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484Ab3KLUXW (ORCPT
+	id S1756667Ab3KLUXu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 15:23:50 -0500
+Received: from mail-oa0-f74.google.com ([209.85.219.74]:38614 "EHLO
+	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756045Ab3KLUXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 15:23:22 -0500
-Message-ID: <52828E31.8010408@wwwdotorg.org>
-Date: Tue, 12 Nov 2013 13:23:13 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>
-CC: Olof Johansson <olof@lixom.net>, Dave Martin <Dave.Martin@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v10 4/7] ARM: tegra: add support for Trusted Foundations
-References: <1383819106-1400-1-git-send-email-acourbot@nvidia.com> <1383819106-1400-5-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1383819106-1400-5-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Nov 2013 15:23:43 -0500
+X-Greylist: delayed 72071 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Nov 2013 15:23:43 EST
+From: Sameer Nanda <snanda@chromium.org>
+To: akpm@linux-foundation.org, mhocko@suse.cz, rientjes@google.com,
+        hannes@cmpxchg.org, rusty@rustcorp.com.au, semenzato@google.com,
+        murzin.v@gmail.com, oleg@redhat.com, dserrg@gmail.com,
+        msb@chromium.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sameer Nanda <snanda@chromium.org>
+Subject: [PATCH v5] mm, oom: Fix race when selecting process to kill
+Date: Tue, 12 Nov 2013 12:23:32 -0800
+Message-Id: <1384287812-3694-1-git-send-email-snanda@chromium.org>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <CANMivWZFXYGB_95WqToKEUyMsKMS2nQ4p5a_-Lte-=bhCC5u2g@mail.gmail.com>
+References: <CANMivWZFXYGB_95WqToKEUyMsKMS2nQ4p5a_-Lte-=bhCC5u2g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2013 03:11 AM, Alexandre Courbot wrote:
-> Register the firmware operations for Trusted Foundations if the device
-> tree indicates it is active on the device.
+The selection of the process to be killed happens in two spots:
+first in select_bad_process and then a further refinement by
+looking for child processes in oom_kill_process. Since this is
+a two step process, it is possible that the process selected by
+select_bad_process may get a SIGKILL just before oom_kill_process
+executes. If this were to happen, __unhash_process deletes this
+process from the thread_group list. This results in oom_kill_process
+getting stuck in an infinite loop when traversing the thread_group
+list of the selected process.
 
-> diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+Fix this race by adding a pid_alive check for the selected process
+with tasklist_lock held in oom_kill_process.
 
->  void __init tegra_init_early(void)
->  {
-> +	of_register_trusted_foundations();
->  	tegra_cpu_reset_handler_init();
->  	tegra_apb_io_init();
->  	tegra_init_fuse();
+Change-Id: I62f9652a780863467a8174e18ea5e19bbcd78c31
+Signed-off-by: Sameer Nanda <snanda@chromium.org>
+---
+ mm/oom_kill.c | 42 +++++++++++++++++++++++++++++-------------
+ 1 file changed, 29 insertions(+), 13 deletions(-)
 
-Your other bugfix patch for 3.13 moved tegra_cpu_reset_handler_init().
-Should the call to of_register_trusted_foundations() move with it when
-this is applied, or should it just stay right at the start of
-tegra_init_early()? Either way is fine; just let me know which way to
-fix up the conflict when this gets applied.
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 6738c47..5108c2b 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -412,31 +412,40 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
+ 					      DEFAULT_RATELIMIT_BURST);
+ 
++	if (__ratelimit(&oom_rs))
++		dump_header(p, gfp_mask, order, memcg, nodemask);
++
++	task_lock(p);
++	pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
++		message, task_pid_nr(p), p->comm, points);
++	task_unlock(p);
++
++	/*
++	 * while_each_thread is currently not RCU safe. Lets hold the
++	 * tasklist_lock across all invocations of while_each_thread (including
++	 * the one in find_lock_task_mm) in this function.
++	 */
++	read_lock(&tasklist_lock);
++
+ 	/*
+ 	 * If the task is already exiting, don't alarm the sysadmin or kill
+ 	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+ 	 */
+-	if (p->flags & PF_EXITING) {
++	if (p->flags & PF_EXITING || !pid_alive(p)) {
++		pr_info("%s: Not killing process %d, just setting TIF_MEMDIE\n",
++			message, task_pid_nr(p));
+ 		set_tsk_thread_flag(p, TIF_MEMDIE);
+ 		put_task_struct(p);
++		read_unlock(&tasklist_lock);
+ 		return;
+ 	}
+ 
+-	if (__ratelimit(&oom_rs))
+-		dump_header(p, gfp_mask, order, memcg, nodemask);
+-
+-	task_lock(p);
+-	pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
+-		message, task_pid_nr(p), p->comm, points);
+-	task_unlock(p);
+-
+ 	/*
+ 	 * If any of p's children has a different mm and is eligible for kill,
+ 	 * the one with the highest oom_badness() score is sacrificed for its
+ 	 * parent.  This attempts to lose the minimal amount of work done while
+ 	 * still freeing memory.
+ 	 */
+-	read_lock(&tasklist_lock);
+ 	do {
+ 		list_for_each_entry(child, &t->children, sibling) {
+ 			unsigned int child_points;
+@@ -456,12 +465,17 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 			}
+ 		}
+ 	} while_each_thread(p, t);
+-	read_unlock(&tasklist_lock);
+ 
+-	rcu_read_lock();
+ 	p = find_lock_task_mm(victim);
++
++	/*
++	 * Since while_each_thread is currently not RCU safe, this unlock of
++	 * tasklist_lock may need to be moved further down if any additional
++	 * while_each_thread loops get added to this function.
++	 */
++	read_unlock(&tasklist_lock);
++
+ 	if (!p) {
+-		rcu_read_unlock();
+ 		put_task_struct(victim);
+ 		return;
+ 	} else if (victim != p) {
+@@ -478,6 +492,8 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 		K(get_mm_counter(victim->mm, MM_FILEPAGES)));
+ 	task_unlock(victim);
+ 
++	rcu_read_lock();
++
+ 	/*
+ 	 * Kill all user processes sharing victim->mm in other thread groups, if
+ 	 * any.  They don't get access to memory reserves, though, to avoid
+-- 
+1.8.4.1
+
