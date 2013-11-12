@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab3KLUWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 15:22:55 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:54747 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab3KLUWu (ORCPT
+	id S1756578Ab3KLUXc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 15:23:32 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40101 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484Ab3KLUXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 15:22:50 -0500
-Message-ID: <52828E17.2040801@gmail.com>
-Date: Tue, 12 Nov 2013 14:22:47 -0600
-From: Rob Herring <robherring2@gmail.com>
+	Tue, 12 Nov 2013 15:23:22 -0500
+Message-ID: <52828E31.8010408@wwwdotorg.org>
+Date: Tue, 12 Nov 2013 13:23:13 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: konrad@kernel.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [Xen-devel] [PATCH 2/2] swiotlb-xen: xen_swiotlb_map_page: do
- not error out if dma_capable fails
-References: <alpine.DEB.2.02.1311121404590.26077@kaball.uk.xensource.com> <1384265520-6833-2-git-send-email-stefano.stabellini@eu.citrix.com> <20131112144832.GC9435@phenom.dumpdata.com> <alpine.DEB.2.02.1311121704590.26077@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1311121704590.26077@kaball.uk.xensource.com>
-X-Enigmail-Version: 1.6
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tomasz Figa <t.figa@samsung.com>
+CC: Olof Johansson <olof@lixom.net>, Dave Martin <Dave.Martin@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v10 4/7] ARM: tegra: add support for Trusted Foundations
+References: <1383819106-1400-1-git-send-email-acourbot@nvidia.com> <1383819106-1400-5-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1383819106-1400-5-git-send-email-acourbot@nvidia.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2013 11:27 AM, Stefano Stabellini wrote:
-> Russell gave a great explanation of the issue so I am just going to
-> limit myself to answering to:
-> 
-> On Tue, 12 Nov 2013, Konrad Rzeszutek Wilk wrote:
->>> Considering that we know that the swiotlb buffer has a low address,
->>> skip the check.
->>
->> I am not following that sentence. Could you please explain to me
->> how the SWIOTLB buffer low address guarantees that we don't need
->> the check?
-> 
-> xen_swiotlb_fixup makes sure that the swiotlb buffer is lower than 4GB,
-> probably lower than 3GB, by passing dma_bits to
-> xen_create_contiguous_region.
-> This meets the requirements of most devices out there.
-> In fact we are not even running this check under the same conditions in
-> swiotlb_map_sg_attrs.
-> I admit that it is possible to come up with a scenario where the check
-> would be useful, but it is far easier to come up with scenarios where
-> not only is unneeded but it is even harmful.
-> 
-> Alternatively (without Rob's "of: set dma_mask to point to
-> coherent_dma_mask") Linux 3.13 is going to fail to get the network
-> running on Midway. It is going to avoid fs mounting failures just
-> because we don't do the same check in swiotlb_map_sg_attrs.
-> 
-> FYI given that Rob's patch is probably going upstream soon anyway, I
-> don't feel so strongly about this.
+On 11/07/2013 03:11 AM, Alexandre Courbot wrote:
+> Register the firmware operations for Trusted Foundations if the device
+> tree indicates it is active on the device.
 
-It is in Linus' tree now.
+> diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
 
-Rob
+>  void __init tegra_init_early(void)
+>  {
+> +	of_register_trusted_foundations();
+>  	tegra_cpu_reset_handler_init();
+>  	tegra_apb_io_init();
+>  	tegra_init_fuse();
 
+Your other bugfix patch for 3.13 moved tegra_cpu_reset_handler_init().
+Should the call to of_register_trusted_foundations() move with it when
+this is applied, or should it just stay right at the start of
+tegra_init_early()? Either way is fine; just let me know which way to
+fix up the conflict when this gets applied.
