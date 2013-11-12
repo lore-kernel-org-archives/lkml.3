@@ -1,84 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3KLFsa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 00:48:30 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:41677 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066Ab3KLFsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 00:48:21 -0500
-Message-ID: <5281C0E9.8020104@ti.com>
-Date: Tue, 12 Nov 2013 11:17:21 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1752210Ab3KLFsm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 00:48:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:21468 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751658Ab3KLFs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 00:48:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="407280190"
+Date: Tue, 12 Nov 2013 10:22:33 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tejun Heo <tj@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Williams <dan.j.williams@intel.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-ide@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] powerpc: add explicit OF includes for ppc4xx
+Message-ID: <20131112045233.GH8834@intel.com>
+References: <1384148143-14335-1-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
-To: Rajendra Nayak <rnayak@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <marc.zyngier@arm.com>,
-        <grant.likely@linaro.org>, <mark.rutland@arm.com>,
-        <robherring2@gmail.com>, <tglx@linutronix.de>,
-        <santosh.shilimkar@ti.com>, <galak@codeaurora.org>
-Subject: Re: [PATCH V3 7/7] ARM: DRA: Enable Crossbar IP support for DRA7XX
-References: <1383657257-3458-1-git-send-email-r.sricharan@ti.com> <1383657257-3458-8-git-send-email-r.sricharan@ti.com> <5281BF70.4050708@ti.com>
-In-Reply-To: <5281BF70.4050708@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384148143-14335-1-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rajendra,
+On Sun, Nov 10, 2013 at 11:35:43PM -0600, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> Commit b5b4bb3f6a11f9 (of: only include prom.h on sparc) removed implicit
+> includes of of_*.h headers by powerpc's prom.h. Some PPC4xx components
+> were missed in initial clean-up patch, so add the necessary includes
+> to fix ppc4xx builds.
+> 
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Matt Mackall <mpm@selenic.com>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: linux-ide@vger.kernel.org
+> Cc: linux-crypto@vger.kernel.org
+> ---
+> I intend to send this patch to Linus with the rest of the DT clean-up
+> series.
+> 
+> Rob
+> 
+>  arch/powerpc/sysdev/ppc4xx_ocm.c     | 1 +
+>  arch/powerpc/sysdev/xilinx_intc.c    | 1 +
+>  drivers/ata/sata_dwc_460ex.c         | 2 ++
+>  drivers/char/hw_random/ppc4xx-rng.c  | 1 +
+>  drivers/crypto/amcc/crypto4xx_core.c | 3 +++
+>  drivers/dma/ppc4xx/adma.c            | 2 ++
+For this:
 
-On Tuesday 12 November 2013 11:11 AM, Rajendra Nayak wrote:
-> On Tuesday 05 November 2013 06:44 PM, Sricharan R wrote:
->> Enable the crossbar IP support for DRA7xx soc.
->>
->> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> Cc: Rajendra Nayak <rnayak@ti.com>
->> Cc: Tony Lindgren <tony@atomide.com>
->> Signed-off-by: Sricharan R <r.sricharan@ti.com>
->> ---
->>  arch/arm/mach-omap2/Kconfig        |    1 +
->>  arch/arm/mach-omap2/omap4-common.c |    4 ++++
->>  2 files changed, 5 insertions(+)
->>
->> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
->> index b5fb5f7..2086c65 100644
->> --- a/arch/arm/mach-omap2/Kconfig
->> +++ b/arch/arm/mach-omap2/Kconfig
->> @@ -141,6 +141,7 @@ config SOC_DRA7XX
->>  	select ARM_GIC
->>  	select HAVE_SMP
->>  	select COMMON_CLK
->> +	select IRQ_CROSSBAR
->>  
->>  comment "OMAP Core Type"
->>  	depends on ARCH_OMAP2
->> diff --git a/arch/arm/mach-omap2/omap4-common.c b/arch/arm/mach-omap2/omap4-common.c
->> index 5791143..274cbfa 100644
->> --- a/arch/arm/mach-omap2/omap4-common.c
->> +++ b/arch/arm/mach-omap2/omap4-common.c
->> @@ -22,6 +22,7 @@
->>  #include <linux/of_platform.h>
->>  #include <linux/export.h>
->>  #include <linux/irqchip/arm-gic.h>
->> +#include <linux/irqchip/irq-crossbar.h>
->>  #include <linux/of_address.h>
->>  #include <linux/reboot.h>
->>  
->> @@ -282,9 +283,12 @@ void __init omap_gic_of_init(void)
->>  
->>  skip_errata_init:
->>  	omap_wakeupgen_init();
->> +	if (soc_is_dra7xx())
->> +		crossbar_init();
-> Its good if this is called irqcrossbar_init() to avoid confusion
-> with the dma crossbar which also exists in dra7 devices.
->
- Ya makes sense. Will change this.
+Acked-by Vinod Koul <vinod.koul@intel.com>
 
-Regards,
- Sricharan
+--
+~Vinod
+>  6 files changed, 10 insertions(+)
+> 
+> diff --git a/arch/powerpc/sysdev/ppc4xx_ocm.c b/arch/powerpc/sysdev/ppc4xx_ocm.c
+> index 1b15f93..b7c4345 100644
+> --- a/arch/powerpc/sysdev/ppc4xx_ocm.c
+> +++ b/arch/powerpc/sysdev/ppc4xx_ocm.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/of.h>
+> +#include <linux/of_address.h>
+>  #include <asm/rheap.h>
+>  #include <asm/ppc4xx_ocm.h>
+>  #include <linux/slab.h>
+> diff --git a/arch/powerpc/sysdev/xilinx_intc.c b/arch/powerpc/sysdev/xilinx_intc.c
+> index f4fdc94..83f943a 100644
+> --- a/arch/powerpc/sysdev/xilinx_intc.c
+> +++ b/arch/powerpc/sysdev/xilinx_intc.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/irq.h>
+>  #include <linux/of.h>
+>  #include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+>  #include <asm/io.h>
+>  #include <asm/processor.h>
+>  #include <asm/i8259.h>
+> diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
+> index 2e39173..523524b 100644
+> --- a/drivers/ata/sata_dwc_460ex.c
+> +++ b/drivers/ata/sata_dwc_460ex.c
+> @@ -31,6 +31,8 @@
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/device.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/libata.h>
+> diff --git a/drivers/char/hw_random/ppc4xx-rng.c b/drivers/char/hw_random/ppc4xx-rng.c
+> index 732c330..521f76b 100644
+> --- a/drivers/char/hw_random/ppc4xx-rng.c
+> +++ b/drivers/char/hw_random/ppc4xx-rng.c
+> @@ -13,6 +13,7 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/hw_random.h>
+>  #include <linux/delay.h>
+> +#include <linux/of_address.h>
+>  #include <linux/of_platform.h>
+>  #include <asm/io.h>
+>  
+> diff --git a/drivers/crypto/amcc/crypto4xx_core.c b/drivers/crypto/amcc/crypto4xx_core.c
+> index f88e3d8..efaf630 100644
+> --- a/drivers/crypto/amcc/crypto4xx_core.c
+> +++ b/drivers/crypto/amcc/crypto4xx_core.c
+> @@ -27,6 +27,9 @@
+>  #include <linux/dma-mapping.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/init.h>
+> +#include <linux/module.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/slab.h>
+>  #include <asm/dcr.h>
+> diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
+> index 370ff82..e24b5ef 100644
+> --- a/drivers/dma/ppc4xx/adma.c
+> +++ b/drivers/dma/ppc4xx/adma.c
+> @@ -42,6 +42,8 @@
+>  #include <linux/uaccess.h>
+>  #include <linux/proc_fs.h>
+>  #include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+>  #include <linux/of_platform.h>
+>  #include <asm/dcr.h>
+>  #include <asm/dcr-regs.h>
+> -- 
+> 1.8.1.2
+> 
 
+-- 
