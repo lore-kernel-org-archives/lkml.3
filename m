@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab3KLOrY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:47:24 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:48304 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484Ab3KLOrQ (ORCPT
+	id S1755895Ab3KLOr3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:47:29 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:44262 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755502Ab3KLOrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:47:16 -0500
+	Tue, 12 Nov 2013 09:47:24 -0500
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, jolsa@redhat.com, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH 3/5] perf tool: Refactor mmap_pages parsing
-Date: Tue, 12 Nov 2013 07:46:55 -0700
-Message-Id: <1384267617-3446-4-git-send-email-dsahern@gmail.com>
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 5/5] perf record: Handle out of space failures writing data with mmap
+Date: Tue, 12 Nov 2013 07:46:57 -0700
+Message-Id: <1384267617-3446-6-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 In-Reply-To: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
 References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
@@ -21,89 +24,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Logic will be re-used for the out-pages argument for mmap based
-writes in perf-record.
+If the filesystem where a file is written using mmap fills perf record
+gets a SIGBUS and terminated. Handle the SIGBUS by using longjmp to
+bounce out of the memcpy and fail the write.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/util/evlist.c | 39 ++++++++++++++++++++++++++++-----------
- 1 file changed, 28 insertions(+), 11 deletions(-)
+ tools/perf/builtin-record.c | 22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index fb4727d3df85..cb19044601bb 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -705,10 +705,9 @@ static size_t perf_evlist__mmap_size(unsigned long pages)
- 	return (pages + 1) * page_size;
- }
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 1a4fa5df215b..48d6535d144f 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -29,9 +29,11 @@
+ #include <unistd.h>
+ #include <sched.h>
+ #include <sys/mman.h>
++#include <setjmp.h>
  
--int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
--				  int unset __maybe_unused)
-+static long parse_pages_arg(const char *str, unsigned long min,
-+			    unsigned long max)
+ /* output file mmap'ed N chunks at a time */
+ #define MMAP_OUTPUT_SIZE   (64*1024*1024)
++sigjmp_buf mmap_jmp;
+ 
+ #ifndef HAVE_ON_EXIT_SUPPORT
+ #ifndef ATEXIT_MAX
+@@ -141,6 +143,7 @@ static int do_mmap_output(struct perf_record *rec, void *buf, size_t size)
  {
--	unsigned int *mmap_pages = opt->value;
- 	unsigned long pages, val;
- 	static struct parse_tag tags[] = {
- 		{ .tag  = 'B', .mult = 1       },
-@@ -719,7 +718,7 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
- 	};
+ 	u64 remaining;
+ 	off_t offset;
++	volatile size_t total_len = 0;
  
- 	if (str == NULL)
--		return -1;
-+		return -EINVAL;
+ 	if (rec->mmap.addr == NULL) {
+ next_segment:
+@@ -157,20 +160,23 @@ next_segment:
+ 	 * space write what we can then go back and create the
+ 	 * next segment
+ 	 */
+-	if (size > remaining) {
+-		memcpy(rec->mmap.addr + rec->mmap.offset, buf, remaining);
++	if (setjmp(mmap_jmp) != 0) {
++		pr_err("mmap copy failed.\n");
++		return -1;
++	}
++	if (size-total_len > remaining) {
++		memcpy(rec->mmap.addr + rec->mmap.offset, buf+total_len, remaining);
+ 		rec->bytes_written += remaining;
  
- 	val = parse_tag_value(str, tags);
- 	if (val != (unsigned long) -1) {
-@@ -729,20 +728,38 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
- 		/* we got pages count value */
- 		char *eptr;
- 		pages = strtoul(str, &eptr, 10);
--		if (*eptr != '\0') {
--			pr_err("failed to parse --mmap_pages/-m value\n");
--			return -1;
--		}
-+		if (*eptr != '\0')
-+			return -EINVAL;
+-		size -= remaining;
+-		buf  += remaining;
++		total_len += remaining;
+ 
+ 		munmap(rec->mmap.addr, rec->mmap.out_size);
+ 		goto next_segment;
  	}
  
--	if (pages < (1UL << 31) && !is_power_of_2(pages)) {
-+	if ((pages == 0) && (min == 0)) {
-+		/* leave number of pages at 0 */
-+	} else if (pages < (1UL << 31) && !is_power_of_2(pages)) {
-+		/* round pages up to next power of 2 */
- 		pages = next_pow2(pages);
- 		pr_info("rounding mmap pages size to %lu bytes (%lu pages)\n",
- 			pages * page_size, pages);
+ 	/* more data to copy and it fits in the current segment */
+-	if (size) {
+-		memcpy(rec->mmap.addr + rec->mmap.offset, buf, size);
++	if (size - total_len) {
++		memcpy(rec->mmap.addr + rec->mmap.offset, buf+total_len, size-total_len);
+ 		rec->bytes_written += size;
+ 		rec->mmap.offset += size;
  	}
+@@ -272,6 +278,9 @@ static void sig_handler(int sig)
+ 	if (sig == SIGCHLD)
+ 		child_finished = 1;
  
--	if (pages > UINT_MAX || pages > SIZE_MAX / page_size) {
--		pr_err("--mmap_pages/-m value too big\n");
-+	if (pages > max)
-+		return -EINVAL;
++	if (sig == SIGBUS)
++		longjmp(mmap_jmp, 1);
 +
-+	return pages;
-+}
-+
-+int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
-+				  int unset __maybe_unused)
-+{
-+	unsigned int *mmap_pages = opt->value;
-+	unsigned long max = UINT_MAX;
-+	long pages;
-+
-+	if (max < SIZE_MAX / page_size)
-+		max = SIZE_MAX / page_size;
-+
-+	pages = parse_pages_arg(str, 1, max);
-+	if (pages < 0) {
-+		pr_err("Invalid argument for --mmap_pages/-m\n");
- 		return -1;
- 	}
+ 	done = 1;
+ 	signr = sig;
+ }
+@@ -532,6 +541,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 	signal(SIGINT, sig_handler);
+ 	signal(SIGUSR1, sig_handler);
+ 	signal(SIGTERM, sig_handler);
++	signal(SIGBUS, sig_handler);
  
+ 	session = perf_session__new(file, false, NULL);
+ 	if (session == NULL) {
 -- 
 1.8.3.4 (Apple Git-47)
 
