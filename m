@@ -1,426 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab3KLRld (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:41:33 -0500
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:39245
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756035Ab3KLRjk (ORCPT
+	id S1756634Ab3KLRlz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:41:55 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51644 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756456Ab3KLRlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:39:40 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VPS4(z551bizc8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h1155h)
-X-WSS-ID: 0MW5VO4-07-DRM-02
-X-M-MSG: 
-Subject: [PATCH 05/10] crypto: CCP AES crypto API support
-To: <davem@davemloft.net>, <linux-crytpo@vger.kernel.org>,
-        <herbert@gondor.hengli.com.au>
-From: Tom Lendacky <thomas.lendacky@amd.com>
-CC: <linux-kernel@vger.kernel.org>
-Date: Tue, 12 Nov 2013 11:39:30 -0600
-Message-ID: <20131112173930.18862.83238.stgit@tlendack-t1.amdoffice.net>
-In-Reply-To: <20131112173900.18862.68623.stgit@tlendack-t1.amdoffice.net>
-References: <20131112173900.18862.68623.stgit@tlendack-t1.amdoffice.net>
-User-Agent: StGit/0.15
+	Tue, 12 Nov 2013 12:41:49 -0500
+Date: Tue, 12 Nov 2013 17:40:28 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Tony Luck <tony.luck@intel.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "l.majewski@samsung.com" <l.majewski@samsung.com>,
+        Jonathan Corbet <corbet@lwn.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [RFC][PATCH v5 00/14] sched: packing tasks
+Message-ID: <20131112174028.GC30177@arm.com>
+References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
+ <CAHkRjk69GNYtLGBSWCNcsCzkBHywKrD0qQQbNkJRpMbcdsCPyw@mail.gmail.com>
+ <20131111163630.GD26898@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131111163630.GD26898@twins.programming.kicks-ass.net>
+Thread-Topic: [RFC][PATCH v5 00/14] sched: packing tasks
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines provide crypto API support for AES on the AMD CCP.
+On Mon, Nov 11, 2013 at 04:36:30PM +0000, Peter Zijlstra wrote:
+> On Mon, Nov 11, 2013 at 11:33:45AM +0000, Catalin Marinas wrote:
+> 
+> tl;dr :-) Still trying to wrap my head around how to do that weird
+> topology Vincent raised..
 
-Support for AES modes: ECB, CBC, OFB, CFB and CTR
+Long email, I know, but topology discussion is a good start ;).
 
-Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
----
- drivers/crypto/ccp/ccp-crypto-aes.c |  375 +++++++++++++++++++++++++++++++++++
- 1 file changed, 375 insertions(+)
- create mode 100644 drivers/crypto/ccp/ccp-crypto-aes.c
+To summarise the rest, I don't see full task packing as useful but
+rather getting packing as a result of other decisions (like trying to
+estimate the cost of task placement and refining the algorithm from
+there). There are ARM SoCs where maximising idle time does not always
+mean maximising the energy saving even if the cores can be power-gated
+individually (unless you have small workload that doesn't increase the
+P-state on the packing CPU).
 
-diff --git a/drivers/crypto/ccp/ccp-crypto-aes.c b/drivers/crypto/ccp/ccp-crypto-aes.c
-new file mode 100644
-index 0000000..f302a5b7
---- /dev/null
-+++ b/drivers/crypto/ccp/ccp-crypto-aes.c
-@@ -0,0 +1,375 @@
-+/*
-+ * AMD Cryptographic Coprocessor (CCP) AES crypto API support
-+ *
-+ * Copyright (C) 2013 Advanced Micro Devices, Inc.
-+ *
-+ * Author: Tom Lendacky <thomas.lendacky@amd.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/delay.h>
-+#include <linux/scatterlist.h>
-+#include <linux/crypto.h>
-+#include <crypto/algapi.h>
-+#include <crypto/aes.h>
-+#include <crypto/ctr.h>
-+#include <crypto/scatterwalk.h>
-+
-+#include "ccp-crypto.h"
-+
-+
-+static int ccp_aes_complete(struct crypto_async_request *async_req, int ret)
-+{
-+	struct ablkcipher_request *req = ablkcipher_request_cast(async_req);
-+	struct ccp_ctx *ctx = crypto_tfm_ctx(req->base.tfm);
-+	struct ccp_aes_req_ctx *rctx = ablkcipher_request_ctx(req);
-+
-+	if (ret)
-+		return ret;
-+
-+	if (ctx->u.aes.mode != CCP_AES_MODE_ECB)
-+		memcpy(req->info, rctx->iv, AES_BLOCK_SIZE);
-+
-+	return 0;
-+}
-+
-+static int ccp_aes_setkey(struct crypto_ablkcipher *tfm, const u8 *key,
-+			  unsigned int key_len)
-+{
-+	struct ccp_ctx *ctx = crypto_tfm_ctx(crypto_ablkcipher_tfm(tfm));
-+	struct ccp_crypto_ablkcipher_alg *alg =
-+		ccp_crypto_ablkcipher_alg(crypto_ablkcipher_tfm(tfm));
-+
-+	switch (key_len) {
-+	case AES_KEYSIZE_128:
-+		ctx->u.aes.type = CCP_AES_TYPE_128;
-+		break;
-+	case AES_KEYSIZE_192:
-+		ctx->u.aes.type = CCP_AES_TYPE_192;
-+		break;
-+	case AES_KEYSIZE_256:
-+		ctx->u.aes.type = CCP_AES_TYPE_256;
-+		break;
-+	default:
-+		crypto_ablkcipher_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
-+		return -EINVAL;
-+	}
-+	ctx->u.aes.mode = alg->mode;
-+	ctx->u.aes.key_len = key_len;
-+
-+	memcpy(ctx->u.aes.key, key, key_len);
-+	sg_init_one(&ctx->u.aes.key_sg, ctx->u.aes.key, key_len);
-+
-+	return 0;
-+}
-+
-+static int ccp_aes_crypt(struct ablkcipher_request *req, bool encrypt)
-+{
-+	struct ccp_ctx *ctx = crypto_tfm_ctx(req->base.tfm);
-+	struct ccp_aes_req_ctx *rctx = ablkcipher_request_ctx(req);
-+	struct scatterlist *iv_sg = NULL;
-+	unsigned int iv_len = 0;
-+	int ret;
-+
-+	if (!ctx->u.aes.key_len) {
-+		pr_err("AES key not set\n");
-+		return -EINVAL;
-+	}
-+
-+	if (((ctx->u.aes.mode == CCP_AES_MODE_ECB) ||
-+	     (ctx->u.aes.mode == CCP_AES_MODE_CBC) ||
-+	     (ctx->u.aes.mode == CCP_AES_MODE_CFB)) &&
-+	    (req->nbytes & (AES_BLOCK_SIZE - 1))) {
-+		pr_err("AES request size is not a multiple of the block size\n");
-+		return -EINVAL;
-+	}
-+
-+	if (ctx->u.aes.mode != CCP_AES_MODE_ECB) {
-+		if (!req->info) {
-+			pr_err("AES IV not supplied");
-+			return -EINVAL;
-+		}
-+
-+		memcpy(rctx->iv, req->info, AES_BLOCK_SIZE);
-+		iv_sg = &rctx->iv_sg;
-+		iv_len = AES_BLOCK_SIZE;
-+		sg_init_one(iv_sg, rctx->iv, iv_len);
-+	}
-+
-+	memset(&rctx->cmd, 0, sizeof(rctx->cmd));
-+	INIT_LIST_HEAD(&rctx->cmd.entry);
-+	rctx->cmd.engine = CCP_ENGINE_AES;
-+	rctx->cmd.u.aes.type = ctx->u.aes.type;
-+	rctx->cmd.u.aes.mode = ctx->u.aes.mode;
-+	rctx->cmd.u.aes.action =
-+		(encrypt) ? CCP_AES_ACTION_ENCRYPT : CCP_AES_ACTION_DECRYPT;
-+	rctx->cmd.u.aes.key = &ctx->u.aes.key_sg;
-+	rctx->cmd.u.aes.key_len = ctx->u.aes.key_len;
-+	rctx->cmd.u.aes.iv = iv_sg;
-+	rctx->cmd.u.aes.iv_len = iv_len;
-+	rctx->cmd.u.aes.src = req->src;
-+	rctx->cmd.u.aes.src_len = req->nbytes;
-+	rctx->cmd.u.aes.dst = req->dst;
-+
-+	ret = ccp_crypto_enqueue_request(&req->base, &rctx->cmd);
-+
-+	return ret;
-+}
-+
-+static int ccp_aes_encrypt(struct ablkcipher_request *req)
-+{
-+	return ccp_aes_crypt(req, true);
-+}
-+
-+static int ccp_aes_decrypt(struct ablkcipher_request *req)
-+{
-+	return ccp_aes_crypt(req, false);
-+}
-+
-+static int ccp_aes_cra_init(struct crypto_tfm *tfm)
-+{
-+	struct ccp_ctx *ctx = crypto_tfm_ctx(tfm);
-+
-+	ctx->complete = ccp_aes_complete;
-+	ctx->u.aes.key_len = 0;
-+
-+	tfm->crt_ablkcipher.reqsize = sizeof(struct ccp_aes_req_ctx);
-+
-+	return 0;
-+}
-+
-+static void ccp_aes_cra_exit(struct crypto_tfm *tfm)
-+{
-+}
-+
-+static int ccp_aes_rfc3686_complete(struct crypto_async_request *async_req,
-+				    int ret)
-+{
-+	struct ablkcipher_request *req = ablkcipher_request_cast(async_req);
-+	struct ccp_aes_req_ctx *rctx = ablkcipher_request_ctx(req);
-+
-+	/* Restore the original pointer */
-+	req->info = rctx->rfc3686_info;
-+
-+	return ccp_aes_complete(async_req, ret);
-+}
-+
-+static int ccp_aes_rfc3686_setkey(struct crypto_ablkcipher *tfm, const u8 *key,
-+				  unsigned int key_len)
-+{
-+	struct ccp_ctx *ctx = crypto_tfm_ctx(crypto_ablkcipher_tfm(tfm));
-+
-+	if (key_len < CTR_RFC3686_NONCE_SIZE)
-+		return -EINVAL;
-+
-+	key_len -= CTR_RFC3686_NONCE_SIZE;
-+	memcpy(ctx->u.aes.nonce, key + key_len, CTR_RFC3686_NONCE_SIZE);
-+
-+	return ccp_aes_setkey(tfm, key, key_len);
-+}
-+
-+static int ccp_aes_rfc3686_crypt(struct ablkcipher_request *req, bool encrypt)
-+{
-+	struct ccp_ctx *ctx = crypto_tfm_ctx(req->base.tfm);
-+	struct ccp_aes_req_ctx *rctx = ablkcipher_request_ctx(req);
-+	u8 *iv;
-+
-+	/* Initialize the CTR block */
-+	iv = rctx->rfc3686_iv;
-+	memcpy(iv, ctx->u.aes.nonce, CTR_RFC3686_NONCE_SIZE);
-+
-+	iv += CTR_RFC3686_NONCE_SIZE;
-+	memcpy(iv, req->info, CTR_RFC3686_IV_SIZE);
-+
-+	iv += CTR_RFC3686_IV_SIZE;
-+	*(__be32 *)iv = cpu_to_be32(1);
-+
-+	/* Point to the new IV */
-+	rctx->rfc3686_info = req->info;
-+	req->info = rctx->rfc3686_iv;
-+
-+	return ccp_aes_crypt(req, encrypt);
-+}
-+
-+static int ccp_aes_rfc3686_encrypt(struct ablkcipher_request *req)
-+{
-+	return ccp_aes_rfc3686_crypt(req, true);
-+}
-+
-+static int ccp_aes_rfc3686_decrypt(struct ablkcipher_request *req)
-+{
-+	return ccp_aes_rfc3686_crypt(req, false);
-+}
-+
-+static int ccp_aes_rfc3686_cra_init(struct crypto_tfm *tfm)
-+{
-+	struct ccp_ctx *ctx = crypto_tfm_ctx(tfm);
-+
-+	ctx->complete = ccp_aes_rfc3686_complete;
-+	ctx->u.aes.key_len = 0;
-+
-+	tfm->crt_ablkcipher.reqsize = sizeof(struct ccp_aes_req_ctx);
-+
-+	return 0;
-+}
-+
-+static void ccp_aes_rfc3686_cra_exit(struct crypto_tfm *tfm)
-+{
-+}
-+
-+static struct crypto_alg ccp_aes_defaults = {
-+	.cra_flags	= CRYPTO_ALG_TYPE_ABLKCIPHER |
-+			  CRYPTO_ALG_ASYNC |
-+			  CRYPTO_ALG_KERN_DRIVER_ONLY |
-+			  CRYPTO_ALG_NEED_FALLBACK,
-+	.cra_blocksize	= AES_BLOCK_SIZE,
-+	.cra_ctxsize	= sizeof(struct ccp_ctx),
-+	.cra_priority	= CCP_CRA_PRIORITY,
-+	.cra_type	= &crypto_ablkcipher_type,
-+	.cra_init	= ccp_aes_cra_init,
-+	.cra_exit	= ccp_aes_cra_exit,
-+	.cra_module	= THIS_MODULE,
-+	.cra_ablkcipher	= {
-+		.setkey		= ccp_aes_setkey,
-+		.encrypt	= ccp_aes_encrypt,
-+		.decrypt	= ccp_aes_decrypt,
-+		.min_keysize	= AES_MIN_KEY_SIZE,
-+		.max_keysize	= AES_MAX_KEY_SIZE,
-+	},
-+};
-+
-+static struct crypto_alg ccp_aes_rfc3686_defaults = {
-+	.cra_flags	= CRYPTO_ALG_TYPE_ABLKCIPHER |
-+			   CRYPTO_ALG_ASYNC |
-+			   CRYPTO_ALG_KERN_DRIVER_ONLY |
-+			   CRYPTO_ALG_NEED_FALLBACK,
-+	.cra_blocksize	= CTR_RFC3686_BLOCK_SIZE,
-+	.cra_ctxsize	= sizeof(struct ccp_ctx),
-+	.cra_priority	= CCP_CRA_PRIORITY,
-+	.cra_type	= &crypto_ablkcipher_type,
-+	.cra_init	= ccp_aes_rfc3686_cra_init,
-+	.cra_exit	= ccp_aes_rfc3686_cra_exit,
-+	.cra_module	= THIS_MODULE,
-+	.cra_ablkcipher	= {
-+		.setkey		= ccp_aes_rfc3686_setkey,
-+		.encrypt	= ccp_aes_rfc3686_encrypt,
-+		.decrypt	= ccp_aes_rfc3686_decrypt,
-+		.min_keysize	= AES_MIN_KEY_SIZE + CTR_RFC3686_NONCE_SIZE,
-+		.max_keysize	= AES_MAX_KEY_SIZE + CTR_RFC3686_NONCE_SIZE,
-+	},
-+};
-+
-+struct ccp_aes_def {
-+	enum ccp_aes_mode mode;
-+	const char *name;
-+	const char *driver_name;
-+	unsigned int blocksize;
-+	unsigned int ivsize;
-+	struct crypto_alg *alg_defaults;
-+};
-+
-+static struct ccp_aes_def aes_algs[] = {
-+	{
-+		.mode		= CCP_AES_MODE_ECB,
-+		.name		= "ecb(aes)",
-+		.driver_name	= "ecb-aes-ccp",
-+		.blocksize	= AES_BLOCK_SIZE,
-+		.ivsize		= 0,
-+		.alg_defaults	= &ccp_aes_defaults,
-+	},
-+	{
-+		.mode		= CCP_AES_MODE_CBC,
-+		.name		= "cbc(aes)",
-+		.driver_name	= "cbc-aes-ccp",
-+		.blocksize	= AES_BLOCK_SIZE,
-+		.ivsize		= AES_BLOCK_SIZE,
-+		.alg_defaults	= &ccp_aes_defaults,
-+	},
-+	{
-+		.mode		= CCP_AES_MODE_CFB,
-+		.name		= "cfb(aes)",
-+		.driver_name	= "cfb-aes-ccp",
-+		.blocksize	= AES_BLOCK_SIZE,
-+		.ivsize		= AES_BLOCK_SIZE,
-+		.alg_defaults	= &ccp_aes_defaults,
-+	},
-+	{
-+		.mode		= CCP_AES_MODE_OFB,
-+		.name		= "ofb(aes)",
-+		.driver_name	= "ofb-aes-ccp",
-+		.blocksize	= 1,
-+		.ivsize		= AES_BLOCK_SIZE,
-+		.alg_defaults	= &ccp_aes_defaults,
-+	},
-+	{
-+		.mode		= CCP_AES_MODE_CTR,
-+		.name		= "ctr(aes)",
-+		.driver_name	= "ctr-aes-ccp",
-+		.blocksize	= 1,
-+		.ivsize		= AES_BLOCK_SIZE,
-+		.alg_defaults	= &ccp_aes_defaults,
-+	},
-+	{
-+		.mode		= CCP_AES_MODE_CTR,
-+		.name		= "rfc3686(ctr(aes))",
-+		.driver_name	= "rfc3686-ctr-aes-ccp",
-+		.blocksize	= 1,
-+		.ivsize		= CTR_RFC3686_IV_SIZE,
-+		.alg_defaults	= &ccp_aes_rfc3686_defaults,
-+	},
-+};
-+
-+static int ccp_register_aes_alg(struct list_head *head,
-+				const struct ccp_aes_def *def)
-+{
-+	struct ccp_crypto_ablkcipher_alg *ccp_alg;
-+	struct crypto_alg *alg;
-+	int ret;
-+
-+	ccp_alg = kzalloc(sizeof(*ccp_alg), GFP_KERNEL);
-+	if (!ccp_alg)
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&ccp_alg->entry);
-+
-+	ccp_alg->mode = def->mode;
-+
-+	/* Copy the defaults and override as necessary */
-+	alg = &ccp_alg->alg;
-+	memcpy(alg, def->alg_defaults, sizeof(*alg));
-+	snprintf(alg->cra_name, CRYPTO_MAX_ALG_NAME, "%s", def->name);
-+	snprintf(alg->cra_driver_name, CRYPTO_MAX_ALG_NAME, "%s",
-+		 def->driver_name);
-+	alg->cra_blocksize = def->blocksize;
-+	alg->cra_ablkcipher.ivsize = def->ivsize;
-+
-+	ret = crypto_register_alg(alg);
-+	if (ret) {
-+		pr_err("%s ablkcipher algorithm registration error (%d)\n",
-+			alg->cra_name, ret);
-+		kfree(ccp_alg);
-+		return ret;
-+	}
-+
-+	list_add(&ccp_alg->entry, head);
-+
-+	return 0;
-+}
-+
-+int ccp_register_aes_algs(struct list_head *head)
-+{
-+	int i, ret;
-+
-+	for (i = 0; i < ARRAY_SIZE(aes_algs); i++) {
-+		ret = ccp_register_aes_alg(head, &aes_algs[i]);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
+> > Question for Peter/Ingo: do you want the scheduler to decide on which
+> > C-state a CPU should be in or we still leave this to a cpuidle
+> > layer/driver?
+> 
+> I think the can leave most of that in a driver; right along with how to
+> prod the hardware to actually get into that state.
+> 
+> I think the most important parts are what is now 'generic' code; stuff
+> that guestimates the idle-time and so forth.
+> 
+> I think the scheduler simply wants to say: we expect to go idle for X
+> ns, we want a guaranteed wakeup latency of Y ns -- go do your thing.
 
+Sounds good (and I think the Linaro guys started looking into this).
 
+> I think you also raised the point in that we do want some feedback as to
+> the cost of waking up particular cores to better make decisions on which
+> to wake. That is indeed so.
+
+It depends on how we end up implementing the energy awareness in the
+scheduler but too simple topology (just which CPUs can be power-gated)
+is not that useful.
+
+In a very simplistic and ideal world (note the 'ideal' part), we could
+estimate the energy cost of a CPU for a period T:
+
+E = sum(P(Cx) * Tx) + sum(wake-up-energy) + sum(P(Ty) * Ty)
+
+  P(Cx): power in C-state x
+  wake-up-energy: the cost of waking up from various C-states
+  P(Ty): power of running task y (which also depends on the P-state)
+  sum(Tx) + sum(Ty) = T
+
+Assuming that we have such information and can predict (based on past
+usage) what the task loads will be, together with other
+performance/latency constraints, an 'ideal' scheduler would always
+choose the correct C/P states and task placements for optimal energy.
+However, the reality is different and even so it would be an NP problem.
+
+But we can try to come up with some "guestimates" based on parameters
+provided by the SoC (via DT or ACPI tables or just some low-level
+driver/arch code). The scheduler does its best according on these
+parameters at certain times (task wake-up, idle balance) while the SoC
+can still tune the behaviour.
+
+If we roughly estimate the energy cost of a run-queue and the energy
+cost of individual tasks on that run-queue (based on their load and
+P-state), we could estimate the cost of moving or waking the
+task on another CPU (where the task's cost may change depending on
+asymmetric configurations or different P-state). We don't even need to
+be precise in the energy costs but just some relative numbers so that
+the scheduler can favour one CPU or another. If we ignore P-state costs
+and only consider C-states and symmetric configurations, we probably get
+a behaviour similar to Vincent's task packing patches.
+
+The information we have currently for C-states is target residency and
+exit latency. From these I think we can only infer the wake-up energy
+cost not how much we save but placing a CPU into that state. So if we
+want the scheduler to decide whether to pack or spread (from an energy
+cost perspective), we need additional information in the topology.
+
+Alternatively we could have a power driver which dynamically returns
+some estimates every time the scheduler asks for them, with a power
+driver for each SoC (which is already the case for ARM SoCs).
+
+-- 
+Catalin
