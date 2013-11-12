@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab3KLXCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 18:02:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52861 "EHLO mx2.suse.de"
+	id S1757498Ab3KLXDB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 18:03:01 -0500
+Received: from imap.thunk.org ([74.207.234.97]:57182 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757243Ab3KLXCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 18:02:06 -0500
-Date: Wed, 13 Nov 2013 00:01:38 +0100
-From: Borislav Petkov <bp@suse.de>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, tglx@linutronix.de, trenn@suse.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/microcode/amd: Tone down printk(), don' t
- treat a missing firmware file as an error
-Message-ID: <20131112230138.GL12854@pd.tnic>
-References: <1384274383-43510-1-git-send-email-trenn@suse.de>
- <tip-11f918d3e2d3861b6931e97b3aa778e4984935aa@git.kernel.org>
- <20131112224511.GJ12854@pd.tnic>
+	id S1755191Ab3KLXCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 18:02:54 -0500
+Date: Tue, 12 Nov 2013 18:02:42 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: Re: linux-next: manual merge of the random tree with the net-next
+ tree
+Message-ID: <20131112230242.GA1643@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Daniel Borkmann <dborkman@redhat.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Hannes Frederic Sowa <hannes@stressinduktion.org>,
+	David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+References: <20131112155549.c160273993147244ed6bc81d@canb.auug.org.au>
+ <5281ED01.5020204@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131112224511.GJ12854@pd.tnic>
+In-Reply-To: <5281ED01.5020204@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(fixed stable@vger).
-
-On Tue, Nov 12, 2013 at 11:45:11PM +0100, Borislav Petkov wrote:
-> On Tue, Nov 12, 2013 at 01:58:00PM -0800, tip-bot for Thomas Renninger wrote:
-> > Commit-ID:  11f918d3e2d3861b6931e97b3aa778e4984935aa
-> > Gitweb:     http://git.kernel.org/tip/11f918d3e2d3861b6931e97b3aa778e4984935aa
-> > Author:     Thomas Renninger <trenn@suse.de>
-> > AuthorDate: Tue, 12 Nov 2013 17:39:43 +0100
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Tue, 12 Nov 2013 22:03:49 +0100
-> > 
-> > x86/microcode/amd: Tone down printk(), don't treat a missing firmware file as an error
-> > 
-> > Do it the same way as done in microcode_intel.c: use pr_debug()
-> > for missing firmware files.
-> > 
-> > There seem to be CPUs out there for which no microcode update
-> > has been submitted to kernel-firmware repo yet resulting in
-> > scary sounding error messages in dmesg:
-> > 
-> >   microcode: failed to load file amd-ucode/microcode_amd_fam16h.bin
-> > 
-> > Signed-off-by: Thomas Renninger <trenn@suse.de>
-> > Acked-by: Borislav Petkov <bp@suse.de>
-> > Cc: <stable@kernel.org>
+On Tue, Nov 12, 2013 at 09:55:29AM +0100, Daniel Borkmann wrote:
 > 
-> Shouldn't that be <stable@vger.kernel.org> ?
+> As per Hannes' suggestion, the result should look like (see cover
+> letter in [1]):
+> 
+> if (r->entropy_total > 128) {
+> 	r->initialized = 1;
+> 	r->entropy_total = 0;
+> 	if (r == &nonblocking_pool) {
+> 		prandom_reseed_late();
+> 		pr_notice("random: %s pool is initialized\n",
+> 			  r->name);
+> 	}
+> }
 
-Yes, it should:
+Agreed.  What's the schedule for pushing net-dev to Linus?  I'm
+currently at Korea Linux Forum, and I was originally planning on
+pushing random.git to Linus sometime today, but I'm also willing to
+wait for net-dev to go first.  Either way, we should make sure Linus
+is aware of the agreed-upon resolution of the merge conflict.
 
-Final-Recipient: rfc822; stable@kernel.org
-Action: failed
-Status: 5.0.0
-Diagnostic-Code: X-Postfix; host mail.kernel.org[198.145.19.201] said: 550
-    5.1.1 <stable@kernel.org>: Recipient address rejected: User unknown in
-    local recipient table (in reply to RCPT TO command)
+Cheers,
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+						- Ted
