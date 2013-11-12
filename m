@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab3KLTnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:43:12 -0500
-Received: from jacques.telenet-ops.be ([195.130.132.50]:60490 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755828Ab3KLTml (ORCPT
+	id S1756761Ab3KLTnq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:43:46 -0500
+Received: from juliette.telenet-ops.be ([195.130.137.74]:34696 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755939Ab3KLTml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Nov 2013 14:42:41 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
-        Chris Zankel <chris@zankel.net>, Rob Herring <rob.herring@calxeda.com>,
-        devicetree@vger.kernel.org
-Subject: [PATCH 14/17] dt: Consolidate __dtb_start declarations in <linux/of_fdt.h>
-Date: Tue, 12 Nov 2013 20:42:24 +0100
-Message-Id: <1384285347-13506-15-git-send-email-geert@linux-m68k.org>
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [PATCH 10/17] tile: Remove tile-specific _sinitdata and _einitdata
+Date: Tue, 12 Nov 2013 20:42:20 +0100
+Message-Id: <1384285347-13506-11-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
 References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
@@ -26,199 +22,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The different architectures used their own (and different) declarations:
-
-    extern struct boot_param_header __dtb_start;
-    extern u32 __dtb_start[];
-    extern char __dtb_start[];
-
-Consolidate them using the first variant in <linux/of_fdt.h>.
-This requires adding a few "address of" operators on architectures where
-__dtb_start was an array before.
+Use standard __init_begin and __init_end instead.
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Vineet Gupta <vgupta@synopsys.com>
-Cc: James Hogan <james.hogan@imgtec.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Jonas Bonn <jonas@southpole.se>
-CC: Chris Zankel <chris@zankel.net>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: devicetree@vger.kernel.org
+Cc: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/arc/include/asm/sections.h             |    1 -
- arch/arc/kernel/setup.c                     |    2 +-
- arch/metag/kernel/setup.c                   |    6 +-----
- arch/mips/include/asm/mips-boards/generic.h |    4 ----
- arch/mips/lantiq/prom.h                     |    2 --
- arch/mips/netlogic/xlp/dt.c                 |    4 ++--
- arch/mips/ralink/of.c                       |    2 --
- arch/openrisc/kernel/setup.c                |    2 +-
- arch/openrisc/kernel/vmlinux.h              |    2 --
- arch/xtensa/kernel/setup.c                  |    3 +--
- include/linux/of_fdt.h                      |    3 +++
- 11 files changed, 9 insertions(+), 22 deletions(-)
+ arch/tile/include/asm/sections.h |    3 ---
+ arch/tile/kernel/vmlinux.lds.S   |    2 --
+ arch/tile/mm/init.c              |   18 +++++++++---------
+ 3 files changed, 9 insertions(+), 14 deletions(-)
 
-diff --git a/arch/arc/include/asm/sections.h b/arch/arc/include/asm/sections.h
-index 764f1e3ba752..09db952e14bd 100644
---- a/arch/arc/include/asm/sections.h
-+++ b/arch/arc/include/asm/sections.h
-@@ -12,6 +12,5 @@
+diff --git a/arch/tile/include/asm/sections.h b/arch/tile/include/asm/sections.h
+index 5d5d3b739a6b..86a746243dc8 100644
+--- a/arch/tile/include/asm/sections.h
++++ b/arch/tile/include/asm/sections.h
+@@ -19,9 +19,6 @@
+ 
  #include <asm-generic/sections.h>
  
- extern char __arc_dccm_base[];
--extern char __dtb_start[];
- 
- #endif
-diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
-index 643eae4436e0..ef705d0f50f5 100644
---- a/arch/arc/kernel/setup.c
-+++ b/arch/arc/kernel/setup.c
-@@ -314,7 +314,7 @@ void setup_processor(void)
- void __init setup_arch(char **cmdline_p)
- {
- 	/* This also populates @boot_command_line from /bootargs */
--	machine_desc = setup_machine_fdt(__dtb_start);
-+	machine_desc = setup_machine_fdt(&__dtb_start);
- 	if (!machine_desc)
- 		panic("Embedded DT invalid\n");
- 
-diff --git a/arch/metag/kernel/setup.c b/arch/metag/kernel/setup.c
-index 129c7cdda1ce..919c782f5479 100644
---- a/arch/metag/kernel/setup.c
-+++ b/arch/metag/kernel/setup.c
-@@ -105,10 +105,6 @@
- 
- extern char _heap_start[];
- 
--#ifdef CONFIG_METAG_BUILTIN_DTB
--extern u32 __dtb_start[];
--#endif
+-/* Text and data are at different areas in the kernel VA space. */
+-extern char _sinitdata[], _einitdata[];
 -
- #ifdef CONFIG_DA_CONSOLE
- /* Our early channel based console driver */
- extern struct console dash_console;
-@@ -251,7 +247,7 @@ void __init setup_arch(char **cmdline_p)
- 	if (!machine_desc) {
- #ifdef CONFIG_METAG_BUILTIN_DTB
- 		/* try the embedded device tree */
--		machine_desc = setup_machine_fdt(__dtb_start);
-+		machine_desc = setup_machine_fdt(&__dtb_start);
- 		if (!machine_desc)
- 			panic("Invalid embedded device tree.");
- #else
-diff --git a/arch/mips/include/asm/mips-boards/generic.h b/arch/mips/include/asm/mips-boards/generic.h
-index 48616816bcbc..c904c24550f6 100644
---- a/arch/mips/include/asm/mips-boards/generic.h
-+++ b/arch/mips/include/asm/mips-boards/generic.h
-@@ -67,10 +67,6 @@
+ /* Write-once data is writable only till the end of initialization. */
+ extern char __w1data_begin[], __w1data_end[];
  
- extern int mips_revision_sconid;
+diff --git a/arch/tile/kernel/vmlinux.lds.S b/arch/tile/kernel/vmlinux.lds.S
+index f1819423ffc9..0e059a0101ea 100644
+--- a/arch/tile/kernel/vmlinux.lds.S
++++ b/arch/tile/kernel/vmlinux.lds.S
+@@ -66,11 +66,9 @@ SECTIONS
  
--#ifdef CONFIG_OF
--extern struct boot_param_header __dtb_start;
--#endif
--
- #ifdef CONFIG_PCI
- extern void mips_pcibios_init(void);
- #else
-diff --git a/arch/mips/lantiq/prom.h b/arch/mips/lantiq/prom.h
-index 8e07b5f28ef1..bfd2d58c1d69 100644
---- a/arch/mips/lantiq/prom.h
-+++ b/arch/mips/lantiq/prom.h
-@@ -26,6 +26,4 @@ struct ltq_soc_info {
- extern void ltq_soc_detect(struct ltq_soc_info *i);
- extern void ltq_soc_init(void);
+   . = ALIGN(PAGE_SIZE);
+   __init_begin = .;
+-  VMLINUX_SYMBOL(_sinitdata) = .;
+   INIT_DATA_SECTION(16) :data =0
+   PERCPU_SECTION(L2_CACHE_BYTES)
+   . = ALIGN(PAGE_SIZE);
+-  VMLINUX_SYMBOL(_einitdata) = .;
+   __init_end = .;
  
--extern struct boot_param_header __dtb_start;
--
- #endif
-diff --git a/arch/mips/netlogic/xlp/dt.c b/arch/mips/netlogic/xlp/dt.c
-index 8316d5454b17..87250f378386 100644
---- a/arch/mips/netlogic/xlp/dt.c
-+++ b/arch/mips/netlogic/xlp/dt.c
-@@ -42,7 +42,7 @@
- #include <asm/prom.h>
+   _sdata = .;                   /* Start of data section */
+diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
+index 0fa1acfac79a..c4e0b6ddb48c 100644
+--- a/arch/tile/mm/init.c
++++ b/arch/tile/mm/init.c
+@@ -254,7 +254,7 @@ static pgprot_t __init init_pgprot(ulong address)
+ 	 * Everything else that isn't data or bss is heap, so mark it
+ 	 * with the initial heap home (hash-for-home, or this cpu).  This
+ 	 * includes any addresses after the loaded image and any address before
+-	 * _einitdata, since we already captured the case of text before
++	 * __init_end, since we already captured the case of text before
+ 	 * _sinittext, and __pa(einittext) is approximately __pa(sinitdata).
+ 	 *
+ 	 * All the LOWMEM pages that we mark this way will get their
+@@ -263,7 +263,7 @@ static pgprot_t __init init_pgprot(ulong address)
+ 	 * homes, but with a zero free_time we don't have to actually
+ 	 * do a flush action the first time we use them, either.
+ 	 */
+-	if (address >= (ulong) _end || address < (ulong) _einitdata)
++	if (address >= (ulong) _end || address < (ulong) __init_end)
+ 		return construct_pgprot(PAGE_KERNEL, initial_heap_home());
  
- extern u32 __dtb_xlp_evp_begin[], __dtb_xlp_svp_begin[],
--	__dtb_xlp_fvp_begin[], __dtb_start[];
-+	__dtb_xlp_fvp_begin[];
- static void *xlp_fdt_blob;
+ 	/* Use hash-for-home if requested for data/bss. */
+@@ -534,7 +534,7 @@ static void __init kernel_physical_mapping_init(pgd_t *pgd_base)
  
- void __init *xlp_dt_init(void *fdtp)
-@@ -66,7 +66,7 @@ void __init *xlp_dt_init(void *fdtp)
- #endif
- 		default:
- 			/* Pick a built-in if any, and hope for the best */
--			fdtp = __dtb_start;
-+			fdtp = &__dtb_start;
- 			break;
- 		}
+ 		BUG_ON(address != (unsigned long)_text);
+ 		pte = NULL;
+-		for (; address < (unsigned long)_einittext;
++		for (; address < (unsigned long)__init_end;
+ 		     pfn++, address += PAGE_SIZE) {
+ 			pte_ofs = pte_index(address);
+ 			if (pte_ofs == 0) {
+@@ -572,7 +572,7 @@ static void __init kernel_physical_mapping_init(pgd_t *pgd_base)
+ 		else
+ 			pteval = hv_pte_set_mode(pteval,
+ 						 HV_PTE_MODE_CACHE_NO_L3);
+-		for (; address < (unsigned long)_einittext;
++		for (; address < (unsigned long)__init_end;
+ 		     pfn += PFN_DOWN(HPAGE_SIZE), address += HPAGE_SIZE)
+ 			*(pte_t *)(pmd++) = pfn_pte(pfn, pteval);
  	}
-diff --git a/arch/mips/ralink/of.c b/arch/mips/ralink/of.c
-index eccc5526155e..615603bd8063 100644
---- a/arch/mips/ralink/of.c
-+++ b/arch/mips/ralink/of.c
-@@ -28,8 +28,6 @@
- __iomem void *rt_sysc_membase;
- __iomem void *rt_memc_membase;
- 
--extern struct boot_param_header __dtb_start;
--
- __iomem void *plat_of_remap_node(const char *node)
+@@ -632,9 +632,9 @@ int devmem_is_allowed(unsigned long pagenr)
  {
- 	struct resource res;
-diff --git a/arch/openrisc/kernel/setup.c b/arch/openrisc/kernel/setup.c
-index 4fc7ccc0a2cf..c9b880d64bb8 100644
---- a/arch/openrisc/kernel/setup.c
-+++ b/arch/openrisc/kernel/setup.c
-@@ -213,7 +213,7 @@ void __init or32_early_setup(void *fdt)
- 	if (fdt)
- 		pr_info("FDT at %p\n", fdt);
- 	else {
--		fdt = __dtb_start;
-+		fdt = &__dtb_start;
- 		pr_info("Compiled-in FDT at %p\n", fdt);
- 	}
- 	early_init_devtree(fdt);
-diff --git a/arch/openrisc/kernel/vmlinux.h b/arch/openrisc/kernel/vmlinux.h
-index 70b9ce41835c..bbcdf21b0b35 100644
---- a/arch/openrisc/kernel/vmlinux.h
-+++ b/arch/openrisc/kernel/vmlinux.h
-@@ -5,6 +5,4 @@
- extern char __initrd_start, __initrd_end;
- #endif
+ 	return pagenr < kaddr_to_pfn(_end) &&
+ 		!(pagenr >= kaddr_to_pfn(&init_thread_union) ||
+-		  pagenr < kaddr_to_pfn(_einitdata)) &&
++		  pagenr < kaddr_to_pfn(__init_end)) &&
+ 		!(pagenr >= kaddr_to_pfn(_sinittext) ||
+-		  pagenr <= kaddr_to_pfn(_einittext-1));
++		  pagenr <= kaddr_to_pfn(__init_end-1));
+ }
  
--extern u32 __dtb_start[];
--
- #endif
-diff --git a/arch/xtensa/kernel/setup.c b/arch/xtensa/kernel/setup.c
-index 6e2b6638122d..d96cf8f3fe70 100644
---- a/arch/xtensa/kernel/setup.c
-+++ b/arch/xtensa/kernel/setup.c
-@@ -68,8 +68,7 @@ extern int initrd_below_start_ok;
- #endif
+ #ifdef CONFIG_HIGHMEM
+@@ -975,8 +975,8 @@ void free_initmem(void)
  
- #ifdef CONFIG_OF
--extern u32 __dtb_start[];
--void *dtb_start = __dtb_start;
-+void *dtb_start = &__dtb_start;
- #endif
+ 	/* Free the data pages that we won't use again after init. */
+ 	free_init_pages("unused kernel data",
+-			(unsigned long)_sinitdata,
+-			(unsigned long)_einitdata);
++			(unsigned long)__init_begin,
++			(unsigned long)__init_end);
  
- unsigned char aux_device_present;
-diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
-index 0beaee9dac1f..aabc49f3e403 100644
---- a/include/linux/of_fdt.h
-+++ b/include/linux/of_fdt.h
-@@ -57,6 +57,9 @@ struct boot_param_header {
- 	__be32	dt_struct_size;		/* size of the DT structure block */
- };
- 
-+/* For kernels with a built-in device tree */
-+extern struct boot_param_header __dtb_start;
-+
- #if defined(CONFIG_OF_FLATTREE)
- 
- struct device_node;
+ 	/*
+ 	 * Free the pages mapped from 0xc0000000 that correspond to code
+@@ -984,7 +984,7 @@ void free_initmem(void)
+ 	 */
+ 	free_init_pages("unused kernel text",
+ 			(unsigned long)_sinittext - text_delta,
+-			(unsigned long)_einittext - text_delta);
++			(unsigned long)__init_end - text_delta);
+ 	/* Do a global TLB flush so everyone sees the changes. */
+ 	flush_tlb_all();
+ }
 -- 
 1.7.9.5
 
