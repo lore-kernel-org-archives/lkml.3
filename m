@@ -1,131 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab3KLOQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:16:38 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:36193 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755386Ab3KLOQf (ORCPT
+	id S1755839Ab3KLOQh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:16:37 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:56237 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755453Ab3KLOQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Nov 2013 09:16:35 -0500
-From: Linus Walleij <linus.walleij@linaro.org>
-To: devicetree@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 5/5 v2] ARM: ux500: adjust the TC3589x devices to the binding
-Date: Tue, 12 Nov 2013 15:16:25 +0100
-Message-Id: <1384265785-11165-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.8.3.1
+Date: Tue, 12 Nov 2013 09:16:32 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        =?ISO-8859-15?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH v2] ARM: Use udiv/sdiv for __aeabi_{u}idiv library
+ functions
+In-Reply-To: <20131112140436.GK16735@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.10.1311120911530.9667@knanqh.ubzr>
+References: <1383951632-6090-1-git-send-email-sboyd@codeaurora.org> <alpine.LFD.2.10.1311092357090.2314@knanqh.ubzr> <528193A0.7050505@codeaurora.org> <alpine.LFD.2.10.1311120839310.9667@knanqh.ubzr> <20131112140436.GK16735@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TC3589x devices appearing in the ST Ericsson device trees
-are adjusted to use the new binding so this is in a good shape,
-and we add the keypad on the TVK1281618 UIB so this is working
-again.
+On Tue, 12 Nov 2013, Russell King - ARM Linux wrote:
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-ChangeLog v1->v2:
-- Adjust DT to match the u32 rows/columns binding.
----
- arch/arm/boot/dts/ste-href-tvk1281618.dtsi | 39 +++++++++++++++++++++++++-----
- arch/arm/boot/dts/ste-hrefprev60.dtsi      |  8 +++---
- 2 files changed, 37 insertions(+), 10 deletions(-)
+> On Tue, Nov 12, 2013 at 09:01:16AM -0500, Nicolas Pitre wrote:
+> > What about this patch which I think is currently your best option.  Note 
+> > it would need to use the facilities from asm/opcodes.h to make it endian 
+> > agnostic.
+> > 
+> > diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> > index 6a1b8a81b1..379cffe4ab 100644
+> > --- a/arch/arm/kernel/setup.c
+> > +++ b/arch/arm/kernel/setup.c
+> > @@ -383,6 +383,34 @@ static void __init cpuid_init_hwcaps(void)
+> >  		elf_hwcap |= HWCAP_IDIVT;
+> >  	}
+> >  
+> > +	/*
+> > +	 * Patch our division routines with the corresponding opcode
+> > +	 * if the hardware supports it.
+> > +	 */
+> > +	if (IS_ENABLED(CONFIG_THUMB2_KERNEL) && (elf_hwcap & HWCAP_IDIVT)) {
+> > +		extern char __aeabi_uidiv, __aeabi_idiv;
+> > +		u16 *uidiv = (u16 *)&__aeabi_uidiv;
+> > +		u16 *idiv = (u16 *)&__aeabi_idiv;
+> > +
+> > +		uidiv[0] = 0xfbb0;  /* udiv r0, r0, r1 */
+> > +		uidiv[1] = 0xf0f1;
+> > +		uidiv[2] = 0x4770;  /* bx lr */
+> > +
+> > +		idiv[0] = 0xfb90;  /* sdiv r0, r0, r1 */
+> > +		idiv[1] = 0xf0f1;  
+> > +		idiv[2] = 0x4770;  /* bx lr */
+> > +	} else if (!IS_ENABLED(CONFIG_THUMB2_KERNEL) && (elf_hwcap & HWCAP_IDIVA)) {
+> > +		extern char __aeabi_uidiv, __aeabi_idiv;
+> > +		u32 *uidiv = (u32 *)&__aeabi_uidiv;
+> > +		u32 *idiv = (u32 *)&__aeabi_idiv;
+> > +
+> > +		uidiv[0] = 0xe730f110;  /* udiv r0, r0, r1 */
+> > +		uidiv[1] = 0xe12fff1e;  /* bx lr */
+> > +
+> > +		idiv[0] = 0xe710f110;  /* sdiv r0, r0, r1 */
+> > +		idiv[1] = 0xe12fff1e;  /* bx lr */
+> > +	}
+> 
+> What about endianness, and what if XIP is enabled?
 
-diff --git a/arch/arm/boot/dts/ste-href-tvk1281618.dtsi b/arch/arm/boot/dts/ste-href-tvk1281618.dtsi
-index 76d3ef13175f..61b180ea92ca 100644
---- a/arch/arm/boot/dts/ste-href-tvk1281618.dtsi
-+++ b/arch/arm/boot/dts/ste-href-tvk1281618.dtsi
-@@ -15,26 +15,53 @@
- 
- / {
- 	soc {
--		/* Add Synaptics touch screen, TC35892 keypad etc here */
-+		/* Add Synaptics touch screen, TC35893 keypad etc here */
- 		i2c@80004000 {
--			tc3589x@44 {
--				compatible = "tc3589x";
-+			tc35893@44 {
-+				compatible = "toshiba,tc35893";
- 				reg = <0x44>;
- 				interrupt-parent = <&gpio6>;
- 				interrupts = <26 IRQ_TYPE_EDGE_RISING>;
- 
- 				interrupt-controller;
--				#interrupt-cells = <2>;
-+				#interrupt-cells = <1>;
- 
- 				tc3589x_gpio {
--					compatible = "tc3589x-gpio";
--					interrupts = <0 IRQ_TYPE_EDGE_RISING>;
-+					compatible = "toshiba,tc3589x-gpio";
-+					interrupts = <0>;
- 
- 					interrupt-controller;
- 					#interrupt-cells = <2>;
- 					gpio-controller;
- 					#gpio-cells = <2>;
- 				};
-+				tc3589x_keypad {
-+					compatible = "toshiba,tc3589x-keypad";
-+					interrupts = <6>;
-+					debounce-delay-ms = <4>;
-+					keypad,num-columns = <8>;
-+					keypad,num-rows = <8>;
-+					linux,no-autorepeat;
-+					linux,wakeup;
-+					linux,keymap = <0x0301006b
-+						        0x04010066
-+							0x06040072
-+							0x040200d7
-+							0x0303006a
-+							0x0205000e
-+							0x0607008b
-+							0x0500001c
-+							0x0403000b
-+							0x03040034
-+							0x05020067
-+							0x0305006c
-+							0x040500e7
-+							0x0005009e
-+							0x06020073
-+							0x01030039
-+							0x07060069
-+							0x050500d9>;
-+				};
- 			};
- 		};
- 	};
-diff --git a/arch/arm/boot/dts/ste-hrefprev60.dtsi b/arch/arm/boot/dts/ste-hrefprev60.dtsi
-index b2cd7bc2752f..6b271a410d03 100644
---- a/arch/arm/boot/dts/ste-hrefprev60.dtsi
-+++ b/arch/arm/boot/dts/ste-hrefprev60.dtsi
-@@ -28,18 +28,18 @@
- 				reg = <0x33>;
- 			};
- 
--			tc3589x@42 {
--				compatible = "tc3589x";
-+			tc35892@42 {
-+				compatible = "toshiba,tc35892";
- 				reg = <0x42>;
- 				interrupt-parent = <&gpio6>;
- 				interrupts = <25 IRQ_TYPE_EDGE_RISING>;
- 
- 				interrupt-controller;
--				#interrupt-cells = <2>;
-+				#interrupt-cells = <1>;
- 
- 				tc3589x_gpio: tc3589x_gpio {
- 					compatible = "tc3589x-gpio";
--					interrupts = <0 IRQ_TYPE_EDGE_RISING>;
-+					interrupts = <0>;
- 
- 					interrupt-controller;
- 					#interrupt-cells = <2>;
--- 
-1.8.3.1
+Just as I said above the diff: this needs refined.
 
+Obviously XIP can't use this and doesn't need it either as a XIP kernel 
+should be optimized for the very platform it will run onto i.e. gcc 
+should already emit those div opcodes inline if appropriate.
+
+
+Nicolas
