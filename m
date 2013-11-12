@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab3KLTuU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:50:20 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:47929 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756915Ab3KLTtt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:49:49 -0500
+	id S1757092Ab3KLTu1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:50:27 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52547 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756913Ab3KLTuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 14:50:11 -0500
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
@@ -20,9 +19,9 @@ CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
         Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
         <devicetree-discuss@lists.ozlabs.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCHv5 10/20] arm: dts: add omap4430 thermal data
-Date: Tue, 12 Nov 2013 15:46:12 -0400
-Message-ID: <1384285582-16933-11-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCHv5 12/20] arm: dts: add cooling properties on omap4430 cpu node
+Date: Tue, 12 Nov 2013 15:46:14 -0400
+Message-ID: <1384285582-16933-13-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
 References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
@@ -33,10 +32,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the dtsi entry on omap4430 to contain
-the thermal data. This data will enable the passive
-cooling with CPUfreq cooling device at 100C and the
-system will do a thermal shutdown at 125C.
+OMAP4430 devices can reach high temperatures and thus
+needs to have cpufreq-cooling on systems running on it.
+
+This patch adds the required cooling device properties
+so that cpufreq-cpu0 driver loads the cooling device.
 
 Cc: "Benoît Cousson" <bcousson@baylibre.com>
 Cc: Tony Lindgren <tony@atomide.com>
@@ -47,39 +47,25 @@ Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/arm/boot/dts/omap443x.dtsi | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/omap443x.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
-index bcf455e..e9c97d6 100644
+index e9c97d6..930ab47 100644
 --- a/arch/arm/boot/dts/omap443x.dtsi
 +++ b/arch/arm/boot/dts/omap443x.dtsi
-@@ -12,7 +12,7 @@
- 
- / {
- 	cpus {
--		cpu@0 {
-+		cpu0: cpu@0 {
- 			/* OMAP443x variants OPP50-OPPNT */
- 			operating-points = <
- 				/* kHz    uV */
-@@ -25,9 +25,15 @@
+@@ -22,6 +22,11 @@
+ 				1008000 1375000
+ 			>;
+ 			clock-latency = <300000>; /* From legacy driver */
++
++			/* cooling options */
++			cooling-min-level = <0>;
++			cooling-max-level = <3>;
++			#cooling-cells = <2>; /* min followed by max */
  		};
  	};
  
--	bandgap {
-+	thermal-zones{
-+		#include "omap4-cpu-thermal.dtsi"
-+	};
-+
-+	bandgap: bandgap {
- 		reg = <0x4a002260 0x4
- 		       0x4a00232C 0x4>;
- 		compatible = "ti,omap4430-bandgap";
-+
-+		#thermal-sensor-cells = <0>;
- 	};
- };
 -- 
 1.8.2.1.342.gfa7285d
 
