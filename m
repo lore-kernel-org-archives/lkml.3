@@ -1,69 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab3KLS2A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 13:28:00 -0500
-Received: from ringil.hengli.com.au ([178.18.16.133]:40220 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753081Ab3KLS14 (ORCPT
+	id S1754253Ab3KLSaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 13:30:25 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:39818 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972Ab3KLSaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 13:27:56 -0500
-Date: Wed, 13 Nov 2013 02:27:46 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>
-Subject: Re: Crypto Update for 3.13
-Message-ID: <20131112182746.GA22711@gondor.apana.org.au>
-References: <20110724011752.GA14373@gondor.apana.org.au>
- <20111031040952.GA19659@gondor.apana.org.au>
- <20120106041250.GA7759@gondor.apana.org.au>
- <20121004095357.GA11777@gondor.apana.org.au>
- <20121214103156.GA5840@gondor.apana.org.au>
- <20130223023331.GA11002@gondor.apana.org.au>
- <20130907035544.GA22658@gondor.apana.org.au>
- <20131107080131.GA32307@gondor.apana.org.au>
- <20131112164151.GA22645@gondor.apana.org.au>
- <20131112165934.GA13441@pd.tnic>
+	Tue, 12 Nov 2013 13:30:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131112165934.GA13441@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <528246BA.10607@imgtec.com>
+References: <528246BA.10607@imgtec.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Tue, 12 Nov 2013 10:29:42 -0800
+Message-ID: <CAGVrzcYV7f4zN23nSMOp3r9aiSme-mJPEz2OkyLUFDWKfWtGqw@mail.gmail.com>
+Subject: Re: Release of Linux MTI-3.10-LTS kernel.
+To: "Steven J. Hill" <Steven.Hill@imgtec.com>
+Cc: LMOL <linux-mips@linux-mips.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 05:59:34PM +0100, Borislav Petkov wrote:
-> On Wed, Nov 13, 2013 at 12:41:52AM +0800, Herbert Xu wrote:
-> > Hi Linus:
-> > 
-> > Here is the crypto update for 3.13:
-> > 
-> > * Made x86 ablk_helper generic for ARM.
-> > * Phase out chainiv in favour of eseqiv (affects IPsec).
-> > * Fixed aes-cbc IV corruption on s390.
-> > * Added constant-time crypto_memneq which replaces memcmp.
-> > 
-> > * Fixed aes-ctr in omap-aes.
-> > * Added OMAP3 ROM RNG support.
-> > * Add PRNG support for MSM SoC's
-> > * Add and use Job Ring API in caam.
-> > 
-> > * Misc fixes.
-> 
-> Maybe add this one to that:
-> 
-> http://marc.info/?l=linux-kernel&m=138078878205385&w=2
-> 
-> ?
+2013/11/12 Steven J. Hill <Steven.Hill@imgtec.com>:
+> Imagination Technologies is pleased to announce the release of its 3.10 LTS
+> (Long-Term Support) MIPS kernel. The changelog below is based off the stable
+> Linux 3.10.14 release done by Greg Kroah-Hartman in commit
+> 8c15abc94c737f9120d3d4a550abbcbb9be121f6 back on October 1st. The code
+> repository is hosted at the Linux/MIPS project GIT:
+>
+> http://git.linux-mips.org/?p=linux-mti.git;a=summary
+>
+> We look forward to any comments or feedback.
 
-I think this should probably go through James Morris's tree.
+Nice job! Do you have a rough idea of the delta between your LTS
+kernel and the current status of mainline/pending submissions?
 
-Thanks,
+Thanks!
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Florian
