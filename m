@@ -1,323 +1,431 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab3KLWCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 17:02:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40092 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125Ab3KLVzl (ORCPT
+	id S1757571Ab3KLWDG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 17:03:06 -0500
+Received: from 1.mo2.mail-out.ovh.net ([46.105.63.121]:56597 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757498Ab3KLWC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:55:41 -0500
-Date: Tue, 12 Nov 2013 13:54:54 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-ihwzraikx23ian9txinogvv2@git.kernel.org>
-Cc: eranian@google.com, acme@redhat.com, mingo@kernel.org,
-        peterz@infradead.org, efault@gmx.de, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        bgray@redhat.com, dzickus@redhat.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, paulus@samba.org, jmario@redhat.com, rfowles@redhat.com,
-        adrian.hunter@intel.com
-Reply-To: mingo@kernel.org, acme@redhat.com, eranian@google.com, efault@gmx.de,
-        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, bgray@redhat.com, tglx@linutronix.de,
-        dzickus@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        paulus@samba.org, jmario@redhat.com, rfowles@redhat.com,
-        adrian.hunter@intel.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf record:
-  Synthesize non-exec MMAP records when --data used
-Git-Commit-ID: 62605dc50c27bf0e4ff69b7b3166f226586aff02
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 13:55:01 -0800 (PST)
+	Tue, 12 Nov 2013 17:02:56 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH v5 07/17] clk: at91: add PMC master clock
+Date: Tue, 12 Nov 2013 23:00:29 +0100
+Message-Id: <1384293629-4645-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
+References: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 11857414869732391136
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  62605dc50c27bf0e4ff69b7b3166f226586aff02
-Gitweb:     http://git.kernel.org/tip/62605dc50c27bf0e4ff69b7b3166f226586aff02
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 11 Nov 2013 09:44:09 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 11 Nov 2013 15:56:39 -0300
+This patch adds new at91 master clock implementation using common clk
+framework.
 
-perf record: Synthesize non-exec MMAP records when --data used
+The master clock layout describe the MCKR register layout.
+There are 2 master clock layouts:
+- at91rm9200
+- at91sam9x5
 
-When perf_event_attr.mmap_data is set the kernel will generate
-PERF_RECORD_MMAP events when non-exec (data, SysV mem) mmaps are
-created, so we need to synthesize from /proc/pid/maps for existing
-threads, as we do for exec mmaps.
+Master clocks are given characteristics:
+- min/max clock output rate
 
-Right now just 'perf record' does it, but any other tool that uses
-perf_event__synthesize_thread(s|map) can request it.
+These characteristics are checked during rate change to avoid
+over/underclocking.
 
-Reported-by: Don Zickus <dzickus@redhat.com>
-Tested-by: Don Zickus <dzickus@redhat.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Bill Gray <bgray@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Joe Mario <jmario@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Richard Fowles <rfowles@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ihwzraikx23ian9txinogvv2@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+These characteristics are described in atmel's SoC datasheet in
+"Electrical Characteristics" paragraph.
+
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- tools/perf/builtin-kvm.c        |  4 ++--
- tools/perf/builtin-record.c     |  6 ++---
- tools/perf/builtin-top.c        |  4 ++--
- tools/perf/builtin-trace.c      |  4 ++--
- tools/perf/tests/code-reading.c |  2 +-
- tools/perf/util/event.c         | 50 ++++++++++++++++++++++++-----------------
- tools/perf/util/event.h         |  4 ++--
- 7 files changed, 42 insertions(+), 32 deletions(-)
+ drivers/clk/at91/Makefile     |    2 +-
+ drivers/clk/at91/clk-master.c |  272 +++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/at91/clk-pll.c    |   10 +-
+ drivers/clk/at91/pmc.c        |    9 ++
+ drivers/clk/at91/pmc.h        |    5 +
+ 5 files changed, 289 insertions(+), 9 deletions(-)
+ create mode 100644 drivers/clk/at91/clk-master.c
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index cd9f920..f36e820 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1550,10 +1550,10 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
- 		perf_event__synthesize_thread_map(&kvm->tool,
- 						  kvm->evlist->threads,
- 						  perf_event__process,
--						  &kvm->session->machines.host);
-+						  &kvm->session->machines.host, false);
- 	else
- 		perf_event__synthesize_threads(&kvm->tool, perf_event__process,
--					       &kvm->session->machines.host);
-+					       &kvm->session->machines.host, false);
+diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+index 902bbf1..e28fb2b 100644
+--- a/drivers/clk/at91/Makefile
++++ b/drivers/clk/at91/Makefile
+@@ -3,4 +3,4 @@
+ #
  
- 
- 	err = kvm_live_open_events(kvm);
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 15280b5..afb252c 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -482,11 +482,11 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 
- 	if (perf_target__has_task(&opts->target))
- 		err = perf_event__synthesize_thread_map(tool, evsel_list->threads,
--						  process_synthesized_event,
--						  machine);
-+							process_synthesized_event,
-+							machine, opts->sample_address);
- 	else if (perf_target__has_cpu(&opts->target))
- 		err = perf_event__synthesize_threads(tool, process_synthesized_event,
--					       machine);
-+						     machine, opts->sample_address);
- 	else /* command specified */
- 		err = 0;
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 9acca88..cc96d75 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -953,10 +953,10 @@ static int __cmd_top(struct perf_top *top)
- 	if (perf_target__has_task(&opts->target))
- 		perf_event__synthesize_thread_map(&top->tool, top->evlist->threads,
- 						  perf_event__process,
--						  &top->session->machines.host);
-+						  &top->session->machines.host, false);
- 	else
- 		perf_event__synthesize_threads(&top->tool, perf_event__process,
--					       &top->session->machines.host);
-+					       &top->session->machines.host, false);
- 
- 	ret = perf_top__start_counters(top);
- 	if (ret)
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 68943ca..277c236 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1343,10 +1343,10 @@ static int trace__symbols_init(struct trace *trace, struct perf_evlist *evlist)
- 	if (perf_target__has_task(&trace->opts.target)) {
- 		err = perf_event__synthesize_thread_map(&trace->tool, evlist->threads,
- 							trace__tool_process,
--							trace->host);
-+							trace->host, false);
- 	} else {
- 		err = perf_event__synthesize_threads(&trace->tool, trace__tool_process,
--						     trace->host);
-+						     trace->host, false);
- 	}
- 
- 	if (err)
-diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
-index 49ccc3b..6d9dc19 100644
---- a/tools/perf/tests/code-reading.c
-+++ b/tools/perf/tests/code-reading.c
-@@ -441,7 +441,7 @@ static int do_test_code_reading(bool try_kcore)
- 	}
- 
- 	ret = perf_event__synthesize_thread_map(NULL, threads,
--						perf_event__process, machine);
-+						perf_event__process, machine, false);
- 	if (ret < 0) {
- 		pr_debug("perf_event__synthesize_thread_map failed\n");
- 		goto out_err;
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index ec9ae11..6e3a846 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -170,7 +170,8 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 					      union perf_event *event,
- 					      pid_t pid, pid_t tgid,
- 					      perf_event__handler_t process,
--					      struct machine *machine)
-+					      struct machine *machine,
-+					      bool mmap_data)
- {
- 	char filename[PATH_MAX];
- 	FILE *fp;
-@@ -188,10 +189,6 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 	}
- 
- 	event->header.type = PERF_RECORD_MMAP;
--	/*
--	 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
--	 */
--	event->header.misc = PERF_RECORD_MISC_USER;
- 
- 	while (1) {
- 		char bf[BUFSIZ];
-@@ -215,9 +212,17 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 
- 		if (n != 5)
- 			continue;
-+		/*
-+		 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
-+		 */
-+		event->header.misc = PERF_RECORD_MISC_USER;
- 
--		if (prot[2] != 'x')
--			continue;
-+		if (prot[2] != 'x') {
-+			if (!mmap_data || prot[0] != 'r')
-+				continue;
+ obj-y += pmc.o
+-obj-y += clk-main.o clk-pll.o clk-plldiv.o
++obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
+diff --git a/drivers/clk/at91/clk-master.c b/drivers/clk/at91/clk-master.c
+new file mode 100644
+index 0000000..65b81de
+--- /dev/null
++++ b/drivers/clk/at91/clk-master.c
+@@ -0,0 +1,272 @@
++/*
++ * drivers/clk/at91/clk-master.c
++ *
++ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ */
 +
-+			event->header.misc |= PERF_RECORD_MISC_MMAP_DATA;
-+		}
- 
- 		if (!strcmp(execname, ""))
- 			strcpy(execname, anonstr);
-@@ -304,20 +309,21 @@ static int __event__synthesize_thread(union perf_event *comm_event,
- 				      pid_t pid, int full,
- 					  perf_event__handler_t process,
- 				      struct perf_tool *tool,
--				      struct machine *machine)
-+				      struct machine *machine, bool mmap_data)
++#include <linux/clk-provider.h>
++#include <linux/clkdev.h>
++#include <linux/clk/at91_pmc.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/io.h>
++#include <linux/wait.h>
++#include <linux/sched.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++
++#include "pmc.h"
++
++#define MASTER_SOURCE_MAX	4
++
++#define MASTER_PRES_MASK	0x7
++#define MASTER_PRES_MAX		MASTER_PRES_MASK
++#define MASTER_DIV_SHIFT	8
++#define MASTER_DIV_MASK		0x3
++
++struct clk_master_characteristics {
++	struct clk_range output;
++	u32 divisors[4];
++	u8 have_div3_pres;
++};
++
++struct clk_master_layout {
++	u32 mask;
++	u8 pres_shift;
++};
++
++#define to_clk_master(hw) container_of(hw, struct clk_master, hw)
++
++struct clk_master {
++	struct clk_hw hw;
++	struct at91_pmc *pmc;
++	unsigned int irq;
++	wait_queue_head_t wait;
++	const struct clk_master_layout *layout;
++	const struct clk_master_characteristics *characteristics;
++};
++
++static irqreturn_t clk_master_irq_handler(int irq, void *dev_id)
++{
++	struct clk_master *master = (struct clk_master *)dev_id;
++
++	wake_up(&master->wait);
++	disable_irq_nosync(master->irq);
++
++	return IRQ_HANDLED;
++}
++static int clk_master_prepare(struct clk_hw *hw)
++{
++	struct clk_master *master = to_clk_master(hw);
++	struct at91_pmc *pmc = master->pmc;
++
++	while (!(pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_MCKRDY)) {
++		enable_irq(master->irq);
++		wait_event(master->wait,
++			   pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_MCKRDY);
++	}
++
++	return 0;
++}
++
++static int clk_master_is_prepared(struct clk_hw *hw)
++{
++	struct clk_master *master = to_clk_master(hw);
++
++	return !!(pmc_read(master->pmc, AT91_PMC_SR) & AT91_PMC_MCKRDY);
++}
++
++static unsigned long clk_master_recalc_rate(struct clk_hw *hw,
++					    unsigned long parent_rate)
++{
++	u8 pres;
++	u8 div;
++	unsigned long rate = parent_rate;
++	struct clk_master *master = to_clk_master(hw);
++	struct at91_pmc *pmc = master->pmc;
++	const struct clk_master_layout *layout = master->layout;
++	const struct clk_master_characteristics *characteristics =
++						master->characteristics;
++	u32 tmp;
++
++	pmc_lock(pmc);
++	tmp = pmc_read(pmc, AT91_PMC_MCKR) & layout->mask;
++	pmc_unlock(pmc);
++
++	pres = (tmp >> layout->pres_shift) & MASTER_PRES_MASK;
++	div = (tmp >> MASTER_DIV_SHIFT) & MASTER_DIV_MASK;
++
++	if (characteristics->have_div3_pres && pres == MASTER_PRES_MAX)
++		rate /= 3;
++	else
++		rate >>= pres;
++
++	rate /= characteristics->divisors[div];
++
++	if (rate < characteristics->output.min)
++		pr_warn("master clk is underclocked");
++	else if (rate > characteristics->output.max)
++		pr_warn("master clk is overclocked");
++
++	return rate;
++}
++
++static u8 clk_master_get_parent(struct clk_hw *hw)
++{
++	struct clk_master *master = to_clk_master(hw);
++	struct at91_pmc *pmc = master->pmc;
++
++	return pmc_read(pmc, AT91_PMC_MCKR) & AT91_PMC_CSS;
++}
++
++static const struct clk_ops master_ops = {
++	.prepare = clk_master_prepare,
++	.is_prepared = clk_master_is_prepared,
++	.recalc_rate = clk_master_recalc_rate,
++	.get_parent = clk_master_get_parent,
++};
++
++static struct clk * __init
++at91_clk_register_master(struct at91_pmc *pmc, unsigned int irq,
++		const char *name, int num_parents,
++		const char **parent_names,
++		const struct clk_master_layout *layout,
++		const struct clk_master_characteristics *characteristics)
++{
++	int ret;
++	struct clk_master *master;
++	struct clk *clk = NULL;
++	struct clk_init_data init;
++
++	if (!pmc || !irq || !name || !num_parents || !parent_names)
++		return ERR_PTR(-EINVAL);
++
++	master = kzalloc(sizeof(*master), GFP_KERNEL);
++	if (!master)
++		return ERR_PTR(-ENOMEM);
++
++	init.name = name;
++	init.ops = &master_ops;
++	init.parent_names = parent_names;
++	init.num_parents = num_parents;
++	init.flags = 0;
++
++	master->hw.init = &init;
++	master->layout = layout;
++	master->characteristics = characteristics;
++	master->pmc = pmc;
++	master->irq = irq;
++	init_waitqueue_head(&master->wait);
++	irq_set_status_flags(master->irq, IRQ_NOAUTOEN);
++	ret = request_irq(master->irq, clk_master_irq_handler,
++			  IRQF_TRIGGER_HIGH, "clk-master", master);
++	if (ret)
++		return ERR_PTR(ret);
++
++	clk = clk_register(NULL, &master->hw);
++	if (IS_ERR(clk))
++		kfree(master);
++
++	return clk;
++}
++
++
++static const struct clk_master_layout at91rm9200_master_layout = {
++	.mask = 0x31F,
++	.pres_shift = 2,
++};
++
++static const struct clk_master_layout at91sam9x5_master_layout = {
++	.mask = 0x373,
++	.pres_shift = 4,
++};
++
++
++static struct clk_master_characteristics * __init
++of_at91_clk_master_get_characteristics(struct device_node *np)
++{
++	struct clk_master_characteristics *characteristics;
++
++	characteristics = kzalloc(sizeof(*characteristics), GFP_KERNEL);
++	if (!characteristics)
++		return NULL;
++
++	if (of_at91_get_clk_range(np, "atmel,clk-output-range", &characteristics->output))
++		goto out_free_characteristics;
++
++	of_property_read_u32_array(np, "atmel,clk-divisors",
++				   characteristics->divisors, 4);
++
++	characteristics->have_div3_pres =
++		of_property_read_bool(np, "atmel,master-clk-have-div3-pres");
++
++	return characteristics;
++
++out_free_characteristics:
++	kfree(characteristics);
++	return NULL;
++}
++
++static void __init
++of_at91_clk_master_setup(struct device_node *np, struct at91_pmc *pmc,
++			 const struct clk_master_layout *layout)
++{
++	struct clk *clk;
++	int num_parents;
++	int i;
++	unsigned int irq;
++	const char *parent_names[MASTER_SOURCE_MAX];
++	const char *name = np->name;
++	struct clk_master_characteristics *characteristics;
++
++	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
++	if (num_parents <= 0 || num_parents > MASTER_SOURCE_MAX)
++		return;
++
++	for (i = 0; i < num_parents; ++i) {
++		parent_names[i] = of_clk_get_parent_name(np, i);
++		if (!parent_names[i])
++			return;
++	}
++
++	of_property_read_string(np, "clock-output-names", &name);
++
++	characteristics = of_at91_clk_master_get_characteristics(np);
++	if (!characteristics)
++		return;
++
++	irq = irq_of_parse_and_map(np, 0);
++	if (!irq)
++		return;
++
++	clk = at91_clk_register_master(pmc, irq, name, num_parents,
++				       parent_names, layout,
++				       characteristics);
++	if (IS_ERR(clk))
++		goto out_free_characteristics;
++
++	of_clk_add_provider(np, of_clk_src_simple_get, clk);
++	return;
++
++out_free_characteristics:
++	kfree(characteristics);
++}
++
++void __init of_at91rm9200_clk_master_setup(struct device_node *np,
++					   struct at91_pmc *pmc)
++{
++	of_at91_clk_master_setup(np, pmc, &at91rm9200_master_layout);
++}
++
++void __init of_at91sam9x5_clk_master_setup(struct device_node *np,
++					   struct at91_pmc *pmc)
++{
++	of_at91_clk_master_setup(np, pmc, &at91sam9x5_master_layout);
++}
+diff --git a/drivers/clk/at91/clk-pll.c b/drivers/clk/at91/clk-pll.c
+index 57cedb5..c4d0dc8 100644
+--- a/drivers/clk/at91/clk-pll.c
++++ b/drivers/clk/at91/clk-pll.c
+@@ -82,6 +82,8 @@ static int clk_pll_prepare(struct clk_hw *hw)
+ 	struct clk_pll *pll = to_clk_pll(hw);
+ 	struct at91_pmc *pmc = pll->pmc;
+ 	const struct clk_pll_layout *layout = pll->layout;
++	const struct clk_pll_characteristics *characteristics =
++							pll->characteristics;
+ 	u8 id = pll->id;
+ 	u32 mask = PLL_STATUS_MASK(id);
+ 	int offset = PLL_REG(id);
+@@ -271,18 +273,10 @@ static int clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
+ 			    unsigned long parent_rate)
  {
- 	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, pid, full,
- 						 process, machine);
- 	if (tgid == -1)
- 		return -1;
- 	return perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
--						  process, machine);
-+						  process, machine, mmap_data);
- }
+ 	struct clk_pll *pll = to_clk_pll(hw);
+-	struct at91_pmc *pmc = pll->pmc;
+-	const struct clk_pll_layout *layout = pll->layout;
+-	const struct clk_pll_characteristics *characteristics =
+-						pll->characteristics;
+-	u8 id = pll->id;
+-	int offset = PLL_REG(id);
+ 	long ret;
+ 	u32 div;
+ 	u32 mul;
+ 	u32 index;
+-	u32 tmp;
+-	u8 out = 0;
  
- int perf_event__synthesize_thread_map(struct perf_tool *tool,
- 				      struct thread_map *threads,
- 				      perf_event__handler_t process,
--				      struct machine *machine)
-+				      struct machine *machine,
-+				      bool mmap_data)
- {
- 	union perf_event *comm_event, *mmap_event;
- 	int err = -1, thread, j;
-@@ -334,7 +340,8 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
- 	for (thread = 0; thread < threads->nr; ++thread) {
- 		if (__event__synthesize_thread(comm_event, mmap_event,
- 					       threads->map[thread], 0,
--					       process, tool, machine)) {
-+					       process, tool, machine,
-+					       mmap_data)) {
- 			err = -1;
- 			break;
- 		}
-@@ -356,10 +363,10 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 	ret = clk_pll_get_best_div_mul(pll, rate, parent_rate,
+ 				       &div, &mul, &index);
+diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+index d26fdb7..d9975e7 100644
+--- a/drivers/clk/at91/pmc.c
++++ b/drivers/clk/at91/pmc.c
+@@ -257,6 +257,15 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
+ 		.compatible = "atmel,at91sam9x5-clk-plldiv",
+ 		.data = of_at91sam9x5_clk_plldiv_setup,
+ 	},
++	/* Master clock */
++	{
++		.compatible = "atmel,at91rm9200-clk-master",
++		.data = of_at91rm9200_clk_master_setup,
++	},
++	{
++		.compatible = "atmel,at91sam9x5-clk-master",
++		.data = of_at91sam9x5_clk_master_setup,
++	},
+ 	{ /*sentinel*/ }
+ };
  
- 			/* if not, generate events for it */
- 			if (need_leader &&
--			    __event__synthesize_thread(comm_event,
--						      mmap_event,
--						      comm_event->comm.pid, 0,
--						      process, tool, machine)) {
-+			    __event__synthesize_thread(comm_event, mmap_event,
-+						       comm_event->comm.pid, 0,
-+						       process, tool, machine,
-+						       mmap_data)) {
- 				err = -1;
- 				break;
- 			}
-@@ -374,7 +381,7 @@ out:
+diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
+index 15aaf38..be5c964 100644
+--- a/drivers/clk/at91/pmc.h
++++ b/drivers/clk/at91/pmc.h
+@@ -72,4 +72,9 @@ extern void __init of_sama5d3_clk_pll_setup(struct device_node *np,
+ extern void __init of_at91sam9x5_clk_plldiv_setup(struct device_node *np,
+ 						  struct at91_pmc *pmc);
  
- int perf_event__synthesize_threads(struct perf_tool *tool,
- 				   perf_event__handler_t process,
--				   struct machine *machine)
-+				   struct machine *machine, bool mmap_data)
- {
- 	DIR *proc;
- 	struct dirent dirent, *next;
-@@ -404,7 +411,7 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
-  		 * one thread couldn't be synthesized.
-  		 */
- 		__event__synthesize_thread(comm_event, mmap_event, pid, 1,
--					   process, tool, machine);
-+					   process, tool, machine, mmap_data);
- 	}
- 
- 	err = 0;
-@@ -528,19 +535,22 @@ int perf_event__process_lost(struct perf_tool *tool __maybe_unused,
- 
- size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp)
- {
--	return fprintf(fp, " %d/%d: [%#" PRIx64 "(%#" PRIx64 ") @ %#" PRIx64 "]: %s\n",
-+	return fprintf(fp, " %d/%d: [%#" PRIx64 "(%#" PRIx64 ") @ %#" PRIx64 "]: %c %s\n",
- 		       event->mmap.pid, event->mmap.tid, event->mmap.start,
--		       event->mmap.len, event->mmap.pgoff, event->mmap.filename);
-+		       event->mmap.len, event->mmap.pgoff,
-+		       (event->header.misc & PERF_RECORD_MISC_MMAP_DATA) ? 'r' : 'x',
-+		       event->mmap.filename);
- }
- 
- size_t perf_event__fprintf_mmap2(union perf_event *event, FILE *fp)
- {
- 	return fprintf(fp, " %d/%d: [%#" PRIx64 "(%#" PRIx64 ") @ %#" PRIx64
--			   " %02x:%02x %"PRIu64" %"PRIu64"]: %s\n",
-+			   " %02x:%02x %"PRIu64" %"PRIu64"]: %c %s\n",
- 		       event->mmap2.pid, event->mmap2.tid, event->mmap2.start,
- 		       event->mmap2.len, event->mmap2.pgoff, event->mmap2.maj,
- 		       event->mmap2.min, event->mmap2.ino,
- 		       event->mmap2.ino_generation,
-+		       (event->header.misc & PERF_RECORD_MISC_MMAP_DATA) ? 'r' : 'x',
- 		       event->mmap2.filename);
- }
- 
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index f8d70f3..30fec99 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -208,10 +208,10 @@ typedef int (*perf_event__handler_t)(struct perf_tool *tool,
- int perf_event__synthesize_thread_map(struct perf_tool *tool,
- 				      struct thread_map *threads,
- 				      perf_event__handler_t process,
--				      struct machine *machine);
-+				      struct machine *machine, bool mmap_data);
- int perf_event__synthesize_threads(struct perf_tool *tool,
- 				   perf_event__handler_t process,
--				   struct machine *machine);
-+				   struct machine *machine, bool mmap_data);
- int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
- 				       perf_event__handler_t process,
- 				       struct machine *machine,
++extern void __init of_at91rm9200_clk_master_setup(struct device_node *np,
++						  struct at91_pmc *pmc);
++extern void __init of_at91sam9x5_clk_master_setup(struct device_node *np,
++						  struct at91_pmc *pmc);
++
+ #endif /* __PMC_H_ */
+-- 
+1.7.9.5
+
