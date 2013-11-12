@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab3KLK6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 05:58:14 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:32928 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693Ab3KLK56 (ORCPT
+	id S1752701Ab3KLLFt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 06:05:49 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:41253 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab3KLLFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 05:57:58 -0500
+	Tue, 12 Nov 2013 06:05:46 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAEPa5y=tgdGpDMBGY0ijyWSgQ0m5SZW8EMP072OF=sZZUjqN1g@mail.gmail.com>
-References: <CAEPa5ym2Xz3F19fJJqNawkRLOKk6Ao6oXrzSrHU051V7p=9otA@mail.gmail.com>
-	<CAE3RKNng9A6Bp7wa4+6iCprwEQpzGueagLc8iob+aFabJW4nnw@mail.gmail.com>
-	<CAEPa5y=tgdGpDMBGY0ijyWSgQ0m5SZW8EMP072OF=sZZUjqN1g@mail.gmail.com>
-Date: Tue, 12 Nov 2013 11:57:56 +0100
-Message-ID: <CAEPa5ym0+-_Q9zUidDfE2SD7XYZxAqqEUByBkkH1ZOmh9rmFHg@mail.gmail.com>
-Subject: Re: bridge not getting ip since 3.11.5 and 3.4.66
-From: Mark Trompell <mark@foresightlinux.org>
-To: Veaceslav Falico <veaceslav@falico.eu>
-Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
+In-Reply-To: <20131112103440.GF4971@laptop.programming.kicks-ass.net>
+References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
+	<1382097147-30088-6-git-send-email-vincent.guittot@linaro.org>
+	<20131112103440.GF4971@laptop.programming.kicks-ass.net>
+Date: Tue, 12 Nov 2013 12:05:45 +0100
+Message-ID: <CAKfTPtBToS=_6p-005LkHzmdkspKQj9Y4_LfEmV2SLFu88w8-w@mail.gmail.com>
+Subject: Re: [RFC][PATCH v5 06/14] sched: create a new field with available capacity
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <len.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lukasz Majewski <l.majewski@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 1:52 PM, Mark Trompell <mark@foresightlinux.org> wrote:
-> On Mon, Nov 11, 2013 at 12:07 PM, Veaceslav Falico <veaceslav@falico.eu> wrote:
->> On Mon, Nov 11, 2013 at 11:29 AM, Mark Trompell <mark@foresightlinux.org> wrote:
->>> my bridge br0 doesn't get an ip from dhcp anymore after 3.11.5 and 3.4.66,
->>> What information would be helpful and required to find out what's going wrong.
->>
->> CC netdev
->>
->> First thing would be to provide the network scheme. Do you use vlans?
->> Which network
->> cards/drivers are you using? Do you use some kind of virtualization?
->> Is bonding involved?
->>
-> Actually this is my desktop machine using kvm for a virtual machine
-> that uses eth0 which is connected to the bridge
-> which is used as interface for the host.
+On 12 November 2013 11:34, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Oct 18, 2013 at 01:52:19PM +0200, Vincent Guittot wrote:
+>> This new field power_available reflects the available capacity of a CPU
+>> unlike the cpu_power which reflects the current capacity.
 >
-> $ ip addr
-> 2. eth0: <BROADCAST,MULTICAST,UP,10000> mtu 1500 qdisc pfifo_fast
-> master br0 qlen 1000
-> ...
-> 3. br0: <BROADCAST,MULTICAST,UP,10000> mtu 1500 qdisc noqueue
-> ...
+>> -     sdg->sgp->power_orig = sdg->sgp->power = power;
+>> +     sdg->sgp->power_orig = sdg->sgp->power_available = available;
+>> +     sdg->sgp->power = power;
 >
-> Anything else?
+> This patch leaves me confused as to power_available vs power_orig and
+> the Changelog doesn't really clarify anything much at all.
 
-Okay more about my hardware and configuration:
-from lspci:
-00:19.0 Ethernet controller: Intel Corporation 82579V Gigabit Network
-Connection (rev 04)
+Ok, i will add more details in the changelog
+power_ori can only modified for SMT purpose otherwise it stays to 1024
+whereas power_available take into account the modification that has
+been done by the platform.
 
-/etc/sysconfig/network-scripts/ifcfg-br0
-DEVICE=br0
-ONBOOT=yes
-MACADDR=00:19:99:ac:b3:24
-TYPE=Bridge
-BOOTPROTO=dhcp
-STP=on
-NM_CONTROLLED=no
-DELAY=0
-
-/etc/sysconfig/network-scripts/ifcfg-eth0
-DEVICE=eth0
-HWADDR=00:19:99:cd:a5:e6
-#BOOTPROTO=dhcp
-ONBOOT=yes
-BRIDGE=br0
-TYPE=Ethernet
-NM_CONTROLLED=no
-
-
-> Greetings
-> Mark
+I can probably re-factor that and merge power_ori and power_available.
+At now,  arch_scale_smt_power and arch_scale_freq_power are not used
+simultaneously by an architecture so I can probably move the returned
+value of arch_scale_freq_power into the power_ori. This would even
+make more sense regarding the current use of it.
