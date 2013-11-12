@@ -1,155 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab3KLVON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 16:14:13 -0500
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:33193
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756138Ab3KLVN7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:13:59 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(z579ehzbb2dI98dI9371Ic89bh1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2149h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h906i1155h192ch)
-Date: Tue, 12 Nov 2013 13:13:39 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 5/7] clocksource/cadence_ttc: Overhaul clocksource
- frequency adjustment
-References: <1383945677-29674-1-git-send-email-soren.brinkmann@xilinx.com>
- <1383945677-29674-6-git-send-email-soren.brinkmann@xilinx.com>
- <52827B11.5040308@linaro.org>
+	id S1756380Ab3KLVTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 16:19:39 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:44612 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab3KLVTa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 16:19:30 -0500
+Date: Tue, 12 Nov 2013 22:19:26 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, jolsa@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 5/5] perf record: Handle out of space failures writing
+ data with mmap
+Message-ID: <20131112211926.GD25913@gmail.com>
+References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
+ <1384267617-3446-6-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52827B11.5040308@linaro.org>
+In-Reply-To: <1384267617-3446-6-git-send-email-dsahern@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <49c3ad81-1370-4c56-b369-90b9d8cfe3d5@AM1EHSMHS004.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 08:01:37PM +0100, Daniel Lezcano wrote:
-> On 11/08/2013 10:21 PM, Soren Brinkmann wrote:
-> >The currently used method adjusting the clocksource to a changing input
-> >frequency does not work on kernels from 3.11 on.
-> >The new approach is to keep the timer frequency as constant as possible.
-> >I.e.
-> >  - due to the TTC's prescaler limitations, allow frequency changes
-> >    only if the frequency scales by a power of 2
-> >  - adjust the counter's divider on the fly when a frequency change
-> >    occurs
-> >
-> >When suspending though, the driver should not prevent rate changes in
-> >order to allow the system to enter its low power state. For that
-> >reason a PM notifier is added so rate changes can be ignored during
-> >suspend/resume.
-> 
-> It sounds very weird you have to add a PM notifier in this driver.
-> 
-> Have you been facing an issue or do you assume it could happen ?
-Yes, I have problems without it, which are probably Zynq specific
-though.
-When we suspend on Zynq, we bypass and power down PLLs, which is a
-re-parent operation in the clock framework. This happens in early suspend
-and triggers the clock notifiers. Due to the restrictions the TTC's
-clock notifier applies to frequency changes, it would prevent the
-re-parent operation even though we do not have to care about it in
-suspend. The timer's own suspend/resume callbacks are called to
-late/early and the PM notifier seemed to be the solution. But I'm open
-to alternative approaches.
 
+* David Ahern <dsahern@gmail.com> wrote:
+
+> If the filesystem where a file is written using mmap fills perf record
+> gets a SIGBUS and terminated. Handle the SIGBUS by using longjmp to
+> bounce out of the memcpy and fail the write.
 > 
-> >This limits cpufreq to scale by certain factors only.
-> >But we may keep the time base somewhat constant, so that sleep() & co
-> >keep working as expected, while supporting cpufreq and suspend.
-> >
-> >Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> >---
-> >  drivers/clocksource/cadence_ttc_timer.c | 142 +++++++++++++++++++++++++++-----
-> >  1 file changed, 122 insertions(+), 20 deletions(-)
-> >
-> >diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
-> >index 68a336038d8f..421b942dd707 100644
-> >--- a/drivers/clocksource/cadence_ttc_timer.c
-> >+++ b/drivers/clocksource/cadence_ttc_timer.c
-> >@@ -16,12 +16,14 @@
-> >   */
-> >
-> >  #include <linux/clk.h>
-> >+#include <linux/clk-provider.h>
-> >  #include <linux/interrupt.h>
-> >  #include <linux/clockchips.h>
-> >  #include <linux/of_address.h>
-> >  #include <linux/of_irq.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/sched_clock.h>
-> >+#include <linux/suspend.h>
-> >
-> >  /*
-> >   * This driver configures the 2 16-bit count-up timers as follows:
-> >@@ -52,6 +54,8 @@
-> >  #define TTC_CNT_CNTRL_DISABLE_MASK	0x1
-> >
-> >  #define TTC_CLK_CNTRL_CSRC_MASK		(1 << 5)	/* clock source */
-> >+#define TTC_CLK_CNTRL_PSV_MASK		0x1e
-> >+#define TTC_CLK_CNTRL_PSV_SHIFT		1
-> >
-> >  /*
-> >   * Setup the timers to use pre-scaling, using a fixed value for now that will
-> >@@ -63,6 +67,8 @@
-> >  #define CLK_CNTRL_PRESCALE_EN	1
-> >  #define CNT_CNTRL_RESET		(1 << 4)
-> >
-> >+#define MAX_F_ERR 50
-> >+
-> >  /**
-> >   * struct ttc_timer - This definition defines local timer structure
-> >   *
-> >@@ -82,8 +88,13 @@ struct ttc_timer {
-> >  		container_of(x, struct ttc_timer, clk_rate_change_nb)
-> >
-> >  struct ttc_timer_clocksource {
-> >+	int			scale_dir;
-> >+	u32			scale_clk_ctrl_reg_old;
-> >+	u32			scale_clk_ctrl_reg_new;
-> >+	int			suspending;
-> >  	struct ttc_timer	ttc;
-> >  	struct clocksource	cs;
-> >+	struct notifier_block	suspend_nb;
-> >  };
-> >
-> >  #define to_ttc_timer_clksrc(x) \
-> >@@ -228,33 +239,120 @@ static int ttc_rate_change_clocksource_cb(struct notifier_block *nb,
-> >  	struct ttc_timer_clocksource *ttccs = container_of(ttc,
-> >  			struct ttc_timer_clocksource, ttc);
-> >
-> >+	if (ttccs->suspending)
-> >+		return NOTIFY_OK;
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Stephane Eranian <eranian@google.com>
+> ---
+>  tools/perf/builtin-record.c | 22 ++++++++++++++++------
+>  1 file changed, 16 insertions(+), 6 deletions(-)
 > 
-> I don't see how it couldn't be racy. What prevents suspend to occur
-> right after this check ?
-Well, in our case there are two situations which could trigger this
-notifier.
-1. cpufreq
-2. suspend
-As long as cpufreq is doing its stuff things should be okay and fine.
-And suspend triggers the PM and clock notifier in the correct order,
-which solves the issue I described above. So, it is not really pretty,
-but works for me.
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index 1a4fa5df215b..48d6535d144f 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -29,9 +29,11 @@
+>  #include <unistd.h>
+>  #include <sched.h>
+>  #include <sys/mman.h>
+> +#include <setjmp.h>
+>  
+>  /* output file mmap'ed N chunks at a time */
+>  #define MMAP_OUTPUT_SIZE   (64*1024*1024)
+> +sigjmp_buf mmap_jmp;
+>  
+>  #ifndef HAVE_ON_EXIT_SUPPORT
+>  #ifndef ATEXIT_MAX
+> @@ -141,6 +143,7 @@ static int do_mmap_output(struct perf_record *rec, void *buf, size_t size)
+>  {
+>  	u64 remaining;
+>  	off_t offset;
+> +	volatile size_t total_len = 0;
+>  
+>  	if (rec->mmap.addr == NULL) {
+>  next_segment:
+> @@ -157,20 +160,23 @@ next_segment:
+>  	 * space write what we can then go back and create the
+>  	 * next segment
+>  	 */
+> -	if (size > remaining) {
+> -		memcpy(rec->mmap.addr + rec->mmap.offset, buf, remaining);
+> +	if (setjmp(mmap_jmp) != 0) {
+> +		pr_err("mmap copy failed.\n");
+> +		return -1;
+> +	}
+> +	if (size-total_len > remaining) {
+> +		memcpy(rec->mmap.addr + rec->mmap.offset, buf+total_len, remaining);
+>  		rec->bytes_written += remaining;
+>  
+> -		size -= remaining;
+> -		buf  += remaining;
+> +		total_len += remaining;
+>  
+>  		munmap(rec->mmap.addr, rec->mmap.out_size);
+>  		goto next_segment;
+>  	}
+>  
+>  	/* more data to copy and it fits in the current segment */
+> -	if (size) {
+> -		memcpy(rec->mmap.addr + rec->mmap.offset, buf, size);
+> +	if (size - total_len) {
+> +		memcpy(rec->mmap.addr + rec->mmap.offset, buf+total_len, size-total_len);
+>  		rec->bytes_written += size;
+>  		rec->mmap.offset += size;
+>  	}
+> @@ -272,6 +278,9 @@ static void sig_handler(int sig)
+>  	if (sig == SIGCHLD)
+>  		child_finished = 1;
+>  
+> +	if (sig == SIGBUS)
+> +		longjmp(mmap_jmp, 1);
 
-	Sören
+So this isn't very robust, because it assumes that all sources of SIGBUS 
+are due to that memcpy() hitting -ENOSPC...
 
+There are several failure modes:
 
+ - If mmap_jmp is not set yet and we get a SIGBUS is some other place, 
+   then the longjmp() result will be undefined.
+
+ - If mmap_jmp environment is set, but we've returned from 
+   do_mmap_output() already, then the result will be undefined - likely a 
+   non-obvious crash.
+
+So at minimum we need a flag that tells us whether the jump environment is 
+valid or not - i.e. whether we are executing inside the protected region 
+or not - and only do the longjmp() if that flag is set.
+
+Is there really no other way to handle the -ENOSPC case robustly? I guess 
+not because the memcpy() really needs memory to write to, but I thought 
+I'd ask ...
+
+Thanks,
+
+	Ingo
