@@ -1,131 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067Ab3KLOwy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:52:54 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33019 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754052Ab3KLOww (ORCPT
+	id S1755924Ab3KLOxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:53:11 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:61265 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab3KLOxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:52:52 -0500
-Date: Tue, 12 Nov 2013 15:52:43 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipvs: Remove unused variable ret from
- sync_thread_master()
-Message-ID: <20131112145243.GU5056@laptop.programming.kicks-ass.net>
-References: <1384264396-14550-1-git-send-email-geert@linux-m68k.org>
- <20131112141314.GQ5056@laptop.programming.kicks-ass.net>
- <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com>
+	Tue, 12 Nov 2013 09:53:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Date: Tue, 12 Nov 2013 12:53:09 -0200
+Message-ID: <CAGG-pUSSBi7+AmN09hVLeD0Qu-uA7iRPepMtr7X154yfbK4C6A@mail.gmail.com>
+Subject: [RFC] Coverity 1128444 - Dereference after null check (FORWARD_NULL)
+ in glock.c
+From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+To: swhiteho@redhat.com
+Cc: cluster-devel@redhat.com, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 02:21:39PM -0000, David Laight wrote:
-> Shame there isn't a process flag to indicate that the process
-> will sleep uninterruptibly and that it doesn't matter.
-> So don't count to the load average and don't emit a warning
-> if it has been sleeping for a long time.
+Hello,
 
-A process flag wouldn't work, because the task could block waiting for
-actual work to complete in other sleeps.
+Coverity detected in 'fs/gfs2/glock.c' a possible dereference after
+null check. Maybe a positive one.
 
-However, we could do something like the below; which would allow us
-writing things like:
+There is a initial check for possible 'gl' NULL. After that 'gl' is
+dereferenced in the looping check by __lockref_is_dead().
 
-	(void)___wait_event(*sk_sleep(sk),
-			    sock_writeable(sk) || kthread_should_stop(),
-			    TASK_UNINTERRUPTIBLE | TASK_IDLE, 0, 0,
-			    schedule());
+What do you think?
 
-Marking the one wait-for-more-work as TASK_IDLE such that it doesn't
-contribute to the load avg.
 
----
- fs/proc/array.c              | 23 ++++++++++++-----------
- include/linux/sched.h        |  8 +++++---
- include/trace/events/sched.h |  3 ++-
- 3 files changed, 19 insertions(+), 15 deletions(-)
+1875static int gfs2_glock_iter_next(struct gfs2_glock_iter *gi)
+1876{
+1877        struct gfs2_glock *gl;
+1878
+1879        do {
+1880                gl = gi->gl;
 
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index 1bd2077187fd..da9a9c8b5bba 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -133,17 +133,18 @@ static inline void task_name(struct seq_file *m, struct task_struct *p)
-  * simple bit tests.
-  */
- static const char * const task_state_array[] = {
--	"R (running)",		/*   0 */
--	"S (sleeping)",		/*   1 */
--	"D (disk sleep)",	/*   2 */
--	"T (stopped)",		/*   4 */
--	"t (tracing stop)",	/*   8 */
--	"Z (zombie)",		/*  16 */
--	"X (dead)",		/*  32 */
--	"x (dead)",		/*  64 */
--	"K (wakekill)",		/* 128 */
--	"W (waking)",		/* 256 */
--	"P (parked)",		/* 512 */
-+	"R (running)",		/*    0 */
-+	"S (sleeping)",		/*    1 */
-+	"D (disk sleep)",	/*    2 */
-+	"T (stopped)",		/*    4 */
-+	"t (tracing stop)",	/*    8 */
-+	"Z (zombie)",		/*   16 */
-+	"X (dead)",		/*   32 */
-+	"x (dead)",		/*   64 */
-+	"K (wakekill)",		/*  128 */
-+	"W (waking)",		/*  256 */
-+	"P (parked)",		/*  512 */
-+	"I (idle)",		/* 1024 */
- };
- 
- static inline const char *get_task_state(struct task_struct *tsk)
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 045b0d227846..a4a9e80688d8 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -145,9 +145,10 @@ print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq);
- #define TASK_WAKEKILL		128
- #define TASK_WAKING		256
- #define TASK_PARKED		512
--#define TASK_STATE_MAX		1024
-+#define TASK_IDLE		1024
-+#define TASK_STATE_MAX		2048
- 
--#define TASK_STATE_TO_CHAR_STR "RSDTtZXxKWP"
-+#define TASK_STATE_TO_CHAR_STR "RSDTtZXxKWPI"
- 
- extern char ___assert_task_state[1 - 2*!!(
- 		sizeof(TASK_STATE_TO_CHAR_STR)-1 != ilog2(TASK_STATE_MAX)+1)];
-@@ -173,7 +174,8 @@ extern char ___assert_task_state[1 - 2*!!(
- 			((task->state & (__TASK_STOPPED | __TASK_TRACED)) != 0)
- #define task_contributes_to_load(task)	\
- 				((task->state & TASK_UNINTERRUPTIBLE) != 0 && \
--				 (task->flags & PF_FROZEN) == 0)
-+				 (task->flags & PF_FROZEN) == 0 && \
-+				 (task->state & TASK_IDLE) == 0)
- 
- #define __set_task_state(tsk, state_value)		\
- 	do { (tsk)->state = (state_value); } while (0)
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 04c308413a5d..4553a2495c25 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -144,7 +144,8 @@ TRACE_EVENT(sched_switch,
- 		  __print_flags(__entry->prev_state & (TASK_STATE_MAX-1), "|",
- 				{ 1, "S"} , { 2, "D" }, { 4, "T" }, { 8, "t" },
- 				{ 16, "Z" }, { 32, "X" }, { 64, "x" },
--				{ 128, "K" }, { 256, "W" }, { 512, "P" }) : "R",
-+				{ 128, "K" }, { 256, "W" }, { 512, "P" },
-+				{ 1024, "I" }) : "R",
- 		__entry->prev_state & TASK_STATE_MAX ? "+" : "",
- 		__entry->next_comm, __entry->next_pid, __entry->next_prio)
- );
+1. Condition "gl", taking false branch
+
+2. var_compare_op: Comparing "gl" to null implies that "gl" might be null.
+1881                if (gl) {
+1882                        gi->gl = glock_hash_next(gl);
+1883                        gi->nhash++;
+1884                } else {
+
+3. Condition "gi->hash >= (32768 /* 1 << 15 */)", taking false branch
+1885                        if (gi->hash >= GFS2_GL_HASH_SIZE) {
+1886                                rcu_read_unlock();
+1887                                return 1;
+1888                        }
+1889                        gi->gl = glock_hash_chain(gi->hash);
+1890                        gi->nhash = 0;
+1891                }
+
+4. Condition "gi->gl == NULL", taking true branch
+
+7. Condition "gi->gl == NULL", taking false branch
+1892                while (gi->gl == NULL) {
+1893                        gi->hash++;
+
+5. Condition "gi->hash >= (32768 /* 1 << 15 */)", taking false branch
+1894                        if (gi->hash >= GFS2_GL_HASH_SIZE) {
+1895                                rcu_read_unlock();
+1896                                return 1;
+1897                        }
+1898                        gi->gl = glock_hash_chain(gi->hash);
+1899                        gi->nhash = 0;
+
+6. Jumping back to the beginning of the loop
+1900                }
+1901        /* Skip entries for other sb and dead entries */
+
+8. Condition "gi->sdp != gi->gl->gl_sbd", taking false branch
+
+CID 1128444 (#1 of 1): Dereference after null check (FORWARD_NULL)9.
+var_deref_model: Passing null pointer "&gl->gl_lockref" to function
+"__lockref_is_dead(struct lockref const *)", which dereferences
+it.[show details]
+1902        } while (gi->sdp != gi->gl->gl_sbd ||
+__lockref_is_dead(&gl->gl_lockref));
+1903
+1904        return 0;
+1905}
+
+-- 
+Regards,
+
+Geyslan G. Bem
+hackingbits.com
