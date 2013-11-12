@@ -1,60 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab3KLUdY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 15:33:24 -0500
-Received: from mail.azstlucas.be ([212.123.26.52]:11915 "EHLO
-	mail.azstlucas.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab3KLUdR convert rfc822-to-8bit (ORCPT
+	id S1756223Ab3KLUiC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 15:38:02 -0500
+Received: from smtprelay0231.hostedemail.com ([216.40.44.231]:56771 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752335Ab3KLUhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 15:33:17 -0500
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Nov 2013 15:33:16 EST
-X-AuditID: ac15020b-b7fc46d000000c4c-a7-52828d037893
-To: undisclosed-recipients:;
-From: Fransen Hendrik <Hendrik.Fransen@AZSTLUCAS.BE>
-Date: Tue, 12 Nov 2013 21:18:10 +0100
-Subject: Re: Webmail Account Certificate expired on the 11th-11-2013
-Thread-Topic: Webmail Account Certificate expired on the 11th-11-2013
-Thread-Index: AQHO3+ROneLuX4FtoE2lhxeT9Zsc4w==
-Message-ID: <C425150816FE2F48A11C64218480B45102D763EDD0@SRVMAIL003.azstlucas.local>
-Accept-Language: en-US, nl-BE
-Content-Language: en-CA
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, nl-BE
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA02SbUxTVxjHd+65b4Ld7qjOM8QvXUzcljHIluXJNAvZ2LyJyTI12RaTuV1n
-	JywFlxZRcC/kgpR1EBEQpCCCNLwUIlSHtBQotsocGnlZ0G6jA61SHFhgq6xExLXUD3w5+eV5
-	fv8n/w+HxzF9bCyfmp6h1qZLGhUbRbeS/YrX6CJ5V0KrgwPL7wYMOcarDLhlF4JTHQUYLtc1
-	c9D38zUMVQ9LKJg0eDBUeJwIXHdqWcgfVoKl5A8EC4NdLDTLx1i4P5AM3RNWFs7dHaehZmwB
-	w095NgryO/UcLD2cYmC2rgTDcOURuBX0c3Cr1oSh63IhDYb8DJjoLeCg3JeLQT/9CMFsj5uD
-	q/+6KKgeqOegdORtKC8MYBgtrUFgrf0eHky1IfivuJ+B6t8AygpHafDmDtEw1jERKrVUjaHF
-	lwgFD3oRlN3pp6DZ/wOY/U0YcvUVHDj1oTpt/4ywsFB5g4FF2xwDrZN+Gkod/SycqZQ5KLLk
-	ITh58ywGf5EVQ0NLMuQ9mWHBfslBwYW/dUnFWHRVeJA4ZThBieemB2jxSt88I97zXWTEx7Nz
-	oVl5Iy2au9uxOG5v5sRTeWZWtHZfZ0WfZ6toXXRRoiUQ0ub/XGDEGruJ/mgY7Ynetk/KyNyd
-	eiD99Xe+iE4ZGtv7zQnmSKP5Os5BJtqA1vBEeJME9P0owi+Qob/aWAOK4mOEXxCx3b6xIq0T
-	4sjpKi8TWRgRaRq8F1rwPBtKy/LOMNLCZlI8tz2sK4Vk4jw2Q0Wi75OKC1NPOZ7cbGnjwqwQ
-	dhOzr3OFkbCJdAR6VjpgYQPpPWPHkT4CMXUPPuX15L53mYn4caQ+eJGL+PHEfbKMjfCrpKFu
-	GkfuP09+rbxLFyOlcdVZ46qIcVXEuCpSi2gzelGnzUyTUjUHDickJMZL2boMzaEvJV38PvV5
-	FP7w66loKwoGVU4k8Ei1VtGeLe+KYaRMXVaaExEeq9Ypkr4LjRT7paxstfbg59pDGrXOiSh+
-	TfiJis1BHwrTM2e/3uF2PmPbqV/utNmSxszKlCeLZR/E7NEE2g9uGn/26Lsjb2yXNwTjlLFd
-	vJyl7iyQX9Y7tM9NNrlt9o2qTxxLlrTcH3tGl2+/tGPL5ujj3reSTec3pq5tuJLt6vu4que4
-	tvHTry55jvLq+pbPmNL3Rue3XvMe9j4a2Wb89rGK1qVIia9grU76H2hysbzTAwAA
+	Tue, 12 Nov 2013 15:37:55 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2198:2199:2200:2393:2553:2559:2562:2828:2904:2918:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3871:3872:3873:3874:4321:5007:7652:7903:9108:10004:10400:10848:11232:11658:11914:12043:12291:12295:12296:12517:12519:12555:12663:12683:12740:13146:13230,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wool43_61dc5cca2f204
+X-Filterd-Recvd-Size: 3681
+Message-ID: <1384288681.3665.22.camel@joe-AO722>
+Subject: Re: [Fwd: Re: [PATCH v2 2/2] x86: add prefetching to do_csum]
+From: Joe Perches <joe@perches.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: netdev <netdev@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Date: Tue, 12 Nov 2013 12:38:01 -0800
+In-Reply-To: <20131112195005.GD19780@hmsreliant.think-freely.org>
+References: <1384220542.4771.23.camel@joe-AO722>
+	 <20131112171239.GC19780@hmsreliant.think-freely.org>
+	 <1384277615.3665.10.camel@joe-AO722>
+	 <20131112195005.GD19780@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your Webmail account Certificate expired on the 11th-11-2013, This may interrupt your
-email delivery configuration, and account POP settings, page error when sending message.
+On Tue, 2013-11-12 at 14:50 -0500, Neil Horman wrote:
+> On Tue, Nov 12, 2013 at 09:33:35AM -0800, Joe Perches wrote:
+> > On Tue, 2013-11-12 at 12:12 -0500, Neil Horman wrote:
+[]
+> > > So, the numbers are correct now that I returned my hardware to its previous
+> > > interrupt affinity state, but the trend seems to be the same (namely that there
+> > > isn't a clear one).  We seem to find peak performance around a readahead of 2
+> > > cachelines, but its very small (about 3%), and its inconsistent (larger set
+> > > sizes fall to either side of that stride).  So I don't see it as a clear win.  I
+> > > still think we should probably scrap the readahead for now, just take the perf
+> > > bits, and revisit this when we can use the vector instructions or the
+> > > independent carry chain instructions to improve this more consistently.
+> > > 
+> > > Thoughts
+> > 
+> > Perhaps a single prefetch, not of the first addr but of
+> > the addr after PREFETCH_STRIDE would work best but only
+> > if length is > PREFETCH_STRIDE.
+> > 
+> > I'd try:
+> > 
+> > 	if (len > PREFETCH_STRIDE)
+> > 		prefetch(buf + PREFETCH_STRIDE);
+> > 	while (count64) {
+> > 		etc...
+> > 	}
+> > 
+> > I still don't know how much that impacts very short lengths.
+> > Can you please add a 20 byte length to your tests?
+> Sure, I modified the code so that we only prefetched 2 cache lines ahead, but
+> only if the overall length of the input buffer is more than 2 cache lines.
+> Below are the results (all counts are the average of 1000000 iterations of the
+> csum operation, as previous tests were, I just omitted that column).
+> 
+> len	set	cycles/byte	cycles/byte	improvement
+> 		no prefetch	prefetch
+> ===========================================================
+> 20B	64MB	45.014989	44.402432	1.3%
+> 20B	128MB	44.900317	46.146447	-2.7%
+> 20B	256MB	45.303223	48.193623	-6.3%
+> 20B	512MB	45.615301	44.486872	2.2%
+[]
+> I'm still left thinking we should just abandon the prefetch at this point and
+> keep the perf code until we have new instructions to help us with this further,
+> unless you see something I dont.
 
-To re-new your webmail Certificate, Please take a second to update your records by
-following the reference link below or copy and paste link on address bar :
-https://docs.google.com/forms/d/1YR-yqrvZzU-44RxLVaWhKFWztQ4KyI-Zj4d_fy8kaMI/viewform
+I tend to agree but perhaps the 3% performance
+increase with a prefetch for longer lengths is
+actually significant and desirable.
 
-Once the information provided matches what is on our record, Your Webmail
-account will work as normal after the verification process,
-and your webmail Certificate will be re-newed.
+It doesn't seem you've done the test I suggested
+where prefetch is done only for
+"len > PREFETCH_STRIDE".
 
-Sincerely,
-Mail Service Team
+Is it ever useful to do a prefetch of the
+address/data being accessed by the next
+instruction?
+
+Anyway, thanks for doing all the work.
+
+Joe
+
