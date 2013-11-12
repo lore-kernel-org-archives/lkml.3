@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab3KLIxB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 03:53:01 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:43566 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab3KLIw5 (ORCPT
+	id S1753871Ab3KLIxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 03:53:41 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:45296 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753726Ab3KLIxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 03:52:57 -0500
+	Tue, 12 Nov 2013 03:53:38 -0500
+Message-ID: <5281EC8E.90501@monstr.eu>
+Date: Tue, 12 Nov 2013 09:53:34 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1384229308.4771.35.camel@joe-AO722>
-References: <tip-z61ofiwe90xeyb461o72h8ya@git.kernel.org>
-	<1384117768.3081.10.camel@joe-AO722>
-	<5ac67859-a0b2-47f5-bdc2-c2a52b8d6885@email.android.com>
-	<1384123457.3081.33.camel@joe-AO722>
-	<52803BA2.2080908@zytor.com>
-	<1384136570.4771.5.camel@joe-AO722>
-	<5281698F.9080808@linux.intel.com>
-	<1384224883.4771.28.camel@joe-AO722>
-	<CA+55aFxsNB0BVg-fdzsu_jkPLpiba1rgTcrUOe7W2tN-mHTnBg@mail.gmail.com>
-	<1384229308.4771.35.camel@joe-AO722>
-Date: Tue, 12 Nov 2013 09:52:57 +0100
-X-Google-Sender-Auth: 3b1PftsXRAyKz54WxBRVjfQZbeg
-Message-ID: <CAMuHMdWxRsiFGNBSsoEhyusyDWhuTQS+ecUiPHH1Yaufj43X1g@mail.gmail.com>
-Subject: Re: [tip:x86/asm] x86, bitops: Change bitops to be native operand size
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joe Perches <joe@perches.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, james.t.kukunas@intel.com,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v2 1/2] mmc: arasan: Add driver for Arasan SDHCI
+References: <1383151090-13885-1-git-send-email-soren.brinkmann@xilinx.com> <b3f788b3-dfc3-422e-9a74-b796c0fd3207@DB8EHSMHS004.ehs.local>
+In-Reply-To: <b3f788b3-dfc3-422e-9a74-b796c0fd3207@DB8EHSMHS004.ehs.local>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="Wg2jxv5IeJdvvv9oNDvD6uQOUbKhvrc7K"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 5:08 AM, Joe Perches <joe@perches.com> wrote:
-> On Tue, 2013-11-12 at 12:15 +0900, Linus Torvalds wrote:
->> Talking about "ideal implementation" is also singularly stupid.
->
-> I just want the various arch implementations to match
-> the docs.  I know that's stupid.
->
-> Maybe if you really don't want to discuss things, you
-> should fix the documentation.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--Wg2jxv5IeJdvvv9oNDvD6uQOUbKhvrc7K
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-E.g. by adding a paragraph that the actual allowed range of indices may be
-a subset of "unsigned long" on some architectures.
-Or if we know that everyone supports at least 31 resp. 63 bits, that it may
-be limited to 31 resp. 63 unsigned bits, which is the positive range subset of
-"long".
+Hi Chris,
 
-Gr{oetje,eeting}s,
+On 11/06/2013 10:41 PM, S=C3=B6ren Brinkmann wrote:
+> Hi Chris,
+>=20
+> any comments from your side? Could you consider applying it to your
+> tree, please?
 
-                        Geert
+any update on this one?
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+What's the naming convention we should follow?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Is sdhci-of-arasan.c OK? Or should we use sdhci-arasan.c instead?
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--Wg2jxv5IeJdvvv9oNDvD6uQOUbKhvrc7K
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlKB7I4ACgkQykllyylKDCFhlACdFtdiHiVNLWlgFY9VQX3M+svY
+XgwAn3LgnDrPDxOgotNWQi0Ti1zgV3AD
+=ioUD
+-----END PGP SIGNATURE-----
+
+--Wg2jxv5IeJdvvv9oNDvD6uQOUbKhvrc7K--
