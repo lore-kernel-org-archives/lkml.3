@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738Ab3KLUAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 15:00:13 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:58025 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756237Ab3KLUAB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 15:00:01 -0500
+	id S1756765Ab3KLUA4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 15:00:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3263 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753735Ab3KLUAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 15:00:50 -0500
+Date: Tue, 12 Nov 2013 21:01:56 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sameer Nanda <snanda@chromium.org>
+Cc: akpm@linux-foundation.org, mhocko@suse.cz, rientjes@google.com,
+        hannes@cmpxchg.org, rusty@rustcorp.com.au, semenzato@google.com,
+        murzin.v@gmail.com, dserrg@gmail.com, msb@chromium.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] mm, oom: Fix race when selecting process to kill
+Message-ID: <20131112200156.GA9820@redhat.com>
+References: <20131109151639.GB14249@redhat.com> <1384215717-2389-1-git-send-email-snanda@chromium.org>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <1384285582-16933-21-git-send-email-eduardo.valentin@ti.com>
-References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
-	<1384285582-16933-21-git-send-email-eduardo.valentin@ti.com>
-Date: Tue, 12 Nov 2013 11:59:59 -0800
-Message-ID: <CAOesGMiCh-nGPqJQd4NPz9st7mBT0JkZ9nEK1gfyF2RmnrXZog@mail.gmail.com>
-Subject: Re: [PATCHv5 20/20] MAINTAINERS: add maintainer entry for thermal bindings
-From: Olof Johansson <olof@lixom.net>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Guenter Roeck <linux@roeck-us.net>, rui.zhang@intel.com,
-        wni@nvidia.com, Grant Likely <grant.likely@linaro.org>,
-        durgadoss.r@intel.com, linux-pm@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        lm-sensors@lm-sensors.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384215717-2389-1-git-send-email-snanda@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 11:46 AM, Eduardo Valentin
-<eduardo.valentin@ti.com> wrote:
-> After discussion and agreement of thermal device tree bindings,
-> it is desirable to properly maintain thermal bindings for
-> existing and upcoming devices.
+On 11/11, Sameer Nanda wrote:
 >
-> As original author of thermal device tree bindings, I am
-> volunteering to maintain them.
+> The selection of the process to be killed happens in two spots:
+> first in select_bad_process and then a further refinement by
+> looking for child processes in oom_kill_process. Since this is
+> a two step process, it is possible that the process selected by
+> select_bad_process may get a SIGKILL just before oom_kill_process
+> executes. If this were to happen, __unhash_process deletes this
+> process from the thread_group list. This results in oom_kill_process
+> getting stuck in an infinite loop when traversing the thread_group
+> list of the selected process.
 >
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
->  MAINTAINERS | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 3438384..94bfc46 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6178,6 +6178,7 @@ M:        Pawel Moll <pawel.moll@arm.com>
->  M:     Mark Rutland <mark.rutland@arm.com>
->  M:     Stephen Warren <swarren@wwwdotorg.org>
->  M:     Ian Campbell <ijc+devicetree@hellion.org.uk>
-> +M:     Eduardo Valentin <eduardo.valentin@ti.com>
->  L:     devicetree@vger.kernel.org
->  S:     Maintained
->  F:     Documentation/devicetree/
+> Fix this race by adding a pid_alive check for the selected process
+> with tasklist_lock held in oom_kill_process.
 
-The number of device-tree maintainers is getting to be somewhat silly.
-You don't have to be a maintainer to be a reviewer, and the number is
-getting large enough that it might get hard for one maintainer to know
-what another is doing.
-
-So, soft nack, but it's really up to the DT guys.
+OK, looks correct to me. Thanks.
 
 
--Olof
+Yes, this is a step backwards, hopefully we will revert this patch soon.
+I am starting to think something like while_each_thread_lame_but_safe()
+makes sense before we really fix this nasty (and afaics not simple)
+problem with with while_each_thread() (which should die).
+
+Oleg.
+
