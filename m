@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab3KLXRW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 18:17:22 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:38079 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756786Ab3KLXRU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 18:17:20 -0500
-Date: Tue, 12 Nov 2013 18:17:17 -0500 (EST)
-Message-Id: <20131112.181717.2152470373264166279.davem@davemloft.net>
-To: tytso@mit.edu
-Cc: dborkman@redhat.com, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hannes@stressinduktion.org,
-        netdev@vger.kernel.org
-Subject: Re: linux-next: manual merge of the random tree with the net-next
- tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20131112230242.GA1643@thunk.org>
-References: <20131112155549.c160273993147244ed6bc81d@canb.auug.org.au>
-	<5281ED01.5020204@redhat.com>
-	<20131112230242.GA1643@thunk.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 12 Nov 2013 15:17:19 -0800 (PST)
+	id S1757704Ab3KLXTh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 18:19:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53608 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757543Ab3KLXTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 18:19:31 -0500
+Date: Wed, 13 Nov 2013 00:19:03 +0100
+From: Borislav Petkov <bp@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        tglx@linutronix.de, trenn@suse.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/microcode/amd: Tone down printk(), don' t
+ treat a missing firmware file as an error
+Message-ID: <20131112231903.GN12854@pd.tnic>
+References: <1384274383-43510-1-git-send-email-trenn@suse.de>
+ <tip-11f918d3e2d3861b6931e97b3aa778e4984935aa@git.kernel.org>
+ <20131112224511.GJ12854@pd.tnic>
+ <20131112230138.GL12854@pd.tnic>
+ <20131112231008.GC30674@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131112231008.GC30674@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Theodore Ts'o <tytso@mit.edu>
-Date: Tue, 12 Nov 2013 18:02:42 -0500
+On Wed, Nov 13, 2013 at 12:10:08AM +0100, Ingo Molnar wrote:
+> Hm, that's really weird, I've been using <stable@kernel.org> for years
+> and the commits do get picked up. I also never saw such a mailer
+> failure.
+>
+> In any case I've changed my pre-cooked alias to
+> <stable@vger.kernel.org>, but still I'm wondering why
+> <stable@kernel.org> seems to be working in practice - maybe Greg
+> is picking up such commits as well, not via an email flow but via
+> scripting?
 
-> On Tue, Nov 12, 2013 at 09:55:29AM +0100, Daniel Borkmann wrote:
->> 
->> As per Hannes' suggestion, the result should look like (see cover
->> letter in [1]):
->> 
->> if (r->entropy_total > 128) {
->> 	r->initialized = 1;
->> 	r->entropy_total = 0;
->> 	if (r == &nonblocking_pool) {
->> 		prandom_reseed_late();
->> 		pr_notice("random: %s pool is initialized\n",
->> 			  r->name);
->> 	}
->> }
-> 
-> Agreed.  What's the schedule for pushing net-dev to Linus?  I'm
-> currently at Korea Linux Forum, and I was originally planning on
-> pushing random.git to Linus sometime today, but I'm also willing to
-> wait for net-dev to go first.  Either way, we should make sure Linus
-> is aware of the agreed-upon resolution of the merge conflict.
+I believe I read somewhere him saying that he does. But the
+stable@kernel.org thing as an email address doesn't work. I'd guess he
+greps commit messages for "stable@" or so...
 
-Linus is going to pull it soon, I sent the pull request last night but
-he was away from decent internet access at the time.
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
