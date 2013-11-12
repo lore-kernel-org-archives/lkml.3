@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab3KLEy2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 23:54:28 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:42382 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab3KLEyV (ORCPT
+	id S1753263Ab3KLE4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 23:56:07 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:50426 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab3KLE4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 23:54:21 -0500
-Message-ID: <1384232059.25633.10.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: Linux kernel API about sector count
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: =?UTF-8?Q?=E9=9F=A9=E7=A3=8A?= <bonben1989@gmail.com>
-Cc: Mihai =?UTF-8?Q?Don=C8=9Bu?= <mihai.dontu@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 11 Nov 2013 20:54:19 -0800
-In-Reply-To: <CAK2Ky6wGwLV1uT-tkjw0=xUutsNtGVZGjLwShaT3C9zgGHSxzw@mail.gmail.com>
-References: <CAK2Ky6yh6U1wiAAPC9TgWduzO4NS9Km0FGgRvMntTm=qYkWt7A@mail.gmail.com>
-	 <20131111150507.0bb1083e@mdontu-l>
-	 <CAK2Ky6wxDJnz3t9zK_Mumad4bsQnM_kzKds1bvhwYKQ98v3adw@mail.gmail.com>
-	 <CAK2Ky6wGwLV1uT-tkjw0=xUutsNtGVZGjLwShaT3C9zgGHSxzw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Mon, 11 Nov 2013 23:56:02 -0500
+Date: Tue, 12 Nov 2013 15:55:49 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>
+Subject: linux-next: manual merge of the random tree with the net-next tree
+Message-Id: <20131112155549.c160273993147244ed6bc81d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__12_Nov_2013_15_55_49_+1100_sxF61Q2z/L/7tjR3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-12 at 10:52 +0800, 韩磊 wrote:
->  I need a API in linux kernel about the disk's total count of
-> sector,not the sector size.
-> thank you!
+--Signature=_Tue__12_Nov_2013_15_55_49_+1100_sxF61Q2z/L/7tjR3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Have you even tried searching through the code? Take a look at how fdisk
-or blockdev or any other tool that deals with devices get the total
-sectors, ie:
+Hi Ted,
 
-blockdev --getsize /dev/sda1
+Today's linux-next merge of the random tree got a conflict in
+drivers/char/random.c between commit 0244ad004a54 ("random32: add
+prandom_reseed_late() and call when nonblocking pool becomes
+initialized") from the net-next tree and commit 301f0595c0e7 ("random:
+printk notifications for urandom pool initialization") from the random
+tree.
 
-Then follow the path for such ioctl in the in the kernel source.
+I fixed it up (probably not properly - see below) and can carry the fix
+as necessary (no action is required).
 
-> 
-> 
-> 2013/11/11 韩磊 <bonben1989@gmail.com>:
-> > Thank you! I need disk's total count of sector,not the sector size.
-> >
-> > 2013/11/11 Mihai Donțu <mihai.dontu@gmail.com>:
-> >> On Mon, 11 Nov 2013 20:31:14 +0800 韩磊 wrote:
-> >>> Can you tell me the API about the count of sector in linux kernel?
-> >>>
-> >>> which .h file and function?
-> >>>
-> >>
-> >> Looking at fdisk (util-linux) there are several ioctls:
-> >>  * HDIO_GETGEO  (linux/hdreg.h)
-> >>  * BLKGETSIZE64 (linux/fs.h), sector size is assumed 512
-> >>
-> >> The HDIO interface *seems* to be legacy:
-> >> http://www.mjmwired.net/kernel/Documentation/ioctl/hdio.txt
-> >>
-> >> Also see:
-> >> https://git.kernel.org/cgit/utils/util-linux/util-linux.git/tree/fdisks/fdisk.c
-> >>
-> >> I hope this helps a bit.
-> >>
-> >> --
-> >> Mihai Donțu
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/char/random.c
+index 4fe5609eeb72,cdf4cfb2da4d..000000000000
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@@ -255,8 -255,12 +255,9 @@@
+  #include <linux/fips.h>
+  #include <linux/ptrace.h>
+  #include <linux/kmemcheck.h>
+ +#include <linux/irq.h>
++ #include <linux/workqueue.h>
+ =20
+ -#ifdef CONFIG_GENERIC_HARDIRQS
+ -# include <linux/irq.h>
+ -#endif
+ -
+  #include <asm/processor.h>
+  #include <asm/uaccess.h>
+  #include <asm/irq.h>
+@@@ -601,12 -654,14 +651,16 @@@ retry
+  	if (cmpxchg(&r->entropy_count, orig, entropy_count) !=3D orig)
+  		goto retry;
+ =20
++ 	r->entropy_total +=3D nbits;
+  	if (!r->initialized && nbits > 0) {
+- 		r->entropy_total +=3D nbits;
+  		if (r->entropy_total > 128) {
++ 			if (r =3D=3D &nonblocking_pool)
++ 				pr_notice("random: %s pool is initialized\n",
++ 					  r->name);
+  			r->initialized =3D 1;
+ +			if (r =3D=3D &nonblocking_pool)
+ +				prandom_reseed_late();
++ 			r->entropy_total =3D 0;
+  		}
+  	}
+ =20
 
+--Signature=_Tue__12_Nov_2013_15_55_49_+1100_sxF61Q2z/L/7tjR3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSgbTZAAoJEMDTa8Ir7ZwVM6EP/jqWGOkXLehMTDq3k35DvAcC
+OG9bp4ifSD5JdYoqBaiFxE1L5cCMv8UONj8CYmRkkcCGK1t0Y6/MLxY6424lb7lA
+7ZMlOkOZ7bgu4E9xDOcYj9IJNhKKC740EoLvBVbjGdZ4tAGyx2IcUCdK8j38iV4r
+W0D5SZtgMWqBBgwhVwkcDNCjeOhLzhgPqBjQC9lDQJHbsTJ8963A4BM82ViiBY9Y
+MfpvG60ol/Kdxh2SZqpsNiBL0/Myx5cdka2Kj5vMdlB/Zq2f6NsirdgN05GsKUDf
+CBajnETNTZSifYIA9+11Vidz+ql1DwoQc6tZd0fNZpGU6hZ/lec/3fwT/TGTG8jc
+OQVG8Vju3E+4FgEujhSGzIhLF0gERwNsyNXadROrl6LfGBnkzpYoOgZE2/3CWAn7
+SDcc1Y2BTI6RM93O0s/ukMpKu6HaEXrbZ6o0jjn+6vs+EcCtM/rhkuw4INlPUwqD
+NEY46pFAhcLCoLO1OJgB0qz+JPGJH1xhHeahfOIngTiLUXr75xbYePKzfWXidyfJ
+DGZAPkPdBxoqyHkQbAmKaCse9Hx8wneBGLnORn/6kW6O/TBnsPgtwnf4vs7O8M8I
+Af8g0vfZndS4eyIaFmsb6uK83OPS7tzL1cfL14Wif76pHspG02Wt8ka3ZRUOrDD6
+8oOsGUf6NVhYUrGe7rgo
+=vFsE
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__12_Nov_2013_15_55_49_+1100_sxF61Q2z/L/7tjR3--
