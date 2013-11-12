@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347Ab3KLEHL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 23:07:11 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:56756 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3KLEHG (ORCPT
+	id S1753304Ab3KLEId (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 23:08:33 -0500
+Received: from smtprelay0074.hostedemail.com ([216.40.44.74]:54379 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750991Ab3KLEIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 23:07:06 -0500
-Date: Tue, 12 Nov 2013 05:07:03 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>
-Subject: Re: [RFC PATCH 3/3] x86, boot: Change the BIOS corruption checker to
- scan 640K
-Message-ID: <20131112040703.GA28410@gmail.com>
-References: <1384215407-22288-1-git-send-email-hpa@linux.intel.com>
- <1384215407-22288-4-git-send-email-hpa@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384215407-22288-4-git-send-email-hpa@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Nov 2013 23:08:25 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3871:3873:3874:4321:5007:6119:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13161:13200:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wrist37_2bf74a8862120
+X-Filterd-Recvd-Size: 1780
+Message-ID: <1384229308.4771.35.camel@joe-AO722>
+Subject: Re: [tip:x86/asm] x86, bitops: Change bitops to be native operand
+ size
+From: Joe Perches <joe@perches.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, james.t.kukunas@intel.com,
+        David Miller <davem@davemloft.net>
+Date: Mon, 11 Nov 2013 20:08:28 -0800
+In-Reply-To: <CA+55aFxsNB0BVg-fdzsu_jkPLpiba1rgTcrUOe7W2tN-mHTnBg@mail.gmail.com>
+References: <tip-z61ofiwe90xeyb461o72h8ya@git.kernel.org>
+	 <1384117768.3081.10.camel@joe-AO722>
+	 <5ac67859-a0b2-47f5-bdc2-c2a52b8d6885@email.android.com>
+	 <1384123457.3081.33.camel@joe-AO722> <52803BA2.2080908@zytor.com>
+	 <1384136570.4771.5.camel@joe-AO722> <5281698F.9080808@linux.intel.com>
+	 <1384224883.4771.28.camel@joe-AO722>
+	 <CA+55aFxsNB0BVg-fdzsu_jkPLpiba1rgTcrUOe7W2tN-mHTnBg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-11-12 at 12:15 +0900, Linus Torvalds wrote:
+> Talking about "ideal implementation" is also singularly stupid.
 
-* H. Peter Anvin <hpa@linux.intel.com> wrote:
+I just want the various arch implementations to match
+the docs.  I know that's stupid.
 
-> From: "H. Peter Anvin" <hpa@linux.intel.com>
-> 
-> Change the BIOS corruption checker to scan 640K if enabled.  This is
-> the normal amount that we otherwise would reserve with the new default
-> settings; change the Kconfig help message to indicate that this is now
-> intended as a diagnostic tool when one is considering enabling any
-> chunk of low memory.
-> 
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> Cc: Olof Johansson <olof@lixom.net>
-> Link: http://lkml.kernel.org/r/528168CB.7070602@linux.intel.com
-> ---
->  arch/x86/Kconfig        | 25 +++++++++++--------------
->  arch/x86/kernel/check.c | 10 +++++-----
->  2 files changed, 16 insertions(+), 19 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 7631122..554aedd 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1384,24 +1384,21 @@ config HIGHPTE
->  config X86_CHECK_BIOS_CORRUPTION
->  	bool "Check for low memory corruption"
->  	---help---
-> +	  Periodically check for memory corruption in low memory,
-> +	  which is suspected to be caused by BIOS.  Even when enabled
-> +	  in the configuration, it is disabled at runtime.  Enable it
-> +	  by setting "memory_corruption_check=1" on the kernel command
-> +	  line.  By default it reserves and scans the low 640K of
-> +	  memory every 60 seconds; see the
-> +	  memory_corruption_check_size and
->  	  memory_corruption_check_period parameters in
->  	  Documentation/kernel-parameters.txt to adjust this.
+Maybe if you really don't want to discuss things, you
+should fix the documentation.
 
-I agree with your patches so far, and I'd suggest we go even further: I'd 
-say the config option is now a misnomer, it should probably be renamed to 
-CONFIG_X86_FORCE_RESERVE_BIOS_LOW_1MB=y or so.
+Documentation/atomic_ops.txt
 
-Btw., should we also force-reserve the remaining bits over 640K..1MB, if 
-they are not marked as reserved in the memory maps, or do we already 
-force-reserve them somewhere?
 
-The CONFIG_X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK=y option and the 
-memory_corruption_check=1 boot option then allow the activation of the low 
-memory corrupion checker - which debug facility can be used on systems 
-where someone wants to live dangerously and not reserve the low 1MB of RAM 
-to the firmware.
-
-Thanks,
-
-	Ingo
