@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab3KLOg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:36:29 -0500
-Received: from unicorn.mansr.com ([81.2.72.234]:38247 "EHLO unicorn.mansr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797Ab3KLOg0 convert rfc822-to-8bit (ORCPT
+	id S1755736Ab3KLOge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:36:34 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:49206 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab3KLOgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:36:26 -0500
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, Ingo Molnar <mingo@redhat.com>,
-        acme@ghostprotocols.net, kernel-br <kernel-br@googlegroups.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Coverity 1128445 - Reliance on integer endianness
-References: <CAGG-pUQrN6D_iSsWVptjQSA4B_oGn5NhbhBp+aLT0GJCFSmYRA@mail.gmail.com>
-Date: Tue, 12 Nov 2013 14:36:24 +0000
-In-Reply-To: <CAGG-pUQrN6D_iSsWVptjQSA4B_oGn5NhbhBp+aLT0GJCFSmYRA@mail.gmail.com>
-	("Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem"'s message of "Tue, 12 Nov 2013
- 12:19:13
-	-0200")
-Message-ID: <yw1xd2m5vg9j.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 12 Nov 2013 09:36:32 -0500
+Date: Tue, 12 Nov 2013 09:36:29 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: =?ISO-8859-15?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+cc: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH v2] ARM: Use udiv/sdiv for __aeabi_{u}idiv library
+ functions
+In-Reply-To: <yw1xhabhvgw0.fsf@unicorn.mansr.com>
+Message-ID: <alpine.LFD.2.10.1311120933060.9667@knanqh.ubzr>
+References: <1383951632-6090-1-git-send-email-sboyd@codeaurora.org> <alpine.LFD.2.10.1311092357090.2314@knanqh.ubzr> <528193A0.7050505@codeaurora.org> <alpine.LFD.2.10.1311120839310.9667@knanqh.ubzr> <yw1xhabhvgw0.fsf@unicorn.mansr.com>
+User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-903574381-1384266990=:9667"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geyslan Gregório Bem <geyslan@gmail.com> writes:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Hi,
->
-> Coverity detected in 'arch/x86/kernel/cpu/perf_event_intel_uncore.c' a
-> possible reliance on integer endianness. Is that a positive one?
+--8323328-903574381-1384266990=:9667
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
-No, x86 is always little endian.
+On Tue, 12 Nov 2013, Måns Rullgård wrote:
 
-> static u64 ivt_uncore_irp_read_counter(struct intel_uncore_box *box,
-> struct perf_event *event)
-> 1369{
-> 1370        struct pci_dev *pdev = box->pci_dev;
-> 1371        struct hw_perf_event *hwc = &event->hw;
-> 1372        u64 count = 0;
-> 1373
->
-> CID 1128445 (#1 of 1): Reliance on integer endianness
-> (INCOMPATIBLE_CAST)incompatible_cast: Pointer "&count" points to an
-> object whose effective type is "unsigned long long" (64 bits,
-> unsigned) but is dereferenced as a narrower "unsigned int" (32 bits,
-> unsigned). This may lead to unexpected results depending on machine
-> endianness.[show details]
->
-> 1374        pci_read_config_dword(pdev, ivt_uncore_irp_ctrs[hwc->idx],
-> (u32 *)&count);
-> 1375        pci_read_config_dword(pdev, ivt_uncore_irp_ctrs[hwc->idx]
-> + 4, (u32 *)&count + 1);
-> 1376
-> 1377        return count;
-> 1378}
+> Nicolas Pitre <nicolas.pitre@linaro.org> writes:
+> 
+> > What about this patch which I think is currently your best option.  Note 
+> > it would need to use the facilities from asm/opcodes.h to make it endian 
+> > agnostic.
+> >
+> > diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> > index 6a1b8a81b1..379cffe4ab 100644
+> > --- a/arch/arm/kernel/setup.c
+> > +++ b/arch/arm/kernel/setup.c
+> > @@ -383,6 +383,34 @@ static void __init cpuid_init_hwcaps(void)
+> >  		elf_hwcap |= HWCAP_IDIVT;
+> >  	}
+> >
+> > +	/*
+> > +	 * Patch our division routines with the corresponding opcode
+> > +	 * if the hardware supports it.
+> > +	 */
+> > +	if (IS_ENABLED(CONFIG_THUMB2_KERNEL) && (elf_hwcap & HWCAP_IDIVT)) {
+> > +		extern char __aeabi_uidiv, __aeabi_idiv;
+> 
+> It would be safer to declare these as arrays of unspecified size.
+> Otherwise the compiler might do evil things with what to it looks like
+> out of bounds indexing.
 
-This looks intentional and correct apart from possible strict aliasing
-issues.
+Right.
 
--- 
-Måns Rullgård
-mans@mansr.com
+> 
+> There should also be some cache maintenance after this patching, or is
+> that already happening for some other reason?
+
+This is so early during boot that the MMU isn't even fully initialized 
+yet.  The cache will be flushed.
+
+
+Nicolas
+--8323328-903574381-1384266990=:9667--
