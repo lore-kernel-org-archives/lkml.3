@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab3KLQO0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 11:14:26 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50200 "EHLO arroyo.ext.ti.com"
+	id S1754300Ab3KLQO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 11:14:29 -0500
+Received: from skyrme.org ([193.175.80.135]:48693 "EHLO skyrme.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751472Ab3KLQOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 11:14:20 -0500
-Message-ID: <528253B7.2060408@ti.com>
-Date: Tue, 12 Nov 2013 11:13:43 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>
-CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>
-Subject: Re: [PATCH 10/12] mtd: nand: davinci: don't set timings if AEMIF
- is used
-References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>,<1384187188-5776-11-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D53@DNCE04.ent.ti.com>
-In-Reply-To: <4F5844B3A985794BA902E12C070812375F8D53@DNCE04.ent.ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752678Ab3KLQOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 11:14:22 -0500
+Date: 12 Nov 2013 16:14:17 +0000
+Message-Id: <1384272857-24473-1-git-send-email-oskar@scara.com>
+From: "Oskar Schirmer" <oskar@scara.com>
+To: "Jaroslav Kysela" <perex@perex.cz>
+Cc: linux-kernel@vger.kernel.org, "Takashi Iwai" <tiwai@suse.de>,
+        alsa-devel@alsa-project.org,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Oskar Schirmer" <oskar@scara.com>
+Subject: [PATCH] ALSA: pcm: retrieve true appl_ptr where stream was unlocked
+X-Mailer: git-send-email 1.6.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 November 2013 12:10 PM, Khoronzhuk, Ivan wrote:
-> If Davinci AEMIF is used we don't need to set timings and bus width.
-> It is done by AEMIF driver (drivers/memory/davinci-aemfi.c).
-> 
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> ---
->  drivers/mtd/nand/davinci_nand.c |   22 +++++++++++++++-------
->  1 file changed, 15 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-> index 4705214..879e915 100644
-> --- a/drivers/mtd/nand/davinci_nand.c
-> +++ b/drivers/mtd/nand/davinci_nand.c
-> @@ -742,27 +742,35 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
->                 goto err_clk_enable;
->         }
-> 
-> +#if !IS_ENABLED(CONFIG_TI_DAVINCI_AEMIF)
->
-Instead above #if, just use a variable.
-	bool aemif = IS_ENABLED(CONFIG_TI_DAVINCI_AEMIF) and then skip
-the below code. #if block in the middle of the code looks ugly.
+Calculated for data transfer, the local variable appl_ptr is reused,
+changed and written back later, though the lock was not held during
+the transfer earlier. Admitted, destiny of the lock is not obvious
+at all, but this looks much like a race condition candidate, so make
+sure to have some original appl_ptr value to work on.
 
-Other than that patch looks fine to me.
+Two occurences.
 
-Regards,
-Santosh
+Signed-off-by: Oskar Schirmer <oskar@scara.com>
+---
+ sound/core/pcm_lib.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
+index 6e03b46..47e836a 100644
+--- a/sound/core/pcm_lib.c
++++ b/sound/core/pcm_lib.c
+@@ -2051,6 +2051,7 @@ static snd_pcm_sframes_t snd_pcm_lib_write1(struct snd_pcm_substream *substream,
+ 		default:
+ 			break;
+ 		}
++		appl_ptr = runtime->control->appl_ptr;
+ 		appl_ptr += frames;
+ 		if (appl_ptr >= runtime->boundary)
+ 			appl_ptr -= runtime->boundary;
+@@ -2283,6 +2284,7 @@ static snd_pcm_sframes_t snd_pcm_lib_read1(struct snd_pcm_substream *substream,
+ 		default:
+ 			break;
+ 		}
++		appl_ptr = runtime->control->appl_ptr;
+ 		appl_ptr += frames;
+ 		if (appl_ptr >= runtime->boundary)
+ 			appl_ptr -= runtime->boundary;
+-- 
+1.7.9.5
 
