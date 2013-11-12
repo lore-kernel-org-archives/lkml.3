@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab3KLAHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 19:07:41 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55710 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752913Ab3KLAHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 19:07:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="407148091"
-Message-ID: <52817251.3040509@linux.intel.com>
-Date: Mon, 11 Nov 2013 16:12:01 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1754185Ab3KLAKD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 19:10:03 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:34707 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753845Ab3KLAJy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Nov 2013 19:09:54 -0500
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>
-CC: balbi@ti.com, gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5.1 4/5] check quirk to pad epout buf size when not aligned
- to maxpacketsize
-References: <1384201011-11114-1-git-send-email-david.a.cohen@linux.intel.com> <1384201011-11114-5-git-send-email-david.a.cohen@linux.intel.com> <xa1ttxfiwkw0.fsf@mina86.com>
-In-Reply-To: <xa1ttxfiwkw0.fsf@mina86.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <52809F67.20901@freescale.com>
+References: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com>
+	<1380188023-3936-4-git-send-email-hongbo.zhang@freescale.com>
+	<525F7C18.3010409@freescale.com>
+	<5278587F.7090500@freescale.com>
+	<CAA9_cme3c7SjH3iio0oR3FHpfoMzgrBDO-2k_Yf68G-AgFNqfA@mail.gmail.com>
+	<52809F67.20901@freescale.com>
+Date: Mon, 11 Nov 2013 16:09:53 -0800
+Message-ID: <CAPcyv4h00zGc2=ZLwnCpP3WTQ8JbFteV-torU+qCo98YXrfq5A@mail.gmail.com>
+Subject: Re: [PATCH v11 3/3] DMA: Freescale: update driver to support
+ 8-channel DMA engine
+From: Dan Williams <dan.j.williams@intel.com>
+To: Hongbo Zhang <hongbo.zhang@freescale.com>
+Cc: "Koul, Vinod" <vinod.koul@intel.com>, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        Stephen Warren <swarren@wwwdotorg.org>, ian.campbell@citrix.com,
+        devicetree@vger.kernel.org,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
-
-On 11/11/2013 03:58 PM, Michal Nazarewicz wrote:
-> Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
-> to be aligned to maxpacketsize of an out endpoint.  ffs_epfile_io() needs
-> to pad epout buffer to match above condition if quirk is found.
->
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> ---
->   drivers/usb/gadget/f_fs.c | 10 +++++++++-
->   1 file changed, 9 insertions(+), 1 deletion(-)
->
-> On Tue, Nov 12 2013, David Cohen wrote:
->> One curiosity here. This patch prints the following warning:
+On Mon, Nov 11, 2013 at 1:12 AM, Hongbo Zhang
+<hongbo.zhang@freescale.com> wrote:
+>>>>> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+>>>>> index 49e8fbd..16a9a48 100644
+>>>>> --- a/drivers/dma/fsldma.c
+>>>>> +++ b/drivers/dma/fsldma.c
+>>>>> @@ -1261,7 +1261,9 @@ static int fsl_dma_chan_probe(struct
+>>>>> fsldma_device
+>>>>> *fdev,
+>>>>>        WARN_ON(fdev->feature != chan->feature);
+>>>>>          chan->dev = fdev->dev;
+>>>>> -    chan->id = ((res.start - 0x100) & 0xfff) >> 7;
+>>>>> +    chan->id = (res.start & 0xfff) < 0x300 ?
+>>>>> +           ((res.start - 0x100) & 0xfff) >> 7 :
+>>>>> +           ((res.start - 0x200) & 0xfff) >> 7;
+>>>>>        if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
 >>
->> In file included from (...)/drivers/usb/gadget/g_ffs.c:55:0:
->> (...)/drivers/usb/gadget/f_fs.c: In function 'ffs_epfile_io.isra.18':
->> (...)/drivers/usb/gadget/f_fs.c:837:15: warning: 'data_len' may be used
->> uninitialized in this function [-Wmaybe-uninitialized]
+>> Isn't it a bit fragile to have this based on the resource address?
+>> Can't device tree tell you the channel id directly by an index into
+>> the "dma0: dma@100300" node?
 >
-> With the below code, this should no longer be a problem.
 >
-> Also fixes issues pointed out by Alan.
+> Yes, both this way and putting a "cell-index" into device tree work.
+> This won't be fragile, because the resource address should always be defined
+> correctly, otherwise even if we can tell a channel id by "cell-index" but
+> with wrong resource address, nothing will work.
+> This piece of code only doesn't seem as neat as using "cell-index", but we
+> prefer the style that let the device tree describes as true as what hardware
+> really has. This doesn't mean "cell-index" isn't acceptable, if it is
+> necessary and unavoidable, we can send another patch to add it, but
+> currently there is no need and we don't have to do this.
+>
 
-You need to update req->length otherwise it's going to crash DWC3.
-I'd rather to keep your previous version.
+I'm pointing it out because we just had a bug fix to another driver
+motivated by the fact that resource addresses may move from one
+implementation to another, whereas the cell index provided by device
+tree is static.  Just a note, no need to fix it now.
 
-Br, David
+--
+Dan
