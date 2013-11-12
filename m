@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894Ab3KLStO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 13:49:14 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39219 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679Ab3KLStL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 13:49:11 -0500
-Date: Tue, 12 Nov 2013 19:49:07 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Does Itanium permit speculative stores?
-Message-ID: <20131112184907.GD16796@laptop.programming.kicks-ass.net>
-References: <20131111171307.GA27002@linux.vnet.ibm.com>
- <3908561D78D1C84285E8C5FCA982C28F31D5DB28@ORSMSX106.amr.corp.intel.com>
- <20131112182617.GG21461@twins.programming.kicks-ass.net>
- <3908561D78D1C84285E8C5FCA982C28F31D5DF47@ORSMSX106.amr.corp.intel.com>
+	id S1755106Ab3KLS0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 13:26:08 -0500
+Received: from mga03.intel.com ([143.182.124.21]:6322 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752679Ab3KLS0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 13:26:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="320296818"
+Message-ID: <5282724F.10207@linux.intel.com>
+Date: Tue, 12 Nov 2013 10:24:15 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31D5DF47@ORSMSX106.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Michal Nazarewicz <mina86@mina86.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 2/2] check quirk to pad epout buf size when not aligned
+ to maxpacketsize
+References: <Pine.LNX.4.44L0.1311121046200.1200-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1311121046200.1200-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 06:46:20PM +0000, Luck, Tony wrote:
-> > So the point we're having a discussion on is if any architecture has
-> > visible speculative STORES and if there's an architecture that doesn't
-> > have control dependencies.
-> >
-> > On the visible speculative STORES; can, if in the above example we have
-> > regular loads/stores:
-> >
-> >  LOAD r1, x			LOAD r2, y
-> >  IF (r1)			IF (r2)
-> >	STORE y, 1			STORE x, 1
-> >
-> > we observe: r1==1 && r2==1
-> >
-> > In order for that to be true; we must be able to observe the stores
-> > before the loads are complete -- and therefore before the branches are a
-> > certainty.
+>>>> IIUC, req->length should still be set to len, not to data_len.
+>>
+>> I misunderstood the first time I read it:
+>> In order to avoid DWC3 to stall, we need to update req->length (this is
+>> the most important fix). kmalloc() is updated too to prevent USB
+>> controller to overflow buffer boundaries.
 > 
-> Even without the ".acq" and ".rel" this code is still safe.
+> Here I disagree.
 > 
-> Quoting ia64 SDM vol 1, Section 4.4.7 Memory Access Ordering"
-> "In addition, memory writes and flushes must observe control dependencies"
+> If the DWC3 hardware stalls, it is up to the DWC3 UDC driver to fix it.  
+> Gadget drivers should not have to worry.  Most especially, gadget 
+> drivers should not lie about a request length.
 > 
-> which I take to mean that the STORE can't be visible until we are certain of
-> the outcome of the conditional.
+> If the UDC driver decides to round up req->length before sending it to
+> the hardware, that's okay.  But req->length should be set to len, not
+> data_len.  And if the hardware receives more than len bytes of data,
+> the UDC driver should set req->status to -EOVERFLOW.
 
-Awesome!
+Got your point. As long as buffer allocation has enough size, DWC3 is
+able to fix itself. I'm fine with this approach too. But in this case I
+will need to redo my DWC3 patch and my validation.
+
+Br, David
+
+> 
+> Alan Stern
+> 
+
