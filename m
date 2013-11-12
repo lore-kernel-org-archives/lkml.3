@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab3KLIcJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 03:32:09 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45214 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab3KLIbu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 03:31:50 -0500
-Date: Tue, 12 Nov 2013 09:31:44 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Vinayak Kale <vkale@apm.com>
-cc: Will Deacon <will.deacon@arm.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>
-Subject: Re: [PATCH 0/2] genirq: arm64: perf: support for percpu pmu
- interrupt
-In-Reply-To: <CAPrCYkf60+9RJ2aJ5ep3-j+ThdniJQHnUj_8POrCr7X2veKRZQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1311120924390.30673@ionos.tec.linutronix.de>
-References: <1383739658-10036-1-git-send-email-vkale@apm.com> <527D8A17.9020208@codeaurora.org> <20131111104432.GA28302@mudshark.cambridge.arm.com> <CAPrCYkf60+9RJ2aJ5ep3-j+ThdniJQHnUj_8POrCr7X2veKRZQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754230Ab3KLIcg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 03:32:36 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:3916 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753345Ab3KLIca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 03:32:30 -0500
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <5281E797.9030101@broadcom.com>
+Date: Tue, 12 Nov 2013 09:32:23 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: "Michael Opdenacker" <michael.opdenacker@free-electrons.com>,
+        trivial@kernel.org
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RESEND][TRIVIAL] treewide: fix occurrences of
+ "the the "
+References: <1384233016-15188-1-git-send-email-michael.opdenacker@free-electrons.com>
+In-Reply-To: <1384233016-15188-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-WSS-ID: 7E9F38F44RS7225641-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Nov 2013, Vinayak Kale wrote:
-> On Mon, Nov 11, 2013 at 4:14 PM, Will Deacon <will.deacon@arm.com> wrote:
-> > cleaner from a user perspective, I always get scared when I see
-> > 'desc->status_use_accessors' since it tends to incur the wrath of tglx :)
+On 11/12/2013 06:10 AM, Michael Opdenacker wrote:
+> Fix all occurrences of "the the " in the source code,
+> comments and documentation.
+>
+> The replacement couldn't be automated because sometimes
+> the first "the" was meant to be another word.
+>
+> Example: "according the the"
+> meaning: "according to the"
+>
+> Note that I sometimes took the opportunity to fix
+> other spelling issues or typos in the same sentences.
+> I also fixed a few checkpatch errors in the same
+> lines.
+>
+> This is an update to the patch sent on Sep. 12, 2013
 
-Nah, if it uses accessors, then it's fine.
+Better put this kind of info below the signed-off-by line. Or even 
+better use the message-id of that patch in the 'In-Reply-To:' field that 
+git-send-email prompts for.
 
-> > That said, I guess that should be fine in irqdesc.h (basically adding a new
-> > accessor). Chris went missing after sending those initial patches, so
-> > perhaps Vinayak could look at resurrecting those?
-> >
-> Okay, in next patch revision I will use that approach.
+For driver change mentioned below:
+Acked-by: Arend van Spriel <arend@broadcom.com>
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+so here: 'This is an update to the patch sent on Sep. 12, 2013'
+> ---
+>   drivers/net/wireless/brcm80211/brcmsmac/main.c                 | 2 +-
 
-Works for me.
 
-Thanks,
-
-	tglx
- 
