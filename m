@@ -1,87 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab3KLPNO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:13:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35777 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab3KLPNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:13:11 -0500
-Date: Tue, 12 Nov 2013 16:13:08 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Sameer Nanda <snanda@chromium.org>
-Cc: akpm@linux-foundation.org, rientjes@google.com, hannes@cmpxchg.org,
-        rusty@rustcorp.com.au, semenzato@google.com, murzin.v@gmail.com,
-        oleg@redhat.com, dserrg@gmail.com, msb@chromium.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] mm, oom: Fix race when selecting process to kill
-Message-ID: <20131112151308.GD6049@dhcp22.suse.cz>
-References: <20131109151639.GB14249@redhat.com>
- <1384215717-2389-1-git-send-email-snanda@chromium.org>
+	id S1755559Ab3KLPN4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:13:56 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:44031 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab3KLPNy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 10:13:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384215717-2389-1-git-send-email-snanda@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131112145752.GM24559@pengutronix.de>
+References: <CA+5PVA72-oR=-T=dL=Y=+gymuDSMd1E8VrSbzGQDxxuJDfoKZg@mail.gmail.com>
+	<CA+5PVA6c6fu5vEnkf1Fk4BE_r-i4Bv1noOoz1sAPDpP3U3PDjw@mail.gmail.com>
+	<20131112145752.GM24559@pengutronix.de>
+Date: Tue, 12 Nov 2013 10:13:54 -0500
+X-Google-Sender-Auth: _SXe3VlgOvwfziVAa1Xade8vg34
+Message-ID: <CA+5PVA5YJKDkNAqXXOSyDN5v+gTc7ig_kkJxCG6yhe8v2_SU2w@mail.gmail.com>
+Subject: Re: imx-drm/ipuv3-crtc.ko fails to link
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>, Dave Airlie <airlied@gmail.com>,
+        devel@driverdev.osuosl.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 11-11-13 16:21:57, Sameer Nanda wrote:
-> The selection of the process to be killed happens in two spots:
-> first in select_bad_process and then a further refinement by
-> looking for child processes in oom_kill_process. Since this is
-> a two step process, it is possible that the process selected by
-> select_bad_process may get a SIGKILL just before oom_kill_process
-> executes. If this were to happen, __unhash_process deletes this
-> process from the thread_group list. This results in oom_kill_process
-> getting stuck in an infinite loop when traversing the thread_group
-> list of the selected process.
-> 
-> Fix this race by adding a pid_alive check for the selected process
-> with tasklist_lock held in oom_kill_process.
-> 
-> Signed-off-by: Sameer Nanda <snanda@chromium.org>
-> ---
->  mm/oom_kill.c | 24 +++++++++++++++++++-----
->  1 file changed, 19 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 6738c47..57638ef 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -413,12 +413,20 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->  					      DEFAULT_RATELIMIT_BURST);
->  
->  	/*
-> +	 * while_each_thread is currently not RCU safe. Lets hold the
-> +	 * tasklist_lock across all invocations of while_each_thread (including
-> +	 * the one in find_lock_task_mm) in this function.
-> +	 */
-> +	read_lock(&tasklist_lock);
-> +
-> +	/*
->  	 * If the task is already exiting, don't alarm the sysadmin or kill
->  	 * its children or threads, just set TIF_MEMDIE so it can die quickly
->  	 */
-> -	if (p->flags & PF_EXITING) {
-> +	if (p->flags & PF_EXITING || !pid_alive(p)) {
->  		set_tsk_thread_flag(p, TIF_MEMDIE);
->  		put_task_struct(p);
-> +		read_unlock(&tasklist_lock);
->  		return;
->  	}
+On Tue, Nov 12, 2013 at 9:57 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> Hi Josh,
+>
+> On Tue, Nov 12, 2013 at 09:32:08AM -0500, Josh Boyer wrote:
+>> On Mon, Nov 11, 2013 at 11:22 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+>> > Hi All,
+>> >
+>> > With v3.12-2839-gedae583 (Linus' tree as of this morning), the
+>> > ipuv3-crtc.ko module fails to link with the following messages:
+>> >
+>> > ERROR: "ipu_plane_disable" [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
+>> > ERROR: "ipu_plane_enable" [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
+>> > ERROR: "ipu_plane_irq" [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
+>> > ERROR: "ipu_plane_get_resources"
+>> > [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
+>> > ERROR: "ipu_plane_init" [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
+>> > ERROR: "imx_drm_crtc_id" [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
+>> > ERROR: "ipu_plane_mode_set" [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
+>> > ERROR: "ipu_plane_set_base" [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
+>> > ERROR: "ipu_plane_put_resources"
+>> > [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
+>> > make[1]: *** [__modpost] Error 1
+>> > make: *** [modules] Error 2
+>>
+>> Actually, I think this is because ipuv3-plane.c was added to the
+>> Makefile as a requisite file for ipuv3-crtc.ko with commit
+>> b8d181e408af6a017d, but Kbuild isn't interpreting it that way because
+>> it's a tristate option, not a bool.  Making it work would require
+>> something like:
+>>
+>> imx-ipuv3-crct-objs  := ipuv3-crtc.o ipuv3-plane.o
+>> obj-$(CONFIG_DRM_IMX_IPUV3)  += imx-ipuv3-crct.o
+>>
+>> But that would rename the module from ipuv3-crtc.ko to
+>> imx-ipuv3-crct.ko.  Even with that, it still fails to link with:
+>>
+>> ERROR: "imx_drm_crtc_id" [drivers/staging/imx-drm/imx-ipuv3-crtc.ko] undefined!
+>>
+>> So two questions really.
+>>
+>> 1) Are the tristate options for DRM_IMX_IPUV3, DRM_IMX_IPUV3_CORE,
+>> DRM_IMX_LDB, DRM_IMX_TVE, DRM_IMX_PARALLEL_DISPLAY, and
+>> DRM_IMX_FB_HELPER really all supposed to be separate modules, or
+>> should they be boolean options to the main DRM_IMX tristate?
+>
+> I think at least the ipuv3 core should be a separate module since this
+> could be used without drm support (for the input pathes, handled via v4l2)
+>
+>>
+>> 2) If the answer to question 1 is "all separate modules", then either
+>> ipuv3-crtc.c needs to be renamed or the final module name will be
+>> different.
+>
+> The final module name shouldn't matter, we can change it.
 
-show_mem used to be one of a bottleneck but now that we have Mel's "mm:
-do not walk all of system memory during show_mem" it shouldn't be a big
-deal anymore.
-The real trouble is with dump_tasks which might be zillions of tasks and
-we do not want to hold tasklist_lock for that long.
+OK.
 
-So no this would regress on the huge machines and yes we have seen
-reports like that and explicit requests to backport 6b0c81b3be114 (mm,
-oom: reduce dependency on tasklist_lock) so this would be a step
-backwards although I see there is a real problem that it tries to fix.
+> Does a EXPORT_SYMBOL_GPL(imx_drm_crtc_id) help fixing the problem?
 
--- 
-Michal Hocko
-SUSE Labs
+I'm sure it would.  Haven't had a chance to test it yet.  Since the
+module name change isn't a big deal, I'll see if I can come up with a
+patch to fix the Makefile and linking issues and send that out.
+
+>> And did anyone actually try building all of these as modules?  This
+>> used to work in 3.12, but I'm not sure that was actually tested there
+>> either.
+>
+> At least I explicitly made this work when writing the IPU stuff, but I
+> must admit that we mostly use monolithic kernels here.
+
+I figured as much.  Fedora builds them as modules, presumably because
+we build multiboard kernels and building this in doesn't benefit
+everything those run on.
+
+josh
