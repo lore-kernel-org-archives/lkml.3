@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab3KLTnZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:43:25 -0500
-Received: from jacques.telenet-ops.be ([195.130.132.50]:60498 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274Ab3KLTmj (ORCPT
+	id S1756741Ab3KLTni (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 14:43:38 -0500
+Received: from juliette.telenet-ops.be ([195.130.137.74]:34744 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904Ab3KLTml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:42:39 -0500
+	Tue, 12 Nov 2013 14:42:41 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>,
-        Hirokazu Takata <takata@linux-m32r.org>, linux-m32r@ml.linux-m32r.org
-Subject: [PATCH 03/17] m32r: Use Kbuild logic to include <asm-generic/sections.h>
-Date: Tue, 12 Nov 2013 20:42:13 +0100
-Message-Id: <1384285347-13506-4-git-send-email-geert@linux-m68k.org>
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 11/17] kernel/param: Consolidate __{start,stop}___param[] in <linux/moduleparam.h>
+Date: Tue, 12 Nov 2013 20:42:21 +0100
+Message-Id: <1384285347-13506-12-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
 References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
@@ -22,39 +22,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: linux-m32r@ml.linux-m32r.org
----
- arch/m32r/include/asm/Kbuild     |    1 +
- arch/m32r/include/asm/sections.h |    7 -------
- 2 files changed, 1 insertion(+), 7 deletions(-)
- delete mode 100644 arch/m32r/include/asm/sections.h
+Consolidate the various external const and non-const declarations of
+__start___param[] and __stop___param in <linux/moduleparam.h>.
+This requires making a few struct kernel_param pointers in kernel/params.c
+const.
 
-diff --git a/arch/m32r/include/asm/Kbuild b/arch/m32r/include/asm/Kbuild
-index 2b58c5f0bc38..e03862db9b75 100644
---- a/arch/m32r/include/asm/Kbuild
-+++ b/arch/m32r/include/asm/Kbuild
-@@ -2,5 +2,6 @@
- generic-y += clkdev.h
- generic-y += exec.h
- generic-y += module.h
-+generic-y += sections.h
- generic-y += trace_clock.h
- generic-y += preempt.h
-diff --git a/arch/m32r/include/asm/sections.h b/arch/m32r/include/asm/sections.h
-deleted file mode 100644
-index 5e5d21c4908a..000000000000
---- a/arch/m32r/include/asm/sections.h
-+++ /dev/null
-@@ -1,7 +0,0 @@
--#ifndef _M32R_SECTIONS_H
--#define _M32R_SECTIONS_H
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+---
+ include/linux/moduleparam.h |    2 ++
+ init/main.c                 |    2 --
+ kernel/params.c             |    7 +++----
+ 3 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+index c3eb102a9cc8..77ccfca0c4ba 100644
+--- a/include/linux/moduleparam.h
++++ b/include/linux/moduleparam.h
+@@ -68,6 +68,8 @@ struct kernel_param {
+ 	};
+ };
+ 
++extern const struct kernel_param __start___param[], __stop___param[];
++
+ /* Special one for strings we want to copy into */
+ struct kparam_string {
+ 	unsigned int maxlen;
+diff --git a/init/main.c b/init/main.c
+index 15ed159b681b..f2c4901f90d1 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -469,7 +469,6 @@ static void __init mm_init(void)
+ asmlinkage void __init start_kernel(void)
+ {
+ 	char * command_line;
+-	extern const struct kernel_param __start___param[], __stop___param[];
+ 
+ 	/*
+ 	 * Need to run as early as possible, to initialize the
+@@ -737,7 +736,6 @@ static char *initcall_level_names[] __initdata = {
+ 
+ static void __init do_initcall_level(int level)
+ {
+-	extern const struct kernel_param __start___param[], __stop___param[];
+ 	initcall_t *fn;
+ 
+ 	strcpy(static_command_line, saved_command_line);
+diff --git a/kernel/params.c b/kernel/params.c
+index c00d5b502aa4..54e05ffb7d24 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -19,6 +19,7 @@
+ #include <linux/string.h>
+ #include <linux/errno.h>
+ #include <linux/module.h>
++#include <linux/moduleparam.h>
+ #include <linux/device.h>
+ #include <linux/err.h>
+ #include <linux/slab.h>
+@@ -506,8 +507,6 @@ EXPORT_SYMBOL(param_ops_string);
+ #define to_module_attr(n) container_of(n, struct module_attribute, attr)
+ #define to_module_kobject(n) container_of(n, struct module_kobject, kobj)
+ 
+-extern struct kernel_param __start___param[], __stop___param[];
 -
--/* nothing to see, move along */
--#include <asm-generic/sections.h>
--
--#endif	/* _M32R_SECTIONS_H */
+ struct param_attribute
+ {
+ 	struct module_attribute mattr;
+@@ -766,7 +765,7 @@ static struct module_kobject * __init locate_module_kobject(const char *name)
+ }
+ 
+ static void __init kernel_add_sysfs_param(const char *name,
+-					  struct kernel_param *kparam,
++					  const struct kernel_param *kparam,
+ 					  unsigned int name_skip)
+ {
+ 	struct module_kobject *mk;
+@@ -801,7 +800,7 @@ static void __init kernel_add_sysfs_param(const char *name,
+  */
+ static void __init param_sysfs_builtin(void)
+ {
+-	struct kernel_param *kp;
++	const struct kernel_param *kp;
+ 	unsigned int name_len;
+ 	char modname[MODULE_NAME_LEN];
+ 
 -- 
 1.7.9.5
 
