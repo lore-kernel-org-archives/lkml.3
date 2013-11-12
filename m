@@ -1,99 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961Ab3KLVa1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 16:30:27 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:44947 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756862Ab3KLVaY (ORCPT
+	id S1756979Ab3KLVdn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 16:33:43 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:53167 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754796Ab3KLVdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:30:24 -0500
-Date: Tue, 12 Nov 2013 13:30:19 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Does Itanium permit speculative stores?
-Message-ID: <20131112213019.GS4138@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131111171307.GA27002@linux.vnet.ibm.com>
- <3908561D78D1C84285E8C5FCA982C28F31D5DB28@ORSMSX106.amr.corp.intel.com>
- <20131112182617.GG21461@twins.programming.kicks-ass.net>
+	Tue, 12 Nov 2013 16:33:37 -0500
+Date: Tue, 12 Nov 2013 22:33:34 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH] perf trace: Simplify '--summary' output
+Message-ID: <20131112213334.GF25913@gmail.com>
+References: <1384267334-18953-1-git-send-email-penberg@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131112182617.GG21461@twins.programming.kicks-ass.net>
+In-Reply-To: <1384267334-18953-1-git-send-email-penberg@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111221-6688-0000-0000-0000036C04FB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 07:26:17PM +0100, Peter Zijlstra wrote:
-> On Tue, Nov 12, 2013 at 06:00:26PM +0000, Luck, Tony wrote:
-> > > Does Itanium permit speculative stores?  For example, on Itanium what are
-> > > the permitted outcomes of the following litmus test, where both x and y
-> > > are initially zero?
-> > 
-> > We have a complier visible speculative read via the "ld.s" and "chk" instructions. But
-> > there is no speculative write ("st.s") instruction.  I think you are asking "can out of order
-> > writes become visible in this scenario?"
-> > 
-> > 	CPU 0				CPU 1
-> > 
-> > 	r1 = ACCESS_ONCE(x);		r2 = ACCESS_ONCE(y);
-> > 	if (r1)				if (r2)
-> > 		ACCESS_ONCE(y) = 1;		ACCESS_ONCE(x) = 1;
-> > 
-> > > In particular, is the outcome (r1 == 1 && r2 == 1) possible on Itanium
-> > > given this litmus test?
-> > 
-> > The "ACCESS_ONCE" macro casts to volatile - which will make gcc generate
-> > ordered "ld.acq" and "st.rel" instructions for your code snippets. So I think
-> > you should be fine.
-> 
-> Cute that volatile generates barrier instructions.
-> 
-> But no; I think Paul accidentally formulated his question in C (since we
-> all speak C) but meant to ask an architectural question.
 
-I got both answers, so I am good.  ;-)
+* Pekka Enberg <penberg@kernel.org> wrote:
 
-> So the point we're having a discussion on is if any architecture has
-> visible speculative STORES and if there's an architecture that doesn't
-> have control dependencies.
+> The output of 'perf trace --summary' tries to be too cute with
+> formatting and makes it very hard to read.  Simplify it in the spirit of
+> "strace -c":
 > 
-> On the visible speculative STORES; can, if in the above example we have
-> regular loads/stores:
-> 
->   LOAD r1, x			LOAD r2, y
->   IF (r1)			IF (r2)
-> 	STORE y, 1			STORE x, 1
-> 
-> we observe: r1==1 && r2==1
-> 
-> In order for that to be true; we must be able to observe the stores
-> before the loads are complete -- and therefore before the branches are a
-> certainty.
-> 
-> Typically if an architecture speculates on branches the result doesn't
-> become visible/committed until the branch is a certainty -- ie. linear
-> branch history.
-> 
-> Alternatively:
-> 
-> 	x:=0
-> 
-> 	IF (cond)			LOAD r1,x
-> 		STORE x,1
-> 	STORE x,2
-> 
-> Can r1 ever be 1 if we know 'cond' will never be true (runtime
-> constraint, not compile time so the branch cannot be omitted).
+> [penberg@localhost libtrading]$ perf trace -a --duration 10000 --summary -- sleep 1
+> ^C
 
-I would have been OK mandating use of ACCESS_ONCE() to prevent speculative
-stores, but it is even nicer that it is not necessary.
+Btw., just a very small feature suggestion - instead of forcing the 
+somewhat counter-intuitive '-- sleep X' pattern it might be helpful to 
+have a general option parser for 'delay' values, which would allow a wide 
+range of time units like:
 
-							Thanx, Paul
+	--delay 10.5h
+        --delay 0.1s
+        --delay 0.1sec
 
+etc. - with the default unit being 'seconds'.
+
+That parser could then be applied to '--duration' filter as well, allowing 
+things like:
+
+   --duration 10sec
+
+which IMHO are more obvious to read (and easier to remember!) than 
+'--duration 10000'.
+
+>  Summary of events:
+> 
+>  dbus-daemon (555), 10 events, 0.0%, 0.000 msec
+> 
+>                                                     msec/call
+>    syscall            calls      min      avg      max stddev
+>    --------------- -------- -------- -------- -------- ------
+>    sendmsg                2    0.002    0.005    0.008  55.00
+>    recvmsg                2    0.002    0.003    0.005  44.00
+>    epoll_wait             1    0.000    0.000    0.000   0.00
+
+In what units is stddev? Percentage? If yes then it might be useful to 
+output it as %. [and probably to restrict precision to a single digit, 
+standard deviations are rarely more accurate than 0.1%.]
+
+>  NetworkManager (667), 56 events, 0.0%, 0.000 msec
+> 
+>                                                     msec/call
+>    syscall            calls      min      avg      max stddev
+>    --------------- -------- -------- -------- -------- ------
+>    poll                   2    0.000    0.002    0.003 100.00
+>    sendmsg               10    0.004    0.007    0.016  15.41
+>    recvmsg               16    0.002    0.003    0.005   8.24
+> 
+>  zfs-fuse (669), 4 events, 0.0%, 0.000 msec
+> 
+>                                                     msec/call
+>    syscall            calls      min      avg      max stddev
+>    --------------- -------- -------- -------- -------- ------
+>    futex                  2    0.000    0.001    0.002 100.00
+
+Nice looking output btw! :-)
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+
+	Ingo
