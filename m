@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab3KLPVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:21:53 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:34826 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab3KLPVu (ORCPT
+	id S1755265Ab3KLPZJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:25:09 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:59153 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab3KLPZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:21:50 -0500
-Date: Tue, 12 Nov 2013 09:21:24 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Michal Nazarewicz <mpn@google.com>
-CC: Felipe Balbi <balbi@ti.com>, Roger Quadros <rogerq@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: phy: remove dead code
-Message-ID: <20131112152123.GF31721@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1384108657-23349-1-git-send-email-mpn@google.com>
+	Tue, 12 Nov 2013 10:25:06 -0500
+Message-ID: <5282484E.9010206@gmail.com>
+Date: Tue, 12 Nov 2013 08:25:02 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="V32M1hWVjliPHW+c"
-Content-Disposition: inline
-In-Reply-To: <1384108657-23349-1-git-send-email-mpn@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf record: Delete file if a failure occurs writing
+ the perf data file
+References: <1383928906-31470-1-git-send-email-dsahern@gmail.com> <20131111093747.GA14810@gmail.com> <5280ECFF.10103@gmail.com> <52824064.4060100@gmail.com> <20131112150410.GW5056@laptop.programming.kicks-ass.net>
+In-Reply-To: <20131112150410.GW5056@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---V32M1hWVjliPHW+c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/12/13, 8:04 AM, Peter Zijlstra wrote:
+> On Tue, Nov 12, 2013 at 07:51:16AM -0700, David Ahern wrote:
+>>>  From man mmap:
+>>>         SIGBUS Attempted access to a portion of the buffer that
+>>>         does not correspond  to  the  file (for  example, beyond
+>>>         the end of the file, ...
+>
+> SIGBUS is basically the std fail for any fault; there's a ton more
+> reasons than listed in that manpage.
+>
+> Failing to dirty a page due to -ENOSPACE is one reason we'll
+> trigger SIGBUS -- as you already found in that memcpy to mmap() instead
+> of write() patch.
 
-On Sun, Nov 10, 2013 at 07:37:37PM +0100, Michal Nazarewicz wrote:
-> From: Michal Nazarewicz <mina86@mina86.com>
+Sure. Lots of mmaps flying around, so to make sure we are on the same 
+page in this case we are talking about perf-report reading a file via mmap.
 
+If the file creation (be it memcpy to mmap() or write()) has a failure 
+due to lack of space, then only a partial event is in the file -- e.g., 
+perf-header only. Trying to read the rest of the event leads to 
+perf-report terminating due to SIGBUS. How should that condition be handled?
 
-no SoB, cannot apply. I already had this patch in my tree but didn't
-send it. I'm fine with using yours but I need SoB and commit log.
+The patch in this thread deletes the file. Another option is to rewind 
+the file to the last known good write (ie., length after last successful 
+call to write_output).
 
---=20
-balbi
+David
 
---V32M1hWVjliPHW+c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSgkdzAAoJEIaOsuA1yqREOUYP/074bbvwf3e802k1grbNC2BV
-fkIz5pXAyNkcQEii8LiyF+2cm1JOB0F0YC+LOQqJOU43jbnlwwBSa4QzKHwuAiSN
-HN/j4a5TCIiFXJlvslRCLAXeLci58GL9/8Q7sYfLn6XGJlaw7UR+kQzVTWDUdUtu
-3EstSpXOxBzigsCaVDbMPqhhgUkmPYpTst7yMqatxRjDr6MYvkNE6c3y+Bn+VLqB
-2OLWPtPUHcOhrWDWeWOhIah9JtX32VborADbtp4GkBXPQDdRXiaV82lQ78lHN2qI
-8qYdqBju1ofIR3JCYEkUWfg+yJtrf6pHWKnSL8dLjwBg5IK+zLj3j4eyZhZHACCo
-dv8jEnnUEEUzyjUkF296FfF6MFu7trjmwVgdWfjELt/YdeQUzYHiX40Y5pcD56sl
-tu/GLO73eROoVjXgoqYP8cA8UrPdDpCsX/y5SBgBbxKNM4CLQ9t8eIzYs3kIw9Ch
-HFVBXRJ2eo2hCwCycs71p2lti2c+3/kGnvF9/GCbpYeRpK3JsxjARRXt6/VLnYUU
-VSFvmGwLFfdPN5L6/17+lUlQ4UfN1DbMPf4CXC3NnHxEzo2vxHTHaSqBtuTkh4UK
-qEWeu2D3LUU+lMth/IGfvDjqbk6bQgRAHl7nfCgDws91nOs4rG7fzHdCHxjlwUQQ
-CTAos51qDNiS4hZ6KPcs
-=OtPg
------END PGP SIGNATURE-----
-
---V32M1hWVjliPHW+c--
