@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab3KLHQM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 02:16:12 -0500
-Received: from david.siemens.de ([192.35.17.14]:27570 "EHLO david.siemens.de"
+	id S1754703Ab3KLHQT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 02:16:19 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:21625 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755771Ab3KLHPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756087Ab3KLHPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Nov 2013 02:15:24 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
@@ -12,100 +12,72 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
-        linux-doc@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Rob Landley <rob@landley.net>, Rusty Russell <rusty@rustcorp.com.au>,
-        sparclinux@vger.kernel.org, Tony Luck <tony.luck@intel.com>
-Subject: [PATCH v7 00/21] Add gdb python scripts as kernel debugging helpers
-Date: Tue, 12 Nov 2013 08:14:18 +0100
-Message-Id: <cover.1384240478.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
+Subject: [PATCH v7 13/21] scripts/gdb: Add helper and convenience function to look up tasks
+Date: Tue, 12 Nov 2013 08:14:31 +0100
+Message-Id: <4b02cfba6cf33138982a46ad80881d6b9715aa5c.1384240478.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
+In-Reply-To: <cover.1384240478.git.jan.kiszka@siemens.com>
+References: <cover.1384240478.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1384240478.git.jan.kiszka@siemens.com>
+References: <cover.1384240478.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another round, addressing the following review comments on v6:
- - introduce CONFIG_GDB_SCRIPTS to enable/disable this feature
- - adjust documentation and fix a minor detail
+Add the helper task_by_pid that can look up a task by its PID. Also
+export it as a convenience function.
 
-See http://lkml.indiana.edu/hypermail/linux/kernel/1210.0/01598.html for
-the original description and
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ scripts/gdb/linux/tasks.py | 27 +++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |  1 +
+ 2 files changed, 28 insertions(+)
 
-    git://git.kiszka.org/linux.git queues/gdb-scripts
-
-for the latest version.
-
-Jan
-
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Fenghua Yu <fenghua.yu@intel.com>
-CC: Kay Sievers <kay@vrfy.org>
-CC: linux-doc@vger.kernel.org
-CC: linux-ia64@vger.kernel.org
-CC: linux-kbuild@vger.kernel.org
-CC: Michal Marek <mmarek@suse.cz>
-CC: Rob Landley <rob@landley.net>
-CC: Rusty Russell <rusty@rustcorp.com.au>
-CC: sparclinux@vger.kernel.org
-CC: Tony Luck <tony.luck@intel.com>
-
-Jan Kiszka (21):
-  scripts/gdb: Add infrastructure
-  scripts/gdb: Add cache for type objects
-  scripts/gdb: Add container_of helper and convenience function
-  scripts/gdb: Add module iteration class
-  scripts/gdb: Add lx-symbols command
-  module: Do not inline do_init_module
-  scripts/gdb: Add automatic symbol reloading on module insertion
-  scripts/gdb: Add internal helper and convenience function to look up a
-    module
-  scripts/gdb: Add get_target_endianness helper
-  scripts/gdb: Add read_u16/32/64 helpers
-  scripts/gdb: Add lx-dmesg command
-  scripts/gdb: Add task iteration class
-  scripts/gdb: Add helper and convenience function to look up tasks
-  scripts/gdb: Add is_target_arch helper
-  scripts/gdb: Add internal helper and convenience function to retrieve
-    thread_info
-  scripts/gdb: Add get_gdbserver_type helper
-  scripts/gdb: Add internal helper and convenience function for per-cpu
-    lookup
-  scripts/gdb: Add lx_current convenience function
-  scripts/gdb: Add class to iterate over CPU masks
-  scripts/gdb: Add lx-lsmod command
-  scripts/gdb: Add basic documentation
-
- Documentation/gdb-kernel-debugging.txt | 160 +++++++++++++++++++++++++++++++
- Makefile                               |   5 +-
- kernel/module.c                        |   9 +-
- lib/Kconfig.debug                      |  11 +++
- scripts/Makefile                       |   3 +-
- scripts/gdb/Makefile                   |  11 +++
- scripts/gdb/linux/Makefile             |   9 ++
- scripts/gdb/linux/__init__.py          |   0
- scripts/gdb/linux/cpus.py              | 139 +++++++++++++++++++++++++++
- scripts/gdb/linux/dmesg.py             |  64 +++++++++++++
- scripts/gdb/linux/modules.py           | 111 ++++++++++++++++++++++
- scripts/gdb/linux/symbols.py           | 166 +++++++++++++++++++++++++++++++++
- scripts/gdb/linux/tasks.py             | 108 +++++++++++++++++++++
- scripts/gdb/linux/utils.py             | 156 +++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py             |  30 ++++++
- 15 files changed, 978 insertions(+), 4 deletions(-)
- create mode 100644 Documentation/gdb-kernel-debugging.txt
- create mode 100644 scripts/gdb/Makefile
- create mode 100644 scripts/gdb/linux/Makefile
- create mode 100644 scripts/gdb/linux/__init__.py
- create mode 100644 scripts/gdb/linux/cpus.py
- create mode 100644 scripts/gdb/linux/dmesg.py
- create mode 100644 scripts/gdb/linux/modules.py
- create mode 100644 scripts/gdb/linux/symbols.py
- create mode 100644 scripts/gdb/linux/tasks.py
- create mode 100644 scripts/gdb/linux/utils.py
- create mode 100644 scripts/gdb/vmlinux-gdb.py
-
+diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
+index cd25984..13bb97c 100644
+--- a/scripts/gdb/linux/tasks.py
++++ b/scripts/gdb/linux/tasks.py
+@@ -44,3 +44,30 @@ class TaskList:
+                 utils.container_of(t['thread_group']['next'],
+                                    self.task_ptr_type, "thread_group")
+         return t
++
++
++def get_task_by_pid(pid):
++    for task in TaskList():
++        if int(task['pid']) == pid:
++            return task
++    return None
++
++
++class LxTaskByPidFunc(gdb.Function):
++    """Find Linux task by PID and return the task_struct variable.
++
++$lx_task_by_pid(PID): Given PID, iterate over all tasks of the target and
++return that task_struct variable which PID matches."""
++
++    def __init__(self):
++        super(LxTaskByPidFunc, self).__init__("lx_task_by_pid")
++
++    def invoke(self, pid):
++        task = get_task_by_pid(pid)
++        if task:
++            return task.dereference()
++        else:
++            raise gdb.GdbError("No task of PID " + str(pid))
++
++
++LxTaskByPidFunc()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index fa66d23..4d7eb2c 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -26,3 +26,4 @@ else:
+     import linux.symbols
+     import linux.modules
+     import linux.dmesg
++    import linux.tasks
 -- 
 1.8.1.1.298.ge7eed54
 
