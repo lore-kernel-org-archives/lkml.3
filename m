@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab3KLV7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 16:59:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40317 "EHLO
+	id S1757434Ab3KLWAB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 17:00:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40276 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756863Ab3KLV6Z (ORCPT
+	with ESMTP id S932437Ab3KLV5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:58:25 -0500
-Date: Tue, 12 Nov 2013 13:57:42 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-602ad878d41ef097cc9aa2def7830d5bb27a15d8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <20131112113427.GA4053@ghostprotocols.net>
-References: <20131112113427.GA4053@ghostprotocols.net>
+	Tue, 12 Nov 2013 16:57:36 -0500
+Date: Tue, 12 Nov 2013 13:57:24 -0800
+From: tip-bot for David Ahern <tipbot@zytor.com>
+Message-ID: <tip-33c2dcfdfe7f114cc656bcb4c839f5939d5e60ba@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, jolsa@redhat.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <1384267617-3446-4-git-send-email-dsahern@gmail.com>
+References: <1384267617-3446-4-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf target: Shorten perf_target__ to target__
-Git-Commit-ID: 602ad878d41ef097cc9aa2def7830d5bb27a15d8
+Subject: [tip:perf/urgent] perf evlist: Refactor mmap_pages parsing
+Git-Commit-ID: 33c2dcfdfe7f114cc656bcb4c839f5939d5e60ba
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,712 +29,102 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 13:57:49 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 13:57:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  602ad878d41ef097cc9aa2def7830d5bb27a15d8
-Gitweb:     http://git.kernel.org/tip/602ad878d41ef097cc9aa2def7830d5bb27a15d8
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 12 Nov 2013 16:46:16 -0300
+Commit-ID:  33c2dcfdfe7f114cc656bcb4c839f5939d5e60ba
+Gitweb:     http://git.kernel.org/tip/33c2dcfdfe7f114cc656bcb4c839f5939d5e60ba
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Tue, 12 Nov 2013 07:46:55 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 12 Nov 2013 16:51:03 -0300
+CommitDate: Tue, 12 Nov 2013 16:33:22 -0300
 
-perf target: Shorten perf_target__ to target__
+perf evlist: Refactor mmap_pages parsing
 
-Getting unwieldly long, for this app domain should be descriptive enough
-and the use of __ to separate the class from the method names should
-help with avoiding clashes with other code bases.
+Logic will be re-used for the out-pages argument for mmap based writes
+in perf-record.
 
-Reported-by: David Ahern <dsahern@gmail.com>
-Suggested-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/20131112113427.GA4053@ghostprotocols.net
+Link: http://lkml.kernel.org/r/1384267617-3446-4-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c     |  6 ++---
- tools/perf/builtin-record.c  | 14 ++++++------
- tools/perf/builtin-stat.c    | 21 ++++++++---------
- tools/perf/builtin-top.c     | 14 ++++++------
- tools/perf/builtin-trace.c   | 10 ++++----
- tools/perf/perf.h            |  2 +-
- tools/perf/tests/task-exit.c |  2 +-
- tools/perf/util/evlist.c     | 12 ++++------
- tools/perf/util/evlist.h     |  5 ++--
- tools/perf/util/evsel.c      |  9 ++++----
- tools/perf/util/evsel.h      |  3 +--
- tools/perf/util/machine.c    |  6 ++---
- tools/perf/util/machine.h    |  4 ++--
- tools/perf/util/target.c     | 54 +++++++++++++++++++++-----------------------
- tools/perf/util/target.h     | 44 +++++++++++++++++-------------------
- tools/perf/util/top.c        |  2 +-
- 16 files changed, 99 insertions(+), 109 deletions(-)
+ tools/perf/util/evlist.c | 39 ++++++++++++++++++++++++++++-----------
+ 1 file changed, 28 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 346bb59..f8bf5f2 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1510,13 +1510,13 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
- 	/*
- 	 * target related setups
- 	 */
--	err = perf_target__validate(&kvm->opts.target);
-+	err = target__validate(&kvm->opts.target);
- 	if (err) {
--		perf_target__strerror(&kvm->opts.target, err, errbuf, BUFSIZ);
-+		target__strerror(&kvm->opts.target, err, errbuf, BUFSIZ);
- 		ui__warning("%s", errbuf);
- 	}
- 
--	if (perf_target__none(&kvm->opts.target))
-+	if (target__none(&kvm->opts.target))
- 		kvm->opts.target.system_wide = true;
- 
- 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 880227e..4d644fe 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -506,7 +506,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	 * (apart from group members) have enable_on_exec=1 set,
- 	 * so don't spoil it by prematurely enabling them.
- 	 */
--	if (!perf_target__none(&opts->target))
-+	if (!target__none(&opts->target))
- 		perf_evlist__enable(evsel_list);
- 
- 	/*
-@@ -535,7 +535,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		 * die with the process and we wait for that. Thus no need to
- 		 * disable events in this case.
- 		 */
--		if (done && !disabled && !perf_target__none(&opts->target)) {
-+		if (done && !disabled && !target__none(&opts->target)) {
- 			perf_evlist__disable(evsel_list);
- 			disabled = true;
- 		}
-@@ -906,7 +906,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	argc = parse_options(argc, argv, record_options, record_usage,
- 			    PARSE_OPT_STOP_AT_NON_OPTION);
--	if (!argc && perf_target__none(&rec->opts.target))
-+	if (!argc && target__none(&rec->opts.target))
- 		usage_with_options(record_usage, record_options);
- 
- 	if (nr_cgroups && !rec->opts.target.system_wide) {
-@@ -936,17 +936,17 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
- 		goto out_symbol_exit;
- 	}
- 
--	err = perf_target__validate(&rec->opts.target);
-+	err = target__validate(&rec->opts.target);
- 	if (err) {
--		perf_target__strerror(&rec->opts.target, err, errbuf, BUFSIZ);
-+		target__strerror(&rec->opts.target, err, errbuf, BUFSIZ);
- 		ui__warning("%s", errbuf);
- 	}
- 
--	err = perf_target__parse_uid(&rec->opts.target);
-+	err = target__parse_uid(&rec->opts.target);
- 	if (err) {
- 		int saved_errno = errno;
- 
--		perf_target__strerror(&rec->opts.target, err, errbuf, BUFSIZ);
-+		target__strerror(&rec->opts.target, err, errbuf, BUFSIZ);
- 		ui__error("%s", errbuf);
- 
- 		err = -saved_errno;
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 0fc1c94..ee0d565 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -108,7 +108,7 @@ enum {
- 
- static struct perf_evlist	*evsel_list;
- 
--static struct perf_target	target = {
-+static struct target target = {
- 	.uid	= UINT_MAX,
- };
- 
-@@ -294,11 +294,10 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
- 
- 	attr->inherit = !no_inherit;
- 
--	if (perf_target__has_cpu(&target))
-+	if (target__has_cpu(&target))
- 		return perf_evsel__open_per_cpu(evsel, perf_evsel__cpus(evsel));
- 
--	if (!perf_target__has_task(&target) &&
--	    perf_evsel__is_group_leader(evsel)) {
-+	if (!target__has_task(&target) && perf_evsel__is_group_leader(evsel)) {
- 		attr->disabled = 1;
- 		if (!initial_delay)
- 			attr->enable_on_exec = 1;
-@@ -1236,7 +1235,7 @@ static void print_stat(int argc, const char **argv)
- 			fprintf(output, "\'system wide");
- 		else if (target.cpu_list)
- 			fprintf(output, "\'CPU(s) %s", target.cpu_list);
--		else if (!perf_target__has_task(&target)) {
-+		else if (!target__has_task(&target)) {
- 			fprintf(output, "\'%s", argv[0]);
- 			for (i = 1; i < argc; i++)
- 				fprintf(output, " %s", argv[i]);
-@@ -1667,7 +1666,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 	} else if (big_num_opt == 0) /* User passed --no-big-num */
- 		big_num = false;
- 
--	if (!argc && perf_target__none(&target))
-+	if (!argc && target__none(&target))
- 		usage_with_options(stat_usage, options);
- 
- 	if (run_count < 0) {
-@@ -1680,8 +1679,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 	}
- 
- 	/* no_aggr, cgroup are for system-wide only */
--	if ((aggr_mode != AGGR_GLOBAL || nr_cgroups)
--	     && !perf_target__has_cpu(&target)) {
-+	if ((aggr_mode != AGGR_GLOBAL || nr_cgroups) &&
-+	    !target__has_cpu(&target)) {
- 		fprintf(stderr, "both cgroup and no-aggregation "
- 			"modes only available in system-wide mode\n");
- 
-@@ -1694,14 +1693,14 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (add_default_attributes())
- 		goto out;
- 
--	perf_target__validate(&target);
-+	target__validate(&target);
- 
- 	if (perf_evlist__create_maps(evsel_list, &target) < 0) {
--		if (perf_target__has_task(&target)) {
-+		if (target__has_task(&target)) {
- 			pr_err("Problems finding threads of monitor\n");
- 			parse_options_usage(stat_usage, options, "p", 1);
- 			parse_options_usage(NULL, options, "t", 1);
--		} else if (perf_target__has_cpu(&target)) {
-+		} else if (target__has_cpu(&target)) {
- 			perror("failed to parse CPUs map");
- 			parse_options_usage(stat_usage, options, "C", 1);
- 			parse_options_usage(NULL, options, "a", 1);
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 8c520d9..b8f8e29 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -967,7 +967,7 @@ static int __cmd_top(struct perf_top *top)
- 	 * XXX 'top' still doesn't start workloads like record, trace, but should,
- 	 * so leave the check here.
- 	 */
--        if (!perf_target__none(&opts->target))
-+        if (!target__none(&opts->target))
-                 perf_evlist__enable(top->evlist);
- 
- 	/* Wait for a minimal set of events before starting the snapshot */
-@@ -1053,7 +1053,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 		.sym_pcnt_filter     = 5,
- 	};
- 	struct perf_record_opts *opts = &top.record_opts;
--	struct perf_target *target = &opts->target;
-+	struct target *target = &opts->target;
- 	const struct option options[] = {
- 	OPT_CALLBACK('e', "event", &top.evlist, "event",
- 		     "event selector. use 'perf list' to list available events",
-@@ -1169,24 +1169,24 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	setup_browser(false);
- 
--	status = perf_target__validate(target);
-+	status = target__validate(target);
- 	if (status) {
--		perf_target__strerror(target, status, errbuf, BUFSIZ);
-+		target__strerror(target, status, errbuf, BUFSIZ);
- 		ui__warning("%s", errbuf);
- 	}
- 
--	status = perf_target__parse_uid(target);
-+	status = target__parse_uid(target);
- 	if (status) {
- 		int saved_errno = errno;
- 
--		perf_target__strerror(target, status, errbuf, BUFSIZ);
-+		target__strerror(target, status, errbuf, BUFSIZ);
- 		ui__error("%s", errbuf);
- 
- 		status = -saved_errno;
- 		goto out_delete_evlist;
- 	}
- 
--	if (perf_target__none(target))
-+	if (target__none(target))
- 		target->system_wide = true;
- 
- 	if (perf_evlist__create_maps(top.evlist, target) < 0)
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index aa5702f..6b230af 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -2327,21 +2327,21 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		}
- 	}
- 
--	err = perf_target__validate(&trace.opts.target);
-+	err = target__validate(&trace.opts.target);
- 	if (err) {
--		perf_target__strerror(&trace.opts.target, err, bf, sizeof(bf));
-+		target__strerror(&trace.opts.target, err, bf, sizeof(bf));
- 		fprintf(trace.output, "%s", bf);
- 		goto out_close;
- 	}
- 
--	err = perf_target__parse_uid(&trace.opts.target);
-+	err = target__parse_uid(&trace.opts.target);
- 	if (err) {
--		perf_target__strerror(&trace.opts.target, err, bf, sizeof(bf));
-+		target__strerror(&trace.opts.target, err, bf, sizeof(bf));
- 		fprintf(trace.output, "%s", bf);
- 		goto out_close;
- 	}
- 
--	if (!argc && perf_target__none(&trace.opts.target))
-+	if (!argc && target__none(&trace.opts.target))
- 		trace.opts.target.system_wide = true;
- 
- 	if (input_name)
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 6a587e84..b079304 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -248,7 +248,7 @@ enum perf_call_graph_mode {
- };
- 
- struct perf_record_opts {
--	struct perf_target target;
-+	struct target target;
- 	int	     call_graph;
- 	bool	     group;
- 	bool	     inherit_stat;
-diff --git a/tools/perf/tests/task-exit.c b/tools/perf/tests/task-exit.c
-index c33d95f..d09ab57 100644
---- a/tools/perf/tests/task-exit.c
-+++ b/tools/perf/tests/task-exit.c
-@@ -28,7 +28,7 @@ int test__task_exit(void)
- 	union perf_event *event;
- 	struct perf_evsel *evsel;
- 	struct perf_evlist *evlist;
--	struct perf_target target = {
-+	struct target target = {
- 		.uid		= UINT_MAX,
- 		.uses_mmap	= true,
- 	};
 diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index cb19044..dc6fa3f 100644
+index fb4727d..cb19044 100644
 --- a/tools/perf/util/evlist.c
 +++ b/tools/perf/util/evlist.c
-@@ -811,8 +811,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 	return perf_evlist__mmap_per_cpu(evlist, prot, mask);
+@@ -705,10 +705,9 @@ static size_t perf_evlist__mmap_size(unsigned long pages)
+ 	return (pages + 1) * page_size;
  }
  
--int perf_evlist__create_maps(struct perf_evlist *evlist,
--			     struct perf_target *target)
-+int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
+-int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+-				  int unset __maybe_unused)
++static long parse_pages_arg(const char *str, unsigned long min,
++			    unsigned long max)
  {
- 	evlist->threads = thread_map__new_str(target->pid, target->tid,
- 					      target->uid);
-@@ -820,9 +819,9 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
- 	if (evlist->threads == NULL)
- 		return -1;
+-	unsigned int *mmap_pages = opt->value;
+ 	unsigned long pages, val;
+ 	static struct parse_tag tags[] = {
+ 		{ .tag  = 'B', .mult = 1       },
+@@ -719,7 +718,7 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+ 	};
  
--	if (perf_target__has_task(target))
-+	if (target__has_task(target))
- 		evlist->cpus = cpu_map__dummy_new();
--	else if (!perf_target__has_cpu(target) && !target->uses_mmap)
-+	else if (!target__has_cpu(target) && !target->uses_mmap)
- 		evlist->cpus = cpu_map__dummy_new();
- 	else
- 		evlist->cpus = cpu_map__new(target->cpu_list);
-@@ -1031,8 +1030,7 @@ out_err:
- 	return err;
- }
- 
--int perf_evlist__prepare_workload(struct perf_evlist *evlist,
--				  struct perf_target *target,
-+int perf_evlist__prepare_workload(struct perf_evlist *evlist, struct target *target,
- 				  const char *argv[], bool pipe_output,
- 				  bool want_signal)
- {
-@@ -1084,7 +1082,7 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
- 		exit(-1);
- 	}
- 
--	if (perf_target__none(target))
-+	if (target__none(target))
- 		evlist->threads->map[0] = evlist->workload.pid;
- 
- 	close(child_ready_pipe[1]);
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index ecaa582..649d6ea 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -102,7 +102,7 @@ void perf_evlist__config(struct perf_evlist *evlist,
- int perf_record_opts__config(struct perf_record_opts *opts);
- 
- int perf_evlist__prepare_workload(struct perf_evlist *evlist,
--				  struct perf_target *target,
-+				  struct target *target,
- 				  const char *argv[], bool pipe_output,
- 				  bool want_signal);
- int perf_evlist__start_workload(struct perf_evlist *evlist);
-@@ -134,8 +134,7 @@ static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
- 	evlist->threads	= threads;
- }
- 
--int perf_evlist__create_maps(struct perf_evlist *evlist,
--			     struct perf_target *target);
-+int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target);
- void perf_evlist__delete_maps(struct perf_evlist *evlist);
- int perf_evlist__apply_filters(struct perf_evlist *evlist);
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index f95653a..18f7c18 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -645,7 +645,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 		}
- 	}
- 
--	if (perf_target__has_cpu(&opts->target))
-+	if (target__has_cpu(&opts->target))
- 		perf_evsel__set_sample_bit(evsel, CPU);
- 
- 	if (opts->period)
-@@ -653,7 +653,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 
- 	if (!perf_missing_features.sample_id_all &&
- 	    (opts->sample_time || !opts->no_inherit ||
--	     perf_target__has_cpu(&opts->target)))
-+	     target__has_cpu(&opts->target)))
- 		perf_evsel__set_sample_bit(evsel, TIME);
- 
- 	if (opts->raw_samples) {
-@@ -696,7 +696,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 	 * Setting enable_on_exec for independent events and
- 	 * group leaders for traced executed by perf.
- 	 */
--	if (perf_target__none(&opts->target) && perf_evsel__is_group_leader(evsel))
-+	if (target__none(&opts->target) && perf_evsel__is_group_leader(evsel))
- 		attr->enable_on_exec = 1;
- }
- 
-@@ -2006,8 +2006,7 @@ bool perf_evsel__fallback(struct perf_evsel *evsel, int err,
- 	return false;
- }
- 
--int perf_evsel__open_strerror(struct perf_evsel *evsel,
--			      struct perf_target *target,
-+int perf_evsel__open_strerror(struct perf_evsel *evsel, struct target *target,
- 			      int err, char *msg, size_t size)
- {
- 	switch (err) {
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 0178233..f502965 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -318,8 +318,7 @@ int perf_evsel__fprintf(struct perf_evsel *evsel,
- 
- bool perf_evsel__fallback(struct perf_evsel *evsel, int err,
- 			  char *msg, size_t msgsize);
--int perf_evsel__open_strerror(struct perf_evsel *evsel,
--			      struct perf_target *target,
-+int perf_evsel__open_strerror(struct perf_evsel *evsel, struct target *target,
- 			      int err, char *msg, size_t size);
- 
- static inline int perf_evsel__group_idx(struct perf_evsel *evsel)
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 680700b6..0393912 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1396,12 +1396,12 @@ int machine__for_each_thread(struct machine *machine,
- }
- 
- int __machine__synthesize_threads(struct machine *machine, struct perf_tool *tool,
--				  struct perf_target *target, struct thread_map *threads,
-+				  struct target *target, struct thread_map *threads,
- 				  perf_event__handler_t process, bool data_mmap)
- {
--	if (perf_target__has_task(target))
-+	if (target__has_task(target))
- 		return perf_event__synthesize_thread_map(tool, threads, process, machine, data_mmap);
--	else if (perf_target__has_cpu(target))
-+	else if (target__has_cpu(target))
- 		return perf_event__synthesize_threads(tool, process, machine, data_mmap);
- 	/* command specified */
- 	return 0;
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index fedd1df..4771330 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -180,10 +180,10 @@ int machine__for_each_thread(struct machine *machine,
- 			     void *priv);
- 
- int __machine__synthesize_threads(struct machine *machine, struct perf_tool *tool,
--				  struct perf_target *target, struct thread_map *threads,
-+				  struct target *target, struct thread_map *threads,
- 				  perf_event__handler_t process, bool data_mmap);
- static inline
--int machine__synthesize_threads(struct machine *machine, struct perf_target *target,
-+int machine__synthesize_threads(struct machine *machine, struct target *target,
- 				struct thread_map *threads, bool data_mmap)
- {
- 	return __machine__synthesize_threads(machine, NULL, target, threads,
-diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
-index 065528b..3c778a0 100644
---- a/tools/perf/util/target.c
-+++ b/tools/perf/util/target.c
-@@ -13,9 +13,9 @@
- #include <string.h>
- 
- 
--enum perf_target_errno perf_target__validate(struct perf_target *target)
-+enum target_errno target__validate(struct target *target)
- {
--	enum perf_target_errno ret = PERF_ERRNO_TARGET__SUCCESS;
-+	enum target_errno ret = TARGET_ERRNO__SUCCESS;
- 
- 	if (target->pid)
- 		target->tid = target->pid;
-@@ -23,42 +23,42 @@ enum perf_target_errno perf_target__validate(struct perf_target *target)
- 	/* CPU and PID are mutually exclusive */
- 	if (target->tid && target->cpu_list) {
- 		target->cpu_list = NULL;
--		if (ret == PERF_ERRNO_TARGET__SUCCESS)
--			ret = PERF_ERRNO_TARGET__PID_OVERRIDE_CPU;
-+		if (ret == TARGET_ERRNO__SUCCESS)
-+			ret = TARGET_ERRNO__PID_OVERRIDE_CPU;
- 	}
- 
- 	/* UID and PID are mutually exclusive */
- 	if (target->tid && target->uid_str) {
- 		target->uid_str = NULL;
--		if (ret == PERF_ERRNO_TARGET__SUCCESS)
--			ret = PERF_ERRNO_TARGET__PID_OVERRIDE_UID;
-+		if (ret == TARGET_ERRNO__SUCCESS)
-+			ret = TARGET_ERRNO__PID_OVERRIDE_UID;
- 	}
- 
- 	/* UID and CPU are mutually exclusive */
- 	if (target->uid_str && target->cpu_list) {
- 		target->cpu_list = NULL;
--		if (ret == PERF_ERRNO_TARGET__SUCCESS)
--			ret = PERF_ERRNO_TARGET__UID_OVERRIDE_CPU;
-+		if (ret == TARGET_ERRNO__SUCCESS)
-+			ret = TARGET_ERRNO__UID_OVERRIDE_CPU;
- 	}
- 
- 	/* PID and SYSTEM are mutually exclusive */
- 	if (target->tid && target->system_wide) {
- 		target->system_wide = false;
--		if (ret == PERF_ERRNO_TARGET__SUCCESS)
--			ret = PERF_ERRNO_TARGET__PID_OVERRIDE_SYSTEM;
-+		if (ret == TARGET_ERRNO__SUCCESS)
-+			ret = TARGET_ERRNO__PID_OVERRIDE_SYSTEM;
- 	}
- 
- 	/* UID and SYSTEM are mutually exclusive */
- 	if (target->uid_str && target->system_wide) {
- 		target->system_wide = false;
--		if (ret == PERF_ERRNO_TARGET__SUCCESS)
--			ret = PERF_ERRNO_TARGET__UID_OVERRIDE_SYSTEM;
-+		if (ret == TARGET_ERRNO__SUCCESS)
-+			ret = TARGET_ERRNO__UID_OVERRIDE_SYSTEM;
- 	}
- 
- 	return ret;
- }
- 
--enum perf_target_errno perf_target__parse_uid(struct perf_target *target)
-+enum target_errno target__parse_uid(struct target *target)
- {
- 	struct passwd pwd, *result;
- 	char buf[1024];
-@@ -66,7 +66,7 @@ enum perf_target_errno perf_target__parse_uid(struct perf_target *target)
- 
- 	target->uid = UINT_MAX;
  	if (str == NULL)
--		return PERF_ERRNO_TARGET__SUCCESS;
-+		return TARGET_ERRNO__SUCCESS;
+-		return -1;
++		return -EINVAL;
  
- 	/* Try user name first */
- 	getpwnam_r(str, &pwd, buf, sizeof(buf), &result);
-@@ -79,22 +79,22 @@ enum perf_target_errno perf_target__parse_uid(struct perf_target *target)
- 		int uid = strtol(str, &endptr, 10);
- 
- 		if (*endptr != '\0')
--			return PERF_ERRNO_TARGET__INVALID_UID;
-+			return TARGET_ERRNO__INVALID_UID;
- 
- 		getpwuid_r(uid, &pwd, buf, sizeof(buf), &result);
- 
- 		if (result == NULL)
--			return PERF_ERRNO_TARGET__USER_NOT_FOUND;
-+			return TARGET_ERRNO__USER_NOT_FOUND;
+ 	val = parse_tag_value(str, tags);
+ 	if (val != (unsigned long) -1) {
+@@ -729,20 +728,38 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+ 		/* we got pages count value */
+ 		char *eptr;
+ 		pages = strtoul(str, &eptr, 10);
+-		if (*eptr != '\0') {
+-			pr_err("failed to parse --mmap_pages/-m value\n");
+-			return -1;
+-		}
++		if (*eptr != '\0')
++			return -EINVAL;
  	}
  
- 	target->uid = result->pw_uid;
--	return PERF_ERRNO_TARGET__SUCCESS;
-+	return TARGET_ERRNO__SUCCESS;
- }
- 
- /*
-- * This must have a same ordering as the enum perf_target_errno.
-+ * This must have a same ordering as the enum target_errno.
-  */
--static const char *perf_target__error_str[] = {
-+static const char *target__error_str[] = {
- 	"PID/TID switch overriding CPU",
- 	"PID/TID switch overriding UID",
- 	"UID switch overriding CPU",
-@@ -104,7 +104,7 @@ static const char *perf_target__error_str[] = {
- 	"Problems obtaining information for user %s",
- };
- 
--int perf_target__strerror(struct perf_target *target, int errnum,
-+int target__strerror(struct target *target, int errnum,
- 			  char *buf, size_t buflen)
- {
- 	int idx;
-@@ -124,21 +124,19 @@ int perf_target__strerror(struct perf_target *target, int errnum,
- 		return 0;
+-	if (pages < (1UL << 31) && !is_power_of_2(pages)) {
++	if ((pages == 0) && (min == 0)) {
++		/* leave number of pages at 0 */
++	} else if (pages < (1UL << 31) && !is_power_of_2(pages)) {
++		/* round pages up to next power of 2 */
+ 		pages = next_pow2(pages);
+ 		pr_info("rounding mmap pages size to %lu bytes (%lu pages)\n",
+ 			pages * page_size, pages);
  	}
  
--	if (errnum <  __PERF_ERRNO_TARGET__START ||
--	    errnum >= __PERF_ERRNO_TARGET__END)
-+	if (errnum <  __TARGET_ERRNO__START || errnum >= __TARGET_ERRNO__END)
+-	if (pages > UINT_MAX || pages > SIZE_MAX / page_size) {
+-		pr_err("--mmap_pages/-m value too big\n");
++	if (pages > max)
++		return -EINVAL;
++
++	return pages;
++}
++
++int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
++				  int unset __maybe_unused)
++{
++	unsigned int *mmap_pages = opt->value;
++	unsigned long max = UINT_MAX;
++	long pages;
++
++	if (max < SIZE_MAX / page_size)
++		max = SIZE_MAX / page_size;
++
++	pages = parse_pages_arg(str, 1, max);
++	if (pages < 0) {
++		pr_err("Invalid argument for --mmap_pages/-m\n");
  		return -1;
+ 	}
  
--	idx = errnum - __PERF_ERRNO_TARGET__START;
--	msg = perf_target__error_str[idx];
-+	idx = errnum - __TARGET_ERRNO__START;
-+	msg = target__error_str[idx];
- 
- 	switch (errnum) {
--	case PERF_ERRNO_TARGET__PID_OVERRIDE_CPU
--	 ... PERF_ERRNO_TARGET__UID_OVERRIDE_SYSTEM:
-+	case TARGET_ERRNO__PID_OVERRIDE_CPU ... TARGET_ERRNO__UID_OVERRIDE_SYSTEM:
- 		snprintf(buf, buflen, "%s", msg);
- 		break;
- 
--	case PERF_ERRNO_TARGET__INVALID_UID:
--	case PERF_ERRNO_TARGET__USER_NOT_FOUND:
-+	case TARGET_ERRNO__INVALID_UID:
-+	case TARGET_ERRNO__USER_NOT_FOUND:
- 		snprintf(buf, buflen, msg, target->uid_str);
- 		break;
- 
-diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
-index a4be857..89bab71 100644
---- a/tools/perf/util/target.h
-+++ b/tools/perf/util/target.h
-@@ -4,7 +4,7 @@
- #include <stdbool.h>
- #include <sys/types.h>
- 
--struct perf_target {
-+struct target {
- 	const char   *pid;
- 	const char   *tid;
- 	const char   *cpu_list;
-@@ -14,8 +14,8 @@ struct perf_target {
- 	bool	     uses_mmap;
- };
- 
--enum perf_target_errno {
--	PERF_ERRNO_TARGET__SUCCESS		= 0,
-+enum target_errno {
-+	TARGET_ERRNO__SUCCESS		= 0,
- 
- 	/*
- 	 * Choose an arbitrary negative big number not to clash with standard
-@@ -24,42 +24,40 @@ enum perf_target_errno {
- 	 *
- 	 * http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/errno.h.html
- 	 */
--	__PERF_ERRNO_TARGET__START		= -10000,
-+	__TARGET_ERRNO__START		= -10000,
- 
-+	/* for target__validate() */
-+	TARGET_ERRNO__PID_OVERRIDE_CPU	= __TARGET_ERRNO__START,
-+	TARGET_ERRNO__PID_OVERRIDE_UID,
-+	TARGET_ERRNO__UID_OVERRIDE_CPU,
-+	TARGET_ERRNO__PID_OVERRIDE_SYSTEM,
-+	TARGET_ERRNO__UID_OVERRIDE_SYSTEM,
- 
--	/* for perf_target__validate() */
--	PERF_ERRNO_TARGET__PID_OVERRIDE_CPU	= __PERF_ERRNO_TARGET__START,
--	PERF_ERRNO_TARGET__PID_OVERRIDE_UID,
--	PERF_ERRNO_TARGET__UID_OVERRIDE_CPU,
--	PERF_ERRNO_TARGET__PID_OVERRIDE_SYSTEM,
--	PERF_ERRNO_TARGET__UID_OVERRIDE_SYSTEM,
-+	/* for target__parse_uid() */
-+	TARGET_ERRNO__INVALID_UID,
-+	TARGET_ERRNO__USER_NOT_FOUND,
- 
--	/* for perf_target__parse_uid() */
--	PERF_ERRNO_TARGET__INVALID_UID,
--	PERF_ERRNO_TARGET__USER_NOT_FOUND,
--
--	__PERF_ERRNO_TARGET__END,
-+	__TARGET_ERRNO__END,
- };
- 
--enum perf_target_errno perf_target__validate(struct perf_target *target);
--enum perf_target_errno perf_target__parse_uid(struct perf_target *target);
-+enum target_errno target__validate(struct target *target);
-+enum target_errno target__parse_uid(struct target *target);
- 
--int perf_target__strerror(struct perf_target *target, int errnum, char *buf,
--			  size_t buflen);
-+int target__strerror(struct target *target, int errnum, char *buf, size_t buflen);
- 
--static inline bool perf_target__has_task(struct perf_target *target)
-+static inline bool target__has_task(struct target *target)
- {
- 	return target->tid || target->pid || target->uid_str;
- }
- 
--static inline bool perf_target__has_cpu(struct perf_target *target)
-+static inline bool target__has_cpu(struct target *target)
- {
- 	return target->system_wide || target->cpu_list;
- }
- 
--static inline bool perf_target__none(struct perf_target *target)
-+static inline bool target__none(struct target *target)
- {
--	return !perf_target__has_task(target) && !perf_target__has_cpu(target);
-+	return !target__has_task(target) && !target__has_cpu(target);
- }
- 
- #endif /* _PERF_TARGET_H */
-diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
-index f857b51..ce793c7 100644
---- a/tools/perf/util/top.c
-+++ b/tools/perf/util/top.c
-@@ -27,7 +27,7 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
- 	float ksamples_per_sec;
- 	float esamples_percent;
- 	struct perf_record_opts *opts = &top->record_opts;
--	struct perf_target *target = &opts->target;
-+	struct target *target = &opts->target;
- 	size_t ret = 0;
- 
- 	if (top->samples) {
