@@ -1,98 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab3KLCI2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 21:08:28 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:55079 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427Ab3KLCIS (ORCPT
+	id S1752517Ab3KLCLT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 21:11:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58167 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab3KLCLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 21:08:18 -0500
+	Mon, 11 Nov 2013 21:11:12 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAPXgP11oHZXbzCt72yutmeF-P=GudzPb9whTpWe5n9LDqOMM+g@mail.gmail.com>
-References: <20131111235700.GA29987@july>
-	<002901cedf3c$a7e77a00$f7b66e00$%han@samsung.com>
-	<20131112005628.GA2914@khazad-dum.debian.net>
-	<CAPXgP11oHZXbzCt72yutmeF-P=GudzPb9whTpWe5n9LDqOMM+g@mail.gmail.com>
-Date: Tue, 12 Nov 2013 11:08:16 +0900
-X-Google-Sender-Auth: AlX0HujP1WGzfJLevODffdCvg2I
-Message-ID: <CAH9JG2VuqQoo3Xv9ED94w34Te97hmz-4tNxUQdbBJTLMM4OLOg@mail.gmail.com>
-Subject: Re: [PATCH] video: backlight: Remove backlight sysfs uevent
-From: Kyungmin Park <kmpark@infradead.org>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        linux-fbdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org
+In-Reply-To: <s5heh6mx2vz.wl%tiwai@suse.de>
+References: <1384183278-19787-1-git-send-email-tiwai@suse.de>
+	<1384183278-19787-2-git-send-email-tiwai@suse.de>
+	<20131111153426.GA6630@pd.tnic>
+	<s5heh6mx2vz.wl%tiwai@suse.de>
+Date: Tue, 12 Nov 2013 10:11:09 +0800
+Message-ID: <CACVXFVO2ixTCqfMxhwi_rfkOsknneX42aUxzP=jKjmpW99HtxA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] firmware: Introduce request_firmware_direct()
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        amd64-microcode@amd64.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 10:19 AM, Kay Sievers <kay@vrfy.org> wrote:
-> On Tue, Nov 12, 2013 at 1:56 AM, Henrique de Moraes Holschuh
-> <hmh@hmh.eng.br> wrote:
->> On Tue, 12 Nov 2013, Jingoo Han wrote:
->>> On Tuesday, November 12, 2013 8:57 AM, Kyungmin Park wrote:
->>> > From: Kyungmin Park <kyungmin.park@samsung.com>
->>> >
->>> > The most mobile phones have Ambient Light Sensors and it changes brightness according lux.
->>> > It means it changes backlight brightness frequently by just writing sysfs node, so it generates uevent.
->>> >
->>> > Usually there's no user to use this backlight changes. But it forks udev worker threads and it takes
->>> > about 5ms. The main problem is that it hurts other process activities. so remove it.
->>> >
->>> > Kay said
->>> > "Uevents are for the major, low-frequent, global device state-changes,
->>> >  not for carrying-out any sort of measurement data. Subsystems which
->>> >  need that should use other facilities like poll()-able sysfs file or
->>> >  any other subscription-based, client-tracking interface which does not
->>> >  cause overhead if it isn't used. Uevents are not the right thing to
->>> >  use here, and upstream udev should not paper-over broken kernel
->>> >  subsystems."
->>
->> True.
->>
->> Now, let's take a look at reality: should you poll()/select() on a sysfs
->> node that doesn't suport it, it will wait until the poll/select timeout
->> happens (or EINTR happens), and userspace has absolutely NO way to detect
->> whether a sysfs node has poll/select support.
->>
->> What happens if the sysfs interface did not provide poll/select support
->> since day one, but rather added it later?  Nobody will use it for a *long*
->> time, if ever... unless you actually took pains to version the sysfs
->> interface, and people actually care.
+On Tue, Nov 12, 2013 at 1:30 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Mon, 11 Nov 2013 16:34:26 +0100,
 >
-> If that's an issue, we can add a new "event" file, just for that.
+> Sounds like a good idea.  How about the patch below?
+> (I used unsigned int since there shouldn't be so many different
+>  behaviors.)
 >
->>> 'thinkpad_acpi.c' uses the 'BACKLIGHT_UPDATE_SYSFS'.
->>> Henrique, can we remove it?
->>
->> Can't you fix this by rate-limiting, or otherwise adding an attribute that
->> backlight devices should set when they need to supress change events?
 >
-> Yeah, great idea, fix a bad hack with another bad one on top. :)
-> Passing measurement data through uevents is just an utterly broken
-> idea which cannot be fixed.
+> thanks,
 >
->> Is there a proper on-screen-display support path for the backlight class
->> nowadays?  Otherwise, you'd be removing the only way userspace ever had to
->> do proper OSD of backlight changes...
+> Takashi
 >
-> OSD drawing and event sounds usually happen as a fedback for
-> keypresses of brightness control, it would be weird to show up when
-> something else, like a light-sensor, adjusts the brightness in the
-> background.
+> ===
 >
-> Anyway, there might be the need for coordination and a new interface,
-> but uevents for measurement data need to die entirely; they make no
-> sense, never made any; and the sooner they are gone the better.
+> From: Takashi Iwai <tiwai@suse.de>
+> Subject: [PATCH] firmware: Use bit flags instead of boolean combos
+>
+> More than two boolean arguments to a function are rather confusing and
+> error-prone for callers.  Let's make the behavior bit flags instead of
+> triple combos.
+>
+> A nice suggestion by Borislav Petkov.
+>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
 
-Now power_supply, especially battery uses this scheme. it passes
-battery data using uevent.
-do you have any idea to kill it?
+Nice work,
 
-Thank you,
-Kyungmin Park
+              Acked-by: Ming Lei <ming.lei@canonical.com>
+
+Thanks,
+--
+Ming Lei
+
+> ---
+>  drivers/base/firmware_class.c | 49 ++++++++++++++++++++++++-------------------
+>  1 file changed, 28 insertions(+), 21 deletions(-)
+>
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index bb03c71bd94d..a4eaa7b82882 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -96,6 +96,11 @@ static inline long firmware_loading_timeout(void)
+>         return loading_timeout > 0 ? loading_timeout * HZ : MAX_SCHEDULE_TIMEOUT;
+>  }
+>
+> +/* firmware behavior options */
+> +#define FW_OPT_UEVENT  (1U << 0)
+> +#define FW_OPT_NOWAIT  (1U << 1)
+> +#define FW_OPT_FALLBACK        (1U << 2)
+> +
+>  struct firmware_cache {
+>         /* firmware_buf instance will be added into the below list */
+>         spinlock_t lock;
+> @@ -820,7 +825,7 @@ static void firmware_class_timeout_work(struct work_struct *work)
+>
+>  static struct firmware_priv *
+>  fw_create_instance(struct firmware *firmware, const char *fw_name,
+> -                  struct device *device, bool uevent, bool nowait)
+> +                  struct device *device, unsigned int opt_flags)
+>  {
+>         struct firmware_priv *fw_priv;
+>         struct device *f_dev;
+> @@ -832,7 +837,7 @@ fw_create_instance(struct firmware *firmware, const char *fw_name,
+>                 goto exit;
+>         }
+>
+> -       fw_priv->nowait = nowait;
+> +       fw_priv->nowait = !!(opt_flags & FW_OPT_NOWAIT);
+>         fw_priv->fw = firmware;
+>         INIT_DELAYED_WORK(&fw_priv->timeout_work,
+>                 firmware_class_timeout_work);
+> @@ -848,8 +853,8 @@ exit:
+>  }
+>
+>  /* load a firmware via user helper */
+> -static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
+> -                                 long timeout)
+> +static int _request_firmware_load(struct firmware_priv *fw_priv,
+> +                                 unsigned int opt_flags, long timeout)
+>  {
+>         int retval = 0;
+>         struct device *f_dev = &fw_priv->dev;
+> @@ -885,7 +890,7 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
+>                 goto err_del_bin_attr;
+>         }
+>
+> -       if (uevent) {
+> +       if (opt_flags & FW_OPT_UEVENT) {
+>                 buf->need_uevent = true;
+>                 dev_set_uevent_suppress(f_dev, false);
+>                 dev_dbg(f_dev, "firmware: requesting %s\n", buf->fw_id);
+> @@ -911,16 +916,16 @@ err_put_dev:
+>
+>  static int fw_load_from_user_helper(struct firmware *firmware,
+>                                     const char *name, struct device *device,
+> -                                   bool uevent, bool nowait, long timeout)
+> +                                   unsigned int opt_flags, long timeout)
+>  {
+>         struct firmware_priv *fw_priv;
+>
+> -       fw_priv = fw_create_instance(firmware, name, device, uevent, nowait);
+> +       fw_priv = fw_create_instance(firmware, name, device, opt_flags);
+>         if (IS_ERR(fw_priv))
+>                 return PTR_ERR(fw_priv);
+>
+>         fw_priv->buf = firmware->priv;
+> -       return _request_firmware_load(fw_priv, uevent, timeout);
+> +       return _request_firmware_load(fw_priv, opt_flags, timeout);
+>  }
+>
+>  #ifdef CONFIG_PM_SLEEP
+> @@ -1015,7 +1020,7 @@ _request_firmware_prepare(struct firmware **firmware_p, const char *name,
+>  }
+>
+>  static int assign_firmware_buf(struct firmware *fw, struct device *device,
+> -                               bool skip_cache)
+> +                              unsigned int opt_flags)
+>  {
+>         struct firmware_buf *buf = fw->priv;
+>
+> @@ -1032,7 +1037,8 @@ static int assign_firmware_buf(struct firmware *fw, struct device *device,
+>          * device may has been deleted already, but the problem
+>          * should be fixed in devres or driver core.
+>          */
+> -       if (device && !skip_cache)
+> +       /* don't cache firmware handled without uevent */
+> +       if (device && (opt_flags & FW_OPT_UEVENT))
+>                 fw_add_devm_name(device, buf->fw_id);
+>
+>         /*
+> @@ -1053,7 +1059,7 @@ static int assign_firmware_buf(struct firmware *fw, struct device *device,
+>  /* called from request_firmware() and request_firmware_work_func() */
+>  static int
+>  _request_firmware(const struct firmware **firmware_p, const char *name,
+> -                 struct device *device, bool uevent, bool nowait, bool fallback)
+> +                 struct device *device, unsigned int opt_flags)
+>  {
+>         struct firmware *fw;
+>         long timeout;
+> @@ -1068,7 +1074,7 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
+>
+>         ret = 0;
+>         timeout = firmware_loading_timeout();
+> -       if (nowait) {
+> +       if (opt_flags & FW_OPT_NOWAIT) {
+>                 timeout = usermodehelper_read_lock_wait(timeout);
+>                 if (!timeout) {
+>                         dev_dbg(device, "firmware: %s loading timed out\n",
+> @@ -1090,17 +1096,16 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
+>                 dev_warn(device, "Direct firmware load failed with error %d\n",
+>                          ret);
+>  #ifdef CONFIG_FW_LOADER_USER_HELPER
+> -               if (fallback) {
+> +               if (opt_flags & FW_OPT_FALLBACK) {
+>                         dev_warn(device, "Falling back to user helper\n");
+>                         ret = fw_load_from_user_helper(fw, name, device,
+> -                                              uevent, nowait, timeout);
+> +                                                      opt_flags, timeout);
+>                 }
+>  #endif
+>         }
+>
+> -       /* don't cache firmware handled without uevent */
+>         if (!ret)
+> -               ret = assign_firmware_buf(fw, device, !uevent);
+> +               ret = assign_firmware_buf(fw, device, opt_flags);
+>
+>         usermodehelper_read_unlock();
+>
+> @@ -1142,7 +1147,8 @@ request_firmware(const struct firmware **firmware_p, const char *name,
+>
+>         /* Need to pin this module until return */
+>         __module_get(THIS_MODULE);
+> -       ret = _request_firmware(firmware_p, name, device, true, false, true);
+> +       ret = _request_firmware(firmware_p, name, device,
+> +                               FW_OPT_UEVENT | FW_OPT_FALLBACK);
+>         module_put(THIS_MODULE);
+>         return ret;
+>  }
+> @@ -1165,7 +1171,7 @@ int request_firmware_direct(const struct firmware **firmware_p,
+>  {
+>         int ret;
+>         __module_get(THIS_MODULE);
+> -       ret = _request_firmware(firmware_p, name, device, true, false, false);
+> +       ret = _request_firmware(firmware_p, name, device, FW_OPT_UEVENT);
+>         module_put(THIS_MODULE);
+>         return ret;
+>  }
+> @@ -1194,7 +1200,7 @@ struct firmware_work {
+>         struct device *device;
+>         void *context;
+>         void (*cont)(const struct firmware *fw, void *context);
+> -       bool uevent;
+> +       unsigned int opt_flags;
+>  };
+>
+>  static void request_firmware_work_func(struct work_struct *work)
+> @@ -1205,7 +1211,7 @@ static void request_firmware_work_func(struct work_struct *work)
+>         fw_work = container_of(work, struct firmware_work, work);
+>
+>         _request_firmware(&fw, fw_work->name, fw_work->device,
+> -                         fw_work->uevent, true, true);
+> +                         fw_work->opt_flags);
+>         fw_work->cont(fw, fw_work->context);
+>         put_device(fw_work->device); /* taken in request_firmware_nowait() */
+>
+> @@ -1253,7 +1259,8 @@ request_firmware_nowait(
+>         fw_work->device = device;
+>         fw_work->context = context;
+>         fw_work->cont = cont;
+> -       fw_work->uevent = uevent;
+> +       fw_work->opt_flags = FW_OPT_NOWAIT | FW_OPT_FALLBACK |
+> +               (uevent ? FW_OPT_UEVENT : 0);
+>
+>         if (!try_module_get(module)) {
+>                 kfree(fw_work);
+> --
+> 1.8.4.2
+>
