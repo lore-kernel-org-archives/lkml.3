@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463Ab3KLWJq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 17:09:46 -0500
+	id S1757413Ab3KLWJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 17:09:40 -0500
 Received: from mga02.intel.com ([134.134.136.20]:4632 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756792Ab3KLWJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 17:09:11 -0500
+	id S1757035Ab3KLWJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 17:09:12 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="434167697"
+   d="scan'208";a="434167694"
 From: David Cohen <david.a.cohen@linux.intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, lenb@kernel.org,
         David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH 3/3] x86: intel-mid: allow sfi_device() to be used by modules
-Date: Tue, 12 Nov 2013 14:13:40 -0800
-Message-Id: <1384294420-9124-4-git-send-email-david.a.cohen@linux.intel.com>
+Subject: [PATCH 1/3] sfi: add private data to sfi_parse_table()
+Date: Tue, 12 Nov 2013 14:13:38 -0800
+Message-Id: <1384294420-9124-2-git-send-email-david.a.cohen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1384294420-9124-1-git-send-email-david.a.cohen@linux.intel.com>
 References: <1384294420-9124-1-git-send-email-david.a.cohen@linux.intel.com>
@@ -23,203 +23,228 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements support for sfi_device() to be called from
-driver modules. This is useful to bring SFI support to out-of-tree
-modules.
+sfi_parse_table() receives a callback as argument to call during its
+execution. This patch adds private data argument to send to such
+callback.
 
 Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+Cc: Len Brown <lenb@kernel.org>
 ---
- arch/x86/include/asm/intel-mid.h  | 13 +++++++++
- arch/x86/platform/intel-mid/sfi.c | 59 ++++++++++++++++++++++++++++++---------
- 2 files changed, 59 insertions(+), 13 deletions(-)
+ arch/x86/include/asm/intel-mid.h             |  4 ++--
+ arch/x86/platform/intel-mid/intel-mid.c      |  2 +-
+ arch/x86/platform/intel-mid/intel_mid_vrtc.c |  2 +-
+ arch/x86/platform/intel-mid/sfi.c            | 13 +++++++------
+ arch/x86/platform/sfi/sfi.c                  |  8 ++++----
+ drivers/sfi/sfi_acpi.c                       |  5 +++--
+ drivers/sfi/sfi_core.c                       |  4 ++--
+ include/linux/sfi.h                          |  8 +++++---
+ 8 files changed, 25 insertions(+), 21 deletions(-)
 
 diff --git a/arch/x86/include/asm/intel-mid.h b/arch/x86/include/asm/intel-mid.h
-index 971cbb1abab3..92b6dc333197 100644
+index e34e097b6f9d..c810abd5178c 100644
 --- a/arch/x86/include/asm/intel-mid.h
 +++ b/arch/x86/include/asm/intel-mid.h
-@@ -11,6 +11,7 @@
- #ifndef _ASM_X86_INTEL_MID_H
- #define _ASM_X86_INTEL_MID_H
- 
-+#include <linux/module.h>
- #include <linux/sfi.h>
- #include <linux/platform_device.h>
- 
-@@ -21,6 +22,7 @@ extern int __init sfi_parse_mrtc(struct sfi_table_header *table, void *const pri
- extern int __init sfi_parse_mtmr(struct sfi_table_header *table, void *const priv);
+@@ -17,8 +17,8 @@
+ extern int intel_mid_pci_init(void);
+ extern int get_gpio_by_name(const char *name);
+ extern void intel_scu_device_register(struct platform_device *pdev);
+-extern int __init sfi_parse_mrtc(struct sfi_table_header *table);
+-extern int __init sfi_parse_mtmr(struct sfi_table_header *table);
++extern int __init sfi_parse_mrtc(struct sfi_table_header *table, void *const priv);
++extern int __init sfi_parse_mtmr(struct sfi_table_header *table, void *const priv);
  extern int sfi_mrtc_num;
  extern struct sfi_rtc_table_entry sfi_mrtc_array[];
-+extern int sfi_parse_one_dev(struct sfi_table_header *table, void *const priv);
  
- /*
-  * Here defines the array of devices platform data that IAFW would export
-@@ -37,9 +39,20 @@ struct devs_id {
- 				struct devs_id *dev);
- };
+diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
+index 1bbedc4b0f88..68124ed102c3 100644
+--- a/arch/x86/platform/intel-mid/intel-mid.c
++++ b/arch/x86/platform/intel-mid/intel-mid.c
+@@ -83,7 +83,7 @@ static unsigned long __init intel_mid_calibrate_tsc(void)
  
-+#ifndef MODULE
- #define sfi_device(i)   \
- 	static const struct devs_id *const __intel_mid_sfi_##i##_dev __used \
- 	__attribute__((__section__(".x86_intel_mid_dev.init"))) = &i
-+#else
-+#define sfi_device(i)	\
-+	static int __init i##_as_module(void)		\
-+	{						\
-+		sfi_table_parse(SFI_SIG_DEVS, NULL, NULL, sfi_parse_one_dev, \
-+							   (void *const)&i); \
-+		return 0;				\
-+	}						\
-+	module_init(i##_as_module);
-+#endif
+ static void __init intel_mid_time_init(void)
+ {
+-	sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr);
++	sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr, NULL);
+ 	switch (intel_mid_timer_options) {
+ 	case INTEL_MID_TIMER_APBT_ONLY:
+ 		break;
+diff --git a/arch/x86/platform/intel-mid/intel_mid_vrtc.c b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
+index 4762cff7facd..3afb51ad745b 100644
+--- a/arch/x86/platform/intel-mid/intel_mid_vrtc.c
++++ b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
+@@ -120,7 +120,7 @@ void __init intel_mid_rtc_init(void)
+ {
+ 	unsigned long vrtc_paddr;
  
- /*
-  * Medfield is the follow-up of Moorestown, it combines two chip solution into
+-	sfi_table_parse(SFI_SIG_MRTC, NULL, NULL, sfi_parse_mrtc);
++	sfi_table_parse(SFI_SIG_MRTC, NULL, NULL, sfi_parse_mrtc, NULL);
+ 
+ 	vrtc_paddr = sfi_mrtc_array[0].phys_addr;
+ 	if (!sfi_mrtc_num || !vrtc_paddr)
 diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
-index 2c66024b7067..fb62fad61392 100644
+index 438306ebed05..2c66024b7067 100644
 --- a/arch/x86/platform/intel-mid/sfi.c
 +++ b/arch/x86/platform/intel-mid/sfi.c
-@@ -227,6 +227,7 @@ int get_gpio_by_name(const char *name)
- 	}
- 	return -EINVAL;
- }
-+EXPORT_SYMBOL_GPL(get_gpio_by_name);
+@@ -73,7 +73,7 @@ EXPORT_SYMBOL_GPL(intel_scu_notifier);
+ 	((dev)->get_platform_data ? (dev)->get_platform_data(priv) : NULL)
  
- void __init intel_scu_device_register(struct platform_device *pdev)
+ /* parse all the mtimer info to a static mtimer array */
+-int __init sfi_parse_mtmr(struct sfi_table_header *table)
++int __init sfi_parse_mtmr(struct sfi_table_header *table, void *const priv)
  {
-@@ -318,10 +319,10 @@ void intel_scu_devices_destroy(void)
- }
- EXPORT_SYMBOL_GPL(intel_scu_devices_destroy);
- 
--static void __init install_irq_resource(struct platform_device *pdev, int irq)
-+static void install_irq_resource(struct platform_device *pdev, int irq)
- {
- 	/* Single threaded */
--	static struct resource res __initdata = {
-+	static struct resource res = {
- 		.name = "IRQ",
- 		.flags = IORESOURCE_IRQ,
- 	};
-@@ -329,8 +330,8 @@ static void __init install_irq_resource(struct platform_device *pdev, int irq)
- 	platform_device_add_resources(pdev, &res, 1);
+ 	struct sfi_table_simple *sb;
+ 	struct sfi_timer_table_entry *pentry;
+@@ -146,7 +146,7 @@ void sfi_free_mtmr(struct sfi_timer_table_entry *mtmr)
  }
  
--static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *pentry,
--					struct devs_id *dev)
-+static void sfi_handle_ipc_dev(struct sfi_device_table_entry *pentry,
-+			       struct devs_id *dev)
+ /* parse all the mrtc info to a global mrtc array */
+-int __init sfi_parse_mrtc(struct sfi_table_header *table)
++int __init sfi_parse_mrtc(struct sfi_table_header *table, void *const priv)
  {
- 	struct platform_device *pdev;
- 	void *pdata = NULL;
-@@ -353,8 +354,8 @@ static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *pentry,
- 	platform_device_add(pdev);
- }
- 
--static void __init sfi_handle_spi_dev(struct sfi_device_table_entry *pentry,
--					struct devs_id *dev)
-+static void sfi_handle_spi_dev(struct sfi_device_table_entry *pentry,
-+				struct devs_id *dev)
+ 	struct sfi_table_simple *sb;
+ 	struct sfi_rtc_table_entry *pentry;
+@@ -185,7 +185,8 @@ int __init sfi_parse_mrtc(struct sfi_table_header *table)
+  * Parsing GPIO table first, since the DEVS table will need this table
+  * to map the pin name to the actual pin.
+  */
+-static int __init sfi_parse_gpio(struct sfi_table_header *table)
++static int __init sfi_parse_gpio(struct sfi_table_header *table,
++				 void *const priv)
  {
- 	struct spi_board_info spi_info;
- 	void *pdata = NULL;
-@@ -383,8 +384,8 @@ static void __init sfi_handle_spi_dev(struct sfi_device_table_entry *pentry,
- 		spi_register_board_info(&spi_info, 1);
- }
- 
--static void __init sfi_handle_i2c_dev(struct sfi_device_table_entry *pentry,
--					struct devs_id *dev)
-+static void sfi_handle_i2c_dev(struct sfi_device_table_entry *pentry,
-+				struct devs_id *dev, int from_module)
- {
- 	struct i2c_board_info i2c_info;
- 	void *pdata = NULL;
-@@ -405,14 +406,20 @@ static void __init sfi_handle_i2c_dev(struct sfi_device_table_entry *pentry,
- 
- 	if (dev->delay)
- 		intel_scu_i2c_device_register(pentry->host_num, &i2c_info);
--	else
-+	else if (!from_module)
-+		/*
-+		 * Despite i2c_register_board_info() is __init, we have a
-+		 * false-positive section mismatch here: this function is not
-+		 * allowed to be called from non-__init source with
-+		 * @from_module == 0.
-+		 */
- 		i2c_register_board_info(pentry->host_num, &i2c_info, 1);
- }
- 
- extern struct devs_id *const __x86_intel_mid_dev_start[],
- 		      *const __x86_intel_mid_dev_end[];
- 
--static struct devs_id __init *get_device_id(u8 type, char *name)
-+static struct devs_id *get_device_id(u8 type, char *name)
- {
- 	struct devs_id *const *dev_table;
- 
-@@ -428,8 +435,9 @@ static struct devs_id __init *get_device_id(u8 type, char *name)
+ 	struct sfi_table_simple *sb;
+ 	struct sfi_gpio_table_entry *pentry;
+@@ -427,7 +428,7 @@ static struct devs_id __init *get_device_id(u8 type, char *name)
  	return NULL;
  }
  
--static int __init sfi_parse_devs(struct sfi_table_header *table, void *const priv)
-+static int __sfi_parse_devs(struct sfi_table_header *table, void *const priv)
+-static int __init sfi_parse_devs(struct sfi_table_header *table)
++static int __init sfi_parse_devs(struct sfi_table_header *table, void *const priv)
  {
-+	struct devs_id *const devid = priv;
  	struct sfi_table_simple *sb;
  	struct sfi_device_table_entry *pentry;
- 	struct devs_id *dev = NULL;
-@@ -480,7 +488,16 @@ static int __init sfi_parse_devs(struct sfi_table_header *table, void *const pri
- 			irq = 0; /* No irq */
- 		}
+@@ -509,8 +510,8 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
  
--		dev = get_device_id(pentry->type, pentry->name);
-+		/*
-+		 * If @devid is NULL we want to go through the whole static
-+		 * dev_ids list by calling get_device_id()
-+		 */
-+		if (likely(!devid))
-+			dev = get_device_id(pentry->type, pentry->name);
-+		else if (devid->type == pentry->type &&
-+			 !strncmp(devid->name, pentry->name,
-+				  sizeof(devid->name)))
-+			dev = devid;
- 
- 		if (!dev)
- 			continue;
-@@ -496,7 +513,7 @@ static int __init sfi_parse_devs(struct sfi_table_header *table, void *const pri
- 				sfi_handle_spi_dev(pentry, dev);
- 				break;
- 			case SFI_DEV_TYPE_I2C:
--				sfi_handle_i2c_dev(pentry, dev);
-+				sfi_handle_i2c_dev(pentry, dev, !!devid);
- 				break;
- 			case SFI_DEV_TYPE_UART:
- 			case SFI_DEV_TYPE_HSI:
-@@ -504,10 +521,26 @@ static int __init sfi_parse_devs(struct sfi_table_header *table, void *const pri
- 				break;
- 			}
- 		}
-+		if (unlikely(devid))
-+			/* We found the one we're looking for */
-+			return 0;
- 	}
-+
- 	return 0;
- }
- 
-+int sfi_parse_one_dev(struct sfi_table_header *table, void *const priv)
-+{
-+	return priv ? __sfi_parse_devs(table, priv) : -EINVAL;
-+}
-+EXPORT_SYMBOL_GPL(sfi_parse_one_dev);
-+
-+static int __init
-+sfi_parse_devs(struct sfi_table_header *table, void *const priv)
-+{
-+	return __sfi_parse_devs(table, NULL);
-+}
-+
  static int __init intel_mid_platform_init(void)
  {
- 	sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, sfi_parse_gpio, NULL);
+-	sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, sfi_parse_gpio);
+-	sfi_table_parse(SFI_SIG_DEVS, NULL, NULL, sfi_parse_devs);
++	sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, sfi_parse_gpio, NULL);
++	sfi_table_parse(SFI_SIG_DEVS, NULL, NULL, sfi_parse_devs, NULL);
+ 	return 0;
+ }
+ arch_initcall(intel_mid_platform_init);
+diff --git a/arch/x86/platform/sfi/sfi.c b/arch/x86/platform/sfi/sfi.c
+index bcd1a703e3e6..8b022f5e30e8 100644
+--- a/arch/x86/platform/sfi/sfi.c
++++ b/arch/x86/platform/sfi/sfi.c
+@@ -48,7 +48,7 @@ static void __init mp_sfi_register_lapic(u8 id)
+ 	generic_processor_info(id, GET_APIC_VERSION(apic_read(APIC_LVR)));
+ }
+ 
+-static int __init sfi_parse_cpus(struct sfi_table_header *table)
++static int __init sfi_parse_cpus(struct sfi_table_header *table, void *priv)
+ {
+ 	struct sfi_table_simple *sb;
+ 	struct sfi_cpu_table_entry *pentry;
+@@ -71,7 +71,7 @@ static int __init sfi_parse_cpus(struct sfi_table_header *table)
+ 
+ #ifdef CONFIG_X86_IO_APIC
+ 
+-static int __init sfi_parse_ioapic(struct sfi_table_header *table)
++static int __init sfi_parse_ioapic(struct sfi_table_header *table, void *priv)
+ {
+ 	struct sfi_table_simple *sb;
+ 	struct sfi_apic_table_entry *pentry;
+@@ -100,10 +100,10 @@ int __init sfi_platform_init(void)
+ {
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	register_lapic_address(sfi_lapic_addr);
+-	sfi_table_parse(SFI_SIG_CPUS, NULL, NULL, sfi_parse_cpus);
++	sfi_table_parse(SFI_SIG_CPUS, NULL, NULL, sfi_parse_cpus, NULL);
+ #endif
+ #ifdef CONFIG_X86_IO_APIC
+-	sfi_table_parse(SFI_SIG_APIC, NULL, NULL, sfi_parse_ioapic);
++	sfi_table_parse(SFI_SIG_APIC, NULL, NULL, sfi_parse_ioapic, NULL);
+ #endif
+ 	return 0;
+ }
+diff --git a/drivers/sfi/sfi_acpi.c b/drivers/sfi/sfi_acpi.c
+index f5b4ca581541..be71be084a5f 100644
+--- a/drivers/sfi/sfi_acpi.c
++++ b/drivers/sfi/sfi_acpi.c
+@@ -96,7 +96,8 @@ static inline struct acpi_table_header *sfi_to_acpi_th(
+  *
+  * Parse the ACPI XSDT for later access by sfi_acpi_table_parse().
+  */
+-static int __init sfi_acpi_parse_xsdt(struct sfi_table_header *th)
++static int __init
++sfi_acpi_parse_xsdt(struct sfi_table_header *th, void *const priv)
+ {
+ 	struct sfi_table_key key = SFI_ANY_KEY;
+ 	int tbl_cnt, i;
+@@ -119,7 +120,7 @@ int __init sfi_acpi_init(void)
+ {
+ 	struct sfi_table_key xsdt_key = { .sig = SFI_SIG_XSDT };
+ 
+-	sfi_table_parse(SFI_SIG_XSDT, NULL, NULL, sfi_acpi_parse_xsdt);
++	sfi_table_parse(SFI_SIG_XSDT, NULL, NULL, sfi_acpi_parse_xsdt, NULL);
+ 
+ 	/* Only call the get_table to keep the table mapped */
+ 	xsdt_va = (struct acpi_table_xsdt *)sfi_get_table(&xsdt_key);
+diff --git a/drivers/sfi/sfi_core.c b/drivers/sfi/sfi_core.c
+index 1e824fb1649b..8289d95be04a 100644
+--- a/drivers/sfi/sfi_core.c
++++ b/drivers/sfi/sfi_core.c
+@@ -278,7 +278,7 @@ void sfi_put_table(struct sfi_table_header *th)
+ 
+ /* Find table with signature, run handler on it */
+ int sfi_table_parse(char *signature, char *oem_id, char *oem_table_id,
+-			sfi_table_handler handler)
++			sfi_table_handler handler, void *const priv)
+ {
+ 	struct sfi_table_header *table = NULL;
+ 	struct sfi_table_key key;
+@@ -295,7 +295,7 @@ int sfi_table_parse(char *signature, char *oem_id, char *oem_table_id,
+ 	if (!table)
+ 		goto exit;
+ 
+-	ret = handler(table);
++	ret = handler(table, priv);
+ 	sfi_put_table(table);
+ exit:
+ 	return ret;
+diff --git a/include/linux/sfi.h b/include/linux/sfi.h
+index d9b436f09925..3d2be5c02256 100644
+--- a/include/linux/sfi.h
++++ b/include/linux/sfi.h
+@@ -170,14 +170,15 @@ struct sfi_gpio_table_entry {
+ 	char	pin_name[SFI_NAME_LEN];
+ } __packed;
+ 
+-typedef int (*sfi_table_handler) (struct sfi_table_header *table);
++typedef int (*sfi_table_handler) (struct sfi_table_header *table,
++				  void *const priv);
+ 
+ #ifdef CONFIG_SFI
+ extern void __init sfi_init(void);
+ extern int __init sfi_platform_init(void);
+ extern void __init sfi_init_late(void);
+ extern int sfi_table_parse(char *signature, char *oem_id, char *oem_table_id,
+-				sfi_table_handler handler);
++				sfi_table_handler handler, void *const priv);
+ 
+ extern int sfi_disabled;
+ static inline void disable_sfi(void)
+@@ -199,7 +200,8 @@ static inline void sfi_init_late(void)
+ 
+ static inline int sfi_table_parse(char *signature, char *oem_id,
+ 					char *oem_table_id,
+-					sfi_table_handler handler)
++					sfi_table_handler handler,
++					void *const priv)
+ {
+ 	return -1;
+ }
 -- 
 1.8.4.2
 
