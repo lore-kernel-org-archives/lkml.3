@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167Ab3KLUsc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 15:48:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41927 "EHLO
+	id S1757191Ab3KLUsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 15:48:40 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41932 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755627Ab3KLUqg (ORCPT
+	with ESMTP id S1755666Ab3KLUqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Nov 2013 15:46:36 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Pekka Enberg <penberg@kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/13] perf evlist: Refactor mmap_pages parsing
-Date: Tue, 12 Nov 2013 17:46:15 -0300
-Message-Id: <1384289178-31374-11-git-send-email-acme@infradead.org>
+Subject: [PATCH 07/13] perf trace: Add summary only option
+Date: Tue, 12 Nov 2013 17:46:12 -0300
+Message-Id: <1384289178-31374-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384289178-31374-1-git-send-email-acme@infradead.org>
 References: <1384289178-31374-1-git-send-email-acme@infradead.org>
@@ -26,91 +27,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
-Logic will be re-used for the out-pages argument for mmap based writes
-in perf-record.
+Per request from Pekka make --summary a summary only option meaning do
+not show the individual system calls. Add another option to see all
+syscalls along with the summary. In addition use 's' and 'S' as
+shortcuts for the options.
 
+Requested-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: David Ahern <dsahern@gmail.com>
+Tested-by: Pekka Enberg <penberg@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1384267617-3446-4-git-send-email-dsahern@gmail.com
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Link: http://lkml.kernel.org/r/1384273875-3751-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 39 ++++++++++++++++++++++++++++-----------
- 1 file changed, 28 insertions(+), 11 deletions(-)
+ tools/perf/Documentation/perf-trace.txt | 10 ++++++++--
+ tools/perf/builtin-trace.c              | 16 +++++++++++++---
+ 2 files changed, 21 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index fb4727d3df85..cb19044601bb 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -705,10 +705,9 @@ static size_t perf_evlist__mmap_size(unsigned long pages)
- 	return (pages + 1) * page_size;
- }
+diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
+index 7b0497f95a75..fae38d9a44a4 100644
+--- a/tools/perf/Documentation/perf-trace.txt
++++ b/tools/perf/Documentation/perf-trace.txt
+@@ -93,9 +93,15 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
+ --comm::
+         Show process COMM right beside its ID, on by default, disable with --no-comm.
  
--int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
--				  int unset __maybe_unused)
-+static long parse_pages_arg(const char *str, unsigned long min,
-+			    unsigned long max)
- {
--	unsigned int *mmap_pages = opt->value;
- 	unsigned long pages, val;
- 	static struct parse_tag tags[] = {
- 		{ .tag  = 'B', .mult = 1       },
-@@ -719,7 +718,7 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
++-s::
+ --summary::
+-	Show a summary of syscalls by thread with min, max, and average times (in
+-    msec) and relative stddev.
++	Show only a summary of syscalls by thread with min, max, and average times
++    (in msec) and relative stddev.
++
++-S::
++--with-summary::
++	Show all syscalls followed by a summary by thread with min, max, and
++    average times (in msec) and relative stddev.
+ 
+ --tool_stats::
+ 	Show tool stats such as number of times fd->pathname was discovered thru
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 0964c0cdc982..aa5702ffa2cb 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1168,6 +1168,7 @@ struct trace {
+ 	bool			sched;
+ 	bool			multiple_threads;
+ 	bool			summary;
++	bool			summary_only;
+ 	bool			show_comm;
+ 	bool			show_tool_stats;
+ 	double			duration_filter;
+@@ -1611,7 +1612,7 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
+ 					   args, trace, thread);
+ 
+ 	if (!strcmp(sc->name, "exit_group") || !strcmp(sc->name, "exit")) {
+-		if (!trace->duration_filter) {
++		if (!trace->duration_filter && !trace->summary_only) {
+ 			trace__fprintf_entry_head(trace, thread, 1, sample->time, trace->output);
+ 			fprintf(trace->output, "%-70s\n", ttrace->entry_str);
+ 		}
+@@ -1664,6 +1665,9 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
+ 	} else if (trace->duration_filter)
+ 		goto out;
+ 
++	if (trace->summary_only)
++		goto out;
++
+ 	trace__fprintf_entry_head(trace, thread, duration, sample->time, trace->output);
+ 
+ 	if (ttrace->entry_pending) {
+@@ -2282,8 +2286,10 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_INCR('v', "verbose", &verbose, "be more verbose"),
+ 	OPT_BOOLEAN('T', "time", &trace.full_time,
+ 		    "Show full timestamp, not time relative to first start"),
+-	OPT_BOOLEAN(0, "summary", &trace.summary,
+-		    "Show syscall summary with statistics"),
++	OPT_BOOLEAN('s', "summary", &trace.summary_only,
++		    "Show only syscall summary with statistics"),
++	OPT_BOOLEAN('S', "with-summary", &trace.summary,
++		    "Show all syscalls and summary with statistics"),
+ 	OPT_END()
  	};
+ 	int err;
+@@ -2294,6 +2300,10 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
  
- 	if (str == NULL)
--		return -1;
-+		return -EINVAL;
+ 	argc = parse_options(argc, argv, trace_options, trace_usage, 0);
  
- 	val = parse_tag_value(str, tags);
- 	if (val != (unsigned long) -1) {
-@@ -729,20 +728,38 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
- 		/* we got pages count value */
- 		char *eptr;
- 		pages = strtoul(str, &eptr, 10);
--		if (*eptr != '\0') {
--			pr_err("failed to parse --mmap_pages/-m value\n");
--			return -1;
--		}
-+		if (*eptr != '\0')
-+			return -EINVAL;
- 	}
- 
--	if (pages < (1UL << 31) && !is_power_of_2(pages)) {
-+	if ((pages == 0) && (min == 0)) {
-+		/* leave number of pages at 0 */
-+	} else if (pages < (1UL << 31) && !is_power_of_2(pages)) {
-+		/* round pages up to next power of 2 */
- 		pages = next_pow2(pages);
- 		pr_info("rounding mmap pages size to %lu bytes (%lu pages)\n",
- 			pages * page_size, pages);
- 	}
- 
--	if (pages > UINT_MAX || pages > SIZE_MAX / page_size) {
--		pr_err("--mmap_pages/-m value too big\n");
-+	if (pages > max)
-+		return -EINVAL;
++	/* summary_only implies summary option, but don't overwrite summary if set */
++	if (trace.summary_only)
++		trace.summary = trace.summary_only;
 +
-+	return pages;
-+}
-+
-+int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
-+				  int unset __maybe_unused)
-+{
-+	unsigned int *mmap_pages = opt->value;
-+	unsigned long max = UINT_MAX;
-+	long pages;
-+
-+	if (max < SIZE_MAX / page_size)
-+		max = SIZE_MAX / page_size;
-+
-+	pages = parse_pages_arg(str, 1, max);
-+	if (pages < 0) {
-+		pr_err("Invalid argument for --mmap_pages/-m\n");
- 		return -1;
- 	}
- 
+ 	if (output_name != NULL) {
+ 		err = trace__open_output(&trace, output_name);
+ 		if (err < 0) {
 -- 
 1.8.1.4
 
