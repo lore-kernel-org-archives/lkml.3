@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483Ab3KLJop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 04:44:45 -0500
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:49240 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488Ab3KLJol convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 04:44:41 -0500
-From: Mischa Jonker <Mischa.Jonker@synopsys.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Vineet.Gupta1@synopsys.com" <Vineet.Gupta1@synopsys.com>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: RE: [PATCH v3 0/2] ARC: Add perf support for ARC700 cores
-Thread-Topic: [PATCH v3 0/2] ARC: Add perf support for ARC700 cores
-Thread-Index: AQHO28D+5ybZczaeNE+tHSTnYRzkg5ogLa2AgAAAxwCAASl7wA==
-Date: Tue, 12 Nov 2013 09:44:34 +0000
-Message-ID: <E6BF041E97966E4DB955F0DF883AD2D685F17293@de02wembxa.internal.synopsys.com>
-References: <1383832512-21130-1-git-send-email-mjonker@synopsys.com>
- <20131111162755.GC26898@twins.programming.kicks-ass.net>
- <20131111163042.GA10977@twins.programming.kicks-ass.net>
-In-Reply-To: <20131111163042.GA10977@twins.programming.kicks-ass.net>
-Accept-Language: nl-NL, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.100.24.48]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753984Ab3KLJql (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 04:46:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3950 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751618Ab3KLJqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 04:46:39 -0500
+Date: Tue, 12 Nov 2013 10:46:28 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] tools lib traceevent: Add direct access to dynamic arrays
+Message-ID: <20131112094628.GA1427@krava.brq.redhat.com>
+References: <20131111160810.0ba9df7d@gandalf.local.home>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131111160810.0ba9df7d@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ah, so its one of those that cannot sample; you might want to fail when we
-> try and create a sampling event.
+On Mon, Nov 11, 2013 at 04:08:10PM -0500, Steven Rostedt wrote:
+> 
+> Jiri Olsa was writing a plugin for the cfg80211_tx_mlme_mgmt trace
+> event, and was not able to get the implemented function working.
+> The event's print fmt looks like:
+> 
+>    "netdev:%s(%d), ftype:0x%.2x", REC->name, REC->ifindex,
+>             __le16_to_cpup((__le16 *)__get_dynamic_array(frame))
+> 
+> As there's no helper function for __le16_to_cpup(), Jiri was creating one
+> with a plugin. But unfortunately, it would not work even though he set
+> up the plugin correctly.
+> 
+> The problem is that the function parameters do not handle the helper
+> function "__get_dynamic_array()", and that passes in a NULL pointer.
+> 
+> Adding PRINT_DYNAMIC_ARRAY direct support to eval_num_arg() allows the
+> use of __get_dynamic_array() in function parameters.
+> 
+> Reported-by: Jiri Olsa <jolsa@redhat.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Good suggestion, I'll create a separate patch for that!
+cool, thanks
 
-> Also, you could consider running an (hr)timer to periodically update the
-> events so that you don't miss a hardware counter wrap around -- if that is a
-> distinct possibility.
+Tested-by: Jiri Olsa <jolsa@redhat.com>
 
-It's a theoretical possibility: the counters are 48 bits. Unlikely to happen
-during application development/performance analysis on an embedded core.
 
-Thanks,
-
-Mischa
+jirka
