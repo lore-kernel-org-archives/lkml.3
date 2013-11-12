@@ -1,176 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab3KLS1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 13:27:34 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:54200 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755271Ab3KLS1c (ORCPT
+	id S1755149Ab3KLScA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 13:32:00 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:46196 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754670Ab3KLSb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 13:27:32 -0500
-Message-ID: <52827311.6060206@codeaurora.org>
-Date: Tue, 12 Nov 2013 13:27:29 -0500
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 12 Nov 2013 13:31:58 -0500
+Date: Tue, 12 Nov 2013 10:31:46 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Does Itanium permit speculative stores?
+Message-ID: <20131112183146.GN4138@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131111171307.GA27002@linux.vnet.ibm.com>
+ <3908561D78D1C84285E8C5FCA982C28F31D5DB28@ORSMSX106.amr.corp.intel.com>
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: balbi@ti.com, gregkh@linuxfoundation.org, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, davidb@codeaurora.org,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniel Walker <dwalker@fifo99.com>
-Subject: Re: [PATCH v4 01/15] usb: phy: msm: Move mach dependent code to platform
- data
-References: <1384267910-32066-1-git-send-email-iivanov@mm-sol.com> <1384267910-32066-2-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1384267910-32066-2-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31D5DB28@ORSMSX106.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111218-0928-0000-0000-000003957965
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ivan,
+On Tue, Nov 12, 2013 at 06:00:26PM +0000, Luck, Tony wrote:
+> > Does Itanium permit speculative stores?  For example, on Itanium what are
+> > the permitted outcomes of the following litmus test, where both x and y
+> > are initially zero?
+> 
+> We have a complier visible speculative read via the "ld.s" and "chk" instructions. But
+> there is no speculative write ("st.s") instruction.  I think you are asking "can out of order
+> writes become visible in this scenario?"
+> 
+> 	CPU 0				CPU 1
+> 
+> 	r1 = ACCESS_ONCE(x);		r2 = ACCESS_ONCE(y);
+> 	if (r1)				if (r2)
+> 		ACCESS_ONCE(y) = 1;		ACCESS_ONCE(x) = 1;
+> 
+> > In particular, is the outcome (r1 == 1 && r2 == 1) possible on Itanium
+> > given this litmus test?
+> 
+> The "ACCESS_ONCE" macro casts to volatile - which will make gcc generate
+> ordered "ld.acq" and "st.rel" instructions for your code snippets. So I think
+> you should be fine.
 
-On 11/12/2013 09:51 AM, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> This patch fix compilation error when driver is compiled
-> in multi-platform builds.
-> 
-> drivers/built-in.o: In function `msm_otg_link_clk_reset':
-> ./drivers/usb/phy/phy-msm-usb.c:314: undefined reference to `clk_reset'
-> ./drivers/usb/phy/phy-msm-usb.c:318: undefined reference to `clk_reset'
-> 
-> Use platform data supplied reset handlers and adjust error
-> messages reported when reset sequence fail.
-> 
-> This is an intermediate step before adding support for reset
-> framework and newer targets.
-> 
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> Acked-by: David Brown <davidb@codeaurora.org>
-> Cc: Daniel Walker <dwalker@fifo99.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  arch/arm/mach-msm/board-msm7x30.c |   35 +++++++++++++++++++++++++++++++++++
->  arch/arm/mach-msm/board-qsd8x50.c |   35 +++++++++++++++++++++++++++++++++++
->  drivers/usb/phy/phy-msm-usb.c     |   35 +++++++++++++++--------------------
->  include/linux/usb/msm_hsusb.h     |    3 +++
->  4 files changed, 88 insertions(+), 20 deletions(-)
-> 
-> diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
-> index f9af5a4..46de789 100644
-> --- a/arch/arm/mach-msm/board-msm7x30.c
-> +++ b/arch/arm/mach-msm/board-msm7x30.c
-> @@ -30,6 +30,7 @@
->  #include <asm/memory.h>
->  #include <asm/setup.h>
->  
-> +#include <mach/clk.h>
->  #include <mach/msm_iomap.h>
->  #include <mach/dma.h>
->  
-> @@ -60,10 +61,44 @@ static int hsusb_phy_init_seq[] = {
->  	-1
->  };
->  
-> +static int hsusb_link_clk_reset(struct clk *link_clk, bool assert)
-> +{
-> +	int ret;
-> +
-> +	if (assert) {
-> +		ret = clk_reset(link_clk, CLK_RESET_ASSERT);
-> +		if (ret)
-> +			pr_err("usb hs_clk assert failed\n");
-> +	} else {
-> +		ret = clk_reset(link_clk, CLK_RESET_DEASSERT);
-> +		if (ret)
-> +			pr_err("usb hs_clk deassert failed\n");
-> +	}
-> +	return ret;
-> +}
-> +
-> +static int hsusb_phy_clk_reset(struct clk *phy_clk)
-> +{
-> +	int ret;
-> +
-> +	ret = clk_reset(phy_clk, CLK_RESET_ASSERT);
-> +	if (ret) {
-> +		pr_err("usb phy clk assert failed\n");
-> +		return ret;
-> +	}
-> +	usleep_range(10000, 12000);
-> +	ret = clk_reset(phy_clk, CLK_RESET_DEASSERT);
-> +	if (ret)
-> +		pr_err("usb phy clk deassert failed\n");
-> +	return ret;
-> +}
-> +
->  static struct msm_otg_platform_data msm_otg_pdata = {
->  	.phy_init_seq		= hsusb_phy_init_seq,
->  	.mode                   = USB_PERIPHERAL,
->  	.otg_control		= OTG_PHY_CONTROL,
-> +	.link_clk_reset		= hsusb_link_clk_reset,
-> +	.phy_clk_reset		= hsusb_phy_clk_reset,
->  };
->  
->  struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {
-> diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
-> index 5f933bc..9169ec3 100644
-> --- a/arch/arm/mach-msm/board-qsd8x50.c
-> +++ b/arch/arm/mach-msm/board-qsd8x50.c
-> @@ -31,6 +31,7 @@
->  #include <mach/irqs.h>
->  #include <mach/sirc.h>
->  #include <mach/vreg.h>
-> +#include <mach/clk.h>
->  #include <linux/platform_data/mmc-msm_sdcc.h>
->  
->  #include "devices.h"
-> @@ -81,10 +82,44 @@ static int hsusb_phy_init_seq[] = {
->  	-1
->  };
->  
-> +static int hsusb_link_clk_reset(struct clk *link_clk, bool assert)
-> +{
-> +	int ret;
-> +
-> +	if (assert) {
-> +		ret = clk_reset(link_clk, CLK_RESET_ASSERT);
-> +		if (ret)
-> +			pr_err("usb hs_clk assert failed\n");
-> +	} else {
-> +		ret = clk_reset(link_clk, CLK_RESET_DEASSERT);
-> +		if (ret)
-> +			pr_err("usb hs_clk deassert failed\n");
-> +	}
-> +	return ret;
-> +}
-> +
-> +static int hsusb_phy_clk_reset(struct clk *phy_clk)
-> +{
-> +	int ret;
-> +
-> +	ret = clk_reset(phy_clk, CLK_RESET_ASSERT);
-> +	if (ret) {
-> +		pr_err("usb phy clk assert failed\n");
-> +		return ret;
-> +	}
-> +	usleep_range(10000, 12000);
-> +	ret = clk_reset(phy_clk, CLK_RESET_DEASSERT);
-> +	if (ret)
-> +		pr_err("usb phy clk deassert failed\n");
-> +	return ret;
-> +}
+Excellent!!!  Thank you for the information!
 
-Why are there identical, static definitions of hsusb_link_clk_reset and
-hsusb_phy_clk_reset across the two board files? Why not share a single
-non-static set of definitions?
+If I understand you correctly, this underscores the importance of
+using ACCESS_ONCE() -- if you omit them in the above scenario, perhaps
+you can see out-of-order stores becoming visible in this scenario?
 
-Thanks,
-Christopher
+Also, this resolves our earlier IRC discussion about Itanium's lack of
+read-read cache coherence.  If you use ACCESS_ONCE properly, then on
+Itanium the reads will become ld.acq instructions, ensuring the expected
+cache coherence.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+Very nice!
+
+							Thanx, Paul
+
