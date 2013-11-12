@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab3KLKoh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 05:44:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51943 "EHLO mx2.suse.de"
+	id S1754857Ab3KLKou (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 05:44:50 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:36102 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754347Ab3KLKoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 05:44:34 -0500
-Subject: Re: [PATCH v2 1/8] x86: speed up int3-based patching using less
- paranoid write
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-In-Reply-To: <20131108074336.29dfbc15@gandalf.local.home>
-References: <1383901932-1945-1-git-send-email-pmladek@suse.cz>
-	 <1383901932-1945-3-git-send-email-pmladek@suse.cz>
-	 <527CD34A.30406@hitachi.com>  <20131108074336.29dfbc15@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Nov 2013 11:44:32 +0100
-Message-ID: <1384253072.1296.21.camel@pathway.suse.cz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1754347Ab3KLKor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 05:44:47 -0500
+Date: Tue, 12 Nov 2013 11:44:23 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
+Subject: Re: [PATCH v5 2/3] x86, apic: Add disable_cpu_apicid kernel parameter
+Message-ID: <20131112104423.GB12849@pd.tnic>
+References: <20131112094952.4902.72689.stgit@localhost6.localdomain6>
+ <20131112095158.4902.75396.stgit@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131112095158.4902.75396.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt píše v Pá 08. 11. 2013 v 07:43 -0500:
-> On Fri, 08 Nov 2013 21:04:26 +0900
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+On Tue, Nov 12, 2013 at 06:51:58PM +0900, HATAYAMA Daisuke wrote:
+> Add disable_cpu_apicid kernel parameter. To use this kernel parameter,
+> specify an initial APIC ID of the corresponding CPU you want to
+> disable.
 > 
-> > (2013/11/08 18:12), Petr Mladek wrote:
-> > > This change is inspired by the int3-based patching code used in
-> > > ftrace. See the commit fd4363fff3d9 (x86: Introduce int3
-> > > (breakpoint)-based instruction patching).
-> > > 
-> > > When trying to use text_poke_bp in ftrace, the result was slower than
-> > > the original implementation.
-> > > 
-> > > It turned out that one difference was in text_poke vs. ftrace_write.
-> > > text_poke did many extra operations to make sure that the change
-> > > was atomic.
-> > 
-> > AFAIK, the main reason why text_poke is used is avoiding
-> > RODATA protection (by alias mapping).
+> This is mostly used for the kdump 2nd kernel to disable BSP to wake up
+> multiple CPUs without causing system reset or hang due to sending INIT
+> from AP to BSP.
 > 
-> That is correct, and the reason ftrace didn't do that is because it
-> would be quite expensive to map 22,000 addresses for each change.
+> Kdump users first figure out initial APIC ID of the BSP, CPU0 in the
+> 1st kernel, for example from /proc/cpuinfo and then set up this kernel
+> parameter for the 2nd kernel using the obtained APIC ID.
+> 
+> However, doing this procedure at each boot time manually is awkward,
+> which should be automatically done by user-land service scripts, for
+> example, kexec-tools on fedora/RHEL distributions.
+> 
+> This design is more flexible than disabling BSP in kernel boot time
+> automatically in that in kernel boot time we have no choice but
+> referring to ACPI/MP table to obtain initial APIC ID for BSP, meaning
+> that the method is not applicable to the systems without such BIOS
+> tables.
+> 
+> One assumption behind this design is that users get initial APIC ID of
+> the BSP in still healthy state and so BSP is uniquely kept in
+> CPU0. Thus, through the kernel parameter, only one initial APIC ID can
+> be specified.
+> 
+> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> ---
+>  arch/x86/kernel/apic/apic.c |   29 +++++++++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index b60ad92..075bf23 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -78,6 +78,13 @@ unsigned int max_physical_apicid;
+>  physid_mask_t phys_cpu_present_map;
+>  
+>  /*
+> + * Processor to be disabled specified by kernel parameter
+> + * disable_cpu_apicid=<int>, mostly used for the kdump 2nd kernel to
+> + * avoid undefined behaviour caused by sending INIT from AP to BSP.
+> + */
+> +unsigned int disabled_cpu_apicid = BAD_APICID;
+> +
+> +/*
+>   * Map cpu index to physical APIC ID
+>   */
+>  DEFINE_EARLY_PER_CPU_READ_MOSTLY(u16, x86_cpu_to_apicid, BAD_APICID);
+> @@ -2117,6 +2124,19 @@ void generic_processor_info(int apicid, int version)
+>  	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
+>  				phys_cpu_present_map);
+>  
+> +	if (disabled_cpu_apicid != BAD_APICID &&
+> +	    disabled_cpu_apicid != boot_cpu_physical_apicid &&
+> +	    disabled_cpu_apicid == apicid) {
+> +		int thiscpu = num_processors + disabled_cpus;
+> +
+> +		pr_warning("ACPI: Disable specified CPU."
+> +			   " Processor %d/0x%x ignored.\n",
+> +			   thiscpu, apicid);
 
-I see. I am going to prepare v3 with the following changes:
+How am I to parse this message - that 'thiscpu' is being disabled
+currently? What does "Processor ... ignored" mean?
 
-	+ use text_poke in text_poke_bp back again because it is not
-          effective to make the pages rw only for a single address;
-          the alias mapping is faster here
+Why not just write:
 
-	+ use the faster text_poke_part only in text_poke_bp_iter;
-          the caller of this function will be responsible for
-          making the code rw
+	ACPI: Disabling requested CPU %d (APIC ID: 0x%x)
 
-	+ I will rework the error handling as suggested in the other
-          mails; I will try to add some also for text_poke.
+and everyone knows what's happening?
 
-Thanks a lot for hints.
+Thanks.
 
-Best Regards,
-Petr
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
