@@ -1,124 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab3KLQAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 11:00:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37822 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754089Ab3KLQAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 11:00:19 -0500
-Date: Tue, 12 Nov 2013 17:00:15 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Fabio Kung <fabio.kung@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
-        Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: memcg creates an unkillable task in 3.11-rc2
-Message-ID: <20131112160015.GE6049@dhcp22.suse.cz>
-References: <8761vui4cr.fsf@xmission.com>
- <20130729075939.GA4678@dhcp22.suse.cz>
- <87ehahg312.fsf@xmission.com>
- <20130729095109.GB4678@dhcp22.suse.cz>
- <20130729161026.GD22605@mtj.dyndns.org>
- <87r4eh70yg.fsf@xmission.com>
- <51F71DE2.4020102@huawei.com>
- <87ppu0a298.fsf_-_@tw-ebiederman.twitter.com>
- <87ppu03td7.fsf@tw-ebiederman.twitter.com>
- <CAHyO6Z33pUJ1_MjPO2OeUY_+ZRmc1niPiFm5DzGVDokm5vb4rw@mail.gmail.com>
+	id S1755533Ab3KLQJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 11:09:20 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37177 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753656Ab3KLQJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 11:09:17 -0500
+Message-ID: <52825283.7000905@ti.com>
+Date: Tue, 12 Nov 2013 11:08:35 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHyO6Z33pUJ1_MjPO2OeUY_+ZRmc1niPiFm5DzGVDokm5vb4rw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>
+CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 07/12] memory: davinci-aemif: introduce AEMIF driver
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>,<1384187188-5776-8-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D2E@DNCE04.ent.ti.com>
+In-Reply-To: <4F5844B3A985794BA902E12C070812375F8D2E@DNCE04.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 26-09-13 16:41:19, Fabio Kung wrote:
-> On Tue, Jul 30, 2013 at 9:28 AM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
-> >
-> > ebiederm@xmission.com (Eric W. Biederman) writes:
-> >
-> > Ok.  I have been trying for an hour and I have not been able to
-> > reproduce the weird hang with the memcg, and it used to be something I
-> > could reproduce trivially.  So it appears the patch below is the fix.
-> >
-> > After I sleep I will see if I can turn it into a proper patch.
-> 
-> 
-> Contributing with another data point: I am seeing similar issues with
-> un-killable tasks inside LXC containers on a vanilla 3.8.11 kernel.
-> The stack from zombie tasks look like this:
-> 
-> # cat /proc/12499/stack
-> [<ffffffff81186226>] __mem_cgroup_try_charge+0xa96/0xbf0
-> [<ffffffff8118670b>] __mem_cgroup_try_charge_swapin+0xab/0xd0
-> [<ffffffff8118678d>] mem_cgroup_try_charge_swapin+0x5d/0x70
-> [<ffffffff811524f5>] handle_pte_fault+0x315/0xac0
-> [<ffffffff81152f11>] handle_mm_fault+0x271/0x3d0
-> [<ffffffff815bbf3b>] __do_page_fault+0x20b/0x4c0
-> [<ffffffff815bc1fe>] do_page_fault+0xe/0x10
-> [<ffffffff815b8718>] page_fault+0x28/0x30
-> [<ffffffff81056327>] mm_release+0x127/0x140
-> [<ffffffff8105ece1>] do_exit+0x171/0xa70
-> [<ffffffff8105f635>] do_group_exit+0x55/0xd0
-> [<ffffffff8106fa8f>] get_signal_to_deliver+0x23f/0x5d0
-> [<ffffffff81014402>] do_signal+0x42/0x600
-> [<ffffffff81014a48>] do_notify_resume+0x88/0xc0
-> [<ffffffff815c0b92>] int_signal+0x12/0x17
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 
-> Same symptoms that Eric described: a race condition in memcg when
-> there is a page fault and the process is exiting.
-> 
-> I went ahead and reproduced the bug described earlier here on the same
-> 3.8.11 kernel, also using the Mesos framework
-> (http://mesos.apache.org/) memory Ballooning tests. The call trace
-> from zombie tasks in this case look very similar:
-> 
-> # cat /proc/22827/stack
-> [<ffffffff81186280>] __mem_cgroup_try_charge+0xaf0/0xbf0
-> [<ffffffff8118670b>] __mem_cgroup_try_charge_swapin+0xab/0xd0
-> [<ffffffff8118678d>] mem_cgroup_try_charge_swapin+0x5d/0x70
-> [<ffffffff811524f5>] handle_pte_fault+0x315/0xac0
-> [<ffffffff81152f11>] handle_mm_fault+0x271/0x3d0
-> [<ffffffff815bbf3b>] __do_page_fault+0x20b/0x4c0
-> [<ffffffff815bc1fe>] do_page_fault+0xe/0x10
-> [<ffffffff815b8718>] page_fault+0x28/0x30
-> [<ffffffff81056327>] mm_release+0x127/0x140
-> [<ffffffff8105ece1>] do_exit+0x171/0xa70
-> [<ffffffff8105f635>] do_group_exit+0x55/0xd0
-> [<ffffffff8106fa8f>] get_signal_to_deliver+0x23f/0x5d0
-> [<ffffffff81014402>] do_signal+0x42/0x600
-> [<ffffffff81014a48>] do_notify_resume+0x88/0xc0
-> [<ffffffff815c0b92>] int_signal+0x12/0x17
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 
-> Then, I applied Eric's patch below, and I can't reproduce the problem
-> anymore. Before the patch, it was very easy to reproduce it with some
-> extra memory pressure from other processes in the instance (increasing
-> the probability of page faults when processes are exiting).
++ Greg KH (drivers/memory/* patches goes through his queue)
 
-Could you try to reproduce with the patch posted earlier in the thread,
-please? https://lkml.org/lkml/2013/7/31/94
+On Monday 11 November 2013 12:06 PM, Khoronzhuk, Ivan wrote:
+> Add new AEMIF driver for EMIF16 davinci controller. The EMIF16 module
+> is intended to provide a glue-less interface to a variety of
+> asynchronous memory devices like ASRA M, NOR and NAND memory. A total
+> of 256M bytes of any of these memories can be accessed at any given
+> time via four chip selects with 64M byte access per chip select.
+> 
+> Synchronous memories such as DDR1 SD RAM, SDR SDRAM and Mobile SDR
+> are not supported.
+> 
+> See http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
+> 
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> ---
+>  drivers/memory/Kconfig         |   11 ++
+>  drivers/memory/Makefile        |    1 +
+>  drivers/memory/davinci-aemif.c |  415 ++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 427 insertions(+)
+>  create mode 100644 drivers/memory/davinci-aemif.c
+> 
+> diff --git a/drivers/memory/Kconfig b/drivers/memory/Kconfig
+> index 29a11db..010e75e 100644
+> --- a/drivers/memory/Kconfig
+> +++ b/drivers/memory/Kconfig
+> @@ -7,6 +7,17 @@ menuconfig MEMORY
+> 
+>  if MEMORY
+> 
+> +config TI_DAVINCI_AEMIF
+s/TI_DAVINCI_AEMIF/TI_AEMIF
 
-Eric had some concerns about the patch (https://lkml.org/lkml/2013/7/31/603)
-but I wasn't quite sure whether the issue he raised exists. As I tried
-to explain in the follow up answer the race shouldn't exit and the
-thread basically died at that state.
+> +       bool "Texas Instruments DaVinci AEMIF driver"
+Drop DaVinci above since its used on more SOCs.
+> +       depends on (ARCH_DAVINCI || ARCH_KEYSTONE) && OF
+> +       help
+> +         This driver is for the AEMIF module available in Texas Instruments
+> +         SoCs. AEMIF stands for Asynchronous External Memory Interface and
+> +         is intended to provide a glue-less interface to a variety of
+> +         asynchronuous memory devices like ASRAM, NOR and NAND memory. A total
+> +         of 256M bytes of any of these memories can be accessed at a given
+> +         time via four chip selects with 64M byte access per chip select.
+> +
+>  config TI_EMIF
+>         tristate "Texas Instruments EMIF driver"
+>         depends on ARCH_OMAP2PLUS
+> diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
+> index 969d923..af14126 100644
+> --- a/drivers/memory/Makefile
+> +++ b/drivers/memory/Makefile
+> @@ -5,6 +5,7 @@
+>  ifeq ($(CONFIG_DDR),y)
+>  obj-$(CONFIG_OF)               += of_memory.o
+>  endif
+> +obj-$(CONFIG_TI_DAVINCI_AEMIF) += davinci-aemif.o
 
-The memcg handling was reworked considerably since then by Johannes -
-merged in 3.12 - and it has moved outside of memcg charging path.
-I still think that the rework hasn't fixed this particular bug and we
-still need a fix. And I would prefer if we simply set TIF_MEMDIE after
-we wake up from the sleep.
+Change this accordingly once the config is renamed.
 
-> We also tried a vanilla 3.11.1 kernel, and we could reproduce the bug
-> on it pretty easily.
--- 
-Michal Hocko
-SUSE Labs
+>  obj-$(CONFIG_TI_EMIF)          += emif.o
+>  obj-$(CONFIG_MVEBU_DEVBUS)     += mvebu-devbus.o
+>  obj-$(CONFIG_TEGRA20_MC)       += tegra20-mc.o
+> diff --git a/drivers/memory/davinci-aemif.c b/drivers/memory/davinci-aemif.c
+> new file mode 100644
+> index 0000000..e36b74b
+> --- /dev/null
+> +++ b/drivers/memory/davinci-aemif.c
+> @@ -0,0 +1,415 @@
+> +/*
+> + * DaVinci/Keystone AEMIF driver
+s/{DaVinci/Keystone}/TI
+> + *
+> + * Copyright (C) 2010 - 2013 Texas Instruments Incorporated. http://www.ti.com/
+> + * Copyright (C) Heiko Schocher <hs@denx.de>
+> + * Copyright (C) Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/platform_device.h>
+> +
+> +#define TA_SHIFT       2
+> +#define RHOLD_SHIFT    4
+> +#define RSTROBE_SHIFT  7
+> +#define RSETUP_SHIFT   13
+> +#define WHOLD_SHIFT    17
+> +#define WSTROBE_SHIFT  20
+> +#define WSETUP_SHIFT   26
+> +#define EW_SHIFT       30
+> +#define SS_SHIFT       31
+> +
+> +#define TA(x)          ((x) << TA_SHIFT)
+> +#define RHOLD(x)       ((x) << RHOLD_SHIFT)
+> +#define RSTROBE(x)     ((x) << RSTROBE_SHIFT)
+> +#define RSETUP(x)      ((x) << RSETUP_SHIFT)
+> +#define WHOLD(x)       ((x) << WHOLD_SHIFT)
+> +#define WSTROBE(x)     ((x) << WSTROBE_SHIFT)
+> +#define WSETUP(x)      ((x) << WSETUP_SHIFT)
+> +#define EW(x)          ((x) << EW_SHIFT)
+> +#define SS(x)          ((x) << SS_SHIFT)
+> +
+> +#define ASIZE_MAX      0x1
+> +#define TA_MAX         0x3
+> +#define RHOLD_MAX      0x7
+> +#define RSTROBE_MAX    0x3f
+> +#define RSETUP_MAX     0xf
+> +#define WHOLD_MAX      0x7
+> +#define WSTROBE_MAX    0x3f
+> +#define WSETUP_MAX     0xf
+> +#define EW_MAX         0x1
+> +#define SS_MAX         0x1
+> +#define NUM_CS         4
+> +
+> +#define TA_VAL(x)      (((x) & TA(TA_MAX)) >> TA_SHIFT)
+> +#define RHOLD_VAL(x)   (((x) & RHOLD(RHOLD_MAX)) >> RHOLD_SHIFT)
+> +#define RSTROBE_VAL(x) (((x) & RSTROBE(RSTROBE_MAX)) >> RSTROBE_SHIFT)
+> +#define RSETUP_VAL(x)  (((x) & RSETUP(RSETUP_MAX)) >> RSETUP_SHIFT)
+> +#define WHOLD_VAL(x)   (((x) & WHOLD(WHOLD_MAX)) >> WHOLD_SHIFT)
+> +#define WSTROBE_VAL(x) (((x) & WSTROBE(WSTROBE_MAX)) >> WSTROBE_SHIFT)
+> +#define WSETUP_VAL(x)  (((x) & WSETUP(WSETUP_MAX)) >> WSETUP_SHIFT)
+> +#define EW_VAL(x)      (((x) & EW(EW_MAX)) >> EW_SHIFT)
+> +#define SS_VAL(x)      (((x) & SS(SS_MAX)) >> SS_SHIFT)
+> +
+> +#define NRCSR_OFFSET   0x00
+> +#define AWCCR_OFFSET   0x04
+> +#define A1CR_OFFSET    0x10
+> +
+> +#define ACR_ASIZE_MASK 0x3
+> +#define ACR_EW_MASK    BIT(30)
+> +#define ACR_SS_MASK    BIT(31)
+> +#define ASIZE_16BIT    1
+> +
+> +#define CONFIG_MASK    (TA(TA_MAX) | \
+> +                               RHOLD(RHOLD_MAX) | \
+> +                               RSTROBE(RSTROBE_MAX) |  \
+> +                               RSETUP(RSETUP_MAX) | \
+> +                               WHOLD(WHOLD_MAX) | \
+> +                               WSTROBE(WSTROBE_MAX) | \
+> +                               WSETUP(WSETUP_MAX) | \
+> +                               EW(EW_MAX) | SS(SS_MAX) | \
+> +                               ASIZE_MAX)
+> +
+> +#define DRV_NAME       "davinci-aemif"
+s/davinci-aemif/ti-aemif
+> +
+> +/**
+> + * structure to hold cs parameters
+> + * @cs: chip-select number
+> + * @wstrobe: write strobe width, ns
+> + * @rstrobe: read strobe width, ns
+> + * @wsetup: write setup width, ns
+> + * @whold: write hold width, ns
+> + * @rsetup: read setup width, ns
+> + * @rhold: read hold width, ns
+> + * @ta: minimum turn around time, ns
+> + * @enable_ss: enable/disable select strobe mode
+> + * @enable_ew: enable/disable extended wait mode
+> + * @asize: width of the asynchronous device's data bus
+> + */
+> +struct davinci_aemif_cs_data {
+> +       u8      cs;
+> +       u16     wstrobe;
+> +       u16     rstrobe;
+> +       u8      wsetup;
+> +       u8      whold;
+> +       u8      rsetup;
+> +       u8      rhold;
+> +       u8      ta;
+> +       u8      enable_ss;
+> +       u8      enable_ew;
+> +       u8      asize;
+> +};
+> +
+I suggest you drop davinci prefix throughout the
+driver.
+
+[..]
+
+> +static const struct of_device_id davinci_aemif_of_match[] = {
+> +       { .compatible = "ti,davinci-aemif", },
+> +       { .compatible = "ti,keystone-aemif", },
+> +       { .compatible = "ti,omap-L138-aemif", },
+> +       {},
+> +};
+Do we need three seperate compatible or "ti,aemif" should
+be enough ? Are there differences which we need to handled
+based on compatibles ?
+
+> +
+> +static const struct of_device_id davinci_cs_of_match[] = {
+> +       { .compatible = "ti,davinci-cs", },
+> +       {},
+> +};
+> +
+> +static int davinci_aemif_probe(struct platform_device *pdev)
+> +{
+> +       int ret  = -ENODEV, i;
+> +       struct resource *res;
+> +       struct device *dev = &pdev->dev;
+> +       struct device_node *np = dev->of_node;
+> +
+> +       if (np == NULL)
+> +               return 0;
+> +
+> +       if (aemif) {
+> +               dev_err(dev, "davinci_aemif driver is in use currently\n");
+> +               return -EBUSY;
+> +       }
+> +
+> +       aemif = devm_kzalloc(dev, sizeof(*aemif), GFP_KERNEL);
+> +
+Drop this extra line.
+
+> +       if (!aemif) {
+> +               dev_err(dev, "cannot allocate memory for aemif\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       aemif->clk = devm_clk_get(dev, "aemif");
+> +       if (IS_ERR(aemif->clk)) {
+> +               dev_err(dev, "cannot get clock 'aemif'\n");
+> +               return PTR_ERR(aemif->clk);
+> +       }
+> +
+> +       clk_prepare_enable(aemif->clk);
+> +       aemif->clk_rate = clk_get_rate(aemif->clk) / 1000;
+> +
+1000 divider ? Define a marco and use it to be clear.
+
+Other than above comments patch looks fine to me.
+
+Regards,
+Santosh
+
