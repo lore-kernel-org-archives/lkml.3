@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582Ab3KLWBX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 17:01:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40217 "EHLO
+	id S932597Ab3KLWBa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 17:01:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40168 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757366Ab3KLV4x (ORCPT
+	with ESMTP id S932335Ab3KLV41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 16:56:53 -0500
-Date: Tue, 12 Nov 2013 13:56:13 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-96695d440242aca871ef8d797bd98d9cbd7ad8a0@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, efault@gmx.de, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        efault@gmx.de, peterz@infradead.org, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <20131112115700.GC4053@ghostprotocols.net>
-References: <20131112115700.GC4053@ghostprotocols.net>
+	Tue, 12 Nov 2013 16:56:27 -0500
+Date: Tue, 12 Nov 2013 13:55:47 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-6qy8ljkn0e9hm7bh7keo5z68@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf trace:
-  Separate tp syscall field caching into init routine to be reused
-Git-Commit-ID: 96695d440242aca871ef8d797bd98d9cbd7ad8a0
+Subject: [tip:perf/urgent] perf tests:
+  Check return of perf_evlist__open sw clock event period test
+Git-Commit-ID: d0b849e9bced36cf279881294c07c43b0b9dce86
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,28 +30,34 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 13:56:19 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 13:55:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  96695d440242aca871ef8d797bd98d9cbd7ad8a0
-Gitweb:     http://git.kernel.org/tip/96695d440242aca871ef8d797bd98d9cbd7ad8a0
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 12 Nov 2013 08:51:45 -0300
+Commit-ID:  d0b849e9bced36cf279881294c07c43b0b9dce86
+Gitweb:     http://git.kernel.org/tip/d0b849e9bced36cf279881294c07c43b0b9dce86
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 11 Nov 2013 16:28:42 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 12 Nov 2013 13:00:36 -0300
+CommitDate: Mon, 11 Nov 2013 16:28:42 -0300
 
-perf trace: Separate tp syscall field caching into init routine to be reused
+perf tests: Check return of perf_evlist__open sw clock event period test
 
-We need to set this in evsels coming out of a perf.data file header, not
-just for new ones created for live sessions.
+We were not checking if we successfully opened the counters, i.e. if
+sys_perf_event_open worked, when it doesn't in this test, we were
+continuing anyway and then segfaulting when trying to access the file
+descriptor array, that at that point had been freed in perf_evlist__open
+error path:
 
-So separate the code that caches the syscall entry/exit tracepoint
-format fields into a new function that will be used in the next
-changeset.
+[root@ssdandy ~]# perf test -v 19
+19: Test software clock events have valid period values    :
+--- start ---
+Segmentation fault (core dumped)
+[root@ssdandy ~]#
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Do the check and bail out instead.
+
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -64,54 +66,26 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/20131112115700.GC4053@ghostprotocols.net
+Link: http://lkml.kernel.org/n/tip-6qy8ljkn0e9hm7bh7keo5z68@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 28 ++++++++++++++++++++--------
- 1 file changed, 20 insertions(+), 8 deletions(-)
+ tools/perf/tests/sw-clock.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index aeb6296..3fa1dce 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -149,20 +149,32 @@ static void perf_evsel__delete_priv(struct perf_evsel *evsel)
- 	perf_evsel__delete(evsel);
- }
- 
-+static int perf_evsel__init_syscall_tp(struct perf_evsel *evsel, void *handler)
-+{
-+	evsel->priv = malloc(sizeof(struct syscall_tp));
-+	if (evsel->priv != NULL) {
-+		if (perf_evsel__init_sc_tp_uint_field(evsel, id))
-+			goto out_delete;
-+
-+		evsel->handler = handler;
-+		return 0;
-+	}
-+
-+	return -ENOMEM;
-+
-+out_delete:
-+	free(evsel->priv);
-+	evsel->priv = NULL;
-+	return -ENOENT;
-+}
-+
- static struct perf_evsel *perf_evsel__syscall_newtp(const char *direction, void *handler)
- {
- 	struct perf_evsel *evsel = perf_evsel__newtp("raw_syscalls", direction);
- 
- 	if (evsel) {
--		evsel->priv = malloc(sizeof(struct syscall_tp));
--
--		if (evsel->priv == NULL)
-+		if (perf_evsel__init_syscall_tp(evsel, handler))
- 			goto out_delete;
--
--		if (perf_evsel__init_sc_tp_uint_field(evsel, id))
--			goto out_delete;
--
--		evsel->handler = handler;
+diff --git a/tools/perf/tests/sw-clock.c b/tools/perf/tests/sw-clock.c
+index 73c5c37..ed77772 100644
+--- a/tools/perf/tests/sw-clock.c
++++ b/tools/perf/tests/sw-clock.c
+@@ -57,7 +57,11 @@ static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
+ 		goto out_delete_maps;
  	}
  
- 	return evsel;
+-	perf_evlist__open(evlist);
++	if (perf_evlist__open(evlist)) {
++		err = -errno;
++		pr_debug("Couldn't open evlist: %s\n", strerror(errno));
++		goto out_delete_maps;
++	}
+ 
+ 	err = perf_evlist__mmap(evlist, 128, true);
+ 	if (err < 0) {
