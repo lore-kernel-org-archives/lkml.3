@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab3KLT7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 14:59:32 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:44622 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755959Ab3KLT7X (ORCPT
+	id S1756738Ab3KLUAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 15:00:13 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:58025 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756237Ab3KLUAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 14:59:23 -0500
+	Tue, 12 Nov 2013 15:00:01 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131106234737.8971.37405.sendpatchset@w520>
-References: <20131106234737.8971.37405.sendpatchset@w520>
-Date: Tue, 12 Nov 2013 20:59:21 +0100
-Message-ID: <CACRpkdZC+hvChpDMasj0avRTTbprVn8ro7NxywNUPw+SOr10bw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Renesas RZ GPIO driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <1384285582-16933-21-git-send-email-eduardo.valentin@ti.com>
+References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
+	<1384285582-16933-21-git-send-email-eduardo.valentin@ti.com>
+Date: Tue, 12 Nov 2013 11:59:59 -0800
+Message-ID: <CAOesGMiCh-nGPqJQd4NPz9st7mBT0JkZ9nEK1gfyF2RmnrXZog@mail.gmail.com>
+Subject: Re: [PATCHv5 20/20] MAINTAINERS: add maintainer entry for thermal bindings
+From: Olof Johansson <olof@lixom.net>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Guenter Roeck <linux@roeck-us.net>, rui.zhang@intel.com,
+        wni@nvidia.com, Grant Likely <grant.likely@linaro.org>,
+        durgadoss.r@intel.com, linux-pm@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        lm-sensors@lm-sensors.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 7, 2013 at 12:47 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
-
-> From: Magnus Damm <damm@opensource.se>
+On Tue, Nov 12, 2013 at 11:46 AM, Eduardo Valentin
+<eduardo.valentin@ti.com> wrote:
+> After discussion and agreement of thermal device tree bindings,
+> it is desirable to properly maintain thermal bindings for
+> existing and upcoming devices.
 >
-> This patch adds a GPIO driver for the RZ series of SoCs from
-> Renesas. The driver can be used as platform device with dynamic
-> or static GPIO assignment or via DT using dynamic GPIOs.
+> As original author of thermal device tree bindings, I am
+> volunteering to maintain them.
+>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Stephen Warren <swarren@wwwdotorg.org>
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> ---
+>  MAINTAINERS | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 3438384..94bfc46 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6178,6 +6178,7 @@ M:        Pawel Moll <pawel.moll@arm.com>
+>  M:     Mark Rutland <mark.rutland@arm.com>
+>  M:     Stephen Warren <swarren@wwwdotorg.org>
+>  M:     Ian Campbell <ijc+devicetree@hellion.org.uk>
+> +M:     Eduardo Valentin <eduardo.valentin@ti.com>
+>  L:     devicetree@vger.kernel.org
+>  S:     Maintained
+>  F:     Documentation/devicetree/
 
-So given that this is for a new system which should only ever
-be booted using device tree, why are we bothering with supporting
-platform data passing at all?
+The number of device-tree maintainers is getting to be somewhat silly.
+You don't have to be a maintainer to be a reviewer, and the number is
+getting large enough that it might get hard for one maintainer to know
+what another is doing.
 
-Is it so that arch/sh is more soft on this for example...?
-Can some arch maintainer like SH/Paul ACK this approach?
+So, soft nack, but it's really up to the DT guys.
 
-Read: SH is not moving to device tree...?
 
-(...)
-> Tested with yet-to-be-posted platform device and DT devices on
-> r7s72100 and Genmai using LEDs, DIP switches and I2C bitbang.
-
-Do you think the maintainers will merge the platform
-device approach?
-
-> --- /dev/null
-> +++ work/include/linux/platform_data/gpio-rz.h  2013-11-06 14:18:46.000000000 +0900
-> @@ -0,0 +1,13 @@
-> +#ifndef __GPIO_RZ_H__
-> +#define __GPIO_RZ_H__
-> +
-> +struct gpio_rz_config {
-> +       int gpio_base;
-
-Passing these static base offsets around is not good for the
-kernel and we're trying to get rid of it :-(
-
-> +       const char *pctl_name;
-
-Ho hum... This needs some kerneldoc describing that this is
-used to map the GPIO range to the right pin controller.
-
-> +};
-> +
-> +#define RZ_GPIOS_PER_PORT 16
-
-This is only used in the driver so move it into the driver.
-
-> +#define RZ_PORT_PIN(bank, pin) (((bank) * RZ_GPIOS_PER_PORT) + (pin))
-
-This is not used anywhere so delete it.
-
-If it is to be kept I'd like "pin" replaced with "line" to avoid
-confusion with the pin control business.
-
-Yours,
-Linus Walleij
+-Olof
