@@ -1,54 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757606Ab3KLWNe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 17:13:34 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51426 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756722Ab3KLWN1 (ORCPT
+	id S1757627Ab3KLWOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 17:14:11 -0500
+Received: from 5.mo2.mail-out.ovh.net ([87.98.181.248]:32781 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756699Ab3KLWOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 17:13:27 -0500
-Date: Tue, 12 Nov 2013 23:13:25 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Aldo Iljazi <mail@aldo.io>
-Cc: andreas.thalhammer@linux.com, linux-kernel@vger.kernel.org
-Subject: Re: A Desktop Linux idea: modulized open hardware database for the
- linux kernel config
-Message-ID: <20131112221325.GA12391@amd.pavel.ucw.cz>
-References: <201311031553.26488.andreas.thalhammer@linux.com>
- <20131103161819.GA4983@linux>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131103161819.GA4983@linux>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 12 Nov 2013 17:14:01 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH v5 08/17] clk: at91: add PMC system clocks
+Date: Tue, 12 Nov 2013 23:05:35 +0100
+Message-Id: <1384293935-4755-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
+References: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 11944109163160762592
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+This patch adds new at91 system clock implementation using common clk
+framework.
 
-> So, you are saying that this should be available for power users only,
-> since it requires kernel compilation.
-> 
-> I have a few points to make.
-> 
-> 1. Wouldn't power users know how to configure the kernel anyway for
-> their system?
+Some peripherals need to enable a "system" clock in order to work properly.
+Each system clock is given an id based on the bit position in SCER/SCDR
+registers.
 
-No, not really. Getting configuration to work is always interesting...
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/clk/at91/Makefile     |    1 +
+ drivers/clk/at91/clk-system.c |  137 +++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/at91/pmc.c        |    5 ++
+ drivers/clk/at91/pmc.h        |    3 +
+ 4 files changed, 146 insertions(+)
+ create mode 100644 drivers/clk/at91/clk-system.c
 
-> 2. What about future hardware upgrades (on both a laptop and desktop
-> machines).
-> 
-> 3. What's wrong with stock distribution kernels?
-
-Actually, biggest problem with configurations for various non-PC
-systems like Nokia N900 or Zaurus (where distributions does not work).
-
-> 4. Wouldn't this take a great amount of manpower for I guess minimum
-> benefits?
-
-									Pavel
+diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+index e28fb2b..c2b7068 100644
+--- a/drivers/clk/at91/Makefile
++++ b/drivers/clk/at91/Makefile
+@@ -4,3 +4,4 @@
+ 
+ obj-y += pmc.o
+ obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
++obj-y += clk-system.o
+diff --git a/drivers/clk/at91/clk-system.c b/drivers/clk/at91/clk-system.c
+new file mode 100644
+index 0000000..1c086f4
+--- /dev/null
++++ b/drivers/clk/at91/clk-system.c
+@@ -0,0 +1,137 @@
++/*
++ * drivers/clk/at91/clk-system.c
++ *
++ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ */
++
++#include <linux/clk-provider.h>
++#include <linux/clkdev.h>
++#include <linux/clk/at91_pmc.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/io.h>
++
++#include "pmc.h"
++
++#define SYSTEM_MAX_ID		31
++
++#define SYSTEM_MAX_NAME_SZ	32
++
++#define to_clk_system(hw) container_of(hw, struct clk_system, hw)
++struct clk_system {
++	struct clk_hw hw;
++	struct at91_pmc *pmc;
++	u8 id;
++};
++
++static int clk_system_enable(struct clk_hw *hw)
++{
++	struct clk_system *sys = to_clk_system(hw);
++	struct at91_pmc *pmc = sys->pmc;
++
++	pmc_write(pmc, AT91_PMC_SCER, 1 << sys->id);
++	return 0;
++}
++
++static void clk_system_disable(struct clk_hw *hw)
++{
++	struct clk_system *sys = to_clk_system(hw);
++	struct at91_pmc *pmc = sys->pmc;
++
++	pmc_write(pmc, AT91_PMC_SCDR, 1 << sys->id);
++}
++
++static int clk_system_is_enabled(struct clk_hw *hw)
++{
++	struct clk_system *sys = to_clk_system(hw);
++	struct at91_pmc *pmc = sys->pmc;
++
++	return !!(pmc_read(pmc, AT91_PMC_SCSR) & (1 << sys->id));
++}
++
++static const struct clk_ops system_ops = {
++	.enable = clk_system_enable,
++	.disable = clk_system_disable,
++	.is_enabled = clk_system_is_enabled,
++};
++
++static struct clk * __init
++at91_clk_register_system(struct at91_pmc *pmc, const char *name,
++			 const char *parent_name, u8 id)
++{
++	struct clk_system *sys;
++	struct clk *clk = NULL;
++	struct clk_init_data init;
++
++	if (!parent_name || id > SYSTEM_MAX_ID)
++		return ERR_PTR(-EINVAL);
++
++	sys = kzalloc(sizeof(*sys), GFP_KERNEL);
++	if (!sys)
++		return ERR_PTR(-ENOMEM);
++
++	init.name = name;
++	init.ops = &system_ops;
++	init.parent_names = &parent_name;
++	init.num_parents = 1;
++	/*
++	 * CLK_IGNORE_UNUSED is used to avoid ddrck switch off.
++	 * TODO : we should implement a driver supporting at91 ddr controller
++	 * (see drivers/memory) which would request and enable the ddrck clock.
++	 * When this is done we will be able to remove CLK_IGNORE_UNUSED flag.
++	 */
++	init.flags = CLK_IGNORE_UNUSED;
++
++	sys->id = id;
++	sys->hw.init = &init;
++	sys->pmc = pmc;
++
++	clk = clk_register(NULL, &sys->hw);
++	if (IS_ERR(clk))
++		kfree(sys);
++
++	return clk;
++}
++
++static void __init
++of_at91_clk_sys_setup(struct device_node *np, struct at91_pmc *pmc)
++{
++	int num;
++	u32 id;
++	struct clk *clk;
++	const char *name;
++	struct device_node *sysclknp;
++	const char *parent_name;
++
++	num = of_get_child_count(np);
++	if (num > (SYSTEM_MAX_ID + 1))
++		return;
++
++	for_each_child_of_node(np, sysclknp) {
++		if (of_property_read_u32(sysclknp, "reg", &id))
++			continue;
++
++		if (of_property_read_string(np, "clock-output-names", &name))
++			name = sysclknp->name;
++
++		parent_name = of_clk_get_parent_name(sysclknp, 0);
++
++		clk = at91_clk_register_system(pmc, name, parent_name, id);
++		if (IS_ERR(clk))
++			continue;
++
++		of_clk_add_provider(sysclknp, of_clk_src_simple_get, clk);
++	}
++}
++
++void __init of_at91rm9200_clk_sys_setup(struct device_node *np,
++					struct at91_pmc *pmc)
++{
++	of_at91_clk_sys_setup(np, pmc);
++}
+diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+index d9975e7..6adc5be 100644
+--- a/drivers/clk/at91/pmc.c
++++ b/drivers/clk/at91/pmc.c
+@@ -266,6 +266,11 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
+ 		.compatible = "atmel,at91sam9x5-clk-master",
+ 		.data = of_at91sam9x5_clk_master_setup,
+ 	},
++	/* System clocks */
++	{
++		.compatible = "atmel,at91rm9200-clk-system",
++		.data = of_at91rm9200_clk_sys_setup,
++	},
+ 	{ /*sentinel*/ }
+ };
+ 
+diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
+index be5c964..9c8a397 100644
+--- a/drivers/clk/at91/pmc.h
++++ b/drivers/clk/at91/pmc.h
+@@ -77,4 +77,7 @@ extern void __init of_at91rm9200_clk_master_setup(struct device_node *np,
+ extern void __init of_at91sam9x5_clk_master_setup(struct device_node *np,
+ 						  struct at91_pmc *pmc);
+ 
++extern void __init of_at91rm9200_clk_sys_setup(struct device_node *np,
++					       struct at91_pmc *pmc);
++
+ #endif /* __PMC_H_ */
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.9.5
+
