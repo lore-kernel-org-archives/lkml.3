@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756426Ab3KLR0E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:26:04 -0500
-Received: from mail.efficios.com ([78.47.125.74]:50379 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753924Ab3KLR0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:26:02 -0500
-Date: Tue, 12 Nov 2013 17:26:05 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        rp@svcs.cs.pdx.edu
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Message-ID: <70373848.65240.1384277165049.JavaMail.zimbra@efficios.com>
-In-Reply-To: <765234983.65237.1384277100566.JavaMail.zimbra@efficios.com>
-Subject: [RELEASE] Userspace RCU 0.8.1
+	id S1756229Ab3KLR2e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:28:34 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:61926 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753375Ab3KLR23 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 12:28:29 -0500
+X-IronPort-AV: E=Sophos;i="4.93,686,1378857600"; 
+   d="scan'208";a="71129161"
+Date: Tue, 12 Nov 2013 17:27:05 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <konrad@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 2/2] swiotlb-xen: xen_swiotlb_map_page: do
+ not error out if dma_capable fails
+In-Reply-To: <20131112144832.GC9435@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1311121704590.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1311121404590.26077@kaball.uk.xensource.com> <1384265520-6833-2-git-send-email-stefano.stabellini@eu.citrix.com> <20131112144832.GC9435@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF25 (Linux)/8.0.5_GA_5839)
-Thread-Topic: Userspace RCU 0.8.1
-Thread-Index: h8KCEd7yH83MfX0MkfCuF4Xtb+zy/Q==
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
-data synchronization library provides read-side access which scales
-linearly with the number of cores. It does so by allowing multiples
-copies of a given data structure to live at the same time, and by
-monitoring the data structure accesses to detect grace periods after
-which memory reclamation is possible.
+Russell gave a great explanation of the issue so I am just going to
+limit myself to answering to:
 
-liburcu-cds provides efficient data structures based on RCU and
-lock-free algorithms. Those structures include hash tables, queues,
-stacks, and doubly-linked lists.
+On Tue, 12 Nov 2013, Konrad Rzeszutek Wilk wrote:
+> > Considering that we know that the swiotlb buffer has a low address,
+> > skip the check.
+> 
+> I am not following that sentence. Could you please explain to me
+> how the SWIOTLB buffer low address guarantees that we don't need
+> the check?
 
-Changelog:
-2013-11-12 Userspace RCU 0.8.1
-        * tls-compat: fix comment typo
-        * Keep ABI compatible with already compiled LGPL applications
-        * Fix: tls-compat multi-lib conflict
-        * Use cross compiler for doc examples
-        * gcc warning fixes: -Wsign-compare and -Wextra
-        * Fix: urcu-qsbr: reversed logic on RCU_DEBUG
-        * Fix: urcu-bp segfault in glibc pthread_kill()
-        * Fix urcu-bp: don't move registry
-        * Fix: compat futex duplicated lock and completion
-        * Fix: i386 compat code duplicated mutex instances
-        * Fix: urcu-bp: Bulletproof RCU arena resize bug
-        * Fix: test_mutex.c uninitialized mutex
+xen_swiotlb_fixup makes sure that the swiotlb buffer is lower than 4GB,
+probably lower than 3GB, by passing dma_bits to
+xen_create_contiguous_region.
+This meets the requirements of most devices out there.
+In fact we are not even running this check under the same conditions in
+swiotlb_map_sg_attrs.
+I admit that it is possible to come up with a scenario where the check
+would be useful, but it is far easier to come up with scenarios where
+not only is unneeded but it is even harmful.
 
-Project website: http://urcu.so
-Download link: http://urcu.so/files/
-Git repository: git://git.urcu.so/urcu.git
+Alternatively (without Rob's "of: set dma_mask to point to
+coherent_dma_mask") Linux 3.13 is going to fail to get the network
+running on Midway. It is going to avoid fs mounting failures just
+because we don't do the same check in swiotlb_map_sg_attrs.
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+FYI given that Rob's patch is probably going upstream soon anyway, I
+don't feel so strongly about this.
