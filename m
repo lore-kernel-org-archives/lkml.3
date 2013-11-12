@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326Ab3KLRGY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:06:24 -0500
-Received: from mga02.intel.com ([134.134.136.20]:43710 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752999Ab3KLRGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:06:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="434011130"
-Message-ID: <52825FBE.9060006@intel.com>
-Date: Tue, 12 Nov 2013 09:05:02 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1756387Ab3KLRGk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:06:40 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49123 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756319Ab3KLRGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 12:06:39 -0500
+Message-ID: <5282601D.9010109@codeaurora.org>
+Date: Tue, 12 Nov 2013 09:06:37 -0800
+From: Olav Haugan <ohaugan@codeaurora.org>
+Organization: Qualcomm Innovation Center, Inc.
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-CC: Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Chandra Seetharaman <sekharan@us.ibm.com>
-Subject: Re: [PATCH v6 07/11] VFS hot tracking: Add a /proc interface to control
- memory usage
-References: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com>	<1383745544-391-8-git-send-email-zwu.kernel@gmail.com>	<528156E4.1030409@intel.com> <CAEH94LjoY6L6zDwTh3XKim17VgRTkdqBKpm7TgX0HGok==p+kg@mail.gmail.com>
-In-Reply-To: <CAEH94LjoY6L6zDwTh3XKim17VgRTkdqBKpm7TgX0HGok==p+kg@mail.gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: ngupta@vflare.org, sjenning@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, minchan@kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v2] staging: zsmalloc: Ensure handle is never 0 on success
+References: <1383875883-30597-1-git-send-email-ohaugan@codeaurora.org> <20131112001902.GA1043@kroah.com>
+In-Reply-To: <20131112001902.GA1043@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 02:45 PM, Zhi Yong Wu wrote:
-> On Tue, Nov 12, 2013 at 6:15 AM, Dave Hansen <dave.hansen@intel.com> wrote:
->> In general, why do you have to control the number of these statically?
-> It gives the user or admin one optional chance to control the amount
-> of memory consumed by VFS hot tracking. And you can choose not to use
-> it.
+Hi Greg,
 
-The on/off knob seems to me to be something better left to a mount
-option, not a global tunable.
+On 11/11/2013 4:19 PM, Greg KH wrote:
+> On Thu, Nov 07, 2013 at 05:58:03PM -0800, Olav Haugan wrote:
+>> zsmalloc encodes a handle using the pfn and an object
+>> index. On hardware platforms with physical memory starting
+>> at 0x0 the pfn can be 0. This causes the encoded handle to be
+>> 0 and is incorrectly interpreted as an allocation failure.
+> 
+> Please list the known hardware platforms that have this issue, so that
+> people have a chance to know if this patch is relevant for them or not.
+> 
+> For example, should I include this in the stable releases because it
+> affects systems that are shipping?  Or is it just in "future" chips and
+> it doesn't need to go there or not?
+> 
+> Please make it easy for me to do this type of determination, I already
+> asked you this question before, why didn't you include the information
+> here as well (hint, that is why I asked you...)
 
->> Shouldn't you just define a shrinker and let memory pressure determine
->> how many of these we allow to exist?
-> How about if the user and admin hope to control the amount of the
-> memory consumed by VFS hot tracking? e.g. If the host has several
-> hundred of G or T memory, but the user or admin hope that the memory
-> size consumed by VFS hot tracking is under several G, In the case,
-> maybe a shrinker of VFS hot tracking will never be invoked by system
-> memory module, so this interface will make sense.
+I don't think it would be the best to mention specific hardware
+platforms in the commit text. If I saw this patch listing specific
+hardware platforms I would have made the wrong decision (I would look at
+the list and decide that I am not running on those platforms so I don't
+need this patch). The problem could happen on any hardware platform. It
+just depends on how the memory map of the platform is configured. Hence,
+I re-worded the commit text to make it clear that this will happen when
+you have memory starting at 0x0.
 
-If the shrinker is not invoked, that means that there is lots of memory
-free.  In the case that there is lots of memory free, are you arguing
-that a user would rather see memory go *unused* than be put to use for
-this hot tracking data?
+If I list out specific hardware platforms it would be only a sample (I
+do not know all hardware platforms and their memory maps). However,
+having said that there are products already shipping with physical
+address starting at 0.
 
-If this were true, why don't we have similar knobs for the dentry, inode
-and page caches?
+Thanks,
+
+Olav Haugan
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
