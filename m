@@ -1,92 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab3KLAnU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Nov 2013 19:43:20 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46328 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069Ab3KLAnN (ORCPT
+	id S1754526Ab3KLAo2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Nov 2013 19:44:28 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:35185 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904Ab3KLAoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Nov 2013 19:43:13 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <52817916.9030104@jp.fujitsu.com>
-Date: Tue, 12 Nov 2013 09:40:54 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: hpa@linux.intel.com, ebiederm@xmission.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v4 1/3] x86, apic: Don't count the CPU with BP flag from
- MP table as booting-up CPU
-References: <20131022150015.24240.39686.stgit@localhost6.localdomain6> <20131022150124.24240.20741.stgit@localhost6.localdomain6> <20131108160830.GB13068@redhat.com> <5280466E.9090504@jp.fujitsu.com> <20131111165202.GD11547@redhat.com>
-In-Reply-To: <20131111165202.GD11547@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Nov 2013 19:44:20 -0500
+X-AuditID: cbfee61a-b7f836d0000025d7-8e-528179e3e9b4
+Date: Tue, 12 Nov 2013 09:44:36 +0900
+From: Kyungmin Park <kmpark@infradead.org>
+To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org, kay@vrfy.org
+Subject: [PATCH] video: backlight: Remove backlight sysfs uevent
+Message-id: <20131112004436.GA30125@july>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHLMWRmVeSWpSXmKPExsVy+t9jQd3HlY1BBtPuy1lcXniJ1eLWqufs
+	Fif6PrBaXN41h81i966nrA6sHnvm/2D16NuyitHj8yY5j4/rPQNYorhsUlJzMstSi/TtErgy
+	Xj9pYivYwF8xZcJm5gbG9zxdjJwcEgImEp9PvmeEsMUkLtxbzwZiCwlMZ5R48lIRwv7CKHH4
+	siCE7Stx4/kOdhCbRUBV4tfRA6wgNpuAlsSVD3vA4iICHhLTnx1lArGZBbwlDk+ZBVYjLOAg
+	8bH3AtguXgFNiRM7/rNC2IISPybfY4Go15JYv/M4VK+0xKO/M8BmigqoSEw5uY1tAiP/LCQt
+	s5C0zELSsoCReRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcKg+k9rBuLLB4hCjAAejEg/v
+	Dq7GICHWxLLiytxDjBIczEoivOa5QCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1qtA4UE0hNL
+	UrNTUwtSi2CyTBycUg2Mlb9XXw2c7LA7xkFzr1r6pQJ/MecdH/bVGbv0HXJsv/dRadetN0FT
+	e0oO3pF4YTP1mEK/QkGn6rnnHGt2uO9f4O939//9728ZLu0+ed+B/RzbFX0z0aqLMk2VIpFf
+	Ju27bCXe8MLCurzopvBKPte/VqrWC2/cVEvuY94oNqvM6f2eIw8e3OxWU2Ipzkg01GIuKk4E
+	AJo21OZRAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/12 1:52), Vivek Goyal wrote:
-> On Mon, Nov 11, 2013 at 11:52:30AM +0900, HATAYAMA Daisuke wrote:
->
-> [..]
->> Looking at my past investigation, kernel/mpparse.c, mm/amdtopology.c and
->> platform/visws/visws_quirks.c assumes that boot_cpu_physical_apicid
->> has initial apicid of the BSP, not the current actual booting-up cpu.
->>
->> These three are called in get_smp_config() below. If either of them is
->> called actually, boot_cpu_physical_apicid has the apicid different from
->> the current actual booting-up cpu temporarily. But init_apic_mappings()
->> soon modifies back the value to the one obtained by read_apic_id().
->>
->>          /*
->>           * Read APIC and some other early information from ACPI tables.
->>           */
->>          acpi_boot_init();
->>          sfi_init();
->>          x86_dtb_init();
->>
->>          /*
->>           * get boot-time SMP configuration:
->>           */
->>          if (smp_found_config)
->>                  get_smp_config();
->>
->>          prefill_possible_map();
->>
->>          init_cpu_to_node();
->>
->>          init_apic_mappings();
->>
->> So, thanks to init_apic_mappings(), the patch set would work without the
->> first patch... This is a careless point in this patch set.
->>
->
-> If init_apic_mappings(), is making sure that boot_cpu_physical_apicid is
-> apic id of booting processor, and you don't need first patch of your
-> series, then I think atleast re-post your patch series without first
-> patch.
->
+From: Kyungmin Park <kyungmin.park@samsung.com>
 
-Yes, I'll repost soon.
+The most mobile phones have Ambient Light Sensors and it changes brightness according lux.
+It means it changes backlight brightness frequently by just writing sysfs node, so it generates uevent.
+ 
+Usually there's no user to use this backlight changes. But it forks udev worker threads and it takes about 5ms. The main problem is that it hurts other process activities. so remove it.
 
-> And then there can be another series which looks into whether we need
-> two different variables or not and if we do, then a separate variable
-> bsp_physical_apicid will track the bsp id as reported by BIOS and
-> boot_cpu_physical_apicid will track apic id of booting cpu. This might
-> a very big and slow cleanup. So I think blocking the first patch series
-> behind it might not make much sense.
->
+Kay said 
+"Uevents are for the major, low-frequent, global device state-changes,
+ not for carrying-out any sort of measurement data. Subsystems which
+ need that should use other facilities like poll()-able sysfs file or
+ any other subscription-based, client-tracking interface which does not
+ cause overhead if it isn't used. Uevents are not the right thing to
+ use here, and upstream udev should not paper-over broken kernel
+ subsystems."
 
-Yes, the current handling of boot_cpu_physical_apicid looks strange and
-should be cleaned up, but the cleaning up needs reviewing together with
-the maintainers for the corresponding part; in particular, it can be
-lengthy for the reviewing on amdtopology.c. I leave this as another
-work for the time being.
-
--- 
-Thanks.
-HATAYAMA, Daisuke
-
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+index 94a403a..441272d 100644
+--- a/drivers/video/backlight/backlight.c
++++ b/drivers/video/backlight/backlight.c
+@@ -88,9 +88,6 @@ static void backlight_generate_event(struct backlight_device *bd,
+ 	char *envp[2];
+ 
+ 	switch (reason) {
+-	case BACKLIGHT_UPDATE_SYSFS:
+-		envp[0] = "SOURCE=sysfs";
+-		break;
+ 	case BACKLIGHT_UPDATE_HOTKEY:
+ 		envp[0] = "SOURCE=hotkey";
+ 		break;
+@@ -172,8 +169,6 @@ static ssize_t brightness_store(struct device *dev,
+ 	}
+ 	mutex_unlock(&bd->ops_lock);
+ 
+-	backlight_generate_event(bd, BACKLIGHT_UPDATE_SYSFS);
+-
+ 	return rc;
+ }
+ static DEVICE_ATTR_RW(brightness);
+diff --git a/include/linux/backlight.h b/include/linux/backlight.h
+index 53b7794..d2a27dd 100644
+--- a/include/linux/backlight.h
++++ b/include/linux/backlight.h
+@@ -29,7 +29,6 @@
+ 
+ enum backlight_update_reason {
+ 	BACKLIGHT_UPDATE_HOTKEY,
+-	BACKLIGHT_UPDATE_SYSFS,
+ };
+ 
+ enum backlight_type {
