@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255Ab3KLKLd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 05:11:33 -0500
+	id S1753762Ab3KLKL3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 05:11:29 -0500
 Received: from mga02.intel.com ([134.134.136.20]:41561 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752461Ab3KLKL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752449Ab3KLKL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Nov 2013 05:11:28 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="433779858"
+   d="scan'208";a="433777808"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: Mark Brown <broonie@kernel.org>
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] serial: 8250_dw: add new ACPI IDs
-Date: Tue, 12 Nov 2013 12:11:09 +0200
-Message-Id: <1384251069-12390-1-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH] spi/pxa2xx: add new ACPI IDs
+Date: Tue, 12 Nov 2013 12:06:21 +0200
+Message-Id: <1384250781-11789-1-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Newer Intel PCHs with LPSS have the same Designware controllers than
-Haswell but ACPI IDs are different. Add these IDs to the driver list.
+Newer Intel PCHs with LPSS have the same SPI controllers than Haswell but
+ACPI IDs are different. Add these IDs to the driver list.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/tty/serial/8250/8250_dw.c | 2 ++
+ drivers/spi/spi-pxa2xx.c | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index daf710f5c3fc..8b2accbad3d1 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -417,6 +417,8 @@ MODULE_DEVICE_TABLE(of, dw8250_of_match);
- static const struct acpi_device_id dw8250_acpi_match[] = {
- 	{ "INT33C4", 0 },
- 	{ "INT33C5", 0 },
-+	{ "INT3434", 0 },
-+	{ "INT3435", 0 },
- 	{ "80860F0A", 0 },
+diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+index c1a50674c1e3..28361f7783cd 100644
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -1077,6 +1077,8 @@ pxa2xx_spi_acpi_get_pdata(struct platform_device *pdev)
+ static struct acpi_device_id pxa2xx_spi_acpi_match[] = {
+ 	{ "INT33C0", 0 },
+ 	{ "INT33C1", 0 },
++	{ "INT3430", 0 },
++	{ "INT3431", 0 },
+ 	{ "80860F0E", 0 },
  	{ },
  };
 -- 
