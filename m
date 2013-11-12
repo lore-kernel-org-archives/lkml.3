@@ -1,74 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611Ab3KLNrg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 08:47:36 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:56313 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab3KLNre (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 08:47:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH 01/11] Add generic fixmap.h
-Date: Tue, 12 Nov 2013 14:46:40 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Richard Kuo <rkuo@codeaurora.org>, linux-hexagon@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>, linux-metag@vger.kernel.org,
-        Michal Simek <monstr@monstr.eu>, microblaze-uclinux@itee.uq.edu.au,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-References: <1384262545-20875-1-git-send-email-msalter@redhat.com> <1384262545-20875-2-git-send-email-msalter@redhat.com>
-In-Reply-To: <1384262545-20875-2-git-send-email-msalter@redhat.com>
+	id S1755024Ab3KLNtE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 08:49:04 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751610Ab3KLNtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 08:49:03 -0500
+Message-ID: <528231C5.9010101@nod.at>
+Date: Tue, 12 Nov 2013 14:48:53 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org
+CC: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH 11/11] um: use generic fixmap.h
+References: <1384262545-20875-1-git-send-email-msalter@redhat.com> <1384262545-20875-12-git-send-email-msalter@redhat.com>
+In-Reply-To: <1384262545-20875-12-git-send-email-msalter@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Message-Id: <201311121446.40700.arnd@arndb.de>
-X-Provags-ID: V02:K0:+2zmCdfderxGjbzwBr5c5ktT93yjI6sR2mBpcJiBz7b
- lnmkTEI+LEpJeY7SttwYPJCVkks05Zo07eB/xRXZJnxz2gwmpn
- iSg8BF92CewlBarW2l13ZeoQNQPfoKzJAkYMj1U33zZRKKsYdf
- A+uAf/zuIBDpZHoiXoB55Wk0vmnQph7RLPNxEiN7gKt04cSh9P
- QJD0/fpVtfL2YWcUpi5KFxuGqMafNzFWLZtNX9c6dcT61rlv26
- Rsv0gNyiKkipRCoLHETu3FAUvDIkkire2iEx2tspFIBNCQQf/I
- P++1WCajC2sQOvZKozxAPHCwt+aKqheScAXcAazXp4B5NXcyo1
- hRd+ZEuC4KtR3ZARkqag=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 November 2013, Mark Salter wrote:
-> Many architectures provide an asm/fixmap.h which defines support for
-> compile-time 'special' virtual mappings which need to be made before
-> paging_init() has run. This suport is also used for early ioremap
-> on x86. Much of this support is identical across the architectures.
-> This patch consolidates all of the common bits into asm-generic/fixmap.h
-> which is intended to be included from arch/*/include/asm/fixmap.h.
+Am 12.11.2013 14:22, schrieb Mark Salter:
+> Signed-off-by: Mark Salter <msalter@redhat.com>
+> CC: Jeff Dike <jdike@addtoit.com>
+> CC: Richard Weinberger <richard@nod.at>
+> CC: user-mode-linux-devel@lists.sourceforge.net
+> ---
+>  arch/um/include/asm/fixmap.h | 40 +---------------------------------------
+>  1 file changed, 1 insertion(+), 39 deletions(-)
 
+Acked-by: Richard Weinberger <richard@nod.at>
 
-Good idea, 
-
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-On Tuesday 12 November 2013, Mark Salter wrote:
-> +static __always_inline unsigned long fix_to_virt(const unsigned int idx)
-> +{
-> +       /*
-> +        * this branch gets completely eliminated after inlining,
-> +        * except when someone tries to use fixaddr indices in an
-> +        * illegal way. (such as mixing up address types or using
-> +        * out-of-range indices).
-> +        *
-> +        * If it doesn't get removed, the linker will complain
-> +        * loudly with a reasonably clear error message..
-> +        */
-> +       if (idx >= __end_of_fixed_addresses)
-> +               __this_fixmap_does_not_exist();
-> +
-
-You might be able to turn this into the more readable BUILD_BUG_ON().
-
-	Arnd
+Thanks,
+//richard
