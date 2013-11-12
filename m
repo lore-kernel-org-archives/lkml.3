@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab3KLLRS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 06:17:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4035 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214Ab3KLLRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 06:17:15 -0500
-Date: Tue, 12 Nov 2013 13:20:09 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stefanha@redhat.com
-Subject: Re: [PATCH net 1/2] tuntap: limit head length of skb allocated
-Message-ID: <20131112112008.GA28597@redhat.com>
-References: <1384250577-20330-1-git-send-email-jasowang@redhat.com>
+	id S1752941Ab3KLLXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 06:23:46 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:57393 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509Ab3KLLXn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 06:23:43 -0500
+Date: Tue, 12 Nov 2013 12:23:38 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/boot changes for v3.13
+Message-ID: <20131112112338.GA12801@gmail.com>
+References: <20131111170558.GA12741@gmail.com>
+ <CAE9FiQWrzZB+wpSXGeQTPKi2o7MKvONFkk0_POe-E+wco07Erw@mail.gmail.com>
+ <20131112103422.GA12849@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384250577-20330-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <20131112103422.GA12849@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 06:02:56PM +0800, Jason Wang wrote:
-> We currently use hdr_len as a hint of head length which is advertised by
-> guest. But when guest advertise a very big value, it can lead to an 64K+
-> allocating of kmalloc() which has a very high possibility of failure when host
-> memory is fragmented or under heavy stress. The huge hdr_len also reduce the
-> effect of zerocopy or even disable if a gso skb is linearized in guest.
-> 
-> To solves those issues, this patch introduces an upper limit (PAGE_SIZE) of the
-> head, which guarantees an order 0 allocation each time.
-> 
-> Cc: Stefan Hajnoczi <stefanha@redhat.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+* Borislav Petkov <bp@alien8.de> wrote:
 
-> ---
-> The patch was needed for stable.
-> ---
->  drivers/net/tun.c | 5 +++++
->  1 file changed, 5 insertions(+)
+> On Mon, Nov 11, 2013 at 01:37:48PM -0800, Yinghai Lu wrote:
+> > How do you know CPU0 and CPU1 are in same package?
 > 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index 7cb105c..5537b65 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -954,6 +954,11 @@ static struct sk_buff *tun_alloc_skb(struct tun_file *tfile,
->  	struct sock *sk = tfile->socket.sk;
->  	struct sk_buff *skb;
->  	int err;
-> +	int good_linear = SKB_MAX_HEAD(prepad);
-> +
-> +	/* Don't use huge linear part */
-> +	if (linear > good_linear)
-> +		linear = good_linear;
->  
->  	/* Under a page?  Don't bother with paged skb. */
->  	if (prepad + len < PAGE_SIZE || !linear)
-> -- 
-> 1.8.3.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Why is that relevant?
+
+So I suspect what Yinghai tried to say if CPU0 and CPU1 are not on the 
+same node we do the printout incorrectly.
+
+Arguably this was a pre-existing condition, but would be nice to fix it 
+now that this code has emerged out of steady bitrot! :-)
+
+How difficult would it be in your opinion? I think the best way to go 
+about it would be to include CPU#0 in the list - I don't think anyone will 
+be confused by the fact that it has already booted. That way the 'gap' for 
+CPU#0 would be eliminated. Or something like that.
+
+Btw., while staring at that code once more I noticed the following small 
+nit, there's a pre-existing weird way of writing the -1 literal:
+
+                          if (current_node > (-1))
+
+Thanks,
+
+	Ingo
