@@ -1,68 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab3KLHPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 02:15:45 -0500
-Received: from david.siemens.de ([192.35.17.14]:27488 "EHLO david.siemens.de"
+	id S1756143Ab3KLHQM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 02:16:12 -0500
+Received: from david.siemens.de ([192.35.17.14]:27570 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754090Ab3KLHPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 02:15:13 -0500
+	id S1755771Ab3KLHPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 02:15:24 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v7 10/21] scripts/gdb: Add read_u16/32/64 helpers
-Date: Tue, 12 Nov 2013 08:14:28 +0100
-Message-Id: <c509d486dad4e1344419e2d187401891f49d4b05.1384240478.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
+        linux-doc@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Rob Landley <rob@landley.net>, Rusty Russell <rusty@rustcorp.com.au>,
+        sparclinux@vger.kernel.org, Tony Luck <tony.luck@intel.com>
+Subject: [PATCH v7 00/21] Add gdb python scripts as kernel debugging helpers
+Date: Tue, 12 Nov 2013 08:14:18 +0100
+Message-Id: <cover.1384240478.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
-In-Reply-To: <cover.1384240478.git.jan.kiszka@siemens.com>
-References: <cover.1384240478.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1384240478.git.jan.kiszka@siemens.com>
-References: <cover.1384240478.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add helpers for reading integers from target memory buffers. Required
-when caching the memory access is more efficient than reading individual
-values via gdb.
+Another round, addressing the following review comments on v6:
+ - introduce CONFIG_GDB_SCRIPTS to enable/disable this feature
+ - adjust documentation and fix a minor detail
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- scripts/gdb/linux/utils.py | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+See http://lkml.indiana.edu/hypermail/linux/kernel/1210.0/01598.html for
+the original description and
 
-diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
-index 10a227b..808a265 100644
---- a/scripts/gdb/linux/utils.py
-+++ b/scripts/gdb/linux/utils.py
-@@ -85,3 +85,24 @@ def get_target_endianness():
-         else:
-             raise gdb.GdgError("unknown endianness '{0}'".format(endian))
-     return target_endianness
-+
-+
-+def read_u16(buffer):
-+    if get_target_endianness() == LITTLE_ENDIAN:
-+        return ord(buffer[0]) + (ord(buffer[1]) << 8)
-+    else:
-+        return ord(buffer[1]) + (ord(buffer[0]) << 8)
-+
-+
-+def read_u32(buffer):
-+    if get_target_endianness() == LITTLE_ENDIAN:
-+        return read_u16(buffer[0:2]) + (read_u16(buffer[2:4]) << 16)
-+    else:
-+        return read_u16(buffer[2:4]) + (read_u16(buffer[0:2]) << 16)
-+
-+
-+def read_u64(buffer):
-+    if get_target_endianness() == LITTLE_ENDIAN:
-+        return read_u32(buffer[0:4]) + (read_u32(buffer[4:8]) << 32)
-+    else:
-+        return read_u32(buffer[4:8]) + (read_u32(buffer[0:4]) << 32)
+    git://git.kiszka.org/linux.git queues/gdb-scripts
+
+for the latest version.
+
+Jan
+
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Fenghua Yu <fenghua.yu@intel.com>
+CC: Kay Sievers <kay@vrfy.org>
+CC: linux-doc@vger.kernel.org
+CC: linux-ia64@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org
+CC: Michal Marek <mmarek@suse.cz>
+CC: Rob Landley <rob@landley.net>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: sparclinux@vger.kernel.org
+CC: Tony Luck <tony.luck@intel.com>
+
+Jan Kiszka (21):
+  scripts/gdb: Add infrastructure
+  scripts/gdb: Add cache for type objects
+  scripts/gdb: Add container_of helper and convenience function
+  scripts/gdb: Add module iteration class
+  scripts/gdb: Add lx-symbols command
+  module: Do not inline do_init_module
+  scripts/gdb: Add automatic symbol reloading on module insertion
+  scripts/gdb: Add internal helper and convenience function to look up a
+    module
+  scripts/gdb: Add get_target_endianness helper
+  scripts/gdb: Add read_u16/32/64 helpers
+  scripts/gdb: Add lx-dmesg command
+  scripts/gdb: Add task iteration class
+  scripts/gdb: Add helper and convenience function to look up tasks
+  scripts/gdb: Add is_target_arch helper
+  scripts/gdb: Add internal helper and convenience function to retrieve
+    thread_info
+  scripts/gdb: Add get_gdbserver_type helper
+  scripts/gdb: Add internal helper and convenience function for per-cpu
+    lookup
+  scripts/gdb: Add lx_current convenience function
+  scripts/gdb: Add class to iterate over CPU masks
+  scripts/gdb: Add lx-lsmod command
+  scripts/gdb: Add basic documentation
+
+ Documentation/gdb-kernel-debugging.txt | 160 +++++++++++++++++++++++++++++++
+ Makefile                               |   5 +-
+ kernel/module.c                        |   9 +-
+ lib/Kconfig.debug                      |  11 +++
+ scripts/Makefile                       |   3 +-
+ scripts/gdb/Makefile                   |  11 +++
+ scripts/gdb/linux/Makefile             |   9 ++
+ scripts/gdb/linux/__init__.py          |   0
+ scripts/gdb/linux/cpus.py              | 139 +++++++++++++++++++++++++++
+ scripts/gdb/linux/dmesg.py             |  64 +++++++++++++
+ scripts/gdb/linux/modules.py           | 111 ++++++++++++++++++++++
+ scripts/gdb/linux/symbols.py           | 166 +++++++++++++++++++++++++++++++++
+ scripts/gdb/linux/tasks.py             | 108 +++++++++++++++++++++
+ scripts/gdb/linux/utils.py             | 156 +++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py             |  30 ++++++
+ 15 files changed, 978 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/gdb-kernel-debugging.txt
+ create mode 100644 scripts/gdb/Makefile
+ create mode 100644 scripts/gdb/linux/Makefile
+ create mode 100644 scripts/gdb/linux/__init__.py
+ create mode 100644 scripts/gdb/linux/cpus.py
+ create mode 100644 scripts/gdb/linux/dmesg.py
+ create mode 100644 scripts/gdb/linux/modules.py
+ create mode 100644 scripts/gdb/linux/symbols.py
+ create mode 100644 scripts/gdb/linux/tasks.py
+ create mode 100644 scripts/gdb/linux/utils.py
+ create mode 100644 scripts/gdb/vmlinux-gdb.py
+
 -- 
 1.8.1.1.298.ge7eed54
 
