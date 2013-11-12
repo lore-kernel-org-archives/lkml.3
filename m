@@ -1,191 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab3KLPLi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 10:11:38 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47283 "EHLO arroyo.ext.ti.com"
+	id S1755437Ab3KLPNO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 10:13:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35777 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752010Ab3KLPLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 10:11:35 -0500
-Message-ID: <52824522.7020401@ti.com>
-Date: Tue, 12 Nov 2013 09:11:30 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751534Ab3KLPNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 10:13:11 -0500
+Date: Tue, 12 Nov 2013 16:13:08 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Sameer Nanda <snanda@chromium.org>
+Cc: akpm@linux-foundation.org, rientjes@google.com, hannes@cmpxchg.org,
+        rusty@rustcorp.com.au, semenzato@google.com, murzin.v@gmail.com,
+        oleg@redhat.com, dserrg@gmail.com, msb@chromium.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] mm, oom: Fix race when selecting process to kill
+Message-ID: <20131112151308.GD6049@dhcp22.suse.cz>
+References: <20131109151639.GB14249@redhat.com>
+ <1384215717-2389-1-git-send-email-snanda@chromium.org>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [RFC PATCH] cpufreq: cpufreq-cpu0: do not allow transitions with
- regulators suspended
-References: <1382638087-32054-1-git-send-email-nm@ti.com> <CAKohponJOOfGX4BHn76LTBDTm58+2QxPf_rv1i4avVfrWhfkRg@mail.gmail.com>
-In-Reply-To: <CAKohponJOOfGX4BHn76LTBDTm58+2QxPf_rv1i4avVfrWhfkRg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384215717-2389-1-git-send-email-snanda@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2013 12:03 AM, Viresh Kumar wrote:
-> Cc'ing Shawn as well.
+On Mon 11-11-13 16:21:57, Sameer Nanda wrote:
+> The selection of the process to be killed happens in two spots:
+> first in select_bad_process and then a further refinement by
+> looking for child processes in oom_kill_process. Since this is
+> a two step process, it is possible that the process selected by
+> select_bad_process may get a SIGKILL just before oom_kill_process
+> executes. If this were to happen, __unhash_process deletes this
+> process from the thread_group list. This results in oom_kill_process
+> getting stuck in an infinite loop when traversing the thread_group
+> list of the selected process.
 > 
-> Sorry for being really late.. I just forgot about it :(
-
-Thanks for responding :)
-
+> Fix this race by adding a pid_alive check for the selected process
+> with tasklist_lock held in oom_kill_process.
 > 
-> On 24 October 2013 23:38, Nishanth Menon <nm@ti.com> wrote:
->> For platforms where regulators are used, regulator access tends to be
->> disabled as part of the suspend path. In SMP systems such as OMAP,
->> CPU1 is disabled as post suspend_noirq. This results in the following
->> tail end sequence of actions:
->> cpufreq_cpu_callback gets called with CPU_POST_DEAD
->>         __cpufreq_remove_dev_finish is invoked as a result
->>                 __cpufreq_governor(policy, CPUFREQ_GOV_START) is
->>                 triggered
->>
->> At this point, with ondemand governor, if the cpu entered suspend path
->> at a lower OPP, this triggers a transition request. However, since
->> irqs are disabled, typically, regulator control using I2C operations
->> are not possible either, regulator operations will naturally fail
->> (even though clk_set_rate might succeed depending on the platform).
->>
->> Unfortunately, cpufreq_driver->suspend|resume is too late as well, since
->> they are invoked as part of syscore_ops (after CPU1 is hotplugged out).
->>
->> The proposal here is to use pm notifier suspend to disable any
->> requests to target, as we may very well expect this to fail at a later
->> suspend sequence.
-> 
-> Yes the problem looks real but there are issues with this patch.
-> - It doesn't solve your problem completely, because you returned -EBUSY,
-> your suspend operation failed and we resumed immediately.
-
-Seems like there was an error handling miss somewhere - for some
-reason, it did suspend properly.
-
-> - We can't make this solution true for everybody using cpu0 driver, it should
-> be platform specific.
-
-Agreed.
-
-> - Its not a problem of cpu0 driver but all drivers. So, probably a better idea
-> would be not calling ->target() at all when drivers have marked them unusable
-> in suspend path..
-
-Ack.
-
-> 
-> But I think the problem can/should be solved some other way.. Looking closely,
-> we got to the problem because we called
-> 
-> __cpufreq_governor(policy, CPUFREQ_GOV_START)
-> 
-> at the first place. This happened because the policy structure had more than
-> one cpu to take care of and after stopping goveronr for CPU1 it has to start it
-> again for CPU0... But this is really not required as anyway we are going to
-> suspend.
-> 
-> Can you try attached patch? I will then repost it formally...
-
-I tried a equivalent of this for v3.12 tag:
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 04548f7..9ec243c 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1186,7 +1186,7 @@ static int __cpufreq_remove_dev_prepare(struct
-device *dev,
-                return -EINVAL;
-        }
-
--       if (cpufreq_driver->target) {
-+       if (cpufreq_driver->target && (!frozen ||
-policy->governor_enabled)) {
-                ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
-                if (ret) {
-                        pr_err("%s: Failed to stop governor\n", __func__);
-@@ -1252,7 +1252,7 @@ static int __cpufreq_remove_dev_finish(struct
-device *dev,
-
-        /* If cpu is last user of policy, free policy */
-        if (cpus == 1) {
--               if (cpufreq_driver->target) {
-+               if (cpufreq_driver->target && !frozen) {
-                        ret = __cpufreq_governor(policy,
-                                        CPUFREQ_GOV_POLICY_EXIT);
-                        if (ret) {
-
-And I see http://pastebin.mozilla.org/3528478
-
-with a WARN patch for generating call stack.
-
-
-Finally squelched warnings with a net diff (v3.12) of
-http://pastebin.mozilla.org/3546062
-
-However, ondemand is no longer functioning on resume (governor needs a
-start after being unfrozen.. and obviously by avoiding that entirely
-in frozen case.. not sure if I missed any other)..
-
-> 
-> commit 2aecab9be85ceafdbab5f824eec5d1f81f3fa803
-> Author: Viresh Kumar <viresh.kumar@linaro.org>
-> Date:   Tue Nov 12 11:26:36 2013 +0530
-> 
->     cpufreq: don't start governor in suspend path
-> 
->     When we suspend our system, we remove all non-boot CPUs one by one. At this
->     point we actually STOP/START governor for each non-boot cpu, which
-> is a total
->     waste of time as we aren't going to use governor until the time we are back.
-> 
->     Also, this is causing problems for some platforms (like OMAP),
-> where governor
->     tries to change freq of core in suspend path which requires programming
->     regulators via I2C which isn't possible then.
-> 
->     So, to make it better for everybody don't start the governor again
-> in suspend
->     path.
-> 
->     Reported-by: Nishanth Menon <nm@ti.com>
->     Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Sameer Nanda <snanda@chromium.org>
 > ---
->  drivers/cpufreq/cpufreq.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  mm/oom_kill.c | 24 +++++++++++++++++++-----
+>  1 file changed, 19 insertions(+), 5 deletions(-)
 > 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 02d534d..bec58cf 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1174,7 +1174,7 @@ static int __cpufreq_remove_dev_prepare(struct
-> device *dev,
->                 return -EINVAL;
->         }
-> 
-> -       if (has_target()) {
-> +       if (has_target() && (!frozen || policy->governor_enabled)) {
->                 ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
->                 if (ret) {
->                         pr_err("%s: Failed to stop governor\n", __func__);
-> @@ -1282,7 +1282,7 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
->                 if (!frozen)
->                         cpufreq_policy_free(policy);
->         } else {
-> -               if (has_target()) {
-> +               if (has_target() && !frozen) {
->                         if ((ret = __cpufreq_governor(policy,
-> CPUFREQ_GOV_START)) ||
->                                         (ret =
-> __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
->                                 pr_err("%s: Failed to start governor\n",
-> 
-> 
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 6738c47..57638ef 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -413,12 +413,20 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+>  					      DEFAULT_RATELIMIT_BURST);
+>  
+>  	/*
+> +	 * while_each_thread is currently not RCU safe. Lets hold the
+> +	 * tasklist_lock across all invocations of while_each_thread (including
+> +	 * the one in find_lock_task_mm) in this function.
+> +	 */
+> +	read_lock(&tasklist_lock);
+> +
+> +	/*
+>  	 * If the task is already exiting, don't alarm the sysadmin or kill
+>  	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+>  	 */
+> -	if (p->flags & PF_EXITING) {
+> +	if (p->flags & PF_EXITING || !pid_alive(p)) {
+>  		set_tsk_thread_flag(p, TIF_MEMDIE);
+>  		put_task_struct(p);
+> +		read_unlock(&tasklist_lock);
+>  		return;
+>  	}
 
+show_mem used to be one of a bottleneck but now that we have Mel's "mm:
+do not walk all of system memory during show_mem" it shouldn't be a big
+deal anymore.
+The real trouble is with dump_tasks which might be zillions of tasks and
+we do not want to hold tasklist_lock for that long.
 
-
+So no this would regress on the huge machines and yes we have seen
+reports like that and explicit requests to backport 6b0c81b3be114 (mm,
+oom: reduce dependency on tasklist_lock) so this would be a step
+backwards although I see there is a real problem that it tries to fix.
 
 -- 
-Regards,
-Nishanth Menon
+Michal Hocko
+SUSE Labs
