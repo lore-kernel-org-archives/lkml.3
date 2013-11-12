@@ -1,161 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab3KLRA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 12:00:56 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36994 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab3KLRAy (ORCPT
+	id S1756192Ab3KLRBs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 12:01:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35942 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753864Ab3KLRBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 12:00:54 -0500
-Date: Tue, 12 Nov 2013 18:00:43 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, David Laight <David.Laight@ACULAB.COM>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipvs: Remove unused variable ret from
- sync_thread_master()
-Message-ID: <20131112170043.GB16796@laptop.programming.kicks-ass.net>
-References: <1384264396-14550-1-git-send-email-geert@linux-m68k.org>
- <20131112141314.GQ5056@laptop.programming.kicks-ass.net>
- <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com>
- <20131112145243.GU5056@laptop.programming.kicks-ass.net>
- <20131112162136.GA29065@redhat.com>
+	Tue, 12 Nov 2013 12:01:46 -0500
+Date: Tue, 12 Nov 2013 09:01:23 -0800
+From: tip-bot for Kees Cook <tipbot@zytor.com>
+Message-ID: <tip-327f7d72454aecdc7a4a1c847a291a3f224b730f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        keescook@chromium.org, minipli@googlemail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, minipli@googlemail.com, tglx@linutronix.de
+In-Reply-To: <20131112165607.GA5921@www.outflux.net>
+References: <20131112165607.GA5921@www.outflux.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/kaslr] x86, kaslr: Use char array to gain sizeof sanity
+Git-Commit-ID: 327f7d72454aecdc7a4a1c847a291a3f224b730f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20131112162136.GA29065@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 09:01:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 05:21:36PM +0100, Oleg Nesterov wrote:
-> On 11/12, Peter Zijlstra wrote:
-> >
-> > On Tue, Nov 12, 2013 at 02:21:39PM -0000, David Laight wrote:
-> > > Shame there isn't a process flag to indicate that the process
-> > > will sleep uninterruptibly and that it doesn't matter.
-> > > So don't count to the load average and don't emit a warning
-> > > if it has been sleeping for a long time.
-> >
-> > A process flag wouldn't work, because the task could block waiting for
-> > actual work to complete in other sleeps.
-> >
-> > However, we could do something like the below; which would allow us
-> > writing things like:
-> >
-> > 	(void)___wait_event(*sk_sleep(sk),
-> > 			    sock_writeable(sk) || kthread_should_stop(),
-> > 			    TASK_UNINTERRUPTIBLE | TASK_IDLE, 0, 0,
-> > 			    schedule());
-> >
-> > Marking the one wait-for-more-work as TASK_IDLE such that it doesn't
-> > contribute to the load avg.
-> 
-> Agreed, I thought about additional bit too.
-> 
-> >  static const char * const task_state_array[] = {
-> > -	"R (running)",		/*   0 */
-> > -	"S (sleeping)",		/*   1 */
-> > -	"D (disk sleep)",	/*   2 */
-> > -	"T (stopped)",		/*   4 */
-> > -	"t (tracing stop)",	/*   8 */
-> > -	"Z (zombie)",		/*  16 */
-> > -	"X (dead)",		/*  32 */
-> > -	"x (dead)",		/*  64 */
-> > -	"K (wakekill)",		/* 128 */
-> > -	"W (waking)",		/* 256 */
-> > -	"P (parked)",		/* 512 */
-> > +	"R (running)",		/*    0 */
-> > +	"S (sleeping)",		/*    1 */
-> > +	"D (disk sleep)",	/*    2 */
-> > +	"T (stopped)",		/*    4 */
-> > +	"t (tracing stop)",	/*    8 */
-> > +	"Z (zombie)",		/*   16 */
-> > +	"X (dead)",		/*   32 */
-> > +	"x (dead)",		/*   64 */
-> > +	"K (wakekill)",		/*  128 */
-> > +	"W (waking)",		/*  256 */
-> > +	"P (parked)",		/*  512 */
-> > +	"I (idle)",		/* 1024 */
-> >  };
-> 
-> but I am not sure about what /proc/ should report in this case...
+Commit-ID:  327f7d72454aecdc7a4a1c847a291a3f224b730f
+Gitweb:     http://git.kernel.org/tip/327f7d72454aecdc7a4a1c847a291a3f224b730f
+Author:     Kees Cook <keescook@chromium.org>
+AuthorDate: Tue, 12 Nov 2013 08:56:07 -0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 12 Nov 2013 08:58:35 -0800
 
-We have to put in something...
+x86, kaslr: Use char array to gain sizeof sanity
 
-	BUILD_BUG_ON(1 + ilog2(TASK_STATE_MAX) != ARRAY_SIZE(task_state_array));
+The build_str needs to be char [] not char * for the sizeof() to report
+the string length.
 
-However, since we always set it together with TASK_UNINTERUPTIBLE
-userspace shouldn't actually ever see the I thing.
+Reported-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: http://lkml.kernel.org/r/20131112165607.GA5921@www.outflux.net
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/boot/compressed/aslr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> >  #define task_contributes_to_load(task)	\
-> >  				((task->state & TASK_UNINTERRUPTIBLE) != 0 && \
-> > -				 (task->flags & PF_FROZEN) == 0)
-> > +				 (task->flags & PF_FROZEN) == 0 && \
-> > +				 (task->state & TASK_IDLE) == 0)
-> 
-> perhaps
-> 
-> 	(task->state & (TASK_UNINTERRUPTIBLE | TASK_IDLE)) == TASK_UNINTERRUPTIBLE
-> 
-> can save an insn.
-
-Fair enough.
-
-> I am also wondering if it makes any sense to turn PF_FROZEN into
-> TASK_FROZEN, something like (incomplete, probably racy) patch below.
-> Note that it actually adds the new state, not the the qualifier.
-> 
-> --- x/include/linux/freezer.h
-> +++ x/include/linux/freezer.h
-> @@ -23,7 +23,7 @@ extern unsigned int freeze_timeout_msecs
->   */
->  static inline bool frozen(struct task_struct *p)
->  {
-> -	return p->flags & PF_FROZEN;
-> +	return p->state & TASK_FROZEN;
-
-do we want == there? Does it make sense to allow it be set with other
-state flags?
-
->  }
->  
->  extern bool freezing_slow_path(struct task_struct *p);
-> --- x/kernel/freezer.c
-> +++ x/kernel/freezer.c
-> @@ -57,16 +57,13 @@ bool __refrigerator(bool check_kthr_stop
->  	pr_debug("%s entered refrigerator\n", current->comm);
->  
->  	for (;;) {
-> -		set_current_state(TASK_UNINTERRUPTIBLE);
-> -
->  		spin_lock_irq(&freezer_lock);
-> -		current->flags |= PF_FROZEN;
-> -		if (!freezing(current) ||
-> -		    (check_kthr_stop && kthread_should_stop()))
-> -			current->flags &= ~PF_FROZEN;
-> +		if (freezing(current) &&
-> +		    !(check_kthr_stop && kthread_should_stop()))
-> +			set_current_state(TASK_FROZEN);
->  		spin_unlock_irq(&freezer_lock);
->  
-> -		if (!(current->flags & PF_FROZEN))
-> +		if (!(current->state & TASK_FROZEN))
->  			break;
->  		was_frozen = true;
->  		schedule();
-> @@ -148,8 +145,7 @@ void __thaw_task(struct task_struct *p)
->  	 * refrigerator.
->  	 */
->  	spin_lock_irqsave(&freezer_lock, flags);
-> -	if (frozen(p))
-> -		wake_up_process(p);
-> +	try_to_wake_up(p, TASK_FROZEN, 0);
->  	spin_unlock_irqrestore(&freezer_lock, flags);
->  }
-
-Should work I suppose... I'm not entirely sure why that's a PF to begin
-with.
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index 38a07cc..84be175 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -13,7 +13,7 @@
+ #include <linux/version.h>
+ 
+ /* Simplified build-specific string for starting entropy. */
+-static const char *build_str = UTS_RELEASE " (" LINUX_COMPILE_BY "@"
++static const char build_str[] = UTS_RELEASE " (" LINUX_COMPILE_BY "@"
+ 		LINUX_COMPILE_HOST ") (" LINUX_COMPILER ") " UTS_VERSION;
+ 
+ #define I8254_PORT_CONTROL	0x43
