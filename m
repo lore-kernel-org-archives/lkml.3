@@ -1,41 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab3KLNuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 08:50:11 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37178 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521Ab3KLNuG (ORCPT
+	id S1755450Ab3KLNyY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 08:54:24 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:49993 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752521Ab3KLNyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 08:50:06 -0500
-Date: Tue, 12 Nov 2013 14:50:04 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org,
-        cody@linux.vnet.ibm.com, schwidefsky@de.ibm.com, utz.bacher@de.ibm.com,
-        mmarek@suse.cz, rmallon@gmail.com, jsvogt@de.ibm.com,
-        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de
-Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v4)
-Message-ID: <20131112135004.GA31957@amd.pavel.ucw.cz>
-References: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com>
+	Tue, 12 Nov 2013 08:54:08 -0500
+From: <srinivas.kandagatla@st.com>
+To: <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <stephen.gallimore@st.com>,
+        <linux-kernel@vger.kernel.org>, <kernel@stlinux.com>,
+        <linux-pm@vger.kernel.org>
+Subject: [PATCH RFC 00/10] ARM: STi: Add dwmac glue and reset controller
+Date: Tue, 12 Nov 2013 13:51:51 +0000
+Message-ID: <1384264311-7308-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Originating-IP: [10.65.51.59]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-> The GenWQE device is a PCIe card used to acclerate different tasks.
-> Since it is configurable, it can be adjusted to different purposes.
-> Our initial task for the card is to do zlib style compression/decompression
-> RFC1950, RFC1951, and RFC1952.
+Hi All,
 
-Is it similar to the Intel's Xeon Phi? They basically many-core have
-computer on PCI card...
+This patch series adds Ethernet support to STi series SOCs STiH415 and STiH416.
+STi SOC series integrates dwmac IP from synopsis, however there is a hardware
+glue on top of this standard IP, this glue needs to configured before the
+actual dwmac can be used.
+To add this a new driver dwmac-sti is introduced whose responsibility is to
+configure dwmac glue and before dwmac driver, this is achieved by making dwmac
+device node as child to ethernet glue node. Inspired by usb/dwc3.
+Also the glue needs to come out of softreset which is why we have added a
+softreset controller to driver which looked perfectly neat, rather then
+driving the softreset bit from the glue driver.
+
+Also as part of power management in glue driver, I found that there was no
+function to determine if the child device is a wakeup source or not.
+I have added a new api device_child_may_wakeup API which could be useful for
+drivers like this. "PM / wakeup : Introduce device_child_may_wakeup" patch has
+that new API and "net: stmmac:sti: Add STi SOC glue driver." glue driver uses
+this new API.
+
+The reason for combining all these patches in a same series is because of
+dependencies.
+
+This patch series is tested on B2000 and B2020 boards with STiH415, STiH416
+SOC on ethernet 100/1000 Links.
+
+Comments?
+
+Thanks,
+srini
+
+Srinivas Kandagatla (6):
+  drivers: reset: stih415: add softreset controller
+  drivers: reset: stih416: add softreset controller
+  PM / wakeup : Introduce device_child_may_wakeup
+  net: stmmac:sti: Add STi SOC glue driver.
+  ARM: STi: Add STiH415 ethernet support.
+  ARM: STi: Add STiH416 ethernet support.
+
+Stephen Gallimore (4):
+  drivers: reset: STi SoC system configuration reset controller support
+  drivers: reset: Reset controller driver for STiH415
+  drivers: reset: Reset controller driver for STiH416
+  ARM: STi: Add reset controller support to mach-sti Kconfig
+
+ .../devicetree/bindings/net/sti-dwmac.txt          |   45 +++
+ .../devicetree/bindings/reset/st,sti-powerdown.txt |   46 +++
+ .../devicetree/bindings/reset/st,sti-softreset.txt |   45 +++
+ arch/arm/boot/dts/stih415-clock.dtsi               |   14 +
+ arch/arm/boot/dts/stih415-pinctrl.dtsi             |   82 ++++++
+ arch/arm/boot/dts/stih415.dtsi                     |   67 +++++
+ arch/arm/boot/dts/stih416-clock.dtsi               |   14 +
+ arch/arm/boot/dts/stih416-pinctrl.dtsi             |  106 +++++++
+ arch/arm/boot/dts/stih416.dtsi                     |   69 +++++
+ arch/arm/boot/dts/stih41x-b2000.dtsi               |   32 +++
+ arch/arm/boot/dts/stih41x-b2020.dtsi               |   33 +++
+ arch/arm/mach-sti/Kconfig                          |    3 +
+ drivers/base/power/wakeup.c                        |   23 ++
+ drivers/net/ethernet/stmicro/stmmac/Makefile       |    1 +
+ drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c    |  294 ++++++++++++++++++++
+ drivers/reset/Kconfig                              |    2 +
+ drivers/reset/Makefile                             |    3 +
+ drivers/reset/sti/Kconfig                          |   15 +
+ drivers/reset/sti/Makefile                         |    4 +
+ drivers/reset/sti/reset-stih415.c                  |   99 +++++++
+ drivers/reset/sti/reset-stih416.c                  |  101 +++++++
+ drivers/reset/sti/reset-syscfg.c                   |  186 ++++++++++++
+ drivers/reset/sti/reset-syscfg.h                   |   69 +++++
+ .../dt-bindings/reset-controller/stih415-resets.h  |   23 ++
+ .../dt-bindings/reset-controller/stih416-resets.h  |   25 ++
+ include/linux/pm_wakeup.h                          |    1 +
+ 26 files changed, 1402 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/sti-dwmac.txt
+ create mode 100644 Documentation/devicetree/bindings/reset/st,sti-powerdown.txt
+ create mode 100644 Documentation/devicetree/bindings/reset/st,sti-softreset.txt
+ create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
+ create mode 100644 drivers/reset/sti/Kconfig
+ create mode 100644 drivers/reset/sti/Makefile
+ create mode 100644 drivers/reset/sti/reset-stih415.c
+ create mode 100644 drivers/reset/sti/reset-stih416.c
+ create mode 100644 drivers/reset/sti/reset-syscfg.c
+ create mode 100644 drivers/reset/sti/reset-syscfg.h
+ create mode 100644 include/dt-bindings/reset-controller/stih415-resets.h
+ create mode 100644 include/dt-bindings/reset-controller/stih416-resets.h
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.6.5
+
