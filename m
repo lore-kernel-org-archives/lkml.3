@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759455Ab3KMQSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 11:18:39 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:36174 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757003Ab3KMQSh (ORCPT
+	id S1759527Ab3KMQTv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 11:19:51 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:55624 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756252Ab3KMQTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 11:18:37 -0500
-Date: Wed, 13 Nov 2013 08:18:29 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Matthew Whitehead <tedheadster@gmail.com>, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org, mwhitehe@redhat.com
-Subject: Re: nohz problem with idle time on old hardware
-Message-ID: <20131113161829.GE4138@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131113113927.GA13875@mwhitehe.csb>
- <alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de>
- <20131113102153.5f10e6b5@gandalf.local.home>
- <20131113103134.5b8cf02f@gandalf.local.home>
- <20131113105737.3f7a0b1b@gandalf.local.home>
- <alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
- <20131113111257.482c2955@gandalf.local.home>
+	Wed, 13 Nov 2013 11:19:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131113111257.482c2955@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111316-8236-0000-0000-000003BE99AB
+In-Reply-To: <87vbzwl307.fsf@linaro.org>
+References: <1384297710-29694-1-git-send-email-nm@ti.com>
+	<20131113125149.GB28192@saruman.home>
+	<52839306.7050701@ti.com>
+	<87vbzwl307.fsf@linaro.org>
+Date: Wed, 13 Nov 2013 10:19:46 -0600
+X-Google-Sender-Auth: VB25XxnrXSnKewFYWPdbBsajvy0
+Message-ID: <CAGo_u6q69_uOaps8=+hA1xXgVz75trK6u3oXQyvWNOrO_DK8rg@mail.gmail.com>
+Subject: Re: [PATCH V2] ARM: OMAP2+: omap_device: maintain sane runtime pm
+ status around suspend/resume
+From: Nishanth Menon <nm@ti.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: balbi@ti.com, Tony Lindgren <tony@atomide.com>,
+        Paul Walmsley <paul@pwsan.com>, Rajendra Nayak <rnayak@ti.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 11:12:57AM -0500, Steven Rostedt wrote:
-> On Wed, 13 Nov 2013 17:07:18 +0100 (CET)
-> Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
-> 
-> > Right. It's telling you if NOHZ is enabled. It's not telling you that
-> > NOHZ is active.
-> 
-> Yeah, which makes this code rather silly:
-> 
-> in rcu_prepare_for_idle():
-> 
-> 	/* Handle nohz enablement switches conservatively. */
-> 	tne = ACCESS_ONCE(tick_nohz_enabled);
-> 	if (tne != rdtp->tick_nohz_enabled_snap) {
-> 		if (rcu_cpu_has_callbacks(cpu, NULL))
-> 			invoke_rcu_core(); /* force nohz to see update. */
-> 		rdtp->tick_nohz_enabled_snap = tne;
-> 		return;
-> 	}
+On Wed, Nov 13, 2013 at 9:45 AM, Kevin Hilman <khilman@linaro.org> wrote:
+> Nishanth Menon <nm@ti.com> writes:
+>
+>> On 11/13/2013 06:51 AM, Felipe Balbi wrote:
+>>> Hi,
+>>>
+>>> On Tue, Nov 12, 2013 at 05:08:30PM -0600, Nishanth Menon wrote:
+>>>> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+>>>> index b69dd9a..f97b34b 100644
+>>>> --- a/arch/arm/mach-omap2/omap_device.c
+>>>> +++ b/arch/arm/mach-omap2/omap_device.c
+>>>> @@ -621,6 +621,7 @@ static int _od_suspend_noirq(struct device *dev)
+>>>>
+>>>>     if (!ret && !pm_runtime_status_suspended(dev)) {
+>>>>             if (pm_generic_runtime_suspend(dev) == 0) {
+>>>> +                   pm_runtime_set_suspended(dev);
+>>>
+>>> don't you have to disable pm_runtime around status changes ? Or is
+>>> pm_runtime already disabled by the time we get here ?
+>>
+>> pm_runtime is already disabled by the time no_irq suspend is invoked.
+>>
+>>>
+>>>> @@ -634,10 +635,10 @@ static int _od_resume_noirq(struct device *dev)
+>>>>     struct platform_device *pdev = to_platform_device(dev);
+>>>>     struct omap_device *od = to_omap_device(pdev);
+>>>>
+>>>> -   if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+>>>> -       !pm_runtime_status_suspended(dev)) {
+>>>> +   if (od->flags & OMAP_DEVICE_SUSPENDED) {
+>>>>             od->flags &= ~OMAP_DEVICE_SUSPENDED;
+>>>>             omap_device_enable(pdev);
+>>>> +           pm_runtime_set_active(dev);
+>>>
+>>> ditto, also pm_runtime_set_active() may fail.
+>>>
+>> again, pm_runtime is not yet active here yet - we just restore the pm
+>> runtime state with which we went down with -> and that is not expected
+>> to fail either - So, how about just adding a WARN if our expectation
+>> of balanced operation was somehow broken in the future with changes to
+>> runtime framework?
+>
+> And also a note in the changelog (or comment at the WARN) about the
+> assumption that runtime PM is disabled at this point.
 
-OK, what should I be checking instead?  Not much point in trying to
-get RCU out of the way of disabling the scheduling-clock interrupt
-if NOHZ is disabled.  ;-)
+Ofcourse. will do.
 
-							Thanx, Paul
-
+--
+Regards,
+Nishanth Menon
