@@ -1,141 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759652Ab3KMRSm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 12:18:42 -0500
-Received: from mail-qc0-f201.google.com ([209.85.216.201]:35658 "EHLO
-	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757440Ab3KMRSf (ORCPT
+	id S1759620Ab3KMRUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 12:20:32 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:51397 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751594Ab3KMRUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 12:18:35 -0500
-From: Sameer Nanda <snanda@chromium.org>
-To: akpm@linux-foundation.org, mhocko@suse.cz, rientjes@google.com,
-        hannes@cmpxchg.org, rusty@rustcorp.com.au, semenzato@google.com,
-        murzin.v@gmail.com, oleg@redhat.com, dserrg@gmail.com,
-        msb@chromium.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sameer Nanda <snanda@chromium.org>
-Subject: [PATCH v6] mm, oom: Fix race when selecting process to kill
-Date: Wed, 13 Nov 2013 09:18:13 -0800
-Message-Id: <1384363093-8025-1-git-send-email-snanda@chromium.org>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <CANMivWaXE=bn4fhvGdz3cPwN+CZpWwrWqmU1BKX8o+vE2JawOw@mail.gmail.com>
-References: <CANMivWaXE=bn4fhvGdz3cPwN+CZpWwrWqmU1BKX8o+vE2JawOw@mail.gmail.com>
+	Wed, 13 Nov 2013 12:20:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <5283A000.8090007@gmail.com>
+References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
+	<1384285347-13506-15-git-send-email-geert@linux-m68k.org>
+	<5283A000.8090007@gmail.com>
+Date: Wed, 13 Nov 2013 18:20:21 +0100
+X-Google-Sender-Auth: mLsJ0-T4n-aLvx_WkAG7duO_FGo
+Message-ID: <CAMuHMdU6Lqup-MuAOH0iTg16b-SHw4D52WsoPXMsumOxQWbJrg@mail.gmail.com>
+Subject: Re: [PATCH 14/17] dt: Consolidate __dtb_start declarations in <linux/of_fdt.h>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
+        Chris Zankel <chris@zankel.net>, Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The selection of the process to be killed happens in two spots:
-first in select_bad_process and then a further refinement by
-looking for child processes in oom_kill_process. Since this is
-a two step process, it is possible that the process selected by
-select_bad_process may get a SIGKILL just before oom_kill_process
-executes. If this were to happen, __unhash_process deletes this
-process from the thread_group list. This results in oom_kill_process
-getting stuck in an infinite loop when traversing the thread_group
-list of the selected process.
+On Wed, Nov 13, 2013 at 4:51 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On Tue, Nov 12, 2013 at 1:42 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> The different architectures used their own (and different) declarations:
+>>
+>>     extern struct boot_param_header __dtb_start;
+>>     extern u32 __dtb_start[];
+>>     extern char __dtb_start[];
+>>
+>> Consolidate them using the first variant in <linux/of_fdt.h>.
+>> This requires adding a few "address of" operators on architectures where
+>> __dtb_start was an array before.
+>>
+>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> Cc: Vineet Gupta <vgupta@synopsys.com>
+>> Cc: James Hogan <james.hogan@imgtec.com>
+>> Cc: Ralf Baechle <ralf@linux-mips.org>
+>> Cc: Jonas Bonn <jonas@southpole.se>
+>> CC: Chris Zankel <chris@zankel.net>
+>> Cc: Rob Herring <rob.herring@calxeda.com>
+>> Cc: devicetree@vger.kernel.org
+>> ---
+>>  arch/arc/include/asm/sections.h             |    1 -
+>>  arch/arc/kernel/setup.c                     |    2 +-
+>>  arch/metag/kernel/setup.c                   |    6 +-----
+>>  arch/mips/include/asm/mips-boards/generic.h |    4 ----
+>>  arch/mips/lantiq/prom.h                     |    2 --
+>>  arch/mips/netlogic/xlp/dt.c                 |    4 ++--
+>>  arch/mips/ralink/of.c                       |    2 --
+>>  arch/openrisc/kernel/setup.c                |    2 +-
+>>  arch/openrisc/kernel/vmlinux.h              |    2 --
+>>  arch/xtensa/kernel/setup.c                  |    3 +--
+>>  include/linux/of_fdt.h                      |    3 +++
+>>  11 files changed, 9 insertions(+), 22 deletions(-)
+>
+> This is great, but I would like to see this taken one step further and
+> move the selection logic into the core code. We can try to use the
+> built-in dtb if early_init_dt_scan is passed a NULL or invalid dtb. This
+> should work for most arches I think and still allows an arch to do a
+> different selection algorithm if desired.
 
-Fix this race by adding a pid_alive check for the selected process
-with tasklist_lock held in oom_kill_process.
+Yes, that makes sense.
 
-Signed-off-by: Sameer Nanda <snanda@chromium.org>
----
- include/linux/sched.h |  5 +++++
- mm/oom_kill.c         | 34 +++++++++++++++++++++-------------
- 2 files changed, 26 insertions(+), 13 deletions(-)
+> Are the DT related patches dependent on the rest of the series?
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e27baee..8975dbb 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2156,6 +2156,11 @@ extern bool current_is_single_threaded(void);
- #define do_each_thread(g, t) \
- 	for (g = t = &init_task ; (g = t = next_task(g)) != &init_task ; ) do
- 
-+/*
-+ * Careful: while_each_thread is not RCU safe. Callers should hold
-+ * read_lock(tasklist_lock) across while_each_thread loops.
-+ */
-+
- #define while_each_thread(g, t) \
- 	while ((t = next_thread(t)) != g)
- 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 6738c47..0d1f804 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -412,31 +412,33 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
- 					      DEFAULT_RATELIMIT_BURST);
- 
-+	if (__ratelimit(&oom_rs))
-+		dump_header(p, gfp_mask, order, memcg, nodemask);
-+
-+	task_lock(p);
-+	pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
-+		message, task_pid_nr(p), p->comm, points);
-+	task_unlock(p);
-+
-+	read_lock(&tasklist_lock);
-+
- 	/*
- 	 * If the task is already exiting, don't alarm the sysadmin or kill
- 	 * its children or threads, just set TIF_MEMDIE so it can die quickly
- 	 */
--	if (p->flags & PF_EXITING) {
-+	if (p->flags & PF_EXITING || !pid_alive(p)) {
- 		set_tsk_thread_flag(p, TIF_MEMDIE);
- 		put_task_struct(p);
-+		read_unlock(&tasklist_lock);
- 		return;
- 	}
- 
--	if (__ratelimit(&oom_rs))
--		dump_header(p, gfp_mask, order, memcg, nodemask);
--
--	task_lock(p);
--	pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
--		message, task_pid_nr(p), p->comm, points);
--	task_unlock(p);
--
- 	/*
- 	 * If any of p's children has a different mm and is eligible for kill,
- 	 * the one with the highest oom_badness() score is sacrificed for its
- 	 * parent.  This attempts to lose the minimal amount of work done while
- 	 * still freeing memory.
- 	 */
--	read_lock(&tasklist_lock);
- 	do {
- 		list_for_each_entry(child, &t->children, sibling) {
- 			unsigned int child_points;
-@@ -456,12 +458,17 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 			}
- 		}
- 	} while_each_thread(p, t);
--	read_unlock(&tasklist_lock);
- 
--	rcu_read_lock();
- 	p = find_lock_task_mm(victim);
-+
-+	/*
-+	 * Since while_each_thread is currently not RCU safe, this unlock of
-+	 * tasklist_lock may need to be moved further down if any additional
-+	 * while_each_thread loops get added to this function.
-+	 */
-+	read_unlock(&tasklist_lock);
-+
- 	if (!p) {
--		rcu_read_unlock();
- 		put_task_struct(victim);
- 		return;
- 	} else if (victim != p) {
-@@ -487,6 +494,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	 * That thread will now get access to memory reserves since it has a
- 	 * pending fatal signal.
- 	 */
-+	rcu_read_lock();
- 	for_each_process(p)
- 		if (p->mm == mm && !same_thread_group(p, victim) &&
- 		    !(p->flags & PF_KTHREAD)) {
--- 
-1.8.4.1
+Not really. There may be small rejects if you apply it out-of-order,
+but nothing serious.
 
+> Something like this is what I have in mind:
+>
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index 5c47910..723f854d 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -869,14 +869,16 @@ void * __init __weak
+> early_init_dt_alloc_memory_arch(u64 size, u64 align)
+>
+>  bool __init early_init_dt_scan(void *params)
+>  {
+> -       if (!params)
+> -               return false;
+> -
+>         /* Setup flat device-tree pointer */
+>         initial_boot_params = params;
+>
+> +       if (!initial_boot_params ||
+> +           (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER))
+> +               initial_boot_params = &__dtb_start;
+> +
+>         /* check device tree validity */
+> -       if (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER) {
+> +       if (!initial_boot_params ||
+
+initial_boot_params cannot be NULL here, so no need to check.
+
+> +           (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER)) {
+
+However, if __dtb_end == __dtb_start, you may be reading random
+data here from the next section. The OF_DT_HEADER check should cover
+this, but better safe than sorry?
+
+>                 initial_boot_params = NULL;
+>                 return false;
+>         }
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
