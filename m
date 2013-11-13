@@ -1,108 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759424Ab3KMPQV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 10:16:21 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30724 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755347Ab3KMPQQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 10:16:16 -0500
+	id S1759431Ab3KMPQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 10:16:53 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46999 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755546Ab3KMPQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 10:16:50 -0500
+Date: Wed, 13 Nov 2013 09:16:46 -0600
+From: Nishanth Menon <nm@ti.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [RFC PATCH] cpufreq: cpufreq-cpu0: do not allow transitions with
+ regulators suspended
+Message-ID: <20131113151645.GA17828@kahuna>
+References: <1382638087-32054-1-git-send-email-nm@ti.com>
+ <CAKohponJOOfGX4BHn76LTBDTm58+2QxPf_rv1i4avVfrWhfkRg@mail.gmail.com>
+ <52824522.7020401@ti.com>
+ <CAKohpomB=wnct88wrTvW-qixLQPQGjVrCVF3V-BSbY7mhsSYQg@mail.gmail.com>
 MIME-Version: 1.0
-Message-ID: <23964ca1-e7cb-41c3-9da2-5bc1b2b0c014@default>
-Date: Wed, 13 Nov 2013 07:16:10 -0800 (PST)
-From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-To: Josh Hunt <joshhunt00@gmail.com>, David Miller <davem@davemloft.net>
-Cc: jjolly@suse.com, LKML <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: RE: [PATCH] rds: Error on offset mismatch if not loopback
-References: <20120921213239.GJ14393@linux-tkdk.sfcn.org>
- <20120922.152524.1294103117346567757.davem@davemloft.net>
- <CAKA=qzac9=UhLF_Z4FnnH+sR7xvkDux4oayC6dPYe=hMLsDxRg@mail.gmail.com>
- <CAKA=qzYpd7Wo9XdU16TEhnbm5dPJjOZMhAY1jA7N+YFBWz5pzw@mail.gmail.com>
-In-Reply-To: <CAKA=qzYpd7Wo9XdU16TEhnbm5dPJjOZMhAY1jA7N+YFBWz5pzw@mail.gmail.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.8  (707110) [OL
- 12.0.6680.5000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAKohpomB=wnct88wrTvW-qixLQPQGjVrCVF3V-BSbY7mhsSYQg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11:19-20131113, Viresh Kumar wrote:
+> On 12 November 2013 20:41, Nishanth Menon <nm@ti.com> wrote:
+> > On 11/12/2013 12:03 AM, Viresh Kumar wrote:
+[...]
+> >> Can you try attached patch? I will then repost it formally...
+> >
+> > I tried a equivalent of this for v3.12 tag:
+[..]
+> > @@ -1252,7 +1252,7 @@ static int __cpufreq_remove_dev_finish(struct
+> > device *dev,
+> >
+> >         /* If cpu is last user of policy, free policy */
+> >         if (cpus == 1) {
+> > -               if (cpufreq_driver->target) {
+> > +               if (cpufreq_driver->target && !frozen) {
+> >                         ret = __cpufreq_governor(policy,
+> >                                         CPUFREQ_GOV_POLICY_EXIT);
+> 
+> This is not an equivalent of my patch :)
+
+arrgh, my bad.. Apologies for the bad one.. I missed it :( Does the following
+look equivalent?
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 04548f7..a9847ce 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1186,7 +1186,7 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (cpufreq_driver->target) {
++	if (cpufreq_driver->target && (!frozen || policy->governor_enabled)) {
+ 		ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+ 		if (ret) {
+ 			pr_err("%s: Failed to stop governor\n", __func__);
+@@ -1295,7 +1295,7 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
+ 		if (!frozen)
+ 			cpufreq_policy_free(policy);
+ 	} else {
+-		if (cpufreq_driver->target) {
++		if (cpufreq_driver->target && !frozen) {
+ 			if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
+ 					(ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
+ 				pr_err("%s: Failed to start governor\n",
 
 
------Original Message-----
-From: Josh Hunt [mailto:joshhunt00@gmail.com] 
-Sent: Tuesday, November 12, 2013 10:25 PM
-To: David Miller
-Cc: jjolly@suse.com; LKML; Venkat Venkatsubra; netdev@vger.kernel.org
-Subject: Re: [PATCH] rds: Error on offset mismatch if not loopback
+With this, I now see:
+wakeup from "mem" at Sat Jan  1 00:17:45 2000
+[   40.823352] PM: Syncing filesystems ... done.
+[   40.848058] Freezing user space processes ... (elapsed 0.002 seconds) done.
+[   40.857869] Freezing remaining freezable tasks ... (elapsed 0.002 seconds) done.
+[   40.884567] smsc95xx 1-3:1.0 eth0: entering SUSPEND2 mode
+[   40.955323] PM: suspend of devices complete after 81.563 msecs
+[   40.967333] PM: late suspend of devices complete after 5.789 msecs
+[   40.981182] PM: noirq suspend of devices complete after 7.274 msecs
+[   40.988005] Disabling non-boot CPUs ...
+[   41.000297] CPU1: shutdown
+[   43.169193] Powerdomain (core_pwrdm) didn't enter target state 1
+[   43.175681] Powerdomain (emu_pwrdm) didn't enter target state 1
+[   43.182097] Powerdomain (l3init_pwrdm) didn't enter target state 1
+[   43.188762] Could not enter target state in pm_suspend
+[   43.194298] A possible cause could be an old bootloader - try u-boot >= v2012.07
+[   43.203291] Enabling non-boot CPUs ...
+[   43.210398] CPU1: Booted secondary processor
+[   43.212714] cpufreq: cpufreq_add_policy_cpu: Failed to stop governor
+^^^ ??
+[   43.224252] CPU1 is up
+[   43.248114] PM: noirq resume of devices complete after 21.329 msecs
+[   43.260582] PM: early resume of devices complete after 4.201 msecs
+[   43.623307] ata1: SATA link down (SStatus 0 SControl 300)
+[   44.006234] PM: resume of devices complete after 742.501 msecs
+[   44.020163] Restarting tasks ... done.
 
-On Tue, Nov 12, 2013 at 10:22 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
-> On Sat, Sep 22, 2012 at 2:25 PM, David Miller <davem@davemloft.net> wrote:
->>
->> From: John Jolly <jjolly@suse.com>
->> Date: Fri, 21 Sep 2012 15:32:40 -0600
->>
->> > Attempting an rds connection from the IP address of an IPoIB 
->> > interface to itself causes a kernel panic due to a BUG_ON() being triggered.
->> > Making the test less strict allows rds-ping to work without 
->> > crashing the machine.
->> >
->> > A local unprivileged user could use this flaw to crash the system.
->> >
->> > Signed-off-by: John Jolly <jjolly@suse.com>
->>
->> Besides the questions being asked of you by Venkat Venkatsubra, this 
->> patch has another issue.
->>
->> It has been completely corrupted by your email client, it has turned 
->> all TAB characters into spaces, making the patch useless.
->>
->> Please learn how to send a patch unmolested in the body of your 
->> email.  Test it by emailing the patch to yourself, and verifying that 
->> you can in fact apply the patch you receive in that email.
->> Then, and only then, should you consider making a new submission of 
->> this patch.
->>
->> Use Documentation/email-clients.txt for guidance.
->> --
->> To unsubscribe from this list: send the line "unsubscribe 
->> linux-kernel" in the body of a message to majordomo@vger.kernel.org 
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
-> I think this issue was lost in the shuffle. It appears that redhat, 
-> ubuntu, and oracle are maintaining local patches to resolve this:
->
-> https://oss.oracle.com/git/?p=redpatch.git;a=commit;h=c7b6a0a1d8d63685
-> 2be130fa15fa8be10d4704e8
-> https://bugzilla.redhat.com/show_bug.cgi?id=822754
-> http://ubuntu.5.x6.nabble.com/CVE-2012-2372-RDS-local-ping-DOS-td49853
-> 88.html
->
-> Given that Oracle has applied it I'll make the assumption that 
-> Venkat's question was answered at some point.
->
-> David - I can resubmit the patch with the proper signed-off-by and 
-> formatting if you are willing to apply it unless John wants to try 
-> again. I think it's time this got upstream.
->
-> --
-> Josh
-
-Ugh.. hopefully resending with all the html crap removed...
-
---
-Josh
-
-Hi Josh,
-
-No, I still didn't get an answer for how "off" could be non-zero in case of rds-ping to hit BUG_ON(off % RDS_FRAG_SIZE).
-Because, rds-ping uses zero byte messages to ping.
-If you have a test case that reproduces the kernel panic I can try it out and see how that can happen.
-The Oracle's internal code I checked doesn't have that patch applied.
-
-Venkat
+but, yes, the patch does squelch the warning I saw.
+-- 
+Regards,
+Nishanth Menon
