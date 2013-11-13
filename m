@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab3KMKgm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 05:36:42 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51234 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab3KMKgj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 05:36:39 -0500
-Date: Wed, 13 Nov 2013 11:36:32 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL] clockevents/clocksource: 3.12 fixes
-Message-ID: <20131113103632.GV14892@pengutronix.de>
-References: <528234B9.7080402@linaro.org>
- <20131112183553.GQ14892@pengutronix.de>
- <alpine.DEB.2.02.1311122316270.30673@ionos.tec.linutronix.de>
+	id S1758568Ab3KMKhL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 05:37:11 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:26158 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756833Ab3KMKg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 05:36:57 -0500
+X-IronPort-AV: E=Sophos;i="4.93,691,1378857600"; 
+   d="scan'208";a="73952297"
+Message-ID: <52835646.5040907@citrix.com>
+Date: Wed, 13 Nov 2013 10:36:54 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.DEB.2.02.1311122316270.30673@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: <xen-devel@lists.xen.org>, Matt Wilson <msw@amazon.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Roger Pau Monne <roger.pau@citrix.com>, <linux-kernel@vger.kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Anthony Liguori <aliguori@amazon.com>
+Subject: Re: [PATCH] xen-gnttab: do not add m2p override entries for blkback
+ mappings
+References: <1384307336-5328-1-git-send-email-anthony@codemonkey.ws>
+In-Reply-To: <1384307336-5328-1-git-send-email-anthony@codemonkey.ws>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-
-On Tue, Nov 12, 2013 at 11:57:46PM +0100, Thomas Gleixner wrote:
-> The whole misery starts that you decided to play maintainer and grab
-> some patches from the mailinglist and then offering them via a pull
-> request to me and others. Finally you tricked Daniel to take them,
->From my POV this isn't "playing maintainer". You stopped reacting on the
-issue and I thought I make it easier for you (and others) to handle the
-patches in case you didn't take because of being busy with other stuff.
-
-> which is a different issue.
+On 13/11/13 01:48, Anthony Liguori wrote:
+> From: Anthony Liguori <aliguori@amazon.com>
 > 
-> There is a reason why I ignored that pull request:
+> Commit 5dc03639 switched blkback to also add m2p override entries
+> when mapping grant pages but history seems to have forgotten why
+> this is useful if it ever was.
 > 
->  I generally do not pull git trees from people who I'm not
->  trusting. And I have good reasons not to trust you at all.
+> The blkback driver does not need m2p override entries to exist
+> and there is significant overhead due to the locking in the m2p
+> override table.  We see about a 10% improvement in IOP rate with
+> this patch applied running FIO in the guest.
 > 
-> Aside of that, I decided to give you a chance and actually pulled
-> your tree into a temporary branch and found out that it's missing a
-> stable annotation. Which made the whole exercise go into /dev/null
-I didn't add that stable annotation because I didn't want to add it
-without you being ok with it. And actually it's easy to get a patch into
-stable that isn't annotated. The other way round is harder.
- 
-> Now Linus pulled my version way before Daniel pulled your tree into
-> his. And you even commented on my commit that I forgot to add a
-> tested-by tag. Yes, I missed that in favour of the stable annotation.
-> 
-> But instead of rebasing your tree or even just withdrawing it and
-> resending the at91 patch, you let Daniel pull your thing.
-To be fair Daniel said to take my pull request a few days before your
-tip-bot told me that you finally took the patch. I could argue that it
-was your turn to tell Daniel that you took a part of the patches that
-were in my pull request. (But I don't as the situation it handled now
-and even if not, the only bad thing that would have happend is that
-another patch is duplicated in the history. shrug)
+> See http://article.gmane.org/gmane.linux.kernel/1590932 for a full
+> analysis of current users.
 
-Best regards
-Uwe
+I think it would be better if it was made clearer what
+m2p_add/remove_override() is for (i.e., allowing get_user_pages_fast()
+to work) so there isn't this confusion in the future.  Please add some
+comments for this and move the calls into the gntdev driver.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+In the future I would like to see the grant map/unmap done in
+m2p_add/remove_override() moved into gntdev as well, but this isn't a
+requirement for this performance fix.
+
+As a prerequiste, the call to dma_mark_clean() in xen_swiotlb_unmap()
+needs to be removed and replaced with a comment explaining why this now
+differs from the generic implementation.  i.e., the necessary
+phys_to_virt() will not work for foreign pages and dma_mark_clean() is a
+nop on all Xen supported architectures.
+
+David
