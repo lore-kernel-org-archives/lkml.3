@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895Ab3KMR0h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 12:26:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52936 "EHLO
+	id S1758961Ab3KMR06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 12:26:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52933 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757859Ab3KMR01 (ORCPT
+	with ESMTP id S1755997Ab3KMR0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 12:26:27 -0500
-Date: Wed, 13 Nov 2013 09:25:51 -0800
-From: tip-bot for Michal Nazarewicz <tipbot@zytor.com>
-Message-ID: <tip-85b088e934b9943322bfe37077289ae60f1b3414@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, bsegall@google.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        mina86@mina86.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, bsegall@google.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        mina86@mina86.com
-In-Reply-To: <1384112521-25177-1-git-send-email-mpn@google.com>
-References: <1384112521-25177-1-git-send-email-mpn@google.com>
+	Wed, 13 Nov 2013 12:26:23 -0500
+Date: Wed, 13 Nov 2013 09:25:41 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-911b2898b3c9fe0048e9485ad1629ed4fce330fd@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, pjt@google.com, peterz@infradead.org,
+        akpm@linux-foundation.org, tglx@linutronix.de,
+        kosaki.motohiro@jp.fujitsu.com, lwoodman@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, pjt@google.com,
+        akpm@linux-foundation.org, tglx@linutronix.de,
+        kosaki.motohiro@jp.fujitsu.com, lwoodman@redhat.com
+In-Reply-To: <20131111172925.GG26898@twins.programming.kicks-ass.net>
+References: <20131111172925.GG26898@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/fair: Avoid integer overflow
-Git-Commit-ID: 85b088e934b9943322bfe37077289ae60f1b3414
+Subject: [tip:sched/urgent] sched: Optimize task_sched_runtime()
+Git-Commit-ID: 911b2898b3c9fe0048e9485ad1629ed4fce330fd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,44 +31,61 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 13 Nov 2013 09:25:57 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 13 Nov 2013 09:25:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  85b088e934b9943322bfe37077289ae60f1b3414
-Gitweb:     http://git.kernel.org/tip/85b088e934b9943322bfe37077289ae60f1b3414
-Author:     Michal Nazarewicz <mina86@mina86.com>
-AuthorDate: Sun, 10 Nov 2013 20:42:01 +0100
+Commit-ID:  911b2898b3c9fe0048e9485ad1629ed4fce330fd
+Gitweb:     http://git.kernel.org/tip/911b2898b3c9fe0048e9485ad1629ed4fce330fd
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Mon, 11 Nov 2013 18:21:56 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 13 Nov 2013 13:33:55 +0100
+CommitDate: Wed, 13 Nov 2013 13:33:54 +0100
 
-sched/fair: Avoid integer overflow
+sched: Optimize task_sched_runtime()
 
-sa->runnable_avg_sum is of type u32 but after shifting it by NICE_0_SHIFT
-bits it is promoted to u64.  This of course makes no sense, since the
-result will never be more then 32-bit long.  Casting sa->runnable_avg_sum
-to u64 before it is shifted, fixes this problem.
+Large multi-threaded apps like to hit this using do_sys_times() and
+then queue up on the rq->lock.
 
-Reviewed-by: Ben Segall <bsegall@google.com>
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Avoid when possible.
+
+Larry reported ~20% performance increase his test case.
+
+Reported-by: Larry Woodman <lwoodman@redhat.com>
+Suggested-by: Paul Turner <pjt@google.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1384112521-25177-1-git-send-email-mpn@google.com
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20131111172925.GG26898@twins.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/core.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 201be78..e8b652e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2178,7 +2178,7 @@ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
- 	long contrib;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 1deccd7..c180860 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2253,6 +2253,20 @@ unsigned long long task_sched_runtime(struct task_struct *p)
+ 	struct rq *rq;
+ 	u64 ns = 0;
  
- 	/* The fraction of a cpu used by this cfs_rq */
--	contrib = div_u64(sa->runnable_avg_sum << NICE_0_SHIFT,
-+	contrib = div_u64((u64)sa->runnable_avg_sum << NICE_0_SHIFT,
- 			  sa->runnable_avg_period + 1);
- 	contrib -= cfs_rq->tg_runnable_contrib;
- 
++#if defined(CONFIG_64BIT) && defined(CONFIG_SMP)
++	/*
++	 * 64-bit doesn't need locks to atomically read a 64bit value.
++	 * So we have a optimization chance when the task's delta_exec is 0.
++	 * Reading ->on_cpu is racy, but this is ok.
++	 *
++	 * If we race with it leaving cpu, we'll take a lock. So we're correct.
++	 * If we race with it entering cpu, unaccounted time is 0. This is
++	 * indistinguishable from the read occurring a few cycles earlier.
++	 */
++	if (!p->on_cpu)
++		return p->se.sum_exec_runtime;
++#endif
++
+ 	rq = task_rq_lock(p, &flags);
+ 	ns = p->se.sum_exec_runtime + do_task_delta_exec(p, rq);
+ 	task_rq_unlock(rq, p, &flags);
