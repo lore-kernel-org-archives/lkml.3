@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758701Ab3KMHlm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 02:41:42 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:25262 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758640Ab3KMHlN (ORCPT
+	id S1758720Ab3KMHlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 02:41:46 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:23388 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756789Ab3KMHlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 02:41:13 -0500
-X-AuditID: cbfec7f5-b7fe66d00000432e-1e-52832d16eab3
+	Wed, 13 Nov 2013 02:41:24 -0500
+X-AuditID: cbfec7f5-b7fe66d00000432e-1c-52832d16193b
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
@@ -22,85 +22,80 @@ Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 4/4] regulator: max14577: Add regulator driver for Maxim 14577
-Date: Wed, 13 Nov 2013 08:40:57 +0100
-Message-id: <1384328457-5147-5-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 3/4] charger: max14577: Add charger support for Maxim 14577
+Date: Wed, 13 Nov 2013 08:40:56 +0100
+Message-id: <1384328457-5147-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1384328457-5147-1-git-send-email-k.kozlowski@samsung.com>
 References: <1384328457-5147-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrELMWRmVeSWpSXmKPExsVy+t/xa7pius1BBlPaLC0ObtW02DhjPavF
-	1IdP2Cyuf3nOajH/yDlWi4krJzNbHPizg9Hi9QtDi7NNb9gt7n89ymjx7UoHk8XlXXPYLNYe
-	uctucbtxBZvF4RUHmCxOd7M6CHgs+HyF3WNC/ydGj52z7rJ7bF6h5bFpVSebx51re9g85p0M
-	9OjbsorR4/MmuQDOKC6blNSczLLUIn27BK6MLZs3sBc8z6w4OiGpgXFbRBcjJ4eEgInE9Y0f
-	2SFsMYkL99azdTFycQgJLGWU+H+riwnC6WOSWD+hiRGkik3AWGLz8iVgVSIC+5klJl6/zQzi
-	MAscZZR427mLCaRKWMBPYsaka2A2i4CqRMuxhywgNq+Am8SLl/+AujmA9ilIzJlkAxLmFHCX
-	WLqwmw3EFgIqmXr+EtsERt4FjAyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MULC+esOxqXH
-	rA4xCnAwKvHwWsQ0BQmxJpYVV+YeYpTgYFYS4T0g3BwkxJuSWFmVWpQfX1Sak1p8iJGJg1Oq
-	gbFDpkqcf0u367x784RYl3rr6MS/VTsR5lLW3vJs4nYpoZWmet9aVjasX236MUf977ddHzan
-	HmxS3PDhU7Qvx+QJ3k1ecSqa/zR/ZdZP19zmcmj6m1q/wM8vn756y3l2y1JWtdp/7JtuL3sj
-	tWHNy67GriaOc08z+BTOx1cmlrZlzfvcs+nRv51KLMUZiYZazEXFiQDLsdKnRQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrELMWRmVeSWpSXmKPExsVy+t/xa7pius1BBvuv8Voc3KppsXHGelaL
+	qQ+fsFlc//Kc1WL+kXOsFhNXTma2OPBnB6PF6xeGFmeb3rBb3P96lNHi25UOJovLu+awWaw9
+	cpfd4nbjCjaLwysOMFmc7mZ1EPBY8PkKu8eE/k+MHjtn3WX32LxCy2PTqk42jzvX9rB5zDsZ
+	6NG3ZRWjx+dNcgGcUVw2Kak5mWWpRfp2CVwZX9quMBbsj6/Y/OkjYwPjAf8uRk4OCQETiUc7
+	Z7ND2GISF+6tZ+ti5OIQEljKKNH/+SkLhNPHJLF+QhMjSBWbgLHE5uVLwKpEBPYzS0y8fpsZ
+	xGEWOMoo8bZzFxNIlbCAt8SmXX+BEhwcLAKqEgueB4KEeQXcJK5/XwoWlhBQkJgzyQYkzCng
+	LrF0YTcbiC0EVDL1/CW2CYy8CxgZVjGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEhPPXHYxL
+	j1kdYhTgYFTi4bWIaQoSYk0sK67MPcQowcGsJMJ7QLg5SIg3JbGyKrUoP76oNCe1+BAjEwen
+	VAPj9rlXraKLhPXWCO74zaIs1K7vcP/I7tLcCFv960x8fbfu2ZmwnPsRytsXZrrvx4Pn4uc1
+	dpe8Xvib16zsms9XmWcLlxQHW/Uc3XKe14z58Zxt1fHXb/6RO/vv00P1tnXc15Zxf7o1LUtr
+	xSOGe4HnLcpLmf/sMdSesmu7U7VrMdeMC+eZPvE+VmIpzkg01GIuKk4EANTeIPdFAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX14577 chip is a multi-function device which includes MUIC,
-charger and voltage regulator. The driver is located in drivers/mfd.
+MAX14577 chip is a multi-function device which includes MUIC, charger
+and voltage regulator. The driver is located in drivers/mfd.
 
-This patch adds regulator driver for MAX14577 chip. There are two
-regulators in this chip:
-1. Safeout LDO with constant voltage output of 4.9V. It can be only
-   enabled or disabled.
-2. Current regulator for the charger. It provides current from 90mA up
-   to 950mA.
-Driver supports Device Tree.
+This patch supports battery charging control of MAX14577 chip and
+provides power supply class information to userspace.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/regulator/Kconfig    |    7 +
- drivers/regulator/Makefile   |    1 +
- drivers/regulator/max14577.c |  365 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 373 insertions(+)
- create mode 100644 drivers/regulator/max14577.c
+ drivers/power/Kconfig            |    7 +
+ drivers/power/Makefile           |    1 +
+ drivers/power/max14577_charger.c |  327 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 335 insertions(+)
+ create mode 100644 drivers/power/max14577_charger.c
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index ce785f4..11ee053 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -249,6 +249,13 @@ config REGULATOR_LP8788
- 	help
- 	  This driver supports LP8788 voltage regulator chip.
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index e6f92b45..fb789df 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -316,6 +316,13 @@ config CHARGER_MANAGER
+           runtime and in suspend-to-RAM by waking up the system periodically
+           with help of suspend_again support.
  
-+config REGULATOR_MAX14577
-+	tristate "Maxim 14577 regulator"
++config CHARGER_MAX14577
++	tristate "Maxim MAX14577 MUIC battery charger driver"
 +	depends on MFD_MAX14577
 +	help
-+	  This driver controls a Maxim 14577 regulator via I2C bus.
-+	  The regulators include safeout LDO and current regulator 'CHARGER'.
++	  Say Y to enable support for the battery charger control sysfs and
++	  platform data of MAX14577 MUICs.
 +
- config REGULATOR_MAX1586
- 	tristate "Maxim 1586/1587 voltage regulator"
- 	depends on I2C
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 01c597e..654bd43 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -35,6 +35,7 @@ obj-$(CONFIG_REGULATOR_LP872X) += lp872x.o
- obj-$(CONFIG_REGULATOR_LP8788) += lp8788-buck.o
- obj-$(CONFIG_REGULATOR_LP8788) += lp8788-ldo.o
- obj-$(CONFIG_REGULATOR_LP8755) += lp8755.o
-+obj-$(CONFIG_REGULATOR_MAX14577) += max14577.o
- obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
- obj-$(CONFIG_REGULATOR_MAX8649)	+= max8649.o
- obj-$(CONFIG_REGULATOR_MAX8660) += max8660.o
-diff --git a/drivers/regulator/max14577.c b/drivers/regulator/max14577.c
+ config CHARGER_MAX8997
+ 	tristate "Maxim MAX8997/MAX8966 PMIC battery charger driver"
+ 	depends on MFD_MAX8997 && REGULATOR_MAX8997
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index a4b7417..aa30084 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -48,6 +48,7 @@ obj-$(CONFIG_CHARGER_LP8727)	+= lp8727_charger.o
+ obj-$(CONFIG_CHARGER_LP8788)	+= lp8788-charger.o
+ obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
+ obj-$(CONFIG_CHARGER_MANAGER)	+= charger-manager.o
++obj-$(CONFIG_CHARGER_MAX14577)	+= max14577_charger.o
+ obj-$(CONFIG_CHARGER_MAX8997)	+= max8997_charger.o
+ obj-$(CONFIG_CHARGER_MAX8998)	+= max8998_charger.o
+ obj-$(CONFIG_CHARGER_BQ2415X)	+= bq2415x_charger.o
+diff --git a/drivers/power/max14577_charger.c b/drivers/power/max14577_charger.c
 new file mode 100644
-index 0000000..e05c445
+index 0000000..614be6d
 --- /dev/null
-+++ b/drivers/regulator/max14577.c
-@@ -0,0 +1,365 @@
++++ b/drivers/power/max14577_charger.c
+@@ -0,0 +1,327 @@
 +/*
-+ * max14577.c - Regulator driver for the Maxim 14577
++ * max14577_charger.c - Battery charger driver for the Maxim 14577
 + *
 + * Copyright (C) 2013 Samsung Electronics
 + * Krzysztof Kozlowski <k.kozlowski@samsung.com>
@@ -122,347 +117,309 @@ index 0000000..e05c445
 +
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/mfd/max14577.h>
++#include <linux/power_supply.h>
 +#include <linux/mfd/max14577-private.h>
-+#include <linux/regulator/of_regulator.h>
 +
-+struct max14577_regulator {
++struct max14577_charger {
 +	struct device *dev;
-+	struct max14577 *max14577;
-+	int num_regulators;
-+	struct regulator_dev **regulators;
++	struct max14577	*max14577;
++	struct power_supply	charger;
++
++	unsigned int	charging_state;
++	unsigned int	battery_state;
 +};
 +
-+static int max14577_reg_calc_charge_current(struct regmap *rmap)
++static int max14577_get_charger_state(struct max14577_charger *chg)
 +{
-+	u8 reg_data;
-+	max14577_read_reg(rmap, MAX14577_CHG_REG_CHG_CTRL4, &reg_data);
-+
-+	if ((reg_data & CHGCTRL4_MBCICHWRCL_MASK) == 0)
-+		return MAX14577_REGULATOR_CURRENT_LIMIT_MIN;
-+
-+	reg_data = ((reg_data & CHGCTRL4_MBCICHWRCH_MASK) >>
-+			CHGCTRL4_MBCICHWRCH_SHIFT);
-+	return MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START +
-+		reg_data * MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP;
-+}
-+
-+static inline int max14577_reg_set_safeout(struct regmap *rmap, int on)
-+{
-+	u8 reg_data = (on ? 0x1 << CTRL2_SFOUTORD_SHIFT : 0x0);
-+
-+	return max14577_update_reg(rmap, MAX14577_REG_CONTROL2,
-+			CTRL2_SFOUTORD_MASK, reg_data);
-+}
-+
-+static inline int max14577_reg_set_charging(struct regmap *rmap, int on)
-+{
-+	u8 reg_data = (on ? 0x1 << CHGCTRL2_MBCHOSTEN_SHIFT : 0x0);
-+
-+	return max14577_update_reg(rmap, MAX14577_CHG_REG_CHG_CTRL2,
-+			CHGCTRL2_MBCHOSTEN_MASK, reg_data);
-+}
-+
-+static int max14577_reg_is_enabled(struct regulator_dev *rdev)
-+{
-+	int rid = rdev_get_id(rdev);
-+	struct regmap *rmap = rdev->regmap;
++	struct regmap *rmap = chg->max14577->regmap;
++	int state = POWER_SUPPLY_STATUS_DISCHARGING;
 +	u8 reg_data;
 +
-+	switch (rid) {
-+	case MAX14577_CHARGER:
-+		max14577_read_reg(rmap, MAX14577_CHG_REG_CHG_CTRL2, &reg_data);
-+		if ((reg_data & CHGCTRL2_MBCHOSTEN_MASK) == 0)
-+			return 0;
-+		max14577_read_reg(rmap, MAX14577_CHG_REG_STATUS3, &reg_data);
-+		if ((reg_data & STATUS3_CGMBC_MASK) == 0)
-+			return 0;
-+		/* MBCHOSTEN and CGMBC are on */
++	/*
++	 * Charging occurs only if:
++	 *  - CHGCTRL2/MBCHOSTEN == 1
++	 *  - STATUS2/CGMBC == 1
++	 *
++	 * TODO:
++	 *  - handle FULL after Top-off timer (EOC register may be off
++	 *    and the charger won't be charging although MBCHOSTEN is on)
++	 *  - handle properly dead-battery charging (respect timer)
++	 *  - handle timers (fast-charge and prequal) /MBCCHGERR/
++	 */
++	max14577_read_reg(rmap, MAX14577_CHG_REG_CHG_CTRL2, &reg_data);
++	if ((reg_data & CHGCTRL2_MBCHOSTEN_MASK) == 0)
++		goto state_set;
++
++	max14577_read_reg(rmap, MAX14577_CHG_REG_STATUS3, &reg_data);
++	if (reg_data & STATUS3_CGMBC_MASK) {
++		/* Charger or USB-cable is connected */
++		if (reg_data & STATUS3_EOC_MASK)
++			state = POWER_SUPPLY_STATUS_FULL;
++		else
++			state = POWER_SUPPLY_STATUS_CHARGING;
++		goto state_set;
++	}
++
++state_set:
++	chg->charging_state = state;
++	return state;
++}
++
++/*
++ * Supported charge types:
++ *  - POWER_SUPPLY_CHARGE_TYPE_NONE
++ *  - POWER_SUPPLY_CHARGE_TYPE_FAST
++ */
++static int max14577_get_charge_type(struct max14577_charger *chg)
++{
++	/*
++	 * TODO: CHARGE_TYPE_TRICKLE (VCHGR_RC or EOC)?
++	 * As spec says:
++	 * [after reaching EOC interrupt]
++	 * "When the battery is fully charged, the 30-minute (typ)
++	 *  top-off timer starts. The device continues to trickle
++	 *  charge the battery until the top-off timer runs out."
++	 */
++	if (max14577_get_charger_state(chg) == POWER_SUPPLY_STATUS_CHARGING)
++		return POWER_SUPPLY_CHARGE_TYPE_FAST;
++	return POWER_SUPPLY_CHARGE_TYPE_NONE;
++}
++
++static int max14577_get_online(struct max14577_charger *chg)
++{
++	struct regmap *rmap = chg->max14577->regmap;
++	u8 reg_data;
++
++	max14577_read_reg(rmap, MAX14577_MUIC_REG_STATUS2, &reg_data);
++	reg_data = ((reg_data & STATUS2_CHGTYP_MASK) >> STATUS2_CHGTYP_SHIFT);
++	switch (reg_data) {
++	case MAX14577_CHARGER_TYPE_USB:
++	case MAX14577_CHARGER_TYPE_DEDICATED_CHG:
++	case MAX14577_CHARGER_TYPE_SPECIAL_500MA:
++	case MAX14577_CHARGER_TYPE_SPECIAL_1A:
++	case MAX14577_CHARGER_TYPE_DEAD_BATTERY:
 +		return 1;
-+	case MAX14577_SAFEOUT:
-+		max14577_read_reg(rmap, MAX14577_REG_CONTROL2, &reg_data);
-+		return (reg_data & CTRL2_SFOUTORD_MASK) != 0;
++	case MAX14577_CHARGER_TYPE_NONE:
++	case MAX14577_CHARGER_TYPE_DOWNSTREAM_PORT:
++	case MAX14577_CHARGER_TYPE_RESERVED:
 +	default:
-+		return -EINVAL;
++		return 0;
 +	}
 +}
 +
-+static int max14577_reg_enable(struct regulator_dev *rdev)
++/*
++ * Supported health statuses:
++ *  - POWER_SUPPLY_HEALTH_DEAD
++ *  - POWER_SUPPLY_HEALTH_OVERVOLTAGE
++ *  - POWER_SUPPLY_HEALTH_GOOD
++ */
++static int max14577_get_battery_health(struct max14577_charger *chg)
 +{
-+	int rid = rdev_get_id(rdev);
-+
-+	switch (rid) {
-+	case MAX14577_CHARGER:
-+		return max14577_reg_set_charging(rdev->regmap, 1);
-+	case MAX14577_SAFEOUT:
-+		return max14577_reg_set_safeout(rdev->regmap, 1);
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static int max14577_reg_disable(struct regulator_dev *rdev)
-+{
-+	int rid = rdev_get_id(rdev);
-+
-+	switch (rid) {
-+	case MAX14577_CHARGER:
-+		return max14577_reg_set_charging(rdev->regmap, 0);
-+	case MAX14577_SAFEOUT:
-+		return max14577_reg_set_safeout(rdev->regmap, 0);
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static int max14577_reg_get_current_limit(struct regulator_dev *rdev)
-+{
-+	if (rdev_get_id(rdev) != MAX14577_CHARGER)
-+		return -EINVAL;
-+
-+	return max14577_reg_calc_charge_current(rdev->regmap);
-+}
-+
-+static int max14577_reg_set_current_limit(struct regulator_dev *rdev,
-+		int min_uA, int max_uA)
-+{
-+	int i, current_bits = 0xf;
++	struct regmap *rmap = chg->max14577->regmap;
++	int state = POWER_SUPPLY_HEALTH_GOOD;
 +	u8 reg_data;
-+	struct max14577_regulator *max14577 = rdev_get_drvdata(rdev);
 +
-+	if (rdev_get_id(rdev) != MAX14577_CHARGER)
-+		return -EINVAL;
-+
-+	dev_info(max14577->dev, "Requested current <%d, %d>\n", min_uA, max_uA);
-+	if (min_uA > MAX14577_REGULATOR_CURRENT_LIMIT_MAX ||
-+			max_uA < MAX14577_REGULATOR_CURRENT_LIMIT_MIN)
-+		return -EINVAL;
-+
-+	if (max_uA < MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START) {
-+		/* Less than 200 mA, so set 90mA (turn only Low Bit off) */
-+		u8 reg_data = 0x0 << CHGCTRL4_MBCICHWRCL_SHIFT;
-+		dev_info(max14577->dev, "Setting current %d uA\n",
-+				MAX14577_REGULATOR_CURRENT_LIMIT_MIN);
-+		return max14577_update_reg(rdev->regmap,
-+				MAX14577_CHG_REG_CHG_CTRL4,
-+				CHGCTRL4_MBCICHWRCL_MASK, reg_data);
++	max14577_read_reg(rmap, MAX14577_MUIC_REG_STATUS2, &reg_data);
++	reg_data = ((reg_data & STATUS2_CHGTYP_MASK) >> STATUS2_CHGTYP_SHIFT);
++	if (reg_data == MAX14577_CHARGER_TYPE_DEAD_BATTERY) {
++		state = POWER_SUPPLY_HEALTH_DEAD;
++		goto state_set;
 +	}
 +
-+	/* max_uA is in range: <LIMIT_HIGH_START, inifinite>, so search for
-+	 * valid current starting from LIMIT_MAX. */
-+	for (i = MAX14577_REGULATOR_CURRENT_LIMIT_MAX;
-+			i >= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START;
-+			i -= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP) {
-+		if (i <= max_uA)
-+			break;
-+		current_bits--;
++	max14577_read_reg(rmap, MAX14577_CHG_REG_STATUS3, &reg_data);
++	if (reg_data & STATUS3_OVP_MASK) {
++		state = POWER_SUPPLY_HEALTH_OVERVOLTAGE;
++		goto state_set;
 +	}
-+	BUG_ON(current_bits < 0); /* Cannot happen */
-+	/* Turn Low Bit on (use range 200mA-950 mA) */
++
++state_set:
++	chg->battery_state = state;
++	return state;
++}
++
++/*
++ * Always returns 1.
++ * The max14577 chip doesn't report any status of battery presence.
++ * Lets assume that it will always be used with some battery.
++ */
++static int max14577_get_present(struct max14577_charger *chg)
++{
++	return 1;
++}
++
++/*
++ * Sets charger registers to proper and safe default values.
++ * Some of these values are equal to defaults in MAX14577E
++ * data sheet but there are minor differences.
++ */
++static void max14577_charger_reg_init(struct max14577_charger *chg)
++{
++	struct regmap *rmap = chg->max14577->regmap;
++	u8 reg_data;
++
++	/*
++	 * Charger-Type Manual Detection, default off (set CHGTYPMAN to 0)
++	 * Charger-Detection Enable, default on (set CHGDETEN to 1)
++	 * Combined mask of CHGDETEN and CHGTYPMAN will zero the CHGTYPMAN bit
++	 */
++	reg_data = 0x1 << CDETCTRL1_CHGDETEN_SHIFT;
++	max14577_update_reg(rmap, MAX14577_REG_CDETCTRL1,
++			CDETCTRL1_CHGDETEN_MASK | CDETCTRL1_CHGTYPMAN_MASK,
++			reg_data);
++
++	/* Battery Fast-Charge Timerr, from SM-V700: 6hrs */
++	reg_data = 0x3 << CHGCTRL1_TCHW_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL1, reg_data);
++
++	/*
++	 * Wall-Adapter Rapid Charge, default on
++	 * Battery-Charger, default on
++	 */
++	reg_data = 0x1 << CHGCTRL2_VCHGR_RC_SHIFT;
++	reg_data |= 0x1 << CHGCTRL2_MBCHOSTEN_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL2, reg_data);
++
++	/* Battery-Charger Constant Voltage (CV) Mode, from SM-V700: 4.35V */
++	reg_data = 0xf << CHGCTRL3_MBCCVWRC_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL3, reg_data);
++
++	/*
++	 * Fast Battery-Charge Current Low, default 200-950mA
++	 * Fast Battery-Charge Current High, from SM-V700: 450 mA
++	 */
 +	reg_data = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
-+	/* and set proper High Bits */
-+	reg_data |= current_bits << CHGCTRL4_MBCICHWRCH_SHIFT;
-+	dev_info(max14577->dev, "Setting current %d uA (REG: 0x%x)\n", i,
-+			reg_data);
++	reg_data |= 0x5 << CHGCTRL4_MBCICHWRCH_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL4, reg_data);
 +
-+	return max14577_update_reg(rdev->regmap, MAX14577_CHG_REG_CHG_CTRL4,
-+			CHGCTRL4_MBCICHWRCL_MASK | CHGCTRL4_MBCICHWRCH_MASK,
-+			reg_data);
++	/* End-of-Charge Current, from SM-V700: 50mA */
++	reg_data = 0x0 << CHGCTRL5_EOCS_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL5, reg_data);
++
++	/* Auto Charging Stop, default off */
++	reg_data = 0x0 << CHGCTRL6_AUTOSTOP_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL6, reg_data);
++
++	/* Overvoltage-Protection Threshold, from SM-V700: 6.5V */
++	reg_data = 0x2 << CHGCTRL7_OTPCGHCVS_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL7, reg_data);
 +}
 +
-+static struct regulator_ops max14577_safeout_ops = {
-+	.is_enabled		= max14577_reg_is_enabled,
-+	.enable			= max14577_reg_enable,
-+	.disable		= max14577_reg_disable,
-+	.list_voltage		= regulator_list_voltage_linear,
++/* Support property from charger */
++static enum power_supply_property max14577_charger_props[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_CHARGE_TYPE,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_MODEL_NAME,
++	POWER_SUPPLY_PROP_MANUFACTURER,
 +};
 +
-+static struct regulator_ops max14577_charger_ops = {
-+	.is_enabled		= max14577_reg_is_enabled,
-+	.enable			= max14577_reg_enable,
-+	.disable		= max14577_reg_disable,
-+	.get_current_limit	= max14577_reg_get_current_limit,
-+	.set_current_limit	= max14577_reg_set_current_limit,
-+};
-+
-+static struct regulator_desc supported_regulators[] = {
-+	{
-+		.name = "SAFEOUT",
-+		.id = MAX14577_SAFEOUT,
-+		.ops = &max14577_safeout_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE,
-+		.n_voltages = 1,
-+		.min_uV = MAX14577_REGULATOR_SAFEOUT_VOLTAGE,
-+	}, {
-+		.name = "CHARGER",
-+		.id = MAX14577_CHARGER,
-+		.ops = &max14577_charger_ops,
-+		.type = REGULATOR_CURRENT,
-+		.owner = THIS_MODULE,
-+	}
-+};
-+
-+#ifdef CONFIG_OF
-+static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev,
-+					struct max14577_platform_data *pdata)
++static const char *model_name = "MAX14577";
++static const char *manufacturer = "Maxim Integrated";
++static int max14577_charger_get_property(struct power_supply *psy,
++			    enum power_supply_property psp,
++			    union power_supply_propval *val)
 +{
-+	struct max14577 *max14577 = dev_get_drvdata(pdev->dev.parent);
-+	struct device_node *np;
-+	struct max14577_regulator_platform_data *reg_pdata;
-+	struct of_regulator_match rmatch;
-+	int i, ret, cnt = 0, regulators_size = ARRAY_SIZE(supported_regulators);
++	struct max14577_charger *chg = container_of(psy,
++						  struct max14577_charger,
++						  charger);
++	int ret = 0;
 +
-+	np = of_find_node_by_name(max14577->dev->of_node, "regulators");
-+	if (!np)
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		val->intval = max14577_get_charger_state(chg);
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_TYPE:
++		val->intval = max14577_get_charge_type(chg);
++		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		val->intval = max14577_get_battery_health(chg);
++		break;
++	case POWER_SUPPLY_PROP_PRESENT:
++		val->intval = max14577_get_present(chg);
++		break;
++	case POWER_SUPPLY_PROP_ONLINE:
++		val->intval = max14577_get_online(chg);
++		break;
++	case POWER_SUPPLY_PROP_MODEL_NAME:
++		val->strval = model_name;
++		break;
++	case POWER_SUPPLY_PROP_MANUFACTURER:
++		val->strval = manufacturer;
++		break;
++	default:
 +		return -EINVAL;
-+
-+	pdata->num_regulators = of_get_child_count(np);
-+	if (pdata->num_regulators == 0)
-+		return -ENODEV;
-+
-+	reg_pdata = devm_kzalloc(&pdev->dev, sizeof(*reg_pdata) *
-+			     pdata->num_regulators, GFP_KERNEL);
-+	if (!reg_pdata)
-+		return -ENOMEM;
-+
-+	dev_info(&pdev->dev, "Parsing %d regulator(s) from supplied DT\n",
-+			pdata->num_regulators);
-+	for (i = 0; i < regulators_size; i++) {
-+		rmatch.name = supported_regulators[i].name;
-+		ret = of_regulator_match(&pdev->dev, np, &rmatch, 1);
-+		if (ret != 1)
-+			continue;
-+		dev_info(&pdev->dev, "Found regulator %d/%s\n",
-+				supported_regulators[i].id,
-+				supported_regulators[i].name);
-+		reg_pdata[cnt].id = supported_regulators[i].id;
-+		reg_pdata[cnt].initdata = rmatch.init_data;
-+		reg_pdata[cnt].of_node = rmatch.of_node;
-+		cnt++;
 +	}
-+
-+	pdata->regulators = reg_pdata;
-+	pdata->num_regulators = cnt;
-+	dev_info(&pdev->dev, "Found %d supported regulator(s)\n",
-+			pdata->num_regulators);
-+
-+	return 0;
-+}
-+#else
-+static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev,
-+					struct max14577_platform_data *pdata)
-+{
-+	return 0;
-+}
-+#endif
-+
-+static int max14577_regulator_probe(struct platform_device *pdev)
-+{
-+	struct max14577_regulator *max14577_reg;
-+	struct max14577 *max14577 = dev_get_drvdata(pdev->dev.parent);
-+	struct max14577_platform_data *pdata = dev_get_platdata(max14577->dev);
-+	int i, ret, size;
-+	struct regulator_config config = {};
-+
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "No platform data found.\n");
-+		return -ENODEV;
-+	}
-+
-+	if (max14577->dev->of_node) {
-+		ret = max14577_regulator_dt_parse_pdata(pdev, pdata);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	max14577_reg = devm_kzalloc(&pdev->dev,
-+			sizeof(struct max14577_regulator), GFP_KERNEL);
-+	if (!max14577_reg)
-+		return -ENOMEM;
-+
-+	size = sizeof(struct regulator_dev *) * pdata->num_regulators;
-+	max14577_reg->regulators = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
-+	if (!max14577_reg->regulators) {
-+		dev_err(&pdev->dev, "Cannot allocate memory for regulators\n");
-+		return -ENOMEM;
-+	}
-+
-+	max14577_reg->dev = &pdev->dev;
-+	max14577_reg->max14577 = max14577;
-+	max14577_reg->num_regulators = pdata->num_regulators;
-+
-+	config.dev = &pdev->dev;
-+	config.regmap = max14577->regmap;
-+	config.driver_data = max14577_reg;
-+	platform_set_drvdata(pdev, max14577_reg);
-+
-+	for (i = 0; i < pdata->num_regulators; i++) {
-+		int id = pdata->regulators[i].id;
-+
-+		config.init_data = pdata->regulators[i].initdata;
-+		config.of_node = pdata->regulators[i].of_node;
-+
-+		max14577_reg->regulators[i] =
-+			regulator_register(&supported_regulators[id], &config);
-+		if (IS_ERR(max14577_reg->regulators[i])) {
-+			ret = PTR_ERR(max14577_reg->regulators[i]);
-+			dev_err(&pdev->dev,
-+					"Regulator init failed for ID %d with error: %d\n",
-+					id, ret);
-+			max14577_reg->regulators[i] = NULL;
-+			goto err;
-+		}
-+	}
-+
-+	return 0;
-+ err:
-+	while (--i >= 0)
-+		regulator_unregister(max14577_reg->regulators[i]);
 +
 +	return ret;
 +}
 +
-+static int max14577_regulator_remove(struct platform_device *pdev)
++static int max14577_charger_probe(struct platform_device *pdev)
 +{
-+	struct max14577_regulator *max14577_reg = platform_get_drvdata(pdev);
-+	struct regulator_dev **regulators = max14577_reg->regulators;
-+	int i;
++	struct max14577_charger *chg;
++	struct max14577 *max14577 = dev_get_drvdata(pdev->dev.parent);
++	int ret;
 +
-+	for (i = 0; i < max14577_reg->num_regulators; i++)
-+		if (regulators[i])
-+			regulator_unregister(regulators[i]);
++	chg = devm_kzalloc(&pdev->dev,
++			sizeof(struct max14577_charger), GFP_KERNEL);
++	if (!chg)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, chg);
++	chg->dev = &pdev->dev;
++	chg->max14577 = max14577;
++
++	max14577_charger_reg_init(chg);
++
++	chg->charger.name = "max14577-charger",
++	chg->charger.type = POWER_SUPPLY_TYPE_BATTERY,
++	chg->charger.properties = max14577_charger_props,
++	chg->charger.num_properties = ARRAY_SIZE(max14577_charger_props),
++	chg->charger.get_property = max14577_charger_get_property,
++
++	ret = power_supply_register(&pdev->dev, &chg->charger);
++	if (ret) {
++		dev_err(&pdev->dev, "failed: power supply register\n");
++		return ret;
++	}
 +
 +	return 0;
 +}
 +
-+static struct platform_driver max14577_regulator_driver = {
++static int max14577_charger_remove(struct platform_device *pdev)
++{
++	struct max14577_charger *chg = platform_get_drvdata(pdev);
++
++	power_supply_unregister(&chg->charger);
++
++	return 0;
++}
++
++static struct platform_driver max14577_charger_driver = {
 +	.driver = {
-+		   .owner = THIS_MODULE,
-+		   .name = "max14577-regulator",
-+		   },
-+	.probe		= max14577_regulator_probe,
-+	.remove		= max14577_regulator_remove,
++		.owner	= THIS_MODULE,
++		.name	= "max14577-charger",
++	},
++	.probe		= max14577_charger_probe,
++	.remove		= max14577_charger_remove,
 +};
 +
-+static int __init max14577_regulator_init(void)
++static int __init max14577_charger_init(void)
 +{
-+	BUILD_BUG_ON(MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START +
-+			MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP * 0xf !=
-+			MAX14577_REGULATOR_CURRENT_LIMIT_MAX);
-+	return platform_driver_register(&max14577_regulator_driver);
++	return platform_driver_register(&max14577_charger_driver);
 +}
-+subsys_initcall(max14577_regulator_init);
 +
-+static void __exit max14577_regulator_exit(void)
++static void __exit max14577_charger_exit(void)
 +{
-+	platform_driver_unregister(&max14577_regulator_driver);
++	platform_driver_unregister(&max14577_charger_driver);
 +}
-+module_exit(max14577_regulator_exit);
++
++module_init(max14577_charger_init);
++module_exit(max14577_charger_exit);
 +
 +MODULE_AUTHOR("Krzysztof Kozlowski <k.kozlowski@samsung.com>");
-+MODULE_DESCRIPTION("MAXIM 14577 regulator driver");
++MODULE_DESCRIPTION("MAXIM 14577 charger driver");
 +MODULE_LICENSE("GPL");
 -- 
 1.7.9.5
