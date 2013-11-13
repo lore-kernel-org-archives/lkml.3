@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759373Ab3KMPgH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 10:36:07 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47352 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753522Ab3KMPgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 10:36:02 -0500
-Message-ID: <52839C31.7070709@ti.com>
-Date: Wed, 13 Nov 2013 21:05:13 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1759340Ab3KMPkn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 10:40:43 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:48298 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755987Ab3KMPkk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 10:40:40 -0500
+Date: Wed, 13 Nov 2013 09:40:22 -0600
+From: Seth Jennings <sjennings@variantweb.net>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: linux-mm@kvack.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        minchan@kernel.org, bob.liu@oracle.com, weijie.yang@samsung.com,
+        k.kozlowski@samsung.com
+Subject: Re: mm/zswap: change to writethrough
+Message-ID: <20131113154022.GA6277@cerebellum.variantweb.net>
+References: <CALZtONAxsYxLizARV3Aam_n7534g5gh_FFkTz6jb-0Q9gThuBQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Rajendra Nayak <rnayak@ti.com>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linus.walleij@linaro.org>, <linux@arm.linux.org.uk>,
-        <tony@atomide.com>, <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
-        <santosh.shilimkar@ti.com>, <galak@codeaurora.org>
-Subject: Re: [PATCH V3 7/7] ARM: DRA: Enable Crossbar IP support for DRA7XX
-References: <1383657257-3458-1-git-send-email-r.sricharan@ti.com> <1383657257-3458-8-git-send-email-r.sricharan@ti.com> <5281BF70.4050708@ti.com> <5281C0E9.8020104@ti.com> <52839B9C.8090707@ti.com>
-In-Reply-To: <52839B9C.8090707@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALZtONAxsYxLizARV3Aam_n7534g5gh_FFkTz6jb-0Q9gThuBQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 13 November 2013 09:02 PM, Nishanth Menon wrote:
-> On 11/11/2013 11:47 PM, Sricharan R wrote:
->> Hi Rajendra,
->>
->> On Tuesday 12 November 2013 11:11 AM, Rajendra Nayak wrote:
->>> On Tuesday 05 November 2013 06:44 PM, Sricharan R wrote:
->>>> Enable the crossbar IP support for DRA7xx soc.
->>>>
->>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>> Cc: Rajendra Nayak <rnayak@ti.com>
->>>> Cc: Tony Lindgren <tony@atomide.com>
->>>> Signed-off-by: Sricharan R <r.sricharan@ti.com>
->>>> ---
->>>>  arch/arm/mach-omap2/Kconfig        |    1 +
->>>>  arch/arm/mach-omap2/omap4-common.c |    4 ++++
->>>>  2 files changed, 5 insertions(+)
->>>>
->>>> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
->>>> index b5fb5f7..2086c65 100644
->>>> --- a/arch/arm/mach-omap2/Kconfig
->>>> +++ b/arch/arm/mach-omap2/Kconfig
->>>> @@ -141,6 +141,7 @@ config SOC_DRA7XX
->>>>  	select ARM_GIC
->>>>  	select HAVE_SMP
->>>>  	select COMMON_CLK
->>>> +	select IRQ_CROSSBAR
->>>>  
->>>>  comment "OMAP Core Type"
->>>>  	depends on ARCH_OMAP2
->>>> diff --git a/arch/arm/mach-omap2/omap4-common.c b/arch/arm/mach-omap2/omap4-common.c
->>>> index 5791143..274cbfa 100644
->>>> --- a/arch/arm/mach-omap2/omap4-common.c
->>>> +++ b/arch/arm/mach-omap2/omap4-common.c
->>>> @@ -22,6 +22,7 @@
->>>>  #include <linux/of_platform.h>
->>>>  #include <linux/export.h>
->>>>  #include <linux/irqchip/arm-gic.h>
->>>> +#include <linux/irqchip/irq-crossbar.h>
->>>>  #include <linux/of_address.h>
->>>>  #include <linux/reboot.h>
->>>>  
->>>> @@ -282,9 +283,12 @@ void __init omap_gic_of_init(void)
->>>>  
->>>>  skip_errata_init:
->>>>  	omap_wakeupgen_init();
->>>> +	if (soc_is_dra7xx())
->>>> +		crossbar_init();
->>> Its good if this is called irqcrossbar_init() to avoid confusion
->>> with the dma crossbar which also exists in dra7 devices.
->>>
->>  Ya makes sense. Will change this.
-> Also why not call it without explicit soc check? there is already
-> parse for of_find_matching_node(NULL, crossbar_match); to see if we
-> have a match in the crossbar_init. OR call it from dra7 init without
-> SoC check dependency?
->
-> Rationale - with more TI SoCs trending towards crossbar, we dont need
-> to keep adding to the soc_is checks, further, we intend to remove
-> soc_is checks in it's entirety..
->
->
-Oh yes. I missed this. Thanks for pointing. Will correct.
+On Mon, Nov 11, 2013 at 02:12:12PM -0500, Dan Streetman wrote:
+> Seth, have you (or anyone else) considered making zswap a writethrough
+> cache instead of writeback?  I think that it would significantly help
+> the case where zswap fills up and starts writing back its oldest pages
+> to disc - all the decompression work would be avoided since zswap
+> could just evict old pages and forget about them, and it seems likely
+> that when zswap is full that's probably the worst time to add extra
+> work/delay, while adding extra disc IO (presumably using dma) before
+> zswap is full doesn't seem to me like it would have much impact,
+> except in the case where zswap isn't full but there is so little free
+> memory that new allocs are waiting on swap-out.
 
-Regards,
- Sricharan
+There are two main benefits to zswap:
+1) avoid write to swap space while the compressed pool is not full and
+2) reduce application delay on anonymous page faults
+
+Doing a writethough approach eliminates benefit 1 as there would
+be just as much swap out activity with or without zswap.  However, you
+still retain benefit 2.
+
+The reclaim from zswap also becomes much simplier if the the compressed
+page can be treated as clean.  It doesn't need to be written back and
+can just be freed and the bit in the frontswap_map unset.
+
+I'm not opposed to this.  The obstacle of writeback has influenced the
+design a lot more than I would have liked.  You do lose the benefit of
+decreased swap out traffic, but the real performance killer, application
+latency on an anonymous page fault, is still greatly improved.
+
+Seth
