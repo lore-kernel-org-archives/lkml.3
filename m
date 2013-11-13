@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab3KMKsu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 05:48:50 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:57288 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab3KMKsq convert rfc822-to-8bit (ORCPT
+	id S1758752Ab3KMKti (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 05:49:38 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:43105 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754386Ab3KMKtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 05:48:46 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
-Subject: Re: [PATCH v6 2/2] PWM: atmel-pwm: add device tree binding document
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1383292811-11343-1-git-send-email-voice.shen@atmel.com>
-Date: Wed, 13 Nov 2013 04:48:40 -0600
-Cc: devicetree@vger.kernel.org, plagnioj@jcrosoft.com, nicolas.ferre@atmel.com,
-        alexandre.belloni@free-electrons.com, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Thierry Reding <thierry.reding@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1B703716-8202-4A87-8604-12B200EBF886@codeaurora.org>
-References: <1383292811-11343-1-git-send-email-voice.shen@atmel.com>
-To: Bo Shen <voice.shen@atmel.com>
-X-Mailer: Apple Mail (2.1822)
+	Wed, 13 Nov 2013 05:49:36 -0500
+Date: Wed, 13 Nov 2013 16:08:37 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        David Long <dave.long@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] uprobes: Fix the memory out of bound overwrite in
+ copy_insn()
+Message-ID: <20131113103837.GB543@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20131106191913.GA18661@redhat.com>
+ <20131107075151.GB31560@gmail.com>
+ <20131107143432.GA6240@redhat.com>
+ <20131107151601.GA5163@gmail.com>
+ <20131107162736.GA31834@redhat.com>
+ <20131107194010.GA29154@redhat.com>
+ <20131107194032.GB29154@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20131107194032.GB29154@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111310-9332-0000-0000-0000022259C0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Oleg Nesterov <oleg@redhat.com> [2013-11-07 20:40:32]:
 
-On Nov 1, 2013, at 3:00 AM, Bo Shen <voice.shen@atmel.com> wrote:
+> 1. copy_insn() doesn't look very nice, all calculations are
+>    confusing and it is not immediately clear why do we read
+>    the 2nd page first.
+> 
+> 2. The usage of inode->i_size is wrong on 32-bit machines.
+> 
+> 3. "Instruction at end of binary" logic is simply wrong, it
+>    doesn't handle the case when uprobe->offset > inode->i_size.
+> 
+>    In this case "bytes" overflows, and __copy_insn() writes to
+>    the memory outside of uprobe->arch.insn.
+> 
+>    Yes, uprobe_register() checks i_size_read(), but this file
+>    can be truncated after that. All i_size checks are racy, we
+>    do this only to catch the obvious mistakes.
+> 
+> Change copy_insn() to call __copy_insn() in a loop, simplify
+> and fix the bytes/nbytes calculations.
+> 
+> Note: we do not care if offset + size > i_size, the users of
+> arch_uprobe->insn can't know how many bytes were actually copied
+> anyway. But perhaps this needs more changes.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-> Add atmel pwm driver device tree binding document
-> 
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
-> 
-> ---
-> Changes in v6:
->  - New, split binding document as a separate patch
-> 
-> Changes in v5: None
-> Changes in v4: None
-> Changes in v3: None
-> Changes in v2: None
-> 
-> .../devicetree/bindings/pwm/atmel-pwm.txt          |   41 ++++++++++++++++++++
-> 1 file changed, 41 insertions(+)
-> create mode 100644 Documentation/devicetree/bindings/pwm/atmel-pwm.txt
-
-Acked-by: Kumar Gala <galak@codeaurora.org>
-
-- k
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+Thanks and Regards
+Srikar Dronamraju
 
