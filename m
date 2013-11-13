@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759646Ab3KMSPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 13:15:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8480 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755759Ab3KMSOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 13:14:51 -0500
-Date: Wed, 13 Nov 2013 19:15:43 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: oom-kill && frozen()
-Message-ID: <20131113181543.GA22041@redhat.com>
-References: <1384264396-14550-1-git-send-email-geert@linux-m68k.org> <20131112141314.GQ5056@laptop.programming.kicks-ass.net> <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com> <20131112145243.GU5056@laptop.programming.kicks-ass.net> <20131112162136.GA29065@redhat.com> <20131112165643.GA31278@redhat.com> <20131113032053.GA19394@mtj.dyndns.org> <20131113170724.GA17739@redhat.com> <20131113174220.GQ21461@twins.programming.kicks-ass.net>
+	id S932140Ab3KMSQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 13:16:15 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49456 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756208Ab3KMSQC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 13:16:02 -0500
+Date: Wed, 13 Nov 2013 19:16:00 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, keescook@chromium.org,
+        tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/kaslr] x86, kaslr: Provide randomness functions
+Message-ID: <20131113181600.GA6160@amd.pavel.ucw.cz>
+References: <1381450698-28710-4-git-send-email-keescook@chromium.org>
+ <tip-5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3@git.kernel.org>
+ <20131111182046.GA14961@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131113174220.GQ21461@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131111182046.GA14961@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13, Peter Zijlstra wrote:
->
-> On Wed, Nov 13, 2013 at 06:07:24PM +0100, Oleg Nesterov wrote:
-> > 	4. Finally, change try_to_wake_up() path to do
-> >
-> > 		-	p->state = TASK_WAKING;
-> > 		+	p->state &= ~state;
-> > 		+	if (p->state & ~(TASK_DEAD | TASK_WAKEKILL | TASK_PARKED))
-> > 		+		return;
-> > 		+	else
-> > 		+		p->state = TASK_WAKING;
-> >
-> > 	   IOW, if the task sleeps in, say, TASK_INTERRUPTIBLE | __TASK_FROZEN
-> > 	   then it need both try_to_wake_up(TASK_INTERRUPTIBLE) and
-> > 	   try_to_wake_up(__TASK_FROZEN) to wake up.
->
-> > Tejun, Peter, do you think this makes any sense? I am just curious, but
-> > "selective wakeup" looks potentially useful.
->
-> I've never looked at any of this freeze stuff, so I cannot comment too
-> much. However we should be very careful not to add too much to relative
-> hot paths for the relative rare case of freezing stuff.
+Hi!
 
-Yes, yes, sure.
+> > x86, kaslr: Provide randomness functions
+> > 
+> > Adds potential sources of randomness: RDRAND, RDTSC, or the i8254.
+> > 
+> > This moves the pre-alternatives inline rdrand function into the header so
+> > both pieces of code can use it. Availability of RDRAND is then controlled
+> > by CONFIG_ARCH_RANDOM, if someone wants to disable it even for kASLR.
+> 
+> While reviewing this as a pre-pull-request, I noticed the following 
+> detail:
+> 
+> > +static unsigned long get_random_long(void)
+> > +{
+> > +	unsigned long random;
+> > +
+> > +	if (has_cpuflag(X86_FEATURE_RDRAND)) {
+> > +		debug_putstr("KASLR using RDRAND...\n");
+> > +		if (rdrand_long(&random))
+> > +			return random;
+> > +	}
+> > +
+> > +	if (has_cpuflag(X86_FEATURE_TSC)) {
+> > +		uint32_t raw;
+> > +
+> > +		debug_putstr("KASLR using RDTSC...\n");
+> > +		rdtscl(raw);
+> > +
+> > +		/* Only use the low bits of rdtsc. */
+> > +		random = raw & 0xffff;
+> > +	} else {
+> > +		debug_putstr("KASLR using i8254...\n");
+> > +		random = i8254();
+> > +	}
+> > +
+> > +	/* Extend timer bits poorly... */
+> > +	random |= (random << 16);
+> > +#ifdef CONFIG_X86_64
+> > +	random |= (random << 32);
+> > +#endif
+> > +	return random;
+> > +}
+> 
+> Why aren't the 3 sources of entropy XOR-ed together?
+> 
+> Also, we talked about also adding system dependent entropy sources, such 
+> as memory layout or the DMI table - none of that seems to have
+> happened.
 
-Plus my description was confusing and incomplete (and I am sure I missed
-something more). I forgot to mention that freeze_task() should also add
-the FROZEN state if it sees FROZEN qualifier, this needs more changes.
+> It's not like this function should be performance critical, it's run once 
+> per bootup, right? There's just no excuse for not maximizing available 
+> entropy in such a situation ...
 
-So please forget. May be I'll _try_ to make something working (at least
-for discussion), but I am not sure.
-
-Oleg.
-
+If it is not performance critical, why not use "/dev/random"
+infrastructure?
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
