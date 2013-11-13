@@ -1,95 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab3KMVuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 16:50:11 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:50485 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750874Ab3KMVuF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 16:50:05 -0500
-Date: Wed, 13 Nov 2013 22:45:54 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Ian Campbell <ijc@hellion.org.uk>
-Cc: linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, linux-kernel@vger.kernel.org
-Subject: Re: [linux-sunxi] [PATCH 2/2] ARM: sun6i: Add SMP support for the
- Allwinner A31
-Message-ID: <20131113214554.GC3538@lukather>
-References: <1383471013-21695-1-git-send-email-maxime.ripard@free-electrons.com>
- <1383471013-21695-3-git-send-email-maxime.ripard@free-electrons.com>
- <1383583997.8826.123.camel@kazak.uk.xensource.com>
- <20131108084056.GB26440@lukather>
- <1383906355.3189.77.camel@kazak.uk.xensource.com>
- <20131110100312.GI26440@lukather>
- <1384188485.19117.90.camel@kazak.uk.xensource.com>
+	id S1751727Ab3KMVwQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 16:52:16 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:20880 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750992Ab3KMVwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 16:52:07 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, <devicetree@vger.kernel.org>,
+        <linux-metag@vger.kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>,
+        <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH v2 2/2] clk-fixed-rate: support specified-clock binding
+Date: Wed, 13 Nov 2013 21:50:00 +0000
+Message-ID: <1384379400-24776-3-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1384379400-24776-1-git-send-email-james.hogan@imgtec.com>
+References: <1384379400-24776-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="V88s5gaDVPzZ0KCq"
-Content-Disposition: inline
-In-Reply-To: <1384188485.19117.90.camel@kazak.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_11_13_21_52_05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Implement the new specified-clock DT binding which uses a table to look
+up the fixed frequency based on the value in a register.
 
---V88s5gaDVPzZ0KCq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The discovery is done entirely within of_specified_clk_setup() since the
+clock rate is still fixed so there's no need to dynamically rediscover
+the rate. The register is iomapped, read, and iounmapped, then the field
+value is extracted and used to look up the clock frequency in the table
+property.
 
-On Mon, Nov 11, 2013 at 04:48:05PM +0000, Ian Campbell wrote:
-> > > Anyway, once I get to the point of being able to do something I'll
-> > > coordinate with Marc etc and figure out what to do. In the meantime I
-> > > think having the kernel do the bringup (like this patch does) is
-> > > sensible. It's very likely to be what we want to do in the absence of
-> > > any instruction to the contrary (DTB or otherwise) in the future anyw=
-ay.
-> >=20
-> > Yep.
-> >=20
-> > A part from the discussion on the approach, do you have any comments
-> > on the patches themselves?
->=20
-> I know approximately diddly about how one is supposed to bring up these
-> processors, but I did correlate what you were doing as best I could with
-> the A20 manual for the registers and it looked sensible to me, modulo
-> the fact that I was looking at the manual for a slightly different
-> processor ;-)
->=20
-> Not a terribly strong statement, sorry.
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org
+---
+Changes in v2:
+ * Rewrite to use a fixed clock instead of an entirely new clock type.
+---
+ drivers/clk/clk-fixed-rate.c | 51 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/clk-provider.h |  1 +
+ 2 files changed, 52 insertions(+)
 
-Fair enough :)
+diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
+index 1ed591ab8b1d..7d7ec4094961 100644
+--- a/drivers/clk/clk-fixed-rate.c
++++ b/drivers/clk/clk-fixed-rate.c
+@@ -9,12 +9,14 @@
+  * Fixed rate clock implementation
+  */
+ 
++#include <linux/bitops.h>
+ #include <linux/clk-provider.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/io.h>
+ #include <linux/err.h>
+ #include <linux/of.h>
++#include <linux/of_address.h>
+ 
+ /*
+  * DOC: basic fixed-rate clock that cannot gate
+@@ -103,4 +105,53 @@ void of_fixed_clk_setup(struct device_node *node)
+ }
+ EXPORT_SYMBOL_GPL(of_fixed_clk_setup);
+ CLK_OF_DECLARE(fixed_clk, "fixed-clock", of_fixed_clk_setup);
++
++/**
++ * of_specified_clk_setup() - Setup function for discoverable fixed rate clock
++ */
++void of_specified_clk_setup(struct device_node *node)
++{
++	struct clk *clk;
++	const char *clk_name = node->name;
++	u32 shift, mask, rate, reg_val, val;
++	void __iomem *reg;
++	struct property *prop;
++	const __be32 *p;
++
++	/* Iomap and read the configuration register */
++	reg = of_iomap(node, 0);
++	if (!reg)
++		return;
++	reg_val = readl(reg);
++	iounmap(reg);
++
++	/* Apply bit-mask */
++	if (of_property_read_u32(node, "bit-mask", &mask))
++		return;
++	reg_val &= mask;
++	/* Apply bit-shift */
++	if (of_property_read_u32(node, "bit-shift", &shift))
++		shift = ffs(mask) - 1;
++	reg_val >>= shift;
++
++	/* Look through the mapping for a matching frequency */
++	of_property_for_each_u32(node, "table", prop, p, val) {
++		p = of_prop_next_u32(prop, p, &rate);
++		if (!p)
++			break;
++		if (val == reg_val)
++			goto found_rate;
++	}
++	/* No match found */
++	return;
++found_rate:
++
++	of_property_read_string(node, "clock-output-names", &clk_name);
++
++	clk = clk_register_fixed_rate(NULL, clk_name, NULL, CLK_IS_ROOT, rate);
++	if (!IS_ERR(clk))
++		of_clk_add_provider(node, of_clk_src_simple_get, clk);
++}
++EXPORT_SYMBOL_GPL(of_specified_clk_setup);
++CLK_OF_DECLARE(specified_clk, "specified-clock", of_specified_clk_setup);
+ #endif
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 7e59253b8603..0e1312504da9 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -203,6 +203,7 @@ struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
+ 		unsigned long fixed_rate);
+ 
+ void of_fixed_clk_setup(struct device_node *np);
++void of_specified_clk_setup(struct device_node *np);
+ 
+ /**
+  * struct clk_gate - gating clock
+-- 
+1.8.1.2
 
-Maxime
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---V88s5gaDVPzZ0KCq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSg/MSAAoJEBx+YmzsjxAgO9YQAKF/7iV8CRHoQRL+rW+1YhCj
-CDuuRdQrlJ5mKhkGzGKa5/h8V70LJH+M7Auxh8Q2413q6AERNMaICbvb8KURWF6K
-rrWb6cUTPjBEaygKMO7ZivdPKuRlBidbqW/9307gZ9qWulf6Rtv9+liOL6RuAOJl
-UVbCWvuh3ROGwWSJdrKNQgPI2iSndc62xlO02a3doi1jg0NbkY1YHxrMfDfPmhtD
-lokcdmPP5Nsxq3AeMM6lCQGPk/MkTMoSeTdFvHfVBk3hd91PLYx7F7cpeWJr9tZQ
-HrwtmgVhAsfmMTEsJR2FnoWcEVgBRAS7AXHRhQHZhsiJHDWtsVKbqtAEMK0sczvJ
-Cs6yXQrmFHyyIKYcloDPXtbv/cKlWJEp0OyrMjFBWnDck2/v4IfcnUY88LZeH4L/
-pCCOzxw8wb72jMFd+tBqOsSXRboUvBjlP4xppw7V9QX9JH4GLyC9Mt/C2xmEtp3M
-CkLuToC4qYmtNB/78/OwnfjQdjXM5uNalZGX5kzkIK0yVKVB9lpXIBeoOEvjARxZ
-nXtTmyg1Y3D9M1Xtb8U0Ee+ezQv7unCFDQZwHici4LFNL39TN2bYLlFuuTM5UlIf
-sWULz7I+FHITxH1s/3cEO/7wLSn2yYxxPFfeIBobocImmXf4v39lFVKjj6pfk8VO
-/sW/j+v3pfAHcsgymnaS
-=7yYM
------END PGP SIGNATURE-----
-
---V88s5gaDVPzZ0KCq--
