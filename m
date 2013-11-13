@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759089Ab3KMMNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 07:13:53 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:43318 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758414Ab3KMMNv (ORCPT
+	id S1759138Ab3KMMQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 07:16:41 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56221 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758789Ab3KMMQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 07:13:51 -0500
-Date: Wed, 13 Nov 2013 13:13:32 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Wei Ni <wni@nvidia.com>
-Cc: pawel.moll@arm.com, mark.rutland@arm.com, rob@landley.net,
-        swarren@nvidia.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6] of: add vendor prefix for GMT
-Message-ID: <20131113131332.63068fb1@endymion.delvare>
-In-Reply-To: <52835C42.6070806@nvidia.com>
-References: <1384340349-8626-1-git-send-email-wni@nvidia.com>
-	<52835C42.6070806@nvidia.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Nov 2013 07:16:38 -0500
+Date: Wed, 13 Nov 2013 13:16:17 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, jolsa@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
+Message-ID: <20131113121617.GL21461@twins.programming.kicks-ass.net>
+References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
+ <1384267617-3446-5-git-send-email-dsahern@gmail.com>
+ <20131112145707.GV5056@laptop.programming.kicks-ass.net>
+ <20131112150751.GA19321@ghostprotocols.net>
+ <20131112151944.GX5056@laptop.programming.kicks-ass.net>
+ <52824AE3.4050207@gmail.com>
+ <20131112211121.GC25913@gmail.com>
+ <20131113113439.GI21461@twins.programming.kicks-ass.net>
+ <20131113115021.GA15469@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131113115021.GA15469@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Nov 2013 19:02:26 +0800, Wei Ni wrote:
-> Previous versions are:
-> [v5]: http://patchwork.ozlabs.org/patch/281017/
-> [v4]: http://lkml.indiana.edu/hypermail/linux/kernel/1309.1/02812.html
+On Wed, Nov 13, 2013 at 12:50:21PM +0100, Ingo Molnar wrote:
 > 
-> On 11/13/2013 06:59 PM, Wei Ni wrote:
-> > Adding Global Mixed-mode Technology Inc. to the list
-> > of devicetree vendor prefixes.
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Tue, Nov 12, 2013 at 10:11:21PM +0100, Ingo Molnar wrote:
+> > > 
+> > > * David Ahern <dsahern@gmail.com> wrote:
+> > > 
+> > > > > Dunno.. it _should_ all work. Try it and see what it does.. Once the 
+> > > > > events are bigger than a page things might get 'interesting' though.
+> > > 
+> > > Which could be the case with call-graph recording, right?
 > > 
-> > Signed-off-by: Wei Ni <wni@nvidia.com>
-> > Acked-by: Stephen Warren <swarren@nvidia.com>
-> > ---
-> >  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> > index 2956800..64471a8 100644
-> > --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> > +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> > @@ -28,6 +28,7 @@ est	ESTeem Wireless Modems
-> >  fsl	Freescale Semiconductor
-> >  GEFanuc	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
-> >  gef	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
-> > +gmt	Global Mixed-mode Technology, Inc.
-> >  hisilicon	Hisilicon Limited.
-> >  hp	Hewlett Packard
-> >  ibm	International Business Machines (IBM)
-> > 
+> > Not typically, I think we're limiting call graphs to 127 u64, which is 
+> > ~1k. Maybe you can blow the single page if you also do a large 
+> > top-of-stack copy for dwarf/unwind nonsense.
+> 
+> What I meant was dwarf style call graph recording:
 
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
+Ah, one of those things I've never yet used ;-)
 
--- 
-Jean Delvare
+>  tools/perf/builtin-record.c:                    const unsigned long default_stack_dump_size = 8192;
+> 
+> Doesn't that mean 8K+ events?
+
+Oh yes.. that's ideal to trigger this.
