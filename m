@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab3KMQB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 11:01:28 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:36847 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626Ab3KMQB0 (ORCPT
+	id S1756003Ab3KMQF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 11:05:29 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:34059 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab3KMQF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 11:01:26 -0500
-Date: Wed, 13 Nov 2013 11:01:03 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Ingo Molnar <mingo@kernel.org>, Joe Perches <joe@perches.com>,
-        netdev <netdev@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [Fwd: Re: [PATCH v2 2/2] x86: add prefetching to do_csum]
-Message-ID: <20131113160103.GA25711@neilslaptop.think-freely.org>
-References: <1384220542.4771.23.camel@joe-AO722>
- <20131112171239.GC19780@hmsreliant.think-freely.org>
- <1384277615.3665.10.camel@joe-AO722>
- <20131112195005.GD19780@hmsreliant.think-freely.org>
- <AE90C24D6B3A694183C094C60CF0A2F6026B740E@saturn3.aculab.com>
- <20131113123010.GB2993@hmsreliant.think-freely.org>
- <20131113130832.GB22140@gmail.com>
- <AE90C24D6B3A694183C094C60CF0A2F6026B7412@saturn3.aculab.com>
+	Wed, 13 Nov 2013 11:05:27 -0500
+Message-ID: <5283A343.1000305@hitachi.com>
+Date: Thu, 14 Nov 2013 01:05:23 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7412@saturn3.aculab.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
+        Jiang Liu <liuj97@gmail.com>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping support
+References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org> <1382008671-4515-3-git-send-email-sandeepa.prabhu@linaro.org> <20131108165639.GD15074@mudshark.cambridge.arm.com> <527DFC1C.1020107@hitachi.com> <CA+b37P3U=cAbUvs=2B9wA4F7S9o49vh7d-KamjPsHcz-b9ZYLA@mail.gmail.com> <52808D53.7080904@hitachi.com> <5280B6C8.7050807@hitachi.com> <20131111105812.GC28302@mudshark.cambridge.arm.com> <528114C4.5000506@hitachi.com> <CA+b37P08cLAvBYAXSkozLPzrpuXn=N0SUetwL6N8JL+10AtYjQ@mail.gmail.com> <5281D848.7000502@hitachi.com> <CA+b37P2EgB0toYwhLny8k-cbrziBVXURST5kHNXcY7AF-CNVLg@mail.gmail.com> <52820043.6090107@hitachi.com> <CA+b37P1xLYWA-a0PwgxT7S7dNr5TdGFscLYFeQhAQUyO_E=Mzw@mail.gmail.com> <20131112115935.23d05236@gandalf.local.home>
+In-Reply-To: <20131112115935.23d05236@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 01:32:50PM -0000, David Laight wrote:
-> > > I'm not sure, whats the typical capacity for the branch predictors
-> > > ability to remember code paths?
-> ...
-> > 
-> > For such simple single-target branches it goes near or over a thousand for
-> > recent Intel and AMD microarchitectures. Thousands for really recent CPUs.
+(2013/11/13 1:59), Steven Rostedt wrote:
+> On Tue, 12 Nov 2013 16:25:26 +0530
+> Sandeepa Prabhu <sandeepa.prabhu@linaro.org> wrote:
 > 
-> IIRC the x86 can also correctly predict simple sequences - like a branch
-> in a loop that is taken every other iteration, or only after a previous
-> branch is taken.
 > 
-> Much simpler cpus may use a much simpler strategy.
-> I think one I've used (a fpga soft-core cpu) just uses the low
-> bits of the instruction address to index a single bit table.
-> This means that branches alias each other.
-> In order to get the consistent cycle counts in order to minimise
-> the worst case code path we had to disable the dynamic prediction.
+>>>
+>>> BTW, I'm currently trying a general housecleaning of __kprobes
+>>> annotations. It may also have impact on your patch.
+>>> https://lkml.org/lkml/2013/11/8/187
+>> Hmm, we can help testing your patchset on arm64 platforms. Also have
+>> many doubts on the changes you are working [blacklisting probes etc]
+>>
+>> Basically I had tried placing kprobe on memcpy() and the model hung
+>> (insmod never returned back!). Fast-model I have does not have option
+>> of any debug so no clue what happened!.
+>> memcpy() is low-level call being used internally within kprobes, so
+>> probably we cannot handle probe on that routine, but then how to make
+>> sure all such API are rejected by kprobe sub-system ?
 > 
-> For the checksum code the loop branch isn't a problem.
-> Tests on entry to the function might get mispredicted.
+> Working on ports of ftrace, I found that many of the functions in lib/
+> are used by several locations that just can't be traced, due to how
+> low level they are. I just simply blacklisted the entire lib/
+> directory (See the top of lib/Makefile)
 > 
-> So if you have conditional prefetch when the buffer is long
-> then time a short buffer after a 100 long ones you'll almost
-> certainly see the mispredition penalty.
-> 
-> FWIW I remember speeding up a copy (I think) loop on a strongarm by
-> adding an extra instruction to fetch a word from later in the buffer
-> into a register I never otherwise used.
-> (That was an unpaged system so I knew it couldn't fault.)
-> 
-Fair enough, but the code we're looking at here is arch specific.  If strongarms
-benefit from different coding patterns, we can handle that in that arch.  This
-x86 implementation can still avoid worrying about branch predicition since its
-hardware handles it well
-Neil
+> I wonder if there's an easy way to blacklist entire directories from
+> being used by kprobes too. Or at least do it by a file per file basis.
 
-> 	David
-> 
-> 
-> 
-> 
-> 
+Hm, perhaps we can do some magic in post-build script as kallsyms does.
+1) make an object file
+2) extract symbols from the file
+3) put the symbols into data section as a list of strings
+4) analyze the list at boot (init) time by using kallsyms
+how about this? :)
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
