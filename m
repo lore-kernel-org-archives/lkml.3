@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759034Ab3KMJb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 04:31:56 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:47160 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758670Ab3KMJby (ORCPT
+	id S1759133Ab3KMJgh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 04:36:37 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57952 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758464Ab3KMJgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 04:31:54 -0500
-Message-ID: <528346FE.9020607@free-electrons.com>
-Date: Wed, 13 Nov 2013 10:31:42 +0100
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 13 Nov 2013 04:36:33 -0500
+Date: Wed, 13 Nov 2013 09:36:22 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: "Anna, Suman" <s-anna@ti.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Kumar Gala <galak@codeaurora.org>, Paul Walmsley <paul@pwsan.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCHv3 0/8]  omap hwspinlock dt support
+Message-ID: <20131113093622.GA21713@e106331-lin.cambridge.arm.com>
+References: <1381439735-52888-1-git-send-email-s-anna@ti.com>
+ <5282708A.30601@ti.com>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: phy: fix memory leak in error handling
-References: <1383974928-20730-1-git-send-email-michael.opdenacker@free-electrons.com> <52809CD7.6080306@ti.com>
-In-Reply-To: <52809CD7.6080306@ti.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5282708A.30601@ti.com>
+Thread-Topic: [PATCHv3 0/8]  omap hwspinlock dt support
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
+On Tue, Nov 12, 2013 at 06:16:42PM +0000, Anna, Suman wrote:
+> 
+> > Hi,
+> >
+> > This is an updated series addressing the review comments from the
+> > v2 series. The hwmod patches have been dropped from the repost
+> > as per Paul's request, they have already been queued.
+> 
+> Mark,
 
-Thank you very much for reviewing my patch!
+Hi Suman,
 
-On 11/11/2013 10:01 AM, Kishon Vijay Abraham I wrote:
+> 
+> Any comments on this series? Tony has picked up the OMAP DTS patches for 
+> 3.13, and so
+> the "ti,omap4-hwspinlock" compatible string is showing up as 
+> undocumented in linux-next.
+> How do you want me to proceed here? I will be separating out the 
+> bindings into separate patches
+> in the future.
 
-> A patch has already been sent for fixing this.
->
-> https://git.kernel.org/cgit/linux/kernel/git/kishon/linux-phy.git/commit/?h=fixes
-Great news! Thanks again,
+The only thing I note that I'm not so keen on is that the
+hwlock-specifier is always one cell, rather than using a #hwlock-cells
+property on the provider (even if we required it to be <1> for the
+moment and just failed if it wasn't).
 
-Cheers,
+If possible, I would like an amendment to always use #hwlock-cells, but
+otherwise this looks fine to me. Feel free to add my Ack:
 
-Michael.
+Acked-by: Mark Rutland <mark.rutland@arm.com>
 
--- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
-
+Thanks,
+Mark.
