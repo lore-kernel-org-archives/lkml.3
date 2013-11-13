@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab3KMQXr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 11:23:47 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:20972 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753881Ab3KMQXn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 11:23:43 -0500
-Date: Wed, 13 Nov 2013 11:23:38 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Matthew Whitehead <tedheadster@gmail.com>, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org, mwhitehe@redhat.com
-Subject: Re: nohz problem with idle time on old hardware
-Message-ID: <20131113112338.7d303c0f@gandalf.local.home>
-In-Reply-To: <20131113161829.GE4138@linux.vnet.ibm.com>
-References: <20131113113927.GA13875@mwhitehe.csb>
-	<alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de>
-	<20131113102153.5f10e6b5@gandalf.local.home>
-	<20131113103134.5b8cf02f@gandalf.local.home>
-	<20131113105737.3f7a0b1b@gandalf.local.home>
-	<alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
-	<20131113111257.482c2955@gandalf.local.home>
-	<20131113161829.GE4138@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932339Ab3KMQYx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 11:24:53 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:21147 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753775Ab3KMQYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 11:24:52 -0500
+Message-ID: <5283A7C0.4080308@imgtec.com>
+Date: Wed, 13 Nov 2013 16:24:32 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Florian Fainelli <f.fainelli@gmail.com>
+CC: "Steven J. Hill" <Steven.Hill@imgtec.com>,
+        LMOL <linux-mips@linux-mips.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Release of Linux MTI-3.10-LTS kernel.
+References: <528246BA.10607@imgtec.com> <CAGVrzcYV7f4zN23nSMOp3r9aiSme-mJPEz2OkyLUFDWKfWtGqw@mail.gmail.com>
+In-Reply-To: <CAGVrzcYV7f4zN23nSMOp3r9aiSme-mJPEz2OkyLUFDWKfWtGqw@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_11_13_16_24_51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Nov 2013 08:18:29 -0800
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-
-> On Wed, Nov 13, 2013 at 11:12:57AM -0500, Steven Rostedt wrote:
-> > On Wed, 13 Nov 2013 17:07:18 +0100 (CET)
-> > Thomas Gleixner <tglx@linutronix.de> wrote:
-> > 
-> > 
-> > > Right. It's telling you if NOHZ is enabled. It's not telling you that
-> > > NOHZ is active.
-> > 
-> > Yeah, which makes this code rather silly:
-> > 
-> > in rcu_prepare_for_idle():
-> > 
-> > 	/* Handle nohz enablement switches conservatively. */
-> > 	tne = ACCESS_ONCE(tick_nohz_enabled);
-> > 	if (tne != rdtp->tick_nohz_enabled_snap) {
-> > 		if (rcu_cpu_has_callbacks(cpu, NULL))
-> > 			invoke_rcu_core(); /* force nohz to see update. */
-> > 		rdtp->tick_nohz_enabled_snap = tne;
-> > 		return;
-> > 	}
+On 12/11/13 18:29, Florian Fainelli wrote:
+> 2013/11/12 Steven J. Hill <Steven.Hill@imgtec.com>:
+>> Imagination Technologies is pleased to announce the release of its 3.10 LTS
+>> (Long-Term Support) MIPS kernel. The changelog below is based off the stable
+>> Linux 3.10.14 release done by Greg Kroah-Hartman in commit
+>> 8c15abc94c737f9120d3d4a550abbcbb9be121f6 back on October 1st. The code
+>> repository is hosted at the Linux/MIPS project GIT:
+>>
+>> http://git.linux-mips.org/?p=linux-mti.git;a=summary
+>>
+>> We look forward to any comments or feedback.
 > 
-> OK, what should I be checking instead?  Not much point in trying to
-> get RCU out of the way of disabling the scheduling-clock interrupt
-> if NOHZ is disabled.  ;-)
-> 
+> Nice job! Do you have a rough idea of the delta between your LTS
+> kernel and the current status of mainline/pending submissions?
 
-I'll leave the answer to Thomas, but checking tick_nohz_enabled just
-lets you know if someone booted with nohz=off or not (and has nohz
-configured). But it doesn't tell you if nohz is actually being used.
+Hi Florian,
 
-That is, tick_nohz_enabled is set at bootup and never changes.
+Regarding the delta, hopefully the following stats give a rough idea:
 
-Perhaps this old hardware uncovered other bugs as well ;-)
+I see 105 patches in the mti branch with the following total diffstat:
+182 files changed, 18614 insertions(+), 1210 deletions(-)
 
--- Steve
+With the help of git log's cherry-mark feature I count 66 of those
+patches corresponding to a patch in mainline since v3.10 (the largest of
+which is Aaro's Octeon USB HCD support patch, with 9992 insertions). 42
+of these upstream patches were authored by somebody at IMG.
+
+Out of the rest (patches not in mainline), the total insertions is 8175
+and total deletions is 826. The largest of these patches by
+insertions are:
+
+1) 4e5dd4434d94 MIPS: MIPS32R2 Segment/EVA support upto 3GB
+36 files changed, 3819 insertions(+), 173 deletions(-)
+
+2) 0d6f34364a6e MIPS: VPE: Re-implement as writes to a pseudo-device.
+4 files changed, 826 insertions(+), 101 deletions(-)
+
+3) 6442e3516c84 MIPS: -mfp64 for abi=o32 ELF binaries support.
+17 files changed, 517 insertions(+), 77 deletions(-)
+
+4) 65b4e451fc32 MIPS: Add proAPTIV CPU support.
+21 files changed, 505 insertions(+), 44 deletions(-)
+
+I'm optimistic the out-of-mainline delta will drop significantly over time.
+
+Cheers
+James
+
