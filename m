@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756908Ab3KMMjz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 07:39:55 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45640 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab3KMMjv (ORCPT
+	id S1756674Ab3KMMv5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 07:51:57 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52753 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab3KMMvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 07:39:51 -0500
-Date: Wed, 13 Nov 2013 12:39:47 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Michael Marineau <michael.marineau@coreos.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: 3.12 Regression: dcache: Translating dentry into pathname
- without taking rename_lock 232d2d60
-Message-ID: <20131113123947.GB13318@ZenIV.linux.org.uk>
-References: <CAGr1u3vZU_Pxwu1nSab0PExNPQsE0xiSpcoMbUQ7MeGbJzBAjA@mail.gmail.com>
+	Wed, 13 Nov 2013 07:51:54 -0500
+Date: Wed, 13 Nov 2013 12:51:11 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Florian Meier <florian.meier@koalo.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        Martin Sperl <martin@sperl.org>
+Message-ID: <20131113125111.GE878@sirena.org.uk>
+References: <527D1DDA.2040004@koalo.de>
+ <20131108181743.GR2493@sirena.org.uk>
+ <20131113050017.GO8834@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="T6xhMxlHU34Bk0ad"
 Content-Disposition: inline
-In-Reply-To: <CAGr1u3vZU_Pxwu1nSab0PExNPQsE0xiSpcoMbUQ7MeGbJzBAjA@mail.gmail.com>
+In-Reply-To: <20131113050017.GO8834@intel.com>
+X-Cookie: Long life is in store for you.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 149.254.183.27
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] dmaengine: Add support for BCM2835.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 03:34:13AM -0800, Michael Marineau wrote:
-> Greetings,
-> 
-> Commit 232d2d60aa5469bb097f55728f65146bd49c1d25 causes intermittent
-> errors in /proc/*/fd/* where readlink returns "/" instead of the
-> correct path. This can be reproduced by the script below which copies
-> the kernel source directory structure while obsessively looking up
-> directory fds in proc from another process. Reverting
-> 232d2d60aa5469bb097f55728f65146bd49c1d25 after two related commits
-> 48f5ec21d9c67e881ff35343988e290ef5cf933f
-> 1812997720ab90d029548778c55d7315555e1fef fixes the issue.
 
-Looking into it...  It seems that we are getting to the end of
-prepend_path() with non-negative error and bptr == *buffer.
-What the...
+--T6xhMxlHU34Bk0ad
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-OK, I see what's going on.  We never reinitialize dentry, vfsmount and mnt
-if we decide to restart.  See if the following helps:
+On Wed, Nov 13, 2013 at 10:30:17AM +0530, Vinod Koul wrote:
+> On Fri, Nov 08, 2013 at 06:17:43PM +0000, Mark Brown wrote:
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index ae6ebb8..89f9671 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2881,9 +2881,9 @@ static int prepend_path(const struct path *path,
- 			const struct path *root,
- 			char **buffer, int *buflen)
- {
--	struct dentry *dentry = path->dentry;
--	struct vfsmount *vfsmnt = path->mnt;
--	struct mount *mnt = real_mount(vfsmnt);
-+	struct dentry *dentry;
-+	struct vfsmount *vfsmnt;
-+	struct mount *mnt;
- 	int error = 0;
- 	unsigned seq = 0;
- 	char *bptr;
-@@ -2893,6 +2893,9 @@ static int prepend_path(const struct path *path,
- restart:
- 	bptr = *buffer;
- 	blen = *buflen;
-+	dentry = path->dentry;
-+	vfsmnt = path->mnt;
-+	mnt = real_mount(vfsmnt);
- 	read_seqbegin_or_lock(&rename_lock, &seq);
- 	while (dentry != root->dentry || vfsmnt != root->mnt) {
- 		struct dentry * parent;
+> > Adding in Martin Sperl who's been looking at DMA with regard to the SPI
+> > controller (which will want non-cyclic mode but I guess there's a lot of
+> > shared code).
+
+> Is there a plan to add a library in SPI for dma ops, on lines of what
+> is done in sound?
+
+I'm probably going to be looking at that at some point, though perhaps
+Martin will get to it since he seems to be looking at this.
+
+--T6xhMxlHU34Bk0ad
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSg3W8AAoJELSic+t+oim9lAIP/i2DqKmTzrViDNzR93jn6mvc
+yk4mHQ8T7rHUOhGCAgFhIahzj+oNnxem4IjfXPOdzKEHBAE8VaKrAFV7qRlWbCbU
+4PloFqW65C5HjAidUgZQaWnKsk0HrfJhjKlN48LoBqQCKqwunL7fJ5EnL2dki0db
+lmRND/wiZ9W3/6rIxxXYGWWZFQ0zdtdbeKV/h27fYZAv3OgVZabd8DdFlb9vUniP
+bRJbLwBfBXZX8e/p1XrZQJ/5eP6yTFLqNGSZVM+/8vWwLEhOZriU6KTlxF4TtE2Y
+0EmesN4Wzc+B7PIqIziu9BtV+YiyoaUypKs/Z6r60np6j1Wo5E8aXG+APwDTHfgM
+eSPy5oqglsYNxxjR32AgXWpDORuZBqH3SobWvZjBrk1phFPMLzqYbRwWpY0x/U8i
+nTvo/yEkhwsdt623Csl10u67UAG044fyBoSr+/pHgkuBdKuVs5HGnik8bTsfoa2a
+1iBFJdUXHVJ8ip9AKO4oidekpjgV9gg4JD7qXBWbLWbhWKPvNUdTmuPeT1626nor
+qZdgUa90tNZewLuJh+8GwdYGo+ep/lrnsA2ZDI3a5v3QWj/MJH0E9s5dKwqMRVzd
+zfocxUDLM50cMtqAtHlUwcMdW7u0sAYcgWAEghWAh68jTYJ/D31YY6VqXvU+DlK+
+Us6gLYk4U+Z158P8Wub3
+=4s61
+-----END PGP SIGNATURE-----
+
+--T6xhMxlHU34Bk0ad--
