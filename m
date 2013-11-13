@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab3KMKn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 05:43:27 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:41385 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab3KMKnX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 05:43:23 -0500
-X-IronPort-AV: E=Sophos;i="4.93,691,1378857600"; 
-   d="scan'208";a="71405609"
-Message-ID: <1384339400.5406.46.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] xen-gnttab: do not add m2p override entries
- for blkback mappings
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-CC: <xen-devel@lists.xen.org>, Anthony Liguori <aliguori@amazon.com>,
-        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        <linux-kernel@vger.kernel.org>, David Vrabel <david.vrabel@citrix.com>,
-        "Matt Wilson" <msw@amazon.com>, Roger Pau Monne <roger.pau@citrix.com>
-Date: Wed, 13 Nov 2013 10:43:20 +0000
-In-Reply-To: <1384307336-5328-1-git-send-email-anthony@codemonkey.ws>
-References: <1384307336-5328-1-git-send-email-anthony@codemonkey.ws>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1758432Ab3KMKrZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 05:47:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46269 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751375Ab3KMKrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 05:47:22 -0500
+Date: Wed, 13 Nov 2013 11:47:18 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: input question: ambient light sensor button
+In-Reply-To: <201309151553.34000@pali>
+Message-ID: <alpine.LNX.2.00.1311131146410.22940@pobox.suse.cz>
+References: <201309151553.34000@pali>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
-X-DLP: MIA1
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-12 at 17:48 -0800, Anthony Liguori wrote:
-> See http://article.gmane.org/gmane.linux.kernel/1590932 for a full
-> analysis of current users.
+On Sun, 15 Sep 2013, Pali Rohár wrote:
 
-Silly nit: Please can you include the message ID in case this goes away,
-or use a URL which includes the ID already so it can be translated if
-need be.
+> I do not know where to ask this question, but I think that kernel 
+> developers could help me.
+> 
+> I have notebook with one special button on keyboard which is 
+> designed for turning ambient light sensor on and off. By default 
+> pressing button do nothing (I can turn ambient light sensor on/off 
+> via sysfs platform wmi module). Button press is reported by 
+> kernel input device AT Translated Set 2 keyboard and reports it 
+> as button "touchpad off".
+> 
+> Of course "touchpad off" is incorrect and I'd like to ask which 
+> kernel key or button from /usr/include/linux/input.h should be 
+> mapped for my ambient light sensor button? Is there already some? 
+> And what is strategy for allocating KEY_* and BTN_* numbers?
 
-I think LKML has a redirector thing you can use or if it went to
-xen-devel you can use http://bugs.xenproject.org/xen/mid/<message-id>
+This is maintained by Dmitry, so he's the one to answer this. I am adding 
+him to CC.
 
-Ian.
+> I'd like to know this, so udev could have correct DMI keymap 
+> hooks and other userspace programs can understand ambient light 
+> sensor button correctly.
 
+-- 
+Jiri Kosina
+SUSE Labs
