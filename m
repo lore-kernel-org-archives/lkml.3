@@ -1,260 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759781Ab3KMSqX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 13:46:23 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:52841 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757151Ab3KMSqP (ORCPT
+	id S1759405Ab3KMSzK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 13:55:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42001 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924Ab3KMSzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 13:46:15 -0500
-Message-ID: <1384368349.2550.17.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 9/9] KEYS: Fix encrypted key type update method
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: d.kasatkin@samsung.com, zohar@us.ibm.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 13 Nov 2013 13:45:49 -0500
-In-Reply-To: <20131104162321.10177.34033.stgit@warthog.procyon.org.uk>
-References: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
-	 <20131104162321.10177.34033.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Wed, 13 Nov 2013 13:55:06 -0500
+Date: Wed, 13 Nov 2013 10:57:05 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: paulmck@linux.vnet.ibm.com, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [PATCH] rcu: Make struct rcu_head searchable
+Message-Id: <20131113105705.c3fed1c5.akpm@linux-foundation.org>
+In-Reply-To: <20131113131044.677cdc74@gandalf.local.home>
+References: <20131113120225.3aacae13@gandalf.local.home>
+	<20131113171205.GG4138@linux.vnet.ibm.com>
+	<20131113131044.677cdc74@gandalf.local.home>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111318-7164-0000-0000-000003455C57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-04 at 16:23 +0000, David Howells wrote:
-> The encrypted key type was using the update method to change the master key
-> used to encrypt a key without passing in all the requisite parameters to
-> completely replace the key contents (it was taking some parameters from the
-> old key contents).  Unfortunately, this has a number of problems:
-> 
->  (1) Update is conceptually meant to be the same as add_key() except that it
->      replaces the contents of the nominated key completely rather than creating
->      a new key.
-> 
->  (2) add_key() can call ->update() if it detects that the key exists.  This can
->      cause the operation to fail if the caller embedded the wrong command in
->      the payload when they called it.  The caller cannot know what the right
->      command is without someway to lock the keyring.
-> 
->  (3) keyctl_update() and add_key() can thus race with adding, linking,
->      requesting and unlinking a key.
-> 
-> The best way to fix this is to offload this operation to keyctl_control() and
-> make encrypted_update() just replace the contents of a key entirely (or maybe
-> just not permit updates if this would be a problem).
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
+On Wed, 13 Nov 2013 13:10:44 -0500 Steven Rostedt <rostedt@goodmis.org> wrote:
 
-The code looks good, other than breaking the existing userspace/kernel
-API, but I haven't tested it yet.  Is there a keyutils git repo with a
-version of keyctl that supports the control option?
+> On Wed, 13 Nov 2013 09:12:05 -0800
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > On Wed, Nov 13, 2013 at 12:02:25PM -0500, Steven Rostedt wrote:
+> > > After wasting too much time trying to see where struct rcu_head was
+> > > declared, I finally found it in include/linux/types.h as a define for
+> > > callback_head!
+> > > 
+> > > To prevent other developers from wasting their precious time in
+> > > searching for this structure, add a comment to help them find it!
+> > > 
+> > > Cc: Al Viro <viro@ZenIV.linux.org.uk>
+> > > Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > Signed-off-by: Steven "frustrated" Rostedt <rostedt@goodmis.org>
+> > 
+> > The cscope tool is your friend in this case, but nevertheless:
+> 
+> I use emacs, and the latest version of etags (or emacs) brings you to
+> each use case before it gets you to the define (which is really
+> annoying). Back in 2006 it use to work properly. I need to figure out
+> what changed :-/
 
-A couple of minor comments:
-- type size_t is unsigned, no need to verify that it is negative.
-- missing Documentation/security/keys-trusted-encrypted.txt updates
-- the encrypted_preparse() comment still says 'encrypted_instantiate'
+That irritates me too.  Fortunately I just invented
 
-thanks,
-
-Mimi
-
-> ---
-> 
->  security/keys/encrypted-keys/encrypted.c |  101 ++++++++++++++----------------
->  1 file changed, 47 insertions(+), 54 deletions(-)
-> 
-> diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
-> index f9e7b808fa47..c9e4fa5b1e2c 100644
-> --- a/security/keys/encrypted-keys/encrypted.c
-> +++ b/security/keys/encrypted-keys/encrypted.c
-> @@ -595,7 +595,7 @@ out:
->  }
-> 
->  /* Allocate memory for decrypted key and datablob. */
-> -static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
-> +static struct encrypted_key_payload *encrypted_key_alloc(size_t *_quotalen,
->  							 const char *format,
->  							 const char *master_desc,
->  							 const char *datalen)
-> @@ -632,10 +632,7 @@ static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
->  	datablob_len = format_len + 1 + strlen(master_desc) + 1
->  	    + strlen(datalen) + 1 + ivsize + 1 + encrypted_datalen;
-> 
-> -	ret = key_payload_reserve(key, payload_datalen + datablob_len
-> -				  + HASH_SIZE + 1);
-> -	if (ret < 0)
-> -		return ERR_PTR(ret);
-> +	*_quotalen = payload_datalen + datablob_len + HASH_SIZE + 1;
-> 
->  	epayload = kzalloc(sizeof(*epayload) + payload_datalen +
->  			   datablob_len + HASH_SIZE + 1, GFP_KERNEL);
-> @@ -773,8 +770,7 @@ static int encrypted_init(struct encrypted_key_payload *epayload,
->   *
->   * On success, return 0. Otherwise return errno.
->   */
-> -static int encrypted_instantiate(struct key *key,
-> -				 struct key_preparsed_payload *prep)
-> +static int encrypted_preparse(struct key_preparsed_payload *prep)
-
->  {
->  	struct encrypted_key_payload *epayload = NULL;
->  	char *datablob = NULL;
-> @@ -798,25 +794,55 @@ static int encrypted_instantiate(struct key *key,
->  	if (ret < 0)
->  		goto out;
-> 
-> -	epayload = encrypted_key_alloc(key, format, master_desc,
-> +	epayload = encrypted_key_alloc(&prep->quotalen, format, master_desc,
->  				       decrypted_datalen);
->  	if (IS_ERR(epayload)) {
->  		ret = PTR_ERR(epayload);
->  		goto out;
->  	}
-> -	ret = encrypted_init(epayload, key->description, format, master_desc,
-> +	ret = encrypted_init(epayload, prep->description, format, master_desc,
->  			     decrypted_datalen, hex_encoded_iv);
->  	if (ret < 0) {
->  		kfree(epayload);
->  		goto out;
->  	}
-> 
-> -	rcu_assign_keypointer(key, epayload);
-> +	prep->payload[0] = epayload;
-> +
->  out:
->  	kfree(datablob);
->  	return ret;
->  }
-> 
-> +/*
-> + * encrypted_free_preparse - Clean up preparse data for an encrypted key
-> + */
-> +static void encrypted_free_preparse(struct key_preparsed_payload *prep)
-> +{
-> +	struct encrypted_key_payload *epayload = prep->payload[0];
-> +
-> +	if (epayload) {
-> +		memset(epayload->decrypted_data, 0,
-> +		       epayload->decrypted_datalen);
-> +		kfree(epayload);
-> +	}
-> +}
-> +
-> +static int encrypted_instantiate(struct key *key,
-> +				 struct key_preparsed_payload *prep)
-> +{
-> +	struct encrypted_key_payload *epayload = prep->payload[0];
-> +	int ret;
-> +
-> +	ret = key_payload_reserve(key, prep->quotalen);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	rcu_assign_keypointer(key, epayload);
-> +	prep->payload[0] = NULL;
-> +	return 0;
-> +}
-> +
->  static void encrypted_rcu_free(struct rcu_head *rcu)
->  {
->  	struct encrypted_key_payload *epayload;
-> @@ -837,50 +863,15 @@ static void encrypted_rcu_free(struct rcu_head *rcu)
->   */
->  static int encrypted_update(struct key *key, struct key_preparsed_payload *prep)
->  {
-> -	struct encrypted_key_payload *epayload = key->payload.data;
-> -	struct encrypted_key_payload *new_epayload;
-> -	char *buf;
-> -	char *new_master_desc = NULL;
-> -	const char *format = NULL;
-> -	size_t datalen = prep->datalen;
-> -	int ret = 0;
-> -
-> -	if (datalen <= 0 || datalen > 32767 || !prep->data)
-> -		return -EINVAL;
-> +	struct encrypted_key_payload *old;
-> +	struct encrypted_key_payload *new = prep->payload[0];
-> 
-> -	buf = kmalloc(datalen + 1, GFP_KERNEL);
-> -	if (!buf)
-> -		return -ENOMEM;
-> -
-> -	buf[datalen] = 0;
-> -	memcpy(buf, prep->data, datalen);
-> -	ret = datablob_parse(buf, &format, &new_master_desc, NULL, NULL);
-> -	if (ret < 0)
-> -		goto out;
-> +	old = rcu_dereference_protected(key->payload.rcudata, &key->sem);
-> 
-> -	ret = valid_master_desc(new_master_desc, epayload->master_desc);
-> -	if (ret < 0)
-> -		goto out;
-> -
-> -	new_epayload = encrypted_key_alloc(key, epayload->format,
-> -					   new_master_desc, epayload->datalen);
-> -	if (IS_ERR(new_epayload)) {
-> -		ret = PTR_ERR(new_epayload);
-> -		goto out;
-> -	}
-> -
-> -	__ekey_init(new_epayload, epayload->format, new_master_desc,
-> -		    epayload->datalen);
-> -
-> -	memcpy(new_epayload->iv, epayload->iv, ivsize);
-> -	memcpy(new_epayload->payload_data, epayload->payload_data,
-> -	       epayload->payload_datalen);
-> -
-> -	rcu_assign_keypointer(key, new_epayload);
-> -	call_rcu(&epayload->rcu, encrypted_rcu_free);
-> -out:
-> -	kfree(buf);
-> -	return ret;
-> +	rcu_assign_keypointer(key, new);
-> +	prep->payload[0] = NULL;
-> +	call_rcu(&old->rcu, encrypted_rcu_free);
-> +	return 0;
->  }
-> 
->  /*
-> @@ -893,7 +884,7 @@ static long encrypted_control(struct key *key, char *command,
->  	struct encrypted_key_payload *epayload, *new_epayload;
->  	char *new_master_desc = NULL;
->  	const char *format = NULL;
-> -	size_t datalen;
-> +	size_t datalen, quotalen;
->  	int ret;
-> 
->  	if (memcmp(command, expected_command, sizeof(expected_command) - 1) != 0)
-> @@ -917,7 +908,7 @@ static long encrypted_control(struct key *key, char *command,
->  		return ret;
->  	}
-> 
-> -	new_epayload = encrypted_key_alloc(key, epayload->format,
-> +	new_epayload = encrypted_key_alloc(&quotalen, epayload->format,
->  					   new_master_desc, epayload->datalen);
->  	if (IS_ERR(new_epayload)) {
->  		up_write(&key->sem);
-> @@ -1023,6 +1014,8 @@ static void encrypted_destroy(struct key *key)
-> 
->  struct key_type key_type_encrypted = {
->  	.name = "encrypted",
-> +	.preparse = encrypted_preparse,
-> +	.free_preparse = encrypted_free_preparse,
->  	.instantiate = encrypted_instantiate,
->  	.update = encrypted_update,
->  	.match = user_match,
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
-
+(grep "#define" tags && grep -v "#define" tags) > tags.new
