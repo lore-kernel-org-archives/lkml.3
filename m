@@ -1,152 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759214Ab3KMMSo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 07:18:44 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:39946 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758619Ab3KMMSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 07:18:40 -0500
-Message-ID: <52836DC8.8080702@ti.com>
-Date: Wed, 13 Nov 2013 08:17:12 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1759224Ab3KMMTv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 07:19:51 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51610 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758908Ab3KMMTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 07:19:48 -0500
+Date: Wed, 13 Nov 2013 12:19:09 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] sched/mm: add finish_switch_mm function
+Message-ID: <20131113121909.GA18837@arm.com>
+References: <1384330574-18418-1-git-send-email-schwidefsky@de.ibm.com>
+ <1384330574-18418-2-git-send-email-schwidefsky@de.ibm.com>
+ <20131113114143.GJ21461@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "wni@nvidia.com" <wni@nvidia.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCHv5 20/20] MAINTAINERS: add maintainer entry for thermal
- bindings
-References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com> <1384285582-16933-21-git-send-email-eduardo.valentin@ti.com> <CAOesGMiCh-nGPqJQd4NPz9st7mBT0JkZ9nEK1gfyF2RmnrXZog@mail.gmail.com> <52828C31.2050604@ti.com> <20131113094232.GB21713@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131113094232.GB21713@e106331-lin.cambridge.arm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="xj7vtLu5XQTwRUPwdGgl6qRw5hxGB2OUA"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131113114143.GJ21461@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---xj7vtLu5XQTwRUPwdGgl6qRw5hxGB2OUA
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 13, 2013 at 11:41:43AM +0000, Peter Zijlstra wrote:
+> On Wed, Nov 13, 2013 at 09:16:13AM +0100, Martin Schwidefsky wrote:
+> > The switch_mm function is called with the task_lock and/or with
+> > request queue lock. Add finish_switch_mm to allow an architecture
+> > to execute some code after the mm has been switched but without
+> > any locks held. One use case is the s390 architecture which will
+> > use this to wait for the completion of TLB flush operations.
 
-On 13-11-2013 05:42, Mark Rutland wrote:
-> Hi,
->=20
-> On Tue, Nov 12, 2013 at 08:14:41PM +0000, Eduardo Valentin wrote:
->> On 12-11-2013 15:59, Olof Johansson wrote:
->>> On Tue, Nov 12, 2013 at 11:46 AM, Eduardo Valentin
->>> <eduardo.valentin@ti.com> wrote:
->>>> After discussion and agreement of thermal device tree bindings,
->>>> it is desirable to properly maintain thermal bindings for
->>>> existing and upcoming devices.
->>>>
->>>> As original author of thermal device tree bindings, I am
->>>> volunteering to maintain them.
->>>>
->>>> Cc: Rob Herring <rob.herring@calxeda.com>
->>>> Cc: Pawel Moll <pawel.moll@arm.com>
->>>> Cc: Mark Rutland <mark.rutland@arm.com>
->>>> Cc: Stephen Warren <swarren@wwwdotorg.org>
->>>> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
->>>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->>>> ---
->>>>  MAINTAINERS | 1 +
->>>>  1 file changed, 1 insertion(+)
->>>>
->>>> diff --git a/MAINTAINERS b/MAINTAINERS
->>>> index 3438384..94bfc46 100644
->>>> --- a/MAINTAINERS
->>>> +++ b/MAINTAINERS
->>>> @@ -6178,6 +6178,7 @@ M:        Pawel Moll <pawel.moll@arm.com>
->>>>  M:     Mark Rutland <mark.rutland@arm.com>
->>>>  M:     Stephen Warren <swarren@wwwdotorg.org>
->>>>  M:     Ian Campbell <ijc+devicetree@hellion.org.uk>
->>>> +M:     Eduardo Valentin <eduardo.valentin@ti.com>
->>>>  L:     devicetree@vger.kernel.org
->>>>  S:     Maintained
->>>>  F:     Documentation/devicetree/
->>>
->>> The number of device-tree maintainers is getting to be somewhat silly=
-=2E
->>> You don't have to be a maintainer to be a reviewer, and the number is=
+We have similar needs on arm and arm64 (full cache flushing where we
+want interrupts enable or some IPIs for TLB tagging synchronisation).
 
->>> getting large enough that it might get hard for one maintainer to kno=
-w
->>> what another is doing.
->>>
->>> So, soft nack, but it's really up to the DT guys.
->>
->> Hello Olof,
->>
->> No issues on my side. As I stated in the patch description, I am
->> volunteering. The motivation comes from the fact that it's been hard t=
-o
->> get DT maintainers attention, so I am assuming they are not having
->> enough bandwidth to pay attention to an extra class of bindings.
->>
->> I agree with you, this is up to the DT folks.
->=20
-> When we discussed this in #devicetree, I was under the impression you
-> meant adding a line like:
->=20
-> F:      Documentation/devicetree/bindings/thermal/
->=20
-> To your MAINTAINERS entry, rather than adding yourself to the general
-> devicetree bindings MAINTAINERS entry. Sorry for the confusion regardin=
-g
-> this.
->=20
-> Given we have enough difficulty organising ourselves at present, I agre=
-e
-> with Olof that it doesn't make much sense to throw more people into the=
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index 1deccd7..89409cb 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -32,7 +32,7 @@
+> >  #include <linux/init.h>
+> >  #include <linux/uaccess.h>
+> >  #include <linux/highmem.h>
+> > -#include <asm/mmu_context.h>
+> > +#include <linux/mmu_context.h>
+> >  #include <linux/interrupt.h>
+> >  #include <linux/capability.h>
+> >  #include <linux/completion.h>
+> > @@ -1996,6 +1996,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+> >  	perf_event_task_sched_in(prev, current);
+> >  	finish_lock_switch(rq, prev);
+> >  	finish_arch_post_lock_switch();
+> > +	finish_switch_mm(current->mm, current);
 
-> general devicetree bindings maintainer pile.
->=20
-> However, we would certainly appreciate any review you'd be willing to
-> provide.
+This could use the same hook.
 
-No issues then folks. :-)
+> >  
+> >  	fire_sched_in_preempt_notifiers(current);
+> >  	if (mm)
+> > @@ -4140,8 +4141,10 @@ void idle_task_exit(void)
+> >  
+> >  	BUG_ON(cpu_online(smp_processor_id()));
+> >  
+> > -	if (mm != &init_mm)
+> > +	if (mm != &init_mm) {
+> >  		switch_mm(mm, &init_mm, current);
+> > +		finish_switch_mm(&init_mm, current);
+> > +	}
+> >  	mmdrop(mm);
+> >  }
 
->=20
-> Thanks,
-> Mark.
->=20
->=20
+Here finish_switch_mm() is called in the same context with switch_mm().
+What we have on ARM via switch_mm() is to check for irqs_disabled() and
+if yes, defer the actual switching via a flag until the
+finish_arch_post_lock_switch() hook. But on ARM we only cared about the
+interrupts being enabled.
 
+> > diff --git a/mm/mmu_context.c b/mm/mmu_context.c
+> > index 8a8cd02..11b3d47 100644
+> > --- a/mm/mmu_context.c
+> > +++ b/mm/mmu_context.c
+> > @@ -8,8 +8,6 @@
+> >  #include <linux/export.h>
+> >  #include <linux/sched.h>
+> >  
+> > -#include <asm/mmu_context.h>
+> > -
+> >  /*
+> >   * use_mm
+> >   *	Makes the calling kernel thread take on the specified
+> > @@ -31,6 +29,7 @@ void use_mm(struct mm_struct *mm)
+> >  	tsk->mm = mm;
+> >  	switch_mm(active_mm, mm, tsk);
+> >  	task_unlock(tsk);
+> > +	finish_switch_mm(mm, tsk);
 
---=20
-You have got to be excited about what you are doing. (L. Lamport)
+As above, for ARM we only care about interrupts being enabled, so it
+didn't require a hook.
 
-Eduardo Valentin
+Is s390 switch_mm() ok with only interrupts being enabled but some locks
+held?
 
-
---xj7vtLu5XQTwRUPwdGgl6qRw5hxGB2OUA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlKDbcgACgkQCXcVR3XQvP3gAAEApfSAfk67eq22FJy/dY46cxCZ
-1DhuZiTeUNPQYuLMkF8A/AkgSQAHK3nAzd3hGOmLOhbfElBIW4F8h0PU34gqqpZr
-=xlBF
------END PGP SIGNATURE-----
-
---xj7vtLu5XQTwRUPwdGgl6qRw5hxGB2OUA--
+-- 
+Catalin
