@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758946Ab3KMLfF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 06:35:05 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55360 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681Ab3KMLfC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 06:35:02 -0500
-Date: Wed, 13 Nov 2013 12:34:39 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, jolsa@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
-Message-ID: <20131113113439.GI21461@twins.programming.kicks-ass.net>
-References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
- <1384267617-3446-5-git-send-email-dsahern@gmail.com>
- <20131112145707.GV5056@laptop.programming.kicks-ass.net>
- <20131112150751.GA19321@ghostprotocols.net>
- <20131112151944.GX5056@laptop.programming.kicks-ass.net>
- <52824AE3.4050207@gmail.com>
- <20131112211121.GC25913@gmail.com>
+	id S1758970Ab3KMLfs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 06:35:48 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:53270 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757539Ab3KMLfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 06:35:47 -0500
+X-IronPort-AV: E=Sophos;i="4.93,692,1378857600"; 
+   d="scan'208";a="73965312"
+Date: Wed, 13 Nov 2013 11:35:44 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Rob Herring <robherring2@gmail.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, <konrad@kernel.org>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 2/2] swiotlb-xen: xen_swiotlb_map_page: do
+ not error out if dma_capable fails
+In-Reply-To: <52828E17.2040801@gmail.com>
+Message-ID: <alpine.DEB.2.02.1311131135340.4714@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1311121404590.26077@kaball.uk.xensource.com> <1384265520-6833-2-git-send-email-stefano.stabellini@eu.citrix.com> <20131112144832.GC9435@phenom.dumpdata.com> <alpine.DEB.2.02.1311121704590.26077@kaball.uk.xensource.com>
+ <52828E17.2040801@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131112211121.GC25913@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 10:11:21PM +0100, Ingo Molnar wrote:
+On Tue, 12 Nov 2013, Rob Herring wrote:
+> On 11/12/2013 11:27 AM, Stefano Stabellini wrote:
+> > Russell gave a great explanation of the issue so I am just going to
+> > limit myself to answering to:
+> > 
+> > On Tue, 12 Nov 2013, Konrad Rzeszutek Wilk wrote:
+> >>> Considering that we know that the swiotlb buffer has a low address,
+> >>> skip the check.
+> >>
+> >> I am not following that sentence. Could you please explain to me
+> >> how the SWIOTLB buffer low address guarantees that we don't need
+> >> the check?
+> > 
+> > xen_swiotlb_fixup makes sure that the swiotlb buffer is lower than 4GB,
+> > probably lower than 3GB, by passing dma_bits to
+> > xen_create_contiguous_region.
+> > This meets the requirements of most devices out there.
+> > In fact we are not even running this check under the same conditions in
+> > swiotlb_map_sg_attrs.
+> > I admit that it is possible to come up with a scenario where the check
+> > would be useful, but it is far easier to come up with scenarios where
+> > not only is unneeded but it is even harmful.
+> > 
+> > Alternatively (without Rob's "of: set dma_mask to point to
+> > coherent_dma_mask") Linux 3.13 is going to fail to get the network
+> > running on Midway. It is going to avoid fs mounting failures just
+> > because we don't do the same check in swiotlb_map_sg_attrs.
+> > 
+> > FYI given that Rob's patch is probably going upstream soon anyway, I
+> > don't feel so strongly about this.
 > 
-> * David Ahern <dsahern@gmail.com> wrote:
-> 
-> > > Dunno.. it _should_ all work. Try it and see what it does.. Once the 
-> > > events are bigger than a page things might get 'interesting' though.
-> 
-> Which could be the case with call-graph recording, right?
-
-Not typically, I think we're limiting call graphs to 127 u64, which is
-~1k. Maybe you can blow the single page if you also do a large
-top-of-stack copy for dwarf/unwind nonsense.
-
-> > one option here is not allow page faults and system wide system calls. 
-> > system wide tracing needs mmap; page faults for a task can use write(). 
-> > I left that option in case something like this came up.
-> 
-> So maybe splice() sounds like the right long term solution after all? :-/
-
-Right until you put a tracepoint (kprobe) somewhere in whatever function
-is used to transfer a single page into/from a splice pipe.
-
-You can always screw yourself over using this stuff, no exceptions.
+> It is in Linus' tree now.
+ 
+OK,  I'll drop this patch then.
