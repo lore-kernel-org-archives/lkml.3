@@ -1,128 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759620Ab3KMRUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 12:20:32 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:51397 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594Ab3KMRUW (ORCPT
+	id S1751652Ab3KMR0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 12:26:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52905 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab3KMR0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 12:20:22 -0500
+	Wed, 13 Nov 2013 12:26:00 -0500
+Date: Wed, 13 Nov 2013 09:25:13 -0800
+From: tip-bot for Michael wang <tipbot@zytor.com>
+Message-ID: <tip-106dd5afde3cd10db7e1370b6ddc77f0b2496a75@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, wangyun@linux.vnet.ibm.com, tglx@linutronix.de,
+        fengguang.wu@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, wangyun@linux.vnet.ibm.com, tglx@linutronix.de,
+        fengguang.wu@intel.com
+In-Reply-To: <5282EDC0.6060003@linux.vnet.ibm.com>
+References: <5282EDC0.6060003@linux.vnet.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Fix endless sync_sched/rcu()
+  loop inside _cpu_down()
+Git-Commit-ID: 106dd5afde3cd10db7e1370b6ddc77f0b2496a75
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <5283A000.8090007@gmail.com>
-References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
-	<1384285347-13506-15-git-send-email-geert@linux-m68k.org>
-	<5283A000.8090007@gmail.com>
-Date: Wed, 13 Nov 2013 18:20:21 +0100
-X-Google-Sender-Auth: mLsJ0-T4n-aLvx_WkAG7duO_FGo
-Message-ID: <CAMuHMdU6Lqup-MuAOH0iTg16b-SHw4D52WsoPXMsumOxQWbJrg@mail.gmail.com>
-Subject: Re: [PATCH 14/17] dt: Consolidate __dtb_start declarations in <linux/of_fdt.h>
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
-        Chris Zankel <chris@zankel.net>, Rob Herring <rob.herring@calxeda.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 13 Nov 2013 09:25:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 4:51 PM, Rob Herring <robherring2@gmail.com> wrote:
-> On Tue, Nov 12, 2013 at 1:42 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->> The different architectures used their own (and different) declarations:
->>
->>     extern struct boot_param_header __dtb_start;
->>     extern u32 __dtb_start[];
->>     extern char __dtb_start[];
->>
->> Consolidate them using the first variant in <linux/of_fdt.h>.
->> This requires adding a few "address of" operators on architectures where
->> __dtb_start was an array before.
->>
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> Cc: Vineet Gupta <vgupta@synopsys.com>
->> Cc: James Hogan <james.hogan@imgtec.com>
->> Cc: Ralf Baechle <ralf@linux-mips.org>
->> Cc: Jonas Bonn <jonas@southpole.se>
->> CC: Chris Zankel <chris@zankel.net>
->> Cc: Rob Herring <rob.herring@calxeda.com>
->> Cc: devicetree@vger.kernel.org
->> ---
->>  arch/arc/include/asm/sections.h             |    1 -
->>  arch/arc/kernel/setup.c                     |    2 +-
->>  arch/metag/kernel/setup.c                   |    6 +-----
->>  arch/mips/include/asm/mips-boards/generic.h |    4 ----
->>  arch/mips/lantiq/prom.h                     |    2 --
->>  arch/mips/netlogic/xlp/dt.c                 |    4 ++--
->>  arch/mips/ralink/of.c                       |    2 --
->>  arch/openrisc/kernel/setup.c                |    2 +-
->>  arch/openrisc/kernel/vmlinux.h              |    2 --
->>  arch/xtensa/kernel/setup.c                  |    3 +--
->>  include/linux/of_fdt.h                      |    3 +++
->>  11 files changed, 9 insertions(+), 22 deletions(-)
->
-> This is great, but I would like to see this taken one step further and
-> move the selection logic into the core code. We can try to use the
-> built-in dtb if early_init_dt_scan is passed a NULL or invalid dtb. This
-> should work for most arches I think and still allows an arch to do a
-> different selection algorithm if desired.
+Commit-ID:  106dd5afde3cd10db7e1370b6ddc77f0b2496a75
+Gitweb:     http://git.kernel.org/tip/106dd5afde3cd10db7e1370b6ddc77f0b2496a75
+Author:     Michael wang <wangyun@linux.vnet.ibm.com>
+AuthorDate: Wed, 13 Nov 2013 11:10:56 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 13 Nov 2013 13:33:50 +0100
 
-Yes, that makes sense.
+sched: Fix endless sync_sched/rcu() loop inside _cpu_down()
 
-> Are the DT related patches dependent on the rest of the series?
+Commit 6acce3ef8:
 
-Not really. There may be small rejects if you apply it out-of-order,
-but nothing serious.
+	sched: Remove get_online_cpus() usage
 
-> Something like this is what I have in mind:
->
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index 5c47910..723f854d 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -869,14 +869,16 @@ void * __init __weak
-> early_init_dt_alloc_memory_arch(u64 size, u64 align)
->
->  bool __init early_init_dt_scan(void *params)
->  {
-> -       if (!params)
-> -               return false;
-> -
->         /* Setup flat device-tree pointer */
->         initial_boot_params = params;
->
-> +       if (!initial_boot_params ||
-> +           (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER))
-> +               initial_boot_params = &__dtb_start;
-> +
->         /* check device tree validity */
-> -       if (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER) {
-> +       if (!initial_boot_params ||
+tries to do sync_sched/rcu() inside _cpu_down() but triggers:
 
-initial_boot_params cannot be NULL here, so no need to check.
+	INFO: task swapper/0:1 blocked for more than 120 seconds.
+	...
+	[<ffffffff811263dc>] synchronize_rcu+0x2c/0x30
+	[<ffffffff81d1bd82>] _cpu_down+0x2b2/0x340
+	...
 
-> +           (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER)) {
+It was caused by that in the rcu boost case we rely on smpboot thread to
+finish the rcu callback, which has already been parked before sync in here
+and leads to the endless sync_sched/rcu().
 
-However, if __dtb_end == __dtb_start, you may be reading random
-data here from the next section. The OF_DT_HEADER check should cover
-this, but better safe than sorry?
+This patch exchanges the sequence of smpboot_park_threads() and
+sync_sched/rcu() to fix the bug.
 
->                 initial_boot_params = NULL;
->                 return false;
->         }
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/5282EDC0.6060003@linux.vnet.ibm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/cpu.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 63aa50d..2227b58 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -306,7 +306,6 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 				__func__, cpu);
+ 		goto out_release;
+ 	}
+-	smpboot_park_threads(cpu);
+ 
+ 	/*
+ 	 * By now we've cleared cpu_active_mask, wait for all preempt-disabled
+@@ -315,12 +314,16 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	 *
+ 	 * For CONFIG_PREEMPT we have preemptible RCU and its sync_rcu() might
+ 	 * not imply sync_sched(), so explicitly call both.
++	 *
++	 * Do sync before park smpboot threads to take care the rcu boost case.
+ 	 */
+ #ifdef CONFIG_PREEMPT
+ 	synchronize_sched();
+ #endif
+ 	synchronize_rcu();
+ 
++	smpboot_park_threads(cpu);
++
+ 	/*
+ 	 * So now all preempt/rcu users must observe !cpu_active().
+ 	 */
