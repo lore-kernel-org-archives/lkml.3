@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932210Ab3KMQJl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 11:09:41 -0500
-Received: from fieldses.org ([174.143.236.118]:58910 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754213Ab3KMQJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 11:09:39 -0500
-Date: Wed, 13 Nov 2013 11:09:37 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Weng Meiling <wengmeiling.weng@huawei.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] nfsd:add '\n' when read file supported_krb5_enctypes
-Message-ID: <20131113160937.GI28033@fieldses.org>
-References: <52786412.5030403@huawei.com>
- <527C9170.9030005@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <527C9170.9030005@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757330Ab3KMQNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 11:13:00 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:54357 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755706Ab3KMQM6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 11:12:58 -0500
+Date: Wed, 13 Nov 2013 11:12:57 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Matthew Whitehead <tedheadster@gmail.com>, john.stultz@linaro.org,
+        linux-kernel@vger.kernel.org, mwhitehe@redhat.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: nohz problem with idle time on old hardware
+Message-ID: <20131113111257.482c2955@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
+References: <20131113113927.GA13875@mwhitehe.csb>
+	<alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de>
+	<20131113102153.5f10e6b5@gandalf.local.home>
+	<20131113103134.5b8cf02f@gandalf.local.home>
+	<20131113105737.3f7a0b1b@gandalf.local.home>
+	<alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 08, 2013 at 03:23:28PM +0800, Weng Meiling wrote:
-> 
-> From: Weng Meiling <wengmeiling.weng@huawei.com>
+On Wed, 13 Nov 2013 17:07:18 +0100 (CET)
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-I agree completely that a \n at the end would make more sense.
 
-Have you tested that this nfs-utils is OK with this change?
+> Right. It's telling you if NOHZ is enabled. It's not telling you that
+> NOHZ is active.
 
-I suspect that the only code that reads this file anywhere is
+Yeah, which makes this code rather silly:
 
-	nfs-utils/utils/gssd/svcgssd_krb5.c:parse_enctypes()
+in rcu_prepare_for_idle():
 
-And on a quick skim of that function.... I *think* it should be fine.
-But I'd be happier if you could confirm that you've tested it.
+	/* Handle nohz enablement switches conservatively. */
+	tne = ACCESS_ONCE(tick_nohz_enabled);
+	if (tne != rdtp->tick_nohz_enabled_snap) {
+		if (rcu_cpu_has_callbacks(cpu, NULL))
+			invoke_rcu_core(); /* force nohz to see update. */
+		rdtp->tick_nohz_enabled_snap = tne;
+		return;
+	}
 
---b.
-
-> 
-> Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
-> ---
->  fs/nfsd/nfsctl.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-> index 7f55517..31db42c 100644
-> --- a/fs/nfsd/nfsctl.c
-> +++ b/fs/nfsd/nfsctl.c
-> @@ -188,7 +188,7 @@ static const struct file_operations export_features_operations = {
->  #if defined(CONFIG_SUNRPC_GSS) || defined(CONFIG_SUNRPC_GSS_MODULE)
->  static int supported_enctypes_show(struct seq_file *m, void *v)
->  {
-> -	seq_printf(m, KRB5_SUPPORTED_ENCTYPES);
-> +	seq_printf(m, "%s\n", KRB5_SUPPORTED_ENCTYPES);
->  	return 0;
->  }
-> 
-> -- 
-> 1.8.3.1
-> 
-> 
-> 
-> 
+-- Steve
