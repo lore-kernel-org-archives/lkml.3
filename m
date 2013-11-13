@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759434Ab3KMOzz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 09:55:55 -0500
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:26382
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932326Ab3KMOzg (ORCPT
+	id S1759448Ab3KMOz6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 09:55:58 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:59605 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759339Ab3KMOzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 09:55:36 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh8275dh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-From: Nicolin Chen <b42378@freescale.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <s.hauer@pengutronix.de>, <timur@tabi.org>, <shawn.guo@linaro.org>,
-        <broonie@kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
-        <ijc+devicetree@hellion.org.uk>
-Subject: [PATCH v7 2/4] dma: imx-sdma: Add new dma type for ssi dual fifo script
-Date: Wed, 13 Nov 2013 22:55:25 +0800
-Message-ID: <5dde8bd3ac0ff25335d896fd617429aa75d0dcd6.1384352281.git.b42378@freescale.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1384352281.git.b42378@freescale.com>
-References: <cover.1384352281.git.b42378@freescale.com>
+	Wed, 13 Nov 2013 09:55:51 -0500
+Date: Wed, 13 Nov 2013 14:54:41 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Florian Meier <florian.meier@koalo.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        Martin Sperl <martin@sperl.org>
+Message-ID: <20131113145441.GQ878@sirena.org.uk>
+References: <527D1DDA.2040004@koalo.de>
+ <20131108181743.GR2493@sirena.org.uk>
+ <20131113050017.GO8834@intel.com>
+ <20131113125111.GE878@sirena.org.uk>
+ <20131113133536.GZ8834@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i13qRg9tmWEwo36p"
+Content-Disposition: inline
+In-Reply-To: <20131113133536.GZ8834@intel.com>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 149.254.183.27
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] dmaengine: Add support for BCM2835.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new DMA_TYPE for SSI dual FIFO script, included
-in SDMA firmware version 2. This script would allow SSI use dual
-fifo mode to transimit/receive data without occasional hardware
-underrun/overrun.
 
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
-Acked-by: Kumar Gala <galak@codeaurora.org>
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
----
- Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt | 1 +
- drivers/dma/imx-sdma.c                                 | 4 ++++
- include/linux/platform_data/dma-imx.h                  | 1 +
- 3 files changed, 6 insertions(+)
+--i13qRg9tmWEwo36p
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
-index 4fa814d..68b83ec 100644
---- a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
-+++ b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
-@@ -42,6 +42,7 @@ The full ID of peripheral types can be found below.
- 	19	IPU Memory
- 	20	ASRC
- 	21	ESAI
-+	22	SSI Dual FIFO	(needs firmware ver >= 2)
- 
- The third cell specifies the transfer priority as below.
- 
-diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index 43a8441..efe9d6a 100644
---- a/drivers/dma/imx-sdma.c
-+++ b/drivers/dma/imx-sdma.c
-@@ -725,6 +725,10 @@ static void sdma_get_pc(struct sdma_channel *sdmac,
- 		per_2_emi = sdma->script_addrs->app_2_mcu_addr;
- 		emi_2_per = sdma->script_addrs->mcu_2_app_addr;
- 		break;
-+	case IMX_DMATYPE_SSI_DUAL:
-+		per_2_emi = sdma->script_addrs->ssish_2_mcu_addr;
-+		emi_2_per = sdma->script_addrs->mcu_2_ssish_addr;
-+		break;
- 	case IMX_DMATYPE_SSI_SP:
- 	case IMX_DMATYPE_MMC:
- 	case IMX_DMATYPE_SDHC:
-diff --git a/include/linux/platform_data/dma-imx.h b/include/linux/platform_data/dma-imx.h
-index beac6b8..bcbc6c3 100644
---- a/include/linux/platform_data/dma-imx.h
-+++ b/include/linux/platform_data/dma-imx.h
-@@ -39,6 +39,7 @@ enum sdma_peripheral_type {
- 	IMX_DMATYPE_IPU_MEMORY,	/* IPU Memory */
- 	IMX_DMATYPE_ASRC,	/* ASRC */
- 	IMX_DMATYPE_ESAI,	/* ESAI */
-+	IMX_DMATYPE_SSI_DUAL,	/* SSI Dual FIFO */
- };
- 
- enum imx_dma_prio {
--- 
-1.8.4
+On Wed, Nov 13, 2013 at 07:05:36PM +0530, Vinod Koul wrote:
+> On Wed, Nov 13, 2013 at 12:51:11PM +0000, Mark Brown wrote:
 
+> > I'm probably going to be looking at that at some point, though perhaps
+> > Martin will get to it since he seems to be looking at this.
 
+> Okay sounds good. This will also help in streamline the implementations..
+
+Yes, though I think some of the stuff Martin was talking about will need
+changes to the dmaengine APIs.  He was wanting to reuse DMA lists which
+currently dmaengine needs to have built up each time.
+
+--i13qRg9tmWEwo36p
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSg5KtAAoJELSic+t+oim9qqIP/iOXfikITADNLFePu4CDZIMB
+csTTt9lhu0Q59fH03aXc2F5JdiUzuVohkH7jK8tFXuxDZ0rCqdm6Zh0FwxL/peIm
+B7fKc6/qRvq3d2gaRBEcRB/aCO9GG8WoKFKdgqWlIl5yEIVmgPPyrePayXXBgf4A
+RA+BiIbC5XrWzIrCWgPqkg8izNZbWvOAF7/THvp7vDleyHeFMWSCn53kczUKye8a
+XVa4Nc4NV4sUWWDfy/5i5w3JcQDEa3KHR10MlRcucNWLqtc+qHY7RQ8k2azerL13
+5IH69j39vNqlD8jfvmJE19nIc8fuSzGBvBX095GkAAEs/oaJoLojTB9aWjvrjeVj
+2KnXOXHdq0Nhu5o8ho0IARU0/IbzEKqUhQ197H0iGB32+UQ1egyAmZQC3yzjzSJF
+Yg5Namq9Wzkv7ZiQsHSmPLWZ7/DV031Es6RmE/x+eMjf07dMn6V8HUn4OnKRisDn
+8nVWz9+Gph14lRHcK3CY+QFby6OpyTkSsjtoBvQWUqYSZu1JoYafCaZxGZRdyrbS
+AluMKSjvFsuFEA02Yl0A7zaoXs1ApHSORpW7UQCrKATI70GXYoetAsv601D7/AFl
+zvb7Zs+jCNDmuou9l49SinH/RX5j6FYP9JXOG/IPqJiO03UFrw35/IDJVQ5pMoHw
+qRWrm8zlEree18mu6K1r
+=gLfd
+-----END PGP SIGNATURE-----
+
+--i13qRg9tmWEwo36p--
