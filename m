@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab3KLOFX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 09:05:23 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42663 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755324Ab3KLOFU (ORCPT
+	id S1755459Ab3KLOFn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 09:05:43 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:55484 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab3KLOFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 09:05:20 -0500
-Date: Tue, 12 Nov 2013 14:04:36 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH v2] ARM: Use udiv/sdiv for __aeabi_{u}idiv library
-	functions
-Message-ID: <20131112140436.GK16735@n2100.arm.linux.org.uk>
-References: <1383951632-6090-1-git-send-email-sboyd@codeaurora.org> <alpine.LFD.2.10.1311092357090.2314@knanqh.ubzr> <528193A0.7050505@codeaurora.org> <alpine.LFD.2.10.1311120839310.9667@knanqh.ubzr>
+	Tue, 12 Nov 2013 09:05:41 -0500
+Date: Tue, 12 Nov 2013 22:03:57 -0500
+From: Huang Shijie <shijie8@gmail.com>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Caizhiyong <caizhiyong@hisilicon.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Karel Zak <kzak@redhat.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: Re: [PATCH 2/2] mtd: cmdlinepart: support master name is not set
+ when parser partition
+Message-ID: <20131113030351.GA8465@gmail.com>
+References: <C3050A4DBA34F345975765E43127F10F1C08B3EA@szxeml512-mbs.china.huawei.com>
+ <20131111030657.GA9406@gmail.com>
+ <20131110180900.GA2478@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.10.1311120839310.9667@knanqh.ubzr>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20131110180900.GA2478@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 09:01:16AM -0500, Nicolas Pitre wrote:
-> What about this patch which I think is currently your best option.  Note 
-> it would need to use the facilities from asm/opcodes.h to make it endian 
-> agnostic.
+On Sun, Nov 10, 2013 at 03:09:02PM -0300, Ezequiel Garcia wrote:
 > 
-> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-> index 6a1b8a81b1..379cffe4ab 100644
-> --- a/arch/arm/kernel/setup.c
-> +++ b/arch/arm/kernel/setup.c
-> @@ -383,6 +383,34 @@ static void __init cpuid_init_hwcaps(void)
->  		elf_hwcap |= HWCAP_IDIVT;
->  	}
->  
-> +	/*
-> +	 * Patch our division routines with the corresponding opcode
-> +	 * if the hardware supports it.
-> +	 */
-> +	if (IS_ENABLED(CONFIG_THUMB2_KERNEL) && (elf_hwcap & HWCAP_IDIVT)) {
-> +		extern char __aeabi_uidiv, __aeabi_idiv;
-> +		u16 *uidiv = (u16 *)&__aeabi_uidiv;
-> +		u16 *idiv = (u16 *)&__aeabi_idiv;
-> +
-> +		uidiv[0] = 0xfbb0;  /* udiv r0, r0, r1 */
-> +		uidiv[1] = 0xf0f1;
-> +		uidiv[2] = 0x4770;  /* bx lr */
-> +
-> +		idiv[0] = 0xfb90;  /* sdiv r0, r0, r1 */
-> +		idiv[1] = 0xf0f1;  
-> +		idiv[2] = 0x4770;  /* bx lr */
-> +	} else if (!IS_ENABLED(CONFIG_THUMB2_KERNEL) && (elf_hwcap & HWCAP_IDIVA)) {
-> +		extern char __aeabi_uidiv, __aeabi_idiv;
-> +		u32 *uidiv = (u32 *)&__aeabi_uidiv;
-> +		u32 *idiv = (u32 *)&__aeabi_idiv;
-> +
-> +		uidiv[0] = 0xe730f110;  /* udiv r0, r0, r1 */
-> +		uidiv[1] = 0xe12fff1e;  /* bx lr */
-> +
-> +		idiv[0] = 0xe710f110;  /* sdiv r0, r0, r1 */
-> +		idiv[1] = 0xe12fff1e;  /* bx lr */
-> +	}
+> Can you summarize such cases? Or maybe better, just share them all :)
+I just test it with cases such as(my nand is just 1G):
+   (1) mtdparts=gpmi-nand:16m(boot),16m(kernel),600m(dtb),600m(ok),-(rootfs)
+   (2) mtdparts=gpmi-nand:16m(boot),16m(kernel),600m(ok),-(rootfs)
+   (3) mtdparts=gpmi-nand:16m(boot),16m(kernel),600m(dtb),600m(ok),600m(ok2),-(rootfs)
 
-What about endianness, and what if XIP is enabled?
+thanks
+Huang Shijie
