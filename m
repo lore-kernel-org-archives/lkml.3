@@ -1,70 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579Ab3KMCAM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 21:00:12 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:7275 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755590Ab3KMCAE (ORCPT
+	id S1757746Ab3KMCBL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 21:01:11 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:51320 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755841Ab3KMCBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 21:00:04 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 12 Nov 2013 17:54:26 -0800
-Message-ID: <5282DD1C.4000307@nvidia.com>
-Date: Wed, 13 Nov 2013 10:59:56 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 12 Nov 2013 21:01:07 -0500
+Date: Tue, 12 Nov 2013 18:01:03 -0800
+From: Matt Wilson <msw@linux.com>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: xen-devel@lists.xen.org, Matt Wilson <msw@amazon.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Roger Pau Monne <roger.pau@citrix.com>, linux-kernel@vger.kernel.org,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Anthony Liguori <aliguori@amazon.com>
+Subject: Re: [PATCH] xen-gnttab: do not add m2p override entries for blkback
+ mappings
+Message-ID: <20131113020103.GA32239@u109add4315675089e695.ant.amazon.com>
+References: <1384307336-5328-1-git-send-email-anthony@codemonkey.ws>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>
-CC: Olof Johansson <olof@lixom.net>, Dave Martin <Dave.Martin@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v10 4/7] ARM: tegra: add support for Trusted Foundations
-References: <1383819106-1400-1-git-send-email-acourbot@nvidia.com> <1383819106-1400-5-git-send-email-acourbot@nvidia.com> <52828E31.8010408@wwwdotorg.org>
-In-Reply-To: <52828E31.8010408@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384307336-5328-1-git-send-email-anthony@codemonkey.ws>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 05:23 AM, Stephen Warren wrote:
-> On 11/07/2013 03:11 AM, Alexandre Courbot wrote:
->> Register the firmware operations for Trusted Foundations if the device
->> tree indicates it is active on the device.
->
->> diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
->
->>   void __init tegra_init_early(void)
->>   {
->> +	of_register_trusted_foundations();
->>   	tegra_cpu_reset_handler_init();
->>   	tegra_apb_io_init();
->>   	tegra_init_fuse();
->
-> Your other bugfix patch for 3.13 moved tegra_cpu_reset_handler_init().
-> Should the call to of_register_trusted_foundations() move with it when
-> this is applied, or should it just stay right at the start of
-> tegra_init_early()? Either way is fine; just let me know which way to
-> fix up the conflict when this gets applied.
+On Tue, Nov 12, 2013 at 05:48:56PM -0800, Anthony Liguori wrote:
+> From: Anthony Liguori <aliguori@amazon.com>
+> 
+> Commit 5dc03639 switched blkback to also add m2p override entries
+> when mapping grant pages but history seems to have forgotten why
+> this is useful if it ever was.
+> 
+> The blkback driver does not need m2p override entries to exist
+> and there is significant overhead due to the locking in the m2p
+> override table.  We see about a 10% improvement in IOP rate with
+> this patch applied running FIO in the guest.
+> 
+> See http://article.gmane.org/gmane.linux.kernel/1590932 for a full
+> analysis of current users.
+> 
+> Signed-off-by: Anthony Liguori <aliguori@amazon.com>
 
-I rebased on -next and left it at the start of tegra_init_early(). Even 
-though at the moment the only requirement is that the call is made 
-before tegra_cpu_reset_handler_init(), it seems to make sense to get rid 
-of firmware-related initialization as early as possible.
+Reviewed-by: Matt Wilson <msw@amazon.com>
 
-Btw, this patchset is still based on the 3.12 code, before common.c got 
-renamed to tegra.c, so you will have a problem here as well (sorry about 
-that). The conflict is easy to resolve, but if you want me to send you a 
-properly rebased version, just let me know.
+One comment for discussion below.
 
+> ---
+> A backported version of this has been heavily tested but the testing
+> against the latest Linux tree is light so far.
+
+[...]
+
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index c4d2298..081be8d 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -881,7 +881,8 @@ EXPORT_SYMBOL_GPL(gnttab_batch_copy);
+>  
+>  int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  		    struct gnttab_map_grant_ref *kmap_ops,
+> -		    struct page **pages, unsigned int count)
+> +		    struct page **pages, unsigned int count,
+> +		    int override)
+>  {
+>  	int i, ret;
+>  	bool lazy = false;
+> @@ -918,10 +919,29 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  		} else {
+>  			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
+>  		}
+> -		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> -				       &kmap_ops[i] : NULL);
+> -		if (ret)
+> -			return ret;
+> +
+> +		if (override) {
+> +			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> +					       &kmap_ops[i] : NULL);
+> +			if (ret)
+> +				return ret;
+
+The original code, which remains unmodified by this patch, is
+returning without calling arch_leave_lazy_mmu_mode() at the bottom of
+this function.
+
+> +		} else {
+> +			unsigned long pfn, old_mfn;
+> +
+> +			pfn = page_to_pfn(pages[i]);
+> +			old_mfn = pfn_to_mfn(pfn);
+> +
+> +			/* Save previous MFN in page private*/
+> +			WARN_ON(PagePrivate(pages[i]));
+> +			SetPagePrivate(pages[i]);
+> +			set_page_private(pages[i], old_mfn);
+> +
+> +			if (!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))) {
+> +				ret = -ENOMEM;
+> +				break;
+
+The new path doesn't repeat this error. I think that the override path
+needs to be changed to do the same in a separate patch.
+
+--msw
+
+> +			}
+> +		}
+> +			
+>  	}
+>  
+>  	if (lazy)
+                arch_leave_lazy_mmu_mode();
+
+        return ret;
+}
