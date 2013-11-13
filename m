@@ -1,177 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543Ab3KMUjX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 15:39:23 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47991 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab3KMUjN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 15:39:13 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Florian Meier <florian.meier@koalo.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree <devicetree@vger.kernel.org>, alsa-devel@alsa-project.org,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
-        dmaengine <dmaengine@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv4] dmaengine: Add support for BCM2835
-Date: Wed, 13 Nov 2013 21:39:10 +0100
-Message-ID: <2049375.GR9Xb2zuek@flatron>
-User-Agent: KMail/4.11.3 (Linux/3.12.0-gentoo; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <5283D47A.7060503@koalo.de>
-References: <5283BC93.1090801@koalo.de> <3722902.ByNK8Ptc5Y@flatron> <5283D47A.7060503@koalo.de>
+	id S1751224Ab3KMUmH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 15:42:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56206 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030Ab3KMUl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 15:41:56 -0500
+Date: Wed, 13 Nov 2013 15:41:30 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Kexec Mailing List <kexec@lists.infradead.org>,
+        Baoquan He <bhe@redhat.com>, WANG Chao <chaowang@redhat.com>,
+        Dave Young <dyoung@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: /proc/vmcore mmap() failure issue
+Message-ID: <20131113204130.GD7613@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 13 of November 2013 20:35:22 Florian Meier wrote:
-> On 13.11.2013 19:43, Tomasz Figa wrote:
-> > Hi Florian,
-> > 
-> > Seems like I accidentally replied to some old version of this patch.
-> > Not sure how many of those comments were still relevant for V3, but
-> > let me look at this version and see whether we can still improve things
-> > a bit. Please see my comments inline.
-> 
-> Some were still helpful (especially the idea to use the chan_init
-> function for setting the irq), thanks.
+Hi Hatayama,
 
-Good. You're welcome.
+We are facing some /proc/vmcore mmap() failure issues and then makdumpfile
+exits without saving dump and system reboots.
 
-> 
-> >> ....
-> >> diff --git a/Documentation/devicetree/bindings/dma/bcm2835-dma.txt b/Documentation/devicetree/bindings/dma/bcm2835-dma.txt
-> >> new file mode 100644
-> >> index 0000000..bca5e84
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/dma/bcm2835-dma.txt
-> >> @@ -0,0 +1,59 @@
-> >> +* BCM2835 DMA controller
-> >> +
-> >> +Required properties:
-> >> +- compatible: Should be "brcm,bcm2835-dma".
-> >> +- reg: Should contain DMA registers location and length.
-> >> +- interrupts: Should contain the DMA interrupts associated
-> >> +		to the DMA channels in ascending order.
-> >> +		First cell is the IRQ bank.
-> >> +		Second cell is the IRQ number.
-> >> +- #dma-cells: Must be <1>, used to represent the number of integer cells in
-> >> +		the dmas property of client devices.
-> >> +- dma-channels: Maximum number of DMA channels available.
-> >> +- dma-requests: Number of DMA Requests.
-> > 
-> > The two properties above do not seem to be used anywhere in the driver.
-> 
-> Aren't they necessary for the DMA engine core?
+I tried latest makedumpfile (devel branch) with 3.12 kernel.
 
-Honestly, looking at the DMA bindings documentation, these two are quite
-a mystery for me. They don't seem to be used in DMA engine core, but
-instead several drivers use them for private purposes.
+I think this issue happens only on some machines. And it looks like it
+happens when end of system RAM chunk in first kernel is not page aligned. For
+example, I have one machine where I noticed it and this is how system
+RAM looks like.
 
-So, since they are optional and you don't seem to need them, I wouldn't
-list them.
+00100000-dafa57ff : System RAM
+  01000000-015892fa : Kernel code
+  015892fb-0195c9ff : Kernel data
+  01ae6000-01d31fff : Kernel bss
+  24000000-33ffffff : Crash kernel
+dafa5800-dbffffff : reserved
 
-> 
-> >> +- brcm,dma-channel-mask: Bit mask representing the channels available.
-> > 
-> > What does the value of this property depend on? Could you describe the
-> > structure of this DMA controller?
-> > 
-> >> +
-> >> +Example:
-> >> +
-> >> +dma: dma@7e007000 {
-> >> +	compatible = "brcm,bcm2835-dma";
-> >> +	reg = <0x7e007000 0xf00>;
-> >> +	interrupts = <1 16
-> >> +		      1 17
-> >> +		      1 18
-> >> +		      1 19
-> >> +		      1 20
-> >> +		      1 21
-> >> +		      1 22
-> >> +		      1 23
-> >> +		      1 24
-> >> +		      1 25
-> >> +		      1 26
-> >> +		      1 27
-> >> +		      1 28>;
-> > 
-> > There are 13 interrupts specified here, but...
-> > 
-> >> +
-> >> +	#dma-cells = <1>;
-> >> +	dma-channels = <16>;
-> > 
-> > ...16 channels here...
-> > 
-> >> +	dma-requests = <32>;
-> >> +	brcm,dma-channel-mask = <0x7f35>;
-> > 
-> > ...and 11 set bits here. May I ask you to explain this to me, please?
-> 
-> How I understand this DMA controller:
-> There are 16 DMA channels in the DMA controller, but only 13 interrupts
-> are available at the IRQ controller. Therefore, the upper DMA channels
-> can just not be used. Maybe because there are to many other IRQs and
-> they didn't want to implement another IRQ bank.
-> Furthermore, some of the DMA channels are already used by the
-> VideoCore/GPU/firmware. This is what dma-channel-mask indicates. This
-> should be automatically set by the firmware in the future.
-> Finally, there are some channels with special functionality that should
-> not be used by DMA engine, too. Therefore, these lines:
-> 		/* do not use the FIQ and BULK channels */
-> 		chans_available &= ~0xD;
+Notice that dafa57ff does not end at page boundary and next reserved
+range does not start at page boundary. I think that next reserved
+range is referenced through some ACPI data. More on this later.
 
-OK, this makes it much more clear.
+So we put some printk() messages to get more info. In a nut shell,
+remap_pfn_range() fails when we try to map the last section of system
+RAM not ending on page boundary.
 
-So, my only comment remaining here is that you shouldn't include the
-channels without interrupt signal in the mask. This would allow you
-to define it as a mask of channels that are operable and then just
-iterate over all set bits in the driver, instead of using tricks with
-interrupt resources. What do you think?
+remap_pfn_range()
+   track_pfn_remap() {
+        /*
+         * For anything smaller than the vma size we set prot based on the
+         * lookup.
+         */ 
+        flags = lookup_memtype(paddr);
+        
+        /* Check memtype for the remaining pages */
+        while (size > PAGE_SIZE) {
+                size -= PAGE_SIZE;
+                paddr += PAGE_SIZE;
+                if (flags != lookup_memtype(paddr))
+                        return -EINVAL; <---------------- Failure.
+        }
+	
+   }
+     
 
-> 
-> > [snip]
-> >> diff --git a/drivers/dma/bcm2835-dma.c b/drivers/dma/bcm2835-dma.c
-> >> new file mode 100644
-> >> index 0000000..baf072e
-> >> --- /dev/null
-> >> +++ b/drivers/dma/bcm2835-dma.c
-> > [snip]
-> >> +static int bcm2835_dma_probe(struct platform_device *pdev)
-> >> +{
-> >> +	struct bcm2835_dmadev *od;
-> >> +	struct resource *dma_res = NULL;
-> >> +	void __iomem *dma_base = NULL;
-> >> +	int rc = 0;
-> >> +	int i = 0;
-> >> +	int irq;
-> >> +	uint32_t chans_available;
-> > [snip]
-> >> +	if (pdev->dev.of_node) {
-> > 
-> > Is this driver supposed to support non-DT based instantation (aka board
-> > files)? If not, maybe it would be cleaner to simply check for
-> > !pdev->dev.of_node at the beginning of probe and return an error?
-> 
-> I would like to maintain the possibility for board file based
-> instatiation, because the Raspberry Pi downstream kernel still doesn't
-> support device tree. If this is a no-go, I will accept that.
+So we pass in a range to track_pfn_remap. Say pfn=0xdad62 size=0x244000.
+Now we call lookup_memtype() on every page in the range and make sure
+they all are same, otherwise we fail. Guess what, all all same except
+last page (which does not end at page boundary).
 
-Sure, you are free to do so.
+I dived deeper in to lookup_memtype() and noticed that all regular
+ranges are not registered anywhere and their flags are _PAGE_CACHE_UC_MINUS.
+But last unaligned page/range, is registered in memtype rb tree and
+has attribute, _PAGE_CACHE_WB.
 
-What I meant is that your probe won't call bcm2835_dma_chan_init() at all
-if there is no pdev->dev.of_node, because the loop iterating over channels
-is under the if clause.
+Then I hooked into reserve_memtype() to figure out who is registering
+page 0xdafa5000 and it is acpi_init() which does it.
 
-Best regards,
-Tomasz
+[    0.721655] Hardware name: <edited>
+[    0.730590]  ffff8800340f3830 ffff8800340f37c0 ffffffff81575509
+00000000dafa5000
+[    0.738010]  ffff8800340f3800 ffffffff810566cc 00000000000dafa5
+00000000dafa5000
+[    0.745428]  00000000dafa6000 00000000dafa5000 0000000000000000
+0000000000001000
+[    0.752845] Call Trace:
+[    0.755288]  [<ffffffff81575509>] dump_stack+0x45/0x56
+[    0.760414]  [<ffffffff810566cc>] reserve_memtype+0x31c/0x3f0
+[    0.766144]  [<ffffffff810537ef>] __ioremap_caller+0x12f/0x360
+[    0.771963]  [<ffffffff8130ad56>] ? acpi_os_release_object+0xe/0x12
+[    0.778217]  [<ffffffff815686ba>] ? acpi_os_map_memory+0xf6/0x14e
+[    0.784295]  [<ffffffff81053a54>] ioremap_cache+0x14/0x20
+[    0.789679]  [<ffffffff815686ba>] acpi_os_map_memory+0xf6/0x14e
+[    0.795582]  [<ffffffff81322ac9>]
+acpi_ex_system_memory_space_handler+0xdd/0x1ca
+[    0.802961]  [<ffffffff8131ca48>]
+acpi_ev_address_space_dispatch+0x1b0/0x208
+[    0.809993]  [<ffffffff8131fd49>] acpi_ex_access_region+0x20e/0x2a2
+[    0.816244]  [<ffffffff81149464>] ? __alloc_pages_nodemask+0x134/0x300
+[    0.822754]  [<ffffffff813200e4>] acpi_ex_field_datum_io+0xf6/0x171
+[    0.829004]  [<ffffffff81320301>] acpi_ex_extract_from_field+0xd7/0x20a
+[    0.835602]  [<ffffffff81331d80>] ?
+acpi_ut_create_internal_object_dbg+0x23/0x8a
+[    0.842981]  [<ffffffff8131f8e7>]
+acpi_ex_read_data_from_field+0x10f/0x14b
+[    0.849838]  [<ffffffff81322e16>]
+acpi_ex_resolve_node_to_value+0x18e/0x21c
+[    0.856780]  [<ffffffff813230a6>] acpi_ex_resolve_to_value+0x202/0x209
+[    0.863291]  [<ffffffff81319486>] acpi_ds_evaluate_name_path+0x7b/0xf5
+[    0.869803]  [<ffffffff81319834>] acpi_ds_exec_end_op+0x98/0x3e8
+[    0.875793]  [<ffffffff8132aca4>] acpi_ps_parse_loop+0x514/0x560
+[    0.881784]  [<ffffffff8132b738>] acpi_ps_parse_aml+0x98/0x28c
+[    0.887601]  [<ffffffff8132bf8d>] acpi_ps_execute_method+0x1c1/0x26c
+[    0.893939]  [<ffffffff813269c5>] acpi_ns_evaluate+0x1c1/0x258
+[    0.899755]  [<ffffffff8131cb98>] acpi_ev_execute_reg_method+0xca/0x112
+[    0.906353]  [<ffffffff8131cd6e>] acpi_ev_reg_run+0x48/0x52
+[    0.911910]  [<ffffffff81328fad>] acpi_ns_walk_namespace+0xc8/0x17f
+[    0.918160]  [<ffffffff8131cd26>] ? acpi_ev_detach_region+0x146/0x146
+[    0.924585]  [<ffffffff8131cdbc>] acpi_ev_execute_reg_methods+0x44/0xf7
+[    0.931184]  [<ffffffff819b2324>] ? acpi_sleep_proc_init+0x2a/0x2a
+[    0.937349]  [<ffffffff8130ac66>] ? acpi_os_wait_semaphore+0x43/0x57
+[    0.943686]  [<ffffffff81331a3f>] ? acpi_ut_acquire_mutex+0x48/0x88
+[    0.949938]  [<ffffffff8131ceb8>]
+acpi_ev_initialize_op_regions+0x49/0x71
+[    0.956709]  [<ffffffff819b2324>] ? acpi_sleep_proc_init+0x2a/0x2a
+[    0.962873]  [<ffffffff81333310>] acpi_initialize_objects+0x23/0x4f
+[    0.969125]  [<ffffffff819b23b4>] acpi_init+0x90/0x268
 
+So basically, this split page seems to be a problem. Some other code
+thinks that it has access to full page and goes ahead and registers
+that with PAT rb tree and this causes problems in mmap() code.
+
+I suspect we might have to go back to idea of copying first and last
+non page aligned ranges in new kernel's memory and read it from there
+to solve this issue. Do you have other ideas?
+
+Thanks
+Vivek
