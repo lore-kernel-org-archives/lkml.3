@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759296Ab3KMObU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 09:31:20 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64503 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759031Ab3KMObS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 09:31:18 -0500
-Date: Wed, 13 Nov 2013 14:31:10 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: Re: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping
- support
-Message-ID: <20131113143110.GF28881@mudshark.cambridge.arm.com>
-References: <20131108165639.GD15074@mudshark.cambridge.arm.com>
- <527DFC1C.1020107@hitachi.com>
- <CA+b37P3U=cAbUvs=2B9wA4F7S9o49vh7d-KamjPsHcz-b9ZYLA@mail.gmail.com>
- <52808D53.7080904@hitachi.com>
- <5280B6C8.7050807@hitachi.com>
- <20131111105812.GC28302@mudshark.cambridge.arm.com>
- <528114C4.5000506@hitachi.com>
- <CA+b37P08cLAvBYAXSkozLPzrpuXn=N0SUetwL6N8JL+10AtYjQ@mail.gmail.com>
- <5281D848.7000502@hitachi.com>
- <CA+b37P1sNsEXrJFfVL51sZ-SeGNCBiwXnOwCiFY8CBwSXPw+mQ@mail.gmail.com>
+	id S1759333Ab3KMObe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 09:31:34 -0500
+Received: from mga09.intel.com ([134.134.136.24]:49955 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759084Ab3KMObb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 09:31:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="asc'?scan'208";a="434618081"
+Date: Wed, 13 Nov 2013 19:05:36 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Florian Meier <florian.meier@koalo.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        Martin Sperl <martin@sperl.org>
+Subject: Re: [PATCH] dmaengine: Add support for BCM2835.
+Message-ID: <20131113133536.GZ8834@intel.com>
+References: <527D1DDA.2040004@koalo.de>
+ <20131108181743.GR2493@sirena.org.uk>
+ <20131113050017.GO8834@intel.com>
+ <20131113125111.GE878@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IrhDeMKUP4DT/M7F"
 Content-Disposition: inline
-In-Reply-To: <CA+b37P1sNsEXrJFfVL51sZ-SeGNCBiwXnOwCiFY8CBwSXPw+mQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131113125111.GE878@sirena.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 06:55:33AM +0000, Sandeepa Prabhu wrote:
-> >>> I'm unsure about arm64's debug feature behavior, what does happen when
-> >>> it performs a single-step on sw-breakpoint?
-> >>>
-> >>>> Sandeepa: I think you need to retry Masami's test on the arm64 model, since
-> >>>> I'm fairly sure it won't work as expected without some additional code.
-> >>>
-> >>> OK, anyway, for testing same one, we need to port ftrace first. So the next
-> >
-> > Sorry for confusion, s/next/fallback is what I meant. Making a kprobe module
-> > can be done without ftrace port.
-> >
-> >>> plan is to make a kprobe module to put a probe (which just printk something)
-> >>> on a specific function (e.g. vfs_symlink), and run perf record with
-> >>> hw-breakpoint as below
-> >>>
-> >>> $ perf record -e "mem:0xXXXXXX:k" ln -s /dev/null /tmp/foo
-> >>>
-> >>> Note that 0xXXXXXX is the address of vfs_symlink.
-> >>>
-> >>> After that, you can see the message in dmesg and also check the perf result
-> >>> with "sudo perf script --dump" (you can find a PERF_RECORD_SAMPLE entry if
-> >>> it works)
-> Hi Will, Masami,
-> 
-> I am not sure of 'perf' right now (my minimal rootfs doesn't have) but
-> I tried to test hardware breakpoints using sample modules
-> "samples/hw_breakpoint/" on arm64 upstream branch. This should use
-> same kernel api as perf I believe.
-> 
-> 1.  Placing watchpoint ( attr.bp_type = HW_BREAKPOINT_W |
-> HW_BREAKPOINT_R) upon vfs_symlink symbol, but seems watch-point is not
-> triggering at all.
 
-vfs_symlink is a function. Why would you expect to write it?
+--IrhDeMKUP4DT/M7F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 2.  Placing text breakpoint (modified sample module with attr.bp_type
-> = HW_BREAKPOINT_X) upon vfs_symlink, and run "ln -s /dev/null
-> /tmp/foo".  This time, breakpoint hit but exception is re-cursing
-> infinitely!
+On Wed, Nov 13, 2013 at 12:51:11PM +0000, Mark Brown wrote:
+> On Wed, Nov 13, 2013 at 10:30:17AM +0530, Vinod Koul wrote:
+> > On Fri, Nov 08, 2013 at 06:17:43PM +0000, Mark Brown wrote:
+>=20
+> > > Adding in Martin Sperl who's been looking at DMA with regard to the S=
+PI
+> > > controller (which will want non-cyclic mode but I guess there's a lot=
+ of
+> > > shared code).
+>=20
+> > Is there a plan to add a library in SPI for dma ops, on lines of what
+> > is done in sound?
+>=20
+> I'm probably going to be looking at that at some point, though perhaps
+> Martin will get to it since he seems to be looking at this.
+Okay sounds good. This will also help in streamline the implementations..
 
-The problem here is that we expect the overflow handler to deal with the
-stepping (like GDB does via ptrace). If you don't register a handler, the
-kernel will do the step (like you would get if you used perf stat -e
-mem:0xNNNN:x).
+--
+~Vinod
 
-Will
+--IrhDeMKUP4DT/M7F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSg4AoAAoJEHwUBw8lI4NHxJwP/iL+nkFcKmg18yC6Vav+mtc1
+mqEMa2wU7W/moUxuckpzPhnuPo2OjP6QYyt7NboQHtOTH5xCJXOtD1s5P6QJvFow
+dziG2YW9uFbLlDOeGTdRTJeOVZtbFg2V+mC0/prVwvAPhYmJQu7ScMpRagpe1//5
+d+/g0ZEbrxfap0S4oMJVL/tsRWT0UtlPCja0kCwFgqtF4lk8A9PIg9Il6WbVaVKu
+hDSlgapGU7VpvWE0rPA9qc5AGxJcILGUFM0Rt+nj0+8wqLhr9XmNNr8Ppb3euzc2
+tjLrHGhreuntGkD2nU/t82OZ0e/nODYIZRoSuwaA2xKIPPo6OCUIMFM9jrye2tz0
+qSsPB6h2oXtjq3k4ffxRtdT/6GaSe5u58OSPRim0lXjm8YhPypIbvAz3yoA/ThyC
+rnC3PwspK7MZY4r3uP6IBQZeJgR9yjMaiYaOwfMqQ9zRodpZLuKlrkiynRleeUR9
+q/SP9bp0GVdrXsKjbR07QJLe8I8JkNk0tk1Qfcs/UHiinc0grY9qmJdwYPIIvqB2
+wcnQX3dXRj6Jm97kU2B7amryy+WRuCCvNwF5kJrRR1/Nna6xPa4dtd2iOherMSJ5
+1307zGfAGokY3nM5L/20C4/SCXg37FpPdWIBdkqiQvbXXi/25ZSdG2wqkaFeJ7i3
+SVC8cFBvO9+CXRg2UuWi
+=FCN3
+-----END PGP SIGNATURE-----
+
+--IrhDeMKUP4DT/M7F--
