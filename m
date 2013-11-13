@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab3KMVcP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 16:32:15 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:53245 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220Ab3KMVb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 16:31:57 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Amit Pundir <amit.pundir@linaro.org>
-Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        John Stultz <john.stultz@linaro.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [RFC][PATCH v2] epoll: allow EPOLLWAKEUP flag if PM_SLEEP is enabled
-Date: Wed, 13 Nov 2013 22:44:23 +0100
-Message-ID: <26648741.38OpUJA4ry@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAMi1Hd06=-DrdoM7nFkOo5VFB2h7oYMc_7Y2ujop6d_vtWLgpw@mail.gmail.com>
-References: <1384289548-26015-1-git-send-email-amit.pundir@linaro.org> <44678154.uI915mOzGH@vostro.rjw.lan> <CAMi1Hd06=-DrdoM7nFkOo5VFB2h7oYMc_7Y2ujop6d_vtWLgpw@mail.gmail.com>
+	id S1751220Ab3KMViV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 16:38:21 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:36555 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab3KMViM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 16:38:12 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20131106110518.6806.79333.sendpatchset@w520>
+References: <20131106110508.6806.48070.sendpatchset@w520>
+	<20131106110518.6806.79333.sendpatchset@w520>
+Date: Wed, 13 Nov 2013 13:38:11 -0800
+X-Google-Sender-Auth: 3tqVBIKO-3EruVrejpDEmyama24
+Message-ID: <CANcMJZDJPbctuYgG0Wr64htUeak-XLf3EYK0vz-BbG320UkFGg@mail.gmail.com>
+Subject: Re: [PATCH v2 01/03] clocksource: Add Kconfig entries for CMT, MTU2,
+ TMU and STI
+From: John Stultz <john.stultz@linaro.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        khilman@linaro.org, arnd@arndb.de, linux-sh@vger.kernel.org,
+        daniel.lezcano@linaro.org, horms@verge.net.au, olof@lixom.net,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 13, 2013 01:35:38 PM Amit Pundir wrote:
-> On 13 November 2013 05:29, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Wednesday, November 13, 2013 02:22:28 AM Amit Pundir wrote:
-> >> ep_create_wakeup_source() reports ENOMEM
-> >
-> > That needs to be fixed too.  I suppose we can make the wakeup_source_register()
-> > stub for CONFIG_PM_SLEEP unset return ERR_PTR(-ENOSYS) or something like that
-> > and ep_create_wakeup_source() return that instead of -ENOMEM.  It looks like
-> > eventpoll.c is the only user of it built for CONFIG_PM_SLEEP unset, but that
-> > needs to be double checked.
-> 
-> Instead of modifying wakeup_source_register() stub, what if I make
-> ep_create_wakeup_source() static inline as well and use its stub to
-> return -ENOSYS when CONFIG_PM_SLEEP is not set?
-> ep_create_wakeup_source() is used only in fs/eventpoll.c anyway.
+On Wed, Nov 6, 2013 at 3:05 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+> From: Magnus Damm <damm@opensource.se>
+>
+> Add Kconfig entries for CMT, MTU2, TMU and STI to
+> drivers/clocksource/Kconfig. This will allow us to
+> get rid of duplicated entires in architecture code
+> such as arch/sh and arch/arm/mach-shmobile.
+>
+> Signed-off-by: Magnus Damm <damm@opensource.se>
+> ---
+>
+>  drivers/clocksource/Kconfig |   30 ++++++++++++++++++++++++++++++
+>  1 file changed, 30 insertions(+)
+>
+> --- 0001/drivers/clocksource/Kconfig
+> +++ work/drivers/clocksource/Kconfig    2013-11-05 19:49:47.000000000 +0900
+> @@ -110,3 +110,33 @@ config VF_PIT_TIMER
+>         bool
+>         help
+>           Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
+> +
+> +if COMPILE_TEST || ARM || SUPERH
+> +menu "Timer drivers"
+> +
+> +config SH_TIMER_CMT
+> +       bool "CMT timer driver"
+> +       default y if ARM || (SUPERH && SYS_SUPPORTS_CMT)
+> +       help
+> +         This enables build of the CMT timer driver.
+> +
+> +config SH_TIMER_MTU2
+> +       bool "MTU2 timer driver"
+> +       default y if ARM || (SUPERH && SYS_SUPPORTS_MTU2)
+> +       help
+> +         This enables build of the MTU2 timer driver.
+> +
+> +config SH_TIMER_TMU
+> +       bool "TMU timer driver"
+> +       default y if ARM || (SUPERH && SYS_SUPPORTS_TMU)
+> +       help
+> +         This enables build of the TMU timer driver.
+> +
+> +config EM_TIMER_STI
+> +       bool "STI timer driver"
+> +       default y if ARM
+> +       help
+> +         This enables build of the STI timer driver.
 
-Well, you can do that too.
 
-> >> if wakeup_source_register()
-> >> returns NULL. ep_create_wakeup_source() assumes that NULL is only
-> >> returned if we run into ENOMEM but NULL is also returned when
-> >> CONFIG_PM_SLEEP is disabled.
-> >>
-> >> Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
-> >> ---
-> >> Changed in v2:
-> >> Using static inline functions instead of #ifdefs
-> >> ---
-> >>  fs/eventpoll.c                 |    3 +--
-> >>  include/uapi/linux/eventpoll.h |   12 ++++++++++++
-> >>  2 files changed, 13 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> >> index 473e09d..10f9c43 100644
-> >> --- a/fs/eventpoll.c
-> >> +++ b/fs/eventpoll.c
-> >> @@ -1820,8 +1820,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
-> >>               goto error_tgt_fput;
-> >>
-> >>       /* Check if EPOLLWAKEUP is allowed */
-> >> -     if ((epds.events & EPOLLWAKEUP) && !capable(CAP_BLOCK_SUSPEND))
-> >> -             epds.events &= ~EPOLLWAKEUP;
-> >> +     ep_epollwakeup_check(&epds.events);
-> >
-> > The "check" part of the name kind of suggests that the function will not change
-> > things.  What about ep_adjust_epollwakeup() or something along these lines?
-> 
-> I see couple of ep_set_* functions in eventpoll.c. Does it make sense
-> to have something like ep_set_epollwakeup()?
+So since I do want to avoid adding user-selectable configs if
+possible, here are some concrete thoughts on this patch, trying to
+provide an example from my more abstract rants down thread. :)
 
-This particular one doesn't really set anything.  I suppose that a name like
-"ep_take_care_of_epollwakeup" might be somewhat closer to what it really does ...
+1) Why does the user have to chose something here?  Can the option be
+set based on other platform details?
 
-Thanks!
+2) The help text for these options are basically tautological and
+could be better. Consider what is it that your really asking the user
+to decide here? What tradeoffs do they have to consider?  What is the
+actual hardware here? CMT/TMU/MTU2/STI? This is just acronym soup.
+These should be included in the help text.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+3) If all of these options are disabled, will the affected system boot?
+
+4) Do you have a list of systems that actually use these drivers? Can
+you be any more restrictive then config ARM?
+
+thanks
+-john
