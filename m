@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758457Ab3KMRrV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 12:47:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59826 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751958Ab3KMRrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 12:47:13 -0500
-Date: Wed, 13 Nov 2013 12:47:06 -0500
-From: Dave Jones <davej@redhat.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: getcwd() rcu locking bug.
-Message-ID: <20131113174706.GA4541@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1758917Ab3KMRsv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 12:48:51 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35708 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754173Ab3KMRsm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 12:48:42 -0500
+Date: Wed, 13 Nov 2013 18:48:26 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        riel@redhat.com, mgorman@suse.de, tglx@linutronix.de,
+        prarit@redhat.com
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/urgent] sched/numa: Fix NULL pointer dereference in
+ task_numa_migrate()
+Message-ID: <20131113174826.GR21461@twins.programming.kicks-ass.net>
+References: <tip-46a73e8a1c1720f7713b5e2df68e9dd272015b5d@git.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <tip-46a73e8a1c1720f7713b5e2df68e9dd272015b5d@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My fuzzer just hit this on v3.12-7033-g42a2d923cc34
+On Wed, Nov 13, 2013 at 09:25:22AM -0800, tip-bot for Rik van Riel wrote:
+> +	if (unlikely(!sd)) {
+> +		p->numa_preferred_nid = cpu_to_node(task_cpu(p));
 
-=====================================
-[ BUG: bad unlock balance detected! ]
-3.12.0+ #2 Not tainted
--------------------------------------
-trinity-child1/11681 is trying to release lock (rcu_read_lock) at:
-[<ffffffff811d287c>] SyS_getcwd+0x11c/0x300
-but there are no more locks to release!
+'t is only now I notice, but I added a convenience helper for this:
+task_node(p) :-)
 
-other info that might help us debug this:
-no locks held by trinity-child1/11681.
-
-stack backtrace:
-CPU: 1 PID: 11681 Comm: trinity-child1 Not tainted 3.12.0+ #2 
- ffffffff81c480a0 ffff88009a40fea0 ffffffff8171b3dc ffff8802399b1560
- ffff88009a40fec8 ffffffff810d370e ffff8802399b1560 ffffffff81c480a0
- ffffffff811d287c ffff88009a40ff00 ffffffff810d80fe ffff88023d2d4600
-Call Trace:
- [<ffffffff8171b3dc>] dump_stack+0x4e/0x7a
- [<ffffffff810d370e>] print_unlock_imbalance_bug+0xee/0x100
- [<ffffffff811d287c>] ? SyS_getcwd+0x11c/0x300
- [<ffffffff810d80fe>] lock_release+0x25e/0x310
- [<ffffffff811d2894>] SyS_getcwd+0x134/0x300
- [<ffffffff811d2799>] ? SyS_getcwd+0x39/0x300
- [<ffffffff8172e064>] tracesys+0xdd/0xe2
-------------[ cut here ]------------
-
+No biggie, I'll try and remember when next something near there needs
+changing.
