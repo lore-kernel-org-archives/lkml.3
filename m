@@ -1,127 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab3KMXyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 18:54:47 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:37744 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab3KMXyh (ORCPT
+	id S1752215Ab3KMX5T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 18:57:19 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:33172 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab3KMX5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 18:54:37 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Simon Horman [Horms]" <horms@verge.net.au>
-Subject: Re: [PATCH] gpio: Renesas RZ GPIO driver
-Date: Thu, 14 Nov 2013 00:55:16 +0100
-Message-ID: <3148793.m2Our7kMkU@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CANqRtoRkMO8Xcno+ZPDPddPp3FNHT_E+6B=i7K_ixELzseRcFw@mail.gmail.com>
-References: <20131106234737.8971.37405.sendpatchset@w520> <1777251.JReTVdX0Pd@avalon> <CANqRtoRkMO8Xcno+ZPDPddPp3FNHT_E+6B=i7K_ixELzseRcFw@mail.gmail.com>
+	Wed, 13 Nov 2013 18:57:13 -0500
+Date: Wed, 13 Nov 2013 16:57:08 -0700
+From: jerry.hoemann@hp.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        matt.fleming@intel.com, yinghai@kernel.org, penberg@kernel.org,
+        akpm@linux-foundation.org, linux-doc@vger.kernel.org,
+        linux-efi@vger.kernel.org, vgoyal@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+Message-ID: <20131113235708.GC25344@anatevka.fc.hp.com>
+Reply-To: jerry.hoemann@hp.com
+References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com>
+ <d73ccce9-6a0d-4470-bda3-f0c6eb96b5e4@email.android.com>
+ <20131113224503.GB25344@anatevka.fc.hp.com>
+ <52840206.5020006@zytor.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52840206.5020006@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
-
-On Thursday 14 November 2013 08:49:16 Magnus Damm wrote:
-> On Wed, Nov 13, 2013 at 9:03 PM, Laurent Pinchart wrote:
-> > Hi Magnus,
+On Wed, Nov 13, 2013 at 02:49:42PM -0800, H. Peter Anvin wrote:
+> On 11/13/2013 02:45 PM, jerry.hoemann@hp.com wrote:
 > > 
-> > Thank you for the patch.
+> > The changes in 3.9 to allow crash kernel to be allocated high helps. 
+> > But as you say, the default is still to allocate crash kernel low and
+> > still susceptible to this problem.  So, a kdump expert can work around it.
+> > But, not everyone is a kdump expert.
 > > 
-> > Please read below for a couple of comments in addition to Linus' review.
+> > So, we can work to change the default, or encourage the distros
+> > to always allocate high.  Or, we change the call to efi_reserve_boot_services
+> > not apply to all platforms.
 > > 
-> > On Thursday 07 November 2013 08:47:37 Magnus Damm wrote:
-> >> From: Magnus Damm <damm@opensource.se>
-> >> 
-> >> This patch adds a GPIO driver for the RZ series of SoCs from
-> >> Renesas. The driver can be used as platform device with dynamic
-> >> or static GPIO assignment or via DT using dynamic GPIOs.
-> >> 
-> >> The hardware allows control of GPIOs in blocks of up to 16 pins,
-> >> and once device may span multiple blocks. Interrupts are not
-> >> included in this hardware block, if interrupts are needed then
-> >> the PFC needs to be configured to a IRQ pin function which is
-> >> handled by the GIC hardware.
-> >> 
-> >> Tested with yet-to-be-posted platform device and DT devices on
-> >> r7s72100 and Genmai using LEDs, DIP switches and I2C bitbang.
-> >> 
-> >> Signed-off-by: Magnus Damm <damm@opensource.se>
-> >> ---
-> >> 
-> >>  drivers/gpio/Kconfig                  |    6
-> >>  drivers/gpio/Makefile                 |    1
-> >>  drivers/gpio/gpio-rz.c                |  241 +++++++++++++++++++++++++++
-> >>  include/linux/platform_data/gpio-rz.h |   13 +
-> >>  4 files changed, 261 insertions(+)
-
-[snip]
-
-> >> --- /dev/null
-> >> +++ work/drivers/gpio/gpio-rz.c       2013-11-06 14:20:02.000000000 +0900
-> >> @@ -0,0 +1,241 @@
-
-[snip]
-
-> >> +static inline unsigned long rz_gpio_read_ppr(struct rz_gpio_priv *p, int
-> >> offs)
-> >> +{
-> >> +     unsigned long msk = BIT(offs % RZ_GPIOS_PER_PORT);
-> >> +     int offset = (offs / RZ_GPIOS_PER_PORT) * 4;
+> > The problems for pre 3.9 based distros is worse as they don't have
+> > ability to allocate crash kernel high.
 > > 
-> > offs and offset are unsigned, you can make them unsigned int.
 > 
-> Ok!
+> But they won't have your new option, either,
+
+
+I am working with distro partners on this issue.
+I hope we can find a solution that all can live with.
+
+
+> 				and that is still horribly
+> manual and system-dependent.
+
+
+I think i can go to a date based black list, that removes the manual
+step.  System running firmware before certain date assumes we need
+to do the work around.  If firmware is newer than that date, we don't
+use the workaround.  Blacklist overrides and allows current behavior
+for new firmware that is subsequently found to be broken and for
+which we can't convenience the manufacturer to fix.
+
+
 > 
-> >> +     return ioread32(p->io[REG_PPR] + offset) & msk;
-> > 
-> > I believe you should return !!(...) here, or in the caller, to make sure
-> > the gpio_get_value() operation returns either 0 or 1. I would do it here
-> > and return a u32 instead of unsigned long.
+> In other words, allocating the crashkernel high has ALL the advantages,
+> plus a few more, and NONE of the disadvantages.
 > 
-> I disagree with the !! because it is just pure overhead, please see
-> the __gpio_get_value() comment, it says returning zero or nonzero. So
-> I left this portion as-is.
+> 	-hpa
 
-OK, good point. Linus, what's the best practice rule for GPIO drivers ? Should 
-they just return any non-zero value, or is any specific value preferred ?
+Not exactly.
 
-> >> +}
+Firmware shouldn't be accessing these regions after exit boot services.
+i like to find/fix firmware bugs.  efi_reserve_boot_services hides this
+particular type of error.  Good or bad,  much of platform/firmware
+validation is based upon booting/running OSes.
 
-[snip]
+Also, there are kernel/tools rev locks in allocating crash kernel high.
+Bigger, more coordination, etc...,
 
-> >> +static int rz_gpio_probe(struct platform_device *pdev)
-> >> +{
-> >> +     struct gpio_rz_config *pdata = dev_get_platdata(&pdev->dev);
-> >> +     struct rz_gpio_priv *p;
-> >> +     struct resource *io[3];
-> >> +     struct gpio_chip *gpio_chip;
-> >> +     struct device_node *np = pdev->dev.of_node;
-> >> +     struct of_phandle_args args;
-> >> +     int number_of_pins, gpio_base;
-> >> +     int k, nr;
-> > 
-> > unsigned ?
-> 
-> Ok!
-> 
-> > By the way, what's wrong with i as a loop index ? :-)
-> 
-> Nothing, but I left it as-is anyway! =)
 
-Good to know it's not wrong. But it's still an int in v2 ;-)
+Don't get me wrong.  I think not restricting crash kernel allocation
+to low memory is big improvement.  
 
-> >> +     int ret;
+I will still point out that as currently used, efi_reserve_boot_services
+is wrong.  A work around for firmware bugs on one platform shouldn't be
+breaking platforms that don't have that bug.  Its just much less likely
+to cause problems with higher crash kernel allocation.
+
+
+
 
 -- 
-Regards,
 
-Laurent Pinchart
+----------------------------------------------------------------------------
+Jerry Hoemann            Software Engineer              Hewlett-Packard/MODL
+
+3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
+Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
+                                                email:  jerry.hoemann@hp.com
+----------------------------------------------------------------------------
 
