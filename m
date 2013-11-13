@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758659Ab3KMQRA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 11:17:00 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:57778 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756293Ab3KMQQ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 11:16:56 -0500
+	id S1759380Ab3KMQR0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 11:17:26 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:34117 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754173Ab3KMQRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 11:17:24 -0500
+Date: Wed, 13 Nov 2013 08:17:19 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Matthew Whitehead <tedheadster@gmail.com>, john.stultz@linaro.org,
+        LKML <linux-kernel@vger.kernel.org>, mwhitehe@redhat.com
+Subject: Re: nohz problem with idle time on old hardware
+Message-ID: <20131113161719.GD4138@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131113113927.GA13875@mwhitehe.csb>
+ <alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de>
+ <20131113102153.5f10e6b5@gandalf.local.home>
+ <20131113103134.5b8cf02f@gandalf.local.home>
+ <alpine.DEB.2.02.1311131635580.30673@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1384330574-18418-3-git-send-email-schwidefsky@de.ibm.com>
-References: <1384330574-18418-1-git-send-email-schwidefsky@de.ibm.com> <1384330574-18418-3-git-send-email-schwidefsky@de.ibm.com>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Wed, 13 Nov 2013 16:16:35 +0000
-X-Google-Sender-Auth: WIIaa53i3ua0LBJa-tlG6KBvvVA
-Message-ID: <CAHkRjk6LAmQpkioBdFxH5htYHi75bR2xhfXzfvmQL5Br0kMgvg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] s390/mm,tlb: race of lazy TLB flush vs. recreation of
- TLB entries
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311131635580.30673@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111316-0320-0000-0000-000001B5DB38
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 November 2013 08:16, Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
-> diff --git a/arch/s390/include/asm/mmu_context.h b/arch/s390/include/asm/mmu_context.h
-> index 5d1f950..e91afeb 100644
-> --- a/arch/s390/include/asm/mmu_context.h
-> +++ b/arch/s390/include/asm/mmu_context.h
-> @@ -48,13 +48,38 @@ static inline void update_mm(struct mm_struct *mm, struct task_struct *tsk)
->  static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
->                              struct task_struct *tsk)
->  {
-> -       cpumask_set_cpu(smp_processor_id(), mm_cpumask(next));
-> -       update_mm(next, tsk);
-> +       int cpu = smp_processor_id();
-> +
-> +       if (prev == next)
-> +               return;
-> +       if (atomic_inc_return(&next->context.attach_count) >> 16) {
-> +               /* Delay update_mm until all TLB flushes are done. */
-> +               set_tsk_thread_flag(tsk, TIF_TLB_WAIT);
-> +       } else {
-> +               cpumask_set_cpu(cpu, mm_cpumask(next));
-> +               update_mm(next, tsk);
-> +               if (next->context.flush_mm)
-> +                       /* Flush pending TLBs */
-> +                       __tlb_flush_mm(next);
-> +       }
->         atomic_dec(&prev->context.attach_count);
->         WARN_ON(atomic_read(&prev->context.attach_count) < 0);
-> -       atomic_inc(&next->context.attach_count);
-> -       /* Check for TLBs not flushed yet */
-> -       __tlb_flush_mm_lazy(next);
-> +}
-> +
-> +#define finish_switch_mm finish_switch_mm
-> +static inline void finish_switch_mm(struct mm_struct *mm,
-> +                                   struct task_struct *tsk)
-> +{
-> +       if (!test_and_clear_tsk_thread_flag(tsk, TIF_TLB_WAIT))
-> +               return;
-> +
-> +       while (atomic_read(&mm->context.attach_count) >> 16)
-> +               cpu_relax();
-> +
-> +       cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
-> +       update_mm(mm, tsk);
-> +       if (mm->context.flush_mm)
-> +               __tlb_flush_mm(mm);
->  }
+On Wed, Nov 13, 2013 at 04:50:20PM +0100, Thomas Gleixner wrote:
+> On Wed, 13 Nov 2013, Steven Rostedt wrote:
+> > > I'm not saying that we are actually getting into nohz, but something
+> > > with the nohz code is messing with cpu accounting.
+> > 
+> > The trace does indeed show that a tick is happening, as the config has
+> > HZ=250 (4ms) and we see a tick happen every 4ms. But for some reason,
+> > we don't update the the idle time correctly when nohz is enabled.
+> > 
+> > When I say nohz is enabled, I mean that we don't have nohz=off in the
+> > command line. There seems to be some difference between having nohz=off
+> > and having nohz disabled at runtime.
+> 
+> Right that affects tick_nohz_enabled
+> 
+> Two files use this variable:
+> kernel/rcu/tree_plugin.h
+> kernel/time/tick-sched.c
+> 
+> The only accounting related stuff is in tick-sched.c:
+> 
+> get_cpu_idle_time_us() and get_cpu_iowait_time_us()
+> 
+> Both functions bail out if (!tick_nohz_enabled).
+> 
+> The users of get_cpu_idle_time_us() are cpufreq and fs/proc/stat.c!
+> 
+> Now the simplest fix is to let those functions check whether we
+> actually switched into NOHZ mode. Should work for the RCU tree stuff
+> as well.
 
-Some care is needed here with preemption (we had this on arm and I
-think we need a fix on arm64 as well). Basically you set TIF_TLB_WAIT
-on a thread but you get preempted just before finish_switch_mm(). The
-new thread has the same mm as the preempted on and switch_mm() exits
-early without setting another flag. So finish_switch_mm() wouldn't do
-anything but you still switched to the new mm. The fix is to make the
-flag per mm rather than thread (see commit bdae73cd374e).
+RCU's use of tick_nohz_enabled is for the RCU_FAST_NO_HZ stuff.  If
+it sees !tick_nohz_enabled, it skips trying to get RCU out of the way
+of disabling the scheduling-clock tick.  If RCU detects a change
+in the value of tick_nohz_enabled, it does a raise_softirq() to
+force re-evaluation of the situation.
 
--- 
-Catalin
+							Thanx, Paul
+
