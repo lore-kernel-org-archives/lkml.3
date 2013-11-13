@@ -1,45 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362Ab3KMVGn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 16:06:43 -0500
-Received: from mga09.intel.com ([134.134.136.24]:51428 "EHLO mga09.intel.com"
+	id S1751079Ab3KMVMC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 16:12:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1747 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874Ab3KMVGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 16:06:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="408358007"
-Message-ID: <5283E9D9.5070006@linux.intel.com>
-Date: Wed, 13 Nov 2013 13:06:33 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1750895Ab3KMVLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 16:11:55 -0500
+Date: Wed, 13 Nov 2013 16:11:47 -0500
+From: Dave Jones <davej@redhat.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: recursive locking (coredump/vfs_write)
+Message-ID: <20131113211147.GA30263@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Al Viro <viro@zeniv.linux.org.uk>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] ftrace/x86: Load ftrace_ops in parameter not the variable
- holding it
-References: <20131113152004.459787f9@gandalf.local.home>
-In-Reply-To: <20131113152004.459787f9@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 12:20 PM, Steven Rostedt wrote:
-> 
-> Function tracing callbacks expect to have the ftrace_ops that registered it
-> passed to them, not the address of the variable that holds the ftrace_ops
-> that registered it.
-> 
-> Use a mov instead of a lea to store the ftrace_ops into the parameter
-> of the function tracing callback.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Hey Al,
 
-This looks like an urgent fix, am I correct?
+here's another one..
 
-	-hpa
 
+=============================================
+[ INFO: possible recursive locking detected ]
+3.12.0+ #2 Not tainted
+---------------------------------------------
+trinity-child3/13302 is trying to acquire lock:
+ (sb_writers#5){.+.+.+}, at: [<ffffffff811b7013>] vfs_write+0x173/0x1f0
+
+but task is already holding lock:
+ (sb_writers#5){.+.+.+}, at: [<ffffffff8122006d>] do_coredump+0xf1d/0x1070
+
+other info that might help us debug this:
+ Possible unsafe locking scenario:
+
+       CPU0
+       ----
+  lock(sb_writers#5);
+  lock(sb_writers#5);
+
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+
+1 lock held by trinity-child3/13302:
+ #0:  (sb_writers#5){.+.+.+}, at: [<ffffffff8122006d>] do_coredump+0xf1d/0x1070
+
+stack backtrace:
+CPU: 3 PID: 13302 Comm: trinity-child3 Not tainted 3.12.0+ #2 
+ ffffffff82526e10 ffff8801b54af820 ffffffff8171b3dc ffffffff82526e10
+ ffff8801b54af8e0 ffffffff810d722b 00007f93d6ce5000 0000000000000000
+ ffff880154b3f200 ffff880100000000 00000000004da26d ffffffff821b3901
+Call Trace:
+ [<ffffffff8171b3dc>] dump_stack+0x4e/0x7a
+ [<ffffffff810d722b>] __lock_acquire+0x19ab/0x19f0
+ [<ffffffff81729334>] ? __do_page_fault+0x264/0x610
+ [<ffffffff8100b144>] ? native_sched_clock+0x24/0x80
+ [<ffffffff810d1d1f>] ? trace_hardirqs_off_caller+0x1f/0xc0
+ [<ffffffff810d7a23>] lock_acquire+0x93/0x1c0
+ [<ffffffff811b7013>] ? vfs_write+0x173/0x1f0
+ [<ffffffff811b97f9>] __sb_start_write+0xc9/0x1a0
+ [<ffffffff811b7013>] ? vfs_write+0x173/0x1f0
+ [<ffffffff811b7013>] ? vfs_write+0x173/0x1f0
+ [<ffffffff812cc303>] ? security_file_permission+0x23/0xa0
+ [<ffffffff811b7013>] vfs_write+0x173/0x1f0
+ [<ffffffff8121ef02>] dump_emit+0x92/0xd0
+ [<ffffffff81218d50>] elf_core_dump+0xde0/0x1740
+ [<ffffffff81218832>] ? elf_core_dump+0x8c2/0x1740
+ [<ffffffff8121fdee>] do_coredump+0xc9e/0x1070
+ [<ffffffff81719d9b>] ? __slab_free+0x191/0x35d
+ [<ffffffff8106a9b8>] get_signal_to_deliver+0x2c8/0x930
+ [<ffffffff810024b8>] do_signal+0x48/0x610
+ [<ffffffff810d1e39>] ? get_lock_stats+0x19/0x60
+ [<ffffffff810d25ae>] ? put_lock_stats.isra.28+0xe/0x30
+ [<ffffffff81715e86>] ? pagefault_enable+0xe/0x21
+ [<ffffffff8114b86e>] ? context_tracking_user_exit+0x4e/0x190
+ [<ffffffff810d54c5>] ? trace_hardirqs_on_caller+0x115/0x1e0
+ [<ffffffff81002adc>] do_notify_resume+0x5c/0xa0
+ [<ffffffff81725f86>] retint_signal+0x46/0x90
 
