@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757681Ab3KMCSj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 21:18:39 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:38859 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab3KMCSb (ORCPT
+	id S1757768Ab3KMCaP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 21:30:15 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:36733 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756069Ab3KMCaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 21:18:31 -0500
-Message-ID: <5282E16F.5010407@linux.vnet.ibm.com>
-Date: Wed, 13 Nov 2013 10:18:23 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [sched/get_online_cpus] INFO: task swapper/0:1 blocked for more
- than 120 seconds.
-References: <20131110101612.GC21916@localhost> <52808B7F.6000309@linux.vnet.ibm.com> <20131111162022.GB21461@twins.programming.kicks-ass.net> <20131112095516.GB32441@localhost>
-In-Reply-To: <20131112095516.GB32441@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111302-2000-0000-0000-00000E82AAA4
+	Tue, 12 Nov 2013 21:30:08 -0500
+From: "Nicholas A. Bellinger" <nab@daterainc.com>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Moussa Ba <moussaba@micron.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 0/2] iscsi/iser-target: Fix 
+Date: Wed, 13 Nov 2013 02:11:41 +0000
+Message-Id: <1384308703-10034-1-git-send-email-nab@daterainc.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2013 05:55 PM, Fengguang Wu wrote:
-[snip]
->>
->> Good thinking.. Wu did this cure stuff?
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Thanks for the confirm :)
+Hi folks,
 
-> 
-> Yes, it fixed the problem.
+Here are the two patches to address the regression bug that Moussa
+has recently been hitting with ib_isert ports + mtip32xx backends.
 
-Thanks for the testing :)
+In the end, this bug was due to an incorrect usage of mutex_trylock(),
+that was originally introduced to avoid an ib_isert specific nested
+deadlock from an exception path, that inadvertently allowed normal
+per RX/TX process context contention to increment sess->max_cmd_sn +
+post a response + receive a new command in RX context with a CmdSN
+larger than the last MaxCmdSN sychronized across RX/TX contexts.
 
-> 
-> Tested-by: Fengguang Wu <fengguang.wu@intel.com>
-> 
+This patch simply avoids the ib_isert callback in lio_queue_status()
+for the special iscsi_execute_cmd() exception cases to avoid the
+dead-lock, which allows the problematic mutex_trylock() usage in
+iscsit_increment_maxcmdsn() to go away entirely.
 
-Will send out a formal patch later.
+I'll be including both of these with a CC' to stable for v3.10+
 
-Regards,
-Michael Wang
+Special thanks to Moussa for helping track this bug down.
 
-> 
-> /kernel/i386-randconfig-j3-11101308/484f4e66a6a1102edf02407479f6f7632aade0f3
-> 
-> +--------------------------------------------------+--------------+--------------+
-> |                                                  | e5137b50a064 | 484f4e66a6a1 |
-> +--------------------------------------------------+--------------+--------------+
-> | boot_successes                                   | 42           | 100          |
-> | boot_failures                                    | 58           |              |
-> | INFO:task_blocked_for_more_than_seconds          | 58           |              |
-> | Kernel_panic-not_syncing:hung_task:blocked_tasks | 58           |              |
-> +--------------------------------------------------+--------------+--------------+
-> 
-> /kernel/x86_64-randconfig-x4-1108/484f4e66a6a1102edf02407479f6f7632aade0f3
-> 
-> +------------------------------------------------------------------------------------+-----------+--------------+--------------+
-> |                                                                                    | v3.12-rc7 | e5137b50a064 | 484f4e66a6a1 |
-> +------------------------------------------------------------------------------------+-----------+--------------+--------------+
-> | boot_successes                                                                     | 59        | 34           | 100          |
-> | has_kernel_error_warning                                                           | 4         |              |              |
-> | BUG:kernel_early_hang_without_any_printk_output                                    | 4         |              |              |
-> | boot_failures                                                                      | 0         | 66           |              |
-> | INFO:task_blocked_for_more_than_seconds                                            | 0         | 66           |              |
-> | INFO:NMI_handler(arch_trigger_all_cpu_backtrace_handler)took_too_long_to_run:msecs | 0         | 55           |              |
-> | Kernel_panic-not_syncing:hung_task:blocked_tasks                                   | 0         | 66           |              |
-> +------------------------------------------------------------------------------------+-----------+--------------+--------------+
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+--nab
+
+Nicholas Bellinger (2):
+  iscsi-target: Fix mutex_trylock usage in iscsit_increment_maxcmdsn
+  ib_isert: Avoid duplicate iscsit_increment_maxcmdsn call
+
+ drivers/infiniband/ulp/isert/ib_isert.c      |    6 +-----
+ drivers/target/iscsi/iscsi_target_configfs.c |    5 +++++
+ drivers/target/iscsi/iscsi_target_device.c   |    6 +-----
+ 3 files changed, 7 insertions(+), 10 deletions(-)
+
+-- 
+1.7.10.4
 
