@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758956Ab3KMOjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 09:39:09 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:34968 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758394Ab3KMOjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 09:39:06 -0500
-X-IronPort-AV: E=Sophos;i="4.93,693,1378828800"; 
-   d="scan'208";a="9026005"
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-To: linux-sh@vger.kernel.org, lethal@linux-sh.org
-Cc: linux-kernel@vger.kernel.org, fengguang.wu@intel.com, kbuild-all@01.org,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH] sh: fix kernel build error
-Date: Wed, 13 Nov 2013 22:38:24 +0800
-Message-Id: <1384353504-21886-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.5.rc1.17.g0ecd94d
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/13 22:37:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/13 22:37:17,
-	Serialize complete at 2013/11/13 22:37:17
+	id S1759200Ab3KMOn7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 09:43:59 -0500
+Received: from fieldses.org ([174.143.236.118]:51950 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757299Ab3KMOnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 09:43:55 -0500
+Date: Wed, 13 Nov 2013 09:43:53 -0500
+From: Bruce Fields <bfields@fieldses.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, stable@kernel.org
+Subject: Re: [git pull] fixes for 3.12-final
+Message-ID: <20131113144353.GE28033@fieldses.org>
+References: <20131103015803.GK13318@ZenIV.linux.org.uk>
+ <CA+55aFy3tAeLYL3_+PbeD15p6PGS-P7bs8fMUaRVSC0OCzvq6w@mail.gmail.com>
+ <20131103195452.GL13318@ZenIV.linux.org.uk>
+ <CA+55aFwW9s3GCa+zNTMg7m44-cj2RdJp7wRpCnPUvQHm9xYnFg@mail.gmail.com>
+ <20131104005300.GM13318@ZenIV.linux.org.uk>
+ <20131106151003.GA21425@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131106151003.GA21425@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-   arch/sh/kernel/kgdb.c: In function 'sleeping_thread_to_gdb_regs':
->> arch/sh/kernel/kgdb.c:225:32: error: implicit declaration of function 'task_stack_page' [-Werror=implicit-function-declaration]
->> arch/sh/kernel/kgdb.c:242:23: error: dereferencing pointer to incomplete type
->> arch/sh/kernel/kgdb.c:243:22: error: dereferencing pointer to incomplete type
-   arch/sh/kernel/kgdb.c: In function 'singlestep_trap_handler':
->> arch/sh/kernel/kgdb.c:310:27: error: 'SIGTRAP' undeclared (first use in this function)
-   arch/sh/kernel/kgdb.c:310:27: note: each undeclared identifier is reported only once for each function it appears in
-   cc1: all warnings being treated as errors
+On Wed, Nov 06, 2013 at 03:10:04PM +0000, Al Viro wrote:
+> FWIW, not taking ->i_lock there definitely looks like a good thing.  As for
+> 64bit ->i_ino itself...  Looks like the main problem is the shitload of
+> printks - the actual uses of ->i_ino are fine, but these suckers create
+> a lot of noise.  So for now I'm going with Bruce's variant; 64bit i_ino
+> doesn't look too bad (even on i386, actually), but it'll have to wait
+> until 3.14.  Too noisy and late in this cycle...
 
-This is introduced by commit 16559ae.
+I believe we also want that in stable?
 
-CC: kbuild-all@01.org
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
----
- arch/sh/kernel/kgdb.c | 1 +
- 1 file changed, 1 insertion(+)
+950ee9566a5b6cc45d15f5fe044bab4f1e8b62cb "exportfs: fix 32-bit nfsd
+handling of 64-bit inode numbers"
 
-diff --git a/arch/sh/kernel/kgdb.c b/arch/sh/kernel/kgdb.c
-index 38b3139..adad46e 100644
---- a/arch/sh/kernel/kgdb.c
-+++ b/arch/sh/kernel/kgdb.c
-@@ -13,6 +13,7 @@
- #include <linux/kdebug.h>
- #include <linux/irq.h>
- #include <linux/io.h>
-+#include <linux/sched.h>
- #include <asm/cacheflush.h>
- #include <asm/traps.h>
- 
--- 
-1.8.5.rc1.17.g0ecd94d
-
+--b.
