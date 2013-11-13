@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758741Ab3KMIH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 03:07:26 -0500
-Received: from dmz-mailsec-scanner-7.mit.edu ([18.7.68.36]:49541 "EHLO
+	id S1758764Ab3KMIHj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 03:07:39 -0500
+Received: from dmz-mailsec-scanner-7.mit.edu ([18.7.68.36]:49565 "EHLO
 	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758727Ab3KMIHS (ORCPT
+	by vger.kernel.org with ESMTP id S1758743Ab3KMIH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 03:07:18 -0500
-X-AuditID: 12074424-b7fa56d000000be4-74-52833335c27f
-Date: Wed, 13 Nov 2013 03:07:14 -0500
+	Wed, 13 Nov 2013 03:07:29 -0500
+X-AuditID: 12074424-b7fa56d000000be4-a4-52833340cd6e
+Date: Wed, 13 Nov 2013 03:07:26 -0500
 From: Greg Price <price@MIT.EDU>
 To: "Theodore Ts'o" <tytso@MIT.EDU>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/9] random: fix typos / spelling errors in comments
-Message-ID: <20131113080714.GO16018@ringworld.MIT.EDU>
+Subject: [PATCH 2/9] random: fix comment on proc_do_uuid
+Message-ID: <20131113080726.GP16018@ringworld.MIT.EDU>
 References: <cover.1384329436.git.price@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <cover.1384329436.git.price@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsUixG6nrmtq3BxkcP46l8XlXXPYHBg9Pm+S
-	C2CM4rJJSc3JLEst0rdL4Mq4v/0sS8F2norbWzQbGL9ydjFyckgImEhMa13JAmGLSVy4t56t
-	i5GLQ0hgNpPEx8XLmEESQgIbGSVWt/pC2L8YJW4fVASxWQRUJaa+Wc8OYrMJKEj8mL8OrF5E
-	QFli1cxNTCA2M1D8171NrCC2sICLxN4vO8GW8QqYSUyc9JYJYqaBxMb9E5gh4oISJ2c+YYHo
-	1ZK48e8lUA0HkC0tsfwfB0iYU8BQYtKGo2AjRQVUJKac3MY2gVFwFpLuWUi6ZyF0L2BkXsUo
-	m5JbpZubmJlTnJqsW5ycmJeXWqRrrpebWaKXmlK6iREcoi4qOxibDykdYhTgYFTi4bWIaQoS
-	Yk0sK67MPcQoycGkJMrrpNMcJMSXlJ9SmZFYnBFfVJqTWnyIUYKDWUmE94AwUI43JbGyKrUo
-	HyYlzcGiJM57i8M+SEggPbEkNTs1tSC1CCYrw8GhJMF72hCoUbAoNT21Ii0zpwQhzcTBCTKc
-	B2j4TJAa3uKCxNzizHSI/ClGRSlx3lyQhABIIqM0D64XlkJeMYoDvSLMOxukigeYfuC6XwEN
-	ZgIabFHcBDK4JBEhJdXAGLUvwtXUPUfV9vzkbco5wlc+/27u3PRW971j8O9sjsfsj9+zPbvU
-	f2Grpp9b90/Pr19FNRg6+g+WHTvN5FSV8ltwycz71q8/ceUUTKy60fyCuS6zYoN3kEvDOdM5
-	VU+/vGLadGFX/jq7OR/EVL0My/a0RkYX3dpQnhWedOF8+FTvnMZDy37oK7EUZyQaajEXFScC
-	ACx23Kn8AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsUixG6nrutg3BxksPCZisXlXXPYHBg9Pm+S
+	C2CM4rJJSc3JLEst0rdL4MpY+nozc8EPropHM/cwNjDe4+hi5OSQEDCRePriFTOELSZx4d56
+	NhBbSGA2k8S9a7JdjFxA9kZGiTuLzrFCOL8YJfY3TAHrYBFQlfg9qY0VxGYTUJD4MX8dWFxE
+	QFli1cxNTCA2M1D8171NYDXCAhYS//Z3g8V5Bcwk3vd9ZoLYZiCxcf8EZoi4oMTJmU9YIHq1
+	JG78ewlUwwFkS0ss/wd2NKeAocSkDUfBRooKqEhMObmNbQKj4Cwk3bOQdM9C6F7AyLyKUTYl
+	t0o3NzEzpzg1Wbc4OTEvL7VI11wvN7NELzWldBMjOExdVHYwNh9SOsQowMGoxMNrEdMUJMSa
+	WFZcmXuIUZKDSUmU10mnOUiILyk/pTIjsTgjvqg0J7X4EKMEB7OSCO8BYaAcb0piZVVqUT5M
+	SpqDRUmc9xaHfZCQQHpiSWp2ampBahFMVoaDQ0mC968hUKNgUWp6akVaZk4JQpqJgxNkOA/Q
+	cBEjkOHFBYm5xZnpEPlTjIpS4ry5IM0CIImM0jy4XlgaecUoDvSKMK8oSDsPMAXBdb8CGswE
+	NNiiuAlkcEkiQkqqgTGXeX0R0/otXntvVWeeEzu9OsK5ecPcfYt3yW8IW/+q8uPfIMNDxtkJ
+	GqtWHtRdkK11terQLbu86p3cJ4rfrbZLOMQvuuDa8cba15+LQup317xhczi85eM2r5NK9QpO
+	923LNzeuz5itv0w0ZbZT6hP2QOPUvLMWr/nWOxxbm3VJ6dI0KfvDnTpKLMUZiYZazEXFiQCW
+	Gm2x/gIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There's only one function here now, as uuid_strategy is long gone.
+Also make the bit about "If accesses via ..." clearer.
+
 Cc: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Price <price@mit.edu>
 ---
- drivers/char/random.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/char/random.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index cdf4cfb..ed72be5 100644
+index ed72be5..e11ee4e 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -308,7 +308,7 @@ static int random_read_wakeup_thresh = 64;
- static int random_write_wakeup_thresh = 28 * OUTPUT_POOL_WORDS;
+@@ -1516,13 +1516,13 @@ static int max_write_thresh = INPUT_POOL_WORDS * 32;
+ static char sysctl_bootid[16];
  
  /*
-- * The minimum number of seconds between urandom pool resending.  We
-+ * The minimum number of seconds between urandom pool reseeding.  We
-  * do this to limit the amount of entropy that can be drained from the
-  * input pool even if there are heavy demands on /dev/urandom.
-  */
-@@ -325,7 +325,7 @@ static int random_min_urandom_seed = 60;
-  * Register.  (See M. Matsumoto & Y. Kurita, 1992.  Twisted GFSR
-  * generators.  ACM Transactions on Modeling and Computer Simulation
-  * 2(3):179-194.  Also see M. Matsumoto & Y. Kurita, 1994.  Twisted
-- * GFSR generators II.  ACM Transactions on Mdeling and Computer
-+ * GFSR generators II.  ACM Transactions on Modeling and Computer
-  * Simulation 4:254-266)
+- * These functions is used to return both the bootid UUID, and random
++ * This function is used to return both the bootid UUID, and random
+  * UUID.  The difference is in whether table->data is NULL; if it is,
+  * then a new UUID is generated and returned to the user.
   *
-  * Thanks to Colin Plumb for suggesting this.
-@@ -1040,7 +1040,7 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 		sha_transform(hash.w, (__u8 *)(r->pool + i), workspace);
- 
- 	/*
--	 * If we have a architectural hardware random number
-+	 * If we have an architectural hardware random number
- 	 * generator, mix that in, too.
- 	 */
- 	for (i = 0; i < LONGS(20); i++) {
+- * If the user accesses this via the proc interface, it will be returned
+- * as an ASCII string in the standard UUID format.  If accesses via the
+- * sysctl system call, it is returned as 16 bytes of binary data.
++ * If the user accesses this via the proc interface, the UUID will be
++ * returned as an ASCII string in the standard UUID format; if via the
++ * sysctl system call, as 16 bytes of binary data.
+  */
+ static int proc_do_uuid(struct ctl_table *table, int write,
+ 			void __user *buffer, size_t *lenp, loff_t *ppos)
 -- 
 1.8.3.2
 
