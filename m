@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab3KMBDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 20:03:22 -0500
-Received: from mail.tpi.com ([74.45.170.26]:43311 "EHLO mail.tpi.com"
+	id S1755376Ab3KMBKF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 20:10:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56209 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753435Ab3KMBDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 20:03:14 -0500
-Message-ID: <5282CFCF.2020100@canonical.com>
-Date: Tue, 12 Nov 2013 17:03:11 -0800
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753525Ab3KMBJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 20:09:59 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Borislav Petkov <bp@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/microcode/amd: Tone down printk(), don' t treat a missing firmware file as an error
+Date: Wed, 13 Nov 2013 02:09:49 +0100
+Message-ID: <3297582.U22CC6mr0K@hammer82.arch.suse.de>
+User-Agent: KMail/4.8.5 (Linux/3.4.47-2.38-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20131112231008.GC30674@gmail.com>
+References: <1384274383-43510-1-git-send-email-trenn@suse.de> <20131112230138.GL12854@pd.tnic> <20131112231008.GC30674@gmail.com>
 MIME-Version: 1.0
-To: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-CC: linux-cifs <linux-cifs@vger.kernel.org>,
-        samba-technical <samba-technical@lists.samba.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@samba.org>
-Subject: Re: [PATCH linux-next] cifs: Use data structures to compute NTLMv2
- response offsets
-References: <1383867657-110399-1-git-send-email-tim.gardner@canonical.com> <CADT32e+ed9EzAb2jraHxmB0CF5AMUQ7XYiuEfH-FOcy7XqqmNQ@mail.gmail.com>
-In-Reply-To: <CADT32e+ed9EzAb2jraHxmB0CF5AMUQ7XYiuEfH-FOcy7XqqmNQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2013 01:19 PM, Shirish Pargaonkar wrote:
-> Looks correct.  You may want to verify that the code works fine for both
-> sec=ntlmssp/ntlmsspi and sec=ntlmv2/ntlmv2i mount options.
+On Wednesday, November 13, 2013 12:10:08 AM Ingo Molnar wrote:
+> * Borislav Petkov <bp@suse.de> wrote:
+...
+> > > Shouldn't that be <stable@vger.kernel.org> ?
+> > 
+> > Yes, it should:
+> > 
+> > Final-Recipient: rfc822; stable@kernel.org
+> > Action: failed
+> > Status: 5.0.0
+> > Diagnostic-Code: X-Postfix; host mail.kernel.org[198.145.19.201] said: 550
+> > 
+> >     5.1.1 <stable@kernel.org>: Recipient address rejected: User unknown in
+> >     local recipient table (in reply to RCPT TO command)
 > 
-> Reviewed-by: Shirish Pargaonkar <spargaonkar@suse.com>
-> 
+> Hm, that's really weird, I've been using <stable@kernel.org> for years and
+> the commits do get picked up. I also never saw such a mailer failure.
+Argh, I used stable@vger.kernel.org for quite some time already.
+I copied the wrong one in a rush.
+ 
+> In any case I've changed my pre-cooked alias to <stable@vger.kernel.org>,
+> but still I'm wondering why <stable@kernel.org> seems to be working in
+> practice - maybe Greg is picking up such commits as well, not via an email
+> flow but via scripting?
+Do I have to resubmit?
 
-These are the mount attempt results using a stock 3.12 kernel built with
-the Ubuntu Trusty config. I am not well versed enough in the various
-security mechanisms to know what should work.
+Thanks for picking this one up that quickly,
 
-mount sec=ntlmssp on WinPro8 success
-mount sec=ntlmsspi on WinPro8 failure
-mount sec=ntlmv2 on WinPro8 failure
-mount sec=ntlmv2i on WinPro8 failure
-mount sec=ntlmssp on iOS-10.8 success
-mount sec=ntlmsspi on iOS-10.8 success
-mount sec=ntlmv2 on iOS-10.8 failure
-mount sec=ntlmv2i on iOS-10.8 failure
-mount sec=ntlmssp on Linux-3.2 success
-mount sec=ntlmsspi on Linux-3.2 failure
-mount sec=ntlmv2 on Linux-3.2 success
-mount sec=ntlmv2i on Linux-3.2 failure
-
-The mount parameters used were '-o
-noserverino,nounix,user=test,pass=test'. For example,
-
-sudo mount -t cifs //10.0.0.182/test /tmp/mnt -o
-noserverino,nounix,user=test,pass=test,sec=ntlmssp
-
-The patched kernel produced identical results.
-
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
+      Thomas
