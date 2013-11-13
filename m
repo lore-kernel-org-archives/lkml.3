@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab3KMNbe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 08:31:34 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:56050 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab3KMNbc (ORCPT
+	id S1757364Ab3KMNdf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 08:33:35 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:39986 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756881Ab3KMNdb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 08:31:32 -0500
-Date: Wed, 13 Nov 2013 14:31:26 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH] perf trace: Tweak summary output
-Message-ID: <20131113133126.GA26861@gmail.com>
-References: <1384345308-24404-1-git-send-email-penberg@kernel.org>
- <20131113125734.GA22140@gmail.com>
- <CAOJsxLEFVwiz3pwKoJdy3ARKd_Rk0Mkcy7k62ZqJJE9_f5s2RQ@mail.gmail.com>
+	Wed, 13 Nov 2013 08:33:31 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOJsxLEFVwiz3pwKoJdy3ARKd_Rk0Mkcy7k62ZqJJE9_f5s2RQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [Fwd: Re: [PATCH v2 2/2] x86: add prefetching to do_csum]
+Date: Wed, 13 Nov 2013 13:32:50 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7412@saturn3.aculab.com>
+In-Reply-To: <20131113130832.GB22140@gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [Fwd: Re: [PATCH v2 2/2] x86: add prefetching to do_csum]
+Thread-Index: Ac7gcW56QU/bfScZTdmcHSG1MS7JxwAARP/Q
+References: <1384220542.4771.23.camel@joe-AO722> <20131112171239.GC19780@hmsreliant.think-freely.org> <1384277615.3665.10.camel@joe-AO722> <20131112195005.GD19780@hmsreliant.think-freely.org> <AE90C24D6B3A694183C094C60CF0A2F6026B740E@saturn3.aculab.com> <20131113123010.GB2993@hmsreliant.think-freely.org> <20131113130832.GB22140@gmail.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Ingo Molnar" <mingo@kernel.org>, "Neil Horman" <nhorman@tuxdriver.com>
+Cc: "Joe Perches" <joe@perches.com>, "netdev" <netdev@vger.kernel.org>,
+        "Dave Jones" <davej@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <sebastien.dugue@bull.net>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "Ingo Molnar" <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        <x86@kernel.org>, "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Pekka Enberg <penberg@kernel.org> wrote:
-
-> On Wed, Nov 13, 2013 at 2:57 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> > Are you convinced about double-digit precision output for percentages?
-> >
-> > I think it suggest a false level of accuracy, but YYMV - typographically
-> > xx.yy certainly looks nicer than xx.y (it's more symmetric).
+> > I'm not sure, whats the typical capacity for the branch predictors
+> > ability to remember code paths?
+...
 > 
-> Yeah, I think it's OK.
+> For such simple single-target branches it goes near or over a thousand for
+> recent Intel and AMD microarchitectures. Thousands for really recent CPUs.
 
-ok.
+IIRC the x86 can also correctly predict simple sequences - like a branch
+in a loop that is taken every other iteration, or only after a previous
+branch is taken.
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+Much simpler cpus may use a much simpler strategy.
+I think one I've used (a fpga soft-core cpu) just uses the low
+bits of the instruction address to index a single bit table.
+This means that branches alias each other.
+In order to get the consistent cycle counts in order to minimise
+the worst case code path we had to disable the dynamic prediction.
 
-Thanks,
+For the checksum code the loop branch isn't a problem.
+Tests on entry to the function might get mispredicted.
 
-	Ingo
+So if you have conditional prefetch when the buffer is long
+then time a short buffer after a 100 long ones you'll almost
+certainly see the mispredition penalty.
+
+FWIW I remember speeding up a copy (I think) loop on a strongarm by
+adding an extra instruction to fetch a word from later in the buffer
+into a register I never otherwise used.
+(That was an unpaged system so I knew it couldn't fault.)
+
+	David
+
+
+
+
