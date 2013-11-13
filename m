@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319Ab3KMJzO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 04:55:14 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:48099
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758648Ab3KMJzK (ORCPT
+	id S1759258Ab3KMJ62 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 04:58:28 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:56231 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758825Ab3KMJ6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 04:55:10 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh1155h)
-Message-ID: <52834C6E.4010704@freescale.com>
-Date: Wed, 13 Nov 2013 17:54:54 +0800
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 13 Nov 2013 04:58:25 -0500
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>, <djbw@fb.com>,
-        <devicetree@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v11 0/3]  DMA: Freescale: Add support for 8-channel DMA
- engine
-References: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com> <20131113085705.GR8834@intel.com>
-In-Reply-To: <20131113085705.GR8834@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-Originating-IP: [218.164.102.165]
+In-Reply-To: <CACVXFVPQfUtrc4r4cS9J+6q5Z6hGZDgafH=M_6JfrzrAUGJOHw@mail.gmail.com>
+References: <CACVXFVNHryPXy2NQhPwXkoCeLUXQSgrWmgBkMNtGD_=X_62_5Q@mail.gmail.com>
+	<CAFRkauDGiy3yZOwKFWMEJvYUe0OoXMEZHKaxogZHdgzMxexdHA@mail.gmail.com>
+	<CACVXFVMAnewCkSNNke3kf1-yO+JCc_HBRp8iaLBPJ+14G79Haw@mail.gmail.com>
+	<87y54vzszo.fsf@rustcorp.com.au>
+	<CAFRkauBYUq3UAjqLvkuDVEz5BVyDpC0DuVRGTe4K+kcoCX17GA@mail.gmail.com>
+	<CACVXFVMvvG1unnR0rsmBMdp9p19Q3JRbURxZF-UWxvrThDPKTw@mail.gmail.com>
+	<CAFRkauCW3FDSuh4t0gvmSWH1m0+qaG0XSoBxmk30Wq1FMy7iFw@mail.gmail.com>
+	<CACVXFVMzOzD+D-MQCUBvC80d4zS-TJfcucKuUvzerGs6gT1fEg@mail.gmail.com>
+	<CACVXFVOnVXcVdRCm=OfPjpvvWCiXi8GRV+9ViOGmSZ3tTf6WDg@mail.gmail.com>
+	<528110B1.4060402@arm.com>
+	<20131111193236.GB16735@n2100.arm.linux.org.uk>
+	<CACVXFVPQfUtrc4r4cS9J+6q5Z6hGZDgafH=M_6JfrzrAUGJOHw@mail.gmail.com>
+Date: Wed, 13 Nov 2013 17:58:24 +0800
+Message-ID: <CAFRkauACb7wPdisp-PEic_-ko5MhhnAyigcpg5gfjLEFUuJqGw@mail.gmail.com>
+Subject: Re: kernel BUG at kernel/kallsyms.c:222!
+From: Axel Lin <axel.lin@ingics.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Michal Marek <mmarek@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 04:57 PM, Vinod Koul wrote:
-> On Thu, Sep 26, 2013 at 05:33:40PM +0800, hongbo.zhang@freescale.com wrote:
->> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+2013/11/12 Ming Lei <tom.leiming@gmail.com>:
+> On Tue, Nov 12, 2013 at 3:32 AM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+>> On Mon, Nov 11, 2013 at 05:15:29PM +0000, Jonathan Austin wrote:
+>>> I've tested the patch below and it solves the ARM side of things - so
+>>> gives you an option other than a complete revert. Happy to put this in to
+>>> RMK's patch system if you'd prefer not to have to revert and he's happy
+>>> with the patch.
 >>
->> Hi DMA and DT maintainers, please have a look at these V11 patches.
->>
->> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch set
->> adds support this DMA engine.
->>
-> Applied all
-
-Thanks.
-
-> Thanks
-> ~Vinod
+>> I think this is the right solution because it then means that this symbol
+>> has the same meaning whether on MMU or !MMU - and getting rid of these
+>> kinds of gratuitous variances are the only way that !MMU is going to
+>> become less fragile.
 >
+> The patch only fixes problem on arm, and other !MMU&&!ARM archs
+> should be affected too.
+>
+> Also there is no CONFIG_PAGE_OFFSET defined for some ARCHs,
+> such as 64bit ARCHs.
+>
+> Currently, I suggest to filter only on ARM as attachment patch if we plan
+> to merge Jonathan's patch, otherwise a more complicated approach has
+> to be figured out  to do the filter(such as, define a readonly symbol in
+> kernel to store PAGE_OFFSET, and let scripts/kallsyms use it for
+> filtering).
 
+Hi Ming,
+You missed "; then" in the end of if statement in your patch.
 
+So I got below error with your patch:
+scripts/link-vmlinux.sh: line 87: syntax error near unexpected token `fi'
+make: *** [vmlinuxclean] Error 2
 
+Regards,
+Axel
