@@ -1,75 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757224Ab3KMNuj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 08:50:39 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41072 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524Ab3KMNug (ORCPT
+	id S1758201Ab3KMNu5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 08:50:57 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:54762 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757292Ab3KMNu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 08:50:36 -0500
-Date: Wed, 13 Nov 2013 13:50:21 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-ID: <20131113135021.GN878@sirena.org.uk>
-References: <1383923118-26921-1-git-send-email-k.kozlowski@samsung.com>
- <1384263715-5713-1-git-send-email-k.kozlowski@samsung.com>
+	Wed, 13 Nov 2013 08:50:56 -0500
+Date: Wed, 13 Nov 2013 14:50:51 +0100
+From: Julian Andres Klode <jak@jak-linux.org>
+To: Julian Andres Klode <jak@jak-linux.org>
+Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "open list:THINKPAD ACPI EXT..." 
+	<ibm-acpi-devel@lists.sourceforge.net>,
+        "open list:THINKPAD ACPI EXT..." 
+	<platform-driver-x86@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] thinkpad_acpi: Add support for controlling charge
+ thresholds
+Message-ID: <20131113135051.GA13304@jak-x230>
+Mail-Followup-To: Julian Andres Klode <jak@jak-linux.org>,
+	Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+	Matthew Garrett <matthew.garrett@nebula.com>,
+	"open list:THINKPAD ACPI EXT..." <ibm-acpi-devel@lists.sourceforge.net>,
+	"open list:THINKPAD ACPI EXT..." <platform-driver-x86@vger.kernel.org>,
+	open list <linux-kernel@vger.kernel.org>
+References: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
+ <1384178195-12218-2-git-send-email-jak@jak-linux.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hNG1vEeyG8BCaHbQ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384263715-5713-1-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: Long life is in store for you.
+In-Reply-To: <1384178195-12218-2-git-send-email-jak@jak-linux.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 149.254.183.27
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: s5m8767: Disable OVCB in probe
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 11, 2013 at 02:56:30PM +0100, Julian Andres Klode wrote:
+> +static int __init battery_init(struct ibm_init_struct *iibm)
 
---hNG1vEeyG8BCaHbQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> +	for (i = 0; i < BATTERY_MAX_COUNT; i++) {
+> +		int j = 0;
+> +		if (!acpi_evalf(hkey_handle, &state, "BCTG", "qdd", i + 1))
+> +			continue;
+> +		/* If the sign bit was set, we could not get the start charge
+> +		 * threshold of that battery. Let's assume that this battery
+> +		 * (and all following ones) do not exist */
+> +		if (state < 0)
+> +			break;
+> +		/* Modify BATTERY_MAX_ATTRS if you add an attribute */
+> +		batteries[i].attributes[j++] = (struct dev_ext_attribute) {
+> +			.attr = __ATTR(start_charge_tresh,
+> +				       S_IWUSR | S_IRUGO,
+> +				       battery_start_charge_thresh_show,
+> +				       battery_start_charge_thresh_store),
+> +			.var = (void *) (unsigned long) (i + 1)
+> +		};
+> +		batteries[i].attributes[j++] = (struct dev_ext_attribute) {
+> +			.attr = __ATTR(stop_charge_tresh,
+> +				       S_IWUSR | S_IRUGO,
+> +				       battery_stop_charge_thresh_show,
+> +				       battery_stop_charge_thresh_store),
+> +			.var = (void *) (unsigned long) (i + 1)
+> +		};
+> +
+> +		strncpy(batteries[i].name, "BAT", 3);
+> +		batteries[i].name[3] = '0' + i;
+> +		batteries[i].name[4] = '\0';
+> +		batteries[i].set = create_attr_set(j - 1, batteries[i].name);
+> +
 
-On Tue, Nov 12, 2013 at 02:41:55PM +0100, Krzysztof Kozlowski wrote:
-> According to SW Guide the Over-Voltage Clamp may malfunction at VBatt
-> 5.25V and 110'C temperature. This may result in overshooting or
-> undershooting LDO's voltage outputs.
-> Disable the Over-Voltage Clamp in probe by updating proper bit in all
-> LDO registers.
+There's a bug here that I just noticed: It should be (j) attributes, not (j - 1)
+ones. The following patch fixes this. I can squash it into that patch and resubmit
+later on if requested.
 
-Is there no way to detect these conditions at runtime?  The temperature
-condition in particular seems very high and hence relatively unlikely to
-hold most of the time, disabling the overvoltage protection all the time
-seems like an uncertain tradeoff.
+-- >8 --
+Subject: [PATCH] thinkpad_acpi: battery: Fix the size of the battery attribute sets
 
---hNG1vEeyG8BCaHbQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+There are not j - 1, but j attributes.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Signed-off-by: Julian Andres Klode <jak@jak-linux.org>
+---
+ drivers/platform/x86/thinkpad_acpi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-iQIcBAEBAgAGBQJSg4OaAAoJELSic+t+oim93YIQAJu06Vc9oDokh4f7uvEGl/ff
-uKS6dg5oi/gHWRes05zrHZGTgvdTFo1hXlN/b35zzSTcoTfr2CCRdrS7o1PhjN7P
-d+CThYQ0w2Jil2SNCtSea+jkkNqDF2qSeCv+f+ZnEAfH2et1zQxxJCaj/K8uZeWF
-8AMHVhqgRd95AaFY+32B0wX7ef3ZiPyK01SdYvBda2G9soH0xBNAM/aXquqmZ/Vj
-2FmRGARhsaJQAn2UEtieSZozaIMXRjE/Jhob9QvhXFOM3mpX1d3a3EDP8ACk1vnY
-lNloqfoVD0ymb8Woso9WtrrFszURZq1jNIIXrzLGcfhgxDMOXLrybIjwSnRbIBoV
-Kn0P+K+yQiIQnMabJW97/WGm4AeKVdzIFZYN01CzqqsxICKJD72R5tRsg3SYHFzr
-FbvTxZ3fNfodEd7YOFrUFKzpYRW5KDZheAbfIOfODq5O3sJQWmJRXibBnT2vySmc
-USzhHibrfk6XpHOUq0rV5iGG3PkKf9kMyK2TgEdfy+oimgsAWeC+A5OODOV221lr
-v7l0QnNLKcla+tjZvuC1QYQf7TR6dVG/FCVAx+1+yWamcavs0jbmMjK2FOqrksXV
-7DrJxba2zupazkdKfO/MM0kqTi0pKmMIoBB4UpwoxecqaOqwQgTb4JLD1nioFEzf
-XGy+4Z/8v2YTrgBwNCb/
-=VOrT
------END PGP SIGNATURE-----
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index a9cba4e..6948141 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -8613,7 +8613,7 @@ static int __init battery_init(struct ibm_init_struct *iibm)
+ 		strncpy(batteries[i].name, "BAT", 3);
+ 		batteries[i].name[3] = '0' + i;
+ 		batteries[i].name[4] = '\0';
+-		batteries[i].set = create_attr_set(j - 1, batteries[i].name);
++		batteries[i].set = create_attr_set(j, batteries[i].name);
+ 
+ 		for (j = j - 1; j >= 0; j--)
+ 			add_to_attr_set(batteries[i].set,
+-- 
+1.8.4.2
 
---hNG1vEeyG8BCaHbQ--
+
+-- 
+Julian Andres Klode  - Debian Developer, Ubuntu Member
+
+See http://wiki.debian.org/JulianAndresKlode and http://jak-linux.org/.
+
+Please do not top-post if possible.
