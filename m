@@ -1,185 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab3KMOKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 09:10:08 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:36431 "EHLO multi.imgtec.com"
+	id S1758875Ab3KMOOF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 09:14:05 -0500
+Received: from mga11.intel.com ([192.55.52.93]:2520 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755360Ab3KMOKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 09:10:05 -0500
-Message-ID: <52838834.4010104@imgtec.com>
-Date: Wed, 13 Nov 2013 14:09:56 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753952Ab3KMOOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 09:14:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,692,1378882800"; 
+   d="scan'208";a="432768316"
+Date: Wed, 13 Nov 2013 18:48:12 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andy Gross <agross@codeaurora.org>
+Cc: devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] dmaengine: add msm bam dma driver
+Message-ID: <20131113131812.GX8834@intel.com>
+References: <1382732643-8184-1-git-send-email-agross@codeaurora.org>
+ <1382732643-8184-2-git-send-email-agross@codeaurora.org>
+ <20131031165948.GM18788@intel.com>
+ <20131031214621.GC24406@agross>
+ <20131107230317.GA5494@agross>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        linux-metag <linux-metag@vger.kernel.org>
-Subject: Re: [PATCH] clk: add specified-rate clock
-References: <1368189862-17119-1-git-send-email-james.hogan@imgtec.com> <20130529173938.6058.96646@quantum>
-In-Reply-To: <20130529173938.6058.96646@quantum>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_11_13_14_09_57
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131107230317.GA5494@agross>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/13 18:39, Mike Turquette wrote:
-> Quoting James Hogan (2013-05-10 05:44:22)
->> The frequency of some SoC's external oscillators (for example TZ1090's
->> XTAL1) are configured by the board using pull-ups/pull-downs of
->> configuration pins, the logic values of which are automatically latched
->> on reset and available in an SoC register. Add a generic clock component
->> and DT bindings to handle this.
->>
->> It behaves similar to a fixed rate clock (read-only), except it needs
->> information about a register field (reg, shift, width), and the
->> clock-frequency is a mapping from register field values to clock
->> frequencies.
->>
+On Thu, Nov 07, 2013 at 05:03:17PM -0600, Andy Gross wrote:
+> On Thu, Oct 31, 2013 at 04:46:21PM -0500, Andy Gross wrote:
+> > On Thu, Oct 31, 2013 at 10:29:48PM +0530, Vinod Koul wrote:
+> > > On Fri, Oct 25, 2013 at 03:24:02PM -0500, Andy Gross wrote:
+> > > 
+> > > This should be sent to dmaengine@vger.kernel.org
+> >  
+> > I'll add the list when I send the second iteration or should I send it over mid
+> > stream?
+either ways is okay, but pls make sure the next rev is sent on list.
+
+> > 
+> > > > +	/* reset channel */
+> > > > +	iowrite32(1, bdev->regs + BAM_P_RST(bchan->id));
+> > > > +	iowrite32(0, bdev->regs + BAM_P_RST(bchan->id));
+> > > > +
+> > > > +	dma_free_coherent(bdev->dev, BAM_DESC_FIFO_SIZE, bchan->fifo_virt,
+> > > > +				bchan->fifo_phys);
+> > > > +
+> > > > +	/* mask irq for pipe/channel */
+> > > > +	val = ioread32(bdev->regs + BAM_IRQ_SRCS_MSK_EE(bchan->ee));
+> > > > +	val &= ~(1 << bchan->id);
+> > > > +	iowrite32(val, bdev->regs + BAM_IRQ_SRCS_MSK_EE(bchan->ee));
+> > > > +
+> > > > +	/* disable irq */
+> > > > +	iowrite32(0, bdev->regs + BAM_P_IRQ_EN(bchan->id));
+> > > > +
+> > > > +	clear_bit(bchan->ee, &bdev->enabled_ees);
+> > > > +}
+> > > > +
+> > > > +/*
+> > > > + * bam_slave_config - set slave configuration for channel
+> > > > + * @chan: dma channel
+> > > > + * @cfg: slave configuration
+> > > > + *
+> > > > + * Sets slave configuration for channel
+> > > > + * Only allow setting direction once.  BAM channels are unidirectional
+> > > > + * and the direction is set in hardware.
+> > > > + *
+> > > > + */
+> > > > +static void bam_slave_config(struct bam_chan *bchan,
+> > > > +		struct bam_dma_slave_config *bcfg)
+> > > 
+> > > > +{
+> > > > +	struct bam_device *bdev = bchan->device;
+> > > > +
+> > > > +	bchan->bam_slave.desc_threshold = bcfg->desc_threshold;
+> > > what does the desc_threshold mean?
+> >  
+> > The desc threshhold determines the minimum number of bytes of descriptor that
+> > causes a write event to be communicated to the peripheral.  I default to 4 bytes
+> > (1 descriptor), but this is configurable through the DMA_SLAVE_CONFIG interface
+> > using the extended slave_config structure.
+sounds like src/dst_maxburst?
+
+> > > > + * bam_tx_submit - Adds transaction to channel pending queue
+> > > > + * @tx: transaction to queue
+> > > > + *
+> > > > + * Adds dma transaction to pending queue for channel
+> > > > + *
+> > > > +*/
+> > > > +static dma_cookie_t bam_tx_submit(struct dma_async_tx_descriptor *tx)
+> > > > +{
+> > > > +	struct bam_chan *bchan = to_bam_chan(tx->chan);
+> > > > +	struct bam_async_desc *desc = to_bam_async_desc(tx);
+> > > > +	dma_cookie_t cookie;
+> > > > +
+> > > > +	spin_lock_bh(&bchan->lock);
+> > > > +
+> > > > +	cookie = dma_cookie_assign(tx);
+> > > > +	list_add_tail(&desc->node, &bchan->pending);
+> > > > +
+> > > > +	spin_unlock_bh(&bchan->lock);
+> > > > +
+> > > > +	return cookie;
+> > > > +}
+> > > Okay you are *NOT* using virt-dma layer, all this can be removed if you do that,
+> > > this is similar to what vchan_tx_submit() does!
+> > >
+> > 
+> > I'll look into reworking and utilizing the virt-dma layer.
+> >  
 > 
-> James,
+> Is it acceptable to pick and choose the pieces of the virt-dma layer that
+> benefit me? Or do I have to absorb all of it.  The smaller helper structs and
+> functions are fine, but in some cases they force a certain implementation.
+and that implementation is the right one and the what we expect from users!
+
+> The bam_tx_submit and perhaps the cleanup functions are about the only pieces
+> I'd be able to leverage from the virt-dma, aside from the structures.
 > 
-> Thanks for sending this!  It looks mostly good and is a useful clock
-> type to support.  Comments below.
+> The main issue with the rest of the code is that it doesn't fit the behavior of
+> my dma controller.  Because i have a fixed sized circular buffer for my
+> descriptor FIFO, I have to copy in the new descriptors before I start up the
+> dma channel.
+the virt-dma is for managing the descriptors and the lists for managing the
+descriptors. Using this is right way and is based on dmaengine APIs and not on
+dma controllers, so I see no reason why you cant use this!
 
-Hi Mike,
+> Using the vchan_cookie_complete() forces me to start the next transaction within
+> the interrupt, or schedule another tasklet to do that work for me.  The overhead
+> for copying what could be a large number of descriptors into the FIFO might
+> introduce too much latency inside the IRQ handler  (especially since this is done
+> to non-cached memory).  Using another tasklet for just restarting the dma
+> controller seems klunky to me.
+That is the expectation from API. Once a txn is complete, you need to quickly
+start the next one in the completion.
 
-Sorry for slight delay getting back to you. I had another think about
-this stuff yesterday...
+> I would rather start the next transaction within the tasklet queued from the IRQ
+> (vchan_cookie_complete), but because it uses it's own tasklet, I wouldn't be
+> able to leverage that.
+why dont you call the vchan_cookie_complete from the irq. That will trigger the
+virt-tasklet to complete the current one, then you schedule your tasklet to
+program the next one.
 
-> 
-> <snip>
->> diff --git a/Documentation/devicetree/bindings/clock/specified-clock.txt b/Documentation/devicetree/bindings/clock/specified-clock.txt
->> new file mode 100644
->> index 0000000..b36ccf9
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/clock/specified-clock.txt
->> @@ -0,0 +1,39 @@
->> +Binding for fixed-rate clock sources with readable configuration.
->> +
->> +This binding uses the common clock binding[1].
->> +
->> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
->> +
->> +Required properties:
->> +- compatible         : Shall be "specified-clock".
->> +- #clock-cells       : From common clock binding; shall be set to 0.
->> +- reg                : Address of configuration register.
->> +- shift              : Shift of config value field in configuration register.
->> +- width              : Width of config value field in configuration register.
-> 
-> It might be better to make this a mask instead of the width.  We have
-> already hit this issue with the mux table on Nvidia where arbitrary
-> masks are necessary.  Mask + shift probably helps future-proof us a bit.
+> The vchan_cookie_complete() usage within the IRQ handler also implys that only 1
+> dma transaction is completed per IRQ.  That might not be the case for me,
+> because I can advance the DMA FIFO offset to tell the controller to keep going
+> to the next transaction.  By the time I get to servicing the IRQ, I might have
+> completed more than 1 transaction.   I suppose you could call
+> vchan_cookie_complete() multiple times, but that seems wrong to me due to the
+> multiple calls to tasklet_schedule.
+I think you are mistaken here. If you have issued 3 descriptors to your HW, then
+assuming you got single completion (which IMO is wrong and you should get
+interrupt for every completion), then you mark all three as completed, the
+completion would move all the completed descriptors
 
-Yes, thanks. I've now borrowed the bit-mask and bit-shift from your mux
-binding proposals (including defaulting shift to ffs(mask)-1 ... nice).
+> > > > +static int bam_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+> > > > +	unsigned long arg)
+> > > > +{
+> > > > +	struct bam_chan *bchan = to_bam_chan(chan);
+> > > > +	struct bam_device *bdev = bchan->device;
+> > > > +	struct bam_dma_slave_config *bconfig;
+> > > > +	int ret = 0;
+> > > > +
+> > > > +	switch (cmd) {
+> > > > +	case DMA_PAUSE:
+> > > > +		spin_lock_bh(&bchan->lock);
+> > > > +		iowrite32(1, bdev->regs + BAM_P_HALT(bchan->id));
+> > > > +		spin_unlock_bh(&bchan->lock);
+> > > > +		break;
+> > > > +	case DMA_RESUME:
+> > > > +		spin_lock_bh(&bchan->lock);
+> > > > +		iowrite32(0, bdev->regs + BAM_P_HALT(bchan->id));
+> > > > +		spin_unlock_bh(&bchan->lock);
+> > > > +		break;
+> > > > +	case DMA_TERMINATE_ALL:
+> > > > +		bam_dma_terminate_all(chan);
+> > > > +		break;
+> > > > +	case DMA_SLAVE_CONFIG:
+> > > > +		bconfig = (struct bam_dma_slave_config *)arg;
+> > > > +		bam_slave_config(bchan, bconfig);
+> > > DMA_SLAVE_CONFIG expects arg as struct dma_slave_config, not this. Pls dont
+> > > voilate APIs
+> > 
+> > So for extended slave_config structures, the caller needs to send in a ptr to
+> > the dma_slave_config and then I can determine the bam_dma_slave_config.  Will
+> > fix.
+What are the additional parameters you need to "extended" config?
 
-> 
-> The rest of the binding looks good.
-> 
-> <snip>
->> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
->> index e7f7fe9..1343179 100644
->> --- a/drivers/clk/Makefile
->> +++ b/drivers/clk/Makefile
->> @@ -8,6 +8,7 @@ obj-$(CONFIG_COMMON_CLK)        += clk-fixed-rate.o
->>  obj-$(CONFIG_COMMON_CLK)       += clk-gate.o
->>  obj-$(CONFIG_COMMON_CLK)       += clk-mux.o
->>  obj-$(CONFIG_COMMON_CLK)       += clk-composite.o
->> +obj-$(CONFIG_COMMON_CLK)       += clk-specified-rate.o
-> 
-> One thing that does occur to me is that this could potentially be
-> combined with the fixed-rate clock.  If the properties for a specified
-> rate existing in the DT data then this code applies, otherwise the
-> existing fixed-rate code is used.  I don't have a strong opinion about
-> combining the code, but something to consider.
+> > 
+> > > > +		break;
+> > > > +	default:
+> > > > +		ret = -EIO;
+> > > I would expect -ENXIO here!
+> > > 
+> > 
+> > OK.
+> > 
+> > > > +		break;
+> > > > +	}
+> > > > +
+> > > > +	return ret;
+> > > > +}
+> > > > +
+> > > > +/*
+> > > > + * bam_tx_status - returns status of transaction
+> > > > + * @chan: dma channel
+> > > > + * @cookie: transaction cookie
+> > > > + * @txstate: DMA transaction state
+> > > > + *
+> > > > + * Return status of dma transaction
+> > > > + */
+> > > > +static enum dma_status bam_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
+> > > > +		struct dma_tx_state *txstate)
+> > > > +{
+> > > > +	return dma_cookie_status(chan, cookie, txstate);
+> > > hmmm, this wont work in many cases for slave. For example if you try to get this
+> > > working with audio you need to provide the residue values.
+> > > The results you are providing here will not be useful, so I would recommedn
+> > > fixing it
+> > > 
+> > 
+> > Ok so in this case I'd need to read where I am in the descriptor chain and
+> > calculate the residual.  That shouldn't be a problem.
+Yup!
 
-That's actually a much neater solution. Because the clock is still
-fixed, the register value can be read once while processing the DT node,
-and an otherwise normal fixed rate clock created at the right frequency.
-It doesn't even need to allocate memory to store the table.
-
-The remaining question is whether to extend the fixed-clock binding or
-have a separate one. I'm in two minds. On the one hand it is a
-fixed-rate clock, on the other hand the only shared properties at the
-moment would be standard clock properties (clock-output-names etc), so
-I'm probably leaning towards a separate binding. I'll send an updated
-patchset soon.
-
-> 
-> <snip>
->> +#ifdef CONFIG_OF
->> +/**
->> + * of_specified_clk_setup() - Setup function for specified fixed rate clock
->> + */
->> +void __init of_specified_clk_setup(struct device_node *node)
->> +{
->> +       struct clk *clk;
->> +       const char *clk_name = node->name;
->> +       u32 shift, width, rate;
->> +       void __iomem *reg;
->> +       int len, num_rates, i;
->> +       struct property *prop;
->> +       struct clk_specified_rate_entry *rates;
->> +       const __be32 *p;
->> +
->> +       of_property_read_string(node, "clock-output-names", &clk_name);
->> +
->> +       if (of_property_read_u32(node, "shift", &shift)) {
->> +               pr_err("%s(%s): could not read shift property\n",
->> +                      __func__, clk_name);
->> +               return;
->> +       }
->> +
->> +       if (of_property_read_u32(node, "width", &width)) {
->> +               pr_err("%s(%s): could not read width property\n",
->> +                      __func__, clk_name);
->> +               return;
->> +       }
->> +
->> +       reg = of_iomap(node, 0);
->> +       if (!reg) {
->> +               pr_err("%s(%s): of_iomap failed\n",
->> +                      __func__, clk_name);
->> +               return;
->> +       }
->> +
->> +       /* check clock-frequency exists */
->> +       prop = of_find_property(node, "clock-frequency", &len);
->> +       if (!prop) {
->> +               pr_err("%s(%s): could not find clock-frequency property\n",
->> +                      __func__, clk_name);
->> +               goto err_iounmap;
->> +       }
->> +
->> +       if (len & (sizeof(u32)*2 - 1)) {
->> +               pr_err("%s(%s): clock-frequency has invalid size of %d bytes\n",
->> +                      __func__, clk_name, len);
->> +               goto err_iounmap;
->> +       }
->> +       num_rates = len / (sizeof(*rates)*2);
-> 
-> This tripped me up for a few minutes.  I think it is a bit weird to
-> count bytes as a way to validate length and determine the number of
-> pairs.
-
-Yes, and I actually recently discovered that this is wrong anyway. rates
-is a struct of two elements so it ends up dividing twice, and it just so
-happened that all the boards I have (until I hacked up qemu to report a
-different frequency) specify a value in the first half of those defined. :)
-
-Thanks
-James
-
+-- 
+~Vinod
