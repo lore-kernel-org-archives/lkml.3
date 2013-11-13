@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757848Ab3KMCFe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 21:05:34 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46582 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755154Ab3KMCFZ (ORCPT
+	id S1757476Ab3KMCIy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 21:08:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33956 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab3KMCIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 21:05:25 -0500
-Date: Wed, 13 Nov 2013 13:05:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: linux-next: manual merge of the aio-direct tree with the btrfs tree
-Message-Id: <20131113130507.b4a99df2f2c2a860bc320bab@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__13_Nov_2013_13_05_07_+1100_KUgmAW8=PQr2cebe"
+	Tue, 12 Nov 2013 21:08:47 -0500
+Date: Wed, 13 Nov 2013 11:11:36 +0900
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Borislav Petkov <bp@suse.de>, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, tglx@linutronix.de, trenn@suse.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/microcode/amd: Tone down printk(), don' t
+ treat a missing firmware file as an error
+Message-ID: <20131113021136.GA31650@kroah.com>
+References: <1384274383-43510-1-git-send-email-trenn@suse.de>
+ <tip-11f918d3e2d3861b6931e97b3aa778e4984935aa@git.kernel.org>
+ <20131112224511.GJ12854@pd.tnic>
+ <20131112230138.GL12854@pd.tnic>
+ <20131112231008.GC30674@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112231008.GC30674@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__13_Nov_2013_13_05_07_+1100_KUgmAW8=PQr2cebe
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 13, 2013 at 12:10:08AM +0100, Ingo Molnar wrote:
+> 
+> * Borislav Petkov <bp@suse.de> wrote:
+> 
+> > (fixed stable@vger).
+> > 
+> > On Tue, Nov 12, 2013 at 11:45:11PM +0100, Borislav Petkov wrote:
+> > > On Tue, Nov 12, 2013 at 01:58:00PM -0800, tip-bot for Thomas Renninger wrote:
+> > > > Commit-ID:  11f918d3e2d3861b6931e97b3aa778e4984935aa
+> > > > Gitweb:     http://git.kernel.org/tip/11f918d3e2d3861b6931e97b3aa778e4984935aa
+> > > > Author:     Thomas Renninger <trenn@suse.de>
+> > > > AuthorDate: Tue, 12 Nov 2013 17:39:43 +0100
+> > > > Committer:  Ingo Molnar <mingo@kernel.org>
+> > > > CommitDate: Tue, 12 Nov 2013 22:03:49 +0100
+> > > > 
+> > > > x86/microcode/amd: Tone down printk(), don't treat a missing firmware file as an error
+> > > > 
+> > > > Do it the same way as done in microcode_intel.c: use pr_debug()
+> > > > for missing firmware files.
+> > > > 
+> > > > There seem to be CPUs out there for which no microcode update
+> > > > has been submitted to kernel-firmware repo yet resulting in
+> > > > scary sounding error messages in dmesg:
+> > > > 
+> > > >   microcode: failed to load file amd-ucode/microcode_amd_fam16h.bin
+> > > > 
+> > > > Signed-off-by: Thomas Renninger <trenn@suse.de>
+> > > > Acked-by: Borislav Petkov <bp@suse.de>
+> > > > Cc: <stable@kernel.org>
+> > > 
+> > > Shouldn't that be <stable@vger.kernel.org> ?
+> > 
+> > Yes, it should:
+> > 
+> > Final-Recipient: rfc822; stable@kernel.org
+> > Action: failed
+> > Status: 5.0.0
+> > Diagnostic-Code: X-Postfix; host mail.kernel.org[198.145.19.201] said: 550
+> >     5.1.1 <stable@kernel.org>: Recipient address rejected: User unknown in
+> >     local recipient table (in reply to RCPT TO command)
+> 
+> Hm, that's really weird, I've been using <stable@kernel.org> for years and 
+> the commits do get picked up. I also never saw such a mailer failure.
+> 
+> In any case I've changed my pre-cooked alias to <stable@vger.kernel.org>, 
+> but still I'm wondering why <stable@kernel.org> seems to be working in 
+> practice - maybe Greg is picking up such commits as well, not via an email 
+> flow but via scripting?
 
-Hi Dave,
+Yes, my scripts pick up both, as this is a very common mistake (the
+address did change after kernel.org got rebuilt, so you were right in
+remembering this as the original address to use.)
 
-Today's linux-next merge of the aio-direct tree got a conflict in
-fs/btrfs/inode.c between commit 0ef8b726075a ("Btrfs: return an error
-from btrfs_wait_ordered_range") from the btrfs tree and commit
-921057174f1c ("dio: Convert direct_IO to use iov_iter") from the
-aio-direct tree.
+So no worries, I can handle both.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+thanks,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc fs/btrfs/inode.c
-index da8d2f696ac5,6feae86d24df..000000000000
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@@ -7234,10 -7233,8 +7247,10 @@@ static ssize_t btrfs_direct_IO(int rw,=20
-  	 * call btrfs_wait_ordered_range to make absolutely sure that any
-  	 * outstanding dirty pages are on disk.
-  	 */
-- 	count =3D iov_length(iov, nr_segs);
-+ 	count =3D iov_iter_count(iter);
- -	btrfs_wait_ordered_range(inode, offset, count);
- +	ret =3D btrfs_wait_ordered_range(inode, offset, count);
- +	if (ret)
- +		return ret;
- =20
-  	if (rw & WRITE) {
-  		/*
-
---Signature=_Wed__13_Nov_2013_13_05_07_+1100_KUgmAW8=PQr2cebe
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSgt5XAAoJEMDTa8Ir7ZwVD34QAIW4tsOZ1moR1hnX7AnjqGWG
-fOxSxprxBbwKav4vZ1Gx+VTQmMnxuKEgq7NYcVD1AleGo8wfiCVk1EMEKJrK/0Cy
-h8OBlsG9K91yT3fEpGQJ5eNKF5VnZcjYRGqEQFNNtd/0qL8KLNyjfP+yUf2Jv2lo
-tZIjRcl6Ot+yh0T9bwtQ1tRZygKV/btHpdOdlykXTHZBSwzkO2MYYWWQkoVXfBrq
-zdk+QDp34NsiMNvHMhf8+bl+6x2GYZTU2I4fn9H1kc/kj9APdjAIxCKDHZk+VxGJ
-TJiJGoaQRmOxZMgum1Q1NclUA19PgQvM6bvOL824pZkuEMxncxz/KQs3UDMgVDwC
-zI6+8NgXkyUkyuPb3Xkuu1AdG1e9kgsky5ddELqQen3N56AA1pxISxSVKfttlO+C
-tRLnC2tPPYDRUe41aY1V/i7paiOdVLpJdNGxyo5ODtqXbBXjylWHBk12TnpmtM56
-kPmG/ITTh0/kM24NgqJQSTkCpeXECuPJ6HQIbBJZHtbV1MG6HWHmRlzFDShgMbTu
-AK/EB4meVxYSGCz2NqCKwzm2gFfeInsUggaZHVp+kTj6tJkuFikA+k73UqQLJibm
-nJq5r2bvQ0Wpg6Tvc48NBkaHavgJbR5oaKjvTdBNCnQ0150Zctk9GWDK1QWLQNYD
-ESh4C2C7smlP/l3koEpn
-=5HuB
------END PGP SIGNATURE-----
-
---Signature=_Wed__13_Nov_2013_13_05_07_+1100_KUgmAW8=PQr2cebe--
+greg k-h
