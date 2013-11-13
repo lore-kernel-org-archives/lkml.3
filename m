@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759580Ab3KMQgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 11:36:31 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50679 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757210Ab3KMQg3 (ORCPT
+	id S1757275Ab3KMQqL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 11:46:11 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52073 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756208Ab3KMQqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 11:36:29 -0500
-Date: Wed, 13 Nov 2013 16:30:55 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Florian Meier <florian.meier@koalo.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        Martin Sperl <martin@sperl.org>
-Message-ID: <20131113163055.GV878@sirena.org.uk>
-References: <527D1DDA.2040004@koalo.de>
- <20131108181743.GR2493@sirena.org.uk>
- <20131113050017.GO8834@intel.com>
- <20131113125111.GE878@sirena.org.uk>
- <20131113133536.GZ8834@intel.com>
- <20131113145441.GQ878@sirena.org.uk>
- <20131113143101.GD8834@intel.com>
+	Wed, 13 Nov 2013 11:46:04 -0500
+Date: Wed, 13 Nov 2013 16:45:00 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Tony Luck <tony.luck@intel.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "l.majewski@samsung.com" <l.majewski@samsung.com>,
+        Jonathan Corbet <corbet@lwn.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [RFC][PATCH v5 00/14] sched: packing tasks
+Message-ID: <20131113164457.GF18837@arm.com>
+References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
+ <CAHkRjk69GNYtLGBSWCNcsCzkBHywKrD0qQQbNkJRpMbcdsCPyw@mail.gmail.com>
+ <20131111163630.GD26898@twins.programming.kicks-ass.net>
+ <52810851.4090907@linux.intel.com>
+ <20131111181805.GE29572@arm.com>
+ <52825BE9.2080605@linux.intel.com>
+ <42638CC1-ACC7-4330-A4F4-D78C88BE8155@arm.com>
+ <5283A545.4040406@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9o1Xi4ZMQ45MudWG"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131113143101.GD8834@intel.com>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 149.254.183.27
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] dmaengine: Add support for BCM2835.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5283A545.4040406@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 13, 2013 at 04:13:57PM +0000, Arjan van de Ven wrote:
+> On 11/12/2013 3:14 PM, Catalin Marinas wrote:
+> > On 12 Nov 2013, at 16:48, Arjan van de Ven <arjan@linux.intel.com> wrote:
+> >> On 11/11/2013 10:18 AM, Catalin Marinas wrote:
+> >>> The ordering is based on the actual C-state, so a simple way is to wake
+> >>> up the CPU in the shallowest C-state. With asymmetric configurations
+> >>> (big.LITTLE) we have different costs for the same C-state, so this would
+> >>> come in handy.
+> >>
+> >> btw I was considering something else; in practice CPUs will be in the deepest state..
+> >> ... at which point I was going to go with some other metrics of what is best from a platform level
+> >
+> > I agree, other metrics are needed.  The problem is that we currently
+> > only have (relatively, guessed from the target residency) the cost of
+> > transition from a C-state to a P-state (for the latter, not sure which).
+> > But we don’t know what the power (saving) on that C-state is nor the one
+> > at a P-state (and vendors reluctant to provide such information). So the
+> > best the scheduler can do is optimise the wake-up cost and blindly assume
+> > that deeper C-state on a CPU is more efficient than lower P-states on two
+> > other CPUs (or the other way around).
+> 
+> for picking the cpu to wake on there are also low level physical kind of things
+> we'd want to take into account on the intel side.
 
---9o1Xi4ZMQ45MudWG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Are these static and could they be hidden behind some cost number in a
+topology description? If they are dynamic, we would need arch or driver
+hooks to give some cost or priority number that the scheduler can use.
 
-On Wed, Nov 13, 2013 at 08:01:01PM +0530, Vinod Koul wrote:
-> On Wed, Nov 13, 2013 at 02:54:41PM +0000, Mark Brown wrote:
-
-> > Yes, though I think some of the stuff Martin was talking about will need
-> > changes to the dmaengine APIs.  He was wanting to reuse DMA lists which
-> > currently dmaengine needs to have built up each time.
-
-> Can you elobrate a bit more on what you guys want to do here?
-
-He wants to be able to submit a descriptor to the hardware more than
-once to save on the costs of of constructing the descriptor.  I'm not
-convinced this is a huge benefit most of the time.
-
---9o1Xi4ZMQ45MudWG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSg6k8AAoJELSic+t+oim9+joP/2v+7ur1ArziF81LX0Mb3ujr
-fDLROLY/aglhlbTL/giThm+O/wdqmcA2yndlZIrVH5tdIJhGSurwQrkuuFNidL/v
-tEu+RbPar9dKcNKJgUHYVNWkh6Yz5JxJkNQj5HV8vgVkG1XSqU82PTCH4FBUJl0l
-vErAYNk2gd09dQqZ9xzIiIjbBuFbXVGpfi+VxocGRgwc5L2+NhypGk9n1w/QjcTY
-wCFNcodvKg//Y9i4GZzaOoGbAqX7awZYom1LECZrNRJGjkloxDb+1Bcdx2zvAZts
-RXxJayHEjF/UHrHoOgSxLm2jtmFo1v9B5H3T4+W/52k8mHMc3B2CmmmKEpTbOsCZ
-pOGl9r8vddum+ZGrGdR342pDbcaWb5eVoW3SS+SNAykwAY+MJ/A4jnepLUtsGcrs
-yDIXMkb2v1fmFpsu3iCF9iS+ptnzP3xcxsj2m/FVtstncA0AdgsY114BSY7EUI5C
-XozE9k5xr653d7k8aQgcEJgdIu7T7Y5lTmR+WLUIaIf8ZvXMTVjISMG7Oe0z93hR
-DIuvocD5unnqg5iZffAR792UpMYlW6/UTz0ubLHyDba/HfFdXTjsclT97rKNO9Od
-ciiXrsWeH8+BGFjfTTcAY+WnYMMuug7DBWI14zNcNlTm75E3hNg8j/d2iTbyCD7a
-AzuzjGapsEAP4zCG+wsm
-=o5Dd
------END PGP SIGNATURE-----
-
---9o1Xi4ZMQ45MudWG--
+-- 
+Catalin
