@@ -1,86 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759255Ab3KMRhG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 12:37:06 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:36526 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758428Ab3KMRg7 (ORCPT
+	id S1758825Ab3KMRk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 12:40:56 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:57569 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756914Ab3KMRkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 12:36:59 -0500
-Date: Wed, 13 Nov 2013 18:36:55 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] block: Employ u64_stats_init()
-Message-ID: <20131113173655.GB10482@gmail.com>
-References: <1384314134-6895-1-git-send-email-john.stultz@linaro.org>
- <5283A10E.2090304@kernel.dk>
- <20131113173521.GA10482@gmail.com>
- <5283B87E.2070703@kernel.dk>
+	Wed, 13 Nov 2013 12:40:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5283B87E.2070703@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <23964ca1-e7cb-41c3-9da2-5bc1b2b0c014@default>
+References: <20120921213239.GJ14393@linux-tkdk.sfcn.org>
+	<20120922.152524.1294103117346567757.davem@davemloft.net>
+	<CAKA=qzac9=UhLF_Z4FnnH+sR7xvkDux4oayC6dPYe=hMLsDxRg@mail.gmail.com>
+	<CAKA=qzYpd7Wo9XdU16TEhnbm5dPJjOZMhAY1jA7N+YFBWz5pzw@mail.gmail.com>
+	<23964ca1-e7cb-41c3-9da2-5bc1b2b0c014@default>
+Date: Wed, 13 Nov 2013 11:40:45 -0600
+Message-ID: <CAKA=qzbK1YX5OrVQbwM=1xM6Si=GKv0UDofULkOC7RNo08zZPw@mail.gmail.com>
+Subject: Re: [PATCH] rds: Error on offset mismatch if not loopback
+From: Josh Hunt <joshhunt00@gmail.com>
+To: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>, honli@redhat.com
+Cc: David Miller <davem@davemloft.net>, jjolly@suse.com,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 13, 2013 at 9:16 AM, Venkat Venkatsubra
+<venkat.x.venkatsubra@oracle.com> wrote:
+>
+>
+> -----Original Message-----
+> From: Josh Hunt [mailto:joshhunt00@gmail.com]
+> Sent: Tuesday, November 12, 2013 10:25 PM
+> To: David Miller
+> Cc: jjolly@suse.com; LKML; Venkat Venkatsubra; netdev@vger.kernel.org
+> Subject: Re: [PATCH] rds: Error on offset mismatch if not loopback
+>
+> On Tue, Nov 12, 2013 at 10:22 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
+>> On Sat, Sep 22, 2012 at 2:25 PM, David Miller <davem@davemloft.net> wrote:
+>>>
+>>> From: John Jolly <jjolly@suse.com>
+>>> Date: Fri, 21 Sep 2012 15:32:40 -0600
+>>>
+>>> > Attempting an rds connection from the IP address of an IPoIB
+>>> > interface to itself causes a kernel panic due to a BUG_ON() being triggered.
+>>> > Making the test less strict allows rds-ping to work without
+>>> > crashing the machine.
+>>> >
+>>> > A local unprivileged user could use this flaw to crash the system.
+>>> >
+>>> > Signed-off-by: John Jolly <jjolly@suse.com>
+>>>
+>>> Besides the questions being asked of you by Venkat Venkatsubra, this
+>>> patch has another issue.
+>>>
+>>> It has been completely corrupted by your email client, it has turned
+>>> all TAB characters into spaces, making the patch useless.
+>>>
+>>> Please learn how to send a patch unmolested in the body of your
+>>> email.  Test it by emailing the patch to yourself, and verifying that
+>>> you can in fact apply the patch you receive in that email.
+>>> Then, and only then, should you consider making a new submission of
+>>> this patch.
+>>>
+>>> Use Documentation/email-clients.txt for guidance.
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe
+>>> linux-kernel" in the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>> I think this issue was lost in the shuffle. It appears that redhat,
+>> ubuntu, and oracle are maintaining local patches to resolve this:
+>>
+>> https://oss.oracle.com/git/?p=redpatch.git;a=commit;h=c7b6a0a1d8d63685
+>> 2be130fa15fa8be10d4704e8
+>> https://bugzilla.redhat.com/show_bug.cgi?id=822754
+>> http://ubuntu.5.x6.nabble.com/CVE-2012-2372-RDS-local-ping-DOS-td49853
+>> 88.html
+>>
+>> Given that Oracle has applied it I'll make the assumption that
+>> Venkat's question was answered at some point.
+>>
+>> David - I can resubmit the patch with the proper signed-off-by and
+>> formatting if you are willing to apply it unless John wants to try
+>> again. I think it's time this got upstream.
+>>
+>> --
+>> Josh
+>
+> Ugh.. hopefully resending with all the html crap removed...
+>
+> --
+> Josh
+>
+> Hi Josh,
+>
+> No, I still didn't get an answer for how "off" could be non-zero in case of rds-ping to hit BUG_ON(off % RDS_FRAG_SIZE).
+> Because, rds-ping uses zero byte messages to ping.
+> If you have a test case that reproduces the kernel panic I can try it out and see how that can happen.
+> The Oracle's internal code I checked doesn't have that patch applied.
+>
+> Venkat
 
-* Jens Axboe <axboe@kernel.dk> wrote:
+No I don't have a test case. I came across this CVE while doing an
+audit and noticed it was patched in Ubuntu's kernel and other distros,
+but was not in the upstream kernel yet. Quick googling of lkml showed
+that there were at least two attempts to get this patch upstream, but
+both had issues due to not following the proper submission process:
 
-> On 11/13/2013 10:35 AM, Ingo Molnar wrote:
-> > 
-> > * Jens Axboe <axboe@kernel.dk> wrote:
-> > 
-> >> On 11/12/2013 08:42 PM, John Stultz wrote:
-> >>> From: Peter Zijlstra <peterz@infradead.org>
-> >>>
-> >>> Now that seqcounts are lockdep enabled objects, we need to properly
-> >>> initialize them.
-> >>>
-> >>> Without this patch, Fengguang was seeing:
-> >>> [    4.127282] INFO: trying to register non-static key.
-> >>> [    4.128027] the code is fine but needs lockdep annotation.
-> >>> [    4.128027] turning off the locking correctness validator.
-> >>> [    4.128027] CPU: 0 PID: 96 Comm: kworker/u4:1 Not tainted 3.12.0-next-20131108-10601-gbad570d #2
-> >>> [    4.128027] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> >>> [    4.128027] Workqueue: events_unbound async_run_entry_fn
-> >>> [    4.128027]  7908e744 00000000 78019968 79dc7cf2 7a80e0a8 780199a0 7908953e 7a1b7f4d
-> >>> [    4.128027]  7a1b7fa7 7a1b7f7d 7f368608 00000000 00000011 44374011 0000a805 7f368110
-> >>> [    4.128027]  7f368110 85bf2a70 00000000 780199cc 7908a1c5 00000000 00000001 00000000
-> >>> [    4.128027] Call Trace:
-> >>> [    4.128027]  [<7908e744>] ? console_unlock+0x353/0x380
-> >>> [    4.128027]  [<79dc7cf2>] dump_stack+0x48/0x60
-> >>> [    4.128027]  [<7908953e>] __lock_acquire.isra.26+0x7e3/0xceb
-> >>> [    4.128027]  [<7908a1c5>] lock_acquire+0x71/0x9a
-> >>> [    4.128027]  [<794079aa>] ? blk_throtl_bio+0x1c3/0x485
-> >>> [    4.128027]  [<7940658b>] throtl_update_dispatch_stats+0x7c/0x153
-> >>> [    4.128027]  [<794079aa>] ? blk_throtl_bio+0x1c3/0x485
-> >>> [    4.128027]  [<794079aa>] blk_throtl_bio+0x1c3/0x485
-> >>> ...
-> >>>
-> >>> Cc: Vivek Goyal <vgoyal@redhat.com>
-> >>> Cc: Jens Axboe <axboe@kernel.dk>
-> >>> Cc: Fengguang Wu <fengguang.wu@intel.com>
-> >>> Cc: Ingo Molnar <mingo@kernel.org>
-> >>> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> >>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> >>> [jstultz: Folded in another fix from the mailing list as well as a fix
-> >>> to that fix. Tweaked commit message.]
-> >>> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> >>
-> >> Thanks for fixing this up, John/Peter. I'll get it queued up.
-> > 
-> > Note that I've already applied it to the locking tree earlier today and
-> > sent it to Linus, didn't want to expose upstream to known false positives.
-> 
-> OK, that works for me, thanks!
+https://lkml.org/lkml/2012/10/22/433
+https://lkml.org/lkml/2012/9/21/505
 
-Also, if it breaks I'll take full responsibility for messing up! :-)
+>From my searching it appears the initial bug was found by someone at redhat:
+https://bugzilla.redhat.com/show_bug.cgi?id=822754
 
-Thanks,
+I've added Li Honggang the reporter of this issue from Redhat to the
+mail. Hopefully he can share his testcase.
 
-	Ingo
+and possibly requires certain hardware as Jay writes in the first link above:
+"...some Infiniband HCAs(QLogic, possibly others) the machine will panic..."
+
+I was referring to this oracle commit:
+https://oss.oracle.com/git/?p=redpatch.git;a=commit;h=c7b6a0a1d8d636852be130fa15fa8be10d4704e8
+
+I have no experience with this code. There were a few comments around
+the reset and xmit fns about making sure the caller did certain things
+if not they were racy, but I have no idea if that's coming into play
+here.
+
+-- 
+Josh
