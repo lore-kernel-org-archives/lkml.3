@@ -1,121 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab3KMDqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 22:46:09 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:25553 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755874Ab3KMDpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 22:45:51 -0500
-X-IronPort-AV: E=Sophos;i="4.93,690,1378828800"; 
-   d="scan'208";a="9020141"
-Message-ID: <5282F46C.5040403@cn.fujitsu.com>
-Date: Wed, 13 Nov 2013 11:39:24 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1757960Ab3KMDwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 22:52:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43592 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755867Ab3KMDwB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 22:52:01 -0500
+Date: Tue, 12 Nov 2013 19:51:33 -0800
+From: tip-bot for Josh Boyer <tipbot@zytor.com>
+Message-ID: <tip-9dd1220114e00d8ec5cdc20085bbe198b21e1985@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        rusty@rustcorp.com.au, jwboyer@fedoraproject.org, jwboyer@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, jwboyer@fedoraproject.org,
+        akpm@linux-foundation.org, jwboyer@redhat.com, tglx@linutronix.de
+In-Reply-To: <20131111140815.GB20328@hansolo.jdub.homelinux.org>
+References: <20131111140815.GB20328@hansolo.jdub.homelinux.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/urgent] smp/cpumask: Make CONFIG_CPUMASK_OFFSTACK=
+ y usable without debug dependency
+Git-Commit-ID: 9dd1220114e00d8ec5cdc20085bbe198b21e1985
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Chao Yu <chao2.yu@samsung.com>
-CC: ??? <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        =?GB2312?B?zLfmrQ==?= <shu.tan@samsung.com>
-Subject: Re: [f2fs-dev] [PATCH 1/2] f2fs: add a new function to support for
- merging contiguous read
-References: <000001cedf66$46a9bb70$d3fd3250$@samsung.com>
-In-Reply-To: <000001cedf66$46a9bb70$d3fd3250$@samsung.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/13 11:43:54,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/13 11:43:56,
-	Serialize complete at 2013/11/13 11:43:56
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 12 Nov 2013 19:51:40 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2013 01:15 PM, Chao Yu wrote:
+Commit-ID:  9dd1220114e00d8ec5cdc20085bbe198b21e1985
+Gitweb:     http://git.kernel.org/tip/9dd1220114e00d8ec5cdc20085bbe198b21e1985
+Author:     Josh Boyer <jwboyer@redhat.com>
+AuthorDate: Mon, 11 Nov 2013 09:08:15 -0500
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 13 Nov 2013 00:45:50 +0100
 
-> For better read performance, we add a new function to support for merging contiguous read as the one for write.
+smp/cpumask: Make CONFIG_CPUMASK_OFFSTACK=y usable without debug dependency
 
-Nice shot!
+When CONFIG_CPUMASK_OFFSTACK was added in 2008, it was dependent upon
+CONFIG_DEBUG_PER_CPU_MAPS being enabled, or an architecture could
+select it.
 
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+The debug dependency adds additional overhead that isn't required
+for operation of the feature and which is undesirable for distro
+kernels. CONFIG_CPUMASK_OFFSTACK=y is needed to increase the
+CONFIG_NR_CPUS value beyond 512 on x86.
 
-Acked-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+So drop the current dependency, its only real dependency is CONFIG_SMP=y.
 
-> ---
->  fs/f2fs/data.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
->  fs/f2fs/f2fs.h |    2 ++
->  2 files changed, 47 insertions(+)
-> 
-> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> index aa3438c..f30060b 100644
-> --- a/fs/f2fs/data.c
-> +++ b/fs/f2fs/data.c
-> @@ -404,6 +404,51 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct page *page,
->  	return 0;
->  }
->  
-> +void f2fs_submit_read_bio(struct f2fs_sb_info *sbi, int rw)
-> +{
-> +	down_read(&sbi->bio_sem);
-> +	if (sbi->read_bio) {
-> +		submit_bio(rw, sbi->read_bio);
-> +		sbi->read_bio = NULL;
-> +	}
-> +	up_read(&sbi->bio_sem);
-> +}
-> +
-> +void submit_read_page(struct f2fs_sb_info *sbi, struct page *page,
-> +					block_t blk_addr, int rw)
-> +{
-> +	struct block_device *bdev = sbi->sb->s_bdev;
-> +	int bio_blocks;
-> +
-> +	verify_block_addr(sbi, blk_addr);
-> +
-> +	down_read(&sbi->bio_sem);
-> +
-> +	if (sbi->read_bio && sbi->last_read_block != blk_addr - 1) {
-> +		submit_bio(rw, sbi->read_bio);
-> +		sbi->read_bio = NULL;
-> +	}
-> +
-> +alloc_new:
-> +	if (sbi->read_bio == NULL) {
-> +		bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
-> +		sbi->read_bio = f2fs_bio_alloc(bdev, bio_blocks);
-> +		sbi->read_bio->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
-> +		sbi->read_bio->bi_end_io = read_end_io;
-> +	}
-> +
-> +	if (bio_add_page(sbi->read_bio, page, PAGE_CACHE_SIZE, 0) <
-> +							PAGE_CACHE_SIZE) {
-> +		submit_bio(rw, sbi->read_bio);
-> +		sbi->read_bio = NULL;
-> +		goto alloc_new;
-> +	}
-> +
-> +	sbi->last_read_block = blk_addr;
-> +
-> +	up_read(&sbi->bio_sem);
-> +}
-> +
->  /*
->   * This function should be used by the data read flow only where it
->   * does not check the "create" flag that indicates block allocation.
-> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> index 89dc750..0afdcec 100644
-> --- a/fs/f2fs/f2fs.h
-> +++ b/fs/f2fs/f2fs.h
-> @@ -359,6 +359,8 @@ struct f2fs_sb_info {
->  
->  	/* for segment-related operations */
->  	struct f2fs_sm_info *sm_info;		/* segment manager */
-> +	struct bio *read_bio;			/* read bios to merge */
-> +	sector_t last_read_block;		/* last read block number */
->  	struct bio *bio[NR_PAGE_TYPE];		/* bios to merge */
->  	sector_t last_block_in_bio[NR_PAGE_TYPE];	/* last block number */
->  	struct rw_semaphore bio_sem;		/* IO semaphore */
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20131111140815.GB20328@hansolo.jdub.homelinux.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ lib/Kconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-
+diff --git a/lib/Kconfig b/lib/Kconfig
+index b3c8be0..50b47cd 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -342,7 +342,8 @@ config CHECK_SIGNATURE
+ 	bool
+ 
+ config CPUMASK_OFFSTACK
+-	bool "Force CPU masks off stack" if DEBUG_PER_CPU_MAPS
++	bool "Force CPU masks off stack"
++	depends on SMP
+ 	help
+ 	  Use dynamic allocation for cpumask_var_t, instead of putting
+ 	  them on the stack.  This is a bit more expensive, but avoids
