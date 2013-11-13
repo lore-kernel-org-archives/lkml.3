@@ -1,139 +1,484 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758896Ab3KMKSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 05:18:39 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:64807 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752958Ab3KMKSf (ORCPT
+	id S1759039Ab3KMKTN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 05:19:13 -0500
+Received: from 11.mo4.mail-out.ovh.net ([46.105.34.195]:37108 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758918Ab3KMKTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 05:18:35 -0500
-Message-ID: <528351F9.3040101@linaro.org>
-Date: Wed, 13 Nov 2013 11:18:33 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 13 Nov 2013 05:19:08 -0500
+Date: Wed, 13 Nov 2013 10:56:28 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Bo Shen <voice.shen@atmel.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>, nicolas.ferre@atmel.com,
+        alexandre.belloni@free-electrons.com, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 1/2] PWM: atmel-pwm: add PWM controller driver
+Message-ID: <20131113095628.GI28304@ns203013.ovh.net>
+References: <1383292767-11211-1-git-send-email-voice.shen@atmel.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaQ==?= =?UTF-8?B?Zw==?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL] clockevents/clocksource: 3.12 fixes
-References: <528234B9.7080402@linaro.org> <20131112183553.GQ14892@pengutronix.de> <alpine.DEB.2.02.1311122316270.30673@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1311122316270.30673@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383292767-11211-1-git-send-email-voice.shen@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 5500302520320437043
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2013 11:57 PM, Thomas Gleixner wrote:
-> On Tue, 12 Nov 2013, Uwe Kleine-König wrote:
->> On Tue, Nov 12, 2013 at 03:01:29PM +0100, Daniel Lezcano wrote:
->>>
->>> Hi Ingo and Thomas,
->>>
->>> this pull request has the following contain:
->>>
->>>   * Laurent Pinchard fixed a missing a clk_put in case the
->>> registering of the sh_mtu[2] drivers fails.
->>>
->>>   * Uwe Kleine-König reuse clockevents_config_and_register for the
->>> at91rm9200_time timer as it was depending on the patch (commit
->>> a4578ea (clockevents: Sanitize ticks to nsec conversion).
->>>
->>> I don't know why Thomas's patch "clockevents: Sanitize ticks to nsec
->>> conversion" appears in the request log because it is not part of the
->>> patches interval I specified for git request pull. The diffstat does
->>> not show the files which should have been changed by the patch. In
->>> any case I kept the changelog untouched since it is what gives me
->>> git and maybe someone can tell me why it appears.
->> Look at:
->>
->> 	git log --oneline --graph --boundary 97b9410..42ab380
->>
->> Then you see that there is Thomas' patch twice. Once the version he
->> committed and sent to Linus (97b9410) and once the version that you get
->> as part of my pull request (a4578ea). To fix this (assuming you don't
->> care much about a stable tree), simply do:
->>
->> 	git rebase 97b9410 42ab380
->>
->> and let the result pull.
->
-> The whole misery starts that you decided to play maintainer and grab
-> some patches from the mailinglist and then offering them via a pull
-> request to me and others. Finally you tricked Daniel to take them,
-> which is a different issue.
->
-> There is a reason why I ignored that pull request:
->
->   I generally do not pull git trees from people who I'm not
->   trusting. And I have good reasons not to trust you at all.
->
-> Aside of that, I decided to give you a chance and actually pulled
-> your tree into a temporary branch and found out that it's missing a
-> stable annotation. Which made the whole exercise go into /dev/null
->
-> Now Linus pulled my version way before Daniel pulled your tree into
-> his. And you even commented on my commit that I forgot to add a
-> tested-by tag. Yes, I missed that in favour of the stable annotation.
->
-> But instead of rebasing your tree or even just withdrawing it and
-> resending the at91 patch, you let Daniel pull your thing.
->
-> Of course Daniel failed to detect the pointless commit in your pull
-> request at the point of merging it and then he starts asking questions
-> when he sends the pull request for his aggregated stuff ....
->
-> There is a good reason why most maintainers have a strict policy from
-> whom they are pulling from and from whom they are just accepting
-> patches by mail.
->
-> Daniel, please provide me a rebased version, but be more careful
-> versus integration of random pull requests next time.
+On 15:59 Fri 01 Nov     , Bo Shen wrote:
+> Add Atmel PWM controller driver based on PWM framework.
+> 
+> This is the basic function implementation of Atmel PWM controller.
+> It can work with PWM based led and backlight.
+> 
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+> 
+> ---
+> Changes in v6:
+>   - using relaxed version for writel and readl
+>   - add none device tree support
+>   - change some define from lower case to upper case
+>   - split device tree binding document as a separate patch
+> 
+> Changes in v5:
+>   - call clk_disable directly, if so, it won't cause more than one channel
+>     enabled, the clock can not be disabled.
+> 
+> Changes in v4:
+>   - check the return value of clk_prepare()
+>   - change channel register size as constant
+> 
+> Changes in v3:
+>   - change compatible string from "atmel,sama5-pwm" to "atmel,sama5d3-pwm"
+>   - Add PWM led example in binding documentation
+>   - Using micro replace hard code
+> 
+> Changes in v2:
+>   - Address the comments from Thierry Reding
+> 
+>  drivers/pwm/Kconfig     |    9 ++
+>  drivers/pwm/Makefile    |    1 +
+>  drivers/pwm/pwm-atmel.c |  360 +++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 370 insertions(+)
+>  create mode 100644 drivers/pwm/pwm-atmel.c
+> 
+> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> index 75840b5..54237b9 100644
+> --- a/drivers/pwm/Kconfig
+> +++ b/drivers/pwm/Kconfig
+> @@ -41,6 +41,15 @@ config PWM_AB8500
+>  	  To compile this driver as a module, choose M here: the module
+>  	  will be called pwm-ab8500.
+>  
+> +config PWM_ATMEL
+> +	tristate "Atmel PWM support"
+> +	depends on ARCH_AT91
+> +	help
+> +	  Generic PWM framework driver for Atmel SoC.
+> +
+> +	  To compile this driver as a module, choose M here: the module
+> +	  will be called pwm-atmel.
+> +
+>  config PWM_ATMEL_TCB
+>  	tristate "Atmel TC Block PWM support"
+>  	depends on ATMEL_TCLIB && OF
+> diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+> index 77a8c18..5b193f8 100644
+> --- a/drivers/pwm/Makefile
+> +++ b/drivers/pwm/Makefile
+> @@ -1,6 +1,7 @@
+>  obj-$(CONFIG_PWM)		+= core.o
+>  obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
+>  obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
+> +obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
+>  obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
+>  obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+>  obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
+> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
+> new file mode 100644
+> index 0000000..ac54252
+> --- /dev/null
+> +++ b/drivers/pwm/pwm-atmel.c
+> @@ -0,0 +1,360 @@
+> +/*
+> + * Driver for Atmel Pulse Width Modulation Controller
+> + *
+> + * Copyright (C) 2013 Atmel Corporation
+> + *		 Bo Shen <voice.shen@atmel.com>
+> + *
+> + * Licensed under GPLv2.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pwm.h>
+> +#include <linux/slab.h>
+> +
+> +/* The following is global registers for PWM controller */
+> +#define PWM_ENA			0x04
+> +#define PWM_DIS			0x08
+> +#define PWM_SR			0x0C
+> +/* bit field in SR */
+> +#define PWM_SR_ALL_CH_ON	0x0F
+> +
+> +/* The following register is PWM channel related registers */
+> +#define PWM_CH_REG_OFFSET	0x200
+> +#define PWM_CH_REG_SIZE		0x20
+> +
+> +#define PWM_CMR			0x0
+> +/* bit field in CMR */
+> +#define PWM_CMR_CPOL		(1 << 9)
+> +#define PWM_CMR_UPD_CDTY	(1 << 10)
+> +
+> +/* The following registers for PWM v1 */
+> +#define PWMV1_CDTY		0x04
+> +#define PWMV1_CPRD		0x08
+> +#define PWMV1_CUPD		0x10
+> +
+> +/* The following registers for PWM v2 */
+> +#define PWMV2_CDTY		0x04
+> +#define PWMV2_CDTYUPD		0x08
+> +#define PWMV2_CPRD		0x0C
+> +#define PWMV2_CPRDUPD		0x10
+> +
+> +/* max value for duty and period */
+> +/*
+> + * Although the duty and period register is 32 bit,
+> + * however only the LSB 16 bits are significant.
+> + */
+> +#define PWM_MAX_DTY		0xFFFF
+> +#define PWM_MAX_PRD		0xFFFF
+> +#define PRD_MAX_PRES		10
+> +
+> +struct atmel_pwm_chip {
+> +	struct pwm_chip chip;
+> +	struct clk *clk;
+> +	void __iomem *base;
+> +
+> +	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
+> +		       int dty, int prd);
+> +};
+> +
+> +static inline struct atmel_pwm_chip *to_atmel_pwm_chip(struct pwm_chip *chip)
+> +{
+> +	return container_of(chip, struct atmel_pwm_chip, chip);
+> +}
+> +
+> +static inline u32 atmel_pwm_readl(struct atmel_pwm_chip *chip,
+> +				  unsigned long offset)
+> +{
+> +	return readl_relaxed(chip->base + offset);
+> +}
+> +
+> +static inline void atmel_pwm_writel(struct atmel_pwm_chip *chip,
+> +				    unsigned long offset, unsigned long val)
+> +{
+> +	writel_relaxed(val, chip->base + offset);
+> +}
+> +
+> +static inline u32 atmel_pwm_ch_readl(struct atmel_pwm_chip *chip,
+> +				     unsigned int ch, unsigned long offset)
+> +{
+> +	return readl_relaxed(chip->base + PWM_CH_REG_OFFSET +
+> +			ch * PWM_CH_REG_SIZE + offset);
+> +}
+> +
+> +static inline void atmel_pwm_ch_writel(struct atmel_pwm_chip *chip,
+> +				       unsigned int ch, unsigned long offset,
+> +				       unsigned long val)
+> +{
+> +	writel_relaxed(val, chip->base + PWM_CH_REG_OFFSET +
+> +			ch * PWM_CH_REG_SIZE + offset);
+> +}
+> +
+> +static int atmel_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+> +		int duty_ns, int period_ns)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+> +	unsigned long clk_rate, prd, dty;
+> +	unsigned long long div;
+> +	int ret, pres = 0;
+> +
+> +	clk_rate = clk_get_rate(atmel_pwm->clk);
+> +	div = clk_rate;
+> +
+> +	/* Calculate the period cycles */
+> +	while (div > PWM_MAX_PRD) {
+> +		div = clk_rate / (1 << pres);
+> +		div = div * period_ns;
+> +		/* 1/Hz = 100000000 ns */
+> +		do_div(div, 1000000000);
+> +
+> +		if (pres++ > PRD_MAX_PRES) {
+> +			pr_err("PRES is bigger than maximum pre-scaler\n");
+> +			return -EINVAL;
+> +		}
+> +	}
+> +
+> +	/* Calculate the duty cycles */
+> +	prd = div;
+> +	div *= duty_ns;
+> +	do_div(div, period_ns);
+> +	dty = div;
+> +
+> +	ret = clk_enable(atmel_pwm->clk);
+> +	if (ret) {
+> +		pr_err("Failed to enable pwm clock\n");
+> +		return ret;
+> +	}
+> +
+> +	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, pres);
+> +	atmel_pwm->config(chip, pwm, dty, prd);
+> +
+> +	clk_disable(atmel_pwm->clk);
+> +
+> +	return 0;
+> +}
+> +
+> +static void atmel_pwm_config_v1(struct pwm_chip *chip, struct pwm_device *pwm,
+> +				int dty, int prd)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+> +	unsigned int val;
+> +
+> +	/*
+> +	 * If the PWM channel is disabled, write value to duty and period
+> +	 * registers directly.
+> +	 * If the PWM channel is enabled, using the update register, it needs
+> +	 * to set bit 10 of CMR to 0
+> +	 */
+> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CUPD, dty);
+> +
+> +		val = atmel_pwm_ch_readl(atmel_pwm, pwm->hwpwm, PWM_CMR);
+> +		val &= ~PWM_CMR_UPD_CDTY;
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
+> +	} else {
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CDTY, dty);
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CPRD, prd);
+> +	}
+> +}
+> +
+> +static void atmel_pwm_config_v2(struct pwm_chip *chip, struct pwm_device *pwm,
+> +				int dty, int prd)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+> +
+> +	/*
+> +	 * If the PWM channel is disabled, write value to duty and period
+> +	 * registers directly.
+> +	 * If the PWM channel is enabled, using the duty update register to
+> +	 * update the value.
+> +	 */
+> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTYUPD, dty);
+> +	} else {
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTY, dty);
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CPRD, prd);
+> +	}
+> +}
+> +
+> +static int atmel_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
+> +		enum pwm_polarity polarity)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+> +	u32 val = 0;
+> +	int ret;
+> +
+> +	if (polarity == PWM_POLARITY_NORMAL)
+> +		val &= ~PWM_CMR_CPOL;
+> +	else
+> +		val |= PWM_CMR_CPOL;
+> +
+> +	ret = clk_enable(atmel_pwm->clk);
+> +	if (ret) {
+> +		pr_err("failed to enable pwm clock\n");
+> +		return ret;
+> +	}
+> +
+> +	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
+> +
+> +	clk_disable(atmel_pwm->clk);
+> +
+> +	return 0;
+> +}
+> +
+> +static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+> +	int ret;
+> +
+> +	ret = clk_enable(atmel_pwm->clk);
+> +	if (ret) {
+> +		pr_err("failed to enable pwm clock\n");
+> +		return ret;
+> +	}
+> +
+> +	atmel_pwm_writel(atmel_pwm, PWM_ENA, 1 << pwm->hwpwm);
+> +
+> +	return 0;
+> +}
+> +
+> +static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+> +
+> +	atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
+> +
+> +	clk_disable(atmel_pwm->clk);
+> +}
+> +
+> +static const struct pwm_ops atmel_pwm_ops = {
+> +	.config = atmel_pwm_config,
+> +	.set_polarity = atmel_pwm_set_polarity,
+> +	.enable = atmel_pwm_enable,
+> +	.disable = atmel_pwm_disable,
+> +	.owner = THIS_MODULE,
+> +};
+> +
+> +struct atmel_pwm_data {
+> +	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
+> +		       int dty, int prd);
+> +};
+> +
+> +static const struct atmel_pwm_data atmel_pwm_data_v1 = {
+> +	.config = atmel_pwm_config_v1,
+> +};
+> +
+> +static const struct atmel_pwm_data atmel_pwm_data_v2 = {
+> +	.config = atmel_pwm_config_v2,
+> +};
+> +
+> +static const struct platform_device_id atmel_pwm_devtypes[] = {
+> +	{
+> +		.name = "at91sam9rl-pwm",
+> +		.driver_data = (kernel_ulong_t)&atmel_pwm_data_v1,
+> +	}, {
+> +		.name = "sama5d3-pwm",
+> +		.driver_data = (kernel_ulong_t)&atmel_pwm_data_v2,
+> +	}, {
+> +		/* sentinel */
+> +	},
+> +};
+> +MODULE_DEVICE_TABLE(platform, atmel_pwm_devtypes);
+> +
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id atmel_pwm_dt_ids[] = {
+> +	{
+> +		.compatible = "atmel,at91sam9rl-pwm",
+> +		.data = &atmel_pwm_data_v1,
+> +	}, {
+> +		.compatible = "atmel,sama5d3-pwm",
+> +		.data = &atmel_pwm_data_v2,
+> +	}, {
+> +		/* sentinel */
+> +	},
+> +};
+> +MODULE_DEVICE_TABLE(of, atmel_pwm_dt_ids);
+> +#endif
+> +
+> +static int atmel_pwm_probe(struct platform_device *pdev)
+> +{
+> +	const struct of_device_id *of_id =
+> +		of_match_device(atmel_pwm_dt_ids, &pdev->dev);
+> +	const struct atmel_pwm_data *data;
+> +	struct atmel_pwm_chip *atmel_pwm;
+> +	struct resource *res;
+> +	int ret;
+> +
+> +	atmel_pwm = devm_kzalloc(&pdev->dev, sizeof(*atmel_pwm), GFP_KERNEL);
+> +	if (!atmel_pwm)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res)
+> +		return -ENODEV;
+> +
+> +	atmel_pwm->base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(atmel_pwm->base))
+> +		return PTR_ERR(atmel_pwm->base);
+> +
+> +	atmel_pwm->clk = devm_clk_get(&pdev->dev, NULL);
+> +	if (IS_ERR(atmel_pwm->clk))
+> +		return PTR_ERR(atmel_pwm->clk);
+> +
+> +	ret = clk_prepare(atmel_pwm->clk);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to prepare pwm clock\n");
+> +		return ret;
+> +	}
+> +
+> +	atmel_pwm->chip.dev = &pdev->dev;
+> +	atmel_pwm->chip.ops = &atmel_pwm_ops;
+I get one issue here for non-dt platform
+> +	atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
+> +	atmel_pwm->chip.of_pwm_n_cells = 3;
+those 3 no need
+> +	atmel_pwm->chip.base = -1;
+here we need specify the base from the board so we known which pwn to use
+for DT -1 is good as we use phandle
 
-    Yes I will. Thanks for catching this.
-
-I overwrote my branch with a rebased version.
-
-The following changes since commit 97b9410643475d6557d2517c2aff9fd2221141a9:
-
-   clockevents: Sanitize ticks to nsec conversion (2013-10-23 12:51:21 
-+0200)
-
-are available in the git repository at:
-
-   git://git.linaro.org/people/dlezcano/linux.git clockevents/fixes
-
-for you to fetch changes up to f578caebe38b87e7923cc03fb135d1e759912709:
-
-   clocksource: sh_tmu: Add clk_prepare/unprepare support (2013-11-13 
-11:06:50 +0100)
-
-----------------------------------------------------------------
-Laurent Pinchart (4):
-       clocksource: sh_mtu2: Release clock when sh_mtu2_register() fails
-       clocksource: sh_mtu2: Add clk_prepare/unprepare support
-       clocksource: sh_tmu: Release clock when sh_tmu_register() fails
-       clocksource: sh_tmu: Add clk_prepare/unprepare support
-
-Uwe Kleine-König (1):
-       ARM: at91: rm9200: switch back to clockevents_config_and_register
-
-  arch/arm/mach-at91/at91rm9200_time.c |    7 ++-----
-  drivers/clocksource/sh_mtu2.c        |   16 ++++++++++++++--
-  drivers/clocksource/sh_tmu.c         |   20 +++++++++++++++++---
-  3 files changed, 33 insertions(+), 10 deletions(-)
-
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Best Regards,
+J.
+> +	atmel_pwm->chip.npwm = 4;
+> +
+> +	data = of_id->data;
+> +	atmel_pwm->config = data->config;
+> +
+> +	ret = pwmchip_add(&atmel_pwm->chip);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "failed to add pwm chip %d\n", ret);
+> +		goto unprepare_clk;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, atmel_pwm);
+> +
+> +unprepare_clk:
+> +	clk_unprepare(atmel_pwm->clk);
+> +	return ret;
+> +}
+> +
+> +static int atmel_pwm_remove(struct platform_device *pdev)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = platform_get_drvdata(pdev);
+> +
+> +	clk_unprepare(atmel_pwm->clk);
+> +
+> +	return pwmchip_remove(&atmel_pwm->chip);
+> +}
+> +
+> +static struct platform_driver atmel_pwm_driver = {
+> +	.driver = {
+> +		.name = "atmel-pwm",
+> +		.of_match_table = of_match_ptr(atmel_pwm_dt_ids),
+> +	},
+> +	.id_table = atmel_pwm_devtypes,
+> +	.probe = atmel_pwm_probe,
+> +	.remove = atmel_pwm_remove,
+> +};
+> +module_platform_driver(atmel_pwm_driver);
+> +
+> +MODULE_ALIAS("platform:atmel-pwm");
+> +MODULE_AUTHOR("Bo Shen <voice.shen@atmel.com>");
+> +MODULE_DESCRIPTION("Atmel PWM driver");
+> +MODULE_LICENSE("GPL v2");
+> -- 
+> 1.7.9.5
+> 
