@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab3KMX0k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 18:26:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57552 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294Ab3KMX0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 18:26:32 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131113232349.GA13970@amd.pavel.ucw.cz>
-References: <1381450698-28710-4-git-send-email-keescook@chromium.org> <tip-5bfce5ef55cbe78ee2ee6e97f2e26a8a582008f3@git.kernel.org> <20131111182046.GA14961@gmail.com> <20131113181600.GA6160@amd.pavel.ucw.cz> <5283C7A8.2010902@linux.intel.com> <20131113232349.GA13970@amd.pavel.ucw.cz>
+	id S1752013Ab3KMX2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 18:28:33 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:14875 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab3KMX23 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 18:28:29 -0500
+Message-ID: <52840B1B.5060205@tilera.com>
+Date: Wed, 13 Nov 2013 18:28:27 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [tip:x86/kaslr] x86, kaslr: Provide randomness functions
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 13 Nov 2013 15:25:46 -0800
-To: Pavel Machek <pavel@ucw.cz>, "H. Peter Anvin" <hpa@linux.intel.com>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Message-ID: <2482e945-c263-4273-ad09-de83a830ecd6@email.android.com>
+To: Mark Salter <msalter@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/11] tile: use generic fixmap.h
+References: <1384262545-20875-1-git-send-email-msalter@redhat.com> <1384262545-20875-11-git-send-email-msalter@redhat.com>
+In-Reply-To: <1384262545-20875-11-git-send-email-msalter@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No, it literally doesn't exist yet.  As in it isn't in memory at the point this is run.
+On 11/12/2013 8:22 AM, Mark Salter wrote:
+> Signed-off-by: Mark Salter <msalter@redhat.com>
+> CC: Chris Metcalf <cmetcalf@tilera.com>
+> ---
+>  arch/tile/include/asm/fixmap.h | 33 +--------------------------------
+>  1 file changed, 1 insertion(+), 32 deletions(-)
 
-Pavel Machek <pavel@ucw.cz> wrote:
->On Wed 2013-11-13 10:40:40, H. Peter Anvin wrote:
->> On 11/13/2013 10:16 AM, Pavel Machek wrote:
->> > 
->> > If it is not performance critical, why not use "/dev/random"
->> > infrastructure?
->> > 
->> 
->> Because it doesn't exist yet?
->
->Would it be feasible to initialize /dev/random earlier instead of
->reinventing it?
->									Pavel
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
