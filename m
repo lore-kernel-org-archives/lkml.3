@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759757Ab3KMSUd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 13:20:33 -0500
+	id S1759775Ab3KMSUm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 13:20:42 -0500
 Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39307 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759374Ab3KMSTz (ORCPT
+	by vger.kernel.org with ESMTP id S1759664Ab3KMST5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 13:19:55 -0500
+	Wed, 13 Nov 2013 13:19:57 -0500
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: cw00.choi@samsung.com
 Cc: myungjoo.ham@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
         patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
         Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH 5/7] extcon: arizona: Add support for headphone detection on wm5110 rev D
-Date: Wed, 13 Nov 2013 18:04:35 +0000
-Message-Id: <1384365877-12355-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 7/7] extcon: arizona: Improve headphone detection error handling
+Date: Wed, 13 Nov 2013 18:04:37 +0000
+Message-Id: <1384365877-12355-7-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1384365877-12355-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 References: <1384365877-12355-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
@@ -22,44 +22,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wm5110 rev D is the first chip to use headphone detection IP 2, specify
-such and make a small correction as the impedance value is actually read
-in 0.5 ohm increments now.
+In several places the return value of regmap operations is not checked
+whilst handling headphone detection. This patch adds checks for these
+return values. Additionally, failing to read/write a register is a
+serious enough error we should abort the headphone detection process so
+correct a couple of cases where this was not the case.
 
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/extcon/extcon-arizona.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ drivers/extcon/extcon-arizona.c |   82 ++++++++++++++++++++++++++++----------
+ 1 files changed, 60 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index e311c52..d08e342 100644
+index 4441be4..ea3a22c 100644
 --- a/drivers/extcon/extcon-arizona.c
 +++ b/drivers/extcon/extcon-arizona.c
-@@ -435,6 +435,7 @@ static int arizona_hpdet_read(struct arizona_extcon_info *info)
- 		}
- 
- 		val &= ARIZONA_HP_LVL_B_MASK;
-+		val /= 2;
- 
- 		regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1,
- 			    &range);
-@@ -1149,6 +1150,16 @@ static int arizona_extcon_probe(struct platform_device *pdev)
- 			break;
- 		}
- 		break;
-+	case WM5110:
-+		switch (arizona->rev) {
-+		case 0 ... 2:
-+			break;
-+		default:
-+			info->micd_clamp = true;
-+			info->hpdet_ip = 2;
-+			break;
-+		}
-+		break;
- 	default:
- 		break;
+@@ -399,22 +399,32 @@ static int arizona_hpdet_read_ip1(struct arizona_extcon_info *info)
+ 	ret = regmap_read(arizona->regmap, ARIZONA_HP_DACVAL, &val);
+ 	if (ret != 0) {
+ 		dev_err(arizona->dev, "Failed to read HP value: %d\n", ret);
+-		return -EAGAIN;
++		return ret;
  	}
+ 
+-	regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1, &range);
++	ret = regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1, &range);
+ 	range = (range & ARIZONA_HP_IMPEDANCE_RANGE_MASK)
+ 		   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
++	if (ret != 0) {
++		dev_err(arizona->dev, "Failed to read HP range: %d\n", ret);
++		return ret;
++	}
+ 
+ 	if (range < ARRAY_SIZE(arizona_hpdet_b_ranges) - 1 &&
+ 	    (val < 100 || val >= 0x3fb)) {
+ 		range++;
+ 		dev_dbg(arizona->dev, "Moving to HPDET range %d\n", range);
+-		regmap_update_bits(arizona->regmap,
+-				   ARIZONA_HEADPHONE_DETECT_1,
+-				   ARIZONA_HP_IMPEDANCE_RANGE_MASK,
+-				   range <<
+-				   ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
++		ret = regmap_update_bits(arizona->regmap,
++					 ARIZONA_HEADPHONE_DETECT_1,
++					 ARIZONA_HP_IMPEDANCE_RANGE_MASK,
++					 range <<
++					 ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
++		if (ret != 0) {
++			dev_err(arizona->dev,
++				"Failed to move range (%d): %d\n",
++				range, ret);
++			return ret;
++		}
+ 		return -EAGAIN;
+ 	}
+ 
+@@ -453,7 +463,11 @@ static int arizona_hpdet_read_ip2(struct arizona_extcon_info *info)
+ 	val &= ARIZONA_HP_LVL_B_MASK;
+ 	val /= 2;
+ 
+-	regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1, &range);
++	ret = regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1, &range);
++	if (ret != 0) {
++		dev_err(arizona->dev, "Failed to read HP range: %d\n", ret);
++		return ret;
++	}
+ 	range = (range & ARIZONA_HP_IMPEDANCE_RANGE_MASK)
+ 		   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
+ 
+@@ -464,11 +478,17 @@ static int arizona_hpdet_read_ip2(struct arizona_extcon_info *info)
+ 		dev_dbg(arizona->dev, "Moving to HPDET range %d-%d\n",
+ 			arizona_hpdet_c_ranges[range].min,
+ 			arizona_hpdet_c_ranges[range].max);
+-		regmap_update_bits(arizona->regmap,
++		ret = regmap_update_bits(arizona->regmap,
+ 				   ARIZONA_HEADPHONE_DETECT_1,
+ 				   ARIZONA_HP_IMPEDANCE_RANGE_MASK,
+ 				   range <<
+ 				   ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
++		if (ret != 0) {
++			dev_err(arizona->dev,
++				"Failed to move range (%d): %d\n",
++				range, ret);
++			return ret;
++		}
+ 		return -EAGAIN;
+ 	}
+ 
+@@ -518,6 +538,7 @@ static int arizona_hpdet_do_id(struct arizona_extcon_info *info, int *reading,
+ {
+ 	struct arizona *arizona = info->arizona;
+ 	int id_gpio = arizona->pdata.hpdet_id_gpio;
++	int ret;
+ 
+ 	/*
+ 	 * If we're using HPDET for accessory identification we need
+@@ -530,18 +551,30 @@ static int arizona_hpdet_do_id(struct arizona_extcon_info *info, int *reading,
+ 		if (id_gpio && info->num_hpdet_res == 1) {
+ 			dev_dbg(arizona->dev, "Measuring mic\n");
+ 
+-			regmap_update_bits(arizona->regmap,
+-					   ARIZONA_ACCESSORY_DETECT_MODE_1,
+-					   ARIZONA_ACCDET_MODE_MASK |
+-					   ARIZONA_ACCDET_SRC,
+-					   ARIZONA_ACCDET_MODE_HPR |
+-					   info->micd_modes[0].src);
++			ret = regmap_update_bits(arizona->regmap,
++					ARIZONA_ACCESSORY_DETECT_MODE_1,
++					ARIZONA_ACCDET_MODE_MASK |
++					ARIZONA_ACCDET_SRC,
++					ARIZONA_ACCDET_MODE_HPR |
++					info->micd_modes[0].src);
++			if (ret != 0) {
++				dev_err(arizona->dev,
++					"Failed to change HPDET source: %d\n",
++					ret);
++				return ret;
++			}
+ 
+ 			gpio_set_value_cansleep(id_gpio, 1);
+ 
+-			regmap_update_bits(arizona->regmap,
+-					   ARIZONA_HEADPHONE_DETECT_1,
+-					   ARIZONA_HP_POLL, ARIZONA_HP_POLL);
++			ret = regmap_update_bits(arizona->regmap,
++					ARIZONA_HEADPHONE_DETECT_1,
++					ARIZONA_HP_POLL, ARIZONA_HP_POLL);
++			if (ret != 0) {
++				dev_err(arizona->dev,
++					"Failed to re-enable HPDET: %d\n",
++					ret);
++				return ret;
++			}
+ 			return -EAGAIN;
+ 		}
+ 
+@@ -574,10 +607,15 @@ static int arizona_hpdet_do_id(struct arizona_extcon_info *info, int *reading,
+ 		}
+ 
+ 		/* Make sure everything is reset back to the real polarity */
+-		regmap_update_bits(arizona->regmap,
+-				   ARIZONA_ACCESSORY_DETECT_MODE_1,
+-				   ARIZONA_ACCDET_SRC,
+-				   info->micd_modes[0].src);
++		ret = regmap_update_bits(arizona->regmap,
++					 ARIZONA_ACCESSORY_DETECT_MODE_1,
++					 ARIZONA_ACCDET_SRC,
++					 info->micd_modes[0].src);
++		if (ret != 0) {
++			dev_err(arizona->dev, "Failed to reset polarity: %d\n",
++				ret);
++			return ret;
++		}
+ 	}
+ 
+ 	return 0;
 -- 
 1.7.2.5
 
