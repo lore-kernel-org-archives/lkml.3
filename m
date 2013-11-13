@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759340Ab3KMPkn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 10:40:43 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:48298 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755987Ab3KMPkk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 10:40:40 -0500
-Date: Wed, 13 Nov 2013 09:40:22 -0600
-From: Seth Jennings <sjennings@variantweb.net>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: linux-mm@kvack.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        minchan@kernel.org, bob.liu@oracle.com, weijie.yang@samsung.com,
-        k.kozlowski@samsung.com
-Subject: Re: mm/zswap: change to writethrough
-Message-ID: <20131113154022.GA6277@cerebellum.variantweb.net>
-References: <CALZtONAxsYxLizARV3Aam_n7534g5gh_FFkTz6jb-0Q9gThuBQ@mail.gmail.com>
+	id S1759359Ab3KMPoa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 10:44:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44174 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755348Ab3KMPo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 10:44:26 -0500
+Date: Wed, 13 Nov 2013 16:45:16 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ingo Molnar <mingo@kernel.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/1] sched: Check TASK_DEAD rather than EXIT_DEAD in
+	schedule_debug()
+Message-ID: <20131113154516.GA15810@redhat.com>
+References: <20131113143552.GA10517@redhat.com> <20131113144856.GL26898@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALZtONAxsYxLizARV3Aam_n7534g5gh_FFkTz6jb-0Q9gThuBQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131113144856.GL26898@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 02:12:12PM -0500, Dan Streetman wrote:
-> Seth, have you (or anyone else) considered making zswap a writethrough
-> cache instead of writeback?  I think that it would significantly help
-> the case where zswap fills up and starts writing back its oldest pages
-> to disc - all the decompression work would be avoided since zswap
-> could just evict old pages and forget about them, and it seems likely
-> that when zswap is full that's probably the worst time to add extra
-> work/delay, while adding extra disc IO (presumably using dma) before
-> zswap is full doesn't seem to me like it would have much impact,
-> except in the case where zswap isn't full but there is so little free
-> memory that new allocs are waiting on swap-out.
+On 11/13, Peter Zijlstra wrote:
+>
+> On Wed, Nov 13, 2013 at 03:35:52PM +0100, Oleg Nesterov wrote:
+> >
+> > As for "nobody should use exit_state". I'll try to recheck, but iirc
+> > we already discussed this... do you remember any reason why
+> > schedule_debug() can't check prev->state == TASK_DEAD instead of
+> > ->exit_state?
+>
+> I have no such memories :/ but a quick test shows that such a kernel
+> does boot without issue.
 
-There are two main benefits to zswap:
-1) avoid write to swap space while the compressed pool is not full and
-2) reduce application delay on anonymous page faults
+probably my memory fools me. OK, it seems that you agree with this change,
+hopefully we both can't be wrong ;)
 
-Doing a writethough approach eliminates benefit 1 as there would
-be just as much swap out activity with or without zswap.  However, you
-still retain benefit 2.
+> Acked-by: Peter Zijlstra <peterz@infradead.org>
 
-The reclaim from zswap also becomes much simplier if the the compressed
-page can be treated as clean.  It doesn't need to be written back and
-can just be freed and the bit in the frontswap_map unset.
+Thanks! And since picked this series, perhaps you can also queue this
+one?
 
-I'm not opposed to this.  The obstacle of writeback has influenced the
-design a lot more than I would have liked.  You do lose the benefit of
-decreased swap out traffic, but the real performance killer, application
-latency on an anonymous page fault, is still greatly improved.
+Oleg.
 
-Seth
