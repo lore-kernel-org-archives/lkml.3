@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759013Ab3KMRgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 12:36:37 -0500
-Received: from mga02.intel.com ([134.134.136.20]:47836 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755325Ab3KMRga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 12:36:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="434721675"
-Message-ID: <5283B9AC.8010705@linux.intel.com>
-Date: Wed, 13 Nov 2013 09:41:00 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1759255Ab3KMRhG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 12:37:06 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:36526 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758428Ab3KMRg7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 12:36:59 -0500
+Date: Wed, 13 Nov 2013 18:36:55 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] block: Employ u64_stats_init()
+Message-ID: <20131113173655.GB10482@gmail.com>
+References: <1384314134-6895-1-git-send-email-john.stultz@linaro.org>
+ <5283A10E.2090304@kernel.dk>
+ <20131113173521.GA10482@gmail.com>
+ <5283B87E.2070703@kernel.dk>
 MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Kuppuswamy Sathyanarayanan 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH] gpiolib: append SFI helpers for GPIO API
-References: <1381979015-28980-1-git-send-email-david.a.cohen@linux.intel.com>  <1382013695.29062.141.camel@smile>  <CACRpkdZG=Sa92qGqK4Jt-L1AVRmremK5tgn8O5-5JccUsZDHTA@mail.gmail.com> <1384345006.14845.56.camel@smile>
-In-Reply-To: <1384345006.14845.56.camel@smile>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5283B87E.2070703@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 04:16 AM, Andy Shevchenko wrote:
-> On Tue, 2013-11-12 at 19:55 +0100, Linus Walleij wrote:
->> On Thu, Oct 17, 2013 at 2:41 PM, Andy Shevchenko
->> <andriy.shevchenko@linux.intel.com> wrote:
->>> On Wed, 2013-10-16 at 20:03 -0700, David Cohen wrote:
->>>> From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->>>>
->>>> To support some (legacy) firmwares and platforms let's make life easier for
->>>> their customers.
->>>
->>>> +int sfi_get_gpio_by_name(const char *name)
->>>> +{
->>>> +     struct sfi_gpio_table_entry *pentry = sfi_gpio_table;
->>>> +     int i;
->>>> +
->>>> +     if (!pentry)
->>>> +             return -1;
->>>
->>> ^^^^ It seems an old version.
->>>
->>> New version was published while ago and even has an ACK from Linus:
->>>
->>> http://www.spinics.net/lists/kernel/msg1545960.html
->>
->> So what is happening to this thing?
->
-> Actually David now coordinates work done for Medfield & Co.
-> Perhaps he is not absent and could answer fast to this.
->
->> Is there some newer patch I should be merging?
->
-> I'm pretty sure there is no newest version of patch.
 
-Yeah, there is no newer version.
-Linus, you're free to stick with the version pointed out by Andy on
-this thread:
-http://www.spinics.net/lists/kernel/msg1545960.html
+* Jens Axboe <axboe@kernel.dk> wrote:
 
-Br, David
+> On 11/13/2013 10:35 AM, Ingo Molnar wrote:
+> > 
+> > * Jens Axboe <axboe@kernel.dk> wrote:
+> > 
+> >> On 11/12/2013 08:42 PM, John Stultz wrote:
+> >>> From: Peter Zijlstra <peterz@infradead.org>
+> >>>
+> >>> Now that seqcounts are lockdep enabled objects, we need to properly
+> >>> initialize them.
+> >>>
+> >>> Without this patch, Fengguang was seeing:
+> >>> [    4.127282] INFO: trying to register non-static key.
+> >>> [    4.128027] the code is fine but needs lockdep annotation.
+> >>> [    4.128027] turning off the locking correctness validator.
+> >>> [    4.128027] CPU: 0 PID: 96 Comm: kworker/u4:1 Not tainted 3.12.0-next-20131108-10601-gbad570d #2
+> >>> [    4.128027] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> >>> [    4.128027] Workqueue: events_unbound async_run_entry_fn
+> >>> [    4.128027]  7908e744 00000000 78019968 79dc7cf2 7a80e0a8 780199a0 7908953e 7a1b7f4d
+> >>> [    4.128027]  7a1b7fa7 7a1b7f7d 7f368608 00000000 00000011 44374011 0000a805 7f368110
+> >>> [    4.128027]  7f368110 85bf2a70 00000000 780199cc 7908a1c5 00000000 00000001 00000000
+> >>> [    4.128027] Call Trace:
+> >>> [    4.128027]  [<7908e744>] ? console_unlock+0x353/0x380
+> >>> [    4.128027]  [<79dc7cf2>] dump_stack+0x48/0x60
+> >>> [    4.128027]  [<7908953e>] __lock_acquire.isra.26+0x7e3/0xceb
+> >>> [    4.128027]  [<7908a1c5>] lock_acquire+0x71/0x9a
+> >>> [    4.128027]  [<794079aa>] ? blk_throtl_bio+0x1c3/0x485
+> >>> [    4.128027]  [<7940658b>] throtl_update_dispatch_stats+0x7c/0x153
+> >>> [    4.128027]  [<794079aa>] ? blk_throtl_bio+0x1c3/0x485
+> >>> [    4.128027]  [<794079aa>] blk_throtl_bio+0x1c3/0x485
+> >>> ...
+> >>>
+> >>> Cc: Vivek Goyal <vgoyal@redhat.com>
+> >>> Cc: Jens Axboe <axboe@kernel.dk>
+> >>> Cc: Fengguang Wu <fengguang.wu@intel.com>
+> >>> Cc: Ingo Molnar <mingo@kernel.org>
+> >>> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> >>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> >>> [jstultz: Folded in another fix from the mailing list as well as a fix
+> >>> to that fix. Tweaked commit message.]
+> >>> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> >>
+> >> Thanks for fixing this up, John/Peter. I'll get it queued up.
+> > 
+> > Note that I've already applied it to the locking tree earlier today and
+> > sent it to Linus, didn't want to expose upstream to known false positives.
+> 
+> OK, that works for me, thanks!
+
+Also, if it breaks I'll take full responsibility for messing up! :-)
+
+Thanks,
+
+	Ingo
