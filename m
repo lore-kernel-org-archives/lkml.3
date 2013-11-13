@@ -1,73 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758862Ab3KMII7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 03:08:59 -0500
-Received: from dmz-mailsec-scanner-2.mit.edu ([18.9.25.13]:58644 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758826Ab3KMIIi (ORCPT
+	id S932234Ab3KMIJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 03:09:21 -0500
+Received: from dmz-mailsec-scanner-1.mit.edu ([18.9.25.12]:57908 "EHLO
+	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758832Ab3KMIIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 03:08:38 -0500
-X-AuditID: 1209190d-b7ef66d000000c40-12-52833385d299
-Date: Wed, 13 Nov 2013 03:08:35 -0500
+	Wed, 13 Nov 2013 03:08:47 -0500
+X-AuditID: 1209190c-b7f7f6d000000bbd-59-5283338d8fe7
+Date: Wed, 13 Nov 2013 03:08:41 -0500
 From: Greg Price <price@MIT.EDU>
 To: "Theodore Ts'o" <tytso@MIT.EDU>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 8/9] random: tighten bound on random_read_wakeup_thresh
-Message-ID: <20131113080835.GV16018@ringworld.MIT.EDU>
+Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 9/9] random: simplify accounting code
+Message-ID: <20131113080841.GW16018@ringworld.MIT.EDU>
 References: <cover.1384329436.git.price@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <cover.1384329436.git.price@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsUixG6nottq3BxksOWSqcXlXXPYHBg9Pm+S
-	C2CM4rJJSc3JLEst0rdL4Mr4NmsWc0E/V8XPT71sDYxLOLoYOTkkBEwkjs++wg5hi0lcuLee
-	rYuRi0NIYDaTxLoHy1ghnI2MEndeT2OGcH4xSuw6/pcJpIVFQFXi6pr3YDabgILEj/nrmEFs
-	EQFliVUzN4HFmYHiv+5tYgWxhQXcJTa//A1WwytgJnFq91MwW0jAQGLj/glQcUGJkzOfsED0
-	aknc+PcSaA4HkC0tsfwf2NWcAoYSkzYcBRspKqAiMeXkNrYJjIKzkHTPQtI9C6F7ASPzKkbZ
-	lNwq3dzEzJzi1GTd4uTEvLzUIl0jvdzMEr3UlNJNjKBA5ZTk3cH47qDSIUYBDkYlHl6LmKYg
-	IdbEsuLK3EOMkhxMSqK8TjrNQUJ8SfkplRmJxRnxRaU5qcWHGCU4mJVEeA8IA+V4UxIrq1KL
-	8mFS0hwsSuK8Nznsg4QE0hNLUrNTUwtSi2CyMhwcShK8FkZAjYJFqempFWmZOSUIaSYOTpDh
-	PEDDRUBqeIsLEnOLM9Mh8qcYFaXEeWNAEgIgiYzSPLheWCJ5xSgO9IowryhIFQ8wCcF1vwIa
-	zAQ02KK4CWRwSSJCSqqBMeyXmPzXOHGNz4VqdRw9Js9mx7w4Hbi6eL3QJFmH73t2eml+XWMf
-	n3XfKcwrbu9m3p1tS44sWDpj3+Rfaxft+GfVmNb1L/nlwR0XxSac/cqmdSJjv8MbB+nbM0zk
-	OHoZIqS3SX/7Ynlw6dqfRQYPUkRsl15tiTjWb/3jquzdYqmj0i0LtG8+W6fEUpyRaKjFXFSc
-	CACDbh7C/wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPIsWRmVeSWpSXmKPExsUixCmqrNtr3BxksGmBtcW0jeIWu+csZrG4
+	vGsOmwOzx5kFR9g9Pm+S8zjR8oU1gDmKyyYlNSezLLVI3y6BK6P/zmfmgouiFf1nbrI0MO4S
+	7GLk5JAQMJHo/3KHCcIWk7hwbz1bFyMXh5DAbCaJQ5862CGcjYwSB941Qjm/GCUWLbvIDtLC
+	IqAqseHjLTCbTUBB4sf8dcwgtoiAssSqmZvAxjILZElsvzuLFcQWFjCVeHB1B5jNK2Amsf3/
+	WzBbSMBAYuP+CcwQcUGJkzOfsED0aknc+PcSaA4HkC0tsfwfB0iYU8BQYtKGo2CtogIqElNO
+	bmObwCg4C0n3LCTdsxC6FzAyr2KUTcmt0s1NzMwpTk3WLU5OzMtLLdI11MvNLNFLTSndxAgO
+	Z0meHYxvDiodYhTgYFTi4X0Q2RQkxJpYVlyZe4hRkoNJSZTXSac5SIgvKT+lMiOxOCO+qDQn
+	tfgQowQHs5II7wFhoBxvSmJlVWpRPkxKmoNFSZz3Jod9kJBAemJJanZqakFqEUxWhoNDSYLX
+	wgioUbAoNT21Ii0zpwQhzcTBCTKcB2i4CEgNb3FBYm5xZjpE/hSjopQ4bwxIQgAkkVGaB9cL
+	SzevGMWBXhHmDQSp4gGmKrjuV0CDmYAGWxQ3gQwuSURISTUw+muzf8jjST+26vasebGXpibt
+	/fLq7s1khbBJb1tNNRfcTb2VeO3NOUu9tSohBr3rZ7WUsPqX+1w68cjy5oaI6/NO5/Uxck4/
+	luIbeXHfXhe37yqOBvvfFn69fDhIijlAkL/KIW9V8OaUXYLaS1Q38iyKVah96NvEpmkfeGnW
+	+ftPOX5POHbFVYmlOCPRUIu5qDgRAHsxypESAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use this value in a few places other than its literal meaning,
-in particular in _xfer_secondary_pool() as a minimum number of
-bits to pull from the input pool at a time into either output
-pool.  It doesn't make sense to pull more bits than the whole size
-of an output pool.
+With this we handle "reserved" in just one place.  As a bonus the
+code becomes less nested, and the "wakeup_write" flag variable
+becomes unnecessary.  The variable "flags" was already unused.
 
-We could and possibly should separate the quantities "how much
-should the input pool have to have to wake up /dev/random readers"
-and "how much should we transfer from the input to an output pool
-at a time", but nobody is likely to be sad they can't set the first
-quantity to more than 1024 bits, so for now just limit them both.
+This code behaves identically to the previous version except in
+two pathological cases that don't occur.  If the argument "nbytes"
+is already less than "min", then we didn't previously enforce
+"min".  If r->limit is false while "reserved" is nonzero, then we
+previously applied "reserved" in checking whether we had enough
+bits, even though we don't apply it to actually limit how many we
+take.  The callers of account() never exercise either of these cases.
+
+Before the previous commit, it was possible for "nbytes" to be less
+than "min" if userspace chose a pathological configuration, but no
+longer.
 
 Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 Signed-off-by: Greg Price <price@mit.edu>
 ---
- drivers/char/random.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/random.c | 27 ++++++++++-----------------
+ 1 file changed, 10 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 1f43f9e..865c8db 100644
+index 865c8db..87b41b0 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -1494,7 +1494,7 @@ EXPORT_SYMBOL(generate_random_uuid);
- #include <linux/sysctl.h>
+@@ -968,8 +968,6 @@ static void push_to_pool(struct work_struct *work)
+ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 		      int reserved)
+ {
+-	unsigned long flags;
+-	int wakeup_write = 0;
+ 	int have_bytes;
+ 	int entropy_count, orig;
+ 	size_t ibytes;
+@@ -981,24 +979,19 @@ retry:
+ 	entropy_count = orig = ACCESS_ONCE(r->entropy_count);
+ 	have_bytes = entropy_count >> (ENTROPY_SHIFT + 3);
+ 	ibytes = nbytes;
+-	if (have_bytes < min + reserved) {
++	/* If limited, never pull more than available */
++	if (r->limit)
++		ibytes = min_t(size_t, ibytes, have_bytes - reserved);
++	if (ibytes < min)
+ 		ibytes = 0;
+-	} else {
+-		/* If limited, never pull more than available */
+-		if (r->limit)
+-			ibytes = min_t(size_t, ibytes, have_bytes - reserved);
+-		entropy_count = max_t(int, 0,
+-			    entropy_count - (ibytes << (ENTROPY_SHIFT + 3)));
+-		if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
+-			goto retry;
+-
+-		if ((r->entropy_count >> ENTROPY_SHIFT)
+-		    < random_write_wakeup_thresh)
+-			wakeup_write = 1;
+-	}
++	entropy_count = max_t(int, 0,
++			      entropy_count - (ibytes << (ENTROPY_SHIFT + 3)));
++	if (ibytes && cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
++		goto retry;
  
- static int min_read_thresh = 8, min_write_thresh;
--static int max_read_thresh = INPUT_POOL_WORDS * 32;
-+static int max_read_thresh = OUTPUT_POOL_WORDS * 32;
- static int max_write_thresh = INPUT_POOL_WORDS * 32;
- static char sysctl_bootid[16];
- 
+ 	trace_debit_entropy(r->name, 8 * ibytes);
+-	if (wakeup_write) {
++	if (ibytes &&
++	    (r->entropy_count >> ENTROPY_SHIFT) < random_write_wakeup_thresh) {
+ 		wake_up_interruptible(&random_write_wait);
+ 		kill_fasync(&fasync, SIGIO, POLL_OUT);
+ 	}
 -- 
 1.8.3.2
-
