@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab3KMMv5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 07:51:57 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52753 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab3KMMvy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 07:51:54 -0500
-Date: Wed, 13 Nov 2013 12:51:11 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Florian Meier <florian.meier@koalo.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        Martin Sperl <martin@sperl.org>
-Message-ID: <20131113125111.GE878@sirena.org.uk>
-References: <527D1DDA.2040004@koalo.de>
- <20131108181743.GR2493@sirena.org.uk>
- <20131113050017.GO8834@intel.com>
+	id S1756892Ab3KMMwc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 07:52:32 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:35623 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752856Ab3KMMwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 07:52:30 -0500
+Date: Wed, 13 Nov 2013 06:51:49 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Nishanth Menon <nm@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, <paul@pwsan.com>, <rnayak@ti.com>,
+        <khilman@linaro.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] ARM: OMAP2+: omap_device: maintain sane runtime pm
+ status around suspend/resume
+Message-ID: <20131113125149.GB28192@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1384297710-29694-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T6xhMxlHU34Bk0ad"
+	protocol="application/pgp-signature"; boundary="TRYliJ5NKNqkz5bu"
 Content-Disposition: inline
-In-Reply-To: <20131113050017.GO8834@intel.com>
-X-Cookie: Long life is in store for you.
+In-Reply-To: <1384297710-29694-1-git-send-email-nm@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 149.254.183.27
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] dmaengine: Add support for BCM2835.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---T6xhMxlHU34Bk0ad
+--TRYliJ5NKNqkz5bu
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Nov 13, 2013 at 10:30:17AM +0530, Vinod Koul wrote:
-> On Fri, Nov 08, 2013 at 06:17:43PM +0000, Mark Brown wrote:
+Hi,
 
-> > Adding in Martin Sperl who's been looking at DMA with regard to the SPI
-> > controller (which will want non-cyclic mode but I guess there's a lot of
-> > shared code).
+On Tue, Nov 12, 2013 at 05:08:30PM -0600, Nishanth Menon wrote:
+> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap=
+_device.c
+> index b69dd9a..f97b34b 100644
+> --- a/arch/arm/mach-omap2/omap_device.c
+> +++ b/arch/arm/mach-omap2/omap_device.c
+> @@ -621,6 +621,7 @@ static int _od_suspend_noirq(struct device *dev)
+> =20
+>  	if (!ret && !pm_runtime_status_suspended(dev)) {
+>  		if (pm_generic_runtime_suspend(dev) =3D=3D 0) {
+> +			pm_runtime_set_suspended(dev);
 
-> Is there a plan to add a library in SPI for dma ops, on lines of what
-> is done in sound?
+don't you have to disable pm_runtime around status changes ? Or is
+pm_runtime already disabled by the time we get here ?
 
-I'm probably going to be looking at that at some point, though perhaps
-Martin will get to it since he seems to be looking at this.
+> @@ -634,10 +635,10 @@ static int _od_resume_noirq(struct device *dev)
+>  	struct platform_device *pdev =3D to_platform_device(dev);
+>  	struct omap_device *od =3D to_omap_device(pdev);
+> =20
+> -	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+> -	    !pm_runtime_status_suspended(dev)) {
+> +	if (od->flags & OMAP_DEVICE_SUSPENDED) {
+>  		od->flags &=3D ~OMAP_DEVICE_SUSPENDED;
+>  		omap_device_enable(pdev);
+> +		pm_runtime_set_active(dev);
 
---T6xhMxlHU34Bk0ad
+ditto, also pm_runtime_set_active() may fail.
+
+--=20
+balbi
+
+--TRYliJ5NKNqkz5bu
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSg3W8AAoJELSic+t+oim9lAIP/i2DqKmTzrViDNzR93jn6mvc
-yk4mHQ8T7rHUOhGCAgFhIahzj+oNnxem4IjfXPOdzKEHBAE8VaKrAFV7qRlWbCbU
-4PloFqW65C5HjAidUgZQaWnKsk0HrfJhjKlN48LoBqQCKqwunL7fJ5EnL2dki0db
-lmRND/wiZ9W3/6rIxxXYGWWZFQ0zdtdbeKV/h27fYZAv3OgVZabd8DdFlb9vUniP
-bRJbLwBfBXZX8e/p1XrZQJ/5eP6yTFLqNGSZVM+/8vWwLEhOZriU6KTlxF4TtE2Y
-0EmesN4Wzc+B7PIqIziu9BtV+YiyoaUypKs/Z6r60np6j1Wo5E8aXG+APwDTHfgM
-eSPy5oqglsYNxxjR32AgXWpDORuZBqH3SobWvZjBrk1phFPMLzqYbRwWpY0x/U8i
-nTvo/yEkhwsdt623Csl10u67UAG044fyBoSr+/pHgkuBdKuVs5HGnik8bTsfoa2a
-1iBFJdUXHVJ8ip9AKO4oidekpjgV9gg4JD7qXBWbLWbhWKPvNUdTmuPeT1626nor
-qZdgUa90tNZewLuJh+8GwdYGo+ep/lrnsA2ZDI3a5v3QWj/MJH0E9s5dKwqMRVzd
-zfocxUDLM50cMtqAtHlUwcMdW7u0sAYcgWAEghWAh68jTYJ/D31YY6VqXvU+DlK+
-Us6gLYk4U+Z158P8Wub3
-=4s61
+iQIcBAEBAgAGBQJSg3XlAAoJEIaOsuA1yqREueoQAKhHJoX6Oyj63VG6CmhMhjjk
+C0lxpjN854wdSGmLFBcAjtP98I6j26xKe25AmWe3H4uUdpm+Sc4iV1iMsJIGNZh/
+0aofkLSP56HbJYE/Et1x69Nc+R/Y/GuP9aJ83MB4sSIcf+qgtEACPZbND7c3g8z3
+OOi6eBklyBmS0hMuKFd1L0BJyTizB8ickz5TM96iBDYGtUMmZvRB6GQViXsBJV6y
+7CJY2iliUMO3k3DVZV2AtloFqhQ5q7GFbRGJCQV3appqdYH6yOvrtSop3VJHCgPM
+UnbSDBixJDyxNhkuZTIhSzGgTeetjI0XD1njMyyXEZaZmlMiS5jR9+CVur2uTW0C
+ui2M+lpS9kmKblkAmH3A/lhCYqlkOmZY2pHPdnw2wQXNvxdDQCpIeE9/CwqKF2Xe
+lSg41lYWPAcFeyVyW1OPU/slIYf00vB4VZUWBQpLevY88LAPj3Ttk7041nef8Gfd
+M2/Zz4vUK5VaCtuK0ddvpO1Vo+uU3IL2gIxd0yQiXNRSeiSMzvVSx6Z9He2ZbHNF
+R/36O5QCRzgzhFN3yEOJjkZcQTNrCpQXuHFEZ2+ZNJfmBs6nCaujesF0K4qaMJQh
+IMuOELm1idXPaRoUB/sgMBFv+pQPetMhqy/2z7WQJ61ZQuOok8RIr2n1UHcSRY+W
+m32V7ACK3LmsPpcv8Us3
+=XVBK
 -----END PGP SIGNATURE-----
 
---T6xhMxlHU34Bk0ad--
+--TRYliJ5NKNqkz5bu--
