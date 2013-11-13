@@ -1,133 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758794Ab3KMIIA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 03:08:00 -0500
-Received: from dmz-mailsec-scanner-6.mit.edu ([18.7.68.35]:60133 "EHLO
-	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758743Ab3KMIHn (ORCPT
+	id S1758812Ab3KMII1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 03:08:27 -0500
+Received: from dmz-mailsec-scanner-4.mit.edu ([18.9.25.15]:63302 "EHLO
+	dmz-mailsec-scanner-4.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758743Ab3KMIIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 03:07:43 -0500
-X-AuditID: 12074423-b7f2b6d000000ce1-f1-5283334ed3f3
-Date: Wed, 13 Nov 2013 03:07:40 -0500
+	Wed, 13 Nov 2013 03:08:19 -0500
+X-AuditID: 1209190f-b7fb86d000000c36-91-528333712a95
+Date: Wed, 13 Nov 2013 03:08:14 -0500
 From: Greg Price <price@MIT.EDU>
 To: "Theodore Ts'o" <tytso@MIT.EDU>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 4/9] random: simplify loop in random_read
-Message-ID: <20131113080740.GR16018@ringworld.MIT.EDU>
+Subject: [PATCH 5/9] random: fix comment on "account"
+Message-ID: <20131113080814.GS16018@ringworld.MIT.EDU>
 References: <cover.1384329436.git.price@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <cover.1384329436.git.price@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsUixG6noutn3BxksPypjcXlXXPYHBg9Pm+S
-	C2CM4rJJSc3JLEst0rdL4Mq4c2EOS8ExoYrf036yNTCu5Oti5OSQEDCROLn9ADuELSZx4d56
-	ti5GLg4hgdlMEvP/nWaEcDYySszcf48VpEpI4BejRNNjbxCbRUBV4tzehWwgNpuAgsSP+euY
-	QWwRAWWJVTM3MYHYzEDxX/c2gfUKC1hKzJmyhQXE5hUwk3i2fSo7xEwDiY37JzBDxAUlTs58
-	wgLRqyVx499LoDkcQLa0xPJ/HCBhTgFDiUkbjoKNFBVQkZhychvbBEbBWUi6ZyHpnoXQvYCR
-	eRWjbEpulW5uYmZOcWqybnFyYl5eapGumV5uZoleakrpJkZwmLoo72D8c1DpEKMAB6MSD69F
-	TFOQEGtiWXFl7iFGSQ4mJVFeJ53mICG+pPyUyozE4oz4otKc1OJDjBIczEoivAeEgXK8KYmV
-	ValF+TApaQ4WJXHeWxz2QUIC6YklqdmpqQWpRTBZGQ4OJQnev4ZAjYJFqempFWmZOSUIaSYO
-	TpDhPEDDRYxAhhcXJOYWZ6ZD5E8xKkqJ8+aCNAuAJDJK8+B6YWnkFaM40CvCvKIg7TzAFATX
-	/QpoMBPQYIviJpDBJYkIKakGRuPazTKFp8sSTi+LZj4+dZqGVk/Yh7K/L0JNZI1F13PNWV6c
-	fFaGnXPlA+/mhbFff356vePaRDvDGWVbm5Oyzj9xqd5SOE0472Ry05RZWZmxl+43vtCe7crw
-	Vkv5Z37CZ2ftOQ8+nJxkoPJHcrO4f2RG9GMG4xWCr0rmfe2SZZLICj2t48x7TomlOCPRUIu5
-	qDgRADkLwA7+AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsUixCmqrVtk3BxkcPMak8XlXXPYHBg9Pm+S
+	C2CM4rJJSc3JLEst0rdL4MrY+nYvc0GPSMX6iY9YGhgbBboYOTkkBEwkzp7czQhhi0lcuLee
+	rYuRi0NIYDaTxNLXl6GcjYwS3w9uZoVwfjFKfDrWzwTSwiKgKvH1wX1WEJtNQEHix/x1zCC2
+	iICyxKqZm8BqmIHiv+5tAqsRFjCVaGw7BhbnFTCTWPn7DxuILSRgILFx/wRmiLigxMmZT1gg
+	erUkbvx7CVTPAWRLSyz/xwES5hQwlJi04SjYSFEBFYkpJ7exTWAUnIWkexaS7lkI3QsYmVcx
+	yqbkVunmJmbmFKcm6xYnJ+blpRbpmujlZpbopaaUbmIEB6ok/w7GbweVDjEKcDAq8fA+iGwK
+	EmJNLCuuzD3EKMnBpCTK66TTHCTEl5SfUpmRWJwRX1Sak1p8iFGCg1lJhPeAMFCONyWxsiq1
+	KB8mJc3BoiTOe5PDPkhIID2xJDU7NbUgtQgmK8PBoSTB+9cQqFGwKDU9tSItM6cEIc3EwQky
+	nAdo+EyQGt7igsTc4sx0iPwpRkUpcd5ckIQASCKjNA+uF5ZIXjGKA70izCtqBFTFA0xCcN2v
+	gAYzAQ22KG4CGVySiJCSamB0+W4t1HfM7NBzz5N7/j9x4Wivf/V8E5+JSkHXbfPshaevfCmU
+	irxuF/2aWSz9sM6HC4Ye0X4sX2PavwRv++u55m6Mi1hFh8gd7u+799/YzVaU+Kgn6eaCC6WT
+	v9xb2JHNoXKY3/NskvXH8yJVDSa9h223ua/ZcPUDp1/j+sy9W1fO2M/SIPJfiaU4I9FQi7mo
+	OBEAUXSaD/8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The loop condition never changes until just before a break, so we
-might as well write it as a constant.  Also since v2.6.33-rc7~40^2~2
-("random: drop weird m_time/a_time manipulation") we don't do
-anything after the loop finishes, so the 'break's might as well
-return directly.  Some other simplifications.
-
-The behavior should be identical except that I've changed a debug
-message.
+This comment didn't quite keep up as extract_entropy() was split into
+four functions.  Put each bit by the function it describes.
 
 Cc: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Price <price@mit.edu>
 ---
- drivers/char/random.c | 57 ++++++++++++++++-----------------------------------
- 1 file changed, 18 insertions(+), 39 deletions(-)
+ drivers/char/random.c | 31 +++++++++++++++++++++----------
+ 1 file changed, 21 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 6d3627d..cf1357b 100644
+index cf1357b..fe7ecdd 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -1289,53 +1289,32 @@ void rand_initialize_disk(struct gendisk *disk)
- static ssize_t
- random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
- {
--	ssize_t n, retval = 0, count = 0;
-+	ssize_t n;
- 
- 	if (nbytes == 0)
- 		return 0;
- 
--	while (nbytes > 0) {
--		n = nbytes;
--		if (n > SEC_XFER_SIZE)
--			n = SEC_XFER_SIZE;
--
--		n = extract_entropy_user(&blocking_pool, buf, n);
--
--		if (n < 0) {
--			retval = n;
--			break;
--		}
--
-+	nbytes = min_t(size_t, nbytes, SEC_XFER_SIZE);
-+	while (1) {
-+		n = extract_entropy_user(&blocking_pool, buf, nbytes);
-+		if (n < 0)
-+			return n;
- 		trace_random_read(n*8, (nbytes-n)*8,
- 				  ENTROPY_BITS(&blocking_pool),
- 				  ENTROPY_BITS(&input_pool));
--
--		if (n == 0) {
--			if (file->f_flags & O_NONBLOCK) {
--				retval = -EAGAIN;
--				break;
--			}
--
--			wait_event_interruptible(random_read_wait,
--				ENTROPY_BITS(&input_pool) >=
--				random_read_wakeup_thresh);
--
--			if (signal_pending(current)) {
--				retval = -ERESTARTSYS;
--				break;
--			}
--
--			continue;
--		}
--
--		count += n;
--		buf += n;
--		nbytes -= n;
--		break;		/* This break makes the device work */
--				/* like a named pipe */
-+		if (n > 0)
-+			return n;
-+		/* Pool is (near) empty.  Maybe wait and retry. */
-+
-+		if (file->f_flags & O_NONBLOCK)
-+			return -EAGAIN;
-+
-+		wait_event_interruptible(random_read_wait,
-+			ENTROPY_BITS(&input_pool) >=
-+			random_read_wakeup_thresh);
-+		if (signal_pending(current))
-+			return -ERESTARTSYS;
- 	}
--
--	return (count ? count : retval);
+@@ -962,17 +962,9 @@ static void push_to_pool(struct work_struct *work)
  }
  
- static ssize_t
+ /*
+- * These functions extracts randomness from the "entropy pool", and
+- * returns it in a buffer.
+- *
+- * The min parameter specifies the minimum amount we can pull before
+- * failing to avoid races that defeat catastrophic reseeding while the
+- * reserved parameter indicates how much entropy we must leave in the
+- * pool after each pull to avoid starving other readers.
+- *
+- * Note: extract_entropy() assumes that .poolwords is a multiple of 16 words.
++ * This function decides how many bytes to actually take from the
++ * given pool, and also debits the entropy count accordingly.
+  */
+-
+ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 		      int reserved)
+ {
+@@ -1022,6 +1014,12 @@ retry:
+ 	return ibytes;
+ }
+ 
++/*
++ * This function does the actual extraction for extract_entropy and
++ * extract_entropy_user.
++ *
++ * Note: we assume that .poolwords is a multiple of 16 words.
++ */
+ static void extract_buf(struct entropy_store *r, __u8 *out)
+ {
+ 	int i;
+@@ -1083,6 +1081,15 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
+ 	memset(&hash, 0, sizeof(hash));
+ }
+ 
++/*
++ * This function extracts randomness from the "entropy pool", and
++ * returns it in a buffer.
++ *
++ * The min parameter specifies the minimum amount we can pull before
++ * failing to avoid races that defeat catastrophic reseeding while the
++ * reserved parameter indicates how much entropy we must leave in the
++ * pool after each pull to avoid starving other readers.
++ */
+ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+ 				 size_t nbytes, int min, int reserved)
+ {
+@@ -1133,6 +1140,10 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+ 	return ret;
+ }
+ 
++/*
++ * This function extracts randomness from the "entropy pool", and
++ * returns it in a userspace buffer.
++ */
+ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
+ 				    size_t nbytes)
+ {
 -- 
 1.8.3.2
 
