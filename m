@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757834Ab3KMCDT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 21:03:19 -0500
-Received: from [213.199.154.186] ([213.199.154.186]:58419 "EHLO
-	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755454Ab3KMCDL (ORCPT
+	id S1757848Ab3KMCFe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 21:05:34 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:46582 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755154Ab3KMCFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 21:03:11 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zz98dI9371I936eI542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh109h2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216hbe9i1155h)
-From: Shaohui Xie <Shaohui.Xie@freescale.com>
-To: Scott Wood <scottwood@freescale.com>
-CC: "shh.xie@gmail.com" <shh.xie@gmail.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shruti Kanetkar <Shruti@freescale.com>,
-        Madalin-Cristian Bucur <madalin.bucur@freescale.com>
-Subject: RE: [PATCH 1/4] phylib: Add Clause 45 read/write functions
-Thread-Topic: [PATCH 1/4] phylib: Add Clause 45 read/write functions
-Thread-Index: AQHO3tiLs19l/z/zlEG78+nbLumxJZoiJtiAgABAxlCAAAFQgIAAAZTw
-Date: Wed, 13 Nov 2013 02:01:55 +0000
-Message-ID: <ED492CCEAF882048BC2237DE806547C9151248F9@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1384167864-2457-1-git-send-email-shh.xie@gmail.com>
-	 <1384293487.1403.67.camel@snotra.buserror.net>
-	 <ED492CCEAF882048BC2237DE806547C91512489F@039-SN2MPN1-013.039d.mgd.msft.net>
- <1384307679.1403.122.camel@snotra.buserror.net>
-In-Reply-To: <1384307679.1403.122.camel@snotra.buserror.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.53]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Tue, 12 Nov 2013 21:05:25 -0500
+Date: Wed, 13 Nov 2013 13:05:07 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Josef Bacik <jbacik@fusionio.com>
+Subject: linux-next: manual merge of the aio-direct tree with the btrfs tree
+Message-Id: <20131113130507.b4a99df2f2c2a860bc320bab@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__13_Nov_2013_13_05_07_+1100_KUgmAW8=PQr2cebe"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAD23OV0029772
 
-> On Tue, 2013-11-12 at 19:51 -0600, Xie Shaohui-B21989 wrote:
-> > > -----Original Message-----
-> > > From: Wood Scott-B07421
-> > > Sent: Wednesday, November 13, 2013 5:58 AM
-> > > To: shh.xie@gmail.com
-> > > Cc: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org;
-> > > Kanetkar Shruti-B44454; Xie Shaohui-B21989; Bucur
-> > > Madalin-Cristian-B32716
-> > > Subject: Re: [PATCH 1/4] phylib: Add Clause 45 read/write functions
-> > >
-> > > On Mon, 2013-11-11 at 19:04 +0800, shh.xie@gmail.com wrote:
-> > > > From: Andy Fleming
-> > > >
-> > > > You need an extra parameter to read or write Clause 45 PHYs, so we
-> > > > need a different API with the extra parameter.
-> > > >
-> > > > Signed-off-by: Andy Fleming
-> > > > Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
-> > >
-> > > Why did you remove Andy's e-mail address?  Even though it's no
-> > > longer valid, it helps identify which specific person you're talking about.
-> > >
-> > [S.H] Andy's e-mail address is not valid and git-send-mail will fail, I have
-> to remove it to make git work.
-> 
-> Tell git send-email to not include that address, e.g. using --suppress-cc, --no-
-> signed-off-by-cc, --suppress-from, etc.
-> 
-[S.H] OK. Thank you!
+--Signature=_Wed__13_Nov_2013_13_05_07_+1100_KUgmAW8=PQr2cebe
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Dave,
 
-Best Regards, 
-Shaohui Xie
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Today's linux-next merge of the aio-direct tree got a conflict in
+fs/btrfs/inode.c between commit 0ef8b726075a ("Btrfs: return an error
+from btrfs_wait_ordered_range") from the btrfs tree and commit
+921057174f1c ("dio: Convert direct_IO to use iov_iter") from the
+aio-direct tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/btrfs/inode.c
+index da8d2f696ac5,6feae86d24df..000000000000
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@@ -7234,10 -7233,8 +7247,10 @@@ static ssize_t btrfs_direct_IO(int rw,=20
+  	 * call btrfs_wait_ordered_range to make absolutely sure that any
+  	 * outstanding dirty pages are on disk.
+  	 */
+- 	count =3D iov_length(iov, nr_segs);
++ 	count =3D iov_iter_count(iter);
+ -	btrfs_wait_ordered_range(inode, offset, count);
+ +	ret =3D btrfs_wait_ordered_range(inode, offset, count);
+ +	if (ret)
+ +		return ret;
+ =20
+  	if (rw & WRITE) {
+  		/*
+
+--Signature=_Wed__13_Nov_2013_13_05_07_+1100_KUgmAW8=PQr2cebe
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSgt5XAAoJEMDTa8Ir7ZwVD34QAIW4tsOZ1moR1hnX7AnjqGWG
+fOxSxprxBbwKav4vZ1Gx+VTQmMnxuKEgq7NYcVD1AleGo8wfiCVk1EMEKJrK/0Cy
+h8OBlsG9K91yT3fEpGQJ5eNKF5VnZcjYRGqEQFNNtd/0qL8KLNyjfP+yUf2Jv2lo
+tZIjRcl6Ot+yh0T9bwtQ1tRZygKV/btHpdOdlykXTHZBSwzkO2MYYWWQkoVXfBrq
+zdk+QDp34NsiMNvHMhf8+bl+6x2GYZTU2I4fn9H1kc/kj9APdjAIxCKDHZk+VxGJ
+TJiJGoaQRmOxZMgum1Q1NclUA19PgQvM6bvOL824pZkuEMxncxz/KQs3UDMgVDwC
+zI6+8NgXkyUkyuPb3Xkuu1AdG1e9kgsky5ddELqQen3N56AA1pxISxSVKfttlO+C
+tRLnC2tPPYDRUe41aY1V/i7paiOdVLpJdNGxyo5ODtqXbBXjylWHBk12TnpmtM56
+kPmG/ITTh0/kM24NgqJQSTkCpeXECuPJ6HQIbBJZHtbV1MG6HWHmRlzFDShgMbTu
+AK/EB4meVxYSGCz2NqCKwzm2gFfeInsUggaZHVp+kTj6tJkuFikA+k73UqQLJibm
+nJq5r2bvQ0Wpg6Tvc48NBkaHavgJbR5oaKjvTdBNCnQ0150Zctk9GWDK1QWLQNYD
+ESh4C2C7smlP/l3koEpn
+=5HuB
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__13_Nov_2013_13_05_07_+1100_KUgmAW8=PQr2cebe--
