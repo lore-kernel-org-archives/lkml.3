@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758828Ab3KMIIj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 03:08:39 -0500
-Received: from dmz-mailsec-scanner-2.mit.edu ([18.9.25.13]:63252 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758808Ab3KMII0 (ORCPT
+	id S1758845Ab3KMIIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 03:08:50 -0500
+Received: from dmz-mailsec-scanner-8.mit.edu ([18.7.68.37]:52353 "EHLO
+	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758743Ab3KMIId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 03:08:26 -0500
-X-AuditID: 1209190d-b7ef66d000000c40-dc-528333786ef3
-Date: Wed, 13 Nov 2013 03:08:21 -0500
+	Wed, 13 Nov 2013 03:08:33 -0500
+X-AuditID: 12074425-b7fd96d000000c39-07-5283337f1a19
+Date: Wed, 13 Nov 2013 03:08:28 -0500
 From: Greg Price <price@MIT.EDU>
 To: "Theodore Ts'o" <tytso@MIT.EDU>
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 6/9] random: simplify accounting logic
-Message-ID: <20131113080821.GT16018@ringworld.MIT.EDU>
+Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 7/9] random: forget lock in lockless accounting
+Message-ID: <20131113080828.GU16018@ringworld.MIT.EDU>
 References: <cover.1384329436.git.price@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <cover.1384329436.git.price@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPIsWRmVeSWpSXmKPExsUixG6nolth3BxksPaatMW0jeIWu+csZrG4
-	vGsOmwOzx5kFR9g9Pm+S8zjR8oU1gDmKyyYlNSezLLVI3y6BK+P5ls2sBau5Kp4d3M3YwDif
-	o4uRk0NCwETizqWLzBC2mMSFe+vZuhi5OIQEZjNJHN09kRnC2cgocfxOAyOE84tRom/tMyaQ
-	FhYBVYk/LZNZQGw2AQWJH/PXgY0SEVCWWDVzE1gNs0CWxPa7s1hBbGEBM4mjT/vYQGxeIHvb
-	NghbSMBAYuP+CcwQcUGJkzOfsED0aknc+PcSaA4HkC0tsfwf2NWcAoYSkzYcBRspKqAiMeXk
-	NrYJjIKzkHTPQtI9C6F7ASPzKkbZlNwq3dzEzJzi1GTd4uTEvLzUIl0jvdzMEr3UlNJNjKBw
-	5pTk3cH47qDSIUYBDkYlHl6LmKYgIdbEsuLK3EOMkhxMSqK8TjrNQUJ8SfkplRmJxRnxRaU5
-	qcWHGCU4mJVEeA8IA+V4UxIrq1KL8mFS0hwsSuK8Nznsg4QE0hNLUrNTUwtSi2CyMhwcShK8
-	FkZAjYJFqempFWmZOSUIaSYOTpDhPEDDRUBqeIsLEnOLM9Mh8qcYFaXEeWNAEgIgiYzSPLhe
-	WLp5xSgO9IowryhIFQ8wVcF1vwIazAQ02KK4CWRwSSJCSqqBUWbFs+J3ic1s5z5xLelZcfls
-	ahHDo3Vhbm/b/Rt7DS+bvjCa8vnkbuPinRtltf58Ur/yV+oL+6/zpvNWb67eY+hcG24WFzxL
-	w/v0zytL2Y8GdzGKejz8eYchf8pH6YenJh9cddr1x2Ofab5NB1sWyp62LPrhmPvi4Lpbm7hX
-	XNWs0vM9urOg/6QSS3FGoqEWc1FxIgACCgwKEgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsUixCmqrFtv3BxkcOWZjsXuOYtZLC7vmsPm
+	wORxZsERdo/Pm+QCmKK4bFJSczLLUov07RK4Mu7/YCvYyVlxpvsMewPjHfYuRk4OCQETiXPr
+	3kHZYhIX7q1n62Lk4hASmM0ksbnvLZSzkVHix8ZTLCBVQgK/GCUau0JBbBYBVYnL116BxdkE
+	FCR+zF/HDGKLCChLrJq5iQnEZhawl/g9dTLQBg4OYSD71XZTkDCvgJnE485dUCMNJDbun8AM
+	EReUODnzCQtEq5bEjX8vmUBamQWkJZb/4wAJcwoYSkzacJQVxBYVUJGYcnIb2wRGwVlIumch
+	6Z6F0L2AkXkVo2xKbpVubmJmTnFqsm5xcmJeXmqRroVebmaJXmpK6SZGUNiyu6juYJxwSOkQ
+	owAHoxIPr0VMU5AQa2JZcWXuIUZJDiYlUV4nneYgIb6k/JTKjMTijPii0pzU4kOMEhzMSiK8
+	B4SBcrwpiZVVqUX5MClpDhYlcd5bHPZBQgLpiSWp2ampBalFMFkZDg4lCV4nQ6BGwaLU9NSK
+	tMycEoQ0EwcnyHAeoOGRIDW8xQWJucWZ6RD5U4yKUuK8uSAJAZBERmkeXC8srbxiFAd6RZg3
+	HqSKB5iS4LpfAQ1mAhpsUdwEMrgkESEl1cDI/ya293zHKq7sAkar6bYVr+V3fq1wSfLhS5vM
+	vmSr8kK2jz55e/luTs20/jRt1XPrbfFrcy6+4at+U30xremN++ceDsH6xs9qh+rnCwsozdGJ
+	Cgytu5l9JPNv4eY3HyVLdydo/RHicmm79uwbR722O49dWdbRGAPTyTk8K1lOnBLrSVa+uEuJ
+	pTgj0VCLuag4EQCWdtZnBgMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This logic is exactly equivalent to the old logic, but it should
-be easier to see what it's doing.
+The only mutable data accessed here is ->entropy_count, but since
+902c098a3 ("random: use lockless techniques in the interrupt path")
+that member isn't protected by the lock anyway.  Since 10b3a32d2
+("random: fix accounting race condition") we use cmpxchg to protect
+our accesses to ->entropy_count here.  Drop the use of the lock.
 
-The equivalence depends on one fact from outside this function:
-when 'r->limit' is false, 'reserved' is zero.  (Well, two facts;
-the other is that 'reserved' is never negative.)
-
-Cc: "Theodore Ts'o" <tytso@mit.edu>
 Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Price <price@mit.edu>
 ---
- drivers/char/random.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ drivers/char/random.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index fe7ecdd..5dffca8 100644
+index 5dffca8..1f43f9e 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -988,14 +988,10 @@ retry:
- 		ibytes = 0;
- 	} else {
- 		/* If limited, never pull more than available */
--		if (r->limit && ibytes + reserved >= have_bytes)
--			ibytes = have_bytes - reserved;
--
--		if (have_bytes >= ibytes + reserved)
--			entropy_count -= ibytes << (ENTROPY_SHIFT + 3);
--		else
--			entropy_count = reserved << (ENTROPY_SHIFT + 3);
--
-+		if (r->limit)
-+			ibytes = min_t(size_t, ibytes, have_bytes - reserved);
-+		entropy_count = max_t(int, 0,
-+			    entropy_count - (ibytes << (ENTROPY_SHIFT + 3)));
- 		if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
- 			goto retry;
+@@ -974,9 +974,6 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 	int entropy_count, orig;
+ 	size_t ibytes;
  
+-	/* Hold lock while accounting */
+-	spin_lock_irqsave(&r->lock, flags);
+-
+ 	BUG_ON(r->entropy_count > r->poolinfo->poolfracbits);
+ 
+ 	/* Can we pull enough? */
+@@ -999,7 +996,6 @@ retry:
+ 		    < random_write_wakeup_thresh)
+ 			wakeup_write = 1;
+ 	}
+-	spin_unlock_irqrestore(&r->lock, flags);
+ 
+ 	trace_debit_entropy(r->name, 8 * ibytes);
+ 	if (wakeup_write) {
 -- 
 1.8.3.2
 
