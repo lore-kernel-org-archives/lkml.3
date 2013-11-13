@@ -1,141 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968Ab3KMUIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 15:08:50 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:40812 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756278Ab3KMUIm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 15:08:42 -0500
-Date: Wed, 13 Nov 2013 21:09:14 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: "MPhil. Emanoil Kotsev" <Emanoil.Kotsev@fincom.at>
-Cc: Borislav Petkov <bp@alien8.de>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Intel-gfx] kernel 3.11.6 general protection fault
-Message-ID: <20131113200914.GG7251@phenom.ffwll.local>
-Mail-Followup-To: "MPhil. Emanoil Kotsev" <Emanoil.Kotsev@fincom.at>,
-	Borislav Petkov <bp@alien8.de>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <201311132058.30310.Emanoil.Kotsev@fincom.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201311132058.30310.Emanoil.Kotsev@fincom.at>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758036Ab3KMUKJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 15:10:09 -0500
+Received: from mga02.intel.com ([134.134.136.20]:30538 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756549Ab3KMUKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 15:10:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="408334671"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: matthew.garrett@nebula.com
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eric.ernst@linux.intel.com,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH 2/3] ipc: Enabled ipc support for additional intel platforms
+Date: Wed, 13 Nov 2013 12:14:30 -0800
+Message-Id: <1384373671-12814-3-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1384373671-12814-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1384373671-12814-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 08:58:29PM +0100, MPhil. Emanoil Kotsev wrote:
-> (sorry it replys automaticaly only to the sender - now added the list)
-> 
-> What do the intel-gfx people think?
-> 
-> ====== original mail follows =======
-> Hi sorry for bothering you once again. 
-> 
-> I noticed most of the issues are coming from drm (I have the stupid "Intel 
-> Corporation Mobile 945GM/GMS, 943/940GML Express Integrated Graphics 
-> Controller (rev 03)")
-> 
-> So I checked today the logs again and found out it crashed in the mornign when 
-> turning on the notebook in the office.
-> 
-> Is there something you can conclude from the trace below and another 
-> question - why is it checking CRTC as I have LVDS, VGA1 and DVI1 - actually 
-> using only the LVDS and DVI outputs
-> 
-> Thanks again for taking your time
+From: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
 
-Testing on latest drm-intel-nightly from
+Enabled ipc support for penwell, clovertrail & tangier platforms.
 
-http://cgit.freedesktop.org/~danvet/drm-intel/
+Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+Cc: David Cohen <david.a.cohen@linux.intel.com>
+---
+ drivers/platform/x86/intel_scu_ipc.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-If that doesn't help then please boot with drm.debug=0xe, reproduce the
-issue and then attach the complete dmesg. Please make sure everything
-starting from boot messages is in there, increase the dmesg buffer with
-log_buf_len=4M or so if that isn't the case.
--Daniel
-
-> 
-> 
-> 
-> Nov 13 09:36:21 maistor kernel: [   40.447271] ------------[ cut 
-> here ]------------
-> Nov 13 09:36:21 maistor kernel: [   40.447311] WARNING: CPU: 1 PID: 4142 at 
-> drivers/gpu/drm/i915/intel_display.c:8292 check_crtc_state+0x5cf/0xa60 [i915]
-> ()
-> Nov 13 09:36:21 maistor kernel: [   40.447313] pipe state doesn't match!
-> Nov 13 09:36:21 maistor kernel: [   40.447315] Modules linked in: snd_hrtimer 
-> acpi_pad sbs sbshc fan binfmt_misc uinput fuse af_packet ipv6 firewire_sbp2 
-> snd
-> _hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss 
-> snd_pcm snd_page_alloc snd_seq_dummy snd_seq_oss snd_seq_midi 
-> snd_seq_midi_eve
-> nt snd_rawmidi snd_seq snd_seq_device snd_timer arc4 iTCO_wdt snd gpio_ich 
-> iwl3945 dell_wmi sparse_keymap i2c_i801 iTCO_vendor_support ehci_pci iwlegacy 
-> mac8
-> 0211 cfg80211 soundcore rfkill dell_laptop lpc_ich yenta_socket pcmcia_rsrc 
-> irda 8250 evdev wmi processor dcdbas rtc_cmos battery crc_ccitt ac joydev 
-> sha256_
-> ssse3 sha256_generic cbc hid_generic usbhid hid loop dm_crypt dm_mod sg b44 
-> sr_mod cdrom ssb i915 cfbfillrect cfbimgblt mmc_core mii pcmcia pcmcia_core 
-> uhci_
-> hcd i2c_algo_bit cfbcopyarea firewire_ohci video backlight firewire_core 
-> crc_itu_t drm_kms_helper drm ehci_hcd sd_mod i2c_core thermal thermal_sys 
-> freq_table
->  usbcore usb_common button intel_agp intel_gtt agpgart
-> Nov 13 09:36:21 maistor kernel: [   40.447384] CPU: 1 PID: 4142 Comm: Xorg 
-> Tainted: P             3.11.6eko2 #3
-> Nov 13 09:36:21 maistor kernel: [   40.447386] Hardware name: Dell Inc. 
-> Latitude D520                   /0NF743, BIOS A04 12/18/2006
-> Nov 13 09:36:21 maistor kernel: [   40.447388]  0000000000000000 
-> 0000000000000009 ffffffff813ce8ab ffff880079c8f888
-> Nov 13 09:36:21 maistor kernel: [   40.447392]  ffffffff81038001 
-> ffff88007a2596d8 ffff880079c8f900 ffff880037f3a000
-> Nov 13 09:36:21 maistor kernel: [   40.447395]  0000000000000001 
-> ffff880037f3a488 ffffffff810380e5 ffffffffa0295531
-> Nov 13 09:36:21 maistor kernel: [   40.447398] Call Trace:
-> Nov 13 09:36:21 maistor kernel: [   40.447407]  [<ffffffff813ce8ab>] ? 
-> dump_stack+0x41/0x51
-> Nov 13 09:36:21 maistor kernel: [   40.447412]  [<ffffffff81038001>] ? 
-> warn_slowpath_common+0x81/0xb0
-> Nov 13 09:36:21 maistor kernel: [   40.447415]  [<ffffffff810380e5>] ? 
-> warn_slowpath_fmt+0x45/0x50
-> Nov 13 09:36:21 maistor kernel: [   40.447427]  [<ffffffffa024338f>] ? 
-> check_crtc_state+0x5cf/0xa60 [i915]
-> Nov 13 09:36:21 maistor kernel: [   40.447440]  [<ffffffffa024db7d>] ? 
-> intel_modeset_check_state+0x2bd/0x730 [i915]
-> Nov 13 09:36:21 maistor kernel: [   40.447445]  [<ffffffff811ec219>] ? 
-> snprintf+0x39/0x40
-> Nov 13 09:36:21 maistor kernel: [   40.447456]  [<ffffffffa024e05d>] ? 
-> intel_set_mode+0x1d/0x30 [i915]
-> Nov 13 09:36:21 maistor kernel: [   40.447467]  [<ffffffffa024e81a>] ? 
-> intel_crtc_set_config+0x7aa/0x980 [i915]
-> Nov 13 09:36:21 maistor kernel: [   40.447481]  [<ffffffffa00f9155>] ? 
-> drm_mode_set_config_internal+0x55/0xd0 [drm]
-> Nov 13 09:36:21 maistor kernel: [   40.447490]  [<ffffffffa00fb118>] ? 
-> drm_mode_setcrtc+0x118/0x640 [drm]
-> Nov 13 09:36:21 maistor kernel: [   40.447497]  [<ffffffffa00ec11d>] ? 
-> drm_ioctl+0x4ed/0x5f0 [drm]
-> Nov 13 09:36:21 maistor kernel: [   40.447507]  [<ffffffffa00fb000>] ? 
-> drm_mode_setplane+0x3a0/0x3a0 [drm]
-> Nov 13 09:36:21 maistor kernel: [   40.447512]  [<ffffffff8111428b>] ? 
-> do_vfs_ioctl+0x8b/0x520
-> Nov 13 09:36:21 maistor kernel: [   40.447515]  [<ffffffff8111476d>] ? 
-> SyS_ioctl+0x4d/0xa0
-> Nov 13 09:36:21 maistor kernel: [   40.447519]  [<ffffffff813d4c56>] ? 
-> system_call_fastpath+0x1a/0x1f
-> Nov 13 09:36:21 maistor kernel: [   40.447521] ---[ end trace 
-> 307df46ce6dc8ed1 ]---
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
-
+diff --git a/drivers/platform/x86/intel_scu_ipc.c b/drivers/platform/x86/intel_scu_ipc.c
+index cc8e4c7d3629..4851560c88fe 100644
+--- a/drivers/platform/x86/intel_scu_ipc.c
++++ b/drivers/platform/x86/intel_scu_ipc.c
+@@ -63,6 +63,9 @@
+ 
+ enum {
+ 	SCU_IPC_LINCROFT,
++	SCU_IPC_PENWELL,
++	SCU_IPC_CLOVERVIEW,
++	SCU_IPC_TANGIER,
+ };
+ 
+ /* intel scu ipc driver data*/
+@@ -80,6 +83,24 @@ static struct intel_scu_ipc_pdata_t intel_scu_ipc_pdata[] = {
+ 		.ipc_len = 0x100,
+ 		.i2c_len = 0x10,
+ 	},
++	[SCU_IPC_PENWELL] = {
++		.ipc_base = 0xff11c000,
++		.i2c_base = 0xff12b000,
++		.ipc_len = 0x100,
++		.i2c_len = 0x10,
++	},
++	[SCU_IPC_CLOVERVIEW] = {
++		.ipc_base = 0xff11c000,
++		.i2c_base = 0xff12b000,
++		.ipc_len = 0x100,
++		.i2c_len = 0x10,
++	},
++	[SCU_IPC_TANGIER] = {
++		.ipc_base = 0xff009000,
++		.i2c_base  = 0xff00d000,
++		.ipc_len  = 0x100,
++		.i2c_len = 0x10,
++	},
+ };
+ 
+ static int ipc_probe(struct pci_dev *dev, const struct pci_device_id *id);
+@@ -586,6 +607,9 @@ static void ipc_remove(struct pci_dev *pdev)
+ 
+ static DEFINE_PCI_DEVICE_TABLE(pci_ids) = {
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x082a), SCU_IPC_LINCROFT},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080e), SCU_IPC_PENWELL},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x08ea), SCU_IPC_CLOVERVIEW},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x11a0), SCU_IPC_TANGIER},
+ 	{ 0,}
+ };
+ MODULE_DEVICE_TABLE(pci, pci_ids);
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.8.4.2
+
