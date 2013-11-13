@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843Ab3KMWxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 17:53:21 -0500
-Received: from forward20.mail.yandex.net ([95.108.253.145]:55130 "EHLO
-	forward20.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab3KMWxP (ORCPT
+	id S1751598Ab3KMW64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 17:58:56 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:59105 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032Ab3KMW6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 17:53:15 -0500
-X-Greylist: delayed 630 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Nov 2013 17:53:15 EST
-From: Evgeniy Polyakov <zbr@ioremap.net>
-Envelope-From: drustafa@yandex.ru
-To: David Fries <david@fries.net>, Evgeny Boger <eugenyboger@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        GregKH <greg@kroah.com>
-In-Reply-To: <20131113040707.GK5509@spacedout.fries.net>
-References: <1384180614-9025-1-git-send-email-boger@contactless.ru>
- <10261384211376@web11j.yandex.ru>
- <5281691F.4060604@gmail.com>
- <37621384218204@web11j.yandex.ru>
- <52817F42.2080706@gmail.com>
- <20131112080146.GF5509@spacedout.fries.net>
- <5282D2C8.6030002@gmail.com> <20131113040707.GK5509@spacedout.fries.net>
-Subject: Re: [PATCH 1/1] Add strong pullup emulation to w1-gpio master driver.
-MIME-Version: 1.0
-Message-Id: <289151384382560@web28g.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Thu, 14 Nov 2013 02:42:40 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+	Wed, 13 Nov 2013 17:58:48 -0500
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, linus.walleij@linaro.org,
+        grant.likely@secretlab.ca, horms@verge.net.au,
+        laurent.pinchart@ideasonboard.com, Magnus Damm <magnus.damm@gmail.com>
+Date: Thu, 14 Nov 2013 07:59:27 +0900
+Message-Id: <20131113225927.21449.78044.sendpatchset@w520>
+Subject: [PATCH 00/03] gpio: R-Car and EM GPIO update
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+gpio: R-Car and EM GPIO update
 
-13.11.2013, 08:07, "David Fries" <david@fries.net>:
->>>> ššStrong pullup is emulated by driving pin logic high after write
->>>> ššcommand when
->>>> ššusing tri-state push-pull GPIO.
->
-> Acked-by: David Fries <david@fries.net>
->
-> Looks good to me.
+[PATCH 01/03] gpio: rcar: Use lazy disable and mask on suspend
+[PATCH 02/03] gpio: em: Setup gpiochip->dev
+[PATCH 03/03] gpio: em: Use lazy disable and mask on suspend
 
-Ok, thank you
+Update the R-Car GPIO driver and the GPIO driver used on EMEV2 to use lazy
+disable and mask on suspend. This fixes the Suspend-to-RAM behavior to make
+sure wakeup sources are left enabled while suspending. Also include a small
+fix for gpio-em that fixes the DT use case.
+ 
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
 
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+ Written against renesas.git tag renesas-devel-v3.12-20131112
 
-Evgeny, can you please resend the whole patch to Greg <greg@kroah.com>,
-he will pick it up and push into upstream
+ drivers/gpio/gpio-em.c   |    5 ++---
+ drivers/gpio/gpio-rcar.c |    3 +--
+ 2 files changed, 3 insertions(+), 5 deletions(-)
