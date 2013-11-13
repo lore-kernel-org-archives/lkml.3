@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751220Ab3KMViV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 16:38:21 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:36555 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895Ab3KMViM (ORCPT
+	id S1751415Ab3KMVjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 16:39:45 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:63476 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab3KMVjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 16:38:12 -0500
+	Wed, 13 Nov 2013 16:39:39 -0500
+Message-ID: <5283F196.9080808@gmail.com>
+Date: Wed, 13 Nov 2013 16:39:34 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131106110518.6806.79333.sendpatchset@w520>
-References: <20131106110508.6806.48070.sendpatchset@w520>
-	<20131106110518.6806.79333.sendpatchset@w520>
-Date: Wed, 13 Nov 2013 13:38:11 -0800
-X-Google-Sender-Auth: 3tqVBIKO-3EruVrejpDEmyama24
-Message-ID: <CANcMJZDJPbctuYgG0Wr64htUeak-XLf3EYK0vz-BbG320UkFGg@mail.gmail.com>
-Subject: Re: [PATCH v2 01/03] clocksource: Add Kconfig entries for CMT, MTU2,
- TMU and STI
-From: John Stultz <john.stultz@linaro.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        khilman@linaro.org, arnd@arndb.de, linux-sh@vger.kernel.org,
-        daniel.lezcano@linaro.org, horms@verge.net.au, olof@lixom.net,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Chang <changxiangzhong@gmail.com>, Daniel Borkmann <dborkman@redhat.com>
+CC: nhorman@tuxdriver.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, dreibh@simula.no
+Subject: Re: [PATCH 1/1] net: sctp: bug fixing when sctp path recovers
+References: <1384306486-31345-1-git-send-email-changxiangzhong@gmail.com> <5282E5F9.5000506@gmail.com> <5282E9EC.3090307@gmail.com> <52833BD3.4040003@redhat.com> <5283CDD1.3090309@gmail.com> <5283CEC3.4050507@redhat.com> <5283E5A8.3020809@gmail.com>
+In-Reply-To: <5283E5A8.3020809@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 6, 2013 at 3:05 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
-> From: Magnus Damm <damm@opensource.se>
+On 11/13/2013 03:48 PM, Chang wrote:
 >
-> Add Kconfig entries for CMT, MTU2, TMU and STI to
-> drivers/clocksource/Kconfig. This will allow us to
-> get rid of duplicated entires in architecture code
-> such as arch/sh and arch/arm/mach-shmobile.
+> On 11/13/2013 08:10 PM, Daniel Borkmann wrote:
+>> On 11/13/2013 08:06 PM, Chang wrote:
+>>> On 11/13/2013 09:44 AM, Daniel Borkmann wrote:
+>>>> On 11/13/2013 03:54 AM, Chang wrote:
+>>>>> On 11/13/2013 03:37 AM, Vlad Yasevich wrote:
+>>>>>> On 11/12/2013 08:34 PM, Chang Xiangzhong wrote:
+>>>>>>> Look for the __two__ most recently used path/transport and set to
+>>>>>>> active_path
+>>>>>>> and retran_path respectively
+>>>>
+>>>> Please also for the log, elaborate a bit more, explaining what
+>>>> currently
+>>>> happens, and what the effects of this bug are, so that later when
+>>>> people
+>>>> are looking through the Git log they can easily get what problem you
+>>>> are
+>>>> trying to fix; and if possible, add:
+>>>>
+>>>> Fixes: <12 digits SHA1> ("<commit title>")
+>>>>
+>>> Yeah, sure, I'll elaborate that more specifically.
+>>
+>> Thanks !
+>>
+>>> I assume the 12-digit SHA1 is the revision number. But may I ask
+>>> where and how shall I add the tag "Fixes" tag? The revision number is
+>>> generated after "git commit", how can I know that in advance?
+>>
+>> Nope, it's the affected commit id from the current git log that
+>> your patch fixes.
+>>
+>> Have a look for example at commit:
+>>
+>> 98bbc06aabac5a2 ("net: x86: bpf: don't forget to free sk_filter (v2)")
+> Thank you for your quick response. I'm quite green on kernel programming
+> and git. So here's one question:
+> To find the the revision that **caused** the bug, I could use gitk to
+> trace the changing of the file(s) history. Is that correct?
 >
-> Signed-off-by: Magnus Damm <damm@opensource.se>
-> ---
->
->  drivers/clocksource/Kconfig |   30 ++++++++++++++++++++++++++++++
->  1 file changed, 30 insertions(+)
->
-> --- 0001/drivers/clocksource/Kconfig
-> +++ work/drivers/clocksource/Kconfig    2013-11-05 19:49:47.000000000 +0900
-> @@ -110,3 +110,33 @@ config VF_PIT_TIMER
->         bool
->         help
->           Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
-> +
-> +if COMPILE_TEST || ARM || SUPERH
-> +menu "Timer drivers"
-> +
-> +config SH_TIMER_CMT
-> +       bool "CMT timer driver"
-> +       default y if ARM || (SUPERH && SYS_SUPPORTS_CMT)
-> +       help
-> +         This enables build of the CMT timer driver.
-> +
-> +config SH_TIMER_MTU2
-> +       bool "MTU2 timer driver"
-> +       default y if ARM || (SUPERH && SYS_SUPPORTS_MTU2)
-> +       help
-> +         This enables build of the MTU2 timer driver.
-> +
-> +config SH_TIMER_TMU
-> +       bool "TMU timer driver"
-> +       default y if ARM || (SUPERH && SYS_SUPPORTS_TMU)
-> +       help
-> +         This enables build of the TMU timer driver.
-> +
-> +config EM_TIMER_STI
-> +       bool "STI timer driver"
-> +       default y if ARM
-> +       help
-> +         This enables build of the STI timer driver.
 
+A lot easier is to run 'git blame <filename>" and find the line you
+are fixing.  The number that line starts with is the short commit id.
 
-So since I do want to avoid adding user-selectable configs if
-possible, here are some concrete thoughts on this patch, trying to
-provide an example from my more abstract rants down thread. :)
+In this particular case, don't worry about it.  This is a day 1 bug
 
-1) Why does the user have to chose something here?  Can the option be
-set based on other platform details?
-
-2) The help text for these options are basically tautological and
-could be better. Consider what is it that your really asking the user
-to decide here? What tradeoffs do they have to consider?  What is the
-actual hardware here? CMT/TMU/MTU2/STI? This is just acronym soup.
-These should be included in the help text.
-
-3) If all of these options are disabled, will the affected system boot?
-
-4) Do you have a list of systems that actually use these drivers? Can
-you be any more restrictive then config ARM?
-
-thanks
--john
+-vlad
