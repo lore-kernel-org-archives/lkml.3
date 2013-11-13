@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751079Ab3KMVMC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 16:12:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1747 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab3KMVLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 16:11:55 -0500
-Date: Wed, 13 Nov 2013 16:11:47 -0500
-From: Dave Jones <davej@redhat.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: recursive locking (coredump/vfs_write)
-Message-ID: <20131113211147.GA30263@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1751275Ab3KMVPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 16:15:00 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:33503 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab3KMVOx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 16:14:53 -0500
+Message-ID: <5283EBCD.9050007@linaro.org>
+Date: Wed, 13 Nov 2013 22:14:53 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: John Stultz <john.stultz@linaro.org>, Magnus Damm <magnus.damm@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2 01/03] clocksource: Add Kconfig entries for CMT, MTU2,
+ TMU and STI
+References: <20131106110508.6806.48070.sendpatchset@w520>	<20131106110518.6806.79333.sendpatchset@w520>	<527B790B.4040200@linaro.org>	<CANqRtoSn7=NeY2bSpacCXn6tKatn1S+CP3r-+mka91b0neJ4kw@mail.gmail.com>	<527D2EA0.7060605@linaro.org>	<CANqRtoQJYqBmDh1e-kA9_3ea-pp0J1Cx9Pr87HieYYfr7y435A@mail.gmail.com> <CALAqxLVZdAs0V9ghA43VdP02+Rn=t4COZw_PRkZnWC=Q=OWLWA@mail.gmail.com>
+In-Reply-To: <CALAqxLVZdAs0V9ghA43VdP02+Rn=t4COZw_PRkZnWC=Q=OWLWA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Al,
+On 11/12/2013 09:47 PM, John Stultz wrote:
 
-here's another one..
+[ ... ]
+
+>> I think all your goals make sense, and I would like to reach the same
+>> place from a usability point of view. I would however like to allow
+>> existing power users to select whatever they want enabled on their
+>> platform. Ideally I also would like to share Kconfig bits between
+>> multiple architectures where appropriate, but it's just a few lines of
+>> code so I don't care that much.
+>
+> And as long as the options for the power-users actually make sense,
+> that all sounds fine. But I want to make sure we aren't needlessly
+> causing pain to folks building kernels all to save a few lines of
+> Kconfig logic.
+>
+> And again, this is just my pet peeve, I'm not the directory
+> submaintainer any more, so Daniel and Thomas are the ones to convince.
+> :)
+
+So to summarize:
+
+1. We want to prevent to manually select the drivers, this is painful to 
+have the right config. We assume the SoC config will choose the right 
+driver config option.
+
+2. We want to disable some drivers because they could conflict. Or for 
+kernel builders, it is easier to hack around the options.
+
+3. We want to select a driver as a module because the timer could reside 
+on a PCI board.
+
+4. Code size could be an issue if everything is selected.
+
+IMO, John's approach makes totally sense.
+
+I am not worried about the code size because one day or another we will 
+have to fix up the code size increasing with the single zImage for ARM, 
+and we will probably end up to unload dynamically unneeded drivers from 
+the memory after booting (I don't how. Perhaps by some magic with the 
+init sections).
+
+Disabling some drivers, or in other words, give more customization 
+options to the kernel builders, makes also sense.
+
+It isn't possible to select the driver as we do right now but let them 
+optional from the Kconfig ? What if we invert the logic in the Kconfig, 
+make each driver depends on a arch_option defaulting to 'yes', so it can 
+be manually unselected (similar to drivers/cpuidle/Kconfig.arm).
+
+In any case, consolidating SH and ARM Kconfig is ok but with a change 
+which is consistent with the current Kconfig, that is following the 
+policy of the Kconfig (on top of the current one or on top of a new one).
+
+   -- Daniel
 
 
-=============================================
-[ INFO: possible recursive locking detected ]
-3.12.0+ #2 Not tainted
----------------------------------------------
-trinity-child3/13302 is trying to acquire lock:
- (sb_writers#5){.+.+.+}, at: [<ffffffff811b7013>] vfs_write+0x173/0x1f0
 
-but task is already holding lock:
- (sb_writers#5){.+.+.+}, at: [<ffffffff8122006d>] do_coredump+0xf1d/0x1070
 
-other info that might help us debug this:
- Possible unsafe locking scenario:
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-       CPU0
-       ----
-  lock(sb_writers#5);
-  lock(sb_writers#5);
-
- *** DEADLOCK ***
-
- May be due to missing lock nesting notation
-
-1 lock held by trinity-child3/13302:
- #0:  (sb_writers#5){.+.+.+}, at: [<ffffffff8122006d>] do_coredump+0xf1d/0x1070
-
-stack backtrace:
-CPU: 3 PID: 13302 Comm: trinity-child3 Not tainted 3.12.0+ #2 
- ffffffff82526e10 ffff8801b54af820 ffffffff8171b3dc ffffffff82526e10
- ffff8801b54af8e0 ffffffff810d722b 00007f93d6ce5000 0000000000000000
- ffff880154b3f200 ffff880100000000 00000000004da26d ffffffff821b3901
-Call Trace:
- [<ffffffff8171b3dc>] dump_stack+0x4e/0x7a
- [<ffffffff810d722b>] __lock_acquire+0x19ab/0x19f0
- [<ffffffff81729334>] ? __do_page_fault+0x264/0x610
- [<ffffffff8100b144>] ? native_sched_clock+0x24/0x80
- [<ffffffff810d1d1f>] ? trace_hardirqs_off_caller+0x1f/0xc0
- [<ffffffff810d7a23>] lock_acquire+0x93/0x1c0
- [<ffffffff811b7013>] ? vfs_write+0x173/0x1f0
- [<ffffffff811b97f9>] __sb_start_write+0xc9/0x1a0
- [<ffffffff811b7013>] ? vfs_write+0x173/0x1f0
- [<ffffffff811b7013>] ? vfs_write+0x173/0x1f0
- [<ffffffff812cc303>] ? security_file_permission+0x23/0xa0
- [<ffffffff811b7013>] vfs_write+0x173/0x1f0
- [<ffffffff8121ef02>] dump_emit+0x92/0xd0
- [<ffffffff81218d50>] elf_core_dump+0xde0/0x1740
- [<ffffffff81218832>] ? elf_core_dump+0x8c2/0x1740
- [<ffffffff8121fdee>] do_coredump+0xc9e/0x1070
- [<ffffffff81719d9b>] ? __slab_free+0x191/0x35d
- [<ffffffff8106a9b8>] get_signal_to_deliver+0x2c8/0x930
- [<ffffffff810024b8>] do_signal+0x48/0x610
- [<ffffffff810d1e39>] ? get_lock_stats+0x19/0x60
- [<ffffffff810d25ae>] ? put_lock_stats.isra.28+0xe/0x30
- [<ffffffff81715e86>] ? pagefault_enable+0xe/0x21
- [<ffffffff8114b86e>] ? context_tracking_user_exit+0x4e/0x190
- [<ffffffff810d54c5>] ? trace_hardirqs_on_caller+0x115/0x1e0
- [<ffffffff81002adc>] do_notify_resume+0x5c/0xa0
- [<ffffffff81725f86>] retint_signal+0x46/0x90
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
