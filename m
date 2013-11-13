@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759055Ab3KMOHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 09:07:24 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:57862 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753952Ab3KMOHV (ORCPT
+	id S1759127Ab3KMOIW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 09:08:22 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:59640 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756989Ab3KMOIU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 09:07:21 -0500
-Message-ID: <52838795.2090106@hitachi.com>
-Date: Wed, 13 Nov 2013 23:07:17 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 13 Nov 2013 09:08:20 -0500
+Message-ID: <528387CF.5090105@arm.com>
+Date: Wed, 13 Nov 2013 14:08:15 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>,
+To: Vinayak Kale <vkale@apm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: Re: Re: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping
- support
-References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org> <1382008671-4515-3-git-send-email-sandeepa.prabhu@linaro.org> <20131108165639.GD15074@mudshark.cambridge.arm.com> <527DFC1C.1020107@hitachi.com> <CA+b37P3U=cAbUvs=2B9wA4F7S9o49vh7d-KamjPsHcz-b9ZYLA@mail.gmail.com> <52808D53.7080904@hitachi.com> <5280B6C8.7050807@hitachi.com> <20131111105812.GC28302@mudshark.cambridge.arm.com> <528114C4.5000506@hitachi.com> <CA+b37P08cLAvBYAXSkozLPzrpuXn=N0SUetwL6N8JL+10AtYjQ@mail.gmail.com> <5281D848.7000502@hitachi.com> <CA+b37P1sNsEXrJFfVL51sZ-SeGNCBiwXnOwCiFY8CBwSXPw+mQ@mail.gmail.com>
-In-Reply-To: <CA+b37P1sNsEXrJFfVL51sZ-SeGNCBiwXnOwCiFY8CBwSXPw+mQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        "patches@apm.com" <patches@apm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Will Deacon <Will.Deacon@arm.com>, "jcm@redhat.com" <jcm@redhat.com>
+Subject: Re: [PATCH V2 1/2] genirq: Add an accessor for IRQ_PER_CPU flag
+References: <1384340725-26073-1-git-send-email-vkale@apm.com> <1384340725-26073-2-git-send-email-vkale@apm.com>
+In-Reply-To: <1384340725-26073-2-git-send-email-vkale@apm.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 13 Nov 2013 14:08:16.0291 (UTC) FILETIME=[CC42AF30:01CEE079]
+X-MC-Unique: 113111314081701201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/13 15:55), Sandeepa Prabhu wrote:
->>>> I'm unsure about arm64's debug feature behavior, what does happen when
->>>> it performs a single-step on sw-breakpoint?
->>>>
->>>>> Sandeepa: I think you need to retry Masami's test on the arm64 model, since
->>>>> I'm fairly sure it won't work as expected without some additional code.
->>>>
->>>> OK, anyway, for testing same one, we need to port ftrace first. So the next
->>
->> Sorry for confusion, s/next/fallback is what I meant. Making a kprobe module
->> can be done without ftrace port.
->>
->>>> plan is to make a kprobe module to put a probe (which just printk something)
->>>> on a specific function (e.g. vfs_symlink), and run perf record with
->>>> hw-breakpoint as below
->>>>
->>>> $ perf record -e "mem:0xXXXXXX:k" ln -s /dev/null /tmp/foo
->>>>
->>>> Note that 0xXXXXXX is the address of vfs_symlink.
->>>>
->>>> After that, you can see the message in dmesg and also check the perf result
->>>> with "sudo perf script --dump" (you can find a PERF_RECORD_SAMPLE entry if
->>>> it works)
-> Hi Will, Masami,
+Hi Vinayak,
+
+On 13/11/13 11:05, Vinayak Kale wrote:
+> This patch adds an accessor function for IRQ_PER_CPU flag.
+> The accessor function is useful to dertermine whether an IRQ is percpu or not.
 > 
-> I am not sure of 'perf' right now (my minimal rootfs doesn't have) but
-> I tried to test hardware breakpoints using sample modules
-> "samples/hw_breakpoint/" on arm64 upstream branch. This should use
-> same kernel api as perf I believe.
+> Signed-off-by: Vinayak Kale <vkale@apm.com>
+> ---
+>  include/linux/irqdesc.h |    8 ++++++++
+>  1 file changed, 8 insertions(+)
 > 
-> 1.  Placing watchpoint ( attr.bp_type = HW_BREAKPOINT_W |
-> HW_BREAKPOINT_R) upon vfs_symlink symbol, but seems watch-point is not
-> triggering at all.
-> 2.  Placing text breakpoint (modified sample module with attr.bp_type
-> = HW_BREAKPOINT_X) upon vfs_symlink, and run "ln -s /dev/null
-> /tmp/foo".  This time, breakpoint hit but exception is re-cursing
-> infinitely!
+> diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+> index 56fb646..acd8a3f 100644
+> --- a/include/linux/irqdesc.h
+> +++ b/include/linux/irqdesc.h
+> @@ -152,6 +152,14 @@ static inline int irq_balancing_disabled(unsigned int irq)
+>  	return desc->status_use_accessors & IRQ_NO_BALANCING_MASK;
+>  }
+>  
+> +static inline int irq_is_percpu(unsigned int irq)
+> +{
+> +	struct irq_desc *desc;
+> +
+> +	desc = irq_to_desc(irq);
+> +	return (desc && (desc->status_use_accessors & IRQ_PER_CPU)) ? 1 : 0;
 
-Did you this without kprobes? If so, the hw_breakpoint porting
-on arm64 may have a bug.
+I don't think it is worth checking for the validity of "desc" here. All
+the other accessors assume that you've not passed a stupid "irq" value.
 
-> I have attached the kernel logs for reference. So wanted to check if
-> hw breakpoint/watch-points are working on the upstream branch? Has it
-> been tested recently with sample modules  or perf/ptrace?
+Simply having
+	return !!(desc->status_use_accessors & IRQ_PER_CPU);
+should be enough.
 
-I've tested on x86 with the latest tip-tree kernel and it worked.
+> +}
+> +
+>  static inline void
+>  irq_set_lockdep_class(unsigned int irq, struct lock_class_key *class)
+>  {
+> 
 
-Thank you,
+Cheers,
 
+	M.
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Jazz is not dead. It just smells funny...
 
