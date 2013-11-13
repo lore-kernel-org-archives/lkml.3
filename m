@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758940Ab3KMSKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 13:10:55 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:10517 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754138Ab3KMSKs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 13:10:48 -0500
-Date: Wed, 13 Nov 2013 13:10:44 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] rcu: Make struct rcu_head searchable
-Message-ID: <20131113131044.677cdc74@gandalf.local.home>
-In-Reply-To: <20131113171205.GG4138@linux.vnet.ibm.com>
-References: <20131113120225.3aacae13@gandalf.local.home>
-	<20131113171205.GG4138@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	id S1759433Ab3KMSLb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 13:11:31 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55378 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756951Ab3KMSLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 13:11:23 -0500
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <rui.zhang@intel.com>
+CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH 1/1] thermal: fix cpu_cooling max_level behavior
+Date: Wed, 13 Nov 2013 14:11:09 -0400
+Message-ID: <1384366269-1655-1-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Nov 2013 09:12:05 -0800
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+As per Documentation/thermal/sysfs-api.txt, max_level
+is an index, not a counter. Thus, in case a CPU has
+3 valid frequencies, max_level is expected to be 2, for instance.
 
-> On Wed, Nov 13, 2013 at 12:02:25PM -0500, Steven Rostedt wrote:
-> > After wasting too much time trying to see where struct rcu_head was
-> > declared, I finally found it in include/linux/types.h as a define for
-> > callback_head!
-> > 
-> > To prevent other developers from wasting their precious time in
-> > searching for this structure, add a comment to help them find it!
-> > 
-> > Cc: Al Viro <viro@ZenIV.linux.org.uk>
-> > Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > Signed-off-by: Steven "frustrated" Rostedt <rostedt@goodmis.org>
-> 
-> The cscope tool is your friend in this case, but nevertheless:
+The current code makes max_level == number of valid frequencies,
+which is bogus. This patch fix the cpu_cooling device by
+ranging max_level properly.
 
-I use emacs, and the latest version of etags (or emacs) brings you to
-each use case before it gets you to the define (which is really
-annoying). Back in 2006 it use to work properly. I need to figure out
-what changed :-/
+Reported-by: Carlos Hernandez <ceh@ti.com>
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+---
+ drivers/thermal/cpu_cooling.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-
-> 
-> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> > diff --git a/include/linux/types.h b/include/linux/types.h
-> > index 4d118ba..073e9a8 100644
-> > --- a/include/linux/types.h
-> > +++ b/include/linux/types.h
-> > @@ -210,6 +210,9 @@ struct callback_head {
-> >  	struct callback_head *next;
-> >  	void (*func)(struct callback_head *head);
-> >  };
-> > +/*
-> > + * Make "struct rcu_head {" seachable with this comment.
-
-I've been told s/seachable/searchable/
-
-Frustration fails me ;-)
-
--- Steve
-
-> > + */
-> >  #define rcu_head callback_head
-> > 
-> >  #endif /*  __ASSEMBLY__ */
-> > 
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index d179028..d0f8f8b5 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -173,6 +173,8 @@ static int get_property(unsigned int cpu, unsigned long input,
+ 		freq = table[i].frequency;
+ 		max_level++;
+ 	}
++	/* max_level is an index, not a counter */
++	max_level--;
+ 
+ 	/* get max level */
+ 	if (property == GET_MAXL) {
+@@ -181,7 +183,7 @@ static int get_property(unsigned int cpu, unsigned long input,
+ 	}
+ 
+ 	if (property == GET_FREQ)
+-		level = descend ? input : (max_level - input - 1);
++		level = descend ? input : (max_level - input);
+ 
+ 	for (i = 0, j = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+ 		/* ignore invalid entry */
+@@ -197,7 +199,7 @@ static int get_property(unsigned int cpu, unsigned long input,
+ 
+ 		if (property == GET_LEVEL && (unsigned int)input == freq) {
+ 			/* get level by frequency */
+-			*output = descend ? j : (max_level - j - 1);
++			*output = descend ? j : (max_level - j);
+ 			return 0;
+ 		}
+ 		if (property == GET_FREQ && level == j) {
+-- 
+1.8.2.1.342.gfa7285d
 
