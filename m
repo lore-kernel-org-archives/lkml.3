@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759420Ab3KMPYX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 10:24:23 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:36831 "EHLO zene.cmpxchg.org"
+	id S1759464Ab3KMPZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 10:25:27 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41514 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759206Ab3KMPYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 10:24:19 -0500
-Date: Wed, 13 Nov 2013 10:24:12 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom killed
-Message-ID: <20131113152412.GH707@cmpxchg.org>
-References: <alpine.DEB.2.02.1311121801200.18803@chino.kir.corp.google.com>
+	id S1756789Ab3KMPZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 10:25:25 -0500
+Message-ID: <528399B2.8010308@ti.com>
+Date: Wed, 13 Nov 2013 10:24:34 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311121801200.18803@chino.kir.corp.google.com>
+To: Sricharan R <r.sricharan@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
+        <galak@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH V3 1/7] DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable
+ irqs
+References: <1383657257-3458-1-git-send-email-r.sricharan@ti.com> <1383657257-3458-2-git-send-email-r.sricharan@ti.com>
+In-Reply-To: <1383657257-3458-2-git-send-email-r.sricharan@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 06:02:18PM -0800, David Rientjes wrote:
-> The oom killer is only invoked when reclaim has already failed and it
-> only kills processes if the victim is also oom.  In other words, the oom
-> killer does not select victims when a process tries to allocate from a
-> disjoint cpuset or allocate DMA memory, for example.
+On Tuesday 05 November 2013 08:14 AM, Sricharan R wrote:
+> In some socs the gic can be preceded by a crossbar IP which
+> routes the peripheral interrupts to the gic inputs. The peripheral
+> interrupts are associated with a fixed crossbar input line and the
+> crossbar routes that to one of the free gic input line.
 > 
-> Therefore, it's pointless for an oom killed process to continue
-> attempting to reclaim memory in a loop when it has been granted access to
-> memory reserves.  It can simply return to the page allocator and allocate
-> memory.
-
-On the other hand, finishing reclaim of 32 pages should not be a
-problem.
-
-> If there is a very large number of processes trying to reclaim memory,
-> the cond_resched() in shrink_slab() becomes troublesome since it always
-> forces a schedule to other processes also trying to reclaim memory.
-> Compounded by many reclaim loops, it is possible for a process to sit in
-> do_try_to_free_pages() for a very long time when reclaim is pointless and
-> it could allocate if it just returned to the page allocator.
-
-"Very large number of processes"
-
-"sit in do_try_to_free_pages() for a very long time"
-
-Can you quantify this a bit more?
-
-And how common are OOM kills on your setups that you need to optimize
-them on this level?
-
-It sounds like your problem could be solved by having cond_resched()
-not schedule away from TIF_MEMDIE processes, which would be much
-preferable to oom-killed checks in random places.
+> The DT entries for peripherals provides the fixed crossbar input line
+> as its interrupt number and the mapping code should associate this with
+> a free gic input line. This patch adds the support inside the gic irqchip
+> to handle such routable irqs. The routable irqs are registered in a linear
+> domain. The registered routable domain's callback should be implemented
+> to get a free irq and to configure the IP to route it.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Rajendra Nayak <rnayak@ti.com>
+> Cc: Marc Zyngier <marc.zyngier@arm.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+> ---
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
