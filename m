@@ -1,93 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab3KMWTL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 17:19:11 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:49174 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab3KMWTC (ORCPT
+	id S1751619Ab3KMWbX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 17:31:23 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:40051 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab3KMWbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 17:19:02 -0500
-Date: Wed, 13 Nov 2013 14:19:00 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add memory.oom_control notification for system
- oom
-In-Reply-To: <20131031054942.GA26301@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1311131416460.23211@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1310301838300.13556@chino.kir.corp.google.com> <20131031054942.GA26301@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 13 Nov 2013 17:31:14 -0500
+Date: Wed, 13 Nov 2013 17:39:33 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>
+Subject: Re: perf/tracepoint yet another lockup
+In-Reply-To: <20131112092458.GL5056@laptop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1311131737100.5706@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1311111158420.25509@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1311111720190.26895@vincent-weaver-1.um.maine.edu> <20131112092458.GL5056@laptop.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Oct 2013, Johannes Weiner wrote:
+On Tue, 12 Nov 2013, Peter Zijlstra wrote:
 
-> > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> > --- a/include/linux/memcontrol.h
-> > +++ b/include/linux/memcontrol.h
-> > @@ -155,6 +155,7 @@ static inline bool task_in_memcg_oom(struct task_struct *p)
-> >  }
-> >  
-> >  bool mem_cgroup_oom_synchronize(bool wait);
-> > +void mem_cgroup_root_oom_notify(void);
-> >  
-> >  #ifdef CONFIG_MEMCG_SWAP
-> >  extern int do_swap_account;
-> > @@ -397,6 +398,10 @@ static inline bool mem_cgroup_oom_synchronize(bool wait)
-> >  	return false;
-> >  }
-> >  
-> > +static inline void mem_cgroup_root_oom_notify(void)
-> > +{
-> > +}
-> > +
-> >  static inline void mem_cgroup_inc_page_stat(struct page *page,
-> >  					    enum mem_cgroup_stat_index idx)
-> >  {
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -5641,6 +5641,15 @@ static void mem_cgroup_oom_notify(struct mem_cgroup *memcg)
-> >  		mem_cgroup_oom_notify_cb(iter);
-> >  }
-> >  
-> > +/*
-> > + * Notify any process waiting on the root memcg's memory.oom_control, but do not
-> > + * notify any child memcgs to avoid triggering their per-memcg oom handlers.
-> > + */
-> > +void mem_cgroup_root_oom_notify(void)
-> > +{
-> > +	mem_cgroup_oom_notify_cb(root_mem_cgroup);
-> > +}
-> > +
-> >  static int mem_cgroup_usage_register_event(struct cgroup_subsys_state *css,
-> >  	struct cftype *cft, struct eventfd_ctx *eventfd, const char *args)
-> >  {
-> > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> > --- a/mm/oom_kill.c
-> > +++ b/mm/oom_kill.c
-> > @@ -632,6 +632,10 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
-> >  		return;
-> >  	}
-> >  
-> > +	/* Avoid waking up processes for oom kills triggered by sysrq */
-> > +	if (!force_kill)
-> > +		mem_cgroup_root_oom_notify();
+> On Mon, Nov 11, 2013 at 05:28:21PM -0500, Vince Weaver wrote:
+> > So are all tracepoints unsafe?  Or just a subset?
 > 
-> We have an API for global OOM notifications, please just use
-> register_oom_notifier() instead.
+> No, most should be fine. But finding the special ones seems interesting
+> :/
 > 
+> Disabling them all for now sure seems like the safe option.
 
-We can't use register_oom_notifier() because we don't want to notify the 
-root memcg for a system oom handler if existing oom notifiers free memory 
-(powerpc or s390).  We also don't want to notify the root memcg when 
-current is exiting or has a pending SIGKILL, we just want to silently give 
-it access to memory reserves and exit.  The mem_cgroup_root_oom_notify() 
-here is placed correctly.
+Update on this, it was a false positive.  It seems like the other crashes 
+I was seeing were also caused by tracepoint 24, the fuzzer just found them 
+via another code path I wasn't checking.
+
+So from what I can tell the only troublesome tracepoint I've come across 
+is the original irq_vectors/irq_work_exit problem.
+
+Vince
+
