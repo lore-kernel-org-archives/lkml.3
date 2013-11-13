@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759341Ab3KMPzr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 10:55:47 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:34996 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755987Ab3KMPzo (ORCPT
+	id S1756396Ab3KMP4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 10:56:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33210 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab3KMP4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 10:55:44 -0500
+	Wed, 13 Nov 2013 10:56:19 -0500
+Message-ID: <5283A10E.2090304@kernel.dk>
+Date: Wed, 13 Nov 2013 08:55:58 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131113143110.GF28881@mudshark.cambridge.arm.com>
-References: <20131108165639.GD15074@mudshark.cambridge.arm.com>
-	<527DFC1C.1020107@hitachi.com>
-	<CA+b37P3U=cAbUvs=2B9wA4F7S9o49vh7d-KamjPsHcz-b9ZYLA@mail.gmail.com>
-	<52808D53.7080904@hitachi.com>
-	<5280B6C8.7050807@hitachi.com>
-	<20131111105812.GC28302@mudshark.cambridge.arm.com>
-	<528114C4.5000506@hitachi.com>
-	<CA+b37P08cLAvBYAXSkozLPzrpuXn=N0SUetwL6N8JL+10AtYjQ@mail.gmail.com>
-	<5281D848.7000502@hitachi.com>
-	<CA+b37P1sNsEXrJFfVL51sZ-SeGNCBiwXnOwCiFY8CBwSXPw+mQ@mail.gmail.com>
-	<20131113143110.GF28881@mudshark.cambridge.arm.com>
-Date: Wed, 13 Nov 2013 21:25:42 +0530
-Message-ID: <CA+b37P1-DPtSu5vB+_4HamUtDNSFn0qNbPWk9A6+vUAp4tu6_w@mail.gmail.com>
-Subject: Re: Re: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping support
-From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
-        Jiang Liu <liuj97@gmail.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>
+To: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] block: Employ u64_stats_init()
+References: <1384314134-6895-1-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1384314134-6895-1-git-send-email-john.stultz@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 November 2013 20:01, Will Deacon <will.deacon@arm.com> wrote:
-> On Wed, Nov 13, 2013 at 06:55:33AM +0000, Sandeepa Prabhu wrote:
->> >>> I'm unsure about arm64's debug feature behavior, what does happen when
->> >>> it performs a single-step on sw-breakpoint?
->> >>>
->> >>>> Sandeepa: I think you need to retry Masami's test on the arm64 model, since
->> >>>> I'm fairly sure it won't work as expected without some additional code.
->> >>>
->> >>> OK, anyway, for testing same one, we need to port ftrace first. So the next
->> >
->> > Sorry for confusion, s/next/fallback is what I meant. Making a kprobe module
->> > can be done without ftrace port.
->> >
->> >>> plan is to make a kprobe module to put a probe (which just printk something)
->> >>> on a specific function (e.g. vfs_symlink), and run perf record with
->> >>> hw-breakpoint as below
->> >>>
->> >>> $ perf record -e "mem:0xXXXXXX:k" ln -s /dev/null /tmp/foo
->> >>>
->> >>> Note that 0xXXXXXX is the address of vfs_symlink.
->> >>>
->> >>> After that, you can see the message in dmesg and also check the perf result
->> >>> with "sudo perf script --dump" (you can find a PERF_RECORD_SAMPLE entry if
->> >>> it works)
->> Hi Will, Masami,
->>
->> I am not sure of 'perf' right now (my minimal rootfs doesn't have) but
->> I tried to test hardware breakpoints using sample modules
->> "samples/hw_breakpoint/" on arm64 upstream branch. This should use
->> same kernel api as perf I believe.
->>
->> 1.  Placing watchpoint ( attr.bp_type = HW_BREAKPOINT_W |
->> HW_BREAKPOINT_R) upon vfs_symlink symbol, but seems watch-point is not
->> triggering at all.
->
-> vfs_symlink is a function. Why would you expect to write it?
-This is generic test module (samples/hw_breakpoint/data_breakpoint.ko)
-which places watchpoint for bothe read/write.
-Atleast watchpt should have triggered for Read right? I also tried
-with othe functions like do_fork, vfs_read etc but no hit.
+On 11/12/2013 08:42 PM, John Stultz wrote:
+> From: Peter Zijlstra <peterz@infradead.org>
+> 
+> Now that seqcounts are lockdep enabled objects, we need to properly
+> initialize them.
+> 
+> Without this patch, Fengguang was seeing:
+> [    4.127282] INFO: trying to register non-static key.
+> [    4.128027] the code is fine but needs lockdep annotation.
+> [    4.128027] turning off the locking correctness validator.
+> [    4.128027] CPU: 0 PID: 96 Comm: kworker/u4:1 Not tainted 3.12.0-next-20131108-10601-gbad570d #2
+> [    4.128027] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [    4.128027] Workqueue: events_unbound async_run_entry_fn
+> [    4.128027]  7908e744 00000000 78019968 79dc7cf2 7a80e0a8 780199a0 7908953e 7a1b7f4d
+> [    4.128027]  7a1b7fa7 7a1b7f7d 7f368608 00000000 00000011 44374011 0000a805 7f368110
+> [    4.128027]  7f368110 85bf2a70 00000000 780199cc 7908a1c5 00000000 00000001 00000000
+> [    4.128027] Call Trace:
+> [    4.128027]  [<7908e744>] ? console_unlock+0x353/0x380
+> [    4.128027]  [<79dc7cf2>] dump_stack+0x48/0x60
+> [    4.128027]  [<7908953e>] __lock_acquire.isra.26+0x7e3/0xceb
+> [    4.128027]  [<7908a1c5>] lock_acquire+0x71/0x9a
+> [    4.128027]  [<794079aa>] ? blk_throtl_bio+0x1c3/0x485
+> [    4.128027]  [<7940658b>] throtl_update_dispatch_stats+0x7c/0x153
+> [    4.128027]  [<794079aa>] ? blk_throtl_bio+0x1c3/0x485
+> [    4.128027]  [<794079aa>] blk_throtl_bio+0x1c3/0x485
+> ...
+> 
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Fengguang Wu <fengguang.wu@intel.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> [jstultz: Folded in another fix from the mailing list as well as a fix
+> to that fix. Tweaked commit message.]
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
 
->
->> 2.  Placing text breakpoint (modified sample module with attr.bp_type
->> = HW_BREAKPOINT_X) upon vfs_symlink, and run "ln -s /dev/null
->> /tmp/foo".  This time, breakpoint hit but exception is re-cursing
->> infinitely!
->
-> The problem here is that we expect the overflow handler to deal with the
-> stepping (like GDB does via ptrace). If you don't register a handler, the
-> kernel will do the step (like you would get if you used perf stat -e
-> mem:0xNNNN:x).
-[This test was done on upstream branch, without kprobes patches.]
-Hmm, then this is expected with test breakpoint right? is this
-handling to be done by perf and ptrace?
-I did not see arm64 support in linux/tools/perf/,  there are multiple
-patches in mailing list though. Are you aware of any version of perf
-that work with arm64?
+Thanks for fixing this up, John/Peter. I'll get it queued up.
 
-~Sandeepa
->
-> Will
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Jens Axboe
+
