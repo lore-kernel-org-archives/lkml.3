@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652Ab3KMR0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 12:26:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52905 "EHLO
+	id S1758537Ab3KMR0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 12:26:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52912 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab3KMR0A (ORCPT
+	with ESMTP id S1756795Ab3KMR0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 12:26:00 -0500
-Date: Wed, 13 Nov 2013 09:25:13 -0800
-From: tip-bot for Michael wang <tipbot@zytor.com>
-Message-ID: <tip-106dd5afde3cd10db7e1370b6ddc77f0b2496a75@git.kernel.org>
+	Wed, 13 Nov 2013 12:26:03 -0500
+Date: Wed, 13 Nov 2013 09:25:22 -0800
+From: tip-bot for Rik van Riel <tipbot@zytor.com>
+Message-ID: <tip-46a73e8a1c1720f7713b5e2df68e9dd272015b5d@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, wangyun@linux.vnet.ibm.com, tglx@linutronix.de,
-        fengguang.wu@intel.com
+        peterz@infradead.org, riel@redhat.com, mgorman@suse.de,
+        tglx@linutronix.de, prarit@redhat.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, wangyun@linux.vnet.ibm.com, tglx@linutronix.de,
-        fengguang.wu@intel.com
-In-Reply-To: <5282EDC0.6060003@linux.vnet.ibm.com>
-References: <5282EDC0.6060003@linux.vnet.ibm.com>
+        peterz@infradead.org, riel@redhat.com, mgorman@suse.de,
+        tglx@linutronix.de, prarit@redhat.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix endless sync_sched/rcu()
-  loop inside _cpu_down()
-Git-Commit-ID: 106dd5afde3cd10db7e1370b6ddc77f0b2496a75
+Subject: [tip:sched/urgent] sched/numa:
+  Fix NULL pointer dereference in task_numa_migrate()
+Git-Commit-ID: 46a73e8a1c1720f7713b5e2df68e9dd272015b5d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,75 +28,63 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 13 Nov 2013 09:25:19 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 13 Nov 2013 09:25:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  106dd5afde3cd10db7e1370b6ddc77f0b2496a75
-Gitweb:     http://git.kernel.org/tip/106dd5afde3cd10db7e1370b6ddc77f0b2496a75
-Author:     Michael wang <wangyun@linux.vnet.ibm.com>
-AuthorDate: Wed, 13 Nov 2013 11:10:56 +0800
+Commit-ID:  46a73e8a1c1720f7713b5e2df68e9dd272015b5d
+Gitweb:     http://git.kernel.org/tip/46a73e8a1c1720f7713b5e2df68e9dd272015b5d
+Author:     Rik van Riel <riel@redhat.com>
+AuthorDate: Mon, 11 Nov 2013 19:29:25 -0500
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 13 Nov 2013 13:33:50 +0100
+CommitDate: Wed, 13 Nov 2013 13:33:51 +0100
 
-sched: Fix endless sync_sched/rcu() loop inside _cpu_down()
+sched/numa: Fix NULL pointer dereference in task_numa_migrate()
 
-Commit 6acce3ef8:
+The cpusets code can split up the scheduler's domain tree into
+smaller domains.  Some of those smaller domains may not cross
+NUMA nodes at all, leading to a NULL pointer dereference on the
+per-cpu sd_numa pointer.
 
-	sched: Remove get_online_cpus() usage
+Tasks cannot be migrated out of their domain, so the patch
+also sets p->numa_preferred_nid to whereever they are, to
+prevent the migration from being retried over and over again.
 
-tries to do sync_sched/rcu() inside _cpu_down() but triggers:
-
-	INFO: task swapper/0:1 blocked for more than 120 seconds.
-	...
-	[<ffffffff811263dc>] synchronize_rcu+0x2c/0x30
-	[<ffffffff81d1bd82>] _cpu_down+0x2b2/0x340
-	...
-
-It was caused by that in the rcu boost case we rely on smpboot thread to
-finish the rcu callback, which has already been parked before sync in here
-and leads to the endless sync_sched/rcu().
-
-This patch exchanges the sequence of smpboot_park_threads() and
-sync_sched/rcu() to fix the bug.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+Reported-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/5282EDC0.6060003@linux.vnet.ibm.com
+Cc: Mel Gorman <mgorman@suse.de>
+Link: http://lkml.kernel.org/n/tip-oosqomw0Jput0Jkvoowhrqtu@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/cpu.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/sched/fair.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 63aa50d..2227b58 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -306,7 +306,6 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 				__func__, cpu);
- 		goto out_release;
- 	}
--	smpboot_park_threads(cpu);
- 
- 	/*
- 	 * By now we've cleared cpu_active_mask, wait for all preempt-disabled
-@@ -315,12 +314,16 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 	 *
- 	 * For CONFIG_PREEMPT we have preemptible RCU and its sync_rcu() might
- 	 * not imply sync_sched(), so explicitly call both.
-+	 *
-+	 * Do sync before park smpboot threads to take care the rcu boost case.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index df77c60..c11e36f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1201,9 +1201,21 @@ static int task_numa_migrate(struct task_struct *p)
  	 */
- #ifdef CONFIG_PREEMPT
- 	synchronize_sched();
- #endif
- 	synchronize_rcu();
+ 	rcu_read_lock();
+ 	sd = rcu_dereference(per_cpu(sd_numa, env.src_cpu));
+-	env.imbalance_pct = 100 + (sd->imbalance_pct - 100) / 2;
++	if (sd)
++		env.imbalance_pct = 100 + (sd->imbalance_pct - 100) / 2;
+ 	rcu_read_unlock();
  
-+	smpboot_park_threads(cpu);
++	/*
++	 * Cpusets can break the scheduler domain tree into smaller
++	 * balance domains, some of which do not cross NUMA boundaries.
++	 * Tasks that are "trapped" in such domains cannot be migrated
++	 * elsewhere, so there is no point in (re)trying.
++	 */
++	if (unlikely(!sd)) {
++		p->numa_preferred_nid = cpu_to_node(task_cpu(p));
++		return -EINVAL;
++	}
 +
- 	/*
- 	 * So now all preempt/rcu users must observe !cpu_active().
- 	 */
+ 	taskweight = task_weight(p, env.src_nid);
+ 	groupweight = group_weight(p, env.src_nid);
+ 	update_numa_stats(&env.src_stats, env.src_nid);
