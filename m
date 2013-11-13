@@ -1,109 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759224Ab3KMMTv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 07:19:51 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51610 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758908Ab3KMMTs (ORCPT
+	id S1759196Ab3KMMV6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 07:21:58 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:35913 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759029Ab3KMMVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 07:19:48 -0500
-Date: Wed, 13 Nov 2013 12:19:09 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+	Wed, 13 Nov 2013 07:21:55 -0500
+From: Pekka Enberg <penberg@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Pekka Enberg <penberg@kernel.org>, David Ahern <dsahern@gmail.com>,
         Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] sched/mm: add finish_switch_mm function
-Message-ID: <20131113121909.GA18837@arm.com>
-References: <1384330574-18418-1-git-send-email-schwidefsky@de.ibm.com>
- <1384330574-18418-2-git-send-email-schwidefsky@de.ibm.com>
- <20131113114143.GJ21461@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131113114143.GJ21461@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH] perf trace: Tweak summary output
+Date: Wed, 13 Nov 2013 14:21:48 +0200
+Message-Id: <1384345308-24404-1-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 11:41:43AM +0000, Peter Zijlstra wrote:
-> On Wed, Nov 13, 2013 at 09:16:13AM +0100, Martin Schwidefsky wrote:
-> > The switch_mm function is called with the task_lock and/or with
-> > request queue lock. Add finish_switch_mm to allow an architecture
-> > to execute some code after the mm has been switched but without
-> > any locks held. One use case is the s390 architecture which will
-> > use this to wait for the completion of TLB flush operations.
+Tweak the summary output as suggested by Ingo Molnar:
 
-We have similar needs on arm and arm64 (full cache flushing where we
-want interrupts enable or some IPIs for TLB tagging synchronisation).
+  [penberg@localhost ~]$ perf trace -a --duration 10000 --summary -- sleep 1
+  ^C
+   Summary of events:
 
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index 1deccd7..89409cb 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -32,7 +32,7 @@
-> >  #include <linux/init.h>
-> >  #include <linux/uaccess.h>
-> >  #include <linux/highmem.h>
-> > -#include <asm/mmu_context.h>
-> > +#include <linux/mmu_context.h>
-> >  #include <linux/interrupt.h>
-> >  #include <linux/capability.h>
-> >  #include <linux/completion.h>
-> > @@ -1996,6 +1996,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
-> >  	perf_event_task_sched_in(prev, current);
-> >  	finish_lock_switch(rq, prev);
-> >  	finish_arch_post_lock_switch();
-> > +	finish_switch_mm(current->mm, current);
+   Xorg (817), 148 events, 0.0%, 0.000 msec
 
-This could use the same hook.
+     syscall            calls      min       avg       max      stddev
+                                 (msec)    (msec)    (msec)        (%)
+     --------------- -------- --------- --------- ---------     ------
+     read                   7     0.002     0.004     0.011     32.00%
+     rt_sigprocmask        40     0.001     0.001     0.002      1.31%
+     ioctl                  6     0.002     0.003     0.005     19.45%
+     writev                 7     0.004     0.018     0.059     43.76%
+     select                 9     0.000    74.513   507.869     74.61%
+     setitimer              4     0.001     0.002     0.002     10.08%
 
-> >  
-> >  	fire_sched_in_preempt_notifiers(current);
-> >  	if (mm)
-> > @@ -4140,8 +4141,10 @@ void idle_task_exit(void)
-> >  
-> >  	BUG_ON(cpu_online(smp_processor_id()));
-> >  
-> > -	if (mm != &init_mm)
-> > +	if (mm != &init_mm) {
-> >  		switch_mm(mm, &init_mm, current);
-> > +		finish_switch_mm(&init_mm, current);
-> > +	}
-> >  	mmdrop(mm);
-> >  }
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ tools/perf/builtin-trace.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Here finish_switch_mm() is called in the same context with switch_mm().
-What we have on ARM via switch_mm() is to check for irqs_disabled() and
-if yes, defer the actual switching via a flag until the
-finish_arch_post_lock_switch() hook. But on ARM we only cared about the
-interrupts being enabled.
-
-> > diff --git a/mm/mmu_context.c b/mm/mmu_context.c
-> > index 8a8cd02..11b3d47 100644
-> > --- a/mm/mmu_context.c
-> > +++ b/mm/mmu_context.c
-> > @@ -8,8 +8,6 @@
-> >  #include <linux/export.h>
-> >  #include <linux/sched.h>
-> >  
-> > -#include <asm/mmu_context.h>
-> > -
-> >  /*
-> >   * use_mm
-> >   *	Makes the calling kernel thread take on the specified
-> > @@ -31,6 +29,7 @@ void use_mm(struct mm_struct *mm)
-> >  	tsk->mm = mm;
-> >  	switch_mm(active_mm, mm, tsk);
-> >  	task_unlock(tsk);
-> > +	finish_switch_mm(mm, tsk);
-
-As above, for ARM we only care about interrupts being enabled, so it
-didn't require a hook.
-
-Is s390 switch_mm() ok with only interrupts being enabled but some locks
-held?
-
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 2a6149e..943087f 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2104,9 +2104,9 @@ static size_t thread__dump_stats(struct thread_trace *ttrace,
+ 
+ 	printed += fprintf(fp, "\n");
+ 
+-	printed += fprintf(fp, "                                                    msec/call\n");
+-	printed += fprintf(fp, "   syscall            calls      min      avg      max stddev\n");
+-	printed += fprintf(fp, "   --------------- -------- -------- -------- -------- ------\n");
++	printed += fprintf(fp, "   syscall            calls      min       avg       max      stddev\n");
++	printed += fprintf(fp, "                               (msec)    (msec)    (msec)        (%%)\n");
++	printed += fprintf(fp, "   --------------- -------- --------- --------- ---------     ------\n");
+ 
+ 	/* each int_node is a syscall */
+ 	while (inode) {
+@@ -2123,9 +2123,9 @@ static size_t thread__dump_stats(struct thread_trace *ttrace,
+ 
+ 			sc = &trace->syscalls.table[inode->i];
+ 			printed += fprintf(fp, "   %-15s", sc->name);
+-			printed += fprintf(fp, " %8" PRIu64 " %8.3f %8.3f",
++			printed += fprintf(fp, " %8" PRIu64 " %9.3f %9.3f",
+ 					   n, min, avg);
+-			printed += fprintf(fp, " %8.3f %6.2f\n", max, pct);
++			printed += fprintf(fp, " %9.3f %9.2f%%\n", max, pct);
+ 		}
+ 
+ 		inode = intlist__next(inode);
 -- 
-Catalin
+1.8.3.1
+
