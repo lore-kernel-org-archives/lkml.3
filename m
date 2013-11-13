@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab3KMCOQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 21:14:16 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:10955 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755737Ab3KMCOI (ORCPT
+	id S1757681Ab3KMCSj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 21:18:39 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:38859 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab3KMCSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 21:14:08 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 12 Nov 2013 18:08:30 -0800
-Message-ID: <5282E068.1070608@nvidia.com>
-Date: Wed, 13 Nov 2013 11:14:00 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
+	Tue, 12 Nov 2013 21:18:31 -0500
+Message-ID: <5282E16F.5010407@linux.vnet.ibm.com>
+Date: Wed, 13 Nov 2013 10:18:23 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@wwwdotorg.org>
-CC: Russell King <linux@arm.linux.org.uk>, Tomasz Figa <t.figa@samsung.com>,
-        Dave Martin <Dave.Martin@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v10 0/7] ARM: support for Trusted Foundations secure monitor
-References: <1383819106-1400-1-git-send-email-acourbot@nvidia.com>	<52828EF5.6090909@wwwdotorg.org> <CAOesGMhatp9ZQr=eTCtQ_9a_E9LXKdTCzJd+P7Sy9Ut9wtvnsA@mail.gmail.com>
-In-Reply-To: <CAOesGMhatp9ZQr=eTCtQ_9a_E9LXKdTCzJd+P7Sy9Ut9wtvnsA@mail.gmail.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Fengguang Wu <fengguang.wu@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [sched/get_online_cpus] INFO: task swapper/0:1 blocked for more
+ than 120 seconds.
+References: <20131110101612.GC21916@localhost> <52808B7F.6000309@linux.vnet.ibm.com> <20131111162022.GB21461@twins.programming.kicks-ass.net> <20131112095516.GB32441@localhost>
+In-Reply-To: <20131112095516.GB32441@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111302-2000-0000-0000-00000E82AAA4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 05:38 AM, Olof Johansson wrote:
-> On Tue, Nov 12, 2013 at 12:26 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 11/07/2013 03:11 AM, Alexandre Courbot wrote:
->>> Just a set of small fixes to address the concerns expressed on v9 with the
->>> non-prefixed version DT properties. I hope there won't be a need for an
->>> eleventh (!) version. :P
+On 11/12/2013 05:55 PM, Fengguang Wu wrote:
+[snip]
 >>
->> BTW, this version looks fine to me. On IRC, Olof said it looked OK to
->> him. I'm just waiting to hear back from Olof/Russell whether I should
->> merge this through the Tegra tree, or whether the first 1-3 patches
->> should go through Russell's tree.
->
-> I pinged Russell, and he brought up the fact that there were earlier
-> requests to move it to drivers/firmware. It would make sense to try to
-> get that done before merging, especially if you anticipate someone
-> using TF on 64-bit platforms.
+>> Good thinking.. Wu did this cure stuff?
 
-IIRC when we discussed this point your last comment was as follows:
+Thanks for the confirm :)
 
-On Tue, Oct 29, 2013 at 6:55 AM, Olof Johansson <olof@lixom.net> wrote:
- > I think we can probably merge this under arch/arm now, and when we
- > figure out what needs to be common with ARM64 we can move it out to a
- > good location. It might be that mostly just a header file with ABI
- > conventions needs to be shared, not actual implementation, for
- > example.
+> 
+> Yes, it fixed the problem.
 
-So I thought we agreed on that. If in the end we prefer to move the ARM 
-firmware interface into drivers/firmware, I'm fine with that too (Tomasz 
-also confirmed he would be ok with it) but I wonder if that would not be 
-somehow premature.
+Thanks for the testing :)
 
-Another worry of mine is that this might delay this patchset some more. 
-Support for TF is one of the last remaining step towards making NVIDIA 
-branded Tegra retail devices (SHIELD and TegraNote at the moment) run 
-upstream directly. I missed 3.13, I'd like to make sure I won't miss 
-3.14. Would it be acceptable if we move the ARM firmware interface to a 
-common place after this patchset is merged?
+> 
+> Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+> 
+
+Will send out a formal patch later.
+
+Regards,
+Michael Wang
+
+> 
+> /kernel/i386-randconfig-j3-11101308/484f4e66a6a1102edf02407479f6f7632aade0f3
+> 
+> +--------------------------------------------------+--------------+--------------+
+> |                                                  | e5137b50a064 | 484f4e66a6a1 |
+> +--------------------------------------------------+--------------+--------------+
+> | boot_successes                                   | 42           | 100          |
+> | boot_failures                                    | 58           |              |
+> | INFO:task_blocked_for_more_than_seconds          | 58           |              |
+> | Kernel_panic-not_syncing:hung_task:blocked_tasks | 58           |              |
+> +--------------------------------------------------+--------------+--------------+
+> 
+> /kernel/x86_64-randconfig-x4-1108/484f4e66a6a1102edf02407479f6f7632aade0f3
+> 
+> +------------------------------------------------------------------------------------+-----------+--------------+--------------+
+> |                                                                                    | v3.12-rc7 | e5137b50a064 | 484f4e66a6a1 |
+> +------------------------------------------------------------------------------------+-----------+--------------+--------------+
+> | boot_successes                                                                     | 59        | 34           | 100          |
+> | has_kernel_error_warning                                                           | 4         |              |              |
+> | BUG:kernel_early_hang_without_any_printk_output                                    | 4         |              |              |
+> | boot_failures                                                                      | 0         | 66           |              |
+> | INFO:task_blocked_for_more_than_seconds                                            | 0         | 66           |              |
+> | INFO:NMI_handler(arch_trigger_all_cpu_backtrace_handler)took_too_long_to_run:msecs | 0         | 55           |              |
+> | Kernel_panic-not_syncing:hung_task:blocked_tasks                                   | 0         | 66           |              |
+> +------------------------------------------------------------------------------------+-----------+--------------+--------------+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
