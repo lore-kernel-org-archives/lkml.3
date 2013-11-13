@@ -1,172 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab3KMUHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 15:07:55 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:25593 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756278Ab3KMUHu (ORCPT
+	id S1757968Ab3KMUIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 15:08:50 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:40812 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756278Ab3KMUIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 15:07:50 -0500
-Date: Wed, 13 Nov 2013 15:07:45 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Matthew Whitehead <tedheadster@gmail.com>, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org, mwhitehe@redhat.com
-Subject: Re: nohz problem with idle time on old hardware
-Message-ID: <20131113150745.25d597fa@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
-References: <20131113113927.GA13875@mwhitehe.csb>
-	<alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de>
-	<20131113102153.5f10e6b5@gandalf.local.home>
-	<20131113103134.5b8cf02f@gandalf.local.home>
-	<20131113105737.3f7a0b1b@gandalf.local.home>
-	<alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
-	<20131113111257.482c2955@gandalf.local.home>
-	<20131113161829.GE4138@linux.vnet.ibm.com>
-	<20131113112338.7d303c0f@gandalf.local.home>
-	<20131113163552.GF4138@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Wed, 13 Nov 2013 15:08:42 -0500
+Date: Wed, 13 Nov 2013 21:09:14 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: "MPhil. Emanoil Kotsev" <Emanoil.Kotsev@fincom.at>
+Cc: Borislav Petkov <bp@alien8.de>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Intel-gfx] kernel 3.11.6 general protection fault
+Message-ID: <20131113200914.GG7251@phenom.ffwll.local>
+Mail-Followup-To: "MPhil. Emanoil Kotsev" <Emanoil.Kotsev@fincom.at>,
+	Borislav Petkov <bp@alien8.de>, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org
+References: <201311132058.30310.Emanoil.Kotsev@fincom.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201311132058.30310.Emanoil.Kotsev@fincom.at>
+X-Operating-System: Linux phenom 3.12.0+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Nov 2013 21:01:57 +0100 (CET)
-Thomas Gleixner <tglx@linutronix.de> wrote:
-
-
-> ---------------->
-> Subject: NOHZ: Check for nohz active instead of nohz enabled
+On Wed, Nov 13, 2013 at 08:58:29PM +0100, MPhil. Emanoil Kotsev wrote:
+> (sorry it replys automaticaly only to the sender - now added the list)
 > 
-> RCU and the fine grained idle time accounting functions check
-> tick_nohz_enabled. But that variable is merily telling that NOHZ has
-> been enabled in the config and not been disabled on the command line.
+> What do the intel-gfx people think?
 > 
-> But it does not tell anything about nohz being active. That's what all
-> this should check for.
+> ====== original mail follows =======
+> Hi sorry for bothering you once again. 
 > 
-> Matthew reported, that the idle accounting on his old P1 machine
-> showed bogus values, when he enabled NOHZ in the config and did not
-> disable it on the kernel command line. The reason is that his machine
-> uses (refined) jiffies as a clocksource which explains why the "fine"
-> grained accounting went into lala land, because it depends on when the
-> system goes and leaves idle relative to the jiffies increment.
+> I noticed most of the issues are coming from drm (I have the stupid "Intel 
+> Corporation Mobile 945GM/GMS, 943/940GML Express Integrated Graphics 
+> Controller (rev 03)")
 > 
-> Provide a tick_nohz_active indicator and let RCU and the accounting
-> code use this instead of tick_nohz_enable.
+> So I checked today the logs again and found out it crashed in the mornign when 
+> turning on the notebook in the office.
 > 
-> Reported-by: Matthew Whitehead <tedheadster@gmail.com>
+> Is there something you can conclude from the trace below and another 
+> question - why is it checking CRTC as I have LVDS, VGA1 and DVI1 - actually 
+> using only the LVDS and DVI outputs
+> 
+> Thanks again for taking your time
 
-Matthew, can you test this patch to make sure it causes the idle issue
-to go away (remember to remove nohz=off from your command line).
+Testing on latest drm-intel-nightly from
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+http://cgit.freedesktop.org/~danvet/drm-intel/
 
--- Steve
+If that doesn't help then please boot with drm.debug=0xe, reproduce the
+issue and then attach the complete dmesg. Please make sure everything
+starting from boot messages is in there, increase the dmesg buffer with
+log_buf_len=4M or so if that isn't the case.
+-Daniel
 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 3822ac0..da6e6de 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -1632,7 +1632,7 @@ module_param(rcu_idle_gp_delay, int, 0644);
->  static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
->  module_param(rcu_idle_lazy_gp_delay, int, 0644);
->  
-> -extern int tick_nohz_enabled;
-> +extern int tick_nohz_active;
->  
->  /*
->   * Try to advance callbacks for all flavors of RCU on the current CPU, but
-> @@ -1729,7 +1729,7 @@ static void rcu_prepare_for_idle(int cpu)
->  	int tne;
->  
->  	/* Handle nohz enablement switches conservatively. */
-> -	tne = ACCESS_ONCE(tick_nohz_enabled);
-> +	tne = ACCESS_ONCE(tick_nohz_active);
->  	if (tne != rdtp->tick_nohz_enabled_snap) {
->  		if (rcu_cpu_has_callbacks(cpu, NULL))
->  			invoke_rcu_core(); /* force nohz to see update. */
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 3612fc7..a12df5a 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -361,8 +361,8 @@ void __init tick_nohz_init(void)
->  /*
->   * NO HZ enabled ?
->   */
-> -int tick_nohz_enabled __read_mostly  = 1;
-> -
-> +static int tick_nohz_enabled __read_mostly  = 1;
-> +int tick_nohz_active  __read_mostly;
->  /*
->   * Enable / Disable tickless mode
->   */
-> @@ -465,7 +465,7 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
->  	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
->  	ktime_t now, idle;
->  
-> -	if (!tick_nohz_enabled)
-> +	if (!tick_nohz_active)
->  		return -1;
->  
->  	now = ktime_get();
-> @@ -506,7 +506,7 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
->  	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
->  	ktime_t now, iowait;
->  
-> -	if (!tick_nohz_enabled)
-> +	if (!tick_nohz_active)
->  		return -1;
->  
->  	now = ktime_get();
-> @@ -799,11 +799,6 @@ void tick_nohz_idle_enter(void)
->  	local_irq_disable();
->  
->  	ts = &__get_cpu_var(tick_cpu_sched);
-> -	/*
-> -	 * set ts->inidle unconditionally. even if the system did not
-> -	 * switch to nohz mode the cpu frequency governers rely on the
-> -	 * update of the idle time accounting in tick_nohz_start_idle().
-> -	 */
->  	ts->inidle = 1;
->  	__tick_nohz_idle_enter(ts);
->  
-> @@ -973,7 +968,7 @@ static void tick_nohz_switch_to_nohz(void)
->  	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
->  	ktime_t next;
->  
-> -	if (!tick_nohz_enabled)
-> +	if (!tick_nohz_active)
->  		return;
->  
->  	local_irq_disable();
-> @@ -981,7 +976,7 @@ static void tick_nohz_switch_to_nohz(void)
->  		local_irq_enable();
->  		return;
->  	}
-> -
-> +	tick_nohz_active = 1;
->  	ts->nohz_mode = NOHZ_MODE_LOWRES;
->  
->  	/*
-> @@ -1139,8 +1134,10 @@ void tick_setup_sched_timer(void)
->  	}
->  
->  #ifdef CONFIG_NO_HZ_COMMON
-> -	if (tick_nohz_enabled)
-> +	if (tick_nohz_enabled) {
->  		ts->nohz_mode = NOHZ_MODE_HIGHRES;
-> +		tick_nohz_active = 1;
-> +	}
->  #endif
->  }
->  #endif /* HIGH_RES_TIMERS */
+> 
+> 
+> 
+> Nov 13 09:36:21 maistor kernel: [   40.447271] ------------[ cut 
+> here ]------------
+> Nov 13 09:36:21 maistor kernel: [   40.447311] WARNING: CPU: 1 PID: 4142 at 
+> drivers/gpu/drm/i915/intel_display.c:8292 check_crtc_state+0x5cf/0xa60 [i915]
+> ()
+> Nov 13 09:36:21 maistor kernel: [   40.447313] pipe state doesn't match!
+> Nov 13 09:36:21 maistor kernel: [   40.447315] Modules linked in: snd_hrtimer 
+> acpi_pad sbs sbshc fan binfmt_misc uinput fuse af_packet ipv6 firewire_sbp2 
+> snd
+> _hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss 
+> snd_pcm snd_page_alloc snd_seq_dummy snd_seq_oss snd_seq_midi 
+> snd_seq_midi_eve
+> nt snd_rawmidi snd_seq snd_seq_device snd_timer arc4 iTCO_wdt snd gpio_ich 
+> iwl3945 dell_wmi sparse_keymap i2c_i801 iTCO_vendor_support ehci_pci iwlegacy 
+> mac8
+> 0211 cfg80211 soundcore rfkill dell_laptop lpc_ich yenta_socket pcmcia_rsrc 
+> irda 8250 evdev wmi processor dcdbas rtc_cmos battery crc_ccitt ac joydev 
+> sha256_
+> ssse3 sha256_generic cbc hid_generic usbhid hid loop dm_crypt dm_mod sg b44 
+> sr_mod cdrom ssb i915 cfbfillrect cfbimgblt mmc_core mii pcmcia pcmcia_core 
+> uhci_
+> hcd i2c_algo_bit cfbcopyarea firewire_ohci video backlight firewire_core 
+> crc_itu_t drm_kms_helper drm ehci_hcd sd_mod i2c_core thermal thermal_sys 
+> freq_table
+>  usbcore usb_common button intel_agp intel_gtt agpgart
+> Nov 13 09:36:21 maistor kernel: [   40.447384] CPU: 1 PID: 4142 Comm: Xorg 
+> Tainted: P             3.11.6eko2 #3
+> Nov 13 09:36:21 maistor kernel: [   40.447386] Hardware name: Dell Inc. 
+> Latitude D520                   /0NF743, BIOS A04 12/18/2006
+> Nov 13 09:36:21 maistor kernel: [   40.447388]  0000000000000000 
+> 0000000000000009 ffffffff813ce8ab ffff880079c8f888
+> Nov 13 09:36:21 maistor kernel: [   40.447392]  ffffffff81038001 
+> ffff88007a2596d8 ffff880079c8f900 ffff880037f3a000
+> Nov 13 09:36:21 maistor kernel: [   40.447395]  0000000000000001 
+> ffff880037f3a488 ffffffff810380e5 ffffffffa0295531
+> Nov 13 09:36:21 maistor kernel: [   40.447398] Call Trace:
+> Nov 13 09:36:21 maistor kernel: [   40.447407]  [<ffffffff813ce8ab>] ? 
+> dump_stack+0x41/0x51
+> Nov 13 09:36:21 maistor kernel: [   40.447412]  [<ffffffff81038001>] ? 
+> warn_slowpath_common+0x81/0xb0
+> Nov 13 09:36:21 maistor kernel: [   40.447415]  [<ffffffff810380e5>] ? 
+> warn_slowpath_fmt+0x45/0x50
+> Nov 13 09:36:21 maistor kernel: [   40.447427]  [<ffffffffa024338f>] ? 
+> check_crtc_state+0x5cf/0xa60 [i915]
+> Nov 13 09:36:21 maistor kernel: [   40.447440]  [<ffffffffa024db7d>] ? 
+> intel_modeset_check_state+0x2bd/0x730 [i915]
+> Nov 13 09:36:21 maistor kernel: [   40.447445]  [<ffffffff811ec219>] ? 
+> snprintf+0x39/0x40
+> Nov 13 09:36:21 maistor kernel: [   40.447456]  [<ffffffffa024e05d>] ? 
+> intel_set_mode+0x1d/0x30 [i915]
+> Nov 13 09:36:21 maistor kernel: [   40.447467]  [<ffffffffa024e81a>] ? 
+> intel_crtc_set_config+0x7aa/0x980 [i915]
+> Nov 13 09:36:21 maistor kernel: [   40.447481]  [<ffffffffa00f9155>] ? 
+> drm_mode_set_config_internal+0x55/0xd0 [drm]
+> Nov 13 09:36:21 maistor kernel: [   40.447490]  [<ffffffffa00fb118>] ? 
+> drm_mode_setcrtc+0x118/0x640 [drm]
+> Nov 13 09:36:21 maistor kernel: [   40.447497]  [<ffffffffa00ec11d>] ? 
+> drm_ioctl+0x4ed/0x5f0 [drm]
+> Nov 13 09:36:21 maistor kernel: [   40.447507]  [<ffffffffa00fb000>] ? 
+> drm_mode_setplane+0x3a0/0x3a0 [drm]
+> Nov 13 09:36:21 maistor kernel: [   40.447512]  [<ffffffff8111428b>] ? 
+> do_vfs_ioctl+0x8b/0x520
+> Nov 13 09:36:21 maistor kernel: [   40.447515]  [<ffffffff8111476d>] ? 
+> SyS_ioctl+0x4d/0xa0
+> Nov 13 09:36:21 maistor kernel: [   40.447519]  [<ffffffff813d4c56>] ? 
+> system_call_fastpath+0x1a/0x1f
+> Nov 13 09:36:21 maistor kernel: [   40.447521] ---[ end trace 
+> 307df46ce6dc8ed1 ]---
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
 
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
