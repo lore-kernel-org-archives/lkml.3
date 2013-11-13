@@ -1,440 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126Ab3KMDzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 22:55:38 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:64334 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757987Ab3KMDzR (ORCPT
+	id S1758025Ab3KMD7Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 22:59:24 -0500
+Received: from hosting.visp.net.lb ([194.146.153.11]:43608 "EHLO
+	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756037Ab3KMD7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 22:55:17 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3 1/3] OF: Introduce Device Tree resolve support.
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <F60B2232-94D0-41C6-8D79-5A28FA282D4E@antoniou-consulting.com>
-References: <1383923170-24914-1-git-send-email-panto@antoniou-consulting.com> <1383923170-24914-2-git-send-email-panto@antoniou-consulting.com> <20131111181739.06BC5C42348@trevor.secretlab.ca> <F60B2232-94D0-41C6-8D79-5A28FA282D4E@antoniou-consulting.com>
-Date: Wed, 13 Nov 2013 10:39:36 +0900
-Message-Id: <20131113013936.E591FC419FB@trevor.secretlab.ca>
+	Tue, 12 Nov 2013 22:59:14 -0500
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Wed, 13 Nov 2013 05:59:11 +0200
+From: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.12 BUG() on ext4, kernel crash on nbd-client when nbd server
+ rebooting
+In-Reply-To: <20131112214632.GB31763@quack.suse.cz>
+References: <8bf7c5db475eefcf17976a36f892200d@visp.net.lb>
+ <20131112214632.GB31763@quack.suse.cz>
+Message-ID: <7c1b2ca40c3abfe805e9e944f21c7016@visp.net.lb>
+User-Agent: VISP Webmail/0.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Nov 2013 09:28:42 +0100, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> 
-> On Nov 11, 2013, at 7:17 PM, Grant Likely wrote:
-> 
-> > On Fri,  8 Nov 2013 17:06:08 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> >> Introduce support for dynamic device tree resolution.
-> >> Using it, it is possible to prepare a device tree that's
-> >> been loaded on runtime to be modified and inserted at the kernel
-> >> live tree.
-> >> 
-> >> Export of of_resolve by Guenter Roeck <groeck@juniper.net>
-> >> 
-> >> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> >> ---
-> >> .../devicetree/dynamic-resolution-notes.txt        |  25 ++
-> >> drivers/of/Kconfig                                 |   9 +
-> >> drivers/of/Makefile                                |   1 +
-> >> drivers/of/resolver.c                              | 396 +++++++++++++++++++++
-> >> include/linux/of.h                                 |  17 +
-> >> 5 files changed, 448 insertions(+)
-> >> create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
-> >> create mode 100644 drivers/of/resolver.c
-> >> 
-> >> diff --git a/Documentation/devicetree/dynamic-resolution-notes.txt b/Documentation/devicetree/dynamic-resolution-notes.txt
-> >> new file mode 100644
-> >> index 0000000..0b396c4
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/dynamic-resolution-notes.txt
-> >> @@ -0,0 +1,25 @@
-> >> +Device Tree Dynamic Resolver Notes
-> >> +----------------------------------
-> >> +
-> >> +This document describes the implementation of the in-kernel
-> >> +Device Tree resolver, residing in drivers/of/resolver.c and is a
-> >> +companion document to Documentation/devicetree/dt-object-internal.txt[1]
-> > 
-> > dt-object-internal.txt is in the DTC patch, not the kernel tree.
-> > 
-> 
-> Yes, good catch. I will fix the reference.
-> 
-> BTW, what about moving/copying some of the DTC docs in the kernel doc
-> directory? The dtc Documentation directory is missing from the kernel tree.
-> 
-> 
-> >> +
-> >> +How the resolver works
-> >> +----------------------
-> >> +
-> >> +The resolver is given as an input an arbitrary tree compiled with the
-> >> +proper dtc option and having a /plugin/ tag. This generates the
-> >> +appropriate __fixups__ & __local_fixups__ nodes as described in [1].
-> > 
-> > Missing footnote reference line for [1]?
-> > 
-> 
-> Yes.
-> 
-> >> +
-> >> +In sequence the resolver works by the following steps:
-> >> +
-> >> +1. Get the maximum device tree phandle value from the live tree + 1.
-> > 
-> > Is there a (realistic) worry about leaking phandle number space from
-> > plugging/unplugging trees repeated addition/removal of overlays?
-> > 
-> 
-> I think not. But doing it this way has the nice property of keeping all phandle
-> values the same each time you do a load-unload-load sequence. 
+Hi
 
-It will break if there are two overlays "leapfrogging" each other on
-loads/unloads. It may be a very outside corner case, but it is worth
-thinking about.
+On 2013-11-12 23:46, Jan Kara wrote:
+> Hello,
+> 
+> On Tue 12-11-13 16:34:07, Denys Fedoryshchenko wrote:
+>> I just did some fault testing for test nbd setup, and found that if
+>> i reboot nbd server i will get immediately BUG() message on nbd
+>> client and filesystem that i cannot unmount, and any operations on
+>> it will freeze and lock processes trying to access it.
+>   So how exactly did you do the fault testing? Because it seems 
+> something
+> has discarded the block device under filesystem's toes and the 
+> superblock
+> buffer_head got unmapped. Didn't something call NBD_CLEAR_SOCK ioctl?
+> Because that calls kill_bdev() which would do exactly that...
+
+Client side:
+modprobe nbd
+nbd-client 2.2.2.29 /dev/nbd0 -name export1
+nbd-client 2.2.2.29 /dev/nbd1 -name export2
+nbd-client 2.2.2.29 /dev/nbd2 -name export3
+mount /dev/nbd0 /mnt/disk1
+mount /dev/nbd1 /mnt/disk2
+mount /dev/nbd2 /mnt/disk3
+
+On server i have config:
+[generic]
+[export1]
+         exportname = /dev/sda1
+[export2]
+         exportname = /dev/sdb1
+[export3]
+         exportname = /dev/sdc1
+
+Steps to reproduce:
+1)Start some large file copy on client side to /mnt/disk1/
+2)Reboot server. It reboots quite fast, just few seconds, server system 
+will get ip before nbd-server process started listening, so probably 
+nbd-client will see connection refused.
+3)seems when client gets connection refused - it is going mad
+
+I can try to capture traffic dump, or do any other debug operation, 
+please let me know, what i should run :)
+P.S. I noticed maybe i should run persist mode, but anyway it should not 
+crash like this i think.
 
 > 
-> >> +2. Adjust all the local phandles of the tree to resolve by that amount.
-> >> +3. Using the __local__fixups__ node information adjust all local references
-> >> +   by the same amount.
-> >> +4. For each property in the __fixups__ node locate the node it references
-> >> +   in the live tree. This is the label used to tag the node.
-> >> +5. Retrieve the phandle of the target of the fixup.
-> >> +5. For each fixup in the property locate the node:property:offset location
-> >> +   and replace it with the phandle value.
-> >> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-> >> index 78cc760..2a00ae5 100644
-> >> --- a/drivers/of/Kconfig
-> >> +++ b/drivers/of/Kconfig
-> >> @@ -74,4 +74,13 @@ config OF_MTD
-> >> 	depends on MTD
-> >> 	def_bool y
-> >> 
-> >> +config OF_RESOLVE
-> >> +	bool "OF Dynamic resolution support"
-> >> +	depends on OF
-> >> +	select OF_DYNAMIC
-> >> +	select OF_DEVICE
-> >> +	help
-> >> +	  Enable OF dynamic resolution support. This allows you to
-> >> +	  load Device Tree object fragments are run time.
-> >> +
-> >> endmenu # OF
-> >> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-> >> index 9bc6d8c..93da457 100644
-> >> --- a/drivers/of/Makefile
-> >> +++ b/drivers/of/Makefile
-> >> @@ -9,3 +9,4 @@ obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
-> >> obj-$(CONFIG_OF_PCI)	+= of_pci.o
-> >> obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
-> >> obj-$(CONFIG_OF_MTD)	+= of_mtd.o
-> >> +obj-$(CONFIG_OF_RESOLVE)  += resolver.o
-> >> diff --git a/drivers/of/resolver.c b/drivers/of/resolver.c
-> >> new file mode 100644
-> >> index 0000000..dfbb51a
-> >> --- /dev/null
-> >> +++ b/drivers/of/resolver.c
-> >> @@ -0,0 +1,396 @@
-> >> +/*
-> >> + * Functions for dealing with DT resolution
-> >> + *
-> >> + * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
-> >> + * Copyright (C) 2012 Texas Instruments Inc.
-> >> + *
-> >> + * This program is free software; you can redistribute it and/or
-> >> + * modify it under the terms of the GNU General Public License
-> >> + * version 2 as published by the Free Software Foundation.
-> >> + */
-> >> +
-> >> +#include <linux/kernel.h>
-> >> +#include <linux/module.h>
-> >> +#include <linux/of.h>
-> >> +#include <linux/of_device.h>
-> >> +#include <linux/of_fdt.h>
-> >> +#include <linux/string.h>
-> >> +#include <linux/ctype.h>
-> >> +#include <linux/errno.h>
-> >> +#include <linux/string.h>
-> >> +#include <linux/slab.h>
-> >> +
-> >> +/**
-> >> + * Find a subtree's maximum phandle value.
-> >> + */
-> >> +static phandle __of_get_tree_max_phandle(struct device_node *node,
-> >> +		phandle max_phandle)
-> >> +{
-> >> +	struct device_node *child;
-> >> +
-> >> +	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL &&
-> >> +			node->phandle > max_phandle)
-> >> +		max_phandle = node->phandle;
-> >> +
-> >> +	__for_each_child_of_node(node, child)
-> >> +		max_phandle = __of_get_tree_max_phandle(child, max_phandle);
-> >> +
-> >> +	return max_phandle;
-> >> +}
-> >> +
-> >> +/**
-> >> + * Find live tree's maximum phandle value.
-> >> + */
-> >> +static phandle of_get_tree_max_phandle(void)
-> >> +{
-> >> +	struct device_node *node;
-> >> +	phandle phandle;
-> >> +	unsigned long flags;
-> >> +
-> >> +	/* get root node */
-> >> +	node = of_find_node_by_path("/");
-> >> +	if (node == NULL)
-> >> +		return OF_PHANDLE_ILLEGAL;
-> >> +
-> >> +	/* now search recursively */
-> >> +	raw_spin_lock_irqsave(&devtree_lock, flags);
-> >> +	phandle = __of_get_tree_max_phandle(node, 0);
-> >> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
-> > 
-> > I don't see another user. What is the reason for the __ version of
-> > of_get_tree_max_phandle?
-> > 
-> >> +
-> >> +	of_node_put(node);
-> >> +
-> >> +	return phandle;
-> >> +}
-> >> +
-> >> +/**
-> >> + * Adjust a subtree's phandle values by a given delta.
-> >> + * Makes sure not to just adjust the device node's phandle value,
-> >> + * but modify the phandle properties values as well.
-> >> + */
-> >> +static void __of_adjust_tree_phandles(struct device_node *node,
-> >> +		int phandle_delta)
-> >> +{
-> >> +	struct device_node *child;
-> >> +	struct property *prop;
-> >> +	phandle phandle;
-> >> +
-> >> +	/* first adjust the node's phandle direct value */
-> >> +	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL)
-> >> +		node->phandle += phandle_delta;
-> >> +
-> >> +	/* now adjust phandle & linux,phandle values */
-> >> +	for_each_property_of_node(node, prop) {
-> >> +
-> >> +		/* only look for these two */
-> >> +		if (of_prop_cmp(prop->name, "phandle") != 0 &&
-> >> +		    of_prop_cmp(prop->name, "linux,phandle") != 0)
-> >> +			continue;
-> >> +
-> >> +		/* must be big enough */
-> >> +		if (prop->length < 4)
-> >> +			continue;
-> >> +
-> >> +		/* read phandle value */
-> >> +		phandle = be32_to_cpu(*(uint32_t *)prop->value);
-> > 
-> > Unnecessary cast if you use:
-> > 	phandle = be32_to_cpup(prop->value);
-> 
-> OK.
-> 
-> > 
-> >> +		if (phandle == OF_PHANDLE_ILLEGAL)	/* unresolved */
-> >> +			continue;
-> > 
-> > Isn't this an error condition? Should never have OF_PHANDLE_ILLEGAL in
-> > the property here.
-> 
-> Hmm, I think so. I'll see if there's anything special there.
-> 
-> > 
-> >> +
-> >> +		/* adjust */
-> >> +		*(uint32_t *)prop->value = cpu_to_be32(node->phandle);
-> > 
-> > *(__be32*)prop->value = ...
-> 
-> 
-> It is the same for the compiler, but you're right. 
-> > 
-> >> +	}
-> >> +
-> >> +	/* now do the children recursively */
-> >> +	__for_each_child_of_node(node, child)
-> >> +		__of_adjust_tree_phandles(child, phandle_delta);
-> >> +}
-> >> +
-> >> +/**
-> >> + * Adjust the local phandle references by the given phandle delta.
-> >> + * Assumes the existances of a __local_fixups__ node at the root
-> >> + * of the tree. Does not take any devtree locks so make sure you
-> >> + * call this on a tree which is at the detached state.
-> >> + */
-> >> +static int __of_adjust_tree_phandle_references(struct device_node *node,
-> >> +		int phandle_delta)
-> >> +{
-> >> +	phandle phandle;
-> >> +	struct device_node *refnode, *child;
-> >> +	struct property *rprop, *sprop;
-> >> +	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
-> >> +	int offset, propcurlen;
-> >> +	int err;
-> >> +
-> >> +	/* locate the symbols & fixups nodes on resolve */
-> >> +	__for_each_child_of_node(node, child)
-> >> +		if (of_node_cmp(child->name, "__local_fixups__") == 0)
-> >> +			break;
-> >> +
-> >> +	/* no local fixups */
-> >> +	if (child == NULL)
-> >> +		return 0;
-> >> +
-> >> +	/* find the local fixups property */
-> >> +	for_each_property_of_node(child, rprop) {
-> >> +
-> >> +		/* skip properties added automatically */
-> >> +		if (of_prop_cmp(rprop->name, "name") == 0)
-> >> +			continue;
-> >> +
-> >> +		/* make a copy */
-> >> +		propval = kmalloc(rprop->length, GFP_KERNEL);
-> >> +		if (propval == NULL) {
-> >> +			pr_err("%s: Could not copy value of '%s'\n",
-> >> +					__func__, rprop->name);
-> >> +			return -ENOMEM;
-> >> +		}
-> >> +		memcpy(propval, rprop->value, rprop->length);
-> >> +
-> >> +		propend = propval + rprop->length;
-> >> +		for (propcur = propval; propcur < propend;
-> >> +				propcur += propcurlen + 1) {
-> >> +
-> >> +			propcurlen = strlen(propcur);
-> >> +
-> >> +			nodestr = propcur;
-> >> +			s = strchr(propcur, ':');
-> >> +			if (s == NULL) {
-> >> +				pr_err("%s: Illegal symbol entry '%s' (1)\n",
-> >> +					__func__, propcur);
-> >> +				err = -EINVAL;
-> >> +				goto err_fail;
-> >> +			}
-> >> +			*s++ = '\0';
-> >> +
-> >> +			propstr = s;
-> >> +			s = strchr(s, ':');
-> >> +			if (s == NULL) {
-> >> +				pr_err("%s: Illegal symbol entry '%s' (2)\n",
-> >> +					__func__, (char *)rprop->value);
-> >> +				err = -EINVAL;
-> >> +				goto err_fail;
-> >> +			}
-> >> +
-> >> +			*s++ = '\0';
-> >> +			offset = simple_strtoul(s, NULL, 10);
-> >> +
-> >> +			/* look into the resolve node for the full path */
-> >> +			refnode = __of_find_node_by_full_name(node, nodestr);
-> >> +			if (refnode == NULL) {
-> >> +				pr_warn("%s: Could not find refnode '%s'\n",
-> >> +					__func__, (char *)rprop->value);
-> >> +				continue;
-> >> +			}
-> >> +
-> >> +			/* now find the property */
-> >> +			for_each_property_of_node(refnode, sprop) {
-> >> +				if (of_prop_cmp(sprop->name, propstr) == 0)
-> >> +					break;
-> >> +			}
-> >> +
-> >> +			if (sprop == NULL) {
-> >> +				pr_err("%s: Could not find property '%s'\n",
-> >> +					__func__, (char *)rprop->value);
-> >> +				err = -ENOENT;
-> >> +				goto err_fail;
-> >> +			}
-> >> +
-> >> +			phandle = be32_to_cpu(*(uint32_t *)
-> >> +					(sprop->value + offset));
-> >> +			*(uint32_t *)(sprop->value + offset) =
-> >> +				cpu_to_be32(phandle + phandle_delta);
-> >> +		}
-> >> +
-> >> +		kfree(propval);
-> >> +	}
-> >> +
-> >> +	return 0;
-> >> +
-> >> +err_fail:
-> >> +	kfree(propval);
-> >> +	return err;
-> >> +}
-> >> +
-> >> +/**
-> >> + * of_resolve	- Resolve the given node against the live tree.
-> >> + *
-> >> + * @resolve:	Node to resolve
-> >> + *
-> >> + * Perform dynamic Device Tree resolution against the live tree
-> >> + * to the given node to resolve. This depends on the live tree
-> >> + * having a __symbols__ node, and the resolve node the __fixups__ &
-> >> + * __local_fixups__ nodes (if needed).
-> >> + * The result of the operation is a resolve node that it's contents
-> >> + * are fit to be inserted or operate upon the live tree.
-> >> + * Returns 0 on success or a negative error value on error.
-> >> + */
-> >> +int of_resolve(struct device_node *resolve)
-> >> +{
-> >> +	struct device_node *child, *refnode;
-> >> +	struct device_node *root_sym, *resolve_sym, *resolve_fix;
-> >> +	struct property *rprop, *sprop;
-> >> +	const char *refpath;
-> >> +	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
-> >> +	int offset, propcurlen;
-> >> +	phandle phandle, phandle_delta;
-> >> +	int err;
-> >> +
-> >> +	/* the resolve node must exist, and be detached */
-> >> +	if (resolve == NULL ||
-> >> +			!of_node_check_flag(resolve, OF_DETACHED)) {
-> >> +		return -EINVAL;
-> >> +	}
-> >> +
-> >> +	/* first we need to adjust the phandles */
-> >> +	phandle_delta = of_get_tree_max_phandle() + 1;
-> > 
-> > Probably need to grab the devtree lock before doing the above, and not
-> > release it until after the trees are merged. Otherwise there is the
-> > potential of trying to merge two trees at once and getting phandle
-> > conflicts.
-> 
-> No, because the device tree being passed it it guaranteed to be
-> in detached state, it is not part of the live device tree; 
-> the check in the beginning of the function makes sure.
-> 
-> When we apply the overlay the devtree lock is taken properly.
-
-That doesn't protect against getting duplicate phandle bases. You need
-something to protect the range of phandles that the overlay trees will
-want to use. The problem with the above code is that it calculates the
-phandle base that it wants, but then goes and does a bunch of stuff
-without a lock which allows another overlay to try and use the same
-phandle range.
-
-g.
-
+> 								Honza
+>> Kernel 3.12, x86_64
+>> 
+>> Please let me know if you need more information
+>> 
+>> Here is dmesg contents i got:
+>> [  102.269270] block nbd1: Receive control failed (result -32)
+>> [  102.269443] block nbd1: shutting down socket
+>> [  102.269461] block nbd1: queue cleared
+>> [  102.269859] block nbd2: Receive control failed (result -32)
+>> [  102.269873] block nbd2: shutting down socket
+>> [  102.269883] block nbd2: queue cleared
+>> [  102.271353] block nbd0: Receive control failed (result -32)
+>> [  102.271518] block nbd0: shutting down socket
+>> [  102.271536] block nbd0: queue cleared
+>> [  106.297217] block nbd0: Attempted send on closed socket
+>> [  106.297219] end_request: I/O error, dev nbd0, sector 73992
+>> [  106.297226] EXT4-fs warning (device nbd0):
+>> __ext4_read_dirblock:908: error reading directory block (ino 2,
+>> block 0)
+>> [  106.297233] block nbd0: Attempted send on closed socket
+>> [  106.297235] end_request: I/O error, dev nbd0, sector 8456
+>> [  106.297245] ------------[ cut here ]------------
+>> [  106.297343] kernel BUG at fs/buffer.c:3015!
+>> [  106.297438] invalid opcode: 0000 [#1] SMP
+>> [  106.297716] Modules linked in: nbd act_mirred cls_u32 sch_ingress
+>> sch_htb iptable_filter i2c_i801
+>> [  106.298568] CPU: 0 PID: 2587 Comm: ls Not tainted 3.12.0noc-02 #1
+>> [  106.298665] Hardware name:                  /DH55TC, BIOS
+>> TCIBX10H.86A.0037.2010.0614.1712 06/14/2010
+>> [  106.298772] task: ffff880231da9770 ti: ffff880231cd4000 task.ti:
+>> ffff880231cd4000
+>> [  106.298879] RIP: 0010:[<ffffffff811253e0>]  [<ffffffff811253e0>]
+>> _submit_bh+0x26/0x1d3
+>> [  106.299078] RSP: 0018:ffff880231cd5b48  EFLAGS: 00010246
+>> [  106.299182] RAX: 0000000000000005 RBX: ffff8800b7456b60 RCX:
+>> 0000000000000008
+>> [  106.299285] RDX: 0000000000000000 RSI: ffff8800b7456b60 RDI:
+>> 0000000000000411
+>> [  106.299388] RBP: ffff880231cd5b68 R08: 0000000000000040 R09:
+>> ffffffff81a9a370
+>> [  106.299487] R10: ffffffff810c0d61 R11: 0000000000000000 R12:
+>> 0000000000000411
+>> [  106.299590] R13: ffff880231b21400 R14: 0000000000000000 R15:
+>> 000000000aea9ff5
+>> [  106.299697] FS:  00007f4f0d755700(0000) GS:ffff88023fc00000(0000)
+>> knlGS:0000000000000000
+>> [  106.299800] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> [  106.300114] CR2: 00000000022275c8 CR3: 0000000235538000 CR4:
+>> 00000000000007f0
+>> [  106.300438] Stack:
+>> [  106.300750]  ffff8800b7456b60 0000000000000411 ffff880231b21400
+>> 0000000000000001
+>> [  106.301652]  ffff880231cd5b78 ffffffff81125598 ffff880231cd5ba8
+>> ffffffff8112761a
+>> [  106.307886]  ffff880231cd5bb8 ffffffff81293a72 ffff8800b7456b60
+>> ffff8802358d4800
+>> [  106.308794] Call Trace:
+>> [  106.309105]  [<ffffffff81125598>] submit_bh+0xb/0xd
+>> [  106.309419]  [<ffffffff8112761a>] __sync_dirty_buffer+0x53/0x86
+>> [  106.309736]  [<ffffffff81293a72>] ? __percpu_counter_sum+0x4d/0x63
+>> [  106.310058]  [<ffffffff8112765b>] sync_dirty_buffer+0xe/0x10
+>> [  106.310368]  [<ffffffff81191327>] ext4_commit_super+0x19e/0x1e7
+>> [  106.310687]  [<ffffffff8119230f>] save_error_info+0x1e/0x22
+>> [  106.311002]  [<ffffffff811925a4>] __ext4_error_inode+0x52/0x10b
+>> [  106.311326]  [<ffffffff81060bbd>] ? __cond_resched+0x25/0x30
+>> [  106.311634]  [<ffffffff8117b4ee>] __ext4_get_inode_loc+0x310/0x336
+>> [  106.311954]  [<ffffffff8117cc0f>] ? ext4_dirty_inode+0x3b/0x54
+>> [  106.312277]  [<ffffffff8117b60a>] ext4_get_inode_loc+0x17/0x19
+>> [  106.312596]  [<ffffffff8117b62d>] 
+>> ext4_reserve_inode_write+0x21/0x7e
+>> [  106.312916]  [<ffffffff811b3288>] ? jbd2__journal_start+0xe0/0x199
+>> [  106.313229]  [<ffffffff8117ca57>] ext4_mark_inode_dirty+0x67/0x1e4
+>> [  106.313549]  [<ffffffff8117cbf9>] ? ext4_dirty_inode+0x25/0x54
+>> [  106.313861]  [<ffffffff8117cc0f>] ext4_dirty_inode+0x3b/0x54
+>> [  106.314177]  [<ffffffff81121010>] __mark_inode_dirty+0x60/0x224
+>> [  106.314493]  [<ffffffff811130be>] update_time+0x99/0xa2
+>> [  106.314807]  [<ffffffff81113381>] touch_atime+0xf1/0x126
+>> [  106.315117]  [<ffffffff8110db84>] iterate_dir+0x87/0xaa
+>> [  106.315439]  [<ffffffff8110dd01>] SyS_getdents+0x85/0xd0
+>> [  106.315757]  [<ffffffff8110da28>] ? SyS_ioctl+0x80/0x80
+>> [  106.316081]  [<ffffffff815a2f62>] system_call_fastpath+0x16/0x1b
+>> [  106.316399] Code: 00 5f 5b c9 c3 55 48 89 e5 41 56 49 89 d6 41 55
+>> 41 54 41 89 fc 53 48 89 f3 48 8b 06 a8 04 75 04 0f 0b eb fe 48 8b 06
+>> a8 20 75 04 <0f> 0b eb fe 48 83 7e 38 00 75 04 0f 0b eb fe 48 8b 06
+>> f6 c4 02
+>> [  106.323170] RIP  [<ffffffff811253e0>] _submit_bh+0x26/0x1d3
+>> [  106.323579]  RSP <ffff880231cd5b48>
+>> [  106.323983] ---[ end trace 205f692f3e0cfed7 ]---
+>> [  111.834648] ------------[ cut here ]------------
+>> [  111.834975] kernel BUG at fs/buffer.c:3015!
+>> [  111.835283] invalid opcode: 0000 [#2] SMP
+>> [  111.835837] Modules linked in: nbd act_mirred cls_u32 sch_ingress
+>> sch_htb iptable_filter i2c_i801
+>> [  111.837121] CPU: 3 PID: 2578 Comm: jbd2/nbd0-8 Tainted: G      D
+>> 3.12.0noc-02 #1
+>> [  111.837656] Hardware name:                  /DH55TC, BIOS
+>> TCIBX10H.86A.0037.2010.0614.1712 06/14/2010
+>> [  111.838193] task: ffff88023574f530 ti: ffff8800b727a000 task.ti:
+>> ffff8800b727a000
+>> [  111.838741] RIP: 0010:[<ffffffff811253e0>]  [<ffffffff811253e0>]
+>> _submit_bh+0x26/0x1d3
+>> [  111.839372] RSP: 0018:ffff8800b727bbb8  EFLAGS: 00010246
+>> [  111.839688] RAX: 0000000004000005 RBX: ffff8800b7452750 RCX:
+>> 0000000000000411
+>> [  111.840005] RDX: 0000000000000000 RSI: ffff8800b7452750 RDI:
+>> 0000000000000411
+>> [  111.840325] RBP: ffff8800b727bbd8 R08: ffff8800b727a000 R09:
+>> ffffffff81a58ea0
+>> [  111.840634] R10: ffff88023fc6d500 R11: ffff8802360dfed8 R12:
+>> 0000000000000411
+>> [  111.840954] R13: 0000000000000411 R14: 0000000000000000 R15:
+>> ffff88023574f530
+>> [  111.841271] FS:  0000000000000000(0000) GS:ffff88023fc60000(0000)
+>> knlGS:0000000000000000
+>> [  111.841816] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> [  111.842130] CR2: 00007ff5bae1b0c0 CR3: 0000000001a0b000 CR4:
+>> 00000000000007e0
+>> [  111.842441] Stack:
+>> [  111.842768]  ffff8800b7452750 ffff8802358d5800 0000000000000411
+>> ffff8800b4c1b000
+>> [  111.843684]  ffff8800b727bbe8 ffffffff81125598 ffff8800b727bc28
+>> ffffffff811bb44a
+>> [  111.844594]  ffff880237004a60 ffff8802358d5800 ffff8800b4c1b000
+>> ffff8800b727be58
+>> [  111.845540] Call Trace:
+>> [  111.845860]  [<ffffffff81125598>] submit_bh+0xb/0xd
+>> [  111.846171]  [<ffffffff811bb44a>] jbd2_write_superblock+0xac/0xfa
+>> [  111.846487]  [<ffffffff811bbc0b>]
+>> jbd2_journal_update_sb_log_tail+0x31/0x64
+>> [  111.846811]  [<ffffffff811b4a56>]
+>> jbd2_journal_commit_transaction+0xa2/0x14d0
+>> [  111.847129]  [<ffffffff81064f92>] ? idle_balance+0xdc/0x109
+>> [  111.847453]  [<ffffffff8159b5b7>] ? __schedule+0x55f/0x591
+>> [  111.847834]  [<ffffffff81043162>] ? lock_timer_base+0x27/0x4d
+>> [  111.848145]  [<ffffffff811ba10e>] kjournald2+0xc8/0x23a
+>> [  111.848469]  [<ffffffff8105493e>] ? wake_up_bit+0x25/0x25
+>> [  111.848775]  [<ffffffff811ba046>] ? commit_timeout+0xb/0xb
+>> [  111.849155]  [<ffffffff81054395>] kthread+0xb0/0xb8
+>> [  111.849473]  [<ffffffff810542e5>] ?
+>> kthread_freezable_should_stop+0x60/0x60
+>> [  111.849780]  [<ffffffff815a2ebc>] ret_from_fork+0x7c/0xb0
+>> [  111.850099]  [<ffffffff810542e5>] ?
+>> kthread_freezable_should_stop+0x60/0x60
+>> [  111.850418] Code: 00 5f 5b c9 c3 55 48 89 e5 41 56 49 89 d6 41 55
+>> 41 54 41 89 fc 53 48 89 f3 48 8b 06 a8 04 75 04 0f 0b eb fe 48 8b 06
+>> a8 20 75 04 <0f> 0b eb fe 48 83 7e 38 00 75 04 0f 0b eb fe 48 8b 06
+>> f6 c4 02
+>> [  111.857588] RIP  [<ffffffff811253e0>] _submit_bh+0x26/0x1d3
+>> [  111.858064]  RSP <ffff8800b727bbb8>
+>> [  111.858448] ---[ end trace 205f692f3e0cfed8 ]---
+>> 
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe 
+>> linux-fsdevel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
