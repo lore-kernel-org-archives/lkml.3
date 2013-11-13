@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757826Ab3KMCh5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 21:37:57 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:42862 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754169Ab3KMCht (ORCPT
+	id S1757518Ab3KMCkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 21:40:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34106 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755254Ab3KMCkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 21:37:49 -0500
-Message-ID: <5282E5F9.5000506@gmail.com>
-Date: Tue, 12 Nov 2013 21:37:45 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 12 Nov 2013 21:40:03 -0500
+Date: Wed, 13 Nov 2013 11:42:52 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, lliubbo@gmail.com,
+        jmarchan@redhat.com, mgorman@suse.de, riel@redhat.com,
+        hughd@google.com, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Luigi Semenzato <semenzato@google.com>
+Subject: Re: [PATCH] staging: zsmalloc: Ensure handle is never 0 on success
+Message-ID: <20131113024252.GA1023@kroah.com>
+References: <20131107070451.GA10645@bbox>
+ <20131112154137.GA3330@gmail.com>
 MIME-Version: 1.0
-To: Chang Xiangzhong <changxiangzhong@gmail.com>, nhorman@tuxdriver.com,
-        davem@davemloft.net
-CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dreibh@simula.no
-Subject: Re: [PATCH 1/1] net: sctp: bug fixing when sctp path recovers
-References: <1384306486-31345-1-git-send-email-changxiangzhong@gmail.com>
-In-Reply-To: <1384306486-31345-1-git-send-email-changxiangzhong@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112154137.GA3330@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2013 08:34 PM, Chang Xiangzhong wrote:
-> Look for the __two__ most recently used path/transport and set to active_path
-> and retran_path respectively
->
-> Signed-off-by: changxiangzhong@gmail.com
-> ---
->   net/sctp/associola.c |    4 ++++
->   1 file changed, 4 insertions(+)
->
-> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-> index ab67efc..070011a 100644
-> --- a/net/sctp/associola.c
-> +++ b/net/sctp/associola.c
-> @@ -913,11 +913,15 @@ void sctp_assoc_control_transport(struct sctp_association *asoc,
->   		if (!first || t->last_time_heard > first->last_time_heard) {
->   			second = first;
->   			first = t;
-> +			continue;
->   		}
->   		if (!second || t->last_time_heard > second->last_time_heard)
->   			second = t;
+On Wed, Nov 13, 2013 at 12:41:38AM +0900, Minchan Kim wrote:
+> We spent much time with preventing zram enhance since it have been in staging
+> and Greg never want to improve without promotion.
 
-You might as well remove this bit and then you don't need a continue.
+It's not "improve", it's "Greg does not want you adding new features and
+functionality while the code is in staging."  I want you to spend your
+time on getting it out of staging first.
 
->   	}
->
-> +	if (!second)
-> +		second = first;
-> +
+Now if something needs to be done based on review and comments to the
+code, then that's fine to do and I'll accept that, but I've been seeing
+new functionality be added to the code, which I will not accept because
+it seems that you all have given up on getting it merged, which isn't
+ok.
 
-This needs to move down 1 more block.  Set the second transport after we
-check to see if the primary is back up and we need to go back to using it.
+thanks,
 
--vlad
-
->   	/* RFC 2960 6.4 Multi-Homed SCTP Endpoints
->   	 *
->   	 * By default, an endpoint should always transmit to the
->
-
+greg k-h
