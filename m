@@ -1,155 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037Ab3KMCeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 21:34:07 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:49742 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756061Ab3KMCd5 (ORCPT
+	id S932182Ab3KMChC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 21:37:02 -0500
+Received: from caiajhbdcbef.dreamhost.com ([208.97.132.145]:56972 "EHLO
+	homiemail-a22.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755492Ab3KMCgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 21:33:57 -0500
-Date: Tue, 12 Nov 2013 18:33:54 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sameer Nanda <snanda@chromium.org>
-cc: akpm@linux-foundation.org, mhocko@suse.cz, hannes@cmpxchg.org,
-        rusty@rustcorp.com.au, semenzato@google.com, murzin.v@gmail.com,
-        oleg@redhat.com, dserrg@gmail.com, msb@chromium.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5] mm, oom: Fix race when selecting process to kill
-In-Reply-To: <1384287812-3694-1-git-send-email-snanda@chromium.org>
-Message-ID: <alpine.DEB.2.02.1311121829220.29891@chino.kir.corp.google.com>
-References: <CANMivWZFXYGB_95WqToKEUyMsKMS2nQ4p5a_-Lte-=bhCC5u2g@mail.gmail.com> <1384287812-3694-1-git-send-email-snanda@chromium.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 12 Nov 2013 21:36:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=novalis.org; h=message-id:subject
+	:from:to:cc:date:in-reply-to:references:content-type
+	:mime-version:content-transfer-encoding; q=dns; s=novalis.org;
+	 b=DKLInUopxWI+g31ZRC8IMy4PUWaPwe5J0o8StWwQRxgmr8GmSZf46IWqMEAWo
+	Sbu9g9xZ+LonjCWRhc7L07SABDwMojOCUvApKUBYAwhenkJTCeMNwVtk1sKd46vQ
+	abLuPOfBPEu5a4DQXQKBq9p9fdfPs+E0k+ZbLON+1JRJkI=
+Message-ID: <1384310211.8994.161.camel@chiang>
+Subject: Re: [PATCH] ext4: explain encoding of 34-bit a,c,mtime values
+From: David Turner <novalis@novalis.org>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Mark Harris <mhlk@osj.us>,
+        Andreas Dilger <adilger@dilger.ca>, Jan Kara <jack@suse.cz>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 12 Nov 2013 21:36:51 -0500
+In-Reply-To: <20131112230335.GA10269@birch.djwong.org>
+References: <1383808590.23882.13.camel@chiang>
+	 <20131107160341.GA3850@quack.suse.cz> <1383864864.23882.33.camel@chiang>
+	 <20131107231445.GG2054@quack.suse.cz> <1383866807.23882.41.camel@chiang>
+	 <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
+	 <1383981551.8994.27.camel@chiang>
+	 <CADQUmxULoLgXRyoPpJJMJLqJPsZ8M4oPP8ScGxWp+Np8-efq3g@mail.gmail.com>
+	 <1384070214.8994.47.camel@chiang> <20131112003018.GA30281@thunk.org>
+	 <20131112230335.GA10269@birch.djwong.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Nov 2013, Sameer Nanda wrote:
-
-> The selection of the process to be killed happens in two spots:
-> first in select_bad_process and then a further refinement by
-> looking for child processes in oom_kill_process. Since this is
-> a two step process, it is possible that the process selected by
-> select_bad_process may get a SIGKILL just before oom_kill_process
-> executes. If this were to happen, __unhash_process deletes this
-> process from the thread_group list. This results in oom_kill_process
-> getting stuck in an infinite loop when traversing the thread_group
-> list of the selected process.
+On Tue, 2013-11-12 at 15:03 -0800, Darrick J. Wong wrote:
+> On Mon, Nov 11, 2013 at 07:30:18PM -0500, Theodore Ts'o wrote:
+> > On Sun, Nov 10, 2013 at 02:56:54AM -0500, David Turner wrote:
+> > > b. Use Andreas's encoding, which is incompatible with pre-1970 files
+> > > written on 64-bit systems.
+> > >
+> > > I don't care about currently-existing post-2038 files, because I believe
+> > > that nobody has a valid reason to have such files.  However, I do
+> > > believe that pre-1970 files are probably important to someone.
+> > > 
+> > > Despite this, I prefer option (b), because I think the simplicity is
+> > > valuable, and because I hate to give up date ranges (even ones that I
+> > > think we'll "never" need). Option (b) is not actually lossy, because we
+> > > could correct pre-1970 files with e2fsck; under Andreas's encoding,
+> > > their dates would be in the far future (and thus cannot be legitimate).
+> > > 
+> > > Would a patch that does (b) be accepted?  I would accompany it with a
+> > > patch to e2fsck (which I assume would also go to the ext4 developers
+> > > mailing list?).
+> > 
+> > I agree, I think this is the best way to go.  I'm going to drop your
+> > earlier patch, and wait for an updated patch from you.  It may miss
+> > this merge window, but as Andreas has pointed out, we still have a few
+> > years to get this right.  :-)
 > 
-> Fix this race by adding a pid_alive check for the selected process
-> with tasklist_lock held in oom_kill_process.
+> Just to be clear... we're going with Andreas' fix, wherein
 > 
-> Change-Id: I62f9652a780863467a8174e18ea5e19bbcd78c31
-
-Is this needed?
-
-> Signed-off-by: Sameer Nanda <snanda@chromium.org>
-> ---
->  mm/oom_kill.c | 42 +++++++++++++++++++++++++++++-------------
->  1 file changed, 29 insertions(+), 13 deletions(-)
+> time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK) << 32;
 > 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 6738c47..5108c2b 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -412,31 +412,40 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->  	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
->  					      DEFAULT_RATELIMIT_BURST);
->  
-> +	if (__ratelimit(&oom_rs))
-> +		dump_header(p, gfp_mask, order, memcg, nodemask);
-> +
-> +	task_lock(p);
-> +	pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
-> +		message, task_pid_nr(p), p->comm, points);
-> +	task_unlock(p);
-> +
-> +	/*
-> +	 * while_each_thread is currently not RCU safe. Lets hold the
-> +	 * tasklist_lock across all invocations of while_each_thread (including
-> +	 * the one in find_lock_task_mm) in this function.
-> +	 */
-> +	read_lock(&tasklist_lock);
-> +
->  	/*
->  	 * If the task is already exiting, don't alarm the sysadmin or kill
->  	 * its children or threads, just set TIF_MEMDIE so it can die quickly
->  	 */
-> -	if (p->flags & PF_EXITING) {
-> +	if (p->flags & PF_EXITING || !pid_alive(p)) {
-> +		pr_info("%s: Not killing process %d, just setting TIF_MEMDIE\n",
-> +			message, task_pid_nr(p));
+> becomes:
+> 
+> time->tv_sec += (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK) << 32;
+> 
+> "or" becomes "plus"?  So I can update fuse2fs.
 
-That makes no sense in the kernel log to have
+Yes, but with a kernel-version-dependent change, which is something like
+this:
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
+		time->tv_sec += (u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK) << 32;
+#else
+		u64 extra_bits = le32_to_cpu(extra) & EXT4_EPOCH_MASK;
+		if (extra_bits == 3)
+			extra_bits = 0;
+		time->tv_sec += extra_bits << 32;
+#endif
 
-	Out of Memory: Kill process 1234 (comm) score 50 or sacrifice child
-	Out of Memory: Not killing process 1234, just setting TIF_MEMDIE
+> Also, can someone proofread [1] and make sure it's correct?
 
-Those are contradictory statements (and will actually mess with kernel log 
-parsing at Google) and nobody other than kernel developers are going to 
-know what TIF_MEMDIE is.
+It's not quite right.  I've requested an account so that I can correct
+it.
 
->  		set_tsk_thread_flag(p, TIF_MEMDIE);
->  		put_task_struct(p);
-> +		read_unlock(&tasklist_lock);
->  		return;
->  	}
->  
-> -	if (__ratelimit(&oom_rs))
-> -		dump_header(p, gfp_mask, order, memcg, nodemask);
-> -
-> -	task_lock(p);
-> -	pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
-> -		message, task_pid_nr(p), p->comm, points);
-> -	task_unlock(p);
-> -
->  	/*
->  	 * If any of p's children has a different mm and is eligible for kill,
->  	 * the one with the highest oom_badness() score is sacrificed for its
->  	 * parent.  This attempts to lose the minimal amount of work done while
->  	 * still freeing memory.
->  	 */
-> -	read_lock(&tasklist_lock);
->  	do {
->  		list_for_each_entry(child, &t->children, sibling) {
->  			unsigned int child_points;
-> @@ -456,12 +465,17 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->  			}
->  		}
->  	} while_each_thread(p, t);
-> -	read_unlock(&tasklist_lock);
->  
-> -	rcu_read_lock();
->  	p = find_lock_task_mm(victim);
-> +
-> +	/*
-> +	 * Since while_each_thread is currently not RCU safe, this unlock of
-> +	 * tasklist_lock may need to be moved further down if any additional
-> +	 * while_each_thread loops get added to this function.
-> +	 */
-
-This comment should be moved to sched.h to indicate how 
-while_each_thread() needs to be handled with respect to tasklist_lock, 
-it's not specific to the oom killer.
-
-> +	read_unlock(&tasklist_lock);
-> +
->  	if (!p) {
-> -		rcu_read_unlock();
->  		put_task_struct(victim);
->  		return;
->  	} else if (victim != p) {
-> @@ -478,6 +492,8 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->  		K(get_mm_counter(victim->mm, MM_FILEPAGES)));
->  	task_unlock(victim);
->  
-> +	rcu_read_lock();
-> +
->  	/*
->  	 * Kill all user processes sharing victim->mm in other thread groups, if
->  	 * any.  They don't get access to memory reserves, though, to avoid
-
-Please move this rcu_read_lock() to be immediatley before the 
-for_each_process() instead of before the comment.
