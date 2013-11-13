@@ -1,30 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759568Ab3KMPdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 10:33:45 -0500
-Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.100]:22999
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759482Ab3KMPdl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 10:33:41 -0500
-Content-Type: text/plain; charset=US-ASCII
+	id S1759373Ab3KMPgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 10:36:07 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47352 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753522Ab3KMPgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 10:36:02 -0500
+Message-ID: <52839C31.7070709@ti.com>
+Date: Wed, 13 Nov 2013 21:05:13 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: I need Your urgent assistance,contact me for more details.
-To: Recipients <chevrolet0025@motorsaward.onmicrosoft.com>
-From: <chevrolet0025@motorsaward.onmicrosoft.com>
-Date: Wed, 13 Nov 2013 20:47:58 +0530
-Reply-To: <vlohong1252@qq.com>
-Message-ID: <d43663f8-3e30-4dd7-859a-f38f60261310@HKXPR02MB005.apcprd02.prod.outlook.com>
-X-Originating-IP: [180.215.200.232]
-X-ClientProxiedBy: DM2PR08CA010.namprd08.prod.outlook.com (10.141.52.168) To
- HKXPR02MB005.apcprd02.prod.outlook.com (10.255.138.35)
-X-Forefront-PRVS: 0029F17A3F
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(77982001)(59766001)(77096001)(56816003)(76576001)(87266001)(76796001)(223583001)(76786001)(53256004)(79102001)(74366001)(47776003)(73186002)(73894003)(63696002)(56776001)(54316002)(76176001)(65816001)(47736001)(23756003)(50986001)(47976001)(80022001)(66066001)(621065002)(54356001)(42186004)(4396001)(74706001)(49866001)(74876001)(43066001)(50466002)(74316001)(51856001)(74502001)(47446002)(85306002)(87976001)(46102001)(218543002)(83072001)(83322001)(74662001)(33646001)(64872004)(31686002)(76482001)(80976001)(81542001)(81686001)(69226001)(81342001)(81816001)(62346009)(214293002);DIR:OUT;SFP:1501;SCL:5;SRVR:HKXPR02MB005;H:[180.215.200.232];CLIP:180.215.200.232;FPR:;RD:InfoNoRecords;A:0;MX:3;LANG:en;
-X-OriginatorOrg: motorsaward.onmicrosoft.com
+To: Nishanth Menon <nm@ti.com>
+CC: Rajendra Nayak <rnayak@ti.com>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linus.walleij@linaro.org>, <linux@arm.linux.org.uk>,
+        <tony@atomide.com>, <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
+        <santosh.shilimkar@ti.com>, <galak@codeaurora.org>
+Subject: Re: [PATCH V3 7/7] ARM: DRA: Enable Crossbar IP support for DRA7XX
+References: <1383657257-3458-1-git-send-email-r.sricharan@ti.com> <1383657257-3458-8-git-send-email-r.sricharan@ti.com> <5281BF70.4050708@ti.com> <5281C0E9.8020104@ti.com> <52839B9C.8090707@ti.com>
+In-Reply-To: <52839B9C.8090707@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 13 November 2013 09:02 PM, Nishanth Menon wrote:
+> On 11/11/2013 11:47 PM, Sricharan R wrote:
+>> Hi Rajendra,
+>>
+>> On Tuesday 12 November 2013 11:11 AM, Rajendra Nayak wrote:
+>>> On Tuesday 05 November 2013 06:44 PM, Sricharan R wrote:
+>>>> Enable the crossbar IP support for DRA7xx soc.
+>>>>
+>>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>> Cc: Rajendra Nayak <rnayak@ti.com>
+>>>> Cc: Tony Lindgren <tony@atomide.com>
+>>>> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+>>>> ---
+>>>>  arch/arm/mach-omap2/Kconfig        |    1 +
+>>>>  arch/arm/mach-omap2/omap4-common.c |    4 ++++
+>>>>  2 files changed, 5 insertions(+)
+>>>>
+>>>> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+>>>> index b5fb5f7..2086c65 100644
+>>>> --- a/arch/arm/mach-omap2/Kconfig
+>>>> +++ b/arch/arm/mach-omap2/Kconfig
+>>>> @@ -141,6 +141,7 @@ config SOC_DRA7XX
+>>>>  	select ARM_GIC
+>>>>  	select HAVE_SMP
+>>>>  	select COMMON_CLK
+>>>> +	select IRQ_CROSSBAR
+>>>>  
+>>>>  comment "OMAP Core Type"
+>>>>  	depends on ARCH_OMAP2
+>>>> diff --git a/arch/arm/mach-omap2/omap4-common.c b/arch/arm/mach-omap2/omap4-common.c
+>>>> index 5791143..274cbfa 100644
+>>>> --- a/arch/arm/mach-omap2/omap4-common.c
+>>>> +++ b/arch/arm/mach-omap2/omap4-common.c
+>>>> @@ -22,6 +22,7 @@
+>>>>  #include <linux/of_platform.h>
+>>>>  #include <linux/export.h>
+>>>>  #include <linux/irqchip/arm-gic.h>
+>>>> +#include <linux/irqchip/irq-crossbar.h>
+>>>>  #include <linux/of_address.h>
+>>>>  #include <linux/reboot.h>
+>>>>  
+>>>> @@ -282,9 +283,12 @@ void __init omap_gic_of_init(void)
+>>>>  
+>>>>  skip_errata_init:
+>>>>  	omap_wakeupgen_init();
+>>>> +	if (soc_is_dra7xx())
+>>>> +		crossbar_init();
+>>> Its good if this is called irqcrossbar_init() to avoid confusion
+>>> with the dma crossbar which also exists in dra7 devices.
+>>>
+>>  Ya makes sense. Will change this.
+> Also why not call it without explicit soc check? there is already
+> parse for of_find_matching_node(NULL, crossbar_match); to see if we
+> have a match in the crossbar_init. OR call it from dra7 init without
+> SoC check dependency?
+>
+> Rationale - with more TI SoCs trending towards crossbar, we dont need
+> to keep adding to the soc_is checks, further, we intend to remove
+> soc_is checks in it's entirety..
+>
+>
+Oh yes. I missed this. Thanks for pointing. Will correct.
+
+Regards,
+ Sricharan
