@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab3KMXBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 18:01:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36351 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751715Ab3KMXB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 18:01:28 -0500
-Date: Wed, 13 Nov 2013 18:00:56 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Kexec Mailing List <kexec@lists.infradead.org>,
-        Baoquan He <bhe@redhat.com>, WANG Chao <chaowang@redhat.com>,
-        Dave Young <dyoung@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: /proc/vmcore mmap() failure issue
-Message-ID: <20131113230056.GA19663@redhat.com>
-References: <20131113204130.GD7613@redhat.com>
- <20131113210432.GE7613@redhat.com>
- <5283EBCD.6070305@zytor.com>
- <20131113224104.GF7613@redhat.com>
- <528400DD.3040003@zytor.com>
+	id S1751793Ab3KMXFs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 18:05:48 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53673 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750992Ab3KMXFi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 18:05:38 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 3/3] ACPI / PCI root: Clear driver_data before failing enumeration
+Date: Thu, 14 Nov 2013 00:17:49 +0100
+Message-ID: <6884617.gWRuZsFG3E@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <2434673.zhjYZOTQ4A@vostro.rjw.lan>
+References: <2434673.zhjYZOTQ4A@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528400DD.3040003@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 02:44:45PM -0800, H. Peter Anvin wrote:
-> On 11/13/2013 02:41 PM, Vivek Goyal wrote:
-> > 
-> > Hi Peter,
-> > 
-> > I noticed we seem to be trimming away partial pages in memblock.
-> > 
-> > memblock_x86_fill() {
-> > 	/* throw away partial pages */
-> >         memblock_trim_memory(PAGE_SIZE);
-> > }
-> > 
-> > But not in e820 hence they show up in /proc/iomem.
-> > 
-> 
-> Why does /proc/iomem matter?
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Kexec-tools parse /proc/iomem and prepare PT_LOAD elf headers for all
-the RAM regions which need to be dumped out, including the partial page ones.
-Second kernel parses these headers and exports to user space in /proc/vmcore.
-Makedumpfile tries to mmap() vmcore then tries to map the partial page pfn
-too and we run into issues.
+If a PCI host bridge cannot be enumerated due to an error in
+pci_acpi_scan_root(), its ACPI device object's driver_data field
+has to be cleared by acpi_pci_root_add() before freeing the
+object pointed to by that field, or some later acpi_pci_find_root()
+checks that should fail may succeed and cause quite a bit of
+confusion to ensue.
 
-> 
-> > How about something along the lines as below patch. This fixes my
-> > /proc/vmcore mmap() issue.
-> 
-> I'm not sure if what you're seeing is something that is better handled
-> in userspace.
+Fix acpi_pci_root_add() to clear device->driver_data before
+returning an error code as appropriate.
 
-I think it should be easy to truncate ELF headers in kexec-tools too when
-we are preparing elf headers. I am not sure if it is right thing to do or
-not. If some entry is showing up in /proc/iomem as RAM, then kexec-tools
-need to believe that it is a possibility that kernel is using that pfn and
-that pfn needs to be dumped out in vmcore. IMHO, kernel should fix this
-issue.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/pci_root.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Secondly, I am writing in-kernel kexec support too and I prepare ELF
-headers there too. And I am facing the same problem there too. So if
-we truncate partial pages in e820 both kexec-tools and in kernel kexec
-implementation don't have to do anything.
+Index: linux-pm/drivers/acpi/pci_root.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/pci_root.c
++++ linux-pm/drivers/acpi/pci_root.c
+@@ -525,6 +525,7 @@ static int acpi_pci_root_add(struct acpi
+ 		dev_err(&device->dev,
+ 			"Bus %04x:%02x not present in PCI namespace\n",
+ 			root->segment, (unsigned int)root->secondary.start);
++		device->driver_data = NULL;
+ 		result = -ENODEV;
+ 		goto end;
+ 	}
 
-Thanks
-Vivek
