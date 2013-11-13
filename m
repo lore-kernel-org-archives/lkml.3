@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751224Ab3KMUmH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 15:42:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56206 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030Ab3KMUl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 15:41:56 -0500
-Date: Wed, 13 Nov 2013 15:41:30 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: Kexec Mailing List <kexec@lists.infradead.org>,
-        Baoquan He <bhe@redhat.com>, WANG Chao <chaowang@redhat.com>,
-        Dave Young <dyoung@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: /proc/vmcore mmap() failure issue
-Message-ID: <20131113204130.GD7613@redhat.com>
+	id S1751456Ab3KMUrW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 15:47:22 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:39756 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab3KMUrO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 15:47:14 -0500
+Date: Wed, 13 Nov 2013 21:47:09 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20131113204709.GA32550@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,122 +23,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hatayama,
+Linus,
 
-We are facing some /proc/vmcore mmap() failure issues and then makdumpfile
-exits without saving dump and system reboots.
+Please pull the latest x86-urgent-for-linus git tree from:
 
-I tried latest makedumpfile (devel branch) with 3.12 kernel.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-I think this issue happens only on some machines. And it looks like it
-happens when end of system RAM chunk in first kernel is not page aligned. For
-example, I have one machine where I noticed it and this is how system
-RAM looks like.
+   # HEAD: 11f918d3e2d3861b6931e97b3aa778e4984935aa x86/microcode/amd: Tone down printk(), don't treat a missing firmware file as an error
 
-00100000-dafa57ff : System RAM
-  01000000-015892fa : Kernel code
-  015892fb-0195c9ff : Kernel data
-  01ae6000-01d31fff : Kernel bss
-  24000000-33ffffff : Crash kernel
-dafa5800-dbffffff : reserved
+Two fixes.
 
-Notice that dafa57ff does not end at page boundary and next reserved
-range does not start at page boundary. I think that next reserved
-range is referenced through some ACPI data. More on this later.
+ Thanks,
 
-So we put some printk() messages to get more info. In a nut shell,
-remap_pfn_range() fails when we try to map the last section of system
-RAM not ending on page boundary.
+	Ingo
 
-remap_pfn_range()
-   track_pfn_remap() {
-        /*
-         * For anything smaller than the vma size we set prot based on the
-         * lookup.
-         */ 
-        flags = lookup_memtype(paddr);
-        
-        /* Check memtype for the remaining pages */
-        while (size > PAGE_SIZE) {
-                size -= PAGE_SIZE;
-                paddr += PAGE_SIZE;
-                if (flags != lookup_memtype(paddr))
-                        return -EINVAL; <---------------- Failure.
-        }
-	
-   }
-     
+------------------>
+Jiri Slaby (1):
+      x86/dumpstack: Fix printk_address for direct addresses
 
-So we pass in a range to track_pfn_remap. Say pfn=0xdad62 size=0x244000.
-Now we call lookup_memtype() on every page in the range and make sure
-they all are same, otherwise we fail. Guess what, all all same except
-last page (which does not end at page boundary).
+Thomas Renninger (1):
+      x86/microcode/amd: Tone down printk(), don't treat a missing firmware file as an error
 
-I dived deeper in to lookup_memtype() and noticed that all regular
-ranges are not registered anywhere and their flags are _PAGE_CACHE_UC_MINUS.
-But last unaligned page/range, is registered in memtype rb tree and
-has attribute, _PAGE_CACHE_WB.
 
-Then I hooked into reserve_memtype() to figure out who is registering
-page 0xdafa5000 and it is acpi_init() which does it.
+ arch/x86/include/asm/kdebug.h   |  2 +-
+ arch/x86/kernel/dumpstack.c     | 11 ++++++++---
+ arch/x86/kernel/microcode_amd.c |  2 +-
+ arch/x86/kernel/process_64.c    |  2 +-
+ arch/x86/mm/fault.c             |  2 +-
+ arch/x86/platform/uv/uv_nmi.c   |  2 +-
+ 6 files changed, 13 insertions(+), 8 deletions(-)
 
-[    0.721655] Hardware name: <edited>
-[    0.730590]  ffff8800340f3830 ffff8800340f37c0 ffffffff81575509
-00000000dafa5000
-[    0.738010]  ffff8800340f3800 ffffffff810566cc 00000000000dafa5
-00000000dafa5000
-[    0.745428]  00000000dafa6000 00000000dafa5000 0000000000000000
-0000000000001000
-[    0.752845] Call Trace:
-[    0.755288]  [<ffffffff81575509>] dump_stack+0x45/0x56
-[    0.760414]  [<ffffffff810566cc>] reserve_memtype+0x31c/0x3f0
-[    0.766144]  [<ffffffff810537ef>] __ioremap_caller+0x12f/0x360
-[    0.771963]  [<ffffffff8130ad56>] ? acpi_os_release_object+0xe/0x12
-[    0.778217]  [<ffffffff815686ba>] ? acpi_os_map_memory+0xf6/0x14e
-[    0.784295]  [<ffffffff81053a54>] ioremap_cache+0x14/0x20
-[    0.789679]  [<ffffffff815686ba>] acpi_os_map_memory+0xf6/0x14e
-[    0.795582]  [<ffffffff81322ac9>]
-acpi_ex_system_memory_space_handler+0xdd/0x1ca
-[    0.802961]  [<ffffffff8131ca48>]
-acpi_ev_address_space_dispatch+0x1b0/0x208
-[    0.809993]  [<ffffffff8131fd49>] acpi_ex_access_region+0x20e/0x2a2
-[    0.816244]  [<ffffffff81149464>] ? __alloc_pages_nodemask+0x134/0x300
-[    0.822754]  [<ffffffff813200e4>] acpi_ex_field_datum_io+0xf6/0x171
-[    0.829004]  [<ffffffff81320301>] acpi_ex_extract_from_field+0xd7/0x20a
-[    0.835602]  [<ffffffff81331d80>] ?
-acpi_ut_create_internal_object_dbg+0x23/0x8a
-[    0.842981]  [<ffffffff8131f8e7>]
-acpi_ex_read_data_from_field+0x10f/0x14b
-[    0.849838]  [<ffffffff81322e16>]
-acpi_ex_resolve_node_to_value+0x18e/0x21c
-[    0.856780]  [<ffffffff813230a6>] acpi_ex_resolve_to_value+0x202/0x209
-[    0.863291]  [<ffffffff81319486>] acpi_ds_evaluate_name_path+0x7b/0xf5
-[    0.869803]  [<ffffffff81319834>] acpi_ds_exec_end_op+0x98/0x3e8
-[    0.875793]  [<ffffffff8132aca4>] acpi_ps_parse_loop+0x514/0x560
-[    0.881784]  [<ffffffff8132b738>] acpi_ps_parse_aml+0x98/0x28c
-[    0.887601]  [<ffffffff8132bf8d>] acpi_ps_execute_method+0x1c1/0x26c
-[    0.893939]  [<ffffffff813269c5>] acpi_ns_evaluate+0x1c1/0x258
-[    0.899755]  [<ffffffff8131cb98>] acpi_ev_execute_reg_method+0xca/0x112
-[    0.906353]  [<ffffffff8131cd6e>] acpi_ev_reg_run+0x48/0x52
-[    0.911910]  [<ffffffff81328fad>] acpi_ns_walk_namespace+0xc8/0x17f
-[    0.918160]  [<ffffffff8131cd26>] ? acpi_ev_detach_region+0x146/0x146
-[    0.924585]  [<ffffffff8131cdbc>] acpi_ev_execute_reg_methods+0x44/0xf7
-[    0.931184]  [<ffffffff819b2324>] ? acpi_sleep_proc_init+0x2a/0x2a
-[    0.937349]  [<ffffffff8130ac66>] ? acpi_os_wait_semaphore+0x43/0x57
-[    0.943686]  [<ffffffff81331a3f>] ? acpi_ut_acquire_mutex+0x48/0x88
-[    0.949938]  [<ffffffff8131ceb8>]
-acpi_ev_initialize_op_regions+0x49/0x71
-[    0.956709]  [<ffffffff819b2324>] ? acpi_sleep_proc_init+0x2a/0x2a
-[    0.962873]  [<ffffffff81333310>] acpi_initialize_objects+0x23/0x4f
-[    0.969125]  [<ffffffff819b23b4>] acpi_init+0x90/0x268
-
-So basically, this split page seems to be a problem. Some other code
-thinks that it has access to full page and goes ahead and registers
-that with PAT rb tree and this causes problems in mmap() code.
-
-I suspect we might have to go back to idea of copying first and last
-non page aligned ranges in new kernel's memory and read it from there
-to solve this issue. Do you have other ideas?
-
-Thanks
-Vivek
+diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
+index 2c37aad..32ce713 100644
+--- a/arch/x86/include/asm/kdebug.h
++++ b/arch/x86/include/asm/kdebug.h
+@@ -21,7 +21,7 @@ enum die_val {
+ 	DIE_NMIUNKNOWN,
+ };
+ 
+-extern void printk_address(unsigned long address, int reliable);
++extern void printk_address(unsigned long address);
+ extern void die(const char *, struct pt_regs *,long);
+ extern int __must_check __die(const char *, struct pt_regs *, long);
+ extern void show_trace(struct task_struct *t, struct pt_regs *regs,
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index deb6421..d9c12d3 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -25,12 +25,17 @@ unsigned int code_bytes = 64;
+ int kstack_depth_to_print = 3 * STACKSLOTS_PER_LINE;
+ static int die_counter;
+ 
+-void printk_address(unsigned long address, int reliable)
++static void printk_stack_address(unsigned long address, int reliable)
+ {
+ 	pr_cont(" [<%p>] %s%pB\n",
+ 		(void *)address, reliable ? "" : "? ", (void *)address);
+ }
+ 
++void printk_address(unsigned long address)
++{
++	pr_cont(" [<%p>] %pS\n", (void *)address, (void *)address);
++}
++
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ static void
+ print_ftrace_graph_addr(unsigned long addr, void *data,
+@@ -151,7 +156,7 @@ static void print_trace_address(void *data, unsigned long addr, int reliable)
+ {
+ 	touch_nmi_watchdog();
+ 	printk(data);
+-	printk_address(addr, reliable);
++	printk_stack_address(addr, reliable);
+ }
+ 
+ static const struct stacktrace_ops print_trace_ops = {
+@@ -281,7 +286,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
+ #else
+ 	/* Executive summary in case the oops scrolled away */
+ 	printk(KERN_ALERT "RIP ");
+-	printk_address(regs->ip, 1);
++	printk_address(regs->ip);
+ 	printk(" RSP <%016lx>\n", regs->sp);
+ #endif
+ 	return 0;
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index af99f71..c3d4cc9 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -431,7 +431,7 @@ static enum ucode_state request_microcode_amd(int cpu, struct device *device,
+ 		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
+ 
+ 	if (request_firmware(&fw, (const char *)fw_name, device)) {
+-		pr_err("failed to load file %s\n", fw_name);
++		pr_debug("failed to load file %s\n", fw_name);
+ 		goto out;
+ 	}
+ 
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 45ab4d6..176ad94 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -63,7 +63,7 @@ void __show_regs(struct pt_regs *regs, int all)
+ 	unsigned int ds, cs, es;
+ 
+ 	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->ip);
+-	printk_address(regs->ip, 1);
++	printk_address(regs->ip);
+ 	printk(KERN_DEFAULT "RSP: %04lx:%016lx  EFLAGS: %08lx\n", regs->ss,
+ 			regs->sp, regs->flags);
+ 	printk(KERN_DEFAULT "RAX: %016lx RBX: %016lx RCX: %016lx\n",
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 7a517bb..e7e1cac 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -596,7 +596,7 @@ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
+ 
+ 	printk(KERN_CONT " at %p\n", (void *) address);
+ 	printk(KERN_ALERT "IP:");
+-	printk_address(regs->ip, 1);
++	printk_address(regs->ip);
+ 
+ 	dump_pagetable(address);
+ }
+diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
+index 2e863ad..8eeccba 100644
+--- a/arch/x86/platform/uv/uv_nmi.c
++++ b/arch/x86/platform/uv/uv_nmi.c
+@@ -399,7 +399,7 @@ static void uv_nmi_dump_cpu_ip(int cpu, struct pt_regs *regs)
+ 	printk(KERN_DEFAULT "UV: %4d %6d %-32.32s ",
+ 		cpu, current->pid, current->comm);
+ 
+-	printk_address(regs->ip, 1);
++	printk_address(regs->ip);
+ }
+ 
+ /* Dump this cpu's state */
