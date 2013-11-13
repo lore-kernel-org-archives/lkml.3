@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab3KMDzY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 22:55:24 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:33346 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757893Ab3KMDzO (ORCPT
+	id S1758126Ab3KMDzi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 22:55:38 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:64334 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757987Ab3KMDzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 22:55:14 -0500
+	Tue, 12 Nov 2013 22:55:17 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 5/5] OF: Introduce utility helper functions
+Subject: Re: [PATCH v3 1/3] OF: Introduce Device Tree resolve support.
 To: Pantelis Antoniou <panto@antoniou-consulting.com>
 Cc: Rob Herring <robherring2@gmail.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
@@ -23,262 +23,418 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Sascha Hauer <s.hauer@pengutronix.de>,
         Michael Bohan <mbohan@codeaurora.org>,
         Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <89491720-464B-47EC-A888-9CDE29B035F5@antoniou-consulting.com>
-References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com> <1383673816-29293-6-git-send-email-panto@antoniou-consulting.com> <20131111163743.D136CC42330@trevor.secretlab.ca> <89491720-464B-47EC-A888-9CDE29B035F5@antoniou-consulting.com>
-Date: Wed, 13 Nov 2013 10:34:59 +0900
-Message-Id: <20131113013459.D3886C40F49@trevor.secretlab.ca>
+        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <F60B2232-94D0-41C6-8D79-5A28FA282D4E@antoniou-consulting.com>
+References: <1383923170-24914-1-git-send-email-panto@antoniou-consulting.com> <1383923170-24914-2-git-send-email-panto@antoniou-consulting.com> <20131111181739.06BC5C42348@trevor.secretlab.ca> <F60B2232-94D0-41C6-8D79-5A28FA282D4E@antoniou-consulting.com>
+Date: Wed, 13 Nov 2013 10:39:36 +0900
+Message-Id: <20131113013936.E591FC419FB@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Nov 2013 11:39:08 +0100, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> Hi Grant,
+On Tue, 12 Nov 2013 09:28:42 +0100, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
 > 
-> On Nov 11, 2013, at 5:37 PM, Grant Likely wrote:
+> On Nov 11, 2013, at 7:17 PM, Grant Likely wrote:
 > 
-> > On Tue,  5 Nov 2013 19:50:16 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> >> Introduce helper functions for working with the live DT tree.
+> > On Fri,  8 Nov 2013 17:06:08 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+> >> Introduce support for dynamic device tree resolution.
+> >> Using it, it is possible to prepare a device tree that's
+> >> been loaded on runtime to be modified and inserted at the kernel
+> >> live tree.
 > >> 
-> >> __of_free_property() frees a dynamically created property
-> >> __of_free_tree() recursively frees a device node tree
-> >> __of_copy_property() copies a property dynamically
-> >> __of_create_empty_node() creates an empty node
-> >> __of_find_node_by_full_name() finds the node with the full name
-> >> and
-> >> of_multi_prop_cmp() performs a multi property compare but without
-> >> having to take locks.
+> >> Export of of_resolve by Guenter Roeck <groeck@juniper.net>
 > >> 
 > >> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> > 
-> > So, this all looks like private stuff, or stuff that belongs in
-> > drivers/of/base.c. Can you move stuff around. I've made more comments
-> > below.
-> > 
-> 
-> Placement is no big issue;
-> 
-> > g.
-> > 
-> 
-> [snip]
-> 
-> >> +	} else {
-> >> +		pr_warn("%s: node %p cannot be freed; memory is gone\n",
-> >> +				__func__, node);
-> >> +	}
-> >> +}
-> > 
-> > All of the above is potentially dangerous. There is no way to determine
-> > if anything still holds a reference to a node. The proper way to handle
-> > removal of properties is to have a release method when the last
-> > of_node_put is called.
-> > 
-> 
-> This is safe, and expected to be called only on a dynamically created tree,
-> that's what all the checks against OF_DYNAMIC guard against.
-> 
-> It is not ever meant to be called on an arbitrary tree, created by unflattening
-> a blob.
-
-I am talking about when being used on a dynamic tree. The problem is
-when a driver or other code holds a reference to a dynamic nodes, but
-doesn't release it correctly. The memory must not be freed until all of
-the references are relased. OF_DYNAMIC doesn't actually help in that
-case, and it is the reason for of_node_get()/of_node_put()
-
-> Perhaps we could have a switch to control whether an unflattened tree is 
-> created dynamically and then freeing/releasing will work.
-> 
-> kobject-ifcation will require it anyway, don't you agree? 
-
-Yes. Kobjectifcation will also take care of the release method.
-
-> 
+> >> ---
+> >> .../devicetree/dynamic-resolution-notes.txt        |  25 ++
+> >> drivers/of/Kconfig                                 |   9 +
+> >> drivers/of/Makefile                                |   1 +
+> >> drivers/of/resolver.c                              | 396 +++++++++++++++++++++
+> >> include/linux/of.h                                 |  17 +
+> >> 5 files changed, 448 insertions(+)
+> >> create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
+> >> create mode 100644 drivers/of/resolver.c
+> >> 
+> >> diff --git a/Documentation/devicetree/dynamic-resolution-notes.txt b/Documentation/devicetree/dynamic-resolution-notes.txt
+> >> new file mode 100644
+> >> index 0000000..0b396c4
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/dynamic-resolution-notes.txt
+> >> @@ -0,0 +1,25 @@
+> >> +Device Tree Dynamic Resolver Notes
+> >> +----------------------------------
 > >> +
-> >> +/**
-> >> + * __of_copy_property - Copy a property dynamically.
-> >> + * @prop:	Property to copy
-> >> + * @flags:	Allocation flags (typically pass GFP_KERNEL)
-> >> + *
-> >> + * Copy a property by dynamically allocating the memory of both the
-> >> + * property stucture and the property name & contents. The property's
-> >> + * flags have the OF_DYNAMIC bit set so that we can differentiate between
-> >> + * dynamically allocated properties and not.
-> >> + * Returns the newly allocated property or NULL on out of memory error.
-> >> + */
+> >> +This document describes the implementation of the in-kernel
+> >> +Device Tree resolver, residing in drivers/of/resolver.c and is a
+> >> +companion document to Documentation/devicetree/dt-object-internal.txt[1]
 > > 
-> > What do you intend the use-case to be for this function? Will the
-> > duplicated property be immediately modified? If so, what happens if the
-> > property needs to be grown in size?
+> > dt-object-internal.txt is in the DTC patch, not the kernel tree.
 > > 
 > 
-> No, the property will no be modified. If it needs to grow it will be moved to 
-> deadprops (since we don't track refs to props) and a new one will be allocated.
+> Yes, good catch. I will fix the reference.
 > 
-> >> +struct property *__of_copy_property(const struct property *prop, gfp_t flags)
-> >> +{
-> >> +	struct property *propn;
-> >> +
-> >> +	propn = kzalloc(sizeof(*prop), flags);
-> >> +	if (propn == NULL)
-> >> +		return NULL;
-> >> +
-> >> +	propn->name = kstrdup(prop->name, flags);
-> >> +	if (propn->name == NULL)
-> >> +		goto err_fail_name;
-> >> +
-> >> +	if (prop->length > 0) {
-> >> +		propn->value = kmalloc(prop->length, flags);
-> >> +		if (propn->value == NULL)
-> >> +			goto err_fail_value;
-> >> +		memcpy(propn->value, prop->value, prop->length);
-> >> +		propn->length = prop->length;
-> >> +	}
-> >> +
-> >> +	/* mark the property as dynamic */
-> >> +	of_property_set_flag(propn, OF_DYNAMIC);
-> >> +
-> >> +	return propn;
-> >> +
-> >> +err_fail_value:
-> >> +	kfree(propn->name);
-> >> +err_fail_name:
-> >> +	kfree(propn);
-> >> +	return NULL;
-> >> +}
-> >> +
-> >> +/**
-> >> + * __of_create_empty_node - Create an empty device node dynamically.
-> >> + * @name:	Name of the new device node
-> >> + * @type:	Type of the new device node
-> >> + * @full_name:	Full name of the new device node
-> >> + * @phandle:	Phandle of the new device node
-> >> + * @flags:	Allocation flags (typically pass GFP_KERNEL)
-> >> + *
-> >> + * Create an empty device tree node, suitable for further modification.
-> >> + * The node data are dynamically allocated and all the node flags
-> >> + * have the OF_DYNAMIC & OF_DETACHED bits set.
-> >> + * Returns the newly allocated node or NULL on out of memory error.
-> >> + */
-> >> +struct device_node *__of_create_empty_node(
-> >> +		const char *name, const char *type, const char *full_name,
-> >> +		phandle phandle, gfp_t flags)
-> > 
-> > I would like to see a user of this function in the core DT paths that
-> > allocate nodes. It will make for less chance of breakage if the fdt and
-> > pdt paths change something, but this function isn't updated.
-> > 
+> BTW, what about moving/copying some of the DTC docs in the kernel doc
+> directory? The dtc Documentation directory is missing from the kernel tree.
 > 
-> Hmm, where do you think it can be used? Perhaps the unflatten parts?
-
-Yes. In unflattening the tree, fdt.c and in extracting the trea from
-real OFW (pdt.c).
-
-> 
-> > g.
-> > 
-> >> +{
-> >> +	struct device_node *node;
-> >> +
-> >> +	node = kzalloc(sizeof(*node), flags);
-> >> +	if (node == NULL)
-> >> +		return NULL;
-> >> +
-> >> +	node->name = kstrdup(name, flags);
-> >> +	if (node->name == NULL)
-> >> +		goto err_return;
-> >> +
-> >> +	node->type = kstrdup(type, flags);
-> >> +	if (node->type == NULL)
-> >> +		goto err_return;
-> >> +
-> >> +	node->full_name = kstrdup(full_name, flags);
-> >> +	if (node->type == NULL)
-> >> +		goto err_return;
-> > 
-> > Again, who do you expect the user of this function to be? If it is part
-> > of unflattening an overlay tree, is there a reason that the passed in
-> > names cannot be used directly instead of kmallocing them?
-> > 
-> 
-> I want to be able to get rid of the blob eventually; I don't need to keep
-> dragging it around.
-
-Why? It really doesn't hurt and it means data does not need to be
-copied.
-
 > 
 > >> +
-> >> +	node->phandle = phandle;
-> >> +	kref_init(&node->kref);
-> >> +	of_node_set_flag(node, OF_DYNAMIC);
-> >> +	of_node_set_flag(node, OF_DETACHED);
+> >> +How the resolver works
+> >> +----------------------
 > >> +
-> >> +	return node;
-> >> +
-> >> +err_return:
-> >> +	__of_free_tree(node);
-> >> +	return NULL;
-> >> +}
-> >> +
-> >> +/**
-> >> + * __of_find_node_by_full_name - Find a node with the full name recursively
-> >> + * @node:	Root of the tree to perform the search
-> >> + * @full_name:	Full name of the node to find.
-> >> + *
-> >> + * Find a node with the give full name by recursively following any of 
-> >> + * the child node links.
-> >> + * Returns the matching node, or NULL if not found.
-> >> + * Note that the devtree lock is not taken, so this function is only
-> >> + * safe to call on either detached trees, or when devtree lock is already
-> >> + * taken.
-> >> + */
-> >> +struct device_node *__of_find_node_by_full_name(struct device_node *node,
-> >> +		const char *full_name)
+> >> +The resolver is given as an input an arbitrary tree compiled with the
+> >> +proper dtc option and having a /plugin/ tag. This generates the
+> >> +appropriate __fixups__ & __local_fixups__ nodes as described in [1].
 > > 
-> > Sounds like something that should be in drivers/of/base.c
+> > Missing footnote reference line for [1]?
 > > 
 > 
 > Yes.
 > 
-> >> +{
-> >> +	struct device_node *child, *found;
 > >> +
-> >> +	if (node == NULL)
-> >> +		return NULL;
+> >> +In sequence the resolver works by the following steps:
 > >> +
-> >> +	/* check */
-> >> +	if (of_node_cmp(node->full_name, full_name) == 0)
-> >> +		return node;
-> >> +
-> >> +	__for_each_child_of_node(node, child) {
-> >> +		found = __of_find_node_by_full_name(child, full_name);
-> >> +		if (found != NULL)
-> >> +			return found;
-> >> +	}
+> >> +1. Get the maximum device tree phandle value from the live tree + 1.
 > > 
-> > I'm not a huge fan of recursive calls. Why doesn't a slightly modified
-> > of_fund_node_by_name() work here?
-> > 
-> > I agree that of_find_node_by_name is not particularly elegant and it
-> > would be good to have something more efficient, but it works and
-> > following the same method would be consistent.
+> > Is there a (realistic) worry about leaking phandle number space from
+> > plugging/unplugging trees repeated addition/removal of overlays?
 > > 
 > 
-> of_find_node_by_name is not iterating on the passed tree and it's subnodes,
-> it is a global search starting from:
-> 
-> 	np = from ? from->allnext : of_allnodes;
-> 
-> This is just broken, since it depends on unflattening creating nodes in the
-> allnodes list in sequence. I.e. that child nodes are after the parent node.
-> This assumption breaks down when doing dynamic insertions of nodes.
-> A detached tree in not linked on of_allnodes anyway.
+> I think not. But doing it this way has the nice property of keeping all phandle
+> values the same each time you do a load-unload-load sequence. 
 
-It would be good to have a root-of-tree structure for both the core tree
-and the overlay trees so that a common iterator can be implemented.
+It will break if there are two overlays "leapfrogging" each other on
+loads/unloads. It may be a very outside corner case, but it is worth
+thinking about.
+
+> 
+> >> +2. Adjust all the local phandles of the tree to resolve by that amount.
+> >> +3. Using the __local__fixups__ node information adjust all local references
+> >> +   by the same amount.
+> >> +4. For each property in the __fixups__ node locate the node it references
+> >> +   in the live tree. This is the label used to tag the node.
+> >> +5. Retrieve the phandle of the target of the fixup.
+> >> +5. For each fixup in the property locate the node:property:offset location
+> >> +   and replace it with the phandle value.
+> >> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+> >> index 78cc760..2a00ae5 100644
+> >> --- a/drivers/of/Kconfig
+> >> +++ b/drivers/of/Kconfig
+> >> @@ -74,4 +74,13 @@ config OF_MTD
+> >> 	depends on MTD
+> >> 	def_bool y
+> >> 
+> >> +config OF_RESOLVE
+> >> +	bool "OF Dynamic resolution support"
+> >> +	depends on OF
+> >> +	select OF_DYNAMIC
+> >> +	select OF_DEVICE
+> >> +	help
+> >> +	  Enable OF dynamic resolution support. This allows you to
+> >> +	  load Device Tree object fragments are run time.
+> >> +
+> >> endmenu # OF
+> >> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+> >> index 9bc6d8c..93da457 100644
+> >> --- a/drivers/of/Makefile
+> >> +++ b/drivers/of/Makefile
+> >> @@ -9,3 +9,4 @@ obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
+> >> obj-$(CONFIG_OF_PCI)	+= of_pci.o
+> >> obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
+> >> obj-$(CONFIG_OF_MTD)	+= of_mtd.o
+> >> +obj-$(CONFIG_OF_RESOLVE)  += resolver.o
+> >> diff --git a/drivers/of/resolver.c b/drivers/of/resolver.c
+> >> new file mode 100644
+> >> index 0000000..dfbb51a
+> >> --- /dev/null
+> >> +++ b/drivers/of/resolver.c
+> >> @@ -0,0 +1,396 @@
+> >> +/*
+> >> + * Functions for dealing with DT resolution
+> >> + *
+> >> + * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
+> >> + * Copyright (C) 2012 Texas Instruments Inc.
+> >> + *
+> >> + * This program is free software; you can redistribute it and/or
+> >> + * modify it under the terms of the GNU General Public License
+> >> + * version 2 as published by the Free Software Foundation.
+> >> + */
+> >> +
+> >> +#include <linux/kernel.h>
+> >> +#include <linux/module.h>
+> >> +#include <linux/of.h>
+> >> +#include <linux/of_device.h>
+> >> +#include <linux/of_fdt.h>
+> >> +#include <linux/string.h>
+> >> +#include <linux/ctype.h>
+> >> +#include <linux/errno.h>
+> >> +#include <linux/string.h>
+> >> +#include <linux/slab.h>
+> >> +
+> >> +/**
+> >> + * Find a subtree's maximum phandle value.
+> >> + */
+> >> +static phandle __of_get_tree_max_phandle(struct device_node *node,
+> >> +		phandle max_phandle)
+> >> +{
+> >> +	struct device_node *child;
+> >> +
+> >> +	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL &&
+> >> +			node->phandle > max_phandle)
+> >> +		max_phandle = node->phandle;
+> >> +
+> >> +	__for_each_child_of_node(node, child)
+> >> +		max_phandle = __of_get_tree_max_phandle(child, max_phandle);
+> >> +
+> >> +	return max_phandle;
+> >> +}
+> >> +
+> >> +/**
+> >> + * Find live tree's maximum phandle value.
+> >> + */
+> >> +static phandle of_get_tree_max_phandle(void)
+> >> +{
+> >> +	struct device_node *node;
+> >> +	phandle phandle;
+> >> +	unsigned long flags;
+> >> +
+> >> +	/* get root node */
+> >> +	node = of_find_node_by_path("/");
+> >> +	if (node == NULL)
+> >> +		return OF_PHANDLE_ILLEGAL;
+> >> +
+> >> +	/* now search recursively */
+> >> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+> >> +	phandle = __of_get_tree_max_phandle(node, 0);
+> >> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+> > 
+> > I don't see another user. What is the reason for the __ version of
+> > of_get_tree_max_phandle?
+> > 
+> >> +
+> >> +	of_node_put(node);
+> >> +
+> >> +	return phandle;
+> >> +}
+> >> +
+> >> +/**
+> >> + * Adjust a subtree's phandle values by a given delta.
+> >> + * Makes sure not to just adjust the device node's phandle value,
+> >> + * but modify the phandle properties values as well.
+> >> + */
+> >> +static void __of_adjust_tree_phandles(struct device_node *node,
+> >> +		int phandle_delta)
+> >> +{
+> >> +	struct device_node *child;
+> >> +	struct property *prop;
+> >> +	phandle phandle;
+> >> +
+> >> +	/* first adjust the node's phandle direct value */
+> >> +	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL)
+> >> +		node->phandle += phandle_delta;
+> >> +
+> >> +	/* now adjust phandle & linux,phandle values */
+> >> +	for_each_property_of_node(node, prop) {
+> >> +
+> >> +		/* only look for these two */
+> >> +		if (of_prop_cmp(prop->name, "phandle") != 0 &&
+> >> +		    of_prop_cmp(prop->name, "linux,phandle") != 0)
+> >> +			continue;
+> >> +
+> >> +		/* must be big enough */
+> >> +		if (prop->length < 4)
+> >> +			continue;
+> >> +
+> >> +		/* read phandle value */
+> >> +		phandle = be32_to_cpu(*(uint32_t *)prop->value);
+> > 
+> > Unnecessary cast if you use:
+> > 	phandle = be32_to_cpup(prop->value);
+> 
+> OK.
+> 
+> > 
+> >> +		if (phandle == OF_PHANDLE_ILLEGAL)	/* unresolved */
+> >> +			continue;
+> > 
+> > Isn't this an error condition? Should never have OF_PHANDLE_ILLEGAL in
+> > the property here.
+> 
+> Hmm, I think so. I'll see if there's anything special there.
+> 
+> > 
+> >> +
+> >> +		/* adjust */
+> >> +		*(uint32_t *)prop->value = cpu_to_be32(node->phandle);
+> > 
+> > *(__be32*)prop->value = ...
+> 
+> 
+> It is the same for the compiler, but you're right. 
+> > 
+> >> +	}
+> >> +
+> >> +	/* now do the children recursively */
+> >> +	__for_each_child_of_node(node, child)
+> >> +		__of_adjust_tree_phandles(child, phandle_delta);
+> >> +}
+> >> +
+> >> +/**
+> >> + * Adjust the local phandle references by the given phandle delta.
+> >> + * Assumes the existances of a __local_fixups__ node at the root
+> >> + * of the tree. Does not take any devtree locks so make sure you
+> >> + * call this on a tree which is at the detached state.
+> >> + */
+> >> +static int __of_adjust_tree_phandle_references(struct device_node *node,
+> >> +		int phandle_delta)
+> >> +{
+> >> +	phandle phandle;
+> >> +	struct device_node *refnode, *child;
+> >> +	struct property *rprop, *sprop;
+> >> +	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
+> >> +	int offset, propcurlen;
+> >> +	int err;
+> >> +
+> >> +	/* locate the symbols & fixups nodes on resolve */
+> >> +	__for_each_child_of_node(node, child)
+> >> +		if (of_node_cmp(child->name, "__local_fixups__") == 0)
+> >> +			break;
+> >> +
+> >> +	/* no local fixups */
+> >> +	if (child == NULL)
+> >> +		return 0;
+> >> +
+> >> +	/* find the local fixups property */
+> >> +	for_each_property_of_node(child, rprop) {
+> >> +
+> >> +		/* skip properties added automatically */
+> >> +		if (of_prop_cmp(rprop->name, "name") == 0)
+> >> +			continue;
+> >> +
+> >> +		/* make a copy */
+> >> +		propval = kmalloc(rprop->length, GFP_KERNEL);
+> >> +		if (propval == NULL) {
+> >> +			pr_err("%s: Could not copy value of '%s'\n",
+> >> +					__func__, rprop->name);
+> >> +			return -ENOMEM;
+> >> +		}
+> >> +		memcpy(propval, rprop->value, rprop->length);
+> >> +
+> >> +		propend = propval + rprop->length;
+> >> +		for (propcur = propval; propcur < propend;
+> >> +				propcur += propcurlen + 1) {
+> >> +
+> >> +			propcurlen = strlen(propcur);
+> >> +
+> >> +			nodestr = propcur;
+> >> +			s = strchr(propcur, ':');
+> >> +			if (s == NULL) {
+> >> +				pr_err("%s: Illegal symbol entry '%s' (1)\n",
+> >> +					__func__, propcur);
+> >> +				err = -EINVAL;
+> >> +				goto err_fail;
+> >> +			}
+> >> +			*s++ = '\0';
+> >> +
+> >> +			propstr = s;
+> >> +			s = strchr(s, ':');
+> >> +			if (s == NULL) {
+> >> +				pr_err("%s: Illegal symbol entry '%s' (2)\n",
+> >> +					__func__, (char *)rprop->value);
+> >> +				err = -EINVAL;
+> >> +				goto err_fail;
+> >> +			}
+> >> +
+> >> +			*s++ = '\0';
+> >> +			offset = simple_strtoul(s, NULL, 10);
+> >> +
+> >> +			/* look into the resolve node for the full path */
+> >> +			refnode = __of_find_node_by_full_name(node, nodestr);
+> >> +			if (refnode == NULL) {
+> >> +				pr_warn("%s: Could not find refnode '%s'\n",
+> >> +					__func__, (char *)rprop->value);
+> >> +				continue;
+> >> +			}
+> >> +
+> >> +			/* now find the property */
+> >> +			for_each_property_of_node(refnode, sprop) {
+> >> +				if (of_prop_cmp(sprop->name, propstr) == 0)
+> >> +					break;
+> >> +			}
+> >> +
+> >> +			if (sprop == NULL) {
+> >> +				pr_err("%s: Could not find property '%s'\n",
+> >> +					__func__, (char *)rprop->value);
+> >> +				err = -ENOENT;
+> >> +				goto err_fail;
+> >> +			}
+> >> +
+> >> +			phandle = be32_to_cpu(*(uint32_t *)
+> >> +					(sprop->value + offset));
+> >> +			*(uint32_t *)(sprop->value + offset) =
+> >> +				cpu_to_be32(phandle + phandle_delta);
+> >> +		}
+> >> +
+> >> +		kfree(propval);
+> >> +	}
+> >> +
+> >> +	return 0;
+> >> +
+> >> +err_fail:
+> >> +	kfree(propval);
+> >> +	return err;
+> >> +}
+> >> +
+> >> +/**
+> >> + * of_resolve	- Resolve the given node against the live tree.
+> >> + *
+> >> + * @resolve:	Node to resolve
+> >> + *
+> >> + * Perform dynamic Device Tree resolution against the live tree
+> >> + * to the given node to resolve. This depends on the live tree
+> >> + * having a __symbols__ node, and the resolve node the __fixups__ &
+> >> + * __local_fixups__ nodes (if needed).
+> >> + * The result of the operation is a resolve node that it's contents
+> >> + * are fit to be inserted or operate upon the live tree.
+> >> + * Returns 0 on success or a negative error value on error.
+> >> + */
+> >> +int of_resolve(struct device_node *resolve)
+> >> +{
+> >> +	struct device_node *child, *refnode;
+> >> +	struct device_node *root_sym, *resolve_sym, *resolve_fix;
+> >> +	struct property *rprop, *sprop;
+> >> +	const char *refpath;
+> >> +	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
+> >> +	int offset, propcurlen;
+> >> +	phandle phandle, phandle_delta;
+> >> +	int err;
+> >> +
+> >> +	/* the resolve node must exist, and be detached */
+> >> +	if (resolve == NULL ||
+> >> +			!of_node_check_flag(resolve, OF_DETACHED)) {
+> >> +		return -EINVAL;
+> >> +	}
+> >> +
+> >> +	/* first we need to adjust the phandles */
+> >> +	phandle_delta = of_get_tree_max_phandle() + 1;
+> > 
+> > Probably need to grab the devtree lock before doing the above, and not
+> > release it until after the trees are merged. Otherwise there is the
+> > potential of trying to merge two trees at once and getting phandle
+> > conflicts.
+> 
+> No, because the device tree being passed it it guaranteed to be
+> in detached state, it is not part of the live device tree; 
+> the check in the beginning of the function makes sure.
+> 
+> When we apply the overlay the devtree lock is taken properly.
+
+That doesn't protect against getting duplicate phandle bases. You need
+something to protect the range of phandles that the overlay trees will
+want to use. The problem with the above code is that it calculates the
+phandle base that it wants, but then goes and does a bunch of stuff
+without a lock which allows another overlay to try and use the same
+phandle range.
 
 g.
 
