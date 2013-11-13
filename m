@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab3KMMxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 07:53:09 -0500
-Received: from collab.rosalab.ru ([195.19.76.181]:49622 "EHLO
-	collab.rosalab.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab3KMMxH (ORCPT
+	id S1756827Ab3KMM5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 07:57:40 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:34754 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868Ab3KMM5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 07:53:07 -0500
-X-Greylist: delayed 607 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Nov 2013 07:53:07 EST
-Message-ID: <5283737F.8040809@rosalab.ru>
-Date: Wed, 13 Nov 2013 16:41:35 +0400
-From: Andrey Ponomarenko <aponomarenko@rosalab.ru>
-Organization: ROSA Lab
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 13 Nov 2013 07:57:37 -0500
+Date: Wed, 13 Nov 2013 13:57:34 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH] perf trace: Tweak summary output
+Message-ID: <20131113125734.GA22140@gmail.com>
+References: <1384345308-24404-1-git-send-email-penberg@kernel.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Linux Kernel ABI Tracker
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384345308-24404-1-git-send-email-penberg@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-I've created a new tool for Linux developers: Kernel ABI Tracker 
-(http://upstream-tracker.org/kernel/).
+* Pekka Enberg <penberg@kernel.org> wrote:
 
-This tool looks for new releases of the Linux kernel, builds them and 
-tracks API/ABI changes using a set of basic tools: ABI Dumper and ABI 
-Compliance Checker.
+> Tweak the summary output as suggested by Ingo Molnar:
+> 
+>   [penberg@localhost ~]$ perf trace -a --duration 10000 --summary -- sleep 1
+>   ^C
+>    Summary of events:
+> 
+>    Xorg (817), 148 events, 0.0%, 0.000 msec
+> 
+>      syscall            calls      min       avg       max      stddev
+>                                  (msec)    (msec)    (msec)        (%)
+>      --------------- -------- --------- --------- ---------     ------
+>      read                   7     0.002     0.004     0.011     32.00%
+>      rt_sigprocmask        40     0.001     0.001     0.002      1.31%
+>      ioctl                  6     0.002     0.003     0.005     19.45%
+>      writev                 7     0.004     0.018     0.059     43.76%
+>      select                 9     0.000    74.513   507.869     74.61%
+>      setitimer              4     0.001     0.002     0.002     10.08%
 
-More info: 
-http://wiki.rosalab.com/en/index.php/Blog:ROSA_Planet/Linux_Kernel_ABI_Tracker
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
-Hope it would be useful for someone in this mail list.
+Are you convinced about double-digit precision output for percentages?
 
-Thanks.
+I think it suggest a false level of accuracy, but YYMV - typographically 
+xx.yy certainly looks nicer than xx.y (it's more symmetric).
 
--- 
-Andrey Ponomarenko, ROSA Lab.
+Thanks,
 
+	Ingo
