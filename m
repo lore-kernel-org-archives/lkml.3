@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758801Ab3KMNxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 08:53:21 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:33296 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445Ab3KMNxO (ORCPT
+	id S1757170Ab3KMN6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 08:58:41 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58001 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473Ab3KMN6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 08:53:14 -0500
-Date: Wed, 13 Nov 2013 14:53:09 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Neil Horman <nhorman@tuxdriver.com>, Joe Perches <joe@perches.com>,
-        netdev <netdev@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [Fwd: Re: [PATCH v2 2/2] x86: add prefetching to do_csum]
-Message-ID: <20131113135309.GA27006@gmail.com>
-References: <1384220542.4771.23.camel@joe-AO722>
- <20131112171239.GC19780@hmsreliant.think-freely.org>
- <1384277615.3665.10.camel@joe-AO722>
- <20131112195005.GD19780@hmsreliant.think-freely.org>
- <AE90C24D6B3A694183C094C60CF0A2F6026B740E@saturn3.aculab.com>
- <20131113123010.GB2993@hmsreliant.think-freely.org>
- <20131113130832.GB22140@gmail.com>
- <AE90C24D6B3A694183C094C60CF0A2F6026B7412@saturn3.aculab.com>
+	Wed, 13 Nov 2013 08:58:39 -0500
+Date: Wed, 13 Nov 2013 14:58:07 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
+        Jiang Liu <liuj97@gmail.com>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping support
+Message-ID: <20131113135807.GJ26898@twins.programming.kicks-ass.net>
+References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
+ <1382008671-4515-3-git-send-email-sandeepa.prabhu@linaro.org>
+ <20131108165639.GD15074@mudshark.cambridge.arm.com>
+ <527DFC1C.1020107@hitachi.com>
+ <CA+b37P3U=cAbUvs=2B9wA4F7S9o49vh7d-KamjPsHcz-b9ZYLA@mail.gmail.com>
+ <52808D53.7080904@hitachi.com>
+ <5280B6C8.7050807@hitachi.com>
+ <20131111105812.GC28302@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7412@saturn3.aculab.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131111105812.GC28302@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 11, 2013 at 10:58:12AM +0000, Will Deacon wrote:
+> Single-stepping on x86 is different to the step behaviour on arm64 afaik. On
+> ARM, we have to manually remove the breakpoint, perform a single-step, then
+> add the breakpoint again. If we re-enable debug exceptions in the kprobe
+> handler, the step will complete early and we'll never step off the
+> breakpoint.
 
-* David Laight <David.Laight@ACULAB.COM> wrote:
-
-> > > I'm not sure, whats the typical capacity for the branch predictors 
-> > > ability to remember code paths?
-> ...
-> > 
-> > For such simple single-target branches it goes near or over a thousand 
-> > for recent Intel and AMD microarchitectures. Thousands for really 
-> > recent CPUs.
-> 
-> IIRC the x86 can also correctly predict simple sequences - like a branch 
-> in a loop that is taken every other iteration, or only after a previous 
-> branch is taken.
-
-They tend to be rather capable but not very well documented :) With a 
-large out of order execution design and 20+ pipeline stages x86 branch 
-prediction accuracy is perhaps the most important design aspect to good 
-CPU performance.
-
-> Much simpler cpus may use a much simpler strategy.
-
-Yeah. The patches in this thread are about the x86 assembly implementation 
-of the csum routines, and for 'typical' x86 CPUs the branch prediction 
-units and caches are certainly sophisticated enough.
-
-Also note that here, for real usecases, the csum routines are (or should 
-be) memory bandwidth limited, missing the data cache most of the time, 
-with a partially idling pipeline, while branch prediction accuracy matters 
-most when the pipeline is well fed and there are a lot of instructions in 
-flight.
-
-Thanks,
-
-	Ingo
+This is about hardware breakpoints right? Which are per-cpu? Otherwise
+removing the breakpoint would open up a hole for another thread to slip
+through while you're single stepping.
