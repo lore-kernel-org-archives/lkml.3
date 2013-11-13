@@ -1,183 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759275Ab3KMQrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 11:47:05 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:44327 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757430Ab3KMQq4 (ORCPT
+	id S1759555Ab3KMQtn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 11:49:43 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:57330 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881Ab3KMQth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 11:46:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1311121829220.29891@chino.kir.corp.google.com>
-References: <CANMivWZFXYGB_95WqToKEUyMsKMS2nQ4p5a_-Lte-=bhCC5u2g@mail.gmail.com>
- <1384287812-3694-1-git-send-email-snanda@chromium.org> <alpine.DEB.2.02.1311121829220.29891@chino.kir.corp.google.com>
-From: Sameer Nanda <snanda@chromium.org>
-Date: Wed, 13 Nov 2013 08:46:35 -0800
-X-Google-Sender-Auth: Zdn6poLno9oufbWvS3h5anEnmvo
-Message-ID: <CANMivWaXE=bn4fhvGdz3cPwN+CZpWwrWqmU1BKX8o+vE2JawOw@mail.gmail.com>
-Subject: Re: [PATCH v5] mm, oom: Fix race when selecting process to kill
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, mhocko@suse.cz,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Luigi Semenzato <semenzato@google.com>,
-        Vladimir Murzin <murzin.v@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Sergey Dyasly <dserrg@gmail.com>,
-        "msb@chromium.org" <msb@chromium.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 13 Nov 2013 11:49:37 -0500
+Message-ID: <1384361368.5245.11.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 6/9] KEYS: Trusted: Use key preparsing
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: d.kasatkin@samsung.com, zohar@us.ibm.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>
+Date: Wed, 13 Nov 2013 11:49:28 -0500
+In-Reply-To: <20131104162300.10177.20700.stgit@warthog.procyon.org.uk>
+References: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
+	 <20131104162300.10177.20700.stgit@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111316-7164-0000-0000-000003438F0D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 6:33 PM, David Rientjes <rientjes@google.com> wrote:
-> On Tue, 12 Nov 2013, Sameer Nanda wrote:
->
->> The selection of the process to be killed happens in two spots:
->> first in select_bad_process and then a further refinement by
->> looking for child processes in oom_kill_process. Since this is
->> a two step process, it is possible that the process selected by
->> select_bad_process may get a SIGKILL just before oom_kill_process
->> executes. If this were to happen, __unhash_process deletes this
->> process from the thread_group list. This results in oom_kill_process
->> getting stuck in an infinite loop when traversing the thread_group
->> list of the selected process.
->>
->> Fix this race by adding a pid_alive check for the selected process
->> with tasklist_lock held in oom_kill_process.
->>
->> Change-Id: I62f9652a780863467a8174e18ea5e19bbcd78c31
->
-> Is this needed?
+On Mon, 2013-11-04 at 16:23 +0000, David Howells wrote:
+> Make use of key preparsing in trusted keys so that quota size determination
+> can take place prior to keyring locking when a key is being added.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
 
-No, it's not.  It's a side effect of using Chrome OS tools to manage
-the patches.  I will make sure to remove it on the next version of the
-patch.
+Cc'ing Dave Safford.
 
->
->> Signed-off-by: Sameer Nanda <snanda@chromium.org>
->> ---
->>  mm/oom_kill.c | 42 +++++++++++++++++++++++++++++-------------
->>  1 file changed, 29 insertions(+), 13 deletions(-)
->>
->> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
->> index 6738c47..5108c2b 100644
->> --- a/mm/oom_kill.c
->> +++ b/mm/oom_kill.c
->> @@ -412,31 +412,40 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->>       static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
->>                                             DEFAULT_RATELIMIT_BURST);
->>
->> +     if (__ratelimit(&oom_rs))
->> +             dump_header(p, gfp_mask, order, memcg, nodemask);
->> +
->> +     task_lock(p);
->> +     pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
->> +             message, task_pid_nr(p), p->comm, points);
->> +     task_unlock(p);
->> +
->> +     /*
->> +      * while_each_thread is currently not RCU safe. Lets hold the
->> +      * tasklist_lock across all invocations of while_each_thread (including
->> +      * the one in find_lock_task_mm) in this function.
->> +      */
->> +     read_lock(&tasklist_lock);
->> +
->>       /*
->>        * If the task is already exiting, don't alarm the sysadmin or kill
->>        * its children or threads, just set TIF_MEMDIE so it can die quickly
->>        */
->> -     if (p->flags & PF_EXITING) {
->> +     if (p->flags & PF_EXITING || !pid_alive(p)) {
->> +             pr_info("%s: Not killing process %d, just setting TIF_MEMDIE\n",
->> +                     message, task_pid_nr(p));
->
-> That makes no sense in the kernel log to have
->
->         Out of Memory: Kill process 1234 (comm) score 50 or sacrifice child
->         Out of Memory: Not killing process 1234, just setting TIF_MEMDIE
->
-> Those are contradictory statements (and will actually mess with kernel log
-> parsing at Google) and nobody other than kernel developers are going to
-> know what TIF_MEMDIE is.
+> ---
+> 
+>  security/keys/trusted.c |  190 ++++++++++++++++++++++-------------------------
+>  1 file changed, 90 insertions(+), 100 deletions(-)
+> 
+> diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+> index e13fcf7636f7..ac444e3cfaa7 100644
+> --- a/security/keys/trusted.c
+> +++ b/security/keys/trusted.c
+> @@ -859,52 +859,22 @@ static int datablob_parse(char *datablob, struct trusted_key_payload *p,
+>  	return ret;
+>  }
+> 
+> -static struct trusted_key_options *trusted_options_alloc(void)
+> -{
+> -	struct trusted_key_options *options;
+> -
+> -	options = kzalloc(sizeof *options, GFP_KERNEL);
+> -	if (options) {
+> -		/* set any non-zero defaults */
+> -		options->keytype = SRK_keytype;
+> -		options->keyhandle = SRKHANDLE;
+> -	}
+> -	return options;
+> -}
+> -
+> -static struct trusted_key_payload *trusted_payload_alloc(struct key *key)
+> -{
+> -	struct trusted_key_payload *p = NULL;
+> -	int ret;
+> -
+> -	ret = key_payload_reserve(key, sizeof *p);
+> -	if (ret < 0)
+> -		return p;
+> -	p = kzalloc(sizeof *p, GFP_KERNEL);
+> -	if (p)
+> -		p->migratable = 1; /* migratable by default */
+> -	return p;
+> -}
+> -
+>  /*
+> - * trusted_instantiate - create a new trusted key
+> + * trusted_preparse - Preparse data for an trusted key
+>   *
+> - * Unseal an existing trusted blob or, for a new key, get a
+> - * random key, then seal and create a trusted key-type key,
+> - * adding it to the specified keyring.
+> + * Decrypt an existing encrypted datablob or create a new encrypted key
+> + * based on a kernel random number.
 
-Since the "Kill process" printk has now moved above the (p->flags &
-PF_EXITING || !pid_alive(p)) check, it is possible that
-oom_kill_process will emit the "Kill process" message but will not
-actually try to kill the process or its child.  The new "Not killing
-process" printk helps disambiguate this case from when a process is
-actually killed by oom_kill_process.  However, since you are finding
-it confusing, let me remove it.
+Not sure why the change in terminology from unsealing/trusted blob to
+decrypt/encrypted blob.
 
->
->>               set_tsk_thread_flag(p, TIF_MEMDIE);
->>               put_task_struct(p);
->> +             read_unlock(&tasklist_lock);
->>               return;
->>       }
->>
->> -     if (__ratelimit(&oom_rs))
->> -             dump_header(p, gfp_mask, order, memcg, nodemask);
->> -
->> -     task_lock(p);
->> -     pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
->> -             message, task_pid_nr(p), p->comm, points);
->> -     task_unlock(p);
->> -
->>       /*
->>        * If any of p's children has a different mm and is eligible for kill,
->>        * the one with the highest oom_badness() score is sacrificed for its
->>        * parent.  This attempts to lose the minimal amount of work done while
->>        * still freeing memory.
->>        */
->> -     read_lock(&tasklist_lock);
->>       do {
->>               list_for_each_entry(child, &t->children, sibling) {
->>                       unsigned int child_points;
->> @@ -456,12 +465,17 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->>                       }
->>               }
->>       } while_each_thread(p, t);
->> -     read_unlock(&tasklist_lock);
->>
->> -     rcu_read_lock();
->>       p = find_lock_task_mm(victim);
->> +
->> +     /*
->> +      * Since while_each_thread is currently not RCU safe, this unlock of
->> +      * tasklist_lock may need to be moved further down if any additional
->> +      * while_each_thread loops get added to this function.
->> +      */
->
-> This comment should be moved to sched.h to indicate how
-> while_each_thread() needs to be handled with respect to tasklist_lock,
-> it's not specific to the oom killer.
+>   * On success, return 0. Otherwise return errno.
+>   */
+> -static int trusted_instantiate(struct key *key,
+> -			       struct key_preparsed_payload *prep)
+> +static int trusted_preparse(struct key_preparsed_payload *prep)
+>  {
+>  	struct trusted_key_payload *payload = NULL;
+>  	struct trusted_key_options *options = NULL;
+>  	size_t datalen = prep->datalen;
+>  	char *datablob;
+> -	int ret = 0;
+> -	int key_cmd;
+> -	size_t key_len;
+> +	long key_cmd;
+> +	int ret = -ENOMEM;
+> 
+>  	if (datalen <= 0 || datalen > 32767 || !prep->data)
+>  		return -EINVAL;
+> @@ -915,16 +885,20 @@ static int trusted_instantiate(struct key *key,
+>  	memcpy(datablob, prep->data, datalen);
+>  	datablob[datalen] = '\0';
+> 
+> -	options = trusted_options_alloc();
+> -	if (!options) {
+> -		ret = -ENOMEM;
+> +	payload = kzalloc(sizeof(*payload), GFP_KERNEL);
+> +	if (!payload)
+>  		goto out;
+> -	}
+> -	payload = trusted_payload_alloc(key);
+> -	if (!payload) {
+> -		ret = -ENOMEM;
+> +	prep->payload[0] = payload;
+> +
+> +	options = kzalloc(sizeof(*options), GFP_KERNEL);
+> +	if (!options)
+>  		goto out;
+> -	}
+> +	prep->type_data[0] = options;
+> +
+> +	/* set any non-zero defaults */
+> +	payload->migratable = 1; /* migratable by default */
+> +	options->keytype = SRK_keytype;
+> +	options->keyhandle = SRKHANDLE;
+> 
+>  	key_cmd = datablob_parse(datablob, payload, options);
+>  	if (key_cmd < 0) {
+> @@ -932,42 +906,81 @@ static int trusted_instantiate(struct key *key,
+>  		goto out;
+>  	}
+> 
+> +	prep->type_data[1] = (void *)key_cmd;
+> +
+>  	dump_payload(payload);
+>  	dump_options(options);
+> +out:
+> +	kfree(datablob);
+> +	return ret;
 
-OK.
->
->> +     read_unlock(&tasklist_lock);
->> +
->>       if (!p) {
->> -             rcu_read_unlock();
->>               put_task_struct(victim);
->>               return;
->>       } else if (victim != p) {
->> @@ -478,6 +492,8 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->>               K(get_mm_counter(victim->mm, MM_FILEPAGES)));
->>       task_unlock(victim);
->>
->> +     rcu_read_lock();
->> +
->>       /*
->>        * Kill all user processes sharing victim->mm in other thread groups, if
->>        * any.  They don't get access to memory reserves, though, to avoid
->
-> Please move this rcu_read_lock() to be immediatley before the
-> for_each_process() instead of before the comment.
+trusted_preparse() always fails, since ret is initialized to -ENOMEM and
+never set.
 
-OK.
+Mimi
+
+> +}
+> +
+> +static void trusted_free_preparse(struct key_preparsed_payload *prep)
+> +{
+> +	struct trusted_key_payload *p = prep->payload[0];
+> +	struct trusted_key_options *o = prep->type_data[0];
+> +
+> +	if (p) {
+> +		memset(p->key, 0, p->key_len);
+> +		kfree(p);
+> +	}
+> +	kfree(o);
+> +}
+> +
+> +/*
+> + * trusted_instantiate - create a new trusted key
+> + *
+> + * Unseal an existing trusted blob or, for a new key, get a
+> + * random key, then seal and create a trusted key-type key,
+> + * adding it to the specified keyring.
+> + *
+> + * On success, return 0. Otherwise return errno.
+> + */
+> +static int trusted_instantiate(struct key *key,
+> +			       struct key_preparsed_payload *prep)
+> +{
+> +	struct trusted_key_payload *payload = prep->payload[0];
+> +	struct trusted_key_options *options = prep->type_data[0];
+> +	long key_cmd = (unsigned long)prep->type_data[1];
+> +	int ret;
+> +	size_t key_len;
+> 
+>  	switch (key_cmd) {
+>  	case Opt_load:
+>  		ret = key_unseal(payload, options);
+>  		dump_payload(payload);
+>  		dump_options(options);
+> -		if (ret < 0)
+> +		if (ret < 0) {
+>  			pr_info("trusted_key: key_unseal failed (%d)\n", ret);
+> +			return ret;
+> +		}
+>  		break;
+>  	case Opt_new:
+>  		key_len = payload->key_len;
+>  		ret = tpm_get_random(TPM_ANY_NUM, payload->key, key_len);
+>  		if (ret != key_len) {
+>  			pr_info("trusted_key: key_create failed (%d)\n", ret);
+> -			goto out;
+> +			return ret;
+>  		}
+>  		ret = key_seal(payload, options);
+> -		if (ret < 0)
+> +		if (ret < 0) {
+>  			pr_info("trusted_key: key_seal failed (%d)\n", ret);
+> +			return ret;
+> +		}
+>  		break;
+>  	default:
+> -		ret = -EINVAL;
+> -		goto out;
+> +		return -EINVAL;
+>  	}
+> -	if (!ret && options->pcrlock)
+> +
+> +	if (options->pcrlock) {
+>  		ret = pcrlock(options->pcrlock);
+> -out:
+> -	kfree(datablob);
+> -	kfree(options);
+> -	if (!ret)
+> -		rcu_assign_keypointer(key, payload);
+> -	else
+> -		kfree(payload);
+> -	return ret;
+> +		if (ret < 0)
+> +			return ret;
+> +	}
+> +
+> +	rcu_assign_keypointer(key, prep->payload[0]);
+> +	prep->payload[0] = NULL;
+> +	return 0;
+>  }
+> 
+>  static void trusted_rcu_free(struct rcu_head *rcu)
+> @@ -985,39 +998,17 @@ static void trusted_rcu_free(struct rcu_head *rcu)
+>  static int trusted_update(struct key *key, struct key_preparsed_payload *prep)
+>  {
+>  	struct trusted_key_payload *p = key->payload.data;
+> -	struct trusted_key_payload *new_p;
+> -	struct trusted_key_options *new_o;
+> -	size_t datalen = prep->datalen;
+> -	char *datablob;
+> +	struct trusted_key_payload *new_p = prep->payload[0];
+> +	struct trusted_key_options *new_o = prep->type_data[0];
+> +	long key_cmd = (unsigned long)prep->type_data[1];
+>  	int ret = 0;
+> 
+>  	if (!p->migratable)
+>  		return -EPERM;
+> -	if (datalen <= 0 || datalen > 32767 || !prep->data)
+> -		return -EINVAL;
+> 
+> -	datablob = kmalloc(datalen + 1, GFP_KERNEL);
+> -	if (!datablob)
+> -		return -ENOMEM;
+> -	new_o = trusted_options_alloc();
+> -	if (!new_o) {
+> -		ret = -ENOMEM;
+> -		goto out;
+> -	}
+> -	new_p = trusted_payload_alloc(key);
+> -	if (!new_p) {
+> -		ret = -ENOMEM;
+> -		goto out;
+> -	}
+> +	if (key_cmd != Opt_update)
+> +		return -EINVAL;
+> 
+> -	memcpy(datablob, prep->data, datalen);
+> -	datablob[datalen] = '\0';
+> -	ret = datablob_parse(datablob, new_p, new_o);
+> -	if (ret != Opt_update) {
+> -		ret = -EINVAL;
+> -		kfree(new_p);
+> -		goto out;
+> -	}
+>  	/* copy old key values, and reseal with new pcrs */
+>  	new_p->migratable = p->migratable;
+>  	new_p->key_len = p->key_len;
+> @@ -1028,23 +1019,19 @@ static int trusted_update(struct key *key, struct key_preparsed_payload *prep)
+>  	ret = key_seal(new_p, new_o);
+>  	if (ret < 0) {
+>  		pr_info("trusted_key: key_seal failed (%d)\n", ret);
+> -		kfree(new_p);
+> -		goto out;
+> +		return ret;
+>  	}
+>  	if (new_o->pcrlock) {
+>  		ret = pcrlock(new_o->pcrlock);
+>  		if (ret < 0) {
+>  			pr_info("trusted_key: pcrlock failed (%d)\n", ret);
+> -			kfree(new_p);
+> -			goto out;
+> +			return ret;
+>  		}
+>  	}
+>  	rcu_assign_keypointer(key, new_p);
+>  	call_rcu(&p->rcu, trusted_rcu_free);
+> -out:
+> -	kfree(datablob);
+> -	kfree(new_o);
+> -	return ret;
+> +	prep->payload[0] = NULL;
+> +	return 0;
+>  }
+> 
+>  /*
+> @@ -1093,13 +1080,16 @@ static void trusted_destroy(struct key *key)
+>  }
+> 
+>  struct key_type key_type_trusted = {
+> -	.name = "trusted",
+> -	.instantiate = trusted_instantiate,
+> -	.update = trusted_update,
+> -	.match = user_match,
+> -	.destroy = trusted_destroy,
+> -	.describe = user_describe,
+> -	.read = trusted_read,
+> +	.name		= "trusted",
+> +	.def_datalen	= sizeof(struct trusted_key_payload),
+> +	.preparse	= trusted_preparse,
+> +	.free_preparse	= trusted_free_preparse,
+> +	.instantiate	= trusted_instantiate,
+> +	.update		= trusted_update,
+> +	.match		= user_match,
+> +	.destroy	= trusted_destroy,
+> +	.describe	= user_describe,
+> +	.read		= trusted_read,
+>  };
+> 
+>  EXPORT_SYMBOL_GPL(key_type_trusted);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
 
-
--- 
-Sameer
