@@ -1,79 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759127Ab3KMOIW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 09:08:22 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:59640 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756989Ab3KMOIU convert rfc822-to-8bit (ORCPT
+	id S1759210Ab3KMOIe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 09:08:34 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:52810 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759156Ab3KMOIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 09:08:20 -0500
-Message-ID: <528387CF.5090105@arm.com>
-Date: Wed, 13 Nov 2013 14:08:15 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Vinayak Kale <vkale@apm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@apm.com" <patches@apm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        Will Deacon <Will.Deacon@arm.com>, "jcm@redhat.com" <jcm@redhat.com>
-Subject: Re: [PATCH V2 1/2] genirq: Add an accessor for IRQ_PER_CPU flag
-References: <1384340725-26073-1-git-send-email-vkale@apm.com> <1384340725-26073-2-git-send-email-vkale@apm.com>
-In-Reply-To: <1384340725-26073-2-git-send-email-vkale@apm.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 13 Nov 2013 14:08:16.0291 (UTC) FILETIME=[CC42AF30:01CEE079]
-X-MC-Unique: 113111314081701201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Nov 2013 09:08:31 -0500
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: devicetree@vger.kernel.org
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux-kernel@vger.kernel.org, mark.rutland@arm.com,
+        Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v2] Documentation: Add MDIO bus node to PHY binding document
+Date: Wed, 13 Nov 2013 15:07:49 +0100
+Message-Id: <1384351669-8325-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1384174825-14249-1-git-send-email-jonas.jensen@gmail.com>
+References: <1384174825-14249-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinayak,
+Add MDIO bus node segment and update the example,
+allowing trivial bindings to break out boilerplate.
 
-On 13/11/13 11:05, Vinayak Kale wrote:
-> This patch adds an accessor function for IRQ_PER_CPU flag.
-> The accessor function is useful to dertermine whether an IRQ is percpu or not.
-> 
-> Signed-off-by: Vinayak Kale <vkale@apm.com>
-> ---
->  include/linux/irqdesc.h |    8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-> index 56fb646..acd8a3f 100644
-> --- a/include/linux/irqdesc.h
-> +++ b/include/linux/irqdesc.h
-> @@ -152,6 +152,14 @@ static inline int irq_balancing_disabled(unsigned int irq)
->  	return desc->status_use_accessors & IRQ_NO_BALANCING_MASK;
->  }
->  
-> +static inline int irq_is_percpu(unsigned int irq)
-> +{
-> +	struct irq_desc *desc;
-> +
-> +	desc = irq_to_desc(irq);
-> +	return (desc && (desc->status_use_accessors & IRQ_PER_CPU)) ? 1 : 0;
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-I don't think it is worth checking for the validity of "desc" here. All
-the other accessors assume that you've not passed a stupid "irq" value.
+Notes:
+    Thanks Mark,
+    
+    This should have the changes from your comments. It also adds optional properties "compatible" and "reg", were those overlooked or left out intentionally?
+    
+    Changes since v1:
+    
+    1. reformat "MDIO bus node" description and add, node name should be "mdio"
+    2. reformat property descriptions, describe what the cells represent
+    3. add optional properties
+    4. add a description after "PHY nodes"
+    
+    Applies to next-20131113
 
-Simply having
-	return !!(desc->status_use_accessors & IRQ_PER_CPU);
-should be enough.
+ Documentation/devicetree/bindings/net/phy.txt | 48 ++++++++++++++++++++++-----
+ 1 file changed, 40 insertions(+), 8 deletions(-)
 
-> +}
-> +
->  static inline void
->  irq_set_lockdep_class(unsigned int irq, struct lock_class_key *class)
->  {
-> 
-
-Cheers,
-
-	M.
+diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
+index 7cd18fb..4179a70 100644
+--- a/Documentation/devicetree/bindings/net/phy.txt
++++ b/Documentation/devicetree/bindings/net/phy.txt
+@@ -1,5 +1,26 @@
++MDIO Bus Nodes
++
++An MDIO bus node describes an MDIO bus, and is a container for PHY nodes
++as described below. An MDIO bus node should be named "mdio".
++
++Required properties:
++
++- #address-cells = Should be <1>, specifies the number of cells needed
++  to encode the PHY address
++- #size-cells = Should be <0>
++
++Optional Properties:
++
++- compatible : Should contain a specific name for the MDIO bus,
++  if known, followed by "-mdio"
++- reg : Should contain register location and length
++
++
+ PHY nodes
+ 
++Describes the PHY chip. A MAC connecting the PHY may use a phandle to
++this node.
++
+ Required properties:
+ 
+  - device_type : Should be "ethernet-phy"
+@@ -23,13 +44,24 @@ Optional Properties:
+   assume clause 22. The compatible list may also contain other
+   elements.
+ 
++
+ Example:
+ 
+-ethernet-phy@0 {
+-	compatible = "ethernet-phy-ieee802.3-c22";
+-	linux,phandle = <2452000>;
+-	interrupt-parent = <40000>;
+-	interrupts = <35 1>;
+-	reg = <0>;
+-	device_type = "ethernet-phy";
+-};
++mdio {
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	ethernet-phy@0 {
++		device_type = "ethernet-phy";
++		compatible = "...", "ethernet-phy-ieee802.3-c22";
++		reg = <0>;
++		interrupts = <24 0>;
++	}
++
++	ethernet-phy@1 {
++		device_type = "ethernet-phy";
++		compatible = "...";
++		reg = <1>;
++		interrupts = <35 1>;
++	}
++}
 -- 
-Jazz is not dead. It just smells funny...
+1.8.2.1
 
