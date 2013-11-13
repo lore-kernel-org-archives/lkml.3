@@ -1,65 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334Ab3KMPu3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 10:50:29 -0500
-Received: from www.linutronix.de ([62.245.132.108]:54308 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932256Ab3KMPu0 (ORCPT
+	id S932381Ab3KMPug (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 10:50:36 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:32841 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932256Ab3KMPub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 10:50:26 -0500
-Date: Wed, 13 Nov 2013 16:50:20 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Matthew Whitehead <tedheadster@gmail.com>, john.stultz@linaro.org,
-        LKML <linux-kernel@vger.kernel.org>, mwhitehe@redhat.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: nohz problem with idle time on old hardware
-In-Reply-To: <20131113103134.5b8cf02f@gandalf.local.home>
-Message-ID: <alpine.DEB.2.02.1311131635580.30673@ionos.tec.linutronix.de>
-References: <20131113113927.GA13875@mwhitehe.csb> <alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de> <20131113102153.5f10e6b5@gandalf.local.home> <20131113103134.5b8cf02f@gandalf.local.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 13 Nov 2013 10:50:31 -0500
+Date: Wed, 13 Nov 2013 15:50:27 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: dyoung@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de
+Subject: Re: [patch 5/7 v2] export efi runtime memory mapping to sysfs
+Message-ID: <20131113155027.GC17248@console-pimps.org>
+References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com>
+ <20131105082718.185728964@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105082718.185728964@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Nov 2013, Steven Rostedt wrote:
-> > I'm not saying that we are actually getting into nohz, but something
-> > with the nohz code is messing with cpu accounting.
+On Tue, 05 Nov, at 04:20:12PM, dyoung@redhat.com wrote:
+> kexec kernel will need exactly same mapping for
+> efi runtime memory ranges. Thus here export the
+> runtime ranges mapping to sysfs, kexec-tools
+> will assemble them and pass to 2nd kernel via
+> setup_data.
 > 
-> The trace does indeed show that a tick is happening, as the config has
-> HZ=250 (4ms) and we see a tick happen every 4ms. But for some reason,
-> we don't update the the idle time correctly when nohz is enabled.
+> Introducing a new directly /sys/firmware/efi/efi-runtime-map
+> Just like /sys/firmware/memmap. Containing below attribute
+> in each file of that directory:
+> attribute  num_pages  phys_addr  type  virt_addr
 > 
-> When I say nohz is enabled, I mean that we don't have nohz=off in the
-> command line. There seems to be some difference between having nohz=off
-> and having nohz disabled at runtime.
+> It will not work for efi 32bit. Only x86_64 currently.
+> 
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  Documentation/ABI/testing/sysfs-efi-runtime-map |   45 ++++++
+>  arch/x86/include/asm/efi.h                      |    3 
+>  arch/x86/platform/efi/efi.c                     |   11 +
+>  drivers/firmware/efi/Kconfig                    |   10 +
+>  drivers/firmware/efi/Makefile                   |    1 
+>  drivers/firmware/efi/efi-runtime-map.c          |  164 ++++++++++++++++++++++++
+>  drivers/firmware/efi/efi.c                      |    3 
+>  include/linux/efi.h                             |    6 
+>  8 files changed, 242 insertions(+), 1 deletion(-)
 
-Right that affects tick_nohz_enabled
+[...]
 
-Two files use this variable:
-kernel/rcu/tree_plugin.h
-kernel/time/tick-sched.c
+> @@ -852,6 +855,14 @@ static void efi_map_regions(void **new_m
+>  
+>  		memcpy(*new_memmap + (*count * memmap.desc_size), md,
+>  		       memmap.desc_size);
+> +		if (md->type != EFI_BOOT_SERVICES_CODE &&
+> +			md->type != EFI_BOOT_SERVICES_DATA) {
+> +			efi_runtime_map = krealloc(efi_runtime_map,
+> +					(nr_efi_runtime_map + 1) *
+> +					sizeof(efi_memory_desc_t), GFP_KERNEL);
+> +			*(efi_runtime_map + nr_efi_runtime_map) = *md;
+> +			nr_efi_runtime_map++;
+> +		}
+>  		(*count)++;
+>  	}
 
-The only accounting related stuff is in tick-sched.c:
+You really need to be using 'memmap.desc_size' here and not
+sizeof(efi_memory_desc_t) as the two may differ. Also, you should be
+checking for failure of krealloc() and using memcpy() instead of
+directly dereferencing 'md'.
 
-get_cpu_idle_time_us() and get_cpu_iowait_time_us()
+> --- linux-2.6.orig/drivers/firmware/efi/Makefile
+> +++ linux-2.6/drivers/firmware/efi/Makefile
+> @@ -4,3 +4,4 @@
+>  obj-y					+= efi.o vars.o
+>  obj-$(CONFIG_EFI_VARS)			+= efivars.o
+>  obj-$(CONFIG_EFI_VARS_PSTORE)		+= efi-pstore.o
+> +obj-$(CONFIG_EFI_RUNTIME_MAP)		+= efi-runtime-map.o
+> --- /dev/null
+> +++ linux-2.6/drivers/firmware/efi/efi-runtime-map.c
 
-Both functions bail out if (!tick_nohz_enabled).
+Small nit but I wouldn't bother prefixing the filename with "efi-",
+since you can't build this file as a module.
 
-The users of get_cpu_idle_time_us() are cpufreq and fs/proc/stat.c!
+> +/*
+> + * These are default attributes that are added for every memmap entry.
+> + */
+> +static struct attribute *def_attrs[] = {
+> +	&map_type_attr.attr,
+> +	&map_phys_addr_attr.attr,
+> +	&map_virt_addr_attr.attr,
+> +	&map_num_pages_attr.attr,
+> +	&map_attribute_attr.attr,
+> +	NULL
+> +};
 
-Now the simplest fix is to let those functions check whether we
-actually switched into NOHZ mode. Should work for the RCU tree stuff
-as well.
+If the UEFI spec ever releases an update for the memory descriptor
+structure, and bumps 'memmap.desc_version', how are we going to signal
+the incompatibility to legacy versions of kexec tools?
 
-Thanks,
-
-	tglx
-
-
-
+-- 
+Matt Fleming, Intel Open Source Technology Center
