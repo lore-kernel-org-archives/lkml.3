@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab3KMMgZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 07:36:25 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:53268 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756674Ab3KMMgW (ORCPT
+	id S1756908Ab3KMMjz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 07:39:55 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45640 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab3KMMjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 07:36:22 -0500
-Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v4)
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org,
-        cody@linux.vnet.ibm.com, schwidefsky@de.ibm.com, utz.bacher@de.ibm.com,
-        mmarek@suse.cz, rmallon@gmail.com, jsvogt@de.ibm.com,
-        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de
-In-Reply-To: <20131112135004.GA31957@amd.pavel.ucw.cz>
-References: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com>
-	 <20131112135004.GA31957@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Wed, 13 Nov 2013 13:36:13 +0100
-Message-ID: <1384346173.15772.9.camel@oc7383187364.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111312-4966-0000-0000-0000077DE6D4
+	Wed, 13 Nov 2013 07:39:51 -0500
+Date: Wed, 13 Nov 2013 12:39:47 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Michael Marineau <michael.marineau@coreos.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org
+Subject: Re: 3.12 Regression: dcache: Translating dentry into pathname
+ without taking rename_lock 232d2d60
+Message-ID: <20131113123947.GB13318@ZenIV.linux.org.uk>
+References: <CAGr1u3vZU_Pxwu1nSab0PExNPQsE0xiSpcoMbUQ7MeGbJzBAjA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGr1u3vZU_Pxwu1nSab0PExNPQsE0xiSpcoMbUQ7MeGbJzBAjA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
-
-Am Dienstag, den 12.11.2013, 14:50 +0100 schrieb Pavel Machek:
-> Hi!
+On Wed, Nov 13, 2013 at 03:34:13AM -0800, Michael Marineau wrote:
+> Greetings,
 > 
-> > The GenWQE device is a PCIe card used to acclerate different tasks.
-> > Since it is configurable, it can be adjusted to different purposes.
-> > Our initial task for the card is to do zlib style compression/decompression
-> > RFC1950, RFC1951, and RFC1952.
-> 
-> Is it similar to the Intel's Xeon Phi? They basically many-core have
-> computer on PCI card...
-> 
+> Commit 232d2d60aa5469bb097f55728f65146bd49c1d25 causes intermittent
+> errors in /proc/*/fd/* where readlink returns "/" instead of the
+> correct path. This can be reproduced by the script below which copies
+> the kernel source directory structure while obsessively looking up
+> directory fds in proc from another process. Reverting
+> 232d2d60aa5469bb097f55728f65146bd49c1d25 after two related commits
+> 48f5ec21d9c67e881ff35343988e290ef5cf933f
+> 1812997720ab90d029548778c55d7315555e1fef fixes the issue.
 
-No, I think it is not the same. The GenWQE PCIe card is not a
-multi-processor card. One cannot run software  on it.
+Looking into it...  It seems that we are getting to the end of
+prepend_path() with non-negative error and bptr == *buffer.
+What the...
 
-Our GenWQE card can be configured by updating it with different
-bitstreams to perform different purposes. The service logic to perform
-such updates stays of course the same and the work-queue too. But the
-request one can put onto this work-queue can be of different nature.
-Currently we can do things like compression, decompression, calculate a
-CRC, copy data ...
+OK, I see what's going on.  We never reinitialize dentry, vfsmount and mnt
+if we decide to restart.  See if the following helps:
 
-Regards
-
-Frank
-
-
+diff --git a/fs/dcache.c b/fs/dcache.c
+index ae6ebb8..89f9671 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2881,9 +2881,9 @@ static int prepend_path(const struct path *path,
+ 			const struct path *root,
+ 			char **buffer, int *buflen)
+ {
+-	struct dentry *dentry = path->dentry;
+-	struct vfsmount *vfsmnt = path->mnt;
+-	struct mount *mnt = real_mount(vfsmnt);
++	struct dentry *dentry;
++	struct vfsmount *vfsmnt;
++	struct mount *mnt;
+ 	int error = 0;
+ 	unsigned seq = 0;
+ 	char *bptr;
+@@ -2893,6 +2893,9 @@ static int prepend_path(const struct path *path,
+ restart:
+ 	bptr = *buffer;
+ 	blen = *buflen;
++	dentry = path->dentry;
++	vfsmnt = path->mnt;
++	mnt = real_mount(vfsmnt);
+ 	read_seqbegin_or_lock(&rename_lock, &seq);
+ 	while (dentry != root->dentry || vfsmnt != root->mnt) {
+ 		struct dentry * parent;
