@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759623Ab3KMSH6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 13:07:58 -0500
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:43157 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756000Ab3KMSHw (ORCPT
+	id S1758940Ab3KMSKz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 13:10:55 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:10517 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754138Ab3KMSKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 13:07:52 -0500
-Date: Wed, 13 Nov 2013 15:07:46 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: perf tip: fails to convert comm
-Message-ID: <20131113180746.GE14758@ghostprotocols.net>
-References: <528306F5.8050307@gmail.com>
- <20131113180344.GA28039@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131113180344.GA28039@localhost.localdomain>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Nov 2013 13:10:48 -0500
+Date: Wed, 13 Nov 2013 13:10:44 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] rcu: Make struct rcu_head searchable
+Message-ID: <20131113131044.677cdc74@gandalf.local.home>
+In-Reply-To: <20131113171205.GG4138@linux.vnet.ibm.com>
+References: <20131113120225.3aacae13@gandalf.local.home>
+	<20131113171205.GG4138@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Nov 13, 2013 at 07:03:47PM +0100, Frederic Weisbecker escreveu:
-> On Tue, Nov 12, 2013 at 09:58:29PM -0700, David Ahern wrote:
-> > Hi Namhyung and Frederic:
+On Wed, 13 Nov 2013 09:12:05 -0800
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+
+> On Wed, Nov 13, 2013 at 12:02:25PM -0500, Steven Rostedt wrote:
+> > After wasting too much time trying to see where struct rcu_head was
+> > declared, I finally found it in include/linux/types.h as a define for
+> > callback_head!
 > > 
-> > If you recall I mentioned noting a problem with the callchain series
-> > showing comm's. Well, it fails on acme's perf/core. git bisect
-> > points to:
+> > To prevent other developers from wasting their precious time in
+> > searching for this structure, add a comment to help them find it!
 > > 
-> > $ git bisect bad
-> > 4dfced359fbc719a35527416f1b4b3999647f68b is the first bad commit
-> > commit 4dfced359fbc719a35527416f1b4b3999647f68b
-> > Author: Namhyung Kim <namhyung.kim@lge.com>
-> > Date:   Fri Sep 13 16:28:57 2013 +0900
-> > 
-> >     perf tools: Get current comm instead of last one
-> > 
-> >     At insert time, a hist entry should reference comm at the time
-> > otherwise
-> >     it'll get the last comm anyway.
-> > 
-> > 
-> > How to re-create:
-> > 
-> > Start point is tools/perf directory for 3.12 (Linus tree):
-> >   $ perf sched record -o /tmp/perf.data -g -- make -j 16
-> >   $ perf script -i /tmp/perf.data > /tmp/1
-> > 
-> > cd to Arnaldo's tree, make perf and use it to create /tmp/2:
-> >   $ perf script -i /tmp/perf.data > /tmp/1
-> >   $ diff -U3 /tmp/1 /tmp/2 | less
-> > 
-> > You'll see a number of comm's showing as :<pid> instead of make, etc.
+> > Cc: Al Viro <viro@ZenIV.linux.org.uk>
+> > Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > Signed-off-by: Steven "frustrated" Rostedt <rostedt@goodmis.org>
 > 
-> I see. I can reproduce, I'll check and see what happens. It would be nice if
-> we could have an option to dump internal perf events like comm events as well
-> in the perf script stream.
+> The cscope tool is your friend in this case, but nevertheless:
 
-'perf record -D' not enough?
+I use emacs, and the latest version of etags (or emacs) brings you to
+each use case before it gets you to the define (which is really
+annoying). Back in 2006 it use to work properly. I need to figure out
+what changed :-/
 
-- Arnaldo
+
+> 
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> > diff --git a/include/linux/types.h b/include/linux/types.h
+> > index 4d118ba..073e9a8 100644
+> > --- a/include/linux/types.h
+> > +++ b/include/linux/types.h
+> > @@ -210,6 +210,9 @@ struct callback_head {
+> >  	struct callback_head *next;
+> >  	void (*func)(struct callback_head *head);
+> >  };
+> > +/*
+> > + * Make "struct rcu_head {" seachable with this comment.
+
+I've been told s/seachable/searchable/
+
+Frustration fails me ;-)
+
+-- Steve
+
+> > + */
+> >  #define rcu_head callback_head
+> > 
+> >  #endif /*  __ASSEMBLY__ */
+> > 
+
