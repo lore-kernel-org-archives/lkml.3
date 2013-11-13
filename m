@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759353Ab3KMOcF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 09:32:05 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:36633 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756878Ab3KMOcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 09:32:01 -0500
-Message-ID: <52838D3D.6060007@imgtec.com>
-Date: Wed, 13 Nov 2013 14:31:25 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1759366Ab3KMOdI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 09:33:08 -0500
+Received: from mail-de.keymile.com ([195.8.104.250]:35039 "EHLO
+	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758386Ab3KMOdG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 09:33:06 -0500
+Message-ID: <52838D9C.80500@keymile.com>
+Date: Wed, 13 Nov 2013 15:33:00 +0100
+From: Gerlando Falauto <gerlando.falauto@keymile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
 MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, "Arnd Bergmann" <arnd@arndb.de>,
-        <linux-doc@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>,
-        linux-metag <linux-metag@vger.kernel.org>
-Subject: Re: [PATCH] clk: add specified-rate clock
-References: <1368189862-17119-1-git-send-email-james.hogan@imgtec.com> <20130529173938.6058.96646@quantum> <52838834.4010104@imgtec.com> <5867382.IN2EZ2ivg4@flatron>
-In-Reply-To: <5867382.IN2EZ2ivg4@flatron>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Mark Brown <broonie@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH] spi: spi-gpio: Add check for cs-gpios dt property
+References: <1384329748-2897-1-git-send-email-gerlando.falauto@keymile.com> <20131113133320.GL878@sirena.org.uk>
+In-Reply-To: <20131113133320.GL878@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_11_13_14_31_27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/11/13 14:18, Tomasz Figa wrote:
-> Hi James, Mike,
-> 
-> On Wednesday 13 of November 2013 14:09:56 James Hogan wrote:
->> On 29/05/13 18:39, Mike Turquette wrote:
->>> Quoting James Hogan (2013-05-10 05:44:22)
->>>> The frequency of some SoC's external oscillators (for example TZ1090's
->>>> XTAL1) are configured by the board using pull-ups/pull-downs of
->>>> configuration pins, the logic values of which are automatically latched
->>>> on reset and available in an SoC register. Add a generic clock component
->>>> and DT bindings to handle this.
->>>>
->>>> It behaves similar to a fixed rate clock (read-only), except it needs
->>>> information about a register field (reg, shift, width), and the
->>>> clock-frequency is a mapping from register field values to clock
->>>> frequencies.
->>>>
->>>
->>> James,
->>>
->>> Thanks for sending this!  It looks mostly good and is a useful clock
->>> type to support.  Comments below.
->>
->> Hi Mike,
->>
->> Sorry for slight delay getting back to you. I had another think about
->> this stuff yesterday...
->>
-> 
-> Just a random idea that came to my mind while reading this thread:
-> 
-> What about modelling this as a set of fixed rate clocks fed into
-> a read-only mux?
+Hi Mark,
 
-Yes, that had occurred to me too. I suppose the arguments against would be:
-* it doesn't describe the hardware, there is no mux, just a fixed rate
-clock with a discoverable frequency.
-* it would sort of work for my small case of only having 9 possible
-frequencies (although it would be a bit verbose), but wouldn't scale
-nicely or be extendible to if the frequency was encoded more
-continuously in the register value. E.g. if the frequency was 1MHz *
-(the register value - 1) or something crazy like that. Of course that's
-conjecture and SoC designers probably aren't going to want to use more
-pins for bootstrap config than necessary.
+On 11/13/2013 02:33 PM, Mark Brown wrote:
+> On Wed, Nov 13, 2013 at 09:02:28AM +0100, Gerlando Falauto wrote:
+>> The bindings assumed that the cs-gpios property is always there.
+>> However, a single SPI device can also work fine without an explicit chip select.
+>> Use the SPI_GPIO_NO_CHIPSELECT mode when the property is not present or invaild.
+>
+> Given that for most systems a missing /CS would be an error it seems
+> better to add an explicit property to enable this in order to help make
+> problems with the more common case more obvious.
+>
 
-Cheers
-James
+Thank you for your answer.
+How about an empty
 
+	cs-gpios;
+
+property? To explicitly state we haven't just forgotten it -- we just 
+know we don't have one instead. (There are plenty of empty "ranges;" 
+properties in ARM DTSes -- I don't know if the use case is the same though).
+
+Or else a null-valued
+
+	cs-gpios = <0>;
+
+property?
+
+I'm open to other proposals of course.
+
+Thanks again!
+Gerlando
