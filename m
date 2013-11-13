@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548Ab3KMWuc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 17:50:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57166 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751048Ab3KMWuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 17:50:24 -0500
-Message-ID: <52840206.5020006@zytor.com>
-Date: Wed, 13 Nov 2013 14:49:42 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751783Ab3KMWwM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 17:52:12 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:57830 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab3KMWwA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 17:52:00 -0500
 MIME-Version: 1.0
-To: jerry.hoemann@hp.com
-CC: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        matt.fleming@intel.com, yinghai@kernel.org, penberg@kernel.org,
-        akpm@linux-foundation.org, linux-doc@vger.kernel.org,
-        linux-efi@vger.kernel.org, vgoyal@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com> <d73ccce9-6a0d-4470-bda3-f0c6eb96b5e4@email.android.com> <20131113224503.GB25344@anatevka.fc.hp.com>
-In-Reply-To: <20131113224503.GB25344@anatevka.fc.hp.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <20131113123947.GB13318@ZenIV.linux.org.uk>
+References: <CAGr1u3vZU_Pxwu1nSab0PExNPQsE0xiSpcoMbUQ7MeGbJzBAjA@mail.gmail.com>
+	<20131113123947.GB13318@ZenIV.linux.org.uk>
+Date: Wed, 13 Nov 2013 14:51:59 -0800
+Message-ID: <CAGr1u3spS2G8r7jCAnFZukE_zGkEGtsk0SSyTj3H39kK9E0_tQ@mail.gmail.com>
+Subject: Re: 3.12 Regression: dcache: Translating dentry into pathname without
+ taking rename_lock 232d2d60
+From: Michael Marineau <michael.marineau@coreos.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 02:45 PM, jerry.hoemann@hp.com wrote:
-> 
-> The changes in 3.9 to allow crash kernel to be allocated high helps. 
-> But as you say, the default is still to allocate crash kernel low and
-> still susceptible to this problem.  So, a kdump expert can work around it.
-> But, not everyone is a kdump expert.
-> 
-> So, we can work to change the default, or encourage the distros
-> to always allocate high.  Or, we change the call to efi_reserve_boot_services
-> not apply to all platforms.
-> 
-> The problems for pre 3.9 based distros is worse as they don't have
-> ability to allocate crash kernel high.
-> 
+On Wed, Nov 13, 2013 at 4:39 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Wed, Nov 13, 2013 at 03:34:13AM -0800, Michael Marineau wrote:
+>> Greetings,
+>>
+>> Commit 232d2d60aa5469bb097f55728f65146bd49c1d25 causes intermittent
+>> errors in /proc/*/fd/* where readlink returns "/" instead of the
+>> correct path. This can be reproduced by the script below which copies
+>> the kernel source directory structure while obsessively looking up
+>> directory fds in proc from another process. Reverting
+>> 232d2d60aa5469bb097f55728f65146bd49c1d25 after two related commits
+>> 48f5ec21d9c67e881ff35343988e290ef5cf933f
+>> 1812997720ab90d029548778c55d7315555e1fef fixes the issue.
+>
+> Looking into it...  It seems that we are getting to the end of
+> prepend_path() with non-negative error and bptr == *buffer.
+> What the...
+>
+> OK, I see what's going on.  We never reinitialize dentry, vfsmount and mnt
+> if we decide to restart.  See if the following helps:
+>
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index ae6ebb8..89f9671 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -2881,9 +2881,9 @@ static int prepend_path(const struct path *path,
+>                         const struct path *root,
+>                         char **buffer, int *buflen)
+>  {
+> -       struct dentry *dentry = path->dentry;
+> -       struct vfsmount *vfsmnt = path->mnt;
+> -       struct mount *mnt = real_mount(vfsmnt);
+> +       struct dentry *dentry;
+> +       struct vfsmount *vfsmnt;
+> +       struct mount *mnt;
+>         int error = 0;
+>         unsigned seq = 0;
+>         char *bptr;
+> @@ -2893,6 +2893,9 @@ static int prepend_path(const struct path *path,
+>  restart:
+>         bptr = *buffer;
+>         blen = *buflen;
+> +       dentry = path->dentry;
+> +       vfsmnt = path->mnt;
+> +       mnt = real_mount(vfsmnt);
+>         read_seqbegin_or_lock(&rename_lock, &seq);
+>         while (dentry != root->dentry || vfsmnt != root->mnt) {
+>                 struct dentry * parent;
 
-But they won't have your new option, either, and that is still horribly
-manual and system-dependent.
-
-In other words, allocating the crashkernel high has ALL the advantages,
-plus a few more, and NONE of the disadvantages.
-
-	-hpa
-
-
+That appears to do the trick! I've tried my test case against that
+patch on both Linus' git tree (as of last night) and the 3.12 release.
+I'm now running the long build job that initially stumbled across this
+bug now but it looks good so far.
