@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759036Ab3KMLjo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 06:39:44 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:55016 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756729Ab3KMLjm (ORCPT
+	id S1759074Ab3KMLkJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 06:40:09 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:10518 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759050Ab3KMLkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 06:39:42 -0500
-Date: Wed, 13 Nov 2013 06:39:27 -0500
-From: Matthew Whitehead <tedheadster@gmail.com>
-To: john.stultz@linaro.org, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Cc: rostedt@goodmis.org, mwhitehe@redhat.com
-Subject: nohz problem with idle time on old hardware
-Message-ID: <20131113113927.GA13875@mwhitehe.csb>
+	Wed, 13 Nov 2013 06:40:05 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 13 Nov 2013 03:34:26 -0800
+Message-ID: <528364C6.80207@nvidia.com>
+Date: Wed, 13 Nov 2013 17:08:46 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+CC: Mark Brown <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: fixed: fix regulator_list_voltage() for regression
+References: <Pine.LNX.4.64.1311131228030.18879@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1311131228030.18879@axis700.grange>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was testing the 3.12 kernel on some _old_ hardware and I uncovered a bug.
-It arises when nohz=on and goes away with nohz=off. On a crusty dual Pentium-1 
-system that is completely idle, the sar utility reports 0% idle time on cpu0 
-and 100% idle on cpu1. Cpu0 _should_ also be reporting 100% idle, but instead
-it reports around 75% system time and 25% user time.
+On Wednesday 13 November 2013 05:03 PM, Guennadi Liakhovetski wrote:
+> Commit c368e5fc2a190923b786f2de3e79430ea3566a25 "regulator: fixed:
+> get rid of {get|list}_voltage()" broke regulator_list_voltage() for
+> the fixed regulator, because an earlier commit
+> 5a523605afa7d3b54b2e7041f8c9e6bc39872a7e "regulator: core: provide
+> fixed voltage in desc for single voltage rail" missed to add support
+> for the fixed-voltage special case to that function. This patch
+> fixes that regression.
+>
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
 
-The problem was diagnosed by Steve Rostedt with help from John Stultz. The old
-system declares the dual TSCs unstable, and backs down to a timesource of 
-refined-jiffies. Apparently refined-jiffies and jiffies are not a usable 
-timesourcefor nohz, but we don't check for that case because most modern
-systems have several reliable hardware timesources.
+I tested the regulator_get_voltage() API only, not other APIs which uses 
+regulator_list_voltage().
+I think this patch is fine.
 
-John suggested that we turn off nohz unless a usable hardware timesource is
-present.
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-- Matthew Whitehead <tedheadster@gmail.com>
 
