@@ -1,126 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759362Ab3KMOsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 09:48:47 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:39667 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758992Ab3KMOso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 09:48:44 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@deeprootsystems.com>
-CC: <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: davinci: Fix McASP mem resource names
-Date: Wed, 13 Nov 2013 16:48:17 +0200
-Message-ID: <1384354097-1163-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.4.2
+	id S1759378Ab3KMOtS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 09:49:18 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59446 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758977Ab3KMOtQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 09:49:16 -0500
+Date: Wed, 13 Nov 2013 15:48:56 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ingo Molnar <mingo@kernel.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] state/exit_state cleanups (Was: Remove unused
+ variable ret from sync_thread_master())
+Message-ID: <20131113144856.GL26898@twins.programming.kicks-ass.net>
+References: <20131113143552.GA10517@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131113143552.GA10517@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ASoC McASP driver looks for the mem resources by name and:
-"mpu" and "dat" regions.
-Change/add the needed name for the mem resources so the driver can pick the
-correct resource.
+On Wed, Nov 13, 2013 at 03:35:52PM +0100, Oleg Nesterov wrote:
+> On 11/12, Oleg Nesterov wrote:
+> >
+> > On 11/12, Peter Zijlstra wrote:
+> > >
+> > > We have to put in something...
+> > >
+> > > 	BUILD_BUG_ON(1 + ilog2(TASK_STATE_MAX) != ARRAY_SIZE(task_state_array));
+> > >
+> > > However, since we always set it together with TASK_UNINTERUPTIBLE
+> > > userspace shouldn't actually ever see the I thing.
+> >
+> > OOPS. I didn't know that get_task_state() does &= TASK_REPORT. So it
+> > can never report anything > EXIT_DEAD.
+> >
+> > Perhaps we should change BUILD_BUG_ON() and shrink task_state_array?
+> 
+> Seriously, imho this looks confusing enough and deserves a cleanup.
+> 
+> 
+> As for "nobody should use exit_state". I'll try to recheck, but iirc
+> we already discussed this... do you remember any reason why
+> schedule_debug() can't check prev->state == TASK_DEAD instead of
+> ->exit_state?
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
-Hi,
+I have no such memories :/ but a quick test shows that such a kernel
+does boot without issue.
 
-This is needed for 3.13.
+> Note that ->exit_state is not exactly right, it is set by exit_notify()
+> but in_atomic_preempt_off() should be only ignored when the task does
+> the last schedule() in TASK_DEAD.
 
-Regards,
-Peter
+Agreed.
 
- arch/arm/mach-davinci/devices-da8xx.c | 4 ++--
- arch/arm/mach-davinci/dm355.c         | 1 +
- arch/arm/mach-davinci/dm365.c         | 1 +
- arch/arm/mach-davinci/dm644x.c        | 1 +
- arch/arm/mach-davinci/dm646x.c        | 4 ++--
- 5 files changed, 7 insertions(+), 4 deletions(-)
+For these patches:
 
-diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
-index c46eccb..78829c5 100644
---- a/arch/arm/mach-davinci/devices-da8xx.c
-+++ b/arch/arm/mach-davinci/devices-da8xx.c
-@@ -487,7 +487,7 @@ int __init da8xx_register_emac(void)
- 
- static struct resource da830_mcasp1_resources[] = {
- 	{
--		.name	= "mcasp1",
-+		.name	= "mpu",
- 		.start	= DAVINCI_DA830_MCASP1_REG_BASE,
- 		.end	= DAVINCI_DA830_MCASP1_REG_BASE + (SZ_1K * 12) - 1,
- 		.flags	= IORESOURCE_MEM,
-@@ -515,7 +515,7 @@ static struct platform_device da830_mcasp1_device = {
- 
- static struct resource da850_mcasp_resources[] = {
- 	{
--		.name	= "mcasp",
-+		.name	= "mpu",
- 		.start	= DAVINCI_DA8XX_MCASP0_REG_BASE,
- 		.end	= DAVINCI_DA8XX_MCASP0_REG_BASE + (SZ_1K * 12) - 1,
- 		.flags	= IORESOURCE_MEM,
-diff --git a/arch/arm/mach-davinci/dm355.c b/arch/arm/mach-davinci/dm355.c
-index ef9ff1f..d4baf4f 100644
---- a/arch/arm/mach-davinci/dm355.c
-+++ b/arch/arm/mach-davinci/dm355.c
-@@ -641,6 +641,7 @@ static struct platform_device dm355_edma_device = {
- 
- static struct resource dm355_asp1_resources[] = {
- 	{
-+		.name	= "mpu",
- 		.start	= DAVINCI_ASP1_BASE,
- 		.end	= DAVINCI_ASP1_BASE + SZ_8K - 1,
- 		.flags	= IORESOURCE_MEM,
-diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
-index 1511a06..9c68e3f 100644
---- a/arch/arm/mach-davinci/dm365.c
-+++ b/arch/arm/mach-davinci/dm365.c
-@@ -942,6 +942,7 @@ static struct platform_device dm365_edma_device = {
- 
- static struct resource dm365_asp_resources[] = {
- 	{
-+		.name	= "mpu",
- 		.start	= DAVINCI_DM365_ASP0_BASE,
- 		.end	= DAVINCI_DM365_ASP0_BASE + SZ_8K - 1,
- 		.flags	= IORESOURCE_MEM,
-diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
-index 143a321..79847d0 100644
---- a/arch/arm/mach-davinci/dm644x.c
-+++ b/arch/arm/mach-davinci/dm644x.c
-@@ -572,6 +572,7 @@ static struct platform_device dm644x_edma_device = {
- /* DM6446 EVM uses ASP0; line-out is a pair of RCA jacks */
- static struct resource dm644x_asp_resources[] = {
- 	{
-+		.name	= "mpu",
- 		.start	= DAVINCI_ASP0_BASE,
- 		.end	= DAVINCI_ASP0_BASE + SZ_8K - 1,
- 		.flags	= IORESOURCE_MEM,
-diff --git a/arch/arm/mach-davinci/dm646x.c b/arch/arm/mach-davinci/dm646x.c
-index 2a73f29..45de58c 100644
---- a/arch/arm/mach-davinci/dm646x.c
-+++ b/arch/arm/mach-davinci/dm646x.c
-@@ -621,7 +621,7 @@ static struct platform_device dm646x_edma_device = {
- 
- static struct resource dm646x_mcasp0_resources[] = {
- 	{
--		.name	= "mcasp0",
-+		.name	= "mpu",
- 		.start 	= DAVINCI_DM646X_MCASP0_REG_BASE,
- 		.end 	= DAVINCI_DM646X_MCASP0_REG_BASE + (SZ_1K << 1) - 1,
- 		.flags 	= IORESOURCE_MEM,
-@@ -641,7 +641,7 @@ static struct resource dm646x_mcasp0_resources[] = {
- 
- static struct resource dm646x_mcasp1_resources[] = {
- 	{
--		.name	= "mcasp1",
-+		.name	= "mpu",
- 		.start	= DAVINCI_DM646X_MCASP1_REG_BASE,
- 		.end	= DAVINCI_DM646X_MCASP1_REG_BASE + (SZ_1K << 1) - 1,
- 		.flags	= IORESOURCE_MEM,
--- 
-1.8.4.2
-
+Acked-by: Peter Zijlstra <peterz@infradead.org>
