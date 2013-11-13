@@ -1,78 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab3KMNkG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 08:40:06 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44768 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756947Ab3KMNkD (ORCPT
+	id S1758294Ab3KMNkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 08:40:46 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:48404 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756987Ab3KMNkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 08:40:03 -0500
-Date: Wed, 13 Nov 2013 14:39:52 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Jonathan Austin <jonathan.austin@arm.com>
-Cc: Ming Lei <tom.leiming@gmail.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] ARM: default PHYS_OFFSET if !MMU
-Message-ID: <20131113133952.GW14892@pengutronix.de>
-References: <1384341351-4110-1-git-send-email-tom.leiming@gmail.com>
- <1384341351-4110-2-git-send-email-tom.leiming@gmail.com>
- <528366A9.7060504@arm.com>
+	Wed, 13 Nov 2013 08:40:43 -0500
+Message-ID: <5283814C.6040904@monstr.eu>
+Date: Wed, 13 Nov 2013 14:40:28 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <528366A9.7060504@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        microblaze-uclinux@itee.uq.edu.au, devicetree@vger.kernel.org
+Subject: Re: [PATCH RFC 15/17] microblaze: Convert from _fdt_start to __dtb_start
+References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org> <1384285347-13506-16-git-send-email-geert@linux-m68k.org> <5283524F.8030902@monstr.eu>
+In-Reply-To: <5283524F.8030902@monstr.eu>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="4IiqVjTX2HIoOtKcUO1NaDwNEIuJkA7CP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 11:46:49AM +0000, Jonathan Austin wrote:
-> Hi Ming,
-> 
-> On 13/11/13 11:15, Ming Lei wrote:
-> > From: Jonathan Austin <jonathan.austin@arm.com>
-> > 
-> > Set CONFIG_PAGE_OFFSET as PHYS_OFFSET when !MMU so that
-> > we can keep CONFIG_PAGE_OFFSET same with PAGE_OFFSET.
-> >
-> 
-> I'm not so sure about this commit message - I don't think
-> it makes sense...Should it not be more like:
-> 
-> ------->8-------
-> Subject: ARM: set PAGE_OFFSET = PHYS_OFFSET if !MMU
-> 
-> With !MMU we still set PAGE_OFFSET to 0xC0000000, which
-> makes little sense and causes a regression on !MMU after
-> f6537f2f0eba4eba ("scripts/kallsyms: filter symbols not
-> kernel address space")
-> 
-> This patch sets PAGE_OFFSET to PHYS_OFFSET in the !MMU
-> case, fixing the regression (Tested on Cortex-R7/Vexpress)
-> --------8<---------
-I like this commit log better, too.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--4IiqVjTX2HIoOtKcUO1NaDwNEIuJkA7CP
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-As CONFIG_PAGE_OFFSET is only used in scripts/kallsyms.c and
-scripts/link-vmlinux.sh for !MMU.
+On 11/13/2013 11:19 AM, Michal Simek wrote:
+> On 11/12/2013 08:42 PM, Geert Uytterhoeven wrote:
+>> Kill the microblaze-specific __fdt_blob section, and start using
+>> .dtb.init.rodata from <asm-generic/sections.h> for built-in DTBs, like=
 
-Booting on efm32 with this patch works just fine, so if you want add my
-Tested-by. But I'm unsure how valuable it is as I don't see a breakage
-without it.
+>> most other DT enabled architectures.
+>>
+>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> Cc: Michal Simek <monstr@monstr.eu>
+>> Cc: Rob Herring <rob.herring@calxeda.com>
+>> Cc: microblaze-uclinux@itee.uq.edu.au
+>> Cc: devicetree@vger.kernel.org
+>> ---
+>> Untested, but the resulting vmlinux after "make simpleImage.system" lo=
+oks
+>> sane.
+>>
+>> QUESTION: The padding of the DTB is gone, is this OK?
+>=20
+> Removing this kernel padding should be fine. I can't remember
+> why it was there from the beginning.
 
-Best regards
-Uwe
+I know why is this here. The reason is process how dtb is passed
+to the kernel via command line. head.S code just copy that dtb to
+the same location where compiled-in dts is expected and kernel
+doesn't need to care about position of dtb because this copy is
+done without MMU. And the full kernel is covered by 2 tlbs and
+we don't need to use another TLB for dtb mapping.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+It means pad matters a lot. Because u-boot ITS format doesn't use
+simpleImage target but the kernel need to have a space for copying
+dtb to this kernel location.
+
+Let me think about if there is an easy way to handle dtbs
+which are passed from bootloader.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--4IiqVjTX2HIoOtKcUO1NaDwNEIuJkA7CP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlKDgU0ACgkQykllyylKDCFfmQCgmiporcUeFQV4wtSrDYnXPPJv
+mUEAnjIcvATuJeWyBzrT/IIH/3dLq4iw
+=QGBC
+-----END PGP SIGNATURE-----
+
+--4IiqVjTX2HIoOtKcUO1NaDwNEIuJkA7CP--
