@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759366Ab3KMOdI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 09:33:08 -0500
-Received: from mail-de.keymile.com ([195.8.104.250]:35039 "EHLO
-	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758386Ab3KMOdG (ORCPT
+	id S1759370Ab3KMOd4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 09:33:56 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:62073 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757060Ab3KMOdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 09:33:06 -0500
-Message-ID: <52838D9C.80500@keymile.com>
-Date: Wed, 13 Nov 2013 15:33:00 +0100
-From: Gerlando Falauto <gerlando.falauto@keymile.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
+	Wed, 13 Nov 2013 09:33:54 -0500
+Message-ID: <52838DD0.20906@gmail.com>
+Date: Wed, 13 Nov 2013 07:33:52 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH] spi: spi-gpio: Add check for cs-gpios dt property
-References: <1384329748-2897-1-git-send-email-gerlando.falauto@keymile.com> <20131113133320.GL878@sirena.org.uk>
-In-Reply-To: <20131113133320.GL878@sirena.org.uk>
+To: Ingo Molnar <mingo@kernel.org>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, jolsa@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 5/5] perf record: Handle out of space failures writing
+ data with mmap
+References: <1384267617-3446-1-git-send-email-dsahern@gmail.com> <1384267617-3446-6-git-send-email-dsahern@gmail.com> <20131112211926.GD25913@gmail.com>
+In-Reply-To: <20131112211926.GD25913@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On 11/12/13, 2:19 PM, Ingo Molnar wrote:
 
-On 11/13/2013 02:33 PM, Mark Brown wrote:
-> On Wed, Nov 13, 2013 at 09:02:28AM +0100, Gerlando Falauto wrote:
->> The bindings assumed that the cs-gpios property is always there.
->> However, a single SPI device can also work fine without an explicit chip select.
->> Use the SPI_GPIO_NO_CHIPSELECT mode when the property is not present or invaild.
+> So this isn't very robust, because it assumes that all sources of SIGBUS
+> are due to that memcpy() hitting -ENOSPC...
 >
-> Given that for most systems a missing /CS would be an error it seems
-> better to add an explicit property to enable this in order to help make
-> problems with the more common case more obvious.
+> There are several failure modes:
 >
+>   - If mmap_jmp is not set yet and we get a SIGBUS is some other place,
+>     then the longjmp() result will be undefined.
+>
+>   - If mmap_jmp environment is set, but we've returned from
+>     do_mmap_output() already, then the result will be undefined - likely a
+>     non-obvious crash.
+>
+> So at minimum we need a flag that tells us whether the jump environment is
+> valid or not - i.e. whether we are executing inside the protected region
+> or not - and only do the longjmp() if that flag is set.
 
-Thank you for your answer.
-How about an empty
+Right I meant to add that -- a flag to know when the jmp should be used. 
+Got distracted.
 
-	cs-gpios;
+>
+> Is there really no other way to handle the -ENOSPC case robustly? I guess
+> not because the memcpy() really needs memory to write to, but I thought
+> I'd ask ...
 
-property? To explicitly state we haven't just forgotten it -- we just 
-know we don't have one instead. (There are plenty of empty "ranges;" 
-properties in ARM DTSes -- I don't know if the use case is the same though).
+You need some means to interrupt memcpy and bounce out of it. longjmp is 
+the only option I know of.
 
-Or else a null-valued
-
-	cs-gpios = <0>;
-
-property?
-
-I'm open to other proposals of course.
-
-Thanks again!
-Gerlando
+David
