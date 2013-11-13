@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904Ab3KMNB4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 08:01:56 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39410 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754473Ab3KMNBy (ORCPT
+	id S1756748Ab3KMNIk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 08:08:40 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:47477 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450Ab3KMNIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 08:01:54 -0500
-Date: Wed, 13 Nov 2013 13:01:49 +0000
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        ckeepax@opensource.wolfsonmicro.com,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ASoC: arizona: Fix typo in name of EQ coefficient controls
-Message-ID: <20131113130149.GA7665@opensource.wolfsonmicro.com>
+	Wed, 13 Nov 2013 08:08:37 -0500
+Date: Wed, 13 Nov 2013 14:08:32 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: David Laight <David.Laight@ACULAB.COM>, Joe Perches <joe@perches.com>,
+        netdev <netdev@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [Fwd: Re: [PATCH v2 2/2] x86: add prefetching to do_csum]
+Message-ID: <20131113130832.GB22140@gmail.com>
+References: <1384220542.4771.23.camel@joe-AO722>
+ <20131112171239.GC19780@hmsreliant.think-freely.org>
+ <1384277615.3665.10.camel@joe-AO722>
+ <20131112195005.GD19780@hmsreliant.think-freely.org>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B740E@saturn3.aculab.com>
+ <20131113123010.GB2993@hmsreliant.think-freely.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20131113123010.GB2993@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
----
- sound/soc/codecs/wm5102.c |    8 ++++----
- sound/soc/codecs/wm5110.c |    8 ++++----
- sound/soc/codecs/wm8997.c |    8 ++++----
- 3 files changed, 12 insertions(+), 12 deletions(-)
+* Neil Horman <nhorman@tuxdriver.com> wrote:
 
-diff --git a/sound/soc/codecs/wm5102.c b/sound/soc/codecs/wm5102.c
-index 8bbddc1..a08e8bf 100644
---- a/sound/soc/codecs/wm5102.c
-+++ b/sound/soc/codecs/wm5102.c
-@@ -685,13 +685,13 @@ ARIZONA_MIXER_CONTROLS("EQ2", ARIZONA_EQ2MIX_INPUT_1_SOURCE),
- ARIZONA_MIXER_CONTROLS("EQ3", ARIZONA_EQ3MIX_INPUT_1_SOURCE),
- ARIZONA_MIXER_CONTROLS("EQ4", ARIZONA_EQ4MIX_INPUT_1_SOURCE),
- 
--SND_SOC_BYTES_MASK("EQ1 Coefficeints", ARIZONA_EQ1_1, 21,
-+SND_SOC_BYTES_MASK("EQ1 Coefficients", ARIZONA_EQ1_1, 21,
- 		   ARIZONA_EQ1_ENA_MASK),
--SND_SOC_BYTES_MASK("EQ2 Coefficeints", ARIZONA_EQ2_1, 21,
-+SND_SOC_BYTES_MASK("EQ2 Coefficients", ARIZONA_EQ2_1, 21,
- 		   ARIZONA_EQ2_ENA_MASK),
--SND_SOC_BYTES_MASK("EQ3 Coefficeints", ARIZONA_EQ3_1, 21,
-+SND_SOC_BYTES_MASK("EQ3 Coefficients", ARIZONA_EQ3_1, 21,
- 		   ARIZONA_EQ3_ENA_MASK),
--SND_SOC_BYTES_MASK("EQ4 Coefficeints", ARIZONA_EQ4_1, 21,
-+SND_SOC_BYTES_MASK("EQ4 Coefficients", ARIZONA_EQ4_1, 21,
- 		   ARIZONA_EQ4_ENA_MASK),
- 
- SOC_SINGLE_TLV("EQ1 B1 Volume", ARIZONA_EQ1_1, ARIZONA_EQ1_B1_GAIN_SHIFT,
-diff --git a/sound/soc/codecs/wm5110.c b/sound/soc/codecs/wm5110.c
-index bbd6438..b67ba33 100644
---- a/sound/soc/codecs/wm5110.c
-+++ b/sound/soc/codecs/wm5110.c
-@@ -101,13 +101,13 @@ ARIZONA_MIXER_CONTROLS("EQ2", ARIZONA_EQ2MIX_INPUT_1_SOURCE),
- ARIZONA_MIXER_CONTROLS("EQ3", ARIZONA_EQ3MIX_INPUT_1_SOURCE),
- ARIZONA_MIXER_CONTROLS("EQ4", ARIZONA_EQ4MIX_INPUT_1_SOURCE),
- 
--SND_SOC_BYTES_MASK("EQ1 Coefficeints", ARIZONA_EQ1_1, 21,
-+SND_SOC_BYTES_MASK("EQ1 Coefficients", ARIZONA_EQ1_1, 21,
- 		   ARIZONA_EQ1_ENA_MASK),
--SND_SOC_BYTES_MASK("EQ2 Coefficeints", ARIZONA_EQ2_1, 21,
-+SND_SOC_BYTES_MASK("EQ2 Coefficients", ARIZONA_EQ2_1, 21,
- 		   ARIZONA_EQ2_ENA_MASK),
--SND_SOC_BYTES_MASK("EQ3 Coefficeints", ARIZONA_EQ3_1, 21,
-+SND_SOC_BYTES_MASK("EQ3 Coefficients", ARIZONA_EQ3_1, 21,
- 		   ARIZONA_EQ3_ENA_MASK),
--SND_SOC_BYTES_MASK("EQ4 Coefficeints", ARIZONA_EQ4_1, 21,
-+SND_SOC_BYTES_MASK("EQ4 Coefficients", ARIZONA_EQ4_1, 21,
- 		   ARIZONA_EQ4_ENA_MASK),
- 
- SOC_SINGLE_TLV("EQ1 B1 Volume", ARIZONA_EQ1_1, ARIZONA_EQ1_B1_GAIN_SHIFT,
-diff --git a/sound/soc/codecs/wm8997.c b/sound/soc/codecs/wm8997.c
-index 2e886ca..1392bb3 100644
---- a/sound/soc/codecs/wm8997.c
-+++ b/sound/soc/codecs/wm8997.c
-@@ -170,13 +170,13 @@ ARIZONA_MIXER_CONTROLS("EQ2", ARIZONA_EQ2MIX_INPUT_1_SOURCE),
- ARIZONA_MIXER_CONTROLS("EQ3", ARIZONA_EQ3MIX_INPUT_1_SOURCE),
- ARIZONA_MIXER_CONTROLS("EQ4", ARIZONA_EQ4MIX_INPUT_1_SOURCE),
- 
--SND_SOC_BYTES_MASK("EQ1 Coefficeints", ARIZONA_EQ1_1, 21,
-+SND_SOC_BYTES_MASK("EQ1 Coefficients", ARIZONA_EQ1_1, 21,
- 		   ARIZONA_EQ1_ENA_MASK),
--SND_SOC_BYTES_MASK("EQ2 Coefficeints", ARIZONA_EQ2_1, 21,
-+SND_SOC_BYTES_MASK("EQ2 Coefficients", ARIZONA_EQ2_1, 21,
- 		   ARIZONA_EQ2_ENA_MASK),
--SND_SOC_BYTES_MASK("EQ3 Coefficeints", ARIZONA_EQ3_1, 21,
-+SND_SOC_BYTES_MASK("EQ3 Coefficients", ARIZONA_EQ3_1, 21,
- 		   ARIZONA_EQ3_ENA_MASK),
--SND_SOC_BYTES_MASK("EQ4 Coefficeints", ARIZONA_EQ4_1, 21,
-+SND_SOC_BYTES_MASK("EQ4 Coefficients", ARIZONA_EQ4_1, 21,
- 		   ARIZONA_EQ4_ENA_MASK),
- 
- SOC_SINGLE_TLV("EQ1 B1 Volume", ARIZONA_EQ1_1, ARIZONA_EQ1_B1_GAIN_SHIFT,
--- 
-1.7.2.5
+> On Wed, Nov 13, 2013 at 10:09:51AM -0000, David Laight wrote:
+> > > Sure, I modified the code so that we only prefetched 2 cache lines ahead, but
+> > > only if the overall length of the input buffer is more than 2 cache lines.
+> > > Below are the results (all counts are the average of 1000000 iterations of the
+> > > csum operation, as previous tests were, I just omitted that column).
+> > 
+> > Hmmm.... averaging over 100000 iterations means that all the code
+> > is in the i-cache and the branch predictor will be correctly primed.
+> > 
+> > For short checksum requests I'd guess that the relevant data
+> > has just been written and is already in the cpu cache (unless
+> > there has been a process and cpu switch).
+> > So prefetch is likely to be unnecessary.
+> > 
+> > If you assume that the checksum code isn't in the i-cache then
+> > small requests are likely to be dominated by the code size.
+> 
+> I'm not sure, whats the typical capacity for the branch predictors 
+> ability to remember code paths?  I ask because the most likely use of 
+> do_csum will be in the receive path of the networking stack 
+> (specifically in the softirq handler). So if we run do_csum once, we're 
+> likely to run it many more times, as we clean out an adapters receive 
+> queue.
 
+For such simple single-target branches it goes near or over a thousand for 
+recent Intel and AMD microarchitectures. Thousands for really recent CPUs.
+
+Note that branch prediction caches are hierarchical and are typically 
+attached to cache hierarchies (where the uops are fetched from), so the 
+first level BTB is typically shared between SMT CPUs that share an icache 
+and L2 BTBs (which is larger and more associative) are shared by all cores 
+in a package.
+
+So it's possible for some other task on another (sibling) CPU to keep 
+pressure on your BTB, but I'd say it's relatively rare, it's hard to do it 
+at a really high rate that blows away all the cache all the time. (PeterZ 
+has written some artificial pseudorandom branching monster just to be able 
+to generate cache misses and validate perf's branch stats - but even if 
+deliberately want to it's pretty hard to beat that cache.)
+
+I'd definitely not worry about the prediction accuracy of repetitive loops 
+like csum routines, they'll be cached well.
+
+Thanks,
+
+	Ingo
