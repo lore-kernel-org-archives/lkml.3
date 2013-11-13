@@ -1,164 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758815Ab3KMIUB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 03:20:01 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37568 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758265Ab3KMITw (ORCPT
+	id S1758843Ab3KMI2n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 03:28:43 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:44578 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758733Ab3KMI2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 03:19:52 -0500
-Date: Wed, 13 Nov 2013 00:19:40 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: David Turner <novalis@novalis.org>
-Cc: Andreas Dilger <adilger@dilger.ca>, "Theodore Ts'o" <tytso@mit.edu>,
-        Mark Harris <mhlk@osj.us>, Jan Kara <jack@suse.cz>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 1/2] ext4: Fix handling of extended tv_sec (bug 23732)
-Message-ID: <20131113081940.GB10269@birch.djwong.org>
-References: <1383864864.23882.33.camel@chiang>
- <20131107231445.GG2054@quack.suse.cz>
- <1383866807.23882.41.camel@chiang>
- <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
- <1383981551.8994.27.camel@chiang>
- <CADQUmxULoLgXRyoPpJJMJLqJPsZ8M4oPP8ScGxWp+Np8-efq3g@mail.gmail.com>
- <1384070214.8994.47.camel@chiang>
- <20131112003018.GA30281@thunk.org>
- <6DE0AF86-98E6-4DE9-BB7F-40FB32E1BC26@dilger.ca>
- <1384326015.8994.185.camel@chiang>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384326015.8994.185.camel@chiang>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 13 Nov 2013 03:28:30 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC 9/9] of/irq: create interrupts-extended property
+To: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>
+In-Reply-To: <CAEgOgz4dM1zQdFpOkUwZqAUMUBe2eh3j1Ah0KgomVAOGgrPsVw@mail.gmail.com>
+References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org> <1381869563-16083-10-git-send-email-grant.likely@linaro.org> <CAEgOgz6=HhBkb2KtxcmHpNdE_0sNngw0NaL2SnLWj1opZkO3SA@mail.gmail.com> <20131112065405.C75E8C42024@trevor.secretlab.ca> <CAEgOgz6j8YsvFgq8ZbE20ocHPA0C-eUGBb7F1gNiVBvJXLa8_g@mail.gmail.com> <20131112085038.B6A75C421BB@trevor.secretlab.ca> <CAEgOgz4dM1zQdFpOkUwZqAUMUBe2eh3j1Ah0KgomVAOGgrPsVw@mail.gmail.com>
+Date: Wed, 13 Nov 2013 15:14:25 +0900
+Message-Id: <20131113061425.667F9C41807@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 02:00:15AM -0500, David Turner wrote:
-> In ext4, the bottom two bits of {a,c,m}time_extra are used to extend
-> the {a,c,m}time fields, deferring the year 2038 problem to the year
-> 2446.
+On Wed, 13 Nov 2013 09:17:01 +1000, Peter Crosthwaite <peter.crosthwaite@xilinx.com> wrote:
+> On Tue, Nov 12, 2013 at 6:50 PM, Grant Likely <grant.likely@linaro.org> wrote:
+> > On Tue, 12 Nov 2013 17:49:37 +1000, Peter Crosthwaite <peter.crosthwaite@xilinx.com> wrote:
+> >> Hi Grant,
+> >>
+> >> On Tue, Nov 12, 2013 at 4:54 PM, Grant Likely <grant.likely@linaro.org> wrote:
+> >> > On Tue, 12 Nov 2013 08:58:15 +1000, Peter Crosthwaite <peter.crosthwaite@xilinx.com> wrote:
+> >> >> Hi Grant,
+> >> >>
+> >> >> On Wed, Oct 16, 2013 at 6:39 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> >> >> > The standard interrupts property in device tree can only handle
+> >> >> > interrupts coming from a single interrupt parent. If a device is wired
+> >> >> > to multiple interrupt controllers, then it needs to be attached to a
+> >> >> > node with an interrupt-map property to demux the interrupt specifiers
+> >> >> > which is confusing. It would be a lot easier if there was a form of the
+> >> >> > interrupts property that allows for a separate interrupt phandle for
+> >> >> > each interrupt specifier.
+> >> >> >
+> >> >> > This patch does exactly that by creating a new interrupts-extended
+> >> >> > property which reuses the phandle+arguments pattern used by GPIOs and
+> >> >> > other core bindings.
+> >> >> >
+> >> >> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> >> >> > Cc: Rob Herring <rob.herring@calxeda.com>
+> >> >> > ---
+> >> >> >  .../bindings/interrupt-controller/interrupts.txt   | 29 +++++++--
+> >> >> >  arch/arm/boot/dts/testcases/tests-interrupts.dtsi  | 16 +++++
+> >> >> >  arch/arm/boot/dts/versatile-ab.dts                 |  2 +-
+> >> >> >  arch/arm/boot/dts/versatile-pb.dts                 |  2 +-
+> >> >> >  drivers/of/irq.c                                   | 16 +++--
+> >> >> >  drivers/of/selftest.c                              | 70 ++++++++++++++++++++++
+> >> >> >  6 files changed, 122 insertions(+), 13 deletions(-)
+> >> >> >
+> >> >> > diff --git a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+> >> >> > index 72a06c0..1486497 100644
+> >> >> > --- a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+> >> >> > +++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+> >> >> > @@ -4,16 +4,33 @@ Specifying interrupt information for devices
+> >> >> >  1) Interrupt client nodes
+> >> >> >  -------------------------
+> >> >> >
+> >> >> > -Nodes that describe devices which generate interrupts must contain an
+> >> >> > -"interrupts" property. This property must contain a list of interrupt
+> >> >> > -specifiers, one per output interrupt. The format of the interrupt specifier is
+> >> >> > -determined by the interrupt controller to which the interrupts are routed; see
+> >> >> > -section 2 below for details.
+> >> >> > +Nodes that describe devices which generate interrupts must contain an either an
+> >> >> > +"interrupts" property or an "interrupts-extended" property. These properties
+> >> >> > +contain a list of interrupt specifiers, one per output interrupt. The format of
+> >> >> > +the interrupt specifier is determined by the interrupt controller to which the
+> >> >> > +interrupts are routed; see section 2 below for details.
+> >> >> > +
+> >> >> > +  Example:
+> >> >> > +       interrupt-parent = <&intc1>;
+> >> >> > +       interrupts = <5 0>, <6 0>;
+> >> >> >
+> >> >> >  The "interrupt-parent" property is used to specify the controller to which
+> >> >> >  interrupts are routed and contains a single phandle referring to the interrupt
+> >> >> >  controller node. This property is inherited, so it may be specified in an
+> >> >> > -interrupt client node or in any of its parent nodes.
+> >> >> > +interrupt client node or in any of its parent nodes. Interrupts listed in the
+> >> >> > +"interrupts" property are always in reference to the node's interrupt parent.
+> >> >> > +
+> >> >> > +The "interrupts-extended" property is a special form for use when a node needs
+> >> >> > +to reference multiple interrupt parents. Each entry in this property contains
+> >> >> > +both the parent phandle and the interrupt specifier. "interrupts-extended"
+> >> >> > +should only be used when a device has multiple interrupt parents.
+> >> >> > +
+> >> >> > +  Example:
+> >> >> > +       interrupts-extended = <&intc1 5 1>, <&intc2 1 0>;
+> >> >> > +
+> >> >>
+> >> >> A slightly different but related problem I am trying to solve with
+> >> >> interrupt bindings, is to describe connection of a single device
+> >> >> interrupt line to multiple interrupts controller, whereas this binding
+> >> >> seems to be describing connection of different interrupt lines to
+> >> >> different controllers. Can this syntax accommodate my case is any way?
+> >> >>
+> >> >> Bascially I think I'm asking for multiple interrupt specifiers for a
+> >> >> single IRQ output if that's possible.
+> >> >>
+> >> >> Should I just be using the interrupt map syntax instead?
+> >> >>
+> >> >> interrupt-map-mask = < 0 0 63>;
+> >> >> interrupt-map = < 0 0 25 &intc0 ... >, < 0 0 25 &intc1 ... >,
+> >> >
+> >> > Interrupt map doesn't actually help you here either since the core code
+> >> > doesn't know what to do with it. It will probably only match and return
+> >> > one of the options.
+> >> >
+> >>
+> >> Yes I noticed that. Although we are a fair way off Linux patches for
+> >> this just yet and all I want to solve near-term is the hardware
+> >> description problem (what core Linux IRQ code is actually supposed to
+> >> do when given such a wiring setup is probably an open question).
+> >>
+> >> > What I would do is describe both in your interrupts property and make
+> >> > the driver know that the extra interrupt specifier is for the same
+> >> > interrupt output.
+> >> >
+> >>
+> >> So this is a little annoying, as ideally device drivers should not be
+> >> aware of their external connections. I'm trying to describe board (or
+> >> SoC) level wiring in hopefully a way that doesn't require individual
+> >> driver awareness. It also gets very messy when you have multiple
+> >> interrupt outputs that are each in themselves connected to multiple
+> >> interrupt controllers (which happens to be my situation). The meaning
+> >> of multiple tuples becomes ambiguous.
+> >>
+> >> Is the interrupt-map system I proposed acceptable long-term from just
+> >> a pure binding acceptability standpoint? The driver side solution is
+> >> also a large change pattern as I'm using this with Xilinx Zynq which
+> >> has a large number of peripherals, any of which could be
+> >> multiply-connected to both A9GIC and soft intc's in FPGA fabric.
+> >
+> > Well, it isn't actively dangerous, but it really isn't a very good
+> > description either. There is no information about what the difference
+> > would be between the different connection options. The kernel certainly
+> > cannot do anything intelligent with it.
+> >
+> > You'd probably be better off with an IRQ mux node and associated driver
+> > that chooses the appropriate connection and makes the behaviour
+> > transparent to the device driver. That way you'd have a place to embed
+> > the knowledge of how to make good decisions.
+> >
 > 
-> When decoding these extended fields, for times whose bottom 32 bits
-> would represent a negative number, sign extension causes the 64-bit
-> extended timestamp to be negative as well, which is not what's
-> intended.  This patch corrects that issue, so that the only negative
-> {a,c,m}times are those between 1901 and 1970 (as per 32-bit signed
-> timestamps).
+> Hi Grant,
 > 
-> Some older kernels might have written pre-1970 dates with 1,1 in the
-> extra bits.  This patch treats those incorrectly-encoded dates as
-> pre-1970, instead of post-2311, until kernel 4.20 is released.
-> Hopefully by then e2fsck will have fixed up the bad data.
+> That sounds good, and it avoids me having to deal with that
+> interrupt-map crazyness. Here's a first attempt at this form of
+> syntax:
 > 
-> Signed-off-by: David Turner <novalis@novalis.org>
-> Reported-by: Mark Harris <mh8928@yahoo.com>
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=23732
-> ---
->  fs/ext4/ext4.h | 61 +++++++++++++++++++++++++++++++++++++---------------------
->  1 file changed, 39 insertions(+), 22 deletions(-)
+> foo_irq_mux {
+>     #interrupt-cells = 0;
+>     comaptible = "irq-mux";
+>     interrupts-extended = < &intc0 0 1 >,< &intc1 2 3 >;
+>     /* descision making info goes here */
+> };
 > 
-> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-> index 18aa56b..7d5e019 100644
-> --- a/fs/ext4/ext4.h
-> +++ b/fs/ext4/ext4.h
-> @@ -26,6 +26,7 @@
->  #include <linux/seqlock.h>
->  #include <linux/mutex.h>
->  #include <linux/timer.h>
-> +#include <linux/version.h>
->  #include <linux/wait.h>
->  #include <linux/blockgroup_lock.h>
->  #include <linux/percpu_counter.h>
-> @@ -713,38 +714,54 @@ struct move_extent {
->  	  sizeof((ext4_inode)->field))			\
->  	<= (EXT4_GOOD_OLD_INODE_SIZE +			\
->  	    (einode)->i_extra_isize))			\
-> +
->  /*
-> - * We use the bottom 34 bits of the signed 64-bit time value, with
-> - * the top two of these bits in the bottom of extra.  This leads
-> - * to a slightly odd encoding, which works like this:
-> + * We need is an encoding that preserves the times for extra epoch "00":
->   *
-> - * extra  msb of
-> - * epoch  32-bit
-> - * bits   time    decoded 64-bit tv_sec   valid time range
-> - * 0 0    0    0x000000000..0x07fffffff  1970-01-01..2038-01-19
-> - * 0 0    1    0x080000000..0x0ffffffff  2038-01-19..2106-02-07
-> - * 0 1    0    0x100000000..0x17fffffff  2106-02-07..2174-02-25
-> - * 0 1    1    0x180000000..0x1ffffffff  2174-02-25..2242-03-16
-> - * 1 0    0    0x200000000..0x27fffffff  2242-03-16..2310-04-04
-> - * 1 0    1    0x280000000..0x2ffffffff  2310-04-04..2378-04-22
-> - * 1 1    0    0x300000000..0x37fffffff  2378-04-22..2446-05-10
-> -
-> - * 1 1    1    -0x80000000..-0x00000001  1901-12-13..1969-12-31
-> + * extra  msb of                         adjust for signed
-> + * epoch  32-bit                         32-bit tv_sec to
-> + * bits   time    decoded 64-bit tv_sec  64-bit tv_sec      valid time range
-> + * 0 0    1    -0x80000000..-0x00000001  0x000000000     1901-12-13..1969-12-31
-> + * 0 0    0    0x000000000..0x07fffffff  0x000000000     1970-01-01..2038-01-19
-> + * 0 1    1    0x080000000..0x0ffffffff  0x100000000     2038-01-19..2106-02-07
-> + * 0 1    0    0x100000000..0x17fffffff  0x100000000     2106-02-07..2174-02-25
-> + * 1 0    1    0x180000000..0x1ffffffff  0x200000000     2174-02-25..2242-03-16
-> + * 1 0    0    0x200000000..0x27fffffff  0x200000000     2242-03-16..2310-04-04
-> + * 1 1    1    0x280000000..0x2ffffffff  0x300000000     2310-04-04..2378-04-22
-> + * 1 1    0    0x300000000..0x37fffffff  0x300000000     2378-04-22..2446-05-10
-> + *
-> + * Note that previous versions of the kernel on 64-bit systems would
-> + * incorrectly use extra epoch bits 1,1 for dates between 1901 and
-> + * 1970.  e2fsck will correct this, assuming that it is run on the
-> + * affected filesystem before 2311.
+> foo : foo@deadbeef {
+>     compatible = "vendor,foo";
+>     interrupts-extended = <&foo_irq_mux>;
+> }
+> 
+> 
+> It's going to get a little verbose once you start making multiple
+> connections as you need one mux per wire. Perhaps it could be cleaned
+> up by making the foo_irq_mux node(s) a child of foo?
 
-Given the table, should this be "before 2310-04-04"?
+It could, but then you need some way of attaching a driver to that node,
+and that would require building knowledge into the driver again.
 
---D
->   */
->  
->  static inline __le32 ext4_encode_extra_time(struct timespec *time)
->  {
-> -       return cpu_to_le32((sizeof(time->tv_sec) > 4 ?
-> -			   (time->tv_sec >> 32) & EXT4_EPOCH_MASK : 0) |
-> -                          ((time->tv_nsec << EXT4_EPOCH_BITS) & EXT4_NSEC_MASK));
-> +	u32 extra = sizeof(time->tv_sec) > 4 ?
-> +		((time->tv_sec - (s32)time->tv_sec) >> 32) & EXT4_EPOCH_MASK : 0;
-> +	return cpu_to_le32(extra | (time->tv_nsec << EXT4_EPOCH_BITS));
->  }
->  
->  static inline void ext4_decode_extra_time(struct timespec *time, __le32 extra)
->  {
-> -       if (sizeof(time->tv_sec) > 4)
-> -	       time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
-> -			       << 32;
-> -       time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
-> +	if (unlikely(sizeof(time->tv_sec) > 4 &&
-> +			(extra & cpu_to_le32(EXT4_EPOCH_MASK)))) {
-> +#if LINUX_VERSION_CODE < KERNEL_VERSION(4,20,0)
-> +		/* Handle legacy encoding of pre-1970 dates with epoch
-> +		 * bits 1,1.  We assume that by kernel version 4.20,
-> +		 * everyone will have run fsck over the affected
-> +		 * filesystems to correct the problem.
-> +		 */
-> +		u64 extra_bits = le32_to_cpu(extra) & EXT4_EPOCH_MASK;
-> +		if (extra_bits == 3)
-> +			extra_bits = 0;
-> +		time->tv_sec += extra_bits << 32;
-> +#else
-> +		time->tv_sec += (u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK) << 32;
-> +#endif
-> +	}
-> +	time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
->  }
->  
->  #define EXT4_INODE_SET_XTIME(xtime, inode, raw_inode)			       \
-> -- 
-> 1.8.1.2
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Can you boil it down to a couple of concrete examples? What is a
+specific example of how the platform should decide which interrupt line
+to use?
+
+g.
+
