@@ -1,327 +1,472 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759266Ab3KMJVB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 04:21:01 -0500
-Received: from [213.199.154.184] ([213.199.154.184]:38140 "EHLO
-	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1759097Ab3KMJUy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 04:20:54 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz9371I542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh6d523h1de097h186068hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216hbe9i1155h)
-From: Bharat Bhushan <Bharat.Bhushan@freescale.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Alex Graf <agraf@suse.de>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v9] PPC: POWERNV: move iommu_add_device earlier
-Thread-Topic: [PATCH v9] PPC: POWERNV: move iommu_add_device earlier
-Thread-Index: AQHO4DnkI6HMG/jLiU6ujlz368GBlJoi4VuQ
-Date: Wed, 13 Nov 2013 09:19:37 +0000
-Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D071FC2FD@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1384324220-30109-1-git-send-email-aik@ozlabs.ru>
-In-Reply-To: <1384324220-30109-1-git-send-email-aik@ozlabs.ru>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.14.2]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932438Ab3KMJZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 04:25:55 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:47093 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758185Ab3KMJZu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 04:25:50 -0500
+Message-ID: <52834593.4000803@free-electrons.com>
+Date: Wed, 13 Nov 2013 17:25:39 +0800
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Bo Shen <voice.shen@atmel.com>, Thierry Reding <thierry.reding@gmail.com>
+CC: linux-pwm@vger.kernel.org, nicolas.ferre@atmel.com,
+        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 1/2] PWM: atmel-pwm: add PWM controller driver
+References: <1383292767-11211-1-git-send-email-voice.shen@atmel.com>
+In-Reply-To: <1383292767-11211-1-git-send-email-voice.shen@atmel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Alexey Kardashevskiy [mailto:aik@ozlabs.ru]
-> Sent: Wednesday, November 13, 2013 12:00 PM
-> To: linuxppc-dev@lists.ozlabs.org
-> Cc: Alexey Kardashevskiy; Benjamin Herrenschmidt; Bhushan Bharat-R65777; Alex
-> Graf; linux-kernel@vger.kernel.org
-> Subject: [PATCH v9] PPC: POWERNV: move iommu_add_device earlier
-> 
-> The current implementation of IOMMU on sPAPR does not use iommu_ops
-> and therefore does not call IOMMU API's bus_set_iommu() which
-> 1) sets iommu_ops for a bus
-> 2) registers a bus notifier
-> Instead, PCI devices are added to IOMMU groups from
-> subsys_initcall_sync(tce_iommu_init) which does basically the same
-> thing without using iommu_ops callbacks.
-> 
-> However Freescale PAMU driver (https://lkml.org/lkml/2013/7/1/158)
-> implements iommu_ops and when tce_iommu_init is called, every PCI device
-> is already added to some group so there is a conflict.
-> 
-> This patch does 2 things:
-> 1. removes the loop in which PCI devices were added to groups and
-> adds explicit iommu_add_device() calls to add devices as soon as they get
-> the iommu_table pointer assigned to them.
-> 2. moves a bus notifier to powernv code in order to avoid conflict with
-> the notifier from Freescale driver.
-> 
-> iommu_add_device() and iommu_del_device() are public now.
-> 
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-
-Tested-by: Bharat Bhushan <bharat.bhushan@freescale.com>
-
+On 01/11/2013 15:59, Bo Shen wrote:
+> Add Atmel PWM controller driver based on PWM framework.
+>
+> This is the basic function implementation of Atmel PWM controller.
+> It can work with PWM based led and backlight.
+>
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+>
 > ---
-> Changes:
-> v9:
-> * removed "KVM" from the subject as it is not really a KVM patch so
-> PPC mainainter (hi Ben!) can review/include it into his tree
-> 
-> v8:
-> * added the check for iommu_group!=NULL before removing device from a group
-> as suggested by Wei Yang <weiyang@linux.vnet.ibm.com>
-> 
-> v2:
-> * added a helper - set_iommu_table_base_and_group - which does
-> set_iommu_table_base() and iommu_add_device()
-> ---
->  arch/powerpc/include/asm/iommu.h            |  9 +++++++
->  arch/powerpc/kernel/iommu.c                 | 41 +++--------------------------
->  arch/powerpc/platforms/powernv/pci-ioda.c   |  8 +++---
->  arch/powerpc/platforms/powernv/pci-p5ioc2.c |  2 +-
->  arch/powerpc/platforms/powernv/pci.c        | 33 ++++++++++++++++++++++-
->  arch/powerpc/platforms/pseries/iommu.c      |  8 +++---
->  6 files changed, 55 insertions(+), 46 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
-> index c34656a..19ad77f 100644
-> --- a/arch/powerpc/include/asm/iommu.h
-> +++ b/arch/powerpc/include/asm/iommu.h
-> @@ -103,6 +103,15 @@ extern struct iommu_table *iommu_init_table(struct
-> iommu_table * tbl,
->  					    int nid);
->  extern void iommu_register_group(struct iommu_table *tbl,
->  				 int pci_domain_number, unsigned long pe_num);
-> +extern int iommu_add_device(struct device *dev);
-> +extern void iommu_del_device(struct device *dev);
+> Changes in v6:
+>   - using relaxed version for writel and readl
+>   - add none device tree support
+>   - change some define from lower case to upper case
+>   - split device tree binding document as a separate patch
+>
+> Changes in v5:
+>   - call clk_disable directly, if so, it won't cause more than one channel
+>     enabled, the clock can not be disabled.
+>
+> Changes in v4:
+>   - check the return value of clk_prepare()
+>   - change channel register size as constant
+>
+> Changes in v3:
+>   - change compatible string from "atmel,sama5-pwm" to "atmel,sama5d3-pwm"
+>   - Add PWM led example in binding documentation
+>   - Using micro replace hard code
+>
+> Changes in v2:
+>   - Address the comments from Thierry Reding
+>
+>  drivers/pwm/Kconfig     |    9 ++
+>  drivers/pwm/Makefile    |    1 +
+>  drivers/pwm/pwm-atmel.c |  360 +++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 370 insertions(+)
+>  create mode 100644 drivers/pwm/pwm-atmel.c
+>
+> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> index 75840b5..54237b9 100644
+> --- a/drivers/pwm/Kconfig
+> +++ b/drivers/pwm/Kconfig
+> @@ -41,6 +41,15 @@ config PWM_AB8500
+>  	  To compile this driver as a module, choose M here: the module
+>  	  will be called pwm-ab8500.
+>  
+> +config PWM_ATMEL
+> +	tristate "Atmel PWM support"
+> +	depends on ARCH_AT91
+> +	help
+> +	  Generic PWM framework driver for Atmel SoC.
 > +
-> +static inline void set_iommu_table_base_and_group(struct device *dev,
-> +						  void *base)
-> +{
-> +	set_iommu_table_base(dev, base);
-> +	iommu_add_device(dev);
-> +}
-> 
->  extern int iommu_map_sg(struct device *dev, struct iommu_table *tbl,
->  			struct scatterlist *sglist, int nelems,
-> diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-> index 572bb5b..ecbf468 100644
-> --- a/arch/powerpc/kernel/iommu.c
-> +++ b/arch/powerpc/kernel/iommu.c
-> @@ -1105,7 +1105,7 @@ void iommu_release_ownership(struct iommu_table *tbl)
->  }
->  EXPORT_SYMBOL_GPL(iommu_release_ownership);
-> 
-> -static int iommu_add_device(struct device *dev)
-> +int iommu_add_device(struct device *dev)
->  {
->  	struct iommu_table *tbl;
->  	int ret = 0;
-> @@ -1134,46 +1134,13 @@ static int iommu_add_device(struct device *dev)
-> 
->  	return ret;
->  }
-> +EXPORT_SYMBOL_GPL(iommu_add_device);
-> 
-> -static void iommu_del_device(struct device *dev)
-> +void iommu_del_device(struct device *dev)
->  {
->  	iommu_group_remove_device(dev);
->  }
-> -
-> -static int iommu_bus_notifier(struct notifier_block *nb,
-> -			      unsigned long action, void *data)
-> -{
-> -	struct device *dev = data;
-> -
-> -	switch (action) {
-> -	case BUS_NOTIFY_ADD_DEVICE:
-> -		return iommu_add_device(dev);
-> -	case BUS_NOTIFY_DEL_DEVICE:
-> -		iommu_del_device(dev);
-> -		return 0;
-> -	default:
-> -		return 0;
-> -	}
-> -}
-> -
-> -static struct notifier_block tce_iommu_bus_nb = {
-> -	.notifier_call = iommu_bus_notifier,
-> -};
-> -
-> -static int __init tce_iommu_init(void)
-> -{
-> -	struct pci_dev *pdev = NULL;
-> -
-> -	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
-> -
-> -	for_each_pci_dev(pdev)
-> -		iommu_add_device(&pdev->dev);
-> -
-> -	bus_register_notifier(&pci_bus_type, &tce_iommu_bus_nb);
-> -	return 0;
-> -}
-> -
-> -subsys_initcall_sync(tce_iommu_init);
-> +EXPORT_SYMBOL_GPL(iommu_del_device);
-> 
->  #else
-> 
-> diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c
-> b/arch/powerpc/platforms/powernv/pci-ioda.c
-> index 084cdfa..614356c 100644
-> --- a/arch/powerpc/platforms/powernv/pci-ioda.c
-> +++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-> @@ -460,7 +460,7 @@ static void pnv_pci_ioda_dma_dev_setup(struct pnv_phb *phb,
-> struct pci_dev *pdev
->  		return;
-> 
->  	pe = &phb->ioda.pe_array[pdn->pe_number];
-> -	set_iommu_table_base(&pdev->dev, &pe->tce32_table);
-> +	set_iommu_table_base_and_group(&pdev->dev, &pe->tce32_table);
->  }
-> 
->  static void pnv_ioda_setup_bus_dma(struct pnv_ioda_pe *pe, struct pci_bus *bus)
-> @@ -468,7 +468,7 @@ static void pnv_ioda_setup_bus_dma(struct pnv_ioda_pe *pe,
-> struct pci_bus *bus)
->  	struct pci_dev *dev;
-> 
->  	list_for_each_entry(dev, &bus->devices, bus_list) {
-> -		set_iommu_table_base(&dev->dev, &pe->tce32_table);
-> +		set_iommu_table_base_and_group(&dev->dev, &pe->tce32_table);
->  		if (dev->subordinate)
->  			pnv_ioda_setup_bus_dma(pe, dev->subordinate);
->  	}
-> @@ -644,7 +644,7 @@ static void pnv_pci_ioda_setup_dma_pe(struct pnv_phb *phb,
->  	iommu_register_group(tbl, pci_domain_nr(pe->pbus), pe->pe_number);
-> 
->  	if (pe->pdev)
-> -		set_iommu_table_base(&pe->pdev->dev, tbl);
-> +		set_iommu_table_base_and_group(&pe->pdev->dev, tbl);
->  	else
->  		pnv_ioda_setup_bus_dma(pe, pe->pbus);
-> 
-> @@ -722,7 +722,7 @@ static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
->  	iommu_init_table(tbl, phb->hose->node);
-> 
->  	if (pe->pdev)
-> -		set_iommu_table_base(&pe->pdev->dev, tbl);
-> +		set_iommu_table_base_and_group(&pe->pdev->dev, tbl);
->  	else
->  		pnv_ioda_setup_bus_dma(pe, pe->pbus);
-> 
-> diff --git a/arch/powerpc/platforms/powernv/pci-p5ioc2.c
-> b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
-> index f8b4bd8..e3807d6 100644
-> --- a/arch/powerpc/platforms/powernv/pci-p5ioc2.c
-> +++ b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
-> @@ -92,7 +92,7 @@ static void pnv_pci_p5ioc2_dma_dev_setup(struct pnv_phb *phb,
->  				pci_domain_nr(phb->hose->bus), phb->opal_id);
->  	}
-> 
-> -	set_iommu_table_base(&pdev->dev, &phb->p5ioc2.iommu_table);
-> +	set_iommu_table_base_and_group(&pdev->dev, &phb->p5ioc2.iommu_table);
->  }
-> 
->  static void __init pnv_pci_init_p5ioc2_phb(struct device_node *np, u64 hub_id,
-> diff --git a/arch/powerpc/platforms/powernv/pci.c
-> b/arch/powerpc/platforms/powernv/pci.c
-> index 4eb33a9..6f3d49c 100644
-> --- a/arch/powerpc/platforms/powernv/pci.c
-> +++ b/arch/powerpc/platforms/powernv/pci.c
-> @@ -536,7 +536,7 @@ static void pnv_pci_dma_fallback_setup(struct pci_controller
-> *hose,
->  		pdn->iommu_table = pnv_pci_setup_bml_iommu(hose);
->  	if (!pdn->iommu_table)
->  		return;
-> -	set_iommu_table_base(&pdev->dev, pdn->iommu_table);
-> +	set_iommu_table_base_and_group(&pdev->dev, pdn->iommu_table);
->  }
-> 
->  static void pnv_pci_dma_dev_setup(struct pci_dev *pdev)
-> @@ -657,3 +657,34 @@ void __init pnv_pci_init(void)
->  	ppc_md.teardown_msi_irqs = pnv_teardown_msi_irqs;
->  #endif
->  }
+> +	  To compile this driver as a module, choose M here: the module
+> +	  will be called pwm-atmel.
 > +
-> +static int tce_iommu_bus_notifier(struct notifier_block *nb,
-> +		unsigned long action, void *data)
-> +{
-> +	struct device *dev = data;
+>  config PWM_ATMEL_TCB
+>  	tristate "Atmel TC Block PWM support"
+>  	depends on ATMEL_TCLIB && OF
+> diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+> index 77a8c18..5b193f8 100644
+> --- a/drivers/pwm/Makefile
+> +++ b/drivers/pwm/Makefile
+> @@ -1,6 +1,7 @@
+>  obj-$(CONFIG_PWM)		+= core.o
+>  obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
+>  obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
+> +obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
+>  obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
+>  obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+>  obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
+> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
+> new file mode 100644
+> index 0000000..ac54252
+> --- /dev/null
+> +++ b/drivers/pwm/pwm-atmel.c
+> @@ -0,0 +1,360 @@
+> +/*
+> + * Driver for Atmel Pulse Width Modulation Controller
+> + *
+> + * Copyright (C) 2013 Atmel Corporation
+> + *		 Bo Shen <voice.shen@atmel.com>
+> + *
+> + * Licensed under GPLv2.
+> + */
 > +
-> +	switch (action) {
-> +	case BUS_NOTIFY_ADD_DEVICE:
-> +		return iommu_add_device(dev);
-> +	case BUS_NOTIFY_DEL_DEVICE:
-> +		if (dev->iommu_group)
-> +			iommu_del_device(dev);
-> +		return 0;
-> +	default:
-> +		return 0;
-> +	}
-> +}
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pwm.h>
+> +#include <linux/slab.h>
 > +
-> +static struct notifier_block tce_iommu_bus_nb = {
-> +	.notifier_call = tce_iommu_bus_notifier,
+> +/* The following is global registers for PWM controller */
+> +#define PWM_ENA			0x04
+> +#define PWM_DIS			0x08
+> +#define PWM_SR			0x0C
+> +/* bit field in SR */
+> +#define PWM_SR_ALL_CH_ON	0x0F
+> +
+> +/* The following register is PWM channel related registers */
+> +#define PWM_CH_REG_OFFSET	0x200
+> +#define PWM_CH_REG_SIZE		0x20
+> +
+> +#define PWM_CMR			0x0
+> +/* bit field in CMR */
+> +#define PWM_CMR_CPOL		(1 << 9)
+> +#define PWM_CMR_UPD_CDTY	(1 << 10)
+> +
+> +/* The following registers for PWM v1 */
+> +#define PWMV1_CDTY		0x04
+> +#define PWMV1_CPRD		0x08
+> +#define PWMV1_CUPD		0x10
+> +
+> +/* The following registers for PWM v2 */
+> +#define PWMV2_CDTY		0x04
+> +#define PWMV2_CDTYUPD		0x08
+> +#define PWMV2_CPRD		0x0C
+> +#define PWMV2_CPRDUPD		0x10
+> +
+> +/* max value for duty and period */
+> +/*
+> + * Although the duty and period register is 32 bit,
+> + * however only the LSB 16 bits are significant.
+> + */
+> +#define PWM_MAX_DTY		0xFFFF
+> +#define PWM_MAX_PRD		0xFFFF
+> +#define PRD_MAX_PRES		10
+> +
+> +struct atmel_pwm_chip {
+> +	struct pwm_chip chip;
+> +	struct clk *clk;
+> +	void __iomem *base;
+> +
+> +	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
+> +		       int dty, int prd);
 > +};
 > +
-> +static int __init tce_iommu_bus_notifier_init(void)
+> +static inline struct atmel_pwm_chip *to_atmel_pwm_chip(struct pwm_chip *chip)
 > +{
-> +	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
+> +	return container_of(chip, struct atmel_pwm_chip, chip);
+> +}
 > +
-> +	bus_register_notifier(&pci_bus_type, &tce_iommu_bus_nb);
+> +static inline u32 atmel_pwm_readl(struct atmel_pwm_chip *chip,
+> +				  unsigned long offset)
+> +{
+> +	return readl_relaxed(chip->base + offset);
+> +}
+> +
+> +static inline void atmel_pwm_writel(struct atmel_pwm_chip *chip,
+> +				    unsigned long offset, unsigned long val)
+> +{
+> +	writel_relaxed(val, chip->base + offset);
+> +}
+> +
+> +static inline u32 atmel_pwm_ch_readl(struct atmel_pwm_chip *chip,
+> +				     unsigned int ch, unsigned long offset)
+> +{
+> +	return readl_relaxed(chip->base + PWM_CH_REG_OFFSET +
+> +			ch * PWM_CH_REG_SIZE + offset);
+> +}
+> +
+> +static inline void atmel_pwm_ch_writel(struct atmel_pwm_chip *chip,
+> +				       unsigned int ch, unsigned long offset,
+> +				       unsigned long val)
+> +{
+> +	writel_relaxed(val, chip->base + PWM_CH_REG_OFFSET +
+> +			ch * PWM_CH_REG_SIZE + offset);
+> +}
+> +
+> +static int atmel_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+> +		int duty_ns, int period_ns)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+> +	unsigned long clk_rate, prd, dty;
+> +	unsigned long long div;
+> +	int ret, pres = 0;
+> +
+> +	clk_rate = clk_get_rate(atmel_pwm->clk);
+> +	div = clk_rate;
+> +
+> +	/* Calculate the period cycles */
+> +	while (div > PWM_MAX_PRD) {
+> +		div = clk_rate / (1 << pres);
+> +		div = div * period_ns;
+> +		/* 1/Hz = 100000000 ns */
+> +		do_div(div, 1000000000);
+> +
+> +		if (pres++ > PRD_MAX_PRES) {
+> +			pr_err("PRES is bigger than maximum pre-scaler\n");
+> +			return -EINVAL;
+> +		}
+> +	}
+> +
+> +	/* Calculate the duty cycles */
+> +	prd = div;
+> +	div *= duty_ns;
+> +	do_div(div, period_ns);
+> +	dty = div;
+> +
+> +	ret = clk_enable(atmel_pwm->clk);
+> +	if (ret) {
+> +		pr_err("Failed to enable pwm clock\n");
+> +		return ret;
+> +	}
+> +
+> +	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, pres);
+> +	atmel_pwm->config(chip, pwm, dty, prd);
+> +
+> +	clk_disable(atmel_pwm->clk);
+> +
 > +	return 0;
 > +}
 > +
-> +subsys_initcall_sync(tce_iommu_bus_notifier_init);
-> diff --git a/arch/powerpc/platforms/pseries/iommu.c
-> b/arch/powerpc/platforms/pseries/iommu.c
-> index f253361..a80af6c 100644
-> --- a/arch/powerpc/platforms/pseries/iommu.c
-> +++ b/arch/powerpc/platforms/pseries/iommu.c
-> @@ -687,7 +687,8 @@ static void pci_dma_dev_setup_pSeries(struct pci_dev *dev)
->  		iommu_table_setparms(phb, dn, tbl);
->  		PCI_DN(dn)->iommu_table = iommu_init_table(tbl, phb->node);
->  		iommu_register_group(tbl, pci_domain_nr(phb->bus), 0);
-> -		set_iommu_table_base(&dev->dev, PCI_DN(dn)->iommu_table);
-> +		set_iommu_table_base_and_group(&dev->dev,
-> +					       PCI_DN(dn)->iommu_table);
->  		return;
->  	}
-> 
-> @@ -699,7 +700,8 @@ static void pci_dma_dev_setup_pSeries(struct pci_dev *dev)
->  		dn = dn->parent;
-> 
->  	if (dn && PCI_DN(dn))
-> -		set_iommu_table_base(&dev->dev, PCI_DN(dn)->iommu_table);
-> +		set_iommu_table_base_and_group(&dev->dev,
-> +					       PCI_DN(dn)->iommu_table);
->  	else
->  		printk(KERN_WARNING "iommu: Device %s has no iommu table\n",
->  		       pci_name(dev));
-> @@ -1193,7 +1195,7 @@ static void pci_dma_dev_setup_pSeriesLP(struct pci_dev
-> *dev)
->  		pr_debug("  found DMA window, table: %p\n", pci->iommu_table);
->  	}
-> 
-> -	set_iommu_table_base(&dev->dev, pci->iommu_table);
-> +	set_iommu_table_base_and_group(&dev->dev, pci->iommu_table);
->  }
-> 
->  static int dma_set_mask_pSeriesLP(struct device *dev, u64 dma_mask)
-> --
-> 1.8.4.rc4
-> 
+> +static void atmel_pwm_config_v1(struct pwm_chip *chip, struct pwm_device *pwm,
+> +				int dty, int prd)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+> +	unsigned int val;
+> +
+> +	/*
+> +	 * If the PWM channel is disabled, write value to duty and period
+> +	 * registers directly.
+> +	 * If the PWM channel is enabled, using the update register, it needs
+> +	 * to set bit 10 of CMR to 0
+> +	 */
+> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CUPD, dty);
+> +
+> +		val = atmel_pwm_ch_readl(atmel_pwm, pwm->hwpwm, PWM_CMR);
+> +		val &= ~PWM_CMR_UPD_CDTY;
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
+> +	} else {
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CDTY, dty);
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CPRD, prd);
+> +	}
+> +}
+> +
+> +static void atmel_pwm_config_v2(struct pwm_chip *chip, struct pwm_device *pwm,
+> +				int dty, int prd)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+> +
+> +	/*
+> +	 * If the PWM channel is disabled, write value to duty and period
+> +	 * registers directly.
+> +	 * If the PWM channel is enabled, using the duty update register to
+> +	 * update the value.
+> +	 */
+> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTYUPD, dty);
+> +	} else {
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTY, dty);
+> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CPRD, prd);
+> +	}
+> +}
+> +
+> +static int atmel_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
+> +		enum pwm_polarity polarity)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+> +	u32 val = 0;
+> +	int ret;
+> +
+> +	if (polarity == PWM_POLARITY_NORMAL)
+> +		val &= ~PWM_CMR_CPOL;
+> +	else
+> +		val |= PWM_CMR_CPOL;
+> +
+> +	ret = clk_enable(atmel_pwm->clk);
+> +	if (ret) {
+> +		pr_err("failed to enable pwm clock\n");
+> +		return ret;
+> +	}
+> +
+> +	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
+> +
+> +	clk_disable(atmel_pwm->clk);
+> +
+> +	return 0;
+> +}
+> +
+> +static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+> +	int ret;
+> +
+> +	ret = clk_enable(atmel_pwm->clk);
+> +	if (ret) {
+> +		pr_err("failed to enable pwm clock\n");
+> +		return ret;
+> +	}
+> +
+> +	atmel_pwm_writel(atmel_pwm, PWM_ENA, 1 << pwm->hwpwm);
+> +
+> +	return 0;
+> +}
+> +
+> +static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+> +
+> +	atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
+> +
+> +	clk_disable(atmel_pwm->clk);
+> +}
+> +
+> +static const struct pwm_ops atmel_pwm_ops = {
+> +	.config = atmel_pwm_config,
+> +	.set_polarity = atmel_pwm_set_polarity,
+> +	.enable = atmel_pwm_enable,
+> +	.disable = atmel_pwm_disable,
+> +	.owner = THIS_MODULE,
+> +};
+> +
+> +struct atmel_pwm_data {
+> +	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
+> +		       int dty, int prd);
+> +};
+> +
+> +static const struct atmel_pwm_data atmel_pwm_data_v1 = {
+> +	.config = atmel_pwm_config_v1,
+> +};
+> +
+> +static const struct atmel_pwm_data atmel_pwm_data_v2 = {
+> +	.config = atmel_pwm_config_v2,
+> +};
+> +
+> +static const struct platform_device_id atmel_pwm_devtypes[] = {
+> +	{
+> +		.name = "at91sam9rl-pwm",
+> +		.driver_data = (kernel_ulong_t)&atmel_pwm_data_v1,
+> +	}, {
+> +		.name = "sama5d3-pwm",
+> +		.driver_data = (kernel_ulong_t)&atmel_pwm_data_v2,
+> +	}, {
+> +		/* sentinel */
+> +	},
+> +};
+> +MODULE_DEVICE_TABLE(platform, atmel_pwm_devtypes);
+> +
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id atmel_pwm_dt_ids[] = {
+> +	{
+> +		.compatible = "atmel,at91sam9rl-pwm",
+> +		.data = &atmel_pwm_data_v1,
+> +	}, {
+> +		.compatible = "atmel,sama5d3-pwm",
+> +		.data = &atmel_pwm_data_v2,
+> +	}, {
+> +		/* sentinel */
+> +	},
+> +};
+> +MODULE_DEVICE_TABLE(of, atmel_pwm_dt_ids);
+> +#endif
+> +
+> +static int atmel_pwm_probe(struct platform_device *pdev)
+> +{
+> +	const struct of_device_id *of_id =
+> +		of_match_device(atmel_pwm_dt_ids, &pdev->dev);
+> +	const struct atmel_pwm_data *data;
+> +	struct atmel_pwm_chip *atmel_pwm;
+> +	struct resource *res;
+> +	int ret;
+> +
+> +	atmel_pwm = devm_kzalloc(&pdev->dev, sizeof(*atmel_pwm), GFP_KERNEL);
+> +	if (!atmel_pwm)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res)
+> +		return -ENODEV;
+> +
+> +	atmel_pwm->base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(atmel_pwm->base))
+> +		return PTR_ERR(atmel_pwm->base);
+> +
+> +	atmel_pwm->clk = devm_clk_get(&pdev->dev, NULL);
+> +	if (IS_ERR(atmel_pwm->clk))
+> +		return PTR_ERR(atmel_pwm->clk);
+> +
+> +	ret = clk_prepare(atmel_pwm->clk);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to prepare pwm clock\n");
+> +		return ret;
+> +	}
+> +
+> +	atmel_pwm->chip.dev = &pdev->dev;
+> +	atmel_pwm->chip.ops = &atmel_pwm_ops;
+> +	atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
+> +	atmel_pwm->chip.of_pwm_n_cells = 3;
+> +	atmel_pwm->chip.base = -1;
+> +	atmel_pwm->chip.npwm = 4;
+> +
+> +	data = of_id->data;
+> +	atmel_pwm->config = data->config;
+> +
+> +	ret = pwmchip_add(&atmel_pwm->chip);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "failed to add pwm chip %d\n", ret);
+> +		goto unprepare_clk;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, atmel_pwm);
+> +
+> +unprepare_clk:
+> +	clk_unprepare(atmel_pwm->clk);
+> +	return ret;
+> +}
+> +
+> +static int atmel_pwm_remove(struct platform_device *pdev)
+> +{
+> +	struct atmel_pwm_chip *atmel_pwm = platform_get_drvdata(pdev);
+> +
+> +	clk_unprepare(atmel_pwm->clk);
+> +
+> +	return pwmchip_remove(&atmel_pwm->chip);
+> +}
+> +
+> +static struct platform_driver atmel_pwm_driver = {
+> +	.driver = {
+> +		.name = "atmel-pwm",
+> +		.of_match_table = of_match_ptr(atmel_pwm_dt_ids),
+> +	},
+> +	.id_table = atmel_pwm_devtypes,
+> +	.probe = atmel_pwm_probe,
+> +	.remove = atmel_pwm_remove,
+> +};
+> +module_platform_driver(atmel_pwm_driver);
+> +
+> +MODULE_ALIAS("platform:atmel-pwm");
+> +MODULE_AUTHOR("Bo Shen <voice.shen@atmel.com>");
+> +MODULE_DESCRIPTION("Atmel PWM driver");
+> +MODULE_LICENSE("GPL v2");
 
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
