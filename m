@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751268Ab3KMU43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 15:56:29 -0500
-Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:33964
-	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750896Ab3KMU4U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 15:56:20 -0500
-From: Shuah Khan <shuah.kh@samsung.com>
-To: akpm@linux-foundation.org, alexander.h.duyck@intel.com, joro@8bytes.org
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com
-Subject: [PATCH v2] dma-debug: enhance dma_debug_device_change() to check for mapping errors
-Date: Wed, 13 Nov 2013 13:56:08 -0700
-Message-Id: <1384376168-2148-1-git-send-email-shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1751299Ab3KMU5e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 15:57:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55581 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750857Ab3KMU50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 15:57:26 -0500
+Message-ID: <5283E7A9.6090706@zytor.com>
+Date: Wed, 13 Nov 2013 12:57:13 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>, Guenter Roeck <linux@roeck-us.net>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gcc4: Disable __compiletime_object_size for GCC 4.6+
+References: <1365821348-7177-1-git-send-email-linux@roeck-us.net> <20131113183913.GK4994@outflux.net>
+In-Reply-To: <20131113183913.GK4994@outflux.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dma-debug checks to verify if driver validated the address returned by
-dma mapping routines when driver does unmap. If a driver doesn't call
-unmap, failure to check mapping errors isn't detected and reported.
+On 11/13/2013 10:39 AM, Kees Cook wrote:
+> Hi Guenter,
+> 
+> On Fri, Apr 12, 2013 at 07:49:08PM -0700, Guenter Roeck wrote:
+>> __builtin_object_size is known to be broken on gcc 4.6+.
+>> See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48880 for details.
+>>
+>> This causes unnecssary build warnings and errors such as
+>>
+>> In function 'copy_from_user', inlined from 'sb16_copy_from_user'
+>> 	at sound/oss/sb_audio.c:878:22:
+>> arch/x86/include/asm/uaccess_32.h:211:26: error: call to 'copy_from_user_overflow'
+>> 	declared with attribute error: copy_from_user() buffer size is not provably correct
+>> make[3]: [sound/oss/sb_audio.o] Error 1 (ignored)
+>>
+>> Disable it where broken.
+> 
+> Is there an alternative? This means that things like
+> DEBUG_STRICT_USER_COPY_CHECKS are being rendered useless. I don't think
+> this is _always_ broken, just under certain situations, right?
+> 
 
-Enhancing existing bus notifier_call dma_debug_device_change() to check
-for mapping errors at the same time it detects leaked dma buffers for
-BUS_NOTIFY_UNBOUND_DRIVER event. It scans for mapping errors and if any
-found, prints one warning message that includes mapping error count.
+It would be one thing to block it for, say, gcc 4.6 and 4.7 only, but
+without an upper cap I don't think this is at all okay.
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- lib/dma-debug.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+	-hpa
 
-diff --git a/lib/dma-debug.c b/lib/dma-debug.c
-index d87a17a..e34865e 100644
---- a/lib/dma-debug.c
-+++ b/lib/dma-debug.c
-@@ -717,6 +717,7 @@ static int device_dma_allocations(struct device *dev, struct dma_debug_entry **o
- 	struct dma_debug_entry *entry;
- 	unsigned long flags;
- 	int count = 0, i;
-+	int map_err_cnt = 0;
- 
- 	local_irq_save(flags);
- 
-@@ -724,6 +725,8 @@ static int device_dma_allocations(struct device *dev, struct dma_debug_entry **o
- 		spin_lock(&dma_entry_hash[i].lock);
- 		list_for_each_entry(entry, &dma_entry_hash[i].list, list) {
- 			if (entry->dev == dev) {
-+				if (entry->map_err_type == MAP_ERR_NOT_CHECKED)
-+					map_err_cnt += 1;
- 				count += 1;
- 				*out_entry = entry;
- 			}
-@@ -733,6 +736,10 @@ static int device_dma_allocations(struct device *dev, struct dma_debug_entry **o
- 
- 	local_irq_restore(flags);
- 
-+	if (map_err_cnt)
-+		dev_warn(entry->dev,
-+			"DMA-API: device driver failed to check map errors: "
-+			"[count] = %d\n", map_err_cnt);
- 	return count;
- }
- 
--- 
-1.8.3.2
 
