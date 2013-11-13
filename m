@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759606Ab3KMRLY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 12:11:24 -0500
-Received: from smarthost01b.mail.zen.net.uk ([212.23.1.3]:39837 "EHLO
-	smarthost01b.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757228Ab3KMRLR (ORCPT
+	id S1759613Ab3KMRM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 12:12:28 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:40533 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab3KMRMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 12:11:17 -0500
-Message-ID: <1384362668.3392.41.camel@linaro1.home>
-Subject: Re: [PATCH v2 08/13] ARM: use a function table for determining
- instruction interpreter actions
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: David Long <dave.long@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Date: Wed, 13 Nov 2013 17:11:08 +0000
-In-Reply-To: <1381871068-27660-9-git-send-email-dave.long@linaro.org>
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org>
-	 <1381871068-27660-9-git-send-email-dave.long@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01b-IP: [82.69.122.217]
+	Wed, 13 Nov 2013 12:12:22 -0500
+Date: Wed, 13 Nov 2013 09:12:05 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] rcu: Make struct rcu_head searchable
+Message-ID: <20131113171205.GG4138@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131113120225.3aacae13@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131113120225.3aacae13@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111317-1344-0000-0000-0000033A219E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-15 at 17:04 -0400, David Long wrote:
-> From: "David A. Long" <dave.long@linaro.org>
+On Wed, Nov 13, 2013 at 12:02:25PM -0500, Steven Rostedt wrote:
+> After wasting too much time trying to see where struct rcu_head was
+> declared, I finally found it in include/linux/types.h as a define for
+> callback_head!
 > 
-> When interpreting instructions use a client-supplied array of functions
-> to take action.  This array can then be provided by krpobes, uprobes, or
-
-'to take action' sounds a bit weird to me, how about 'to specify
-actions'?
-
-> possibly some other client subsystem.  The interpreter assigns a group
-> number to each recognized instruction and invokes the corresponding action
-> function.
+> To prevent other developers from wasting their precious time in
+> searching for this structure, add a comment to help them find it!
 > 
-> Signed-off-by: David A. Long <dave.long@linaro.org>
-> ---
->  arch/arm/kernel/Makefile         |    2 +-
->  arch/arm/kernel/kprobes-arm.c    |   41 ++
->  arch/arm/kernel/kprobes-common.c |    3 +-
->  arch/arm/kernel/kprobes-thumb.c  | 1016 ++++----------------------------------
->  arch/arm/kernel/kprobes.c        |   10 +-
->  arch/arm/kernel/kprobes.h        |   14 +-
->  arch/arm/kernel/probes-arm.c     |  114 ++---
->  arch/arm/kernel/probes-arm.h     |   37 ++
->  arch/arm/kernel/probes-thumb.c   |  875 ++++++++++++++++++++++++++++++++
->  arch/arm/kernel/probes-thumb.h   |  136 +++++
->  arch/arm/kernel/probes.c         |    9 +-
->  arch/arm/kernel/probes.h         |   15 +-
->  12 files changed, 1288 insertions(+), 984 deletions(-)
->  create mode 100644 arch/arm/kernel/probes-thumb.c
->  create mode 100644 arch/arm/kernel/probes-thumb.h
+> Cc: Al Viro <viro@ZenIV.linux.org.uk>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Steven "frustrated" Rostedt <rostedt@goodmis.org>
 
-As I mentioned in comments to patch 7, this patch seems to accidentally
-include the thumb code reorg of moving code from kprobes-thumb.c to
-probes-thumb.c
+The cscope tool is your friend in this case, but nevertheless:
 
-I've no other comments on the patch so trimmed the rest...
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
--- 
-Tixy
-
+> diff --git a/include/linux/types.h b/include/linux/types.h
+> index 4d118ba..073e9a8 100644
+> --- a/include/linux/types.h
+> +++ b/include/linux/types.h
+> @@ -210,6 +210,9 @@ struct callback_head {
+>  	struct callback_head *next;
+>  	void (*func)(struct callback_head *head);
+>  };
+> +/*
+> + * Make "struct rcu_head {" seachable with this comment.
+> + */
+>  #define rcu_head callback_head
+> 
+>  #endif /*  __ASSEMBLY__ */
+> 
 
