@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759299Ab3KMRlK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 12:41:10 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:38007 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758428Ab3KMRkx (ORCPT
+	id S1758922Ab3KMRms (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 12:42:48 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35534 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450Ab3KMRmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 12:40:53 -0500
-Message-ID: <5283B9A0.2080502@linaro.org>
-Date: Wed, 13 Nov 2013 09:40:48 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 13 Nov 2013 12:42:40 -0500
+Date: Wed, 13 Nov 2013 18:42:20 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: oom-kill && frozen()
+Message-ID: <20131113174220.GQ21461@twins.programming.kicks-ass.net>
+References: <1384264396-14550-1-git-send-email-geert@linux-m68k.org>
+ <20131112141314.GQ5056@laptop.programming.kicks-ass.net>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com>
+ <20131112145243.GU5056@laptop.programming.kicks-ass.net>
+ <20131112162136.GA29065@redhat.com>
+ <20131112165643.GA31278@redhat.com>
+ <20131113032053.GA19394@mtj.dyndns.org>
+ <20131113170724.GA17739@redhat.com>
 MIME-Version: 1.0
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-CC: Fengguang Wu <fengguang.wu@intel.com>, Huang Ying <ying.huang@intel.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: performance regressions by "seqcount: Add lockdep functionality
- to seqcount/seqlock structures"
-References: <20131113091408.GH22256@yliu-dev.sh.intel.com>
-In-Reply-To: <20131113091408.GH22256@yliu-dev.sh.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131113170724.GA17739@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 01:14 AM, Yuanhan Liu wrote:
-> Hi,
->
-> FYI, we found some performance regressions caused by commit 1ca7d67c
-> ("seqcount: Add lockdep functionality to seqcount/seqlock structures")
+On Wed, Nov 13, 2013 at 06:07:24PM +0100, Oleg Nesterov wrote:
+> 	4. Finally, change try_to_wake_up() path to do
+> 
+> 		-	p->state = TASK_WAKING;
+> 		+	p->state &= ~state;
+> 		+	if (p->state & ~(TASK_DEAD | TASK_WAKEKILL | TASK_PARKED))
+> 		+		return;
+> 		+	else
+> 		+		p->state = TASK_WAKING;
+> 
+> 	   IOW, if the task sleeps in, say, TASK_INTERRUPTIBLE | __TASK_FROZEN
+> 	   then it need both try_to_wake_up(TASK_INTERRUPTIBLE) and
+> 	   try_to_wake_up(__TASK_FROZEN) to wake up.
 
-So this is expected. seqlock readers are usually very very cheap
-operations, and we're now doing lockdep tracking on every iteration
-around the loop. As the lockdep help states:
+> Tejun, Peter, do you think this makes any sense? I am just curious, but
+> "selective wakeup" looks potentially useful.
 
-  | If you say Y here, the lock dependency engine will
-do                   |  
-  | additional runtime checks to debug itself, at the
-price                 |  
-  | of more runtime overhead.
+I've never looked at any of this freeze stuff, so I cannot comment too
+much. However we should be very careful not to add too much to relative
+hot paths for the relative rare case of freezing stuff.
 
-
-So now since we're also tracking seqlocks in addition to spinlocks, it
-creates more overhead.
-
-
-Disabling CONFIG_LOCKDEP should restore performance.
-
-thanks
--john
 
