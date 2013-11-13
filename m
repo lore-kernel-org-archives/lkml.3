@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759562Ab3KMQWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 11:22:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52262 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757083Ab3KMQWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 11:22:10 -0500
-Message-ID: <5283A6DD.2030808@zytor.com>
-Date: Wed, 13 Nov 2013 08:20:45 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: dyoung@redhat.com, linux-kernel@vger.kernel.org
-CC: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de
-Subject: Re: [patch 7/7 v2] x86: add xloadflags bit for efi runtime support
- on kexec
-References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com> <20131105082719.416282009@dhcp-16-126.nay.redhat.com>
-In-Reply-To: <20131105082719.416282009@dhcp-16-126.nay.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932177Ab3KMQXr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 11:23:47 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:20972 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753881Ab3KMQXn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 11:23:43 -0500
+Date: Wed, 13 Nov 2013 11:23:38 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Matthew Whitehead <tedheadster@gmail.com>, john.stultz@linaro.org,
+        linux-kernel@vger.kernel.org, mwhitehe@redhat.com
+Subject: Re: nohz problem with idle time on old hardware
+Message-ID: <20131113112338.7d303c0f@gandalf.local.home>
+In-Reply-To: <20131113161829.GE4138@linux.vnet.ibm.com>
+References: <20131113113927.GA13875@mwhitehe.csb>
+	<alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de>
+	<20131113102153.5f10e6b5@gandalf.local.home>
+	<20131113103134.5b8cf02f@gandalf.local.home>
+	<20131113105737.3f7a0b1b@gandalf.local.home>
+	<alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
+	<20131113111257.482c2955@gandalf.local.home>
+	<20131113161829.GE4138@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2013 12:20 AM, dyoung@redhat.com wrote:
-> Old kexec-tools can not load new kernel. The reason is previously kexec-tools
-> do not fill efi_info in x86 setup header thus efi init fail and switch
-> to noefi boot. In new kexec-tools it will by default fill efi_info and
-> pass other efi required infomation to 2nd kernel so kexec kernel efi
-> initialization will success finally.
+On Wed, 13 Nov 2013 08:18:29 -0800
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+
+> On Wed, Nov 13, 2013 at 11:12:57AM -0500, Steven Rostedt wrote:
+> > On Wed, 13 Nov 2013 17:07:18 +0100 (CET)
+> > Thomas Gleixner <tglx@linutronix.de> wrote:
+> > 
+> > 
+> > > Right. It's telling you if NOHZ is enabled. It's not telling you that
+> > > NOHZ is active.
+> > 
+> > Yeah, which makes this code rather silly:
+> > 
+> > in rcu_prepare_for_idle():
+> > 
+> > 	/* Handle nohz enablement switches conservatively. */
+> > 	tne = ACCESS_ONCE(tick_nohz_enabled);
+> > 	if (tne != rdtp->tick_nohz_enabled_snap) {
+> > 		if (rcu_cpu_has_callbacks(cpu, NULL))
+> > 			invoke_rcu_core(); /* force nohz to see update. */
+> > 		rdtp->tick_nohz_enabled_snap = tne;
+> > 		return;
+> > 	}
 > 
-> To prevent from breaking userspace, add a new xloadflags bit so kexec-tools
-> will check the flag and switch to old logic.
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  arch/x86/boot/header.S                |    9 ++++++++-
->  arch/x86/include/uapi/asm/bootparam.h |    1 +
->  2 files changed, 9 insertions(+), 1 deletion(-)
-> 
-> --- linux-2.6.orig/arch/x86/boot/header.S
-> +++ linux-2.6/arch/x86/boot/header.S
-> @@ -391,7 +391,14 @@ xloadflags:
->  #else
->  # define XLF23 0
->  #endif
-> -			.word XLF0 | XLF1 | XLF23
-> +
-> +#if defined(CONFIG_X86_64) && defined(CONFIG_EFI)
-> +# define XLF4 XLF_EFI_KEXEC
-> +#else
-> +# define XLF4 0
-> +#endif
-> +
-> +			.word XLF0 | XLF1 | XLF23 | XLF4
->  
->  cmdline_size:   .long   COMMAND_LINE_SIZE-1     #length of the command line,
->                                                  #added with boot protocol
-> --- linux-2.6.orig/arch/x86/include/uapi/asm/bootparam.h
-> +++ linux-2.6/arch/x86/include/uapi/asm/bootparam.h
-> @@ -24,6 +24,7 @@
->  #define XLF_CAN_BE_LOADED_ABOVE_4G	(1<<1)
->  #define XLF_EFI_HANDOVER_32		(1<<2)
->  #define XLF_EFI_HANDOVER_64		(1<<3)
-> +#define XLF_EFI_KEXEC			(1<<4)
->  
->  #ifndef __ASSEMBLY__
->  
+> OK, what should I be checking instead?  Not much point in trying to
+> get RCU out of the way of disabling the scheduling-clock interrupt
+> if NOHZ is disabled.  ;-)
 > 
 
-Also needs to be added to Documentation/x86/boot.txt with the exact
-semantics being exposed.
+I'll leave the answer to Thomas, but checking tick_nohz_enabled just
+lets you know if someone booted with nohz=off or not (and has nohz
+configured). But it doesn't tell you if nohz is actually being used.
 
-	-hpa
+That is, tick_nohz_enabled is set at bootup and never changes.
 
+Perhaps this old hardware uncovered other bugs as well ;-)
+
+-- Steve
