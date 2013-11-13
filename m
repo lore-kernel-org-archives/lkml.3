@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758284Ab3KMGaN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 01:30:13 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:44832 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab3KMGaH (ORCPT
+	id S1758345Ab3KMGaR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 01:30:17 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:55400 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758223Ab3KMGaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 01:30:07 -0500
+	Wed, 13 Nov 2013 01:30:09 -0500
 From: Olof Johansson <olof@lixom.net>
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
         Olof Johansson <olof@lixom.net>
-Subject: [PATCH 2/2] dma: imx-sdma: Fix warnings for LPAE builds
-Date: Tue, 12 Nov 2013 22:30:44 -0800
-Message-Id: <1384324244-11330-2-git-send-email-olof@lixom.net>
+Subject: [PATCH 1/2] dmaengine: ipu: fix warnings from 64-bit dma_addr_t printouts
+Date: Tue, 12 Nov 2013 22:30:43 -0800
+Message-Id: <1384324244-11330-1-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1384324244-11330-1-git-send-email-olof@lixom.net>
-References: <1384324244-11330-1-git-send-email-olof@lixom.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,42 +22,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 This resolves a number of warnings such as the below when building with
 64-bit dma_addr_t on arm:
 
-drivers/dma/imx-sdma.c:1092:3: warning: format '%x' expects argument of
-  type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Wformat=]
+drivers/dma/ipu/ipu_idmac.c:1235:2: warning: format '%x' expects argument
+  of type 'unsigned int', but argument 5 has type 'dma_addr_t' [-Wformat=]
 
 ..by upcasting to u64 and using %llx.
 
 Signed-off-by: Olof Johansson <olof@lixom.net>
 ---
- drivers/dma/imx-sdma.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/dma/ipu/ipu_idmac.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index e43c040..4088ff8 100644
---- a/drivers/dma/imx-sdma.c
-+++ b/drivers/dma/imx-sdma.c
-@@ -1089,8 +1089,8 @@ static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
- 			param &= ~BD_CONT;
- 		}
+diff --git a/drivers/dma/ipu/ipu_idmac.c b/drivers/dma/ipu/ipu_idmac.c
+index cb9c0bc..128ca14 100644
+--- a/drivers/dma/ipu/ipu_idmac.c
++++ b/drivers/dma/ipu/ipu_idmac.c
+@@ -1232,8 +1232,10 @@ static irqreturn_t idmac_interrupt(int irq, void *dev_id)
+ 	desc = list_entry(ichan->queue.next, struct idmac_tx_desc, list);
+ 	descnew = desc;
  
--		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%08x %s%s\n",
--				i, count, sg->dma_address,
-+		dev_dbg(sdma->dev, "entry %d: count: %d dma: %#llx %s%s\n",
-+				i, count, (u64)sg->dma_address,
- 				param & BD_WRAP ? "wrap" : "",
- 				param & BD_INTR ? " intr" : "");
+-	dev_dbg(dev, "IDMAC irq %d, dma 0x%08x, next dma 0x%08x, current %d, curbuf 0x%08x\n",
+-		irq, sg_dma_address(*sg), sgnext ? sg_dma_address(sgnext) : 0, ichan->active_buffer, curbuf);
++	dev_dbg(dev, "IDMAC irq %d, dma %#llx, next dma %#llx, current %d, curbuf %#x\n",
++		irq, (u64)sg_dma_address(*sg),
++		sgnext ? (u64)sg_dma_address(sgnext) : 0,
++		ichan->active_buffer, curbuf);
  
-@@ -1163,8 +1163,8 @@ static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
- 		if (i + 1 == num_periods)
- 			param |= BD_WRAP;
- 
--		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%08x %s%s\n",
--				i, period_len, dma_addr,
-+		dev_dbg(sdma->dev, "entry %d: count: %d dma: %#llx %s%s\n",
-+				i, period_len, (u64)dma_addr,
- 				param & BD_WRAP ? "wrap" : "",
- 				param & BD_INTR ? " intr" : "");
- 
+ 	/* Find the descriptor of sgnext */
+ 	sgnew = idmac_sg_next(ichan, &descnew, *sg);
 -- 
 1.7.10.4
 
