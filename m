@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759333Ab3KMObe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 09:31:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:49955 "EHLO mga09.intel.com"
+	id S1759353Ab3KMOcF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 09:32:05 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:36633 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759084Ab3KMObb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 09:31:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="asc'?scan'208";a="434618081"
-Date: Wed, 13 Nov 2013 19:05:36 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Florian Meier <florian.meier@koalo.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        Martin Sperl <martin@sperl.org>
-Subject: Re: [PATCH] dmaengine: Add support for BCM2835.
-Message-ID: <20131113133536.GZ8834@intel.com>
-References: <527D1DDA.2040004@koalo.de>
- <20131108181743.GR2493@sirena.org.uk>
- <20131113050017.GO8834@intel.com>
- <20131113125111.GE878@sirena.org.uk>
+	id S1756878Ab3KMOcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 09:32:01 -0500
+Message-ID: <52838D3D.6060007@imgtec.com>
+Date: Wed, 13 Nov 2013 14:31:25 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IrhDeMKUP4DT/M7F"
-Content-Disposition: inline
-In-Reply-To: <20131113125111.GE878@sirena.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tomasz Figa <tomasz.figa@gmail.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, "Arnd Bergmann" <arnd@arndb.de>,
+        <linux-doc@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>,
+        linux-metag <linux-metag@vger.kernel.org>
+Subject: Re: [PATCH] clk: add specified-rate clock
+References: <1368189862-17119-1-git-send-email-james.hogan@imgtec.com> <20130529173938.6058.96646@quantum> <52838834.4010104@imgtec.com> <5867382.IN2EZ2ivg4@flatron>
+In-Reply-To: <5867382.IN2EZ2ivg4@flatron>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_11_13_14_31_27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 13/11/13 14:18, Tomasz Figa wrote:
+> Hi James, Mike,
+> 
+> On Wednesday 13 of November 2013 14:09:56 James Hogan wrote:
+>> On 29/05/13 18:39, Mike Turquette wrote:
+>>> Quoting James Hogan (2013-05-10 05:44:22)
+>>>> The frequency of some SoC's external oscillators (for example TZ1090's
+>>>> XTAL1) are configured by the board using pull-ups/pull-downs of
+>>>> configuration pins, the logic values of which are automatically latched
+>>>> on reset and available in an SoC register. Add a generic clock component
+>>>> and DT bindings to handle this.
+>>>>
+>>>> It behaves similar to a fixed rate clock (read-only), except it needs
+>>>> information about a register field (reg, shift, width), and the
+>>>> clock-frequency is a mapping from register field values to clock
+>>>> frequencies.
+>>>>
+>>>
+>>> James,
+>>>
+>>> Thanks for sending this!  It looks mostly good and is a useful clock
+>>> type to support.  Comments below.
+>>
+>> Hi Mike,
+>>
+>> Sorry for slight delay getting back to you. I had another think about
+>> this stuff yesterday...
+>>
+> 
+> Just a random idea that came to my mind while reading this thread:
+> 
+> What about modelling this as a set of fixed rate clocks fed into
+> a read-only mux?
 
---IrhDeMKUP4DT/M7F
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, that had occurred to me too. I suppose the arguments against would be:
+* it doesn't describe the hardware, there is no mux, just a fixed rate
+clock with a discoverable frequency.
+* it would sort of work for my small case of only having 9 possible
+frequencies (although it would be a bit verbose), but wouldn't scale
+nicely or be extendible to if the frequency was encoded more
+continuously in the register value. E.g. if the frequency was 1MHz *
+(the register value - 1) or something crazy like that. Of course that's
+conjecture and SoC designers probably aren't going to want to use more
+pins for bootstrap config than necessary.
 
-On Wed, Nov 13, 2013 at 12:51:11PM +0000, Mark Brown wrote:
-> On Wed, Nov 13, 2013 at 10:30:17AM +0530, Vinod Koul wrote:
-> > On Fri, Nov 08, 2013 at 06:17:43PM +0000, Mark Brown wrote:
->=20
-> > > Adding in Martin Sperl who's been looking at DMA with regard to the S=
-PI
-> > > controller (which will want non-cyclic mode but I guess there's a lot=
- of
-> > > shared code).
->=20
-> > Is there a plan to add a library in SPI for dma ops, on lines of what
-> > is done in sound?
->=20
-> I'm probably going to be looking at that at some point, though perhaps
-> Martin will get to it since he seems to be looking at this.
-Okay sounds good. This will also help in streamline the implementations..
+Cheers
+James
 
---
-~Vinod
-
---IrhDeMKUP4DT/M7F
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSg4AoAAoJEHwUBw8lI4NHxJwP/iL+nkFcKmg18yC6Vav+mtc1
-mqEMa2wU7W/moUxuckpzPhnuPo2OjP6QYyt7NboQHtOTH5xCJXOtD1s5P6QJvFow
-dziG2YW9uFbLlDOeGTdRTJeOVZtbFg2V+mC0/prVwvAPhYmJQu7ScMpRagpe1//5
-d+/g0ZEbrxfap0S4oMJVL/tsRWT0UtlPCja0kCwFgqtF4lk8A9PIg9Il6WbVaVKu
-hDSlgapGU7VpvWE0rPA9qc5AGxJcILGUFM0Rt+nj0+8wqLhr9XmNNr8Ppb3euzc2
-tjLrHGhreuntGkD2nU/t82OZ0e/nODYIZRoSuwaA2xKIPPo6OCUIMFM9jrye2tz0
-qSsPB6h2oXtjq3k4ffxRtdT/6GaSe5u58OSPRim0lXjm8YhPypIbvAz3yoA/ThyC
-rnC3PwspK7MZY4r3uP6IBQZeJgR9yjMaiYaOwfMqQ9zRodpZLuKlrkiynRleeUR9
-q/SP9bp0GVdrXsKjbR07QJLe8I8JkNk0tk1Qfcs/UHiinc0grY9qmJdwYPIIvqB2
-wcnQX3dXRj6Jm97kU2B7amryy+WRuCCvNwF5kJrRR1/Nna6xPa4dtd2iOherMSJ5
-1307zGfAGokY3nM5L/20C4/SCXg37FpPdWIBdkqiQvbXXi/25ZSdG2wqkaFeJ7i3
-SVC8cFBvO9+CXRg2UuWi
-=FCN3
------END PGP SIGNATURE-----
-
---IrhDeMKUP4DT/M7F--
