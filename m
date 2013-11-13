@@ -1,45 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab3KMA3f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 19:29:35 -0500
-Received: from smtprelay0080.hostedemail.com ([216.40.44.80]:55845 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753306Ab3KMA32 (ORCPT
+	id S1755956Ab3KMAb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 19:31:26 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:50270 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485Ab3KMAbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 19:29:28 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1536:1559:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2693:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3870:3872:3876:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4043:4250:4321:5007:6117:6119:7652:9025:10004:10400:10848:11232:11658:11914:12043:12517:12519:12679:12740:13069:13311:13357:13845,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: grip90_5254e135b8928
-X-Filterd-Recvd-Size: 1371
-Message-ID: <1384302563.3665.28.camel@joe-AO722>
-Subject: Re: [PATCH V3] printk/cache: Mark printk_once test variable
- __read_mostly
-From: Joe Perches <joe@perches.com>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        linux-metag@vger.kernel.org
-Date: Tue, 12 Nov 2013 16:29:23 -0800
-In-Reply-To: <CA+8MBb+rrAWSTTvO4cx32ju-QOAG6aHHxR9B=sLtGXR3q8DF0A@mail.gmail.com>
-References: <1383128301-20231-1-git-send-email-james.hogan@imgtec.com>
-	 <20131030134839.8bdf70cc68d1bf0beb1fb63a@linux-foundation.org>
-	 <1383244173.8740.9.camel@joe-AO722>
-	 <CA+8MBb+rrAWSTTvO4cx32ju-QOAG6aHHxR9B=sLtGXR3q8DF0A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Nov 2013 19:31:19 -0500
+Date: Wed, 13 Nov 2013 08:28:51 +0800
+From: Shaohua Li <shli@kernel.org>
+To: NeilBrown <neilb@suse.de>
+Cc: fengguang.wu@intel.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [raid5] kernel BUG at drivers/md/raid5.c:701!
+Message-ID: <20131113002851.GA8051@kernel.org>
+References: <20131111144757.GA20255@localhost>
+ <20131112115556.6ee0e2e3@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112115556.6ee0e2e3@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-12 at 16:23 -0800, Tony Luck wrote:
-> Trying this again with HTML disabled in gmail so mailing lists will see it ...
+On Tue, Nov 12, 2013 at 11:55:56AM +1100, NeilBrown wrote:
+> On Mon, 11 Nov 2013 22:47:57 +0800 fengguang.wu@intel.com wrote:
+> 
+> > 28cc2127527dcba2a0817afa8fd5a33c9e023090 is the first bad commit
+> > commit 28cc2127527dcba2a0817afa8fd5a33c9e023090
+> > Author: Shaohua Li <shli@kernel.org>
+> > Date:   Tue Sep 10 15:37:56 2013 +0800
+> > 
+> >     raid5: relieve lock contention in get_active_stripe()
+> >     
+> >     get_active_stripe() is the last place we have lock contention. It has two
+> >     paths. One is stripe isn't found and new stripe is allocated, the other is
+> >     stripe is found.
+> >     
+> >     The first path basically calls __find_stripe and init_stripe. It accesses
+> >     conf->generation, conf->previous_raid_disks, conf->raid_disks,
+> >     conf->prev_chunk_sectors, conf->chunk_sectors, conf->max_degraded,
+> >     conf->prev_algo, conf->algorithm, the stripe_hashtbl and inactive_list. Except
+> >     stripe_hashtbl and inactive_list, other fields are changed very rarely.
+> >     
+> >     With this patch, we split inactive_list and add new hash locks. Each free
+> >     stripe belongs to a specific inactive list. Which inactive list is determined
+> >     by stripe's lock_hash. Note, even a stripe hasn't a sector assigned, it has a
+> >     lock_hash assigned. Stripe's inactive list is protected by a hash lock, which
+> >     is determined by it's lock_hash too. The lock_hash is derivied from current
+> >     stripe_hashtbl hash, which guarantees any stripe_hashtbl list will be assigned
+> >     to a specific lock_hash, so we can use new hash lock to protect stripe_hashtbl
+> >     list too. The goal of the new hash locks introduced is we can only use the new
+> >     locks in the first path of get_active_stripe(). Since we have several hash
+> >     locks, lock contention is relieved significantly.
+> >     
+> >     The first path of get_active_stripe() accesses other fields, since they are
+> >     changed rarely, changing them now need take conf->device_lock and all hash
+> >     locks. For a slow path, this isn't a problem.
+> >     
+> >     If we need lock device_lock and hash lock, we always lock hash lock first. The
+> >     tricky part is release_stripe and friends. We need take device_lock first.
+> >     Neil's suggestion is we put inactive stripes to a temporary list and readd it
+> >     to inactive_list after device_lock is released. In this way, we add stripes to
+> >     temporary list with device_lock hold and remove stripes from the list with hash
+> >     lock hold. So we don't allow concurrent access to the temporary list, which
+> >     means we need allocate temporary list for all participants of release_stripe.
+> >     
+> >     One downside is free stripes are maintained in their inactive list, they can't
+> >     across between the lists. By default, we have total 256 stripes and 8 lists, so
+> >     each list will have 32 stripes. It's possible one list has free stripe but
+> >     other list hasn't. The chance should be rare because stripes allocation are
+> >     even distributed. And we can always allocate more stripes for cache, several
+> >     mega bytes memory isn't a big deal.
+> >     
+> >     This completely removes the lock contention of the first path of
+> >     get_active_stripe(). It slows down the second code path a little bit though
+> >     because we now need takes two locks, but since the hash lock isn't contended,
+> >     the overhead should be quite small (several atomic instructions). The second
+> >     path of get_active_stripe() (basically sequential write or big request size
+> >     randwrite) still has lock contentions.
+> >     
+> >     Signed-off-by: Shaohua Li <shli@fusionio.com>
+> >     Signed-off-by: NeilBrown <neilb@suse.de>
+> > 
+> > :040000 040000 84ab47136c389751c7c08ded47b1761b1bee7184 351047cfe3ac66013fc5c77f23d9bb04f869081d M	drivers
+> > bisect run success
+> > 
+> > # bad: [86737931c2be292ec985df48f2e7fbafb4467f0e] Merge 'md/master' into devel-hourly-2013111107
+> > # good: [5e01dc7b26d9f24f39abace5da98ccbd6a5ceb52] Linux 3.12
+> > git bisect start '86737931c2be292ec985df48f2e7fbafb4467f0e' '5e01dc7b26d9f24f39abace5da98ccbd6a5ceb52' '--'
+> > # good: [21136946c495b0e1e0f7e25a8de6f170efbdeadf] drm/vmwgfx: fix warning if config intel iommu is off.
+> > git bisect good 21136946c495b0e1e0f7e25a8de6f170efbdeadf
+> > # good: [ee360d688c8e37f81c92039f76bebaddbe36befe] Merge branch 'acpi-assorted'
+> > git bisect good ee360d688c8e37f81c92039f76bebaddbe36befe
+> > # good: [cf0613d242805797f252535fcf7bb019512beb46] Merge branch 'gma500-next' of git://github.com/patjak/drm-gma500 into drm-next
+> > git bisect good cf0613d242805797f252535fcf7bb019512beb46
+> > # good: [feba070dbac6f7b477570e590a7dc960b7b0f784] Merge branch 'pm-sleep'
+> > git bisect good feba070dbac6f7b477570e590a7dc960b7b0f784
+> > # good: [6f092343855a71e03b8d209815d8c45bf3a27fcd] net: flow_dissector: fail on evil iph->ihl
+> > git bisect good 6f092343855a71e03b8d209815d8c45bf3a27fcd
+> > # good: [7d963128c95a790b40ae5bac6af23646ceffcb54] Merge 'drm/drm-next' into devel-hourly-2013111107
+> > git bisect good 7d963128c95a790b40ae5bac6af23646ceffcb54
+> > # bad: [917bb50339fbbea9c5f47d257ea42f9652129c3f] raid1: Replace raise_barrier/lower_barrier with freeze_array/unfreeze_array when reconfiguring the array.
+> > git bisect bad 917bb50339fbbea9c5f47d257ea42f9652129c3f
+> > # bad: [28cc2127527dcba2a0817afa8fd5a33c9e023090] raid5: relieve lock contention in get_active_stripe()
+> > git bisect bad 28cc2127527dcba2a0817afa8fd5a33c9e023090
+> > # good: [09b06d70464536cb3cce7cf1c52f23a321604f62] md: fix calculation of stacking limits on level change.
+> > git bisect good 09b06d70464536cb3cce7cf1c52f23a321604f62
+> > # good: [c0f773604d33616b07d61841463a056a780f5ae7] wait: add wait_event_cmd()
+> > git bisect good c0f773604d33616b07d61841463a056a780f5ae7
+> > # first bad commit: [28cc2127527dcba2a0817afa8fd5a33c9e023090] raid5: relieve lock contention in get_active_stripe()
+> > 
+> 
+> I think I've fixed this by merging in the follow.
+> 
+> Shaohua: could you please review and confirm if you  agree?
+> 
+> Thanks,
+> NeilBrown
+> 
+> diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+> index c37ffca1b13c..93090b2afab4 100644
+> --- a/drivers/md/raid5.c
+> +++ b/drivers/md/raid5.c
+> @@ -697,6 +697,7 @@ get_active_stripe(struct r5conf *conf, sector_t sector,
+>  				if (!test_bit(STRIPE_HANDLE, &sh->state))
+>  					atomic_inc(&conf->active_stripes);
+>  				if (list_empty(&sh->lru) &&
+> +				    !test_bit(STRIPE_ON_RELEASE_LIST, &sh->state) &&
+>  				    !test_bit(STRIPE_EXPANDING, &sh->state))
+>  					BUG();
+>  				list_del_init(&sh->lru);
 
-try this:
-
-https://lkml.org/lkml/2013/10/30/604
-
-
+Yes, makes a lot of sense. Thanks!
