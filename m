@@ -1,144 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759632Ab3KMRRJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 12:17:09 -0500
-Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:36770 "EHLO
-	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759314Ab3KMRRC (ORCPT
+	id S1759652Ab3KMRSm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 12:18:42 -0500
+Received: from mail-qc0-f201.google.com ([209.85.216.201]:35658 "EHLO
+	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757440Ab3KMRSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 12:17:02 -0500
-Message-ID: <1384363014.3392.44.camel@linaro1.home>
-Subject: Re: [PATCH v2 11/13] ARM: Finish renaming ARM kprobes APIs for
- sharing with uprobes
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: David Long <dave.long@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Date: Wed, 13 Nov 2013 17:16:54 +0000
-In-Reply-To: <1381871068-27660-12-git-send-email-dave.long@linaro.org>
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org>
-	 <1381871068-27660-12-git-send-email-dave.long@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01c-IP: [82.69.122.217]
+	Wed, 13 Nov 2013 12:18:35 -0500
+From: Sameer Nanda <snanda@chromium.org>
+To: akpm@linux-foundation.org, mhocko@suse.cz, rientjes@google.com,
+        hannes@cmpxchg.org, rusty@rustcorp.com.au, semenzato@google.com,
+        murzin.v@gmail.com, oleg@redhat.com, dserrg@gmail.com,
+        msb@chromium.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sameer Nanda <snanda@chromium.org>
+Subject: [PATCH v6] mm, oom: Fix race when selecting process to kill
+Date: Wed, 13 Nov 2013 09:18:13 -0800
+Message-Id: <1384363093-8025-1-git-send-email-snanda@chromium.org>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <CANMivWaXE=bn4fhvGdz3cPwN+CZpWwrWqmU1BKX8o+vE2JawOw@mail.gmail.com>
+References: <CANMivWaXE=bn4fhvGdz3cPwN+CZpWwrWqmU1BKX8o+vE2JawOw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-15 at 17:04 -0400, David Long wrote:
-> From: "David A. Long" <dave.long@linaro.org>
-> 
-> Use the prefix "probes_" for APIs and definitions to be shared between
-> kprobes and uprobes. Pass additional information into the lower-level decoding
-> functions to avoid having to duplicate architecture-specfific data structures.
-> Make susbsystem-specific APIs static (non-global) again.  Make a couple of utility
-> functions (probes_simulate_nop and probes_emulate_none) sharable and in a common
-> file. Keep the current "action" tables specific to kprobes, as this is where
-> uprobes functionality will be connected up to the instruction interpreter.
+The selection of the process to be killed happens in two spots:
+first in select_bad_process and then a further refinement by
+looking for child processes in oom_kill_process. Since this is
+a two step process, it is possible that the process selected by
+select_bad_process may get a SIGKILL just before oom_kill_process
+executes. If this were to happen, __unhash_process deletes this
+process from the thread_group list. This results in oom_kill_process
+getting stuck in an infinite loop when traversing the thread_group
+list of the selected process.
 
-That's a rather long list of things this patch is reorganising and makes
-it very difficult to review. For those class of changes which are
-independent of each other, can you do them as separate patches?
+Fix this race by adding a pid_alive check for the selected process
+with tasklist_lock held in oom_kill_process.
 
-Particularly, the change from using the function arguments
+Signed-off-by: Sameer Nanda <snanda@chromium.org>
+---
+ include/linux/sched.h |  5 +++++
+ mm/oom_kill.c         | 34 +++++++++++++++++++++-------------
+ 2 files changed, 26 insertions(+), 13 deletions(-)
 
-    struct kprobe *p'
-
-to
-    probes_opcode_t opcode, probes_opcode_t *addr, struct arch_specific_insn *asi
-
-should be in it's own separate patch as that is spread out across multiple files
-and functions.
-
-I have a few general comments on this patch...
-
-1. I don't think we actually need to pass 'probes_opcode_t *addr' to the
-simulation functions, this will be the same as regs->ARM_pc (except that
-for thumb code 'addr' has bit0 set, which we don't actually care about).
-So drop the new 'addr' argument, and we can also delete the definition of
-thumb_probe_pc() and replace its use with 'regs->ARM_pc + 4' 
-
-2. Now we pass 'probes_opcode_t opcode' to simulation functions a lot of
-them end up doing the redundant...
-
-   kprobe_opcode_t insn = opcode
-
-I would suggest deleting all of these assignments and either rename all
-use of 'insn' to 'opcode' or just changing the function argument name to
-'insn'.
-
-3. I've a comment about the change to probes_decode_insn, I've snipped
-the rest of the patch...
-
-[...]
->  int __kprobes
-> -kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-> +probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
->  				const union decode_item *table, bool thumb,
-> -				const union decode_item *actions)
-> +				bool usermode, const union decode_item *actions)
->  {
-
-The new argument 'usermode' is named for the use you are using it for,
-i.e. uprobes, I think the code is more intuitive if it was called
-something like 'no_emulate', because what the argument does is force all
-emulate operations to become 'custom'.
-
-Perhaps to avoid double negatives like !no_emulate, the logic of the
-argument could be inverted and it called 'use_emulation' or something.
-
-> -	const struct decode_header *h = (struct decode_header *)table;
-> -	const struct decode_header *next;
-> +	struct decode_header *h = (struct decode_header *)table;
-> +	struct decode_header *next;
->  	bool matched = false;
->  
-> -	insn = prepare_emulated_insn(insn, asi, thumb);
-> +	if (!usermode)
-> +		insn = prepare_emulated_insn(insn, asi, thumb);
->  
->  	for (;; h = next) {
->  		enum decode_type type = h->type_regs.bits & DECODE_TYPE_MASK;
-> @@ -401,7 +412,7 @@ kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
->  		if (!matched && (insn & h->mask.bits) != h->value.bits)
->  			continue;
->  
-> -		if (!decode_regs(&insn, regs))
-> +		if (!decode_regs(&insn, regs, !usermode))
->  			return INSN_REJECTED;
->  
->  		switch (type) {
-> @@ -414,7 +425,8 @@ kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
->  
->  		case DECODE_TYPE_CUSTOM: {
->  			struct decode_custom *d = (struct decode_custom *)h;
-> -			return actions[d->decoder.bits].decoder(insn, asi, h);
-> +			return actions[d->decoder.bits].decoder(insn,
-> +					asi, h);
->  		}
->  
->  		case DECODE_TYPE_SIMULATE: {
-> @@ -425,6 +437,11 @@ kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
->  
->  		case DECODE_TYPE_EMULATE: {
->  			struct decode_emulate *d = (struct decode_emulate *)h;
-> +
-> +			if (usermode)
-> +				return actions[d->handler.bits].decoder(insn,
-> +								asi, h);
-> +
->  			asi->insn_handler = actions[d->handler.bits].handler;
->  			set_emulated_insn(insn, asi, thumb);
->  			return INSN_GOOD;
-
-[...]
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e27baee..8975dbb 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2156,6 +2156,11 @@ extern bool current_is_single_threaded(void);
+ #define do_each_thread(g, t) \
+ 	for (g = t = &init_task ; (g = t = next_task(g)) != &init_task ; ) do
+ 
++/*
++ * Careful: while_each_thread is not RCU safe. Callers should hold
++ * read_lock(tasklist_lock) across while_each_thread loops.
++ */
++
+ #define while_each_thread(g, t) \
+ 	while ((t = next_thread(t)) != g)
+ 
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 6738c47..0d1f804 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -412,31 +412,33 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
+ 					      DEFAULT_RATELIMIT_BURST);
+ 
++	if (__ratelimit(&oom_rs))
++		dump_header(p, gfp_mask, order, memcg, nodemask);
++
++	task_lock(p);
++	pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
++		message, task_pid_nr(p), p->comm, points);
++	task_unlock(p);
++
++	read_lock(&tasklist_lock);
++
+ 	/*
+ 	 * If the task is already exiting, don't alarm the sysadmin or kill
+ 	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+ 	 */
+-	if (p->flags & PF_EXITING) {
++	if (p->flags & PF_EXITING || !pid_alive(p)) {
+ 		set_tsk_thread_flag(p, TIF_MEMDIE);
+ 		put_task_struct(p);
++		read_unlock(&tasklist_lock);
+ 		return;
+ 	}
+ 
+-	if (__ratelimit(&oom_rs))
+-		dump_header(p, gfp_mask, order, memcg, nodemask);
+-
+-	task_lock(p);
+-	pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
+-		message, task_pid_nr(p), p->comm, points);
+-	task_unlock(p);
+-
+ 	/*
+ 	 * If any of p's children has a different mm and is eligible for kill,
+ 	 * the one with the highest oom_badness() score is sacrificed for its
+ 	 * parent.  This attempts to lose the minimal amount of work done while
+ 	 * still freeing memory.
+ 	 */
+-	read_lock(&tasklist_lock);
+ 	do {
+ 		list_for_each_entry(child, &t->children, sibling) {
+ 			unsigned int child_points;
+@@ -456,12 +458,17 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 			}
+ 		}
+ 	} while_each_thread(p, t);
+-	read_unlock(&tasklist_lock);
+ 
+-	rcu_read_lock();
+ 	p = find_lock_task_mm(victim);
++
++	/*
++	 * Since while_each_thread is currently not RCU safe, this unlock of
++	 * tasklist_lock may need to be moved further down if any additional
++	 * while_each_thread loops get added to this function.
++	 */
++	read_unlock(&tasklist_lock);
++
+ 	if (!p) {
+-		rcu_read_unlock();
+ 		put_task_struct(victim);
+ 		return;
+ 	} else if (victim != p) {
+@@ -487,6 +494,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	 * That thread will now get access to memory reserves since it has a
+ 	 * pending fatal signal.
+ 	 */
++	rcu_read_lock();
+ 	for_each_process(p)
+ 		if (p->mm == mm && !same_thread_group(p, victim) &&
+ 		    !(p->flags & PF_KTHREAD)) {
 -- 
-Tixy
-
-
+1.8.4.1
 
