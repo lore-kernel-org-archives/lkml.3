@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759002Ab3KMLuk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 06:50:40 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:36472 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755502Ab3KMLuY (ORCPT
+	id S1759058Ab3KMLvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 06:51:54 -0500
+Received: from smtprelay05.ispgateway.de ([80.67.31.100]:53395 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758823Ab3KMLvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 06:50:24 -0500
-Date: Wed, 13 Nov 2013 12:50:21 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, jolsa@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
-Message-ID: <20131113115021.GA15469@gmail.com>
-References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
- <1384267617-3446-5-git-send-email-dsahern@gmail.com>
- <20131112145707.GV5056@laptop.programming.kicks-ass.net>
- <20131112150751.GA19321@ghostprotocols.net>
- <20131112151944.GX5056@laptop.programming.kicks-ass.net>
- <52824AE3.4050207@gmail.com>
- <20131112211121.GC25913@gmail.com>
- <20131113113439.GI21461@twins.programming.kicks-ass.net>
+	Wed, 13 Nov 2013 06:51:52 -0500
+Message-ID: <528367D0.6010900@ladisch.de>
+Date: Wed, 13 Nov 2013 12:51:44 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
+To: Stephan Mueller <smueller@chronox.de>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Pavel Machek <pavel@ucw.cz>,
+        sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and
+ /dev/random
+References: <2579337.FPgJGgHYdz@tauon> <8100659.WdgUuKxd0z@myon.chronox.de> <527FEC56.5070306@ladisch.de> <1391779.T98KINxAMQ@myon.chronox.de>
+In-Reply-To: <1391779.T98KINxAMQ@myon.chronox.de>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131113113439.GI21461@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Stephan Mueller wrote:
+> Am Sonntag, 10. November 2013, 21:28:06 schrieb Clemens Ladisch:
+>> Many CPUs allow to disable branch prediction, but this is very vendor
+>> specific (try to find MSR documentation).  The biggest offender probably
+>> is the out-of-order execution engine, which cannot be disabled.
+>
+> For x86, I have not found a way to disable the unit.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+My AMD processor can do this in the IC_CFG/DC_CFG MSRs.  (See the BKDG.)
 
-> On Tue, Nov 12, 2013 at 10:11:21PM +0100, Ingo Molnar wrote:
-> > 
-> > * David Ahern <dsahern@gmail.com> wrote:
-> > 
-> > > > Dunno.. it _should_ all work. Try it and see what it does.. Once the 
-> > > > events are bigger than a page things might get 'interesting' though.
-> > 
-> > Which could be the case with call-graph recording, right?
-> 
-> Not typically, I think we're limiting call graphs to 127 u64, which is 
-> ~1k. Maybe you can blow the single page if you also do a large 
-> top-of-stack copy for dwarf/unwind nonsense.
+The Intel Core family has other settings (such as data prefetching) that
+are configurable in the IA32_MISC_ENABLE MSR.
 
-What I meant was dwarf style call graph recording:
+(And any setting that increases accesses to main memory is likey to
+introduce more entropy due to clock drift between the processor and the
+memory bus.  Or where do you assume the entropy comes from?)
 
- tools/perf/builtin-record.c:                    const unsigned long default_stack_dump_size = 8192;
+BTW: MFENCE is not guaranteed to flush the instruction pipeline; you
+need CPUID for that.
 
-Doesn't that mean 8K+ events?
+> XOR is a bijective operation.
 
-> > > one option here is not allow page faults and system wide system 
-> > > calls. system wide tracing needs mmap; page faults for a task can 
-> > > use write(). I left that option in case something like this came up.
-> > 
-> > So maybe splice() sounds like the right long term solution after all?
-> > :-/
-> 
-> Right until you put a tracepoint (kprobe) somewhere in whatever function 
-> is used to transfer a single page into/from a splice pipe.
+Only XOR with a constant, which is not what you're doing.
 
-That ought to be a far less common occurance than tracing page faults 
-though.
+>>> There are so many assessments on entropy I make, I am surprised that I
+>>> am said to have no entropy assessment.
+>>
+>> Again: Shannon entropy assumes that you have a sequence of independent
+>> and identically distributed random variables.  And you cannot prove
+>> these properties from the output; you need to know the process that
+>> generates the values.
+>
+> I am absolutely on your side here. And as we cannot (yet?) fully conclude that
+> the observations are independent, a safety margin must always be considered.
 
-> You can always screw yourself over using this stuff, no exceptions.
+If the observations are not independent, you cannot just assume that the
+estimate is off by a certain factor.  It means that the estimate is not
+applicable _at all_.
 
-Granted, as the many notrace markings demonstrate this stuff really wants 
-to observe itself observing itself all the time! :)
+> The RNG has the following safety margins where it is more conservative than
+> measurements indicate:
 
-Thanks,
+You _cannot_ measure entropy by looking at the output.  How would you
+differentiate between /dev/random and /dev/urandom?
 
-	Ingo
+
+Regards,
+Clemens
