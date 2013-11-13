@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759138Ab3KMMQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 07:16:41 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56221 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758789Ab3KMMQi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 07:16:38 -0500
-Date: Wed, 13 Nov 2013 13:16:17 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, jolsa@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
-Message-ID: <20131113121617.GL21461@twins.programming.kicks-ass.net>
-References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
- <1384267617-3446-5-git-send-email-dsahern@gmail.com>
- <20131112145707.GV5056@laptop.programming.kicks-ass.net>
- <20131112150751.GA19321@ghostprotocols.net>
- <20131112151944.GX5056@laptop.programming.kicks-ass.net>
- <52824AE3.4050207@gmail.com>
- <20131112211121.GC25913@gmail.com>
- <20131113113439.GI21461@twins.programming.kicks-ass.net>
- <20131113115021.GA15469@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131113115021.GA15469@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1759168Ab3KMMRN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 07:17:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:61273 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758927Ab3KMMRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 07:17:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="434534686"
+Message-ID: <1384345006.14845.56.camel@smile>
+Subject: Re: [PATCH] gpiolib: append SFI helpers for GPIO API
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: David Cohen <david.a.cohen@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>,
+        Len Brown <lenb@kernel.org>
+Date: Wed, 13 Nov 2013 14:16:46 +0200
+In-Reply-To: <CACRpkdZG=Sa92qGqK4Jt-L1AVRmremK5tgn8O5-5JccUsZDHTA@mail.gmail.com>
+References: <1381979015-28980-1-git-send-email-david.a.cohen@linux.intel.com>
+	 <1382013695.29062.141.camel@smile>
+	 <CACRpkdZG=Sa92qGqK4Jt-L1AVRmremK5tgn8O5-5JccUsZDHTA@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 12:50:21PM +0100, Ingo Molnar wrote:
+On Tue, 2013-11-12 at 19:55 +0100, Linus Walleij wrote:
+> On Thu, Oct 17, 2013 at 2:41 PM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+> > On Wed, 2013-10-16 at 20:03 -0700, David Cohen wrote:
+> >> From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> >>
+> >> To support some (legacy) firmwares and platforms let's make life easier for
+> >> their customers.
+> >
+> >> +int sfi_get_gpio_by_name(const char *name)
+> >> +{
+> >> +     struct sfi_gpio_table_entry *pentry = sfi_gpio_table;
+> >> +     int i;
+> >> +
+> >> +     if (!pentry)
+> >> +             return -1;
+> >
+> > ^^^^ It seems an old version.
+> >
+> > New version was published while ago and even has an ACK from Linus:
+> >
+> > http://www.spinics.net/lists/kernel/msg1545960.html
 > 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Tue, Nov 12, 2013 at 10:11:21PM +0100, Ingo Molnar wrote:
-> > > 
-> > > * David Ahern <dsahern@gmail.com> wrote:
-> > > 
-> > > > > Dunno.. it _should_ all work. Try it and see what it does.. Once the 
-> > > > > events are bigger than a page things might get 'interesting' though.
-> > > 
-> > > Which could be the case with call-graph recording, right?
-> > 
-> > Not typically, I think we're limiting call graphs to 127 u64, which is 
-> > ~1k. Maybe you can blow the single page if you also do a large 
-> > top-of-stack copy for dwarf/unwind nonsense.
-> 
-> What I meant was dwarf style call graph recording:
+> So what is happening to this thing?
 
-Ah, one of those things I've never yet used ;-)
+Actually David now coordinates work done for Medfield & Co.
+Perhaps he is not absent and could answer fast to this.
 
->  tools/perf/builtin-record.c:                    const unsigned long default_stack_dump_size = 8192;
-> 
-> Doesn't that mean 8K+ events?
+> Is there some newer patch I should be merging?
 
-Oh yes.. that's ideal to trigger this.
+I'm pretty sure there is no newest version of patch.
+
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
+
