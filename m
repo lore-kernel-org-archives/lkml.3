@@ -1,78 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab3KMHVf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 02:21:35 -0500
-Received: from 3.mo2.mail-out.ovh.net ([46.105.58.226]:38946 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751518Ab3KMHV0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 02:21:26 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: [PATCH v5 17/17] ARM: at91: add new compatible strings for pmc driver
-Date: Wed, 13 Nov 2013 08:18:55 +0100
-Message-Id: <1384327135-7262-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
-References: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 2841208415252871392
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1758626Ab3KMHZb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 02:25:31 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:58268 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758023Ab3KMHZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 02:25:22 -0500
+X-IronPort-AV: E=Sophos;i="4.93,690,1378828800"; 
+   d="scan'208";a="9022471"
+Message-ID: <5283299B.8080702@cn.fujitsu.com>
+Date: Wed, 13 Nov 2013 15:26:19 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [REVIEW][PATCH 1/2] userns: Better restrictions on when proc
+ and sysfs can be mounted
+References: <878uzmhkqg.fsf@xmission.com> <52749663.2000701@cn.fujitsu.com>	<527C4D88.10907@cn.fujitsu.com> <87k3gigmgj.fsf@xmission.com>
+In-Reply-To: <87k3gigmgj.fsf@xmission.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/13 15:23:33,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/13 15:23:34,
+	Serialize complete at 2013/11/13 15:23:34
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new compatible string for PMC node to prepare the
-transition to common clk.
+On 11/09/2013 01:42 PM, Eric W. Biederman wrote:
+> Gao feng <gaofeng@cn.fujitsu.com> writes:
+> 
+>> On 11/02/2013 02:06 PM, Gao feng wrote:
+>>> Hi Eric,
+>>>
+>>> On 08/28/2013 05:44 AM, Eric W. Biederman wrote:
+>>>>
+>>>> Rely on the fact that another flavor of the filesystem is already
+>>>> mounted and do not rely on state in the user namespace.
+>>>>
+>>>> Verify that the mounted filesystem is not covered in any significant
+>>>> way.  I would love to verify that the previously mounted filesystem
+>>>> has no mounts on top but there are at least the directories
+>>>> /proc/sys/fs/binfmt_misc and /sys/fs/cgroup/ that exist explicitly
+>>>> for other filesystems to mount on top of.
+>>>>
+>>>> Refactor the test into a function named fs_fully_visible and call that
+>>>> function from the mount routines of proc and sysfs.  This makes this
+>>>> test local to the filesystems involved and the results current of when
+>>>> the mounts take place, removing a weird threading of the user
+>>>> namespace, the mount namespace and the filesystems themselves.
+>>>>
+>>>> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+>>>> ---
+>>>>  fs/namespace.c                 |   37 +++++++++++++++++++++++++------------
+>>>>  fs/proc/root.c                 |    7 +++++--
+>>>>  fs/sysfs/mount.c               |    3 ++-
+>>>>  include/linux/fs.h             |    1 +
+>>>>  include/linux/user_namespace.h |    4 ----
+>>>>  kernel/user.c                  |    2 --
+>>>>  kernel/user_namespace.c        |    2 --
+>>>>  7 files changed, 33 insertions(+), 23 deletions(-)
+>>>>
+>>>> diff --git a/fs/namespace.c b/fs/namespace.c
+>>>> index 64627f8..877e427 100644
+>>>> --- a/fs/namespace.c
+>>>> +++ b/fs/namespace.c
+>>>> @@ -2867,25 +2867,38 @@ bool current_chrooted(void)
+>>>>  	return chrooted;
+>>>>  }
+>>>>  
+>>>> -void update_mnt_policy(struct user_namespace *userns)
+>>>> +bool fs_fully_visible(struct file_system_type *type)
+>>>>  {
+>>>>  	struct mnt_namespace *ns = current->nsproxy->mnt_ns;
+>>>>  	struct mount *mnt;
+>>>> +	bool visible = false;
+>>>>  
+>>>> -	down_read(&namespace_sem);
+>>>> +	if (unlikely(!ns))
+>>>> +		return false;
+>>>> +
+>>>> +	namespace_lock();
+>>>>  	list_for_each_entry(mnt, &ns->list, mnt_list) {
+>>>> -		switch (mnt->mnt.mnt_sb->s_magic) {
+>>>> -		case SYSFS_MAGIC:
+>>>> -			userns->may_mount_sysfs = true;
+>>>> -			break;
+>>>> -		case PROC_SUPER_MAGIC:
+>>>> -			userns->may_mount_proc = true;
+>>>> -			break;
+>>>> +		struct mount *child;
+>>>> +		if (mnt->mnt.mnt_sb->s_type != type)
+>>>> +			continue;
+>>>> +
+>>>> +		/* This mount is not fully visible if there are any child mounts
+>>>> +		 * that cover anything except for empty directories.
+>>>> +		 */
+>>>> +		list_for_each_entry(child, &mnt->mnt_mounts, mnt_child) {
+>>>> +			struct inode *inode = child->mnt_mountpoint->d_inode;
+>>>> +			if (!S_ISDIR(inode->i_mode))
+>>>> +				goto next;
+>>>> +			if (inode->i_nlink != 2)
+>>>> +				goto next;
+>>>
+>>>
+>>> I met a problem that proc filesystem failed to mount in user namespace,
+>>> The problem is the i_nlink of sysctl entries under proc filesystem is not
+>>> 2. it always is 1 even it's a directory, see proc_sys_make_inode. and for
+>>> btrfs, the i_nlink for an empty dir is 2 too. it seems like depends on the
+>>> filesystem itself,not depends on vfs. In my system binfmt_misc is mounted
+>>> on /proc/sys/fs/binfmt_misc, and the i_nlink of this directory's inode is
+>>> 1.
+> 
+> Yes. 1 is what filesystems that are too lazy to count the number of
+> links to a directory return, and /proc/sys is currently such a
+> filesystem.
+> 
+> Ordinarily nlink == 2 means a directory does not have any subdirectories.
+> 
+>>> btw, I'm not quite understand what's the inode->i_nlink != 2 here means?
+>>> is this directory empty? as I know, when we create a file(not dir) under
+>>> a dir, the i_nlink of this dir will not increase.
+>>>
+>>> And another question, it looks like if we don't have proc/sys fs mounted,
+>>> then proc/sys will be failed to be mounted?
+>>>
+>>
+>> Any Idea?? or should we need to revert this patch??
+> 
+> The patch is mostly doing what it is supposed to be doing.
+> 
+> Now the code is slightly buggy.  inode->i_nlink will test to see if a
+> directory has subdirectories but it won't test to see if a directory is
+> empty.  Where did my brain go when I was writing that test?
+> 
+> Right now I would rather not have the empty directory exception than
+> remove this code.
+> 
+> The test is a little trickier to write than it might otherwise be
+> because /proc and /sys tend to be slightly imperfect filesystems.
+> 
+> I think the only way to really test that is to call readdir on the
+> directory itself :(  I don't like that thought.
+> 
+> I don't know what I was thinking when I wrote that test but I definitely
+> goofed up.  Grr!
+> 
+> I can certainly filter out any directory with nlink > 2.  That would be
+> an easy partial step forward.
+> 
+> The real question though is how do I detect directories it is safe to
+> mount on where there will not be files in them.  I can't call iterate
+> with the namespace_lock held so things are a bit tricky.
+> 
 
-These compatible string come from pmc driver in clk subsystem and are
-needed to provide new device tree compatibility with old at91 clks
-(device tree using common clks will use the new compatible strings).
+I know this problem is not easy to be resolved. why not let the user
+make the decision?  maybe we can introduce a new mount option MS_LOCK,
+if user wants to use mount to hide something, he should use mount with
+option MS_LOCK. so the unpriviged user can't umount this filesystem and
+fail to mount the filesystem if one of it's child mount is mounted with
+MS_LOCK option otherwise he use MS_REC too.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/mach-at91/clock.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
-index 5f02aea..72b2579 100644
---- a/arch/arm/mach-at91/clock.c
-+++ b/arch/arm/mach-at91/clock.c
-@@ -884,6 +884,11 @@ static int __init at91_pmc_init(unsigned long main_clock)
- #if defined(CONFIG_OF)
- static struct of_device_id pmc_ids[] = {
- 	{ .compatible = "atmel,at91rm9200-pmc" },
-+	{ .compatible = "atmel,at91sam9260-pmc" },
-+	{ .compatible = "atmel,at91sam9g45-pmc" },
-+	{ .compatible = "atmel,at91sam9n12-pmc" },
-+	{ .compatible = "atmel,at91sam9x5-pmc" },
-+	{ .compatible = "atmel,sama5d3-pmc" },
- 	{ /*sentinel*/ }
- };
- 
--- 
-1.7.9.5
-
+Thanks
