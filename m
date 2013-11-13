@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758661Ab3KMH0y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 02:26:54 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:2088 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758570Ab3KMH0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 02:26:47 -0500
-X-IronPort-AV: E=Sophos;i="4.93,690,1378828800"; 
-   d="scan'208";a="9022494"
-From: Gao feng <gaofeng@cn.fujitsu.com>
-To: containers@lists.linux-foundation.org
-Cc: ebiederm@xmission.com, linux-fsdevel@vger.kernel.org, serge@hallyn.com,
-        linux-kernel@vger.kernel.org, Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH] userns: allow privileged user to operate locked mount
-Date: Wed, 13 Nov 2013 15:27:43 +0800
-Message-Id: <1384327663-12032-1-git-send-email-gaofeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.3.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/13 15:24:58,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/13 15:24:58,
-	Serialize complete at 2013/11/13 15:24:58
+	id S1758485Ab3KMHdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 02:33:06 -0500
+Received: from m53-178.qiye.163.com ([123.58.178.53]:36081 "EHLO
+	m53-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757480Ab3KMHdC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 02:33:02 -0500
+From: Li Wang <liwang@ubuntukylin.com>
+To: ceph-devel@vger.kernel.org
+Cc: Sage Weil <sage@inktank.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Li Wang <liwang@ubuntukylin.com>
+Subject: [PATCH] Ceph: Avoid data inconsistency due to d-cache aliasing in readpage()
+Date: Wed, 13 Nov 2013 15:22:14 +0800
+Message-Id: <1384327335-18812-1-git-send-email-liwang@ubuntukylin.com>
+X-Mailer: git-send-email 1.7.9.5
+X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUpMVUNJQkJCQkJJSExLTUtOTldZCQ4XHghZQV
+	koKz0kKzooKCQyNSQzPjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQ1NCQyNSQzPj
+	o*PilBSVVLQDg0LjUvKSIkODVBS1VLQCk#PDI0NSQ6KDI6QUtVS0ArKTQtMjU4PiQ8Ljo1PD80NT
+	xBS1VLQD8iNTo2MjgkMiskNTQkMjUkMz46Pz4pQUtVS0ApPjo3JDIrJDI1JCk5NyQyNSQzPjo*Pi
+	lBSklVS0A2LjcvMiQpOCsvJD8yPT0#KT41LyQyNSQzPjo*PilBSVVLQDIrJC80PzoiJDg1LyRLJE
+	pLS0FLVUtAMiskTiQ2MjUuLz4kODUvJEskSktBS1VLQDIrJEhLJDYyNS4vPiQ4NS8kSyROS0FLVU
+	tAMiskSiQzNC4pJDg1LyRLJEpLS0FLVUtAMiskSiQ2MjUuLz4kODUvJEskSktBS1VLQCguOSQ#QU
+	pVTk5APTUkKC45JD41LDQpPygkMzcxJEpLS0lLSkFLVUlDWQY+
+X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSENP
+	SElMSENMTE5CVTMWGhIXVRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHldZCAFZ
+	QUpMSEo3V1kSC1lBWUpDSFVNSFVJTktVTVkG
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Privileged user should have rights to mount/umount/move
-these even locked mount.
+If the length of data to be read in readpage() is exactly
+PAGE_CACHE_SIZE, the original code does not flush d-cache
+for data consistency after finishing reading. This patches fixes
+this.
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Li Wang <liwang@ubuntukylin.com>
 ---
- fs/namespace.c | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ fs/ceph/addr.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index da5c494..7097fc7 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1297,6 +1297,11 @@ static inline bool may_mount(void)
- 	return ns_capable(current->nsproxy->mnt_ns->user_ns, CAP_SYS_ADMIN);
- }
+diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+index 6df8bd4..7b0000a 100644
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -210,9 +210,13 @@ static int readpage_nounlock(struct file *filp, struct page *page)
+ 	if (err < 0) {
+ 		SetPageError(page);
+ 		goto out;
+-	} else if (err < PAGE_CACHE_SIZE) {
++	} else {
++		if (err < PAGE_CACHE_SIZE) {
+ 		/* zero fill remainder of page */
+-		zero_user_segment(page, err, PAGE_CACHE_SIZE);
++			zero_user_segment(page, err, PAGE_CACHE_SIZE);
++		} else {
++			flush_dcache_page(page);
++		}
+ 	}
+ 	SetPageUptodate(page);
  
-+static inline bool may_mount_lock(struct mount *mnt)
-+{
-+	return !(mnt->mnt.mnt_flags & MNT_LOCKED) || capable(CAP_SYS_ADMIN);
-+}
-+
- /*
-  * Now umount can handle mount points as well as block devices.
-  * This is important for filesystems which use unnamed block devices.
-@@ -1330,7 +1335,7 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
- 		goto dput_and_out;
- 	if (!check_mnt(mnt))
- 		goto dput_and_out;
--	if (mnt->mnt.mnt_flags & MNT_LOCKED)
-+	if (!may_mount_lock(mnt))
- 		goto dput_and_out;
- 
- 	retval = do_umount(mnt, flags);
-@@ -1768,7 +1773,8 @@ static int do_loopback(struct path *path, const char *old_name,
- 	if (!check_mnt(parent) || !check_mnt(old))
- 		goto out2;
- 
--	if (!recurse && has_locked_children(old, old_path.dentry))
-+	if (!recurse && has_locked_children(old, old_path.dentry) &&
-+	    !capable(CAP_SYS_ADMIN))
- 		goto out2;
- 
- 	if (recurse)
-@@ -1895,7 +1901,7 @@ static int do_move_mount(struct path *path, const char *old_name)
- 	if (!check_mnt(p) || !check_mnt(old))
- 		goto out1;
- 
--	if (old->mnt.mnt_flags & MNT_LOCKED)
-+	if (!may_mount_lock(old))
- 		goto out1;
- 
- 	err = -EINVAL;
-@@ -2679,7 +2685,7 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
- 		goto out4;
- 	if (!check_mnt(root_mnt) || !check_mnt(new_mnt))
- 		goto out4;
--	if (new_mnt->mnt.mnt_flags & MNT_LOCKED)
-+	if (!may_mount_lock(new_mnt))
- 		goto out4;
- 	error = -ENOENT;
- 	if (d_unlinked(new.dentry))
 -- 
-1.8.3.1
+1.7.9.5
 
