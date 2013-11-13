@@ -1,153 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759350Ab3KMOrx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 09:47:53 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:45451 "EHLO comal.ext.ti.com"
+	id S1759362Ab3KMOsr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 09:48:47 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:39667 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757299Ab3KMOru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 09:47:50 -0500
-Message-ID: <528390C1.2060902@ti.com>
-Date: Wed, 13 Nov 2013 10:46:25 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1758992Ab3KMOso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 09:48:44 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@deeprootsystems.com>
+CC: <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM: davinci: Fix McASP mem resource names
+Date: Wed, 13 Nov 2013 16:48:17 +0200
+Message-ID: <1384354097-1163-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.4.2
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "wni@nvidia.com" <wni@nvidia.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCHv5 20/20] MAINTAINERS: add maintainer entry for thermal
- bindings
-References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com> <1384285582-16933-21-git-send-email-eduardo.valentin@ti.com> <CAOesGMiCh-nGPqJQd4NPz9st7mBT0JkZ9nEK1gfyF2RmnrXZog@mail.gmail.com> <52828C31.2050604@ti.com> <20131113094232.GB21713@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131113094232.GB21713@e106331-lin.cambridge.arm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="slmGsk2f3aKAX9TOXKTg41uE9VJimV0Lc"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---slmGsk2f3aKAX9TOXKTg41uE9VJimV0Lc
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+The ASoC McASP driver looks for the mem resources by name and:
+"mpu" and "dat" regions.
+Change/add the needed name for the mem resources so the driver can pick the
+correct resource.
 
-On 13-11-2013 05:42, Mark Rutland wrote:
-> Hi,
->=20
-> On Tue, Nov 12, 2013 at 08:14:41PM +0000, Eduardo Valentin wrote:
->> On 12-11-2013 15:59, Olof Johansson wrote:
->>> On Tue, Nov 12, 2013 at 11:46 AM, Eduardo Valentin
->>> <eduardo.valentin@ti.com> wrote:
->>>> After discussion and agreement of thermal device tree bindings,
->>>> it is desirable to properly maintain thermal bindings for
->>>> existing and upcoming devices.
->>>>
->>>> As original author of thermal device tree bindings, I am
->>>> volunteering to maintain them.
->>>>
->>>> Cc: Rob Herring <rob.herring@calxeda.com>
->>>> Cc: Pawel Moll <pawel.moll@arm.com>
->>>> Cc: Mark Rutland <mark.rutland@arm.com>
->>>> Cc: Stephen Warren <swarren@wwwdotorg.org>
->>>> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
->>>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->>>> ---
->>>>  MAINTAINERS | 1 +
->>>>  1 file changed, 1 insertion(+)
->>>>
->>>> diff --git a/MAINTAINERS b/MAINTAINERS
->>>> index 3438384..94bfc46 100644
->>>> --- a/MAINTAINERS
->>>> +++ b/MAINTAINERS
->>>> @@ -6178,6 +6178,7 @@ M:        Pawel Moll <pawel.moll@arm.com>
->>>>  M:     Mark Rutland <mark.rutland@arm.com>
->>>>  M:     Stephen Warren <swarren@wwwdotorg.org>
->>>>  M:     Ian Campbell <ijc+devicetree@hellion.org.uk>
->>>> +M:     Eduardo Valentin <eduardo.valentin@ti.com>
->>>>  L:     devicetree@vger.kernel.org
->>>>  S:     Maintained
->>>>  F:     Documentation/devicetree/
->>>
->>> The number of device-tree maintainers is getting to be somewhat silly=
-=2E
->>> You don't have to be a maintainer to be a reviewer, and the number is=
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+Hi,
 
->>> getting large enough that it might get hard for one maintainer to kno=
-w
->>> what another is doing.
->>>
->>> So, soft nack, but it's really up to the DT guys.
->>
->> Hello Olof,
->>
->> No issues on my side. As I stated in the patch description, I am
->> volunteering. The motivation comes from the fact that it's been hard t=
-o
->> get DT maintainers attention, so I am assuming they are not having
->> enough bandwidth to pay attention to an extra class of bindings.
->>
->> I agree with you, this is up to the DT folks.
->=20
-> When we discussed this in #devicetree, I was under the impression you
-> meant adding a line like:
->=20
-> F:      Documentation/devicetree/bindings/thermal/
+This is needed for 3.13.
 
-This would work for me too. How about adding this to thermal subsys
-entry in MAINTAINERS file?
+Regards,
+Peter
 
->=20
-> To your MAINTAINERS entry, rather than adding yourself to the general
-> devicetree bindings MAINTAINERS entry. Sorry for the confusion regardin=
-g
-> this.
->=20
-> Given we have enough difficulty organising ourselves at present, I agre=
-e
-> with Olof that it doesn't make much sense to throw more people into the=
+ arch/arm/mach-davinci/devices-da8xx.c | 4 ++--
+ arch/arm/mach-davinci/dm355.c         | 1 +
+ arch/arm/mach-davinci/dm365.c         | 1 +
+ arch/arm/mach-davinci/dm644x.c        | 1 +
+ arch/arm/mach-davinci/dm646x.c        | 4 ++--
+ 5 files changed, 7 insertions(+), 4 deletions(-)
 
-> general devicetree bindings maintainer pile.
->=20
-> However, we would certainly appreciate any review you'd be willing to
-> provide.
->=20
-> Thanks,
-> Mark.
->=20
->=20
+diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+index c46eccb..78829c5 100644
+--- a/arch/arm/mach-davinci/devices-da8xx.c
++++ b/arch/arm/mach-davinci/devices-da8xx.c
+@@ -487,7 +487,7 @@ int __init da8xx_register_emac(void)
+ 
+ static struct resource da830_mcasp1_resources[] = {
+ 	{
+-		.name	= "mcasp1",
++		.name	= "mpu",
+ 		.start	= DAVINCI_DA830_MCASP1_REG_BASE,
+ 		.end	= DAVINCI_DA830_MCASP1_REG_BASE + (SZ_1K * 12) - 1,
+ 		.flags	= IORESOURCE_MEM,
+@@ -515,7 +515,7 @@ static struct platform_device da830_mcasp1_device = {
+ 
+ static struct resource da850_mcasp_resources[] = {
+ 	{
+-		.name	= "mcasp",
++		.name	= "mpu",
+ 		.start	= DAVINCI_DA8XX_MCASP0_REG_BASE,
+ 		.end	= DAVINCI_DA8XX_MCASP0_REG_BASE + (SZ_1K * 12) - 1,
+ 		.flags	= IORESOURCE_MEM,
+diff --git a/arch/arm/mach-davinci/dm355.c b/arch/arm/mach-davinci/dm355.c
+index ef9ff1f..d4baf4f 100644
+--- a/arch/arm/mach-davinci/dm355.c
++++ b/arch/arm/mach-davinci/dm355.c
+@@ -641,6 +641,7 @@ static struct platform_device dm355_edma_device = {
+ 
+ static struct resource dm355_asp1_resources[] = {
+ 	{
++		.name	= "mpu",
+ 		.start	= DAVINCI_ASP1_BASE,
+ 		.end	= DAVINCI_ASP1_BASE + SZ_8K - 1,
+ 		.flags	= IORESOURCE_MEM,
+diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
+index 1511a06..9c68e3f 100644
+--- a/arch/arm/mach-davinci/dm365.c
++++ b/arch/arm/mach-davinci/dm365.c
+@@ -942,6 +942,7 @@ static struct platform_device dm365_edma_device = {
+ 
+ static struct resource dm365_asp_resources[] = {
+ 	{
++		.name	= "mpu",
+ 		.start	= DAVINCI_DM365_ASP0_BASE,
+ 		.end	= DAVINCI_DM365_ASP0_BASE + SZ_8K - 1,
+ 		.flags	= IORESOURCE_MEM,
+diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
+index 143a321..79847d0 100644
+--- a/arch/arm/mach-davinci/dm644x.c
++++ b/arch/arm/mach-davinci/dm644x.c
+@@ -572,6 +572,7 @@ static struct platform_device dm644x_edma_device = {
+ /* DM6446 EVM uses ASP0; line-out is a pair of RCA jacks */
+ static struct resource dm644x_asp_resources[] = {
+ 	{
++		.name	= "mpu",
+ 		.start	= DAVINCI_ASP0_BASE,
+ 		.end	= DAVINCI_ASP0_BASE + SZ_8K - 1,
+ 		.flags	= IORESOURCE_MEM,
+diff --git a/arch/arm/mach-davinci/dm646x.c b/arch/arm/mach-davinci/dm646x.c
+index 2a73f29..45de58c 100644
+--- a/arch/arm/mach-davinci/dm646x.c
++++ b/arch/arm/mach-davinci/dm646x.c
+@@ -621,7 +621,7 @@ static struct platform_device dm646x_edma_device = {
+ 
+ static struct resource dm646x_mcasp0_resources[] = {
+ 	{
+-		.name	= "mcasp0",
++		.name	= "mpu",
+ 		.start 	= DAVINCI_DM646X_MCASP0_REG_BASE,
+ 		.end 	= DAVINCI_DM646X_MCASP0_REG_BASE + (SZ_1K << 1) - 1,
+ 		.flags 	= IORESOURCE_MEM,
+@@ -641,7 +641,7 @@ static struct resource dm646x_mcasp0_resources[] = {
+ 
+ static struct resource dm646x_mcasp1_resources[] = {
+ 	{
+-		.name	= "mcasp1",
++		.name	= "mpu",
+ 		.start	= DAVINCI_DM646X_MCASP1_REG_BASE,
+ 		.end	= DAVINCI_DM646X_MCASP1_REG_BASE + (SZ_1K << 1) - 1,
+ 		.flags	= IORESOURCE_MEM,
+-- 
+1.8.4.2
 
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
---slmGsk2f3aKAX9TOXKTg41uE9VJimV0Lc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlKDkMEACgkQCXcVR3XQvP1MgQEA4A3me8OJdzA42F/3En97fxl8
-+BMg42OFMOItYPRaNTABAJPGu4RiWaQFdYyCqzH50zMuushR8yN/BSnBnE6gu3d0
-=VWEh
------END PGP SIGNATURE-----
-
---slmGsk2f3aKAX9TOXKTg41uE9VJimV0Lc--
