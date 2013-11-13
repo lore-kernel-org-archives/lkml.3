@@ -1,170 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757633Ab3KMQ3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 11:29:54 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34087 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755706Ab3KMQ3u (ORCPT
+	id S1759119Ab3KMQb1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 11:31:27 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:44035 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753533Ab3KMQbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 11:29:50 -0500
-Date: Wed, 13 Nov 2013 17:29:19 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
-Subject: Re: [RFC][PATCH v5 01/14] sched: add a new arch_sd_local_flags for
- sched_domain init
-Message-ID: <20131113162919.GM26898@twins.programming.kicks-ass.net>
-References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
- <1382097147-30088-2-git-send-email-vincent.guittot@linaro.org>
- <20131105140626.GP31370@twins.programming.kicks-ass.net>
- <CAKfTPtCYHKRv=w3b4tZV-2BW_a_T+tkO9Qpc0PhLD=uZY1yvfw@mail.gmail.com>
- <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <20131106145344.448d7733@mschwide>
- <20131106140807.GM10651@twins.programming.kicks-ass.net>
- <528268C8.8010501@arm.com>
- <20131112180844.GF21461@twins.programming.kicks-ass.net>
- <52839F04.60702@arm.com>
+	Wed, 13 Nov 2013 11:31:25 -0500
+Message-Id: <1384360284.28215.47013129.162FF17C@webmail.messagingengine.com>
+X-Sasl-Enc: g/XVnph7HvS1qsrp9zkvi6YRbn+JRT4dy8sKC/F1sxnF 1384360284
+From: randmedia@123mail.org
+To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52839F04.60702@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-d4893488
+Subject: How to correctly disable LIRC-related MCE*/IR_* modules,
+ to remove ID of RemoteControl as BOTH keyboard & remote?
+Date: Wed, 13 Nov 2013 08:31:24 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 03:47:16PM +0000, Dietmar Eggemann wrote:
-> On 12/11/13 18:08, Peter Zijlstra wrote:
-> > On Tue, Nov 12, 2013 at 05:43:36PM +0000, Dietmar Eggemann wrote:
-> >> This patch removes the sched_domain initializer macros
-> >> SD_[SIBLING|MC|BOOK|CPU]_INIT in core.c and in archs and replaces them
-> >> with calls to the new function sd_init().  The function sd_init
-> >> incorporates the already existing function sd_numa_init().
-> > 
-> > Your patch retains far too much of the weird behavioural variations we
-> > have, nor does it create a proper separation between topology and
-> > behaviour.
-> 
-> Could you please explain a little bit further on the weird behavioural
-> variations. Are you referring to the specific SD_ flags or sd_domain levels?
+Hello,
 
-+++ b/arch/ia64/kernel/topology.c
-@@ -99,6 +99,14 @@ out:
+I'm working on setup of an IR RemoteControl.  Specifically, a
+'Streamzap' IR remote, with its included USB-connected IR receiver.
 
- subsys_initcall(topology_init);
+I'm configuring it as a LIRC remote _only_, in a specific app (XBMC,
+fwiw), and NOT as a keyboard/remote in/for any other app.
 
-+void arch_sd_customize(int level, struct sched_domain *sd, int cpu)
-+{
-+       if (level == SD_LVL_CPU) {
-+               sd->cache_nice_tries = 2;
-+
-+               sd->flags &= ~SD_PREFER_SIBLING;
-+       }
-+}
+I've been unable to manage disabling conflicts between the
+assignment/registration of the IR Remote as BOTH a keyboard & a remote. 
+I'd like to learn how to effectively DISable the interfering modules;
+without necessarily having to recompille the kernel.
 
-+++ b/arch/tile/kernel/smp.c
-@@ -254,3 +254,15 @@ void smp_send_reschedule(int cpu)
- }
+Here's what I'm seeing.
 
- #endif /* CHIP_HAS_IPI() */
-+
-+void arch_sd_customize(int level, struct sched_domain *sd, int cpu)
-+{
-+       if (level == SD_LVL_CPU) {
-+               sd->min_interval = 4;
-+               sd->max_interval = 128;
-+
-+               sd->flags &= ~(SD_WAKE_AFFINE | SD_PREFER_SIBLING);
-+
-+               sd->balance_interval = 32;
-+       }
-+}
+On Linux kernel -- whether
 
-Many of these differences are just bitrot / accidents, and the different
-min interval for tile was already taken care of by basing the intervals
-off of the domain weight.
+	uname -a
+		Linux rpi.loc 3.10.18 #2 PREEMPT Tue Nov 12 16:04:38 UTC
+		2013 armv6l GNU/Linux
 
-On that, you should also not rely on these SD_LVL things; if we wanted
-to inject an extra level they'd go all funny.
+@ an arm-based RaspberryPi, or
 
-> I agree that this patch doesn't separate behaviour and topology and I
-> will consider this going forward.
+	uname -a
+		Linux desk.loc 3.7.10-1.16-desktop #1 SMP PREEMPT Fri
+		May 31 20:21:23 UTC 2013 (97c14ba) x86_64 x86_64 x86_64
+		GNU/Linux
 
-Please take the patch I did and work from there.
+@ an x86_64 desktop, I find @ boot that the attached device is
+recognized & registered as an MCE device (here, e.g., @ Rpi),
 
-> > We might indeed have to have a single arch_() function that adds
-> > SD_flags, but please restrict the flags it can set -- never allow it to
-> > set behavioural flags.
-> 
-> Understood. Simply exporting an sd_domain pointer is a no-go.
+	dmesg | egrep -i "stream|lirc"
+		[    4.537755] usb 1-3.1: Product: Streamzap Remote
+		Control
+		[    4.537756] usb 1-3.1: Manufacturer: Streamzap, Inc.
+		[   17.122902] Registered IR keymap rc-streamzap
+		[   17.134146] input: Streamzap PC Remote Infrared
+		Receiver (0e9c:0000) as
+		/devices/pci0000:00/0000:00:12.2/usb1/1-3/1-3.1/1-3.1:1.0/rc/rc0/input8
+		[   17.134244] rc0: Streamzap PC Remote Infrared
+		Receiver (0e9c:0000) as
+		/devices/pci0000:00/0000:00:12.2/usb1/1-3/1-3.1/1-3.1:1.0/rc/rc0
+		[   17.134315] streamzap 1-3.1:1.0: Registered
+		Streamzap, Inc. Streamzap Remote Control on usb1:4
+		[   17.219672] IR RC5 (streamzap) protocol handler
+		initialized
+		[   17.290559] usbcore: registered new interface driver
+		streamzap
+>>>		[   17.417754] input: MCE IR Keyboard/Mouse (streamzap) as /devices/virtual/input/input9
+		[   17.469336] lirc_dev: IR Remote Control driver
+		registered, major 249
+		[   17.486010] rc rc0: lirc_dev: driver ir-lirc-codec
+		(streamzap) registered at minor = 0
+		[   17.507386] IR LIRC bridge handler initialized
 
-I was more thinking along the lines of:
+which is not what I want.
 
-unsigned long arch_sd_flags(unsigned long sd_flags)
-{
-	return 0
-}
+To prevent that, I've tried to blacklist MCE* and IR_RC5* drivers in
+/etc/modprobe.d/{blacklist,MODULE}.conf, to no effect.  The
+registration, and the load of associated modules, still occurs, as seen
+in dmesg.
 
-Used like:
+This has the result that I've been experiencing conflicts between
+keypresses being recognized as MCE 'keyboard' presses and LIRC 'remote'
+keypresses.
 
-	extra_sd_flags = arch_sd_flags(sd->sd_flags);
-	if (extra_sd_flags & FOO) {
-		WARN("silly bugger: %x\n", extra_sd_flags);
-		extra_sd_flags &= ~FOO;
-	}
-	sd->sd_flags |= extra_sd_flags;
+Where there's an X server in use, reading
 
-Or something.
+	http://wiki.xbmc.org/index.php?title=How-to:Setup_Streamzap_PC_Remote_for_Linux#Xinput:_Preventing_Streamzap_from_becoming_a_keyboard
 
-> > 
-> > Furthermore, I think we want to allow the arch to override the base
-> > topology; we've had desire to add per arch level in the past.. eg. add
-> > an L2 level for some x86 variants.
-> 
-> I quite don't understand this one. Are you saying that one idea for the
-> topology side of things is to have an extra arch specific sd level which
-> would be the only sd_domain level which could be then overridden by the
-> arch?
+and editing
 
-No allow an arch to fully override default_topology[] like I did in that
-s390 case.
+	cat /etc/X11/xorg.conf.d/05-streamzap.conf
+		Section "InputClass"
+		    Identifier "Ignore Streamzap IR as KEYBOARD or
+		    MOUSE"
+		     MatchIsKeyboard "on"
+		    MatchProduct "treamzap|MCE IR"
+		    Option "Ignore" "true"
+		EndSection
 
-The case where the x86 cpu_core_map != cpu_llc_shared_map can currently
-not be represented. Luckily no recent chips have had this, but there was
-a time when this was a popular configuration (Intel Core2Quad).
+manages to prevent the MCE-related conflict.  However, where there's NO
+X env, e.g. on the RPi, I lose that option.
 
-There's been other 'fun' cases, like AMD putting two nodes in 1 package.
-That's not something we can represent (not sure we need to but still).
+Working on the RPi, I finally got this under control by recompiling its
+kernel, setting the kernel config specifically to DISable the unwanted
+MCE* and IR_* modules,
 
-And there's the AMD bulldozer shared core thing, which we currently
-model the same as SMT but which could do with some tweaks - they're
-distinct in that they share an 'large' L2.
+	CONFIG_LIRC=m
+	CONFIG_IR_LIRC_CODEC=m
+	CONFIG_IR_STREAMZAP=m
+	CONFIG_IR_MCE_KBD_DECODER=n
+	CONFIG_IR_MCEUSB=n
+	CONFIG_LIRC_STAGING=n
+	CONFIG_IR_JVC_DECODER=n
+	CONFIG_IR_NEC_DECODER=n
+	CONFIG_IR_RC5_DECODER=n
+	CONFIG_IR_RC5_SZ_DECODER=n
+	CONFIG_IR_RC6_DECODER=n
+	CONFIG_IR_SANYO_DECODER=n
+	CONFIG_IR_SONY_DECODER=n
+	CONFIG_LIRC_IGORPLUGUSB=n
+	CONFIG_LIRC_IMON=n
+	CONFIG_LIRC_RPI=n
+	CONFIG_LIRC_XBOX=n
+	CONFIG_LIRC_SASEM=n
+	CONFIG_LIRC_SERIAL=n
+	CONFIG_LIRC_SERIAL_TRANSMITTER=n
+	CONFIG_LIRC_SIR=n
+	CONFIG_LIRC_ZILOG=n
 
-Then there's the Xeon-7400 which is 'similar' to the AMD in that cores
-share L2.
+Now, @ Rpi, I've simply
 
-Anyway, all I'm saying is that even within one architecture there's
-sufficient variation to allow for runtime topology creation. I'm sure
-ARM has plenty weird configurations too.
+	lsmod | egrep -i "sz|streamzap|lirc"
+		ir_lirc_codec           3100  3 
+		lirc_dev                7036  1 ir_lirc_codec
+		rc_streamzap             668  0 
+		streamzap               3425  0 
+		rc_core                11688  4
+		streamzap,ir_lirc_codec,rc_streamzap
 
-And I'm not sure we need to represent all the weird variations, but in
-the past we've had moments where we wanted to but could not (sanely) do
-things.
+and setup of standalone LIRC-daemon connection/use of the remote is as
+expected -- remote-only, and no interruptions/intererference by
+'keyboard' assignments, in-/out-side of the current target app, XBMC.
+
+So, I have a workaround that meets my need.  Atm, it appears to require
+the seemingly heavy-handed recompile of the kernel, cleaned of the
+unwanted Media modules.
+
+I'd prefer to avoid the hassle, and use standard distro kernel, but
+manage to effectively disable the unwanted/interfering modules.
+
+What's the correct/effective method to turn off specifically the
+unwanted MCE*/IR_* interference, whether disable the modules, or other
+method?
+
+rand
