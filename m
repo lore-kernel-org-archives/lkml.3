@@ -1,196 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab3KMReB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 12:34:01 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:65506 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450Ab3KMRdx (ORCPT
+	id S1758087Ab3KMRfB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 12:35:01 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:60139 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450Ab3KMRex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 12:33:53 -0500
-Date: Wed, 13 Nov 2013 18:33:49 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] locking changes for v3.13
-Message-ID: <20131113173349.GA30218@gmail.com>
+	Wed, 13 Nov 2013 12:34:53 -0500
+Message-ID: <5283B83A.8030206@gmail.com>
+Date: Wed, 13 Nov 2013 11:34:50 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
+        Chris Zankel <chris@zankel.net>, Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 14/17] dt: Consolidate __dtb_start declarations in <linux/of_fdt.h>
+References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>	<1384285347-13506-15-git-send-email-geert@linux-m68k.org>	<5283A000.8090007@gmail.com> <CAMuHMdU6Lqup-MuAOH0iTg16b-SHw4D52WsoPXMsumOxQWbJrg@mail.gmail.com>
+In-Reply-To: <CAMuHMdU6Lqup-MuAOH0iTg16b-SHw4D52WsoPXMsumOxQWbJrg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 11/13/2013 11:20 AM, Geert Uytterhoeven wrote:
+> On Wed, Nov 13, 2013 at 4:51 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> On Tue, Nov 12, 2013 at 1:42 PM, Geert Uytterhoeven
+>> <geert@linux-m68k.org> wrote:
+>>> The different architectures used their own (and different) declarations:
+>>>
+>>>     extern struct boot_param_header __dtb_start;
+>>>     extern u32 __dtb_start[];
+>>>     extern char __dtb_start[];
+>>>
+>>> Consolidate them using the first variant in <linux/of_fdt.h>.
+>>> This requires adding a few "address of" operators on architectures where
+>>> __dtb_start was an array before.
+>>>
+>>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>>> Cc: Vineet Gupta <vgupta@synopsys.com>
+>>> Cc: James Hogan <james.hogan@imgtec.com>
+>>> Cc: Ralf Baechle <ralf@linux-mips.org>
+>>> Cc: Jonas Bonn <jonas@southpole.se>
+>>> CC: Chris Zankel <chris@zankel.net>
+>>> Cc: Rob Herring <rob.herring@calxeda.com>
+>>> Cc: devicetree@vger.kernel.org
+>>> ---
+>>>  arch/arc/include/asm/sections.h             |    1 -
+>>>  arch/arc/kernel/setup.c                     |    2 +-
+>>>  arch/metag/kernel/setup.c                   |    6 +-----
+>>>  arch/mips/include/asm/mips-boards/generic.h |    4 ----
+>>>  arch/mips/lantiq/prom.h                     |    2 --
+>>>  arch/mips/netlogic/xlp/dt.c                 |    4 ++--
+>>>  arch/mips/ralink/of.c                       |    2 --
+>>>  arch/openrisc/kernel/setup.c                |    2 +-
+>>>  arch/openrisc/kernel/vmlinux.h              |    2 --
+>>>  arch/xtensa/kernel/setup.c                  |    3 +--
+>>>  include/linux/of_fdt.h                      |    3 +++
+>>>  11 files changed, 9 insertions(+), 22 deletions(-)
+>>
+>> This is great, but I would like to see this taken one step further and
+>> move the selection logic into the core code. We can try to use the
+>> built-in dtb if early_init_dt_scan is passed a NULL or invalid dtb. This
+>> should work for most arches I think and still allows an arch to do a
+>> different selection algorithm if desired.
+> 
+> Yes, that makes sense.
+> 
+>> Are the DT related patches dependent on the rest of the series?
+> 
+> Not really. There may be small rejects if you apply it out-of-order,
+> but nothing serious.
+> 
+>> Something like this is what I have in mind:
+>>
+>> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+>> index 5c47910..723f854d 100644
+>> --- a/drivers/of/fdt.c
+>> +++ b/drivers/of/fdt.c
+>> @@ -869,14 +869,16 @@ void * __init __weak
+>> early_init_dt_alloc_memory_arch(u64 size, u64 align)
+>>
+>>  bool __init early_init_dt_scan(void *params)
+>>  {
+>> -       if (!params)
+>> -               return false;
+>> -
+>>         /* Setup flat device-tree pointer */
+>>         initial_boot_params = params;
+>>
+>> +       if (!initial_boot_params ||
+>> +           (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER))
+>> +               initial_boot_params = &__dtb_start;
+>> +
+>>         /* check device tree validity */
+>> -       if (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER) {
+>> +       if (!initial_boot_params ||
+> 
+> initial_boot_params cannot be NULL here, so no need to check.
 
-Please pull the latest core-locking-for-linus git tree from:
+What about the case of no built-in dtb like on arm?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-locking-for-linus
+> 
+>> +           (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER)) {
+> 
+> However, if __dtb_end == __dtb_start, you may be reading random
+> data here from the next section. The OF_DT_HEADER check should cover
+> this, but better safe than sorry?
 
-   # HEAD: 90d3839b90fe379557dae4a44735a6af78f42885 block: Use u64_stats_init() to initialize seqcounts
+Then we should also check that (__dtb_end != __dtb_start).
 
-The biggest changes:
+Rob
 
- - add lockdep support for seqcount/seqlocks structures, this unearthed both bugs and required extra annotation.
+> 
+>>                 initial_boot_params = NULL;
+>>                 return false;
+>>         }
+> 
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+> 
 
- - move the various kernel locking primitives to the new kernel/locking/ directory.
-
- Thanks,
-
-	Ingo
-
-[ Note: shortlog and diffstat was generated by hand. One trivial conflict in kernel/Makefile. ]
------------------->
-
-Borislav Petkov (1):
-      lockdep, x86/alternatives: Drop ancient lockdep fixup message
-
-Davidlohr Bueso (1):
-      lockstat: Report avg wait and hold times
-
-Fengguang Wu (1):
-      locking/lockdep: Mark __lockdep_count_forward_deps() as static
-
-Ingo Molnar (3):
-      Merge tag 'v3.12' into core/locking to pick up mutex upates
-      Merge branch 'core/rcu' into core/locking, to prepare the kernel/locking/ file move
-      Merge branch 'sched/core' into core/locking, to prepare the kernel/locking/ file move
-
-John Stultz (4):
-      net: Explicitly initialize u64_stats_sync structures for lockdep
-      seqcount: Add lockdep functionality to seqcount/seqlock structures
-      cpuset: Fix potential deadlock w/ set_mems_allowed
-      ipv6: Fix possible ipv6 seqlock deadlock
-
-Li Zefan (1):
-      hung_task: Change sysctl_hung_task_check_count to 'int'
-
-Oleg Nesterov (1):
-      hung_task debugging: Add tracepoint to report the hang
-
-Peter Zijlstra (11):
-      locking: Move the mutex code to kernel/locking/
-      locking: Move the lockdep code to kernel/locking/
-      locking: Move the spinlock code to kernel/locking/
-      locking: Move the semaphore core to kernel/locking/
-      locking: Move the rtmutex code to kernel/locking/
-      locking: Move the rwsem code to kernel/locking/
-      locking: Move the lglocks code to kernel/locking/
-      locking: Move the percpu-rwsem code to kernel/locking/
-      locking/doc: Update references to kernel/mutex.c
-      lockdep/proc: Fix lock-time avg computation
-      block: Use u64_stats_init() to initialize seqcounts
-
-Raghavendra K T (1):
-      x86/locking/kconfig: Update paravirt spinlock Kconfig description
-
-
- Documentation/DocBook/kernel-locking.tmpl      |   2 +-
- Documentation/lockstat.txt                     | 123 ++++++++++++-------------
- Documentation/mutex-design.txt                 |  10 +-
- arch/x86/Kconfig                               |   6 +-
- arch/x86/kernel/alternative.c                  |  11 ---
- arch/x86/vdso/vclock_gettime.c                 |   8 +-
- block/blk-cgroup.h                             |  10 ++
- block/blk-throttle.c                           |  10 ++
- block/cfq-iosched.c                            |  25 +++++
- drivers/net/dummy.c                            |   6 ++
- drivers/net/ethernet/emulex/benet/be_main.c    |   4 +
- drivers/net/ethernet/intel/igb/igb_main.c      |   5 +
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  |   4 +
- drivers/net/ethernet/marvell/mvneta.c          |   3 +
- drivers/net/ethernet/marvell/sky2.c            |   3 +
- drivers/net/ethernet/neterion/vxge/vxge-main.c |   4 +
- drivers/net/ethernet/nvidia/forcedeth.c        |   2 +
- drivers/net/ethernet/realtek/8139too.c         |   3 +
- drivers/net/ethernet/tile/tilepro.c            |   2 +
- drivers/net/ethernet/via/via-rhine.c           |   3 +
- drivers/net/ifb.c                              |   5 +
- drivers/net/loopback.c                         |   6 ++
- drivers/net/macvlan.c                          |   7 ++
- drivers/net/nlmon.c                            |   8 ++
- drivers/net/team/team.c                        |   6 ++
- drivers/net/team/team_mode_loadbalance.c       |   9 +-
- drivers/net/veth.c                             |   8 ++
- drivers/net/virtio_net.c                       |   8 ++
- drivers/net/vxlan.c                            |   8 ++
- drivers/net/xen-netfront.c                     |   6 ++
- fs/dcache.c                                    |   4 +-
- fs/fs_struct.c                                 |   2 +-
- include/linux/cpuset.h                         |   4 +
- include/linux/init_task.h                      |   8 +-
- include/linux/lockdep.h                        |   8 +-
- include/linux/mutex.h                          |   2 +-
- include/linux/sched/sysctl.h                   |   2 +-
- include/linux/seqlock.h                        |  79 ++++++++++++++--
- include/linux/u64_stats_sync.h                 |   7 ++
- include/trace/events/sched.h                   |  19 ++++
- kernel/Makefile                                |  22 +----
- kernel/futex.c                                 |   2 +-
- kernel/hung_task.c                             |   6 +-
- kernel/locking/Makefile                        |  25 +++++
- kernel/{ => locking}/lglock.c                  |   0
- kernel/{ => locking}/lockdep.c                 |   4 +-
- kernel/{ => locking}/lockdep_internals.h       |   0
- kernel/{ => locking}/lockdep_proc.c            |  15 +--
- kernel/{ => locking}/lockdep_states.h          |   0
- kernel/{ => locking}/mutex-debug.c             |   0
- kernel/{ => locking}/mutex-debug.h             |   0
- kernel/{ => locking}/mutex.c                   |   2 +-
- kernel/{ => locking}/mutex.h                   |   0
- {lib => kernel/locking}/percpu-rwsem.c         |   0
- kernel/{ => locking}/rtmutex-debug.c           |   0
- kernel/{ => locking}/rtmutex-debug.h           |   0
- kernel/{ => locking}/rtmutex-tester.c          |   0
- kernel/{ => locking}/rtmutex.c                 |   0
- kernel/{ => locking}/rtmutex.h                 |   0
- kernel/{ => locking}/rtmutex_common.h          |   0
- {lib => kernel/locking}/rwsem-spinlock.c       |   0
- lib/rwsem.c => kernel/locking/rwsem-xadd.c     |   0
- kernel/{ => locking}/rwsem.c                   |   0
- kernel/{ => locking}/semaphore.c               |   0
- kernel/{ => locking}/spinlock.c                |   0
- {lib => kernel/locking}/spinlock_debug.c       |   0
- kernel/rcu/tree_plugin.h                       |   2 +-
- kernel/sysctl.c                                |   5 +-
- lib/Makefile                                   |   4 -
- mm/filemap_xip.c                               |   2 +-
- net/8021q/vlan_dev.c                           |   9 +-
- net/bridge/br_device.c                         |   7 ++
- net/ipv4/af_inet.c                             |  14 +++
- net/ipv4/ip_tunnel.c                           |   8 +-
- net/ipv6/addrconf.c                            |  14 +++
- net/ipv6/af_inet6.c                            |  14 +++
- net/ipv6/ip6_gre.c                             |  15 +++
- net/ipv6/ip6_output.c                          |   2 +-
- net/ipv6/ip6_tunnel.c                          |   7 ++
- net/ipv6/sit.c                                 |  15 +++
- net/netfilter/ipvs/ip_vs_ctl.c                 |  25 ++++-
- net/openvswitch/datapath.c                     |   6 ++
- net/openvswitch/vport.c                        |   8 ++
- 83 files changed, 535 insertions(+), 148 deletions(-)
- create mode 100644 kernel/locking/Makefile
- rename kernel/{ => locking}/lglock.c (100%)
- rename kernel/{ => locking}/lockdep.c (99%)
- rename kernel/{ => locking}/lockdep_internals.h (100%)
- rename kernel/{ => locking}/lockdep_proc.c (97%)
- rename kernel/{ => locking}/lockdep_states.h (100%)
- rename kernel/{ => locking}/mutex-debug.c (100%)
- rename kernel/{ => locking}/mutex-debug.h (100%)
- rename kernel/{ => locking}/mutex.c (99%)
- rename kernel/{ => locking}/mutex.h (100%)
- rename {lib => kernel/locking}/percpu-rwsem.c (100%)
- rename kernel/{ => locking}/rtmutex-debug.c (100%)
- rename kernel/{ => locking}/rtmutex-debug.h (100%)
- rename kernel/{ => locking}/rtmutex-tester.c (100%)
- rename kernel/{ => locking}/rtmutex.c (100%)
- rename kernel/{ => locking}/rtmutex.h (100%)
- rename kernel/{ => locking}/rtmutex_common.h (100%)
- rename {lib => kernel/locking}/rwsem-spinlock.c (100%)
- rename lib/rwsem.c => kernel/locking/rwsem-xadd.c (100%)
- rename kernel/{ => locking}/rwsem.c (100%)
- rename kernel/{ => locking}/semaphore.c (100%)
- rename kernel/{ => locking}/spinlock.c (100%)
- rename {lib => kernel/locking}/spinlock_debug.c (100%)
