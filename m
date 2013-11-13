@@ -1,125 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab3KMBQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 20:16:06 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:49057 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755269Ab3KMBP4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 20:15:56 -0500
-Message-ID: <5282D2C8.6030002@gmail.com>
-Date: Wed, 13 Nov 2013 05:15:52 +0400
-From: Evgeny Boger <eugenyboger@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: David Fries <david@fries.net>
-CC: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Add strong pullup emulation to w1-gpio master driver.
-References: <1384180614-9025-1-git-send-email-boger@contactless.ru> <10261384211376@web11j.yandex.ru> <5281691F.4060604@gmail.com> <37621384218204@web11j.yandex.ru> <52817F42.2080706@gmail.com> <20131112080146.GF5509@spacedout.fries.net>
-In-Reply-To: <20131112080146.GF5509@spacedout.fries.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755973Ab3KMB36 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 20:29:58 -0500
+Received: from mga14.intel.com ([143.182.124.37]:15513 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755359Ab3KMB3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 20:29:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,689,1378882800"; 
+   d="scan'208";a="426554509"
+Subject: [PATCH V2] usbnet: fix race condition caused spinlock bad magic
+ issue
+From: wangbiao <biao.wang@intel.com>
+To: oneukum@suse.de, netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo.kernel.org@gmail.com>
+Cc: akpm@linux-foundation.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        rusty@rustcorp.com.au, william.douglas@intel.com, di.zhang@intel.com,
+        biao.wang@intel.com
+Content-Type: text/plain; charset="us-ascii"
+Date: Wed, 13 Nov 2013 09:11:25 +0800
+Message-ID: <1384305085.19509.5.camel@wangbiao>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11/12/2013 12:01 PM, David Fries:
-> On Tue, Nov 12, 2013 at 05:07:14AM +0400, Evgeny Boger wrote:
->> +David Fries <david@fries.net>
->>
->> Hi David,
->>
->> Would you please comment on this?
->
-> On Mon, Nov 11, 2013 at 06:36:54PM +0400, Evgeny Boger wrote:
->>   Strong pullup is emulated by driving pin logic high after write
->>   command when
->>   using tri-state push-pull GPIO.
-> Not knowing the hardware involved, is driving the logic high a
-> stronger pullup than the normal weak pullup input high?  Meaning it
-> was already being left high, just with a lessor pullup and this will
-> provide a stronger one?
+From: wang, biao <biao.wang@intel.com>
+Date: Mon, 11 Nov 2013 10:23:40 +0800
+Subject: [PATCH] usbnet: fix race condition caused spinlock bad magic issue
+
+1, there is race between usbnet_terminate_urbs and usbnet_bh, when
+unlink_wakeup used in usbnet_bh, it may be already freed and used by
+other function as unlink_wakeup was a local var on stack.
+for example:
+    cpu 0:                              cpu 1:
+                                    usb_suspend_both
+                                    ->usbnet_suspend
+usbnet_bh                           ->usbnet_terminate_urbs
+->__wake_up
+->_raw_spin_unlock_irqrestore
+->do_raw_spin_unlock
+->spin_bug
+when usbnet_terminate_urbs complete execution and memory of unlink_wakeup was
+used by other function, then usbnet_bh may still use it.
+
+2, for the same reason,dev->wait should be judged again before use it,
+as between the judge point(if(dev->wait)) and use point(wakeup(dev->wait)),
+the dev->wait may be set NULL by another cpu.
+
+for issue 1, declare  unlink_wakeup in global section instead of on stack.
+for issue 2, use a temporary local var to keep the value of dev->wait
+in stack and judge it before using.
+
+Signed-off-by: wang, biao <biao.wang@intel.com>
+Acked-by: Ingo Molnar <mingo.kernel.org@gmail.com>
+Acked-by: Oliver Neukum <oneukum@suse.de>
+Acked-by: Zhang, Di <di.zhang@intel.com>
+---
+ drivers/net/usb/usbnet.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index 90a429b..0603ef6 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -86,6 +86,7 @@ static const char driver_name [] = "usbnet";
+ 
+ /* use ethtool to change the level for any given device */
+ static int msg_level = -1;
++static DECLARE_WAIT_QUEUE_HEAD(unlink_wakeup);
+ module_param (msg_level, int, 0);
+ MODULE_PARM_DESC (msg_level, "Override default message level");
+ 
+@@ -761,7 +762,6 @@ EXPORT_SYMBOL_GPL(usbnet_unlink_rx_urbs);
+ // precondition: never called in_interrupt
+ static void usbnet_terminate_urbs(struct usbnet *dev)
+ {
+-	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(unlink_wakeup);
+ 	DECLARE_WAITQUEUE(wait, current);
+ 	int temp;
+ 
+@@ -1449,7 +1449,9 @@ static void usbnet_bh (unsigned long param)
+ 	// waiting for all pending urbs to complete?
+ 	if (dev->wait) {
+ 		if ((dev->txq.qlen + dev->rxq.qlen + dev->done.qlen) == 0) {
+-			wake_up (dev->wait);
++			wait_queue_head_t *wait_d = dev->wait;
++			if (wait_d)
++				wake_up(wait_d);
+ 		}
+ 
+ 	// or are we maybe short a few urbs?
+-- 
+1.7.0.4
 
 
 
-
-Sure. The push-pull GPIO on common SoC's are usually able to provide up 
-to 10 mA of current.
-
-
-
-
->
-> On Tue, Nov 12, 2013 at 03:09:36AM +0400, Evgeniy Polyakov wrote:
->>> + msleep(pdata->pullup_duration);
->> This doesn't look like a good idea - kernel will sleep for that long
->> not doing usual w1 job
-> Not speaking for Evgeny Boger, but I'm thinking that's intended here.
-> The original strong pullup code change 6a158c0de791a81 I wrote will
-> msleep in w1_post_write when a hardware pullup isn't available, while
-> the hardware ds2490 ds9490r_set_pullup sleeps for the strong pullup
-> using spu_sleep variable.  The user requests a strong pullup for a
-> given time and any other operations on the bus will interrupt the
-> strong pullup, so locking any other operations sounds desired.
->
->> 11/12/2013 05:03 AM, Evgeniy Polyakov:
->>> Hi
->>>
->>> 12.11.2013, 03:32, "Evgeny Boger" <eugenyboger@gmail.com>:
->>>>> Why did you drop this check? It has nothing with w1-gpio driver
->>>> This check prevents master from implementing "set_pullup"  provided it does support only "write_bit" method.
->>>> The comment above states that
->>>>>   w1_io.c would need to support calling set_pullup before - * the last write_bit operation of a w1_write_8 which it currently - * doesn't.
->>>> which is kind of strange, since it describes what w1_io.c actually does support.
->>>>
->>>> w1_write_8 (w1_io.c:154, https://github.com/torvalds/linux/blob/master/drivers/w1/w1_io.c#L154):
->>>>>                  for (i = 0; i < 8; ++i) {
->>>>>                          if (i == 7)
->>>>>                                  w1_pre_write(dev);
->>>>>                          w1_touch_bit(dev, (byte >> i) & 0x1);
->>>>>                  }
->>>> It seems like w1_write_8() calls w1_pre_write(), which in turn calls set_pullup() just before the last write_bit().
-> I'm not seeing any harm in removing this check and clear
-> master->set_pullup.  It doesn't seem correct for this code to override
-> a master that claims to provide something of a stronger pullup.  It's
-> been about five years since I wrote that code, I think it was just to
-> protect against a stupid master.
->
-> With this patch the last w1_write_bit will go logic 1, for 64 or 10 us
-> before returning, then w1_gpio_set_pullup is called to enable the
-> strong pullup.  What I wouldn't know is if in that last bit if the
-> logic 1 would be a go up to the strong pullup, or if it would finish
-> that time slot with a weak pullup and then go to a strong pullup.  I
-> would have to dig into the timing specifications much more than I have
-> time to right now to say what is supposed to happen.  The 18b20
-> datasheet lists, "The DQ line must be switched over to the strong
-> pullup within 10 us maximum after issuing any protocol that involves
-> copying the E2 memory or initiates temperature conversions."  It isn't
-> clear where that 10 us starts from.  You might try to dig around and
-> see if that last bit written should go to weak pullup 1 or strong
-> pullup 1.  It would take more changes if it should go right to a
-> strong pullup.
-
-
-I wasn't able to find any support for the latter statement.
-It looks like the strong pull-up should be enabled *after* the last bit 
-has been sent
-so no need to set strong pull-up there.
-
-However setting strong pullup for last bit makes sense just to ensure we
-fit to 10us time window.
-
-On the other hand, I didn't experienced any problems with the proposed
-implementation.
-
-
-
-
-
->
->>>> I'm not sure why this check was there in the first place.
->>> Please add author of those lines to clarify things.
->>> This doesn't look obvious to me
-
---
-  Evgeny
