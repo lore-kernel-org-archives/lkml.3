@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759426Ab3KMSMr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 13:12:47 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46900 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755687Ab3KMSMj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 13:12:39 -0500
-Date: Wed, 13 Nov 2013 18:12:38 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: getcwd() rcu locking bug.
-Message-ID: <20131113181238.GD13318@ZenIV.linux.org.uk>
-References: <20131113174706.GA4541@redhat.com>
- <20131113180238.GA6419@redhat.com>
+	id S1759646Ab3KMSPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 13:15:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8480 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755759Ab3KMSOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 13:14:51 -0500
+Date: Wed, 13 Nov 2013 19:15:43 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: oom-kill && frozen()
+Message-ID: <20131113181543.GA22041@redhat.com>
+References: <1384264396-14550-1-git-send-email-geert@linux-m68k.org> <20131112141314.GQ5056@laptop.programming.kicks-ass.net> <AE90C24D6B3A694183C094C60CF0A2F6026B7405@saturn3.aculab.com> <20131112145243.GU5056@laptop.programming.kicks-ass.net> <20131112162136.GA29065@redhat.com> <20131112165643.GA31278@redhat.com> <20131113032053.GA19394@mtj.dyndns.org> <20131113170724.GA17739@redhat.com> <20131113174220.GQ21461@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131113180238.GA6419@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131113174220.GQ21461@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 01:02:38PM -0500, Dave Jones wrote:
-> On Wed, Nov 13, 2013 at 12:47:06PM -0500, Dave Jones wrote:
->  > My fuzzer just hit this on v3.12-7033-g42a2d923cc34
->  > 
->  > =====================================
->  > [ BUG: bad unlock balance detected! ]
->  > 3.12.0+ #2 Not tainted
->  > -------------------------------------
->  > trinity-child1/11681 is trying to release lock (rcu_read_lock) at:
->  > [<ffffffff811d287c>] SyS_getcwd+0x11c/0x300
->  > but there are no more locks to release!
->  > 
->  > other info that might help us debug this:
->  > no locks held by trinity-child1/11681.
->  > 
->  > stack backtrace:
->  > CPU: 1 PID: 11681 Comm: trinity-child1 Not tainted 3.12.0+ #2 
->  >  ffffffff81c480a0 ffff88009a40fea0 ffffffff8171b3dc ffff8802399b1560
->  >  ffff88009a40fec8 ffffffff810d370e ffff8802399b1560 ffffffff81c480a0
->  >  ffffffff811d287c ffff88009a40ff00 ffffffff810d80fe ffff88023d2d4600
->  > Call Trace:
->  >  [<ffffffff8171b3dc>] dump_stack+0x4e/0x7a
->  >  [<ffffffff810d370e>] print_unlock_imbalance_bug+0xee/0x100
->  >  [<ffffffff811d287c>] ? SyS_getcwd+0x11c/0x300
->  >  [<ffffffff810d80fe>] lock_release+0x25e/0x310
->  >  [<ffffffff811d2894>] SyS_getcwd+0x134/0x300
->  >  [<ffffffff811d2799>] ? SyS_getcwd+0x39/0x300
->  >  [<ffffffff8172e064>] tracesys+0xdd/0xe2
->  > ------------[ cut here ]------------
-> 
-> adding Linus, as this might be related to 68f0d9d92e54
+On 11/13, Peter Zijlstra wrote:
+>
+> On Wed, Nov 13, 2013 at 06:07:24PM +0100, Oleg Nesterov wrote:
+> > 	4. Finally, change try_to_wake_up() path to do
+> >
+> > 		-	p->state = TASK_WAKING;
+> > 		+	p->state &= ~state;
+> > 		+	if (p->state & ~(TASK_DEAD | TASK_WAKEKILL | TASK_PARKED))
+> > 		+		return;
+> > 		+	else
+> > 		+		p->state = TASK_WAKING;
+> >
+> > 	   IOW, if the task sleeps in, say, TASK_INTERRUPTIBLE | __TASK_FROZEN
+> > 	   then it need both try_to_wake_up(TASK_INTERRUPTIBLE) and
+> > 	   try_to_wake_up(__TASK_FROZEN) to wake up.
+>
+> > Tejun, Peter, do you think this makes any sense? I am just curious, but
+> > "selective wakeup" looks potentially useful.
+>
+> I've never looked at any of this freeze stuff, so I cannot comment too
+> much. However we should be very careful not to add too much to relative
+> hot paths for the relative rare case of freezing stuff.
 
-Check today's vfs.git#for-linus, should be fixed there.
+Yes, yes, sure.
+
+Plus my description was confusing and incomplete (and I am sure I missed
+something more). I forgot to mention that freeze_task() should also add
+the FROZEN state if it sees FROZEN qualifier, this needs more changes.
+
+So please forget. May be I'll _try_ to make something working (at least
+for discussion), but I am not sure.
+
+Oleg.
+
