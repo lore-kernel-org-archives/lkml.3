@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128Ab3KMIC5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 03:02:57 -0500
-Received: from ja.ssi.bg ([178.16.129.10]:41224 "EHLO ja.home.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751383Ab3KMICs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 03:02:48 -0500
-Date: Wed, 13 Nov 2013 10:00:39 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-X-X-Sender: ja@ja.home.ssi.bg
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>, Fabio Estevam <festevam@gmail.com>
-Subject: Re: [PATCH -v2] ipvs: Remove unused variable ret from
- sync_thread_master()
-In-Reply-To: <1384266864-564-1-git-send-email-geert@linux-m68k.org>
-Message-ID: <alpine.LFD.2.03.1311130934390.1647@ssi.bg>
-References: <1384266864-564-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932246Ab3KMIDL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 03:03:11 -0500
+Received: from mail-de.keymile.com ([195.8.104.250]:55529 "EHLO
+	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932130Ab3KMIC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 03:02:58 -0500
+From: Gerlando Falauto <gerlando.falauto@keymile.com>
+To: linux-kernel@vger.kernel.org
+Cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH] spi: spi-gpio: Add check for cs-gpios dt property
+Date: Wed, 13 Nov 2013 09:02:28 +0100
+Message-Id: <1384329748-2897-1-git-send-email-gerlando.falauto@keymile.com>
+X-Mailer: git-send-email 1.8.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The bindings assumed that the cs-gpios property is always there.
+However, a single SPI device can also work fine without an explicit chip select.
+Use the SPI_GPIO_NO_CHIPSELECT mode when the property is not present or invaild.
 
-	Hello,
+Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Mark Brown <broonie@kernel.org>
+---
+ drivers/spi/spi-gpio.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-On Tue, 12 Nov 2013, Geert Uytterhoeven wrote:
+diff --git a/drivers/spi/spi-gpio.c b/drivers/spi/spi-gpio.c
+index 0021fc4..3f21208 100644
+--- a/drivers/spi/spi-gpio.c
++++ b/drivers/spi/spi-gpio.c
+@@ -463,9 +463,16 @@ static int spi_gpio_probe(struct platform_device *pdev)
+ 		 * property of the node.
+ 		 */
+ 
+-		for (i = 0; i < SPI_N_CHIPSEL; i++)
++		for (i = 0; i < SPI_N_CHIPSEL; i++) {
+ 			spi_gpio->cs_gpios[i] =
+ 				of_get_named_gpio(np, "cs-gpios", i);
++			if ((SPI_N_CHIPSEL == 1)
++			&& !gpio_is_valid(spi_gpio->cs_gpios[i] < 0)) {
++				dev_info(&pdev->dev,
++					"no cs-gpios property, using no-cs mode\n");
++				spi_gpio->cs_gpios[i] = SPI_GPIO_NO_CHIPSELECT;
++			}
++		}
+ 	}
+ #endif
+ 
+-- 
+1.8.0.1
 
-> net/netfilter/ipvs/ip_vs_sync.c: In function 'sync_thread_master':
-> net/netfilter/ipvs/ip_vs_sync.c:1640:8: warning: unused variable 'ret' [-Wunused-variable]
-> 
-> Commit 35a2af94c7ce7130ca292c68b1d27fcfdb648f6b ("sched/wait: Make the
-> __wait_event*() interface more friendly") changed how the interruption
-> state is returned. However, sync_thread_master() ignores this state,
-> now causing a compile warning.
-> 
-> According to Julian Anastasov <ja@ssi.bg>, this behavior is OK:
-> 
->     "Yes, your patch looks ok to me. In the past we used ssleep() but IPVS
->      users were confused why IPVS threads increase the load average. So, we
->      switched to _interruptible calls and later the socket polling was
->      added."
-> 
-> Document this, as requested by Peter Zijlstra, to avoid precious developers
-> disappearing in this pitfall in the future.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
-> v2: Document that sync_thread_master() ignores the interruption state,
-> 
->  net/netfilter/ipvs/ip_vs_sync.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
-> index f63c2388f38d..db801263ee9f 100644
-> --- a/net/netfilter/ipvs/ip_vs_sync.c
-> +++ b/net/netfilter/ipvs/ip_vs_sync.c
-> @@ -1637,7 +1637,10 @@ static int sync_thread_master(void *data)
->  			continue;
->  		}
->  		while (ip_vs_send_sync_msg(tinfo->sock, sb->mesg) < 0) {
-> -			int ret = __wait_event_interruptible(*sk_sleep(sk),
-> +			/* (Ab)use interruptible sleep to avoid increasing
-> +			 * the load avg.
-> +			 */
-> +			__wait_event_interruptible(*sk_sleep(sk),
->  						   sock_writeable(sk) ||
->  						   kthread_should_stop());
->  			if (unlikely(kthread_should_stop()))
-
-	Fabio Estevam posted similar change too early but
-we are better with such comment.
-
-Acked-by: Julian Anastasov <ja@ssi.bg>
-
-	Also, the TASK_UNINTERRUPTIBLE | TASK_IDLE idea looks good
-to me. If such change is planned may be the above patch
-better not to go via the ipvs-next tree to avoid conflicts?
-As we don't have any changes in this area let us know if
-someone takes the above patch for another tree.
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
