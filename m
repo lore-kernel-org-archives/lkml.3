@@ -1,68 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab3KMIHu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 03:07:50 -0500
-Received: from dmz-mailsec-scanner-5.mit.edu ([18.7.68.34]:64046 "EHLO
-	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758639Ab3KMIHh (ORCPT
+	id S1758794Ab3KMIIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 03:08:00 -0500
+Received: from dmz-mailsec-scanner-6.mit.edu ([18.7.68.35]:60133 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758743Ab3KMIHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 03:07:37 -0500
-X-AuditID: 12074422-b7f9d6d000000bc0-71-528333493d2a
-Date: Wed, 13 Nov 2013 03:07:32 -0500
+	Wed, 13 Nov 2013 03:07:43 -0500
+X-AuditID: 12074423-b7f2b6d000000ce1-f1-5283334ed3f3
+Date: Wed, 13 Nov 2013 03:07:40 -0500
 From: Greg Price <price@MIT.EDU>
 To: "Theodore Ts'o" <tytso@MIT.EDU>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/9] random: fix description of get_random_bytes
-Message-ID: <20131113080732.GQ16018@ringworld.MIT.EDU>
+Subject: [PATCH 4/9] random: simplify loop in random_read
+Message-ID: <20131113080740.GR16018@ringworld.MIT.EDU>
 References: <cover.1384329436.git.price@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <cover.1384329436.git.price@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsUixCmqretp3Bxk8GkXp8XlXXPYHBg9Pm+S
-	C2CM4rJJSc3JLEst0rdL4Mo4/qOPpaCVs2LJ3G3sDYw72bsYOTkkBEwk/t/eAmWLSVy4t56t
-	i5GLQ0hgNpPEh2vtrBDORkaJO3e3s4BUCQn8YpR4PS8ZxGYRUJVY3nqXFcRmE1CQ+DF/HTOI
-	LSKgLLFq5iYmEJsZKP7r3iawGmEBB4mpJxuANnBw8AqYSaxrjYEYaSCxcf8EsFZeAUGJkzOf
-	sEC0aknc+PeSCaScWUBaYvk/DpAwp4ChxKQNR8EmigqoSEw5uY1tAqPgLCTds5B0z0LoXsDI
-	vIpRNiW3Sjc3MTOnODVZtzg5MS8vtUjXVC83s0QvNaV0EyMoSNldlHYw/jyodIhRgINRiYfX
-	IqYpSIg1say4MvcQoyQHk5Ior5NOc5AQX1J+SmVGYnFGfFFpTmrxIUYJDmYlEd4DwkA53pTE
-	yqrUonyYlDQHi5I47y0O+yAhgfTEktTs1NSC1CKYrAwHh5IEr4URUKNgUWp6akVaZk4JQpqJ
-	gxNkOA/QcBGQGt7igsTc4sx0iPwpRkUpcd4YkIQASCKjNA+uF5ZEXjGKA70izCsKUsUDTEBw
-	3a+ABjMBDbYobgIZXJKIkJJqYOTcOuXhxdLm1b5vQ2996j7alaasIsGvGvSiLLut2ji8gt//
-	sKP0RbMVz3wK4pTfrDv/xGTX47Wzk4UnJy7kbGRwL/pVy8ztcrLKItJi5705r/ZkVM0L2VWx
-	44Gw09pdN+QEnlw9s+FE+vGq2KMH5UqMF+VkTTtR4LzcTV9Yda/gDU7OxGtanUosxRmJhlrM
-	RcWJAMVIczr9AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsUixG6noutn3BxksPypjcXlXXPYHBg9Pm+S
+	C2CM4rJJSc3JLEst0rdL4Mq4c2EOS8ExoYrf036yNTCu5Oti5OSQEDCROLn9ADuELSZx4d56
+	ti5GLg4hgdlMEvP/nWaEcDYySszcf48VpEpI4BejRNNjbxCbRUBV4tzehWwgNpuAgsSP+euY
+	QWwRAWWJVTM3MYHYzEDxX/c2gfUKC1hKzJmyhQXE5hUwk3i2fSo7xEwDiY37JzBDxAUlTs58
+	wgLRqyVx499LoDkcQLa0xPJ/HCBhTgFDiUkbjoKNFBVQkZhychvbBEbBWUi6ZyHpnoXQvYCR
+	eRWjbEpulW5uYmZOcWqybnFyYl5eapGumV5uZoleakrpJkZwmLoo72D8c1DpEKMAB6MSD69F
+	TFOQEGtiWXFl7iFGSQ4mJVFeJ53mICG+pPyUyozE4oz4otKc1OJDjBIczEoivAeEgXK8KYmV
+	ValF+TApaQ4WJXHeWxz2QUIC6YklqdmpqQWpRTBZGQ4OJQnev4ZAjYJFqempFWmZOSUIaSYO
+	TpDhPEDDRYxAhhcXJOYWZ6ZD5E8xKkqJ8+aCNAuAJDJK8+B6YWnkFaM40CvCvKIg7TzAFATX
+	/QpoMBPQYIviJpDBJYkIKakGRuPazTKFp8sSTi+LZj4+dZqGVk/Yh7K/L0JNZI1F13PNWV6c
+	fFaGnXPlA+/mhbFff356vePaRDvDGWVbm5Oyzj9xqd5SOE0472Ry05RZWZmxl+43vtCe7crw
+	Vkv5Z37CZ2ftOQ8+nJxkoPJHcrO4f2RG9GMG4xWCr0rmfe2SZZLICj2t48x7TomlOCPRUIu5
+	qDgRADkLwA7+AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After this remark was written, commit d2e7c96af added a use of
-arch_get_random_long() inside the get_random_bytes codepath.
-The main point stands, but it needs to be reworded.
+The loop condition never changes until just before a break, so we
+might as well write it as a constant.  Also since v2.6.33-rc7~40^2~2
+("random: drop weird m_time/a_time manipulation") we don't do
+anything after the loop finishes, so the 'break's might as well
+return directly.  Some other simplifications.
+
+The behavior should be identical except that I've changed a debug
+message.
 
 Cc: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Price <price@mit.edu>
 ---
- drivers/char/random.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/char/random.c | 57 ++++++++++++++++-----------------------------------
+ 1 file changed, 18 insertions(+), 39 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index e11ee4e..6d3627d 100644
+index 6d3627d..cf1357b 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -1174,8 +1174,9 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
- /*
-  * This function is the exported kernel interface.  It returns some
-  * number of good random numbers, suitable for key generation, seeding
-- * TCP sequence numbers, etc.  It does not use the hw random number
-- * generator, if available; use get_random_bytes_arch() for that.
-+ * TCP sequence numbers, etc.  It does not rely on the hardware random
-+ * number generator.  For random bytes direct from the hardware RNG
-+ * (when available), use get_random_bytes_arch().
-  */
- void get_random_bytes(void *buf, int nbytes)
+@@ -1289,53 +1289,32 @@ void rand_initialize_disk(struct gendisk *disk)
+ static ssize_t
+ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
  {
+-	ssize_t n, retval = 0, count = 0;
++	ssize_t n;
+ 
+ 	if (nbytes == 0)
+ 		return 0;
+ 
+-	while (nbytes > 0) {
+-		n = nbytes;
+-		if (n > SEC_XFER_SIZE)
+-			n = SEC_XFER_SIZE;
+-
+-		n = extract_entropy_user(&blocking_pool, buf, n);
+-
+-		if (n < 0) {
+-			retval = n;
+-			break;
+-		}
+-
++	nbytes = min_t(size_t, nbytes, SEC_XFER_SIZE);
++	while (1) {
++		n = extract_entropy_user(&blocking_pool, buf, nbytes);
++		if (n < 0)
++			return n;
+ 		trace_random_read(n*8, (nbytes-n)*8,
+ 				  ENTROPY_BITS(&blocking_pool),
+ 				  ENTROPY_BITS(&input_pool));
+-
+-		if (n == 0) {
+-			if (file->f_flags & O_NONBLOCK) {
+-				retval = -EAGAIN;
+-				break;
+-			}
+-
+-			wait_event_interruptible(random_read_wait,
+-				ENTROPY_BITS(&input_pool) >=
+-				random_read_wakeup_thresh);
+-
+-			if (signal_pending(current)) {
+-				retval = -ERESTARTSYS;
+-				break;
+-			}
+-
+-			continue;
+-		}
+-
+-		count += n;
+-		buf += n;
+-		nbytes -= n;
+-		break;		/* This break makes the device work */
+-				/* like a named pipe */
++		if (n > 0)
++			return n;
++		/* Pool is (near) empty.  Maybe wait and retry. */
++
++		if (file->f_flags & O_NONBLOCK)
++			return -EAGAIN;
++
++		wait_event_interruptible(random_read_wait,
++			ENTROPY_BITS(&input_pool) >=
++			random_read_wakeup_thresh);
++		if (signal_pending(current))
++			return -ERESTARTSYS;
+ 	}
+-
+-	return (count ? count : retval);
+ }
+ 
+ static ssize_t
 -- 
 1.8.3.2
 
