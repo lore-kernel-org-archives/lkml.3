@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759717Ab3KMS1f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 13:27:35 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:34184 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756951Ab3KMS11 (ORCPT
+	id S1759665Ab3KMSaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 13:30:05 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:59443 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757477Ab3KMS34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 13:27:27 -0500
-Date: Wed, 13 Nov 2013 11:27:21 -0700
-From: jerry.hoemann@hp.com
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
-        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v4 0/3] x86, apic, kexec: Add disable_cpu_apic kernel
- parameter
-Message-ID: <20131113182721.GB10062@anatevka.fc.hp.com>
-Reply-To: jerry.hoemann@hp.com
-References: <20131022150015.24240.39686.stgit@localhost6.localdomain6>
- <20131106190232.GA28119@anatevka.fc.hp.com>
- <528061E5.7010903@jp.fujitsu.com>
+	Wed, 13 Nov 2013 13:29:56 -0500
+Date: Wed, 13 Nov 2013 19:29:53 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf tip: fails to convert comm
+Message-ID: <20131113182951.GB28039@localhost.localdomain>
+References: <528306F5.8050307@gmail.com>
+ <20131113180344.GA28039@localhost.localdomain>
+ <20131113180746.GE14758@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <528061E5.7010903@jp.fujitsu.com>
+In-Reply-To: <20131113180746.GE14758@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 01:49:41PM +0900, HATAYAMA Daisuke wrote:
+On Wed, Nov 13, 2013 at 03:07:46PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Nov 13, 2013 at 07:03:47PM +0100, Frederic Weisbecker escreveu:
+> > On Tue, Nov 12, 2013 at 09:58:29PM -0700, David Ahern wrote:
+> > > Hi Namhyung and Frederic:
+> > > 
+> > > If you recall I mentioned noting a problem with the callchain series
+> > > showing comm's. Well, it fails on acme's perf/core. git bisect
+> > > points to:
+> > > 
+> > > $ git bisect bad
+> > > 4dfced359fbc719a35527416f1b4b3999647f68b is the first bad commit
+> > > commit 4dfced359fbc719a35527416f1b4b3999647f68b
+> > > Author: Namhyung Kim <namhyung.kim@lge.com>
+> > > Date:   Fri Sep 13 16:28:57 2013 +0900
+> > > 
+> > >     perf tools: Get current comm instead of last one
+> > > 
+> > >     At insert time, a hist entry should reference comm at the time
+> > > otherwise
+> > >     it'll get the last comm anyway.
+> > > 
+> > > 
+> > > How to re-create:
+> > > 
+> > > Start point is tools/perf directory for 3.12 (Linus tree):
+> > >   $ perf sched record -o /tmp/perf.data -g -- make -j 16
+> > >   $ perf script -i /tmp/perf.data > /tmp/1
+> > > 
+> > > cd to Arnaldo's tree, make perf and use it to create /tmp/2:
+> > >   $ perf script -i /tmp/perf.data > /tmp/1
+> > >   $ diff -U3 /tmp/1 /tmp/2 | less
+> > > 
+> > > You'll see a number of comm's showing as :<pid> instead of make, etc.
+> > 
+> > I see. I can reproduce, I'll check and see what happens. It would be nice if
+> > we could have an option to dump internal perf events like comm events as well
+> > in the perf script stream.
 > 
-> Thanks for your testing.
-> 
-> >I have seen no issues w/ the 3.0.80 dump testing on our proto.
-> >
-> >On the 2.6.32 testing on our proto, i have hit a low probability (< 5%)
-> >chance of the capture suffering a soft lockup hang during
-> >"Switching to clocksource hpet."  I have not RCA'd this yet.
-> >Note, I have seen this issue on earlier version of the patch, so
-> >it is not specific to this version.
-> >
-> >I then tested the 2.6.32 port on a dl380.  This worked without issue.
-> >
-> >Note, I have seen no issues related to this patch on our proto when
-> >booting the capture with a single processor.
-> >
-> >While I am still pursuing the issue of the 2.6.32 kernel on our proto,
-> >I believe this patch is good and should be accepted.
-> >
-> 
-> This seems there's something that depends on the system you used. But I
-> have never verified my patch set on 2.6.32-based kernel. I'll try to
-> do a similar test on some FJ systems.
-> 
-> The 2.6.32-based kernel you mean is one of the Longterm release kernels,
-> right? So, you used on the test the 2.6.32-based Longterm release kernel
-> with my v4 patch, right?
+> 'perf record -D' not enough?
 
-
-I've been using 2.6.32 and 3.0.80 based kernels from different distros.
-These are not the same as long term kernels on kernel.org.
-
-
-I see you've posted an updated version of the patch.  i've picked it
-up and will test.
-
-
--- 
-
-----------------------------------------------------------------------------
-Jerry Hoemann            Software Engineer              Hewlett-Packard/MODL
-
-3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
-Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
-                                                email:  jerry.hoemann@hp.com
-----------------------------------------------------------------------------
-
+No because it's not easy to correlate with perf script event output. Although it could
+be if we simply dump the time the same way in both.
