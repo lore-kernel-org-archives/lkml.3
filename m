@@ -1,115 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab3KMFtf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 00:49:35 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:49016 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab3KMFt2 (ORCPT
+	id S1757947Ab3KMFud (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 00:50:33 -0500
+Received: from smtp-66.nebula.fi ([83.145.220.66]:46021 "EHLO
+	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751047Ab3KMFuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 00:49:28 -0500
+	Wed, 13 Nov 2013 00:50:25 -0500
+Date: Wed, 13 Nov 2013 07:50:14 +0200
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: linux-kernel@vger.kernel.org
+Cc: mturquette@linaro.org
+Subject: Re: [PATCH] clk: add generic driver for fixed rate clock
+Message-ID: <20131113055013.GA25452@chokladfabriken.org>
+References: <1378010420-20031-1-git-send-email-stefan.kristiansson@saunalahti.fi>
 MIME-Version: 1.0
-In-Reply-To: <52824522.7020401@ti.com>
-References: <1382638087-32054-1-git-send-email-nm@ti.com>
-	<CAKohponJOOfGX4BHn76LTBDTm58+2QxPf_rv1i4avVfrWhfkRg@mail.gmail.com>
-	<52824522.7020401@ti.com>
-Date: Wed, 13 Nov 2013 11:19:27 +0530
-Message-ID: <CAKohpomB=wnct88wrTvW-qixLQPQGjVrCVF3V-BSbY7mhsSYQg@mail.gmail.com>
-Subject: Re: [RFC PATCH] cpufreq: cpufreq-cpu0: do not allow transitions with
- regulators suspended
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378010420-20031-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 November 2013 20:41, Nishanth Menon <nm@ti.com> wrote:
-> On 11/12/2013 12:03 AM, Viresh Kumar wrote:
+Ping and adding Mike Turquette to CC
 
->> Yes the problem looks real but there are issues with this patch.
->> - It doesn't solve your problem completely, because you returned -EBUSY,
->> your suspend operation failed and we resumed immediately.
->
-> Seems like there was an error handling miss somewhere - for some
-> reason, it did suspend properly.
-
-Yeah, its missing in cpufreq_cpu_callback()..
-
->> But I think the problem can/should be solved some other way.. Looking closely,
->> we got to the problem because we called
->>
->> __cpufreq_governor(policy, CPUFREQ_GOV_START)
->>
->> at the first place. This happened because the policy structure had more than
->> one cpu to take care of and after stopping goveronr for CPU1 it has to start it
->> again for CPU0... But this is really not required as anyway we are going to
->> suspend.
->>
->> Can you try attached patch? I will then repost it formally...
->
-> I tried a equivalent of this for v3.12 tag:
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 04548f7..9ec243c 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1186,7 +1186,7 @@ static int __cpufreq_remove_dev_prepare(struct
-> device *dev,
->                 return -EINVAL;
->         }
->
-> -       if (cpufreq_driver->target) {
-> +       if (cpufreq_driver->target && (!frozen ||
-> policy->governor_enabled)) {
->                 ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
->                 if (ret) {
->                         pr_err("%s: Failed to stop governor\n", __func__);
-> @@ -1252,7 +1252,7 @@ static int __cpufreq_remove_dev_finish(struct
-> device *dev,
->
->         /* If cpu is last user of policy, free policy */
->         if (cpus == 1) {
-> -               if (cpufreq_driver->target) {
-> +               if (cpufreq_driver->target && !frozen) {
->                         ret = __cpufreq_governor(policy,
->                                         CPUFREQ_GOV_POLICY_EXIT);
-
-This is not an equivalent of my patch :)
-
-@@ -1282,7 +1282,7 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
-                if (!frozen)
-                        cpufreq_policy_free(policy);
-        } else {
--               if (has_target()) {
-+               if (has_target() && !frozen) {
-                        if ((ret = __cpufreq_governor(policy,
-CPUFREQ_GOV_START)) ||
-                                        (ret =
-__cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
-
-
-> And I see http://pastebin.mozilla.org/3528478
->
-> with a WARN patch for generating call stack.
-
-that's why you got it.. I was really surprised to see it just didn't
-worked for you
-and believe me it took me a lot of time understanding how isn't it
-working for u.
-Because I simply believed on your equivalent version and didn't looked at it
-closely :)
-
-> Finally squelched warnings with a net diff (v3.12) of
-> http://pastebin.mozilla.org/3546062
-
-we don't need that stuff in cpufreq_add_policy_cpu()
-
-> However, ondemand is no longer functioning on resume (governor needs a
-> start after being unfrozen.. and obviously by avoiding that entirely
-> in frozen case.. not sure if I missed any other)..
-
-It would be, try the right code once. :)
+On Sun, Sep 01, 2013 at 07:40:20AM +0300, Stefan Kristiansson wrote:
+> This adds a simple driver with the only purpose to initialise
+> the fixed rate clock.
+> This is useful for systems that do not wish to use seperate init
+> code for the fixed rate clock init, but rather only rely on a
+> device tree description of it.
+> 
+> Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+> ---
+>  drivers/clk/Kconfig             |  8 ++++++
+>  drivers/clk/Makefile            |  1 +
+>  drivers/clk/clk-generic-fixed.c | 59 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 68 insertions(+)
+>  create mode 100644 drivers/clk/clk-generic-fixed.c
+> 
+> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> index 51380d6..7c8ea78 100644
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@ -87,6 +87,14 @@ config CLK_PPC_CORENET
+>  	  This adds the clock driver support for Freescale PowerPC corenet
+>  	  platforms using common clock framework.
+>  
+> +config COMMON_CLK_GENERIC_FIXED
+> +	tristate "Generic fixed rate clock driver"
+> +	depends on OF
+> +	---help---
+> +	  Driver for systems that do not want to register their fixed rate
+> +	  clocks through init code, but rather through the device tree
+> +	  description.
+> +
+>  endmenu
+>  
+>  source "drivers/clk/mvebu/Kconfig"
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index 4038c2b..2d46647 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -8,6 +8,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
+>  obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
+>  obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
+>  obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
+> +obj-$(CONFIG_COMMON_CLK_GENERIC_FIXED) += clk-generic-fixed.o
+>  
+>  # SoCs specific
+>  obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
+> diff --git a/drivers/clk/clk-generic-fixed.c b/drivers/clk/clk-generic-fixed.c
+> new file mode 100644
+> index 0000000..85df8a8
+> --- /dev/null
+> +++ b/drivers/clk/clk-generic-fixed.c
+> @@ -0,0 +1,59 @@
+> +/*
+> + * Copyright 2013 Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * Generic driver for fixed rate clock
+> + */
+> +#include <linux/platform_device.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/clk.h>
+> +#include <linux/of.h>
+> +#include <linux/module.h>
+> +
+> +static const struct of_device_id generic_fixed_clk_match[] __initconst = {
+> +	{ .compatible = "fixed-clock",},
+> +	{}
+> +};
+> +
+> +static int generic_fixed_clk_probe(struct platform_device *pdev)
+> +{
+> +	of_fixed_clk_setup(pdev->dev.of_node);
+> +
+> +	return 0;
+> +}
+> +
+> +static int generic_fixed_clk_remove(struct platform_device *pdev)
+> +{
+> +	of_clk_del_provider(pdev->dev.of_node);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver generic_fixed_clk_driver = {
+> +	.driver = {
+> +		.name = "generic-fixed-clk",
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = generic_fixed_clk_match,
+> +	},
+> +	.probe	= generic_fixed_clk_probe,
+> +	.remove	= generic_fixed_clk_remove,
+> +};
+> +
+> +static int __init generic_fixed_clk_init(void)
+> +{
+> +	return platform_driver_register(&generic_fixed_clk_driver);
+> +}
+> +subsys_initcall(generic_fixed_clk_init);
+> +
+> +static void __exit generic_fixed_exit(void)
+> +{
+> +	platform_driver_unregister(&generic_fixed_clk_driver);
+> +}
+> +module_exit(generic_fixed_exit);
+> +
+> +MODULE_AUTHOR("Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>");
+> +MODULE_DESCRIPTION("Generic driver for fixed rate clock");
+> +MODULE_LICENSE("GPL v2");
+> -- 
+> 1.8.1.2
+> 
