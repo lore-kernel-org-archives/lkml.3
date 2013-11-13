@@ -1,85 +1,403 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758335Ab3KMHNl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 02:13:41 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:20443 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327Ab3KMHNi (ORCPT
+	id S1758471Ab3KMHPI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 02:15:08 -0500
+Received: from 6.mo2.mail-out.ovh.net ([87.98.165.38]:49437 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756411Ab3KMHPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 02:13:38 -0500
-X-Spam-Score: -100.8
-Message-ID: <52832724.1090000@asianux.com>
-Date: Wed, 13 Nov 2013 15:15:48 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: revert mremap pud_free anti-fix
-References: <alpine.LNX.2.00.1310150330350.9078@eggly.anvils> <525D2B15.8060503@asianux.com>
-In-Reply-To: <525D2B15.8060503@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Nov 2013 02:15:00 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH v5 15/17] dt: binding: add at91 clks dt bindings documentation
+Date: Wed, 13 Nov 2013 08:12:27 +0100
+Message-Id: <1384326748-7085-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
+References: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 2731996125550377184
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 07:46 PM, Chen Gang wrote:
-> On 10/15/2013 06:34 PM, Hugh Dickins wrote:
->> > Revert 1ecfd533f4c5 ("mm/mremap.c: call pud_free() after fail calling
->> > pmd_alloc()").  The original code was correct: pud_alloc(), pmd_alloc(),
->> > pte_alloc_map() ensure that the pud, pmd, pt is already allocated, and
->> > seldom do they need to allocate; on failure, upper levels are freed if
->> > appropriate by the subsequent do_munmap().  Whereas 1ecfd533f4c5 did an
->> > unconditional pud_free() of a most-likely still-in-use pud: saved only
->> > by the near-impossiblity of pmd_alloc() failing.
->> > 
-> What you said above sounds reasonable to me,  but better to provide the
-> information below:
-> 
->  - pud_free() for pgd_alloc() in "arch/arm/mm/pgd.c".
-> 
+This patch adds new at91 clks dt bindings documentation.
 
-It is correct, it is for 'new_pgd' which not come from 'mm'.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ .../devicetree/bindings/clock/at91-clock.txt       |  339 ++++++++++++++++++++
+ 1 file changed, 339 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
 
->  - pud_free() for init_stub_pte() in "arch/um/kernel/skas/mmu.c".
-> 
-
-For me, it need improvement, I have sent related patch for it.
-
->  - more details about do_munmap(), (e.g. do it need mm->page_table_lock)
->    or more details about the demo "most-likely still-in-use pud ...".
-> 
-
-According to "Documentation/vm/locking", 'mm->page_table_lock' is for
-using vma list, so not need it when its related vmas are detached from
-using vma list.
-
-The related work flow:
-
-  do_munmap()->
-    detach_vmas_to_be_unmapped(); /* so not need mm->page_table_lock */
-    unmap_region() ->
-      free_pgtables() ->
-        free_pgd_range() ->
-          free_pud_range() ->
-            free_pmd_range() ->
-              free_pte_range() ->
-                pmd_clear();
-                pte_free_tlb();
-              pud_clear();
-              pmd_free_tlb();
-            pgd_clear();
-            pud_free_tlb();
-
-
-Thanks.
-
-> 
-> Hmm... I am not quite sure about the 3 things, and I will/should
-> continue analysing/learning about them, but better to get your reply. :-)
-
-
+diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
+new file mode 100644
+index 0000000..cd5e239
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
+@@ -0,0 +1,339 @@
++Device Tree Clock bindings for arch-at91
++
++This binding uses the common clock binding[1].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++Required properties:
++- compatible : shall be one of the following:
++	"atmel,at91rm9200-pmc" or
++	"atmel,at91sam9g45-pmc" or
++	"atmel,at91sam9n12-pmc" or
++	"atmel,at91sam9x5-pmc" or
++	"atmel,sama5d3-pmc":
++		at91 PMC (Power Management Controller)
++		All at91 specific clocks (clocks defined below) must be child
++		node of the PMC node.
++
++	"atmel,at91rm9200-clk-main":
++		at91 main oscillator
++
++	"atmel,at91rm9200-clk-master" or
++	"atmel,at91sam9x5-clk-master":
++		at91 master clock
++
++	"atmel,at91sam9x5-clk-peripheral" or
++	"atmel,at91rm9200-clk-peripheral":
++		at91 peripheral clocks
++
++	"atmel,at91rm9200-clk-pll" or
++	"atmel,at91sam9g45-clk-pll" or
++	"atmel,at91sam9g20-clk-pllb" or
++	"atmel,sama5d3-clk-pll":
++		at91 pll clocks
++
++	"atmel,at91sam9x5-clk-plldiv":
++		at91 plla divisor
++
++	"atmel,at91rm9200-clk-programmable" or
++	"atmel,at91sam9g45-clk-programmable" or
++	"atmel,at91sam9x5-clk-programmable":
++		at91 programmable clocks
++
++	"atmel,at91sam9x5-clk-smd":
++		at91 SMD (Soft Modem) clock
++
++	"atmel,at91rm9200-clk-system":
++		at91 system clocks
++
++	"atmel,at91rm9200-clk-usb" or
++	"atmel,at91sam9x5-clk-usb" or
++	"atmel,at91sam9n12-clk-usb":
++		at91 usb clock
++
++	"atmel,at91sam9x5-clk-utmi":
++		at91 utmi clock
++
++Required properties for PMC node:
++- reg : defines the IO memory reserved for the PMC.
++- #size-cells : shall be 0 (reg is used to encode clk id).
++- #address-cells : shall be 1 (reg is used to encode clk id).
++- interrupts : shall be set to PMC interrupt line.
++- interrupt-controller : tell that the PMC is an interrupt controller.
++- #interrupt-cells : must be set to 1. The first cell encodes the interrupt id,
++	and reflect the bit position in the PMC_ER/DR/SR registers.
++	You can use the dt macros defined in dt-bindings/clk/at91.h.
++	0 (AT91_PMC_MOSCS) -> main oscillator ready
++	1 (AT91_PMC_LOCKA) -> PLL A ready
++	2 (AT91_PMC_LOCKB) -> PLL B ready
++	3 (AT91_PMC_MCKRDY) -> master clock ready
++	6 (AT91_PMC_LOCKU) -> UTMI PLL clock ready
++	8 .. 15 (AT91_PMC_PCKRDY(id)) -> programmable clock ready
++	16 (AT91_PMC_MOSCSELS) -> main oscillator selected
++	17 (AT91_PMC_MOSCRCS) -> RC main oscillator stabilized
++	18 (AT91_PMC_CFDEV) -> clock failure detected
++
++For example:
++	pmc: pmc@fffffc00 {
++		compatible = "atmel,sama5d3-pmc";
++		interrupts = <1 4 7>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		#size-cells = <0>;
++		#address-cells = <1>;
++
++		/* put at91 clocks here */
++	};
++
++Required properties for main clock:
++- interrupt-parent : must reference the PMC node.
++- interrupts : shall be set to "<0>".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks (optional if clock-frequency is provided) : shall be the slow clock
++	phandle. This clock is used to calculate the main clock rate if
++	"clock-frequency" is not provided.
++- clock-frequency : the main oscillator frequency.Prefer the use of
++	"clock-frequency" over automatic clock rate calculation.
++
++For example:
++	main: mainck {
++		compatible = "atmel,at91rm9200-clk-main";
++		interrupt-parent = <&pmc>;
++		interrupts = <0>;
++		#clock-cells = <0>;
++		clocks = <&ck32k>;
++		clock-frequency = <18432000>;
++	};
++
++Required properties for master clock:
++- interrupt-parent : must reference the PMC node.
++- interrupts : shall be set to "<3>".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the master clock sources (see atmel datasheet) phandles.
++	e.g. "<&ck32k>, <&main>, <&plla>, <&pllb>".
++- atmel,clk-output-range : minimum and maximum clock frequency (two u32
++			   fields).
++	   e.g. output = <0 133000000>; <=> 0 to 133MHz.
++- atmel,clk-divisors : master clock divisors table (four u32 fields).
++		0 <=> reserved value.
++		e.g. divisors = <1 2 4 6>;
++- atmel,master-clk-have-div3-pres : some SoC use the reserved value 7 in the
++				    PRES field as CLOCK_DIV3 (e.g sam9x5).
++
++For example:
++	mck: mck {
++		compatible = "atmel,at91rm9200-clk-master";
++		interrupt-parent = <&pmc>;
++		interrupts = <3>;
++		#clock-cells = <0>;
++		atmel,clk-output-range = <0 133000000>;
++		atmel,clk-divisors = <1 2 4 0>;
++	};
++
++Required properties for peripheral clocks:
++- #size-cells : shall be 0 (reg is used to encode clk id).
++- #address-cells : shall be 1 (reg is used to encode clk id).
++- clocks : shall be the master clock phandle.
++	e.g. clocks = <&mck>;
++- name: device tree node describing a specific system clock.
++	* #clock-cells : from common clock binding; shall be set to 0.
++	* reg: peripheral id. See Atmel's datasheets to get a full
++	  list of peripheral ids.
++	* atmel,clk-output-range : minimum and maximum clock frequency
++	  (two u32 fields). Only valid on at91sam9x5-clk-peripheral
++	  compatible IPs.
++
++For example:
++	periph: periphck {
++		compatible = "atmel,at91sam9x5-clk-peripheral";
++		#size-cells = <0>;
++		#address-cells = <1>;
++		clocks = <&mck>;
++
++		ssc0_clk {
++			#clock-cells = <0>;
++			reg = <2>;
++			atmel,clk-output-range = <0 133000000>;
++		};
++
++		usart0_clk {
++			#clock-cells = <0>;
++			reg = <3>;
++			atmel,clk-output-range = <0 66000000>;
++		};
++	};
++
++
++Required properties for pll clocks:
++- interrupt-parent : must reference the PMC node.
++- interrupts : shall be set to "<1>".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the main clock phandle.
++- reg : pll id.
++	0 -> PLL A
++	1 -> PLL B
++- atmel,clk-input-range : minimum and maximum source clock frequency (two u32
++			  fields).
++	  e.g. input = <1 32000000>; <=> 1 to 32MHz.
++- #atmel,pll-clk-output-range-cells : number of cells reserved for pll output
++				      range description. Sould be set to 2, 3
++				      or 4.
++	* 1st and 2nd cells represent the frequency range (min-max).
++	* 3rd cell is optional and represents the OUT field value for the given
++	  range.
++	* 4th cell is optional and represents the ICPLL field (PLLICPR
++	  register)
++- atmel,pll-clk-output-ranges : pll output frequency ranges + optional parameter
++				depending on #atmel,pll-output-range-cells
++				property value.
++
++For example:
++	plla: pllack {
++		compatible = "atmel,at91sam9g45-clk-pll";
++		interrupt-parent = <&pmc>;
++		interrupts = <1>;
++		#clock-cells = <0>;
++		clocks = <&main>;
++		reg = <0>;
++		atmel,clk-input-range = <2000000 32000000>;
++		#atmel,pll-clk-output-range-cells = <4>;
++		atmel,pll-clk-output-ranges = <74500000 800000000 0 0
++					       69500000 750000000 1 0
++					       64500000 700000000 2 0
++					       59500000 650000000 3 0
++					       54500000 600000000 0 1
++					       49500000 550000000 1 1
++					       44500000 500000000 2 1
++					       40000000 450000000 3 1>;
++	};
++
++Required properties for plldiv clocks (plldiv = pll / 2):
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the plla clock phandle.
++
++The pll divisor is equal to 2 and cannot be changed.
++
++For example:
++	plladiv: plladivck {
++		compatible = "atmel,at91sam9x5-clk-plldiv";
++		#clock-cells = <0>;
++		clocks = <&plla>;
++	};
++
++Required properties for programmable clocks:
++- interrupt-parent : must reference the PMC node.
++- #size-cells : shall be 0 (reg is used to encode clk id).
++- #address-cells : shall be 1 (reg is used to encode clk id).
++- clocks : shall be the programmable clock source phandles.
++	e.g. clocks = <&clk32k>, <&main>, <&plla>, <&pllb>;
++- name: device tree node describing a specific prog clock.
++	* #clock-cells : from common clock binding; shall be set to 0.
++	* reg : programmable clock id (register offset from  PCKx
++			 register).
++	* interrupts : shall be set to "<(8 + id)>".
++
++For example:
++	prog: progck {
++		compatible = "atmel,at91sam9g45-clk-programmable";
++		#size-cells = <0>;
++		#address-cells = <1>;
++		interrupt-parent = <&pmc>;
++		clocks = <&clk32k>, <&main>, <&plladiv>, <&utmi>, <&mck>;
++
++		prog0 {
++			#clock-cells = <0>;
++			reg = <0>;
++			interrupts = <8>;
++		};
++
++		prog1 {
++			#clock-cells = <0>;
++			reg = <1>;
++			interrupts = <9>;
++		};
++	};
++
++
++Required properties for smd clock:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the smd clock source phandles.
++	e.g. clocks = <&plladiv>, <&utmi>;
++
++For example:
++	smd: smdck {
++		compatible = "atmel,at91sam9x5-clk-smd";
++		#clock-cells = <0>;
++		clocks = <&plladiv>, <&utmi>;
++	};
++
++Required properties for system clocks:
++- #size-cells : shall be 0 (reg is used to encode clk id).
++- #address-cells : shall be 1 (reg is used to encode clk id).
++- name: device tree node describing a specific system clock.
++	* #clock-cells : from common clock binding; shall be set to 0.
++	* reg: system clock id (bit position in SCER/SCDR/SCSR registers).
++	      See Atmel's datasheet to get a full list of system clock ids.
++
++For example:
++	system: systemck {
++		compatible = "atmel,at91rm9200-clk-system";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		ddrck {
++			#clock-cells = <0>;
++			reg = <2>;
++			clocks = <&mck>;
++		};
++
++		uhpck {
++			#clock-cells = <0>;
++			reg = <6>;
++			clocks = <&usb>;
++		};
++
++		udpck {
++			#clock-cells = <0>;
++			reg = <7>;
++			clocks = <&usb>;
++		};
++	};
++
++
++Required properties for usb clock:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the smd clock source phandles.
++	e.g. clocks = <&pllb>;
++- atmel,clk-divisors (only available for "atmel,at91rm9200-clk-usb"):
++	usb clock divisor table.
++	e.g. divisors = <1 2 4 0>;
++
++For example:
++	usb: usbck {
++		compatible = "atmel,at91sam9x5-clk-usb";
++		#clock-cells = <0>;
++		clocks = <&plladiv>, <&utmi>;
++	};
++
++	usb: usbck {
++		compatible = "atmel,at91rm9200-clk-usb";
++		#clock-cells = <0>;
++		clocks = <&pllb>;
++		atmel,clk-divisors = <1 2 4 0>;
++	};
++
++
++Required properties for utmi clock:
++- interrupt-parent : must reference the PMC node.
++- interrupts : shall be set to "<AT91_PMC_LOCKU IRQ_TYPE_LEVEL_HIGH>".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the main clock source phandle.
++
++For example:
++	utmi: utmick {
++		compatible = "atmel,at91sam9x5-clk-utmi";
++		interrupt-parent = <&pmc>;
++		interrupts = <AT91_PMC_LOCKU IRQ_TYPE_LEVEL_HIGH>;
++		#clock-cells = <0>;
++		clocks = <&main>;
++	};
 -- 
-Chen Gang
+1.7.9.5
+
