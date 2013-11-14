@@ -1,121 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab3KNIUB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 03:20:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35283 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab3KNIT6 (ORCPT
+	id S1752758Ab3KNIUZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 03:20:25 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:56808 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757Ab3KNIUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 03:19:58 -0500
-Date: Thu, 14 Nov 2013 00:18:34 -0800
-From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-12413057fa8b6f2993f573e6e83f843fc86d044c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        will.deacon@arm.com, torvalds@linux-foundation.org,
-        jean.pihet@linaro.org, rmk@arm.linux.org.uk, jolsa@redhat.com,
-        acme@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, will.deacon@arm.com,
-        jean.pihet@linaro.org, rmk@arm.linux.org.uk, jolsa@redhat.com,
-        acme@infradead.org, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tools/perf/build:
-  Fix feature-libunwind-debug-frame handling
-Git-Commit-ID: 12413057fa8b6f2993f573e6e83f843fc86d044c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 14 Nov 2013 03:20:21 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 14 Nov 2013 00:18:40 -0800 (PST)
+In-Reply-To: <20131112135412.GF14929@order.stressinduktion.org>
+References: <CAP8BHkGZ5EFxW4BNervKrOiEaQTNdSh9s2YOrFoexzQCOR=AqQ@mail.gmail.com>
+	<20131111203954.GB3043@order.stressinduktion.org>
+	<CAP8BHkG6=KuU9K7=sGsZftMDe58eTYByRu2DZ+j+KNqcfsOfAA@mail.gmail.com>
+	<20131112135412.GF14929@order.stressinduktion.org>
+Date: Thu, 14 Nov 2013 13:50:20 +0530
+Message-ID: <CAP8BHkEyASA52Q4Zg4w5OqR7Hv7Y_it8SnG_tMPViza_T9TV+Q@mail.gmail.com>
+Subject: Re: IPv6: Blackhole route support partial ?
+From: Kamala R <kamala@aristanetworks.com>
+To: Kamala R <kamala@aristanetworks.com>, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  12413057fa8b6f2993f573e6e83f843fc86d044c
-Gitweb:     http://git.kernel.org/tip/12413057fa8b6f2993f573e6e83f843fc86d044c
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Thu, 14 Nov 2013 08:25:24 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 14 Nov 2013 08:40:23 +0100
+Hi,
 
-tools/perf/build: Fix feature-libunwind-debug-frame handling
+I have one quick question before I send the patch across. I noticed
+that "ip -6 route show" shows an error -22 in the output which
+signifies -EINVAL associated with blackhole routes. This behaviour is
+not consistent with that of "ip route show" that shows no such error
+for a blackhole route. Does this qualify a bug that needs fixing ?
 
-Set feature-libunwind-debug-frame. We don't want it in
-CORE_FEATURE_TESTS because it's not the generic case, but we
-need to set it in the !feature-libunwind case.
+Regards,
+Kamala
 
-Also, because x86 distributions typically don't have
-dwarf_find_debug_frame() unwinding method:
-
-  test-libunwind-debug-frame.c:(.text+0x31): undefined reference to `_Ux86_64_dwarf_find_debug_frame'
-
-Restrict this new API to ARM for the time being.
-
-With this patch test-all.c works again, so repeat perf builds
-are  fast again:
-
-  comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
-  [...]
-
-       0,452899660 seconds time elapsed                                          ( +-  0,11% )
-
-While with before it was:
-
-  comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
-  [...]
-
-       1,674001829 seconds time elapsed                                          ( +-  0,16% )
-
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Link: http://lkml.kernel.org/n/tip-scsoctqzmou3rpkixCHezy9e@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/config/Makefile                  | 10 ++++++++--
- tools/perf/config/feature-checks/test-all.c |  4 ----
- 2 files changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index f5905f2..a8abd0e 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -328,8 +328,14 @@ ifndef NO_LIBUNWIND
-     msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 1.1);
-     NO_LIBUNWIND := 1
-   else
--    ifneq ($(feature-libunwind-debug-frame), 1)
--      msg := $(warning No debug_frame support found in libunwind);
-+    ifeq ($(ARCH),arm)
-+      $(call feature_check,feature-libunwind-debug-frame)
-+      ifneq ($(feature-libunwind-debug-frame), 1)
-+        msg := $(warning No debug_frame support found in libunwind);
-+        CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
-+      endif
-+    else
-+      # non-ARM has no dwarf_find_debug_frame() function:
-       CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
-     endif
-   endif
-diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
-index 799865b..59e7a70 100644
---- a/tools/perf/config/feature-checks/test-all.c
-+++ b/tools/perf/config/feature-checks/test-all.c
-@@ -49,10 +49,6 @@
- # include "test-libunwind.c"
- #undef main
- 
--#define main main_test_libunwind_debug_frame
--# include "test-libunwind-debug-frame.c"
--#undef main
--
- #define main main_test_libaudit
- # include "test-libaudit.c"
- #undef main
+On Tue, Nov 12, 2013 at 7:24 PM, Hannes Frederic Sowa
+<hannes@stressinduktion.org> wrote:
+> On Tue, Nov 12, 2013 at 04:39:10PM +0530, Kamala R wrote:
+>> Hi,
+>>
+>> Sure, here it is.
+>>
+>> --- linux-3.12/net/ipv6/route.c.orig    2013-11-12 16:23:46.000000000 +0530
+>> +++ linux-3.12/net/ipv6/route.c 2013-11-12 16:30:51.000000000 +0530
+>> @@ -1570,9 +1570,13 @@ int ip6_route_add(struct fib6_config *cf
+>>                 switch (cfg->fc_type) {
+>>                 case RTN_BLACKHOLE:
+>>                         rt->dst.error = -EINVAL;
+>> +                       rt->dst.input = dst_discard;
+>> +                       rt->dst.discard = dst_discard;
+>>                         break;
+>>                 case RTN_PROHIBIT:
+>>                         rt->dst.error = -EACCES;
+>> +                       rt->dst.input = ip6_pkt_prohibit;
+>> +                       rt->dst.output = ip6_pkt_prohibit_out;
+>>                         break;
+>>                 case RTN_THROW:
+>>                         rt->dst.error = -EAGAIN;
+>>
+>> Is this ok ?
+>
+> I woud move all the initialization of the function pointer into the
+> switch-case. You could merge the case RTN_THROW with the default one by just
+> using a ternary statement to initialize dst.error.
+>
+> Your patch must be well-formed to get included into the
+> kernel. For that you should base your patch ontop net-next
+> or net, write a proper commit message and send the git
+> format-patch generated patch to this list. Here some hints:
+> <https://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/tree/Documentation/SubmittingPatches>
+>
+> You can check if your formatting is correct by using scripts/checkpatch
+> --strict.
+>
+> Let me know if there are any problems with that.
+>
+> Thank you,
+>
+>   Hannes
+>
