@@ -1,89 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab3KNAca (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 19:32:30 -0500
-Received: from imap.thunk.org ([74.207.234.97]:58309 "EHLO imap.thunk.org"
+	id S1752410Ab3KNAgg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 19:36:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48357 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751157Ab3KNAcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 19:32:21 -0500
-Date: Wed, 13 Nov 2013 19:32:15 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: [GIT PULL] ext4 changes for 3.13
-Message-ID: <20131114003215.GA31632@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org
+	id S1751521Ab3KNAg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 19:36:29 -0500
+Date: Wed, 13 Nov 2013 22:36:10 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v3 04/15] KVM: MMU: flush tlb out of mmu lock when
+ write-protect the sptes
+Message-ID: <20131114003609.GA15692@amt.cnet>
+References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1382534973-13197-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1382534973-13197-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 61e6cfa80de5760bbe406f4e815b7739205754d2:
+On Wed, Oct 23, 2013 at 09:29:22PM +0800, Xiao Guangrong wrote:
+> Now we can flush all the TLBs out of the mmu lock without TLB corruption when
+> write-proect the sptes, it is because:
+> - we have marked large sptes readonly instead of dropping them that means we
+>   just change the spte from writable to readonly so that we only need to care
+>   the case of changing spte from present to present (changing the spte from
+>   present to nonpresent will flush all the TLBs immediately), in other words,
+>   the only case we need to care is mmu_spte_update()
 
-  Linux 3.12-rc5 (2013-10-13 15:41:28 -0700)
+Xiao,
 
-are available in the git repository at:
+Any code location which reads the writable bit in the spte and assumes if its not
+set, that the translation which the spte refers to is not cached in a
+remote CPU's TLB can become buggy. (*)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+It might be the case that now its not an issue, but its so subtle that
+it should be improved.
 
-for you to fetch changes up to 3f61c0cc706d5c0beee7af17ffeb706403cf513c:
+Can you add a fat comment on top of is_writeable_bit describing this?
+(and explain why is_writable_pte users do not make an assumption
+about (*). 
 
-  ext4: add prototypes for macro-generated functions (2013-11-11 22:40:40 -0500)
+"Writeable bit of locklessly modifiable sptes might be cleared
+but TLBs not flushed: so whenever reading locklessly modifiable sptes
+you cannot assume TLBs are flushed".
 
-----------------------------------------------------------------
-Ext4 updates for 3.13.  Mostly bug fixes and cleanups.
+For example this one is unclear:
 
-----------------------------------------------------------------
-Andreas Dilger (2):
-      ext4: return non-zero st_blocks for inline data
-      ext4: add prototypes for macro-generated functions
+                if (!can_unsync && is_writable_pte(*sptep))
+                        goto set_pte;
+And:
 
-Azat Khuzhin (1):
-      ext4: drop set but otherwise unused variable from ext4_add_dirent_to_inline()
+        if (!is_writable_pte(spte) &&
+              !(pt_protect && spte_is_locklessly_modifiable(spte)))
+                return false;
 
-BoxiLiu (1):
-      ext4: change ext4_read_inline_dir() to return 0 on success
+This is safe because get_dirty_log/kvm_mmu_slot_remove_write_access are
+serialized by a single mutex (if there were two mutexes, it would not be
+safe). Can you add an assert to both
+kvm_mmu_slot_remove_write_access/kvm_vm_ioctl_get_dirty_log 
+for (slots_lock) is locked, and explain?
 
-Darrick J. Wong (1):
-      ext4: don't count free clusters from a corrupt block group
+So just improve the comments please, thanks (no need to resend whole
+series).
 
-Eric Sandeen (2):
-      ext4: remove unreachable code in ext4_can_extents_be_merged()
-      ext4: remove unreachable code after ext4_can_extents_be_merged()
-
-Jan Kara (2):
-      ext4: fix assertion in ext4_add_complete_io()
-      ext4: fixup kerndoc annotation of mpage_map_and_submit_extent()
-
-Lukas Czerner (1):
-      ext4: fix FITRIM in no journal mode
-
-Ming Lei (2):
-      ext4: fix performance regression in ext4_writepages
-      ext4: pair trace_ext4_writepages & trace_ext4_writepages_result
-
-Theodore Ts'o (3):
-      ext4: add ratelimiting to ext4 messages
-      ext4: avoid bh leak in retry path of ext4_expand_extra_isize_ea()
-      ext4: use prandom_u32() instead of get_random_bytes()
-
- fs/ext4/balloc.c  |  13 +++++-
- fs/ext4/ext4.h    |  17 +++++++
- fs/ext4/extents.c |  35 +-------------
- fs/ext4/ialloc.c  |   2 +-
- fs/ext4/inline.c  |   3 +-
- fs/ext4/inode.c   |  54 +++++++++++++---------
- fs/ext4/mballoc.c |   4 +-
- fs/ext4/mmp.c     |   2 +-
- fs/ext4/page-io.c |   5 +-
- fs/ext4/super.c   | 159 ++++++++++++++++++++++++++++++++++++++-------------------------
- fs/ext4/xattr.c   |   1 +
- 11 files changed, 168 insertions(+), 127 deletions(-)
+> - in mmu_spte_update(), we haved checked
+>   SPTE_HOST_WRITEABLE | PTE_MMU_WRITEABLE instead of PT_WRITABLE_MASK, that
+>   means it does not depend on PT_WRITABLE_MASK anymore
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c | 18 ++++++++++++++----
+>  arch/x86/kvm/x86.c |  9 +++++++--
+>  2 files changed, 21 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 62f18ec..337d173 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -4273,15 +4273,25 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+>  			if (*rmapp)
+>  				__rmap_write_protect(kvm, rmapp, false);
+>  
+> -			if (need_resched() || spin_needbreak(&kvm->mmu_lock)) {
+> -				kvm_flush_remote_tlbs(kvm);
+> +			if (need_resched() || spin_needbreak(&kvm->mmu_lock))
+>  				cond_resched_lock(&kvm->mmu_lock);
+> -			}
+>  		}
+>  	}
+>  
+> -	kvm_flush_remote_tlbs(kvm);
+>  	spin_unlock(&kvm->mmu_lock);
+> +
+> +	/*
+> +	 * We can flush all the TLBs out of the mmu lock without TLB
+> +	 * corruption since we just change the spte from writable to
+> +	 * readonly so that we only need to care the case of changing
+> +	 * spte from present to present (changing the spte from present
+> +	 * to nonpresent will flush all the TLBs immediately), in other
+> +	 * words, the only case we care is mmu_spte_update() where we
+> +	 * haved checked SPTE_HOST_WRITEABLE | SPTE_MMU_WRITEABLE
+> +	 * instead of PT_WRITABLE_MASK, that means it does not depend
+> +	 * on PT_WRITABLE_MASK anymore.
+> +	 */
+> +	kvm_flush_remote_tlbs(kvm);
+>  }
+>  
+>  #define BATCH_ZAP_PAGES	10
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index b3aa650..573c6b3 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -3571,11 +3571,16 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
+>  		offset = i * BITS_PER_LONG;
+>  		kvm_mmu_write_protect_pt_masked(kvm, memslot, offset, mask);
+>  	}
+> -	if (is_dirty)
+> -		kvm_flush_remote_tlbs(kvm);
+>  
+>  	spin_unlock(&kvm->mmu_lock);
+>  
+> +	/*
+> +	 * All the TLBs can be flushed out of mmu lock, see the comments in
+> +	 * kvm_mmu_slot_remove_write_access().
+> +	 */
+> +	if (is_dirty)
+> +		kvm_flush_remote_tlbs(kvm);
+> +
+>  	r = -EFAULT;
+>  	if (copy_to_user(log->dirty_bitmap, dirty_bitmap_buffer, n))
+>  		goto out;
+> -- 
+> 1.8.1.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
