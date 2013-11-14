@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931Ab3KNAG1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 19:06:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58271 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751157Ab3KNAGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 19:06:20 -0500
-Message-ID: <528413DE.1090203@zytor.com>
-Date: Wed, 13 Nov 2013 16:05:50 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752148Ab3KNAHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 19:07:00 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:37812 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478Ab3KNAGw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 19:06:52 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        linus.walleij@linaro.org, grant.likely@secretlab.ca,
+        horms@verge.net.au
+Subject: Re: [PATCH 01/03] gpio: rcar: Use lazy disable and mask on suspend
+Date: Thu, 14 Nov 2013 01:07:30 +0100
+Message-ID: <1906707.rpHAsqdqKq@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20131113225936.21449.29529.sendpatchset@w520>
+References: <20131113225927.21449.78044.sendpatchset@w520> <20131113225936.21449.29529.sendpatchset@w520>
 MIME-Version: 1.0
-To: jerry.hoemann@hp.com
-CC: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        matt.fleming@intel.com, yinghai@kernel.org, penberg@kernel.org,
-        akpm@linux-foundation.org, linux-doc@vger.kernel.org,
-        linux-efi@vger.kernel.org, vgoyal@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com> <d73ccce9-6a0d-4470-bda3-f0c6eb96b5e4@email.android.com> <20131113224503.GB25344@anatevka.fc.hp.com> <52840206.5020006@zytor.com> <20131113235708.GC25344@anatevka.fc.hp.com>
-In-Reply-To: <20131113235708.GC25344@anatevka.fc.hp.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 03:57 PM, jerry.hoemann@hp.com wrote:
+Hi Magnus,
+
+Thank you for the patch.
+
+On Thursday 14 November 2013 07:59:36 Magnus Damm wrote:
+> From: Magnus Damm <damm@opensource.se>
 > 
-> I think i can go to a date based black list, that removes the manual
-> step.  System running firmware before certain date assumes we need
-> to do the work around.  If firmware is newer than that date, we don't
-> use the workaround.  Blacklist overrides and allows current behavior
-> for new firmware that is subsequently found to be broken and for
-> which we can't convenience the manufacturer to fix.
+> Set the ->irq_enable() and ->irq_disable() methods to NULL
+> to enable lazy disable of interrupts.
+
+Is that just for optimization purpose, or is there another reason ?
+
+> Also extend the code to set IRQCHIP_MASK_ON_SUSPEND which tells the core
+> that only IRQs marked as wakeups need to stay enabled during Suspend-to-RAM.
+
+Shouldn't this be split to a separate patch ?
+
+> Tested on the Lager board with GPIO-keys and Suspend-to-RAM.
 > 
-
-No, we can't, at least not for now.  We are continually finding new
-platforms with the bug.
-
+> Signed-off-by: Magnus Damm <damm@opensource.se>
+> ---
 > 
-> I will still point out that as currently used, efi_reserve_boot_services
-> is wrong.  A work around for firmware bugs on one platform shouldn't be
-> breaking platforms that don't have that bug.  Its just much less likely
-> to cause problems with higher crash kernel allocation.
+>  drivers/gpio/gpio-rcar.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
+> --- 0001/drivers/gpio/gpio-rcar.c
+> +++ work/drivers/gpio/gpio-rcar.c	2013-11-13 19:26:26.000000000 +0900
+> @@ -368,10 +368,9 @@ static int gpio_rcar_probe(struct platfo
+>  	irq_chip->name = name;
+>  	irq_chip->irq_mask = gpio_rcar_irq_disable;
+>  	irq_chip->irq_unmask = gpio_rcar_irq_enable;
+> -	irq_chip->irq_enable = gpio_rcar_irq_enable;
+> -	irq_chip->irq_disable = gpio_rcar_irq_disable;
+>  	irq_chip->irq_set_type = gpio_rcar_irq_set_type;
+>  	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE | IRQCHIP_SET_TYPE_MASKED;
+> +	irq_chip->flags	|= IRQCHIP_MASK_ON_SUSPEND;
 
-It is wrong, yes, but it seems like a ubiquitous problem.
+You can write it as
 
-	-hpa
+        irq_chip->flags = IRQCHIP_SKIP_SET_WAKE | IRQCHIP_SET_TYPE_MASKED
+                        | IRQCHIP_MASK_ON_SUSPEND;
 
+>  	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
+>  					      p->config.number_of_pins,
+-- 
+Regards,
+
+Laurent Pinchart
 
