@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab3KNQRS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:17:18 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:59385 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215Ab3KNQQZ (ORCPT
+	id S1755346Ab3KNQRL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:17:11 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:63469 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab3KNQQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:16:25 -0500
+	Thu, 14 Nov 2013 11:16:15 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Nathaniel Clark <nathaniel.l.clark@intel.com>,
-        Andrew Perepechko <andrew_perepechko@xyratex.com>,
+Cc: linux-kernel@vger.kernel.org, Jinshan Xiong <jinshan.xiong@intel.com>,
+        Aurelien Degremont <aurelien.degremont@cea.fr>,
         Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 30/40] staging/lustre/xattr: separate ACL and XATTR caches
-Date: Fri, 15 Nov 2013 00:13:32 +0800
-Message-Id: <1384445622-12346-31-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 28/40] staging/lustre/hsm: Add hsm_release feature.
+Date: Fri, 15 Nov 2013 00:13:30 +0800
+Message-Id: <1384445622-12346-29-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
 References: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
@@ -24,464 +23,687 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nathaniel Clark <nathaniel.l.clark@intel.com>
+From: Jinshan Xiong <jinshan.xiong@intel.com>
 
-This patch separates ACL and XATTR caches, so that
-when updating an ACL only LOOKUP lock is needed and
-when updating another XATTR only XATTR lock is needed.
+HSM Release is one of the key feature of HSM. To perform HSM
+release, clients need to acquire the file lease exclusivelt and
+flush dirty cache from clients. A special close REQ will be sent
+to the MDT to release the lease and get rid of OST objects.
 
-This patch also reverts XATTR cache support for setxattr
-because client performing REINT under even PR lock
-can deadlock if an active server operation (like unlink)
-attempts to cancel all locks, and setxattr has to wait
-for it (MDC max-in-flight is 1).
-
-This patch also drops mot_xattr_sem because there is
-no use case for FLXATTRLS with locking.
-
-This patch also takes into account that osd_xattr_list
-may be changing lu_buf, so it does not assume that
-the buf is unchanged after the call.
-
-This patch disables the r/o cache if the data is
-unreasonably large (larger than maximum single EA
-size).
-
-Lustre-change: http://review.whamcloud.com/7208
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3669
-Signed-off-by: Andrew Perepechko <andrew_perepechko@xyratex.com>
-Signed-off-by: Nathaniel Clark <nathaniel.l.clark@intel.com>
+Lustre-change: http://review.whamcloud.com/7028
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-1333
+Signed-off-by: Aurelien Degremont <aurelien.degremont@cea.fr>
+Signed-off-by: Jinshan Xiong <jinshan.xiong@intel.com>
 Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: John L. Hammond <john.hammond@intel.com>
+Reviewed-by: Alex Zhuravlev <alexey.zhuravlev@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- .../lustre/lustre/include/lustre/lustre_idl.h      |    1 -
- drivers/staging/lustre/lustre/ldlm/ldlm_lock.c     |    2 -
- .../staging/lustre/lustre/llite/llite_internal.h   |    7 --
- drivers/staging/lustre/lustre/llite/xattr.c        |   39 ++++---
- drivers/staging/lustre/lustre/llite/xattr_cache.c  |  119 ++++----------------
- drivers/staging/lustre/lustre/mdc/mdc_internal.h   |    2 +-
- drivers/staging/lustre/lustre/mdc/mdc_locks.c      |    9 +-
- drivers/staging/lustre/lustre/mdc/mdc_reint.c      |    2 +-
- drivers/staging/lustre/lustre/mdc/mdc_request.c    |   30 ++++-
- drivers/staging/lustre/lustre/ptlrpc/layout.c      |    3 +-
- 10 files changed, 74 insertions(+), 140 deletions(-)
+ .../lustre/lustre/include/lustre/lustre_idl.h      |   14 +++-
+ .../lustre/lustre/include/lustre/lustre_user.h     |   11 ++-
+ .../lustre/lustre/include/lustre_req_layout.h      |    2 +
+ drivers/staging/lustre/lustre/include/obd.h        |    6 +-
+ .../staging/lustre/lustre/lclient/lcommon_misc.c   |    4 +-
+ drivers/staging/lustre/lustre/llite/dir.c          |   24 +++++-
+ drivers/staging/lustre/lustre/llite/file.c         |   87 +++++++++++++++++---
+ .../staging/lustre/lustre/llite/llite_internal.h   |    3 +-
+ drivers/staging/lustre/lustre/llite/vvp_object.c   |    2 +-
+ .../staging/lustre/lustre/lov/lov_cl_internal.h    |   16 ++++
+ drivers/staging/lustre/lustre/lov/lov_object.c     |   35 +++++---
+ drivers/staging/lustre/lustre/mdc/mdc_lib.c        |   26 +++++-
+ drivers/staging/lustre/lustre/mdc/mdc_request.c    |   23 +++++-
+ drivers/staging/lustre/lustre/ptlrpc/layout.c      |   19 +++++
+ .../staging/lustre/lustre/ptlrpc/pack_generic.c    |    7 ++
+ 15 files changed, 242 insertions(+), 37 deletions(-)
 
 diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
-index 54e1599..bc4eaf2 100644
+index 05e583f..97d633e 100644
 --- a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
 +++ b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
-@@ -1760,7 +1760,6 @@ static inline __u32 lov_mds_md_size(__u16 stripes, __u32 lmm_magic)
- 			  OBD_MD_FLGID   | OBD_MD_FLFLAGS | OBD_MD_FLNLINK | \
- 			  OBD_MD_FLGENER | OBD_MD_FLRDEV  | OBD_MD_FLGROUP)
+@@ -1750,6 +1750,7 @@ static inline __u32 lov_mds_md_size(__u16 stripes, __u32 lmm_magic)
+ #define OBD_MD_FLRMTRGETFACL (0x0008000000000000ULL) /* lfs rgetfacl case */
  
--#define OBD_MD_FLXATTRLOCKED OBD_MD_FLGETATTRLOCK
- #define OBD_MD_FLXATTRALL (OBD_MD_FLXATTR | OBD_MD_FLXATTRLS)
+ #define OBD_MD_FLDATAVERSION (0x0010000000000000ULL) /* iversion sum */
++#define OBD_MD_FLRELEASED    (0x0020000000000000ULL) /* file released */
  
- /* don't forget obdo_fid which is way down at the bottom so it can
-diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c b/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-index f72b887..c4fa9f9 100644
---- a/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-+++ b/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-@@ -145,8 +145,6 @@ char *ldlm_it2str(int it)
- 		return "getxattr";
- 	case IT_LAYOUT:
- 		return "layout";
--	case IT_SETXATTR:
--		return "setxattr";
- 	default:
- 		CERROR("Unknown intent %d\n", it);
- 		return "UNKNOWN";
-diff --git a/drivers/staging/lustre/lustre/llite/llite_internal.h b/drivers/staging/lustre/lustre/llite/llite_internal.h
-index 7ded2e4..7f0197c 100644
---- a/drivers/staging/lustre/lustre/llite/llite_internal.h
-+++ b/drivers/staging/lustre/lustre/llite/llite_internal.h
-@@ -295,13 +295,6 @@ int ll_xattr_cache_get(struct inode *inode,
- 			size_t size,
- 			__u64 valid);
+ #define OBD_MD_FLGETATTR (OBD_MD_FLID    | OBD_MD_FLATIME | OBD_MD_FLMTIME | \
+ 			  OBD_MD_FLCTIME | OBD_MD_FLSIZE  | OBD_MD_FLBLKSZ | \
+@@ -2386,6 +2387,7 @@ extern void lustre_swab_mdt_rec_setattr (struct mdt_rec_setattr *sa);
+ 					      * delegation, succeed if it's not
+ 					      * being opened with conflict mode.
+ 					      */
++#define MDS_OPEN_RELEASE   02000000000000ULL /* Open the file for HSM release */
  
--int ll_xattr_cache_update(struct inode *inode,
--			const char *name,
--			const char *newval,
--			size_t size,
--			__u64 valid,
--			int flags);
--
- /*
-  * Locking to guarantee consistency of non-atomic updates to long long i_size,
-  * consistency between file size and KMS.
-diff --git a/drivers/staging/lustre/lustre/llite/xattr.c b/drivers/staging/lustre/lustre/llite/xattr.c
-index 1345b67..8c96854 100644
---- a/drivers/staging/lustre/lustre/llite/xattr.c
-+++ b/drivers/staging/lustre/lustre/llite/xattr.c
-@@ -183,17 +183,11 @@ int ll_setxattr_common(struct inode *inode, const char *name,
- 		valid |= rce_ops2valid(rce->rce_ops);
- 	}
- #endif
--	if (sbi->ll_xattr_cache_enabled &&
--	    (rce == NULL || rce->rce_ops == RMT_LSETFACL)) {
--		rc = ll_xattr_cache_update(inode, name, pv, size, valid, flags);
--	} else {
--		oc = ll_mdscapa_get(inode);
--		rc = md_setxattr(sbi->ll_md_exp, ll_inode2fid(inode), oc,
--				valid, name, pv, size, 0, flags,
--				ll_i2suppgid(inode), &req);
--		capa_put(oc);
--	}
--
-+	oc = ll_mdscapa_get(inode);
-+	rc = md_setxattr(sbi->ll_md_exp, ll_inode2fid(inode), oc,
-+			valid, name, pv, size, 0, flags,
-+			ll_i2suppgid(inode), &req);
-+	capa_put(oc);
- #ifdef CONFIG_FS_POSIX_ACL
- 	if (new_value != NULL)
- 		lustre_posix_acl_xattr_free(new_value, size);
-@@ -292,6 +286,7 @@ int ll_getxattr_common(struct inode *inode, const char *name,
- 	void *xdata;
- 	struct obd_capa *oc;
- 	struct rmtacl_ctl_entry *rce = NULL;
-+	struct ll_inode_info *lli = ll_i2info(inode);
+ /* permission for create non-directory file */
+ #define MAY_CREATE      (1 << 7)
+@@ -2404,7 +2406,7 @@ extern void lustre_swab_mdt_rec_setattr (struct mdt_rec_setattr *sa);
+ /* lfs rgetfacl permission check */
+ #define MAY_RGETFACL    (1 << 14)
  
- 	CDEBUG(D_VFSTRACE, "VFS Op:inode=%lu/%u(%p)\n",
- 	       inode->i_ino, inode->i_generation, inode);
-@@ -339,7 +334,7 @@ int ll_getxattr_common(struct inode *inode, const char *name,
- 	 */
- 	if (xattr_type == XATTR_ACL_ACCESS_T &&
- 	    !(sbi->ll_flags & LL_SBI_RMT_CLIENT)) {
--		struct ll_inode_info *lli = ll_i2info(inode);
+-enum {
++enum mds_op_bias {
+ 	MDS_CHECK_SPLIT		= 1 << 0,
+ 	MDS_CROSS_REF		= 1 << 1,
+ 	MDS_VTX_BYPASS		= 1 << 2,
+@@ -2417,6 +2419,7 @@ enum {
+ 	MDS_DATA_MODIFIED	= 1 << 9,
+ 	MDS_CREATE_VOLATILE	= 1 << 10,
+ 	MDS_OWNEROVERRIDE	= 1 << 11,
++	MDS_HSM_RELEASE		= 1 << 12,
+ };
+ 
+ /* instance of mdt_reint_rec */
+@@ -3740,5 +3743,14 @@ struct mdc_swap_layouts {
+ 
+ void lustre_swab_swap_layouts(struct mdc_swap_layouts *msl);
+ 
++struct close_data {
++	struct lustre_handle	cd_handle;
++	struct lu_fid		cd_fid;
++	__u64			cd_data_version;
++	__u64			cd_reserved[8];
++};
 +
- 		struct posix_acl *acl;
- 
- 		spin_lock(&lli->lli_lock);
-@@ -358,13 +353,27 @@ int ll_getxattr_common(struct inode *inode, const char *name,
- #endif
- 
- do_getxattr:
--	if (sbi->ll_xattr_cache_enabled && (rce == NULL ||
--					    rce->rce_ops == RMT_LGETFACL ||
--					    rce->rce_ops == RMT_LSETFACL)) {
-+	if (sbi->ll_xattr_cache_enabled && xattr_type != XATTR_ACL_ACCESS_T) {
- 		rc = ll_xattr_cache_get(inode, name, buffer, size, valid);
-+		if (rc == -EAGAIN)
-+			goto getxattr_nocache;
- 		if (rc < 0)
- 			GOTO(out_xattr, rc);
++void lustre_swab_close_data(struct close_data *data);
 +
-+		/* Add "system.posix_acl_access" to the list */
-+		if (lli->lli_posix_acl != NULL && valid & OBD_MD_FLXATTRLS) {
-+			if (size == 0) {
-+				rc += sizeof(XATTR_NAME_ACL_ACCESS);
-+			} else if (size - rc >= sizeof(XATTR_NAME_ACL_ACCESS)) {
-+				memcpy(buffer + rc, XATTR_NAME_ACL_ACCESS,
-+				       sizeof(XATTR_NAME_ACL_ACCESS));
-+				rc += sizeof(XATTR_NAME_ACL_ACCESS);
-+			} else {
-+				GOTO(out_xattr, rc = -ERANGE);
-+			}
-+		}
- 	} else {
-+getxattr_nocache:
- 		oc = ll_mdscapa_get(inode);
- 		rc = md_getxattr(sbi->ll_md_exp, ll_inode2fid(inode), oc,
- 				valid | (rce ? rce_ops2valid(rce->rce_ops) : 0),
-diff --git a/drivers/staging/lustre/lustre/llite/xattr_cache.c b/drivers/staging/lustre/lustre/llite/xattr_cache.c
-index fd303cb..f9f2855 100644
---- a/drivers/staging/lustre/lustre/llite/xattr_cache.c
-+++ b/drivers/staging/lustre/lustre/llite/xattr_cache.c
-@@ -121,13 +121,13 @@ static int ll_xattr_cache_find(struct list_head *cache,
- }
+ #endif
+ /** @} lustreidl */
+diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
+index b6090b5..ec1bcf5 100644
+--- a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
++++ b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
+@@ -623,10 +623,13 @@ struct if_quotactl {
+ };
  
- /**
-- * This adds or updates an xattr.
-+ * This adds an xattr.
-  *
-  * Add @xattr_name attr with @xattr_val value and @xattr_val_len length,
-- * if the attribute already exists, then update its value.
-  *
-  * \retval 0       success
-  * \retval -ENOMEM if no memory could be allocated for the cached attr
-+ * \retval -EPROTO if duplicate xattr is being added
+ /* swap layout flags */
+-#define	SWAP_LAYOUTS_CHECK_DV1		(1 << 0)
+-#define	SWAP_LAYOUTS_CHECK_DV2		(1 << 1)
+-#define	SWAP_LAYOUTS_KEEP_MTIME		(1 << 2)
+-#define	SWAP_LAYOUTS_KEEP_ATIME		(1 << 3)
++#define SWAP_LAYOUTS_CHECK_DV1		(1 << 0)
++#define SWAP_LAYOUTS_CHECK_DV2		(1 << 1)
++#define SWAP_LAYOUTS_KEEP_MTIME		(1 << 2)
++#define SWAP_LAYOUTS_KEEP_ATIME		(1 << 3)
++
++/* Swap XATTR_NAME_HSM as well, only on the MDT so far */
++#define SWAP_LAYOUTS_MDS_HSM		(1 << 31)
+ struct lustre_swap_layouts {
+ 	__u64	sl_flags;
+ 	__u32	sl_fd;
+diff --git a/drivers/staging/lustre/lustre/include/lustre_req_layout.h b/drivers/staging/lustre/lustre/include/lustre_req_layout.h
+index 2832569..a75f4c6 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_req_layout.h
++++ b/drivers/staging/lustre/lustre/include/lustre_req_layout.h
+@@ -164,6 +164,7 @@ extern struct req_format RQF_UPDATE_OBJ;
   */
- static int ll_xattr_cache_add(struct list_head *cache,
- 			      const char *xattr_name,
-@@ -139,28 +139,8 @@ static int ll_xattr_cache_add(struct list_head *cache,
+ extern struct req_format RQF_MDS_GETATTR_NAME;
+ extern struct req_format RQF_MDS_CLOSE;
++extern struct req_format RQF_MDS_RELEASE_CLOSE;
+ extern struct req_format RQF_MDS_PIN;
+ extern struct req_format RQF_MDS_UNPIN;
+ extern struct req_format RQF_MDS_CONNECT;
+@@ -262,6 +263,7 @@ extern struct req_msg_field RMF_GETINFO_VAL;
+ extern struct req_msg_field RMF_GETINFO_VALLEN;
+ extern struct req_msg_field RMF_GETINFO_KEY;
+ extern struct req_msg_field RMF_IDX_INFO;
++extern struct req_msg_field RMF_CLOSE_DATA;
  
+ /*
+  * connection handle received in MDS_CONNECT request.
+diff --git a/drivers/staging/lustre/lustre/include/obd.h b/drivers/staging/lustre/lustre/include/obd.h
+index f0c1773..3247d1d 100644
+--- a/drivers/staging/lustre/lustre/include/obd.h
++++ b/drivers/staging/lustre/lustre/include/obd.h
+@@ -1070,7 +1070,7 @@ struct md_op_data {
+ 	struct obd_capa	*op_capa2;
  
- 	if (ll_xattr_cache_find(cache, xattr_name, &xattr) == 0) {
--		/* Found a cached EA, update it */
--
--		if (xattr_val_len != xattr->xe_vallen) {
--			char *val;
--			OBD_ALLOC(val, xattr_val_len);
--			if (val == NULL) {
--				CDEBUG(D_CACHE, "failed to allocate %u bytes "
--						"for xattr %s update\n",
--						xattr_val_len,
--						xattr_name);
--				return -ENOMEM;
--			}
--			OBD_FREE(xattr->xe_value, xattr->xe_vallen);
--			xattr->xe_value = val;
--			xattr->xe_vallen = xattr_val_len;
--		}
--		memcpy(xattr->xe_value, xattr_val, xattr_val_len);
--
--		CDEBUG(D_CACHE, "update: [%s]=%.*s\n", xattr_name,
--			xattr_val_len, xattr_val);
--
--		return 0;
-+		CDEBUG(D_CACHE, "duplicate xattr: [%s]\n", xattr_name);
-+		return -EPROTO;
- 	}
+ 	/* Various operation flags. */
+-	__u32		   op_bias;
++	enum mds_op_bias        op_bias;
  
- 	OBD_SLAB_ALLOC_PTR_GFP(xattr, xattr_kmem, __GFP_IO);
-@@ -316,7 +296,7 @@ int ll_xattr_cache_destroy(struct inode *inode)
- }
- 
- /**
-- * Match or enqueue a PR or PW LDLM lock.
-+ * Match or enqueue a PR lock.
-  *
-  * Find or request an LDLM lock with xattr data.
-  * Since LDLM does not provide API for atomic match_or_enqueue,
-@@ -346,9 +326,7 @@ static int ll_xattr_find_get_lock(struct inode *inode,
- 
- 	mutex_lock(&lli->lli_xattrs_enq_lock);
- 	/* Try matching first. */
--	mode = ll_take_md_lock(inode, MDS_INODELOCK_XATTR, &lockh, 0,
--			       oit->it_op == IT_SETXATTR ? LCK_PW :
--							   (LCK_PR | LCK_PW));
-+	mode = ll_take_md_lock(inode, MDS_INODELOCK_XATTR, &lockh, 0, LCK_PR);
- 	if (mode != 0) {
- 		/* fake oit in mdc_revalidate_lock() manner */
- 		oit->d.lustre.it_lock_handle = lockh.cookie;
-@@ -364,13 +342,7 @@ static int ll_xattr_find_get_lock(struct inode *inode,
- 		return PTR_ERR(op_data);
- 	}
- 
--	op_data->op_valid = OBD_MD_FLXATTR | OBD_MD_FLXATTRLS |
--			    OBD_MD_FLXATTRLOCKED;
--#ifdef CONFIG_FS_POSIX_ACL
--	/* If working with ACLs, we would like to cache local ACLs */
--	if (sbi->ll_flags & LL_SBI_RMT_CLIENT)
--		op_data->op_valid |= OBD_MD_FLRMTLGETFACL;
--#endif
-+	op_data->op_valid = OBD_MD_FLXATTR | OBD_MD_FLXATTRLS;
- 
- 	rc = md_enqueue(exp, &einfo, oit, op_data, &lockh, NULL, 0, NULL, 0);
- 	ll_finish_md_op_data(op_data);
-@@ -432,7 +404,11 @@ static int ll_xattr_cache_refill(struct inode *inode, struct lookup_intent *oit)
- 	if (oit->d.lustre.it_status < 0) {
- 		CDEBUG(D_CACHE, "getxattr intent returned %d for fid "DFID"\n",
- 		       oit->d.lustre.it_status, PFID(ll_inode2fid(inode)));
--		GOTO(out_destroy, rc = oit->d.lustre.it_status);
-+		rc = oit->d.lustre.it_status;
-+		/* xattr data is so large that we don't want to cache it */
-+		if (rc == -ERANGE)
-+			rc = -EAGAIN;
-+		GOTO(out_destroy, rc);
- 	}
- 
- 	body = req_capsule_server_get(&req->rq_pill, &RMF_MDT_BODY);
-@@ -470,6 +446,11 @@ static int ll_xattr_cache_refill(struct inode *inode, struct lookup_intent *oit)
- 			rc = -EPROTO;
- 		} else if (OBD_FAIL_CHECK(OBD_FAIL_LLITE_XATTR_ENOMEM)) {
- 			rc = -ENOMEM;
-+		} else if (!strcmp(xdata, XATTR_NAME_ACL_ACCESS)) {
-+			/* Filter out ACL ACCESS since it's cached separately */
-+			CDEBUG(D_CACHE, "not caching %s\n",
-+			       XATTR_NAME_ACL_ACCESS);
-+			rc = 0;
- 		} else {
- 			rc = ll_xattr_cache_add(&lli->lli_xattrs, xdata, xval,
- 						*xsizes);
-@@ -490,9 +471,8 @@ static int ll_xattr_cache_refill(struct inode *inode, struct lookup_intent *oit)
- 
- 	GOTO(out_maybe_drop, rc);
- out_maybe_drop:
--	/* drop lock on error or getxattr */
--	if (rc != 0 || oit->it_op != IT_SETXATTR)
--		ll_intent_drop_lock(oit);
+ 	/* Operation type */
+ 	__u32		   op_opc;
+@@ -1084,6 +1084,10 @@ struct md_op_data {
+ 	/* used to transfer info between the stacks of MD client
+ 	 * see enum op_cli_flags */
+ 	__u32			op_cli_flags;
 +
-+	ll_intent_drop_lock(oit);
++	/* File object data version for HSM release, on client */
++	__u64			op_data_version;
++	struct lustre_handle	op_lease_handle;
+ };
  
- 	if (rc != 0)
- 		up_write(&lli->lli_xattrs_list_rwsem);
-@@ -577,64 +557,3 @@ out:
+ enum op_cli_flags {
+diff --git a/drivers/staging/lustre/lustre/lclient/lcommon_misc.c b/drivers/staging/lustre/lustre/lclient/lcommon_misc.c
+index 2b4dbee..e04c2d3 100644
+--- a/drivers/staging/lustre/lustre/lclient/lcommon_misc.c
++++ b/drivers/staging/lustre/lustre/lclient/lcommon_misc.c
+@@ -140,7 +140,9 @@ int cl_get_grouplock(struct cl_object *obj, unsigned long gid, int nonblock,
+ 
+ 	rc = cl_io_init(env, io, CIT_MISC, io->ci_obj);
+ 	if (rc) {
+-		LASSERT(rc < 0);
++		/* Does not make sense to take GL for released layout */
++		if (rc > 0)
++			rc = -ENOTSUPP;
+ 		cl_env_put(env, &refcheck);
+ 		return rc;
+ 	}
+diff --git a/drivers/staging/lustre/lustre/llite/dir.c b/drivers/staging/lustre/lustre/llite/dir.c
+index 1f07903..22d0acc9 100644
+--- a/drivers/staging/lustre/lustre/llite/dir.c
++++ b/drivers/staging/lustre/lustre/llite/dir.c
+@@ -1809,8 +1809,28 @@ out_rmdir:
+ 			return -EFAULT;
+ 		}
+ 
+-		rc = obd_iocontrol(cmd, ll_i2mdexp(inode), totalsize,
+-				   hur, NULL);
++		if (hur->hur_request.hr_action == HUA_RELEASE) {
++			const struct lu_fid *fid;
++			struct inode *f;
++			int i;
++
++			for (i = 0; i < hur->hur_request.hr_itemcount; i++) {
++				fid = &hur->hur_user_item[i].hui_fid;
++				f = search_inode_for_lustre(inode->i_sb, fid);
++				if (IS_ERR(f)) {
++					rc = PTR_ERR(f);
++					break;
++				}
++
++				rc = ll_hsm_release(f);
++				iput(f);
++				if (rc != 0)
++					break;
++			}
++		} else {
++			rc = obd_iocontrol(cmd, ll_i2mdexp(inode), totalsize,
++					   hur, NULL);
++		}
+ 
+ 		OBD_FREE_LARGE(hur, totalsize);
+ 
+diff --git a/drivers/staging/lustre/lustre/llite/file.c b/drivers/staging/lustre/lustre/llite/file.c
+index 174ba4e..981d3fe 100644
+--- a/drivers/staging/lustre/lustre/llite/file.c
++++ b/drivers/staging/lustre/lustre/llite/file.c
+@@ -115,7 +115,8 @@ out:
+ 
+ static int ll_close_inode_openhandle(struct obd_export *md_exp,
+ 				     struct inode *inode,
+-				     struct obd_client_handle *och)
++				     struct obd_client_handle *och,
++				     const __u64 *data_version)
+ {
+ 	struct obd_export *exp = ll_i2mdexp(inode);
+ 	struct md_op_data *op_data;
+@@ -139,6 +140,13 @@ static int ll_close_inode_openhandle(struct obd_export *md_exp,
+ 		GOTO(out, rc = -ENOMEM); // XXX We leak openhandle and request here.
+ 
+ 	ll_prepare_close(inode, op_data, och);
++	if (data_version != NULL) {
++		/* Pass in data_version implies release. */
++		op_data->op_bias |= MDS_HSM_RELEASE;
++		op_data->op_data_version = *data_version;
++		op_data->op_lease_handle = och->och_lease_handle;
++		op_data->op_attr.ia_valid |= ATTR_SIZE | ATTR_BLOCKS;
++	}
+ 	epoch_close = (op_data->op_flags & MF_EPOCH_CLOSE);
+ 	rc = md_close(md_exp, op_data, och->och_mod, &req);
+ 	if (rc == -EAGAIN) {
+@@ -167,14 +175,20 @@ static int ll_close_inode_openhandle(struct obd_export *md_exp,
+ 		spin_unlock(&lli->lli_lock);
+ 	}
+ 
+-	ll_finish_md_op_data(op_data);
+-
+ 	if (rc == 0) {
+ 		rc = ll_objects_destroy(req, inode);
+ 		if (rc)
+ 			CERROR("inode %lu ll_objects destroy: rc = %d\n",
+ 			       inode->i_ino, rc);
+ 	}
++	if (rc == 0 && op_data->op_bias & MDS_HSM_RELEASE) {
++		struct mdt_body *body;
++		body = req_capsule_server_get(&req->rq_pill, &RMF_MDT_BODY);
++		if (!(body->valid & OBD_MD_FLRELEASED))
++			rc = -EBUSY;
++	}
++
++	ll_finish_md_op_data(op_data);
+ 
+ out:
+ 	if (exp_connect_som(exp) && !epoch_close &&
+@@ -224,7 +238,7 @@ int ll_md_real_close(struct inode *inode, int flags)
+ 	if (och) { /* There might be a race and somebody have freed this och
+ 		      already */
+ 		rc = ll_close_inode_openhandle(ll_i2sbi(inode)->ll_md_exp,
+-					       inode, och);
++					       inode, och, NULL);
+ 	}
+ 
+ 	return rc;
+@@ -254,7 +268,7 @@ int ll_md_close(struct obd_export *md_exp, struct inode *inode,
+ 	}
+ 
+ 	if (fd->fd_och != NULL) {
+-		rc = ll_close_inode_openhandle(md_exp, inode, fd->fd_och);
++		rc = ll_close_inode_openhandle(md_exp, inode, fd->fd_och, NULL);
+ 		fd->fd_och = NULL;
+ 		GOTO(out, rc);
+ 	}
+@@ -718,7 +732,7 @@ static int ll_md_blocking_lease_ast(struct ldlm_lock *lock,
+  * Acquire a lease and open the file.
+  */
+ struct obd_client_handle *ll_lease_open(struct inode *inode, struct file *file,
+-					fmode_t fmode)
++					fmode_t fmode, __u64 open_flags)
+ {
+ 	struct lookup_intent it = { .it_op = IT_OPEN };
+ 	struct ll_sb_info *sbi = ll_i2sbi(inode);
+@@ -786,7 +800,8 @@ struct obd_client_handle *ll_lease_open(struct inode *inode, struct file *file,
+ 	/* To tell the MDT this openhandle is from the same owner */
+ 	op_data->op_handle = old_handle;
+ 
+-	it.it_flags = fmode | MDS_OPEN_LOCK | MDS_OPEN_BY_FID | MDS_OPEN_LEASE;
++	it.it_flags = fmode | open_flags;
++	it.it_flags |= MDS_OPEN_LOCK | MDS_OPEN_BY_FID | MDS_OPEN_LEASE;
+ 	rc = md_intent_lock(sbi->ll_md_exp, op_data, NULL, 0, &it, 0, &req,
+ 				ll_md_blocking_lease_ast,
+ 	/* LDLM_FL_NO_LRU: To not put the lease lock into LRU list, otherwise
+@@ -832,7 +847,7 @@ struct obd_client_handle *ll_lease_open(struct inode *inode, struct file *file,
+ 	return och;
+ 
+ out_close:
+-	rc2 = ll_close_inode_openhandle(sbi->ll_md_exp, inode, och);
++	rc2 = ll_close_inode_openhandle(sbi->ll_md_exp, inode, och, NULL);
+ 	if (rc2)
+ 		CERROR("Close openhandle returned %d\n", rc2);
+ 
+@@ -877,7 +892,8 @@ int ll_lease_close(struct obd_client_handle *och, struct inode *inode,
+ 	if (lease_broken != NULL)
+ 		*lease_broken = cancelled;
+ 
+-	rc = ll_close_inode_openhandle(ll_i2sbi(inode)->ll_md_exp, inode, och);
++	rc = ll_close_inode_openhandle(ll_i2sbi(inode)->ll_md_exp, inode, och,
++				       NULL);
+ 	return rc;
+ }
+ EXPORT_SYMBOL(ll_lease_close);
+@@ -1686,8 +1702,8 @@ int ll_release_openhandle(struct dentry *dentry, struct lookup_intent *it)
+ 	ll_och_fill(ll_i2sbi(inode)->ll_md_exp, it, och);
+ 
+ 	rc = ll_close_inode_openhandle(ll_i2sbi(inode)->ll_md_exp,
+-				       inode, och);
+- out:
++				       inode, och, NULL);
++out:
+ 	/* this one is in place of ll_file_open */
+ 	if (it_disposition(it, DISP_ENQ_OPEN_REF)) {
+ 		ptlrpc_req_finished(it->d.lustre.it_data);
+@@ -1892,6 +1908,53 @@ out:
  	return rc;
  }
  
--
--/**
-- * Set/update an xattr value or remove xattr using the write-through cache.
-- *
-- * Set/update the xattr value (if @valid has OBD_MD_FLXATTR) of @name to @newval
-- * or
-- * remove the xattr @name (@valid has OBD_MD_FLXATTRRM set) from @inode.
-- * @flags is either XATTR_CREATE or XATTR_REPLACE as defined by setxattr(2)
-- *
-- * \retval 0        no error occured
-- * \retval -EPROTO  network protocol error
-- * \retval -ENOMEM  not enough memory for the cache
-- * \retval -ERANGE  the buffer is not large enough
-- * \retval -ENODATA no such attr (in the removal case)
-- */
--int ll_xattr_cache_update(struct inode *inode,
--			const char *name,
--			const char *newval,
--			size_t size,
--			__u64 valid,
--			int flags)
--{
--	struct lookup_intent oit = { .it_op = IT_SETXATTR };
--	struct ll_sb_info *sbi = ll_i2sbi(inode);
--	struct ptlrpc_request *req = NULL;
--	struct ll_inode_info *lli = ll_i2info(inode);
--	struct obd_capa *oc;
--	int rc;
--
--
--
--	LASSERT(!!(valid & OBD_MD_FLXATTR) ^ !!(valid & OBD_MD_FLXATTRRM));
--
--	rc = ll_xattr_cache_refill(inode, &oit);
--	if (rc)
--		return rc;
--
--	oc = ll_mdscapa_get(inode);
--	rc = md_setxattr(sbi->ll_md_exp, ll_inode2fid(inode), oc,
--			valid | OBD_MD_FLXATTRLOCKED, name, newval,
--			size, 0, flags, ll_i2suppgid(inode), &req);
--	capa_put(oc);
--
--	if (rc) {
--		ll_intent_drop_lock(&oit);
--		GOTO(out, rc);
--	}
--
--	if (valid & OBD_MD_FLXATTR)
--		rc = ll_xattr_cache_add(&lli->lli_xattrs, name, newval, size);
--	else if (valid & OBD_MD_FLXATTRRM)
--		rc = ll_xattr_cache_del(&lli->lli_xattrs, name);
--
--	ll_intent_drop_lock(&oit);
--	GOTO(out, rc);
--out:
--	up_write(&lli->lli_xattrs_list_rwsem);
--	ptlrpc_req_finished(req);
--
--	return rc;
--}
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_internal.h b/drivers/staging/lustre/lustre/mdc/mdc_internal.h
-index 5069829..fc21777 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_internal.h
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_internal.h
-@@ -101,7 +101,7 @@ int mdc_enqueue(struct obd_export *exp, struct ldlm_enqueue_info *einfo,
- 		struct lustre_handle *lockh, void *lmm, int lmmsize,
- 		struct ptlrpc_request **req, __u64 extra_lock_flags);
++/*
++ * Trigger a HSM release request for the provided inode.
++ */
++int ll_hsm_release(struct inode *inode)
++{
++	struct cl_env_nest nest;
++	struct lu_env *env;
++	struct obd_client_handle *och = NULL;
++	__u64 data_version = 0;
++	int rc;
++
++
++	CDEBUG(D_INODE, "%s: Releasing file "DFID".\n",
++	       ll_get_fsname(inode->i_sb, NULL, 0),
++	       PFID(&ll_i2info(inode)->lli_fid));
++
++	och = ll_lease_open(inode, NULL, FMODE_WRITE, MDS_OPEN_RELEASE);
++	if (IS_ERR(och))
++		GOTO(out, rc = PTR_ERR(och));
++
++	/* Grab latest data_version and [am]time values */
++	rc = ll_data_version(inode, &data_version, 1);
++	if (rc != 0)
++		GOTO(out, rc);
++
++	env = cl_env_nested_get(&nest);
++	if (IS_ERR(env))
++		GOTO(out, rc = PTR_ERR(env));
++
++	ll_merge_lvb(env, inode);
++	cl_env_nested_put(&nest, env);
++
++	/* Release the file.
++	 * NB: lease lock handle is released in mdc_hsm_release_pack() because
++	 * we still need it to pack l_remote_handle to MDT. */
++	rc = ll_close_inode_openhandle(ll_i2sbi(inode)->ll_md_exp, inode, och,
++				       &data_version);
++	och = NULL;
++
++
++out:
++	if (och != NULL && !IS_ERR(och)) /* close the file */
++		ll_lease_close(och, inode, NULL);
++
++	return rc;
++}
++
+ struct ll_swap_stack {
+ 	struct iattr		 ia1, ia2;
+ 	__u64			 dv1, dv2;
+@@ -2318,7 +2381,7 @@ long ll_file_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		CDEBUG(D_INODE, "Set lease with mode %d\n", mode);
  
--int mdc_resource_get_unused(struct obd_export *exp, struct lu_fid *fid,
-+int mdc_resource_get_unused(struct obd_export *exp, const struct lu_fid *fid,
- 			    struct list_head *cancels, ldlm_mode_t mode,
- 			    __u64 bits);
- /* mdc/mdc_request.c */
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-index f285cbe..b5a3f26 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-@@ -379,13 +379,6 @@ mdc_intent_getxattr_pack(struct obd_export *exp,
+ 		/* apply for lease */
+-		och = ll_lease_open(inode, file, mode);
++		och = ll_lease_open(inode, file, mode, 0);
+ 		if (IS_ERR(och))
+ 			return PTR_ERR(och);
  
- 	mdc_set_capa_size(req, &RMF_CAPA1, op_data->op_capa1);
+diff --git a/drivers/staging/lustre/lustre/llite/llite_internal.h b/drivers/staging/lustre/lustre/llite/llite_internal.h
+index da56f77..06e83dd 100644
+--- a/drivers/staging/lustre/lustre/llite/llite_internal.h
++++ b/drivers/staging/lustre/lustre/llite/llite_internal.h
+@@ -787,9 +787,10 @@ int ll_get_grouplock(struct inode *inode, struct file *file, unsigned long arg);
+ int ll_put_grouplock(struct inode *inode, struct file *file, unsigned long arg);
+ int ll_fid2path(struct inode *inode, void *arg);
+ int ll_data_version(struct inode *inode, __u64 *data_version, int extent_lock);
++int ll_hsm_release(struct inode *inode);
  
--	if (it->it_op == IT_SETXATTR)
--		/* If we want to upgrade to LCK_PW, let's cancel LCK_PR
--		 * locks now. This avoids unnecessary ASTs. */
--		count = mdc_resource_get_unused(exp, &op_data->op_fid1,
--						&cancels, LCK_PW,
--						MDS_INODELOCK_XATTR);
--
- 	rc = ldlm_prep_enqueue_req(exp, req, &cancels, count);
- 	if (rc) {
- 		ptlrpc_request_free(req);
-@@ -843,7 +836,7 @@ resend:
- 			return -EOPNOTSUPP;
- 		req = mdc_intent_layout_pack(exp, it, op_data);
- 		lvb_type = LVB_T_LAYOUT;
--	} else if (it->it_op & (IT_GETXATTR | IT_SETXATTR)) {
-+	} else if (it->it_op & IT_GETXATTR) {
- 		req = mdc_intent_getxattr_pack(exp, it, op_data);
+ struct obd_client_handle *ll_lease_open(struct inode *inode, struct file *file,
+-					fmode_t mode);
++					fmode_t mode, __u64 flags);
+ int ll_lease_close(struct obd_client_handle *och, struct inode *inode,
+ 		   bool *lease_broken);
+ 
+diff --git a/drivers/staging/lustre/lustre/llite/vvp_object.c b/drivers/staging/lustre/lustre/llite/vvp_object.c
+index 33173fc..25973de 100644
+--- a/drivers/staging/lustre/lustre/llite/vvp_object.c
++++ b/drivers/staging/lustre/lustre/llite/vvp_object.c
+@@ -138,7 +138,7 @@ int vvp_conf_set(const struct lu_env *env, struct cl_object *obj,
+ 			lli->lli_layout_gen,
+ 			conf->u.coc_md->lsm->lsm_layout_gen);
+ 
+-		lli->lli_has_smd = true;
++		lli->lli_has_smd = lsm_has_objects(conf->u.coc_md->lsm);
+ 		lli->lli_layout_gen = conf->u.coc_md->lsm->lsm_layout_gen;
  	} else {
- 		LBUG();
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_reint.c b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
-index 9f3a345..1aea154 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_reint.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
-@@ -66,7 +66,7 @@ static int mdc_reint(struct ptlrpc_request *request,
- /* Find and cancel locally locks matched by inode @bits & @mode in the resource
-  * found by @fid. Found locks are added into @cancel list. Returns the amount of
-  * locks added to @cancels list. */
--int mdc_resource_get_unused(struct obd_export *exp, struct lu_fid *fid,
-+int mdc_resource_get_unused(struct obd_export *exp, const struct lu_fid *fid,
- 			    struct list_head *cancels, ldlm_mode_t mode,
- 			    __u64 bits)
- {
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-index 0b43251..c6e4fb2 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-@@ -355,10 +355,32 @@ static int mdc_xattr_common(struct obd_export *exp,const struct req_format *fmt,
- 				     input_size);
- 	}
- 
--	rc = ptlrpc_request_pack(req, LUSTRE_MDS_VERSION, opcode);
--	if (rc) {
--		ptlrpc_request_free(req);
--		return rc;
-+	/* Flush local XATTR locks to get rid of a possible cancel RPC */
-+	if (opcode == MDS_REINT && fid_is_sane(fid) &&
-+	    exp->exp_connect_data.ocd_ibits_known & MDS_INODELOCK_XATTR) {
-+		LIST_HEAD(cancels);
-+		int count;
-+
-+		/* Without that packing would fail */
-+		if (input_size == 0)
-+			req_capsule_set_size(&req->rq_pill, &RMF_EADATA,
-+					     RCL_CLIENT, 0);
-+
-+		count = mdc_resource_get_unused(exp, fid,
-+						&cancels, LCK_EX,
-+						MDS_INODELOCK_XATTR);
-+
-+		rc = mdc_prep_elc_req(exp, req, MDS_REINT, &cancels, count);
-+		if (rc) {
-+			ptlrpc_request_free(req);
-+			return rc;
-+		}
-+	} else {
-+		rc = ptlrpc_request_pack(req, LUSTRE_MDS_VERSION, opcode);
-+		if (rc) {
-+			ptlrpc_request_free(req);
-+			return rc;
-+		}
- 	}
- 
- 	if (opcode == MDS_REINT) {
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/layout.c b/drivers/staging/lustre/lustre/ptlrpc/layout.c
-index d7c427f..3aa5539 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/layout.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/layout.c
-@@ -295,7 +295,8 @@ static const struct req_msg_field *mds_reint_setxattr_client[] = {
- 	&RMF_REC_REINT,
- 	&RMF_CAPA1,
- 	&RMF_NAME,
--	&RMF_EADATA
-+	&RMF_EADATA,
-+	&RMF_DLM_REQ
+ 		CDEBUG(D_VFSTRACE, "layout lock destroyed: %u.\n",
+diff --git a/drivers/staging/lustre/lustre/lov/lov_cl_internal.h b/drivers/staging/lustre/lustre/lov/lov_cl_internal.h
+index 4276124..3965d5e 100644
+--- a/drivers/staging/lustre/lustre/lov/lov_cl_internal.h
++++ b/drivers/staging/lustre/lustre/lov/lov_cl_internal.h
+@@ -168,6 +168,22 @@ enum lov_layout_type {
+ 	LLT_NR
  };
  
- static const struct req_msg_field *mdt_swap_layouts[] = {
++static inline char *llt2str(enum lov_layout_type llt)
++{
++	switch (llt) {
++	case LLT_EMPTY:
++		return "EMPTY";
++	case LLT_RAID0:
++		return "RAID0";
++	case LLT_RELEASED:
++		return "RELEASED";
++	case LLT_NR:
++		LBUG();
++	}
++	LBUG();
++	return "";
++}
++
+ /**
+  * lov-specific file state.
+  *
+diff --git a/drivers/staging/lustre/lustre/lov/lov_object.c b/drivers/staging/lustre/lustre/lov/lov_object.c
+index cf2fa8a..df8b5b5 100644
+--- a/drivers/staging/lustre/lustre/lov/lov_object.c
++++ b/drivers/staging/lustre/lustre/lov/lov_object.c
+@@ -393,13 +393,13 @@ static int lov_print_empty(const struct lu_env *env, void *cookie,
+ static int lov_print_raid0(const struct lu_env *env, void *cookie,
+ 			   lu_printer_t p, const struct lu_object *o)
+ {
+-	struct lov_object       *lov = lu2lov(o);
+-	struct lov_layout_raid0 *r0  = lov_r0(lov);
+-	struct lov_stripe_md    *lsm = lov->lo_lsm;
+-	int i;
++	struct lov_object	*lov = lu2lov(o);
++	struct lov_layout_raid0	*r0  = lov_r0(lov);
++	struct lov_stripe_md	*lsm = lov->lo_lsm;
++	int			 i;
+ 
+-	(*p)(env, cookie, "stripes: %d, %svalid, lsm{%p 0x%08X %d %u %u}: \n",
+-		r0->lo_nr, lov->lo_layout_invalid ? "in" : "", lsm,
++	(*p)(env, cookie, "stripes: %d, %s, lsm{%p 0x%08X %d %u %u}:\n",
++		r0->lo_nr, lov->lo_layout_invalid ? "invalid" : "valid", lsm,
+ 		lsm->lsm_magic, atomic_read(&lsm->lsm_refc),
+ 		lsm->lsm_stripe_count, lsm->lsm_layout_gen);
+ 	for (i = 0; i < r0->lo_nr; ++i) {
+@@ -408,8 +408,9 @@ static int lov_print_raid0(const struct lu_env *env, void *cookie,
+ 		if (r0->lo_sub[i] != NULL) {
+ 			sub = lovsub2lu(r0->lo_sub[i]);
+ 			lu_object_print(env, cookie, p, sub);
+-		} else
++		} else {
+ 			(*p)(env, cookie, "sub %d absent\n", i);
++		}
+ 	}
+ 	return 0;
+ }
+@@ -417,7 +418,14 @@ static int lov_print_raid0(const struct lu_env *env, void *cookie,
+ static int lov_print_released(const struct lu_env *env, void *cookie,
+ 				lu_printer_t p, const struct lu_object *o)
+ {
+-	(*p)(env, cookie, "released\n");
++	struct lov_object	*lov = lu2lov(o);
++	struct lov_stripe_md	*lsm = lov->lo_lsm;
++
++	(*p)(env, cookie,
++		"released: %s, lsm{%p 0x%08X %d %u %u}:\n",
++		lov->lo_layout_invalid ? "invalid" : "valid", lsm,
++		lsm->lsm_magic, atomic_read(&lsm->lsm_refc),
++		lsm->lsm_stripe_count, lsm->lsm_layout_gen);
+ 	return 0;
+ }
+ 
+@@ -662,6 +670,10 @@ static int lov_layout_change(const struct lu_env *unused,
+ 		return PTR_ERR(env);
+ 	}
+ 
++	CDEBUG(D_INODE, DFID" from %s to %s\n",
++	       PFID(lu_object_fid(lov2lu(lov))),
++	       llt2str(lov->lo_type), llt2str(llt));
++
+ 	old_ops = &lov_dispatch[lov->lo_type];
+ 	new_ops = &lov_dispatch[llt];
+ 
+@@ -750,8 +762,9 @@ static int lov_conf_set(const struct lu_env *env, struct cl_object *obj,
+ 	if (conf->u.coc_md != NULL)
+ 		lsm = conf->u.coc_md->lsm;
+ 	if ((lsm == NULL && lov->lo_lsm == NULL) ||
+-	    (lsm != NULL && lov->lo_lsm != NULL &&
+-	     lov->lo_lsm->lsm_layout_gen == lsm->lsm_layout_gen)) {
++	    ((lsm != NULL && lov->lo_lsm != NULL) &&
++	     (lov->lo_lsm->lsm_layout_gen == lsm->lsm_layout_gen) &&
++	     (lov->lo_lsm->lsm_pattern == lsm->lsm_pattern))) {
+ 		/* same version of layout */
+ 		lov->lo_layout_invalid = false;
+ 		GOTO(out, result = 0);
+@@ -767,6 +780,8 @@ static int lov_conf_set(const struct lu_env *env, struct cl_object *obj,
+ 
+ out:
+ 	lov_conf_unlock(lov);
++	CDEBUG(D_INODE, DFID" lo_layout_invalid=%d\n",
++	       PFID(lu_object_fid(lov2lu(lov))), lov->lo_layout_invalid);
+ 	return result;
+ }
+ 
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_lib.c b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
+index 3e77020..91f6876 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_lib.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
+@@ -179,7 +179,8 @@ static __u64 mds_pack_open_flags(__u64 flags, __u32 mode)
+ 	__u64 cr_flags = (flags & (FMODE_READ | FMODE_WRITE |
+ 				   MDS_OPEN_HAS_EA | MDS_OPEN_HAS_OBJS |
+ 				   MDS_OPEN_OWNEROVERRIDE | MDS_OPEN_LOCK |
+-				   MDS_OPEN_BY_FID | MDS_OPEN_LEASE));
++				   MDS_OPEN_BY_FID | MDS_OPEN_LEASE |
++				   MDS_OPEN_RELEASE));
+ 	if (flags & O_CREAT)
+ 		cr_flags |= MDS_OPEN_CREAT;
+ 	if (flags & O_EXCL)
+@@ -490,6 +491,28 @@ void mdc_getattr_pack(struct ptlrpc_request *req, __u64 valid, int flags,
+ 	}
+ }
+ 
++static void mdc_hsm_release_pack(struct ptlrpc_request *req,
++				 struct md_op_data *op_data)
++{
++	if (op_data->op_bias & MDS_HSM_RELEASE) {
++		struct close_data *data;
++		struct ldlm_lock *lock;
++
++		data = req_capsule_client_get(&req->rq_pill, &RMF_CLOSE_DATA);
++		LASSERT(data != NULL);
++
++		lock = ldlm_handle2lock(&op_data->op_lease_handle);
++		if (lock != NULL) {
++			data->cd_handle = lock->l_remote_handle;
++			ldlm_lock_put(lock);
++		}
++		ldlm_cli_cancel(&op_data->op_lease_handle, LCF_LOCAL);
++
++		data->cd_data_version = op_data->op_data_version;
++		data->cd_fid = op_data->op_fid2;
++	}
++}
++
+ void mdc_close_pack(struct ptlrpc_request *req, struct md_op_data *op_data)
+ {
+ 	struct mdt_ioepoch *epoch;
+@@ -501,6 +524,7 @@ void mdc_close_pack(struct ptlrpc_request *req, struct md_op_data *op_data)
+ 	mdc_setattr_pack_rec(rec, op_data);
+ 	mdc_pack_capa(req, &RMF_CAPA1, op_data->op_capa1);
+ 	mdc_ioepoch_pack(epoch, op_data);
++	mdc_hsm_release_pack(req, op_data);
+ }
+ 
+ static int mdc_req_avail(struct client_obd *cli, struct mdc_cache_waiter *mcw)
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
+index 8373778..0b43251 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
+@@ -800,10 +800,27 @@ int mdc_close(struct obd_export *exp, struct md_op_data *op_data,
+ {
+ 	struct obd_device     *obd = class_exp2obd(exp);
+ 	struct ptlrpc_request *req;
+-	int		    rc;
++	struct req_format     *req_fmt;
++	int                    rc;
++	int		       saved_rc = 0;
++
++
++	req_fmt = &RQF_MDS_CLOSE;
++	if (op_data->op_bias & MDS_HSM_RELEASE) {
++		req_fmt = &RQF_MDS_RELEASE_CLOSE;
++
++		/* allocate a FID for volatile file */
++		rc = mdc_fid_alloc(exp, &op_data->op_fid2, op_data);
++		if (rc < 0) {
++			CERROR("%s: "DFID" failed to allocate FID: %d\n",
++			       obd->obd_name, PFID(&op_data->op_fid1), rc);
++			/* save the errcode and proceed to close */
++			saved_rc = rc;
++		}
++	}
+ 
+ 	*request = NULL;
+-	req = ptlrpc_request_alloc(class_exp2cliimp(exp), &RQF_MDS_CLOSE);
++	req = ptlrpc_request_alloc(class_exp2cliimp(exp), req_fmt);
+ 	if (req == NULL)
+ 		return -ENOMEM;
+ 
+@@ -893,7 +910,7 @@ int mdc_close(struct obd_export *exp, struct md_op_data *op_data,
+ 	}
+ 	*request = req;
+ 	mdc_close_handle_reply(req, op_data, rc);
+-	return rc;
++	return rc < 0 ? rc : saved_rc;
+ }
+ 
+ int mdc_done_writing(struct obd_export *exp, struct md_op_data *op_data,
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/layout.c b/drivers/staging/lustre/lustre/ptlrpc/layout.c
+index e7524f9..1db01a4 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/layout.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/layout.c
+@@ -145,6 +145,14 @@ static const struct req_msg_field *mdt_close_client[] = {
+ 	&RMF_CAPA1
+ };
+ 
++static const struct req_msg_field *mdt_release_close_client[] = {
++	&RMF_PTLRPC_BODY,
++	&RMF_MDT_EPOCH,
++	&RMF_REC_REINT,
++	&RMF_CAPA1,
++	&RMF_CLOSE_DATA
++};
++
+ static const struct req_msg_field *obd_statfs_server[] = {
+ 	&RMF_PTLRPC_BODY,
+ 	&RMF_OBD_STATFS
+@@ -666,6 +674,7 @@ static struct req_format *req_formats[] = {
+ 	&RQF_MDS_GETXATTR,
+ 	&RQF_MDS_SYNC,
+ 	&RQF_MDS_CLOSE,
++	&RQF_MDS_RELEASE_CLOSE,
+ 	&RQF_MDS_PIN,
+ 	&RQF_MDS_UNPIN,
+ 	&RQF_MDS_READPAGE,
+@@ -885,6 +894,11 @@ struct req_msg_field RMF_PTLRPC_BODY =
+ 		    sizeof(struct ptlrpc_body), lustre_swab_ptlrpc_body, NULL);
+ EXPORT_SYMBOL(RMF_PTLRPC_BODY);
+ 
++struct req_msg_field RMF_CLOSE_DATA =
++	DEFINE_MSGF("data_version", 0,
++		    sizeof(struct close_data), lustre_swab_close_data, NULL);
++EXPORT_SYMBOL(RMF_CLOSE_DATA);
++
+ struct req_msg_field RMF_OBD_STATFS =
+ 	DEFINE_MSGF("obd_statfs", 0,
+ 		    sizeof(struct obd_statfs), lustre_swab_obd_statfs, NULL);
+@@ -1412,6 +1426,11 @@ struct req_format RQF_MDS_CLOSE =
+ 			mdt_close_client, mds_last_unlink_server);
+ EXPORT_SYMBOL(RQF_MDS_CLOSE);
+ 
++struct req_format RQF_MDS_RELEASE_CLOSE =
++	DEFINE_REQ_FMT0("MDS_CLOSE",
++			mdt_release_close_client, mds_last_unlink_server);
++EXPORT_SYMBOL(RQF_MDS_RELEASE_CLOSE);
++
+ struct req_format RQF_MDS_PIN =
+ 	DEFINE_REQ_FMT0("MDS_PIN",
+ 			mdt_body_capa, mdt_body_only);
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/pack_generic.c b/drivers/staging/lustre/lustre/ptlrpc/pack_generic.c
+index 8ec08d9..cc978d7 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/pack_generic.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/pack_generic.c
+@@ -2565,3 +2565,10 @@ void lustre_swab_swap_layouts(struct mdc_swap_layouts *msl)
+ 	__swab64s(&msl->msl_flags);
+ }
+ EXPORT_SYMBOL(lustre_swab_swap_layouts);
++
++void lustre_swab_close_data(struct close_data *cd)
++{
++	lustre_swab_lu_fid(&cd->cd_fid);
++	__swab64s(&cd->cd_data_version);
++}
++EXPORT_SYMBOL(lustre_swab_close_data);
 -- 
 1.7.9.5
 
