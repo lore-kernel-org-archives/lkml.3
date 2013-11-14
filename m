@@ -1,378 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab3KNCOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 21:14:43 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:48862 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab3KNCOZ (ORCPT
+	id S1752712Ab3KNCO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 21:14:56 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:18036 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752632Ab3KNCOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 21:14:25 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3 2/3] OF: Introduce DT overlay support.
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <ED51965C-6EC8-48AE-A59C-CD09FFD57731@antoniou-consulting.com>
-References: <1383923170-24914-1-git-send-email-panto@antoniou-consulting.com> <1383923170-24914-3-git-send-email-panto@antoniou-consulting.com> <20131111184245.D569DC4234A@trevor.secretlab.ca> <ED51965C-6EC8-48AE-A59C-CD09FFD57731@antoniou-consulting.com>
-Date: Thu, 14 Nov 2013 10:31:24 +0900
-Message-Id: <20131114013124.7DD0AC404DF@trevor.secretlab.ca>
+	Wed, 13 Nov 2013 21:14:47 -0500
+Date: Wed, 13 Nov 2013 21:14:30 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Miller <davem@davemloft.net>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Clark Williams <williams@redhat.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+Subject: [BUG] stable v3.10.16+ introduced by "ip6tnl: allow to use rtnl ops
+ on fb tunnel"
+Message-ID: <20131113211430.1ad3bb7d@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Nov 2013 10:30:37 +0100, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> Hi Grant,
-> 
-> On Nov 11, 2013, at 7:42 PM, Grant Likely wrote:
-> 
-> > On Fri,  8 Nov 2013 17:06:09 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> >> Introduce DT overlay support.
-> >> Using this functionality it is possible to dynamically overlay a part of
-> >> the kernel's tree with another tree that's been dynamically loaded.
-> >> It is also possible to remove node and properties.
-> >> 
-> >> Note that the I2C client devices are 'special', as in they're not platform
-> >> devices. They need to be registered with an I2C specific method.
-> >> 
-> >> In general I2C is just no good platform device citizen and needs
-> >> special casing.
-> >> 
-> >> PCI is another special case where PCI device insertion and removal
-> >> is implemented in the PCI subsystem.
-> > 
-> > Actually. I2C isn't special in this regard; SPI, MDIO, PCI, USB are all
-> > in the same boat. platform_device just happens to be able to make a few
-> > assumptions. If anything, platform_device is the 'special' one. :-)
-> > 
-> 
-> I'm of the opinion that 'platform_device' shouldn't exist at all btw :)
-> Most of it's functionality can pretty easily be subsumed by device proper
-> and the world would be a better place :)
+In our test labs we discovered a bug with the latest 3.10-rt kernel.
+When investigating, I found that it was actually a bug in the 3.10.18
+kernel that we based on. With that, I bisected it down to this commit:
 
-I'm fine for merging some/all of the platform_device fields into struct
-device. There are a few things, like resources, which would probably be
-useful to have common on all struct device variants. However,
-platform_device is far more about matching drivers to devices. Even if
-all of platform_device went into struct device, there would still need
-to be the platform_bus_type as the collection point for the device
-drivers.
+commit 506cdb8909a1a739c7585c680c6bd4b3d1247564
+Author: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Date:   Tue Oct 1 18:05:00 2013 +0200
 
-> > In all cases it must be the underlying subsystem that should be
-> > responsible for creation/removal of devices described in the overlay.
-> > Sometimes that will extend right down into the individual bus device
-> > drivers, but it is better if that can be avoided.
-> > 
-> 
-> Yes, that's the right way to handle this, but we're talking about 
-> serious modification in almost every kind of device core.
-> 
-> Just getting the basic concept of overlays in is hard without having
-> to tackle something like this.
-> 
-> In the future, I'd be ecstatic if we could get a per device class
-> filter, but it's nothing we can fix right now.
-> 
-> IMHO of course.
+    ip6tnl: allow to use rtnl ops on fb tunnel
+    
+    [ Upstream commit bb8140947a247b9aa15652cc24dc555ebb0b64b0 ]
+    
+    rtnl ops where introduced by c075b13098b3 ("ip6tnl: advertise tunnel param
+    rtnl"), but I forget to assign rtnl ops to fb tunnels.
+    
+    Now that it is done, we must remove the explicit call to
+    unregister_netdevice_queue(), because  the fallback tunnel is added to the
+    in ip6_tnl_destroy_tunnels() when checking rtnl_link_ops of all netdevices
+    is valid since commit 0bd8762824e7 ("ip6tnl: add x-netns support")).
 
-It's fine to limit yourself to only platform_devices and i2c for now,
-but that doesn't give license to do the wrong thing with the
-implementation. The subsystem modifications really shouldn't be very
-invasive. It will need a per-subsystem notifier callback to deal with
-the add/remove events, and it will require the subsystem to maintain a
-list of parent bus nodes that it cares about and should create children
-for.
 
-Doing it with a central function like this patch does is not a good
-approach at all.
+The bug we see is caused by simply loading and unloading the ip6_tunnel
+module.
 
-> 
-> >> 
-> >> Bug fixes & PCI support by Guenter Roeck <groeck@juniper.net>
-> >> 
-> 
-> [snip]
-> 
-> >> +so a bar platform device will be registered and if a matching device driver
-> >> +is loaded the device will be created as expected.
-> >> +
-> >> +Overlay in-kernel API
-> >> +---------------------
-> >> +
-> >> +The steps typically required to get an overlay to work are as follows:
-> >> +
-> >> +1. Use of_build_overlay_info() to create an array of initialized and
-> >> +ready to use of_overlay_info structures.
-> >> +2. Call of_overlay() to apply the overlays declared in the array.
-> >> +3. If the overlay needs to be removed, call of_overlay_revert().
-> >> +4. Finally release the memory taken by the overlay info array by
-> >> +of_free_overlay_info().
-> > 
-> > Make of_overlay_info a kobject and use a release method to free it when
-> > all users go away. Freeing directly is a dangerous thing to do.
-> > 
-> 
-> It's more dangerous than even that. We also have the mess with the way
-> unflattening works (properties point directly to binary blob area
-> with no way to free per property data). In general freeing/releasing
-> device tree nodes is tricky on a good day.
+	modprobe ip6_tunnel; rmmod ip6_tunnel
 
-Repeating from my comment on the previous email, don't throw away the
-blob. There is no need and it makes your job harder.
+Which causes the following oops:
 
-> 
-> I agree we have to move to a kobject model eventually. 
-> 
-> >> +
-> >> +/**
-> >> + * of_build_overlay_info	- Build an overlay info array
-> >> + * @tree:	Device node containing all the overlays
-> >> + * @cntp:	Pointer to where the overlay info count will be help
-> >> + * @ovinfop:	Pointer to the pointer of an overlay info structure.
-> >> + *
-> >> + * Helper function that given a tree containing overlay information,
-> >> + * allocates and builds an overlay info array containing it, ready
-> >> + * for use using of_overlay.
-> >> + *
-> >> + * Returns 0 on success with the @cntp @ovinfop pointers valid,
-> >> + * while on error a negative error value is returned.
-> >> + */
-> >> +int of_build_overlay_info(struct device_node *tree,
-> >> +		int *cntp, struct of_overlay_info **ovinfop);
-> >> +
-> >> +/**
-> >> + * of_free_overlay_info	- Free an overlay info array
-> >> + * @count:	Number of of_overlay_info's
-> >> + * @ovinfo_tab:	Array of overlay_info's to free
-> >> + *
-> >> + * Releases the memory of a previously allocate ovinfo array
-> >> + * by of_build_overlay_info.
-> >> + * Returns 0, or an error if the arguments are bogus.
-> >> + */
-> >> +int of_free_overlay_info(int count, struct of_overlay_info *ovinfo_tab);
-> >> +
-> >> +/**
-> >> + * of_overlay	- Apply @count overlays pointed at by @ovinfo_tab
-> >> + * @count:	Number of of_overlay_info's
-> >> + * @ovinfo_tab:	Array of overlay_info's to apply
-> >> + *
-> >> + * Applies the overlays given, while handling all error conditions
-> >> + * appropriately. Either the operation succeeds, or if it fails the
-> >> + * live tree is reverted to the state before the attempt.
-> >> + * Returns 0, or an error if the overlay attempt failed.
-> >> + */
-> >> +int of_overlay(int count, struct of_overlay_info *ovinfo_tab);
-> >> +
-> >> +/**
-> >> + * of_overlay_revert	- Revert a previously applied overlay
-> >> + * @count:	Number of of_overlay_info's
-> >> + * @ovinfo_tab:	Array of overlay_info's to apply
-> >> + *
-> >> + * Revert a previous overlay. The state of the live tree
-> >> + * is reverted to the one before the overlay.
-> >> + * Returns 0, or an error if the overlay table is not given.
-> >> + */
-> >> +int of_overlay_revert(int count, struct of_overlay_info *ovinfo_tab);
-> >> +
-> >> +Overlay DTS Format
-> >> +------------------
-> >> +
-> >> +The DTS of an overlay should have the following format:
-> >> +
-> >> +{
-> >> +	/* ignored properties by the overlay */
-> >> +
-> >> +	fragment@0 {	/* first child node */
-> >> +		target=<phandle>;	/* target of the overlay */
-> >> +		__overlay__ {
-> >> +			property-a;	/* add property-a to the target */
-> >> +			-property-b;	/* remove property-b from target */
-> >> +			node-a {	/* add to an existing, or create a node-a */
-> >> +				...
-> >> +			};
-> >> +			-node-b {	/* remove an existing node-b */
-> >> +				...
-> >> +			};
-> > 
-> > Are the node & property removals reversable? What about property
-> > modifications? If they are not, then it would be better to not support
-> > removals at all for now. Otherwise we'll end up with overlays that
-> > cannot be removed and I don't want to inadvertently put users into that
-> > situation.
-> 
-> Yes, everything is reversible. Doesn't mean that the drivers/driver core
-> can handle it. Using overlays is an excellent way to trigger bugs in
-> device removal as I've found out :)
+[   43.423028] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+[   43.424010] IP: [<ffffffffa0534f51>] ip6_tnl_exit_net+0x71/0x93 [ip6_tunnel]
+[   43.424010] PGD 776f4067 PUD 7810a067 PMD 0 
+[   43.424010] Oops: 0000 [#1] PREEMPT SMP 
+[   43.424010] Modules linked in: ip6_tunnel(-) tunnel6 ipt_MASQUERADE sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables uinput snd_hda_codec_idt kvm_i
+ntel snd_hda_intel snd_hda_codec kvm snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer snd shpchp i2c_i801 soundcore microcode pata_acpi firewire_ohci firewire_core
+ crc_itu_t ata_generic i915 drm_kms_helper drm i2c_algo_bit i2c_core video
+[   43.424010] CPU: 1 PID: 2731 Comm: rmmod Not tainted 3.10.15-test+ #105
+[   43.424010] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+[   43.424010] task: ffff880078b01460 ti: ffff880077bf4000 task.ti: ffff880077bf4000
+[   43.424010] RIP: 0010:[<ffffffffa0534f51>]  [<ffffffffa0534f51>] ip6_tnl_exit_net+0x71/0x93 [ip6_tunnel]
+[   43.424010] RSP: 0018:ffff880077bf5e08  EFLAGS: 00010246
+[   43.424010] RAX: 0000000000000000 RBX: 0000000000000100 RCX: 0000000000000003
+[   43.424010] RDX: ffff88007d480000 RSI: ffff880077bf5e08 RDI: ffff880077bf4000
+[   43.424010] RBP: ffff880077bf5e38 R08: ffff880077bf5d68 R09: ffffffff81aa20d0
+[   43.424010] R10: ffffffff81aa20d0 R11: ffffffff81aa20d0 R12: 0000000000000000
+[   43.424010] R13: ffff88007794b400 R14: ffff880077bf5e08 R15: 0000000000000001
+[   43.424010] FS:  00007fbc2ee27700(0000) GS:ffff88007d480000(0000) knlGS:0000000000000000
+[   43.424010] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   43.424010] CR2: 0000000000000008 CR3: 0000000077bd0000 CR4: 00000000000007e0
+[   43.424010] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   43.424010] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   43.424010] Stack:
+[   43.424010]  ffff880077bf5e08 ffff880077bf5e08 ffffffffa0536f50 ffffffff81aa0900
+[   43.424010]  ffff880077bf5e78 0000000000000000 ffff880077bf5e68 ffffffff81408df4
+[   43.424010]  0000000000000000 ffffffffa0536f50 ffffffff81aa1820 ffff880077bf5e78
+[   43.424010] Call Trace:
+[   43.424010]  [<ffffffff81408df4>] ops_exit_list+0x27/0x50
+[   43.424010]  [<ffffffff814090ba>] unregister_pernet_operations+0x61/0x93
+[   43.424010]  [<ffffffff81409122>] unregister_pernet_device+0x36/0x47
+[   43.424010]  [<ffffffffa05367d4>] ip6_tunnel_cleanup+0x70/0x72 [ip6_tunnel]
+[   43.424010]  [<ffffffff81083ef5>] SyS_delete_module+0x20b/0x27d
+[   43.424010]  [<ffffffff81244cae>] ? trace_hardirqs_on_thunk+0x3a/0x3c
+[   43.424010]  [<ffffffff81503902>] system_call_fastpath+0x16/0x1b
+[   43.424010] Code: 24 08 4c 89 f6 e8 8c 88 ed e0 4d 8b 24 24 4d 85 e4 75 ea 48 83 c3 08 48 81 fb 00 01 00 00 75 d6 49 8b 85 08 01 00 00 48 8d 75 d0 <48> 8b 78 08 e8 62 88 ed e0 48 8d 7d d0 e8 84 77 ed e0 e8 90 62 
+[   43.424010] RIP  [<ffffffffa0534f51>] ip6_tnl_exit_net+0x71/0x93 [ip6_tunnel]
+[   43.424010]  RSP <ffff880077bf5e08>
+[   43.424010] CR2: 0000000000000008
+[   43.708059] ---[ end trace ea2c125633de7c64 ]---
 
-:)
 
-> 
-> > 
-> >> +		};
-> >> +	}
-> >> +	fragment@1 {	/* second child node */
-> >> +		...
-> >> +	};
-> >> +	/* more fragments follow */
-> >> +}
-> 
-> [snip]
-> 
-> >> +
-> >> +static int of_overlay_device_entry_change(struct of_overlay_info *ovinfo,
-> >> +		struct of_overlay_device_entry *de, int revert)
-> >> +{
-> > 
-> > I've got big problems here. This is entirely the wrong place to create
-> > and delete devices. Each subsystem needs to create and remove its own
-> > device types. To begin with, only the subsystem knows which busses are
-> > appropriate for creating child devices.
-> > 
-> 
-> It was the best I could under the circumstances, without having to touch
-> every subsystem.
-> 
-> 
-> > Second, it is incorrect to create a platform_device for every single
-> > node by default. Some nodes aren't devices at all. Just looking for a
-> > compatible property isn't sufficient either.
-> > 
-> 
-> Yep. 
-> 
-> > The solution here is for each subsystem to have it's own notifier, and
-> > only create a child device if the changed node has a parent the
-> > subsystem already knows about (because it's already populated device
-> > tree devices from that parent). This is also true for platform_devices.
-> > 
-> > Finally, sometimes the tips of the tree will get populated, but not
-> > until after some parent nodes have been delt with. In that case the
-> > creation of devices needs to be deferred back to the driver for the
-> > parent bus.
-> > 
-> 
-> Well, any solution that requires each and every subsystem to do dynamic
-> child insertions/removal is going to be hard sell.
+(gdb) li *ip6_tnl_exit_net+0x71
+0xf51 is in ip6_tnl_exit_net (/home/rostedt/work/git/linux-trace.git/net/ipv6/ip6_tunnel.c:1715).
+1710                            t = rtnl_dereference(t->next);
+1711                    }
+1712            }
+1713
+1714            t = rtnl_dereference(ip6n->tnls_wc[0]);
+1715            unregister_netdevice_queue(t->dev, &list);
+1716            unregister_netdevice_many(&list);
+1717    }
+1718
+1719    static int __net_init ip6_tnl_init_net(struct net *net)
 
-They have to do it /anyway/! How many subsystems are we talking about?
-SPI, I2C, platform_device (and amba_device). Maybe MDIO. To get to a
-useful subset it isn't very many targets. SPI and I2C will probably be
-receptive, so no problem there. The maintainer of drivers/of/platform.c
-is friendly too. :-) Haven't asked about MDIO.
+Thus, this got called with ip6n->tnsl_wc[0] as NULL.
 
-> 
-> What about something more gentle?
-> 
-> For example, I know that most of the cases fall into a couple of set
-> patterns for my case
-> 
-> a) Target is the ocp node (on chip peripheral node) and results in
-> the creation of platform devices under that node.
+I ran the following trace command on this:
 
-No, I'm going to be hard-line on this. The code needs to be very
-explicit about which nodes cause devices to be created for nodes. It
-cannot be based on some arbitrary heuristics.
+# modprobe ip6_tunnel
+# trace-cmd start -p function_graph -g SyS_delete_module
+# rmmod ip6_tunnel
 
-I'm not asking you to do something hard though. For the platform devices
-I'd be fine with of_platform_populate() marking some kind of flag on
-struct device_node that says children of it should be used to create
-more platform_devices.
+and traced the flow of functions that lead up to the crash: Full dump
+can be found here: http://rostedt.homelinux.com/private/ip6_tunnel.trace
 
-> b) Target is one of the disabled devices under the ocp node
-> and the status property is modified, plus optional nodes are
-> added that result in the creation of more devices under the bus this
-> node controls. This is the case of enabled an I2C/SPI bus and inserting
-> children devices.
 
-Close, but again it has to match with what I've said above. The various
-subsystems need to keep track of which nodes describe a subsystem bus
-and only create devices on those nodes. It would be valuable to have a
-simple library for keeping track of that information which is usable by
-all subsystems, but it still needs to be under the control of the
-subsystem.
+ip6_tnl_dev_uninit() which is called by rollback_registered_many() sets
+tnls_wc[0] to NULL. Later unregistered_pernet_device() gets called,
+which eventually calls ip6_tnl_exit_net() which references the
+tnls_wc[0] unconditionally. This looks to be where the bug happens.
 
-> 
-> Perhaps the trick is having hooks about what to do in case certain
-> nodes are modified in a certain way, i.e. a notifier on the ocp node
-> would 'catch' those. The problem is a having a way to present this
-> information to the notifier in a way that's easy to be handled.
-> 
-> What do you think?
+Finally, after digging through all this, I looked at the original
+commit that was backported to 3.10 and noticed that the backport
+doesn't include the entire change. It also has:
 
-It would probably work to have a single notifier for each entire
-subsystem instead of a separate notifier for each and every bus node.
-Once a subsystem marks a node as interesting, it is quite simple for a
-generic subsystem notifier callback to decide whether to create devices
-based on it. If done right, it should work without any changes to the
-SPI/I2C/etc bus drivers.
++++ b/net/ipv6/ip6_tunnel.c
+@@ -1731,8 +1731,6 @@ static void __net_exit ip6_tnl_destroy_tunnels(struct ip
+                }
+        }
+ 
+-       t = rtnl_dereference(ip6n->tnls_wc[0]);
+-       unregister_netdevice_queue(t->dev, &list);
+        unregister_netdevice_many(&list);
+ }
+ 
 
-> 
-> >> +
-> >> +/**
-> >> + * Revert one overlay
-> >> + * Either due to an error, or due to normal overlay removal.
-> >> + * Using the log entries, we revert any change to the live tree.
-> >> + * In the same manner, using the device entries we enable/disable
-> >> + * the platform devices appropriately.
-> >> + */
-> >> +static void of_overlay_revert_one(struct of_overlay_info *ovinfo)
-> >> +{
-> >> +	struct of_overlay_device_entry *de, *den;
-> >> +	struct of_overlay_log_entry *le, *len;
-> >> +	struct property *prop, **propp;
-> >> +	int ret;
-> >> +	unsigned long flags;
-> >> +
-> >> +	if (!ovinfo || !ovinfo->target || !ovinfo->overlay)
-> >> +		return;
-> >> +
-> >> +	pr_debug("%s: Reverting overlay on '%s'\n", __func__,
-> >> +			ovinfo->target->full_name);
-> >> +
-> >> +	/* overlay applied correctly, now create/destroy pdevs */
-> >> +	list_for_each_entry_safe_reverse(de, den, &ovinfo->de_list, node) {
-> >> +		of_overlay_device_entry_change(ovinfo, de, 1);
-> >> +		of_node_put(de->np);
-> >> +		list_del(&de->node);
-> >> +		kfree(de);
-> >> +	}
-> > 
-> > Can overlays interact in bad ways? If overlay 1 is installed before
-> > overlay 2, what happens if overlay 1 is removed?
-> > 
-> 
-> Yes, they can. It is not something easily fixed; the proper way would
-> be to calculate overlay intersection points and refuse to unload.
+Which, when applied to 3.10.18, fixes the bug. Was there a reason that
+this part of the commit wasn't backported? or was this just an oversight?
 
-I think this is important. If it cannot be solved immediately, then the
-kernel should enforce overlays always get removed in the reverse order
-that they were added. There may be use-cases that don't like it, but it
-is safe.
-
-> 
-> > Okay, my brain is tired. It's a complicated series and I don't see any
-> > obvious bits that can be split off and be independently useful. I would
-> > *really* like to see some test cases for this functionality. It's
-> > complicated enough to make me quite nervous.... in fact I would really
-> > like to see drivers/of/selftest.c become an early user of overlays. That
-> > would make the DT selftests executable on any platform.
-> > 
-> 
-> OK, I see your point. My brain is tired too, and I'm on travel too for
-> this week and the next. I'll see what I can come up with.
-
-Enjoy your trip.
-
-g.
+-- Steve
