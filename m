@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758165Ab3KNWO4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 17:14:56 -0500
-Received: from georges.telenet-ops.be ([195.130.137.68]:48002 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755273Ab3KNWOt (ORCPT
+	id S1758239Ab3KNWPb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 17:15:31 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:53406 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755273Ab3KNWPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 17:14:49 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jonas Bonn <jonas@southpole.se>, linux-kbuild@vger.kernel.org
-Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] [RFC] initramfs: Prefix simple paths with $(srctree)
-Date: Thu, 14 Nov 2013 23:14:43 +0100
-Message-Id: <1384467283-14806-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 14 Nov 2013 17:15:24 -0500
+Date: Thu, 14 Nov 2013 17:15:21 -0500 (EST)
+Message-Id: <20131114.171521.371758595511020967.davem@davemloft.net>
+To: linux@hahnjo.de
+Cc: jcliburn@gmail.com, chris.snook@gmail.com, johannes@sipsolutions.net,
+        wangyijing@huawei.com, maarten.lankhorst@canonical.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] alx: Reset phy speed after resume
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1384445773.29057.5.camel@localhost.tld>
+References: <1384445773.29057.5.camel@localhost.tld>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 14 Nov 2013 14:15:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_INITRAMFS_SOURCE contains relative paths inside the source tree
-(e.g. in a defconfig pointing to arch-specific files), the corresponding
-file system entries are not found when building outside the source tree.
+From: hahnjo <linux@hahnjo.de>
+Date: Thu, 14 Nov 2013 17:16:13 +0100
 
-Prefix all simple paths (paths not starting with "/", "../", or "./") with
-$(srctree) to fix this.
+> From 27744b24f9291782c1342dbd6cac511e68da907c Mon Sep 17 00:00:00 2001
+> From: hahnjo <hahnjo@hahnjo.de>
+> Date: Tue, 12 Nov 2013 18:19:24 +0100
+> Subject: [PATCH] alx: Reset phy speed after resume
+> 
+> This fixes bug 62491 (https://bugzilla.kernel.org/show_bug.cgi?id=62491).
+> After resuming some users got the following error flooding the kernel log:
+> alx 0000:02:00.0: invalid PHY speed/duplex: 0xffff
+> 
+> Signed-off-by: Jonas Hahnfeld <linux@hahnjo.de>
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-This issue happens when building an OpenRISC defconfig from
-git://openrisc.net/jonas/linux. Mainline doesn't have the OpenRISC
-initramfs.
-
-Questions:
-  1. Is this an acceptable solution for mainline?
-  2. My make-foo is limited. is there a better way to accomplish this, than
-     by prefixing all paths and removing the prefixes again where they're
-     not wanted?
-   
- usr/Makefile |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/usr/Makefile b/usr/Makefile
-index e767f019accf..2170c38936ce 100644
---- a/usr/Makefile
-+++ b/usr/Makefile
-@@ -41,6 +41,12 @@ hostprogs-y := gen_init_cpio
- initramfs   := $(CONFIG_SHELL) $(srctree)/scripts/gen_initramfs_list.sh
- ramfs-input := $(if $(filter-out "",$(CONFIG_INITRAMFS_SOURCE)), \
- 			$(shell echo $(CONFIG_INITRAMFS_SOURCE)),-d)
-+ifneq ("$(ramfs-input)", "-d")
-+ramfs-input := $(patsubst %, $(srctree)/%, $(ramfs-input))
-+ramfs-input := $(patsubst $(srctree)//%, /%, $(ramfs-input))
-+ramfs-input := $(patsubst $(srctree)/../%, ../%, $(ramfs-input))
-+ramfs-input := $(patsubst $(srctree)/./%, ./%, $(ramfs-input))
-+endif
- ramfs-args  := \
-         $(if $(CONFIG_INITRAMFS_ROOT_UID), -u $(CONFIG_INITRAMFS_ROOT_UID)) \
-         $(if $(CONFIG_INITRAMFS_ROOT_GID), -g $(CONFIG_INITRAMFS_ROOT_GID))
--- 
-1.7.9.5
-
+Applied, thanks.
