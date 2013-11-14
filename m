@@ -1,36 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab3KNN17 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 08:27:59 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:34197 "EHLO multi.imgtec.com"
+	id S1753900Ab3KNNbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 08:31:39 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:45529 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753462Ab3KNN1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 08:27:53 -0500
-Message-ID: <5284CFCB.8040009@imgtec.com>
-Date: Thu, 14 Nov 2013 07:27:39 -0600
-From: "Steven J. Hill" <Steven.Hill@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751181Ab3KNNbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 08:31:31 -0500
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <olof@lixom.net>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ian.campbell@citrix.com>,
+        <rob.herring@calxeda.com>, <linux@roeck-us.net>, <rui.zhang@intel.com>
+CC: <wni@nvidia.com>, <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: [PATCHv6 20/20] MAINTAINERS: add thermal bindings entry in thermal domain
+Date: Thu, 14 Nov 2013 09:30:10 -0400
+Message-ID: <1384435810-8897-1-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+In-Reply-To: <20131113094232.GB21713@e106331-lin.cambridge.arm.com>
+References: <20131113094232.GB21713@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-CC: LMOL <linux-mips@linux-mips.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Release of Linux MTI-3.10-LTS kernel.
-References: <528246BA.10607@imgtec.com> <20131112210234.GB30010@blackmetal.musicnaut.iki.fi>
-In-Reply-To: <20131112210234.GB30010@blackmetal.musicnaut.iki.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.159.180]
-X-SEF-Processed: 7_3_0_01192__2013_11_14_13_27_46
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Aaro.
+After discussion and agreement of thermal device tree bindings,
+it is desirable to properly maintain thermal bindings for
+existing and upcoming devices.
 
-I wanted to apologize for my earlier email that could have been much 
-shorter without being snarky. In short, we have a long test cycle and 
-that we are tracking LTS support kernels and will be doing regular 
-updates. A few months ago 3.10 was chosen as the next LTS version. We 
-decided for stability and continued bug fixes to go with it.
+As original author of thermal device tree bindings, I am
+volunteering to maintain them. This then adds and entry
+for device tree bindings under thermal domain.
 
-Steve
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+---
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3438384..57fbf81 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -8411,6 +8411,7 @@ S:      Supported
+ F:      drivers/thermal/
+ F:      include/linux/thermal.h
+ F:      include/linux/cpu_cooling.h
++F:      Documentation/devicetree/bindings/thermal/
+ 
+ THINGM BLINK(1) USB RGB LED DRIVER
+ M:	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+-- 
+1.8.2.1.342.gfa7285d
 
