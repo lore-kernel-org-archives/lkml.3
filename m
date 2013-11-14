@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab3KNXQB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 18:16:01 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:61235 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427Ab3KNXPx (ORCPT
+	id S1752966Ab3KNXTJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 18:19:09 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:53716 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab3KNXTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 18:15:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <1906951.EFsdgbeaob@flatron>
-References: <1378898048-25205-1-git-send-email-yadi.brar@samsung.com>
-	<CAKew6eUK9ZtoVgVu_b13Bn20iMNWzHnWjSHMjxD1Y+zDtvoCWw@mail.gmail.com>
-	<1906951.EFsdgbeaob@flatron>
-Date: Fri, 15 Nov 2013 08:15:52 +0900
-Message-ID: <CAKew6eVJiXNWpyE8E69MminsHjr+ip8syX6kx8wuY3R78QW=iA@mail.gmail.com>
-Subject: Re: [RFC 0/4] Add basic support for ASV
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 14 Nov 2013 18:19:07 -0500
+Date: Thu, 14 Nov 2013 18:19:04 -0500 (EST)
+Message-Id: <20131114.181904.1534883503140584652.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 14 Nov 2013 15:19:06 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding Sachin]
 
-Hi Tomasz,
+There is a minor conflict with patches Andrew submitted to you today,
+one of his patches is fixing the error handling in the sparc64 page
+table SLAB handling, whereas the 47-bit physical address support patch
+series in this pull request deletes all of the sparc64 page table SLAB
+code entirely.
 
-On Fri, Nov 15, 2013 at 12:06 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Hi Yadwinder,
->
-> On Monday 11 of November 2013 23:27:08 Yadwinder Singh Brar wrote:
->> gentle ping for suggestions/reviews ..
->
-> Hmm, I must have somehow missed this series when you orignally sent it.
-> Can I ask you to resend it, as I don't have it in my e-mail client archive
-> any longer?
->
-> While at it, I would also ask you to add my private e-mail address
-> (this one) and linux-pm mailing list to Cc list.
->
+So just take the removal in your merge conflict resolution.
 
-hmm, I am on travel still for few more days, so it may be difficult for me
-to resend it quickly. But I think Sachin may help me here.
-Sachin can you please rebase and repost it ?
+1) Implement support for up to 47-bit physical addresses on sparc64.
 
-Regards,
-Yadwinder
+2) Support HAVE_CONTEXT_TRACKING on sparc64, from Kirill Tkhai.
+
+3) Fix Simba bridge window calculations, from Kjetil Oftedal.
+
+Please pull, thanks a lot!
+
+The following changes since commit 10d0c9705e80bbd3d587c5fad24599aabaca6688:
+
+  Merge tag 'devicetree-for-3.13' of git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux (2013-11-12 16:52:17 +0900)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-next.git master
+
+for you to fetch changes up to 812cb83a56a908729c453a7db3fb2c262119bc9d:
+
+  sparc64: Implement HAVE_CONTEXT_TRACKING (2013-11-14 14:57:21 -0800)
+
+----------------------------------------------------------------
+David S. Miller (9):
+      sparc64: Clean up 64-bit mmap exclusion defines.
+      sparc64: Use PAGE_OFFSET instead of a magic constant.
+      sparc64: Define PAGE_OFFSET in terms of physical address bits.
+      sparc64: Document the shift counts used to validate linear kernel addresses.
+      sparc64: Fix inconsistent max-physical-address defines.
+      sparc64: Make PAGE_OFFSET variable.
+      sparc64: Move from 4MB to 8MB huge pages.
+      sparc64: Move to 64-bit PGDs and PMDs.
+      sparc64: Encode huge PMDs using PTE encoding.
+
+Kirill Tkhai (2):
+      sparc64: Add self-IPI support for smp_send_reschedule()
+      sparc64: Implement HAVE_CONTEXT_TRACKING
+
+oftedal (1):
+      sparc: PCI: Fix incorrect address calculation of PCI Bridge windows on Simba-bridges
+
+ arch/sparc/Kconfig                      |   1 +
+ arch/sparc/include/asm/mmu_64.h         |   1 -
+ arch/sparc/include/asm/page_64.h        |  49 ++++++++++++---
+ arch/sparc/include/asm/pgtable_64.h     | 209 +++++++++++++++++++++++++++++++++++++--------------------------
+ arch/sparc/include/asm/sparsemem.h      |   6 +-
+ arch/sparc/include/asm/thread_info_64.h |   3 +-
+ arch/sparc/include/asm/tsb.h            | 105 +++++++-------------------------
+ arch/sparc/kernel/entry.h               |   1 -
+ arch/sparc/kernel/kgdb_64.c             |   5 +-
+ arch/sparc/kernel/kprobes.c             |   7 ++-
+ arch/sparc/kernel/ktlb.S                |  30 +++++++--
+ arch/sparc/kernel/pci.c                 |   4 +-
+ arch/sparc/kernel/process_64.c          |   2 +
+ arch/sparc/kernel/ptrace_64.c           |  10 +++
+ arch/sparc/kernel/rtrap_64.S            |   8 ++-
+ arch/sparc/kernel/signal_64.c           |  13 +++-
+ arch/sparc/kernel/smp_64.c              |   9 ++-
+ arch/sparc/kernel/sun4v_tlb_miss.S      |   2 +-
+ arch/sparc/kernel/sys_sparc_64.c        |   6 +-
+ arch/sparc/kernel/syscalls.S            |   8 +--
+ arch/sparc/kernel/traps_64.c            |  85 ++++++++++++++++++++------
+ arch/sparc/kernel/tsb.S                 |   2 +-
+ arch/sparc/kernel/unaligned_64.c        |  16 +++--
+ arch/sparc/kernel/vmlinux.lds.S         |   5 ++
+ arch/sparc/lib/clear_page.S             |   4 +-
+ arch/sparc/lib/copy_page.S              |   4 +-
+ arch/sparc/mm/fault_64.c                |  14 +++--
+ arch/sparc/mm/gup.c                     |   9 ++-
+ arch/sparc/mm/hugetlbpage.c             |   2 -
+ arch/sparc/mm/init_64.c                 | 282 +++++++++++++++++++++++++++++++++++--------------------------------------------------
+ arch/sparc/mm/init_64.h                 |   4 +-
+ arch/sparc/mm/tlb.c                     |  13 ++--
+ arch/sparc/mm/tsb.c                     |  13 +---
+ arch/sparc/mm/ultra.S                   |  12 ++--
+ 34 files changed, 510 insertions(+), 434 deletions(-)
