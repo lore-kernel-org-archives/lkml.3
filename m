@@ -1,103 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab3KNNXG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 08:23:06 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51822 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753463Ab3KNNXB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 08:23:01 -0500
-Date: Thu, 14 Nov 2013 13:22:23 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] s390/mm,tlb: race of lazy TLB flush vs. recreation
- of TLB entries
-Message-ID: <20131114132223.GG20261@arm.com>
-References: <1384330574-18418-1-git-send-email-schwidefsky@de.ibm.com>
- <1384330574-18418-3-git-send-email-schwidefsky@de.ibm.com>
- <CAHkRjk6LAmQpkioBdFxH5htYHi75bR2xhfXzfvmQL5Br0kMgvg@mail.gmail.com>
- <20131114091007.0b15dde2@mschwide>
+	id S1753848Ab3KNNZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 08:25:29 -0500
+Received: from fieldses.org ([174.143.236.118]:56858 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753410Ab3KNNZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 08:25:19 -0500
+Date: Thu, 14 Nov 2013 08:25:17 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] nfsd:add '\n' when read file supported_krb5_enctypes
+Message-ID: <20131114132517.GA20059@fieldses.org>
+References: <52786412.5030403@huawei.com>
+ <527C9170.9030005@huawei.com>
+ <20131113160937.GI28033@fieldses.org>
+ <5284C45F.5050400@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131114091007.0b15dde2@mschwide>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5284C45F.5050400@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 08:10:07AM +0000, Martin Schwidefsky wrote:
-> On Wed, 13 Nov 2013 16:16:35 +0000
-> Catalin Marinas <catalin.marinas@arm.com> wrote:
-> 
-> > On 13 November 2013 08:16, Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
-> > > diff --git a/arch/s390/include/asm/mmu_context.h b/arch/s390/include/asm/mmu_context.h
-> > > index 5d1f950..e91afeb 100644
-> > > --- a/arch/s390/include/asm/mmu_context.h
-> > > +++ b/arch/s390/include/asm/mmu_context.h
-> > > @@ -48,13 +48,38 @@ static inline void update_mm(struct mm_struct *mm, struct task_struct *tsk)
-> > >  static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
-> > >                              struct task_struct *tsk)
-> > >  {
-> > > -       cpumask_set_cpu(smp_processor_id(), mm_cpumask(next));
-> > > -       update_mm(next, tsk);
-> > > +       int cpu = smp_processor_id();
-> > > +
-> > > +       if (prev == next)
-> > > +               return;
-> > > +       if (atomic_inc_return(&next->context.attach_count) >> 16) {
-> > > +               /* Delay update_mm until all TLB flushes are done. */
-> > > +               set_tsk_thread_flag(tsk, TIF_TLB_WAIT);
-> > > +       } else {
-> > > +               cpumask_set_cpu(cpu, mm_cpumask(next));
-> > > +               update_mm(next, tsk);
-> > > +               if (next->context.flush_mm)
-> > > +                       /* Flush pending TLBs */
-> > > +                       __tlb_flush_mm(next);
-> > > +       }
-> > >         atomic_dec(&prev->context.attach_count);
-> > >         WARN_ON(atomic_read(&prev->context.attach_count) < 0);
-> > > -       atomic_inc(&next->context.attach_count);
-> > > -       /* Check for TLBs not flushed yet */
-> > > -       __tlb_flush_mm_lazy(next);
-> > > +}
-> > > +
-> > > +#define finish_switch_mm finish_switch_mm
-> > > +static inline void finish_switch_mm(struct mm_struct *mm,
-> > > +                                   struct task_struct *tsk)
-> > > +{
-> > > +       if (!test_and_clear_tsk_thread_flag(tsk, TIF_TLB_WAIT))
-> > > +               return;
-> > > +
-> > > +       while (atomic_read(&mm->context.attach_count) >> 16)
-> > > +               cpu_relax();
-> > > +
-> > > +       cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
-> > > +       update_mm(mm, tsk);
-> > > +       if (mm->context.flush_mm)
-> > > +               __tlb_flush_mm(mm);
-> > >  }
+On Thu, Nov 14, 2013 at 08:38:55PM +0800, Weng Meiling wrote:
+> On 2013/11/14 0:09, J. Bruce Fields wrote:
+> > On Fri, Nov 08, 2013 at 03:23:28PM +0800, Weng Meiling wrote:
+> >>
+> >> From: Weng Meiling <wengmeiling.weng@huawei.com>
 > > 
-> > Some care is needed here with preemption (we had this on arm and I
-> > think we need a fix on arm64 as well). Basically you set TIF_TLB_WAIT
-> > on a thread but you get preempted just before finish_switch_mm(). The
-> > new thread has the same mm as the preempted on and switch_mm() exits
-> > early without setting another flag. So finish_switch_mm() wouldn't do
-> > anything but you still switched to the new mm. The fix is to make the
-> > flag per mm rather than thread (see commit bdae73cd374e).
+> > I agree completely that a \n at the end would make more sense.
+> > 
+> > Have you tested that this nfs-utils is OK with this change?
+> > 
+> > I suspect that the only code that reads this file anywhere is
+> > 
+> > 	nfs-utils/utils/gssd/svcgssd_krb5.c:parse_enctypes()
+> > 
+> > And on a quick skim of that function.... I *think* it should be fine.
+> > But I'd be happier if you could confirm that you've tested it.
+> > 
+> > --b.
+> > 
+> After this change， starting the nfs server， other host can use the
+> server's shared files normally :-).
+
+I don't see how that tests parse_enctypes().
+
+--b.
+
 > 
-> Interesting. For s390 I need to make sure that each task attaching an
-> mm waits for the completion of concurrent TLB flush operations. If the
-> scheduler does not switch the mm I don't care, the mm is still attached.
-
-I assume the actual hardware mm switch happens via update_mm(). If you
-have a context_switch() to a thread which requires an update_mm() but you
-defer this until finish_switch_mm(), you may be preempted before the
-hardware update. If the new context_switch() schedules a thread with the
-same mm as the preempted one, you no longer call update_mm(). So the new
-thread actually uses an old hardware mm.
-
--- 
-Catalin
+> Thanks！
+> Weng Meilling
+> >>
+> >> Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+> >> ---
+> >>  fs/nfsd/nfsctl.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+> >> index 7f55517..31db42c 100644
+> >> --- a/fs/nfsd/nfsctl.c
+> >> +++ b/fs/nfsd/nfsctl.c
+> >> @@ -188,7 +188,7 @@ static const struct file_operations export_features_operations = {
+> >>  #if defined(CONFIG_SUNRPC_GSS) || defined(CONFIG_SUNRPC_GSS_MODULE)
+> >>  static int supported_enctypes_show(struct seq_file *m, void *v)
+> >>  {
+> >> -	seq_printf(m, KRB5_SUPPORTED_ENCTYPES);
+> >> +	seq_printf(m, "%s\n", KRB5_SUPPORTED_ENCTYPES);
+> >>  	return 0;
+> >>  }
+> >>
+> >> -- 
+> >> 1.8.3.1
+> >>
+> >>
+> >>
+> >>
+> > 
+> > 
+> 
+> 
