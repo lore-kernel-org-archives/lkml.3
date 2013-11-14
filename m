@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab3KNPlW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 10:41:22 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:48320 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab3KNPlN (ORCPT
+	id S1754457Ab3KNPln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 10:41:43 -0500
+Received: from cmexedge2.ext.emulex.com ([138.239.224.100]:48651 "EHLO
+	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752404Ab3KNPlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 10:41:13 -0500
+	Thu, 14 Nov 2013 10:41:36 -0500
+Message-ID: <5284EF2E.7010600@emulex.com>
+Date: Thu, 14 Nov 2013 10:41:34 -0500
+From: James Smart <james.smart@emulex.com>
+Reply-To: <james.smart@emulex.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1384440423-4275-1-git-send-email-nicolas.dichtel@6wind.com>
-References: <20131113211430.1ad3bb7d@gandalf.local.home> <1384440423-4275-1-git-send-email-nicolas.dichtel@6wind.com>
-From: Willem de Bruijn <willemb@google.com>
-Date: Thu, 14 Nov 2013 10:40:41 -0500
-Message-ID: <CA+FuTSd5g3KHdf+jVLrrU8vLNm8bVRUvj8khJuOvzoRd4of0=w@mail.gmail.com>
-Subject: Re: [PATCH net] ip6tnl: fix use after free of fb_tnl_dev
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: rostedt@goodmis.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, gregkh@linuxfoundation.org,
-        williams@redhat.com, linux-rt-users@vger.kernel.org, lclaudio@uudg.org,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Felipe Pena <felipensp@gmail.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: scsi: lpfc_debugfs: Fix wrong assignment
+References: <1382138137-4088-1-git-send-email-felipensp@gmail.com>
+In-Reply-To: <1382138137-4088-1-git-send-email-felipensp@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 9:47 AM, Nicolas Dichtel
-<nicolas.dichtel@6wind.com> wrote:
-> Bug has been introduced by commit bb8140947a24 ("ip6tnl: allow to use rtnl ops
-> on fb tunnel").
->
-> When ip6_tunnel.ko is unloaded, FB device is delete by rtnl_link_unregister()
-> and then we try to use the pointer in ip6_tnl_destroy_tunnels().
->
-> Let's add an handler for dellink, which will never remove the FB tunnel. With
-> this patch it will no more be possible to remove it via 'ip link del ip6tnl0',
-> but it's safer.
->
-> The same fix was already proposed by Willem de Bruijn <willemb@google.com> for
-> sit interfaces.
->
-> CC: Willem de Bruijn <willemb@google.com>
-> Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Thanks!
 
-Acked-by: Willem de Bruijn <willemb@google.com>
+Acked-by:   James Smart  <james.smart@emulex.com>
 
-Also ran a test similar to the one for sit: `modprobe ip6_tunnel;
-rmmod ip6_tunnel` with CONFIG_DEBUG_SLAB=y. This exposed the bug at
-HEAD, completes successfully with the patch applied.
+-- james s
+
+
+On 10/18/2013 7:15 PM, Felipe Pena wrote:
+> On lpfc_debugfs_initialize function the dumpHostSlim member setup happens
+> when 'phba->sli_rev < LPFC_SLI_REV4' is true, however when it is false NULL
+> has been assigned to debug_dumpHBASlim instead of debug_dumpHostSlim.
+>
+> Signed-off-by: Felipe Pena <felipensp@gmail.com>
+> ---
+>   drivers/scsi/lpfc/lpfc_debugfs.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/scsi/lpfc/lpfc_debugfs.c b/drivers/scsi/lpfc/lpfc_debugfs.c
+> index 60084e6..b800cc9 100644
+> --- a/drivers/scsi/lpfc/lpfc_debugfs.c
+> +++ b/drivers/scsi/lpfc/lpfc_debugfs.c
+> @@ -4001,7 +4001,7 @@ lpfc_debugfs_initialize(struct lpfc_vport *vport)
+>   				goto debug_failed;
+>   			}
+>   		} else
+> -			phba->debug_dumpHBASlim = NULL;
+> +			phba->debug_dumpHostSlim = NULL;
+>
+>   		/* Setup dumpData */
+>   		snprintf(name, sizeof(name), "dumpData");
+> --
+> 1.7.10.4
+>
+>
+>
+
