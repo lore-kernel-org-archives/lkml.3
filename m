@@ -1,104 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab3KNLHc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 06:07:32 -0500
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:18446
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753364Ab3KNLH1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 06:07:27 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-From: Nicolin Chen <b42378@freescale.com>
-To: <timur@tabi.org>, <shawn.guo@linaro.org>, <broonie@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <linux@arm.linux.org.uk>,
-        <ijc+devicetree@hellion.org.uk>, <swarren@wwwdotorg.org>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>, <lgirdwood@gmail.com>
-Subject: [PATCH 2/2] ASoC: fsl_ssi: Add monaural audio support for non-ac97 interface
-Date: Thu, 14 Nov 2013 19:07:10 +0800
-Message-ID: <1384427230-979-3-git-send-email-b42378@freescale.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1384427230-979-1-git-send-email-b42378@freescale.com>
-References: <1384427230-979-1-git-send-email-b42378@freescale.com>
+	id S1753447Ab3KNLJO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 06:09:14 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:34404 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752778Ab3KNLJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 06:09:11 -0500
+X-IronPort-AV: E=Sophos;i="4.93,699,1378828800"; 
+   d="scan'208";a="9034673"
+Message-ID: <5284AF90.7060506@cn.fujitsu.com>
+Date: Thu, 14 Nov 2013 19:10:08 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [REVIEW][PATCH 1/2] userns: Better restrictions on when proc
+ and sysfs can be mounted
+References: <878uzmhkqg.fsf@xmission.com> <52749663.2000701@cn.fujitsu.com>	<527C4D88.10907@cn.fujitsu.com> <87k3gigmgj.fsf@xmission.com> <5283299B.8080702@cn.fujitsu.com>
+In-Reply-To: <5283299B.8080702@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/14 19:07:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/14 19:07:21,
+	Serialize complete at 2013/11/14 19:07:21
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The normal mode of SSI allows it to send/receive data to/from the first
-slot of each period. So we can use this normal mode to trick I2S signal
-by puting/getting data to/from the first slot only (the left channel)
-so as to support monaural audio playback and recording.
+On 11/13/2013 03:26 PM, Gao feng wrote:
+> On 11/09/2013 01:42 PM, Eric W. Biederman wrote:
+>> Gao feng <gaofeng@cn.fujitsu.com> writes:
+>>
+>>> On 11/02/2013 02:06 PM, Gao feng wrote:
+>>>> Hi Eric,
+>>>>
+>>>> On 08/28/2013 05:44 AM, Eric W. Biederman wrote:
+>>>>>
+>>>>> Rely on the fact that another flavor of the filesystem is already
+>>>>> mounted and do not rely on state in the user namespace.
+>>>>>
+>>>>> Verify that the mounted filesystem is not covered in any significant
+>>>>> way.  I would love to verify that the previously mounted filesystem
+>>>>> has no mounts on top but there are at least the directories
+>>>>> /proc/sys/fs/binfmt_misc and /sys/fs/cgroup/ that exist explicitly
+>>>>> for other filesystems to mount on top of.
+>>>>>
+>>>>> Refactor the test into a function named fs_fully_visible and call that
+>>>>> function from the mount routines of proc and sysfs.  This makes this
+>>>>> test local to the filesystems involved and the results current of when
+>>>>> the mounts take place, removing a weird threading of the user
+>>>>> namespace, the mount namespace and the filesystems themselves.
+>>>>>
+>>>>> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+>>>>> ---
+>>>>>  fs/namespace.c                 |   37 +++++++++++++++++++++++++------------
+>>>>>  fs/proc/root.c                 |    7 +++++--
+>>>>>  fs/sysfs/mount.c               |    3 ++-
+>>>>>  include/linux/fs.h             |    1 +
+>>>>>  include/linux/user_namespace.h |    4 ----
+>>>>>  kernel/user.c                  |    2 --
+>>>>>  kernel/user_namespace.c        |    2 --
+>>>>>  7 files changed, 33 insertions(+), 23 deletions(-)
+>>>>>
+>>>>> diff --git a/fs/namespace.c b/fs/namespace.c
+>>>>> index 64627f8..877e427 100644
+>>>>> --- a/fs/namespace.c
+>>>>> +++ b/fs/namespace.c
+>>>>> @@ -2867,25 +2867,38 @@ bool current_chrooted(void)
+>>>>>  	return chrooted;
+>>>>>  }
+>>>>>  
+>>>>> -void update_mnt_policy(struct user_namespace *userns)
+>>>>> +bool fs_fully_visible(struct file_system_type *type)
+>>>>>  {
+>>>>>  	struct mnt_namespace *ns = current->nsproxy->mnt_ns;
+>>>>>  	struct mount *mnt;
+>>>>> +	bool visible = false;
+>>>>>  
+>>>>> -	down_read(&namespace_sem);
+>>>>> +	if (unlikely(!ns))
+>>>>> +		return false;
+>>>>> +
+>>>>> +	namespace_lock();
+>>>>>  	list_for_each_entry(mnt, &ns->list, mnt_list) {
+>>>>> -		switch (mnt->mnt.mnt_sb->s_magic) {
+>>>>> -		case SYSFS_MAGIC:
+>>>>> -			userns->may_mount_sysfs = true;
+>>>>> -			break;
+>>>>> -		case PROC_SUPER_MAGIC:
+>>>>> -			userns->may_mount_proc = true;
+>>>>> -			break;
+>>>>> +		struct mount *child;
+>>>>> +		if (mnt->mnt.mnt_sb->s_type != type)
+>>>>> +			continue;
+>>>>> +
+>>>>> +		/* This mount is not fully visible if there are any child mounts
+>>>>> +		 * that cover anything except for empty directories.
+>>>>> +		 */
+>>>>> +		list_for_each_entry(child, &mnt->mnt_mounts, mnt_child) {
+>>>>> +			struct inode *inode = child->mnt_mountpoint->d_inode;
+>>>>> +			if (!S_ISDIR(inode->i_mode))
+>>>>> +				goto next;
+>>>>> +			if (inode->i_nlink != 2)
+>>>>> +				goto next;
+>>>>
+>>>>
+>>>> I met a problem that proc filesystem failed to mount in user namespace,
+>>>> The problem is the i_nlink of sysctl entries under proc filesystem is not
+>>>> 2. it always is 1 even it's a directory, see proc_sys_make_inode. and for
+>>>> btrfs, the i_nlink for an empty dir is 2 too. it seems like depends on the
+>>>> filesystem itself,not depends on vfs. In my system binfmt_misc is mounted
+>>>> on /proc/sys/fs/binfmt_misc, and the i_nlink of this directory's inode is
+>>>> 1.
+>>
+>> Yes. 1 is what filesystems that are too lazy to count the number of
+>> links to a directory return, and /proc/sys is currently such a
+>> filesystem.
+>>
+>> Ordinarily nlink == 2 means a directory does not have any subdirectories.
+>>
+>>>> btw, I'm not quite understand what's the inode->i_nlink != 2 here means?
+>>>> is this directory empty? as I know, when we create a file(not dir) under
+>>>> a dir, the i_nlink of this dir will not increase.
+>>>>
+>>>> And another question, it looks like if we don't have proc/sys fs mounted,
+>>>> then proc/sys will be failed to be mounted?
+>>>>
+>>>
+>>> Any Idea?? or should we need to revert this patch??
+>>
+>> The patch is mostly doing what it is supposed to be doing.
+>>
+>> Now the code is slightly buggy.  inode->i_nlink will test to see if a
+>> directory has subdirectories but it won't test to see if a directory is
+>> empty.  Where did my brain go when I was writing that test?
+>>
+>> Right now I would rather not have the empty directory exception than
+>> remove this code.
+>>
+>> The test is a little trickier to write than it might otherwise be
+>> because /proc and /sys tend to be slightly imperfect filesystems.
+>>
+>> I think the only way to really test that is to call readdir on the
+>> directory itself :(  I don't like that thought.
+>>
+>> I don't know what I was thinking when I wrote that test but I definitely
+>> goofed up.  Grr!
+>>
+>> I can certainly filter out any directory with nlink > 2.  That would be
+>> an easy partial step forward.
+>>
+>> The real question though is how do I detect directories it is safe to
+>> mount on where there will not be files in them.  I can't call iterate
+>> with the namespace_lock held so things are a bit tricky.
+>>
+> 
+> I know this problem is not easy to be resolved. why not let the user
+> make the decision?  maybe we can introduce a new mount option MS_LOCK,
+> if user wants to use mount to hide something, he should use mount with
+> option MS_LOCK. so the unpriviged user can't umount this filesystem and
+> fail to mount the filesystem if one of it's child mount is mounted with
+> MS_LOCK option otherwise he use MS_REC too.
+> 
 
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
+Something like this.
+
+>From 437f33ea366623c7a9d557b2e84cae424876a44f Mon Sep 17 00:00:00 2001
+From: Gao feng <gaofeng@cn.fujitsu.com>
+Date: Wed, 13 Nov 2013 16:06:46 +0800
+Subject: [PATCH] userns: introduce new mount option MS_LOCK
+
+After commit 5ff9d8a65ce80efb509ce4e8051394e9ed2cd942
+vfs: Lock in place mounts from more privileged users,
+in userns, the mounts of child mntns which copied from
+parent mntns is locked and user has no rights to umount/move
+them, it's too strict.
+
+The core purpose of above commit is trying to prevent
+unprivileged user from accessing files hidden by mount.
+This patch introduces a new mount option MS_LOCK, this
+gives user the capable to mount filesystem as the type
+of lock if he wants to use mount to hide something.
+
+And this patch also makes it possible to resolve the
+problem brought by commit e51db73532955dc5eaba4235e62b74b460709d5b,
+the i_nlink is incorrect in some filesystems.
+
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 ---
- sound/soc/fsl/fsl_ssi.c | 22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ fs/namespace.c          | 10 ++++------
+ fs/proc_namespace.c     |  1 +
+ include/uapi/linux/fs.h |  1 +
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
-index f43be6d..ccf1d38 100644
---- a/sound/soc/fsl/fsl_ssi.c
-+++ b/sound/soc/fsl/fsl_ssi.c
-@@ -517,10 +517,12 @@ static int fsl_ssi_hw_params(struct snd_pcm_substream *substream,
- {
- 	struct fsl_ssi_private *ssi_private = snd_soc_dai_get_drvdata(cpu_dai);
- 	struct ccsr_ssi __iomem *ssi = ssi_private->ssi;
-+	unsigned int channels = params_channels(hw_params);
- 	unsigned int sample_size =
- 		snd_pcm_format_width(params_format(hw_params));
- 	u32 wl = CCSR_SSI_SxCCR_WL(sample_size);
- 	int enabled = read_ssi(&ssi->scr) & CCSR_SSI_SCR_SSIEN;
-+	static u8 i2s_mode;
- 
- 	/*
- 	 * If we're in synchronous mode, and the SSI is already enabled,
-@@ -546,6 +548,21 @@ static int fsl_ssi_hw_params(struct snd_pcm_substream *substream,
- 	else
- 		write_ssi_mask(&ssi->srccr, CCSR_SSI_SxCCR_WL_MASK, wl);
- 
-+	if (ssi_private->imx_ac97)
-+		return 0;
-+
-+	/* Save i2s mode configuration so that we can restore it later */
-+	switch (read_ssi(&ssi->scr) & CCSR_SSI_SCR_I2S_MODE_MASK) {
-+	case CCSR_SSI_SCR_I2S_MODE_SLAVE:
-+	case CCSR_SSI_SCR_I2S_MODE_MASTER:
-+		i2s_mode = read_ssi(&ssi->scr) & CCSR_SSI_SCR_I2S_MODE_MASK;
-+	default:
-+		break;
-+	}
-+
-+	write_ssi_mask(&ssi->scr, CCSR_SSI_SCR_NET | CCSR_SSI_SCR_I2S_MODE_MASK,
-+			channels == 1 ? 0 : CCSR_SSI_SCR_NET | i2s_mode);
-+
- 	return 0;
- }
- 
-@@ -658,14 +675,13 @@ static const struct snd_soc_dai_ops fsl_ssi_dai_ops = {
- static struct snd_soc_dai_driver fsl_ssi_dai_template = {
- 	.probe = fsl_ssi_dai_probe,
- 	.playback = {
--		/* The SSI does not support monaural audio. */
--		.channels_min = 2,
-+		.channels_min = 1,
- 		.channels_max = 2,
- 		.rates = FSLSSI_I2S_RATES,
- 		.formats = FSLSSI_I2S_FORMATS,
- 	},
- 	.capture = {
--		.channels_min = 2,
-+		.channels_min = 1,
- 		.channels_max = 2,
- 		.rates = FSLSSI_I2S_RATES,
- 		.formats = FSLSSI_I2S_FORMATS,
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 7097fc7..8e6b3e8 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -830,10 +830,6 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
+ 	if ((flag & CL_UNPRIVILEGED) && (mnt->mnt.mnt_flags & MNT_READONLY))
+ 		mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
+
+-	/* Don't allow unprivileged users to reveal what is under a mount */
+-	if ((flag & CL_UNPRIVILEGED) && list_empty(&old->mnt_expire))
+-		mnt->mnt.mnt_flags |= MNT_LOCKED;
+-
+ 	atomic_inc(&sb->s_active);
+ 	mnt->mnt.mnt_sb = sb;
+ 	mnt->mnt.mnt_root = dget(root);
+@@ -2359,10 +2355,12 @@ long do_mount(const char *dev_name, const char *dir_name,
+ 		mnt_flags &= ~(MNT_RELATIME | MNT_NOATIME);
+ 	if (flags & MS_RDONLY)
+ 		mnt_flags |= MNT_READONLY;
++	if (flags & MS_LOCK)
++		mnt_flags |= MNT_LOCKED;
+
+ 	flags &= ~(MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_ACTIVE | MS_BORN |
+ 		   MS_NOATIME | MS_NODIRATIME | MS_RELATIME| MS_KERNMOUNT |
+-		   MS_STRICTATIME);
++		   MS_STRICTATIME | MS_LOCK);
+
+ 	if (flags & MS_REMOUNT)
+ 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
+@@ -2894,7 +2892,7 @@ bool fs_fully_visible(struct file_system_type *type)
+ 			struct inode *inode = child->mnt_mountpoint->d_inode;
+ 			if (!S_ISDIR(inode->i_mode))
+ 				goto next;
+-			if (inode->i_nlink != 2)
++			if (!may_mount_lock(child))
+ 				goto next;
+ 		}
+ 		visible = true;
+diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
+index 5fe34c3..fc9b15c 100644
+--- a/fs/proc_namespace.c
++++ b/fs/proc_namespace.c
+@@ -65,6 +65,7 @@ static void show_mnt_opts(struct seq_file *m, struct vfsmount *mnt)
+ 		{ MNT_NOATIME, ",noatime" },
+ 		{ MNT_NODIRATIME, ",nodiratime" },
+ 		{ MNT_RELATIME, ",relatime" },
++		{ MNT_LOCKED, ",locked" },
+ 		{ 0, NULL }
+ 	};
+ 	const struct proc_fs_info *fs_infop;
+diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
+index 6c28b61..731d894 100644
+--- a/include/uapi/linux/fs.h
++++ b/include/uapi/linux/fs.h
+@@ -69,6 +69,7 @@ struct inodes_stat_t {
+ #define MS_REMOUNT	32	/* Alter flags of a mounted FS */
+ #define MS_MANDLOCK	64	/* Allow mandatory locks on an FS */
+ #define MS_DIRSYNC	128	/* Directory modifications are synchronous */
++#define MS_LOCK		512	/* Disallow unpriviged user to umount FS. */
+ #define MS_NOATIME	1024	/* Do not update access times. */
+ #define MS_NODIRATIME	2048	/* Do not update directory access times */
+ #define MS_BIND		4096
 -- 
-1.8.4
+1.8.3.1
 
 
