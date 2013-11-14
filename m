@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3KNLQK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 06:16:10 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:47412 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686Ab3KNLQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 06:16:07 -0500
+	id S1753527Ab3KNLQY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 06:16:24 -0500
+Received: from [204.155.152.216] ([204.155.152.216]:45719 "EHLO shutemov.name"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752928Ab3KNLQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 06:16:18 -0500
+Date: Thu, 14 Nov 2013 12:19:48 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ramfs: Fix memory leak on ramfs_fill_super error paths
+Message-ID: <20131114101948.GA12195@shutemov.name>
+References: <1384412359.28992.3.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <20131113000358.GA2420@gmail.com>
-References: <1384180814-21823-1-git-send-email-felipe.contreras@gmail.com>
-	<20131113000358.GA2420@gmail.com>
-Date: Thu, 14 Nov 2013 05:16:06 -0600
-Message-ID: <CAMP44s17p0ZpFx0Y2E_K7Oq9c4tk2J+9uXRWDYChAD-yM-4JjQ@mail.gmail.com>
-Subject: Re: [PATCH v2] panic: setup panic_timeout early
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384412359.28992.3.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 6:03 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
->
->> Otherwise we might not reboot when the user needs it the most (early
->> on).
->>
->> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
->> ---
->>
-> [...]
->>
->> diff --git a/kernel/panic.c b/kernel/panic.c
->> index b6c482c..d865263 100644
->> --- a/kernel/panic.c
->> +++ b/kernel/panic.c
->> @@ -468,9 +468,23 @@ EXPORT_SYMBOL(__stack_chk_fail);
->>
->>  #endif
->>
->> -core_param(panic, panic_timeout, int, 0644);
->>  core_param(pause_on_oops, pause_on_oops, int, 0644);
->>
->> +static int __init set_panic_timeout(char *val)
->> +{
->> +     long timeout;
->> +     int ret;
->> +
->> +     ret = kstrtol(val, 0, &timeout);
->> +     if (ret < 0)
->> +             return ret;
->> +
->> +     panic_timeout = timeout;
->> +     return 0;
->> +}
->
-> I think the type of the 'timeout' local variable should match the type of
-> 'panic_timeout' (which is 'int', not 'long').
+On Thu, Nov 14, 2013 at 02:59:19PM +0800, Axel Lin wrote:
+> The memory leak was introduced by commit 318ceed0884
+> "tidy up after d_make_root() conversion".
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  fs/ramfs/inode.c | 12 +++++++++---
+>  1 file changed, 9 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+> index 39d1465..868a41e 100644
+> --- a/fs/ramfs/inode.c
+> +++ b/fs/ramfs/inode.c
+> @@ -221,7 +221,7 @@ int ramfs_fill_super(struct super_block *sb, void *data, int silent)
+>  
+>  	err = ramfs_parse_options(data, &fsi->mount_opts);
+>  	if (err)
+> -		return err;
+> +		goto fail;
+>  
+>  	sb->s_maxbytes		= MAX_LFS_FILESIZE;
+>  	sb->s_blocksize		= PAGE_CACHE_SIZE;
+> @@ -232,10 +232,16 @@ int ramfs_fill_super(struct super_block *sb, void *data, int silent)
+>  
+>  	inode = ramfs_get_inode(sb, NULL, S_IFDIR | fsi->mount_opts.mode, 0);
+>  	sb->s_root = d_make_root(inode);
+> -	if (!sb->s_root)
+> -		return -ENOMEM;
+> +	if (!sb->s_root) {
+> +		err = -ENOMEM;
+> +		goto fail;
+> +	}
+>  
+>  	return 0;
+> +fail:
+> +	kfree(fsi);
+> +	sb->s_fs_info = NULL;
 
-So you would rather have this?
+Why do we need this?
+mount_nodev() seems just drop super block if filler fails.
 
-  kstrtol(val, 0, (long *)&timeout);
-
-Couldn't that potentially write the value beyond the memory allocated
-to 'timeout'?
-
+> +	return err;
+>  }
+>  
+>  struct dentry *ramfs_mount(struct file_system_type *fs_type,
 -- 
-Felipe Contreras
+ Kirill A. Shutemov
