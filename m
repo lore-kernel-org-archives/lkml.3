@@ -1,87 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab3KNNZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 08:25:29 -0500
-Received: from fieldses.org ([174.143.236.118]:56858 "EHLO fieldses.org"
+	id S1753891Ab3KNN17 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 08:27:59 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:34197 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753410Ab3KNNZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 08:25:19 -0500
-Date: Thu, 14 Nov 2013 08:25:17 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Weng Meiling <wengmeiling.weng@huawei.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] nfsd:add '\n' when read file supported_krb5_enctypes
-Message-ID: <20131114132517.GA20059@fieldses.org>
-References: <52786412.5030403@huawei.com>
- <527C9170.9030005@huawei.com>
- <20131113160937.GI28033@fieldses.org>
- <5284C45F.5050400@huawei.com>
+	id S1753462Ab3KNN1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 08:27:53 -0500
+Message-ID: <5284CFCB.8040009@imgtec.com>
+Date: Thu, 14 Nov 2013 07:27:39 -0600
+From: "Steven J. Hill" <Steven.Hill@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5284C45F.5050400@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+CC: LMOL <linux-mips@linux-mips.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Release of Linux MTI-3.10-LTS kernel.
+References: <528246BA.10607@imgtec.com> <20131112210234.GB30010@blackmetal.musicnaut.iki.fi>
+In-Reply-To: <20131112210234.GB30010@blackmetal.musicnaut.iki.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.159.180]
+X-SEF-Processed: 7_3_0_01192__2013_11_14_13_27_46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 08:38:55PM +0800, Weng Meiling wrote:
-> On 2013/11/14 0:09, J. Bruce Fields wrote:
-> > On Fri, Nov 08, 2013 at 03:23:28PM +0800, Weng Meiling wrote:
-> >>
-> >> From: Weng Meiling <wengmeiling.weng@huawei.com>
-> > 
-> > I agree completely that a \n at the end would make more sense.
-> > 
-> > Have you tested that this nfs-utils is OK with this change?
-> > 
-> > I suspect that the only code that reads this file anywhere is
-> > 
-> > 	nfs-utils/utils/gssd/svcgssd_krb5.c:parse_enctypes()
-> > 
-> > And on a quick skim of that function.... I *think* it should be fine.
-> > But I'd be happier if you could confirm that you've tested it.
-> > 
-> > --b.
-> > 
-> After this change， starting the nfs server， other host can use the
-> server's shared files normally :-).
+Hey Aaro.
 
-I don't see how that tests parse_enctypes().
+I wanted to apologize for my earlier email that could have been much 
+shorter without being snarky. In short, we have a long test cycle and 
+that we are tracking LTS support kernels and will be doing regular 
+updates. A few months ago 3.10 was chosen as the next LTS version. We 
+decided for stability and continued bug fixes to go with it.
 
---b.
+Steve
 
-> 
-> Thanks！
-> Weng Meilling
-> >>
-> >> Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
-> >> ---
-> >>  fs/nfsd/nfsctl.c | 2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-> >> index 7f55517..31db42c 100644
-> >> --- a/fs/nfsd/nfsctl.c
-> >> +++ b/fs/nfsd/nfsctl.c
-> >> @@ -188,7 +188,7 @@ static const struct file_operations export_features_operations = {
-> >>  #if defined(CONFIG_SUNRPC_GSS) || defined(CONFIG_SUNRPC_GSS_MODULE)
-> >>  static int supported_enctypes_show(struct seq_file *m, void *v)
-> >>  {
-> >> -	seq_printf(m, KRB5_SUPPORTED_ENCTYPES);
-> >> +	seq_printf(m, "%s\n", KRB5_SUPPORTED_ENCTYPES);
-> >>  	return 0;
-> >>  }
-> >>
-> >> -- 
-> >> 1.8.3.1
-> >>
-> >>
-> >>
-> >>
-> > 
-> > 
-> 
-> 
