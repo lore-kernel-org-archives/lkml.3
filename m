@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab3KNLP0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 06:15:26 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51983 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752910Ab3KNLPW (ORCPT
+	id S1753457Ab3KNLQK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 06:16:10 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:47412 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab3KNLQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 06:15:22 -0500
-Date: Thu, 14 Nov 2013 12:15:14 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mikey@neuling.org,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH v2] sched: Check sched_domain before computing group
- power.
-Message-ID: <20131114111514.GH16796@laptop.programming.kicks-ass.net>
-References: <tip-db2pe0vxwunv37plc7onnugj@git.kernel.org>
- <20131112105547.GA27310@linux.vnet.ibm.com>
- <20131112115736.GO5056@laptop.programming.kicks-ass.net>
- <20131112164126.GF2559@linux.vnet.ibm.com>
- <20131113151718.GN21461@twins.programming.kicks-ass.net>
- <20131114105017.GD543@linux.vnet.ibm.com>
+	Thu, 14 Nov 2013 06:16:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131114105017.GD543@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131113000358.GA2420@gmail.com>
+References: <1384180814-21823-1-git-send-email-felipe.contreras@gmail.com>
+	<20131113000358.GA2420@gmail.com>
+Date: Thu, 14 Nov 2013 05:16:06 -0600
+Message-ID: <CAMP44s17p0ZpFx0Y2E_K7Oq9c4tk2J+9uXRWDYChAD-yM-4JjQ@mail.gmail.com>
+Subject: Re: [PATCH v2] panic: setup panic_timeout early
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 04:20:17PM +0530, Srikar Dronamraju wrote:
-> > +			/*
-> > +			 * build_sched_domains() -> init_sched_groups_power()
-> > +			 * gets here before we've attached the domains to the
-> > +			 * runqueues.
-> > +			 *
-> > +			 * Use power_of(), which is set irrespective of domains
-> > +			 * in update_cpu_power().
-> > +			 *
-> > +			 * This avoids power/power_orig from being 0 and
-> > +			 * causing divide-by-zero issues on boot.
-> > +			 *
-> > +			 * Runtime updates will correct power_orig.
-> > +			 */
-> > +			if (!rq->sd) {
-> 
-> Because this condition is only true during boot up, I am now
-> thinking if we should do mark this as unlikely i.e if (unlikely(!rq->sd)) {
+On Tue, Nov 12, 2013 at 6:03 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
+>
+>> Otherwise we might not reboot when the user needs it the most (early
+>> on).
+>>
+>> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+>> ---
+>>
+> [...]
+>>
+>> diff --git a/kernel/panic.c b/kernel/panic.c
+>> index b6c482c..d865263 100644
+>> --- a/kernel/panic.c
+>> +++ b/kernel/panic.c
+>> @@ -468,9 +468,23 @@ EXPORT_SYMBOL(__stack_chk_fail);
+>>
+>>  #endif
+>>
+>> -core_param(panic, panic_timeout, int, 0644);
+>>  core_param(pause_on_oops, pause_on_oops, int, 0644);
+>>
+>> +static int __init set_panic_timeout(char *val)
+>> +{
+>> +     long timeout;
+>> +     int ret;
+>> +
+>> +     ret = kstrtol(val, 0, &timeout);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     panic_timeout = timeout;
+>> +     return 0;
+>> +}
+>
+> I think the type of the 'timeout' local variable should match the type of
+> 'panic_timeout' (which is 'int', not 'long').
 
-Makes sense, edited the patch.
+So you would rather have this?
 
+  kstrtol(val, 0, (long *)&timeout);
+
+Couldn't that potentially write the value beyond the memory allocated
+to 'timeout'?
+
+-- 
+Felipe Contreras
