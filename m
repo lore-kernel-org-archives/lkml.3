@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab3KNQpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:45:08 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:46432 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757281Ab3KNQoy (ORCPT
+	id S932129Ab3KNQpP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:45:15 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:45327 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757261Ab3KNQou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:44:54 -0500
+	Thu, 14 Nov 2013 11:44:50 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Jinshan Xiong <jinshan.xiong@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Oleg Drokin <oleg.drokin@intel.com>,
+        Jian Yu <jian.yu@intel.com>, Jinshan Xiong <jinshan.xiong@intel.com>,
         Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 22/26] staging/lustre/osc: osc_extent_wait() shouldn't be interruptible
-Date: Fri, 15 Nov 2013 00:43:09 +0800
-Message-Id: <1384447393-13838-23-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 21/26] staging/lustre/clio: Do not shrink sublock at cancel
+Date: Fri, 15 Nov 2013 00:43:08 +0800
+Message-Id: <1384447393-13838-22-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384447393-13838-1-git-send-email-bergwolf@gmail.com>
 References: <1384447393-13838-1-git-send-email-bergwolf@gmail.com>
@@ -22,41 +23,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jinshan Xiong <jinshan.xiong@intel.com>
+From: Oleg Drokin <oleg.drokin@intel.com>
 
-Otherwise it will hit the assertion at cl_lock.c:
+Shrinking sublock at ldlm lock cancel time means whoever happened
+to attach to this lock just before will reenqueue the wrong lock.
 
-   cl_lock.c:1967:discard_cb())
-        ASSERTION( (!(page->cp_type == CPT_CACHEABLE) ||
-        (!PageWriteback(cl_page_vmpage(env, page)))) ) failed:
-
-This is because in osc_lock_flush() we have to make sure the IO
-is finished before discarding the pages.
-
-Lustre-change: http://review.whamcloud.com/5419
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2779
+Lustre-change: http://review.whamcloud.com/7569
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3027
+Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
+Signed-off-by: Jian Yu <jian.yu@intel.com>
 Signed-off-by: Jinshan Xiong <jinshan.xiong@intel.com>
+Reviewed-by: Patrick Farrell <paf@cray.com>
 Reviewed-by: Bobi Jam <bobijam@gmail.com>
-Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/osc/osc_cache.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/lustre/lustre/lov/lovsub_lock.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/lustre/osc/osc_cache.c b/drivers/staging/lustre/lustre/osc/osc_cache.c
-index ff36e77..6051e41 100644
---- a/drivers/staging/lustre/lustre/osc/osc_cache.c
-+++ b/drivers/staging/lustre/lustre/osc/osc_cache.c
-@@ -891,7 +891,7 @@ static int osc_extent_wait(const struct lu_env *env, struct osc_extent *ext,
- 			"%s: wait ext to %d timedout, recovery in progress?\n",
- 			osc_export(obj)->exp_obd->obd_name, state);
- 
--		lwi = LWI_INTR(LWI_ON_SIGNAL_NOOP, NULL);
-+		lwi = LWI_INTR(NULL, NULL);
- 		rc = l_wait_event(ext->oe_waitq, extent_wait_cb(ext, state),
- 				  &lwi);
- 	}
+diff --git a/drivers/staging/lustre/lustre/lov/lovsub_lock.c b/drivers/staging/lustre/lustre/lov/lovsub_lock.c
+index 80305aa..b38c30d 100644
+--- a/drivers/staging/lustre/lustre/lov/lovsub_lock.c
++++ b/drivers/staging/lustre/lustre/lov/lovsub_lock.c
+@@ -208,7 +208,10 @@ int lov_sublock_modify(const struct lu_env *env, struct lov_lock *lov,
+ 	pd->cld_mode = parent_descr->cld_mode;
+ 	pd->cld_gid  = parent_descr->cld_gid;
+ 	lovsub_lock_descr_map(d, subobj->lso_super, subobj->lso_index, pd);
+-	lov->lls_sub[idx].sub_got = *d;
++
++	/* LU-3027: only update extent of lock */
++	lov->lls_sub[idx].sub_got.cld_start = d->cld_start;
++	lov->lls_sub[idx].sub_got.cld_end = d->cld_end;
+ 	/*
+ 	 * Notify top-lock about modification, if lock description changes
+ 	 * materially.
 -- 
 1.7.9.5
 
