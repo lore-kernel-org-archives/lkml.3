@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab3KNXeV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 18:34:21 -0500
-Received: from mga03.intel.com ([143.182.124.21]:7369 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754450Ab3KNXeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 18:34:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,702,1378882800"; 
-   d="scan'208";a="427920890"
-Subject: [PATCH 1/2] mm: hugetlbfs: Add some VM_BUG_ON()s to catch non-hugetlbfs pages
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, dave.jiang@intel.com, Mel Gorman <mgorman@suse.de>,
-        akpm@linux-foundation.org, dhillf@gmail.com,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Thu, 14 Nov 2013 15:33:58 -0800
-References: <20131114233357.90EE35C1@viggo.jf.intel.com>
-In-Reply-To: <20131114233357.90EE35C1@viggo.jf.intel.com>
-Message-Id: <20131114233358.2B10EA33@viggo.jf.intel.com>
+	id S1754358Ab3KNXfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 18:35:43 -0500
+Received: from smtprelay0042.hostedemail.com ([216.40.44.42]:60943 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752718Ab3KNXfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 18:35:37 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1538:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3865:4321:4418:5007:7652:10004:10400:10848:11232:11657:11658:11914:12517:12519:12555:12679:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: chess74_13abf49b2a00c
+X-Filterd-Recvd-Size: 1217
+Message-ID: <1384472134.2897.35.camel@joe-AO722>
+Subject: [PATCH] MAINTAINERS: Remove F: entry for kernel/wait.c
+From: Joe Perches <joe@perches.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 14 Nov 2013 15:35:34 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+commit 7a6354e241 ("sched: Move wait.c into kernel/sched/")
+moved the file into an already maintained section.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+Delete the F: pattern line.
 
-Dave Jiang reported that he was seeing oopses when running
-NUMA systems and default_hugepagesz=1G.  I traced the issue down
-to migrate_page_copy() trying to use the same code for hugetlb
-pages and transparent hugepages.  It should not have been trying
-to pass thp pages in there.
-
-So, add some VM_BUG_ON()s for the next hapless VM developer that
-tries the same thing.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
+ MAINTAINERS | 1 -
+ 1 file changed, 1 deletion(-)
 
- linux.git-davehans/include/linux/hugetlb.h |    1 +
- linux.git-davehans/mm/hugetlb.c            |    1 +
- 2 files changed, 2 insertions(+)
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 239c751..3f85561 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7361,7 +7361,6 @@ S:	Maintained
+ F:	kernel/sched/
+ F:	include/linux/sched.h
+ F:	include/uapi/linux/sched.h
+-F:	kernel/wait.c
+ F:	include/linux/wait.h
+ 
+ SCORE ARCHITECTURE
 
-diff -puN include/linux/hugetlb.h~bug-not-hugetlbfs-in-copy_huge_page include/linux/hugetlb.h
---- linux.git/include/linux/hugetlb.h~bug-not-hugetlbfs-in-copy_huge_page	2013-11-14 15:09:38.707180957 -0800
-+++ linux.git-davehans/include/linux/hugetlb.h	2013-11-14 15:09:38.710181090 -0800
-@@ -355,6 +355,7 @@ static inline pte_t arch_make_huge_pte(p
- 
- static inline struct hstate *page_hstate(struct page *page)
- {
-+	VM_BUG_ON(!PageHuge(page));
- 	return size_to_hstate(PAGE_SIZE << compound_order(page));
- }
- 
-diff -puN mm/hugetlb.c~bug-not-hugetlbfs-in-copy_huge_page mm/hugetlb.c
---- linux.git/mm/hugetlb.c~bug-not-hugetlbfs-in-copy_huge_page	2013-11-14 15:09:38.708181001 -0800
-+++ linux.git-davehans/mm/hugetlb.c	2013-11-14 15:09:38.711181135 -0800
-@@ -498,6 +498,7 @@ void copy_huge_page(struct page *dst, st
- 	int i;
- 	struct hstate *h = page_hstate(src);
- 
-+	VM_BUG_ON(!h);
- 	if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
- 		copy_gigantic_page(dst, src);
- 		return;
-_
+
