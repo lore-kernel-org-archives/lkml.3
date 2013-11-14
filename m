@@ -1,47 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab3KNJck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 04:32:40 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:51006 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab3KNJci (ORCPT
+	id S1753235Ab3KNJdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 04:33:12 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:60332 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab3KNJdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 04:32:38 -0500
-Date: Thu, 14 Nov 2013 09:32:30 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: cw00.choi@samsung.com, myungjoo.ham@samsung.com, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] extcon: arizona: Add defines for microphone
- detection levels
-Message-ID: <20131114093230.GE3863@lee--X1>
-References: <1384365877-12355-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Thu, 14 Nov 2013 04:33:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1384365877-12355-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: showlilkindness@hotmail.com
+Date: Thu, 14 Nov 2013 01:33:06 -0800
+Message-ID: <CAGV0mdS683vSbz4tbxdVp1sV4nx29ii2V8GsMsVZen_0D7BYqA@mail.gmail.com>
+Subject: Urgent
+From: NIRAV JOGANI <10dme118@nirmauni.ac.in>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Nov 2013, Charles Keepax wrote:
-
-> Improve readability by creating a define for each microphone detection
-> level.
-> 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> ---
->  drivers/extcon/extcon-arizona.c       |   19 ++++++++++++++-----
->  include/linux/mfd/arizona/registers.h |    9 +++++++++
->  2 files changed, 23 insertions(+), 5 deletions(-)
-
-For the MFD changes:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
-
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Good day, my name is Anna Cane (Mrs.),Did you receive my last e-mail
+regarding my urgent need of your assistance from you? If not kindly
+notify me via <showlilkindness@hotmail.com> for more details.
+Anna Cane (Mrs.)
