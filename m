@@ -1,144 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab3KNIi4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 03:38:56 -0500
-Received: from mail.abilis.ch ([195.70.19.74]:17249 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751284Ab3KNIiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 03:38:54 -0500
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Pavel Roskin <proski@gnu.org>, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Noam Camus <noamc@ezchip.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>
-Subject: [PATCH 2/2] x86: Add support for uncompressed kernel images
-Date: Thu, 14 Nov 2013 09:38:16 +0100
-Message-Id: <1384418296-10374-2-git-send-email-christian.ruppert@abilis.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20131114083247.GB9687@ab42.lan>
-References: <20131114083247.GB9687@ab42.lan>
+	id S1752666Ab3KNIjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 03:39:08 -0500
+Received: from caiajhbdcbef.dreamhost.com ([208.97.132.145]:58622 "EHLO
+	homiemail-a17.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752377Ab3KNIiz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 03:38:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=novalis.org; h=message-id:subject
+	:from:to:cc:date:in-reply-to:references:content-type
+	:mime-version:content-transfer-encoding; q=dns; s=novalis.org;
+	 b=ETGgqcuvGyey1CVn45a13yogWg6VAElFg5PSfcfd9RapEuM4n5/OJtSlHNID6
+	wAtL6MT5SOIowEUOqQ4Q+1u4L9IdS99sCvq4mjRl+6Fj2cQn2BpkWE9SEQ0tI0FR
+	9CKSwqFWUnUGQNB/Mt/i4VXQA2Z0WO91KLdYrLpEzYJc2A=
+Message-ID: <1384418333.8994.203.camel@chiang>
+Subject: [PATCH v5 1/2] ext4: Fix handling of extended tv_sec (bug 23732)
+From: David Turner <novalis@novalis.org>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Mark Harris <mhlk@osj.us>,
+        Jan Kara <jack@suse.cz>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 14 Nov 2013 03:38:53 -0500
+In-Reply-To: <276FA06E-1EE0-4FB4-94E1-B6D9F05F0B5B@dilger.ca>
+References: <1383808590.23882.13.camel@chiang>
+	 <20131107160341.GA3850@quack.suse.cz> <1383864864.23882.33.camel@chiang>
+	 <20131107231445.GG2054@quack.suse.cz> <1383866807.23882.41.camel@chiang>
+	 <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
+	 <1383981551.8994.27.camel@chiang>
+	 <CADQUmxULoLgXRyoPpJJMJLqJPsZ8M4oPP8ScGxWp+Np8-efq3g@mail.gmail.com>
+	 <1384070214.8994.47.camel@chiang> <20131112003018.GA30281@thunk.org>
+	 <6DE0AF86-98E6-4DE9-BB7F-40FB32E1BC26@dilger.ca>
+	 <1384326020.8994.186.camel@chiang>
+	 <276FA06E-1EE0-4FB4-94E1-B6D9F05F0B5B@dilger.ca>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
----
- arch/x86/Kconfig                  |  1 +
- arch/x86/boot/compressed/Makefile | 14 ++++++------
- arch/x86/boot/compressed/misc.c   |  4 ++++
- lib/decompress_copy.c             | 47 +++++++++++++++++++++++++++++++++++++++
- 4 files changed, 59 insertions(+), 7 deletions(-)
- create mode 100644 lib/decompress_copy.c
+Thanks for your patient and detailed comments.
+--
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index f67e839..2a32df9 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -61,6 +61,7 @@ config X86
- 	select USER_STACKTRACE_SUPPORT
- 	select HAVE_REGS_AND_STACK_ACCESS_API
- 	select HAVE_DMA_API_DEBUG
-+	select HAVE_KERNEL_UNCOMPRESSED
- 	select HAVE_KERNEL_GZIP
- 	select HAVE_KERNEL_BZIP2
- 	select HAVE_KERNEL_LZMA
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index dcd90df..f65e444 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -67,16 +67,16 @@ $(obj)/vmlinux.bin.lzo: $(vmlinux.bin.all-y) FORCE
- $(obj)/vmlinux.bin.lz4: $(vmlinux.bin.all-y) FORCE
- 	$(call if_changed,lz4)
- 
--suffix-$(CONFIG_KERNEL_GZIP)	:= gz
--suffix-$(CONFIG_KERNEL_BZIP2)	:= bz2
--suffix-$(CONFIG_KERNEL_LZMA)	:= lzma
--suffix-$(CONFIG_KERNEL_XZ)	:= xz
--suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
--suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
-+suffix-$(CONFIG_KERNEL_GZIP)	:= .gz
-+suffix-$(CONFIG_KERNEL_BZIP2)	:= .bz2
-+suffix-$(CONFIG_KERNEL_LZMA)	:= .lzma
-+suffix-$(CONFIG_KERNEL_XZ)	:= .xz
-+suffix-$(CONFIG_KERNEL_LZO) 	:= .lzo
-+suffix-$(CONFIG_KERNEL_LZ4) 	:= .lz4
- 
- quiet_cmd_mkpiggy = MKPIGGY $@
-       cmd_mkpiggy = $(obj)/mkpiggy $< > $@ || ( rm -f $@ ; false )
- 
- targets += piggy.S
--$(obj)/piggy.S: $(obj)/vmlinux.bin.$(suffix-y) $(obj)/mkpiggy FORCE
-+$(obj)/piggy.S: $(obj)/vmlinux.bin$(suffix-y) $(obj)/mkpiggy FORCE
- 	$(call if_changed,mkpiggy)
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 434f077..c210314 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -149,6 +149,10 @@ static int lines, cols;
- #include "../../../../lib/decompress_unlz4.c"
- #endif
- 
-+#ifdef CONFIG_KERNEL_UNCOMPRESSED
-+#include "../../../../lib/decompress_copy.c"
-+#endif
+In ext4, the bottom two bits of {a,c,m}time_extra are used to extend
+the {a,c,m}time fields, deferring the year 2038 problem to the year
+2446.
+
+When decoding these extended fields, for times whose bottom 32 bits
+would represent a negative number, sign extension causes the 64-bit
+extended timestamp to be negative as well, which is not what's
+intended.  This patch corrects that issue, so that the only negative
+{a,c,m}times are those between 1901 and 1970 (as per 32-bit signed
+timestamps).
+
+Some older kernels might have written pre-1970 dates with 1,1 in the
+extra bits.  This patch treats those incorrectly-encoded dates as
+pre-1970, instead of post-2311, until kernel 4.20 is released.
+Hopefully by then e2fsck will have fixed up the bad data.
+
+Signed-off-by: David Turner <novalis@novalis.org>
+Reported-by: Mark Harris <mh8928@yahoo.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=23732
+---
+ fs/ext4/ext4.h | 61 +++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 39 insertions(+), 22 deletions(-)
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 18aa56b..ac54dac 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -26,6 +26,7 @@
+ #include <linux/seqlock.h>
+ #include <linux/mutex.h>
+ #include <linux/timer.h>
++#include <linux/version.h>
+ #include <linux/wait.h>
+ #include <linux/blockgroup_lock.h>
+ #include <linux/percpu_counter.h>
+@@ -713,38 +714,54 @@ struct move_extent {
+ 	  sizeof((ext4_inode)->field))			\
+ 	<= (EXT4_GOOD_OLD_INODE_SIZE +			\
+ 	    (einode)->i_extra_isize))			\
 +
- static void scroll(void)
+ /*
+- * We use the bottom 34 bits of the signed 64-bit time value, with
+- * the top two of these bits in the bottom of extra.  This leads
+- * to a slightly odd encoding, which works like this:
++ * We need is an encoding that preserves the times for extra epoch "00":
+  *
+- * extra  msb of
+- * epoch  32-bit
+- * bits   time    decoded 64-bit tv_sec   valid time range
+- * 0 0    0    0x000000000..0x07fffffff  1970-01-01..2038-01-19
+- * 0 0    1    0x080000000..0x0ffffffff  2038-01-19..2106-02-07
+- * 0 1    0    0x100000000..0x17fffffff  2106-02-07..2174-02-25
+- * 0 1    1    0x180000000..0x1ffffffff  2174-02-25..2242-03-16
+- * 1 0    0    0x200000000..0x27fffffff  2242-03-16..2310-04-04
+- * 1 0    1    0x280000000..0x2ffffffff  2310-04-04..2378-04-22
+- * 1 1    0    0x300000000..0x37fffffff  2378-04-22..2446-05-10
+-
+- * 1 1    1    -0x80000000..-0x00000001  1901-12-13..1969-12-31
++ * extra  msb of                         adjust for signed
++ * epoch  32-bit                         32-bit tv_sec to
++ * bits   time    decoded 64-bit tv_sec  64-bit tv_sec      valid time range
++ * 0 0    1    -0x80000000..-0x00000001  0x000000000     1901-12-13..1969-12-31
++ * 0 0    0    0x000000000..0x07fffffff  0x000000000     1970-01-01..2038-01-19
++ * 0 1    1    0x080000000..0x0ffffffff  0x100000000     2038-01-19..2106-02-07
++ * 0 1    0    0x100000000..0x17fffffff  0x100000000     2106-02-07..2174-02-25
++ * 1 0    1    0x180000000..0x1ffffffff  0x200000000     2174-02-25..2242-03-16
++ * 1 0    0    0x200000000..0x27fffffff  0x200000000     2242-03-16..2310-04-04
++ * 1 1    1    0x280000000..0x2ffffffff  0x300000000     2310-04-04..2378-04-22
++ * 1 1    0    0x300000000..0x37fffffff  0x300000000     2378-04-22..2446-05-10
++ *
++ * Note that previous versions of the kernel on 64-bit systems would
++ * incorrectly use extra epoch bits 1,1 for dates between 1901 and
++ * 1970.  e2fsck will correct this, assuming that it is run on the
++ * affected filesystem before 2242.
+  */
+ 
+ static inline __le32 ext4_encode_extra_time(struct timespec *time)
  {
- 	int i;
-diff --git a/lib/decompress_copy.c b/lib/decompress_copy.c
-new file mode 100644
-index 0000000..8a41090
---- /dev/null
-+++ b/lib/decompress_copy.c
-@@ -0,0 +1,47 @@
-+#include <linux/decompress/mm.h>
-+
-+#define NOZIP_BUFSZ (16 * 1024)
-+STATIC int INIT nozip(unsigned char *buf, int len,
-+			int(*fill)(void*, unsigned int),
-+			int(*flush)(void*, unsigned int),
-+			unsigned char *outbuf,
-+			int *pos,
-+			void(*error)(char *x))
-+{
-+	char *b;
-+
-+	if (buf)
-+		b = buf;
-+	else
-+		b = malloc(NOZIP_BUFSZ);
-+
-+	if (!b) {
-+		error("Out of memory while allocating buffer");
-+		return -1;
+-       return cpu_to_le32((sizeof(time->tv_sec) > 4 ?
+-			   (time->tv_sec >> 32) & EXT4_EPOCH_MASK : 0) |
+-                          ((time->tv_nsec << EXT4_EPOCH_BITS) & EXT4_NSEC_MASK));
++	u32 extra = sizeof(time->tv_sec) > 4 ?
++		((time->tv_sec - (s32)time->tv_sec) >> 32) & EXT4_EPOCH_MASK : 0;
++	return cpu_to_le32(extra | (time->tv_nsec << EXT4_EPOCH_BITS));
+ }
+ 
+ static inline void ext4_decode_extra_time(struct timespec *time, __le32 extra)
+ {
+-       if (sizeof(time->tv_sec) > 4)
+-	       time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
+-			       << 32;
+-       time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
++	if (unlikely(sizeof(time->tv_sec) > 4 &&
++			(extra & cpu_to_le32(EXT4_EPOCH_MASK)))) {
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4,20,0)
++		/* Handle legacy encoding of pre-1970 dates with epoch
++		 * bits 1,1.  We assume that by kernel version 4.20,
++		 * everyone will have run fsck over the affected
++		 * filesystems to correct the problem.
++		 */
++		u64 extra_bits = le32_to_cpu(extra) & EXT4_EPOCH_MASK;
++		if (extra_bits == 3)
++			extra_bits = 0;
++		time->tv_sec += extra_bits << 32;
++#else
++		time->tv_sec += (u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK) << 32;
++#endif
 +	}
-+
-+	if (flush) {
-+		if (!len)
-+			len = fill(b, NOZIP_BUFSZ);
-+
-+		len = flush(b, len);
-+	} else {
-+		if (!len)
-+			len = fill(outbuf, NOZIP_BUFSZ);
-+		else {
-+			int i;
-+			for (i = 0; i < len; i++)
-+				outbuf[i] = b[i];
-+		}
-+	}
-+
-+	if (pos)
-+		*pos = len;
-+
-+	if (!buf)
-+		free(b);
-+
-+	return 0;
-+}
-+
-+#define decompress nozip
++	time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
+ }
+ 
+ #define EXT4_INODE_SET_XTIME(xtime, inode, raw_inode)			       \
 -- 
-1.8.4
+1.8.1.2
+
+
 
