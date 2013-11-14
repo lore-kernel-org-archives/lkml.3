@@ -1,109 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab3KNSwC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 13:52:02 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:57067 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777Ab3KNSvy (ORCPT
+	id S1756432Ab3KNSyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 13:54:25 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:44423 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755222Ab3KNSyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 13:51:54 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/z/SKjmjkw4dD1HYybDK1V
-Date: Thu, 14 Nov 2013 10:51:33 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Luciano Coelho <luca@coelho.fi>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Felipe Balbi <balbi@ti.com>, Sachin Kamat <sachin.kamat@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        Luciano Coelho <coelho@ti.com>
-Subject: Re: [PATCH 1/4] wl1251: split wl251 platform data to a separate
- structure
-Message-ID: <20131114185132.GQ10317@atomide.com>
-References: <1382890469-25286-1-git-send-email-sre@debian.org>
- <1382890469-25286-2-git-send-email-sre@debian.org>
+	Thu, 14 Nov 2013 13:54:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382890469-25286-2-git-send-email-sre@debian.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1384440661-3769-1-git-send-email-lpapp@kde.org>
+References: <1384440661-3769-1-git-send-email-lpapp@kde.org>
+Date: Thu, 14 Nov 2013 18:54:17 +0000
+X-Google-Sender-Auth: lgzcYkeb5QTGrZOsIDu-G2-nvaE
+Message-ID: <CAOMwXhMS-0AUHQ5tOo9oYEWzRZOo_DnVhm9-tYcjhhyThtca-g@mail.gmail.com>
+Subject: Re: [PATCH] hwmon: (max6650) Add support for gpiodef
+From: Laszlo Papp <lpapp@kde.org>
+To: hjk@hansjkoch.de
+Cc: Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, Laszlo Papp <lpapp@kde.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Reichel <sre@debian.org> [131027 09:15]:
-> From: Luciano Coelho <coelho@ti.com>
-> 
-> Move the wl1251 part of the wl12xx platform data structure into a new
-> structure specifically for wl1251.  Change the platform data built-in
-> block and board files accordingly.
-> 
-> Cc: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Luciano Coelho <coelho@ti.com>
-> Acked-by: Tony Lindgren <tony@atomide.com>
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
-> ---
->  arch/arm/mach-omap2/board-omap3pandora.c       |  4 +--
->  arch/arm/mach-omap2/board-rx51-peripherals.c   |  2 +-
->  drivers/net/wireless/ti/wilink_platform_data.c | 37 +++++++++++++++++++++-----
->  drivers/net/wireless/ti/wl1251/sdio.c          | 12 ++++-----
->  drivers/net/wireless/ti/wl1251/spi.c           |  2 +-
->  include/linux/wl12xx.h                         | 22 ++++++++++++++-
->  6 files changed, 62 insertions(+), 17 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
-> index de1bc6b..24f3c1b 100644
-> --- a/arch/arm/mach-omap2/board-omap3pandora.c
-> +++ b/arch/arm/mach-omap2/board-omap3pandora.c
-> @@ -536,7 +536,7 @@ static struct spi_board_info omap3pandora_spi_board_info[] __initdata = {
->  
->  static void __init pandora_wl1251_init(void)
->  {
-> -	struct wl12xx_platform_data pandora_wl1251_pdata;
-> +	struct wl1251_platform_data pandora_wl1251_pdata;
->  	int ret;
->  
->  	memset(&pandora_wl1251_pdata, 0, sizeof(pandora_wl1251_pdata));
-> @@ -550,7 +550,7 @@ static void __init pandora_wl1251_init(void)
->  		goto fail_irq;
->  
->  	pandora_wl1251_pdata.use_eeprom = true;
-> -	ret = wl12xx_set_platform_data(&pandora_wl1251_pdata);
-> +	ret = wl1251_set_platform_data(&pandora_wl1251_pdata);
->  	if (ret < 0)
->  		goto fail_irq;
->  
-> diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-> index 65e3627..0d8e7d2 100644
-> --- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-> +++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-> @@ -82,7 +82,7 @@ enum {
->  	RX51_SPI_MIPID,		/* LCD panel */
->  };
->  
-> -static struct wl12xx_platform_data wl1251_pdata;
-> +static struct wl1251_platform_data wl1251_pdata;
->  static struct tsc2005_platform_data tsc2005_pdata;
->  
->  #if defined(CONFIG_SENSORS_LIS3_I2C) || defined(CONFIG_SENSORS_LIS3_I2C_MODULE)
+On Thu, Nov 14, 2013 at 2:51 PM, Laszlo Papp <lpapp@kde.org> wrote:
+> +       case 1:
+> +               data->gpiodef &= ~MAX6650_GPIO_DEF_GPIO1_LOW;
+> +               data->gpiodef &= (gpio << 2);
 
-If this is not going into v3.13, these will cause conflicts
-with the mach-omap2/board-*.c files for v3.14.
-
-So it might be best to do a minimal header patch first that
-can be merged in by both linux-omap and wireless trees.
-
-Regards,
-
-Tony
+Yikes, that should have been "|=" of course. I will fix it if needed
+once the right approach is found and agreed upon...
