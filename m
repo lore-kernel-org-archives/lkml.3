@@ -1,498 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab3KNG3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 01:29:31 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:57920 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab3KNG3X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 01:29:23 -0500
-Message-ID: <52846D94.5090608@atmel.com>
-Date: Thu, 14 Nov 2013 14:28:36 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751363Ab3KNGmS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 01:42:18 -0500
+Received: from ozlabs.org ([203.10.76.45]:37850 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751094Ab3KNGmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 01:42:07 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 11/17] kernel/param: Consolidate __{start,stop}___param[] in <linux/moduleparam.h>
+In-Reply-To: <1384285347-13506-12-git-send-email-geert@linux-m68k.org>
+References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org> <1384285347-13506-12-git-send-email-geert@linux-m68k.org>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 14 Nov 2013 14:31:30 +1030
+Message-ID: <87habfy6lh.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, <nicolas.ferre@atmel.com>,
-        <alexandre.belloni@free-electrons.com>, <linux-pwm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v6 1/2] PWM: atmel-pwm: add PWM controller driver
-References: <1383292767-11211-1-git-send-email-voice.shen@atmel.com> <20131113095628.GI28304@ns203013.ovh.net>
-In-Reply-To: <20131113095628.GI28304@ns203013.ovh.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi J,
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
+> Consolidate the various external const and non-const declarations of
+> __start___param[] and __stop___param in <linux/moduleparam.h>.
+> This requires making a few struct kernel_param pointers in kernel/params.c
+> const.
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
 
-On 11/13/2013 05:56 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 15:59 Fri 01 Nov     , Bo Shen wrote:
->> Add Atmel PWM controller driver based on PWM framework.
->>
->> This is the basic function implementation of Atmel PWM controller.
->> It can work with PWM based led and backlight.
->>
->> Signed-off-by: Bo Shen <voice.shen@atmel.com>
->>
->> ---
->> Changes in v6:
->>    - using relaxed version for writel and readl
->>    - add none device tree support
->>    - change some define from lower case to upper case
->>    - split device tree binding document as a separate patch
->>
->> Changes in v5:
->>    - call clk_disable directly, if so, it won't cause more than one channel
->>      enabled, the clock can not be disabled.
->>
->> Changes in v4:
->>    - check the return value of clk_prepare()
->>    - change channel register size as constant
->>
->> Changes in v3:
->>    - change compatible string from "atmel,sama5-pwm" to "atmel,sama5d3-pwm"
->>    - Add PWM led example in binding documentation
->>    - Using micro replace hard code
->>
->> Changes in v2:
->>    - Address the comments from Thierry Reding
->>
->>   drivers/pwm/Kconfig     |    9 ++
->>   drivers/pwm/Makefile    |    1 +
->>   drivers/pwm/pwm-atmel.c |  360 +++++++++++++++++++++++++++++++++++++++++++++++
->>   3 files changed, 370 insertions(+)
->>   create mode 100644 drivers/pwm/pwm-atmel.c
->>
->> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
->> index 75840b5..54237b9 100644
->> --- a/drivers/pwm/Kconfig
->> +++ b/drivers/pwm/Kconfig
->> @@ -41,6 +41,15 @@ config PWM_AB8500
->>   	  To compile this driver as a module, choose M here: the module
->>   	  will be called pwm-ab8500.
->>
->> +config PWM_ATMEL
->> +	tristate "Atmel PWM support"
->> +	depends on ARCH_AT91
->> +	help
->> +	  Generic PWM framework driver for Atmel SoC.
->> +
->> +	  To compile this driver as a module, choose M here: the module
->> +	  will be called pwm-atmel.
->> +
->>   config PWM_ATMEL_TCB
->>   	tristate "Atmel TC Block PWM support"
->>   	depends on ATMEL_TCLIB && OF
->> diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
->> index 77a8c18..5b193f8 100644
->> --- a/drivers/pwm/Makefile
->> +++ b/drivers/pwm/Makefile
->> @@ -1,6 +1,7 @@
->>   obj-$(CONFIG_PWM)		+= core.o
->>   obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
->>   obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
->> +obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
->>   obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
->>   obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
->>   obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
->> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
->> new file mode 100644
->> index 0000000..ac54252
->> --- /dev/null
->> +++ b/drivers/pwm/pwm-atmel.c
->> @@ -0,0 +1,360 @@
->> +/*
->> + * Driver for Atmel Pulse Width Modulation Controller
->> + *
->> + * Copyright (C) 2013 Atmel Corporation
->> + *		 Bo Shen <voice.shen@atmel.com>
->> + *
->> + * Licensed under GPLv2.
->> + */
->> +
->> +#include <linux/clk.h>
->> +#include <linux/err.h>
->> +#include <linux/io.h>
->> +#include <linux/module.h>
->> +#include <linux/of.h>
->> +#include <linux/of_device.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/pwm.h>
->> +#include <linux/slab.h>
->> +
->> +/* The following is global registers for PWM controller */
->> +#define PWM_ENA			0x04
->> +#define PWM_DIS			0x08
->> +#define PWM_SR			0x0C
->> +/* bit field in SR */
->> +#define PWM_SR_ALL_CH_ON	0x0F
->> +
->> +/* The following register is PWM channel related registers */
->> +#define PWM_CH_REG_OFFSET	0x200
->> +#define PWM_CH_REG_SIZE		0x20
->> +
->> +#define PWM_CMR			0x0
->> +/* bit field in CMR */
->> +#define PWM_CMR_CPOL		(1 << 9)
->> +#define PWM_CMR_UPD_CDTY	(1 << 10)
->> +
->> +/* The following registers for PWM v1 */
->> +#define PWMV1_CDTY		0x04
->> +#define PWMV1_CPRD		0x08
->> +#define PWMV1_CUPD		0x10
->> +
->> +/* The following registers for PWM v2 */
->> +#define PWMV2_CDTY		0x04
->> +#define PWMV2_CDTYUPD		0x08
->> +#define PWMV2_CPRD		0x0C
->> +#define PWMV2_CPRDUPD		0x10
->> +
->> +/* max value for duty and period */
->> +/*
->> + * Although the duty and period register is 32 bit,
->> + * however only the LSB 16 bits are significant.
->> + */
->> +#define PWM_MAX_DTY		0xFFFF
->> +#define PWM_MAX_PRD		0xFFFF
->> +#define PRD_MAX_PRES		10
->> +
->> +struct atmel_pwm_chip {
->> +	struct pwm_chip chip;
->> +	struct clk *clk;
->> +	void __iomem *base;
->> +
->> +	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
->> +		       int dty, int prd);
->> +};
->> +
->> +static inline struct atmel_pwm_chip *to_atmel_pwm_chip(struct pwm_chip *chip)
->> +{
->> +	return container_of(chip, struct atmel_pwm_chip, chip);
->> +}
->> +
->> +static inline u32 atmel_pwm_readl(struct atmel_pwm_chip *chip,
->> +				  unsigned long offset)
->> +{
->> +	return readl_relaxed(chip->base + offset);
->> +}
->> +
->> +static inline void atmel_pwm_writel(struct atmel_pwm_chip *chip,
->> +				    unsigned long offset, unsigned long val)
->> +{
->> +	writel_relaxed(val, chip->base + offset);
->> +}
->> +
->> +static inline u32 atmel_pwm_ch_readl(struct atmel_pwm_chip *chip,
->> +				     unsigned int ch, unsigned long offset)
->> +{
->> +	return readl_relaxed(chip->base + PWM_CH_REG_OFFSET +
->> +			ch * PWM_CH_REG_SIZE + offset);
->> +}
->> +
->> +static inline void atmel_pwm_ch_writel(struct atmel_pwm_chip *chip,
->> +				       unsigned int ch, unsigned long offset,
->> +				       unsigned long val)
->> +{
->> +	writel_relaxed(val, chip->base + PWM_CH_REG_OFFSET +
->> +			ch * PWM_CH_REG_SIZE + offset);
->> +}
->> +
->> +static int atmel_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
->> +		int duty_ns, int period_ns)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->> +	unsigned long clk_rate, prd, dty;
->> +	unsigned long long div;
->> +	int ret, pres = 0;
->> +
->> +	clk_rate = clk_get_rate(atmel_pwm->clk);
->> +	div = clk_rate;
->> +
->> +	/* Calculate the period cycles */
->> +	while (div > PWM_MAX_PRD) {
->> +		div = clk_rate / (1 << pres);
->> +		div = div * period_ns;
->> +		/* 1/Hz = 100000000 ns */
->> +		do_div(div, 1000000000);
->> +
->> +		if (pres++ > PRD_MAX_PRES) {
->> +			pr_err("PRES is bigger than maximum pre-scaler\n");
->> +			return -EINVAL;
->> +		}
->> +	}
->> +
->> +	/* Calculate the duty cycles */
->> +	prd = div;
->> +	div *= duty_ns;
->> +	do_div(div, period_ns);
->> +	dty = div;
->> +
->> +	ret = clk_enable(atmel_pwm->clk);
->> +	if (ret) {
->> +		pr_err("Failed to enable pwm clock\n");
->> +		return ret;
->> +	}
->> +
->> +	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, pres);
->> +	atmel_pwm->config(chip, pwm, dty, prd);
->> +
->> +	clk_disable(atmel_pwm->clk);
->> +
->> +	return 0;
->> +}
->> +
->> +static void atmel_pwm_config_v1(struct pwm_chip *chip, struct pwm_device *pwm,
->> +				int dty, int prd)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->> +	unsigned int val;
->> +
->> +	/*
->> +	 * If the PWM channel is disabled, write value to duty and period
->> +	 * registers directly.
->> +	 * If the PWM channel is enabled, using the update register, it needs
->> +	 * to set bit 10 of CMR to 0
->> +	 */
->> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CUPD, dty);
->> +
->> +		val = atmel_pwm_ch_readl(atmel_pwm, pwm->hwpwm, PWM_CMR);
->> +		val &= ~PWM_CMR_UPD_CDTY;
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
->> +	} else {
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CDTY, dty);
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CPRD, prd);
->> +	}
->> +}
->> +
->> +static void atmel_pwm_config_v2(struct pwm_chip *chip, struct pwm_device *pwm,
->> +				int dty, int prd)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->> +
->> +	/*
->> +	 * If the PWM channel is disabled, write value to duty and period
->> +	 * registers directly.
->> +	 * If the PWM channel is enabled, using the duty update register to
->> +	 * update the value.
->> +	 */
->> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTYUPD, dty);
->> +	} else {
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTY, dty);
->> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CPRD, prd);
->> +	}
->> +}
->> +
->> +static int atmel_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
->> +		enum pwm_polarity polarity)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->> +	u32 val = 0;
->> +	int ret;
->> +
->> +	if (polarity == PWM_POLARITY_NORMAL)
->> +		val &= ~PWM_CMR_CPOL;
->> +	else
->> +		val |= PWM_CMR_CPOL;
->> +
->> +	ret = clk_enable(atmel_pwm->clk);
->> +	if (ret) {
->> +		pr_err("failed to enable pwm clock\n");
->> +		return ret;
->> +	}
->> +
->> +	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
->> +
->> +	clk_disable(atmel_pwm->clk);
->> +
->> +	return 0;
->> +}
->> +
->> +static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->> +	int ret;
->> +
->> +	ret = clk_enable(atmel_pwm->clk);
->> +	if (ret) {
->> +		pr_err("failed to enable pwm clock\n");
->> +		return ret;
->> +	}
->> +
->> +	atmel_pwm_writel(atmel_pwm, PWM_ENA, 1 << pwm->hwpwm);
->> +
->> +	return 0;
->> +}
->> +
->> +static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->> +
->> +	atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
->> +
->> +	clk_disable(atmel_pwm->clk);
->> +}
->> +
->> +static const struct pwm_ops atmel_pwm_ops = {
->> +	.config = atmel_pwm_config,
->> +	.set_polarity = atmel_pwm_set_polarity,
->> +	.enable = atmel_pwm_enable,
->> +	.disable = atmel_pwm_disable,
->> +	.owner = THIS_MODULE,
->> +};
->> +
->> +struct atmel_pwm_data {
->> +	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
->> +		       int dty, int prd);
->> +};
->> +
->> +static const struct atmel_pwm_data atmel_pwm_data_v1 = {
->> +	.config = atmel_pwm_config_v1,
->> +};
->> +
->> +static const struct atmel_pwm_data atmel_pwm_data_v2 = {
->> +	.config = atmel_pwm_config_v2,
->> +};
->> +
->> +static const struct platform_device_id atmel_pwm_devtypes[] = {
->> +	{
->> +		.name = "at91sam9rl-pwm",
->> +		.driver_data = (kernel_ulong_t)&atmel_pwm_data_v1,
->> +	}, {
->> +		.name = "sama5d3-pwm",
->> +		.driver_data = (kernel_ulong_t)&atmel_pwm_data_v2,
->> +	}, {
->> +		/* sentinel */
->> +	},
->> +};
->> +MODULE_DEVICE_TABLE(platform, atmel_pwm_devtypes);
->> +
->> +#ifdef CONFIG_OF
->> +static const struct of_device_id atmel_pwm_dt_ids[] = {
->> +	{
->> +		.compatible = "atmel,at91sam9rl-pwm",
->> +		.data = &atmel_pwm_data_v1,
->> +	}, {
->> +		.compatible = "atmel,sama5d3-pwm",
->> +		.data = &atmel_pwm_data_v2,
->> +	}, {
->> +		/* sentinel */
->> +	},
->> +};
->> +MODULE_DEVICE_TABLE(of, atmel_pwm_dt_ids);
->> +#endif
->> +
->> +static int atmel_pwm_probe(struct platform_device *pdev)
->> +{
->> +	const struct of_device_id *of_id =
->> +		of_match_device(atmel_pwm_dt_ids, &pdev->dev);
->> +	const struct atmel_pwm_data *data;
->> +	struct atmel_pwm_chip *atmel_pwm;
->> +	struct resource *res;
->> +	int ret;
->> +
->> +	atmel_pwm = devm_kzalloc(&pdev->dev, sizeof(*atmel_pwm), GFP_KERNEL);
->> +	if (!atmel_pwm)
->> +		return -ENOMEM;
->> +
->> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +	if (!res)
->> +		return -ENODEV;
->> +
->> +	atmel_pwm->base = devm_ioremap_resource(&pdev->dev, res);
->> +	if (IS_ERR(atmel_pwm->base))
->> +		return PTR_ERR(atmel_pwm->base);
->> +
->> +	atmel_pwm->clk = devm_clk_get(&pdev->dev, NULL);
->> +	if (IS_ERR(atmel_pwm->clk))
->> +		return PTR_ERR(atmel_pwm->clk);
->> +
->> +	ret = clk_prepare(atmel_pwm->clk);
->> +	if (ret) {
->> +		dev_err(&pdev->dev, "failed to prepare pwm clock\n");
->> +		return ret;
->> +	}
->> +
->> +	atmel_pwm->chip.dev = &pdev->dev;
->> +	atmel_pwm->chip.ops = &atmel_pwm_ops;
-> I get one issue here for non-dt platform
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-I will fix this issue for none-dt in next version.
+Thanks!
+Rusty.
 
->> +	atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
->> +	atmel_pwm->chip.of_pwm_n_cells = 3;
-> those 3 no need
-
-Which "those 3"?
-for dt / none-dt compatible, I will use following code
---->8---
-if (pdev->dev.of_node) {
-	atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
-         atmel_pwm->chip.of_pwm_n_cells = 3;
-         atmel_pwm->chip.base = -1;
-} else {
-	atmel_pwm->chip.base = 0;
-}
----8<---
-
->> +	atmel_pwm->chip.base = -1;
-> here we need specify the base from the board so we known which pwn to use
-> for DT -1 is good as we use phandle
-
-I will fix this issue for none-dt in next version.
-
-> Best Regards,
-> J.
->> +	atmel_pwm->chip.npwm = 4;
->> +
->> +	data = of_id->data;
->> +	atmel_pwm->config = data->config;
->> +
->> +	ret = pwmchip_add(&atmel_pwm->chip);
->> +	if (ret < 0) {
->> +		dev_err(&pdev->dev, "failed to add pwm chip %d\n", ret);
->> +		goto unprepare_clk;
->> +	}
->> +
->> +	platform_set_drvdata(pdev, atmel_pwm);
->> +
->> +unprepare_clk:
->> +	clk_unprepare(atmel_pwm->clk);
->> +	return ret;
->> +}
->> +
->> +static int atmel_pwm_remove(struct platform_device *pdev)
->> +{
->> +	struct atmel_pwm_chip *atmel_pwm = platform_get_drvdata(pdev);
->> +
->> +	clk_unprepare(atmel_pwm->clk);
->> +
->> +	return pwmchip_remove(&atmel_pwm->chip);
->> +}
->> +
->> +static struct platform_driver atmel_pwm_driver = {
->> +	.driver = {
->> +		.name = "atmel-pwm",
->> +		.of_match_table = of_match_ptr(atmel_pwm_dt_ids),
->> +	},
->> +	.id_table = atmel_pwm_devtypes,
->> +	.probe = atmel_pwm_probe,
->> +	.remove = atmel_pwm_remove,
->> +};
->> +module_platform_driver(atmel_pwm_driver);
->> +
->> +MODULE_ALIAS("platform:atmel-pwm");
->> +MODULE_AUTHOR("Bo Shen <voice.shen@atmel.com>");
->> +MODULE_DESCRIPTION("Atmel PWM driver");
->> +MODULE_LICENSE("GPL v2");
->> --
->> 1.7.9.5
->>
-
-Best Regards,
-Bo Shen
-
+> ---
+>  include/linux/moduleparam.h |    2 ++
+>  init/main.c                 |    2 --
+>  kernel/params.c             |    7 +++----
+>  3 files changed, 5 insertions(+), 6 deletions(-)
+>
+> diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+> index c3eb102a9cc8..77ccfca0c4ba 100644
+> --- a/include/linux/moduleparam.h
+> +++ b/include/linux/moduleparam.h
+> @@ -68,6 +68,8 @@ struct kernel_param {
+>  	};
+>  };
+>  
+> +extern const struct kernel_param __start___param[], __stop___param[];
+> +
+>  /* Special one for strings we want to copy into */
+>  struct kparam_string {
+>  	unsigned int maxlen;
+> diff --git a/init/main.c b/init/main.c
+> index 15ed159b681b..f2c4901f90d1 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -469,7 +469,6 @@ static void __init mm_init(void)
+>  asmlinkage void __init start_kernel(void)
+>  {
+>  	char * command_line;
+> -	extern const struct kernel_param __start___param[], __stop___param[];
+>  
+>  	/*
+>  	 * Need to run as early as possible, to initialize the
+> @@ -737,7 +736,6 @@ static char *initcall_level_names[] __initdata = {
+>  
+>  static void __init do_initcall_level(int level)
+>  {
+> -	extern const struct kernel_param __start___param[], __stop___param[];
+>  	initcall_t *fn;
+>  
+>  	strcpy(static_command_line, saved_command_line);
+> diff --git a/kernel/params.c b/kernel/params.c
+> index c00d5b502aa4..54e05ffb7d24 100644
+> --- a/kernel/params.c
+> +++ b/kernel/params.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/string.h>
+>  #include <linux/errno.h>
+>  #include <linux/module.h>
+> +#include <linux/moduleparam.h>
+>  #include <linux/device.h>
+>  #include <linux/err.h>
+>  #include <linux/slab.h>
+> @@ -506,8 +507,6 @@ EXPORT_SYMBOL(param_ops_string);
+>  #define to_module_attr(n) container_of(n, struct module_attribute, attr)
+>  #define to_module_kobject(n) container_of(n, struct module_kobject, kobj)
+>  
+> -extern struct kernel_param __start___param[], __stop___param[];
+> -
+>  struct param_attribute
+>  {
+>  	struct module_attribute mattr;
+> @@ -766,7 +765,7 @@ static struct module_kobject * __init locate_module_kobject(const char *name)
+>  }
+>  
+>  static void __init kernel_add_sysfs_param(const char *name,
+> -					  struct kernel_param *kparam,
+> +					  const struct kernel_param *kparam,
+>  					  unsigned int name_skip)
+>  {
+>  	struct module_kobject *mk;
+> @@ -801,7 +800,7 @@ static void __init kernel_add_sysfs_param(const char *name,
+>   */
+>  static void __init param_sysfs_builtin(void)
+>  {
+> -	struct kernel_param *kp;
+> +	const struct kernel_param *kp;
+>  	unsigned int name_len;
+>  	char modname[MODULE_NAME_LEN];
+>  
+> -- 
+> 1.7.9.5
