@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab3KNQSR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:18:17 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:35304 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755266Ab3KNQQq (ORCPT
+	id S1755585Ab3KNQSk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:18:40 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:54643 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754789Ab3KNQQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:16:46 -0500
+	Thu, 14 Nov 2013 11:16:55 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Lai Siyao <laisiyao@whamcloud.com>,
-        Lai Siyao <lai.siyao@intel.com>, Peng Tao <bergwolf@gmail.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Artem Blagodarenko <artem_blagodarenko@xyratex.com>,
+        Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 35/40] staging/lustre/llite: remove ll_d_root_ops
-Date: Fri, 15 Nov 2013 00:13:37 +0800
-Message-Id: <1384445622-12346-36-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 38/40] staging/lustre/mgs: set_param -P option that sets value permanently
+Date: Fri, 15 Nov 2013 00:13:40 +0800
+Message-Id: <1384445622-12346-39-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
 References: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
@@ -22,315 +23,396 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Siyao <laisiyao@whamcloud.com>
+From: Artem Blagodarenko <artem_blagodarenko@xyratex.com>
 
-Mnt root dentry will never be revalidated, but its d_op->d_compare
-will be called for its children, to simplify code, we use the same
-ll_d_ops as normal dentries.
-But its attribute may be invalid before access, this won't cause
-any issue because it always exists, and the only operation depends
-on its attribute is .permission, which has revalidated it in lustre
-code.
+set_param and conf_param have different syntaxes. Also conf_param
+has unimplemented paths and no wildcarding support.
 
-So it's okay to remove ll_d_root_ops, and remove unnecessary checks
-in lookup/revalidate/statahead.
+This patch adds set_param -P option, that replaces the whole
+conf_param "direct" proc access with a simple upcall-type mechanism
+from the MGC. Option conf_param is saved now for compatibility.
 
-This patch also includes several small fixes:
-* don't d_add() for create only files, because the dentry is fake,
-  and will be released right after use.
-* alloc ll_dentry_data may fail, add check for this.
-
-Lustre-change: http://review.whamcloud.com/6797
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3486
-Signed-off-by: Lai Siyao <lai.siyao@intel.com>
-Reviewed-by: James Simmons <uja.ornl@gmail.com>
-Reviewed-by: Peng Tao <bergwolf@gmail.com>
-Reviewed-by: Bobi Jam <bobijam@gmail.com>
-Reviewed-by: Fan Yong <fan.yong@intel.com>
-Reviewed-by: Alexey Shvetsov <alexxy@gentoo.org>
-Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3155
+Lustre-change: http://review.whamcloud.com/6025
+Signed-off-by: Artem Blagodarenko <artem_blagodarenko@xyratex.com>
+Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+Reviewed-by: Emoly Liu <emoly.liu@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/llite/dcache.c       |   41 +++++---------------
- .../staging/lustre/lustre/llite/llite_internal.h   |    5 ++-
- drivers/staging/lustre/lustre/llite/llite_lib.c    |   11 +-----
- drivers/staging/lustre/lustre/llite/llite_nfs.c    |    6 +--
- drivers/staging/lustre/lustre/llite/namei.c        |   33 +++++++---------
- drivers/staging/lustre/lustre/llite/statahead.c    |    7 ++--
- 6 files changed, 35 insertions(+), 68 deletions(-)
+ drivers/staging/lustre/lustre/include/lustre_cfg.h |    2 +
+ .../staging/lustre/lustre/include/lustre_disk.h    |    2 +
+ drivers/staging/lustre/lustre/include/obd_class.h  |    9 +-
+ drivers/staging/lustre/lustre/llite/llite_lib.c    |    5 +-
+ drivers/staging/lustre/lustre/mgc/mgc_request.c    |   89 +++++++++++++++++---
+ .../staging/lustre/lustre/obdclass/obd_config.c    |   50 +++++++++--
+ 6 files changed, 134 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/llite/dcache.c b/drivers/staging/lustre/lustre/llite/dcache.c
-index cc7befe..c5565be 100644
---- a/drivers/staging/lustre/lustre/llite/dcache.c
-+++ b/drivers/staging/lustre/lustre/llite/dcache.c
-@@ -37,6 +37,7 @@
- #include <linux/fs.h>
- #include <linux/sched.h>
- #include <linux/quotaops.h>
-+#include <linux/kernel.h>
+diff --git a/drivers/staging/lustre/lustre/include/lustre_cfg.h b/drivers/staging/lustre/lustre/include/lustre_cfg.h
+index e14a5f6..3680668 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_cfg.h
++++ b/drivers/staging/lustre/lustre/include/lustre_cfg.h
+@@ -88,6 +88,8 @@ enum lcfg_command_type {
+ 	LCFG_SET_LDLM_TIMEOUT   = 0x00ce030, /**< set ldlm_timeout */
+ 	LCFG_PRE_CLEANUP	= 0x00cf031, /**< call type-specific pre
+ 					      * cleanup cleanup */
++	LCFG_SET_PARAM		= 0x00ce032, /**< use set_param syntax to set
++					      *a proc parameters */
+ };
  
- #define DEBUG_SUBSYSTEM S_LLITE
+ struct lustre_cfg_bufs {
+diff --git a/drivers/staging/lustre/lustre/include/lustre_disk.h b/drivers/staging/lustre/lustre/include/lustre_disk.h
+index 9228b16..e714fde 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_disk.h
++++ b/drivers/staging/lustre/lustre/include/lustre_disk.h
+@@ -98,6 +98,8 @@
+ #define LDD_F_IR_CAPABLE    0x2000
+ /** the MGS refused to register the target. */
+ #define LDD_F_ERROR	 0x4000
++/** process at lctl conf_param */
++#define LDD_F_PARAM2		0x8000
  
-@@ -176,7 +177,7 @@ static int ll_ddelete(const struct dentry *de)
- 	return 0;
- }
+ /* opc for target register */
+ #define LDD_F_OPC_REG   0x10000000
+diff --git a/drivers/staging/lustre/lustre/include/obd_class.h b/drivers/staging/lustre/lustre/include/obd_class.h
+index 983718f..1c2ba19 100644
+--- a/drivers/staging/lustre/lustre/include/obd_class.h
++++ b/drivers/staging/lustre/lustre/include/obd_class.h
+@@ -175,9 +175,13 @@ enum {
+ 	CONFIG_T_CONFIG  = 0,
+ 	CONFIG_T_SPTLRPC = 1,
+ 	CONFIG_T_RECOVER = 2,
+-	CONFIG_T_MAX     = 3
++	CONFIG_T_PARAMS  = 3,
++	CONFIG_T_MAX     = 4
+ };
  
--static int ll_set_dd(struct dentry *de)
-+int ll_d_init(struct dentry *de)
- {
- 	LASSERT(de != NULL);
- 
-@@ -190,40 +191,22 @@ static int ll_set_dd(struct dentry *de)
- 		OBD_ALLOC_PTR(lld);
- 		if (likely(lld != NULL)) {
- 			spin_lock(&de->d_lock);
--			if (likely(de->d_fsdata == NULL))
-+			if (likely(de->d_fsdata == NULL)) {
- 				de->d_fsdata = lld;
--			else
-+				__d_lustre_invalidate(de);
-+			} else {
- 				OBD_FREE_PTR(lld);
-+			}
- 			spin_unlock(&de->d_lock);
- 		} else {
- 			return -ENOMEM;
- 		}
- 	}
-+	LASSERT(de->d_op == &ll_d_ops);
- 
- 	return 0;
- }
- 
--int ll_dops_init(struct dentry *de, int block, int init_sa)
--{
--	struct ll_dentry_data *lld = ll_d2d(de);
--	int rc = 0;
--
--	if (lld == NULL && block != 0) {
--		rc = ll_set_dd(de);
--		if (rc)
--			return rc;
--
--		lld = ll_d2d(de);
--	}
--
--	if (lld != NULL && init_sa != 0)
--		lld->lld_sa_generation = 0;
--
--	/* kernel >= 2.6.38 d_op is set in d_alloc() */
--	LASSERT(de->d_op == &ll_d_ops);
--	return rc;
--}
--
- void ll_intent_drop_lock(struct lookup_intent *it)
- {
- 	if (it->it_op && it->d.lustre.it_lock_mode) {
-@@ -358,6 +341,8 @@ int ll_revalidate_it(struct dentry *de, int lookup_flags,
- 	CDEBUG(D_VFSTRACE, "VFS Op:name=%s,intent=%s\n", de->d_name.name,
- 	       LL_IT2STR(it));
- 
-+	LASSERT(de != de->d_sb->s_root);
++#define PARAMS_FILENAME	"params"
++#define LCTL_UPCALL	"lctl"
 +
- 	if (de->d_inode == NULL) {
- 		__u64 ibits;
- 
-@@ -382,14 +367,6 @@ int ll_revalidate_it(struct dentry *de, int lookup_flags,
- 	if (d_mountpoint(de))
- 		GOTO(out_sa, rc = 1);
- 
--	/* need to get attributes in case root got changed from other client */
--	if (de == de->d_sb->s_root) {
--		rc = __ll_inode_revalidate_it(de, it, MDS_INODELOCK_LOOKUP);
--		if (rc == 0)
--			rc = 1;
--		GOTO(out_sa, rc);
--	}
--
- 	exp = ll_i2mdexp(de->d_inode);
- 
- 	OBD_FAIL_TIMEOUT(OBD_FAIL_MDC_REVALIDATE_PAUSE, 5);
-diff --git a/drivers/staging/lustre/lustre/llite/llite_internal.h b/drivers/staging/lustre/lustre/llite/llite_internal.h
-index 5028c3b..37e33ab 100644
---- a/drivers/staging/lustre/lustre/llite/llite_internal.h
-+++ b/drivers/staging/lustre/lustre/llite/llite_internal.h
-@@ -816,7 +816,7 @@ int ll_lease_close(struct obd_client_handle *och, struct inode *inode,
- 
- /* llite/dcache.c */
- 
--int ll_dops_init(struct dentry *de, int block, int init_sa);
-+int ll_d_init(struct dentry *de);
- extern struct dentry_operations ll_d_ops;
- void ll_intent_drop_lock(struct lookup_intent *);
- void ll_intent_release(struct lookup_intent *);
-@@ -1308,7 +1308,8 @@ ll_statahead_mark(struct inode *dir, struct dentry *dentry)
- 	if (lli->lli_opendir_pid != current_pid())
- 		return;
- 
--	if (sai != NULL && ldd != NULL)
-+	LASSERT(ldd != NULL);
-+	if (sai != NULL)
- 		ldd->lld_sa_generation = sai->sai_generation;
- }
- 
+ /* list of active configuration logs  */
+ struct config_llog_data {
+ 	struct ldlm_res_id	  cld_resid;
+@@ -185,7 +189,8 @@ struct config_llog_data {
+ 	struct list_head		  cld_list_chain;
+ 	atomic_t		cld_refcount;
+ 	struct config_llog_data    *cld_sptlrpc;/* depended sptlrpc log */
+-	struct config_llog_data    *cld_recover;    /* imperative recover log */
++	struct config_llog_data	   *cld_params;	/* common parameters log */
++	struct config_llog_data    *cld_recover;/* imperative recover log */
+ 	struct obd_export	  *cld_mgcexp;
+ 	struct mutex		    cld_lock;
+ 	int			 cld_type;
 diff --git a/drivers/staging/lustre/lustre/llite/llite_lib.c b/drivers/staging/lustre/lustre/llite/llite_lib.c
-index 3b7e022..d15f99c 100644
+index d15f99c..93c67e5 100644
 --- a/drivers/staging/lustre/lustre/llite/llite_lib.c
 +++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
-@@ -154,11 +154,6 @@ void ll_free_sbi(struct super_block *sb)
+@@ -1058,7 +1058,7 @@ out_free:
+ 
+ void ll_put_super(struct super_block *sb)
+ {
+-	struct config_llog_instance cfg;
++	struct config_llog_instance cfg, params_cfg;
+ 	struct obd_device *obd;
+ 	struct lustre_sb_info *lsi = s2lsi(sb);
+ 	struct ll_sb_info *sbi = ll_s2sbi(sb);
+@@ -1072,6 +1072,9 @@ void ll_put_super(struct super_block *sb)
+ 	cfg.cfg_instance = sb;
+ 	lustre_end_log(sb, profilenm, &cfg);
+ 
++	params_cfg.cfg_instance = sb;
++	lustre_end_log(sb, PARAMS_FILENAME, &params_cfg);
++
+ 	if (sbi->ll_md_exp) {
+ 		obd = class_exp2obd(sbi->ll_md_exp);
+ 		if (obd)
+diff --git a/drivers/staging/lustre/lustre/mgc/mgc_request.c b/drivers/staging/lustre/lustre/mgc/mgc_request.c
+index 9325f91..f4ecd29 100644
+--- a/drivers/staging/lustre/lustre/mgc/mgc_request.c
++++ b/drivers/staging/lustre/lustre/mgc/mgc_request.c
+@@ -56,7 +56,7 @@ static int mgc_name2resid(char *name, int len, struct ldlm_res_id *res_id,
+ {
+ 	__u64 resname = 0;
+ 
+-	if (len > 8) {
++	if (len > sizeof(resname)) {
+ 		CERROR("name too long: %s\n", name);
+ 		return -EINVAL;
  	}
+@@ -76,6 +76,7 @@ static int mgc_name2resid(char *name, int len, struct ldlm_res_id *res_id,
+ 		resname = 0;
+ 		break;
+ 	case CONFIG_T_RECOVER:
++	case CONFIG_T_PARAMS:
+ 		resname = type;
+ 		break;
+ 	default:
+@@ -101,10 +102,13 @@ int mgc_logname2resid(char *logname, struct ldlm_res_id *res_id, int type)
+ 	int len;
+ 
+ 	/* logname consists of "fsname-nodetype".
+-	 * e.g. "lustre-MDT0001", "SUN-000-client" */
++	 * e.g. "lustre-MDT0001", "SUN-000-client"
++	 * there is an exception: llog "params" */
+ 	name_end = strrchr(logname, '-');
+-	LASSERT(name_end);
+-	len = name_end - logname;
++	if (!name_end)
++		len = strlen(logname);
++	else
++		len = name_end - logname;
+ 	return mgc_name2resid(logname, len, res_id, type);
  }
  
--static struct dentry_operations ll_d_root_ops = {
--	.d_compare = ll_dcompare,
--	.d_revalidate = ll_revalidate_nd,
--};
--
- static int client_common_fill_super(struct super_block *sb, char *md, char *dt,
- 				    struct vfsmount *mnt)
- {
-@@ -577,10 +572,6 @@ static int client_common_fill_super(struct super_block *sb, char *md, char *dt,
- 		GOTO(out_root, err = -ENOMEM);
- 	}
+@@ -140,6 +144,8 @@ static void config_log_put(struct config_llog_data *cld)
+ 			config_log_put(cld->cld_recover);
+ 		if (cld->cld_sptlrpc)
+ 			config_log_put(cld->cld_sptlrpc);
++		if (cld->cld_params)
++			config_log_put(cld->cld_params);
+ 		if (cld_is_sptlrpc(cld))
+ 			sptlrpc_conf_log_stop(cld->cld_logname);
  
--	/* kernel >= 2.6.38 store dentry operations in sb->s_d_op. */
--	d_set_d_op(sb->s_root, &ll_d_root_ops);
--	sb->s_d_op = &ll_d_ops;
--
- 	sbi->ll_sdev_orig = sb->s_dev;
- 
- 	/* We set sb->s_dev equal on all lustre clients in order to support
-@@ -1011,6 +1002,8 @@ int ll_fill_super(struct super_block *sb, struct vfsmount *mnt)
- 		GOTO(out_free, err);
- 
- 	sb->s_bdi = &lsi->lsi_bdi;
-+	/* kernel >= 2.6.38 store dentry operations in sb->s_d_op. */
-+	sb->s_d_op = &ll_d_ops;
- 
- 	/* Generate a string unique to this super, in case some joker tries
- 	   to mount the same fs at two mount points.
-diff --git a/drivers/staging/lustre/lustre/llite/llite_nfs.c b/drivers/staging/lustre/lustre/llite/llite_nfs.c
-index 1767c74..3580069 100644
---- a/drivers/staging/lustre/lustre/llite/llite_nfs.c
-+++ b/drivers/staging/lustre/lustre/llite/llite_nfs.c
-@@ -167,10 +167,10 @@ ll_iget_for_nfs(struct super_block *sb, struct lu_fid *fid, struct lu_fid *paren
- 	}
- 
- 	result = d_obtain_alias(inode);
--	if (IS_ERR(result))
-+	if (IS_ERR(result)) {
-+		iput(inode);
- 		return result;
--
--	ll_dops_init(result, 1, 0);
-+	}
- 
- 	return result;
+@@ -271,6 +277,19 @@ static struct config_llog_data *config_recover_log_add(struct obd_device *obd,
+ 	return cld;
  }
-diff --git a/drivers/staging/lustre/lustre/llite/namei.c b/drivers/staging/lustre/lustre/llite/namei.c
-index dfcfbb8..c760059 100644
---- a/drivers/staging/lustre/lustre/llite/namei.c
-+++ b/drivers/staging/lustre/lustre/llite/namei.c
-@@ -398,11 +398,16 @@ static struct dentry *ll_find_alias(struct inode *inode, struct dentry *dentry)
- struct dentry *ll_splice_alias(struct inode *inode, struct dentry *de)
- {
- 	struct dentry *new;
-+	int rc;
  
- 	if (inode) {
- 		new = ll_find_alias(inode, de);
- 		if (new) {
--			ll_dops_init(new, 1, 1);
-+			rc = ll_d_init(new);
-+			if (rc < 0) {
-+				dput(new);
-+				return ERR_PTR(rc);
-+			}
- 			d_move(new, de);
- 			iput(inode);
- 			CDEBUG(D_DENTRY,
-@@ -411,8 +416,9 @@ struct dentry *ll_splice_alias(struct inode *inode, struct dentry *de)
- 			return new;
++static struct config_llog_data *config_params_log_add(struct obd_device *obd,
++	struct config_llog_instance *cfg, struct super_block *sb)
++{
++	struct config_llog_instance	lcfg = *cfg;
++	struct config_llog_data		*cld;
++
++	lcfg.cfg_instance = sb;
++
++	cld = do_config_log_add(obd, PARAMS_FILENAME, CONFIG_T_PARAMS,
++				&lcfg, sb);
++
++	return cld;
++}
+ 
+ /** Add this log to the list of active logs watched by an MGC.
+  * Active means we're watching for updates.
+@@ -284,8 +303,10 @@ static int config_log_add(struct obd_device *obd, char *logname,
+ 	struct lustre_sb_info *lsi = s2lsi(sb);
+ 	struct config_llog_data *cld;
+ 	struct config_llog_data *sptlrpc_cld;
+-	char		     seclogname[32];
+-	char		    *ptr;
++	struct config_llog_data *params_cld;
++	char			seclogname[32];
++	char			*ptr;
++	int			rc;
+ 
+ 	CDEBUG(D_MGC, "adding config log %s:%p\n", logname, cfg->cfg_instance);
+ 
+@@ -308,32 +329,49 @@ static int config_log_add(struct obd_device *obd, char *logname,
+ 						CONFIG_T_SPTLRPC, NULL, NULL);
+ 		if (IS_ERR(sptlrpc_cld)) {
+ 			CERROR("can't create sptlrpc log: %s\n", seclogname);
+-			return PTR_ERR(sptlrpc_cld);
++			GOTO(out_err, rc = PTR_ERR(sptlrpc_cld));
  		}
  	}
--	ll_dops_init(de, 1, 1);
--	__d_lustre_invalidate(de);
-+	rc = ll_d_init(de);
-+	if (rc < 0)
-+		return ERR_PTR(rc);
- 	d_add(de, inode);
- 	CDEBUG(D_DENTRY, "Add dentry %p inode %p refc %d flags %#x\n",
- 	       de, de->d_inode, d_count(de), de->d_flags);
-@@ -453,8 +459,11 @@ int ll_lookup_it_finish(struct ptlrpc_request *request,
- 	/* Only hash *de if it is unhashed (new dentry).
- 	 * Atoimc_open may passin hashed dentries for open.
- 	 */
--	if (d_unhashed(*de))
-+	if (d_unhashed(*de)) {
- 		*de = ll_splice_alias(inode, *de);
-+		if (IS_ERR(*de))
-+			return PTR_ERR(*de);
++	params_cld = config_params_log_add(obd, cfg, sb);
++	if (IS_ERR(params_cld)) {
++		rc = PTR_ERR(params_cld);
++		CERROR("%s: can't create params log: rc = %d\n",
++		       obd->obd_name, rc);
++		GOTO(out_err1, rc);
 +	}
  
- 	if (!it_disposition(it, DISP_LOOKUP_NEG)) {
- 		/* we have lookup look - unhide dentry */
-@@ -503,16 +512,6 @@ static struct dentry *ll_lookup_it(struct inode *parent, struct dentry *dentry,
+ 	cld = do_config_log_add(obd, logname, CONFIG_T_CONFIG, cfg, sb);
+ 	if (IS_ERR(cld)) {
+ 		CERROR("can't create log: %s\n", logname);
+-		config_log_put(sptlrpc_cld);
+-		return PTR_ERR(cld);
++		GOTO(out_err2, rc = PTR_ERR(cld));
+ 	}
  
- 	ll_frob_intent(&it, &lookup_it);
+ 	cld->cld_sptlrpc = sptlrpc_cld;
++	cld->cld_params = params_cld;
  
--	/* As do_lookup is called before follow_mount, root dentry may be left
--	 * not valid, revalidate it here. */
--	if (parent->i_sb->s_root && (parent->i_sb->s_root->d_inode == parent) &&
--	    (it->it_op & (IT_OPEN | IT_CREAT))) {
--		rc = ll_inode_revalidate_it(parent->i_sb->s_root, it,
--					    MDS_INODELOCK_LOOKUP);
--		if (rc)
--			return ERR_PTR(rc);
--	}
+ 	LASSERT(lsi->lsi_lmd);
+ 	if (!(lsi->lsi_lmd->lmd_flags & LMD_FLG_NOIR)) {
+ 		struct config_llog_data *recover_cld;
+ 		*strrchr(seclogname, '-') = 0;
+ 		recover_cld = config_recover_log_add(obd, seclogname, cfg, sb);
+-		if (IS_ERR(recover_cld)) {
+-			config_log_put(cld);
+-			return PTR_ERR(recover_cld);
+-		}
++		if (IS_ERR(recover_cld))
++			GOTO(out_err3, rc = PTR_ERR(recover_cld));
+ 		cld->cld_recover = recover_cld;
+ 	}
+ 
+ 	return 0;
++
++out_err3:
++	config_log_put(cld);
++
++out_err2:
++	config_log_put(params_cld);
++
++out_err1:
++	config_log_put(sptlrpc_cld);
++
++out_err:
++	return rc;
+ }
+ 
+ DEFINE_MUTEX(llog_process_lock);
+@@ -344,6 +382,7 @@ static int config_log_end(char *logname, struct config_llog_instance *cfg)
+ {
+ 	struct config_llog_data *cld;
+ 	struct config_llog_data *cld_sptlrpc = NULL;
++	struct config_llog_data *cld_params = NULL;
+ 	struct config_llog_data *cld_recover = NULL;
+ 	int rc = 0;
+ 
+@@ -382,11 +421,20 @@ static int config_log_end(char *logname, struct config_llog_instance *cfg)
+ 	spin_lock(&config_list_lock);
+ 	cld_sptlrpc = cld->cld_sptlrpc;
+ 	cld->cld_sptlrpc = NULL;
++	cld_params = cld->cld_params;
++	cld->cld_params = NULL;
+ 	spin_unlock(&config_list_lock);
+ 
+ 	if (cld_sptlrpc)
+ 		config_log_put(cld_sptlrpc);
+ 
++	if (cld_params) {
++		mutex_lock(&cld_params->cld_lock);
++		cld_params->cld_stopping = 1;
++		mutex_unlock(&cld_params->cld_lock);
++		config_log_put(cld_params);
++	}
++
+ 	/* drop the ref from the find */
+ 	config_log_put(cld);
+ 	/* drop the start ref */
+@@ -1657,7 +1705,7 @@ static int mgc_process_cfg_log(struct obd_device *mgc,
+ 				LCONSOLE_ERROR_MSG(0x13a, "Failed to get MGS "
+ 						   "log %s and no local copy."
+ 						   "\n", cld->cld_logname);
+-				GOTO(out_pop, rc = -ENOTCONN);
++				GOTO(out_pop, rc = -ENOENT);
+ 			}
+ 			CDEBUG(D_MGC, "Failed to get MGS log %s, using local "
+ 			       "copy for now, will try to update later.\n",
+@@ -1856,6 +1904,19 @@ static int mgc_process_config(struct obd_device *obd, obd_count len, void *buf)
+ 			if (rc)
+ 				CERROR("Cannot process recover llog %d\n", rc);
+ 		}
++
++		if (rc == 0 && cld->cld_params != NULL) {
++			rc = mgc_process_log(obd, cld->cld_params);
++			if (rc == -ENOENT) {
++				CDEBUG(D_MGC, "There is no params"
++					      "config file yet\n");
++				rc = 0;
++			}
++			/* params log is optional */
++			if (rc)
++				CERROR("%s: can't process params llog: rc = %d\n",
++				       obd->obd_name, rc);
++		}
+ 		config_log_put(cld);
+ 
+ 		break;
+diff --git a/drivers/staging/lustre/lustre/obdclass/obd_config.c b/drivers/staging/lustre/lustre/obdclass/obd_config.c
+index 362ae54..abb519a 100644
+--- a/drivers/staging/lustre/lustre/obdclass/obd_config.c
++++ b/drivers/staging/lustre/lustre/obdclass/obd_config.c
+@@ -1027,6 +1027,45 @@ struct lustre_cfg *lustre_cfg_rename(struct lustre_cfg *cfg,
+ }
+ EXPORT_SYMBOL(lustre_cfg_rename);
+ 
++static int process_param2_config(struct lustre_cfg *lcfg)
++{
++	char *param = lustre_cfg_string(lcfg, 1);
++	char *upcall = lustre_cfg_string(lcfg, 2);
++	char *argv[] = {
++		[0] = "/usr/sbin/lctl",
++		[1] = "set_param",
++		[2] = param,
++		[3] = NULL
++	};
++	struct timeval	start;
++	struct timeval	end;
++	int		rc;
++
++
++	/* Add upcall processing here. Now only lctl is supported */
++	if (strcmp(upcall, LCTL_UPCALL) != 0) {
++		CERROR("Unsupported upcall %s\n", upcall);
++		return -EINVAL;
++	}
++
++	do_gettimeofday(&start);
++	rc = USERMODEHELPER(argv[0], argv, NULL);
++	do_gettimeofday(&end);
++
++	if (rc < 0) {
++		CERROR("lctl: error invoking upcall %s %s %s: rc = %d; "
++		       "time %ldus\n", argv[0], argv[1], argv[2], rc,
++		       cfs_timeval_sub(&end, &start, NULL));
++	} else {
++		CDEBUG(D_HA, "lctl: invoked upcall %s %s %s, time %ldus\n",
++		       argv[0], argv[1], argv[2],
++		       cfs_timeval_sub(&end, &start, NULL));
++		       rc = 0;
++	}
++
++	return rc;
++}
++
+ void lustre_register_quota_process_config(int (*qpc)(struct lustre_cfg *lcfg))
+ {
+ 	quota_process_config = qpc;
+@@ -1142,11 +1181,14 @@ int class_process_config(struct lustre_cfg *lcfg)
+ 			err = (*quota_process_config)(lcfg);
+ 			GOTO(out, err);
+ 		}
+-		/* Fall through */
++
+ 		break;
+ 	}
++	case LCFG_SET_PARAM: {
++		err = process_param2_config(lcfg);
++		GOTO(out, 0);
++	}
+ 	}
 -
- 	if (it->it_op == IT_GETATTR) {
- 		rc = ll_statahead_enter(parent, &dentry, 0);
- 		if (rc == 1) {
-@@ -582,12 +581,8 @@ static struct dentry *ll_lookup_nd(struct inode *parent, struct dentry *dentry,
- 	       parent->i_generation, parent, flags);
- 
- 	/* Optimize away (CREATE && !OPEN). Let .create handle the race. */
--	if ((flags & LOOKUP_CREATE ) && !(flags & LOOKUP_OPEN)) {
--		ll_dops_init(dentry, 1, 1);
--		__d_lustre_invalidate(dentry);
--		d_add(dentry, NULL);
-+	if ((flags & LOOKUP_CREATE) && !(flags & LOOKUP_OPEN))
- 		return NULL;
--	}
- 
- 	if (flags & (LOOKUP_PARENT|LOOKUP_OPEN|LOOKUP_CREATE))
- 		itp = NULL;
-diff --git a/drivers/staging/lustre/lustre/llite/statahead.c b/drivers/staging/lustre/lustre/llite/statahead.c
-index f6b5f4b9..183b415 100644
---- a/drivers/staging/lustre/lustre/llite/statahead.c
-+++ b/drivers/staging/lustre/lustre/llite/statahead.c
-@@ -877,9 +877,6 @@ static int do_sa_revalidate(struct inode *dir, struct ll_sa_entry *entry,
- 	if (d_mountpoint(dentry))
- 		return 1;
- 
--	if (unlikely(dentry == dentry->d_sb->s_root))
--		return 1;
--
- 	entry->se_inode = igrab(inode);
- 	rc = md_revalidate_lock(ll_i2mdexp(dir), &it, ll_inode2fid(inode),NULL);
- 	if (rc == 1) {
-@@ -1590,6 +1587,10 @@ int do_statahead_enter(struct inode *dir, struct dentry **dentryp,
- 				if ((*dentryp)->d_inode == NULL) {
- 					*dentryp = ll_splice_alias(inode,
- 								   *dentryp);
-+					if (IS_ERR(*dentryp)) {
-+						ll_sai_unplug(sai, entry);
-+						return PTR_ERR(*dentryp);
-+					}
- 				} else if ((*dentryp)->d_inode != inode) {
- 					/* revalidate, but inode is recreated */
- 					CDEBUG(D_READA,
+ 	/* Commands that require a device */
+ 	obd = class_name2obd(lustre_cfg_string(lcfg, 0));
+ 	if (obd == NULL) {
+@@ -1183,24 +1225,20 @@ int class_process_config(struct lustre_cfg *lcfg)
+ 	case LCFG_POOL_NEW: {
+ 		err = obd_pool_new(obd, lustre_cfg_string(lcfg, 2));
+ 		GOTO(out, err = 0);
+-		break;
+ 	}
+ 	case LCFG_POOL_ADD: {
+ 		err = obd_pool_add(obd, lustre_cfg_string(lcfg, 2),
+ 				   lustre_cfg_string(lcfg, 3));
+ 		GOTO(out, err = 0);
+-		break;
+ 	}
+ 	case LCFG_POOL_REM: {
+ 		err = obd_pool_rem(obd, lustre_cfg_string(lcfg, 2),
+ 				   lustre_cfg_string(lcfg, 3));
+ 		GOTO(out, err = 0);
+-		break;
+ 	}
+ 	case LCFG_POOL_DEL: {
+ 		err = obd_pool_del(obd, lustre_cfg_string(lcfg, 2));
+ 		GOTO(out, err = 0);
+-		break;
+ 	}
+ 	default: {
+ 		err = obd_process_config(obd, sizeof(*lcfg), lcfg);
 -- 
 1.7.9.5
 
