@@ -1,138 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab3KNBd3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 20:33:29 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:52989 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286Ab3KNBdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 20:33:22 -0500
+	id S1752129Ab3KNBhv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 20:37:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751132Ab3KNBhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 20:37:43 -0500
+Date: Thu, 14 Nov 2013 09:36:49 +0800
+From: Dave Young <dyoung@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, bp@alien8.de
+Subject: Re: [patch 7/7 v2] x86: add xloadflags bit for efi runtime support
+ on kexec
+Message-ID: <20131114013649.GA4081@dhcp-16-126.nay.redhat.com>
+References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com>
+ <20131105082719.416282009@dhcp-16-126.nay.redhat.com>
+ <5283A6DD.2030808@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <20131113131328.GF878@sirena.org.uk>
-References: <1384328457-5147-1-git-send-email-k.kozlowski@samsung.com>
-	<1384328457-5147-2-git-send-email-k.kozlowski@samsung.com>
-	<20131113131328.GF878@sirena.org.uk>
-Date: Thu, 14 Nov 2013 10:33:22 +0900
-X-Google-Sender-Auth: 4-XgszsC0UI4AJdtXVz3sxA54uw
-Message-ID: <CAH9JG2U9VDnRW9JZ7j7OyRmVhSXWJ5Yp_gNqUPK=xCST7SY=xg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] mfd: max14577: Add max14577 MFD driver core
-From: Kyungmin Park <kmpark@infradead.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5283A6DD.2030808@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 10:13 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Wed, Nov 13, 2013 at 08:40:54AM +0100, Krzysztof Kozlowski wrote:
->
->> +/**
->> + * After resuming from suspend it may happen that IRQ is signalled but
->> + * IRQ GPIO is not high. Also the interrupt registers won't have any data
->> + * (all of them equal to 0x00).
->> + *
->> + * In such case retry few times reading the interrupt registers.
->> + */
->> +#define IRQ_READ_REG_RETRY_CNT               5
->
-> What is the cause here?  This smells like an unreliable workaround for
-> some other behaviour.  In general this all looks very like standard
-> regmap code.
->
->> +     for (i = 0; i < MAX14577_IRQ_REGS_NUM; i++) {
->> +             u8 mask_reg = max14577_mask_reg[i];
->> +
->> +             if (mask_reg == MAX14577_REG_INVALID ||
->> +                             IS_ERR_OR_NULL(max14577->regmap))
->> +                     continue;
->
-> Why would this code even be running if you don't have a register map?
->
->> +             dev_info(max14577->dev, "Got interrupts [1:0x%02x, 2:0x%02x, 3:0x%02x]\n",
->> +                     irq_reg[MAX14577_IRQ_INT1], irq_reg[MAX14577_IRQ_INT2],
->> +                     irq_reg[MAX14577_IRQ_INT3]);
->
-> This is far too noisy, dev_dbg() at most.
->
->> +             gpio_val = gpio_get_value(pdata->irq_gpio);
->> +
->> +             if (gpio_get_value(pdata->irq_gpio) == 0)
->> +                     dev_warn(max14577->dev, "IRQ GPIO is not high, retry reading interrupt registers\n");
->> +     } while (gpio_val == 0 && --retry > 0);
->
-> This looks very strange...
->
->> +     max14577->irq = gpio_to_irq(pdata->irq_gpio);
->> +     ret = gpio_request(pdata->irq_gpio, "max14577_irq");
->> +     if (ret) {
->> +             dev_err(max14577->dev, "Failed requesting GPIO %d: %d\n",
->> +                             pdata->irq_gpio, ret);
->> +             goto err;
->> +     }
->> +     gpio_direction_input(pdata->irq_gpio);
->> +     gpio_free(pdata->irq_gpio);
->
-> This means the GPIO handling code that was present in the handling is
-> broken, it's trying to use the GPIO after it was freed.
->
->> +     ret = request_threaded_irq(max14577->irq, NULL, max14577_irq_thread,
->> +                                IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
->> +                                "max14577-irq", max14577);
->
-> Are you *positive* this is a falling triggered IRQ?  All the code to do
-> with spinning reading the GPIO state during handling makes it look like
-> this is in fact an active low interrupt and a lot of the code in here is
-> working around trying to handle that as the wrong kind of IRQ.
+On 11/13/13 at 08:20am, H. Peter Anvin wrote:
+> On 11/05/2013 12:20 AM, dyoung@redhat.com wrote:
+> > Old kexec-tools can not load new kernel. The reason is previously kexec-tools
+> > do not fill efi_info in x86 setup header thus efi init fail and switch
+> > to noefi boot. In new kexec-tools it will by default fill efi_info and
+> > pass other efi required infomation to 2nd kernel so kexec kernel efi
+> > initialization will success finally.
+> > 
+> > To prevent from breaking userspace, add a new xloadflags bit so kexec-tools
+> > will check the flag and switch to old logic.
+> > 
+> > Signed-off-by: Dave Young <dyoung@redhat.com>
+> > ---
+> >  arch/x86/boot/header.S                |    9 ++++++++-
+> >  arch/x86/include/uapi/asm/bootparam.h |    1 +
+> >  2 files changed, 9 insertions(+), 1 deletion(-)
+> > 
+> > --- linux-2.6.orig/arch/x86/boot/header.S
+> > +++ linux-2.6/arch/x86/boot/header.S
+> > @@ -391,7 +391,14 @@ xloadflags:
+> >  #else
+> >  # define XLF23 0
+> >  #endif
+> > -			.word XLF0 | XLF1 | XLF23
+> > +
+> > +#if defined(CONFIG_X86_64) && defined(CONFIG_EFI)
+> > +# define XLF4 XLF_EFI_KEXEC
+> > +#else
+> > +# define XLF4 0
+> > +#endif
+> > +
+> > +			.word XLF0 | XLF1 | XLF23 | XLF4
+> >  
+> >  cmdline_size:   .long   COMMAND_LINE_SIZE-1     #length of the command line,
+> >                                                  #added with boot protocol
+> > --- linux-2.6.orig/arch/x86/include/uapi/asm/bootparam.h
+> > +++ linux-2.6/arch/x86/include/uapi/asm/bootparam.h
+> > @@ -24,6 +24,7 @@
+> >  #define XLF_CAN_BE_LOADED_ABOVE_4G	(1<<1)
+> >  #define XLF_EFI_HANDOVER_32		(1<<2)
+> >  #define XLF_EFI_HANDOVER_64		(1<<3)
+> > +#define XLF_EFI_KEXEC			(1<<4)
+> >  
+> >  #ifndef __ASSEMBLY__
+> >  
+> > 
+> 
+> Also needs to be added to Documentation/x86/boot.txt with the exact
+> semantics being exposed.
 
-It's not work with level triggering. as wm8994, it requires edge
-triggering. previous time I send RFC patch to handle edge triggering
-at regmap.
+Will do
 
->
->> +int max14577_bulk_write(struct regmap *map, u8 reg, u8 *buf, int count)
->> +{
->> +     return regmap_bulk_write(map, reg, buf, count);
->> +}
->> +EXPORT_SYMBOL_GPL(max14577_bulk_write);
->
-> Given that these are basically all trivial wrappers around regmap they
-> probably ought to be static inlines in the header.
->
->> +static struct max14577_platform_data *max14577_i2c_parse_dt(struct device *dev)
->> +{
->
-> There's no DT binding document?
->
->> +const struct dev_pm_ops max14577_pm = {
->> +     .suspend = max14577_suspend,
->> +     .resume = max14577_resume,
->> +};
->
-> SET_SYSTEM_SLEEP_PM_OPS().
->
->> +static int __init max14577_i2c_init(void)
->> +{
->> +     return i2c_add_driver(&max14577_i2c_driver);
->> +}
->> +subsys_initcall(max14577_i2c_init);
->
-> Why not module_i2c_driver?
-
-there's ordering issue, it should provide regulator which is used
-others before USB probe. if not, it failed to use USB.
-Other PMICs use also subsys_initcall for this reason.
-
-Thank you,
-Kyungmin Park
+> 
+> 	-hpa
+> 
