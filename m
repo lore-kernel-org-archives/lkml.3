@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab3KNOwC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 09:52:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46884 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293Ab3KNOvy (ORCPT
+	id S1754288Ab3KNOyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 09:54:47 -0500
+Received: from 33.106-14-84.ripe.coltfrance.com ([84.14.106.33]:45530 "EHLO
+	proxy.6wind.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850Ab3KNOyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 09:51:54 -0500
-Message-ID: <5284E382.9090900@ubuntu.com>
-Date: Thu, 14 Nov 2013 14:51:46 +0000
-From: James Hunt <james.hunt@ubuntu.com>
-Reply-To: james.hunt@ubuntu.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: "upstart-devel >> \"upstart-devel >> Upstart Devel List\"" 
-	<upstart-devel@lists.ubuntu.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Upstart 1.11 released
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Nov 2013 09:54:43 -0500
+X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Nov 2013 09:54:43 EST
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        gregkh@linuxfoundation.org, williams@redhat.com,
+        linux-rt-users@vger.kernel.org, lclaudio@uudg.org, davem@davemloft.net,
+        netdev@vger.kernel.org, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Willem de Bruijn <willemb@google.com>
+Subject: [PATCH net] ip6tnl: fix use after free of fb_tnl_dev
+Date: Thu, 14 Nov 2013 15:47:03 +0100
+Message-Id: <1384440423-4275-1-git-send-email-nicolas.dichtel@6wind.com>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <20131113211430.1ad3bb7d@gandalf.local.home>
+References: <20131113211430.1ad3bb7d@gandalf.local.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Summary of changes:
+Bug has been introduced by commit bb8140947a24 ("ip6tnl: allow to use rtnl ops
+on fb tunnel").
 
-* Add '--no-dbus' command-line option for the init(8) daemon (allowing
-  event propagation to the Session Init via the upstart-event-bridge(8) to
-  be disabled).
-* Serialise Session Init job environment table on re-exec (LP: #1238078).
-* upstart-{dbus,socket}-bridge(8): Don't clobber existing PATH (LP: #1234898).
-* upstart-file-bridge(8):
-  - Allow watching for directory creation (LP: #1221466).
-  - Reduce default output.
-* upstart-local-bridge(8): Handle arbitrary numbers of pairs and additional
-  checks on input validity (LP: #1234898).
-* Improved Session Init shutdown speed (LP: #1227212).
-* New configure options: '--disable-local-bridge', '--disable-socket-bridge'.
-* Added upstart-file-bridge(8) and Session Init re-exec integration tests.
-* Retain umask for Session Init (LP: #1240686).
-* Make Session Init connect to D-Bus Session Bus on request
-  (LP: #1203595, #1235649)
-* Improved build-time ABI compliance checking.
-* Doc updates and lots of test refinements.
+When ip6_tunnel.ko is unloaded, FB device is delete by rtnl_link_unregister()
+and then we try to use the pointer in ip6_tnl_destroy_tunnels().
 
-Thanks to all the contributors, reviewers, and testers.
+Let's add an handler for dellink, which will never remove the FB tunnel. With
+this patch it will no more be possible to remove it via 'ip link del ip6tnl0',
+but it's safer.
 
-Download it from launchpad: https://launchpad.net/upstart
+The same fix was already proposed by Willem de Bruijn <willemb@google.com> for
+sit interfaces.
 
---
-James Hunt
-____________________________________
-#upstart on freenode
-http://upstart.ubuntu.com/cookbook
-https://lists.ubuntu.com/mailman/listinfo/upstart-devel
+CC: Willem de Bruijn <willemb@google.com>
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+---
+ net/ipv6/ip6_tunnel.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
+index 583b77e2f69b..c1e11b5d6ccc 100644
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -1635,6 +1635,15 @@ static int ip6_tnl_changelink(struct net_device *dev, struct nlattr *tb[],
+ 	return ip6_tnl_update(t, &p);
+ }
+ 
++static void ip6_tnl_dellink(struct net_device *dev, struct list_head *head)
++{
++	struct net *net = dev_net(dev);
++	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
++
++	if (dev != ip6n->fb_tnl_dev)
++		unregister_netdevice_queue(dev, head);
++}
++
+ static size_t ip6_tnl_get_size(const struct net_device *dev)
+ {
+ 	return
+@@ -1699,6 +1708,7 @@ static struct rtnl_link_ops ip6_link_ops __read_mostly = {
+ 	.validate	= ip6_tnl_validate,
+ 	.newlink	= ip6_tnl_newlink,
+ 	.changelink	= ip6_tnl_changelink,
++	.dellink	= ip6_tnl_dellink,
+ 	.get_size	= ip6_tnl_get_size,
+ 	.fill_info	= ip6_tnl_fill_info,
+ };
+@@ -1715,9 +1725,9 @@ static struct xfrm6_tunnel ip6ip6_handler __read_mostly = {
+ 	.priority	=	1,
+ };
+ 
+-static void __net_exit ip6_tnl_destroy_tunnels(struct ip6_tnl_net *ip6n)
++static void __net_exit ip6_tnl_destroy_tunnels(struct net *net)
+ {
+-	struct net *net = dev_net(ip6n->fb_tnl_dev);
++	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
+ 	struct net_device *dev, *aux;
+ 	int h;
+ 	struct ip6_tnl *t;
+@@ -1785,10 +1795,8 @@ err_alloc_dev:
+ 
+ static void __net_exit ip6_tnl_exit_net(struct net *net)
+ {
+-	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
+-
+ 	rtnl_lock();
+-	ip6_tnl_destroy_tunnels(ip6n);
++	ip6_tnl_destroy_tunnels(net);
+ 	rtnl_unlock();
+ }
+ 
+-- 
+1.8.4.1
+
