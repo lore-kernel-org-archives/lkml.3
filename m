@@ -1,102 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab3KNPTX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 10:19:23 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:58004 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752425Ab3KNPTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 10:19:15 -0500
-Message-ID: <5284E9A3.8010100@imgtec.com>
-Date: Thu, 14 Nov 2013 15:17:55 +0000
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754366Ab3KNPX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 10:23:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57113 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753555Ab3KNPXS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 10:23:18 -0500
+Date: Thu, 14 Nov 2013 16:23:04 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: perf/tracepoint: another fuzzer generated lockup
+Message-ID: <20131114152304.GC5364@laptop.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1311081440440.7281@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu>
+ <20131108200244.GB14606@localhost.localdomain>
+ <alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu>
+ <20131108204839.GD14606@localhost.localdomain>
+ <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu>
+ <20131108223657.GF14606@localhost.localdomain>
+ <20131109151014.GN16117@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Daniel Borkmann <dborkman@redhat.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: Re: linux-next: manual merge of the random tree with the net-next
- tree
-References: <20131112155549.c160273993147244ed6bc81d@canb.auug.org.au>	<5281ED01.5020204@redhat.com> <20131113074657.287f83d9669c8144865a77b6@canb.auug.org.au>
-In-Reply-To: <20131113074657.287f83d9669c8144865a77b6@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.31]
-X-SEF-Processed: 7_3_0_01192__2013_11_14_15_19_11
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131109151014.GN16117@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2013 08:46 PM, Stephen Rothwell wrote:
-> Hi Daniel,
->
-> On Tue, 12 Nov 2013 09:55:29 +0100 Daniel Borkmann <dborkman@redhat.com> wrote:
->>
->> On 11/12/2013 05:55 AM, Stephen Rothwell wrote:
->>>
->>> Today's linux-next merge of the random tree got a conflict in
->>> drivers/char/random.c between commit 0244ad004a54 ("random32: add
->>> prandom_reseed_late() and call when nonblocking pool becomes
->>> initialized") from the net-next tree and commit 301f0595c0e7 ("random:
->>> printk notifications for urandom pool initialization") from the random
->>> tree.
->>>
->>> I fixed it up (probably not properly - see below) and can carry the fix
->>> as necessary (no action is required).
->>
->> As per Hannes' suggestion, the result should look like (see cover
->> letter in [1]):
->>
->> if (r->entropy_total > 128) {
->> 	r->initialized = 1;
->> 	r->entropy_total = 0;
->> 	if (r == &nonblocking_pool) {
->> 		prandom_reseed_late();
->> 		pr_notice("random: %s pool is initialized\n",
->> 			  r->name);
->> 	}
->> }
->
-> I will use that from today.  Thanks.
->
+On Sat, Nov 09, 2013 at 04:10:14PM +0100, Peter Zijlstra wrote:
+> Cute.. so what appears to happen is that:
+> 
+> 1) we trace irq_work_exit
+> 2) we generate event
+> 3) event needs to deliver signal
+> 4) we queue irq_work to send signal
+> 5) goto 1
 
-Hi Stephen,
+---
+ arch/x86/include/asm/trace/irq_vectors.h | 11 +++++++++++
+ include/linux/ftrace_event.h             | 16 ++++++++++++++++
+ include/linux/tracepoint.h               |  4 ++++
+ include/trace/ftrace.h                   |  7 +++++++
+ kernel/trace/trace_event_perf.c          |  6 ++++++
+ 5 files changed, 44 insertions(+)
 
-This broke the build for MIPS for the malta_defconfig when using the 
-latest Mentor toolchain.
-
-In file included from include/linux/fs.h:16:0,
-                  from fs/fuse/fuse_i.h:13,
-                  from fs/fuse/file.c:9:
-fs/fuse/file.c: In function 'fuse_file_poll':
-include/linux/rbtree.h:82:28: warning: 'parent' may be used 
-uninitialized in this function [-Wmaybe-uninitialized]
-fs/fuse/file.c:2580:27: note: 'parent' was declared here
-drivers/char/random.c: In function 'init_std_data':
-drivers/char/random.c:1249:1: internal compiler error: in 
-add_insn_before, at emit-rtl.c:3857
-Please submit a full bug report,
-with preprocessed source if appropriate.
-See <https://sourcery.mentor.com/GNUToolchain/> for instructions.
-make[2]: *** [drivers/char/random.o] Error 1
-make[1]: *** [drivers/char] Error 2
-make: *** [drivers] Error 2
-make: *** Waiting for unfinished jobs....
-
-
-If you want to reproduce it you can do the following steps:
-- Get a MIPS Mentor toolchain from 
-https://sourcery.mentor.com/GNUToolchain/release2554
-- make ARCH=mips CROSS_COMPILE=$TOOLCHAIN_PATH/bin/mips-linux-gnu- 
-malta_defconfig
-- make ARCH=mips CROSS_COMPILE=$TOOLCHAIN_PATH/bin/mips-linux-gnu-
-
-
-We are working with the toolchain group to come up with a workaround in 
-the code to resolve the problem.
-
--- 
-markos
-
+diff --git a/arch/x86/include/asm/trace/irq_vectors.h b/arch/x86/include/asm/trace/irq_vectors.h
+index 2874df24e7a4..4cab890007a7 100644
+--- a/arch/x86/include/asm/trace/irq_vectors.h
++++ b/arch/x86/include/asm/trace/irq_vectors.h
+@@ -72,6 +72,17 @@ DEFINE_IRQ_VECTOR_EVENT(x86_platform_ipi);
+ DEFINE_IRQ_VECTOR_EVENT(irq_work);
+ 
+ /*
++ * We must dis-allow sampling irq_work_exit() because perf event sampling
++ * itself can cause irq_work, which would lead to an infinite loop;
++ *
++ *  1) irq_work_exit happens
++ *  2) generates perf sample
++ *  3) generates irq_work
++ *  4) goto 1
++ */
++TRACE_EVENT_PERF_PERM(irq_work_exit, is_sampling_event(p_event) ? -EPERM : 0);
++
++/*
+  * call_function - called when entering/exiting a call function interrupt
+  * vector handler
+  */
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 5eaa746735ff..3e4d05566022 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -244,6 +244,9 @@ struct ftrace_event_call {
+ #ifdef CONFIG_PERF_EVENTS
+ 	int				perf_refcount;
+ 	struct hlist_head __percpu	*perf_events;
++
++	int	(*perf_perm)(struct ftrace_event_call *,
++			     struct perf_event *);
+ #endif
+ };
+ 
+@@ -306,6 +309,19 @@ struct ftrace_event_file {
+ 	}								\
+ 	early_initcall(trace_init_flags_##name);
+ 
++#define __TRACE_EVENT_PERF_PERM(name, expr)				\
++	static int perf_perm_##name(struct ftrace_event_call *tp_event, \
++				    struct perf_event *p_event)		\
++	{								\
++		return expr;						\
++	}								\
++	static int __init trace_init_flags_##name(void)			\
++	{								\
++		event_##name.perf_perm = &perf_perm_##name;		\
++		return 0;						\
++	}								\
++	early_initcall(trace_init_flags_##name);
++
+ #define PERF_MAX_TRACE_SIZE	2048
+ 
+ #define MAX_FILTER_STR_VAL	256	/* Should handle KSYM_SYMBOL_LEN */
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index ebeab360d851..dd5cb1dca207 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -267,6 +267,8 @@ static inline void tracepoint_synchronize_unregister(void)
+ 
+ #define TRACE_EVENT_FLAGS(event, flag)
+ 
++#define TRACE_EVENT_PERF_PERM(event, expr)
++
+ #endif /* DECLARE_TRACE */
+ 
+ #ifndef TRACE_EVENT
+@@ -399,4 +401,6 @@ static inline void tracepoint_synchronize_unregister(void)
+ 
+ #define TRACE_EVENT_FLAGS(event, flag)
+ 
++#define TRACE_EVENT_PERF_PERM(event, expr)
++
+ #endif /* ifdef TRACE_EVENT (see note above) */
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 5c7ab17cbb02..7bdda40fc406 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -90,6 +90,10 @@
+ #define TRACE_EVENT_FLAGS(name, value)					\
+ 	__TRACE_EVENT_FLAGS(name, value)
+ 
++#undef TRACE_EVENT_PERF_PERM
++#define TRACE_EVENT_PERF_PERM(name, expr)				\
++	__TRACE_EVENT_PERF_PERM(name, expr)
++
+ #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
+ 
+ 
+@@ -140,6 +144,9 @@
+ #undef TRACE_EVENT_FLAGS
+ #define TRACE_EVENT_FLAGS(event, flag)
+ 
++#undef TRACE_EVENT_PERF_PERM
++#define TRACE_EVENT_PERF_PERM(event, expr)
++
+ #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
+ 
+ /*
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 78e27e3b52ac..630889f68b1d 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -24,6 +24,12 @@ static int	total_ref_count;
+ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
+ 				 struct perf_event *p_event)
+ {
++	if (tp_event->perf_perm) {
++		int ret = tp_event->perf_perm(tp_event, p_event);
++		if (ret)
++			return ret;
++	}
++
+ 	/* The ftrace function trace is allowed only for root. */
+ 	if (ftrace_event_is_function(tp_event) &&
+ 	    perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
