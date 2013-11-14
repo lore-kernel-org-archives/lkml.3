@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab3KNU60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 15:58:26 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58007 "EHLO
+	id S1757228Ab3KNVAv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 16:00:51 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58011 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753965Ab3KNU6T (ORCPT
+	with ESMTP id S1754766Ab3KNVAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 15:58:19 -0500
-Date: Thu, 14 Nov 2013 20:57:58 +0000
+	Thu, 14 Nov 2013 16:00:42 -0500
+Date: Thu, 14 Nov 2013 21:00:15 +0000
 From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Andreas Werner <wernerandy@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Black screen with GMA500 driver on Atom E680 (invalid VBT
- signature)
-Message-ID: <20131114205758.78c0788d@alan.etchedpixels.co.uk>
-In-Reply-To: <20131114182523.GA2133@thinkpad.fritz.box>
-References: <20131113183418.GA1593@thinkpad.fritz.box>
-	<20131114135209.0a8a15ff@alan.etchedpixels.co.uk>
-	<20131114182523.GA2133@thinkpad.fritz.box>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: matthew.garrett@nebula.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.ernst@linux.intel.com,
+        Kuppuswamy Sathyanarayanan 
+	<sathyanarayanan.kuppuswamy@linux.intel.com>
+Subject: Re: [PATCH 3/3] ipc: Added support for IPC interrupt mode
+Message-ID: <20131114210015.25dab122@alan.etchedpixels.co.uk>
+In-Reply-To: <52850A12.3090900@linux.intel.com>
+References: <1384373671-12814-1-git-send-email-david.a.cohen@linux.intel.com>
+	<1384373671-12814-4-git-send-email-david.a.cohen@linux.intel.com>
+	<20131114134842.7225c7f8@alan.etchedpixels.co.uk>
+	<52850A12.3090900@linux.intel.com>
 Organization: Intel Corporation
 X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
@@ -27,22 +30,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> but if you checkout the PCI table in the driver, there is the device
-> and vendor ID mentioned, that means for me that the driver supports
-> the Graphic core in E680.
-> And after loading the driver, it will parse for $VBT.
-> I just find a comment in the PCI table with "E620" but
-> the device and vendor id is the same for E680.
+On Thu, 14 Nov 2013 09:36:18 -0800
+David Cohen <david.a.cohen@linux.intel.com> wrote:
+
+> Hi Alan,
 > 
-> What do you mean with "Moorestown style" ?
+> [snip]
+> 
+> > So I think
+> >
+> > 1. Pass the informatio upon whether IRQ mode should be used in the
+> > platform information and remove all the ifdeffery
+> 
+> I will double check with Sathya. But in case polling mode is left for
+> development purpose, make we can create a static variable to set irq
+> mode or not.
 
-There are essentially two styles of configuration table used with PVR
-graphics. One is basically the same as that used on 'real' Intel graphics
-the other first introduced with one of the SoC devices is a firmware
-table in a completely different format.
-
-The netbook and PC oriented devices use the VBT, the tablet SoC
-devices and embedded ones seem to vary and have a VBT/GCT in different
-form that is found via config 0xFC on the chipset - see mid_bios.c
-
-Alan
+If its only for development it doesn't IMHO need to be upstream. If its
+useful for debug and/or needed on real chipsets (as I believe is the case
+for the older ones) then a module (and thus kernel command line) option
+would be sensible yes.
