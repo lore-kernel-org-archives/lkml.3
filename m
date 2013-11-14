@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab3KNTMj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 14:12:39 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:2732 "EHLO mms2.broadcom.com"
+	id S1757133Ab3KNTMt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 14:12:49 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:2694 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755241Ab3KNTLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755073Ab3KNTLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Nov 2013 14:11:10 -0500
 X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
 From: "Tim Kryger" <tim.kryger@linaro.org>
@@ -22,65 +22,56 @@ cc: "Tim Kryger" <tim.kryger@linaro.org>,
         "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
         "Linux MMC List" <linux-mmc@vger.kernel.org>,
         "Linaro Patches List" <patches@linaro.org>
-Subject: [PATCH v3 4/8] ARM: dts: Specify clocks for SDHCIs on bcm11351
-Date: Thu, 14 Nov 2013 11:10:39 -0800
-Message-ID: <1384456243-27053-5-git-send-email-tim.kryger@linaro.org>
+Subject: [PATCH v3 6/8] Documentation: dt: kona-timer: Add clocks
+ property
+Date: Thu, 14 Nov 2013 11:10:41 -0800
+Message-ID: <1384456243-27053-7-git-send-email-tim.kryger@linaro.org>
 X-Mailer: git-send-email 1.8.0.1
 In-Reply-To: <1384456243-27053-1-git-send-email-tim.kryger@linaro.org>
 References: <1384456243-27053-1-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
-X-WSS-ID: 7E9BFFA34RS8193359-01-01
+X-WSS-ID: 7E9BFFA24RS8193357-01-01
 Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Specify the external clock label in each SDHCI node.
+The frequency for the Kona timer can either be specified through the
+device tree or determined by checking the rate of the clock specified
+in the device tree.  Update the documentation to reflect both ways.
 
 Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 Reviewed-by: Matt Porter <matt.porter@linaro.org>
 ---
- arch/arm/boot/dts/bcm11351.dtsi | 4 ++++
- 1 file changed, 4 insertions(+)
+ Documentation/devicetree/bindings/arm/bcm/kona-timer.txt | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-index 9b99c52..cfa1158 100644
---- a/arch/arm/boot/dts/bcm11351.dtsi
-+++ b/arch/arm/boot/dts/bcm11351.dtsi
-@@ -117,6 +117,7 @@
- 	sdio1: sdio@3f180000 {
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f180000 0x10000>;
-+		clocks = <&sdio1_clk>;
- 		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
- 		status = "disabled";
+diff --git a/Documentation/devicetree/bindings/arm/bcm/kona-timer.txt b/Documentation/devicetree/bindings/arm/bcm/kona-timer.txt
+index 17d88b2..b84e184 100644
+--- a/Documentation/devicetree/bindings/arm/bcm/kona-timer.txt
++++ b/Documentation/devicetree/bindings/arm/bcm/kona-timer.txt
+@@ -8,13 +8,19 @@ Required properties:
+ - DEPRECATED: compatible : "bcm,kona-timer"
+ - reg : Register range for the timer
+ - interrupts : interrupt for the timer
++- clocks: clock specifier for the kona i2c external clock
+ - clock-frequency: frequency that the clock operates
+ 
++Only one of clocks or clock-frequency should be specified.
++
++Refer to clocks/clock-bindings.txt for generic clock consumer
++properties.
++
+ Example:
+ 	timer@35006000 {
+ 		compatible = "brcm,kona-timer";
+ 		reg = <0x35006000 0x1000>;
+ 		interrupts = <0x0 7 0x4>;
+-		clock-frequency = <32768>;
++		clocks = <&hub_timer_clk>;
  	};
-@@ -124,6 +125,7 @@
- 	sdio2: sdio@3f190000 {
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f190000 0x10000>;
-+		clocks = <&sdio2_clk>;
- 		interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
- 		status = "disabled";
- 	};
-@@ -131,6 +133,7 @@
- 	sdio3: sdio@3f1a0000 {
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f1a0000 0x10000>;
-+		clocks = <&sdio3_clk>;
- 		interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
- 		status = "disabled";
- 	};
-@@ -138,6 +141,7 @@
- 	sdio4: sdio@3f1b0000 {
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f1b0000 0x10000>;
-+		clocks = <&sdio4_clk>;
- 		interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
- 		status = "disabled";
- 	};
+ 
 -- 
 1.8.0.1
 
