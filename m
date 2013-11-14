@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab3KNSZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 13:25:34 -0500
-Received: from mout.gmx.net ([212.227.17.21]:53357 "EHLO mout.gmx.net"
+	id S1755440Ab3KNS0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 13:26:22 -0500
+Received: from mout.gmx.net ([212.227.15.15]:63539 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755073Ab3KNSZ1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 13:25:27 -0500
-Date: Thu, 14 Nov 2013 19:25:23 +0100
+	id S1754657Ab3KNS0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 13:26:13 -0500
+Date: Thu, 14 Nov 2013 19:26:09 +0100
 From: Andreas Werner <wernerandy@gmx.de>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Black screen with GMA500 driver on Atom E680 (invalid VBT
- signature)
-Message-ID: <20131114182523.GA2133@thinkpad.fritz.box>
-References: <20131113183418.GA1593@thinkpad.fritz.box>
- <20131114135209.0a8a15ff@alan.etchedpixels.co.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Marek Vasut <marex@denx.de>, wsa@the-dreams.de, jacmet@sunsite.dk,
+        baohua.song@csr.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] I2C: busses: Do not print error message in syslog if no
+ ACK received
+Message-ID: <20131114182609.GB2133@thinkpad.fritz.box>
+References: <1384278336-3694-1-git-send-email-wernerandy@gmx.de>
+ <201311121933.41038.marex@denx.de>
+ <20131113182415.GA1458@thinkpad.fritz.box>
+ <201311132024.06853.marex@denx.de>
+ <1384436392.15774.2.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131114135209.0a8a15ff@alan.etchedpixels.co.uk>
+In-Reply-To: <1384436392.15774.2.camel@joe-AO722>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V03:K0:vbqkSU5FcvSOa1uozT1KYNO3fZLmdFCK1duYU5dCR3BGX0qzqei
- WdUGgz+U3rzAJC1RpwMIokUnI7q9yzLq4XGUeE6EGb9buHG9B6YQZTrm6PmSF80GjFCmeWm
- KgMB8PDo1wBpAD9IoKmUOoRpPVcO7ZJYOceBQx4FUT38EiNIAU6V2tPFShpU6/hGfjlbDNa
- IQSa3JPWrmthN0y5R8T4Q==
+X-Provags-ID: V03:K0:k/5S2CInDoLE4U9Xu84ohYIskPoeOYOKJcCkOZ9X+3a0i7V4pI8
+ duf/ie0LjbOdDN3iHIL15jTLBlgotYeSGjexy/0JYSoIYNEcQLk1RiAzXBhqLsU2LvuyNZ2
+ ym935jG71bAK/tB1KeG2qQ7JQCfGMJ3/YaXZeQqDhJ2Sc6iftx1g0mkuNifuvRszUXa37Vd
+ 23dOQGrYAGdLQ63XvaWkg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 01:52:09PM +0000, One Thousand Gnomes wrote:
-> > My question now is, is it a bug in the driver or in the VGA Bios?
+On Thu, Nov 14, 2013 at 05:39:52AM -0800, Joe Perches wrote:
+> On Wed, 2013-11-13 at 20:24 +0100, Marek Vasut wrote:
+> > > On Tue, Nov 12, 2013 at 07:33:40PM +0100, Marek Vasut wrote:
+> > > > > > That is because if you look at the only caller of this function,
+> > > > > > which is pch_i2c_wait_for_check_xfer(), you will see that at the
+> > > > > > only place where pch_i2c_getack() is called there is already
+> > > > > > pch_dbg():
+> > > > > > 
+> > > > > > 369         if (pch_i2c_getack(adap)) {
+> > > > > > 370                 pch_dbg(adap, "Receive NACK for slave address"
+> > > > > > 371                         "setting\n");
+> > > > > > 372                 return -EIO;
+> > > > > > 373         }
+> > > 
+> > > Sorry i misunderstood that. You are absolutly right, thats the best
+> > > solution for that. Remove the pch_err at getack so that only the pch_dbg
+> > > get printed where getack is called. This should be enough information.
 > > 
-> > I´ve checked the VGA bios and did a hex dump but there is really no "$VBT" string.
-> > On an Atom Gen1 CPU with intel GMA500 Graphic there is the string in the VGA BIOS.
-> > But if i create the VGA BIOS for intel Atom E680 which has a GMA600 Graphic
-> > there is no string.
-> > 
-> > Does anybody of you running the GMA500 driver with and Atom E680 without having this
-> > problem? Or does anybody know how to get this string into the VGA BIOS?
+> > No problem ;-)
 > 
-> E680 I believe will try and use the other style of parsing. I never got
-> my hands on one to confirm that but in general E6xx seems to use
-> Moorestown style tables instead and you'll only get support for some
-> outputs.
+> If this is the approach taken, please coalesce the format.
+> As is there's a missing space between address and setting.
+> This should be:
+> 
+> 		pch_dbg(adap, "Received NACK for slave address setting\n");
+> 
 > 
 Hi,
-but if you checkout the PCI table in the driver, there is the device
-and vendor ID mentioned, that means for me that the driver supports
-the Graphic core in E680.
-And after loading the driver, it will parse for $VBT.
-I just find a comment in the PCI table with "E620" but
-the device and vendor id is the same for E680.
+yes you are right, i will also add it and resand the patch in a few days.
 
-What do you mean with "Moorestown style" ?
-
-Regards
+regards 
 Andy
