@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab3KNMCl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 07:02:41 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:46644 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624Ab3KNMCi (ORCPT
+	id S1753314Ab3KNMIM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 07:08:12 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52717 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab3KNMIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 07:02:38 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: input question: ambient light sensor button
-Date: Thu, 14 Nov 2013 13:02:31 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-13-generic; KDE/4.11.2; x86_64; ; )
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-References: <201309151553.34000@pali> <alpine.LNX.2.00.1311131146410.22940@pobox.suse.cz> <20131113162840.GB11657@core.coreip.homeip.net>
-In-Reply-To: <20131113162840.GB11657@core.coreip.homeip.net>
+	Thu, 14 Nov 2013 07:08:10 -0500
+Date: Thu, 14 Nov 2013 13:07:42 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <len.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
+Subject: Re: [RFC][PATCH v5 01/14] sched: add a new arch_sd_local_flags for
+ sched_domain init
+Message-ID: <20131114120742.GI16796@laptop.programming.kicks-ass.net>
+References: <20131105140626.GP31370@twins.programming.kicks-ass.net>
+ <CAKfTPtCYHKRv=w3b4tZV-2BW_a_T+tkO9Qpc0PhLD=uZY1yvfw@mail.gmail.com>
+ <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <20131106145344.448d7733@mschwide>
+ <20131106140807.GM10651@twins.programming.kicks-ass.net>
+ <528268C8.8010501@arm.com>
+ <20131112180844.GF21461@twins.programming.kicks-ass.net>
+ <52839F04.60702@arm.com>
+ <20131113162919.GM26898@twins.programming.kicks-ass.net>
+ <20131114104902.GB5762@e103034-lin>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1917016.QdsGLqR9mN";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201311141302.33384@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131114104902.GB5762@e103034-lin>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1917016.QdsGLqR9mN
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 14, 2013 at 10:49:02AM +0000, Morten Rasmussen wrote:
+> We need a way to know which group of cpus the flag applies to. If we
+> don't want to pass a pointer to the sched_domain and we want to replace
+> the current named sched_domain levels with something more flexible, the
+> only solution I can think of right now is to pass a cpumask to the arch
+> code. Better suggestions?
 
-On Wednesday 13 November 2013 17:28:40 Dmitry Torokhov wrote:
-> On Wed, Nov 13, 2013 at 11:47:18AM +0100, Jiri Kosina wrote:
-> > On Sun, 15 Sep 2013, Pali Roh=C3=A1r wrote:
-> > > I do not know where to ask this question, but I think that
-> > > kernel developers could help me.
-> > >=20
-> > > I have notebook with one special button on keyboard which
-> > > is designed for turning ambient light sensor on and off.
-> > > By default pressing button do nothing (I can turn ambient
-> > > light sensor on/off via sysfs platform wmi module).
-> > > Button press is reported by kernel input device AT
-> > > Translated Set 2 keyboard and reports it as button
-> > > "touchpad off".
-> > >=20
-> > > Of course "touchpad off" is incorrect and I'd like to ask
-> > > which kernel key or button from
-> > > /usr/include/linux/input.h should be mapped for my
-> > > ambient light sensor button? Is there already some? And
-> > > what is strategy for allocating KEY_* and BTN_* numbers?
-> >=20
-> > This is maintained by Dmitry, so he's the one to answer
-> > this. I am adding him to CC.
->=20
-> I guess we need patch adding
->=20
-> 	#define KEY_ALS_TOGGLE	0x230
->=20
-> Thanks.
+That might work.
 
-So there is no good key for als yet?
+> If we let arch generate the topology it could set the flags as well. But
+> that means that an arch would have to deal with generating the topology
+> even if it just needs to flip a single flag in the default topology.
+> 
+> Another thing is if we want to put energy related information into the
+> sched_domain hierarchy. If we want various energy costs (P and C state)
+> to be represented here we would need to modify more than just flags.
+> 
+> One way to do that is to put the energy information into a sub-struct and
+> have another arch_sd_energy() call that allows the arch to populate that
+> struct with relevant information.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Right.. I didn't think that far ahead yet :-)
 
---nextPart1917016.QdsGLqR9mN
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+So one thing that could be done is something like:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+struct sd_energy arch_sd_energy(const struct sched_domain * sd);
 
-iEYEABECAAYFAlKEu9kACgkQi/DJPQPkQ1KjOwCgl+ZCq5uJPmE4nzDC0DDHYnPV
-NuIAn2FNCmKfQVxLSERM7ropiuwuCNVj
-=3B3H
------END PGP SIGNATURE-----
+Where you have an entire sd available, but since its const you cannot
+actually modify it and are restricted to the return value -- which we
+can validate before applying.
 
---nextPart1917016.QdsGLqR9mN--
+And we can have one such a function per specific thing we want to allow
+modifying.
