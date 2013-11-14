@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab3KNQkY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:40:24 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:54409 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755999Ab3KNQjM (ORCPT
+	id S1756566Ab3KNQka (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:40:30 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:58185 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755926Ab3KNQjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:39:12 -0500
+	Thu, 14 Nov 2013 11:39:42 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>,
+Cc: linux-kernel@vger.kernel.org, Li Xi <lixi@ddn.com>,
         Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 11/39] staging/lustre/mdt: CDT cleanup follow-on patch
-Date: Fri, 15 Nov 2013 00:32:34 +0800
-Message-Id: <1384446782-13741-12-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 19/39] staging/lustre/libcfs: Add relocation function to libcfs heap
+Date: Fri, 15 Nov 2013 00:32:42 +0800
+Message-Id: <1384446782-13741-20-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
 References: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
@@ -23,74 +22,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+From: Li Xi <lixi@ddn.com>
 
-This patch implements the comments made during the review after
-maloo passed test or after the landing.
+When changing the values of the node in the heap which might affect
+its ranking, we have to remove the node from the heap, change the
+values and then insert the node into the heap again. The process of
+inserting into the heap might fail because of memory insufficiency.
+Sometimes, it is not convienient and efficient for a caller to handle
+such kind of failure.
 
-rename in hai_zero() hai_first()
- Use a better name for hai helper
+This patch adds a new function to do the job.
 
-replace use of cfs_helpers by native one in CDT
- replace atomic_t and helpers
- replace cfs_list and helpers
- change list_for_each + list_entry by list_entry_for_each
- replace cfs_task_t
-
-clean err msg in HSM agent interface
- remove duplicate rc print
-
-parenthesis code cleaning
- remove useless () in conditionnal tests
-
-Lustre-change: http://review.whamcloud.com/7254
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3709
-Signed-off-by: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
-Reviewed-by: Jinshan Xiong <jinshan.xiong@intel.com>
-Reviewed-by: John L. Hammond <john.hammond@intel.com>
+Lustre-change: http://review.whamcloud.com/6743
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3494
+Signed-off-by: Li Xi <lixi@ddn.com>
+Reviewed-by: Bobbie Lind <bobbie.j.lind@intel.com>
+Reviewed-by: Liang Zhen <liang.zhen@intel.com>
 Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- .../lustre/lustre/include/lustre/lustre_user.h     |    4 ++--
- drivers/staging/lustre/lustre/mdc/mdc_request.c    |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ .../lustre/include/linux/libcfs/libcfs_heap.h      |    1 +
+ drivers/staging/lustre/lustre/libcfs/heap.c        |   18 ++++++++++++++++--
+ 2 files changed, 17 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-index c63a1ae..2c72a88 100644
---- a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-+++ b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-@@ -1106,7 +1106,7 @@ static inline int cfs_size_round (int val)
- #endif
+diff --git a/drivers/staging/lustre/include/linux/libcfs/libcfs_heap.h b/drivers/staging/lustre/include/linux/libcfs/libcfs_heap.h
+index bfa6d7b..9d72647 100644
+--- a/drivers/staging/lustre/include/linux/libcfs/libcfs_heap.h
++++ b/drivers/staging/lustre/include/linux/libcfs/libcfs_heap.h
+@@ -166,6 +166,7 @@ cfs_binheap_t *cfs_binheap_create(cfs_binheap_ops_t *ops, unsigned int flags,
+ cfs_binheap_node_t *cfs_binheap_find(cfs_binheap_t *h, unsigned int idx);
+ int cfs_binheap_insert(cfs_binheap_t *h, cfs_binheap_node_t *e);
+ void cfs_binheap_remove(cfs_binheap_t *h, cfs_binheap_node_t *e);
++void cfs_binheap_relocate(cfs_binheap_t *h, cfs_binheap_node_t *e);
  
- /* Return pointer to first hai in action list */
--static inline struct hsm_action_item * hai_zero(struct hsm_action_list *hal)
-+static inline struct hsm_action_item *hai_first(struct hsm_action_list *hal)
- {
- 	return (struct hsm_action_item *)(hal->hal_fsname +
- 					  cfs_size_round(strlen(hal-> \
-@@ -1126,7 +1126,7 @@ static inline int hal_size(struct hsm_action_list *hal)
- 	struct hsm_action_item *hai;
+ static inline int
+ cfs_binheap_size(cfs_binheap_t *h)
+diff --git a/drivers/staging/lustre/lustre/libcfs/heap.c b/drivers/staging/lustre/lustre/libcfs/heap.c
+index 147e4fe..2493582 100644
+--- a/drivers/staging/lustre/lustre/libcfs/heap.c
++++ b/drivers/staging/lustre/lustre/libcfs/heap.c
+@@ -463,8 +463,7 @@ cfs_binheap_remove(cfs_binheap_t *h, cfs_binheap_node_t *e)
  
- 	sz = sizeof(*hal) + cfs_size_round(strlen(hal->hal_fsname));
--	hai = hai_zero(hal);
-+	hai = hai_first(hal);
- 	for (i = 0 ; i < hal->hal_count ; i++, hai = hai_next(hai))
- 		sz += cfs_size_round(hai->hai_len);
+ 	last->chn_index = cur_idx;
+ 	*cur_ptr = last;
+-	if (!cfs_binheap_bubble(h, *cur_ptr))
+-		cfs_binheap_sink(h, *cur_ptr);
++	cfs_binheap_relocate(h, *cur_ptr);
  
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-index e418b58..eb3b44f 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-@@ -1957,7 +1957,7 @@ static void lustre_swab_hal(struct hsm_action_list *h)
- 	__swab32s(&h->hal_count);
- 	__swab32s(&h->hal_archive_id);
- 	__swab64s(&h->hal_flags);
--	hai = hai_zero(h);
-+	hai = hai_first(h);
- 	for (i = 0; i < h->hal_count; i++, hai = hai_next(hai))
- 		lustre_swab_hai(hai);
+ 	e->chn_index = CBH_POISON;
+ 	if (h->cbh_ops->hop_exit)
+@@ -472,4 +471,19 @@ cfs_binheap_remove(cfs_binheap_t *h, cfs_binheap_node_t *e)
  }
+ EXPORT_SYMBOL(cfs_binheap_remove);
+ 
++/**
++ * Relocate a node in the binary heap.
++ * Should be called whenever a node's values
++ * which affects its ranking are changed.
++ *
++ * \param[in] h The heap
++ * \param[in] e The node
++ */
++void
++cfs_binheap_relocate(cfs_binheap_t *h, cfs_binheap_node_t *e)
++{
++	if (!cfs_binheap_bubble(h, e))
++		cfs_binheap_sink(h, e);
++}
++EXPORT_SYMBOL(cfs_binheap_relocate);
+ /** @} heap */
 -- 
 1.7.9.5
 
