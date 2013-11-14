@@ -1,23 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab3KNXLb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 18:11:31 -0500
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:35311 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab3KNXLX (ORCPT
+	id S1753634Ab3KNXLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 18:11:42 -0500
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:41734 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581Ab3KNXLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 18:11:23 -0500
-Date: Thu, 14 Nov 2013 15:05:32 -0800 (PST)
+	Thu, 14 Nov 2013 18:11:25 -0500
+X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Nov 2013 18:11:25 EST
+Date: Thu, 14 Nov 2013 15:11:21 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-cc: Tony Luck <tony.luck@intel.com>, Chen Gong <gong.chen@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch x86/mce] ACPI, x86: Export boot_cpu_physical_apicid to
- modules
-Message-ID: <alpine.DEB.2.02.1311141504080.30112@chino.kir.corp.google.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH] mm/migrate.c: take returned value of isolate_huge_page()(Re:
+ [PATCH 4/9] migrate: add hugepage migration code to move_pages())
+In-Reply-To: <1384444050-v86q6ypr-mutt-n-horiguchi@ah.jp.nec.com>
+Message-ID: <alpine.DEB.2.02.1311141509390.30112@chino.kir.corp.google.com>
+References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1376025702-14818-5-git-send-email-n-horiguchi@ah.jp.nec.com> <20130928172602.GA6191@pd.tnic> <1380553263-lqp3ggll-mutt-n-horiguchi@ah.jp.nec.com> <20130930160450.GA20030@pd.tnic>
+ <1380557324-v44mpchd-mutt-n-horiguchi@ah.jp.nec.com> <20131112115633.GA16700@pd.tnic> <1384444050-v86q6ypr-mutt-n-horiguchi@ah.jp.nec.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,27 +34,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"ACPI, x86: Fix extended error log driver to depend on CONFIG_X86_LOCAL_APIC" 
-fixed a build error when CONFIG_X86_LOCAL_APIC was not selected and !CONFIG_SMP.
-However, since CONFIG_ACPI_EXTLOG is tristate, there is a second build error:
+On Thu, 14 Nov 2013, Naoya Horiguchi wrote:
 
-ERROR: "boot_cpu_physical_apicid" [drivers/acpi/acpi_extlog.ko] undefined!
+> Introduces a cosmetic substitution of the returned value of isolate_huge_page()
+> to suppress a build warning when !CONFIG_HUGETLBFS. No behavioral change.
+> 
+> Reported-by: Borislav Petkov <bp@alien8.de>
+> Tested-by: Borislav Petkov <bp@alien8.de>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  mm/migrate.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 4cd63c2..4a26042 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -1168,7 +1168,7 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
+>  			goto put_and_set;
+>  
+>  		if (PageHuge(page)) {
+> -			isolate_huge_page(page, &pagelist);
+> +			err = isolate_huge_page(page, &pagelist);
+>  			goto put_and_set;
+>  		}
+>  
 
-The symbol needs to be exported for it to be available.
+I think it would be better to just fix hugetlb.h to do
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/x86/kernel/apic/apic.c | 1 +
- 1 file changed, 1 insertion(+)
+	static inline bool isolate_huge_page(struct page *page, struct list_head *list)
+	{
+		return false;
+	}
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -62,6 +62,7 @@ unsigned disabled_cpus;
- 
- /* Processor that is doing the boot up */
- unsigned int boot_cpu_physical_apicid = -1U;
-+EXPORT_SYMBOL(boot_cpu_physical_apicid);
- 
- /*
-  * The highest APIC ID seen during enumeration.
+for the !CONFIG_HUGETLB_PAGE variant.
