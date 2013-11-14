@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942Ab3KNQxN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:53:13 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:59911 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755410Ab3KNQkM (ORCPT
+	id S1756512Ab3KNQxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:53:43 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:37493 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756344Ab3KNQkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:40:12 -0500
+	Thu, 14 Nov 2013 11:40:08 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>,
+Cc: linux-kernel@vger.kernel.org, wang di <di.wang@intel.com>,
         Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 27/39] staging/lustre/mdt: HSM EXIST event not triggered at last rm/mv
-Date: Fri, 15 Nov 2013 00:32:50 +0800
-Message-Id: <1384446782-13741-28-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 26/39] staging/lustre/osd: remove fld lookup during configuration
+Date: Fri, 15 Nov 2013 00:32:49 +0800
+Message-Id: <1384446782-13741-27-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
 References: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
@@ -23,41 +22,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+From: wang di <di.wang@intel.com>
 
-After a rm or mv, if the target file is destroyed
-(last unlink) and if there is an archive in the backend
-a flags must be set in changelog event
+Remove fld lookup during configuration, so to avoid accessing
+FLDB on MDT0 before MDT0 is setup.
 
-Lustre-change: http://review.whamcloud.com/7260
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3718
-Signed-off-by: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
-Reviewed-by: Jinshan Xiong <jinshan.xiong@intel.com>
+1. add od_is_ost to check whether the FID is on OST, instead
+of lookup in FLDB.
+
+2. add oic_device in OI cache, so in OI cache lookup, it will
+try to match device to avoid the ino of agent inode is being
+retrieved from OI cache. Then osd_remote_fid, which will trigger
+fld lookup, can be removed from osd index lookup.
+
+Lustre-change: http://review.whamcloud.com/7266
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3126
+Signed-off-by: wang di <di.wang@intel.com>
+Reviewed-by: Alex Zhuravlev <alexey.zhuravlev@intel.com>
+Reviewed-by: Niu Yawei <yawei.niu@intel.com>
+Reviewed-by: Mike Pershin <mike.pershin@intel.com>
 Reviewed-by: John L. Hammond <john.hammond@intel.com>
+Reviewed-by: Fan Yong <fan.yong@intel.com>
+Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
 Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
-[pick up only lustre_user.h change -- Peng Tao]
+[pick up only lustre_idl.h change -- Peng Tao]
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- .../lustre/lustre/include/lustre/lustre_user.h     |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ .../lustre/lustre/include/lustre/lustre_idl.h      |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-index 2c72a88..0ad524a 100644
---- a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-+++ b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-@@ -692,7 +692,10 @@ static inline const char *changelog_type2str(int type) {
- #define CLF_UNLINK_HSM_EXISTS 0x0002 /* File has something in HSM */
- 				     /* HSM cleaning needed */
- /* Flags for rename */
--#define CLF_RENAME_LAST       0x0001 /* rename unlink last hardlink of target */
-+#define CLF_RENAME_LAST		0x0001 /* rename unlink last hardlink
-+					* of target */
-+#define CLF_RENAME_LAST_EXISTS	0x0002 /* rename unlink last hardlink of target
-+					* has an archive in backend */
+diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
+index 7bdb24f..15f70dc 100644
+--- a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
++++ b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
+@@ -611,10 +611,15 @@ static inline obd_id fid_idif_id(obd_seq seq, __u32 oid, __u32 ver)
+ 	return ((__u64)ver << 48) | ((seq & 0xffff) << 32) | oid;
+ }
  
- /* Flags for HSM */
- /* 12b used (from high weight to low weight):
++static inline __u32 idif_ost_idx(obd_seq seq)
++{
++	return (seq >> 16) & 0xffff;
++}
++
+ /* extract ost index from IDIF FID */
+ static inline __u32 fid_idif_ost_idx(const struct lu_fid *fid)
+ {
+-	return (fid_seq(fid) >> 16) & 0xffff;
++	return idif_ost_idx(fid_seq(fid));
+ }
+ 
+ /* extract OST sequence (group) from a wire ost_id (id/seq) pair */
 -- 
 1.7.9.5
 
