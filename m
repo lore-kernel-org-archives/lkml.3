@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab3KNVWV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 16:22:21 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:40923 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756160Ab3KNVWL (ORCPT
+	id S1757847Ab3KNVWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 16:22:44 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:33647 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756160Ab3KNVWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 16:22:11 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3 2/3] OF: Introduce DT overlay support.
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <E4922A5F-11B3-4167-91EF-C0D5F3F77D40@antoniou-consulting.com>
-References: <1383923170-24914-1-git-send-email-panto@antoniou-consulting.com > <1383923170-24914-3-git-send-email-panto@antoniou-consulting.com> < 20131111184245.D569DC4234A@trevor.secretlab.ca> < ED51965C-6EC8-48AE-A59C-CD09FFD57731@antoniou-consulting.com> < 20131114013124.7DD0AC404DF@trevor.secretlab.ca> < E4922A5F-11B3-4167-91EF-C0D5F3F77D40@antoniou-consulting.com>
-Date: Fri, 15 Nov 2013 06:22:06 +0900
-Message-Id: <20131114212206.EAD1BC402B4@trevor.secretlab.ca>
+	Thu, 14 Nov 2013 16:22:35 -0500
+Message-ID: <52853F18.4040605@tilera.com>
+Date: Thu, 14 Nov 2013 16:22:32 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Pete Zaitcev <zaitcev@redhat.com>
+CC: Evgeniy Polyakov <zbr@ioremap.net>, Erik Jacobson <erikj@sgi.com>,
+        Andrew Morton <akpm@osdl.org>, Matt Helsley <matthltc@us.ibm.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] connector: improved unaligned access error fix
+References: <201311141743.rAEHhuEV004998@farm-0012.internal.tilera.com> <20131114124549.7b5f3a7b@lembas.zaitcev.lan>
+In-Reply-To: <20131114124549.7b5f3a7b@lembas.zaitcev.lan>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Nov 2013 11:01:35 +0100, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> On Nov 14, 2013, at 2:31 AM, Grant Likely wrote:
-> > On Tue, 12 Nov 2013 10:30:37 +0100, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> >> On Nov 11, 2013, at 7:42 PM, Grant Likely wrote:
-> >>> On Fri,  8 Nov 2013 17:06:09 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> >> I'm of the opinion that 'platform_device' shouldn't exist at all btw :)
-> >> Most of it's functionality can pretty easily be subsumed by device proper
-> >> and the world would be a better place :)
-> > 
-> > I'm fine for merging some/all of the platform_device fields into struct
-> > device. There are a few things, like resources, which would probably be
-> > useful to have common on all struct device variants. However,
-> > platform_device is far more about matching drivers to devices. Even if
-> > all of platform_device went into struct device, there would still need
-> > to be the platform_bus_type as the collection point for the device
-> > drivers.
-> > 
-> 
-> We don't really need the resources structures on OF. That information is
-> present in OF format, which we can use to generate transient resources for
-> usage with the standard kernel interfaces.
-> 
-> BTW, last time I checked resource handling was broken on release.
-> There are a few patches I sent out fixing it but they were probably ignored.
+On 11/14/2013 2:45 PM, Pete Zaitcev wrote:
+> On Thu, 14 Nov 2013 12:09:21 -0500
+> Chris Metcalf <cmetcalf@tilera.com> wrote:
+>
+>> -	__u8 buffer[CN_PROC_MSG_SIZE];
+>> +	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+>> -	msg = (struct cn_msg *)buffer;
+>> +	msg = buffer_to_cn_msg(buffer);
+>>  	ev = (struct proc_event *)msg->data;
+>>  	memset(&ev->event_data, 0, sizeof(ev->event_data));
+> Why is memset(buffer,0,CN_PROC_MSG_SIZE) not acceptable?
 
-Please send them again. They probably got lost.
+That would be fine from a correctness point of view; I'm happy
+either way.  My patch nominally has better performance, for
+what that's worth, since the memset() call is for a smaller
+range (24 bytes instead of 60).  It also avoids the need for
+put_unaligned(), which even on platforms that allow unaligned
+stores can still be slower.
 
-> >>> Can overlays interact in bad ways? If overlay 1 is installed before
-> >>> overlay 2, what happens if overlay 1 is removed?
-> >>> 
-> >> 
-> >> Yes, they can. It is not something easily fixed; the proper way would
-> >> be to calculate overlay intersection points and refuse to unload.
-> > 
-> > I think this is important. If it cannot be solved immediately, then the
-> > kernel should enforce overlays always get removed in the reverse order
-> > that they were added. There may be use-cases that don't like it, but it
-> > is safe.
-> 
-> OK, that makes sense.
-> 
-> We are not talking about a global overlay stack though, we're talking about
-> an overlay stack for overlays that overlap.
+I can certainly do a v2 with the larger memset() instead if
+that's the consensus.
 
-I'm actually talking about a global overlay stack. Otherwise you've
-still got the ever-increasing-phandles problem again.
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-Cheers,
-g.
