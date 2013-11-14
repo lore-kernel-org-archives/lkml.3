@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab3KNA1d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 19:27:33 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:60258 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894Ab3KNA1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 19:27:03 -0500
-X-IronPort-AV: E=Sophos;i="4.93,695,1378828800"; 
-   d="scan'208";a="9028698"
-Message-ID: <528418B1.6090507@cn.fujitsu.com>
-Date: Thu, 14 Nov 2013 08:26:25 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752386Ab3KNAca (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 19:32:30 -0500
+Received: from imap.thunk.org ([74.207.234.97]:58309 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751157Ab3KNAcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 19:32:21 -0500
+Date: Wed, 13 Nov 2013 19:32:15 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: [GIT PULL] ext4 changes for 3.13
+Message-ID: <20131114003215.GA31632@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+	linux-ext4@vger.kernel.org
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-sh@vger.kernel.org, lethal@linux-sh.org
-CC: linux-kernel@vger.kernel.org, fengguang.wu@intel.com, kbuild-all@01.org,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH] sh: fix kernel build error
-References: <1384353504-21886-1-git-send-email-gaowanlong@cn.fujitsu.com> <5283C19D.4050601@cogentembedded.com>
-In-Reply-To: <5283C19D.4050601@cogentembedded.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/14 08:25:13,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/14 08:25:14,
-	Serialize complete at 2013/11/14 08:25:14
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2013 02:14 AM, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 11/13/2013 05:38 PM, Wanlong Gao wrote:
-> 
->>     arch/sh/kernel/kgdb.c: In function 'sleeping_thread_to_gdb_regs':
->>>> arch/sh/kernel/kgdb.c:225:32: error: implicit declaration of function 'task_stack_page' [-Werror=implicit-function-declaration]
->>>> arch/sh/kernel/kgdb.c:242:23: error: dereferencing pointer to incomplete type
->>>> arch/sh/kernel/kgdb.c:243:22: error: dereferencing pointer to incomplete type
->>     arch/sh/kernel/kgdb.c: In function 'singlestep_trap_handler':
->>>> arch/sh/kernel/kgdb.c:310:27: error: 'SIGTRAP' undeclared (first use in this function)
->>     arch/sh/kernel/kgdb.c:310:27: note: each undeclared identifier is reported only once for each function it appears in
->>     cc1: all warnings being treated as errors
-> 
->    Strange quoting...
+The following changes since commit 61e6cfa80de5760bbe406f4e815b7739205754d2:
 
-Strange? It's the build error log.
+  Linux 3.12-rc5 (2013-10-13 15:41:28 -0700)
 
-> 
->> This is introduced by commit 16559ae.
-> 
->    Please also specify that commit's summary line in parens.
+are available in the git repository at:
 
-commit 16559ae48c76f1ceb970b9719dea62b77eb5d06b
-Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date:   Mon Feb 4 15:35:26 2013 -0800
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
 
-    kgdb: remove #include <linux/serial_8250.h> from kgdb.h
-    
-    There's no reason kgdb.h itself needs to include the 8250 serial port
-    header file.  So push it down to the _very_ limited number of individual
-    drivers that need the values in that file, and fix up the places where
-    people really wanted serial_core.h and platform_device.h.
-    
-    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+for you to fetch changes up to 3f61c0cc706d5c0beee7af17ffeb706403cf513c:
 
+  ext4: add prototypes for macro-generated functions (2013-11-11 22:40:40 -0500)
 
-And the line caused this build error is:
+----------------------------------------------------------------
+Ext4 updates for 3.13.  Mostly bug fixes and cleanups.
 
-diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
-index 4dff0c6..c6e091b 100644
---- a/include/linux/kgdb.h
-+++ b/include/linux/kgdb.h
-@@ -13,7 +13,6 @@
- #ifndef _KGDB_H_
- #define _KGDB_H_
- 
--#include <linux/serial_8250.h>
- #include <linux/linkage.h>
- #include <linux/init.h>
- #include <linux/atomic.h>
+----------------------------------------------------------------
+Andreas Dilger (2):
+      ext4: return non-zero st_blocks for inline data
+      ext4: add prototypes for macro-generated functions
 
+Azat Khuzhin (1):
+      ext4: drop set but otherwise unused variable from ext4_add_dirent_to_inline()
 
-Thanks,
-Wanlong Gao
+BoxiLiu (1):
+      ext4: change ext4_read_inline_dir() to return 0 on success
 
-> 
->> CC: kbuild-all@01.org
->> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
->> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> 
-> WBR, Sergei
-> 
-> 
+Darrick J. Wong (1):
+      ext4: don't count free clusters from a corrupt block group
 
+Eric Sandeen (2):
+      ext4: remove unreachable code in ext4_can_extents_be_merged()
+      ext4: remove unreachable code after ext4_can_extents_be_merged()
+
+Jan Kara (2):
+      ext4: fix assertion in ext4_add_complete_io()
+      ext4: fixup kerndoc annotation of mpage_map_and_submit_extent()
+
+Lukas Czerner (1):
+      ext4: fix FITRIM in no journal mode
+
+Ming Lei (2):
+      ext4: fix performance regression in ext4_writepages
+      ext4: pair trace_ext4_writepages & trace_ext4_writepages_result
+
+Theodore Ts'o (3):
+      ext4: add ratelimiting to ext4 messages
+      ext4: avoid bh leak in retry path of ext4_expand_extra_isize_ea()
+      ext4: use prandom_u32() instead of get_random_bytes()
+
+ fs/ext4/balloc.c  |  13 +++++-
+ fs/ext4/ext4.h    |  17 +++++++
+ fs/ext4/extents.c |  35 +-------------
+ fs/ext4/ialloc.c  |   2 +-
+ fs/ext4/inline.c  |   3 +-
+ fs/ext4/inode.c   |  54 +++++++++++++---------
+ fs/ext4/mballoc.c |   4 +-
+ fs/ext4/mmp.c     |   2 +-
+ fs/ext4/page-io.c |   5 +-
+ fs/ext4/super.c   | 159 ++++++++++++++++++++++++++++++++++++++-------------------------
+ fs/ext4/xattr.c   |   1 +
+ 11 files changed, 168 insertions(+), 127 deletions(-)
