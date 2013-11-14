@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965Ab3KNBZH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 20:25:07 -0500
-Received: from prod-mail-xrelay06.akamai.com ([96.6.114.98]:33937 "EHLO
-	prod-mail-xrelay06.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751087Ab3KNBZC (ORCPT
+	id S1752402Ab3KNBZX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 20:25:23 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:40341 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab3KNBZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 20:25:02 -0500
-X-Greylist: delayed 555 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Nov 2013 20:25:02 EST
-From: Josh Hunt <johunt@akamai.com>
-To: netdev@vger.kernel.org, venkat.x.venkatsubra@oracle.com
-Cc: linux-kernel@vger.kernel.org, jjolly@suse.com, fenlason@redhat.com,
-        honli@redhat.com, Josh Hunt <johunt@akamai.com>
-Subject: [PATCH] rds: fix local ping DoS
-Date: Wed, 13 Nov 2013 17:15:43 -0800
-Message-Id: <1384391743-9342-1-git-send-email-johunt@akamai.com>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 13 Nov 2013 20:25:14 -0500
+Message-ID: <52842671.40703@linaro.org>
+Date: Thu, 14 Nov 2013 06:55:05 +0530
+From: viresh kumar <viresh.kumar@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Nishanth Menon <nm@ti.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [RFC PATCH] cpufreq: cpufreq-cpu0: do not allow transitions with
+ regulators suspended
+References: <1382638087-32054-1-git-send-email-nm@ti.com> <CAKohponJOOfGX4BHn76LTBDTm58+2QxPf_rv1i4avVfrWhfkRg@mail.gmail.com> <52824522.7020401@ti.com> <CAKohpomB=wnct88wrTvW-qixLQPQGjVrCVF3V-BSbY7mhsSYQg@mail.gmail.com> <20131113151645.GA17828@kahuna>
+In-Reply-To: <20131113151645.GA17828@kahuna>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rds_ib_xmit function in net/rds/ib_send.c in the Reliable Datagram Sockets
-(RDS) protocol implementation allows local users to cause a denial of service
-(BUG_ON and kernel panic) by establishing an RDS connection with the source
-IP address equal to the IPoIB interface's own IP address, as demonstrated by
-rds-ping.
+On Wednesday 13 November 2013 08:46 PM, Nishanth Menon wrote:
+> arrgh, my bad.. Apologies for the bad one.. I missed it :( Does the following
+> look equivalent?
 
-A local unprivileged user could use this flaw to crash the system.
+yes.
 
-CVE-2012-2372
+> With this, I now see:
 
-Reported-by: Honggang Li <honli@redhat.com>
-Signed-off-by: Josh Hunt <johunt@akamai.com>
----
- net/rds/ib_send.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> [   43.212714] cpufreq: cpufreq_add_policy_cpu: Failed to stop governor
+> ^^^ ??
 
-diff --git a/net/rds/ib_send.c b/net/rds/ib_send.c
-index e590949..7920c85 100644
---- a/net/rds/ib_send.c
-+++ b/net/rds/ib_send.c
-@@ -544,7 +544,7 @@ int rds_ib_xmit(struct rds_connection *conn, struct rds_message *rm,
- 	int flow_controlled = 0;
- 	int nr_sig = 0;
- 
--	BUG_ON(off % RDS_FRAG_SIZE);
-+	BUG_ON(!conn->c_loopback && off % RDS_FRAG_SIZE);
- 	BUG_ON(hdr_off != 0 && hdr_off != sizeof(struct rds_header));
- 
- 	/* Do not send cong updates to IB loopback */
--- 
-1.7.0.4
+Ahh, I missed this part. I thought it will fail at some other place where there
+is no error checking :), but that's not true.
+
+Following should fix it for you and looks to be the right way as well.
+
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index dc67fa0..30b09d3 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1530,6 +1530,14 @@ static void cpufreq_bp_resume(void)
+                }
+        }
+
++       if (has_target()) {
++               if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
++                       (ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
++                       pr_err("%s: Failed to start governor\n", __func__);
++                       goto fail;
++               }
++       }
++
+        schedule_work(&policy->update);
+
+ fail:
 
