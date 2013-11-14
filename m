@@ -1,82 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab3KNH6u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 02:58:50 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:41545 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab3KNH6l (ORCPT
+	id S1752256Ab3KNIA1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 03:00:27 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:55801 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab3KNIAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 02:58:41 -0500
-Date: Thu, 14 Nov 2013 08:58:37 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: wangbiao <biao.wang@intel.com>
-Cc: oneukum@suse.de, netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
-        a.p.zijlstra@chello.nl, rusty@rustcorp.com.au,
-        william.douglas@intel.com, di.zhang@intel.com
-Subject: Re: [PATCH V3] usbnet: fix race condition caused spinlock bad magic
- issue
-Message-ID: <20131114075837.GA7292@gmail.com>
-References: <1384394595.4229.24.camel@wangbiao>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384394595.4229.24.camel@wangbiao>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 14 Nov 2013 03:00:24 -0500
+Date: Thu, 14 Nov 2013 09:00:10 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] sched/mm: add finish_switch_mm function
+Message-ID: <20131114090010.2dc05610@mschwide>
+In-Reply-To: <20131113170358.GG18837@arm.com>
+References: <1384330574-18418-1-git-send-email-schwidefsky@de.ibm.com>
+	<1384330574-18418-2-git-send-email-schwidefsky@de.ibm.com>
+	<20131113114143.GJ21461@twins.programming.kicks-ass.net>
+	<20131113121909.GA18837@arm.com>
+	<20131113170556.7e170e89@mschwide>
+	<20131113170358.GG18837@arm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111408-8372-0000-0000-000007C46A2B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 13 Nov 2013 17:03:58 +0000
+Catalin Marinas <catalin.marinas@arm.com> wrote:
 
-* wangbiao <biao.wang@intel.com> wrote:
+> On Wed, Nov 13, 2013 at 04:05:56PM +0000, Martin Schwidefsky wrote:
+> > On Wed, 13 Nov 2013 12:19:09 +0000
+> > Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > > On Wed, Nov 13, 2013 at 11:41:43AM +0000, Peter Zijlstra wrote:
+> > > > On Wed, Nov 13, 2013 at 09:16:13AM +0100, Martin Schwidefsky wrote:
+> > > > >  	fire_sched_in_preempt_notifiers(current);
+> > > > >  	if (mm)
+> > > > > @@ -4140,8 +4141,10 @@ void idle_task_exit(void)
+> > > > >  
+> > > > >  	BUG_ON(cpu_online(smp_processor_id()));
+> > > > >  
+> > > > > -	if (mm != &init_mm)
+> > > > > +	if (mm != &init_mm) {
+> > > > >  		switch_mm(mm, &init_mm, current);
+> > > > > +		finish_switch_mm(&init_mm, current);
+> > > > > +	}
+> > > > >  	mmdrop(mm);
+> > > > >  }
+> > > 
+> > > Here finish_switch_mm() is called in the same context with switch_mm().
+> > > What we have on ARM via switch_mm() is to check for irqs_disabled() and
+> > > if yes, defer the actual switching via a flag until the
+> > > finish_arch_post_lock_switch() hook. But on ARM we only cared about the
+> > > interrupts being enabled.
+> > 
+> > The guarantee s390 needs is that the rq-lock is not taken. What I have
+> > seen with the wait loop in switch_mm is a dead lock because one CPU #0
+> > was looping in switch_mm to wait for the TLB flush of another CPU #1.
+> > CPU #1 got an interrupt that tried to wake-up a task which happened to
+> > be on the run-queue of CPU #0.
+> 
+> I'm not familiar with the s390 code, so how's the waiting done? Is it
+> part of an on_each_cpu() call (that's what I got from smp_ptlb_all)?
+ 
+Ok, the long explanation: the requirement of the architecture is that a
+PTE need to be modified in a coordinated fashion if there is the possibility
+that another CPU is using the mm at the same time. Coordinated means that
+the modification has to be done with specific instructions, IPTE and IDTE.
+These instructions make sure that other CPUs can complete instructions
+that use the PTE before the PTE is made invalid and the associated TLB
+is flushed.
 
-> @@ -86,6 +86,7 @@ static const char driver_name [] = "usbnet";
->  
->  /* use ethtool to change the level for any given device */
->  static int msg_level = -1;
-> +static spinlock_t dev_wait_lock = __SPIN_LOCK_UNLOCKED(dev_wait_lock);
->  module_param (msg_level, int, 0);
->  MODULE_PARM_DESC (msg_level, "Override default message level");
->  
+Problem is that these instructions are slow, basically they do on_each_cpu
+under the hood. Therefore the code tries to batch PTE operations. For each
+PTE the code decides if it can do a batched/lazy PTE update or if the
+expensive way with IPTE is required. Now if the decision to use a batched
+PTE update has just been made with the PTE still valid this can race with
+another CPU attaching the mm with switch_mm(). Until the first CPU is done
+with PTE modification the second CPU may not use the mm yet. 
 
-> @@ -1447,13 +1454,18 @@ static void usbnet_bh (unsigned long param)
->  	clear_bit(EVENT_RX_KILL, &dev->flags);
->  
->  	// waiting for all pending urbs to complete?
+The coordination between CPU is done with the mm->context.attach_count.
+The upper 16 bit have a flush-counter, the lower 16 bit an attach counter.
+Each attacher of an mm increases the lower 16 bit, this is used by the
+flusher to decide between lazy and direct flushing. Each flusher increases
+the upper 16 bit while it is in the critical phase of the update. The
+attacher uses this to loop until the flush counter is zero again. And
+this wait loop may not hold any locks, otherwise it can dead-lock.
 
-Please escape this code from the clutches of C++ style!
+-- 
+blue skies,
+   Martin.
 
-> +	spin_lock_irqsave(&dev_wait_lock, flags);
->  	if (dev->wait) {
->  		if ((dev->txq.qlen + dev->rxq.qlen + dev->done.qlen) == 0) {
-> -			wake_up (dev->wait);
-> +			wake_up(dev->wait);
->  		}
-> +		spin_unlock_irqrestore(&dev_wait_lock, flags);
-> +		return;
-> +	}
-> +	spin_unlock_irqrestore(&dev_wait_lock, flags);
+"Reality continues to ruin my life." - Calvin.
 
-The extra locking and the naked return from the middle of the 
-control flow is a bit sad.
-
->  
->  	// or are we maybe short a few urbs?
-> -	} else if (netif_running (dev->net) &&
-> +	if (netif_running(dev->net) &&
->  		   netif_device_present (dev->net) &&
->  		   netif_carrier_ok(dev->net) &&
->  		   !timer_pending (&dev->delay) &&
-
-While using a global spinlock from the probe/teardown methods is 
-probably not a big deal, using it in usbnet_bh() looks rather 
-unfortunate for performance and scalability of this driver.
-
-I don't know the usbnet code at all, but is there really no 
-natural per device synchronization method available for such 
-cases? Could the race be avoided some other way? How do other 
-drivers implement such kind of dev->wait handling?
-
-Thanks,
-
-	Ingo
