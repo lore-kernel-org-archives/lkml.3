@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689Ab3KNQZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:25:04 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:58680 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754913Ab3KNQPG (ORCPT
+	id S1754998Ab3KNQZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:25:16 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:46796 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754907Ab3KNQPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:15:06 -0500
+	Thu, 14 Nov 2013 11:15:02 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Mikhail Pershin <tappro@whamcloud.com>,
-        Mikhail Pershin <mike.pershin@intel.com>,
-        Peng Tao <bergwolf@gmail.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 10/40] staging/lustre/server: use unified request handler for MGS
-Date: Fri, 15 Nov 2013 00:13:12 +0800
-Message-Id: <1384445622-12346-11-git-send-email-bergwolf@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andreas Dilger <andreas.dilger@intel.com>,
+        Lai Siyao <lai.siyao@intel.com>, Peng Tao <bergwolf@gmail.com>
+Subject: [PATCH 09/40] staging/lustre/ldlm: fix resource/fid check, use DLDLMRES
+Date: Fri, 15 Nov 2013 00:13:11 +0800
+Message-Id: <1384445622-12346-10-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
 References: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
@@ -23,107 +21,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikhail Pershin <tappro@whamcloud.com>
+From: Andreas Dilger <andreas.dilger@intel.com>
 
-- Unify request handler. It finds target for particular request and
-  calls appropriate handler for it. Generic handlers are moved to
-  the unified target code. The tgt_session_info is introduced to
-  store all request-related data and passed to all handlers.
-- Pack reply in llog server functions early and use err_serious()
-- remove obsoleted llog_origin_handle_cancel(), it is not used
-  anymore
-- remove push_ctxt/pop_ctxt from llog server function, it is based
-  on OSD now.
+In ll_md_blocking_ast() the FID/resource comparison is incorrectly
+checking for fid_ver() stored in res_id.name[2] instead of name[1]
+changed since http://review.whamcloud.com/2271 (commit 4f91d5161d00)
+landed.  This does not impact current clients, since name[2] and
+fid_ver() are always zero, but it could cause problems in the future.
 
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2145
-Lustre-change: http://review.whamcloud.com/4826
-Signed-off-by: Mikhail Pershin <mike.pershin@intel.com>
-Reviewed-by: Fan Yong <fan.yong@intel.com>
-Reviewed-by: Alex Zhuravlev <alexey.zhuravlev@intel.com>
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: James Simmons <uja.ornl@gmail.com>
+In ldlm_cli_enqueue_fini() use ldlm_res_eq() instead of comparing
+each of the resource fields separately.
+
+Use DLDLMRES/PLDLMRES when printing resource names everywhere.
+
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2901
+Lustre-change: http://review.whamcloud.com/6592
+Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+Signed-off-by: Lai Siyao <lai.siyao@intel.com>
+Reviewed-by: Johann Lombardi <johann.lombardi@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- .../lustre/lustre/include/lustre_req_layout.h      |    2 ++
- .../staging/lustre/lustre/include/obd_support.h    |    7 +++++++
- drivers/staging/lustre/lustre/ptlrpc/layout.c      |    7 ++++++-
- .../staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c    |    4 ++--
- 4 files changed, 17 insertions(+), 3 deletions(-)
+ drivers/staging/lustre/lustre/ldlm/ldlm_request.c  |   32 +++++++-------------
+ drivers/staging/lustre/lustre/ldlm/ldlm_resource.c |   19 +++---------
+ drivers/staging/lustre/lustre/llite/namei.c        |    5 +--
+ drivers/staging/lustre/lustre/mdc/mdc_locks.c      |    9 ++----
+ drivers/staging/lustre/lustre/mgc/mgc_request.c    |    4 +--
+ 5 files changed, 21 insertions(+), 48 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre_req_layout.h b/drivers/staging/lustre/lustre/include/lustre_req_layout.h
-index f4d3820..2832569 100644
---- a/drivers/staging/lustre/lustre/include/lustre_req_layout.h
-+++ b/drivers/staging/lustre/lustre/include/lustre_req_layout.h
-@@ -245,6 +245,8 @@ extern struct req_format RQF_LLOG_ORIGIN_HANDLE_PREV_BLOCK;
- extern struct req_format RQF_LLOG_ORIGIN_HANDLE_READ_HEADER;
- extern struct req_format RQF_LLOG_ORIGIN_CONNECT;
+diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_request.c b/drivers/staging/lustre/lustre/ldlm/ldlm_request.c
+index 1e2c0dd..1ddcca3 100644
+--- a/drivers/staging/lustre/lustre/ldlm/ldlm_request.c
++++ b/drivers/staging/lustre/lustre/ldlm/ldlm_request.c
+@@ -610,18 +610,12 @@ int ldlm_cli_enqueue_fini(struct obd_export *exp, struct ptlrpc_request *req,
+ 			lock->l_req_mode = newmode;
+ 		}
  
-+extern struct req_format RQF_CONNECT;
-+
- extern struct req_msg_field RMF_GENERIC_DATA;
- extern struct req_msg_field RMF_PTLRPC_BODY;
- extern struct req_msg_field RMF_MDT_BODY;
-diff --git a/drivers/staging/lustre/lustre/include/obd_support.h b/drivers/staging/lustre/lustre/include/obd_support.h
-index 9697e7f..825a0c9 100644
---- a/drivers/staging/lustre/lustre/include/obd_support.h
-+++ b/drivers/staging/lustre/lustre/include/obd_support.h
-@@ -416,6 +416,13 @@ int obd_alloc_fail(const void *ptr, const char *name, const char *type,
- #define OBD_FAIL_MGC_PAUSE_PROCESS_LOG   0x903
- #define OBD_FAIL_MGS_PAUSE_REQ	   0x904
- #define OBD_FAIL_MGS_PAUSE_TARGET_REG    0x905
-+#define OBD_FAIL_MGS_CONNECT_NET	 0x906
-+#define OBD_FAIL_MGS_DISCONNECT_NET	 0x907
-+#define OBD_FAIL_MGS_SET_INFO_NET	 0x908
-+#define OBD_FAIL_MGS_EXCEPTION_NET	 0x909
-+#define OBD_FAIL_MGS_TARGET_REG_NET	 0x90a
-+#define OBD_FAIL_MGS_TARGET_DEL_NET	 0x90b
-+#define OBD_FAIL_MGS_CONFIG_READ_NET	 0x90c
+-		if (memcmp(reply->lock_desc.l_resource.lr_name.name,
+-			  lock->l_resource->lr_name.name,
+-			  sizeof(struct ldlm_res_id))) {
+-			CDEBUG(D_INFO, "remote intent success, locking "
+-					"(%ld,%ld,%ld) instead of "
+-					"(%ld,%ld,%ld)\n",
+-			      (long)reply->lock_desc.l_resource.lr_name.name[0],
+-			      (long)reply->lock_desc.l_resource.lr_name.name[1],
+-			      (long)reply->lock_desc.l_resource.lr_name.name[2],
+-			      (long)lock->l_resource->lr_name.name[0],
+-			      (long)lock->l_resource->lr_name.name[1],
+-			      (long)lock->l_resource->lr_name.name[2]);
++		if (!ldlm_res_eq(&reply->lock_desc.l_resource.lr_name,
++				 &lock->l_resource->lr_name)) {
++			CDEBUG(D_INFO, "remote intent success, locking "DLDLMRES
++				       " instead of "DLDLMRES"\n",
++			       PLDLMRES(&reply->lock_desc.l_resource),
++			       PLDLMRES(lock->l_resource));
  
- #define OBD_FAIL_QUOTA_DQACQ_NET			0xA01
- #define OBD_FAIL_QUOTA_EDQUOT	    0xA02
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/layout.c b/drivers/staging/lustre/lustre/ptlrpc/layout.c
-index d0a6e56..e7524f9 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/layout.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/layout.c
-@@ -738,7 +738,8 @@ static struct req_format *req_formats[] = {
- 	&RQF_LLOG_ORIGIN_HANDLE_NEXT_BLOCK,
- 	&RQF_LLOG_ORIGIN_HANDLE_PREV_BLOCK,
- 	&RQF_LLOG_ORIGIN_HANDLE_READ_HEADER,
--	&RQF_LLOG_ORIGIN_CONNECT
-+	&RQF_LLOG_ORIGIN_CONNECT,
-+	&RQF_CONNECT,
- };
+ 			rc = ldlm_lock_change_resource(ns, lock,
+ 					&reply->lock_desc.l_resource.lr_name);
+@@ -1912,7 +1906,8 @@ int ldlm_cli_cancel_unused_resource(struct ldlm_namespace *ns,
+ 					   0, flags | LCF_BL_AST, opaque);
+ 	rc = ldlm_cli_cancel_list(&cancels, count, NULL, flags);
+ 	if (rc != ELDLM_OK)
+-		CERROR("ldlm_cli_cancel_unused_resource: %d\n", rc);
++		CERROR("canceling unused lock "DLDLMRES": rc = %d\n",
++		       PLDLMRES(res), rc);
  
- struct req_msg_field {
-@@ -1504,6 +1505,10 @@ struct req_format RQF_LLOG_ORIGIN_CONNECT =
- 	DEFINE_REQ_FMT0("LLOG_ORIGIN_CONNECT", llogd_conn_body_only, empty);
- EXPORT_SYMBOL(RQF_LLOG_ORIGIN_CONNECT);
+ 	LDLM_RESOURCE_DELREF(res);
+ 	ldlm_resource_putref(res);
+@@ -1930,15 +1925,10 @@ static int ldlm_cli_hash_cancel_unused(struct cfs_hash *hs, struct cfs_hash_bd *
+ {
+ 	struct ldlm_resource	   *res = cfs_hash_object(hs, hnode);
+ 	struct ldlm_cli_cancel_arg     *lc = arg;
+-	int			     rc;
  
-+struct req_format RQF_CONNECT =
-+	DEFINE_REQ_FMT0("CONNECT", obd_connect_client, obd_connect_server);
-+EXPORT_SYMBOL(RQF_CONNECT);
-+
- struct req_format RQF_OST_CONNECT =
- 	DEFINE_REQ_FMT0("OST_CONNECT",
- 			obd_connect_client, obd_connect_server);
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c b/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
-index bea44a3..537c540 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
-@@ -114,10 +114,10 @@ struct ll_rpc_opcode {
- 	{ MGS_SET_INFO,     "mgs_set_info" },
- 	{ MGS_CONFIG_READ,  "mgs_config_read" },
- 	{ OBD_PING,	 "obd_ping" },
--	{ OBD_LOG_CANCEL,   "llog_origin_handle_cancel" },
-+	{ OBD_LOG_CANCEL,	"llog_cancel" },
- 	{ OBD_QC_CALLBACK,  "obd_quota_callback" },
- 	{ OBD_IDX_READ,	    "dt_index_read" },
--	{ LLOG_ORIGIN_HANDLE_CREATE,     "llog_origin_handle_create" },
-+	{ LLOG_ORIGIN_HANDLE_CREATE,	 "llog_origin_handle_open" },
- 	{ LLOG_ORIGIN_HANDLE_NEXT_BLOCK, "llog_origin_handle_next_block" },
- 	{ LLOG_ORIGIN_HANDLE_READ_HEADER,"llog_origin_handle_read_header" },
- 	{ LLOG_ORIGIN_HANDLE_WRITE_REC,  "llog_origin_handle_write_rec" },
+-	rc = ldlm_cli_cancel_unused_resource(ldlm_res_to_ns(res), &res->lr_name,
+-					     NULL, LCK_MINMODE,
+-					     lc->lc_flags, lc->lc_opaque);
+-	if (rc != 0) {
+-		CERROR("ldlm_cli_cancel_unused ("LPU64"): %d\n",
+-		       res->lr_name.name[0], rc);
+-	}
++	ldlm_cli_cancel_unused_resource(ldlm_res_to_ns(res), &res->lr_name,
++					NULL, LCK_MINMODE,
++					lc->lc_flags, lc->lc_opaque);
+ 	/* must return 0 for hash iteration */
+ 	return 0;
+ }
+diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_resource.c b/drivers/staging/lustre/lustre/ldlm/ldlm_resource.c
+index 77e022b..2fdd938 100644
+--- a/drivers/staging/lustre/lustre/ldlm/ldlm_resource.c
++++ b/drivers/staging/lustre/lustre/ldlm/ldlm_resource.c
+@@ -762,16 +762,9 @@ static int ldlm_resource_complain(struct cfs_hash *hs, struct cfs_hash_bd *bd,
+ 	struct ldlm_resource  *res = cfs_hash_object(hs, hnode);
+ 
+ 	lock_res(res);
+-	CERROR("Namespace %s resource refcount nonzero "
+-	       "(%d) after lock cleanup; forcing "
+-	       "cleanup.\n",
+-	       ldlm_ns_name(ldlm_res_to_ns(res)),
+-	       atomic_read(&res->lr_refcount) - 1);
+-
+-	CERROR("Resource: %p ("LPU64"/"LPU64"/"LPU64"/"
+-	       LPU64") (rc: %d)\n", res,
+-	       res->lr_name.name[0], res->lr_name.name[1],
+-	       res->lr_name.name[2], res->lr_name.name[3],
++	CERROR("%s: namespace resource "DLDLMRES" (%p) refcount nonzero "
++	       "(%d) after lock cleanup; forcing cleanup.\n",
++	       ldlm_ns_name(ldlm_res_to_ns(res)), PLDLMRES(res), res,
+ 	       atomic_read(&res->lr_refcount) - 1);
+ 
+ 	ldlm_resource_dump(D_ERROR, res);
+@@ -1403,10 +1396,8 @@ void ldlm_resource_dump(int level, struct ldlm_resource *res)
+ 	if (!((libcfs_debug | D_ERROR) & level))
+ 		return;
+ 
+-	CDEBUG(level, "--- Resource: %p ("LPU64"/"LPU64"/"LPU64"/"LPU64
+-	       ") (rc: %d)\n", res, res->lr_name.name[0], res->lr_name.name[1],
+-	       res->lr_name.name[2], res->lr_name.name[3],
+-	       atomic_read(&res->lr_refcount));
++	CDEBUG(level, "--- Resource: "DLDLMRES" (%p) refcount = %d\n",
++	       PLDLMRES(res), res, atomic_read(&res->lr_refcount));
+ 
+ 	if (!list_empty(&res->lr_granted)) {
+ 		CDEBUG(level, "Granted locks (in reverse order):\n");
+diff --git a/drivers/staging/lustre/lustre/llite/namei.c b/drivers/staging/lustre/lustre/llite/namei.c
+index 34815b5..8377468 100644
+--- a/drivers/staging/lustre/lustre/llite/namei.c
++++ b/drivers/staging/lustre/lustre/llite/namei.c
+@@ -233,12 +233,9 @@ int ll_md_blocking_ast(struct ldlm_lock *lock, struct ldlm_lock_desc *desc,
+ 			ll_have_md_lock(inode, &bits, mode);
+ 
+ 		fid = ll_inode2fid(inode);
+-		if (lock->l_resource->lr_name.name[0] != fid_seq(fid) ||
+-		    lock->l_resource->lr_name.name[1] != fid_oid(fid) ||
+-		    lock->l_resource->lr_name.name[2] != fid_ver(fid)) {
++		if (!fid_res_name_eq(fid, &lock->l_resource->lr_name))
+ 			LDLM_ERROR(lock, "data mismatch with object "
+ 				   DFID" (%p)", PFID(fid), inode);
+-		}
+ 
+ 		if (bits & MDS_INODELOCK_OPEN) {
+ 			int flags = 0;
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
+index 3fc0697..8bc9007 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
+@@ -971,13 +971,8 @@ static int mdc_finish_intent_lock(struct obd_export *exp,
+ 
+ 		LASSERTF(fid_res_name_eq(&mdt_body->fid1,
+ 					 &lock->l_resource->lr_name),
+-			 "Lock res_id: %lu/%lu/%lu, fid: %lu/%lu/%lu.\n",
+-			 (unsigned long)lock->l_resource->lr_name.name[0],
+-			 (unsigned long)lock->l_resource->lr_name.name[1],
+-			 (unsigned long)lock->l_resource->lr_name.name[2],
+-			 (unsigned long)fid_seq(&mdt_body->fid1),
+-			 (unsigned long)fid_oid(&mdt_body->fid1),
+-			 (unsigned long)fid_ver(&mdt_body->fid1));
++			 "Lock res_id: "DLDLMRES", fid: "DFID"\n",
++			 PLDLMRES(lock->l_resource), PFID(&mdt_body->fid1));
+ 		LDLM_LOCK_PUT(lock);
+ 
+ 		memcpy(&old_lock, lockh, sizeof(*lockh));
+diff --git a/drivers/staging/lustre/lustre/mgc/mgc_request.c b/drivers/staging/lustre/lustre/mgc/mgc_request.c
+index 12a9ede..93b601d 100644
+--- a/drivers/staging/lustre/lustre/mgc/mgc_request.c
++++ b/drivers/staging/lustre/lustre/mgc/mgc_request.c
+@@ -788,8 +788,8 @@ static int mgc_blocking_ast(struct ldlm_lock *lock, struct ldlm_lock_desc *desc,
+ 		/* We've given up the lock, prepare ourselves to update. */
+ 		LDLM_DEBUG(lock, "MGC cancel CB");
+ 
+-		CDEBUG(D_MGC, "Lock res "LPX64" (%.8s)\n",
+-		       lock->l_resource->lr_name.name[0],
++		CDEBUG(D_MGC, "Lock res "DLDLMRES" (%.8s)\n",
++		       PLDLMRES(lock->l_resource),
+ 		       (char *)&lock->l_resource->lr_name.name[0]);
+ 
+ 		if (!cld) {
 -- 
 1.7.9.5
 
