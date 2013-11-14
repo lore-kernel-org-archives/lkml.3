@@ -1,76 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab3KNO1Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 09:27:25 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:38862 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754603Ab3KNO1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 09:27:10 -0500
-Message-ID: <5284DDB9.7040502@ti.com>
-Date: Thu, 14 Nov 2013 08:27:05 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: viresh kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [RFC PATCH] cpufreq: cpufreq-cpu0: do not allow transitions with
- regulators suspended
-References: <1382638087-32054-1-git-send-email-nm@ti.com> <CAKohponJOOfGX4BHn76LTBDTm58+2QxPf_rv1i4avVfrWhfkRg@mail.gmail.com> <52824522.7020401@ti.com> <CAKohpomB=wnct88wrTvW-qixLQPQGjVrCVF3V-BSbY7mhsSYQg@mail.gmail.com> <20131113151645.GA17828@kahuna> <52842671.40703@linaro.org>
-In-Reply-To: <52842671.40703@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1754666Ab3KNO1c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 09:27:32 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60359 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754597Ab3KNO1I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 09:27:08 -0500
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: cw00.choi@samsung.com
+Cc: myungjoo.ham@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH v2 7/7] extcon: arizona: Improve headphone detection error handling
+Date: Thu, 14 Nov 2013 14:11:37 +0000
+Message-Id: <1384438297-27851-7-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1384438297-27851-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1384438297-27851-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 07:25 PM, viresh kumar wrote:
-> On Wednesday 13 November 2013 08:46 PM, Nishanth Menon wrote:
->> arrgh, my bad.. Apologies for the bad one.. I missed it :( Does the following
->> look equivalent?
-> 
-> yes.
-> 
->> With this, I now see:
-> 
->> [   43.212714] cpufreq: cpufreq_add_policy_cpu: Failed to stop governor
->> ^^^ ??
-> 
-> Ahh, I missed this part. I thought it will fail at some other place where there
-> is no error checking :), but that's not true.
-> 
-> Following should fix it for you and looks to be the right way as well.
-> 
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index dc67fa0..30b09d3 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1530,6 +1530,14 @@ static void cpufreq_bp_resume(void)
->                 }
->         }
-> 
-> +       if (has_target()) {
-> +               if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
-> +                       (ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
-> +                       pr_err("%s: Failed to start governor\n", __func__);
-> +                       goto fail;
-> +               }
-> +       }
-> +
->         schedule_work(&policy->update);
-> 
->  fail:
-> 
-I am guessing this is a little too early for restarting policy here
-considering syscore_ops->resume is pretty early..
+In several places the return value of regmap operations is not checked
+whilst handling headphone detection. This patch adds checks for these
+return values. Additionally, failing to read/write a register is a
+serious enough error we should abort the headphone detection process so
+correct a couple of cases where this was not the case.
 
-http://pastebin.mozilla.org/3602746 is the equivalent patch for v3.12
-http://pastebin.mozilla.org/3602747 is the result.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/extcon/extcon-arizona.c |   82 ++++++++++++++++++++++++++++----------
+ 1 files changed, 60 insertions(+), 22 deletions(-)
 
+diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+index d71a738..321dcc9 100644
+--- a/drivers/extcon/extcon-arizona.c
++++ b/drivers/extcon/extcon-arizona.c
+@@ -399,22 +399,32 @@ static int arizona_hpdet_read_ip1(struct arizona_extcon_info *info)
+ 	ret = regmap_read(arizona->regmap, ARIZONA_HP_DACVAL, &val);
+ 	if (ret != 0) {
+ 		dev_err(arizona->dev, "Failed to read HP value: %d\n", ret);
+-		return -EAGAIN;
++		return ret;
+ 	}
+ 
+-	regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1, &range);
++	ret = regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1, &range);
+ 	range = (range & ARIZONA_HP_IMPEDANCE_RANGE_MASK)
+ 		   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
++	if (ret != 0) {
++		dev_err(arizona->dev, "Failed to read HP range: %d\n", ret);
++		return ret;
++	}
+ 
+ 	if (range < ARRAY_SIZE(arizona_hpdet_b_ranges) - 1 &&
+ 	    (val < 100 || val >= 0x3fb)) {
+ 		range++;
+ 		dev_dbg(arizona->dev, "Moving to HPDET range %d\n", range);
+-		regmap_update_bits(arizona->regmap,
+-				   ARIZONA_HEADPHONE_DETECT_1,
+-				   ARIZONA_HP_IMPEDANCE_RANGE_MASK,
+-				   range <<
+-				   ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
++		ret = regmap_update_bits(arizona->regmap,
++					 ARIZONA_HEADPHONE_DETECT_1,
++					 ARIZONA_HP_IMPEDANCE_RANGE_MASK,
++					 range <<
++					 ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
++		if (ret != 0) {
++			dev_err(arizona->dev,
++				"Failed to move range (%d): %d\n",
++				range, ret);
++			return ret;
++		}
+ 		return -EAGAIN;
+ 	}
+ 
+@@ -454,7 +464,11 @@ static int arizona_hpdet_read_ip2(struct arizona_extcon_info *info)
+ 	/* Convert to ohms, the value is in 0.5 ohm increments */
+ 	val /= 2;
+ 
+-	regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1, &range);
++	ret = regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1, &range);
++	if (ret != 0) {
++		dev_err(arizona->dev, "Failed to read HP range: %d\n", ret);
++		return ret;
++	}
+ 	range = (range & ARIZONA_HP_IMPEDANCE_RANGE_MASK)
+ 		   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
+ 
+@@ -465,11 +479,17 @@ static int arizona_hpdet_read_ip2(struct arizona_extcon_info *info)
+ 		dev_dbg(arizona->dev, "Moving to HPDET range %d-%d\n",
+ 			arizona_hpdet_c_ranges[range].min,
+ 			arizona_hpdet_c_ranges[range].max);
+-		regmap_update_bits(arizona->regmap,
++		ret = regmap_update_bits(arizona->regmap,
+ 				   ARIZONA_HEADPHONE_DETECT_1,
+ 				   ARIZONA_HP_IMPEDANCE_RANGE_MASK,
+ 				   range <<
+ 				   ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
++		if (ret != 0) {
++			dev_err(arizona->dev,
++				"Failed to move range (%d): %d\n",
++				range, ret);
++			return ret;
++		}
+ 		return -EAGAIN;
+ 	}
+ 
+@@ -519,6 +539,7 @@ static int arizona_hpdet_do_id(struct arizona_extcon_info *info, int *reading,
+ {
+ 	struct arizona *arizona = info->arizona;
+ 	int id_gpio = arizona->pdata.hpdet_id_gpio;
++	int ret;
+ 
+ 	/*
+ 	 * If we're using HPDET for accessory identification we need
+@@ -531,18 +552,30 @@ static int arizona_hpdet_do_id(struct arizona_extcon_info *info, int *reading,
+ 		if (id_gpio && info->num_hpdet_res == 1) {
+ 			dev_dbg(arizona->dev, "Measuring mic\n");
+ 
+-			regmap_update_bits(arizona->regmap,
+-					   ARIZONA_ACCESSORY_DETECT_MODE_1,
+-					   ARIZONA_ACCDET_MODE_MASK |
+-					   ARIZONA_ACCDET_SRC,
+-					   ARIZONA_ACCDET_MODE_HPR |
+-					   info->micd_modes[0].src);
++			ret = regmap_update_bits(arizona->regmap,
++					ARIZONA_ACCESSORY_DETECT_MODE_1,
++					ARIZONA_ACCDET_MODE_MASK |
++					ARIZONA_ACCDET_SRC,
++					ARIZONA_ACCDET_MODE_HPR |
++					info->micd_modes[0].src);
++			if (ret != 0) {
++				dev_err(arizona->dev,
++					"Failed to change HPDET source: %d\n",
++					ret);
++				return ret;
++			}
+ 
+ 			gpio_set_value_cansleep(id_gpio, 1);
+ 
+-			regmap_update_bits(arizona->regmap,
+-					   ARIZONA_HEADPHONE_DETECT_1,
+-					   ARIZONA_HP_POLL, ARIZONA_HP_POLL);
++			ret = regmap_update_bits(arizona->regmap,
++					ARIZONA_HEADPHONE_DETECT_1,
++					ARIZONA_HP_POLL, ARIZONA_HP_POLL);
++			if (ret != 0) {
++				dev_err(arizona->dev,
++					"Failed to re-enable HPDET: %d\n",
++					ret);
++				return ret;
++			}
+ 			return -EAGAIN;
+ 		}
+ 
+@@ -575,10 +608,15 @@ static int arizona_hpdet_do_id(struct arizona_extcon_info *info, int *reading,
+ 		}
+ 
+ 		/* Make sure everything is reset back to the real polarity */
+-		regmap_update_bits(arizona->regmap,
+-				   ARIZONA_ACCESSORY_DETECT_MODE_1,
+-				   ARIZONA_ACCDET_SRC,
+-				   info->micd_modes[0].src);
++		ret = regmap_update_bits(arizona->regmap,
++					 ARIZONA_ACCESSORY_DETECT_MODE_1,
++					 ARIZONA_ACCDET_SRC,
++					 info->micd_modes[0].src);
++		if (ret != 0) {
++			dev_err(arizona->dev, "Failed to reset polarity: %d\n",
++				ret);
++			return ret;
++		}
+ 	}
+ 
+ 	return 0;
 -- 
-Regards,
-Nishanth Menon
+1.7.2.5
+
