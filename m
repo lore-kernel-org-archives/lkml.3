@@ -1,250 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab3KNQg5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:36:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24112 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754481Ab3KNQgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:36:45 -0500
-Message-ID: <1384447002.3813.6.camel@localhost>
-Subject: [GIT PULL] Audit tree for 3.13
-From: Eric Paris <eparis@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: rgb@redhat.com, linux-kernel@vger.kernel.org
-Date: Thu, 14 Nov 2013 11:36:42 -0500
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755887Ab3KNQhM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:37:12 -0500
+Received: from ihemail3.lucent.com ([135.245.0.37]:36525 "EHLO
+	ihemail3.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab3KNQg7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 11:36:59 -0500
+From: James Solner <solner@alcatel-lucent.com>
+To: dhowells@redhat.com, Josh Boyer <jwboyer@fedoraproject.org>,
+        Randy Dunlap <rdunlap@infradead.org>, jwboyer@fedoraproject.org,
+        rusty@rustcorp.com.au
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4] Add Documentation/module-signing.txt file
+Date: Thu, 14 Nov 2013 10:36:19 -0600
+Message-ID: <3184360.WhYjmYFIyN@cmlinux10.ih.lucent.com>
+User-Agent: KMail/4.11.3 (Linux/3.12.0-PRV02+; KDE/4.11.3; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull audit changes for 3.13.  
+This patch adds the Documentation/module-signing.txt file that is
+currently missing from the Documentation directory. The init/Kconfig
+file references the Documentation/module-signing.txt file to explain
+how kernel module signing works. This patch supplies this documentation. 
 
-git://git.infradead.org/users/eparis/audit.git master
+The initial version of this patch provided old documentation
+that was a mixture of the old RHEL style GPG signing. 
 
-Nothing amazing.  Formatting, small bug fixes, couple of fixes where we
-didn't get records due to some old VFS changes, and a change to how we
-collect execve info...
+Version 1: Updated the documentation to described the current
+           implementation using x509 certificate signing. 
 
-There is a merge conflict which sfr has been carrying in linux-next in
-fs/exec.c due to some changes in the bprm handling.  It is easy for you
-to solve.  My instructions to sfr on solving the conflict was:
+Version 2: fixes grammar/spelling mistakes and removes
+           trailing whitespaces. 
 
-1) Take everything of Linus's
-2) delete the 4 line audit_bprm() block of code
-3) call audit_bprm() inside exec_binprm() just before
-trace_sched_process_exec().   Note: audit_bprm() now returns void.
+Version 3, fixes grammar/spelling mistakes. 
 
-My merge diff was:
+Version 4: Include updates from David Howells and fixes for
+           spelling mistakes.            
 
-diff --cc fs/exec.c
-index 8875dd1,c5c24f2..47d7edb
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@@ -1385,71 -1383,72 +1385,68 @@@ int search_binary_handler(struct linux_
-        if (retval)
-                return retval;
-  
--       retval = audit_bprm(bprm);
--       if (retval)
--               return retval;
-- 
- +      retval = -ENOENT;
- + retry:
- +      read_lock(&binfmt_lock);
- +      list_for_each_entry(fmt, &formats, lh) {
- +              if (!try_module_get(fmt->module))
- +                      continue;
- +              read_unlock(&binfmt_lock);
- +              bprm->recursion_depth++;
- +              retval = fmt->load_binary(bprm);
- +              bprm->recursion_depth--;
- +              if (retval >= 0 || retval != -ENOEXEC ||
- +                  bprm->mm == NULL || bprm->file == NULL) {
- +                      put_binfmt(fmt);
- +                      return retval;
- +              }
- +              read_lock(&binfmt_lock);
- +              put_binfmt(fmt);
- +      }
- +      read_unlock(&binfmt_lock);
- +
- +      if (need_retry && retval == -ENOEXEC) {
- +              if (printable(bprm->buf[0]) && printable(bprm->buf[1]) &&
- +                  printable(bprm->buf[2]) && printable(bprm->buf[3]))
- +                      return retval;
- +              if (request_module("binfmt-%04x", *(ushort *)(bprm->buf + 2)) < 0)
- +                      return retval;
- +              need_retry = false;
- +              goto retry;
- +      }
- +
- +      return retval;
- +}
- +EXPORT_SYMBOL(search_binary_handler);
- +
- +static int exec_binprm(struct linux_binprm *bprm)
- +{
- +      pid_t old_pid, old_vpid;
- +      int ret;
- +
-        /* Need to fetch pid before load_binary changes it */
-        old_pid = current->pid;
-        rcu_read_lock();
-        old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
-        rcu_read_unlock();
-  
- -      retval = -ENOENT;
- -      for (try=0; try<2; try++) {
- -              read_lock(&binfmt_lock);
- -              list_for_each_entry(fmt, &formats, lh) {
- -                      int (*fn)(struct linux_binprm *) = fmt->load_binary;
- -                      if (!fn)
- -                              continue;
- -                      if (!try_module_get(fmt->module))
- -                              continue;
- -                      read_unlock(&binfmt_lock);
- -                      bprm->recursion_depth = depth + 1;
- -                      retval = fn(bprm);
- -                      bprm->recursion_depth = depth;
- -                      if (retval >= 0) {
- -                              if (depth == 0) {
- -                                      audit_bprm(bprm);
- -                                      trace_sched_process_exec(current, old_pid, bprm);
- -                                      ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
- -                              }
- -                              put_binfmt(fmt);
- -                              allow_write_access(bprm->file);
- -                              if (bprm->file)
- -                                      fput(bprm->file);
- -                              bprm->file = NULL;
- -                              current->did_exec = 1;
- -                              proc_exec_connector(current);
- -                              return retval;
- -                      }
- -                      read_lock(&binfmt_lock);
- -                      put_binfmt(fmt);
- -                      if (retval != -ENOEXEC || bprm->mm == NULL)
- -                              break;
- -                      if (!bprm->file) {
- -                              read_unlock(&binfmt_lock);
- -                              return retval;
- -                      }
- +      ret = search_binary_handler(bprm);
- +      if (ret >= 0) {
-++              audit_bprm(bprm);
- +              trace_sched_process_exec(current, old_pid, bprm);
- +              ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
- +              current->did_exec = 1;
- +              proc_exec_connector(current);
- +
- +              if (bprm->file) {
- +                      allow_write_access(bprm->file);
- +                      fput(bprm->file);
- +                      bprm->file = NULL; /* to catch use-after-free */
-                }
- -              read_unlock(&binfmt_lock);
- -#ifdef CONFIG_MODULES
- -              if (retval != -ENOEXEC || bprm->mm == NULL) {
- -                      break;
- -              } else {
- -#define printable(c) (((c)=='\t') || ((c)=='\n') || (0x20<=(c) && (c)<=0x7e))
- -                      if (printable(bprm->buf[0]) &&
- -                          printable(bprm->buf[1]) &&
- -                          printable(bprm->buf[2]) &&
- -                          printable(bprm->buf[3]))
- -                              break; /* -ENOEXEC */
- -                      if (try)
- -                              break; /* -ENOEXEC */
- -                      request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
- -              }
- -#else
- -              break;
- -#endif
-        }
- -      return retval;
- -}
-  
- -EXPORT_SYMBOL(search_binary_handler);
- +      return ret;
- +}
-  
-  /*
-   * sys_execve() executes a new program.
+Signed-off-by: James Solner <solner@alcatel-lucent.com>
 
 
-The following changes since commit 6e4664525b1db28f8c4e1130957f70a94c19213e:
+diff --git a/Documentation/module-signing.txt b/Documentation/module-signing.txt
+new file mode 100644
+index 0000000..c34815d
+--- /dev/null
++++ b/Documentation/module-signing.txt
+@@ -0,0 +1,240 @@
++			==============================
++			KERNEL MODULE SIGNING FACILITY
++			==============================
++
++CONTENTS
++
++ - Overview.
++ - Configuring module signing.
++ - Generating signing keys.
++ - Public keys in the kernel.
++ - Manually signing modules.
++ - Signed modules and stripping.
++ - Loading signed modules.
++ - Non-valid signatures and unsigned modules.
++ - Administering/protecting the private key.
++
++
++========
++OVERVIEW
++========
++
++The kernel module signing facility cryptographically signs modules during
++installation and then checks the signature upon loading the module.  This
++allows increased kernel security by disallowing the loading of unsigned modules
++or modules signed with an invalid key.  Module signing increases security by
++making it harder to load a malicious module into the kernel.  The module
++signature checking is done by the kernel so that it is not necessary to have
++trusted userspace bits.
++
++This facility uses X.509 ITU-T standard certificates to encode the public keys
++involved.  The signatures are not themselves encoded in any industrial standard
++type.  The facility currently only supports the RSA public key encryption
++standard (though it is pluggable and permits others to be used).  The possible
++hash algorithms that can be used are SHA-1, SHA-224, SHA-256, SHA-384, and
++SHA-512 (the algorithm is selected by data in the signature).
++
++
++==========================
++CONFIGURING MODULE SIGNING
++==========================
++
++The module signing facility is enabled by going to the "Enable Loadable Module
++Support" section of the kernel configuration and turning on
++
++	CONFIG_MODULE_SIG	"Module signature verification"
++
++This has a number of options available:
++
++ (1) "Require modules to be validly signed" (CONFIG_MODULE_SIG_FORCE)
++
++     This specifies how the kernel should deal with a module that has a
++     signature for which the key is not known or a module that is unsigned.
++
++     If this is off (ie. "permissive"), then modules for which the key is not
++     available and modules that are unsigned are permitted, but the kernel will
++     be marked as being tainted.
++
++     If this is on (ie. "restrictive"), only modules that have a valid
++     signature that can be verified by a public key in the kernel's possession
++     will be loaded.  All other modules will generate an error.
++
++     Irrespective of the setting here, if the module has a signature block that
++     cannot be parsed, it will be rejected out of hand.
++
++
++ (2) "Automatically sign all modules" (CONFIG_MODULE_SIG_ALL)
++
++     If this is on then modules will be automatically signed during the
++     modules_install phase of a build.  If this is off, then the modules must
++     be signed manually using:
++
++	scripts/sign-file
++
++
++ (3) "Which hash algorithm should modules be signed with?"
++
++     This presents a choice of which hash algorithm the installation phase will
++     sign the modules with:
++
++	CONFIG_SIG_SHA1		"Sign modules with SHA-1"
++	CONFIG_SIG_SHA224	"Sign modules with SHA-224"
++	CONFIG_SIG_SHA256	"Sign modules with SHA-256"
++	CONFIG_SIG_SHA384	"Sign modules with SHA-384"
++	CONFIG_SIG_SHA512	"Sign modules with SHA-512"
++
++     The algorithm selected here will also be built into the kernel (rather
++     than being a module) so that modules signed with that algorithm can have
++     their signatures checked without causing a dependency loop.
++
++
++=======================
++GENERATING SIGNING KEYS
++=======================
++
++Cryptographic keypairs are required to generate and check signatures.  A
++private key is used to generate a signature and the corresponding public key is
++used to check it.  The private key is only needed during the build, after which
++it can be deleted or stored securely.  The public key gets built into the
++kernel so that it can be used to check the signatures as the modules are
++loaded.
++
++Under normal conditions, the kernel build will automatically generate a new
++keypair using openssl if one does not exist in the files:
++
++	signing_key.priv
++	signing_key.x509
++
++during the building of vmlinux (the public part of the key needs to be built
++into vmlinux) using parameters in the:
++
++	x509.genkey
++
++file (which is also generated if it does not already exist).
++
++It is strongly recommended that you provide your own x509.genkey file.
++
++Most notably, in the x509.genkey file, the req_distinguished_name section
++should be altered from the default:
++
++	[ req_distinguished_name ]
++	O = Magrathea
++	CN = Glacier signing key
++	emailAddress = slartibartfast@magrathea.h2g2
++
++The generated RSA key size can also be set with:
++
++	[ req ]
++	default_bits = 4096
++
++
++It is also possible to manually generate the key private/public files using the
++x509.genkey key generation configuration file in the root node of the Linux
++kernel sources tree and the openssl command.  The following is an example to
++generate the public/private key files:
++
++	openssl req -new -nodes -utf8 -sha256 -days 36500 -batch -x509 \
++	   -config x509.genkey -outform DER -out signing_key.x509 \
++	   -keyout signing_key.priv
++
++
++=========================
++PUBLIC KEYS IN THE KERNEL
++=========================
++
++The kernel contains a ring of public keys that can be viewed by root.  They're
++in a keyring called ".system_keyring" that can be seen by:
++
++	[root@deneb ~]# cat /proc/keys
++	...
++	223c7853 I------     1 perm 1f030000     0     0 keyring   .system_keyring: 1
++	302d2d52 I------     1 perm 1f010000     0     0 asymmetri Fedora kernel signing key: d69a84e6bce3d216b979e9505b3e3ef9a7118079: X509.RSA a7118079 []
++	...
++
++Beyond the public key generated specifically for module signing, any file
++placed in the kernel source root directory or the kernel build root directory
++whose name is suffixed with ".x509" will be assumed to be an X.509 public key
++and will be added to the keyring.
++
++Further, the architecture code may take public keys from a hardware store and
++add those in also (e.g. from the UEFI key database).
++
++Finally, it is possible to add additional public keys by doing:
++
++	keyctl padd asymmetric "" [.system_keyring-ID] <[key-file]
++
++e.g.:
++
++	keyctl padd asymmetric "" 0x223c7853 <my_public_key.x509
++
++Note, however, that the kernel will only permit keys to be added to
++.system_keyring _if_ the new key's X.509 wrapper is validly signed by a key
++that is already resident in the .system_keyring at the time the key was added.
++
++
++=========================
++MANUALLY SIGNING MODULES
++=========================
++
++To manually sign a module, use the scripts/sign-file tool available in
++the Linux kernel source tree.  The script requires 4 arguments:
++
++	1.  The hash algorithm (e.g., sha512)
++	2.  The private key filename
++	3.  The public key filename
++	4.  The kernel module to be signed
++
++The following is an example to sign a kernel module:
++
++	scripts/sign-file sha512 signkey.priv \
++		signkey.x509 module.ko
++
++The hash algorithm used does not have to match the one configured, but if it
++doesn't, you should make sure that hash algorithm is either built into the
++kernel or can be loaded without requiring itself.
++
++
++============================
++SIGNED MODULES AND STRIPPING
++============================
++
++A signed module has a digital signature simply appended at the end.  The string
++"~Module signature appended~." at the end of the module's file confirms that a
++signature is present but it does not confirm that the signature is valid!
++
++Signed modules are BRITTLE as the signature is outside of the defined ELF
++container.  Thus they MAY NOT be stripped once the signature is computed and
++attached.  Note the entire module is the signed payload, including any and all
++debug information present at the time of signing.
++
++
++======================
++LOADING SIGNED MODULES
++======================
++
++Modules are loaded with insmod, modprobe, init_module() or finit_module(),
++exactly as for unsigned modules as no processing is done in userspace.  The
++signature checking is all done within the kernel.
++
++
++=========================================
++NON-VALID SIGNATURES AND UNSIGNED MODULES
++=========================================
++
++If CONFIG_MODULE_SIG_FORCE is enabled or enforcemodulesig=1 is supplied on
++the kernel command line, the kernel will only load validly signed modules
++for which it has a public key.   Otherwise, it will also load modules that are
++unsigned.   Any module for which the kernel has a key, but which proves to have
++a signature mismatch will not be permitted to load.
++
++Any module that has an unparseable signature will be rejected.
++
++
++=========================================
++ADMINISTERING/PROTECTING THE PRIVATE KEY
++=========================================
++
++Since the private key is used to sign modules, viruses and malware could use
++the private key to sign modules and compromise the operating system.  The
++private key must be either destroyed or moved to a secure location and not kept
++in the root node of the kernel source tree.
+-- 
+1.7.12.4
 
-  Linux 3.11 (2013-09-02 13:46:10 -0700)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/eparis/audit.git master
-
-for you to fetch changes up to 9175c9d2aed528800175ef81c90569d00d23f9be:
-
-  audit: fix type of sessionid in audit_set_loginuid() (2013-11-06 11:47:24 -0500)
-
-----------------------------------------------------------------
-Eric Paris (10):
-      audit: implement generic feature setting and retrieving
-      selinux: apply selinux checks on new audit message types
-      audit: loginuid functions coding style
-      audit: remove CONFIG_AUDIT_LOGINUID_IMMUTABLE
-      audit: allow unsetting the loginuid (with priv)
-      audit: audit feature to only allow unsetting the loginuid
-      audit: audit feature to set loginuid immutable
-      audit: use memset instead of trying to initialize field by field
-      audit: do not reject all AUDIT_INODE filter types
-      audit: fix type of sessionid in audit_set_loginuid()
-
-Eric W. Biederman (1):
-      audit: Kill the unused struct audit_aux_data_capset
-
-Gao feng (1):
-      Audit: remove duplicate comments
-
-Ilya V. Matveychikov (1):
-      audit: remove duplicate inclusion of the netlink header
-
-Jeff Layton (2):
-      audit: add child record before the create to handle case where create fails
-      audit: log the audit_names record type
-
-Mathias Krause (2):
-      audit: fix info leak in AUDIT_GET requests
-      audit: use nlmsg_len() to get message payload length
-
-Oleg Nesterov (1):
-      audit_alloc: clear TIF_SYSCALL_AUDIT if !audit_context
-
-Richard Guy Briggs (9):
-      audit: format user messages to size of MAX_AUDIT_MESSAGE_LENGTH
-      audit: remove newline accidentally added during session id helper refactor
-      audit: change decimal constant to macro for invalid uid
-      audit: update AUDIT_INODE filter rule to comparator function
-      audit: use given values in tty_audit enable api
-      audit: suppress stock memalloc failure warnings since already managed
-      audit: remove unused envc member of audit_aux_data_execve
-      audit: move audit_aux_data_execve contents into audit_context union
-      audit: call audit_bprm() only once to add AUDIT_EXECVE information
-
-Tyler Hicks (1):
-      audit: printk USER_AVC messages when audit isn't enabled
-
- fs/exec.c                   |   5 +----
- fs/namei.c                  |   1 +
- fs/proc/base.c              |  14 ++++++++++----
- include/linux/audit.h       |  15 +++++++--------
- include/uapi/linux/audit.h  |  26 ++++++++++++++++++++++++++
- init/Kconfig                |  14 --------------
- kernel/audit.c              | 153 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--------------
- kernel/audit.h              |   3 +++
- kernel/auditfilter.c        |   3 ++-
- kernel/auditsc.c            | 133 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------------------------------------------------------------------
- security/lsm_audit.c        |   3 ++-
- security/selinux/nlmsgtab.c |   2 ++
- 12 files changed, 259 insertions(+), 113 deletions(-)
-
+---
 
