@@ -1,163 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab3KNIjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 03:39:08 -0500
-Received: from caiajhbdcbef.dreamhost.com ([208.97.132.145]:58622 "EHLO
-	homiemail-a17.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752377Ab3KNIiz (ORCPT
+	id S1752783Ab3KNIjf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 03:39:35 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:46181 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab3KNIjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 03:38:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=novalis.org; h=message-id:subject
-	:from:to:cc:date:in-reply-to:references:content-type
-	:mime-version:content-transfer-encoding; q=dns; s=novalis.org;
-	 b=ETGgqcuvGyey1CVn45a13yogWg6VAElFg5PSfcfd9RapEuM4n5/OJtSlHNID6
-	wAtL6MT5SOIowEUOqQ4Q+1u4L9IdS99sCvq4mjRl+6Fj2cQn2BpkWE9SEQ0tI0FR
-	9CKSwqFWUnUGQNB/Mt/i4VXQA2Z0WO91KLdYrLpEzYJc2A=
-Message-ID: <1384418333.8994.203.camel@chiang>
-Subject: [PATCH v5 1/2] ext4: Fix handling of extended tv_sec (bug 23732)
-From: David Turner <novalis@novalis.org>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Mark Harris <mhlk@osj.us>,
-        Jan Kara <jack@suse.cz>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Thu, 14 Nov 2013 03:38:53 -0500
-In-Reply-To: <276FA06E-1EE0-4FB4-94E1-B6D9F05F0B5B@dilger.ca>
-References: <1383808590.23882.13.camel@chiang>
-	 <20131107160341.GA3850@quack.suse.cz> <1383864864.23882.33.camel@chiang>
-	 <20131107231445.GG2054@quack.suse.cz> <1383866807.23882.41.camel@chiang>
-	 <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
-	 <1383981551.8994.27.camel@chiang>
-	 <CADQUmxULoLgXRyoPpJJMJLqJPsZ8M4oPP8ScGxWp+Np8-efq3g@mail.gmail.com>
-	 <1384070214.8994.47.camel@chiang> <20131112003018.GA30281@thunk.org>
-	 <6DE0AF86-98E6-4DE9-BB7F-40FB32E1BC26@dilger.ca>
-	 <1384326020.8994.186.camel@chiang>
-	 <276FA06E-1EE0-4FB4-94E1-B6D9F05F0B5B@dilger.ca>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Nov 2013 03:39:33 -0500
+Date: Thu, 14 Nov 2013 09:39:30 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        thomas.ilsche@tu-dresden.de, linux-kernel@vger.kernel.org,
+        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH] Perf: Correct Assumptions about Sample Timestamps in
+ Passes
+Message-ID: <20131114083930.GC16543@gmail.com>
+References: <528484CB.7@tu-dresden.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528484CB.7@tu-dresden.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your patient and detailed comments.
---
 
-In ext4, the bottom two bits of {a,c,m}time_extra are used to extend
-the {a,c,m}time fields, deferring the year 2038 problem to the year
-2446.
+* Joseph Schuchart <joseph.schuchart@tu-dresden.de> wrote:
 
-When decoding these extended fields, for times whose bottom 32 bits
-would represent a negative number, sign extension causes the 64-bit
-extended timestamp to be negative as well, which is not what's
-intended.  This patch corrects that issue, so that the only negative
-{a,c,m}times are those between 1901 and 1970 (as per 32-bit signed
-timestamps).
+> @@ -549,15 +552,24 @@ static int flush_sample_queue(struct perf_session *s,
+>  	return 0;
+>  }
+>  
+> +static inline void set_next_flush(struct perf_session *session)
+> +{
+> +	int i;
+> +	u64 min_max_timestamp = session->ordered_samples.max_timestamps[0];
+> +	for (i = 1; i < MAX_NR_CPUS; i++) {
+> +		if (min_max_timestamp > session->ordered_samples.max_timestamps[i])
+> +			min_max_timestamp = session->ordered_samples.max_timestamps[i];
+> +	}
+> +	session->ordered_samples.next_flush = min_max_timestamp;
+> +}
 
-Some older kernels might have written pre-1970 dates with 1,1 in the
-extra bits.  This patch treats those incorrectly-encoded dates as
-pre-1970, instead of post-2311, until kernel 4.20 is released.
-Hopefully by then e2fsck will have fixed up the bad data.
+>  static int process_finished_round(struct perf_tool *tool,
+>  				  union perf_event *event __maybe_unused,
+>  				  struct perf_session *session)
+>  {
+> -	int ret = flush_sample_queue(session, tool);
+> -	if (!ret)
+> -		session->ordered_samples.next_flush = session->ordered_samples.max_timestamp;
+> -
+> +	int ret;
+> +	set_next_flush(session);
+> +	ret = flush_sample_queue(session, tool);
 
-Signed-off-by: David Turner <novalis@novalis.org>
-Reported-by: Mark Harris <mh8928@yahoo.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=23732
----
- fs/ext4/ext4.h | 61 +++++++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 39 insertions(+), 22 deletions(-)
+Just a quick side note, while I realize that you are 
+(rightfully!) concerned about correctness primarily, if that loop 
+over MAX_NR_CPUS executes often enough then this might hurt 
+performance:
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 18aa56b..ac54dac 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -26,6 +26,7 @@
- #include <linux/seqlock.h>
- #include <linux/mutex.h>
- #include <linux/timer.h>
-+#include <linux/version.h>
- #include <linux/wait.h>
- #include <linux/blockgroup_lock.h>
- #include <linux/percpu_counter.h>
-@@ -713,38 +714,54 @@ struct move_extent {
- 	  sizeof((ext4_inode)->field))			\
- 	<= (EXT4_GOOD_OLD_INODE_SIZE +			\
- 	    (einode)->i_extra_isize))			\
-+
- /*
-- * We use the bottom 34 bits of the signed 64-bit time value, with
-- * the top two of these bits in the bottom of extra.  This leads
-- * to a slightly odd encoding, which works like this:
-+ * We need is an encoding that preserves the times for extra epoch "00":
-  *
-- * extra  msb of
-- * epoch  32-bit
-- * bits   time    decoded 64-bit tv_sec   valid time range
-- * 0 0    0    0x000000000..0x07fffffff  1970-01-01..2038-01-19
-- * 0 0    1    0x080000000..0x0ffffffff  2038-01-19..2106-02-07
-- * 0 1    0    0x100000000..0x17fffffff  2106-02-07..2174-02-25
-- * 0 1    1    0x180000000..0x1ffffffff  2174-02-25..2242-03-16
-- * 1 0    0    0x200000000..0x27fffffff  2242-03-16..2310-04-04
-- * 1 0    1    0x280000000..0x2ffffffff  2310-04-04..2378-04-22
-- * 1 1    0    0x300000000..0x37fffffff  2378-04-22..2446-05-10
--
-- * 1 1    1    -0x80000000..-0x00000001  1901-12-13..1969-12-31
-+ * extra  msb of                         adjust for signed
-+ * epoch  32-bit                         32-bit tv_sec to
-+ * bits   time    decoded 64-bit tv_sec  64-bit tv_sec      valid time range
-+ * 0 0    1    -0x80000000..-0x00000001  0x000000000     1901-12-13..1969-12-31
-+ * 0 0    0    0x000000000..0x07fffffff  0x000000000     1970-01-01..2038-01-19
-+ * 0 1    1    0x080000000..0x0ffffffff  0x100000000     2038-01-19..2106-02-07
-+ * 0 1    0    0x100000000..0x17fffffff  0x100000000     2106-02-07..2174-02-25
-+ * 1 0    1    0x180000000..0x1ffffffff  0x200000000     2174-02-25..2242-03-16
-+ * 1 0    0    0x200000000..0x27fffffff  0x200000000     2242-03-16..2310-04-04
-+ * 1 1    1    0x280000000..0x2ffffffff  0x300000000     2310-04-04..2378-04-22
-+ * 1 1    0    0x300000000..0x37fffffff  0x300000000     2378-04-22..2446-05-10
-+ *
-+ * Note that previous versions of the kernel on 64-bit systems would
-+ * incorrectly use extra epoch bits 1,1 for dates between 1901 and
-+ * 1970.  e2fsck will correct this, assuming that it is run on the
-+ * affected filesystem before 2242.
-  */
- 
- static inline __le32 ext4_encode_extra_time(struct timespec *time)
- {
--       return cpu_to_le32((sizeof(time->tv_sec) > 4 ?
--			   (time->tv_sec >> 32) & EXT4_EPOCH_MASK : 0) |
--                          ((time->tv_nsec << EXT4_EPOCH_BITS) & EXT4_NSEC_MASK));
-+	u32 extra = sizeof(time->tv_sec) > 4 ?
-+		((time->tv_sec - (s32)time->tv_sec) >> 32) & EXT4_EPOCH_MASK : 0;
-+	return cpu_to_le32(extra | (time->tv_nsec << EXT4_EPOCH_BITS));
- }
- 
- static inline void ext4_decode_extra_time(struct timespec *time, __le32 extra)
- {
--       if (sizeof(time->tv_sec) > 4)
--	       time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
--			       << 32;
--       time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
-+	if (unlikely(sizeof(time->tv_sec) > 4 &&
-+			(extra & cpu_to_le32(EXT4_EPOCH_MASK)))) {
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,20,0)
-+		/* Handle legacy encoding of pre-1970 dates with epoch
-+		 * bits 1,1.  We assume that by kernel version 4.20,
-+		 * everyone will have run fsck over the affected
-+		 * filesystems to correct the problem.
-+		 */
-+		u64 extra_bits = le32_to_cpu(extra) & EXT4_EPOCH_MASK;
-+		if (extra_bits == 3)
-+			extra_bits = 0;
-+		time->tv_sec += extra_bits << 32;
-+#else
-+		time->tv_sec += (u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK) << 32;
-+#endif
-+	}
-+	time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
- }
- 
- #define EXT4_INODE_SET_XTIME(xtime, inode, raw_inode)			       \
--- 
-1.8.1.2
+   perf.h:#define MAX_NR_CPUS                      256
 
+So it might be better to maintain a rolling min_max_timestamp in 
+this place:
 
++       os->max_timestamps[sample->cpu] = timestamp;
 
+?
+
+If done that way then AFAICS we could even eliminate the 
+->max_timestamps[NR_CPUS] array.
+
+Thanks,
+
+	Ingo
