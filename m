@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab3KNVHQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 16:07:16 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:52829 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758020Ab3KNVGr (ORCPT
+	id S1757395Ab3KNVIu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 16:08:50 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:55172 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755960Ab3KNVIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 16:06:47 -0500
-Date: Thu, 14 Nov 2013 16:06:44 -0500 (EST)
-Message-Id: <20131114.160644.936677620948788988.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
-        stefanha@redhat.com, gregory.v.rose@intel.com
-Subject: Re: [PATCH net V2 2/2] macvtap: limit head length of skb allocated
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1384322440-29038-2-git-send-email-jasowang@redhat.com>
-References: <1384322440-29038-1-git-send-email-jasowang@redhat.com>
-	<1384322440-29038-2-git-send-email-jasowang@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 14 Nov 2013 13:06:46 -0800 (PST)
+	Thu, 14 Nov 2013 16:08:42 -0500
+From: Olof Johansson <olof@lixom.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: [PATCH] video: exynos_mipi_dsim: Remove unused variable
+Date: Thu, 14 Nov 2013 13:09:24 -0800
+Message-Id: <1384463364-28864-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Wed, 13 Nov 2013 14:00:40 +0800
+commit 7e0be9f9f7cba3356f75b86737dbe3a005da067e ('video: exynos_mipi_dsim:
+Use the generic PHY driver') resulted in a warning about an unused
+variable:
 
-> We currently use hdr_len as a hint of head length which is advertised by
-> guest. But when guest advertise a very big value, it can lead to an 64K+
-> allocating of kmalloc() which has a very high possibility of failure when host
-> memory is fragmented or under heavy stress. The huge hdr_len also reduce the
-> effect of zerocopy or even disable if a gso skb is linearized in guest.
-> 
-> To solves those issues, this patch introduces an upper limit (PAGE_SIZE) of the
-> head, which guarantees an order 0 allocation each time.
-> 
-> Cc: Stefan Hajnoczi <stefanha@redhat.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+drivers/video/exynos/exynos_mipi_dsi.c:144:26: warning: unused variable
+    'pdev' [-Wunused-variable]
 
-Applied and queued up for -stable.
+It is indeed unused; remove it.
+
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+---
+ drivers/video/exynos/exynos_mipi_dsi.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/video/exynos/exynos_mipi_dsi.c b/drivers/video/exynos/exynos_mipi_dsi.c
+index 00b3a52..cee9602 100644
+--- a/drivers/video/exynos/exynos_mipi_dsi.c
++++ b/drivers/video/exynos/exynos_mipi_dsi.c
+@@ -141,7 +141,6 @@ static int exynos_mipi_dsi_early_blank_mode(struct mipi_dsim_device *dsim,
+ 
+ static int exynos_mipi_dsi_blank_mode(struct mipi_dsim_device *dsim, int power)
+ {
+-	struct platform_device *pdev = to_platform_device(dsim->dev);
+ 	struct mipi_dsim_lcd_driver *client_drv = dsim->dsim_lcd_drv;
+ 	struct mipi_dsim_lcd_device *client_dev = dsim->dsim_lcd_dev;
+ 
+-- 
+1.7.10.4
+
