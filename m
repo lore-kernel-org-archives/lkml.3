@@ -1,121 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab3KNA4o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 19:56:44 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:34860 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368Ab3KNA4M (ORCPT
+	id S1752216Ab3KNBGi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 20:06:38 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:58954 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab3KNBGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 19:56:12 -0500
-Date: Wed, 13 Nov 2013 16:56:09 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add memory.oom_control notification for system
- oom
-In-Reply-To: <20131113233419.GJ707@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1310301838300.13556@chino.kir.corp.google.com> <20131031054942.GA26301@cmpxchg.org> <alpine.DEB.2.02.1311131416460.23211@chino.kir.corp.google.com> <20131113233419.GJ707@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 13 Nov 2013 20:06:31 -0500
+Date: Wed, 13 Nov 2013 17:06:27 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 02/12] mtd: Remove superfluous name casts
+Message-ID: <20131114010627.GK9468@ld-irv-0074.broadcom.com>
+References: <1384283245-9419-1-git-send-email-geert@linux-m68k.org>
+ <1384283245-9419-3-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384283245-9419-3-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Nov 2013, Johannes Weiner wrote:
-
-> > > > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> > > > --- a/include/linux/memcontrol.h
-> > > > +++ b/include/linux/memcontrol.h
-> > > > @@ -155,6 +155,7 @@ static inline bool task_in_memcg_oom(struct task_struct *p)
-> > > >  }
-> > > >  
-> > > >  bool mem_cgroup_oom_synchronize(bool wait);
-> > > > +void mem_cgroup_root_oom_notify(void);
-> > > >  
-> > > >  #ifdef CONFIG_MEMCG_SWAP
-> > > >  extern int do_swap_account;
-> > > > @@ -397,6 +398,10 @@ static inline bool mem_cgroup_oom_synchronize(bool wait)
-> > > >  	return false;
-> > > >  }
-> > > >  
-> > > > +static inline void mem_cgroup_root_oom_notify(void)
-> > > > +{
-> > > > +}
-> > > > +
-> > > >  static inline void mem_cgroup_inc_page_stat(struct page *page,
-> > > >  					    enum mem_cgroup_stat_index idx)
-> > > >  {
-> > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > > --- a/mm/memcontrol.c
-> > > > +++ b/mm/memcontrol.c
-> > > > @@ -5641,6 +5641,15 @@ static void mem_cgroup_oom_notify(struct mem_cgroup *memcg)
-> > > >  		mem_cgroup_oom_notify_cb(iter);
-> > > >  }
-> > > >  
-> > > > +/*
-> > > > + * Notify any process waiting on the root memcg's memory.oom_control, but do not
-> > > > + * notify any child memcgs to avoid triggering their per-memcg oom handlers.
-> > > > + */
-> > > > +void mem_cgroup_root_oom_notify(void)
-> > > > +{
-> > > > +	mem_cgroup_oom_notify_cb(root_mem_cgroup);
-> > > > +}
-> > > > +
-> > > >  static int mem_cgroup_usage_register_event(struct cgroup_subsys_state *css,
-> > > >  	struct cftype *cft, struct eventfd_ctx *eventfd, const char *args)
-> > > >  {
-> > > > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> > > > --- a/mm/oom_kill.c
-> > > > +++ b/mm/oom_kill.c
-> > > > @@ -632,6 +632,10 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
-> > > >  		return;
-> > > >  	}
-> > > >  
-> > > > +	/* Avoid waking up processes for oom kills triggered by sysrq */
-> > > > +	if (!force_kill)
-> > > > +		mem_cgroup_root_oom_notify();
-> > > 
-> > > We have an API for global OOM notifications, please just use
-> > > register_oom_notifier() instead.
-> > > 
-> > 
-> > We can't use register_oom_notifier() because we don't want to notify the 
-> > root memcg for a system oom handler if existing oom notifiers free memory 
-> > (powerpc or s390).  We also don't want to notify the root memcg when 
-> > current is exiting or has a pending SIGKILL, we just want to silently give 
-> > it access to memory reserves and exit.  The mem_cgroup_root_oom_notify() 
-> > here is placed correctly.
+On Tue, Nov 12, 2013 at 08:07:15PM +0100, Geert Uytterhoeven wrote:
+> map_info.name is "const char *"
 > 
-> This is all handwaving.
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: linux-mtd@lists.infradead.org
 
-I'm defining the semantics of the system oom notification for the root 
-memcg.  Userspace oom handlers are not going to want to wakeup when a 
-kernel oom notifier is capable of freeing memory to prevent the oom killer 
-from doing anything at all or if current simply needs access to memory 
-reserves to make forward progress.  Userspace oom handlers want a wakeup 
-when a process must be killed to free memory, and thus this is correctly 
-placed.
+Pushed to l2-mtd.git/next. Thanks!
 
-> Somebody called out_of_memory() after they
-> failed reclaim, the machine is OOM.
-
-While momentarily oom, the oom notifiers in powerpc and s390 have the 
-ability to free memory without requiring a kill.
-
-> The fact that current is exiting
-> without requiring a kill is coincidental and irrelevant.  You want an
-> OOM notification, use the OOM notifiers, that's what they're for.
-> 
-
-I think you're misunderstanding the kernel oom notifiers, they exist 
-solely to free memory so that the oom killer actually doesn't have to kill 
-anything.  The fact that they use kernel notifiers is irrelevant and 
-userspace oom notification is separate.  Userspace is only going to want a 
-notification when the oom killer has to kill something, the EXACT same 
-semantics as the non-root-memcg memory.oom_control.
+Brian
