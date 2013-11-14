@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab3KNXLm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 18:11:42 -0500
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:41734 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab3KNXLZ (ORCPT
+	id S1752893Ab3KNXQB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 18:16:01 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:61235 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427Ab3KNXPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 18:11:25 -0500
-X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Nov 2013 18:11:25 EST
-Date: Thu, 14 Nov 2013 15:11:21 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH] mm/migrate.c: take returned value of isolate_huge_page()(Re:
- [PATCH 4/9] migrate: add hugepage migration code to move_pages())
-In-Reply-To: <1384444050-v86q6ypr-mutt-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.DEB.2.02.1311141509390.30112@chino.kir.corp.google.com>
-References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1376025702-14818-5-git-send-email-n-horiguchi@ah.jp.nec.com> <20130928172602.GA6191@pd.tnic> <1380553263-lqp3ggll-mutt-n-horiguchi@ah.jp.nec.com> <20130930160450.GA20030@pd.tnic>
- <1380557324-v44mpchd-mutt-n-horiguchi@ah.jp.nec.com> <20131112115633.GA16700@pd.tnic> <1384444050-v86q6ypr-mutt-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 14 Nov 2013 18:15:53 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1906951.EFsdgbeaob@flatron>
+References: <1378898048-25205-1-git-send-email-yadi.brar@samsung.com>
+	<CAKew6eUK9ZtoVgVu_b13Bn20iMNWzHnWjSHMjxD1Y+zDtvoCWw@mail.gmail.com>
+	<1906951.EFsdgbeaob@flatron>
+Date: Fri, 15 Nov 2013 08:15:52 +0900
+Message-ID: <CAKew6eVJiXNWpyE8E69MminsHjr+ip8syX6kx8wuY3R78QW=iA@mail.gmail.com>
+Subject: Re: [RFC 0/4] Add basic support for ASV
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Nov 2013, Naoya Horiguchi wrote:
+[adding Sachin]
 
-> Introduces a cosmetic substitution of the returned value of isolate_huge_page()
-> to suppress a build warning when !CONFIG_HUGETLBFS. No behavioral change.
-> 
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> Tested-by: Borislav Petkov <bp@alien8.de>
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  mm/migrate.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 4cd63c2..4a26042 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -1168,7 +1168,7 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
->  			goto put_and_set;
->  
->  		if (PageHuge(page)) {
-> -			isolate_huge_page(page, &pagelist);
-> +			err = isolate_huge_page(page, &pagelist);
->  			goto put_and_set;
->  		}
->  
+Hi Tomasz,
 
-I think it would be better to just fix hugetlb.h to do
+On Fri, Nov 15, 2013 at 12:06 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> Hi Yadwinder,
+>
+> On Monday 11 of November 2013 23:27:08 Yadwinder Singh Brar wrote:
+>> gentle ping for suggestions/reviews ..
+>
+> Hmm, I must have somehow missed this series when you orignally sent it.
+> Can I ask you to resend it, as I don't have it in my e-mail client archive
+> any longer?
+>
+> While at it, I would also ask you to add my private e-mail address
+> (this one) and linux-pm mailing list to Cc list.
+>
 
-	static inline bool isolate_huge_page(struct page *page, struct list_head *list)
-	{
-		return false;
-	}
+hmm, I am on travel still for few more days, so it may be difficult for me
+to resend it quickly. But I think Sachin may help me here.
+Sachin can you please rebase and repost it ?
 
-for the !CONFIG_HUGETLB_PAGE variant.
+Regards,
+Yadwinder
