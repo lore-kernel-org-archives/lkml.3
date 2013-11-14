@@ -1,106 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932229Ab3KNVrn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 16:47:43 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61917 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757870Ab3KNVrM (ORCPT
+	id S1758116Ab3KNVr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 16:47:56 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:54497 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932232Ab3KNVru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 16:47:12 -0500
-From: Marek Belisko <marek@goldelico.com>
-To: arnd@arndb.de, gregkh@linuxfoundation.org
-Cc: neilb@suse.de, hns@goldelico.com, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, rob@landley.net,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Marek Belisko <marek@goldelico.com>
-Subject: [PATCH 3/3] misc: bmp085: Add missing platform data.
-Date: Thu, 14 Nov 2013 22:46:49 +0100
-Message-Id: <1384465609-26485-4-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1384465609-26485-1-git-send-email-marek@goldelico.com>
-References: <1384465609-26485-1-git-send-email-marek@goldelico.com>
+	Thu, 14 Nov 2013 16:47:50 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: Nishanth Menon <nm@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [RFC PATCH] cpufreq: cpufreq-cpu0: do not allow transitions with regulators suspended
+Date: Thu, 14 Nov 2013 23:00:21 +0100
+Message-ID: <2085822.gaTNcUz76n@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <52842671.40703@linaro.org>
+References: <1382638087-32054-1-git-send-email-nm@ti.com> <20131113151645.GA17828@kahuna> <52842671.40703@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DT bindings contains more parameters to set so add them to platform data also
-to have possibility to use on arch where DT isn't available yet.
+On Thursday, November 14, 2013 06:55:05 AM viresh kumar wrote:
+> On Wednesday 13 November 2013 08:46 PM, Nishanth Menon wrote:
+> > arrgh, my bad.. Apologies for the bad one.. I missed it :( Does the following
+> > look equivalent?
+> 
+> yes.
+> 
+> > With this, I now see:
+> 
+> > [   43.212714] cpufreq: cpufreq_add_policy_cpu: Failed to stop governor
+> > ^^^ ??
+> 
+> Ahh, I missed this part. I thought it will fail at some other place where there
+> is no error checking :), but that's not true.
+> 
+> Following should fix it for you and looks to be the right way as well.
+> 
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index dc67fa0..30b09d3 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1530,6 +1530,14 @@ static void cpufreq_bp_resume(void)
+>                 }
+>         }
+> 
+> +       if (has_target()) {
+> +               if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
+> +                       (ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
 
-Signed-off-by: Marek Belisko <marek@goldelico.com>
----
- drivers/misc/bmp085.c      | 21 +++++++++++++++++----
- include/linux/i2c/bmp085.h |  7 +++++++
- 2 files changed, 24 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/misc/bmp085.c b/drivers/misc/bmp085.c
-index 9792ce2..530b4a1 100644
---- a/drivers/misc/bmp085.c
-+++ b/drivers/misc/bmp085.c
-@@ -408,13 +408,15 @@ static void bmp085_get_of_properties(struct bmp085_data *data,
- 		return;
- 
- 	if (!of_property_read_u32(np, "chip-id", &prop))
--		data->chip_id = prop & 0xff;
-+		pdata->chip_id = prop & 0xff;
- 
- 	if (!of_property_read_u32(np, "temp-measurement-period", &prop))
--		data->temp_measurement_period = (prop/100)*HZ;
-+		pdata->temp_measurement_period = (prop/100)*HZ;
- 
- 	if (!of_property_read_u32(np, "default-oversampling", &prop))
--		data->oversampling_setting = prop & 0xff;
-+		pdata->default_oversampling = prop & 0xff;
-+	else
-+		pdata->default_oversampling = -1;
- 
- 	pdata->gpio = of_get_named_gpio(np, "gpio", 0);
- 	of_property_read_u32(np, "irq", &pdata->irq);
-@@ -443,9 +445,20 @@ static int bmp085_init_client(struct device *dev, struct bmp085_data *data)
- 					GFP_KERNEL);
- 		if (!pdata)
- 			return -ENOMEM;
-+
-+		bmp085_get_of_properties(data, pdata);
- 	}
- 
--	bmp085_get_of_properties(data, pdata);
-+	if (pdata->chip_id)
-+		data->chip_id = pdata->chip_id;
-+
-+	if (pdata->temp_measurement_period > 0)
-+		data->temp_measurement_period =
-+			(pdata->temp_measurement_period/100)*HZ;
-+
-+	if (pdata->default_oversampling >= 0 &&
-+		pdata->default_oversampling <= 3)
-+		data->oversampling_setting = pdata->default_oversampling;
- 
- 	if (gpio_is_valid(pdata->gpio)) {
- 		err = devm_gpio_request(dev, pdata->gpio, "bmp085_eoc_irq");
-diff --git a/include/linux/i2c/bmp085.h b/include/linux/i2c/bmp085.h
-index b66cb98..addb972 100644
---- a/include/linux/i2c/bmp085.h
-+++ b/include/linux/i2c/bmp085.h
-@@ -5,11 +5,18 @@
- 
- /*
-  * bmp085 platform data
-+ * @chip_id: configurable chip id for non-default chip revisions
-+ * @temp_measurement_period: in milliseconds
-+ * @default_oversampling: used at startup, range is 0-3 with rising sensitivity
-+ * set it to -1 when don't want to change default value (3)
-  * @gpio: if is set it is the End Of Conversion line which is high when
-  * conversion is finished
-  * @irq: if gpio < 0 and irq > 0, then it is an interrupt with no gpio
-  */
- struct bmp085_platform_data {
-+	int	chip_id;
-+	int	temp_measurement_period;
-+	int	default_oversampling;
- 	int	gpio;
- 	int	irq;
- };
+I'm not going to apply anything like this.  If I have already, that's been a mistake.
+
+Do not mix assignments with logical operators in such outrageous ways, please.
+That's completely unreadable and confusing.
+
+What about:
+
+	ret = __cpufreq_governor(policy, CPUFREQ_GOV_START);
+	if (!ret) {
+		ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
+		if (ret) {
+
+
+> +                       pr_err("%s: Failed to start governor\n", __func__);
+> +                       goto fail;
+> +               }
+> +       }
+> +
+>         schedule_work(&policy->update);
+> 
+>  fail:
+
+Thanks!
+
 -- 
-1.8.1.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
