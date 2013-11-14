@@ -1,164 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663Ab3KNGqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 01:46:37 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:9299 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab3KNGqa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 01:46:30 -0500
-X-Spam-Score: -100.8
-Message-ID: <52847237.5030405@asianux.com>
-Date: Thu, 14 Nov 2013 14:48:23 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751869Ab3KNGwZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 01:52:25 -0500
+Received: from imap.thunk.org ([74.207.234.97]:58397 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049Ab3KNGwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 01:52:19 -0500
+Date: Thu, 14 Nov 2013 01:52:12 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: /dev/random changes for 3.13
+Message-ID: <20131114065212.GA13618@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+References: <20131114020332.GA10961@thunk.org>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>
-Subject: Re: [PATCH] arch: um: kernel: skas: mmu: remove pmd_free() and pud_free()
- for failure processing in init_stub_pte()
-References: <alpine.LNX.2.00.1310150330350.9078@eggly.anvils> <528308E8.8040203@asianux.com> <alpine.LNX.2.00.1311132041200.1785@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1311132041200.1785@eggly.anvils>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; x-action=pgp-signed
+In-Reply-To: <20131114020332.GA10961@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
 
-Firstly, thank you for spending your time resources to reply so many
-details.
-
-
-On 11/14/2013 01:20 PM, Hugh Dickins wrote:
-> On Wed, 13 Nov 2013, Chen Gang wrote:
+On Wed, Nov 13, 2013 at 09:03:32PM -0500, Theodore Ts'o wrote:
+> The following changes since commit 6e4664525b1db28f8c4e1130957f70a94c19213e:
 > 
->> Unfortunately, p?d_alloc() and p?d_free() are not pair!! If p?d_alloc()
->> succeed, they may be used, so in the next failure, we have to skip them
->> to let exit_mmap() or do_munmap() to process it.
->>
->> According to "Documentation/vm/locking", 'mm->page_table_lock' is for
->> using vma list, so not need it when its related vmas are detached or
->> unmapped from using vma list.
+>   Linux 3.11 (2013-09-02 13:46:10 -0700)
 > 
-> Hah, don't believe a word of Documentation/vm/locking.  From time to
-> time someone or other has updated some part of it, but on the whole
-> it represents the state of the art in 1999.  Look at its git history:
-> not a lot of activity there.
+> are available in the git repository at:
 > 
-> And please don't ask me to update it, and please don't try to update
-> it yourself.  Delete it?  Maybe.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tytso/random.git tags/random_for_linus
 > 
-
-I agree with you.
-
-> Study the code itself for how mm locking is actually done
-> (can you see anywhere we use page_table_lock on the vma list?)
+> for you to fetch changes up to 392a546dc8368d1745f9891ef3f8f7c380de8650:
 > 
+>   random: add debugging code to detect early use of get_random_bytes() (2013-11-03 18:24:08 -0500)
 
-in p?d_alloc() will use page_table_lock, that the reason why I noticed
-about it.
+There will be a merge conflict thanks to changes from the net tree.
+Here is the proposed resolution:
 
+commit 6b284fe1892e320a76145bdc421fc7222169c98b
+Merge: 392a546 2821fe6
+Author: Theodore Ts'o <tytso@mit.edu>
+Date:   Wed Nov 13 20:27:49 2013 -0500
 
->>
->> The related work flow:
->>
->>   exit_mmap() ->
->>     unmap_vmas(); /* so not need mm->page_table_lock */
->>     free_pgtables();
->>
->>   do_munmap()->
->>     detach_vmas_to_be_unmapped(); /* so not need mm->page_table_lock */
->>     unmap_region() ->
->>       free_pgtables();
->>
->>   free_pgtables() ->
->>     free_pgd_range() ->
->>       free_pud_range() ->
->>         free_pmd_range() ->
->>           free_pte_range() ->
->>             pmd_clear();
->>             pte_free_tlb();
->>           pud_clear();
->>           pmd_free_tlb();
->>         pgd_clear(); 
->>         pud_free_tlb();
-> 
-> I don't think those notes would belong in this patch...
-> 
+    Merge /usr/projects/linux/base into merge-resolve
+    
+    Conflicts:
+    	drivers/char/random.c
 
-Hmm... maybe what you said above is correct, although it is also the
-sample to show how to remove them if pgd is related with real 'mm',
-which is not like p?d_free().
+diff --cc drivers/char/random.c
+index cdf4cfb,4fe5609..aa051ef
+- --- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@@ -654,14 -601,12 +654,16 @@@ retry
+  	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
+  		goto retry;
+  
+- - 	r->entropy_total += nbits;
+  	if (!r->initialized && nbits > 0) {
++ 		r->entropy_total += nbits;
+  		if (r->entropy_total > 128) {
+- - 			if (r == &nonblocking_pool)
+- - 				pr_notice("random: %s pool is initialized\n",
+- - 					  r->name);
+  			r->initialized = 1;
+ -			if (r == &nonblocking_pool)
+ +			r->entropy_total = 0;
+++			if (r == &nonblocking_pool) {
++ 				prandom_reseed_late();
+++				pr_notice("random: %s pool is initialized\n",
+++					  r->name);
+++			}
+  		}
+  	}
+  
 
+I've pushed this merge resolution here:
 
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> ---
->>  arch/um/kernel/skas/mmu.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/um/kernel/skas/mmu.c b/arch/um/kernel/skas/mmu.c
->> index 007d550..3fd1951 100644
->> --- a/arch/um/kernel/skas/mmu.c
->> +++ b/arch/um/kernel/skas/mmu.c
->> @@ -40,9 +40,9 @@ static int init_stub_pte(struct mm_struct *mm, unsigned long proc,
->>  	return 0;
->>  
->>   out_pte:
->> -	pmd_free(mm, pmd);
->> +	/* used by mm->pgd->pud, will free in do_munmap() or exit_mmap() */
->>   out_pmd:
->> -	pud_free(mm, pud);
->> +	/* used by mm->pgd, will free in do_munmap() or exit_mmap() */
->>   out:
->>  	return -ENOMEM;
->>  }
->> -- 
->> 1.7.7.6
-> 
-> .. but I'm not going to ack this: I just don't share your zest
-> for mucking around with what I don't understand, and don't have
-> the time to spare to understand it well enough.
-> 
+http://git.kernel.org/cgit/linux/kernel/git/tytso/random.git/log/?h=trial_merge
 
-OK, I can understand. It belongs both mm area and um, it seems no one
-familiar both of them (for me, I am familiar with neither of them).
+git pull git://git.kernel.org/pub/scm/linux/kernel/git/tytso/random.git trial_merge
 
-But, for me, need continue analyzing and discussing.
+% git show-ref trial_merge
+c0caa5d6dd21f115005a73311960d60172028047 refs/heads/trial_merge
 
->>From the look of it, if an error did occur in init_stub_pte(),
-> then the special mapping of STUB_CODE and STUB_DATA would not
-> be installed, so this area would be invisible to munmap and exit,
-> and with your patch then the pages allocated likely to be leaked.
-> 
+Cheers,
 
-It sounds reasonable to me: "although 'pgd' related with 'mm', but they
-are not installed". But just like you said originally: "better get ACK
-from some mm guys".
+							- Ted
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-
-Hmm... is it another issue: "after STUB_CODE succeeds, but STUB_DATA
-fails, the STUB_CODE will be leaked".
-
-
-> Which is not to say that the existing code is actually correct:
-> you're probably right that it's technically wrong.  But it would
-> be very hard to get init_stub_pte() to fail, and has anyone
-> reported a problem with it?  My guess is not, and my own
-> inclination to dabble here is zero.
-> 
-
-Yeah.
-
-> Hugh
-> 
-> 
-
-
--- 
-Chen Gang
+iQIcBAEBCAAGBQJShHMcAAoJENNvdpvBGATwiLQP/2+zj0iAwkae2WCHgKEd5g0G
+8iHzzQ23JJChoItJE/8OWs3HnsdiJsz+dTpe05ZFIfRWO0p3Niyrstr6Jc9Wk0eL
+p9tA/VNGuCwOcqpTaKLNs3mSUlS6IgIDs2UoFnbAjzG5lddsPTfOuWRyqCpYWNWI
+5Q1bz/zobvUcgVmNL/Crv5DHut4vyMH40O9LJZIREDwAXp8X6XzqNHNcbiESqgRg
+K7MRD3mzX1Xojs07SIszmKEGoXhDxmWAbpLf3ulv3qS/FI7hPevUqqj4NWjnFppJ
+iNFOcRCLfQpXBA3y+b2sj+EpLwG32WhX0fs4oT8cX4wpqEmymqAxM1Ek/+ZdZmkB
+Aw9JX20JPQ4U8tdlQgSvZfg/B/gDFcysV2mTgjuME23qqZLRLfmWpwUrE8lpVolC
+ZxRt4ouE7y5/gjUg1KM4ASLZzwYnSsnyLuWk6WGtF1YQcaAeTYjZEWJqAL3fuJdI
+5JpDYO7givH9Sv6cFPnuoKVfZyQrQPkkshxBLBO1Vlhb2zxgRNmYGqMdAnnog7NG
+4VF9j3WoG7NwynXy5iZyedpO8dF2HfL+Bk2hoepVyqiY/L36hciyjA+yAOpUDePq
+QpcUqe7/YEucqvgPxHpy2UIR3w/LSkFGoLU3tqdF5bR95tSuU+XEEp5mZcBWPdA4
+fHRXvUWN+eQya2PdWnoE
+=IkXd
+-----END PGP SIGNATURE-----
