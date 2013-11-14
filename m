@@ -1,120 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab3KNQeP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:34:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46492 "EHLO
+	id S1755518Ab3KNQe1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:34:27 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46511 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754830Ab3KNQdv (ORCPT
+	by vger.kernel.org with ESMTP id S1755127Ab3KNQdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:33:51 -0500
+	Thu, 14 Nov 2013 11:33:54 -0500
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: cw00.choi@samsung.com
 Cc: myungjoo.ham@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
         patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
         Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH v3 1/7] extcon: arizona: Add defines for microphone detection levels
-Date: Thu, 14 Nov 2013 16:18:21 +0000
-Message-Id: <1384445907-12859-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH v3 6/7] extcon: arizona: Factor out different headphone detection IPs
+Date: Thu, 14 Nov 2013 16:18:26 +0000
+Message-Id: <1384445907-12859-6-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1384445907-12859-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1384445907-12859-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Improve readability by creating a define for each microphone detection
-level.
+This patch factors out each headphone detection IP in a seperate
+function this makes the code a little more readable and prevents us
+getting to excessive levels of indentation.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/extcon/extcon-arizona.c       |   19 ++++++++++++++-----
- include/linux/mfd/arizona/registers.h |    9 +++++++++
- 2 files changed, 23 insertions(+), 5 deletions(-)
+ drivers/extcon/extcon-arizona.c |  215 +++++++++++++++++++++++---------------
+ 1 files changed, 130 insertions(+), 85 deletions(-)
 
 diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index ec9a14e..d611420 100644
+index f4fe2d1..d71a738 100644
 --- a/drivers/extcon/extcon-arizona.c
 +++ b/drivers/extcon/extcon-arizona.c
-@@ -44,6 +44,15 @@
- #define HPDET_DEBOUNCE 500
- #define DEFAULT_MICD_TIMEOUT 2000
+@@ -354,7 +354,31 @@ static struct {
+ 	{ 1000, 10000 },
+ };
  
-+#define MICD_LVL_1_TO_7 (ARIZONA_MICD_LVL_1 | ARIZONA_MICD_LVL_2 | \
-+			 ARIZONA_MICD_LVL_3 | ARIZONA_MICD_LVL_4 | \
-+			 ARIZONA_MICD_LVL_5 | ARIZONA_MICD_LVL_6 | \
-+			 ARIZONA_MICD_LVL_7)
+-static int arizona_hpdet_read(struct arizona_extcon_info *info)
++static int arizona_hpdet_read_ip0(struct arizona_extcon_info *info)
++{
++	struct arizona *arizona = info->arizona;
++	unsigned int val;
++	int ret;
 +
-+#define MICD_LVL_0_TO_7 (ARIZONA_MICD_LVL_0 | MICD_LVL_1_TO_7)
++	ret = regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_2, &val);
++	if (ret != 0) {
++		dev_err(arizona->dev, "Failed to read HPDET status: %d\n",
++			ret);
++		return ret;
++	}
 +
-+#define MICD_LVL_0_TO_8 (MICD_LVL_0_TO_7 | ARIZONA_MICD_LVL_8)
 +
- struct arizona_extcon_info {
- 	struct device *dev;
- 	struct arizona *arizona;
-@@ -767,7 +776,7 @@ static void arizona_micd_detect(struct work_struct *work)
- 
- 	mutex_lock(&info->lock);
- 
--	for (i = 0; i < 10 && !(val & 0x7fc); i++) {
-+	for (i = 0; i < 10 && !(val & MICD_LVL_0_TO_8); i++) {
- 		ret = regmap_read(arizona->regmap, ARIZONA_MIC_DETECT_3, &val);
- 		if (ret != 0) {
- 			dev_err(arizona->dev, "Failed to read MICDET: %d\n", ret);
-@@ -784,7 +793,7 @@ static void arizona_micd_detect(struct work_struct *work)
- 		}
++	if (!(val & ARIZONA_HP_DONE)) {
++		dev_err(arizona->dev, "HPDET did not complete: %x\n", val);
++		return -EAGAIN;
++	}
++
++	val &= ARIZONA_HP_LVL_MASK;
++
++	return val;
++}
++
++static int arizona_hpdet_read_ip1(struct arizona_extcon_info *info)
+ {
+ 	struct arizona *arizona = info->arizona;
+ 	unsigned int val, range;
+@@ -367,106 +391,127 @@ static int arizona_hpdet_read(struct arizona_extcon_info *info)
+ 		return ret;
  	}
  
--	if (i == 10 && !(val & 0x7fc)) {
-+	if (i == 10 && !(val & MICD_LVL_0_TO_8)) {
- 		dev_err(arizona->dev, "Failed to get valid MICDET value\n");
- 		mutex_unlock(&info->lock);
- 		return;
-@@ -798,7 +807,7 @@ static void arizona_micd_detect(struct work_struct *work)
+-	switch (info->hpdet_ip) {
+-	case 0:
+-		if (!(val & ARIZONA_HP_DONE)) {
+-			dev_err(arizona->dev, "HPDET did not complete: %x\n",
+-				val);
+-			return -EAGAIN;
+-		}
++	if (!(val & ARIZONA_HP_DONE_B)) {
++		dev_err(arizona->dev, "HPDET did not complete: %x\n", val);
++		return -EAGAIN;
++	}
+ 
+-		val &= ARIZONA_HP_LVL_MASK;
+-		break;
++	ret = regmap_read(arizona->regmap, ARIZONA_HP_DACVAL, &val);
++	if (ret != 0) {
++		dev_err(arizona->dev, "Failed to read HP value: %d\n", ret);
++		return -EAGAIN;
++	}
+ 
+-	case 1:
+-		if (!(val & ARIZONA_HP_DONE_B)) {
+-			dev_err(arizona->dev, "HPDET did not complete: %x\n",
+-				val);
+-			return -EAGAIN;
+-		}
++	regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1, &range);
++	range = (range & ARIZONA_HP_IMPEDANCE_RANGE_MASK)
++		   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
+ 
+-		ret = regmap_read(arizona->regmap, ARIZONA_HP_DACVAL, &val);
+-		if (ret != 0) {
+-			dev_err(arizona->dev, "Failed to read HP value: %d\n",
+-				ret);
+-			return -EAGAIN;
+-		}
++	if (range < ARRAY_SIZE(arizona_hpdet_b_ranges) - 1 &&
++	    (val < 100 || val >= 0x3fb)) {
++		range++;
++		dev_dbg(arizona->dev, "Moving to HPDET range %d\n", range);
++		regmap_update_bits(arizona->regmap,
++				   ARIZONA_HEADPHONE_DETECT_1,
++				   ARIZONA_HP_IMPEDANCE_RANGE_MASK,
++				   range <<
++				   ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
++		return -EAGAIN;
++	}
+ 
+-		regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1,
+-			    &range);
+-		range = (range & ARIZONA_HP_IMPEDANCE_RANGE_MASK)
+-			   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
++	/* If we go out of range report top of range */
++	if (val < 100 || val >= 0x3fb) {
++		dev_dbg(arizona->dev, "Measurement out of range\n");
++		return ARIZONA_HPDET_MAX;
++	}
+ 
+-		if (range < ARRAY_SIZE(arizona_hpdet_b_ranges) - 1 &&
+-		    (val < 100 || val >= 0x3fb)) {
+-			range++;
+-			dev_dbg(arizona->dev, "Moving to HPDET range %d\n",
+-				range);
+-			regmap_update_bits(arizona->regmap,
+-					   ARIZONA_HEADPHONE_DETECT_1,
+-					   ARIZONA_HP_IMPEDANCE_RANGE_MASK,
+-					   range <<
+-					   ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
+-			return -EAGAIN;
+-		}
++	dev_dbg(arizona->dev, "HPDET read %d in range %d\n", val, range);
+ 
+-		/* If we go out of range report top of range */
+-		if (val < 100 || val >= 0x3fb) {
+-			dev_dbg(arizona->dev, "Measurement out of range\n");
+-			return ARIZONA_HPDET_MAX;
+-		}
++	val = arizona_hpdet_b_ranges[range].factor_b
++		/ ((val * 100) - arizona_hpdet_b_ranges[range].factor_a);
++
++	return val;
++}
++
++static int arizona_hpdet_read_ip2(struct arizona_extcon_info *info)
++{
++	struct arizona *arizona = info->arizona;
++	unsigned int val, range;
++	int ret;
++
++	ret = regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_2, &val);
++	if (ret != 0) {
++		dev_err(arizona->dev, "Failed to read HPDET status: %d\n",
++			ret);
++		return ret;
++	}
++
++	if (!(val & ARIZONA_HP_DONE_B)) {
++		dev_err(arizona->dev, "HPDET did not complete: %x\n", val);
++		return -EAGAIN;
++	}
++
++	val &= ARIZONA_HP_LVL_B_MASK;
++	/* Convert to ohms, the value is in 0.5 ohm increments */
++	val /= 2;
++
++	regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1, &range);
++	range = (range & ARIZONA_HP_IMPEDANCE_RANGE_MASK)
++		   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
++
++	/* Skip up a range, or report? */
++	if (range < ARRAY_SIZE(arizona_hpdet_c_ranges) - 1 &&
++	    (val >= arizona_hpdet_c_ranges[range].max)) {
++		range++;
++		dev_dbg(arizona->dev, "Moving to HPDET range %d-%d\n",
++			arizona_hpdet_c_ranges[range].min,
++			arizona_hpdet_c_ranges[range].max);
++		regmap_update_bits(arizona->regmap,
++				   ARIZONA_HEADPHONE_DETECT_1,
++				   ARIZONA_HP_IMPEDANCE_RANGE_MASK,
++				   range <<
++				   ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
++		return -EAGAIN;
++	}
++
++	if (range && (val < arizona_hpdet_c_ranges[range].min)) {
++		dev_dbg(arizona->dev, "Reporting range boundary %d\n",
++			arizona_hpdet_c_ranges[range].min);
++		val = arizona_hpdet_c_ranges[range].min;
++	}
++
++	return val;
++}
+ 
+-		dev_dbg(arizona->dev, "HPDET read %d in range %d\n",
+-			val, range);
++static int arizona_hpdet_read(struct arizona_extcon_info *info)
++{
++	struct arizona *arizona = info->arizona;
++	int ret = 0;
+ 
+-		val = arizona_hpdet_b_ranges[range].factor_b
+-			/ ((val * 100) -
+-			   arizona_hpdet_b_ranges[range].factor_a);
++	switch (info->hpdet_ip) {
++	case 0:
++		ret = arizona_hpdet_read_ip0(info);
++		if (ret < 0)
++			return ret;
++		break;
++
++	case 1:
++		ret = arizona_hpdet_read_ip1(info);
++		if (ret < 0)
++			return ret;
+ 		break;
+ 
+ 	default:
+ 		dev_warn(arizona->dev, "Unknown HPDET IP revision %d\n",
+ 			 info->hpdet_ip);
+ 	case 2:
+-		if (!(val & ARIZONA_HP_DONE_B)) {
+-			dev_err(arizona->dev, "HPDET did not complete: %x\n",
+-				val);
+-			return -EAGAIN;
+-		}
+-
+-		val &= ARIZONA_HP_LVL_B_MASK;
+-		/* Convert to ohms, the value is in 0.5 ohm increments */
+-		val /= 2;
+-
+-		regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1,
+-			    &range);
+-		range = (range & ARIZONA_HP_IMPEDANCE_RANGE_MASK)
+-			   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
+-
+-		/* Skip up a range, or report? */
+-		if (range < ARRAY_SIZE(arizona_hpdet_c_ranges) - 1 &&
+-		    (val >= arizona_hpdet_c_ranges[range].max)) {
+-			range++;
+-			dev_dbg(arizona->dev, "Moving to HPDET range %d-%d\n",
+-				arizona_hpdet_c_ranges[range].min,
+-				arizona_hpdet_c_ranges[range].max);
+-			regmap_update_bits(arizona->regmap,
+-					   ARIZONA_HEADPHONE_DETECT_1,
+-					   ARIZONA_HP_IMPEDANCE_RANGE_MASK,
+-					   range <<
+-					   ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
+-			return -EAGAIN;
+-		}
+-
+-		if (range && (val < arizona_hpdet_c_ranges[range].min)) {
+-			dev_dbg(arizona->dev, "Reporting range boundary %d\n",
+-				arizona_hpdet_c_ranges[range].min);
+-			val = arizona_hpdet_c_ranges[range].min;
+-		}
++		ret = arizona_hpdet_read_ip2(info);
++		if (ret < 0)
++			return ret;
++		break;
  	}
  
- 	/* If we got a high impedence we should have a headset, report it. */
--	if (info->detecting && (val & 0x400)) {
-+	if (info->detecting && (val & ARIZONA_MICD_LVL_8)) {
- 		arizona_identify_headphone(info);
+-	dev_dbg(arizona->dev, "HP impedance %d ohms\n", val);
+-	return val;
++	dev_dbg(arizona->dev, "HP impedance %d ohms\n", ret);
++	return ret;
+ }
  
- 		ret = extcon_update_state(&info->edev,
-@@ -827,7 +836,7 @@ static void arizona_micd_detect(struct work_struct *work)
- 	 * plain headphones.  If both polarities report a low
- 	 * impedence then give up and report headphones.
- 	 */
--	if (info->detecting && (val & 0x3f8)) {
-+	if (info->detecting && (val & MICD_LVL_1_TO_7)) {
- 		if (info->jack_flips >= info->micd_num_modes * 10) {
- 			dev_dbg(arizona->dev, "Detected HP/line\n");
- 			arizona_identify_headphone(info);
-@@ -851,7 +860,7 @@ static void arizona_micd_detect(struct work_struct *work)
- 	 * If we're still detecting and we detect a short then we've
- 	 * got a headphone.  Otherwise it's a button press.
- 	 */
--	if (val & 0x3fc) {
-+	if (val & MICD_LVL_0_TO_7) {
- 		if (info->mic) {
- 			dev_dbg(arizona->dev, "Mic button detected\n");
- 
-diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
-index 4706d3d..10d9e70 100644
---- a/include/linux/mfd/arizona/registers.h
-+++ b/include/linux/mfd/arizona/registers.h
-@@ -2196,6 +2196,15 @@
- /*
-  * R677 (0x2A5) - Mic Detect 3
-  */
-+#define ARIZONA_MICD_LVL_0                       0x0004  /* MICD_LVL - [2] */
-+#define ARIZONA_MICD_LVL_1                       0x0008  /* MICD_LVL - [3] */
-+#define ARIZONA_MICD_LVL_2                       0x0010  /* MICD_LVL - [4] */
-+#define ARIZONA_MICD_LVL_3                       0x0020  /* MICD_LVL - [5] */
-+#define ARIZONA_MICD_LVL_4                       0x0040  /* MICD_LVL - [6] */
-+#define ARIZONA_MICD_LVL_5                       0x0080  /* MICD_LVL - [7] */
-+#define ARIZONA_MICD_LVL_6                       0x0100  /* MICD_LVL - [8] */
-+#define ARIZONA_MICD_LVL_7                       0x0200  /* MICD_LVL - [9] */
-+#define ARIZONA_MICD_LVL_8                       0x0400  /* MICD_LVL - [10] */
- #define ARIZONA_MICD_LVL_MASK                    0x07FC  /* MICD_LVL - [10:2] */
- #define ARIZONA_MICD_LVL_SHIFT                        2  /* MICD_LVL - [10:2] */
- #define ARIZONA_MICD_LVL_WIDTH                        9  /* MICD_LVL - [10:2] */
+ static int arizona_hpdet_do_id(struct arizona_extcon_info *info, int *reading,
 -- 
 1.7.2.5
 
