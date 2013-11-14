@@ -1,108 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402Ab3KNTAv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 14:00:51 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:43608 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777Ab3KNTAq (ORCPT
+	id S1756525Ab3KNTCC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 14:02:02 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28551 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755253Ab3KNTBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 14:00:46 -0500
-Date: Thu, 14 Nov 2013 11:00:44 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: hjk@hansjkoch.de, lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: (max6650) Add support for gpiodef
-Message-ID: <20131114190044.GE13727@roeck-us.net>
-References: <1384440661-3769-1-git-send-email-lpapp@kde.org>
- <20131114172427.GA11062@roeck-us.net>
- <CAOMwXhNdo8aRGH9AL+JxYnDg2zAN4+-TeHJU=Kc1kDKmyYuYmA@mail.gmail.com>
- <20131114181845.GA13727@roeck-us.net>
- <CAOMwXhNaZ=oqp5mjnCrOSkdax5U6ffsZf_p4mzd3W2jF+=xWqg@mail.gmail.com>
+	Thu, 14 Nov 2013 14:01:55 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19dodfBtaXYuKZDuVFQ+N8c
+Date: Thu, 14 Nov 2013 11:01:51 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: devicetree@vger.kernel.org, linux-omap@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] doc: devicetree: Add bindings documentation for
+ omap-des driver
+Message-ID: <20131114190150.GT10317@atomide.com>
+References: <1384199386-14504-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOMwXhNaZ=oqp5mjnCrOSkdax5U6ffsZf_p4mzd3W2jF+=xWqg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1384199386-14504-1-git-send-email-joelf@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 06:35:57PM +0000, Laszlo Papp wrote:
-> On Thu, Nov 14, 2013 at 6:18 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > On Thu, Nov 14, 2013 at 06:13:45PM +0000, Laszlo Papp wrote:
-> >> On Thu, Nov 14, 2013 at 5:24 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> >>
-> >> > On Thu, Nov 14, 2013 at 02:51:01PM +0000, Laszlo Papp wrote:
-> >> > > It is necessary for end users when they are using the gpio pins
-> >> > connected to the
-> >> > > fan controller. There is a separate gpiodef register provided, but it is
-> >> > unused
-> >> > > under the usual circumstances and that is probably the reason why this
-> >> > feature
-> >> > > has not been added before. It is necessary for our board to function
-> >> > properly.
-> >> > >
-> >> > > Signed-off-by: Laszlo Papp <lpapp@kde.org>
-> >> > > ---
-> >> > >  Documentation/hwmon/max6650 |   5 +++
-> >> > >  drivers/hwmon/max6650.c     | 107
-> >> > ++++++++++++++++++++++++++++++++++++++++++++
-> >> > >  2 files changed, 112 insertions(+)
-> >> > >
-> >> > > diff --git a/Documentation/hwmon/max6650 b/Documentation/hwmon/max6650
-> >> > > index 58d9644..32c69a8 100644
-> >> > > --- a/Documentation/hwmon/max6650
-> >> > > +++ b/Documentation/hwmon/max6650
-> >> > > @@ -39,6 +39,11 @@ pwm1               rw      relative speed (0-255),
-> >> > 255=max. speed.
-> >> > >  fan1_div     rw      sets the speed range the inputs can handle. Legal
-> >> > >                       values are 1, 2, 4, and 8. Use lower values for
-> >> > >                       faster fans.
-> >> > > +gpio0        rw      sets the gpio 0 PIN. Legal values are 0, 1, 2, and
-> >> > 3.
-> >> > > +gpio1        rw      sets the gpio 1 PIN. Legal values are 0, 1, 2, and
-> >> > 3.
-> >> > > +gpio2        rw      sets the gpio 2 PIN. Legal values are 0, 1, 2, and
-> >> > 3.
-> >> > > +gpio3        rw      sets the gpio 3 PIN. Legal values are 0, and 1.
-> >> > > +gpio4        rw      sets the gpio 4 PIN. Legal values are 0, and 1.
-> >> > >
-> >> > gpio pins should be exported through the gpio subsystem, usually with a
-> >> > gpio
-> >> > driver. In this case, it may be acceptable to have the driver register with
-> >> > the gpio subsystem to export the pins. Using local sysfs attributes is
-> >> > wrong
-> >> > and unacceptable.
-> >> >
-> >>
-> >> In short: I am not sure.
-> >>
-> >> My concern is that these are not generic gpio pins. They seem to have chip
-> >> specific functionality, like alarm, full-on, and clock (internal and
-> >> external). Strictly speaking, one could even mention that to expose the
-> >> GPIODEF register as is without splitting it into five separate gpio pin
-> >> entries. Even those five pins behave slightly differently.
-> >>
-> >> I considered both, but these are the reasons why I decided to keep it chip
-> >> specific rather than separately in a generic subsystem.
-> >>
-> > If the registers are not really gpio pins but are needed / used for chip
-> > configuration, the other option would be to configure the values using platform
-> > data and/or devicetree data. Either case, exporting the pins to user space via
-> > sysfs attribute files in the device directory is the wrong approach.
+* Joel Fernandes <joelf@ti.com> [131111 11:50]:
+> Add documentation for the generic OMAP DES crypto modul describing the device
+> tree bindings.
 > 
-> Hmm, that would not allow dynamic settings on its own - if I am not
-> mistaken - which we are in need of. I might be mistaken tough, so
-> please forgive my shortcomings.
-> 
-> I was also thinking of module parameters before, as well. Perhaps that
-> is a better approach. I am not sure. What do you think about it?
-> 
-Problem with that is that it applies to all MAX6650's.
+> Reviewed-by: Mark Rutland <mark.rutland@arm.com>
+> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Signed-off-by: Joel Fernandes <joelf@ti.com>
 
-What are those pins used for ?
-If they need to be set at runtime, gpio may be a choice after all. 
-I think I may need to get a better understanding of your use case.
+Thanks applying into omap-for-v3.13/fixes.
 
-Thanks,
-Guenter
+Tony
+
+> ---
+> v2 changes: Update documentation for clocks, clock-names and dma-names.
+> 
+>  .../devicetree/bindings/crypto/omap-des.txt        | 30 ++++++++++++++++++++++
+>  1 file changed, 30 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/crypto/omap-des.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/crypto/omap-des.txt b/Documentation/devicetree/bindings/crypto/omap-des.txt
+> new file mode 100644
+> index 0000000..e8c63bf
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/crypto/omap-des.txt
+> @@ -0,0 +1,30 @@
+> +OMAP SoC DES crypto Module
+> +
+> +Required properties:
+> +
+> +- compatible : Should contain "ti,omap4-des"
+> +- ti,hwmods: Name of the hwmod associated with the DES module
+> +- reg : Offset and length of the register set for the module
+> +- interrupts : the interrupt-specifier for the DES module
+> +- clocks : A phandle to the functional clock node of the DES module
+> +           corresponding to each entry in clock-names
+> +- clock-names : Name of the functional clock, should be "fck"
+> +
+> +Optional properties:
+> +- dmas: DMA specifiers for tx and rx dma. See the DMA client binding,
+> +	Documentation/devicetree/bindings/dma/dma.txt
+> +	Each entry corresponds to an entry in dma-names
+> +- dma-names: DMA request names should include "tx" and "rx" if present
+> +
+> +Example:
+> +	/* DRA7xx SoC */
+> +	des: des@480a5000 {
+> +		compatible = "ti,omap4-des";
+> +		ti,hwmods = "des";
+> +		reg = <0x480a5000 0xa0>;
+> +		interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
+> +		dmas = <&sdma 117>, <&sdma 116>;
+> +		dma-names = "tx", "rx";
+> +		clocks = <&l3_iclk_div>;
+> +		clock-names = "fck";
+> +	};
+> -- 
+> 1.8.1.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
