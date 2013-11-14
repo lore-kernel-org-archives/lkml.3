@@ -1,103 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab3KNTfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 14:35:52 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53501 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755049Ab3KNTfm (ORCPT
+	id S1756791Ab3KNTkt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 14:40:49 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:40871 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755548Ab3KNTkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 14:35:42 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Amit Pundir <amit.pundir@linaro.org>
-Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        John Stultz <john.stultz@linaro.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [RFC][PATCH v2] epoll: allow EPOLLWAKEUP flag if PM_SLEEP is enabled
-Date: Thu, 14 Nov 2013 20:48:13 +0100
-Message-ID: <2226686.lJvXUupyWo@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAMi1Hd2F5iWGztjMOM7UarEeXdUTCGh7ZV=XxhX1u-kKCRt-LQ@mail.gmail.com>
-References: <1384289548-26015-1-git-send-email-amit.pundir@linaro.org> <26648741.38OpUJA4ry@vostro.rjw.lan> <CAMi1Hd2F5iWGztjMOM7UarEeXdUTCGh7ZV=XxhX1u-kKCRt-LQ@mail.gmail.com>
+	Thu, 14 Nov 2013 14:40:41 -0500
+Date: Thu, 14 Nov 2013 17:40:36 -0200
+From: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Duncan Laurie <dlaurie@chromium.org>
+Subject: Re: [PATCH] i915: Use 120MHz LVDS SSC clock for gen5/gen6/gen7
+Message-ID: <20131114194036.GA3220@bratislava.amr.corp.intel.com>
+References: <1384394383-8582-1-git-send-email-olof@lixom.net>
+ <20131114165142.GA11645@bratislava.fso.intel.com>
+ <CAOesGMjbwV=kJUHPnr5Nk7sYTXjM4Z3kxqDUDNJEbda8HWNFTA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMjbwV=kJUHPnr5Nk7sYTXjM4Z3kxqDUDNJEbda8HWNFTA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 14, 2013 09:59:44 PM Amit Pundir wrote:
-> On 14 November 2013 03:14, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Wednesday, November 13, 2013 01:35:38 PM Amit Pundir wrote:
-> >> On 13 November 2013 05:29, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On Wednesday, November 13, 2013 02:22:28 AM Amit Pundir wrote:
-> >> >> ep_create_wakeup_source() reports ENOMEM
-> >> >
-> >> > That needs to be fixed too.  I suppose we can make the wakeup_source_register()
-> >> > stub for CONFIG_PM_SLEEP unset return ERR_PTR(-ENOSYS) or something like that
-> >> > and ep_create_wakeup_source() return that instead of -ENOMEM.  It looks like
-> >> > eventpoll.c is the only user of it built for CONFIG_PM_SLEEP unset, but that
-> >> > needs to be double checked.
+On Thu, Nov 14, 2013 at 09:36:10AM -0800, Olof Johansson wrote:
+> On Thu, Nov 14, 2013 at 8:53 AM, Rodrigo Vivi <rodrigo.vivi@gmail.com> wrote:
+> > On Wed, Nov 13, 2013 at 05:59:43PM -0800, Olof Johansson wrote:
+> >> From: Duncan Laurie <dlaurie@chromium.org>
 > >>
-> >> Instead of modifying wakeup_source_register() stub, what if I make
-> >> ep_create_wakeup_source() static inline as well and use its stub to
-> >> return -ENOSYS when CONFIG_PM_SLEEP is not set?
-> >> ep_create_wakeup_source() is used only in fs/eventpoll.c anyway.
-> >
-> > Well, you can do that too.
-> >
-> 
-> On second thought we may skip modifying ep_create_wakeup_source() or
-> wakeup_source_register() altogether because once we drop EPOLLWAKEUP
-> from epoll events mask(if PM_SLEEP is unset) then I don't see us
-> running into ep_create_wakeup_source() again. And the only reason for
-> ep_create_wakeup_source() failure will be -ENOMEM as far as I can see.
-
-OK
-
-> >> >> if wakeup_source_register()
-> >> >> returns NULL. ep_create_wakeup_source() assumes that NULL is only
-> >> >> returned if we run into ENOMEM but NULL is also returned when
-> >> >> CONFIG_PM_SLEEP is disabled.
-> >> >>
-> >> >> Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
-> >> >> ---
-> >> >> Changed in v2:
-> >> >> Using static inline functions instead of #ifdefs
-> >> >> ---
-> >> >>  fs/eventpoll.c                 |    3 +--
-> >> >>  include/uapi/linux/eventpoll.h |   12 ++++++++++++
-> >> >>  2 files changed, 13 insertions(+), 2 deletions(-)
-> >> >>
-> >> >> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> >> >> index 473e09d..10f9c43 100644
-> >> >> --- a/fs/eventpoll.c
-> >> >> +++ b/fs/eventpoll.c
-> >> >> @@ -1820,8 +1820,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
-> >> >>               goto error_tgt_fput;
-> >> >>
-> >> >>       /* Check if EPOLLWAKEUP is allowed */
-> >> >> -     if ((epds.events & EPOLLWAKEUP) && !capable(CAP_BLOCK_SUSPEND))
-> >> >> -             epds.events &= ~EPOLLWAKEUP;
-> >> >> +     ep_epollwakeup_check(&epds.events);
-> >> >
-> >> > The "check" part of the name kind of suggests that the function will not change
-> >> > things.  What about ep_adjust_epollwakeup() or something along these lines?
+> >> We had been using a DMI table workaround to select the right
+> >> frequency for devices, but this is fragile and must be updated
+> >> with every new platform.
 > >>
-> >> I see couple of ep_set_* functions in eventpoll.c. Does it make sense
-> >> to have something like ep_set_epollwakeup()?
+> >> Instead the default case when VBT is missing is changed to use
+> >> 120MHz clock for LVDS SSC for these generations.
+> >>
+> >> The docs for 2010-Core, SandyBridge, and IvyBridge all indicate
+> >> that the reference frequency for LVDS is 120MHz:
+> >>
+> >> "2010 Core"
+> >> http://intellinuxgraphics.org/IHD_OS_Vol3_Part3r2.pdf
+> >> page 38
+> >> Reference Frequency: 120MHz for CRT and LVDS.  100MHz for the FDI.
+> >>
+> >> "2011 SandyBridge"
+> >> http://intellinuxgraphics.org/documentation/SNB/IHD_OS_Vol3_Part3.pdf
+> >> page 33
+> >> Reference Frequency: 120MHz for CRT, HDMI, LVDS.  100MHz for the FDI.
+> >>
+> >> "2012 IvyBridge"
+> >> http://intellinuxgraphics.org/documentation/IVB/IHD_OS_Vol3_Part4.pdf
+> >> page 27
+> >> Reference Frequency: 120 MHz for CRT, HDMI, LVDS, 100MHz for the FDI.
 > >
-> > This particular one doesn't really set anything.  I suppose that a name like
-> > "ep_take_care_of_epollwakeup" might be somewhat closer to what it really does ...
+> > Checked. You are right.
+> > And actually true even for HSW and BDW. 120 is the default and 100 is for test mode.
 > 
-> I'm running out of ideas on this one, lets go with
-> "ep_take_care_of_epollwakeup".
+> Yeah, the patch predates HSW/BDW, so it was not mentioned.
+> 
+> >> Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
+> >> [olof: Fixup for recent base, switched from if/else to single call]
+> >> Signed-off-by: Olof Johansson <olof@lixom.net>
+> >> ---
+> >>
+> >> Daniel,
+> >>
+> >> This applies on top of -next, which I'm presuming is close to your
+> >> for-3.13 base right now. It'd be good to see this go in since it's needed
+> >> to boot on Chromebooks (with developer mode off), and is thus blocking
+> >> testing next/mainline on a regular basis here.
+> >>
+> >> Thanks!
+> >>
+> >> -Olof
+> >>
+> >>  drivers/gpu/drm/i915/intel_bios.c | 7 ++++++-
+> >>  1 file changed, 6 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
+> >> index 6dd622d733b9..e4fba39631a5 100644
+> >> --- a/drivers/gpu/drm/i915/intel_bios.c
+> >> +++ b/drivers/gpu/drm/i915/intel_bios.c
+> >> @@ -790,7 +790,12 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
+> >>
+> >>       /* Default to using SSC */
+> >>       dev_priv->vbt.lvds_use_ssc = 1;
+> >> -     dev_priv->vbt.lvds_ssc_freq = intel_bios_ssc_frequency(dev, 1);
+> >> +     /*
+> >> +      * Core/SandyBridge/IvyBridge use alternative (120MHz) reference
+> >> +      * clock for LVDS.
+> >> +      */
+> >> +     dev_priv->vbt.lvds_ssc_freq = intel_bios_ssc_frequency(dev,
+> >> +                     !HAS_PCH_SPLIT(dev));
+> >
+> > I'm just not convinced this is the right way to fix this here.
+> > Mainly because for most of platforms the alternate is 100 and default is 120.
+> > The ideal in my opinion should be to invert the alternate inside ssc_freqeuncy function and use the exception, that is probably IS_PINEVIEW(dev)...
+> >
+> > Not sure though... just a guess since this alternate was implemented for pineview...
+> 
+> Seeing the history of some of this code (changes, followed by reverts,
+> etc), I wanted to stay conservative with what we know works from a few
+> years in the field by now.
 
-Well, that's fine by me, if no one else has any better ideas.
+Stay conservative is good, but what I don't like is just the inverted logic... or maybe just the "alternate" name.
 
-Thanks!
+> The vbt defaults are only used by
+> Chromebooks, as far as I know, so it's not a code path shared with
+> other platforms today.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Are you sure? I don't know who is really setting vbt or going to defaults, but it is possible to have any one using it right now... anyway another reason to stay conservative...
+
+> Also, the ssc_freq bit from the vbios table is
+> passed into this function, so I don't think there's much point in
+> reversing the logic in there just for one of the two code paths.
+
+yeah, maybe just the name alternate is killing me here...
+
+> 
+> Finally, from elsewhere in the same file:
+> 
+> /*
+>  * The genX designation typically refers to the render engine, so render
+>  * capability related checks should use IS_GEN, while display and other checks
+>  * have their own (e.g. HAS_PCH_SPLIT for ILK+ display, IS_foo for
+> particular
+>  * chips, etc.).
+>  */
+
+with this I agree..
+
+> 
+> Since this is display and not rendering related, that seems like the
+> right thing to base it on instead of generation tests.
+> 
+> I'm open for suggestions on improvements though, of course.
+
+I don't have a real suggestion here... only bikesheds... maybe on the alternate name ;)
+
+But either way, it seems to work and right since default is 120 for those platforms... So, feel free to use:
+Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+
+> 
+> 
+> -Olof
+
+Cheers,
+Rodrigo.
