@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab3KNM0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 07:26:20 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38129 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752929Ab3KNM0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 07:26:18 -0500
+	id S1753668Ab3KNM02 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 07:26:28 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:57122 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605Ab3KNM0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 07:26:24 -0500
 From: Sricharan R <r.sricharan@ti.com>
 To: <r.sricharan@ti.com>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
@@ -16,48 +17,55 @@ To: <r.sricharan@ti.com>, <linux-kernel@vger.kernel.org>,
         <robherring2@gmail.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
         <rob.herring@calxeda.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
         <bcousson@baylibre.com>
-Subject: [PATCH V4 0/3] ARM: DTS: DRA7: Updates for adding crossbar device
-Date: Thu, 14 Nov 2013 17:55:24 +0530
-Message-ID: <1384431928-2328-1-git-send-email-r.sricharan@ti.com>
+Subject: [PATCH V4 1/3] ARM: DTS: DRA7: Add crossbar device binding
+Date: Thu, 14 Nov 2013 17:55:25 +0530
+Message-ID: <1384431928-2328-2-git-send-email-r.sricharan@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384431928-2328-1-git-send-email-r.sricharan@ti.com>
+References: <1384431928-2328-1-git-send-email-r.sricharan@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some socs have a large number of interrupts requests to service
-the needs of its many peripherals and subsystems. All of the interrupt
-requests lines from the subsystems are not needed at the same
-time, so they have to be muxed to the controllers appropriately.
-In such places a interrupt controllers are preceded by an
-IRQ CROSSBAR that provides flexibility in muxing the device interrupt
-requests to the controller inputs.
+This adds the irq crossbar device node.
 
-The driver support for the same was added here.
-	http://marc.info/?l=linux-omap&m=138443167321614&w=2
+There is a IRQ crossbar device in the soc, which
+maps the irq requests from the peripherals to the
+mpu interrupt controller's inputs. The Peripheral irq
+requests are connected to only one crossbar
+input and the output of the crossbar is connected to only one
+controller's input line. The crossbar device is used to map
+a peripheral input to a free mpu's interrupt controller line.
 
-The dts file update to support the crossbar device and convert
-peripheral irq numbers to crossbar number are added here.
-This series was originally a part of the series [1] and now split
-to keep the DTS updates separately as per comments from
-Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Benoit Cousson <bcousson@baylibre.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Rajendra Nayak <rnayak@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Sricharan R <r.sricharan@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ arch/arm/boot/dts/dra7.dtsi |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Applied this series on top of
-  git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
-  for_3.13/dts
-
-[1] http://www.kernelhub.org/?msg=356470&p=2
-
-Sricharan R (3):
-  ARM: DTS: DRA: Add crossbar device binding
-  ARM: DTS: DRA: Replace peripheral interrupt numbers with crossbar
-    inputs
-  ARM: DTS: DRA7: Add routable-irqs property for gic node
-
- arch/arm/boot/dts/dra7.dtsi |   95 +++++++++++++++++++++++--------------------
- 1 file changed, 52 insertions(+), 43 deletions(-)
-
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index d0df4c4..cf0d6ca 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -583,4 +583,12 @@
+ 			status = "disabled";
+ 		};
+ 	};
++
++	crossbar_mpu: crossbar@4a020000 {
++		compatible = "ti,irq-crossbar";
++		reg = <0x4a002a48 0x130>;
++		ti,max-irqs = <160>;
++		ti,reg-size = <2>;
++		ti,irqs-reserved = <0 1 2 3 5 6 131 132 139 140>;
++	};
+ };
 -- 
 1.7.9.5
 
