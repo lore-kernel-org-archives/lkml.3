@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab3KNXjx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 18:39:53 -0500
-Received: from mga09.intel.com ([134.134.136.24]:53230 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752815Ab3KNXjq convert rfc822-to-8bit (ORCPT
+	id S1753753Ab3KNXpV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 18:45:21 -0500
+Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.97]:32120
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752718Ab3KNXpR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 18:39:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="435509130"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: David Rientjes <rientjes@google.com>
-CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [patch x86/mce] ACPI, x86: Export boot_cpu_physical_apicid to
- modules
-Thread-Topic: [patch x86/mce] ACPI, x86: Export boot_cpu_physical_apicid to
- modules
-Thread-Index: AQHO4Y4NBW/b3dchAkqmOAl2WwcKZJolXB6ggACKvYD//3tHMA==
-Date: Thu, 14 Nov 2013 23:39:45 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31D6D6F0@ORSMSX106.amr.corp.intel.com>
-References: <alpine.DEB.2.02.1311141504080.30112@chino.kir.corp.google.com>
- <3908561D78D1C84285E8C5FCA982C28F31D6D644@ORSMSX106.amr.corp.intel.com>
- <alpine.DEB.2.02.1311141528180.8370@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1311141528180.8370@chino.kir.corp.google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 14 Nov 2013 18:45:17 -0500
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: CONTACT WESTERN UNION MONEY TRANSFER OFFICE URGENT
+To: Recipients <017@Burrows00t.onmicrosoft.com>
+From: <017@Burrows00t.onmicrosoft.com>
+Date: Fri, 15 Nov 2013 00:19:55 +0530
+Reply-To: <donphilip011@gmail.com>
+Message-ID: <eb8f80d8-a8ab-4204-b90c-08604916f1d3@AMXPR01MB008.eurprd01.prod.exchangelabs.com>
+X-Forefront-PRVS: 0030839EEE
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(74662001)(50466002)(74876001)(217423001)(74706001)(74502001)(23756003)(43066001)(47446002)(77982001)(4396001)(47736001)(47976001)(49866001)(74366001)(74316001)(33646001)(64872004)(87976001)(19580405001)(19580395003)(83322001)(325944007)(87266001)(81542001)(59766001)(53256004)(81342001)(50986001)(79102001)(56776001)(54316002)(81816001)(46102001)(31686002)(76482001)(223583001)(80976001)(85306002)(83072001)(81686001)(76176001)(51856001)(65816001)(80022001)(69226001)(54356001)(218543002)(56816003)(77096001)(76796001)(76786001)(63696002)(47776003)(84722001);DIR:OUT;SFP:1501;SCL:5;SRVR:AMXPR01MB008;H:DB3PR01MB009.eurprd01.prod.exchangelabs.com;CLIP:10.255.177.35;FPR:;RD:InfoNoRecords;A:0;MX:3;LANG:en;
+X-OriginatorOrg: Burrows00t.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Or do some randconfig testing before patches are proposed :)  I don't have 
-> any particular dependency on this, so I'm happy with whatever is decided.  
-> This is the last error I've found related to CONFIG_ACPI_EXTLOG, however.
+Dear Friend ,
 
-If you *promise* this is the last one ,.. then
+We have concluded to effect your payment of $1.5Million USD, through western union, but the maximum amount you will be receiving each day starting from tomorrow is $4,500.00 per hours until the fund is completely transferred.
 
-Acked-by: Tony Luck <tony.luck@intel.com>
+Kindly Contact Western union Agent:
+Mr.Fred Roland
+TEL: +91-7838355947
+E-mail: westernnunion77@yahoo.in
 
--Tony
+Also reconfirm your information to them below
+
+YOUR NAME----------------------   
+YOUR ADDRESS-----------              
+YOUR PHONE-------------                   
+OCCUPATION-----------------             
+
+Though, I sent $4,500.00 in your name today,but Mr.Fred Roland said that you have to contact him with your information, therefore contact Mr.Fred Roland or you call him as soon as you receive this email and ask him to give you the MTCN, sender name and question/answer to pick the $4,500.00 Please let me know as soon as you receive all your fund of $1.5Million USD,
+
+Thank you.
+Mr.Don Philip
