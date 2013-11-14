@@ -1,170 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab3KNPX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 10:23:27 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57113 "EHLO
+	id S1754416Ab3KNPYC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 10:24:02 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57127 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753555Ab3KNPXS (ORCPT
+	with ESMTP id S1751496Ab3KNPXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 10:23:18 -0500
-Date: Thu, 14 Nov 2013 16:23:04 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: perf/tracepoint: another fuzzer generated lockup
-Message-ID: <20131114152304.GC5364@laptop.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1311081440440.7281@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu>
- <20131108200244.GB14606@localhost.localdomain>
- <alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu>
- <20131108204839.GD14606@localhost.localdomain>
- <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu>
- <20131108223657.GF14606@localhost.localdomain>
- <20131109151014.GN16117@laptop.programming.kicks-ass.net>
+	Thu, 14 Nov 2013 10:23:54 -0500
+Date: Thu, 14 Nov 2013 08:23:50 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH-next] block/blk-mq: remove newly added instances of
+ __cpuinit
+Message-ID: <20131114152350.GA7533@kernel.dk>
+References: <1383851058-11688-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131109151014.GN16117@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1383851058-11688-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 09, 2013 at 04:10:14PM +0100, Peter Zijlstra wrote:
-> Cute.. so what appears to happen is that:
+On Thu, Nov 07 2013, Paul Gortmaker wrote:
+> commit 320ae51feed5c2f13664aa05a76bec198967e04d [Nov7 linux-next
+> via "Merge remote-tracking branch 'block/for-next'"] adds
+> "blk-mq: new multi-queue block IO queueing mechanism".  This
+> commit added new instances of __cpuinit usage.
 > 
-> 1) we trace irq_work_exit
-> 2) we generate event
-> 3) event needs to deliver signal
-> 4) we queue irq_work to send signal
-> 5) goto 1
+> We removed this a couple versions ago; we now want to remove
+> the compat no-op stubs.  Introducing new users is not what
+> we want to see at this point in time, as it will break once
+> the stubs are gone.
 
----
- arch/x86/include/asm/trace/irq_vectors.h | 11 +++++++++++
- include/linux/ftrace_event.h             | 16 ++++++++++++++++
- include/linux/tracepoint.h               |  4 ++++
- include/trace/ftrace.h                   |  7 +++++++
- kernel/trace/trace_event_perf.c          |  6 ++++++
- 5 files changed, 44 insertions(+)
+Thanks, added.
 
-diff --git a/arch/x86/include/asm/trace/irq_vectors.h b/arch/x86/include/asm/trace/irq_vectors.h
-index 2874df24e7a4..4cab890007a7 100644
---- a/arch/x86/include/asm/trace/irq_vectors.h
-+++ b/arch/x86/include/asm/trace/irq_vectors.h
-@@ -72,6 +72,17 @@ DEFINE_IRQ_VECTOR_EVENT(x86_platform_ipi);
- DEFINE_IRQ_VECTOR_EVENT(irq_work);
- 
- /*
-+ * We must dis-allow sampling irq_work_exit() because perf event sampling
-+ * itself can cause irq_work, which would lead to an infinite loop;
-+ *
-+ *  1) irq_work_exit happens
-+ *  2) generates perf sample
-+ *  3) generates irq_work
-+ *  4) goto 1
-+ */
-+TRACE_EVENT_PERF_PERM(irq_work_exit, is_sampling_event(p_event) ? -EPERM : 0);
-+
-+/*
-  * call_function - called when entering/exiting a call function interrupt
-  * vector handler
-  */
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 5eaa746735ff..3e4d05566022 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -244,6 +244,9 @@ struct ftrace_event_call {
- #ifdef CONFIG_PERF_EVENTS
- 	int				perf_refcount;
- 	struct hlist_head __percpu	*perf_events;
-+
-+	int	(*perf_perm)(struct ftrace_event_call *,
-+			     struct perf_event *);
- #endif
- };
- 
-@@ -306,6 +309,19 @@ struct ftrace_event_file {
- 	}								\
- 	early_initcall(trace_init_flags_##name);
- 
-+#define __TRACE_EVENT_PERF_PERM(name, expr)				\
-+	static int perf_perm_##name(struct ftrace_event_call *tp_event, \
-+				    struct perf_event *p_event)		\
-+	{								\
-+		return expr;						\
-+	}								\
-+	static int __init trace_init_flags_##name(void)			\
-+	{								\
-+		event_##name.perf_perm = &perf_perm_##name;		\
-+		return 0;						\
-+	}								\
-+	early_initcall(trace_init_flags_##name);
-+
- #define PERF_MAX_TRACE_SIZE	2048
- 
- #define MAX_FILTER_STR_VAL	256	/* Should handle KSYM_SYMBOL_LEN */
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index ebeab360d851..dd5cb1dca207 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -267,6 +267,8 @@ static inline void tracepoint_synchronize_unregister(void)
- 
- #define TRACE_EVENT_FLAGS(event, flag)
- 
-+#define TRACE_EVENT_PERF_PERM(event, expr)
-+
- #endif /* DECLARE_TRACE */
- 
- #ifndef TRACE_EVENT
-@@ -399,4 +401,6 @@ static inline void tracepoint_synchronize_unregister(void)
- 
- #define TRACE_EVENT_FLAGS(event, flag)
- 
-+#define TRACE_EVENT_PERF_PERM(event, expr)
-+
- #endif /* ifdef TRACE_EVENT (see note above) */
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 5c7ab17cbb02..7bdda40fc406 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -90,6 +90,10 @@
- #define TRACE_EVENT_FLAGS(name, value)					\
- 	__TRACE_EVENT_FLAGS(name, value)
- 
-+#undef TRACE_EVENT_PERF_PERM
-+#define TRACE_EVENT_PERF_PERM(name, expr)				\
-+	__TRACE_EVENT_PERF_PERM(name, expr)
-+
- #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
- 
- 
-@@ -140,6 +144,9 @@
- #undef TRACE_EVENT_FLAGS
- #define TRACE_EVENT_FLAGS(event, flag)
- 
-+#undef TRACE_EVENT_PERF_PERM
-+#define TRACE_EVENT_PERF_PERM(event, expr)
-+
- #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
- 
- /*
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 78e27e3b52ac..630889f68b1d 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -24,6 +24,12 @@ static int	total_ref_count;
- static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
- 				 struct perf_event *p_event)
- {
-+	if (tp_event->perf_perm) {
-+		int ret = tp_event->perf_perm(tp_event, p_event);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	/* The ftrace function trace is allowed only for root. */
- 	if (ftrace_event_is_function(tp_event) &&
- 	    perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
+-- 
+Jens Axboe
+
