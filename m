@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab3KNPgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 10:36:09 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:37130 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab3KNPf7 (ORCPT
+	id S1754251Ab3KNPlW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 10:41:22 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:48320 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123Ab3KNPlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 10:35:59 -0500
-Date: Thu, 14 Nov 2013 16:35:56 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Dave Jones <davej@redhat.com>, masami.hiramatsu.pt@hitachi.com
-Subject: Re: perf/tracepoint: another fuzzer generated lockup
-Message-ID: <20131114153553.GA4399@localhost.localdomain>
-References: <alpine.DEB.2.10.1311081440440.7281@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu>
- <20131108200244.GB14606@localhost.localdomain>
- <alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu>
- <20131108204839.GD14606@localhost.localdomain>
- <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu>
- <20131108223657.GF14606@localhost.localdomain>
- <20131109151014.GN16117@laptop.programming.kicks-ass.net>
- <20131114152304.GC5364@laptop.programming.kicks-ass.net>
- <20131114153301.GD5364@laptop.programming.kicks-ass.net>
+	Thu, 14 Nov 2013 10:41:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131114153301.GD5364@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1384440423-4275-1-git-send-email-nicolas.dichtel@6wind.com>
+References: <20131113211430.1ad3bb7d@gandalf.local.home> <1384440423-4275-1-git-send-email-nicolas.dichtel@6wind.com>
+From: Willem de Bruijn <willemb@google.com>
+Date: Thu, 14 Nov 2013 10:40:41 -0500
+Message-ID: <CA+FuTSd5g3KHdf+jVLrrU8vLNm8bVRUvj8khJuOvzoRd4of0=w@mail.gmail.com>
+Subject: Re: [PATCH net] ip6tnl: fix use after free of fb_tnl_dev
+To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Cc: rostedt@goodmis.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, gregkh@linuxfoundation.org,
+        williams@redhat.com, linux-rt-users@vger.kernel.org, lclaudio@uudg.org,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 04:33:01PM +0100, Peter Zijlstra wrote:
-> On Thu, Nov 14, 2013 at 04:23:04PM +0100, Peter Zijlstra wrote:
-> >  /*
-> > + * We must dis-allow sampling irq_work_exit() because perf event sampling
-> > + * itself can cause irq_work, which would lead to an infinite loop;
-> > + *
-> > + *  1) irq_work_exit happens
-> > + *  2) generates perf sample
-> > + *  3) generates irq_work
-> > + *  4) goto 1
-> > + */
-> > +TRACE_EVENT_PERF_PERM(irq_work_exit, is_sampling_event(p_event) ? -EPERM : 0);
-> 
-> And the only reason this doesn't feed fwd itself into oblivion for
-> irq_work_enter() is because the irq_work_list must not be empty when the
-> interrupt is raised, and queueing further work does not re-raise the
-> IPI.
+On Thu, Nov 14, 2013 at 9:47 AM, Nicolas Dichtel
+<nicolas.dichtel@6wind.com> wrote:
+> Bug has been introduced by commit bb8140947a24 ("ip6tnl: allow to use rtnl ops
+> on fb tunnel").
+>
+> When ip6_tunnel.ko is unloaded, FB device is delete by rtnl_link_unregister()
+> and then we try to use the pointer in ip6_tnl_destroy_tunnels().
+>
+> Let's add an handler for dellink, which will never remove the FB tunnel. With
+> this patch it will no more be possible to remove it via 'ip link del ip6tnl0',
+> but it's safer.
+>
+> The same fix was already proposed by Willem de Bruijn <willemb@google.com> for
+> sit interfaces.
+>
+> CC: Willem de Bruijn <willemb@google.com>
+> Reported-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-Right.
+Acked-by: Willem de Bruijn <willemb@google.com>
 
-> 
-> 
-> Also, we should probably do something 'smart' for kprobes, as all of
-> irq_work.c and plenty of perf itself is not __kprobe marked so you're
-> all free to insert kprobes in the middle of perf and then attach perf to
-> such a thing.
-> 
-
-True, ok I'm going to comment about that on your patch.
+Also ran a test similar to the one for sit: `modprobe ip6_tunnel;
+rmmod ip6_tunnel` with CONFIG_DEBUG_SLAB=y. This exposed the bug at
+HEAD, completes successfully with the patch applied.
