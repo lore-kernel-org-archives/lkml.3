@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab3KNSQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 13:16:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11804 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753570Ab3KNSQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 13:16:05 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1384368349.2550.17.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <1384368349.2550.17.camel@dhcp-9-2-203-236.watson.ibm.com> <20131104162216.10177.98067.stgit@warthog.procyon.org.uk> <20131104162321.10177.34033.stgit@warthog.procyon.org.uk>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, d.kasatkin@samsung.com, zohar@us.ibm.com,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 9/9] KEYS: Fix encrypted key type update method
-Date: Thu, 14 Nov 2013 17:59:51 +0000
-Message-ID: <29885.1384451991@warthog.procyon.org.uk>
+	id S1755197Ab3KNSQg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 13:16:36 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:47283 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753570Ab3KNSQ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 13:16:29 -0500
+MIME-Version: 1.0
+Date: Thu, 14 Nov 2013 18:16:28 +0000
+X-Google-Sender-Auth: Ab1v6ELwarIl0Y0xJpQaa3HkgOo
+Message-ID: <CAOMwXhPSyUQ7F3zBkLu5Vr5-LpBUKvKdLXA6=Od=2F=YZhK_-Q@mail.gmail.com>
+Subject: Re: [PATCH] hwmon: (max6650) Add support for gpiodef
+From: Laszlo Papp <lpapp@kde.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: hjk@hansjkoch.de, lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+On Thu, Nov 14, 2013 at 5:24 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>
+> On Thu, Nov 14, 2013 at 02:51:01PM +0000, Laszlo Papp wrote:
+> > It is necessary for end users when they are using the gpio pins connected to the
+> > fan controller. There is a separate gpiodef register provided, but it is unused
+> > under the usual circumstances and that is probably the reason why this feature
+> > has not been added before. It is necessary for our board to function properly.
+> >
+> > Signed-off-by: Laszlo Papp <lpapp@kde.org>
+> > ---
+> >  Documentation/hwmon/max6650 |   5 +++
+> >  drivers/hwmon/max6650.c     | 107 ++++++++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 112 insertions(+)
+> >
+> > diff --git a/Documentation/hwmon/max6650 b/Documentation/hwmon/max6650
+> > index 58d9644..32c69a8 100644
+> > --- a/Documentation/hwmon/max6650
+> > +++ b/Documentation/hwmon/max6650
+> > @@ -39,6 +39,11 @@ pwm1               rw      relative speed (0-255), 255=max. speed.
+> >  fan1_div     rw      sets the speed range the inputs can handle. Legal
+> >                       values are 1, 2, 4, and 8. Use lower values for
+> >                       faster fans.
+> > +gpio0        rw      sets the gpio 0 PIN. Legal values are 0, 1, 2, and 3.
+> > +gpio1        rw      sets the gpio 1 PIN. Legal values are 0, 1, 2, and 3.
+> > +gpio2        rw      sets the gpio 2 PIN. Legal values are 0, 1, 2, and 3.
+> > +gpio3        rw      sets the gpio 3 PIN. Legal values are 0, and 1.
+> > +gpio4        rw      sets the gpio 4 PIN. Legal values are 0, and 1.
+> >
+> gpio pins should be exported through the gpio subsystem, usually with a gpio
+> driver. In this case, it may be acceptable to have the driver register with
+> the gpio subsystem to export the pins. Using local sysfs attributes is wrong
+> and unacceptable.
 
-> Is there a keyutils git repo with a version of keyctl that supports the
-> control option?
+In short: I am not sure.
 
-http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/log/?h=development
+My concern is that these are not generic gpio pins. They seem to have
+chip specific functionality, like alarm, full-on, and clock (internal
+and external). Strictly speaking, one could even mention that to
+expose the GPIODEF register as is without splitting it into five
+separate gpio pin entries. Even those five pins behave slightly
+differently.
 
-> - type size_t is unsigned, no need to verify that it is negative.
+I considered both, but these are the reasons why I decided to keep it
+chip specific rather than separately in a generic subsystem.
 
-It doesn't hurt either...
-
-> - missing Documentation/security/keys-trusted-encrypted.txt updates
-
-Fixed (see diff below), but I suspect trusted_update() also needs scrutiny.
-
-> - the encrypted_preparse() comment still says 'encrypted_instantiate'
-
-Fixed.
-
-David
----
-diff --git a/Documentation/security/keys-trusted-encrypted.txt b/Documentation/security/keys-trusted-encrypted.txt
-index e105ae97a4f5..78794adf445d 100644
---- a/Documentation/security/keys-trusted-encrypted.txt
-+++ b/Documentation/security/keys-trusted-encrypted.txt
-@@ -61,7 +61,7 @@ Usage:
-     keyctl add encrypted name "new [format] key-type:master-key-name keylen"
-         ring
-     keyctl add encrypted name "load hex_blob" ring
--    keyctl update keyid "update key-type:master-key-name"
-+    keyctl control keyid encrypted change-master-key "key-type:master-key-name"
- 
- format:= 'default | ecryptfs'
- key-type:= 'trusted' | 'user'
+Cheers,
+Laszlo
