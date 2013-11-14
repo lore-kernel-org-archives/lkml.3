@@ -1,78 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab3KNTZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 14:25:28 -0500
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:63445 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754860Ab3KNTZT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 14:25:19 -0500
-X-AuditID: cbfec373-b7f356d000006018-a1-5285239fd4e4
-Date: Thu, 14 Nov 2013 17:25:13 -0200
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Libo Chen <clbchenlibo.chen@huawei.com>
-Cc: dougthompson@xmission.com, linux-edac@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, mchehab@redhat.com,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] edac: cell_edac: fix missing of_node_put
-Message-id: <20131114172513.6f1b1e7b@samsung.com>
-In-reply-to: <521AFB77.9080401@huawei.com>
-References: <521AFB77.9080401@huawei.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/hIN35yq1BBps2cVhMvrWXzeLqsrNM
-	Fs2L17NZXDjVwGRxedccNotJHb3sFnuOHmZ3YPdoOfKW1WP/3DXsHu/3XWXz+LxJzmPKoXaW
-	ANYoLpuU1JzMstQifbsEroxJF76xFvxlq+iZfYG9gfEGaxcjJ4eEgInE2dlt7BC2mMSFe+vZ
-	uhi5OIQEljBKnLsxmwXC6WaSeLxkF1gVi4CqxJSPv8BsNgEjiVeNLWCTRAS0JRr/L2IDsZkF
-	djNKtC5gBrGFBWwlNh14xghi8woYSqw8uBgszimgJTHl3g0mEFtIQFPi/eZOoJkcQFc4Sew+
-	IAVRLijxY/I9FoiRWhKbtzWxQtjyEpvXvGWewCgwC0nZLCRls5CULWBkXsUoWlqcXFCclJ5r
-	pFecmFtcmpeul5yfu4kREuTFOxhfbLA6xCjAwajEw8sg2RokxJpYVlyZe4hRgoNZSYT3AhNQ
-	iDclsbIqtSg/vqg0J7X4ECMTB6dUA6Pg1BMbcvTC7zUKvFi/MNuocL5B99F3s7a1yFfrvfg5
-	/d6P9mbftT12CbNOHT5zNKtk0dK9iRxT4zN3qJaypE5sjGi7/M5kRWqVcZ2Hec8MXcWorbr3
-	+b792HSG/8OdPXNe+Kcadn2bwa5rqXSAq0UwUy/MjqtbV+yugOiVHa92VPPX/XgcO0+JpTgj
-	0VCLuag4EQD/fpGwUAIAAA==
+	id S1756463Ab3KNTam (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 14:30:42 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33330 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754344Ab3KNTad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 14:30:33 -0500
+Message-ID: <528524BD.9010005@ti.com>
+Date: Thu, 14 Nov 2013 13:30:05 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, <paul@pwsan.com>, <rnayak@ti.com>,
+        <khilman@linaro.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3] ARM: OMAP2+: omap_device: maintain sane runtime pm
+ status around suspend/resume
+References: <1384297710-29694-1-git-send-email-nm@ti.com> <1384448716-3186-1-git-send-email-nm@ti.com> <20131114185558.GB16529@saruman.home>
+In-Reply-To: <20131114185558.GB16529@saruman.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 26 Aug 2013 14:53:43 +0800
-Libo Chen <clbchenlibo.chen@huawei.com> escreveu:
+On 11/14/2013 12:55 PM, Felipe Balbi wrote:
+> Hi,
+> 
+> On Thu, Nov 14, 2013 at 11:05:16AM -0600, Nishanth Menon wrote:
+>> OMAP device hooks around suspend|resume_noirq ensures that hwmod
+>> devices are forced to idle using omap_device_idle/enable as part of
+>> the last stage of suspend activity.
+>>
+>> For a device such as i2c who uses autosuspend, it is possible to enter
+>> the suspend path with dev->power.runtime_status = RPM_ACTIVE.
+>>
+>> As part of the suspend flow, the generic runtime logic would increment
+>> it's dev->power.disable_depth to 1. This should prevent further
+>> pm_runtime_get_sync from succeeding once the runtime_status has been
+>> set to RPM_SUSPENDED.
+>>
+>> Now, as part of the suspend_noirq handler in omap_device, we force the
+>> following: if the device status is !suspended, we force the device
+>> to idle using omap_device_idle (clocks are cut etc..). This ensures
+>> that from a hardware perspective, the device is "suspended". However,
+>> runtime_status is left to be active.
+>>
+>> *if* an operation is attempted after this point to
+>> pm_runtime_get_sync, runtime framework depends on runtime_status to
+>> indicate accurately the device status, and since it sees it to be
+>> ACTIVE, it assumes the module is functional and returns a non-error
+>> value. As a result the user will see pm_runtime_get succeed, however a
+>> register access will crash due to the lack of clocks.
+>>
+>> To prevent this from happening, we should ensure that runtime_status
+>> exactly indicates the device status. As a result of this change
+>> any further calls to pm_runtime_get* would return -EACCES (since
+>> disable_depth is 1). On resume, we restore the clocks and runtime
+>> status exactly as we suspended with. These operations are not expected
+>> to fail as we update the states after the core runtime framework has
+>> suspended itself and restore before the core runtime framework has
+>> resumed.
+>>
+>> Reported-by: J Keerthy <j-keerthy@ti.com>
+>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>> Acked-by: Rajendra Nayak <rnayak@ti.com>
+>> Acked-by: Kevin Hilman <khilman@linaro.org>
+>> ---
+>> Changes in V3:
+>> 	- Added WARN in case of unexpected failure of runtime pm status restore
+>> v2: https://patchwork.kernel.org/patch/3176501/
+>> v1: https://patchwork.kernel.org/patch/3154501/
+>>
+>> patch baseline: V3.12 tag (also applies on linux-next next-20131107 tag)
+>>
+>>  arch/arm/mach-omap2/omap_device.c |   13 +++++++++++--
+>>  1 file changed, 11 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+>> index b69dd9a..53f0735 100644
+>> --- a/arch/arm/mach-omap2/omap_device.c
+>> +++ b/arch/arm/mach-omap2/omap_device.c
+>> @@ -621,6 +621,7 @@ static int _od_suspend_noirq(struct device *dev)
+>>  
+>>  	if (!ret && !pm_runtime_status_suspended(dev)) {
+>>  		if (pm_generic_runtime_suspend(dev) == 0) {
+>> +			pm_runtime_set_suspended(dev);
+>>  			omap_device_idle(pdev);
+>>  			od->flags |= OMAP_DEVICE_SUSPENDED;
+>>  		}
+>> @@ -634,10 +635,18 @@ static int _od_resume_noirq(struct device *dev)
+>>  	struct platform_device *pdev = to_platform_device(dev);
+>>  	struct omap_device *od = to_omap_device(pdev);
+>>  
+>> -	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+>> -	    !pm_runtime_status_suspended(dev)) {
+>> +	if (od->flags & OMAP_DEVICE_SUSPENDED) {
+>>  		od->flags &= ~OMAP_DEVICE_SUSPENDED;
+>>  		omap_device_enable(pdev);
+>> +		/*
+>> +		 * XXX: we run before core runtime pm has resumed itself. At
+>> +		 * this point in time, we just restore the runtime pm state and
+>> +		 * considering symmetric operations in resume, we donot expect
+>> +		 * to fail. If we failed, something changed in core runtime_pm
+>> +		 * framework OR some device driver messed things up, hence, WARN
+>> +		 */
+>> +		WARN(pm_runtime_set_active(dev),
+>> +		     "Could not set %s runtime state active\n", dev_name(dev));
+> 
+> if you want to print the device name, how about dev_WARN() ?
+> 
+> no strong feelings though:
+
+I would like to stick with WARN as dev_WARN would probably need an
+condition check.. unless someone has a strong opinion, I dont see it
+adding value here.
 
 > 
-> decrease device_node refcount np after task completion
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
 > 
-> Signed-off-by: Libo Chen <libo.chen@huawei.com>
-
-
-Applied.
-
-Patch is at:
-	http://git.infradead.org/users/mchehab/edac.git
-and
-	http://git.kernel.org/cgit/linux/kernel/git/mchehab/linux-edac.git
-
-> ---
->  drivers/edac/cell_edac.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/edac/cell_edac.c b/drivers/edac/cell_edac.c
-> index c2eaf33..493dc30 100644
-> --- a/drivers/edac/cell_edac.c
-> +++ b/drivers/edac/cell_edac.c
-> @@ -162,6 +162,7 @@ static void cell_edac_init_csrows(struct mem_ctl_info *mci)
->  			csrow->first_page, nr_pages);
->  		break;
->  	}
-> +	of_node_put(np);
->  }
-> 
->  static int cell_edac_probe(struct platform_device *pdev)
 
 
 -- 
-
-Cheers,
-Mauro
+Regards,
+Nishanth Menon
