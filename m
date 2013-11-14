@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab3KNQov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:44:51 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:41034 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757128Ab3KNQoN (ORCPT
+	id S1757308Ab3KNQpD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:45:03 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:63610 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932095Ab3KNQof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:44:13 -0500
+	Thu, 14 Nov 2013 11:44:35 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Swapnil Pimpale <spimpale@ddn.com>,
+Cc: linux-kernel@vger.kernel.org, "Christopher J. Morrone" <morrone2@llnl.gov>,
         Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 11/26] staging/lustre/ptlrpc: Return a meaningful status from ptlrpcd_init()
-Date: Fri, 15 Nov 2013 00:42:58 +0800
-Message-Id: <1384447393-13838-12-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 17/26] staging/lustre/changelogs: Correct KUC code max changelog msg size
+Date: Fri, 15 Nov 2013 00:43:04 +0800
+Message-Id: <1384447393-13838-18-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384447393-13838-1-git-send-email-bergwolf@gmail.com>
 References: <1384447393-13838-1-git-send-email-bergwolf@gmail.com>
@@ -22,145 +22,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Swapnil Pimpale <spimpale@ddn.com>
+From: "Christopher J. Morrone" <morrone2@llnl.gov>
 
-This patch has the following:
-1) Fix for the return value from ptlrpcd_init(). It will now return a
-correct status instead of returning zero always.
-2) ptlrpcd_addref() should not increment ptlrpcd_users on error.
-3) Added code in a mdc_setup() and mgc_setup() to test the return
-value of ptlrpcd_addref() and return on error.
+The kernel to userspace communication routines (KUC) allocate
+and limit the maximum cs_buf size to CR_MAXSIZE.  However this
+fails to account for the fact that the buffer is assumed to begin
+with a struct kuc_hdr.  To allocate and account for that space,
+we introduce a new define, KUC_CHANGELOG_MSG_MAXSIZE.
 
-Lustre-change: http://review.whamcloud.com/7522
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3808
-Signed-off-by: Swapnil Pimpale <spimpale@ddn.com>
-Reviewed-by: John L. Hammond <john.hammond@intel.com>
+Lustre-change: http://review.whamcloud.com/7406
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3587
+Signed-off-by: Christopher J. Morrone <morrone2@llnl.gov>
 Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+Reviewed-by: jacques-Charles Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/mdc/mdc_request.c |   15 +++++++++------
- drivers/staging/lustre/lustre/mgc/libmgc.c      |    4 +++-
- drivers/staging/lustre/lustre/mgc/mgc_request.c |    8 +++++---
- drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c  |   13 ++++++++-----
- 4 files changed, 25 insertions(+), 15 deletions(-)
+ .../include/linux/libcfs/libcfs_kernelcomm.h       |    2 ++
+ drivers/staging/lustre/lustre/mdc/mdc_request.c    |    6 +++---
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/staging/lustre/include/linux/libcfs/libcfs_kernelcomm.h b/drivers/staging/lustre/include/linux/libcfs/libcfs_kernelcomm.h
+index 4e12ffc..e7469ac 100644
+--- a/drivers/staging/lustre/include/linux/libcfs/libcfs_kernelcomm.h
++++ b/drivers/staging/lustre/include/linux/libcfs/libcfs_kernelcomm.h
+@@ -61,6 +61,8 @@ struct kuc_hdr {
+ 	__u16 kuc_msglen;     /* Including header */
+ } __attribute__((aligned(sizeof(__u64))));
+ 
++#define KUC_CHANGELOG_MSG_MAXSIZE (sizeof(struct kuc_hdr)+CR_MAXSIZE)
++
+ #define KUC_MAGIC  0x191C /*Lustre9etLinC */
+ #define KUC_FL_BLOCK 0x01   /* Wait for send */
+ 
 diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-index 4c30fa8..651fcb1 100644
+index 651fcb1..eeac9b4 100644
 --- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
 +++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-@@ -2364,20 +2364,22 @@ struct ldlm_valblock_ops inode_lvbo = {
- 
- static int mdc_setup(struct obd_device *obd, struct lustre_cfg *cfg)
+@@ -1452,7 +1452,7 @@ static struct kuc_hdr *changelog_kuc_hdr(char *buf, int len, int flags)
  {
--	struct client_obd *cli = &obd->u.cli;
--	struct lprocfs_static_vars lvars = { 0 };
--	int rc;
-+	struct client_obd		*cli = &obd->u.cli;
-+	struct lprocfs_static_vars	lvars = { 0 };
-+	int				rc;
+ 	struct kuc_hdr *lh = (struct kuc_hdr *)buf;
  
- 	OBD_ALLOC(cli->cl_rpc_lock, sizeof (*cli->cl_rpc_lock));
- 	if (!cli->cl_rpc_lock)
- 		return -ENOMEM;
- 	mdc_init_rpc_lock(cli->cl_rpc_lock);
+-	LASSERT(len <= CR_MAXSIZE);
++	LASSERT(len <= KUC_CHANGELOG_MSG_MAXSIZE);
  
--	ptlrpcd_addref();
-+	rc = ptlrpcd_addref();
-+	if (rc < 0)
-+		GOTO(err_rpc_lock, rc);
+ 	lh->kuc_magic = KUC_MAGIC;
+ 	lh->kuc_transport = KUC_TRANSPORT_CHANGELOG;
+@@ -1525,7 +1525,7 @@ static int mdc_changelog_send_thread(void *csdata)
+ 	CDEBUG(D_CHANGELOG, "changelog to fp=%p start "LPU64"\n",
+ 	       cs->cs_fp, cs->cs_startrec);
  
- 	OBD_ALLOC(cli->cl_close_lock, sizeof (*cli->cl_close_lock));
- 	if (!cli->cl_close_lock)
--		GOTO(err_rpc_lock, rc = -ENOMEM);
-+		GOTO(err_ptlrpcd_decref, rc = -ENOMEM);
- 	mdc_init_rpc_lock(cli->cl_close_lock);
+-	OBD_ALLOC(cs->cs_buf, CR_MAXSIZE);
++	OBD_ALLOC(cs->cs_buf, KUC_CHANGELOG_MSG_MAXSIZE);
+ 	if (cs->cs_buf == NULL)
+ 		GOTO(out, rc = -ENOMEM);
  
- 	rc = client_obd_setup(obd, cfg);
-@@ -2403,9 +2405,10 @@ static int mdc_setup(struct obd_device *obd, struct lustre_cfg *cfg)
- 
- err_close_lock:
- 	OBD_FREE(cli->cl_close_lock, sizeof (*cli->cl_close_lock));
-+err_ptlrpcd_decref:
-+	ptlrpcd_decref();
- err_rpc_lock:
- 	OBD_FREE(cli->cl_rpc_lock, sizeof (*cli->cl_rpc_lock));
--	ptlrpcd_decref();
- 	return rc;
- }
- 
-diff --git a/drivers/staging/lustre/lustre/mgc/libmgc.c b/drivers/staging/lustre/lustre/mgc/libmgc.c
-index 9b40c57..3269ad1 100644
---- a/drivers/staging/lustre/lustre/mgc/libmgc.c
-+++ b/drivers/staging/lustre/lustre/mgc/libmgc.c
-@@ -57,7 +57,9 @@ static int mgc_setup(struct obd_device *obd, struct lustre_cfg *lcfg)
- {
- 	int rc;
- 
--	ptlrpcd_addref();
-+	rc = ptlrpcd_addref();
-+	if (rc < 0)
-+		return rc;
- 
- 	rc = client_obd_setup(obd, lcfg);
- 	if (rc)
-diff --git a/drivers/staging/lustre/lustre/mgc/mgc_request.c b/drivers/staging/lustre/lustre/mgc/mgc_request.c
-index 94e11bd..b6a55c6 100644
---- a/drivers/staging/lustre/lustre/mgc/mgc_request.c
-+++ b/drivers/staging/lustre/lustre/mgc/mgc_request.c
-@@ -852,10 +852,12 @@ static int mgc_cleanup(struct obd_device *obd)
- 
- static int mgc_setup(struct obd_device *obd, struct lustre_cfg *lcfg)
- {
--	struct lprocfs_static_vars lvars;
--	int rc;
-+	struct lprocfs_static_vars	lvars;
-+	int				rc;
- 
--	ptlrpcd_addref();
-+	rc = ptlrpcd_addref();
-+	if (rc < 0)
-+		return rc;
- 
- 	rc = client_obd_setup(obd, lcfg);
- 	if (rc)
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c b/drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c
-index 337eefd..d73ed94 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c
-@@ -727,9 +727,9 @@ static void ptlrpcd_fini(void)
- 
- static int ptlrpcd_init(void)
- {
--	int nthreads = num_online_cpus();
--	char name[16];
--	int size, i = -1, j, rc = 0;
-+	int	nthreads = num_online_cpus();
-+	char	name[16];
-+	int	size, i = -1, j, rc = 0;
- 
- 	if (max_ptlrpcds > 0 && max_ptlrpcds < nthreads)
- 		nthreads = max_ptlrpcds;
-@@ -786,7 +786,7 @@ out:
- 		ptlrpcds = NULL;
- 	}
- 
--	return 0;
-+	return rc;
- }
- 
- int ptlrpcd_addref(void)
-@@ -794,8 +794,11 @@ int ptlrpcd_addref(void)
- 	int rc = 0;
- 
- 	mutex_lock(&ptlrpcd_mutex);
--	if (++ptlrpcd_users == 1)
-+	if (++ptlrpcd_users == 1) {
- 		rc = ptlrpcd_init();
-+		if (rc < 0)
-+			ptlrpcd_users--;
-+	}
- 	mutex_unlock(&ptlrpcd_mutex);
+@@ -1562,7 +1562,7 @@ out:
+ 	if (ctxt)
+ 		llog_ctxt_put(ctxt);
+ 	if (cs->cs_buf)
+-		OBD_FREE(cs->cs_buf, CR_MAXSIZE);
++		OBD_FREE(cs->cs_buf, KUC_CHANGELOG_MSG_MAXSIZE);
+ 	OBD_FREE_PTR(cs);
  	return rc;
  }
 -- 
