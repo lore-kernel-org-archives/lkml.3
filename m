@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab3KNQSk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:18:40 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:54643 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754789Ab3KNQQz (ORCPT
+	id S1755618Ab3KNQSz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:18:55 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:59961 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755312Ab3KNQRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:16:55 -0500
+	Thu, 14 Nov 2013 11:17:03 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Artem Blagodarenko <artem_blagodarenko@xyratex.com>,
+Cc: linux-kernel@vger.kernel.org, Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
         Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 38/40] staging/lustre/mgs: set_param -P option that sets value permanently
-Date: Fri, 15 Nov 2013 00:13:40 +0800
-Message-Id: <1384445622-12346-39-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 40/40] staging/lustre/ptlrpc: flock deadlock detection does not work
+Date: Fri, 15 Nov 2013 00:13:42 +0800
+Message-Id: <1384445622-12346-41-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
 References: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
@@ -23,396 +22,237 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Blagodarenko <artem_blagodarenko@xyratex.com>
+From: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
 
-set_param and conf_param have different syntaxes. Also conf_param
-has unimplemented paths and no wildcarding support.
+Flock deadlocks are checked on the first attempt to grant
+the flock only. If we try again to grant it after its
+blocking lock is cancelled, we don't check for deadlocks
+which also may exist.
 
-This patch adds set_param -P option, that replaces the whole
-conf_param "direct" proc access with a simple upcall-type mechanism
-from the MGC. Option conf_param is saved now for compatibility.
+Perform deadlock detection during reprocess
 
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3155
-Lustre-change: http://review.whamcloud.com/6025
-Signed-off-by: Artem Blagodarenko <artem_blagodarenko@xyratex.com>
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: Emoly Liu <emoly.liu@intel.com>
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-1715
+Lustre-change: http://review.whamcloud.com/3553
+Signed-off-by: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
+Reviewed-by: Vitaly Fertman <vitaly_fertman@xyratex.com>
+Reviewed-by: Bruce Korb <bruce_korb@xyratex.com>
+Reviewed-by: Keith Mannthey <keith.mannthey@intel.com>
+Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/include/lustre_cfg.h |    2 +
- .../staging/lustre/lustre/include/lustre_disk.h    |    2 +
- drivers/staging/lustre/lustre/include/obd_class.h  |    9 +-
- drivers/staging/lustre/lustre/llite/llite_lib.c    |    5 +-
- drivers/staging/lustre/lustre/mgc/mgc_request.c    |   89 +++++++++++++++++---
- .../staging/lustre/lustre/obdclass/obd_config.c    |   50 +++++++++--
- 6 files changed, 134 insertions(+), 23 deletions(-)
+ .../lustre/lustre/include/lustre/lustre_idl.h      |    5 ++-
+ .../lustre/lustre/include/lustre_dlm_flags.h       |   14 +++++--
+ drivers/staging/lustre/lustre/ldlm/ldlm_flock.c    |   41 ++++++++++++++++++--
+ drivers/staging/lustre/lustre/llite/llite_lib.c    |    3 +-
+ .../lustre/lustre/obdclass/lprocfs_status.c        |    1 +
+ drivers/staging/lustre/lustre/ptlrpc/wiretest.c    |    2 +
+ 6 files changed, 57 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre_cfg.h b/drivers/staging/lustre/lustre/include/lustre_cfg.h
-index e14a5f6..3680668 100644
---- a/drivers/staging/lustre/lustre/include/lustre_cfg.h
-+++ b/drivers/staging/lustre/lustre/include/lustre_cfg.h
-@@ -88,6 +88,8 @@ enum lcfg_command_type {
- 	LCFG_SET_LDLM_TIMEOUT   = 0x00ce030, /**< set ldlm_timeout */
- 	LCFG_PRE_CLEANUP	= 0x00cf031, /**< call type-specific pre
- 					      * cleanup cleanup */
-+	LCFG_SET_PARAM		= 0x00ce032, /**< use set_param syntax to set
-+					      *a proc parameters */
- };
- 
- struct lustre_cfg_bufs {
-diff --git a/drivers/staging/lustre/lustre/include/lustre_disk.h b/drivers/staging/lustre/lustre/include/lustre_disk.h
-index 9228b16..e714fde 100644
---- a/drivers/staging/lustre/lustre/include/lustre_disk.h
-+++ b/drivers/staging/lustre/lustre/include/lustre_disk.h
-@@ -98,6 +98,8 @@
- #define LDD_F_IR_CAPABLE    0x2000
- /** the MGS refused to register the target. */
- #define LDD_F_ERROR	 0x4000
-+/** process at lctl conf_param */
-+#define LDD_F_PARAM2		0x8000
- 
- /* opc for target register */
- #define LDD_F_OPC_REG   0x10000000
-diff --git a/drivers/staging/lustre/lustre/include/obd_class.h b/drivers/staging/lustre/lustre/include/obd_class.h
-index 983718f..1c2ba19 100644
---- a/drivers/staging/lustre/lustre/include/obd_class.h
-+++ b/drivers/staging/lustre/lustre/include/obd_class.h
-@@ -175,9 +175,13 @@ enum {
- 	CONFIG_T_CONFIG  = 0,
- 	CONFIG_T_SPTLRPC = 1,
- 	CONFIG_T_RECOVER = 2,
--	CONFIG_T_MAX     = 3
-+	CONFIG_T_PARAMS  = 3,
-+	CONFIG_T_MAX     = 4
- };
- 
-+#define PARAMS_FILENAME	"params"
-+#define LCTL_UPCALL	"lctl"
+diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
+index 9d3bc29..7bdb24f 100644
+--- a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
++++ b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
+@@ -1292,6 +1292,8 @@ extern void lustre_swab_ptlrpc_body(struct ptlrpc_body *pb);
+ #define OBD_CONNECT_LIGHTWEIGHT 0x1000000000000ULL/* lightweight connection */
+ #define OBD_CONNECT_SHORTIO     0x2000000000000ULL/* short io */
+ #define OBD_CONNECT_PINGLESS	0x4000000000000ULL/* pings not required */
++#define OBD_CONNECT_FLOCK_DEAD	0x8000000000000ULL/* improved flock deadlock detection */
 +
- /* list of active configuration logs  */
- struct config_llog_data {
- 	struct ldlm_res_id	  cld_resid;
-@@ -185,7 +189,8 @@ struct config_llog_data {
- 	struct list_head		  cld_list_chain;
- 	atomic_t		cld_refcount;
- 	struct config_llog_data    *cld_sptlrpc;/* depended sptlrpc log */
--	struct config_llog_data    *cld_recover;    /* imperative recover log */
-+	struct config_llog_data	   *cld_params;	/* common parameters log */
-+	struct config_llog_data    *cld_recover;/* imperative recover log */
- 	struct obd_export	  *cld_mgcexp;
- 	struct mutex		    cld_lock;
- 	int			 cld_type;
+ /* XXX README XXX:
+  * Please DO NOT add flag values here before first ensuring that this same
+  * flag value is not in use on some other branch.  Please clear any such
+@@ -1329,7 +1331,8 @@ extern void lustre_swab_ptlrpc_body(struct ptlrpc_body *pb);
+ 				OBD_CONNECT_EINPROGRESS | \
+ 				OBD_CONNECT_LIGHTWEIGHT | OBD_CONNECT_UMASK | \
+ 				OBD_CONNECT_LVB_TYPE | OBD_CONNECT_LAYOUTLOCK |\
+-				OBD_CONNECT_PINGLESS | OBD_CONNECT_MAX_EASIZE)
++				OBD_CONNECT_PINGLESS | OBD_CONNECT_MAX_EASIZE |\
++				OBD_CONNECT_FLOCK_DEAD)
+ #define OST_CONNECT_SUPPORTED  (OBD_CONNECT_SRVLOCK | OBD_CONNECT_GRANT | \
+ 				OBD_CONNECT_REQPORTAL | OBD_CONNECT_VERSION | \
+ 				OBD_CONNECT_TRUNCLOCK | OBD_CONNECT_INDEX | \
+diff --git a/drivers/staging/lustre/lustre/include/lustre_dlm_flags.h b/drivers/staging/lustre/lustre/include/lustre_dlm_flags.h
+index a632217..855e18f 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_dlm_flags.h
++++ b/drivers/staging/lustre/lustre/include/lustre_dlm_flags.h
+@@ -35,10 +35,10 @@
+ #ifndef LDLM_ALL_FLAGS_MASK
+ 
+ /** l_flags bits marked as "all_flags" bits */
+-#define LDLM_FL_ALL_FLAGS_MASK          0x00FFFFFFC08F132FULL
++#define LDLM_FL_ALL_FLAGS_MASK          0x00FFFFFFC08F932FULL
+ 
+ /** l_flags bits marked as "ast" bits */
+-#define LDLM_FL_AST_MASK                0x0000000080000000ULL
++#define LDLM_FL_AST_MASK                0x0000000080008000ULL
+ 
+ /** l_flags bits marked as "blocked" bits */
+ #define LDLM_FL_BLOCKED_MASK            0x000000000000000EULL
+@@ -56,7 +56,7 @@
+ #define LDLM_FL_LOCAL_ONLY_MASK         0x00FFFFFF00000000ULL
+ 
+ /** l_flags bits marked as "on_wire" bits */
+-#define LDLM_FL_ON_WIRE_MASK            0x00000000C08F132FULL
++#define LDLM_FL_ON_WIRE_MASK            0x00000000C08F932FULL
+ 
+ /** extent, mode, or resource changed */
+ #define LDLM_FL_LOCK_CHANGED            0x0000000000000001ULL // bit   0
+@@ -114,6 +114,12 @@
+ #define ldlm_set_has_intent(_l)         LDLM_SET_FLAG((  _l), 1ULL << 12)
+ #define ldlm_clear_has_intent(_l)       LDLM_CLEAR_FLAG((_l), 1ULL << 12)
+ 
++/** flock deadlock detected */
++#define LDLM_FL_FLOCK_DEADLOCK          0x0000000000008000ULL // bit  15
++#define ldlm_is_flock_deadlock(_l)      LDLM_TEST_FLAG(( _l), 1ULL << 15)
++#define ldlm_set_flock_deadlock(_l)     LDLM_SET_FLAG((  _l), 1ULL << 15)
++#define ldlm_clear_flock_deadlock(_l)   LDLM_CLEAR_FLAG((_l), 1ULL << 15)
++
+ /** discard (no writeback) on cancel */
+ #define LDLM_FL_DISCARD_DATA            0x0000000000010000ULL // bit  16
+ #define ldlm_is_discard_data(_l)        LDLM_TEST_FLAG(( _l), 1ULL << 16)
+@@ -390,6 +396,7 @@ static int hf_lustre_ldlm_fl_ast_sent            = -1;
+ static int hf_lustre_ldlm_fl_replay              = -1;
+ static int hf_lustre_ldlm_fl_intent_only         = -1;
+ static int hf_lustre_ldlm_fl_has_intent          = -1;
++static int hf_lustre_ldlm_fl_flock_deadlock      = -1;
+ static int hf_lustre_ldlm_fl_discard_data        = -1;
+ static int hf_lustre_ldlm_fl_no_timeout          = -1;
+ static int hf_lustre_ldlm_fl_block_nowait        = -1;
+@@ -431,6 +438,7 @@ const value_string lustre_ldlm_flags_vals[] = {
+   {LDLM_FL_REPLAY,              "LDLM_FL_REPLAY"},
+   {LDLM_FL_INTENT_ONLY,         "LDLM_FL_INTENT_ONLY"},
+   {LDLM_FL_HAS_INTENT,          "LDLM_FL_HAS_INTENT"},
++  {LDLM_FL_FLOCK_DEADLOCK,      "LDLM_FL_FLOCK_DEADLOCK"},
+   {LDLM_FL_DISCARD_DATA,        "LDLM_FL_DISCARD_DATA"},
+   {LDLM_FL_NO_TIMEOUT,          "LDLM_FL_NO_TIMEOUT"},
+   {LDLM_FL_BLOCK_NOWAIT,        "LDLM_FL_BLOCK_NOWAIT"},
+diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c b/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c
+index 182773b..6324eff 100644
+--- a/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c
++++ b/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c
+@@ -205,6 +205,26 @@ ldlm_flock_deadlock(struct ldlm_lock *req, struct ldlm_lock *bl_lock)
+ 	return 0;
+ }
+ 
++static void ldlm_flock_cancel_on_deadlock(struct ldlm_lock *lock,
++					  struct list_head *work_list)
++{
++	CDEBUG(D_INFO, "reprocess deadlock req=%p\n", lock);
++
++	if ((exp_connect_flags(lock->l_export) &
++				OBD_CONNECT_FLOCK_DEAD) == 0) {
++		CERROR("deadlock found, but client doesn't "
++				"support flock canceliation\n");
++	} else {
++		LASSERT(lock->l_completion_ast);
++		LASSERT((lock->l_flags & LDLM_FL_AST_SENT) == 0);
++		lock->l_flags |= LDLM_FL_AST_SENT | LDLM_FL_CANCEL_ON_BLOCK |
++			LDLM_FL_FLOCK_DEADLOCK;
++		ldlm_flock_blocking_unlink(lock);
++		ldlm_resource_unlink_lock(lock);
++		ldlm_add_ast_work_item(lock, NULL, work_list);
++	}
++}
++
+ /**
+  * Process a granting attempt for flock lock.
+  * Must be called under ns lock held.
+@@ -272,6 +292,7 @@ reprocess:
+ 			}
+ 		}
+ 	} else {
++		int reprocess_failed = 0;
+ 		lockmode_verify(mode);
+ 
+ 		/* This loop determines if there are existing locks
+@@ -293,8 +314,15 @@ reprocess:
+ 			if (!ldlm_flocks_overlap(lock, req))
+ 				continue;
+ 
+-			if (!first_enq)
+-				return LDLM_ITER_CONTINUE;
++			if (!first_enq) {
++				reprocess_failed = 1;
++				if (ldlm_flock_deadlock(req, lock)) {
++					ldlm_flock_cancel_on_deadlock(req,
++							work_list);
++					return LDLM_ITER_CONTINUE;
++				}
++				continue;
++			}
+ 
+ 			if (*flags & LDLM_FL_BLOCK_NOWAIT) {
+ 				ldlm_flock_destroy(req, mode, *flags);
+@@ -330,6 +358,8 @@ reprocess:
+ 			*flags |= LDLM_FL_BLOCK_GRANTED;
+ 			return LDLM_ITER_STOP;
+ 		}
++		if (reprocess_failed)
++			return LDLM_ITER_CONTINUE;
+ 	}
+ 
+ 	if (*flags & LDLM_FL_TEST_LOCK) {
+@@ -646,7 +676,10 @@ granted:
+ 	/* ldlm_lock_enqueue() has already placed lock on the granted list. */
+ 	list_del_init(&lock->l_res_link);
+ 
+-	if (flags & LDLM_FL_TEST_LOCK) {
++	if (lock->l_flags & LDLM_FL_FLOCK_DEADLOCK) {
++		LDLM_DEBUG(lock, "client-side enqueue deadlock received");
++		rc = -EDEADLK;
++	} else if (flags & LDLM_FL_TEST_LOCK) {
+ 		/* fcntl(F_GETLK) request */
+ 		/* The old mode was saved in getlk->fl_type so that if the mode
+ 		 * in the lock changes we can decref the appropriate refcount.*/
+@@ -675,7 +708,7 @@ granted:
+ 		ldlm_process_flock_lock(lock, &noreproc, 1, &err, NULL);
+ 	}
+ 	unlock_res_and_lock(lock);
+-	return 0;
++	return rc;
+ }
+ EXPORT_SYMBOL(ldlm_flock_completion_ast);
+ 
 diff --git a/drivers/staging/lustre/lustre/llite/llite_lib.c b/drivers/staging/lustre/lustre/llite/llite_lib.c
-index d15f99c..93c67e5 100644
+index 93c67e5..18e3db2 100644
 --- a/drivers/staging/lustre/lustre/llite/llite_lib.c
 +++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
-@@ -1058,7 +1058,7 @@ out_free:
+@@ -205,7 +205,8 @@ static int client_common_fill_super(struct super_block *sb, char *md, char *dt,
+ 				  OBD_CONNECT_EINPROGRESS |
+ 				  OBD_CONNECT_JOBSTATS | OBD_CONNECT_LVB_TYPE |
+ 				  OBD_CONNECT_LAYOUTLOCK | OBD_CONNECT_PINGLESS |
+-				  OBD_CONNECT_MAX_EASIZE;
++				  OBD_CONNECT_MAX_EASIZE |
++				  OBD_CONNECT_FLOCK_DEAD;
  
- void ll_put_super(struct super_block *sb)
- {
--	struct config_llog_instance cfg;
-+	struct config_llog_instance cfg, params_cfg;
- 	struct obd_device *obd;
- 	struct lustre_sb_info *lsi = s2lsi(sb);
- 	struct ll_sb_info *sbi = ll_s2sbi(sb);
-@@ -1072,6 +1072,9 @@ void ll_put_super(struct super_block *sb)
- 	cfg.cfg_instance = sb;
- 	lustre_end_log(sb, profilenm, &cfg);
- 
-+	params_cfg.cfg_instance = sb;
-+	lustre_end_log(sb, PARAMS_FILENAME, &params_cfg);
-+
- 	if (sbi->ll_md_exp) {
- 		obd = class_exp2obd(sbi->ll_md_exp);
- 		if (obd)
-diff --git a/drivers/staging/lustre/lustre/mgc/mgc_request.c b/drivers/staging/lustre/lustre/mgc/mgc_request.c
-index 9325f91..f4ecd29 100644
---- a/drivers/staging/lustre/lustre/mgc/mgc_request.c
-+++ b/drivers/staging/lustre/lustre/mgc/mgc_request.c
-@@ -56,7 +56,7 @@ static int mgc_name2resid(char *name, int len, struct ldlm_res_id *res_id,
- {
- 	__u64 resname = 0;
- 
--	if (len > 8) {
-+	if (len > sizeof(resname)) {
- 		CERROR("name too long: %s\n", name);
- 		return -EINVAL;
- 	}
-@@ -76,6 +76,7 @@ static int mgc_name2resid(char *name, int len, struct ldlm_res_id *res_id,
- 		resname = 0;
- 		break;
- 	case CONFIG_T_RECOVER:
-+	case CONFIG_T_PARAMS:
- 		resname = type;
- 		break;
- 	default:
-@@ -101,10 +102,13 @@ int mgc_logname2resid(char *logname, struct ldlm_res_id *res_id, int type)
- 	int len;
- 
- 	/* logname consists of "fsname-nodetype".
--	 * e.g. "lustre-MDT0001", "SUN-000-client" */
-+	 * e.g. "lustre-MDT0001", "SUN-000-client"
-+	 * there is an exception: llog "params" */
- 	name_end = strrchr(logname, '-');
--	LASSERT(name_end);
--	len = name_end - logname;
-+	if (!name_end)
-+		len = strlen(logname);
-+	else
-+		len = name_end - logname;
- 	return mgc_name2resid(logname, len, res_id, type);
- }
- 
-@@ -140,6 +144,8 @@ static void config_log_put(struct config_llog_data *cld)
- 			config_log_put(cld->cld_recover);
- 		if (cld->cld_sptlrpc)
- 			config_log_put(cld->cld_sptlrpc);
-+		if (cld->cld_params)
-+			config_log_put(cld->cld_params);
- 		if (cld_is_sptlrpc(cld))
- 			sptlrpc_conf_log_stop(cld->cld_logname);
- 
-@@ -271,6 +277,19 @@ static struct config_llog_data *config_recover_log_add(struct obd_device *obd,
- 	return cld;
- }
- 
-+static struct config_llog_data *config_params_log_add(struct obd_device *obd,
-+	struct config_llog_instance *cfg, struct super_block *sb)
-+{
-+	struct config_llog_instance	lcfg = *cfg;
-+	struct config_llog_data		*cld;
-+
-+	lcfg.cfg_instance = sb;
-+
-+	cld = do_config_log_add(obd, PARAMS_FILENAME, CONFIG_T_PARAMS,
-+				&lcfg, sb);
-+
-+	return cld;
-+}
- 
- /** Add this log to the list of active logs watched by an MGC.
-  * Active means we're watching for updates.
-@@ -284,8 +303,10 @@ static int config_log_add(struct obd_device *obd, char *logname,
- 	struct lustre_sb_info *lsi = s2lsi(sb);
- 	struct config_llog_data *cld;
- 	struct config_llog_data *sptlrpc_cld;
--	char		     seclogname[32];
--	char		    *ptr;
-+	struct config_llog_data *params_cld;
-+	char			seclogname[32];
-+	char			*ptr;
-+	int			rc;
- 
- 	CDEBUG(D_MGC, "adding config log %s:%p\n", logname, cfg->cfg_instance);
- 
-@@ -308,32 +329,49 @@ static int config_log_add(struct obd_device *obd, char *logname,
- 						CONFIG_T_SPTLRPC, NULL, NULL);
- 		if (IS_ERR(sptlrpc_cld)) {
- 			CERROR("can't create sptlrpc log: %s\n", seclogname);
--			return PTR_ERR(sptlrpc_cld);
-+			GOTO(out_err, rc = PTR_ERR(sptlrpc_cld));
- 		}
- 	}
-+	params_cld = config_params_log_add(obd, cfg, sb);
-+	if (IS_ERR(params_cld)) {
-+		rc = PTR_ERR(params_cld);
-+		CERROR("%s: can't create params log: rc = %d\n",
-+		       obd->obd_name, rc);
-+		GOTO(out_err1, rc);
-+	}
- 
- 	cld = do_config_log_add(obd, logname, CONFIG_T_CONFIG, cfg, sb);
- 	if (IS_ERR(cld)) {
- 		CERROR("can't create log: %s\n", logname);
--		config_log_put(sptlrpc_cld);
--		return PTR_ERR(cld);
-+		GOTO(out_err2, rc = PTR_ERR(cld));
- 	}
- 
- 	cld->cld_sptlrpc = sptlrpc_cld;
-+	cld->cld_params = params_cld;
- 
- 	LASSERT(lsi->lsi_lmd);
- 	if (!(lsi->lsi_lmd->lmd_flags & LMD_FLG_NOIR)) {
- 		struct config_llog_data *recover_cld;
- 		*strrchr(seclogname, '-') = 0;
- 		recover_cld = config_recover_log_add(obd, seclogname, cfg, sb);
--		if (IS_ERR(recover_cld)) {
--			config_log_put(cld);
--			return PTR_ERR(recover_cld);
--		}
-+		if (IS_ERR(recover_cld))
-+			GOTO(out_err3, rc = PTR_ERR(recover_cld));
- 		cld->cld_recover = recover_cld;
- 	}
- 
- 	return 0;
-+
-+out_err3:
-+	config_log_put(cld);
-+
-+out_err2:
-+	config_log_put(params_cld);
-+
-+out_err1:
-+	config_log_put(sptlrpc_cld);
-+
-+out_err:
-+	return rc;
- }
- 
- DEFINE_MUTEX(llog_process_lock);
-@@ -344,6 +382,7 @@ static int config_log_end(char *logname, struct config_llog_instance *cfg)
- {
- 	struct config_llog_data *cld;
- 	struct config_llog_data *cld_sptlrpc = NULL;
-+	struct config_llog_data *cld_params = NULL;
- 	struct config_llog_data *cld_recover = NULL;
- 	int rc = 0;
- 
-@@ -382,11 +421,20 @@ static int config_log_end(char *logname, struct config_llog_instance *cfg)
- 	spin_lock(&config_list_lock);
- 	cld_sptlrpc = cld->cld_sptlrpc;
- 	cld->cld_sptlrpc = NULL;
-+	cld_params = cld->cld_params;
-+	cld->cld_params = NULL;
- 	spin_unlock(&config_list_lock);
- 
- 	if (cld_sptlrpc)
- 		config_log_put(cld_sptlrpc);
- 
-+	if (cld_params) {
-+		mutex_lock(&cld_params->cld_lock);
-+		cld_params->cld_stopping = 1;
-+		mutex_unlock(&cld_params->cld_lock);
-+		config_log_put(cld_params);
-+	}
-+
- 	/* drop the ref from the find */
- 	config_log_put(cld);
- 	/* drop the start ref */
-@@ -1657,7 +1705,7 @@ static int mgc_process_cfg_log(struct obd_device *mgc,
- 				LCONSOLE_ERROR_MSG(0x13a, "Failed to get MGS "
- 						   "log %s and no local copy."
- 						   "\n", cld->cld_logname);
--				GOTO(out_pop, rc = -ENOTCONN);
-+				GOTO(out_pop, rc = -ENOENT);
- 			}
- 			CDEBUG(D_MGC, "Failed to get MGS log %s, using local "
- 			       "copy for now, will try to update later.\n",
-@@ -1856,6 +1904,19 @@ static int mgc_process_config(struct obd_device *obd, obd_count len, void *buf)
- 			if (rc)
- 				CERROR("Cannot process recover llog %d\n", rc);
- 		}
-+
-+		if (rc == 0 && cld->cld_params != NULL) {
-+			rc = mgc_process_log(obd, cld->cld_params);
-+			if (rc == -ENOENT) {
-+				CDEBUG(D_MGC, "There is no params"
-+					      "config file yet\n");
-+				rc = 0;
-+			}
-+			/* params log is optional */
-+			if (rc)
-+				CERROR("%s: can't process params llog: rc = %d\n",
-+				       obd->obd_name, rc);
-+		}
- 		config_log_put(cld);
- 
- 		break;
-diff --git a/drivers/staging/lustre/lustre/obdclass/obd_config.c b/drivers/staging/lustre/lustre/obdclass/obd_config.c
-index 362ae54..abb519a 100644
---- a/drivers/staging/lustre/lustre/obdclass/obd_config.c
-+++ b/drivers/staging/lustre/lustre/obdclass/obd_config.c
-@@ -1027,6 +1027,45 @@ struct lustre_cfg *lustre_cfg_rename(struct lustre_cfg *cfg,
- }
- EXPORT_SYMBOL(lustre_cfg_rename);
- 
-+static int process_param2_config(struct lustre_cfg *lcfg)
-+{
-+	char *param = lustre_cfg_string(lcfg, 1);
-+	char *upcall = lustre_cfg_string(lcfg, 2);
-+	char *argv[] = {
-+		[0] = "/usr/sbin/lctl",
-+		[1] = "set_param",
-+		[2] = param,
-+		[3] = NULL
-+	};
-+	struct timeval	start;
-+	struct timeval	end;
-+	int		rc;
-+
-+
-+	/* Add upcall processing here. Now only lctl is supported */
-+	if (strcmp(upcall, LCTL_UPCALL) != 0) {
-+		CERROR("Unsupported upcall %s\n", upcall);
-+		return -EINVAL;
-+	}
-+
-+	do_gettimeofday(&start);
-+	rc = USERMODEHELPER(argv[0], argv, NULL);
-+	do_gettimeofday(&end);
-+
-+	if (rc < 0) {
-+		CERROR("lctl: error invoking upcall %s %s %s: rc = %d; "
-+		       "time %ldus\n", argv[0], argv[1], argv[2], rc,
-+		       cfs_timeval_sub(&end, &start, NULL));
-+	} else {
-+		CDEBUG(D_HA, "lctl: invoked upcall %s %s %s, time %ldus\n",
-+		       argv[0], argv[1], argv[2],
-+		       cfs_timeval_sub(&end, &start, NULL));
-+		       rc = 0;
-+	}
-+
-+	return rc;
-+}
-+
- void lustre_register_quota_process_config(int (*qpc)(struct lustre_cfg *lcfg))
- {
- 	quota_process_config = qpc;
-@@ -1142,11 +1181,14 @@ int class_process_config(struct lustre_cfg *lcfg)
- 			err = (*quota_process_config)(lcfg);
- 			GOTO(out, err);
- 		}
--		/* Fall through */
-+
- 		break;
- 	}
-+	case LCFG_SET_PARAM: {
-+		err = process_param2_config(lcfg);
-+		GOTO(out, 0);
-+	}
- 	}
--
- 	/* Commands that require a device */
- 	obd = class_name2obd(lustre_cfg_string(lcfg, 0));
- 	if (obd == NULL) {
-@@ -1183,24 +1225,20 @@ int class_process_config(struct lustre_cfg *lcfg)
- 	case LCFG_POOL_NEW: {
- 		err = obd_pool_new(obd, lustre_cfg_string(lcfg, 2));
- 		GOTO(out, err = 0);
--		break;
- 	}
- 	case LCFG_POOL_ADD: {
- 		err = obd_pool_add(obd, lustre_cfg_string(lcfg, 2),
- 				   lustre_cfg_string(lcfg, 3));
- 		GOTO(out, err = 0);
--		break;
- 	}
- 	case LCFG_POOL_REM: {
- 		err = obd_pool_rem(obd, lustre_cfg_string(lcfg, 2),
- 				   lustre_cfg_string(lcfg, 3));
- 		GOTO(out, err = 0);
--		break;
- 	}
- 	case LCFG_POOL_DEL: {
- 		err = obd_pool_del(obd, lustre_cfg_string(lcfg, 2));
- 		GOTO(out, err = 0);
--		break;
- 	}
- 	default: {
- 		err = obd_process_config(obd, sizeof(*lcfg), lcfg);
+ 	if (sbi->ll_flags & LL_SBI_SOM_PREVIEW)
+ 		data->ocd_connect_flags |= OBD_CONNECT_SOM;
+diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+index 9008861..3329055 100644
+--- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
++++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+@@ -531,6 +531,7 @@ static const char *obd_connect_names[] = {
+ 	"lightweight_conn",
+ 	"short_io",
+ 	"pingless",
++	"flock_deadlock",
+ 	"unknown",
+ 	NULL
+ };
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/wiretest.c b/drivers/staging/lustre/lustre/ptlrpc/wiretest.c
+index 6c31947..f7af706 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/wiretest.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/wiretest.c
+@@ -1153,6 +1153,8 @@ void lustre_assert_wire_constants(void)
+ 		 OBD_CONNECT_SHORTIO);
+ 	LASSERTF(OBD_CONNECT_PINGLESS == 0x4000000000000ULL, "found 0x%.16llxULL\n",
+ 		 OBD_CONNECT_PINGLESS);
++	LASSERTF(OBD_CONNECT_FLOCK_DEAD == 0x8000000000000ULL, "found 0x%.16llxULL\n",
++		 OBD_CONNECT_FLOCK_DEAD);
+ 	LASSERTF(OBD_CKSUM_CRC32 == 0x00000001UL, "found 0x%.8xUL\n",
+ 		(unsigned)OBD_CKSUM_CRC32);
+ 	LASSERTF(OBD_CKSUM_ADLER == 0x00000002UL, "found 0x%.8xUL\n",
 -- 
 1.7.9.5
 
