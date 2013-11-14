@@ -1,80 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab3KNMoI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 07:44:08 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:6881 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab3KNMoF (ORCPT
+	id S1753972Ab3KNMoZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 07:44:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38092 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab3KNMoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 07:44:05 -0500
-Message-ID: <5284C45F.5050400@huawei.com>
-Date: Thu, 14 Nov 2013 20:38:55 +0800
-From: Weng Meiling <wengmeiling.weng@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 14 Nov 2013 07:44:06 -0500
+Date: Thu, 14 Nov 2013 04:43:17 -0800
+From: tip-bot for Ingo Molnar <tipbot@zytor.com>
+Message-ID: <tip-aeec4743f2d99b5643e079df95c41032af8c659a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        will.deacon@arm.com, torvalds@linux-foundation.org,
+        jean.pihet@linaro.org, rmk@arm.linux.org.uk, jolsa@redhat.com,
+        acme@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, will.deacon@arm.com,
+        jean.pihet@linaro.org, rmk@arm.linux.org.uk, jolsa@redhat.com,
+        acme@infradead.org, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] tools/perf/build:
+  Fix feature-libunwind-debug-frame handling
+Git-Commit-ID: aeec4743f2d99b5643e079df95c41032af8c659a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] nfsd:add '\n' when read file supported_krb5_enctypes
-References: <52786412.5030403@huawei.com> <527C9170.9030005@huawei.com> <20131113160937.GI28033@fieldses.org>
-In-Reply-To: <20131113160937.GI28033@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.68.127]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 14 Nov 2013 04:43:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/11/14 0:09, J. Bruce Fields wrote:
-> On Fri, Nov 08, 2013 at 03:23:28PM +0800, Weng Meiling wrote:
->>
->> From: Weng Meiling <wengmeiling.weng@huawei.com>
-> 
-> I agree completely that a \n at the end would make more sense.
-> 
-> Have you tested that this nfs-utils is OK with this change?
-> 
-> I suspect that the only code that reads this file anywhere is
-> 
-> 	nfs-utils/utils/gssd/svcgssd_krb5.c:parse_enctypes()
-> 
-> And on a quick skim of that function.... I *think* it should be fine.
-> But I'd be happier if you could confirm that you've tested it.
-> 
-> --b.
-> 
-After this change， starting the nfs server， other host can use the
-server's shared files normally :-).
+Commit-ID:  aeec4743f2d99b5643e079df95c41032af8c659a
+Gitweb:     http://git.kernel.org/tip/aeec4743f2d99b5643e079df95c41032af8c659a
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Thu, 14 Nov 2013 08:25:24 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 14 Nov 2013 13:36:19 +0100
 
-Thanks！
-Weng Meilling
->>
->> Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
->> ---
->>  fs/nfsd/nfsctl.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
->> index 7f55517..31db42c 100644
->> --- a/fs/nfsd/nfsctl.c
->> +++ b/fs/nfsd/nfsctl.c
->> @@ -188,7 +188,7 @@ static const struct file_operations export_features_operations = {
->>  #if defined(CONFIG_SUNRPC_GSS) || defined(CONFIG_SUNRPC_GSS_MODULE)
->>  static int supported_enctypes_show(struct seq_file *m, void *v)
->>  {
->> -	seq_printf(m, KRB5_SUPPORTED_ENCTYPES);
->> +	seq_printf(m, "%s\n", KRB5_SUPPORTED_ENCTYPES);
->>  	return 0;
->>  }
->>
->> -- 
->> 1.8.3.1
->>
->>
->>
->>
-> 
-> 
+tools/perf/build: Fix feature-libunwind-debug-frame handling
 
+Set feature-libunwind-debug-frame. We don't want it in
+CORE_FEATURE_TESTS because it's not the generic case, but we
+need to set it in the !feature-libunwind case.
 
+Also, because x86 distributions typically don't have
+dwarf_find_debug_frame() unwinding method:
+
+  test-libunwind-debug-frame.c:(.text+0x31): undefined reference to `_Ux86_64_dwarf_find_debug_frame'
+
+Restrict this new API to ARM for the time being.
+
+With this patch test-all.c works again, so repeat perf builds
+are  fast again:
+
+  comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
+  [...]
+
+       0,452899660 seconds time elapsed                                          ( +-  0,11% )
+
+While with before it was:
+
+  comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
+  [...]
+
+       1,674001829 seconds time elapsed                                          ( +-  0,16% )
+
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Link: http://lkml.kernel.org/n/tip-scsoctqzmou3rpkixCHezy9e@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/config/Makefile                  | 10 ++++++++--
+ tools/perf/config/feature-checks/test-all.c |  4 ----
+ 2 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 861379e..f7d11a8 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -329,8 +329,14 @@ ifndef NO_LIBUNWIND
+     msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 1.1);
+     NO_LIBUNWIND := 1
+   else
+-    ifneq ($(feature-libunwind-debug-frame), 1)
+-      msg := $(warning No debug_frame support found in libunwind);
++    ifeq ($(ARCH),arm)
++      $(call feature_check,libunwind-debug-frame)
++      ifneq ($(feature-libunwind-debug-frame), 1)
++        msg := $(warning No debug_frame support found in libunwind);
++        CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
++      endif
++    else
++      # non-ARM has no dwarf_find_debug_frame() function:
+       CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
+     endif
+   endif
+diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+index 799865b..59e7a70 100644
+--- a/tools/perf/config/feature-checks/test-all.c
++++ b/tools/perf/config/feature-checks/test-all.c
+@@ -49,10 +49,6 @@
+ # include "test-libunwind.c"
+ #undef main
+ 
+-#define main main_test_libunwind_debug_frame
+-# include "test-libunwind-debug-frame.c"
+-#undef main
+-
+ #define main main_test_libaudit
+ # include "test-libaudit.c"
+ #undef main
