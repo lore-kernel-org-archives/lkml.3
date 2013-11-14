@@ -1,120 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab3KNIct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 03:32:49 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:44282 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755Ab3KNIco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 03:32:44 -0500
-X-AuditID: cbfec7f5-b7fe66d00000432e-7c-52848aaad6d6
-Message-id: <1384417960.5901.14.camel@AMDC1943>
-Subject: Re: [PATCH 1/4] mfd: max14577: Add max14577 MFD driver core
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Date: Thu, 14 Nov 2013 09:32:40 +0100
-In-reply-to: <20131113115018.GE21713@e106331-lin.cambridge.arm.com>
-References: <1384328457-5147-1-git-send-email-k.kozlowski@samsung.com>
- <1384328457-5147-2-git-send-email-k.kozlowski@samsung.com>
- <20131113115018.GE21713@e106331-lin.cambridge.arm.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t/xa7qrulqCDBbvVrQ4uFXTYuOM9awW
-	Ux8+YbO4/uU5q8X8I+dYLSaunMxsceDPDkaLs01v2C3ufz3KaPHtSgeTxeVdc9gs1h65y26x
-	9PpFJovbjSvYLA6vOMBkcbqb1UHAY828NYweCz5fYfeY0P+J0WPnrLvsHptXaHlsWtXJ5nHn
-	2h42j3knAz36tqxi9Pi8SS6AK4rLJiU1J7MstUjfLoErY/PHbtaCbQIV23e+YW1g/MndxcjJ
-	ISFgIrHm9yVmCFtM4sK99WwgtpDAUkaJWR8SIOzPjBJLJuWD2LwC+hKTZ/8BqufgEBZwkfjX
-	WgASZhMwlti8fAlYq4iAukTPri8sXYxcHMwCm1gltmxfDZZgEVCV+L9yLtguTgFnidsnLrCB
-	FAkJ7GGU+P10KhNIghmoe9K8RVAHKUnsbu9kh4jLS2xe85YZ4ghBiR+T77FMYBSYhaRlFpKy
-	WUjKFjAyr2IUTS1NLihOSs810itOzC0uzUvXS87P3cQIibSvOxiXHrM6xCjAwajEw1uwszlI
-	iDWxrLgy9xCjBAezkgjvo8aWICHelMTKqtSi/Pii0pzU4kOMTBycUg2MjSK79P0fTHz+zz4p
-	V/PQyh23XrT/tD0l3P57+XzuOx/uHLwgMb3t9lohIfEVNZovp9hMXqyvavux8Wqd+rUuI+ML
-	YR9tH4dVFGxZe2rJtcfZ/0Sa2FfEpHvZr2Gf8U498y1fmlb7gzfvFddEb6+7v1HpavGk373H
-	nc8uiTP4dGLKjc1/mXcsZ1ZiKc5INNRiLipOBACBLtjakgIAAA==
+	id S1752646Ab3KNIdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 03:33:13 -0500
+Received: from mail.abilis.ch ([195.70.19.74]:13814 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232Ab3KNIdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 03:33:11 -0500
+Date: Thu, 14 Nov 2013 09:32:48 +0100
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Pavel Roskin <proski@gnu.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Noam Camus <noamc@ezchip.com>
+Subject: Re: Uncompressed kernel doesn't build on x86_64
+Message-ID: <20131114083247.GB9687@ab42.lan>
+References: <20131113113418.167b8ffd@IRBT4585>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131113113418.167b8ffd@IRBT4585>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-
-On Wed, 2013-11-13 at 11:50 +0000, Mark Rutland wrote:
-> I see some of_* calls in the code, but no documentation of the binding.
-> As this has more than just a compatible, interrupts, and reg, it needs
-> its own binding document.
+On Wed, Nov 13, 2013 at 11:34:18AM -0500, Pavel Roskin wrote:
+> Hi Christian,
 > 
+> Your recent patch enables uncompressed kernels, but selecting that
+> option (CONFIG_KERNEL_UNCOMPRESSED) fails on x86_86:
 > [...]
+> arch/x86/boot/compressed/Makefile has no provision for uncompressed
+> files.  There is no definition for suffix-$(CONFIG_KERNEL_UNCOMPRESSED)
+> so $(suffix-y) evaluates to an empty string and there is no rule to
+> make vmlinuz.bin.$(suffix-y)
 > 
-> > +static struct mfd_cell max14577_devs[] = {
-> > +       { .name = "max14577-muic",
-> > +               .of_compatible = "maxim,max14577-muic", },
-> 
-> The compatible string looks fine to me, but should be documented.
+> I think the patch should be either reverted or fixed as soon as
+> possible.
 
-Sure, I will add documentation.
+This is an interesting observation, thanks. Although this patch is
+rather intended for embedded architectures than x86, it highlights
+potential issues with self-decompressing images of all sorts. I have no
+way of testing all architectures and so I'm sending two patches in the
+follow-up:
+1. A conservative version of the original patch which requires
+   architectures to explicitly enable uncompresed kernel images if they
+   support compression as well and falls back to previous behaviour if
+   nothing is specified. I have copied Vineet Gupta (maintainer of the
+   ARC platform) since I enabled GZIP and uncompressed kernels for ARC
+   by default.
+2. A patch to enable uncompressed x86 kernels. As stated above, I don't
+   think this makes a lot of sense in itself but it might serve as an
+   example for people working on other platforms with self-extracting
+   kernels and the nozip not-decompression algorithm might be useful on
+   those platforms as well. I only had a single x86-64 machine available
+   to test this, however, so some more testing might be required.
 
-> [...]
-> 
-> > +#ifdef CONFIG_OF
-> > +static struct max14577_platform_data *max14577_i2c_parse_dt(struct device *dev)
-> > +{
-> > +       struct max14577_platform_data *pdata;
-> > +       struct device_node *np = dev->of_node;
-> > +
-> > +       pdata = devm_kzalloc(dev, sizeof(struct max14577_platform_data),
-> > +                            GFP_KERNEL);
-> > +       if (!pdata)
-> > +               return ERR_PTR(-ENOMEM);
-> > +
-> > +       pdata->irq_gpio = of_get_named_gpio(np, "irq_gpio", 0);
-> 
-> In general, '-' is preferred to '_' in property names. This should be
-> irq-gpio.
+> Any suggestions for uncompressed suffix?  I'd go with "copy".  Then the
+> "compression" could be a symlink.  Alternatively, the "." could be
+> included in other suffixes, the uncompressed suffix would be empty and
+> the compression would be an empty statement.
 
-OK.
+I followed H. Peter's suggestion and chose option 2 in patch 2.
 
-
-> What exactly is this used for? I know that others have strong opinions
-> about how gpio/irq interaction should be handled.
-
-Later also Mark Brown raised this. I'll leave this to discussion with
-Kyungmin Park as I'm not entirely the author of the code.
-
-
-> 
-> > +       if (!gpio_is_valid(pdata->irq_gpio)) {
-> > +               dev_err(dev, "Invalid irq_gpio in DT\n");
-> > +               return ERR_PTR(-EINVAL);
-> > +       }
-> > +
-> > +       if (of_property_read_bool(np, "wakeup"))
-> > +               pdata->wakeup = true;
-> 
-> What does this mean? It seems like a remarkably generic name for
-> something that I'd guess is _very_ specific to this particular binding.
-> 
-> It might be worth prefixing it, and is certainly worth having a more
-> precise name.
-
-It is used for marking device as wake up source. This is same code as in
-other max drivers used on Exynos boards (max77693 and max77686).
-
-
-Thanks for review,
-Krzysztof
-
+Greetings,
+  Christian
