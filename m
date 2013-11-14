@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757807Ab3KNU1v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 15:27:51 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36290 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756772Ab3KNUZY (ORCPT
+	id S1757891Ab3KNU3O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 15:29:14 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:42634 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756980Ab3KNU3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 15:25:24 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/10] perf tools: Remove trivial extra semincolon
-Date: Thu, 14 Nov 2013 17:25:07 -0300
-Message-Id: <1384460715-23198-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1384460715-23198-1-git-send-email-acme@infradead.org>
-References: <1384460715-23198-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 14 Nov 2013 15:29:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <1384456378-29970-1-git-send-email-geyslan@gmail.com>
+References: <1384456378-29970-1-git-send-email-geyslan@gmail.com>
+Date: Thu, 14 Nov 2013 18:29:02 -0200
+Message-ID: <CAGG-pUSYRXFyKW_nocM8eitrbdt4YfyMfMq4hN5472bdPUZ7fQ@mail.gmail.com>
+Subject: Re: [PATCH] net/hsr: Fix possible leak in 'hsr_get_node_status()'
+From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+To: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Arvid Brodin <arvid.brodin@xdin.com>,
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <davidlohr@hp.com>
+2013/11/14 Geyslan G. Bem <geyslan@gmail.com>:
+> If 'hsr_get_node_data()' returns error, going directly to 'fail' label
+> doesn't free the memory pointed by 'skb_out'.
+>
+> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+> ---
+>  net/hsr/hsr_netlink.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/net/hsr/hsr_netlink.c b/net/hsr/hsr_netlink.c
+> index 4e66bf6..aef8429 100644
+> --- a/net/hsr/hsr_netlink.c
+> +++ b/net/hsr/hsr_netlink.c
+> @@ -249,7 +249,7 @@ static int hsr_get_node_status(struct sk_buff *skb_in, struct genl_info *info)
+>                         &hsr_node_if2_age,
+>                         &hsr_node_if2_seq);
+>         if (res < 0)
+> -               goto fail;
+> +               goto nla_put_failure;
+>
+>         res = nla_put(skb_out, HSR_A_NODE_ADDR, ETH_ALEN,
+>                                         nla_data(info->attrs[HSR_A_NODE_ADDR]));
+> --
+> 1.8.4.2
+>
 
-Accidentally ran into these, get rid of them.
+It's a Coverity catch: CID 1128855.
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Link: http://lkml.kernel.org/r/1384323864.2527.8.camel@buesod1.americas.hpqcorp.net
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/browser.c  | 2 +-
- tools/perf/util/evlist.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
-index bbc782e364b0..3648d4ec041f 100644
---- a/tools/perf/ui/browser.c
-+++ b/tools/perf/ui/browser.c
-@@ -680,7 +680,7 @@ static void __ui_browser__line_arrow_down(struct ui_browser *browser,
- 	if (end >= browser->top_idx + browser->height)
- 		end_row = browser->height - 1;
- 	else
--		end_row = end - browser->top_idx;;
-+		end_row = end - browser->top_idx;
- 
- 	ui_browser__gotorc(browser, row, column);
- 	SLsmg_draw_vline(end_row - row + 1);
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index dc6fa3fbb180..5ce2ace2d6c1 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1148,7 +1148,7 @@ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp)
- 				   perf_evsel__name(evsel));
- 	}
- 
--	return printed + fprintf(fp, "\n");;
-+	return printed + fprintf(fp, "\n");
- }
- 
- int perf_evlist__strerror_tp(struct perf_evlist *evlist __maybe_unused,
 -- 
-1.8.1.4
+Regards,
 
+Geyslan G. Bem
+hackingbits.com
