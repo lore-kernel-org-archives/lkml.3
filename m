@@ -1,275 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265Ab3KNKh3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 05:37:29 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:61223 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752939Ab3KNKh0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 05:37:26 -0500
-X-IronPort-AV: E=Sophos;i="4.93,699,1378828800"; 
-   d="scan'208";a="9034437"
-Message-ID: <5284A667.7020103@cn.fujitsu.com>
-Date: Thu, 14 Nov 2013 18:31:03 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Chao Yu <chao2.yu@samsung.com>
-CC: "'???'" <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        =?GB2312?B?J8y35q0n?= <shu.tan@samsung.com>
-Subject: Re: [f2fs-dev] [PATCH 2/2] f2fs: read contiguous sit entry pages
- by merging for mount performance
-References: <000101cedf66$c2e7ea40$48b7bec0$@samsung.com> <5282F470.4020401@cn.fujitsu.com> <000001cee047$e7bebce0$b73c36a0$@samsung.com>
-In-Reply-To: <000001cee047$e7bebce0$b73c36a0$@samsung.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/14 18:35:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/14 18:35:36
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+	id S1752979Ab3KNKl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 05:41:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43623 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752030Ab3KNKlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 05:41:55 -0500
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Petr Mladek <pmladek@suse.cz>
+Subject: [PATCH v3 0/8] x86: use new text_poke_bp in ftrace
+Date: Thu, 14 Nov 2013 11:41:18 +0100
+Message-Id: <1384425686-21018-1-git-send-email-pmladek@suse.cz>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yu,
-On 11/13/2013 04:10 PM, Chao Yu wrote:
+The commit fd4363fff3d9 (x86: Introduce int3 (breakpoint)-based instruction
+patching) uses the same technique that has been used in ftrace since 08d636b
+("ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine")
 
-> Hi Gu,
-> 
->> -----Original Message-----
->> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
->> Sent: Wednesday, November 13, 2013 11:39 AM
->> To: Chao Yu
->> Cc: ???; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; Ì·æ­
->> Subject: Re: [f2fs-dev] [PATCH 2/2] f2fs: read contiguous sit entry pages by merging for mount performance
->>
->> Hi Yu,
->> On 11/12/2013 01:18 PM, Chao Yu wrote:
->>
->>> Previously we read sit entries page one by one, this method lost the chance of reading contiguous page together.
->>> So we read pages as contiguous as possible for better mount performance.
->>>
->>> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
->>> ---
->>>  fs/f2fs/f2fs.h    |    2 ++
->>>  fs/f2fs/segment.c |   65 ++++++++++++++++++++++++++++++++++++++++++++++++++---
->>>  fs/f2fs/segment.h |    2 ++
->>>  3 files changed, 66 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
->>> index 0afdcec..bfe9d87 100644
->>> --- a/fs/f2fs/f2fs.h
->>> +++ b/fs/f2fs/f2fs.h
->>> @@ -1113,6 +1113,8 @@ struct page *find_data_page(struct inode *, pgoff_t, bool);
->>>  struct page *get_lock_data_page(struct inode *, pgoff_t);
->>>  struct page *get_new_data_page(struct inode *, struct page *, pgoff_t, bool);
->>>  int f2fs_readpage(struct f2fs_sb_info *, struct page *, block_t, int);
->>> +void f2fs_submit_read_bio(struct f2fs_sb_info *, int);
->>> +void submit_read_page(struct f2fs_sb_info *, struct page *, block_t, int);
->>
->> Better to move these declarations into PATCH 1/2.
-> 
-> Okay, I will move it to the right place.
-> 
->>
->>>  int do_write_data_page(struct page *);
->>>
->>>  /*
->>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
->>> index 86dc289..414c351 100644
->>> --- a/fs/f2fs/segment.c
->>> +++ b/fs/f2fs/segment.c
->>> @@ -1474,19 +1474,72 @@ static int build_curseg(struct f2fs_sb_info *sbi)
->>>  	return restore_curseg_summaries(sbi);
->>>  }
->>>
->>> +static int ra_sit_pages(struct f2fs_sb_info *sbi, int start,
->>> +					int nrpages, bool *is_order)
->>> +{
->>> +	struct address_space *mapping = sbi->meta_inode->i_mapping;
->>> +	struct sit_info *sit_i = SIT_I(sbi);
->>> +	struct page *page;
->>> +	block_t blk_addr;
->>> +	int blkno, readcnt = 0;
->>> +	int sit_blk_cnt = SIT_BLK_CNT(sbi);
->>> +
->>> +	for (blkno = start; blkno < start + nrpages; blkno++) {
->>> +
->>> +		if (blkno >= sit_blk_cnt)
->>
->> Merge these two judgements:
->> for (blkno = start; blkno < start + nrpages && blkno < sit_blk_cnt; blkno++)
-> 
-> Right, but the line may over 80 characters, if we split this line, it seems not suitable.
-> So how about this?
-> 	int blkno = start, readcnt = 0;
-> 	int sit_blk_cnt = SIT_BLK_CNT(sbi);
-> 
-> 	for (; blkno < start + nrpages && blkno < sit_blk_cnt; blkno++) {
+This patch set merge the two implementations and remove duplicities from
+the ftrace side.
 
-More neat£¡
+    + First four patches improve the generic int3-based framework to be usable
+      with ftrace. All the changes are based on ideas already used in ftrace.
+      They are needed to keep the functionality and efficiency.
 
-> 
->>
->>> +			goto out;
->>
->>> +		if ((!f2fs_test_bit(blkno, sit_i->sit_bitmap) ^ !*is_order)) {
->>> +			*is_order = !*is_order;
->>> +			goto out;
->>
->> 'Break' seems more suitable.
-> 
-> Yes, you are right.
-> 
->>
->>> +		}
->>> +
->>> +		blk_addr = sit_i->sit_base_addr + blkno;
->>> +		if (*is_order)
->>> +			blk_addr += sit_i->sit_blocks;
->>> +repeat:
->>> +		page = grab_cache_page(mapping, blk_addr);
->>> +		if (!page) {
->>> +			cond_resched();
->>> +			goto repeat;
->>> +		}
->>> +		if (PageUptodate(page)) {
->>> +			f2fs_put_page(page, 1);
->>> +			readcnt++;
->>> +			goto out;
->>
->> Here may be 'Continue'.
-> 
-> 'Out' label could be removed after this modification.
-> It seems more neat.
+    + The 5th patch speedups the original ftrace code but it is useful also
+      with the generic functions.
 
-Right.
-
-> 
->>
->>> +		}
->>> +
->>> +		submit_read_page(sbi, page, blk_addr, READ_SYNC);
->>> +
->>> +		page_cache_release(page);
->>
->> Put page here seems not a good idea, otherwise all your work may be in vain.
-> 
-> You mean that pages could be reclaimed by VM when out of memory?
-> IMO, it is designed more like VM read ahead because we should concern 
-> memory state of system, and still we have second chance to read these pages.
-> 
-
-Yes, but we can avoid to read the same page secondly, that's a serious waste, if we still
-reread the page in get_current_sit_page(), all the improvement will disappear.
-
-> Could we use mark_page_accessed () to delay VM reclaimed them?
-
-IMO, this is the right way.
-
-> 
->>
->>> +		readcnt++;
->>> +	}
->>> +out:
->>> +	f2fs_submit_read_bio(sbi, READ_SYNC);
->>> +	return readcnt;
->>> +}
->>> +
->>>  static void build_sit_entries(struct f2fs_sb_info *sbi)
->>>  {
->>>  	struct sit_info *sit_i = SIT_I(sbi);
->>>  	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_COLD_DATA);
->>>  	struct f2fs_summary_block *sum = curseg->sum_blk;
->>> -	unsigned int start;
->>> +	bool is_order = f2fs_test_bit(0, sit_i->sit_bitmap) ? true : false;
->>> +	int sit_blk_cnt = SIT_BLK_CNT(sbi);
->>> +	int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
->>> +	unsigned int i, start, end;
->>> +	unsigned int readed, start_blk = 0;
->>>
->>> -	for (start = 0; start < TOTAL_SEGS(sbi); start++) {
->>> +next:
->>> +	readed = ra_sit_pages(sbi, start_blk, bio_blocks, &is_order);
->>
->> In fact, you know how many blocks that you want to read(SIT_BLK_CNT(sbi)),
->> so here sit_blk_cnt is more suitable than a MAX one, and it also can make
->> the logic of ra_sit_pages more simple.
-> 
-> Right.
-> 
-> BTW, I am considering that maybe we should send dynamical cnt which 
-> depend on memory state of system more than the logic of ra_sit_pages.
-> May it's the work of anther patch. How do you think?
-
-Agree. It's the same as the way that I suggested previously, and it can make
-the contiguous pages reading api more common.
-
-Regards,
-Gu
-
-> 
->>
->>> +
->>> +	start = start_blk * sit_i->sents_per_block;
->>> +	end = (start_blk + readed) * sit_i->sents_per_block;
->>> +
->>> +	for (; start < end && start < TOTAL_SEGS(sbi); start++) {
->>>  		struct seg_entry *se = &sit_i->sentries[start];
->>>  		struct f2fs_sit_block *sit_blk;
->>>  		struct f2fs_sit_entry sit;
->>>  		struct page *page;
->>> -		int i;
->>>
->>>  		mutex_lock(&curseg->curseg_mutex);
->>>  		for (i = 0; i < sits_in_cursum(sum); i++) {
->>> @@ -1497,6 +1550,7 @@ static void build_sit_entries(struct f2fs_sb_info *sbi)
->>>  			}
->>>  		}
->>>  		mutex_unlock(&curseg->curseg_mutex);
->>> +
->>>  		page = get_current_sit_page(sbi, start);
->>>  		sit_blk = (struct f2fs_sit_block *)page_address(page);
->>>  		sit = sit_blk->entries[SIT_ENTRY_OFFSET(sit_i, start)];
->>> @@ -1509,6 +1563,11 @@ got_it:
->>>  			e->valid_blocks += se->valid_blocks;
->>>  		}
->>>  	}
->>> +
->>> +	start_blk += readed;
->>> +	if (start_blk >= sit_blk_cnt)
->>> +		return;
->>> +	goto next;
->>
->> Using do {...} while(start_blk < sit_blk_cnt) rather than the so big upstream goto.
-> 
-> Yes, you are right.
-> 
->>
->>>  }
->>>
->>>  static void init_free_segmap(struct f2fs_sb_info *sbi)
->>> diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
->>> index 269f690..ad5b9f1 100644
->>> --- a/fs/f2fs/segment.h
->>> +++ b/fs/f2fs/segment.h
->>> @@ -83,6 +83,8 @@
->>>  	(segno / SIT_ENTRY_PER_BLOCK)
->>>  #define	START_SEGNO(sit_i, segno)		\
->>>  	(SIT_BLOCK_OFFSET(sit_i, segno) * SIT_ENTRY_PER_BLOCK)
->>> +#define SIT_BLK_CNT(sbi)			\
->>> +	((TOTAL_SEGS(sbi) + SIT_ENTRY_PER_BLOCK - 1) / SIT_ENTRY_PER_BLOCK)
->>>  #define f2fs_bitmap_size(nr)			\
->>>  	(BITS_TO_LONGS(nr) * sizeof(unsigned long))
->>>  #define TOTAL_SEGS(sbi)	(SM_I(sbi)->main_segments)
-> 
-> Thanks!
-> 
-> Regards,
-> Yu
-> 
-> 
-> 
+    + The last three patches modifies different parts of the current
+      x86-specific ftrace implementation and use the generic functions there.
 
 
+Changes in v3:
+
+    + use the new text_poke_part only in text_poke_bp_list because it
+      works only with read-write code
+    + update all text_poke functions to return error instead on calling BUG()
+    + handle text_poke* function return values whenever they were used
+
+Changes in v2:
+
+    + check for number of CPUs instead of enabling IRQs when syncing CPUs;
+      suggested by Steven Rostedt, Paul E. McKenney, and Masami Hiramatsu
+    + return error codes in text_poke_part and text_poke_bp; needed by ftrace
+    + reverted changes in text_poke_bp; it patches only single address again
+    + introduce text_poke_bp_iter for patching multiple addresses:
+	+ uses iterator and callbacks instead of copying data
+	+ checks old code before patching
+	+ returns error code and more info about error; needed by ftrace
+	+ provides recovery mechanism in case of errors
+    + update ftrace.c to use the new text_poke_bp_iter
+    + split notrace __probe_kernel_read into separate patch because it
+      is useful for original ftrace code as well
+    + rebased on current kernel tip and updated performance statistics;
+      it started to be slower on idle machine after the commit commit
+      c229828ca6bc62d6c654 (rcu: Throttle rcu_try_advance_all_cbs() execution)
+
+I tried to switch between 7 tracers: blk, branch, function_graph, wakeup_rt,
+irqsoff, function, and nop. Every tracer has also been enabled and disabled.
+With 500 cycles, I got these times before the change:
+
+    real    18m2.477s     18m8.654s     18m9.196s
+    user    0m0.008s      0m0.008s	0m0.012s
+    sys     0m17.316s     0m17.104s	0m17.300s
+
+and after
+
+    real    17m19.055s    17m29.200s    17m27.456
+    user    0m0.052s      0m0.056s	0m0.052s
+    sys     0m20.236s     0m20.068s	0m20.264s
+
+The patches are against kernel/git/tip/tip.git on top of the commit
+af7949e870d4632b Merge branch 'tools/kvm perf fixes'
+
+Petr Mladek (8):
+  x86: allow to handle errors in text_poke function family
+  x86: allow to call text_poke_bp during boot
+  x86: add generic function to modify more calls using int3 framework
+  x86: speed up int3-based patching using direct write
+  x86: do not trace __probe_kernel_read
+  x86: modify ftrace function using the new int3-based framework
+  x86: patch all traced function calls using the int3-based framework
+  x86: enable/disable ftrace graph call using new int3-based framework
+
+ arch/x86/include/asm/alternative.h |  43 ++-
+ arch/x86/kernel/alternative.c      | 374 +++++++++++++++++++++---
+ arch/x86/kernel/ftrace.c           | 571 ++++++++-----------------------------
+ arch/x86/kernel/jump_label.c       |  11 +-
+ arch/x86/kernel/kgdb.c             |  11 +-
+ arch/x86/kernel/kprobes/core.c     |  10 +-
+ arch/x86/kernel/kprobes/opt.c      |   8 +-
+ arch/x86/kernel/traps.c            |  10 -
+ include/linux/ftrace.h             |   6 -
+ mm/maccess.c                       |   2 +-
+ 10 files changed, 530 insertions(+), 516 deletions(-)
+
+-- 
+1.8.4
