@@ -1,298 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab3KNQhM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:37:12 -0500
-Received: from ihemail3.lucent.com ([135.245.0.37]:36525 "EHLO
-	ihemail3.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481Ab3KNQg7 (ORCPT
+	id S1755035Ab3KNQia (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:38:30 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:35228 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753654Ab3KNQiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:36:59 -0500
-From: James Solner <solner@alcatel-lucent.com>
-To: dhowells@redhat.com, Josh Boyer <jwboyer@fedoraproject.org>,
-        Randy Dunlap <rdunlap@infradead.org>, jwboyer@fedoraproject.org,
-        rusty@rustcorp.com.au
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4] Add Documentation/module-signing.txt file
-Date: Thu, 14 Nov 2013 10:36:19 -0600
-Message-ID: <3184360.WhYjmYFIyN@cmlinux10.ih.lucent.com>
-User-Agent: KMail/4.11.3 (Linux/3.12.0-PRV02+; KDE/4.11.3; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 14 Nov 2013 11:38:24 -0500
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH 00/39] staging/lustre: patch bomb 2
+Date: Fri, 15 Nov 2013 00:32:23 +0800
+Message-Id: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Documentation/module-signing.txt file that is
-currently missing from the Documentation directory. The init/Kconfig
-file references the Documentation/module-signing.txt file to explain
-how kernel module signing works. This patch supplies this documentation. 
+Hi Greg,
 
-The initial version of this patch provided old documentation
-that was a mixture of the old RHEL style GPG signing. 
+This is the second patch bomb. All 39 patches are ported from Lustre tree.
+And it syncs kernel client with Lustre tree up to commit
+(LU-3581 osc: Lustre returns EINTR from writes when SA_RESTART is set).
 
-Version 1: Updated the documentation to described the current
-           implementation using x509 certificate signing. 
+Thanks,
+Tao
 
-Version 2: fixes grammar/spelling mistakes and removes
-           trailing whitespaces. 
+Cc: Andreas Dilger <andreas.dilger@intel.com>
 
-Version 3, fixes grammar/spelling mistakes. 
+Andreas Dilger (1):
+  staging/lustre/osd-ldiskfs: remove dependency on mdd module
 
-Version 4: Include updates from David Howells and fixes for
-           spelling mistakes.            
+Andriy Skulysh (2):
+  staging/lustre/ptlrpc: add rpc_cache
+  staging/lustre/ldlm: ldlm_flock_deadlock() ASSERTION( req != lock )
+    failed
 
-Signed-off-by: James Solner <solner@alcatel-lucent.com>
+Aurelien Degremont (1):
+  staging/lustre/hsm: copy start error should set HP_FLAG_COMPLETED
 
+Bob Glossman (1):
+  staging/lustre/libcfs: improve validity test for valid file
+    descriptors
 
-diff --git a/Documentation/module-signing.txt b/Documentation/module-signing.txt
-new file mode 100644
-index 0000000..c34815d
---- /dev/null
-+++ b/Documentation/module-signing.txt
-@@ -0,0 +1,240 @@
-+			==============================
-+			KERNEL MODULE SIGNING FACILITY
-+			==============================
-+
-+CONTENTS
-+
-+ - Overview.
-+ - Configuring module signing.
-+ - Generating signing keys.
-+ - Public keys in the kernel.
-+ - Manually signing modules.
-+ - Signed modules and stripping.
-+ - Loading signed modules.
-+ - Non-valid signatures and unsigned modules.
-+ - Administering/protecting the private key.
-+
-+
-+========
-+OVERVIEW
-+========
-+
-+The kernel module signing facility cryptographically signs modules during
-+installation and then checks the signature upon loading the module.  This
-+allows increased kernel security by disallowing the loading of unsigned modules
-+or modules signed with an invalid key.  Module signing increases security by
-+making it harder to load a malicious module into the kernel.  The module
-+signature checking is done by the kernel so that it is not necessary to have
-+trusted userspace bits.
-+
-+This facility uses X.509 ITU-T standard certificates to encode the public keys
-+involved.  The signatures are not themselves encoded in any industrial standard
-+type.  The facility currently only supports the RSA public key encryption
-+standard (though it is pluggable and permits others to be used).  The possible
-+hash algorithms that can be used are SHA-1, SHA-224, SHA-256, SHA-384, and
-+SHA-512 (the algorithm is selected by data in the signature).
-+
-+
-+==========================
-+CONFIGURING MODULE SIGNING
-+==========================
-+
-+The module signing facility is enabled by going to the "Enable Loadable Module
-+Support" section of the kernel configuration and turning on
-+
-+	CONFIG_MODULE_SIG	"Module signature verification"
-+
-+This has a number of options available:
-+
-+ (1) "Require modules to be validly signed" (CONFIG_MODULE_SIG_FORCE)
-+
-+     This specifies how the kernel should deal with a module that has a
-+     signature for which the key is not known or a module that is unsigned.
-+
-+     If this is off (ie. "permissive"), then modules for which the key is not
-+     available and modules that are unsigned are permitted, but the kernel will
-+     be marked as being tainted.
-+
-+     If this is on (ie. "restrictive"), only modules that have a valid
-+     signature that can be verified by a public key in the kernel's possession
-+     will be loaded.  All other modules will generate an error.
-+
-+     Irrespective of the setting here, if the module has a signature block that
-+     cannot be parsed, it will be rejected out of hand.
-+
-+
-+ (2) "Automatically sign all modules" (CONFIG_MODULE_SIG_ALL)
-+
-+     If this is on then modules will be automatically signed during the
-+     modules_install phase of a build.  If this is off, then the modules must
-+     be signed manually using:
-+
-+	scripts/sign-file
-+
-+
-+ (3) "Which hash algorithm should modules be signed with?"
-+
-+     This presents a choice of which hash algorithm the installation phase will
-+     sign the modules with:
-+
-+	CONFIG_SIG_SHA1		"Sign modules with SHA-1"
-+	CONFIG_SIG_SHA224	"Sign modules with SHA-224"
-+	CONFIG_SIG_SHA256	"Sign modules with SHA-256"
-+	CONFIG_SIG_SHA384	"Sign modules with SHA-384"
-+	CONFIG_SIG_SHA512	"Sign modules with SHA-512"
-+
-+     The algorithm selected here will also be built into the kernel (rather
-+     than being a module) so that modules signed with that algorithm can have
-+     their signatures checked without causing a dependency loop.
-+
-+
-+=======================
-+GENERATING SIGNING KEYS
-+=======================
-+
-+Cryptographic keypairs are required to generate and check signatures.  A
-+private key is used to generate a signature and the corresponding public key is
-+used to check it.  The private key is only needed during the build, after which
-+it can be deleted or stored securely.  The public key gets built into the
-+kernel so that it can be used to check the signatures as the modules are
-+loaded.
-+
-+Under normal conditions, the kernel build will automatically generate a new
-+keypair using openssl if one does not exist in the files:
-+
-+	signing_key.priv
-+	signing_key.x509
-+
-+during the building of vmlinux (the public part of the key needs to be built
-+into vmlinux) using parameters in the:
-+
-+	x509.genkey
-+
-+file (which is also generated if it does not already exist).
-+
-+It is strongly recommended that you provide your own x509.genkey file.
-+
-+Most notably, in the x509.genkey file, the req_distinguished_name section
-+should be altered from the default:
-+
-+	[ req_distinguished_name ]
-+	O = Magrathea
-+	CN = Glacier signing key
-+	emailAddress = slartibartfast@magrathea.h2g2
-+
-+The generated RSA key size can also be set with:
-+
-+	[ req ]
-+	default_bits = 4096
-+
-+
-+It is also possible to manually generate the key private/public files using the
-+x509.genkey key generation configuration file in the root node of the Linux
-+kernel sources tree and the openssl command.  The following is an example to
-+generate the public/private key files:
-+
-+	openssl req -new -nodes -utf8 -sha256 -days 36500 -batch -x509 \
-+	   -config x509.genkey -outform DER -out signing_key.x509 \
-+	   -keyout signing_key.priv
-+
-+
-+=========================
-+PUBLIC KEYS IN THE KERNEL
-+=========================
-+
-+The kernel contains a ring of public keys that can be viewed by root.  They're
-+in a keyring called ".system_keyring" that can be seen by:
-+
-+	[root@deneb ~]# cat /proc/keys
-+	...
-+	223c7853 I------     1 perm 1f030000     0     0 keyring   .system_keyring: 1
-+	302d2d52 I------     1 perm 1f010000     0     0 asymmetri Fedora kernel signing key: d69a84e6bce3d216b979e9505b3e3ef9a7118079: X509.RSA a7118079 []
-+	...
-+
-+Beyond the public key generated specifically for module signing, any file
-+placed in the kernel source root directory or the kernel build root directory
-+whose name is suffixed with ".x509" will be assumed to be an X.509 public key
-+and will be added to the keyring.
-+
-+Further, the architecture code may take public keys from a hardware store and
-+add those in also (e.g. from the UEFI key database).
-+
-+Finally, it is possible to add additional public keys by doing:
-+
-+	keyctl padd asymmetric "" [.system_keyring-ID] <[key-file]
-+
-+e.g.:
-+
-+	keyctl padd asymmetric "" 0x223c7853 <my_public_key.x509
-+
-+Note, however, that the kernel will only permit keys to be added to
-+.system_keyring _if_ the new key's X.509 wrapper is validly signed by a key
-+that is already resident in the .system_keyring at the time the key was added.
-+
-+
-+=========================
-+MANUALLY SIGNING MODULES
-+=========================
-+
-+To manually sign a module, use the scripts/sign-file tool available in
-+the Linux kernel source tree.  The script requires 4 arguments:
-+
-+	1.  The hash algorithm (e.g., sha512)
-+	2.  The private key filename
-+	3.  The public key filename
-+	4.  The kernel module to be signed
-+
-+The following is an example to sign a kernel module:
-+
-+	scripts/sign-file sha512 signkey.priv \
-+		signkey.x509 module.ko
-+
-+The hash algorithm used does not have to match the one configured, but if it
-+doesn't, you should make sure that hash algorithm is either built into the
-+kernel or can be loaded without requiring itself.
-+
-+
-+============================
-+SIGNED MODULES AND STRIPPING
-+============================
-+
-+A signed module has a digital signature simply appended at the end.  The string
-+"~Module signature appended~." at the end of the module's file confirms that a
-+signature is present but it does not confirm that the signature is valid!
-+
-+Signed modules are BRITTLE as the signature is outside of the defined ELF
-+container.  Thus they MAY NOT be stripped once the signature is computed and
-+attached.  Note the entire module is the signed payload, including any and all
-+debug information present at the time of signing.
-+
-+
-+======================
-+LOADING SIGNED MODULES
-+======================
-+
-+Modules are loaded with insmod, modprobe, init_module() or finit_module(),
-+exactly as for unsigned modules as no processing is done in userspace.  The
-+signature checking is all done within the kernel.
-+
-+
-+=========================================
-+NON-VALID SIGNATURES AND UNSIGNED MODULES
-+=========================================
-+
-+If CONFIG_MODULE_SIG_FORCE is enabled or enforcemodulesig=1 is supplied on
-+the kernel command line, the kernel will only load validly signed modules
-+for which it has a public key.   Otherwise, it will also load modules that are
-+unsigned.   Any module for which the kernel has a key, but which proves to have
-+a signature mismatch will not be permitted to load.
-+
-+Any module that has an unparseable signature will be rejected.
-+
-+
-+=========================================
-+ADMINISTERING/PROTECTING THE PRIVATE KEY
-+=========================================
-+
-+Since the private key is used to sign modules, viruses and malware could use
-+the private key to sign modules and compromise the operating system.  The
-+private key must be either destroyed or moved to a secure location and not kept
-+in the root node of the kernel source tree.
+Christopher J. Morrone (1):
+  staging/lustre/changelogs: Account for changelog_ext_rec in
+    CR_MAXSIZE
+
+Dmitry Eremin (2):
+  staging/lustre/lnet: build Lustre with Intel OFED for Xeon Phi
+  staging/lustre/build: build error with gcc 4.7.0 20110509
+
+Fan Yong (1):
+  staging/lustre/llite: return compatible fsid for statfs
+
+Gaurav Mahajan (1):
+  staging/lustre/llite: Delaying creation of client side proc entries.
+
+Henri Doreau (1):
+  staging/lustre/utils: Posix copytool fixes.
+
+JC Lafoucriere (3):
+  staging/lustre/mdt: CDT cleanup follow-on patch
+  staging/lustre/lmv: update coding style
+  staging/lustre/mdt: HSM EXIST event not triggered at last rm/mv
+
+James Simmons (5):
+  staging/lustre/lvfs: remove llog_lvfs.c and other lvfs code from llog
+  staging/lustre/autoconf: remove LC_LOCK_MAP_ACQUIRE test
+  staging/lustre/autoconf: remove LC_FS_STRUCT_USE_PATH
+  staging/lustre/autoconf: remove LC_SECURITY_PLUG test
+  staging/lustre/osc: Lustre returns EINTR from writes when SA_RESTART
+    is set
+
+Jinshan Xiong (4):
+  staging/lustre/hsm: small fixes for HSM
+  staging/lustre/llite: reset writeback index in ll_writepages
+  staging/lustre/llite: cancel open lock before closing file
+  staging/lustre/hsm: Add support to drop all pages for ll_data_version
+
+John L. Hammond (3):
+  staging/lustre/hsm: remove hsm_nl proc file
+  staging/lustre/clio: honor O_NOATIME
+  staging/lustre/obd: add md_stats to MDC and LMV devices
+
+Li Xi (1):
+  staging/lustre/libcfs: Add relocation function to libcfs heap
+
+Mikhail Pershin (1):
+  staging/lustre/obdclass: fix wrong device put in case of race
+
+Ned Bass (1):
+  staging/lustre/mdc: document mdc_rpc_lock
+
+Niu Yawei (1):
+  staging/lustre/llite: use 64bits flags in ll_lov_setea()
+
+Sebastien Buisson (5):
+  staging/lustre/build: fix 'deadcode' errors
+  staging/lustre/build: fix 'integer handling' issues
+  staging/lustre/build: fix 'data race condition' issues
+  staging/lustre/build: fix 'NULL pointer dereference' errors
+  staging/lustre/build: fix 'no effect' errors
+
+Swapnil Pimpale (1):
+  staging/lustre/lov: Get the correct address of lmm_objects
+
+Vitaly Fertman (1):
+  staging/lustre/clio: wrong cl_lock usage
+
+wang di (2):
+  staging/lustre/lmv: choose right MDT for open by FID
+  staging/lustre/osd: remove fld lookup during configuration
+
+ .../lustre/include/linux/libcfs/libcfs_debug.h     |  129 +--
+ .../lustre/include/linux/libcfs/libcfs_heap.h      |    1 +
+ .../include/linux/libcfs/libcfs_kernelcomm.h       |    1 +
+ .../staging/lustre/lnet/klnds/o2iblnd/o2iblnd.h    |    2 +
+ drivers/staging/lustre/lnet/selftest/conrpc.c      |    8 +-
+ drivers/staging/lustre/lustre/include/cl_object.h  |    6 +-
+ .../lustre/lustre/include/linux/lustre_compat25.h  |   14 -
+ .../lustre/lustre/include/linux/lustre_fsfilt.h    |   84 --
+ drivers/staging/lustre/lustre/include/linux/lvfs.h |    5 -
+ .../lustre/lustre/include/lustre/lustre_idl.h      |    8 +-
+ .../lustre/lustre/include/lustre/lustre_user.h     |   16 +-
+ .../lustre/lustre/include/lustre/lustreapi.h       |    7 +-
+ .../staging/lustre/lustre/include/lustre_capa.h    |   25 +-
+ .../staging/lustre/lustre/include/lustre_export.h  |    1 -
+ drivers/staging/lustre/lustre/include/lustre_log.h |    4 -
+ drivers/staging/lustre/lustre/include/lustre_mdc.h |   18 +
+ .../staging/lustre/lustre/include/lustre_update.h  |    3 +-
+ drivers/staging/lustre/lustre/include/md_object.h  |   20 -
+ drivers/staging/lustre/lustre/include/obd.h        |  139 ++--
+ drivers/staging/lustre/lustre/include/obd_class.h  |  129 ++-
+ drivers/staging/lustre/lustre/ldlm/ldlm_flock.c    |    3 +
+ drivers/staging/lustre/lustre/libcfs/debug.c       |  131 +--
+ drivers/staging/lustre/lustre/libcfs/heap.c        |   18 +-
+ .../lustre/lustre/libcfs/kernel_user_comm.c        |   10 +-
+ .../lustre/lustre/libcfs/linux/linux-curproc.c     |    4 +-
+ drivers/staging/lustre/lustre/llite/dir.c          |   30 +-
+ drivers/staging/lustre/lustre/llite/file.c         |   98 ++-
+ .../staging/lustre/lustre/llite/llite_internal.h   |    6 +-
+ drivers/staging/lustre/lustre/llite/llite_lib.c    |   25 +-
+ drivers/staging/lustre/lustre/llite/llite_nfs.c    |   16 -
+ drivers/staging/lustre/lustre/llite/rw.c           |    6 +-
+ drivers/staging/lustre/lustre/llite/xattr.c        |   11 +-
+ drivers/staging/lustre/lustre/lmv/lmv_intent.c     |    8 +-
+ drivers/staging/lustre/lustre/lmv/lmv_obd.c        |  115 +--
+ drivers/staging/lustre/lustre/lov/lov_io.c         |    4 +-
+ drivers/staging/lustre/lustre/lov/lov_merge.c      |   13 +-
+ drivers/staging/lustre/lustre/lov/lov_obd.c        |    2 +-
+ drivers/staging/lustre/lustre/lov/lov_pack.c       |    3 +-
+ drivers/staging/lustre/lustre/lvfs/fsfilt_ext3.c   |  760 ------------------
+ drivers/staging/lustre/lustre/lvfs/lvfs_lib.c      |    6 +
+ drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |   17 +-
+ drivers/staging/lustre/lustre/mdc/lproc_mdc.c      |   73 --
+ drivers/staging/lustre/lustre/mdc/mdc_lib.c        |    2 +-
+ drivers/staging/lustre/lustre/mdc/mdc_request.c    |   10 +-
+ drivers/staging/lustre/lustre/obdclass/capa.c      |   41 +
+ drivers/staging/lustre/lustre/obdclass/cl_lock.c   |    2 +-
+ drivers/staging/lustre/lustre/obdclass/class_obd.c |    5 +
+ drivers/staging/lustre/lustre/obdclass/llog_cat.c  |   34 +-
+ .../staging/lustre/lustre/obdclass/llog_ioctl.c    |    6 +-
+ drivers/staging/lustre/lustre/obdclass/llog_lvfs.c |  847 --------------------
+ .../staging/lustre/lustre/obdclass/local_storage.c |   13 +-
+ .../lustre/lustre/obdclass/lprocfs_status.c        |   58 +-
+ drivers/staging/lustre/lustre/osc/osc_cache.c      |   43 +-
+ drivers/staging/lustre/lustre/osc/osc_io.c         |   21 +-
+ drivers/staging/lustre/lustre/osc/osc_lock.c       |   19 +-
+ drivers/staging/lustre/lustre/ptlrpc/client.c      |   42 +-
+ drivers/staging/lustre/lustre/ptlrpc/events.c      |    2 +-
+ .../staging/lustre/lustre/ptlrpc/ptlrpc_internal.h |    4 +
+ .../staging/lustre/lustre/ptlrpc/ptlrpc_module.c   |   24 +-
+ drivers/staging/lustre/lustre/ptlrpc/sec.c         |    6 +-
+ drivers/staging/lustre/lustre/ptlrpc/sec_bulk.c    |    1 -
+ drivers/staging/lustre/lustre/ptlrpc/sec_config.c  |    2 +-
+ drivers/staging/lustre/lustre/ptlrpc/service.c     |   13 +-
+ 63 files changed, 772 insertions(+), 2402 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/lvfs/fsfilt_ext3.c
+ delete mode 100644 drivers/staging/lustre/lustre/obdclass/llog_lvfs.c
+
 -- 
-1.7.12.4
-
----
+1.7.9.5
 
