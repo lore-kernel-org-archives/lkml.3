@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab3KNUZt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 15:25:49 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36312 "EHLO
+	id S1757005Ab3KNUZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 15:25:29 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36261 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756919Ab3KNUZ2 (ORCPT
+	with ESMTP id S1755253Ab3KNUZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 15:25:28 -0500
+	Thu, 14 Nov 2013 15:25:21 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Azat Khuzhin <a3at.mail@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/10] perf probe: Add '--demangle'/'--no-demangle'
-Date: Thu, 14 Nov 2013 17:25:14 -0300
-Message-Id: <1384460715-23198-10-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/10] perf trace: Tweak summary output
+Date: Thu, 14 Nov 2013 17:25:06 -0300
+Message-Id: <1384460715-23198-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384460715-23198-1-git-send-email-acme@infradead.org>
 References: <1384460715-23198-1-git-send-email-acme@infradead.org>
@@ -25,49 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Azat Khuzhin <a3at.mail@gmail.com>
+From: Pekka Enberg <penberg@kernel.org>
 
-You can't pass demangled name into "perf probe", because of special chars:
-./perf probe -f -x /tmp/a.out 'foo(int)'
-Semantic error :There is non-digit char in line number.
+Tweak the summary output as suggested by Ingo Molnar:
 
-And you can't even pass without demangling (because it search symbol in
-DSO with demangle=true):
-./perf probe -f -x /tmp/a.out _Z3fooi
-no symbols found in /tmp/a.out, maybe install a debug package?
+  [penberg@localhost ~]$ perf trace -a --duration 10000 --summary -- sleep 1
+  ^C
+   Summary of events:
 
-However:
-nm /tmp/a.out | grep foo
-000000000040056d T _Z3fooi
+   Xorg (817), 148 events, 0.0%, 0.000 msec
 
-After this patch, using the next command:
-./perf probe -f --no-demangle -x /tmp/a.out _Z3fooi
+     syscall            calls      min       avg       max      stddev
+                                 (msec)    (msec)    (msec)        (%)
+     --------------- -------- --------- --------- ---------     ------
+     read                   7     0.002     0.004     0.011     32.00%
+     rt_sigprocmask        40     0.001     0.001     0.002      1.31%
+     ioctl                  6     0.002     0.003     0.005     19.45%
+     writev                 7     0.004     0.018     0.059     43.76%
+     select                 9     0.000    74.513   507.869     74.61%
+     setitimer              4     0.001     0.002     0.002     10.08%
 
-probe will be successfully added.
-
-Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1382947464-31266-1-git-send-email-a3at.mail@gmail.com
+Link: http://lkml.kernel.org/r/1384345308-24404-1-git-send-email-penberg@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-probe.c | 2 ++
- 1 file changed, 2 insertions(+)
+ tools/perf/builtin-trace.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 89acc17cf2a0..6ea9e85bdc00 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -325,6 +325,8 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 		     opt_set_filter),
- 	OPT_CALLBACK('x', "exec", NULL, "executable|path",
- 			"target executable name or path", opt_set_target),
-+	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
-+		    "Disable symbol demangling"),
- 	OPT_END()
- 	};
- 	int ret;
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 6b230af940e2..8be17fc462ba 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2112,9 +2112,9 @@ static size_t thread__dump_stats(struct thread_trace *ttrace,
+ 
+ 	printed += fprintf(fp, "\n");
+ 
+-	printed += fprintf(fp, "                                                    msec/call\n");
+-	printed += fprintf(fp, "   syscall            calls      min      avg      max stddev\n");
+-	printed += fprintf(fp, "   --------------- -------- -------- -------- -------- ------\n");
++	printed += fprintf(fp, "   syscall            calls      min       avg       max      stddev\n");
++	printed += fprintf(fp, "                               (msec)    (msec)    (msec)        (%%)\n");
++	printed += fprintf(fp, "   --------------- -------- --------- --------- ---------     ------\n");
+ 
+ 	/* each int_node is a syscall */
+ 	while (inode) {
+@@ -2131,9 +2131,9 @@ static size_t thread__dump_stats(struct thread_trace *ttrace,
+ 
+ 			sc = &trace->syscalls.table[inode->i];
+ 			printed += fprintf(fp, "   %-15s", sc->name);
+-			printed += fprintf(fp, " %8" PRIu64 " %8.3f %8.3f",
++			printed += fprintf(fp, " %8" PRIu64 " %9.3f %9.3f",
+ 					   n, min, avg);
+-			printed += fprintf(fp, " %8.3f %6.2f\n", max, pct);
++			printed += fprintf(fp, " %9.3f %9.2f%%\n", max, pct);
+ 		}
+ 
+ 		inode = intlist__next(inode);
 -- 
 1.8.1.4
 
