@@ -1,93 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab3KNOiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 09:38:13 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:48315 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753361Ab3KNOiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 09:38:08 -0500
-Message-ID: <5284DFE7.70308@ti.com>
-Date: Thu, 14 Nov 2013 09:36:23 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754181Ab3KNOoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 09:44:10 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:56735 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab3KNOoH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 09:44:07 -0500
 MIME-Version: 1.0
-To: "Nori, Sekhar" <nsekhar@ti.com>
-CC: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 10/12] mtd: nand: davinci: don't set timings if AEMIF
- is used
-References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>, <1384187188-5776-11-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D53@DNCE04.ent.ti.com> <528307F0.6000805@ti.com> <52838941.4060207@ti.com> <5284ABB9.70608@ti.com>
-In-Reply-To: <5284ABB9.70608@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [139.11.160.113]
+In-Reply-To: <5235663.VIm8z9qphx@flatron>
+References: <5283BC93.1090801@koalo.de>
+	<2049375.GR9Xb2zuek@flatron>
+	<528477EE.4060407@koalo.de>
+	<5235663.VIm8z9qphx@flatron>
+Date: Thu, 14 Nov 2013 15:44:05 +0100
+Message-ID: <CABDT8Wz4r0iN-Ady41tpdZgPF1wC=Qap5_jNGmKbSYQmRdPAHg@mail.gmail.com>
+Subject: Re: [PATCHv4] dmaengine: Add support for BCM2835
+From: Florian Meier <florian.meier@koalo.de>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree <devicetree@vger.kernel.org>, alsa-devel@alsa-project.org,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        dmaengine <dmaengine@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 14 November 2013 05:53 AM, Nori, Sekhar wrote:
-> On Wednesday 13 November 2013 07:44 PM, Santosh Shilimkar wrote:
->> On Wednesday 13 November 2013 12:02 AM, Sekhar Nori wrote:
->>> On Monday 11 November 2013 10:40 PM, Khoronzhuk, Ivan wrote:
->>>> If Davinci AEMIF is used we don't need to set timings and bus width.
->>>> It is done by AEMIF driver (drivers/memory/davinci-aemfi.c).
->>>>
->>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>>> ---
->>>>  drivers/mtd/nand/davinci_nand.c |   22 +++++++++++++++-------
->>>>  1 file changed, 15 insertions(+), 7 deletions(-)
->>>>
->>>> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
->>>> index 4705214..879e915 100644
->>>> --- a/drivers/mtd/nand/davinci_nand.c
->>>> +++ b/drivers/mtd/nand/davinci_nand.c
->>>> @@ -742,27 +742,35 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
->>>>                 goto err_clk_enable;
->>>>         }
->>>>
->>>> +#if !IS_ENABLED(CONFIG_TI_DAVINCI_AEMIF)
->>>
->>> This is a hack! Just because AEMIF driver is enabled, it does not
->>> guarantee that the timings have been setup by it. Instead of configuring
->>> timings in two drivers, why not just convert everyone over to use the
->>> new driver. Dont worry about breaking old platforms, I will help test
->>> and ack them.
->>>
->> How about you take a stab at and convert the DaVinci code over to make
->> use of new driver. We are trying to re-use as much as possible from the
->> common drivers and also making an option so that the DaVinci arch can
->> move over to these drivers if they want to.
-> 
-> Sure I could.
-> 
-Thanks
+2013/11/14 Tomasz Figa <tomasz.figa@gmail.com>:
+> On Thursday 14 of November 2013 08:12:46 Florian Meier wrote:
+>> On 13.11.2013 21:39, Tomasz Figa wrote:
+>> > On Wednesday 13 of November 2013 20:35:22 Florian Meier wrote:
+>> >>>> +- brcm,dma-channel-mask: Bit mask representing the channels available.
+>> >>>
+>> >>> What does the value of this property depend on? Could you describe the
+>> >>> structure of this DMA controller?
+>> >>>
+>> >>>> +
+>> >>>> +Example:
+>> >>>> +
+>> >>>> +dma: dma@7e007000 {
+>> >>>> +        compatible = "brcm,bcm2835-dma";
+>> >>>> +        reg = <0x7e007000 0xf00>;
+>> >>>> +        interrupts = <1 16
+>> >>>> +                      1 17
+>> >>>> +                      1 18
+>> >>>> +                      1 19
+>> >>>> +                      1 20
+>> >>>> +                      1 21
+>> >>>> +                      1 22
+>> >>>> +                      1 23
+>> >>>> +                      1 24
+>> >>>> +                      1 25
+>> >>>> +                      1 26
+>> >>>> +                      1 27
+>> >>>> +                      1 28>;
+>> >>>
+>> >>> There are 13 interrupts specified here, but...
+>> >>>
+>> >>>> +
+>> >>>> +        #dma-cells = <1>;
+>> >>>> +        dma-channels = <16>;
+>> >>>
+>> >>> ...16 channels here...
+>> >>>
+>> >>>> +        dma-requests = <32>;
+>> >>>> +        brcm,dma-channel-mask = <0x7f35>;
+>> >>>
+>> >>> ...and 11 set bits here. May I ask you to explain this to me, please?
+>> >>
+>> >> How I understand this DMA controller:
+>> >> There are 16 DMA channels in the DMA controller, but only 13 interrupts
+>> >> are available at the IRQ controller. Therefore, the upper DMA channels
+>> >> can just not be used. Maybe because there are to many other IRQs and
+>> >> they didn't want to implement another IRQ bank.
+>> >> Furthermore, some of the DMA channels are already used by the
+>> >> VideoCore/GPU/firmware. This is what dma-channel-mask indicates. This
+>> >> should be automatically set by the firmware in the future.
+>> >> Finally, there are some channels with special functionality that should
+>> >> not be used by DMA engine, too. Therefore, these lines:
+>> >>            /* do not use the FIQ and BULK channels */
+>> >>            chans_available &= ~0xD;
+>> >
+>> > OK, this makes it much more clear.
+>> >
+>> > So, my only comment remaining here is that you shouldn't include the
+>> > channels without interrupt signal in the mask. This would allow you
+>> > to define it as a mask of channels that are operable and then just
+>> > iterate over all set bits in the driver, instead of using tricks with
+>> > interrupt resources. What do you think?
+>>
+>> Since the mask will come directly from the firmware, this would require
+>> patching the firmware. I think that is not worth the effort.
+>
+> Now I'm slightly confused. Do you already have code in your firmware that
+> adds this property to your device tree?
+>
+> Otherwise in what circumstances such patching would take place? On given
+> hardware (unless it's an FPGA) the configuration of available DMA channels
+> that have interrupt signals should not change.
 
-> Ivan,
-> 
-> The AEMIF driver does not use platfrom_data currently. Is that something
-> you can add or you want me to take a stab at that as well?
-> 
-The AEMIF new driver is device tree only and thats the direction. So the
-better thing would be to convert Davinci to DT and then make use of this
-new driver. Thats how most of the new drivers used on arm socs are
-moving. Adding platform data to new driver is a step in backward
-direction so I would want to avoid that.
+It is very confusing. I agree.
+There is already a DMA driver with a proprietary API in the downstream
+kernel. The firmware already creates this mask and passes it to this
+proprietary driver.
+There was already a discussion about this in the first version thread
+that (as long as I understand it) resulted in "we should pass this
+mask on to the driver via device tree". So I did that. I have no idea
+about how this firmware->devicetree interface will take place, but
+since I didn't want to run in circles I hardcoded it in the device
+tree.
 
-Once you start using new driver the $subject patch code skipping
-is trivial. Till then I would like to proceed with current approach
-which allows Nand support for Keystone.
 
-Regards,
-Santosh
+>> >>> [snip]
+>> >>>> diff --git a/drivers/dma/bcm2835-dma.c b/drivers/dma/bcm2835-dma.c
+>> >>>> new file mode 100644
+>> >>>> index 0000000..baf072e
+>> >>>> --- /dev/null
+>> >>>> +++ b/drivers/dma/bcm2835-dma.c
+>> >>> [snip]
+>> >>>> +static int bcm2835_dma_probe(struct platform_device *pdev)
+>> >>>> +{
+>> >>>> +        struct bcm2835_dmadev *od;
+>> >>>> +        struct resource *dma_res = NULL;
+>> >>>> +        void __iomem *dma_base = NULL;
+>> >>>> +        int rc = 0;
+>> >>>> +        int i = 0;
+>> >>>> +        int irq;
+>> >>>> +        uint32_t chans_available;
+>> >>> [snip]
+>> >>>> +        if (pdev->dev.of_node) {
+>> >>>
+>> >>> Is this driver supposed to support non-DT based instantation (aka board
+>> >>> files)? If not, maybe it would be cleaner to simply check for
+>> >>> !pdev->dev.of_node at the beginning of probe and return an error?
+>> >>
+>> >> I would like to maintain the possibility for board file based
+>> >> instatiation, because the Raspberry Pi downstream kernel still doesn't
+>> >> support device tree. If this is a no-go, I will accept that.
+>> >
+>> > Sure, you are free to do so.
+>> >
+>> > What I meant is that your probe won't call bcm2835_dma_chan_init() at all
+>> > if there is no pdev->dev.of_node, because the loop iterating over channels
+>> > is under the if clause.
+>>
+>> Yes you are right, but I think it will make the patching easier, later.
+>> Currently, nothing bad happens without device tree - it just allocates
+>> no channels.
+>
+> But isn't it really an error condition, if no channels are allocated?
 
+A fridge is still a working fridge, even if no beer is inside ;-)
+Ok, bad example, but you will get an error message anyway when you try
+to get a channel.
+
+> Anyway, back to my point about leaving non-DT support in a driver, the
+> point is still valid only for drivers, not for platforms/boards. So if
+> there are no boards supported using board files in mainline that could
+> benefit from this driver, then this driver can be safely made DT-only,
+> because no new non-DT platforms/boards can be added.
+
+I don't have a telling argument against this, but just thought writing
+it this way will
+make the migration of the downstream kernel to upstream easier, but if you say I
+should change it, I will of course do that.
+I am becoming desperate anyway that this migration will ever fully
+take place....
+
+Greetings,
+Florian
