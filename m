@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308Ab3KNQpD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:45:03 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:63610 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932095Ab3KNQof (ORCPT
+	id S1757357Ab3KNQpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:45:08 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:46432 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757281Ab3KNQoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:44:35 -0500
+	Thu, 14 Nov 2013 11:44:54 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, "Christopher J. Morrone" <morrone2@llnl.gov>,
+Cc: linux-kernel@vger.kernel.org, Jinshan Xiong <jinshan.xiong@intel.com>,
         Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 17/26] staging/lustre/changelogs: Correct KUC code max changelog msg size
-Date: Fri, 15 Nov 2013 00:43:04 +0800
-Message-Id: <1384447393-13838-18-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 22/26] staging/lustre/osc: osc_extent_wait() shouldn't be interruptible
+Date: Fri, 15 Nov 2013 00:43:09 +0800
+Message-Id: <1384447393-13838-23-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384447393-13838-1-git-send-email-bergwolf@gmail.com>
 References: <1384447393-13838-1-git-send-email-bergwolf@gmail.com>
@@ -22,71 +22,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Christopher J. Morrone" <morrone2@llnl.gov>
+From: Jinshan Xiong <jinshan.xiong@intel.com>
 
-The kernel to userspace communication routines (KUC) allocate
-and limit the maximum cs_buf size to CR_MAXSIZE.  However this
-fails to account for the fact that the buffer is assumed to begin
-with a struct kuc_hdr.  To allocate and account for that space,
-we introduce a new define, KUC_CHANGELOG_MSG_MAXSIZE.
+Otherwise it will hit the assertion at cl_lock.c:
 
-Lustre-change: http://review.whamcloud.com/7406
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3587
-Signed-off-by: Christopher J. Morrone <morrone2@llnl.gov>
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: jacques-Charles Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+   cl_lock.c:1967:discard_cb())
+        ASSERTION( (!(page->cp_type == CPT_CACHEABLE) ||
+        (!PageWriteback(cl_page_vmpage(env, page)))) ) failed:
+
+This is because in osc_lock_flush() we have to make sure the IO
+is finished before discarding the pages.
+
+Lustre-change: http://review.whamcloud.com/5419
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2779
+Signed-off-by: Jinshan Xiong <jinshan.xiong@intel.com>
+Reviewed-by: Bobi Jam <bobijam@gmail.com>
 Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- .../include/linux/libcfs/libcfs_kernelcomm.h       |    2 ++
- drivers/staging/lustre/lustre/mdc/mdc_request.c    |    6 +++---
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/staging/lustre/lustre/osc/osc_cache.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/include/linux/libcfs/libcfs_kernelcomm.h b/drivers/staging/lustre/include/linux/libcfs/libcfs_kernelcomm.h
-index 4e12ffc..e7469ac 100644
---- a/drivers/staging/lustre/include/linux/libcfs/libcfs_kernelcomm.h
-+++ b/drivers/staging/lustre/include/linux/libcfs/libcfs_kernelcomm.h
-@@ -61,6 +61,8 @@ struct kuc_hdr {
- 	__u16 kuc_msglen;     /* Including header */
- } __attribute__((aligned(sizeof(__u64))));
+diff --git a/drivers/staging/lustre/lustre/osc/osc_cache.c b/drivers/staging/lustre/lustre/osc/osc_cache.c
+index ff36e77..6051e41 100644
+--- a/drivers/staging/lustre/lustre/osc/osc_cache.c
++++ b/drivers/staging/lustre/lustre/osc/osc_cache.c
+@@ -891,7 +891,7 @@ static int osc_extent_wait(const struct lu_env *env, struct osc_extent *ext,
+ 			"%s: wait ext to %d timedout, recovery in progress?\n",
+ 			osc_export(obj)->exp_obd->obd_name, state);
  
-+#define KUC_CHANGELOG_MSG_MAXSIZE (sizeof(struct kuc_hdr)+CR_MAXSIZE)
-+
- #define KUC_MAGIC  0x191C /*Lustre9etLinC */
- #define KUC_FL_BLOCK 0x01   /* Wait for send */
- 
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-index 651fcb1..eeac9b4 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-@@ -1452,7 +1452,7 @@ static struct kuc_hdr *changelog_kuc_hdr(char *buf, int len, int flags)
- {
- 	struct kuc_hdr *lh = (struct kuc_hdr *)buf;
- 
--	LASSERT(len <= CR_MAXSIZE);
-+	LASSERT(len <= KUC_CHANGELOG_MSG_MAXSIZE);
- 
- 	lh->kuc_magic = KUC_MAGIC;
- 	lh->kuc_transport = KUC_TRANSPORT_CHANGELOG;
-@@ -1525,7 +1525,7 @@ static int mdc_changelog_send_thread(void *csdata)
- 	CDEBUG(D_CHANGELOG, "changelog to fp=%p start "LPU64"\n",
- 	       cs->cs_fp, cs->cs_startrec);
- 
--	OBD_ALLOC(cs->cs_buf, CR_MAXSIZE);
-+	OBD_ALLOC(cs->cs_buf, KUC_CHANGELOG_MSG_MAXSIZE);
- 	if (cs->cs_buf == NULL)
- 		GOTO(out, rc = -ENOMEM);
- 
-@@ -1562,7 +1562,7 @@ out:
- 	if (ctxt)
- 		llog_ctxt_put(ctxt);
- 	if (cs->cs_buf)
--		OBD_FREE(cs->cs_buf, CR_MAXSIZE);
-+		OBD_FREE(cs->cs_buf, KUC_CHANGELOG_MSG_MAXSIZE);
- 	OBD_FREE_PTR(cs);
- 	return rc;
- }
+-		lwi = LWI_INTR(LWI_ON_SIGNAL_NOOP, NULL);
++		lwi = LWI_INTR(NULL, NULL);
+ 		rc = l_wait_event(ext->oe_waitq, extent_wait_cb(ext, state),
+ 				  &lwi);
+ 	}
 -- 
 1.7.9.5
 
