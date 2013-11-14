@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757420Ab3KNU0E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 15:26:04 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36319 "EHLO
+	id S1757500Ab3KNU0N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 15:26:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36325 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757020Ab3KNUZb (ORCPT
+	with ESMTP id S1757168Ab3KNUZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 15:25:31 -0500
+	Thu, 14 Nov 2013 15:25:38 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/10] perf record: Add an option to force per-cpu mmaps
-Date: Thu, 14 Nov 2013 17:25:15 -0300
-Message-Id: <1384460715-23198-11-git-send-email-acme@infradead.org>
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH 07/10] perf symbols: Limit max callchain using max_stack on DWARF unwinding too
+Date: Thu, 14 Nov 2013 17:25:12 -0300
+Message-Id: <1384460715-23198-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384460715-23198-1-git-send-email-acme@infradead.org>
 References: <1384460715-23198-1-git-send-email-acme@infradead.org>
@@ -30,123 +30,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-By default, when tasks are specified (i.e. -p, -t or -u options)
-per-thread mmaps are created.
+It was affecting only frame-pointer (fp) based callchain processing.
 
-Add an option to override that and force per-cpu mmaps.
+Usage example:
 
-Further comments by peterz:
+  perf top --call-graph dwarf,1024 --max-stack 2
 
-So this option allows -t/-p/-u to create one buffer per cpu and attach
-all the various thread/process/user tasks' their counters to that one
-buffer?
+Works for any tool that does callchain resolving and provides a
+--max-stack option.
 
-As opposed to the current state where each such counter would have its
-own buffer.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Tested-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1383313899-15987-7-git-send-email-adrian.hunter@intel.com
+Cc: Waiman Long <Waiman.Long@hp.com>
+Link: http://lkml.kernel.org/n/tip-eu45v8s3tq9ruay8tpfyon79@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-record.txt | 6 ++++++
- tools/perf/builtin-record.c              | 2 ++
- tools/perf/util/evlist.c                 | 4 +++-
- tools/perf/util/evsel.c                  | 4 ++--
- tools/perf/util/target.h                 | 1 +
- 5 files changed, 14 insertions(+), 3 deletions(-)
+ tools/perf/util/machine.c | 2 +-
+ tools/perf/util/unwind.c  | 9 +++++----
+ tools/perf/util/unwind.h  | 5 +++--
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 052f7c4dc00c..43b42c4f4a91 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -201,6 +201,12 @@ abort events and some memory events in precise mode on modern Intel CPUs.
- --transaction::
- Record transaction flags for transaction related events.
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 0393912d8033..84cdb072ac83 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1368,7 +1368,7 @@ int machine__resolve_callchain(struct machine *machine,
  
-+--force-per-cpu::
-+Force the use of per-cpu mmaps.  By default, when tasks are specified (i.e. -p,
-+-t or -u options) per-thread mmaps are created.  This option overrides that and
-+forces per-cpu mmaps.  A side-effect of that is that inheritance is
-+automatically enabled.  Add the -i option also to disable inheritance.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-list[1]
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 4d644fe2d5b7..7c8020a32784 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -888,6 +888,8 @@ const struct option record_options[] = {
- 		    "sample by weight (on special events only)"),
- 	OPT_BOOLEAN(0, "transaction", &record.opts.sample_transaction,
- 		    "sample transaction flags (special events only)"),
-+	OPT_BOOLEAN(0, "force-per-cpu", &record.opts.target.force_per_cpu,
-+		    "force the use of per-cpu mmaps"),
- 	OPT_END()
+ 	return unwind__get_entries(unwind_entry, &callchain_cursor, machine,
+ 				   thread, evsel->attr.sample_regs_user,
+-				   sample);
++				   sample, max_stack);
+ 
+ }
+ 
+diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
+index 5390d0b8862a..0efd5393de85 100644
+--- a/tools/perf/util/unwind.c
++++ b/tools/perf/util/unwind.c
+@@ -559,7 +559,7 @@ static unw_accessors_t accessors = {
  };
  
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 5ce2ace2d6c1..bbc746aa5716 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -819,7 +819,9 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
- 	if (evlist->threads == NULL)
- 		return -1;
+ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
+-		       void *arg)
++		       void *arg, int max_stack)
+ {
+ 	unw_addr_space_t addr_space;
+ 	unw_cursor_t c;
+@@ -575,7 +575,7 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
+ 	if (ret)
+ 		display_error(ret);
  
--	if (target__has_task(target))
-+	if (target->force_per_cpu)
-+		evlist->cpus = cpu_map__new(target->cpu_list);
-+	else if (target__has_task(target))
- 		evlist->cpus = cpu_map__dummy_new();
- 	else if (!target__has_cpu(target) && !target->uses_mmap)
- 		evlist->cpus = cpu_map__dummy_new();
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 18f7c188ff63..46dd4c2a41ce 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -645,7 +645,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 		}
- 	}
+-	while (!ret && (unw_step(&c) > 0)) {
++	while (!ret && (unw_step(&c) > 0) && max_stack--) {
+ 		unw_word_t ip;
  
--	if (target__has_cpu(&opts->target))
-+	if (target__has_cpu(&opts->target) || opts->target.force_per_cpu)
- 		perf_evsel__set_sample_bit(evsel, CPU);
+ 		unw_get_reg(&c, UNW_REG_IP, &ip);
+@@ -588,7 +588,8 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
  
- 	if (opts->period)
-@@ -653,7 +653,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
+ 			struct machine *machine, struct thread *thread,
+-			u64 sample_uregs, struct perf_sample *data)
++			u64 sample_uregs, struct perf_sample *data,
++			int max_stack)
+ {
+ 	unw_word_t ip;
+ 	struct unwind_info ui = {
+@@ -610,5 +611,5 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
+ 	if (ret)
+ 		return -ENOMEM;
  
- 	if (!perf_missing_features.sample_id_all &&
- 	    (opts->sample_time || !opts->no_inherit ||
--	     target__has_cpu(&opts->target)))
-+	     target__has_cpu(&opts->target) || opts->target.force_per_cpu))
- 		perf_evsel__set_sample_bit(evsel, TIME);
- 
- 	if (opts->raw_samples) {
-diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
-index 89bab7129de4..2d0c50690892 100644
---- a/tools/perf/util/target.h
-+++ b/tools/perf/util/target.h
-@@ -12,6 +12,7 @@ struct target {
- 	uid_t	     uid;
- 	bool	     system_wide;
- 	bool	     uses_mmap;
-+	bool	     force_per_cpu;
- };
- 
- enum target_errno {
+-	return get_entries(&ui, cb, arg);
++	return get_entries(&ui, cb, arg, max_stack);
+ }
+diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
+index ec0c71a2ca2e..d5966f49e22c 100644
+--- a/tools/perf/util/unwind.h
++++ b/tools/perf/util/unwind.h
+@@ -18,7 +18,7 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
+ 			struct machine *machine,
+ 			struct thread *thread,
+ 			u64 sample_uregs,
+-			struct perf_sample *data);
++			struct perf_sample *data, int max_stack);
+ int unwind__arch_reg_id(int regnum);
+ #else
+ static inline int
+@@ -27,7 +27,8 @@ unwind__get_entries(unwind_entry_cb_t cb __maybe_unused,
+ 		    struct machine *machine __maybe_unused,
+ 		    struct thread *thread __maybe_unused,
+ 		    u64 sample_uregs __maybe_unused,
+-		    struct perf_sample *data __maybe_unused)
++		    struct perf_sample *data __maybe_unused,
++		    int max_stack __maybe_unused)
+ {
+ 	return 0;
+ }
 -- 
 1.8.1.4
 
