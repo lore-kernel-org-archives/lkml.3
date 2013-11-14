@@ -1,97 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab3KNRwz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 12:52:55 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64558 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab3KNRwr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 12:52:47 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19+Cpzk/lwvg2pyFzCYxpPH
-Date: Thu, 14 Nov 2013 09:52:27 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Subject: Re: [PATCH 1/2] isp1704_charger: Add DT support
-Message-ID: <20131114175227.GH10317@atomide.com>
-References: <1384432734-1490-1-git-send-email-sre@debian.org>
+	id S1754782Ab3KNSBW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 13:01:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754177Ab3KNSBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 13:01:13 -0500
+Message-ID: <52850FEC.2040106@redhat.com>
+Date: Thu, 14 Nov 2013 13:01:16 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384432734-1490-1-git-send-email-sre@debian.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Miroslav Lichvar <mlichvar@redhat.com>
+CC: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH RFC] timekeeping: Fix clock stability with nohz
+References: <1384440640-9482-1-git-send-email-mlichvar@redhat.com>
+In-Reply-To: <1384440640-9482-1-git-send-email-mlichvar@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Reichel <sre@debian.org> [131114 04:40]:
-> This patch introduces device tree support to the isp1704
-> charger driver. Adding support involved moving the handling
-> of the enable GPIO from board code into the driver.
-> 
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
-> ---
->  arch/arm/mach-omap2/board-rx51-peripherals.c | 10 +----
->  drivers/power/isp1704_charger.c              | 56 +++++++++++++++++++++++++---
->  include/linux/power/isp1704_charger.h        |  2 +-
->  3 files changed, 52 insertions(+), 16 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-> index a791fef..2986d16 100644
-> --- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-> +++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-> @@ -273,13 +273,8 @@ static struct platform_device rx51_battery_device = {
->  	.id	= -1,
->  };
->  
-> -static void rx51_charger_set_power(bool on)
-> -{
-> -	gpio_set_value(RX51_USB_TRANSCEIVER_RST_GPIO, on);
-> -}
-> -
->  static struct isp1704_charger_data rx51_charger_data = {
-> -	.set_power	= rx51_charger_set_power,
-> +	.enable_gpio	= RX51_USB_TRANSCEIVER_RST_GPIO,
->  };
->  
->  static struct platform_device rx51_charger_device = {
-> @@ -291,9 +286,6 @@ static struct platform_device rx51_charger_device = {
->  
->  static void __init rx51_charger_init(void)
->  {
-> -	WARN_ON(gpio_request_one(RX51_USB_TRANSCEIVER_RST_GPIO,
-> -		GPIOF_OUT_INIT_HIGH, "isp1704_reset"));
-> -
->  	platform_device_register(&rx51_battery_device);
->  	platform_device_register(&rx51_charger_device);
->  }
+On 11/14/2013 09:50 AM, Miroslav Lichvar wrote:
+> Since commit 5eb6d205 the system clock is kept separately from NTP time
+> and it is synchronized by adjusting its multiplier in a feedback loop.
+> This works well when the updates are done regularly. With nohz and idle
+> system, however, the loop becomes unstable at a certain update interval.
+> The loop overcorrects and the frequency doesn't settle down. The clock
+> has a large error, which seems to grow quadratically with update
+> interval.
 
-Can you please separate out the changes to board-rx51-peripherals.c
-as they have a huge chance of merge conflicts for v3.14 when
-we're planning to flip omap3 to be device tree only?
+> In a simulation with 1GHz TSC clock and 10Hz clock update the maximum
+> error went down from 4.7 microseconds to 5.5 nanoseconds. With 1Hz
+> update the maximum error went down from 480 microseconds to 55
+> nanoseconds.
+>
+> In a real test on idle machine comparing raw TSC and clock_gettime()
+> time stamps, the maximum error went down from microseconds to tens of
+> nanoseconds. A test with clock synchronized to a PTP hardware clock by
+> phc2sys from linuxptp now shows no difference when running with nohz
+> enabled and disabled, the clock seems to be stable to few tens of
+> nanoseconds.
 
-To remove the dependency, how about add .enable_gpio to the
-isp1704_charger.h and to the board-rx51-peripherals.c without
-removing .set_power in the first patch?
+Looks like a big improvement to me.
 
-Then we can set up an immutable branch that can be merged both
-to linux-omap tree and Anton's tree to avoid merge conflicts.
+Also very useful for virtual machines, which have no
+good control over when the timekeeping routines will
+run, but which can see what time it is when they do
+run...
 
-Then the rest of the patches can go via Anton's tree and you
-can just have .set_power do nothing, and then it can be
-removed later on when no longer used at all.
+> Signed-off-by: Miroslav Lichvar <mlichvar@redhat.com>
 
-Regards,
-
-Tony
+Acked-by: Rik van Riel <riel@redhat.com>
