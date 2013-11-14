@@ -1,74 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758235Ab3KNWyk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 17:54:40 -0500
-Received: from mail.tpi.com ([74.45.170.26]:48221 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751951Ab3KNWyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 17:54:36 -0500
-Message-ID: <528554AC.5080607@canonical.com>
-Date: Thu, 14 Nov 2013 14:54:36 -0800
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1758242Ab3KNW5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 17:57:12 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:41007 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab3KNW5D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 17:57:03 -0500
+Date: Thu, 14 Nov 2013 16:56:49 -0600
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tj@kernel.org,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Markus Blank-Burian <burian@muenster.de>
+Subject: Re: 3.10.16 cgroup_mutex deadlock
+Message-ID: <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com>
+References: <20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com>
+ <52820030.6000806@huawei.com>
+ <20131112143147.GB6049@dhcp22.suse.cz>
+ <20131112155530.GA2860@sbohrermbp13-local.rgmadvisors.com>
+ <20131112165504.GF6049@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "roger.pau@citrix.com" <roger.pau@citrix.com>
-Subject: Re: [PATCH 3.13-rc1] xen-blkfront: Silence pfn maybe-uninitialized
- warning
-References: <1384464592-35970-1-git-send-email-tim.gardner@canonical.com> <17a2e4ab-d2dc-4bcc-a0fc-1eb1172876e5@email.android.com>
-In-Reply-To: <17a2e4ab-d2dc-4bcc-a0fc-1eb1172876e5@email.android.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112165504.GF6049@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2013 02:24 PM, Konrad Rzeszutek Wilk wrote:
-> Tim Gardner <tim.gardner@canonical.com> wrote:
->> pfn cannot actually be used unless (!info->feature_persistent), nor
->> is pfn accessed in get_grant() unless (!info->feature_persistent),
->> but silence this warning anyway. gcc-4.8
->> 
->> drivers/block/xen-blkfront.c: In function 'do_blkif_request': 
->> drivers/block/xen-blkfront.c:508:20: warning: 'pfn' may be used 
->> uninitialized in this function [-Wmaybe-uninitialized] 
->> gnt_list_entry = get_grant(&gref_head, pfn, info); ^ 
->> drivers/block/xen-blkfront.c:492:19: note: 'pfn' was declared here 
->> unsigned long pfn;
->> 
->> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> Cc: Boris
->> Ostrovsky <boris.ostrovsky@oracle.com> Cc: David Vrabel
->> <david.vrabel@citrix.com> Signed-off-by: Tim Gardner
->> <tim.gardner@canonical.com> --- drivers/block/xen-blkfront.c |    2
->> +- 1 file changed, 1 insertion(+), 1 deletion(-)
->> 
->> diff --git a/drivers/block/xen-blkfront.c 
->> b/drivers/block/xen-blkfront.c index 432db1b..5f926de 100644 ---
->> a/drivers/block/xen-blkfront.c +++ b/drivers/block/xen-blkfront.c 
->> @@ -489,7 +489,7 @@ static int blkif_queue_request(struct request
->> *req)
->> 
->> if ((ring_req->operation == BLKIF_OP_INDIRECT) && (i %
->> SEGS_PER_INDIRECT_FRAME == 0)) { -				unsigned long pfn; +
->> unsigned long uninitialized_var(pfn);
->> 
->> if (segments) kunmap_atomic(segments);
+On Tue, Nov 12, 2013 at 05:55:04PM +0100, Michal Hocko wrote:
+> On Tue 12-11-13 09:55:30, Shawn Bohrer wrote:
+> > On Tue, Nov 12, 2013 at 03:31:47PM +0100, Michal Hocko wrote:
+> > > On Tue 12-11-13 18:17:20, Li Zefan wrote:
+> > > > Cc more people
+> > > > 
+> > > > On 2013/11/12 6:06, Shawn Bohrer wrote:
+> > > > > Hello,
+> > > > > 
+> > > > > This morning I had a machine running 3.10.16 go unresponsive but
+> > > > > before we killed it we were able to get the information below.  I'm
+> > > > > not an expert here but it looks like most of the tasks below are
+> > > > > blocking waiting on the cgroup_mutex.  You can see that the
+> > > > > resource_alloca:16502 task is holding the cgroup_mutex and that task
+> > > > > appears to be waiting on a lru_add_drain_all() to complete.
+> > > 
+> > > Do you have sysrq+l output as well by any chance? That would tell
+> > > us what the current CPUs are doing. Dumping all kworker stacks
+> > > might be helpful as well. We know that lru_add_drain_all waits for
+> > > schedule_on_each_cpu to return so it is waiting for workers to finish.
+> > > I would be really curious why some of lru_add_drain_cpu cannot finish
+> > > properly. The only reason would be that some work item(s) do not get CPU
+> > > or somebody is holding lru_lock.
+> > 
+> > In fact the sys-admin did manage to fire off a sysrq+l, I've put all
+> > of the info from the syslog below.  I've looked it over and I'm not
+> > sure it reveals anything.  First looking at the timestamps it appears
+> > we ran the sysrq+l 19.2 hours after the cgroup_mutex lockup I
+> > previously sent.
 > 
-> I have a similar patch from Roger that sets pfn=0.
-> 
-> Roger could you repost your patch please or if you feel that this
-> patch makes sense then comment on it?
-> 
-> Thanks.
-> 
+> I would expect sysrq+w would still show those kworkers blocked on the
+> same cgroup mutex?
 
-The advantage of uninitialized_var() is that it doesn't actually
-generate any code (or so it says in the header).
+Yes, I believe so.
 
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
+> > I also have atop logs over that whole time period
+> > that show hundreds of zombie processes which to me indicates that over
+> > that 19.2 hours systemd remained wedged on the cgroup_mutex.  Looking
+> > at the backtraces from the sysrq+l it appears most of the CPUs were
+> > idle
+> 
+> Right so either we managed to sleep with the lru_lock held which sounds
+> a bit improbable - but who knows - or there is some other problem. I
+> would expect the later to be true.
+> 
+> lru_add_drain executes per-cpu and preemption disabled this means that
+> its work item cannot be preempted so the only logical explanation seems
+> to be that the work item has never got scheduled.
+
+Meaning you think there would be no kworker thread for the
+lru_add_drain at this point?  If so you might be correct.
+
+> OK. In case the issue happens again. It would be very helpful to get the
+> kworker and per-cpu stacks. Maybe Tejun can help with some waitqueue
+> debugging tricks.
+
+I set up one of my test pools with two scripts trying to reproduce the
+problem.  One essentially puts tasks into several cpuset groups that
+have cpuset.memory_migrate set, then takes them back out.  It also
+occasionally switches cpuset.mems in those groups to try to keep the
+memory of those tasks migrating between nodes.  The second script is:
+
+$ cat /home/hbi/cgroup_mutex_cgroup_maker.sh 
+#!/bin/bash
+
+session_group=$(ps -o pid,cmd,cgroup -p $$ | grep -E 'c[0-9]+' -o)
+cd /sys/fs/cgroup/systemd/user/hbi/${session_group}
+pwd
+
+while true; do
+    for x in $(seq 1 1000); do
+        mkdir $x
+        echo $$ > ${x}/tasks
+        echo $$ > tasks
+        rmdir $x
+    done
+    sleep .1
+    date
+done
+
+After running both concurrently on 40 machines for about 12 hours I've
+managed to reproduce the issue at least once, possibly more.  One
+machine looked identical to this reported issue.  It has a bunch of
+stuck cgroup_free_fn() kworker threads and one thread in cpuset_attach
+waiting on lru_add_drain_all().  A sysrq+l shows all CPUs are idle
+except for the one triggering the sysrq+l.  The sysrq+w unfortunately
+wrapped dmesg so we didn't get the stacks of all blocked tasks.  We
+did however also cat /proc/<pid>/stack of all kworker threads on the
+system.  There were 265 kworker threads that all have the following
+stack:
+
+[kworker/2:1]
+[<ffffffff810930ec>] cgroup_free_fn+0x2c/0x120
+[<ffffffff81057c54>] process_one_work+0x174/0x490
+[<ffffffff81058d0c>] worker_thread+0x11c/0x370
+[<ffffffff8105f0b0>] kthread+0xc0/0xd0
+[<ffffffff814c20dc>] ret_from_fork+0x7c/0xb0
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+And there were another 101 that had stacks like the following:
+
+[kworker/0:0]
+[<ffffffff81058daf>] worker_thread+0x1bf/0x370
+[<ffffffff8105f0b0>] kthread+0xc0/0xd0
+[<ffffffff814c20dc>] ret_from_fork+0x7c/0xb0
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+That's it.  Again I'm not sure if that is helpful at all but it seems
+to imply that the lru_add_drain_work was not scheduled.
+
+I also managed to kill another two machines running my test.  One of
+them we didn't get anything out of, and the other looks like I
+deadlocked on the css_set_lock lock.  I'll follow up with the
+css_set_lock deadlock in another email since it doesn't look related
+to this one.  But it does seem that I can probably reproduce this if
+anyone has some debugging ideas.
+
+--
+Shawn
