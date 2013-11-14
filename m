@@ -1,87 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab3KNMbs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 07:31:48 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:48820 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752901Ab3KNMbq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 07:31:46 -0500
-Message-ID: <5284C2B9.2020805@cogentembedded.com>
-Date: Thu, 14 Nov 2013 16:31:53 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: gaowanlong@cn.fujitsu.com, linux-sh@vger.kernel.org, lethal@linux-sh.org
-CC: linux-kernel@vger.kernel.org, fengguang.wu@intel.com, kbuild-all@01.org
-Subject: Re: [PATCH] sh: fix kernel build error
-References: <1384353504-21886-1-git-send-email-gaowanlong@cn.fujitsu.com> <5283C19D.4050601@cogentembedded.com> <528418B1.6090507@cn.fujitsu.com>
-In-Reply-To: <528418B1.6090507@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753841Ab3KNMdA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 07:33:00 -0500
+Received: from smtp21.mail.ru ([94.100.176.174]:34027 "EHLO smtp21.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753146Ab3KNMc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 07:32:56 -0500
+From: Alexander Shiyan <shc_work@mail.ru>
+To: rtc-linux@googlegroups.com
+Cc: Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH] rtc: rtc-ds1742: Add devicetree support
+Date: Thu, 14 Nov 2013 16:32:42 +0400
+Message-Id: <1384432362-26102-1-git-send-email-shc_work@mail.ru>
+X-Mailer: git-send-email 1.8.1.5
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+This patch allows the driver to be enabled with devicetree.
 
-On 14-11-2013 4:26, Wanlong Gao wrote:
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+---
+ Documentation/devicetree/bindings/rtc/maxim,ds1742.txt | 14 ++++++++++++++
+ drivers/rtc/rtc-ds1742.c                               | 10 +++++++++-
+ 2 files changed, 23 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/rtc/maxim,ds1742.txt
 
->>>      arch/sh/kernel/kgdb.c: In function 'sleeping_thread_to_gdb_regs':
->>>>> arch/sh/kernel/kgdb.c:225:32: error: implicit declaration of function 'task_stack_page' [-Werror=implicit-function-declaration]
->>>>> arch/sh/kernel/kgdb.c:242:23: error: dereferencing pointer to incomplete type
->>>>> arch/sh/kernel/kgdb.c:243:22: error: dereferencing pointer to incomplete type
->>>      arch/sh/kernel/kgdb.c: In function 'singlestep_trap_handler':
->>>>> arch/sh/kernel/kgdb.c:310:27: error: 'SIGTRAP' undeclared (first use in this function)
->>>      arch/sh/kernel/kgdb.c:310:27: note: each undeclared identifier is reported only once for each function it appears in
->>>      cc1: all warnings being treated as errors
-
->>     Strange quoting...
-
-> Strange? It's the build error log.
-
-    I've never seen the leading > characters in gcc's error output.
-
->>> This is introduced by commit 16559ae.
-
->>     Please also specify that commit's summary line in parens.
-
-> commit 16559ae48c76f1ceb970b9719dea62b77eb5d06b
-> Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Date:   Mon Feb 4 15:35:26 2013 -0800
-
->      kgdb: remove #include <linux/serial_8250.h> from kgdb.h
->
->      There's no reason kgdb.h itself needs to include the 8250 serial port
->      header file.  So push it down to the _very_ limited number of individual
->      drivers that need the values in that file, and fix up the places where
->      people really wanted serial_core.h and platform_device.h.
-
->      Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
-> And the line caused this build error is:
-
-> diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
-> index 4dff0c6..c6e091b 100644
-> --- a/include/linux/kgdb.h
-> +++ b/include/linux/kgdb.h
-> @@ -13,7 +13,6 @@
->   #ifndef _KGDB_H_
->   #define _KGDB_H_
->
-> -#include <linux/serial_8250.h>
->   #include <linux/linkage.h>
->   #include <linux/init.h>
->   #include <linux/atomic.h>
-
-    That's all interesting but what I asked you to do is add the summary line 
-("kgdb: remove #include <linux/serial_8250.h> from kgdb.h" in this case) 
-enclosed into parentheses to your commit log. There was no need to tell me all 
-the gory details of your fix. :-)
-
-> Thanks,
-> Wanlong Gao
-
-WBR, Sergei
+diff --git a/Documentation/devicetree/bindings/rtc/maxim,ds1742.txt b/Documentation/devicetree/bindings/rtc/maxim,ds1742.txt
+new file mode 100644
+index 0000000..d2ddd71
+--- /dev/null
++++ b/Documentation/devicetree/bindings/rtc/maxim,ds1742.txt
+@@ -0,0 +1,14 @@
++* Maxim (Dallas) DS1742/DS1743 Real Time Clock
++
++Register a Maxim DS1742-compatible RTC.
++
++Required properties:
++- compatible: Should be "maxim,ds1742".
++- reg: Physical base address of the RTC and length of memory
++  mapped region.
++
++Example:
++	rtc: rtc@10000000 {
++		compatible = "maxim,ds1742";
++		reg = <0x10000000 0x800>;
++	};
+diff --git a/drivers/rtc/rtc-ds1742.c b/drivers/rtc/rtc-ds1742.c
+index 17b73fd..d7f74f5 100644
+--- a/drivers/rtc/rtc-ds1742.c
++++ b/drivers/rtc/rtc-ds1742.c
+@@ -13,12 +13,13 @@
+  */
+ 
+ #include <linux/bcd.h>
+-#include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/gfp.h>
+ #include <linux/delay.h>
+ #include <linux/jiffies.h>
+ #include <linux/rtc.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/module.h>
+@@ -215,12 +216,19 @@ static int ds1742_rtc_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static struct of_device_id __maybe_unused ds1742_rtc_of_match[] = {
++	{ .compatible = "maxim,ds1742", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, ds1742_rtc_of_match);
++
+ static struct platform_driver ds1742_rtc_driver = {
+ 	.probe		= ds1742_rtc_probe,
+ 	.remove		= ds1742_rtc_remove,
+ 	.driver		= {
+ 		.name	= "rtc-ds1742",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(ds1742_rtc_of_match),
+ 	},
+ };
+ 
+-- 
+1.8.1.5
 
