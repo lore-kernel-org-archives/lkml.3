@@ -1,90 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab3KNSSw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 13:18:52 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:55994 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755049Ab3KNSSr (ORCPT
+	id S1755120Ab3KNSZB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 13:25:01 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:55286 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753295Ab3KNSYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 13:18:47 -0500
-Date: Thu, 14 Nov 2013 10:18:45 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: hjk@hansjkoch.de, lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: (max6650) Add support for gpiodef
-Message-ID: <20131114181845.GA13727@roeck-us.net>
-References: <1384440661-3769-1-git-send-email-lpapp@kde.org>
- <20131114172427.GA11062@roeck-us.net>
- <CAOMwXhNdo8aRGH9AL+JxYnDg2zAN4+-TeHJU=Kc1kDKmyYuYmA@mail.gmail.com>
+	Thu, 14 Nov 2013 13:24:52 -0500
+Message-ID: <5285157C.7040701@ieee.org>
+Date: Thu, 14 Nov 2013 12:25:00 -0600
+From: Alex Elder <elder@ieee.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMwXhNdo8aRGH9AL+JxYnDg2zAN4+-TeHJU=Kc1kDKmyYuYmA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ben Myers <bpm@sgi.com>, Ric Wheeler <rwheeler@redhat.com>
+CC: elder@kernel.org, Mark Tinguely <tinguely@sgi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] update xfs maintainers
+References: <20131107220208.GY1935@sgi.com> <527C0F64.3010906@sgi.com>	<527C4B27.6020205@redhat.com> <527CC50D.4060905@redhat.com>	<20131108180337.GO10553@sgi.com>	<20131108193424.GA11052@infradead.org>	<20131108204605.GA1935@sgi.com> <527D4E8D.3000109@redhat.com> <20131108220309.GB1935@sgi.com>
+In-Reply-To: <20131108220309.GB1935@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 06:13:45PM +0000, Laszlo Papp wrote:
-> On Thu, Nov 14, 2013 at 5:24 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+On 11/08/2013 04:03 PM, Ben Myers wrote:
+> Hey Ric,
 > 
-> > On Thu, Nov 14, 2013 at 02:51:01PM +0000, Laszlo Papp wrote:
-> > > It is necessary for end users when they are using the gpio pins
-> > connected to the
-> > > fan controller. There is a separate gpiodef register provided, but it is
-> > unused
-> > > under the usual circumstances and that is probably the reason why this
-> > feature
-> > > has not been added before. It is necessary for our board to function
-> > properly.
-> > >
-> > > Signed-off-by: Laszlo Papp <lpapp@kde.org>
-> > > ---
-> > >  Documentation/hwmon/max6650 |   5 +++
-> > >  drivers/hwmon/max6650.c     | 107
-> > ++++++++++++++++++++++++++++++++++++++++++++
-> > >  2 files changed, 112 insertions(+)
-> > >
-> > > diff --git a/Documentation/hwmon/max6650 b/Documentation/hwmon/max6650
-> > > index 58d9644..32c69a8 100644
-> > > --- a/Documentation/hwmon/max6650
-> > > +++ b/Documentation/hwmon/max6650
-> > > @@ -39,6 +39,11 @@ pwm1               rw      relative speed (0-255),
-> > 255=max. speed.
-> > >  fan1_div     rw      sets the speed range the inputs can handle. Legal
-> > >                       values are 1, 2, 4, and 8. Use lower values for
-> > >                       faster fans.
-> > > +gpio0        rw      sets the gpio 0 PIN. Legal values are 0, 1, 2, and
-> > 3.
-> > > +gpio1        rw      sets the gpio 1 PIN. Legal values are 0, 1, 2, and
-> > 3.
-> > > +gpio2        rw      sets the gpio 2 PIN. Legal values are 0, 1, 2, and
-> > 3.
-> > > +gpio3        rw      sets the gpio 3 PIN. Legal values are 0, and 1.
-> > > +gpio4        rw      sets the gpio 4 PIN. Legal values are 0, and 1.
-> > >
-> > gpio pins should be exported through the gpio subsystem, usually with a
-> > gpio
-> > driver. In this case, it may be acceptable to have the driver register with
-> > the gpio subsystem to export the pins. Using local sysfs attributes is
-> > wrong
-> > and unacceptable.
-> >
+> On Fri, Nov 08, 2013 at 03:50:21PM -0500, Ric Wheeler wrote:
+>> On 11/08/2013 03:46 PM, Ben Myers wrote:
+>>> Hey Christoph,
+>>>
+>>> On Fri, Nov 08, 2013 at 11:34:24AM -0800, Christoph Hellwig wrote:
+>>>> On Fri, Nov 08, 2013 at 12:03:37PM -0600, Ben Myers wrote:
+>>>>> Mark is replacing Alex as my backup because Alex is really busy at
+>>>>> Linaro and asked to be taken off awhile ago.  The holiday season is
+>>>>> coming up and I fully intend to go off my meds, turn in to Fonzy the
+>>>>> bear, and eat my hat.  I need someone to watch the shop while I'm off
+>>>>> exploring on Mars.  I trust Mark to do that because he is totally
+>>>>> awesome.
+>>>>
+>>>> Doing this as an unilateral decisions is not something that will win you
+>>>> a fan base.
+>>> It's posted for review.
+>>>
+>>>> While we never had anything reassembling a democracy in Linux Kernel
+>>>> development making decisions without even contacting the major
+>>>> contributor is wrong, twice so if the maintainer is a relatively minor
+>>>> contributor to start with.
+>>>>
+>>>> Just because it recent came up elsewhere I'd like to recite the
+>>>> definition from Trond here again:
+>>>>
+>>>> 	http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-June/000066.html
+>>>>
+>>>> By many of the creative roles enlisted there it's clear that Dave should
+>>>> be the maintainer.  He's been the main contributor and chief architect
+>>>> for XFS for many year, while the maintainers came and went at the mercy
+>>>> of SGI.  This is not meant to bad mouth either of you as I think you're
+>>>> doing a reasonably good job compared to other maintainers, but at the
+>>>> same time the direction is set by other people that have a much longer
+>>>> involvement with the project, and having them officially in control
+>>>> would help us forward a lot.  It would also avoid having to spend
+>>>> considerable resources to train every new generation of SGI maintainer.
+>>>>
+>>>> Coming to and end I would like to maintain Dave Chinner as the primary
+>>>> XFS maintainer for all the work he has done as biggest contributor and
+>>>> architect of XFS since longer than I can remember, and I would love to
+>>>> retain Ben Myers as a co-maintainer for all the good work he has done
+>>>> maintaining and reviewing patches since November 2011.
+>>> I think we're doing a decent job too.  So thanks for that much at least.  ;)
+>>>> I would also like to use this post as a public venue to condemn the
+>>>> unilateral smokey backroom decisions about XFS maintainership that SGI is
+>>>> trying to enforce on the community.
+>>> That really didn't happen Christoph.  It's not in my tree or in a pull request.
+>>>
+>>> Linus, let me know what you want to do.  I do think we're doing a fair job over
+>>> here, and (geez) I'm just trying to add Mark as my backup since Alex is too
+>>> busy.  I know the RH people want more control, and that's understandable, but
+>>> they really don't need to replace me to get their code in.  Ouch.
+>>>
+>>> Thanks,
+>>> 	Ben
+>>
+>> Christoph is not a Red Hat person.
+>>
+>> Jeff is from Oracle.
+>>
+>> This is not a Red Hat vs SGI thing,
 > 
-> In short: I am not sure.
+> Sorry if my read on that was wrong.
+>        
+>> Dave simply has earned the right
+>> to take on the formal leadership role of maintainer.
 > 
-> My concern is that these are not generic gpio pins. They seem to have chip
-> specific functionality, like alarm, full-on, and clock (internal and
-> external). Strictly speaking, one could even mention that to expose the
-> GPIODEF register as is without splitting it into five separate gpio pin
-> entries. Even those five pins behave slightly differently.
+> Then we're gonna need some Reviewed-bys.  ;)
 > 
-> I considered both, but these are the reasons why I decided to keep it chip
-> specific rather than separately in a generic subsystem.
+> From: Ben Myers <bpm@sgi.com>
 > 
-If the registers are not really gpio pins but are needed / used for chip
-configuration, the other option would be to configure the values using platform
-data and/or devicetree data. Either case, exporting the pins to user space via
-sysfs attribute files in the device directory is the wrong approach.
+> xfs: update maintainers 
+> 
+> Add Dave as maintainer of XFS.
+> 
+> Signed-off-by: Ben Myers <bpm@sgi.com>
 
-Guenter
+And just so everybody knows I'm cool with this...
+
+Reviewed-by: Alex Elder <elder@kernel.org>
+
+(Or use Signed-off-by: if you think that's more appropriate.)
+
+					-Alex
+
+> ---
+>  MAINTAINERS |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: b/MAINTAINERS
+> ===================================================================
+> --- a/MAINTAINERS	2013-11-08 15:20:18.935186245 -0600
+> +++ b/MAINTAINERS	2013-11-08 15:22:50.685245977 -0600
+> @@ -9387,8 +9387,8 @@ F:	drivers/xen/*swiotlb*
+>  
+>  XFS FILESYSTEM
+>  P:	Silicon Graphics Inc
+> +M:	Dave Chinner <dchinner@fromorbit.com>
+>  M:	Ben Myers <bpm@sgi.com>
+> -M:	Alex Elder <elder@kernel.org>
+>  M:	xfs@oss.sgi.com
+>  L:	xfs@oss.sgi.com
+>  W:	http://oss.sgi.com/projects/xfs
+> 
+> _______________________________________________
+> xfs mailing list
+> xfs@oss.sgi.com
+> http://oss.sgi.com/mailman/listinfo/xfs
+> 
+
