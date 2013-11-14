@@ -1,285 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab3KNO1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 09:27:14 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60372 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754591Ab3KNO1I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 09:27:08 -0500
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: cw00.choi@samsung.com
-Cc: myungjoo.ham@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH v2 6/7] extcon: arizona: Factor out different headphone detection IPs
-Date: Thu, 14 Nov 2013 14:11:36 +0000
-Message-Id: <1384438297-27851-6-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1384438297-27851-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1384438297-27851-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	id S1753509Ab3KNO1Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 09:27:25 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38862 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754603Ab3KNO1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 09:27:10 -0500
+Message-ID: <5284DDB9.7040502@ti.com>
+Date: Thu, 14 Nov 2013 08:27:05 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: viresh kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [RFC PATCH] cpufreq: cpufreq-cpu0: do not allow transitions with
+ regulators suspended
+References: <1382638087-32054-1-git-send-email-nm@ti.com> <CAKohponJOOfGX4BHn76LTBDTm58+2QxPf_rv1i4avVfrWhfkRg@mail.gmail.com> <52824522.7020401@ti.com> <CAKohpomB=wnct88wrTvW-qixLQPQGjVrCVF3V-BSbY7mhsSYQg@mail.gmail.com> <20131113151645.GA17828@kahuna> <52842671.40703@linaro.org>
+In-Reply-To: <52842671.40703@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch factors out each headphone detection IP in a seperate
-function this makes the code a little more readable and prevents us
-getting to excessive levels of indentation.
+On 11/13/2013 07:25 PM, viresh kumar wrote:
+> On Wednesday 13 November 2013 08:46 PM, Nishanth Menon wrote:
+>> arrgh, my bad.. Apologies for the bad one.. I missed it :( Does the following
+>> look equivalent?
+> 
+> yes.
+> 
+>> With this, I now see:
+> 
+>> [   43.212714] cpufreq: cpufreq_add_policy_cpu: Failed to stop governor
+>> ^^^ ??
+> 
+> Ahh, I missed this part. I thought it will fail at some other place where there
+> is no error checking :), but that's not true.
+> 
+> Following should fix it for you and looks to be the right way as well.
+> 
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index dc67fa0..30b09d3 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1530,6 +1530,14 @@ static void cpufreq_bp_resume(void)
+>                 }
+>         }
+> 
+> +       if (has_target()) {
+> +               if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
+> +                       (ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
+> +                       pr_err("%s: Failed to start governor\n", __func__);
+> +                       goto fail;
+> +               }
+> +       }
+> +
+>         schedule_work(&policy->update);
+> 
+>  fail:
+> 
+I am guessing this is a little too early for restarting policy here
+considering syscore_ops->resume is pretty early..
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/extcon/extcon-arizona.c |  215 +++++++++++++++++++++++---------------
- 1 files changed, 130 insertions(+), 85 deletions(-)
+http://pastebin.mozilla.org/3602746 is the equivalent patch for v3.12
+http://pastebin.mozilla.org/3602747 is the result.
 
-diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index f4fe2d1..d71a738 100644
---- a/drivers/extcon/extcon-arizona.c
-+++ b/drivers/extcon/extcon-arizona.c
-@@ -354,7 +354,31 @@ static struct {
- 	{ 1000, 10000 },
- };
- 
--static int arizona_hpdet_read(struct arizona_extcon_info *info)
-+static int arizona_hpdet_read_ip0(struct arizona_extcon_info *info)
-+{
-+	struct arizona *arizona = info->arizona;
-+	unsigned int val;
-+	int ret;
-+
-+	ret = regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_2, &val);
-+	if (ret != 0) {
-+		dev_err(arizona->dev, "Failed to read HPDET status: %d\n",
-+			ret);
-+		return ret;
-+	}
-+
-+
-+	if (!(val & ARIZONA_HP_DONE)) {
-+		dev_err(arizona->dev, "HPDET did not complete: %x\n", val);
-+		return -EAGAIN;
-+	}
-+
-+	val &= ARIZONA_HP_LVL_MASK;
-+
-+	return val;
-+}
-+
-+static int arizona_hpdet_read_ip1(struct arizona_extcon_info *info)
- {
- 	struct arizona *arizona = info->arizona;
- 	unsigned int val, range;
-@@ -367,106 +391,127 @@ static int arizona_hpdet_read(struct arizona_extcon_info *info)
- 		return ret;
- 	}
- 
--	switch (info->hpdet_ip) {
--	case 0:
--		if (!(val & ARIZONA_HP_DONE)) {
--			dev_err(arizona->dev, "HPDET did not complete: %x\n",
--				val);
--			return -EAGAIN;
--		}
-+	if (!(val & ARIZONA_HP_DONE_B)) {
-+		dev_err(arizona->dev, "HPDET did not complete: %x\n", val);
-+		return -EAGAIN;
-+	}
- 
--		val &= ARIZONA_HP_LVL_MASK;
--		break;
-+	ret = regmap_read(arizona->regmap, ARIZONA_HP_DACVAL, &val);
-+	if (ret != 0) {
-+		dev_err(arizona->dev, "Failed to read HP value: %d\n", ret);
-+		return -EAGAIN;
-+	}
- 
--	case 1:
--		if (!(val & ARIZONA_HP_DONE_B)) {
--			dev_err(arizona->dev, "HPDET did not complete: %x\n",
--				val);
--			return -EAGAIN;
--		}
-+	regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1, &range);
-+	range = (range & ARIZONA_HP_IMPEDANCE_RANGE_MASK)
-+		   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
- 
--		ret = regmap_read(arizona->regmap, ARIZONA_HP_DACVAL, &val);
--		if (ret != 0) {
--			dev_err(arizona->dev, "Failed to read HP value: %d\n",
--				ret);
--			return -EAGAIN;
--		}
-+	if (range < ARRAY_SIZE(arizona_hpdet_b_ranges) - 1 &&
-+	    (val < 100 || val >= 0x3fb)) {
-+		range++;
-+		dev_dbg(arizona->dev, "Moving to HPDET range %d\n", range);
-+		regmap_update_bits(arizona->regmap,
-+				   ARIZONA_HEADPHONE_DETECT_1,
-+				   ARIZONA_HP_IMPEDANCE_RANGE_MASK,
-+				   range <<
-+				   ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
-+		return -EAGAIN;
-+	}
- 
--		regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1,
--			    &range);
--		range = (range & ARIZONA_HP_IMPEDANCE_RANGE_MASK)
--			   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
-+	/* If we go out of range report top of range */
-+	if (val < 100 || val >= 0x3fb) {
-+		dev_dbg(arizona->dev, "Measurement out of range\n");
-+		return ARIZONA_HPDET_MAX;
-+	}
- 
--		if (range < ARRAY_SIZE(arizona_hpdet_b_ranges) - 1 &&
--		    (val < 100 || val >= 0x3fb)) {
--			range++;
--			dev_dbg(arizona->dev, "Moving to HPDET range %d\n",
--				range);
--			regmap_update_bits(arizona->regmap,
--					   ARIZONA_HEADPHONE_DETECT_1,
--					   ARIZONA_HP_IMPEDANCE_RANGE_MASK,
--					   range <<
--					   ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
--			return -EAGAIN;
--		}
-+	dev_dbg(arizona->dev, "HPDET read %d in range %d\n", val, range);
- 
--		/* If we go out of range report top of range */
--		if (val < 100 || val >= 0x3fb) {
--			dev_dbg(arizona->dev, "Measurement out of range\n");
--			return ARIZONA_HPDET_MAX;
--		}
-+	val = arizona_hpdet_b_ranges[range].factor_b
-+		/ ((val * 100) - arizona_hpdet_b_ranges[range].factor_a);
-+
-+	return val;
-+}
-+
-+static int arizona_hpdet_read_ip2(struct arizona_extcon_info *info)
-+{
-+	struct arizona *arizona = info->arizona;
-+	unsigned int val, range;
-+	int ret;
-+
-+	ret = regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_2, &val);
-+	if (ret != 0) {
-+		dev_err(arizona->dev, "Failed to read HPDET status: %d\n",
-+			ret);
-+		return ret;
-+	}
-+
-+	if (!(val & ARIZONA_HP_DONE_B)) {
-+		dev_err(arizona->dev, "HPDET did not complete: %x\n", val);
-+		return -EAGAIN;
-+	}
-+
-+	val &= ARIZONA_HP_LVL_B_MASK;
-+	/* Convert to ohms, the value is in 0.5 ohm increments */
-+	val /= 2;
-+
-+	regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1, &range);
-+	range = (range & ARIZONA_HP_IMPEDANCE_RANGE_MASK)
-+		   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
-+
-+	/* Skip up a range, or report? */
-+	if (range < ARRAY_SIZE(arizona_hpdet_c_ranges) - 1 &&
-+	    (val >= arizona_hpdet_c_ranges[range].max)) {
-+		range++;
-+		dev_dbg(arizona->dev, "Moving to HPDET range %d-%d\n",
-+			arizona_hpdet_c_ranges[range].min,
-+			arizona_hpdet_c_ranges[range].max);
-+		regmap_update_bits(arizona->regmap,
-+				   ARIZONA_HEADPHONE_DETECT_1,
-+				   ARIZONA_HP_IMPEDANCE_RANGE_MASK,
-+				   range <<
-+				   ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
-+		return -EAGAIN;
-+	}
-+
-+	if (range && (val < arizona_hpdet_c_ranges[range].min)) {
-+		dev_dbg(arizona->dev, "Reporting range boundary %d\n",
-+			arizona_hpdet_c_ranges[range].min);
-+		val = arizona_hpdet_c_ranges[range].min;
-+	}
-+
-+	return val;
-+}
- 
--		dev_dbg(arizona->dev, "HPDET read %d in range %d\n",
--			val, range);
-+static int arizona_hpdet_read(struct arizona_extcon_info *info)
-+{
-+	struct arizona *arizona = info->arizona;
-+	int ret = 0;
- 
--		val = arizona_hpdet_b_ranges[range].factor_b
--			/ ((val * 100) -
--			   arizona_hpdet_b_ranges[range].factor_a);
-+	switch (info->hpdet_ip) {
-+	case 0:
-+		ret = arizona_hpdet_read_ip0(info);
-+		if (ret < 0)
-+			return ret;
-+		break;
-+
-+	case 1:
-+		ret = arizona_hpdet_read_ip1(info);
-+		if (ret < 0)
-+			return ret;
- 		break;
- 
- 	default:
- 		dev_warn(arizona->dev, "Unknown HPDET IP revision %d\n",
- 			 info->hpdet_ip);
- 	case 2:
--		if (!(val & ARIZONA_HP_DONE_B)) {
--			dev_err(arizona->dev, "HPDET did not complete: %x\n",
--				val);
--			return -EAGAIN;
--		}
--
--		val &= ARIZONA_HP_LVL_B_MASK;
--		/* Convert to ohms, the value is in 0.5 ohm increments */
--		val /= 2;
--
--		regmap_read(arizona->regmap, ARIZONA_HEADPHONE_DETECT_1,
--			    &range);
--		range = (range & ARIZONA_HP_IMPEDANCE_RANGE_MASK)
--			   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
--
--		/* Skip up a range, or report? */
--		if (range < ARRAY_SIZE(arizona_hpdet_c_ranges) - 1 &&
--		    (val >= arizona_hpdet_c_ranges[range].max)) {
--			range++;
--			dev_dbg(arizona->dev, "Moving to HPDET range %d-%d\n",
--				arizona_hpdet_c_ranges[range].min,
--				arizona_hpdet_c_ranges[range].max);
--			regmap_update_bits(arizona->regmap,
--					   ARIZONA_HEADPHONE_DETECT_1,
--					   ARIZONA_HP_IMPEDANCE_RANGE_MASK,
--					   range <<
--					   ARIZONA_HP_IMPEDANCE_RANGE_SHIFT);
--			return -EAGAIN;
--		}
--
--		if (range && (val < arizona_hpdet_c_ranges[range].min)) {
--			dev_dbg(arizona->dev, "Reporting range boundary %d\n",
--				arizona_hpdet_c_ranges[range].min);
--			val = arizona_hpdet_c_ranges[range].min;
--		}
-+		ret = arizona_hpdet_read_ip2(info);
-+		if (ret < 0)
-+			return ret;
-+		break;
- 	}
- 
--	dev_dbg(arizona->dev, "HP impedance %d ohms\n", val);
--	return val;
-+	dev_dbg(arizona->dev, "HP impedance %d ohms\n", ret);
-+	return ret;
- }
- 
- static int arizona_hpdet_do_id(struct arizona_extcon_info *info, int *reading,
 -- 
-1.7.2.5
-
+Regards,
+Nishanth Menon
