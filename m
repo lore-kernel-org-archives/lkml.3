@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab3KNHbZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 02:31:25 -0500
-Received: from mga09.intel.com ([134.134.136.24]:41047 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751087Ab3KNHbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 02:31:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="408592340"
-Message-ID: <528479A9.9020802@intel.com>
-Date: Thu, 14 Nov 2013 15:20:09 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1752486Ab3KNHbg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 02:31:36 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:44168 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab3KNHbe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 02:31:34 -0500
+X-Spam-Score: -100.8
+Message-ID: <52847CD5.1030105@asianux.com>
+Date: Thu, 14 Nov 2013 15:33:41 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH 2/2] ACPI / bind: Use (put|get)_device() on ACPI device
- objects too
-References: <3268437.YsusHvklcv@vostro.rjw.lan> <1803808.ghCmmaO2Cj@vostro.rjw.lan> <9712243.It8gvaRCs0@vostro.rjw.lan>
-In-Reply-To: <9712243.It8gvaRCs0@vostro.rjw.lan>
+To: Hugh Dickins <hughd@google.com>
+CC: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>
+Subject: Re: [PATCH] arch: um: kernel: skas: mmu: remove pmd_free() and pud_free()
+ for failure processing in init_stub_pte()
+References: <alpine.LNX.2.00.1310150330350.9078@eggly.anvils> <528308E8.8040203@asianux.com> <alpine.LNX.2.00.1311132041200.1785@eggly.anvils> <52847237.5030405@asianux.com>
+In-Reply-To: <52847237.5030405@asianux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年11月14日 07:26, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On 11/14/2013 02:48 PM, Chen Gang wrote:
+>> >From the look of it, if an error did occur in init_stub_pte(),
+>> > then the special mapping of STUB_CODE and STUB_DATA would not
+>> > be installed, so this area would be invisible to munmap and exit,
+>> > and with your patch then the pages allocated likely to be leaked.
+>> > 
+> It sounds reasonable to me: "although 'pgd' related with 'mm', but they
+> are not installed". But just like you said originally: "better get ACK
+> from some mm guys".
 > 
-> When associating a "physical" device with an ACPI device object
-> acpi_bind_one() only uses get_device() to increment the reference
-> counter of the former, but there is no reason not to do that with
-> the latter too.  Among other things, that may help to avoid
-> use-after-free when an ACPI device object is freed without calling
-> acpi_unbind_one() for all "physical" devices associated with it
-> (that only can happen in buggy code, but then it's better if the
-> kernel doesn't crash as a result of a bug).
 > 
-> For this reason, modify acpi_bind_one() to apply get_device() to
-> the ACPI device object too and update acpi_unbind_one() to drop
-> that reference using put_device() as appropriate.
+> Hmm... is it another issue: "after STUB_CODE succeeds, but STUB_DATA
+> fails, the STUB_CODE will be leaked".
 > 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/glue.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
 > 
-> Index: linux-pm/drivers/acpi/glue.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/glue.c
-> +++ linux-pm/drivers/acpi/glue.c
-> @@ -217,6 +217,7 @@ int acpi_bind_one(struct device *dev, ac
->  	if (!acpi_dev)
->  		return -EINVAL;
->  
-> +	get_device(&acpi_dev->dev);
->  	get_device(dev);
->  	physical_node = kzalloc(sizeof(*physical_node), GFP_KERNEL);
->  	if (!physical_node) {
-> @@ -243,6 +244,7 @@ int acpi_bind_one(struct device *dev, ac
->  				goto err;
->  
->  			put_device(dev);
-> +			put_device(&acpi_dev->dev);
->  			return 0;
->  		}
->  		if (pn->node_id == node_id) {
-> @@ -282,6 +284,7 @@ int acpi_bind_one(struct device *dev, ac
->   err:
->  	ACPI_COMPANION_SET(dev, NULL);
->  	put_device(dev);
-> +	put_device(&acpi_dev->dev);
->  	return retval;
->  }
->  EXPORT_SYMBOL_GPL(acpi_bind_one);
-> @@ -307,8 +310,9 @@ int acpi_unbind_one(struct device *dev)
->  			sysfs_remove_link(&acpi_dev->dev.kobj, physnode_name);
->  			sysfs_remove_link(&dev->kobj, "firmware_node");
->  			ACPI_COMPANION_SET(dev, NULL);
-> -			/* acpi_bind_one() increase refcnt by one. */
-> +			/* Drop references taken by acpi_bind_one(). */
->  			put_device(dev);
-> +			put_device(&acpi_dev->dev);
->  			kfree(entry);
->  			break;
->  		}
+>> > Which is not to say that the existing code is actually correct:
+>> > you're probably right that it's technically wrong.  But it would
+>> > be very hard to get init_stub_pte() to fail, and has anyone
+>> > reported a problem with it?  My guess is not, and my own
+>> > inclination to dabble here is zero.
+>> > 
+> Yeah.
 > 
 
-Reviewed-by: Lan Tianyu <tianyu.lan@intel.com>
+If we can not get ACK from any mm guys, and we have no enough time
+resource to read related source code, for me, I still recommend to
+remove p?d_free() in failure processing.
 
+In the worst cases, we will leak a little memory, and no any other
+negative effect, it is an executable way which is no any risks.
+
+For current mm implementation, it seems we can not assume any thing,
+although they sounds (or should be) reasonable (include what you said
+about mm).
+
+
+Thanks.
 -- 
-Best regards
-Tianyu Lan
+Chen Gang
