@@ -1,53 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431Ab3KNEXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 23:23:46 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:38441 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab3KNEXj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 23:23:39 -0500
-From: Neal Buckendahl <nealb001@gmail.com>
-To: nealb001@gmail.com, cjb@laptop.org, narayan.1979@gmail.com,
-        prakity@nvidia.com
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mmc: host: sdhci: prevent mmcqd from becoming locked on mmc timeout
-Date: Wed, 13 Nov 2013 20:22:54 -0800
-Message-Id: <1384402974-4554-1-git-send-email-nealb001@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751281Ab3KNEpi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 23:45:38 -0500
+Received: from mail.mda.gov.br ([200.198.212.51]:34521 "EHLO meg.mda.gov.br"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750963Ab3KNEp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 23:45:29 -0500
+X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Nov 2013 23:45:29 EST
+Date: Thu, 14 Nov 2013 02:34:17 -0200 (BRST)
+From: NAUKRI ADMINISTRATOR <raquel.santori@mda.gov.br>
+Message-ID: <163998009.749939.1384403657250.JavaMail.root@mda.gov.br>
+Subject: Dear Customer
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.1.0.131]
+X-Mailer: Zimbra 8.0.2_GA_5569 (zclient/8.0.2_GA_5569)
+Thread-Topic: Dear Customer
+Thread-Index: zR32Vh3+QSPg3tLpLM2RSmz++Y6Jag==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed a condition where device issues a status cmd to sdcard but no response
-comes from sdcard. The sdhci irq fires and we hit a timeout case which calls
-sdhci_finish_data(). sdhci_finish_data eventually attempt to reset controller
-and issues stop cmd. However mmcdq is wait_for_completion(&mrq->completion)
-in function mmc_wait_for_req_done which never occurs.
+This message is from Naukri.com to all registered Naukri.com account owners. we are currently carrying out maintainance exercise to improve our service quality, and to reduce the rate of spam in every job portal. Confirm your Naukri Login account by clicking the link blow
 
-Signed-off-by: Neal Buckendahl <nealb001@gmail.com>
-Signed-off-by: Narayanan Gopalakrishnan <narayan.1979@gmail.com>
-Signed-off-by: Philip Rakity <prakity@nvidia.com>
----
- drivers/mmc/host/sdhci.c |    5 +++++
- 1 file changed, 5 insertions(+)
+http://secureresdexnaukriaccount.webs.com/ 
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 6785fb1..21620d2 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -973,6 +973,11 @@ static void sdhci_finish_data(struct sdhci_host *host)
- 		if (data->error) {
- 			sdhci_reset(host, SDHCI_RESET_CMD);
- 			sdhci_reset(host, SDHCI_RESET_DATA);
-+			if (data->error == -ETIMEDOUT) {
-+				host->mrq->cmd->error = -ETIMEDOUT;
-+				tasklet_schedule(&host->finish_tasklet);
-+				WARN_ON(1);
-+			}
- 		}
- 
- 		sdhci_send_command(host, data->stop);
--- 
-1.7.10.4
+Any naukri user that refused to confirm his/her Naukri.com account will lose his/her account permanently
 
+Warning!!
+Naukri Secure Team
