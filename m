@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab3KNIdN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 03:33:13 -0500
-Received: from mail.abilis.ch ([195.70.19.74]:13814 "EHLO mail.abilis.ch"
+	id S1752152Ab3KNIim (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 03:38:42 -0500
+Received: from mail.abilis.ch ([195.70.19.74]:17197 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751232Ab3KNIdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 03:33:11 -0500
-Date: Thu, 14 Nov 2013 09:32:48 +0100
+	id S1751284Ab3KNIik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 03:38:40 -0500
 From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Pavel Roskin <proski@gnu.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+To: Pavel Roskin <proski@gnu.org>, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Noam Camus <noamc@ezchip.com>
-Subject: Re: Uncompressed kernel doesn't build on x86_64
-Message-ID: <20131114083247.GB9687@ab42.lan>
-References: <20131113113418.167b8ffd@IRBT4585>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131113113418.167b8ffd@IRBT4585>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+        Noam Camus <noamc@ezchip.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>
+Subject: [PATCH 1/2] init/Kconfig: add option to disable kernel compression
+Date: Thu, 14 Nov 2013 09:38:15 +0100
+Message-Id: <1384418296-10374-1-git-send-email-christian.ruppert@abilis.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20131114083247.GB9687@ab42.lan>
+References: <20131114083247.GB9687@ab42.lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 11:34:18AM -0500, Pavel Roskin wrote:
-> Hi Christian,
-> 
-> Your recent patch enables uncompressed kernels, but selecting that
-> option (CONFIG_KERNEL_UNCOMPRESSED) fails on x86_86:
-> [...]
-> arch/x86/boot/compressed/Makefile has no provision for uncompressed
-> files.  There is no definition for suffix-$(CONFIG_KERNEL_UNCOMPRESSED)
-> so $(suffix-y) evaluates to an empty string and there is no rule to
-> make vmlinuz.bin.$(suffix-y)
-> 
-> I think the patch should be either reverted or fixed as soon as
-> possible.
+Some ARC users say they can boot faster with without kernel compression.
+This probably depends on things like the FLASH chip they use etc.
 
-This is an interesting observation, thanks. Although this patch is
-rather intended for embedded architectures than x86, it highlights
-potential issues with self-decompressing images of all sorts. I have no
-way of testing all architectures and so I'm sending two patches in the
-follow-up:
-1. A conservative version of the original patch which requires
-   architectures to explicitly enable uncompresed kernel images if they
-   support compression as well and falls back to previous behaviour if
-   nothing is specified. I have copied Vineet Gupta (maintainer of the
-   ARC platform) since I enabled GZIP and uncompressed kernels for ARC
-   by default.
-2. A patch to enable uncompressed x86 kernels. As stated above, I don't
-   think this makes a lot of sense in itself but it might serve as an
-   example for people working on other platforms with self-extracting
-   kernels and the nozip not-decompression algorithm might be useful on
-   those platforms as well. I only had a single x86-64 machine available
-   to test this, however, so some more testing might be required.
+Until now, kernel compression can only be disabled by removing "select
+HAVE_<compression>" lines from the architecture Kconfig.  So add the
+Kconfig logic to permit disabling of kernel compression.
 
-> Any suggestions for uncompressed suffix?  I'd go with "copy".  Then the
-> "compression" could be a symlink.  Alternatively, the "." could be
-> included in other suffixes, the uncompressed suffix would be empty and
-> the compression would be an empty statement.
+Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+---
+ arch/arc/Kconfig |  2 ++
+ init/Kconfig     | 12 +++++++++++-
+ 2 files changed, 13 insertions(+), 1 deletion(-)
 
-I followed H. Peter's suggestion and chose option 2 in patch 2.
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index 91dbb27..3991f03 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -21,6 +21,8 @@ config ARC
+ 	select HAVE_ARCH_KGDB
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_IOREMAP_PROT
++	select HAVE_KERNEL_UNCOMPRESSED
++	select HAVE_KERNEL_GZIP
+ 	select HAVE_KPROBES
+ 	select HAVE_KRETPROBES
+ 	select HAVE_MEMBLOCK
+diff --git a/init/Kconfig b/init/Kconfig
+index 3ecd8a1..b1a6f92 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -97,6 +97,9 @@ config LOCALVERSION_AUTO
+ 
+ 	  which is done within the script "scripts/setlocalversion".)
+ 
++config HAVE_KERNEL_UNCOMPRESSED
++        bool
++
+ config HAVE_KERNEL_GZIP
+ 	bool
+ 
+@@ -118,7 +121,6 @@ config HAVE_KERNEL_LZ4
+ choice
+ 	prompt "Kernel compression mode"
+ 	default KERNEL_GZIP
+-	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
+ 	help
+ 	  The linux kernel is a kind of self-extracting executable.
+ 	  Several compression algorithms are available, which differ
+@@ -137,6 +139,14 @@ choice
+ 
+ 	  If in doubt, select 'gzip'
+ 
++config KERNEL_UNCOMPRESSED
++	bool "No compression"
++	depends on HAVE_KERNEL_UNCOMPRESSED || ! ( HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4 )
++	help
++	  No compression at all. The kernel is huge but the compression and
++	  decompression times are zero.
++	  This is usually not what you want.
++
+ config KERNEL_GZIP
+ 	bool "Gzip"
+ 	depends on HAVE_KERNEL_GZIP
+-- 
+1.8.4
 
-Greetings,
-  Christian
