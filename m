@@ -1,83 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab3KNQ5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:57:16 -0500
-Received: from smtprelay0166.hostedemail.com ([216.40.44.166]:52690 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755786Ab3KNQ5E (ORCPT
+	id S932335Ab3KNQ5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:57:37 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:46616 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab3KNQjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:57:04 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3834:3865:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4560:5007:6119:6120:7576:7652:7901:7903:9025:9545:10004:10400:10848:10967:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12555:12698:12737:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesia
-X-HE-Tag: goose74_2021e293b6c1a
-X-Filterd-Recvd-Size: 2662
-Message-ID: <1384448222.15774.12.camel@joe-AO722>
-Subject: Re: [PATCH] alx: Reset phy speed after resume
-From: Joe Perches <joe@perches.com>
-To: hahnjo <linux@hahnjo.de>
-Cc: jcliburn@gmail.com, chris.snook@gmail.com, davem@davemloft.net,
-        johannes@sipsolutions.net, wangyijing@huawei.com,
-        maarten.lankhorst@canonical.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 14 Nov 2013 08:57:02 -0800
-In-Reply-To: <1384445773.29057.5.camel@localhost.tld>
-References: <1384445773.29057.5.camel@localhost.tld>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Nov 2013 11:39:04 -0500
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Niu Yawei <yawei.niu@intel.com>,
+        Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH 09/39] staging/lustre/llite: use 64bits flags in ll_lov_setea()
+Date: Fri, 15 Nov 2013 00:32:32 +0800
+Message-Id: <1384446782-13741-10-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
+References: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-14 at 17:16 +0100, hahnjo wrote:
-> From 27744b24f9291782c1342dbd6cac511e68da907c Mon Sep 17 00:00:00 2001
-> From: hahnjo <hahnjo@hahnjo.de>
-> Date: Tue, 12 Nov 2013 18:19:24 +0100
-> Subject: [PATCH] alx: Reset phy speed after resume
-> 
-> This fixes bug 62491 (https://bugzilla.kernel.org/show_bug.cgi?id=62491).
-> After resuming some users got the following error flooding the kernel log:
-> alx 0000:02:00.0: invalid PHY speed/duplex: 0xffff
-> 
-> Signed-off-by: Jonas Hahnfeld <linux@hahnjo.de>
-> ---
->  drivers/net/ethernet/atheros/alx/main.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
-> index fc95b23..6305a5d 100644
-> --- a/drivers/net/ethernet/atheros/alx/main.c
-> +++ b/drivers/net/ethernet/atheros/alx/main.c
-> @@ -1389,6 +1389,9 @@ static int alx_resume(struct device *dev)
->  {
->  	struct pci_dev *pdev = to_pci_dev(dev);
->  	struct alx_priv *alx = pci_get_drvdata(pdev);
-> +	struct alx_hw *hw = &alx->hw;
-> +
-> +	alx_reset_phy(hw);
->  
->  	if (!netif_running(alx->dev))
->  		return 0;
+From: Niu Yawei <yawei.niu@intel.com>
 
-Perhaps this would help too:
+In ll_lov_setea(), setting MDS_OPEN_HAS_OBJS to an int flags will
+result in the flags being overflowed.
+
+Lustre-change: http://review.whamcloud.com/7312
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3744
+Signed-off-by: Niu Yawei <yawei.niu@intel.com>
+Reviewed-by: Emoly Liu <emoly.liu@intel.com>
+Reviewed-by: Jian Yu <jian.yu@intel.com>
+Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
+Signed-off-by: Peng Tao <bergwolf@gmail.com>
+Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/net/ethernet/atheros/alx/hw.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/lustre/lustre/llite/file.c         |    7 ++++---
+ .../staging/lustre/lustre/llite/llite_internal.h   |    2 +-
+ drivers/staging/lustre/lustre/llite/xattr.c        |    6 +++---
+ 3 files changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/ethernet/atheros/alx/hw.c b/drivers/net/ethernet/atheros/alx/hw.c
-index 1e8c24a..3396224 100644
---- a/drivers/net/ethernet/atheros/alx/hw.c
-+++ b/drivers/net/ethernet/atheros/alx/hw.c
-@@ -908,7 +908,8 @@ int alx_read_phy_link(struct alx_hw *hw)
- 	return 0;
- 
- wrong_speed:
--	dev_err(&pdev->dev, "invalid PHY speed/duplex: 0x%x\n", giga);
-+	dev_err_ratelimited(&pdev->dev, "invalid PHY speed/duplex: 0x%x\n",
-+			    giga);
- 	return -EINVAL;
+diff --git a/drivers/staging/lustre/lustre/llite/file.c b/drivers/staging/lustre/lustre/llite/file.c
+index 02b297b..d3f375d 100644
+--- a/drivers/staging/lustre/lustre/llite/file.c
++++ b/drivers/staging/lustre/lustre/llite/file.c
+@@ -1401,7 +1401,8 @@ static int ll_lov_recreate_fid(struct inode *inode, unsigned long arg)
  }
  
-
+ int ll_lov_setstripe_ea_info(struct inode *inode, struct file *file,
+-			     int flags, struct lov_user_md *lum, int lum_size)
++			     __u64  flags, struct lov_user_md *lum,
++			     int lum_size)
+ {
+ 	struct lov_stripe_md *lsm = NULL;
+ 	struct lookup_intent oit = {.it_op = IT_OPEN, .it_flags = flags};
+@@ -1522,7 +1523,7 @@ out:
+ static int ll_lov_setea(struct inode *inode, struct file *file,
+ 			    unsigned long arg)
+ {
+-	int			 flags = MDS_OPEN_HAS_OBJS | FMODE_WRITE;
++	__u64			 flags = MDS_OPEN_HAS_OBJS | FMODE_WRITE;
+ 	struct lov_user_md	*lump;
+ 	int			 lum_size = sizeof(struct lov_user_md) +
+ 					    sizeof(struct lov_user_ost_data);
+@@ -1554,7 +1555,7 @@ static int ll_lov_setstripe(struct inode *inode, struct file *file,
+ 	struct lov_user_md_v1	*lumv1p = (struct lov_user_md_v1 *)arg;
+ 	struct lov_user_md_v3	*lumv3p = (struct lov_user_md_v3 *)arg;
+ 	int			 lum_size, rc;
+-	int			 flags = FMODE_WRITE;
++	__u64			 flags = FMODE_WRITE;
+ 
+ 	/* first try with v1 which is smaller than v3 */
+ 	lum_size = sizeof(struct lov_user_md_v1);
+diff --git a/drivers/staging/lustre/lustre/llite/llite_internal.h b/drivers/staging/lustre/lustre/llite/llite_internal.h
+index 37e33ab..69b5d91 100644
+--- a/drivers/staging/lustre/lustre/llite/llite_internal.h
++++ b/drivers/staging/lustre/lustre/llite/llite_internal.h
+@@ -790,7 +790,7 @@ struct posix_acl * ll_get_acl(struct inode *inode, int type);
+ int ll_inode_permission(struct inode *inode, int mask);
+ 
+ int ll_lov_setstripe_ea_info(struct inode *inode, struct file *file,
+-			     int flags, struct lov_user_md *lum,
++			     __u64  flags, struct lov_user_md *lum,
+ 			     int lum_size);
+ int ll_lov_getstripe_ea_info(struct inode *inode, const char *filename,
+ 			     struct lov_mds_md **lmm, int *lmm_size,
+diff --git a/drivers/staging/lustre/lustre/llite/xattr.c b/drivers/staging/lustre/lustre/llite/xattr.c
+index 8c96854..b6cb0db 100644
+--- a/drivers/staging/lustre/lustre/llite/xattr.c
++++ b/drivers/staging/lustre/lustre/llite/xattr.c
+@@ -236,13 +236,13 @@ int ll_setxattr(struct dentry *dentry, const char *name,
+ 			lump->lmm_stripe_offset = -1;
+ 
+ 		if (lump != NULL && S_ISREG(inode->i_mode)) {
+-			struct file f;
+-			int flags = FMODE_WRITE;
++			struct file	f;
++			__u64		it_flags = FMODE_WRITE;
+ 			int lum_size = (lump->lmm_magic == LOV_USER_MAGIC_V1) ?
+ 				sizeof(*lump) : sizeof(struct lov_user_md_v3);
+ 
+ 			f.f_dentry = dentry;
+-			rc = ll_lov_setstripe_ea_info(inode, &f, flags, lump,
++			rc = ll_lov_setstripe_ea_info(inode, &f, it_flags, lump,
+ 						      lum_size);
+ 			/* b10667: rc always be 0 here for now */
+ 			rc = 0;
+-- 
+1.7.9.5
 
