@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758083Ab3KNViF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 16:38:05 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:49794 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756160Ab3KNVh6 (ORCPT
+	id S1757470Ab3KNVrM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 16:47:12 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:49552 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824Ab3KNVrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 16:37:58 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: shuah.kh@samsung.com
-Cc: gregkh@linuxfoundation.org, shuahkhan@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Add Legacy PM OPS usage checks to class, bus, and driver register functions
-Date: Thu, 14 Nov 2013 22:50:29 +0100
-Message-ID: <1786563.y3Kg82Sl7s@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <5284EF9F.5050508@samsung.com>
-References: <cover.1383868060.git.shuah.kh@samsung.com> <5284EF9F.5050508@samsung.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Thu, 14 Nov 2013 16:47:02 -0500
+From: Marek Belisko <marek@goldelico.com>
+To: arnd@arndb.de, gregkh@linuxfoundation.org
+Cc: neilb@suse.de, hns@goldelico.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, rob@landley.net,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Marek Belisko <marek@goldelico.com>
+Subject: [PATCH 0/3] Add EOC handling for bmp085 + DT and platform data updates
+Date: Thu, 14 Nov 2013 22:46:46 +0100
+Message-Id: <1384465609-26485-1-git-send-email-marek@goldelico.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 14, 2013 08:43:27 AM Shuah Khan wrote:
-> On 11/07/2013 05:03 PM, Shuah Khan wrote:
-> > Add Legacy PM OPS usage checks to class, bus, and driver register functions.
-> > If Legacy PM OPS usage is found, print warning message to indicate the driver
-> > code needs updating to use Dev PM OPS interfaces. This will help serve as a way
-> > to track drivers that still use Legacy PM OPS and fix them.
-> >
-> > This patch set adds Legacy PM OPS usage check and warning to bus_register(),
-> > __class_register(), and driver_register() functions.
-> >
-> > Individual patches in this series are not dependent on each other. The only
-> > reason this is a series is for context and facilitating discussion on the
-> > overall change as opposed individual patches.
-> >
-> > Shuah Khan (3):
-> >    drivers/bus: Add Legacy PM OPS usage check and warning to
-> >      bus_register()
-> >    drivers/class: Add Legacy PM OPS usage check and warning to
-> >      __class_register()
-> >    driver: Add Legacy PM OPS usage check and warning to driver_register()
-> >
-> >   drivers/base/bus.c    | 3 +++
-> >   drivers/base/class.c  | 4 ++++
-> >   drivers/base/driver.c | 4 ++++
-> >   3 files changed, 11 insertions(+)
-> >
-> 
-> Greg/Rafael,
-> 
-> Any feedback on this series? Haven't gotten to it or don't like it?
+This series add support for using EOC gpio line of bmp085 to detect when conversion
+is finished. First patch add that functionality. Second patch add DT bindings for gpio
+and irq parameters. Third patch add missing platform data which are already in DT bindings
+to have possibility to used them on non-DT archs.
 
-I haven't had the time to review this, sorry.
+Marek Belisko (3):
+  misc: bmp085: Clean up and enable use of interrupt for completion.
+  misc: bmp085: Add DT bindings for EOC gpio line and direct irq.
+  misc: bmp085: Add missing platform data.
 
-Thanks,
-Rafael
+ Documentation/devicetree/bindings/misc/bmp085.txt |   8 ++
+ drivers/misc/bmp085.c                             | 138 +++++++++++++++++++---
+ include/linux/i2c/bmp085.h                        |  24 ++++
+ 3 files changed, 155 insertions(+), 15 deletions(-)
+ create mode 100644 include/linux/i2c/bmp085.h
+
+-- 
+1.8.1.2
 
