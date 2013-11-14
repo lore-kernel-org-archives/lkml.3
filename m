@@ -1,266 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3KNLJO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 06:09:14 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:34404 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778Ab3KNLJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 06:09:11 -0500
-X-IronPort-AV: E=Sophos;i="4.93,699,1378828800"; 
-   d="scan'208";a="9034673"
-Message-ID: <5284AF90.7060506@cn.fujitsu.com>
-Date: Thu, 14 Nov 2013 19:10:08 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753497Ab3KNLKI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 06:10:08 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:53044 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab3KNLKG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 06:10:06 -0500
+Message-ID: <5284AF89.20505@hitachi.com>
+Date: Thu, 14 Nov 2013 20:10:01 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Linux Containers <containers@lists.linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [REVIEW][PATCH 1/2] userns: Better restrictions on when proc
- and sysfs can be mounted
-References: <878uzmhkqg.fsf@xmission.com> <52749663.2000701@cn.fujitsu.com>	<527C4D88.10907@cn.fujitsu.com> <87k3gigmgj.fsf@xmission.com> <5283299B.8080702@cn.fujitsu.com>
-In-Reply-To: <5283299B.8080702@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/14 19:07:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/14 19:07:21,
-	Serialize complete at 2013/11/14 19:07:21
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v3 1/8] x86: allow to handle errors in text_poke function
+ family
+References: <1384425686-21018-1-git-send-email-pmladek@suse.cz> <1384425686-21018-2-git-send-email-pmladek@suse.cz>
+In-Reply-To: <1384425686-21018-2-git-send-email-pmladek@suse.cz>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 03:26 PM, Gao feng wrote:
-> On 11/09/2013 01:42 PM, Eric W. Biederman wrote:
->> Gao feng <gaofeng@cn.fujitsu.com> writes:
->>
->>> On 11/02/2013 02:06 PM, Gao feng wrote:
->>>> Hi Eric,
->>>>
->>>> On 08/28/2013 05:44 AM, Eric W. Biederman wrote:
->>>>>
->>>>> Rely on the fact that another flavor of the filesystem is already
->>>>> mounted and do not rely on state in the user namespace.
->>>>>
->>>>> Verify that the mounted filesystem is not covered in any significant
->>>>> way.  I would love to verify that the previously mounted filesystem
->>>>> has no mounts on top but there are at least the directories
->>>>> /proc/sys/fs/binfmt_misc and /sys/fs/cgroup/ that exist explicitly
->>>>> for other filesystems to mount on top of.
->>>>>
->>>>> Refactor the test into a function named fs_fully_visible and call that
->>>>> function from the mount routines of proc and sysfs.  This makes this
->>>>> test local to the filesystems involved and the results current of when
->>>>> the mounts take place, removing a weird threading of the user
->>>>> namespace, the mount namespace and the filesystems themselves.
->>>>>
->>>>> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
->>>>> ---
->>>>>  fs/namespace.c                 |   37 +++++++++++++++++++++++++------------
->>>>>  fs/proc/root.c                 |    7 +++++--
->>>>>  fs/sysfs/mount.c               |    3 ++-
->>>>>  include/linux/fs.h             |    1 +
->>>>>  include/linux/user_namespace.h |    4 ----
->>>>>  kernel/user.c                  |    2 --
->>>>>  kernel/user_namespace.c        |    2 --
->>>>>  7 files changed, 33 insertions(+), 23 deletions(-)
->>>>>
->>>>> diff --git a/fs/namespace.c b/fs/namespace.c
->>>>> index 64627f8..877e427 100644
->>>>> --- a/fs/namespace.c
->>>>> +++ b/fs/namespace.c
->>>>> @@ -2867,25 +2867,38 @@ bool current_chrooted(void)
->>>>>  	return chrooted;
->>>>>  }
->>>>>  
->>>>> -void update_mnt_policy(struct user_namespace *userns)
->>>>> +bool fs_fully_visible(struct file_system_type *type)
->>>>>  {
->>>>>  	struct mnt_namespace *ns = current->nsproxy->mnt_ns;
->>>>>  	struct mount *mnt;
->>>>> +	bool visible = false;
->>>>>  
->>>>> -	down_read(&namespace_sem);
->>>>> +	if (unlikely(!ns))
->>>>> +		return false;
->>>>> +
->>>>> +	namespace_lock();
->>>>>  	list_for_each_entry(mnt, &ns->list, mnt_list) {
->>>>> -		switch (mnt->mnt.mnt_sb->s_magic) {
->>>>> -		case SYSFS_MAGIC:
->>>>> -			userns->may_mount_sysfs = true;
->>>>> -			break;
->>>>> -		case PROC_SUPER_MAGIC:
->>>>> -			userns->may_mount_proc = true;
->>>>> -			break;
->>>>> +		struct mount *child;
->>>>> +		if (mnt->mnt.mnt_sb->s_type != type)
->>>>> +			continue;
->>>>> +
->>>>> +		/* This mount is not fully visible if there are any child mounts
->>>>> +		 * that cover anything except for empty directories.
->>>>> +		 */
->>>>> +		list_for_each_entry(child, &mnt->mnt_mounts, mnt_child) {
->>>>> +			struct inode *inode = child->mnt_mountpoint->d_inode;
->>>>> +			if (!S_ISDIR(inode->i_mode))
->>>>> +				goto next;
->>>>> +			if (inode->i_nlink != 2)
->>>>> +				goto next;
->>>>
->>>>
->>>> I met a problem that proc filesystem failed to mount in user namespace,
->>>> The problem is the i_nlink of sysctl entries under proc filesystem is not
->>>> 2. it always is 1 even it's a directory, see proc_sys_make_inode. and for
->>>> btrfs, the i_nlink for an empty dir is 2 too. it seems like depends on the
->>>> filesystem itself,not depends on vfs. In my system binfmt_misc is mounted
->>>> on /proc/sys/fs/binfmt_misc, and the i_nlink of this directory's inode is
->>>> 1.
->>
->> Yes. 1 is what filesystems that are too lazy to count the number of
->> links to a directory return, and /proc/sys is currently such a
->> filesystem.
->>
->> Ordinarily nlink == 2 means a directory does not have any subdirectories.
->>
->>>> btw, I'm not quite understand what's the inode->i_nlink != 2 here means?
->>>> is this directory empty? as I know, when we create a file(not dir) under
->>>> a dir, the i_nlink of this dir will not increase.
->>>>
->>>> And another question, it looks like if we don't have proc/sys fs mounted,
->>>> then proc/sys will be failed to be mounted?
->>>>
->>>
->>> Any Idea?? or should we need to revert this patch??
->>
->> The patch is mostly doing what it is supposed to be doing.
->>
->> Now the code is slightly buggy.  inode->i_nlink will test to see if a
->> directory has subdirectories but it won't test to see if a directory is
->> empty.  Where did my brain go when I was writing that test?
->>
->> Right now I would rather not have the empty directory exception than
->> remove this code.
->>
->> The test is a little trickier to write than it might otherwise be
->> because /proc and /sys tend to be slightly imperfect filesystems.
->>
->> I think the only way to really test that is to call readdir on the
->> directory itself :(  I don't like that thought.
->>
->> I don't know what I was thinking when I wrote that test but I definitely
->> goofed up.  Grr!
->>
->> I can certainly filter out any directory with nlink > 2.  That would be
->> an easy partial step forward.
->>
->> The real question though is how do I detect directories it is safe to
->> mount on where there will not be files in them.  I can't call iterate
->> with the namespace_lock held so things are a bit tricky.
->>
+(2013/11/14 19:41), Petr Mladek wrote:
+> The text_poke functions called BUG() in case of error. This was too strict.
+> There are situations when the system is still usable even when the patching
+> has failed, for example when enabling the dynamic ftrace.
 > 
-> I know this problem is not easy to be resolved. why not let the user
-> make the decision?  maybe we can introduce a new mount option MS_LOCK,
-> if user wants to use mount to hide something, he should use mount with
-> option MS_LOCK. so the unpriviged user can't umount this filesystem and
-> fail to mount the filesystem if one of it's child mount is mounted with
-> MS_LOCK option otherwise he use MS_REC too.
+> This commit modifies text_poke, text_poke_early, and text_poke_bp functions
+> to return an error code instead calling BUG(). The code is returned instead
+> of the patched address. The address was just copied from the first parameter,
+> so it was no extra information. It has not been used anywhere yet.
 > 
+> The commit also modifies the few locations where text_poke functions were used
+> and the error code has to be handled now. It just passes the error code if
+> there already is an existing error handling, for example in
+> kgdb_arch_set_breakpoint. It calls BUG() in the other locations.
+> 
+> Note that BUG() still need to be called in text_poke_bp when the code already is
+> partially modified but the operation can not be finished.
 
-Something like this.
+Mostly this looks good for me, see below.
 
->From 437f33ea366623c7a9d557b2e84cae424876a44f Mon Sep 17 00:00:00 2001
-From: Gao feng <gaofeng@cn.fujitsu.com>
-Date: Wed, 13 Nov 2013 16:06:46 +0800
-Subject: [PATCH] userns: introduce new mount option MS_LOCK
+> @@ -566,7 +576,8 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
+>  		WARN_ON(!PageReserved(pages[0]));
+>  		pages[1] = virt_to_page(addr + PAGE_SIZE);
+>  	}
+> -	BUG_ON(!pages[0]);
+> +	if (unlikely(!pages[0]))
+> +		return -EFAULT;
+>  	local_irq_save(flags);
+>  	set_fixmap(FIX_TEXT_POKE0, page_to_phys(pages[0]));
+>  	if (pages[1])
+> @@ -580,10 +591,11 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
+>  	sync_core();
+>  	/* Could also do a CLFLUSH here to speed up CPU recovery; but
+>  	   that causes hangs on some VIA CPUs. */
+> -	for (i = 0; i < len; i++)
+> -		BUG_ON(((char *)addr)[i] != ((char *)opcode)[i]);
+>  	local_irq_restore(flags);
+> -	return addr;
+> +	for (i = 0; i < len; i++)
+> +		if (((char *)addr)[i] != ((char *)opcode)[i])
+> +			return -EPERM;
+> +	return 0;
 
-After commit 5ff9d8a65ce80efb509ce4e8051394e9ed2cd942
-vfs: Lock in place mounts from more privileged users,
-in userns, the mounts of child mntns which copied from
-parent mntns is locked and user has no rights to umount/move
-them, it's too strict.
+Hmm, IMHO, it would be better to keep the old one, because it actually failed to modify
+as expected for some reason (not only permission error). And we are not sure the
+code is same as old one. (only compared with what we expected)
 
-The core purpose of above commit is trying to prevent
-unprivileged user from accessing files hidden by mount.
-This patch introduces a new mount option MS_LOCK, this
-gives user the capable to mount filesystem as the type
-of lock if he wants to use mount to hide something.
+Thank you,
 
-And this patch also makes it possible to resolve the
-problem brought by commit e51db73532955dc5eaba4235e62b74b460709d5b,
-the i_nlink is incorrect in some filesystems.
-
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
----
- fs/namespace.c          | 10 ++++------
- fs/proc_namespace.c     |  1 +
- include/uapi/linux/fs.h |  1 +
- 3 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 7097fc7..8e6b3e8 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -830,10 +830,6 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
- 	if ((flag & CL_UNPRIVILEGED) && (mnt->mnt.mnt_flags & MNT_READONLY))
- 		mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-
--	/* Don't allow unprivileged users to reveal what is under a mount */
--	if ((flag & CL_UNPRIVILEGED) && list_empty(&old->mnt_expire))
--		mnt->mnt.mnt_flags |= MNT_LOCKED;
--
- 	atomic_inc(&sb->s_active);
- 	mnt->mnt.mnt_sb = sb;
- 	mnt->mnt.mnt_root = dget(root);
-@@ -2359,10 +2355,12 @@ long do_mount(const char *dev_name, const char *dir_name,
- 		mnt_flags &= ~(MNT_RELATIME | MNT_NOATIME);
- 	if (flags & MS_RDONLY)
- 		mnt_flags |= MNT_READONLY;
-+	if (flags & MS_LOCK)
-+		mnt_flags |= MNT_LOCKED;
-
- 	flags &= ~(MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_ACTIVE | MS_BORN |
- 		   MS_NOATIME | MS_NODIRATIME | MS_RELATIME| MS_KERNMOUNT |
--		   MS_STRICTATIME);
-+		   MS_STRICTATIME | MS_LOCK);
-
- 	if (flags & MS_REMOUNT)
- 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
-@@ -2894,7 +2892,7 @@ bool fs_fully_visible(struct file_system_type *type)
- 			struct inode *inode = child->mnt_mountpoint->d_inode;
- 			if (!S_ISDIR(inode->i_mode))
- 				goto next;
--			if (inode->i_nlink != 2)
-+			if (!may_mount_lock(child))
- 				goto next;
- 		}
- 		visible = true;
-diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
-index 5fe34c3..fc9b15c 100644
---- a/fs/proc_namespace.c
-+++ b/fs/proc_namespace.c
-@@ -65,6 +65,7 @@ static void show_mnt_opts(struct seq_file *m, struct vfsmount *mnt)
- 		{ MNT_NOATIME, ",noatime" },
- 		{ MNT_NODIRATIME, ",nodiratime" },
- 		{ MNT_RELATIME, ",relatime" },
-+		{ MNT_LOCKED, ",locked" },
- 		{ 0, NULL }
- 	};
- 	const struct proc_fs_info *fs_infop;
-diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-index 6c28b61..731d894 100644
---- a/include/uapi/linux/fs.h
-+++ b/include/uapi/linux/fs.h
-@@ -69,6 +69,7 @@ struct inodes_stat_t {
- #define MS_REMOUNT	32	/* Alter flags of a mounted FS */
- #define MS_MANDLOCK	64	/* Allow mandatory locks on an FS */
- #define MS_DIRSYNC	128	/* Directory modifications are synchronous */
-+#define MS_LOCK		512	/* Disallow unpriviged user to umount FS. */
- #define MS_NOATIME	1024	/* Do not update access times. */
- #define MS_NODIRATIME	2048	/* Do not update directory access times */
- #define MS_BIND		4096
 -- 
-1.8.3.1
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
