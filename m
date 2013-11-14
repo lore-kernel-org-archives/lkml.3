@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456Ab3KNITD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 03:19:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35264 "EHLO
+	id S1752672Ab3KNIUB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 03:20:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35283 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab3KNITA (ORCPT
+	with ESMTP id S1751750Ab3KNIT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 03:19:00 -0500
-Date: Thu, 14 Nov 2013 00:18:43 -0800
+	Thu, 14 Nov 2013 03:19:58 -0500
+Date: Thu, 14 Nov 2013 00:18:34 -0800
 From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-20799a9645646d99707b9809d789adb60cca4d42@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, torvalds@linux-foundation.org, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        dsahern@gmail.com, tglx@linutronix.de
+Message-ID: <tip-12413057fa8b6f2993f573e6e83f843fc86d044c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        will.deacon@arm.com, torvalds@linux-foundation.org,
+        jean.pihet@linaro.org, rmk@arm.linux.org.uk, jolsa@redhat.com,
+        acme@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, will.deacon@arm.com,
+        jean.pihet@linaro.org, rmk@arm.linux.org.uk, jolsa@redhat.com,
+        acme@infradead.org, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tools/perf/build: Fix timerfd feature check
-Git-Commit-ID: 20799a9645646d99707b9809d789adb60cca4d42
+Subject: [tip:perf/urgent] tools/perf/build:
+  Fix feature-libunwind-debug-frame handling
+Git-Commit-ID: 12413057fa8b6f2993f573e6e83f843fc86d044c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,68 +30,92 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 14 Nov 2013 00:18:49 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 14 Nov 2013 00:18:40 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  20799a9645646d99707b9809d789adb60cca4d42
-Gitweb:     http://git.kernel.org/tip/20799a9645646d99707b9809d789adb60cca4d42
+Commit-ID:  12413057fa8b6f2993f573e6e83f843fc86d044c
+Gitweb:     http://git.kernel.org/tip/12413057fa8b6f2993f573e6e83f843fc86d044c
 Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Thu, 14 Nov 2013 08:33:24 +0100
+AuthorDate: Thu, 14 Nov 2013 08:25:24 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Thu, 14 Nov 2013 08:40:23 +0100
 
-tools/perf/build: Fix timerfd feature check
+tools/perf/build: Fix feature-libunwind-debug-frame handling
 
-'feature_timerfd' is checked all the time and calculated explicitly,
-in a serial fashion. Add it to CORE_FEATURE_TESTS which causes it to
-be built in parallel, using the newfangled parallel build autodetection
-code.
+Set feature-libunwind-debug-frame. We don't want it in
+CORE_FEATURE_TESTS because it's not the generic case, but we
+need to set it in the !feature-libunwind case.
 
-This shaves 137 msecs off the perf build time on my system, which
-speeds up the common case cached build by 43%:
+Also, because x86 distributions typically don't have
+dwarf_find_debug_frame() unwinding method:
 
-Before:
+  test-libunwind-debug-frame.c:(.text+0x31): undefined reference to `_Ux86_64_dwarf_find_debug_frame'
 
-  comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
-  [...]
-         0,453771441 seconds time elapsed                                          ( +-  0,09% )
+Restrict this new API to ARM for the time being.
 
-After:
+With this patch test-all.c works again, so repeat perf builds
+are  fast again:
 
   comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
   [...]
-         0,316290185 seconds time elapsed                                          ( +-  0,24% )
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+       0,452899660 seconds time elapsed                                          ( +-  0,11% )
+
+While with before it was:
+
+  comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
+  [...]
+
+       1,674001829 seconds time elapsed                                          ( +-  0,16% )
+
+Cc: Russell King <rmk@arm.linux.org.uk>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-bb92CmexihopoSyqnkqepvsy@git.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Link: http://lkml.kernel.org/n/tip-scsoctqzmou3rpkixCHezy9e@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/config/Makefile | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/config/Makefile                  | 10 ++++++++--
+ tools/perf/config/feature-checks/test-all.c |  4 ----
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index a8abd0e..396c163 100644
+index f5905f2..a8abd0e 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -142,7 +142,8 @@ CORE_FEATURE_TESTS =			\
- 	libunwind			\
- 	on-exit				\
- 	stackprotector			\
--	stackprotector-all
-+	stackprotector-all		\
-+	timerfd
- 
- #
- # So here we detect whether test-all was rebuilt, to be able
-@@ -411,7 +412,6 @@ else
+@@ -328,8 +328,14 @@ ifndef NO_LIBUNWIND
+     msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 1.1);
+     NO_LIBUNWIND := 1
+   else
+-    ifneq ($(feature-libunwind-debug-frame), 1)
+-      msg := $(warning No debug_frame support found in libunwind);
++    ifeq ($(ARCH),arm)
++      $(call feature_check,feature-libunwind-debug-frame)
++      ifneq ($(feature-libunwind-debug-frame), 1)
++        msg := $(warning No debug_frame support found in libunwind);
++        CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
++      endif
++    else
++      # non-ARM has no dwarf_find_debug_frame() function:
+       CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
+     endif
    endif
- endif
+diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+index 799865b..59e7a70 100644
+--- a/tools/perf/config/feature-checks/test-all.c
++++ b/tools/perf/config/feature-checks/test-all.c
+@@ -49,10 +49,6 @@
+ # include "test-libunwind.c"
+ #undef main
  
--$(call feature_check,timerfd)
- ifeq ($(feature-timerfd), 1)
-   CFLAGS += -DHAVE_TIMERFD_SUPPORT
- else
+-#define main main_test_libunwind_debug_frame
+-# include "test-libunwind-debug-frame.c"
+-#undef main
+-
+ #define main main_test_libaudit
+ # include "test-libaudit.c"
+ #undef main
