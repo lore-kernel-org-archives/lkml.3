@@ -1,120 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab3KNQ37 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:29:59 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:45945 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754595Ab3KNQ3v (ORCPT
+	id S1755172Ab3KNQah (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:30:37 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52815 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754829Ab3KNQa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:29:51 -0500
-Message-ID: <5284FA75.4040601@monstr.eu>
-Date: Thu, 14 Nov 2013 17:29:41 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 14 Nov 2013 11:30:27 -0500
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        microblaze-uclinux@itee.uq.edu.au, devicetree@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH RFC 15/17] microblaze: Convert from _fdt_start to __dtb_start
-References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org> <1384285347-13506-16-git-send-email-geert@linux-m68k.org> <5283524F.8030902@monstr.eu> <5283814C.6040904@monstr.eu> <5283A573.6020403@gmail.com>
-In-Reply-To: <5283A573.6020403@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="PqGQeILfHAdb3iIoJpgcaA3RufafL7qtV"
+In-Reply-To: <26648741.38OpUJA4ry@vostro.rjw.lan>
+References: <1384289548-26015-1-git-send-email-amit.pundir@linaro.org>
+ <44678154.uI915mOzGH@vostro.rjw.lan> <CAMi1Hd06=-DrdoM7nFkOo5VFB2h7oYMc_7Y2ujop6d_vtWLgpw@mail.gmail.com>
+ <26648741.38OpUJA4ry@vostro.rjw.lan>
+From: Amit Pundir <amit.pundir@linaro.org>
+Date: Thu, 14 Nov 2013 21:59:44 +0530
+Message-ID: <CAMi1Hd2F5iWGztjMOM7UarEeXdUTCGh7ZV=XxhX1u-kKCRt-LQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH v2] epoll: allow EPOLLWAKEUP flag if PM_SLEEP is enabled
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---PqGQeILfHAdb3iIoJpgcaA3RufafL7qtV
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 11/13/2013 05:14 PM, Rob Herring wrote:
-> On 11/13/2013 07:40 AM, Michal Simek wrote:
->> On 11/13/2013 11:19 AM, Michal Simek wrote:
->>> On 11/12/2013 08:42 PM, Geert Uytterhoeven wrote:
->>>> Kill the microblaze-specific __fdt_blob section, and start
->>>> using .dtb.init.rodata from <asm-generic/sections.h> for
->>>> built-in DTBs, like most other DT enabled architectures.
->>>>
->>>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org> Cc:
->>>> Michal Simek <monstr@monstr.eu> Cc: Rob Herring
->>>> <rob.herring@calxeda.com> Cc:
->>>> microblaze-uclinux@itee.uq.edu.au Cc:
->>>> devicetree@vger.kernel.org --- Untested, but the resulting
->>>> vmlinux after "make simpleImage.system" looks sane.
->>>>
->>>> QUESTION: The padding of the DTB is gone, is this OK?
->>>
->>> Removing this kernel padding should be fine. I can't remember why
->>> it was there from the beginning.
+On 14 November 2013 03:14, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, November 13, 2013 01:35:38 PM Amit Pundir wrote:
+>> On 13 November 2013 05:29, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Wednesday, November 13, 2013 02:22:28 AM Amit Pundir wrote:
+>> >> ep_create_wakeup_source() reports ENOMEM
+>> >
+>> > That needs to be fixed too.  I suppose we can make the wakeup_source_register()
+>> > stub for CONFIG_PM_SLEEP unset return ERR_PTR(-ENOSYS) or something like that
+>> > and ep_create_wakeup_source() return that instead of -ENOMEM.  It looks like
+>> > eventpoll.c is the only user of it built for CONFIG_PM_SLEEP unset, but that
+>> > needs to be double checked.
 >>
->> I know why is this here. The reason is process how dtb is passed to
->> the kernel via command line. head.S code just copy that dtb to the
->> same location where compiled-in dts is expected and kernel doesn't
->> need to care about position of dtb because this copy is done
->> without MMU. And the full kernel is covered by 2 tlbs and we don't
->> need to use another TLB for dtb mapping.
+>> Instead of modifying wakeup_source_register() stub, what if I make
+>> ep_create_wakeup_source() static inline as well and use its stub to
+>> return -ENOSYS when CONFIG_PM_SLEEP is not set?
+>> ep_create_wakeup_source() is used only in fs/eventpoll.c anyway.
+>
+> Well, you can do that too.
+>
+
+On second thought we may skip modifying ep_create_wakeup_source() or
+wakeup_source_register() altogether because once we drop EPOLLWAKEUP
+from epoll events mask(if PM_SLEEP is unset) then I don't see us
+running into ep_create_wakeup_source() again. And the only reason for
+ep_create_wakeup_source() failure will be -ENOMEM as far as I can see.
+
+>> >> if wakeup_source_register()
+>> >> returns NULL. ep_create_wakeup_source() assumes that NULL is only
+>> >> returned if we run into ENOMEM but NULL is also returned when
+>> >> CONFIG_PM_SLEEP is disabled.
+>> >>
+>> >> Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
+>> >> ---
+>> >> Changed in v2:
+>> >> Using static inline functions instead of #ifdefs
+>> >> ---
+>> >>  fs/eventpoll.c                 |    3 +--
+>> >>  include/uapi/linux/eventpoll.h |   12 ++++++++++++
+>> >>  2 files changed, 13 insertions(+), 2 deletions(-)
+>> >>
+>> >> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+>> >> index 473e09d..10f9c43 100644
+>> >> --- a/fs/eventpoll.c
+>> >> +++ b/fs/eventpoll.c
+>> >> @@ -1820,8 +1820,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+>> >>               goto error_tgt_fput;
+>> >>
+>> >>       /* Check if EPOLLWAKEUP is allowed */
+>> >> -     if ((epds.events & EPOLLWAKEUP) && !capable(CAP_BLOCK_SUSPEND))
+>> >> -             epds.events &= ~EPOLLWAKEUP;
+>> >> +     ep_epollwakeup_check(&epds.events);
+>> >
+>> > The "check" part of the name kind of suggests that the function will not change
+>> > things.  What about ep_adjust_epollwakeup() or something along these lines?
 >>
->> It means pad matters a lot. Because u-boot ITS format doesn't use=20
->> simpleImage target but the kernel need to have a space for copying=20
->> dtb to this kernel location.
->>
->> Let me think about if there is an easy way to handle dtbs which are
->> passed from bootloader.
->=20
-> Isn't the built-in dtb in a RO init section? Seems like a bad idea to
-> write to it. Also, it will be a double copy because a built-in dtb has
-> to be copied out of init section.
+>> I see couple of ep_set_* functions in eventpoll.c. Does it make sense
+>> to have something like ep_set_epollwakeup()?
+>
+> This particular one doesn't really set anything.  I suppose that a name like
+> "ep_take_care_of_epollwakeup" might be somewhat closer to what it really does ...
 
-Microblaze has it currently out of RO section.
-This patch is adding it there.
+I'm running out of ideas on this one, lets go with
+"ep_take_care_of_epollwakeup".
 
-I have looked at powerpc flow which is probably the closest to our versio=
-n.
+Regards,
+Amit Pundir
 
-head.S
-Saving dtb pointer to r31 then initial_mmu which setups 16MB tlb for kern=
-el
-then some exception and calling machine_init()->early_init_devtree()
-->move_device_tree() where also change initial_boot_params location
-for unflatten_device_tree() in setup_arch().
-
-Ben: I didn't find any TLB entry for DTB itself.
-Does it mean that I missed it or that powerpc can access in machine_init(=
-)
-the whole memory space?
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---PqGQeILfHAdb3iIoJpgcaA3RufafL7qtV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlKE+nsACgkQykllyylKDCHnKgCdFzhDnKZrwD7RCx5D1S1nT3dT
-39EAn3O7U8yvIzBvowJyzZf9xOuJ3kFZ
-=hnEu
------END PGP SIGNATURE-----
-
---PqGQeILfHAdb3iIoJpgcaA3RufafL7qtV--
+>
+> Thanks!
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
