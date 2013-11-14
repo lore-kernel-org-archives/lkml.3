@@ -1,90 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab3KNAsm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 19:48:42 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:64395 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554Ab3KNAsf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 19:48:35 -0500
-Date: Wed, 13 Nov 2013 16:48:32 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom
- killed
-In-Reply-To: <20131114000043.GK707@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1311121801200.18803@chino.kir.corp.google.com> <20131113152412.GH707@cmpxchg.org> <alpine.DEB.2.02.1311131400300.23211@chino.kir.corp.google.com> <20131114000043.GK707@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752400Ab3KNA4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 19:56:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41340 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751544Ab3KNA4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 19:56:04 -0500
+Message-ID: <52841F95.7040204@redhat.com>
+Date: Thu, 14 Nov 2013 08:55:49 +0800
+From: Honggang LI <honli@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Josh Hunt <joshhunt00@gmail.com>,
+        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+CC: David Miller <davem@davemloft.net>, jjolly@suse.com,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: [PATCH] rds: Error on offset mismatch if not loopback
+References: <20120921213239.GJ14393@linux-tkdk.sfcn.org>	<20120922.152524.1294103117346567757.davem@davemloft.net>	<CAKA=qzac9=UhLF_Z4FnnH+sR7xvkDux4oayC6dPYe=hMLsDxRg@mail.gmail.com>	<CAKA=qzYpd7Wo9XdU16TEhnbm5dPJjOZMhAY1jA7N+YFBWz5pzw@mail.gmail.com>	<23964ca1-e7cb-41c3-9da2-5bc1b2b0c014@default> <CAKA=qzbK1YX5OrVQbwM=1xM6Si=GKv0UDofULkOC7RNo08zZPw@mail.gmail.com>
+In-Reply-To: <CAKA=qzbK1YX5OrVQbwM=1xM6Si=GKv0UDofULkOC7RNo08zZPw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Nov 2013, Johannes Weiner wrote:
+On 11/14/2013 01:40 AM, Josh Hunt wrote:
+> On Wed, Nov 13, 2013 at 9:16 AM, Venkat Venkatsubra
+> <venkat.x.venkatsubra@oracle.com> wrote:
+>>
+>> -----Original Message-----
+>> From: Josh Hunt [mailto:joshhunt00@gmail.com]
+>> Sent: Tuesday, November 12, 2013 10:25 PM
+>> To: David Miller
+>> Cc: jjolly@suse.com; LKML; Venkat Venkatsubra; netdev@vger.kernel.org
+>> Subject: Re: [PATCH] rds: Error on offset mismatch if not loopback
+>>
+>> On Tue, Nov 12, 2013 at 10:22 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
+>>> On Sat, Sep 22, 2012 at 2:25 PM, David Miller <davem@davemloft.net> wrote:
+>>>> From: John Jolly <jjolly@suse.com>
+>>>> Date: Fri, 21 Sep 2012 15:32:40 -0600
+>>>>
+>>>>> Attempting an rds connection from the IP address of an IPoIB
+>>>>> interface to itself causes a kernel panic due to a BUG_ON() being triggered.
+>>>>> Making the test less strict allows rds-ping to work without
+>>>>> crashing the machine.
+>>>>>
+>>>>> A local unprivileged user could use this flaw to crash the system.
+>>>>>
+>>>>> Signed-off-by: John Jolly <jjolly@suse.com>
+>>>> Besides the questions being asked of you by Venkat Venkatsubra, this
+>>>> patch has another issue.
+>>>>
+>>>> It has been completely corrupted by your email client, it has turned
+>>>> all TAB characters into spaces, making the patch useless.
+>>>>
+>>>> Please learn how to send a patch unmolested in the body of your
+>>>> email.  Test it by emailing the patch to yourself, and verifying that
+>>>> you can in fact apply the patch you receive in that email.
+>>>> Then, and only then, should you consider making a new submission of
+>>>> this patch.
+>>>>
+>>>> Use Documentation/email-clients.txt for guidance.
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>> linux-kernel" in the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>> I think this issue was lost in the shuffle. It appears that redhat,
+>>> ubuntu, and oracle are maintaining local patches to resolve this:
+>>>
+>>> https://oss.oracle.com/git/?p=redpatch.git;a=commit;h=c7b6a0a1d8d63685
+>>> 2be130fa15fa8be10d4704e8
+>>> https://bugzilla.redhat.com/show_bug.cgi?id=822754
+>>> http://ubuntu.5.x6.nabble.com/CVE-2012-2372-RDS-local-ping-DOS-td49853
+>>> 88.html
+>>>
+>>> Given that Oracle has applied it I'll make the assumption that
+>>> Venkat's question was answered at some point.
+>>>
+>>> David - I can resubmit the patch with the proper signed-off-by and
+>>> formatting if you are willing to apply it unless John wants to try
+>>> again. I think it's time this got upstream.
+>>>
+>>> --
+>>> Josh
+>> Ugh.. hopefully resending with all the html crap removed...
+>>
+>> --
+>> Josh
+>>
+>> Hi Josh,
+>>
+>> No, I still didn't get an answer for how "off" could be non-zero in case of rds-ping to hit BUG_ON(off % RDS_FRAG_SIZE).
+>> Because, rds-ping uses zero byte messages to ping.
+>> If you have a test case that reproduces the kernel panic I can try it out and see how that can happen.
+>> The Oracle's internal code I checked doesn't have that patch applied.
+>>
+>> Venkat
+> No I don't have a test case. I came across this CVE while doing an
+> audit and noticed it was patched in Ubuntu's kernel and other distros,
+> but was not in the upstream kernel yet. Quick googling of lkml showed
+> that there were at least two attempts to get this patch upstream, but
+> both had issues due to not following the proper submission process:
+>
+> https://lkml.org/lkml/2012/10/22/433
+> https://lkml.org/lkml/2012/9/21/505
+>
+> From my searching it appears the initial bug was found by someone at redhat:
+> https://bugzilla.redhat.com/show_bug.cgi?id=822754
+>
+> I've added Li Honggang the reporter of this issue from Redhat to the
+> mail. Hopefully he can share his testcase.
+The test case is very simple:
+Steps to Reproduce:
+1. yum install -y rds-tools
 
-> > The reclaim will fail, the only reason current has TIF_MEMDIE set is 
-> > because reclaim has completely failed.
-> 
-> ...for somebody else.
-> 
+2. [root@rdma3 ~]# ifconfig ib0 | grep 'inet addr'
+          inet addr:172.31.0.3  Bcast:172.31.0.255  Mask:255.255.255.0
 
-That process is in the same allocating context as current, otherwise 
-current would not have been selected as a victim.  The oom killer tries to 
-only kill processes that will lead to future memory freeing where reclaim 
-has failed.
+3. [root@rdma3 ~]# /usr/bin/rds-ping 172.31.0.3  <<<< kernel panic (You
+may need to wait for a few seconds before the kernel panic.)
+>
+> and possibly requires certain hardware as Jay writes in the first link above:
+> "...some Infiniband HCAs(QLogic, possibly others) the machine will panic..."
+This bug can be reproduced with Mellanox HCAs (mlx4_ib.ko and mthca.ko),
+QLogic HCA (ib_qib.ko). I did not test the QLogic HCA running "ib_ipath.ko".
 
-> > I don't know of any other "random places" other than when the oom killed 
-> > process is sitting in reclaim before it is selected as the victim.  Once 
-> > it returns to the page allocator, it will immediately allocate and then be 
-> > able to handle its pending SIGKILL.  The one spot identified where it is 
-> > absolutely pointless to spin is in reclaim since it is virtually 
-> > guaranteed to fail.  This patch fixes that issue.
-> 
-> No, this applies to every other operation that does not immediately
-> lead to the task exiting or which creates more system load.  Readahead
-> would be another example.  They're all pointless and you could do
-> without all of them at this point, but I'm not okay with putting these
-> checks in random places that happen to bother you right now.  It's not
-> a proper solution to the problem.
-> 
+As I know the upstream code of RDS is broken. There are *many* RDS bugs.
 
-If you have an alternative solution, please feel free to propose it and 
-I'll try it out.
+Best regards.
+Honggang
+>
+> I was referring to this oracle commit:
+> https://oss.oracle.com/git/?p=redpatch.git;a=commit;h=c7b6a0a1d8d636852be130fa15fa8be10d4704e8
+>
+> I have no experience with this code. There were a few comments around
+> the reset and xmit fns about making sure the caller did certain things
+> if not they were racy, but I have no idea if that's coming into play
+> here.
+>
 
-This isn't only about the cond_resched() in shrink_slab(), the reclaim is 
-going to fail.  There should be no instances where an oom killed process 
-can go and start magically reclaiming memory that would have prevented it 
-from becoming oom in the first place.  I have seen the oom killer trigger 
-and the victim stall for several seconds before actually allocating memory 
-and that stall is pointless, especially when we're not touching a hotpath 
-here, we're in direct reclaim already.
-
-> Is it a good idea to let ~700 processes simultaneously go into direct
-> global reclaim?
-> 
-> The victim aborting reclaim still leaves you with ~699 processes
-> spinning in reclaim that should instead just retry the allocation as
-> well.  What about them?
-> 
-
-Um, no, those processes are going through a repeated loop of direct 
-reclaim, calling the oom killer, iterating the tasklist, finding an 
-existing oom killed process that has yet to exit, and looping.  They 
-wouldn't loop for too long if we can reduce the amount of time that it 
-takes for that oom killed process to exit.
-
-> The situation your setups seem to get in frequently is bananas, don't
-> micro optimize this.
-> 
-
-Unless you propose an alternative solution, this is the patch that fixes 
-the problem when an oom killed process gets killed and then stalls for 
-seconds before it actually retries allocating memory.
-
-Thanks for your thoughts.
