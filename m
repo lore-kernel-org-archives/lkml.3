@@ -1,55 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab3KNSvh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 13:51:37 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:61659 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777Ab3KNSva (ORCPT
+	id S1756317Ab3KNSwC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 13:52:02 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:57067 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754777Ab3KNSvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 13:51:30 -0500
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl: nomadik: always display IRQ in debugfs
-Date: Thu, 14 Nov 2013 19:51:18 +0100
-Message-Id: <1384455078-21233-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.8.3.1
+	Thu, 14 Nov 2013 13:51:54 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/z/SKjmjkw4dD1HYybDK1V
+Date: Thu, 14 Nov 2013 10:51:33 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Luciano Coelho <luca@coelho.fi>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Felipe Balbi <balbi@ti.com>, Sachin Kamat <sachin.kamat@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        Luciano Coelho <coelho@ti.com>
+Subject: Re: [PATCH 1/4] wl1251: split wl251 platform data to a separate
+ structure
+Message-ID: <20131114185132.GQ10317@atomide.com>
+References: <1382890469-25286-1-git-send-email-sre@debian.org>
+ <1382890469-25286-2-git-send-email-sre@debian.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382890469-25286-2-git-send-email-sre@debian.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we now grab IRQs also without first reserving the GPIO
-line, let's print the mapped IRQ unconditionally in the
-debugfs file as well.
+* Sebastian Reichel <sre@debian.org> [131027 09:15]:
+> From: Luciano Coelho <coelho@ti.com>
+> 
+> Move the wl1251 part of the wl12xx platform data structure into a new
+> structure specifically for wl1251.  Change the platform data built-in
+> block and board files accordingly.
+> 
+> Cc: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Luciano Coelho <coelho@ti.com>
+> Acked-by: Tony Lindgren <tony@atomide.com>
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
+> ---
+>  arch/arm/mach-omap2/board-omap3pandora.c       |  4 +--
+>  arch/arm/mach-omap2/board-rx51-peripherals.c   |  2 +-
+>  drivers/net/wireless/ti/wilink_platform_data.c | 37 +++++++++++++++++++++-----
+>  drivers/net/wireless/ti/wl1251/sdio.c          | 12 ++++-----
+>  drivers/net/wireless/ti/wl1251/spi.c           |  2 +-
+>  include/linux/wl12xx.h                         | 22 ++++++++++++++-
+>  6 files changed, 62 insertions(+), 17 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
+> index de1bc6b..24f3c1b 100644
+> --- a/arch/arm/mach-omap2/board-omap3pandora.c
+> +++ b/arch/arm/mach-omap2/board-omap3pandora.c
+> @@ -536,7 +536,7 @@ static struct spi_board_info omap3pandora_spi_board_info[] __initdata = {
+>  
+>  static void __init pandora_wl1251_init(void)
+>  {
+> -	struct wl12xx_platform_data pandora_wl1251_pdata;
+> +	struct wl1251_platform_data pandora_wl1251_pdata;
+>  	int ret;
+>  
+>  	memset(&pandora_wl1251_pdata, 0, sizeof(pandora_wl1251_pdata));
+> @@ -550,7 +550,7 @@ static void __init pandora_wl1251_init(void)
+>  		goto fail_irq;
+>  
+>  	pandora_wl1251_pdata.use_eeprom = true;
+> -	ret = wl12xx_set_platform_data(&pandora_wl1251_pdata);
+> +	ret = wl1251_set_platform_data(&pandora_wl1251_pdata);
+>  	if (ret < 0)
+>  		goto fail_irq;
+>  
+> diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
+> index 65e3627..0d8e7d2 100644
+> --- a/arch/arm/mach-omap2/board-rx51-peripherals.c
+> +++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+> @@ -82,7 +82,7 @@ enum {
+>  	RX51_SPI_MIPID,		/* LCD panel */
+>  };
+>  
+> -static struct wl12xx_platform_data wl1251_pdata;
+> +static struct wl1251_platform_data wl1251_pdata;
+>  static struct tsc2005_platform_data tsc2005_pdata;
+>  
+>  #if defined(CONFIG_SENSORS_LIS3_I2C) || defined(CONFIG_SENSORS_LIS3_I2C_MODULE)
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinctrl-nomadik.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+If this is not going into v3.13, these will cause conflicts
+with the mach-omap2/board-*.c files for v3.14.
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index 7111c3b59130..cea951f5fa49 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -846,14 +846,14 @@ static void nmk_gpio_dbg_show_one(struct seq_file *s,
- 		   (mode < 0) ? "unknown" : modes[mode],
- 		   pull ? "pull" : "none");
- 
--	if (label && !is_out) {
--		int		irq = gpio_to_irq(gpio);
-+	if (!is_out) {
-+		int irq = gpio_to_irq(gpio);
- 		struct irq_desc	*desc = irq_to_desc(irq);
- 
- 		/* This races with request_irq(), set_irq_type(),
- 		 * and set_irq_wake() ... but those are "rare".
- 		 */
--		if (irq >= 0 && desc->action) {
-+		if (irq > 0 && desc && desc->action) {
- 			char *trigger;
- 			u32 bitmask = nmk_gpio_get_bitmask(gpio);
- 
--- 
-1.8.3.1
+So it might be best to do a minimal header patch first that
+can be merged in by both linux-omap and wireless trees.
 
+Regards,
+
+Tony
