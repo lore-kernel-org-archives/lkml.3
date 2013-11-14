@@ -1,154 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab3KNKoi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 05:44:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43906 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753446Ab3KNKoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 05:44:37 -0500
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH v3 8/8] x86: enable/disable ftrace graph call using new int3-based framework
-Date: Thu, 14 Nov 2013 11:41:26 +0100
-Message-Id: <1384425686-21018-9-git-send-email-pmladek@suse.cz>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1384425686-21018-1-git-send-email-pmladek@suse.cz>
-References: <1384425686-21018-1-git-send-email-pmladek@suse.cz>
+	id S1753191Ab3KNKq5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 05:46:57 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53738 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751896Ab3KNKq4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 05:46:56 -0500
+Date: Thu, 14 Nov 2013 10:46:20 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jingchang Lu <b35083@freescale.com>
+Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Alison Wang <b18965@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v6 3/3] dma: Add Freescale eDMA engine driver support
+Message-ID: <20131114104620.GB16396@e106331-lin.cambridge.arm.com>
+References: <1379498279-16096-1-git-send-email-b35083@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379498279-16096-1-git-send-email-b35083@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One more change related to replacing the existing Int3-based framework with
-the new generic function introduced by the commit fd4363fff3d9
-(x86: Introduce int3 (breakpoint)-based instruction patching)
+On Wed, Sep 18, 2013 at 10:57:59AM +0100, Jingchang Lu wrote:
+> Add Freescale enhanced direct memory(eDMA) controller support.
+> The eDMA controller deploys DMAMUXs routing DMA request sources(slot)
+> to eDMA channels.
+> This module can be found on Vybrid and LS-1 SoCs.
+> 
+> Signed-off-by: Alison Wang <b18965@freescale.com>
+> Signed-off-by: Jingchang Lu <b35083@freescale.com>
+> ---
+> changes in v6:
+>   holding lock in dma_control to prevent race.
+> 
+> changes in v5:
+>   config slave_id when dmaengine_slave_config intead of channel request.
+>   adding residue calculation and dma pause/resume device control.
+> 
+> changes in v4:
+>   using exact compatible string in binding document.
+> 
+> changes in v3:
+>   handle all pending interrupt one time.
+>   add protect lock on dma transfer complete handling.
+>   change desc and tcd alloc flag to GFP_NOWAIT.
+>   add sanity check and error messages.
+> 
+> changes in v2:
+>   using generic dma-channels property instead of fsl,dma-channel.
+>   rename the binding document to fsl-edma.txt.
+> 
+> 
+>  Documentation/devicetree/bindings/dma/fsl-edma.txt |  84 ++
+>  drivers/dma/Kconfig                                |  10 +
+>  drivers/dma/Makefile                               |   1 +
+>  drivers/dma/fsl-edma.c                             | 944 +++++++++++++++++++++
+>  4 files changed, 1039 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/dma/fsl-edma.txt
+>  create mode 100644 drivers/dma/fsl-edma.c
+> 
+> diff --git a/Documentation/devicetree/bindings/dma/fsl-edma.txt b/Documentation/devicetree/bindings/dma/fsl-edma.txt
+> new file mode 100644
+> index 0000000..60a8cb2
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/dma/fsl-edma.txt
+> @@ -0,0 +1,84 @@
+> +* Freescale enhanced Direct Memory Access(eDMA) Controller
+> +
+> +The eDMA engine deploys DMAMUXs routing request sources(slot) to
+> +eDMA controller channels.
+> +
+> +* eDMA Controller
+> +Required properties:
+> +- compatible :
+> +  - "fsl,vf610-edma" for eDMA used similar to that on Vybrid vf610 SoC
+> +- reg : Should contain eDMA registers location and length
+> +- interrupts : Should contain eDMA interrupt
 
-ftrace_enable_ftrace_graph_caller and ftrace_disable_ftrace_graph_caller
-modified the jump target directly without using the int3 guard. It worked
-because writing the address was an atomic operation.
+- interrupts: A list of interrupt-specifiers, one for each entry in
+  interrupt-names.
 
-We do not really need to use the safe ftrace_modify_code here but it helps
-to remove another arch-specific code. The result is more consistent
-and better readable code which is might be worth the change.
+> +- interrupt-names : Should be "edma-tx" for tx interrupt and
+> +  "edma-err" for err interrupt
+> +- #dma-cells : Must be <2>.
+> +  The first cell specifies the DMAMUX ID. Specific request source
+> +  can only be routed by specific DMAMUXs.
+> +  the second cell specifies the request source(slot) ID.
+> +  See include/dt-bindings/dma/<soc>-edma.h for all the supported
+> +  request source IDs.
+> +- dma-channels : Number of channels supported by the controller
+> +- fsl,dma-mux : Phandle of the DMAMUXs deployed by the controller
+> +
+> +
+> +* DMAMUX
+> +Required properties:
 
-Signed-off-by: Petr Mladek <pmladek@suse.cz>
----
- arch/x86/kernel/ftrace.c | 63 +++++++++++-------------------------------------
- 1 file changed, 14 insertions(+), 49 deletions(-)
+No compatible?
 
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index 92fe8ca..20d2028 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -47,7 +47,7 @@ int ftrace_arch_code_modify_post_process(void)
- union ftrace_code_union {
- 	char code[MCOUNT_INSN_SIZE];
- 	struct {
--		char e8;
-+		char inst;
- 		int offset;
- 	} __attribute__((packed));
- };
-@@ -88,7 +88,7 @@ static unsigned char *ftrace_call_replace(unsigned long ip, unsigned long addr)
- {
- 	static union ftrace_code_union calc;
- 
--	calc.e8		= 0xe8;
-+	calc.inst	= 0xe8;
- 	calc.offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
- 
- 	/*
-@@ -98,27 +98,11 @@ static unsigned char *ftrace_call_replace(unsigned long ip, unsigned long addr)
- 	return calc.code;
- }
- 
--static inline int
--within(unsigned long addr, unsigned long start, unsigned long end)
-+static void ftrace_jump_replace(union ftrace_code_union *calc,
-+				unsigned long ip, unsigned long addr)
- {
--	return addr >= start && addr < end;
--}
--
--static int
--do_ftrace_mod_code(unsigned long ip, const void *new_code)
--{
--	/*
--	 * On x86_64, kernel text mappings are mapped read-only with
--	 * CONFIG_DEBUG_RODATA. So we use the kernel identity mapping instead
--	 * of the kernel text mapping to modify the kernel text.
--	 *
--	 * For 32bit kernels, these mappings are same and we can use
--	 * kernel identity mapping to modify code.
--	 */
--	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
--		ip = (unsigned long)__va(__pa_symbol(ip));
--
--	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
-+	calc->inst	= 0xe9;
-+	calc->offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
- }
- 
- static const unsigned char *ftrace_nop_replace(void)
-@@ -369,45 +353,26 @@ int __init ftrace_dyn_arch_init(void *data)
- #ifdef CONFIG_DYNAMIC_FTRACE
- extern void ftrace_graph_call(void);
- 
--static int ftrace_mod_jmp(unsigned long ip,
--			  int old_offset, int new_offset)
--{
--	unsigned char code[MCOUNT_INSN_SIZE];
--
--	if (probe_kernel_read(code, (void *)ip, MCOUNT_INSN_SIZE))
--		return -EFAULT;
--
--	if (code[0] != 0xe9 || old_offset != *(int *)(&code[1]))
--		return -EINVAL;
--
--	*(int *)(&code[1]) = new_offset;
--
--	if (do_ftrace_mod_code(ip, &code))
--		return -EPERM;
--
--	return 0;
--}
--
- int ftrace_enable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
-+	union ftrace_code_union old, new;
- 
--	old_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
-+	ftrace_jump_replace(&old, ip, (unsigned long)(&ftrace_stub));
-+	ftrace_jump_replace(&new, ip, (unsigned long)(&ftrace_graph_caller));
- 
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_modify_code(ip, old.code, new.code);
- }
- 
- int ftrace_disable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
-+	union ftrace_code_union old, new;
- 
--	old_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
-+	ftrace_jump_replace(&old, ip, (unsigned long)(&ftrace_graph_caller));
-+	ftrace_jump_replace(&new, ip, (unsigned long)(&ftrace_stub));
- 
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_modify_code(ip, old.code, new.code);
- }
- 
- #endif /* !CONFIG_DYNAMIC_FTRACE */
--- 
-1.8.4
+Where are DMAMUX nodes expected to live?
 
+How to they relate to the eDMA controller in HW? Are they a
+subcomponent, or a logically separate unit that happens to be connected?
+
+> +- reg : Should contain DMAMUX registers location and length
+> +- fsl,dmamux-id : DMAMUX ID. DMAMUX IDs are unique in each eDMA controller.
+> +  inside one eDMA controller, specific request source can only be routed by
+> +  one of its DMAMUXs.
+> +  However Specific request source may be routed to different eDMA controller,
+> +  thus all the DMAMUXs sharing a the same request sources have the same ID.
+> +- clocks : Phandle of the clock used by the DMAMUX
+> +- clock-names : The clock names
+
+_which_ clock names do you expect? From the looks of the example, you
+expect "dmamux".
+
+>From the view of the DMAMUX, what is its clock input called? "dmamux"
+doesn't look like what I'd expect for a clock name, but if the
+documentation for the eDMA doesn't provide a name for it, "dmamux" is
+fine.
+
+If you're not using clock-names, it's useless. You _must_ define the set
+of names you expect or it's unusable. If you do define a set of names,
+then you should request clocks by name in the driver.
+
+> +
+> +Below is the eDMA controller and DMAMUX association, and DMAMUX IDs assignment
+> +On Vybrid vf610 SoC, DMAMUX0 and DMAMU3 share the same request source group,
+> +and DMAMUX1 and DMAMU2 share the same request source group.
+> +
+> +eDMA controller                DMAMUXs         DMAMUX ID
+> +-------------------------------------------------
+> +eDMA0                  DMAMUX0         0
+> +                       DMAMUX1         1
+> +
+> +eDMA1                  DMAMUX2         1
+> +                       DMAMUX3         0
+> +
+> +Examples:
+> +
+> +edma0: dma-controller@40018000 {
+> +       #dma-cells = <2>;
+> +       compatible = "fsl,vf610-edma";
+> +       reg = <0x40018000 0x2000>;
+> +       interrupts = <0 8 0x04>, <0 9 0x04>;
+> +       interrupt-names = "edma-tx", "edma-err";
+> +       dma-channels = <32>;
+> +       fsl,edma-mux = <&dmamux0>, <&dmamux1>;
+> +};
+> +
+> +dmamux0: dmamux@40024000 {
+> +       reg = <0x40024000 0x1000>;
+> +       fsl,dmamux-id = <0>;
+> +       clocks = <&clks VF610_CLK_DMAMUX0>;
+> +       clock-names = "dmamux";
+> +};
+> +
+> +
+> +* DMA clients
+> +DMA client drivers that uses the DMA function must use the format described
+> +in the dma.txt file, using a three-cell specifier for each channel: a phandle
+> +plus two integer cells as described above.
+
+Nit: the phandle isn't part of the specifier. The cells after the
+phandle are the specifier associated with the phandle.
+
+[...]
+
+> +static bool fsl_edma_filter_fn(struct dma_chan *chan, void *mux_id)
+> +{
+> +       struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
+> +
+> +       if (fsl_chan->edmamux->mux_id != (u32)mux_id)
+> +               return false;
+> +
+> +       return true;
+
+Why not:
+
+return fsl_chan->edmamux->mux_id == (u32)mux_id;
+
+[...]
+
+> +static int
+> +fsl_init_edmamux(struct platform_device *pdev, struct fsl_edma_engine *fsl_edma)
+> +{
+> +       struct device_node *np = pdev->dev.of_node;
+> +       struct fsl_edma_dmamux *fsl_edmamux;
+> +       struct device_node *phandle;
+
+That's confusing, a node is not a phandle. Why not mux_np?
+
+> +       const void *prop;
+> +       struct resource res;
+> +       int len, n_muxes, chans_per_mux, ch_off;
+> +       int i, j;
+> +       int ret;
+> +
+> +       prop = of_get_property(np, "fsl,dma-mux", &len);
+> +       if (!prop) {
+> +               dev_err(&pdev->dev, "Can't get DMAMUX.\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       n_muxes = len / sizeof(u32);
+
+It would be nicer if we had a variant of of_count_phandle_with_args that
+cound handle a fixed count of 0 args for this sort of thing.
+
+> +       chans_per_mux = fsl_edma->n_chans / n_muxes;
+> +       fsl_edmamux = devm_kzalloc(&pdev->dev,
+> +                       sizeof(struct fsl_edma_dmamux) * n_muxes, GFP_KERNEL);
+> +       if (!fsl_edmamux)
+> +               return -ENOMEM;
+> +
+> +       fsl_edma->n_muxes = 0;
+> +       fsl_edma->edmamux = fsl_edmamux;
+> +       for (i = 0; i < n_muxes; i++) {
+> +               phandle = of_parse_phandle(np, "fsl,dma-mux", i);
+> +               ret = of_address_to_resource(phandle, 0, &res);
+> +               if (ret)
+> +                       return ret;
+> +               fsl_edmamux->membase = devm_ioremap_resource(&pdev->dev, &res);
+> +               if (IS_ERR(fsl_edmamux->membase))
+> +                       return PTR_ERR(fsl_edmamux->membase);
+> +
+> +               fsl_edmamux->clk = of_clk_get(phandle, 0);
+> +               if (IS_ERR(fsl_edmamux->clk)) {
+> +                       dev_err(&pdev->dev, "Missing DMAMUX clock.\n");
+> +                       return PTR_ERR(fsl_edmamux->clk);
+> +               }
+
+Please acquire the clock by name:
+
+fsl_edmamux->clk = of_clk_get_byname(phandle, "dmamux");
+
+> +
+> +               ret = clk_prepare_enable(fsl_edmamux->clk);
+> +               if (ret) {
+> +                       dev_err(&pdev->dev, "DMAMUX clk enable failed.\n");
+> +                       return ret;
+> +               }
+> +
+> +               ret = of_property_read_u32_index(phandle, "fsl,dmamux-id", 0,
+> +                               &fsl_edmamux->mux_id);
+
+Why not just of_property_read_u32?
+
+> +               if (ret) {
+> +                       dev_err(&pdev->dev, "Can't get dmamux-id.\n");
+> +                       return ret;
+> +               }
+> +
+> +               ch_off = fsl_edma->n_muxes * chans_per_mux;
+> +               for (j = 0; j < chans_per_mux; j++)
+> +                       fsl_edma->chans[ch_off + j].edmamux = fsl_edmamux;
+> +
+> +               fsl_edmamux++;
+> +               fsl_edma->n_muxes++;
+> +       }
+> +       return 0;
+> +}
+
+[...]
+
+> +static int fsl_edma_probe(struct platform_device *pdev)
+> +{
+> +       struct device_node *np = pdev->dev.of_node;
+> +       struct fsl_edma_engine *fsl_edma;
+> +       struct fsl_edma_chan *fsl_chan;
+> +       struct resource *res;
+> +       int len, chans;
+> +       int ret, i;
+> +
+> +       ret = of_property_read_u32_index(np, "dma-channels", 0, &chans);
+
+Use of_property_read_u32.
+
+Thanks,
+Mark.
