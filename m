@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758239Ab3KNWPb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 17:15:31 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:53406 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755273Ab3KNWPY (ORCPT
+	id S1758172Ab3KNWSb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 17:18:31 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:16193 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756408Ab3KNWSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 17:15:24 -0500
-Date: Thu, 14 Nov 2013 17:15:21 -0500 (EST)
-Message-Id: <20131114.171521.371758595511020967.davem@davemloft.net>
-To: linux@hahnjo.de
-Cc: jcliburn@gmail.com, chris.snook@gmail.com, johannes@sipsolutions.net,
-        wangyijing@huawei.com, maarten.lankhorst@canonical.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] alx: Reset phy speed after resume
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1384445773.29057.5.camel@localhost.tld>
-References: <1384445773.29057.5.camel@localhost.tld>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 14 Nov 2013 17:18:25 -0500
+Date: Thu, 14 Nov 2013 17:18:21 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Miller <davem@davemloft.net>
+Cc: nicolas.dichtel@6wind.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, gregkh@linuxfoundation.org,
+        williams@redhat.com, linux-rt-users@vger.kernel.org, lclaudio@uudg.org,
+        netdev@vger.kernel.org, willemb@google.com
+Subject: Re: [PATCH net] ip6tnl: fix use after free of fb_tnl_dev
+Message-ID: <20131114171821.6500541d@gandalf.local.home>
+In-Reply-To: <20131114.170529.1627250972818871118.davem@davemloft.net>
+References: <20131113211430.1ad3bb7d@gandalf.local.home>
+	<1384440423-4275-1-git-send-email-nicolas.dichtel@6wind.com>
+	<20131114.170529.1627250972818871118.davem@davemloft.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 14 Nov 2013 14:15:23 -0800 (PST)
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: hahnjo <linux@hahnjo.de>
-Date: Thu, 14 Nov 2013 17:16:13 +0100
+On Thu, 14 Nov 2013 17:05:29 -0500 (EST)
+David Miller <davem@davemloft.net> wrote:
 
-> From 27744b24f9291782c1342dbd6cac511e68da907c Mon Sep 17 00:00:00 2001
-> From: hahnjo <hahnjo@hahnjo.de>
-> Date: Tue, 12 Nov 2013 18:19:24 +0100
-> Subject: [PATCH] alx: Reset phy speed after resume
-> 
-> This fixes bug 62491 (https://bugzilla.kernel.org/show_bug.cgi?id=62491).
-> After resuming some users got the following error flooding the kernel log:
-> alx 0000:02:00.0: invalid PHY speed/duplex: 0xffff
-> 
-> Signed-off-by: Jonas Hahnfeld <linux@hahnjo.de>
+ 
+> Applied and queued up for -stable, thanks for being so proactive about this
+> Nicolas.
 
-Applied, thanks.
+I should also note that I added this back to 3.10.18 and the bug goes
+away.
+
+If it's not too late:
+
+Tested-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
