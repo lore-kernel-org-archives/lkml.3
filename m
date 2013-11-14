@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab3KNBk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 20:40:57 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:45360 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab3KNBkr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 20:40:47 -0500
-Date: Wed, 13 Nov 2013 18:40:43 -0700
-From: jerry.hoemann@hp.com
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        matt.fleming@intel.com, yinghai@kernel.org, penberg@kernel.org,
-        akpm@linux-foundation.org, linux-doc@vger.kernel.org,
-        linux-efi@vger.kernel.org, vgoyal@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-Message-ID: <20131114014043.GD25344@anatevka.fc.hp.com>
-Reply-To: jerry.hoemann@hp.com
-References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com>
- <d73ccce9-6a0d-4470-bda3-f0c6eb96b5e4@email.android.com>
- <20131113224503.GB25344@anatevka.fc.hp.com>
- <52840206.5020006@zytor.com>
- <20131113235708.GC25344@anatevka.fc.hp.com>
- <528413DE.1090203@zytor.com>
+	id S1752618Ab3KNBlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 20:41:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30445 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752530Ab3KNBkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 20:40:51 -0500
+Date: Thu, 14 Nov 2013 09:39:55 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de
+Subject: Re: [patch 3/7 v2] Cleanup efi_enter_virtual_mode function
+Message-ID: <20131114013955.GC4081@dhcp-16-126.nay.redhat.com>
+References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com>
+ <20131105082716.825753041@dhcp-16-126.nay.redhat.com>
+ <20131113155017.GB17248@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <528413DE.1090203@zytor.com>
+In-Reply-To: <20131113155017.GB17248@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 04:05:50PM -0800, H. Peter Anvin wrote:
-> On 11/13/2013 03:57 PM, jerry.hoemann@hp.com wrote:
+On 11/13/13 at 03:50pm, Matt Fleming wrote:
+> On Tue, 05 Nov, at 04:20:10PM, dyoung@redhat.com wrote:
+> > Add two small functions:
+> > efi_merge_regions and efi_map_regions, efi_enter_virtual_mode
+> > calls them instead of embedding two long for loop.
 > > 
-> > I think i can go to a date based black list, that removes the manual
-> > step.  System running firmware before certain date assumes we need
-> > to do the work around.  If firmware is newer than that date, we don't
-> > use the workaround.  Blacklist overrides and allows current behavior
-> > for new firmware that is subsequently found to be broken and for
-> > which we can't convenience the manufacturer to fix.
+> > v1->v2:
+> > refresh; coding style fixes.
 > > 
+> > Signed-off-by: Dave Young <dyoung@redhat.com>
+> > ---
+> >  arch/x86/platform/efi/efi.c |  107 +++++++++++++++++++++++++-------------------
+> >  1 file changed, 63 insertions(+), 44 deletions(-)
 > 
-> No, we can't, at least not for now.  We are continually finding new
-> platforms with the bug.
+> [...]
+> 
+> > @@ -860,17 +840,59 @@ void __init efi_enter_virtual_mode(void)
+> >  			efi.systab = (efi_system_table_t *) (unsigned long) systab;
+> >  		}
+> >  
+> > -		new_memmap = krealloc(new_memmap,
+> > -				      (count + 1) * memmap.desc_size,
+> > -				      GFP_KERNEL);
+> > -		if (!new_memmap)
+> > +		*new_memmap = krealloc(*new_memmap,
+> > +					(*count + 1) * memmap.desc_size,
+> > +					GFP_KERNEL);
+> > +		if (!*new_memmap)
+> >  			goto err_out;
+> >  
+> > -		memcpy(new_memmap + (count * memmap.desc_size), md,
+> > +		memcpy(*new_memmap + (*count * memmap.desc_size), md,
+> >  		       memmap.desc_size);
+> > -		count++;
+> > +		(*count)++;
+> >  	}
+> >  
+> > +err_out:
+> > +	pr_err("Error reallocating memory, EFI runtime non-functional!\n");
+> > +}
+> 
+> You should really return an error value here so that we don't
+> dereference 'new_memmap' below if it's NULL. In fact, just return the
+> memmap...
 
-  Does you have a list of systems that require efi_reserve_boot_services?
-  might be useful from a testing standpoint to get access to one.
-
+Good catch, will do
 
 > 
-> > 
-> > I will still point out that as currently used, efi_reserve_boot_services
-> > is wrong.  A work around for firmware bugs on one platform shouldn't be
-> > breaking platforms that don't have that bug.  Its just much less likely
-> > to cause problems with higher crash kernel allocation.
-> > 
+> > +
+> > +	efi_merge_regions();
+> > +
+> > +	efi_map_regions(&new_memmap, &count);
+> > +
 > 
-> It is wrong, yes, but it seems like a ubiquitous problem.
-> 
-> 	-hpa
+> and make sure to check the return value here.
 
--- 
+Ok.
 
-----------------------------------------------------------------------------
-Jerry Hoemann            Software Engineer              Hewlett-Packard/MODL
-
-3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
-Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
-                                                email:  jerry.hoemann@hp.com
-----------------------------------------------------------------------------
-
+> -- 
+> Matt Fleming, Intel Open Source Technology Center
