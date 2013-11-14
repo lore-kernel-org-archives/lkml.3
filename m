@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619Ab3KNMPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 07:15:33 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:35056 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280Ab3KNMPE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 07:15:04 -0500
-From: SeongJae Park <sj38.park@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        SeongJae Park <sj38.park@gmail.com>
-Subject: [PATCH 2/3] staging: alarm-dev: Remove unnecessary blank lines
-Date: Thu, 14 Nov 2013 21:15:11 +0900
-Message-Id: <1384431312-2685-2-git-send-email-sj38.park@gmail.com>
+	id S1753353Ab3KNMTr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 07:19:47 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37923 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751181Ab3KNMTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 07:19:44 -0500
+From: Sricharan R <r.sricharan@ti.com>
+To: <r.sricharan@ti.com>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linus.walleij@linaro.org>, <linux@arm.linux.org.uk>,
+        <tony@atomide.com>, <rnayak@ti.com>, <marc.zyngier@arm.com>,
+        <grant.likely@linaro.org>, <mark.rutland@arm.com>,
+        <robherring2@gmail.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
+        <rob.herring@calxeda.com>, <nm@ti.com>, <bcousson@baylibre.com>
+Subject: [PATCH V4 0/4] DRIVERS: IRQCHIP: Add support for crossbar IP
+Date: Thu, 14 Nov 2013 17:48:46 +0530
+Message-ID: <1384431530-2166-1-git-send-email-r.sricharan@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1384431312-2685-1-git-send-email-sj38.park@gmail.com>
-References: <y>
- <1384431312-2685-1-git-send-email-sj38.park@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: SeongJae Park <sj38.park@gmail.com>
----
- drivers/staging/android/alarm-dev.c |    3 ---
- 1 file changed, 3 deletions(-)
+Some socs have a large number of interrupts requests to service
+the needs of its many peripherals and subsystems. All of the interrupt
+requests lines from the subsystems are not needed at the same
+time, so they have to be muxed to the controllers appropriately.
+In such places a interrupt controllers are preceded by an
+IRQ CROSSBAR that provides flexibility in muxing the device interrupt
+requests to the controller inputs.
 
-diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
-index ccf74ee..a3b467b 100644
---- a/drivers/staging/android/alarm-dev.c
-+++ b/drivers/staging/android/alarm-dev.c
-@@ -72,7 +72,6 @@ static int is_wakeup(enum android_alarm_type type)
- 		type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP;
- }
- 
--
- static void devalarm_start(struct devalarm *alrm, ktime_t exp)
- {
- 	if (is_wakeup(alrm->type))
-@@ -111,7 +110,6 @@ static void alarm_clear(enum android_alarm_type alarm_type)
- 	}
- 	alarm_enabled &= ~alarm_type_mask;
- 	spin_unlock_irqrestore(&alarm_slock, flags);
--
- }
- 
- static void alarm_set(enum android_alarm_type alarm_type,
-@@ -371,7 +369,6 @@ static void devalarm_triggered(struct devalarm *alarm)
- 	spin_unlock_irqrestore(&alarm_slock, flags);
- }
- 
--
- static enum hrtimer_restart devalarm_hrthandler(struct hrtimer *hrt)
- {
- 	struct devalarm *devalrm = container_of(hrt, struct devalarm, u.hrt);
+This series models the peripheral interrupts that can be routed through
+the crossbar to the GIC as 'routable-irqs'. The routable irqs are added
+in a separate linear domain inside the GIC. The registered routable domain's
+callback are invoked as a part of the GIC's callback, which in turn should
+allocate a free irq line and configure the IP accordingly. So every peripheral
+in the dts files mentions the fixed crossbar number as its interrupt. A free
+gic line for that gets allocated and configured when the peripheral interrupts
+are mapped.
+
+The minimal crossbar driver to track and allocate free GIC lines and configure the
+crossbar is added here, along with the DT bindings.
+
+V4:
+   Addressed a couple of comments and split the DTS file updates in to
+   a separate series.
+
+V3:
+   Addressed few more comments from Thomas Gleixner <tglx@linutronix.de>
+
+   Rebased patches 3,4,5,7 which updates the DTS file on top of below branch
+	   git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+	   for_3.13/dts
+
+   Rebased patches 1,2,6 on top of 3.12 mainline
+   Updated Commit tags
+
+V2:
+   Addressed Thomas Gleixner <tglx@linutronix.de> comments and
+   Kumar Gala <galak@codeaurora.org>
+
+   Split updating the DRA7.dtsi file for adding the routable-irqs
+
+Previous discussions that led to this is at
+	https://lkml.org/lkml/2013/9/18/540
+
+The V1,V2,V3 post of these patches is at
+      [V1]  https://lkml.org/lkml/2013/9/30/283
+      [V2]  http://www.spinics.net/lists/linux-omap/msg99540.html
+      [V3]  http://www.kernelhub.org/?msg=356470&p=2
+
+Sricharan R (4):
+  DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable irqs
+  DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP
+  ARM: OMAP4+: Correct Wakeup-gen code to use physical irq number
+  ARM: DRA: Enable Crossbar IP support for DRA7XX
+
+ Documentation/devicetree/bindings/arm/gic.txt      |    6 +
+ .../devicetree/bindings/arm/omap/crossbar.txt      |   27 +++
+ arch/arm/mach-omap2/Kconfig                        |    1 +
+ arch/arm/mach-omap2/omap-wakeupgen.c               |    4 +-
+ arch/arm/mach-omap2/omap4-common.c                 |    3 +
+ drivers/irqchip/Kconfig                            |    8 +
+ drivers/irqchip/Makefile                           |    1 +
+ drivers/irqchip/irq-crossbar.c                     |  206 ++++++++++++++++++++
+ drivers/irqchip/irq-gic.c                          |   81 +++++++-
+ include/linux/irqchip/arm-gic.h                    |    7 +-
+ include/linux/irqchip/irq-crossbar.h               |   11 ++
+ 11 files changed, 342 insertions(+), 13 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
+ create mode 100644 drivers/irqchip/irq-crossbar.c
+ create mode 100644 include/linux/irqchip/irq-crossbar.h
+
 -- 
 1.7.9.5
 
