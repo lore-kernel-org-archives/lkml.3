@@ -1,156 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab3KNKvJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 05:51:09 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53146 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752514Ab3KNKvH (ORCPT
+	id S1753357Ab3KNKvT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 05:51:19 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:44788 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752514Ab3KNKvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 05:51:07 -0500
-Date: Thu, 14 Nov 2013 10:49:02 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
-Subject: Re: [RFC][PATCH v5 01/14] sched: add a new arch_sd_local_flags for
- sched_domain init
-Message-ID: <20131114104902.GB5762@e103034-lin>
-References: <1382097147-30088-2-git-send-email-vincent.guittot@linaro.org>
- <20131105140626.GP31370@twins.programming.kicks-ass.net>
- <CAKfTPtCYHKRv=w3b4tZV-2BW_a_T+tkO9Qpc0PhLD=uZY1yvfw@mail.gmail.com>
- <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <20131106145344.448d7733@mschwide>
- <20131106140807.GM10651@twins.programming.kicks-ass.net>
- <528268C8.8010501@arm.com>
- <20131112180844.GF21461@twins.programming.kicks-ass.net>
- <52839F04.60702@arm.com>
- <20131113162919.GM26898@twins.programming.kicks-ass.net>
+	Thu, 14 Nov 2013 05:51:10 -0500
+X-Sasl-enc: SudsStN4GhIbliDKzHusL3B/JuXnur89aWBDT4KJM6gO 1384426265
+Message-ID: <5284AB17.5050802@ladisch.de>
+Date: Thu, 14 Nov 2013 11:51:03 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
+To: Stephan Mueller <smueller@chronox.de>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Pavel Machek <pavel@ucw.cz>,
+        sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and
+ /dev/random
+References: <2579337.FPgJGgHYdz@tauon> <1391779.T98KINxAMQ@myon.chronox.de> <528367D0.6010900@ladisch.de> <27146362.bQgmetPpTV@tauon>
+In-Reply-To: <27146362.bQgmetPpTV@tauon>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131113162919.GM26898@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 04:29:19PM +0000, Peter Zijlstra wrote:
-> On Wed, Nov 13, 2013 at 03:47:16PM +0000, Dietmar Eggemann wrote:
-> > On 12/11/13 18:08, Peter Zijlstra wrote:
-> > > On Tue, Nov 12, 2013 at 05:43:36PM +0000, Dietmar Eggemann wrote:
-> > >> This patch removes the sched_domain initializer macros
-> > >> SD_[SIBLING|MC|BOOK|CPU]_INIT in core.c and in archs and replaces them
-> > >> with calls to the new function sd_init().  The function sd_init
-> > >> incorporates the already existing function sd_numa_init().
-> > > 
-> > > Your patch retains far too much of the weird behavioural variations we
-> > > have, nor does it create a proper separation between topology and
-> > > behaviour.
-> > 
-> > Could you please explain a little bit further on the weird behavioural
-> > variations. Are you referring to the specific SD_ flags or sd_domain levels?
-> 
-> +++ b/arch/ia64/kernel/topology.c
-> @@ -99,6 +99,14 @@ out:
-> 
->  subsys_initcall(topology_init);
-> 
-> +void arch_sd_customize(int level, struct sched_domain *sd, int cpu)
-> +{
-> +       if (level == SD_LVL_CPU) {
-> +               sd->cache_nice_tries = 2;
-> +
-> +               sd->flags &= ~SD_PREFER_SIBLING;
-> +       }
-> +}
-> 
-> +++ b/arch/tile/kernel/smp.c
-> @@ -254,3 +254,15 @@ void smp_send_reschedule(int cpu)
->  }
-> 
->  #endif /* CHIP_HAS_IPI() */
-> +
-> +void arch_sd_customize(int level, struct sched_domain *sd, int cpu)
-> +{
-> +       if (level == SD_LVL_CPU) {
-> +               sd->min_interval = 4;
-> +               sd->max_interval = 128;
-> +
-> +               sd->flags &= ~(SD_WAKE_AFFINE | SD_PREFER_SIBLING);
-> +
-> +               sd->balance_interval = 32;
-> +       }
-> +}
-> 
-> Many of these differences are just bitrot / accidents, and the different
-> min interval for tile was already taken care of by basing the intervals
-> off of the domain weight.
-> 
-> On that, you should also not rely on these SD_LVL things; if we wanted
-> to inject an extra level they'd go all funny.
-> 
-> > I agree that this patch doesn't separate behaviour and topology and I
-> > will consider this going forward.
-> 
-> Please take the patch I did and work from there.
-> 
-> > > We might indeed have to have a single arch_() function that adds
-> > > SD_flags, but please restrict the flags it can set -- never allow it to
-> > > set behavioural flags.
-> > 
-> > Understood. Simply exporting an sd_domain pointer is a no-go.
-> 
-> I was more thinking along the lines of:
-> 
-> unsigned long arch_sd_flags(unsigned long sd_flags)
-> {
-> 	return 0
-> }
-> 
-> Used like:
-> 
-> 	extra_sd_flags = arch_sd_flags(sd->sd_flags);
-> 	if (extra_sd_flags & FOO) {
-> 		WARN("silly bugger: %x\n", extra_sd_flags);
-> 		extra_sd_flags &= ~FOO;
-> 	}
-> 	sd->sd_flags |= extra_sd_flags;
-> 
-> Or something.
+Stephan Mueller wrote:
+> Am Mittwoch, 13. November 2013, 12:51:44 schrieb Clemens Ladisch:
+>> (And any setting that increases accesses to main memory is likey to
+>> introduce more entropy due to clock drift between the processor and the
+>> memory bus.  Or where do you assume the entropy comes from?)
+>
+> You nailed it. When I disable the caches using the CR0 setting, I get a
+> massive increase in variations and thus entropy.
 
-We need a way to know which group of cpus the flag applies to. If we
-don't want to pass a pointer to the sched_domain and we want to replace
-the current named sched_domain levels with something more flexible, the
-only solution I can think of right now is to pass a cpumask to the arch
-code. Better suggestions?
+Now this would be an opportunity to use the number of main memory
+accesses to estimate entropy.  (And when you're running out of the
+cache, i.e., deterministically, is there any entropy?)
 
-If we let arch generate the topology it could set the flags as well. But
-that means that an arch would have to deal with generating the topology
-even if it just needs to flip a single flag in the default topology.
+>>> XOR is a bijective operation.
+>>
+>> Only XOR with a constant, which is not what you're doing.
+>
+> If you want to regain the full 64 bit input bit stream, then you are
+> right.
+>
+> But still, XOR is bijective with respect to the two bits that go into
+> the operation.
 
-Another thing is if we want to put energy related information into the
-sched_domain hierarchy. If we want various energy costs (P and C state)
-to be represented here we would need to modify more than just flags.
+Please look up what "bijective" actually means:
+<http://en.wikipedia.org/wiki/Bijection>
 
-One way to do that is to put the energy information into a sub-struct and
-have another arch_sd_energy() call that allows the arch to populate that
-struct with relevant information.
+> folding based on XOR is an appropriate way to collapse the string and
+> yet retain entropy.
 
-Morten
+Correct, but the reason for that is not being bijective.
+
+>> If the observations are not independent, you cannot just assume that
+>> the estimate is off by a certain factor.  It means that the estimate
+>> is not applicable _at all_.
+>
+> Well, I am not so sure here.
+
+So, what is the factor that you are saying is large enough?
+
+>>> The RNG has the following safety margins where it is more conservative than
+>>> measurements indicate:
+>>
+>> You _cannot_ measure entropy by looking at the output.  How would you
+>> differentiate between /dev/random and /dev/urandom?
+>
+> I think regarding the independence you can very well draw the conclusion
+> based on the output, because any dependencies will ultimately form a
+> pattern.
+
+The output of a pure PRNG (such as /dev/urandom without entropy) is
+dependent on the internal state, but there are no patterns detectable
+from the output alone.
+
+> In addition, we need to keep in mind that the independence claim is
+> relative
+
+No, independence is a property of the process that generates the
+samples.
+
+> If you have an output string that has no detectable patterns, i.e. looks
+> like white noise, you can only assume that the observations are
+> independent of each other. If there are patterns, you know that there
+> are dependencies.
+>
+> That statement may *not* apply any more if you look at the internals of
+> the RNG. In such a case, you may have even strong dependencies.
+>
+> The best example on this matter are deterministic RNGs with a
+> cryptographic output function. When you see the output string, you only
+> see white noise. As you cannot detect a pattern, you have to assume that
+> the string provides independent observations. At least for you who looks
+> from the outside cannot draw any conclusions from observing some output
+> bit stream which would be the future bit stream. Yet, when you know the
+> state of the RNG, you entire future output bit stream has no
+> independence.
+
+You cannot restrict the analysis to observations from the outside;
+there are many people who can know about the CPU's internal structure.
+
+> Coming back to the jitter RNG: I applied a large array of statistical
+> tests and all of them concluded that the output is white noise, as
+> explained in the documentation. That means when looking from the
+> outside, there are no dependencies visible. Now you may say that this
+> conclusion does not mean that there are no dependencies -- but I reply
+> again, if there would be any, none of the array of statistical tests can
+> detect it. So, how would an attacker detect patterns?
+
+An attacker would not try to detect patterns; he would apply knowledge
+of the internals.
+
+Statistical tests are useful only for detecting the absence of entropy,
+not for the opposite.
+
+
+All your arguments about the output of the CPU jitter RNG also apply to
+the output of /dev/urandom.  So are you saying that it would be a good
+idea to loop the output of /dev/urandom back into /dev/random?
+
+
+Regards,
+Clemens
