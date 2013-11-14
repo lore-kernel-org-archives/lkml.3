@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261Ab3KNQlu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:41:50 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:47081 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756601Ab3KNQkk (ORCPT
+	id S1756809Ab3KNQl7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:41:59 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59583 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754744Ab3KNQlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:40:40 -0500
+	Thu, 14 Nov 2013 11:41:00 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Jinshan Xiong <jinshan.xiong@intel.com>,
-        Peng Tao <bergwolf@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, James Simmons <uja.ornl@gmail.com>,
+        Patrick Farrell <paf@cray.com>, Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 34/39] staging/lustre/llite: cancel open lock before closing file
-Date: Fri, 15 Nov 2013 00:32:57 +0800
-Message-Id: <1384446782-13741-35-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 39/39] staging/lustre/osc: Lustre returns EINTR from writes when SA_RESTART is set
+Date: Fri, 15 Nov 2013 00:33:02 +0800
+Message-Id: <1384446782-13741-40-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
 References: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
@@ -22,59 +22,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jinshan Xiong <jinshan.xiong@intel.com>
+From: James Simmons <uja.ornl@gmail.com>
 
-In error handling path of ll_lease_open(), och has already been
-freed in ll_close_inode_openhandle() so the sequence of cancel
-open lock and close open handle need adjusting.
+When Lustre is in a read or write system call and receives a
+SIGALRM, it will return EINTR if interrupted in osc_enter_cache.
+This prevents the system call from being restarted if
+SA_RESTART is set in the handler.
 
-Lustre-change: http://review.whamcloud.com/7346
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3647
-Signed-off-by: Jinshan Xiong <jinshan.xiong@intel.com>
-Reviewed-by: John L. Hammond <john.hammond@intel.com>
-Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
+This patch changes behavior in this location to return ERESTARTSYS
+when a signal arrives during the call to l_wait_event.
+
+Lustre-change: http://review.whamcloud.com/7002
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3581
+Signed-off-by: Patrick Farrell <paf@cray.com>
+Signed-off-by: James Simmons <uja.ornl@gmail.com>
+Reviewed-by: Rahul Deshmukh <rahul_deshmukh@xyratex.com>
+Reviewed-by: Cory Spitz <spitzcor@cray.com>
+Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/llite/file.c |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ drivers/staging/lustre/lustre/osc/osc_cache.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/llite/file.c b/drivers/staging/lustre/lustre/llite/file.c
-index 390bea5..a2a9844 100644
---- a/drivers/staging/lustre/lustre/llite/file.c
-+++ b/drivers/staging/lustre/lustre/llite/file.c
-@@ -847,20 +847,24 @@ struct obd_client_handle *ll_lease_open(struct inode *inode, struct file *file,
- 	return och;
+diff --git a/drivers/staging/lustre/lustre/osc/osc_cache.c b/drivers/staging/lustre/lustre/osc/osc_cache.c
+index 7d63a37..abb4604 100644
+--- a/drivers/staging/lustre/lustre/osc/osc_cache.c
++++ b/drivers/staging/lustre/lustre/osc/osc_cache.c
+@@ -1533,13 +1533,24 @@ static int osc_enter_cache(const struct lu_env *env, struct client_obd *cli,
  
- out_close:
--	rc2 = ll_close_inode_openhandle(sbi->ll_md_exp, inode, och, NULL);
--	if (rc2)
--		CERROR("Close openhandle returned %d\n", rc2);
+ 		/* l_wait_event is interrupted by signal, or timed out */
+ 		if (rc < 0) {
+-			if (rc == -ETIMEDOUT) {
++			switch (rc) {
++			case -ETIMEDOUT:
+ 				OSC_DUMP_GRANT(D_ERROR, cli,
+ 						"try to reserve %d.\n", bytes);
+ 				osc_extent_tree_dump(D_ERROR, osc);
+ 				rc = -EDQUOT;
++				break;
++			case -EINTR:
++				/* Ensures restartability - LU-3581 */
++				rc = -ERESTARTSYS;
++				break;
++			default:
++				CDEBUG(D_CACHE, "%s: event for cache space @"
++				       " %p never arrived due to %d\n",
++				       cli->cl_import->imp_obd->obd_name,
++				       &ocw, rc);
++				break;
+ 			}
 -
--	/* cancel open lock */
-+	/* Cancel open lock */
- 	if (it.d.lustre.it_lock_mode != 0) {
- 		ldlm_lock_decref_and_cancel(&och->och_lease_handle,
--						it.d.lustre.it_lock_mode);
-+					    it.d.lustre.it_lock_mode);
- 		it.d.lustre.it_lock_mode = 0;
-+		och->och_lease_handle.cookie = 0ULL;
- 	}
-+	rc2 = ll_close_inode_openhandle(sbi->ll_md_exp, inode, och, NULL);
-+	if (rc2 < 0)
-+		CERROR("%s: error closing file "DFID": %d\n",
-+		       ll_get_fsname(inode->i_sb, NULL, 0),
-+		       PFID(&ll_i2info(inode)->lli_fid), rc2);
-+	och = NULL; /* och has been freed in ll_close_inode_openhandle() */
- out_release_it:
- 	ll_intent_release(&it);
- out:
--	OBD_FREE_PTR(och);
-+	if (och != NULL)
-+		OBD_FREE_PTR(och);
- 	return ERR_PTR(rc);
- }
- EXPORT_SYMBOL(ll_lease_open);
+ 			list_del_init(&ocw.ocw_entry);
+ 			GOTO(out, rc);
+ 		}
 -- 
 1.7.9.5
 
