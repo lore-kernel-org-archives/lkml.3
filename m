@@ -1,54 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab3KNO0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 09:26:22 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:43430 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361Ab3KNO0Q (ORCPT
+	id S1754599Ab3KNO1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 09:27:09 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60341 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753293Ab3KNO1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 09:26:16 -0500
-Message-ID: <5284DD7E.30604@gmail.com>
-Date: Thu, 14 Nov 2013 07:26:06 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>,
-        Joseph Schuchart <joseph.schuchart@tu-dresden.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>
-CC: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        thomas.ilsche@tu-dresden.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Perf: Correct Assumptions about Sample Timestamps in
- Passes
-References: <528484CB.7@tu-dresden.de> <20131114083930.GC16543@gmail.com> <528490DE.4080204@tu-dresden.de> <20131114100552.GA5064@gmail.com>
-In-Reply-To: <20131114100552.GA5064@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Nov 2013 09:27:01 -0500
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: cw00.choi@samsung.com
+Cc: myungjoo.ham@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH v2 1/7] extcon: arizona: Add defines for microphone detection levels
+Date: Thu, 14 Nov 2013 14:11:31 +0000
+Message-Id: <1384438297-27851-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/13, 3:05 AM, Ingo Molnar wrote:
+Improve readability by creating a define for each microphone detection
+level.
 
-> What am I missing?
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/extcon/extcon-arizona.c       |   19 ++++++++++++++-----
+ include/linux/mfd/arizona/registers.h |    9 +++++++++
+ 2 files changed, 23 insertions(+), 5 deletions(-)
 
-I have spent quite a bit of time on this problem on this well. I think 
-the flush time needs to be based on the start time of each round, not 
-the minimum time observed across mmaps. I have tried the minimum time 
-stamp route and it still fails often enough to be annoying.
+diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+index ec9a14e..d611420 100644
+--- a/drivers/extcon/extcon-arizona.c
++++ b/drivers/extcon/extcon-arizona.c
+@@ -44,6 +44,15 @@
+ #define HPDET_DEBOUNCE 500
+ #define DEFAULT_MICD_TIMEOUT 2000
+ 
++#define MICD_LVL_1_TO_7 (ARIZONA_MICD_LVL_1 | ARIZONA_MICD_LVL_2 | \
++			 ARIZONA_MICD_LVL_3 | ARIZONA_MICD_LVL_4 | \
++			 ARIZONA_MICD_LVL_5 | ARIZONA_MICD_LVL_6 | \
++			 ARIZONA_MICD_LVL_7)
++
++#define MICD_LVL_0_TO_7 (ARIZONA_MICD_LVL_0 | MICD_LVL_1_TO_7)
++
++#define MICD_LVL_0_TO_8 (MICD_LVL_0_TO_7 | ARIZONA_MICD_LVL_8)
++
+ struct arizona_extcon_info {
+ 	struct device *dev;
+ 	struct arizona *arizona;
+@@ -767,7 +776,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 
+ 	mutex_lock(&info->lock);
+ 
+-	for (i = 0; i < 10 && !(val & 0x7fc); i++) {
++	for (i = 0; i < 10 && !(val & MICD_LVL_0_TO_8); i++) {
+ 		ret = regmap_read(arizona->regmap, ARIZONA_MIC_DETECT_3, &val);
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev, "Failed to read MICDET: %d\n", ret);
+@@ -784,7 +793,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 		}
+ 	}
+ 
+-	if (i == 10 && !(val & 0x7fc)) {
++	if (i == 10 && !(val & MICD_LVL_0_TO_8)) {
+ 		dev_err(arizona->dev, "Failed to get valid MICDET value\n");
+ 		mutex_unlock(&info->lock);
+ 		return;
+@@ -798,7 +807,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 	}
+ 
+ 	/* If we got a high impedence we should have a headset, report it. */
+-	if (info->detecting && (val & 0x400)) {
++	if (info->detecting && (val & ARIZONA_MICD_LVL_8)) {
+ 		arizona_identify_headphone(info);
+ 
+ 		ret = extcon_update_state(&info->edev,
+@@ -827,7 +836,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 	 * plain headphones.  If both polarities report a low
+ 	 * impedence then give up and report headphones.
+ 	 */
+-	if (info->detecting && (val & 0x3f8)) {
++	if (info->detecting && (val & MICD_LVL_1_TO_7)) {
+ 		if (info->jack_flips >= info->micd_num_modes * 10) {
+ 			dev_dbg(arizona->dev, "Detected HP/line\n");
+ 			arizona_identify_headphone(info);
+@@ -851,7 +860,7 @@ static void arizona_micd_detect(struct work_struct *work)
+ 	 * If we're still detecting and we detect a short then we've
+ 	 * got a headphone.  Otherwise it's a button press.
+ 	 */
+-	if (val & 0x3fc) {
++	if (val & MICD_LVL_0_TO_7) {
+ 		if (info->mic) {
+ 			dev_dbg(arizona->dev, "Mic button detected\n");
+ 
+diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
+index 4706d3d..10d9e70 100644
+--- a/include/linux/mfd/arizona/registers.h
++++ b/include/linux/mfd/arizona/registers.h
+@@ -2196,6 +2196,15 @@
+ /*
+  * R677 (0x2A5) - Mic Detect 3
+  */
++#define ARIZONA_MICD_LVL_0                       0x0004  /* MICD_LVL - [2] */
++#define ARIZONA_MICD_LVL_1                       0x0008  /* MICD_LVL - [3] */
++#define ARIZONA_MICD_LVL_2                       0x0010  /* MICD_LVL - [4] */
++#define ARIZONA_MICD_LVL_3                       0x0020  /* MICD_LVL - [5] */
++#define ARIZONA_MICD_LVL_4                       0x0040  /* MICD_LVL - [6] */
++#define ARIZONA_MICD_LVL_5                       0x0080  /* MICD_LVL - [7] */
++#define ARIZONA_MICD_LVL_6                       0x0100  /* MICD_LVL - [8] */
++#define ARIZONA_MICD_LVL_7                       0x0200  /* MICD_LVL - [9] */
++#define ARIZONA_MICD_LVL_8                       0x0400  /* MICD_LVL - [10] */
+ #define ARIZONA_MICD_LVL_MASK                    0x07FC  /* MICD_LVL - [10:2] */
+ #define ARIZONA_MICD_LVL_SHIFT                        2  /* MICD_LVL - [10:2] */
+ #define ARIZONA_MICD_LVL_WIDTH                        9  /* MICD_LVL - [10:2] */
+-- 
+1.7.2.5
 
-See builtin-kvm.c, perf_kvm__mmap_read(). The problem is that it takes 
-time to move from mmap to mmap and sample can come in behind you - an 
-mmap that has already be scanned with a timestamp less than what is 
-determined to be the lowest minimum for the samples actually read. 'perf 
-kvm stat live' in a nested environment is a stress test for the problem.
-
-I believe reading perf_clock at the start of each round and using that 
-as the flush time will fix the problem (to the degree that perf_clock is 
-monotonic across all cpus and sockets).
-
-But, right now we have no means of reading the perf_clock timestamp in 
-userspace.
-
-David
