@@ -1,68 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab3KNSCU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 13:02:20 -0500
-Received: from mail.eperm.de ([89.247.134.16]:51772 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754177Ab3KNSCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 13:02:11 -0500
-From: Stephan Mueller <smueller@chronox.de>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Pavel Machek <pavel@ucw.cz>,
-        sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
-Date: Thu, 14 Nov 2013 19:01:58 +0100
-Message-ID: <3127174.i8ueAho43m@tauon>
-User-Agent: KMail/4.11.3 (Linux/3.11.7-200.fc19.x86_64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <5284AB17.5050802@ladisch.de>
-References: <2579337.FPgJGgHYdz@tauon> <27146362.bQgmetPpTV@tauon> <5284AB17.5050802@ladisch.de>
+	id S1755234Ab3KNSFG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 13:05:06 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:44998 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824Ab3KNSFB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 13:05:01 -0500
+Date: Thu, 14 Nov 2013 11:04:55 -0700
+From: jerry.hoemann@hp.com
+To: Pekka Enberg <penberg@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "list@ebiederm.org:DOCUMENTATION <linux-doc@vger.kernel.org>,
+	list@ebiederm.org:MEMORY MANAGEMENT <linux-mm@kvack.org>," 
+	<linux-doc@vger.kernel.org>,
+        linux-efi@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+Message-ID: <20131114180455.GA32212@anatevka.fc.hp.com>
+Reply-To: jerry.hoemann@hp.com
+References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com>
+ <d73ccce9-6a0d-4470-bda3-f0c6eb96b5e4@email.android.com>
+ <20131113224503.GB25344@anatevka.fc.hp.com>
+ <52840206.5020006@zytor.com>
+ <20131113235708.GC25344@anatevka.fc.hp.com>
+ <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 14. November 2013, 11:51:03 schrieb Clemens Ladisch:
-
-Hi Clemens,
-
->Stephan Mueller wrote:
->> Am Mittwoch, 13. November 2013, 12:51:44 schrieb Clemens Ladisch:
->>> (And any setting that increases accesses to main memory is likey to
->>> introduce more entropy due to clock drift between the processor and
->>> the memory bus.  Or where do you assume the entropy comes from?)
->> 
->> You nailed it. When I disable the caches using the CR0 setting, I get
->> a massive increase in variations and thus entropy.
->
->Now this would be an opportunity to use the number of main memory
->accesses to estimate entropy.  (And when you're running out of the
->cache, i.e., deterministically, is there any entropy?)
->
-
-I seem to have found the root cause with my bare metal tester, but I am 
-yet unable to make sense of it.
-
-I will report back with more analyses.
+On Thu, Nov 14, 2013 at 10:24:17AM +0200, Pekka Enberg wrote:
+> Hi Jerry,
+> 
+> On Thu, Nov 14, 2013 at 1:57 AM,  <jerry.hoemann@hp.com> wrote:
+> > I will still point out that as currently used, efi_reserve_boot_services
+> > is wrong.  A work around for firmware bugs on one platform shouldn't be
+> > breaking platforms that don't have that bug.  Its just much less likely
+> > to cause problems with higher crash kernel allocation.
+> 
+> Wrong in what way exactly?
 
 
->An attacker would not try to detect patterns; he would apply knowledge
->of the internals.
+efi_reserve_boot_services can cause reserve_crashkernel to fail.
+This breaks kump.
 
-I do not buy that argument, because if an attacker can detect or deduce 
-the internals of the CPU, he surely can detect the state of the 
-input_pool or the other entropy pools behind /dev/random. And then, 
-/dev/random is not so entropic any more for that attacker.
->
->Statistical tests are useful only for detecting the absence of entropy,
->not for the opposite.
+Prior to 3.9, the area for crash dump had to be reserved below 896M.
+crash kernel is in one physically contiguous space.
 
-Again, I fully agree. But it is equally important to understand that 
-entropy is relative. And all I want and all I care about is that an 
-attacker has only the knowledge and ability to make measurements that 
-are less precise than 1 bit.
+This is still the default way crash kernel is allocated post 3.9.
 
-Ciao
-Stephan
+The size of crash kernel is based upon size of system (memory, cpus, IO)
+and can get large.  On one of our new servers we need to allocate crash
+kernels of 512MB or larger.   efi_reserve_boot_services reserve boot
+service code/data and prevents it from being available to reserve_crashkernel.
+When this reservation fragments memory below 896 MB, it breaks the
+allocation for reserve_crashkernel.  It breaks kdump.
+
+Distros based upon pre 3.9 kernels and w/ efi_reserve_boot_services
+are subject to failure.
+
+
+Customers who buy large servers want to be supported.  They want to
+be able to take crash dumps and have bugs fixed.  This issue makes
+crash dump more difficult or impossible dependent upon configuration
+and kernel version.
+
+
+
+ 
+> We need efi_reserve_boot_services on _some_ platforms and it's only practical
+> to do it on all platforms to be able to boot a generic kernel.  Likewise, it
+
+
+disagree.
+
+efi_reserve_boot_services is necessary on some platforms, but
+it should have been applied as a quirk as its a workaround for
+broken firmware.
+
+there are numerous examples in linux of other platform defects being
+worked around as quirks.
+
+
+
+> would be more practical to fix crashkernel on all platforms instead of adding a
+> new code path in the kernel that won't receive as much testing coverage (we
+> need to reserve boot services by default).
+
+disagree.
+
+The fix for this issue will have to be back ported across multiple releases
+and distros.  A large change will be difficult to back port and debug.
+There are kernel/tools rev locks in top of tree crash paths, these
+will likely have to be back ported also.
+
+Making this issue a quirk will be a lot more practical.  Its a small, focused
+change whose implications are limited and more easily understood.
+
+BTW, we test the crash path a lot.
+
+
+> 
+> And frankly, I don't understand why 'violating the UEFI specification' is even
+
+
+Its background material to understand why the code is the way it is.
+Its the reason that efi_reserve_boot_services was added to the kernel.
+Its why we can't just drop efi_reserve_boot_services.
+
+
+> brought up.  It's shipped firmware that matters here no matter how broken it
+> is.  As long as there's a reasonable solution for crashkernel that works on all
+> platforms, we should go for it instead of special-casing for 'proper firmware'
+> because it makes testing the kernel more difficult.
+> 
+>                         Pekka
+
+-- 
+
+----------------------------------------------------------------------------
+Jerry Hoemann            Software Engineer              Hewlett-Packard
+
+3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
+Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
+                                                email:  jerry.hoemann@hp.com
+----------------------------------------------------------------------------
+
