@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab3KNQjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:39:54 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:44886 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755158Ab3KNQiu (ORCPT
+	id S1756319Ab3KNQkF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:40:05 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:44093 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755982Ab3KNQjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:38:50 -0500
+	Thu, 14 Nov 2013 11:39:08 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
-        Niu Yawei <yawei.niu@intel.com>, Peng Tao <bergwolf@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Jinshan Xiong <jinshan.xiong@intel.com>,
+        Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 05/39] staging/lustre/ptlrpc: add rpc_cache
-Date: Fri, 15 Nov 2013 00:32:28 +0800
-Message-Id: <1384446782-13741-6-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 10/39] staging/lustre/hsm: small fixes for HSM
+Date: Fri, 15 Nov 2013 00:32:33 +0800
+Message-Id: <1384446782-13741-11-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
 References: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
@@ -22,298 +22,377 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
+From: Jinshan Xiong <jinshan.xiong@intel.com>
 
-Add rpc_cache for allocating ptlrpc_requests.
+This patch includes the following fixes for HSM:
+1. Redefine D_HSM. It was defined to D_TRACE;
+2. Fix lu_ref for lease handle
+3. User input verification to make sure the hur size is less than
+MDS_MAXREQSIZE;
 
-Lustre-change: http://review.whamcloud.com/6874
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2424
-Signed-off-by: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
-Signed-off-by: Niu Yawei <yawei.niu@intel.com>
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: Lai Siyao <lai.siyao@intel.com>
+Lustre-change: http://review.whamcloud.com/7243
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3647
+Signed-off-by: Jinshan Xiong <jinshan.xiong@intel.com>
+Reviewed-by: John L. Hammond <john.hammond@intel.com>
+Reviewed-by: jacques-Charles Lafoucriere <jacques-charles.lafoucriere@cea.fr>
 Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/ptlrpc/client.c      |   42 ++++++++++++++++----
- drivers/staging/lustre/lustre/ptlrpc/events.c      |    2 +-
- .../staging/lustre/lustre/ptlrpc/ptlrpc_internal.h |    4 ++
- .../staging/lustre/lustre/ptlrpc/ptlrpc_module.c   |   24 +++++++----
- drivers/staging/lustre/lustre/ptlrpc/sec.c         |    6 +--
- drivers/staging/lustre/lustre/ptlrpc/service.c     |   13 +++---
- 6 files changed, 65 insertions(+), 26 deletions(-)
+ .../lustre/include/linux/libcfs/libcfs_debug.h     |  129 ++++++++++---------
+ drivers/staging/lustre/lustre/libcfs/debug.c       |  131 ++------------------
+ drivers/staging/lustre/lustre/llite/dir.c          |    5 +
+ drivers/staging/lustre/lustre/llite/file.c         |    4 +-
+ drivers/staging/lustre/lustre/mdc/mdc_lib.c        |    2 +-
+ 5 files changed, 89 insertions(+), 182 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/client.c b/drivers/staging/lustre/lustre/ptlrpc/client.c
-index faa982a..9cdee5e 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/client.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/client.c
-@@ -378,6 +378,34 @@ static int ptlrpc_at_recv_early_reply(struct ptlrpc_request *req)
- 	return rc;
- }
+diff --git a/drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h b/drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h
+index 40282b7..02a77de 100644
+--- a/drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h
++++ b/drivers/staging/lustre/include/linux/libcfs/libcfs_debug.h
+@@ -87,74 +87,83 @@ struct ptldebug_header {
  
-+struct kmem_cache *request_cache;
+ /* Debugging subsystems (32 bits, non-overlapping) */
+ /* keep these in sync with lnet/utils/debug.c and lnet/libcfs/debug.c */
+-#define S_UNDEFINED   0x00000001
+-#define S_MDC	 0x00000002
+-#define S_MDS	 0x00000004
+-#define S_OSC	 0x00000008
+-#define S_OST	 0x00000010
+-#define S_CLASS       0x00000020
+-#define S_LOG	 0x00000040
+-#define S_LLITE       0x00000080
+-#define S_RPC	 0x00000100
+-#define S_MGMT	0x00000200
+-#define S_LNET	0x00000400
+-#define S_LND	 0x00000800 /* ALL LNDs */
+-#define S_PINGER      0x00001000
+-#define S_FILTER      0x00002000
++#define S_UNDEFINED	0x00000001
++#define S_MDC		0x00000002
++#define S_MDS		0x00000004
++#define S_OSC		0x00000008
++#define S_OST		0x00000010
++#define S_CLASS		0x00000020
++#define S_LOG		0x00000040
++#define S_LLITE		0x00000080
++#define S_RPC		0x00000100
++#define S_MGMT		0x00000200
++#define S_LNET		0x00000400
++#define S_LND		0x00000800 /* ALL LNDs */
++#define S_PINGER	0x00001000
++#define S_FILTER	0x00002000
+ /* unused */
+-#define S_ECHO	0x00008000
+-#define S_LDLM	0x00010000
+-#define S_LOV	 0x00020000
+-#define S_LQUOTA      0x00040000
++#define S_ECHO		0x00008000
++#define S_LDLM		0x00010000
++#define S_LOV		0x00020000
++#define S_LQUOTA	0x00040000
+ #define S_OSD		0x00080000
++#define S_LFSCK		0x00100000
+ /* unused */
+ /* unused */
++#define S_LMV		0x00800000 /* b_new_cmd */
+ /* unused */
+-#define S_LMV	 0x00800000 /* b_new_cmd */
++#define S_SEC		0x02000000 /* upcall cache */
++#define S_GSS		0x04000000 /* b_new_cmd */
+ /* unused */
+-#define S_SEC	 0x02000000 /* upcall cache */
+-#define S_GSS	 0x04000000 /* b_new_cmd */
+-/* unused */
+-#define S_MGC	 0x10000000
+-#define S_MGS	 0x20000000
+-#define S_FID	 0x40000000 /* b_new_cmd */
+-#define S_FLD	 0x80000000 /* b_new_cmd */
+-/* keep these in sync with lnet/utils/debug.c and lnet/libcfs/debug.c */
++#define S_MGC		0x10000000
++#define S_MGS		0x20000000
++#define S_FID		0x40000000 /* b_new_cmd */
++#define S_FLD		0x80000000 /* b_new_cmd */
 +
-+int ptlrpc_request_cache_init()
-+{
-+	request_cache = kmem_cache_create("ptlrpc_cache",
-+					  sizeof(struct ptlrpc_request),
-+					  0, SLAB_HWCACHE_ALIGN, NULL);
-+	return request_cache == NULL ? -ENOMEM : 0;
-+}
++#define LIBCFS_DEBUG_SUBSYS_NAMES {					\
++	"undefined", "mdc", "mds", "osc", "ost", "class", "log",	\
++	"llite", "rpc", "mgmt", "lnet", "lnd", "pinger", "filter", "",	\
++	"echo", "ldlm", "lov", "lquota", "osd", "lfsck", "", "", "lmv",	\
++	 "", "sec", "gss", "", "mgc", "mgs", "fid", "fld", NULL }
+ 
+ /* Debugging masks (32 bits, non-overlapping) */
+-/* keep these in sync with lnet/utils/debug.c and lnet/libcfs/debug.c */
+-#define D_TRACE       0x00000001 /* ENTRY/EXIT markers */
+-#define D_INODE       0x00000002
+-#define D_SUPER       0x00000004
+-#define D_EXT2	0x00000008 /* anything from ext2_debug */
+-#define D_MALLOC      0x00000010 /* print malloc, free information */
+-#define D_CACHE       0x00000020 /* cache-related items */
+-#define D_INFO	0x00000040 /* general information */
+-#define D_IOCTL       0x00000080 /* ioctl related information */
+-#define D_NETERROR    0x00000100 /* network errors */
+-#define D_NET	 0x00000200 /* network communications */
+-#define D_WARNING     0x00000400 /* CWARN(...) == CDEBUG (D_WARNING, ...) */
+-#define D_BUFFS       0x00000800
+-#define D_OTHER       0x00001000
+-#define D_DENTRY      0x00002000
+-#define D_NETTRACE    0x00004000
+-#define D_PAGE	0x00008000 /* bulk page handling */
+-#define D_DLMTRACE    0x00010000
+-#define D_ERROR       0x00020000 /* CERROR(...) == CDEBUG (D_ERROR, ...) */
+-#define D_EMERG       0x00040000 /* CEMERG(...) == CDEBUG (D_EMERG, ...) */
+-#define D_HA	  0x00080000 /* recovery and failover */
+-#define D_RPCTRACE    0x00100000 /* for distributed debugging */
+-#define D_VFSTRACE    0x00200000
+-#define D_READA       0x00400000 /* read-ahead */
+-#define D_MMAP	0x00800000
+-#define D_CONFIG      0x01000000
+-#define D_CONSOLE     0x02000000
+-#define D_QUOTA       0x04000000
+-#define D_SEC	 0x08000000
+-#define D_LFSCK	      0x10000000 /* For both OI scrub and LFSCK */
+-/* keep these in sync with lnet/{utils,libcfs}/debug.c */
+-
+-#define D_HSM	 D_TRACE
++#define D_TRACE		0x00000001 /* ENTRY/EXIT markers */
++#define D_INODE		0x00000002
++#define D_SUPER		0x00000004
++#define D_EXT2		0x00000008 /* anything from ext2_debug */
++#define D_MALLOC	0x00000010 /* print malloc, free information */
++#define D_CACHE		0x00000020 /* cache-related items */
++#define D_INFO		0x00000040 /* general information */
++#define D_IOCTL		0x00000080 /* ioctl related information */
++#define D_NETERROR	0x00000100 /* network errors */
++#define D_NET		0x00000200 /* network communications */
++#define D_WARNING	0x00000400 /* CWARN(...) == CDEBUG (D_WARNING, ...) */
++#define D_BUFFS		0x00000800
++#define D_OTHER		0x00001000
++#define D_DENTRY	0x00002000
++#define D_NETTRACE	0x00004000
++#define D_PAGE		0x00008000 /* bulk page handling */
++#define D_DLMTRACE	0x00010000
++#define D_ERROR		0x00020000 /* CERROR(...) == CDEBUG (D_ERROR, ...) */
++#define D_EMERG		0x00040000 /* CEMERG(...) == CDEBUG (D_EMERG, ...) */
++#define D_HA		0x00080000 /* recovery and failover */
++#define D_RPCTRACE	0x00100000 /* for distributed debugging */
++#define D_VFSTRACE	0x00200000
++#define D_READA		0x00400000 /* read-ahead */
++#define D_MMAP		0x00800000
++#define D_CONFIG	0x01000000
++#define D_CONSOLE	0x02000000
++#define D_QUOTA		0x04000000
++#define D_SEC		0x08000000
++#define D_LFSCK		0x10000000 /* For both OI scrub and LFSCK */
++#define D_HSM		0x20000000
 +
-+void ptlrpc_request_cache_fini()
-+{
-+	kmem_cache_destroy(request_cache);
-+}
++#define LIBCFS_DEBUG_MASKS_NAMES {					\
++	"trace", "inode", "super", "ext2", "malloc", "cache", "info",	\
++	"ioctl", "neterror", "net", "warning", "buffs", "other",	\
++	"dentry", "nettrace", "page", "dlmtrace", "error", "emerg",	\
++	"ha", "rpctrace", "vfstrace", "reada", "mmap", "config",	\
++	"console", "quota", "sec", "lfsck", "hsm", NULL }
+ 
+ #define D_CANTMASK   (D_ERROR | D_EMERG | D_WARNING | D_CONSOLE)
+ 
+diff --git a/drivers/staging/lustre/lustre/libcfs/debug.c b/drivers/staging/lustre/lustre/libcfs/debug.c
+index 9b9c451..581fc18 100644
+--- a/drivers/staging/lustre/lustre/libcfs/debug.c
++++ b/drivers/staging/lustre/lustre/libcfs/debug.c
+@@ -124,132 +124,25 @@ int libcfs_panic_in_progress;
+ 
+ /* libcfs_debug_token2mask() expects the returned
+  * string in lower-case */
+-const char *
+-libcfs_debug_subsys2str(int subsys)
++const char *libcfs_debug_subsys2str(int subsys)
+ {
+-	switch (1 << subsys) {
+-	default:
++	static const char *libcfs_debug_subsystems[] = LIBCFS_DEBUG_SUBSYS_NAMES;
 +
-+struct ptlrpc_request *ptlrpc_request_cache_alloc(int flags)
-+{
-+	struct ptlrpc_request *req;
-+
-+	OBD_SLAB_ALLOC_PTR_GFP(req, request_cache, flags);
-+	return req;
-+}
-+
-+void ptlrpc_request_cache_free(struct ptlrpc_request *req)
-+{
-+	OBD_SLAB_FREE_PTR(req, request_cache);
-+}
-+
- /**
-  * Wind down request pool \a pool.
-  * Frees all requests from the pool too
-@@ -396,7 +424,7 @@ void ptlrpc_free_rq_pool(struct ptlrpc_request_pool *pool)
- 		LASSERT(req->rq_reqbuf);
- 		LASSERT(req->rq_reqbuf_len == pool->prp_rq_size);
- 		OBD_FREE_LARGE(req->rq_reqbuf, pool->prp_rq_size);
--		OBD_FREE(req, sizeof(*req));
-+		ptlrpc_request_cache_free(req);
- 	}
- 	spin_unlock(&pool->prp_lock);
- 	OBD_FREE(pool, sizeof(*pool));
-@@ -426,12 +454,12 @@ void ptlrpc_add_rqs_to_pool(struct ptlrpc_request_pool *pool, int num_rq)
- 		struct lustre_msg *msg;
- 
- 		spin_unlock(&pool->prp_lock);
--		OBD_ALLOC(req, sizeof(struct ptlrpc_request));
-+		req = ptlrpc_request_cache_alloc(__GFP_IO);
- 		if (!req)
- 			return;
- 		OBD_ALLOC_LARGE(msg, size);
- 		if (!msg) {
--			OBD_FREE(req, sizeof(struct ptlrpc_request));
-+			ptlrpc_request_cache_free(req);
- 			return;
- 		}
- 		req->rq_reqbuf = msg;
-@@ -667,7 +695,7 @@ struct ptlrpc_request *__ptlrpc_request_alloc(struct obd_import *imp,
- 		request = ptlrpc_prep_req_from_pool(pool);
- 
- 	if (!request)
--		OBD_ALLOC_PTR(request);
-+		request = ptlrpc_request_cache_alloc(__GFP_IO);
- 
- 	if (request) {
- 		LASSERTF((unsigned long)imp > 0x1000, "%p", imp);
-@@ -738,7 +766,7 @@ void ptlrpc_request_free(struct ptlrpc_request *request)
- 	if (request->rq_pool)
- 		__ptlrpc_free_req_to_pool(request);
- 	else
--		OBD_FREE_PTR(request);
-+		ptlrpc_request_cache_free(request);
- }
- EXPORT_SYMBOL(ptlrpc_request_free);
- 
-@@ -2216,7 +2244,7 @@ static void __ptlrpc_free_req(struct ptlrpc_request *request, int locked)
- 	if (request->rq_pool)
- 		__ptlrpc_free_req_to_pool(request);
- 	else
--		OBD_FREE(request, sizeof(*request));
-+		ptlrpc_request_cache_free(request);
- }
- 
- static int __ptlrpc_req_finished(struct ptlrpc_request *request, int locked);
-@@ -2934,7 +2962,7 @@ void *ptlrpcd_alloc_work(struct obd_import *imp,
- 		return ERR_PTR(-EINVAL);
- 
- 	/* copy some code from deprecated fakereq. */
--	OBD_ALLOC_PTR(req);
-+	req = ptlrpc_request_cache_alloc(__GFP_IO);
- 	if (req == NULL) {
- 		CERROR("ptlrpc: run out of memory!\n");
- 		return ERR_PTR(-ENOMEM);
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/events.c b/drivers/staging/lustre/lustre/ptlrpc/events.c
-index 58d089c..f5e0d31 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/events.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/events.c
-@@ -307,7 +307,7 @@ void request_in_callback(lnet_event_t *ev)
- 			/* We moaned above already... */
- 			return;
- 		}
--		OBD_ALLOC_GFP(req, sizeof(*req), ALLOC_ATOMIC_TRY);
-+		req = ptlrpc_request_cache_alloc(ALLOC_ATOMIC_TRY);
- 		if (req == NULL) {
- 			CERROR("Can't allocate incoming request descriptor: "
- 			       "Dropping %s RPC from %s\n",
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/ptlrpc_internal.h b/drivers/staging/lustre/lustre/ptlrpc/ptlrpc_internal.h
-index ab36347..fa54c5a 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/ptlrpc_internal.h
-+++ b/drivers/staging/lustre/lustre/ptlrpc/ptlrpc_internal.h
-@@ -55,6 +55,10 @@ int ptlrpcd_start(int index, int max, const char *name, struct ptlrpcd_ctl *pc);
- /* client.c */
- struct ptlrpc_bulk_desc *ptlrpc_new_bulk(unsigned npages, unsigned max_brw,
- 					 unsigned type, unsigned portal);
-+int ptlrpc_request_cache_init(void);
-+void ptlrpc_request_cache_fini(void);
-+struct ptlrpc_request *ptlrpc_request_cache_alloc(int flags);
-+void ptlrpc_request_cache_free(struct ptlrpc_request *req);
- void ptlrpc_init_xid(void);
- 
- /* events.c */
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/ptlrpc_module.c b/drivers/staging/lustre/lustre/ptlrpc/ptlrpc_module.c
-index 419e634..938aaed 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/ptlrpc_module.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/ptlrpc_module.c
-@@ -73,29 +73,34 @@ __init int ptlrpc_init(void)
- 		return rc;
- 
- 	cleanup_phase = 1;
-+	rc = ptlrpc_request_cache_init();
-+	if (rc)
-+		GOTO(cleanup, rc);
- 
-+	cleanup_phase = 2;
- 	rc = ptlrpc_init_portals();
- 	if (rc)
- 		GOTO(cleanup, rc);
--	cleanup_phase = 2;
-+
-+	cleanup_phase = 3;
- 
- 	rc = ptlrpc_connection_init();
- 	if (rc)
- 		GOTO(cleanup, rc);
--	cleanup_phase = 3;
- 
-+	cleanup_phase = 4;
- 	ptlrpc_put_connection_superhack = ptlrpc_connection_put;
- 
- 	rc = ptlrpc_start_pinger();
- 	if (rc)
- 		GOTO(cleanup, rc);
--	cleanup_phase = 4;
- 
-+	cleanup_phase = 5;
- 	rc = ldlm_init();
- 	if (rc)
- 		GOTO(cleanup, rc);
--	cleanup_phase = 5;
- 
-+	cleanup_phase = 6;
- 	rc = sptlrpc_init();
- 	if (rc)
- 		GOTO(cleanup, rc);
-@@ -117,14 +122,16 @@ cleanup:
- 		ptlrpc_nrs_fini();
- 	case 7:
- 		sptlrpc_fini();
--	case 5:
-+	case 6:
- 		ldlm_exit();
--	case 4:
-+	case 5:
- 		ptlrpc_stop_pinger();
--	case 3:
-+	case 4:
- 		ptlrpc_connection_fini();
--	case 2:
-+	case 3:
- 		ptlrpc_exit_portals();
-+	case 2:
-+		ptlrpc_request_cache_fini();
- 	case 1:
- 		ptlrpc_hr_fini();
- 		req_layout_fini();
-@@ -142,6 +149,7 @@ static void __exit ptlrpc_exit(void)
- 	ldlm_exit();
- 	ptlrpc_stop_pinger();
- 	ptlrpc_exit_portals();
-+	ptlrpc_request_cache_fini();
- 	ptlrpc_hr_fini();
- 	ptlrpc_connection_fini();
- }
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/sec.c b/drivers/staging/lustre/lustre/ptlrpc/sec.c
-index 962b31d..7a10f73 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/sec.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/sec.c
-@@ -904,7 +904,7 @@ int sptlrpc_import_check_ctx(struct obd_import *imp)
- 		return -EACCES;
- 	}
- 
--	OBD_ALLOC_PTR(req);
-+	req = ptlrpc_request_cache_alloc(__GFP_IO);
- 	if (!req)
- 		return -ENOMEM;
- 
-@@ -920,7 +920,7 @@ int sptlrpc_import_check_ctx(struct obd_import *imp)
- 	rc = sptlrpc_req_refresh_ctx(req, 0);
- 	LASSERT(list_empty(&req->rq_ctx_chain));
- 	sptlrpc_cli_ctx_put(req->rq_cli_ctx, 1);
--	OBD_FREE_PTR(req);
-+	ptlrpc_request_cache_free(req);
- 
- 	return rc;
- }
-@@ -1177,7 +1177,7 @@ void sptlrpc_cli_finish_early_reply(struct ptlrpc_request *early_req)
- 
- 	sptlrpc_cli_ctx_put(early_req->rq_cli_ctx, 1);
- 	OBD_FREE_LARGE(early_req->rq_repbuf, early_req->rq_repbuf_len);
--	OBD_FREE_PTR(early_req);
-+	ptlrpc_request_cache_free(early_req);
- }
- 
- /**************************************************
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/service.c b/drivers/staging/lustre/lustre/ptlrpc/service.c
-index 21de868..abd0b8d 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/service.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/service.c
-@@ -842,7 +842,7 @@ static void ptlrpc_server_free_request(struct ptlrpc_request *req)
- 		/* NB request buffers use an embedded
- 		 * req if the incoming req unlinked the
- 		 * MD; this isn't one of them! */
--		OBD_FREE(req, sizeof(*req));
-+		ptlrpc_request_cache_free(req);
- 	}
- }
- 
-@@ -1306,14 +1306,12 @@ static int ptlrpc_at_send_early_reply(struct ptlrpc_request *req)
- 	}
- 	newdl = cfs_time_current_sec() + at_get(&svcpt->scp_at_estimate);
- 
--	OBD_ALLOC(reqcopy, sizeof(*reqcopy));
-+	reqcopy = ptlrpc_request_cache_alloc(__GFP_IO);
- 	if (reqcopy == NULL)
- 		return -ENOMEM;
- 	OBD_ALLOC_LARGE(reqmsg, req->rq_reqlen);
--	if (!reqmsg) {
--		OBD_FREE(reqcopy, sizeof(*reqcopy));
--		return -ENOMEM;
++	if (subsys >= ARRAY_SIZE(libcfs_debug_subsystems))
+ 		return NULL;
+-	case S_UNDEFINED:
+-		return "undefined";
+-	case S_MDC:
+-		return "mdc";
+-	case S_MDS:
+-		return "mds";
+-	case S_OSC:
+-		return "osc";
+-	case S_OST:
+-		return "ost";
+-	case S_CLASS:
+-		return "class";
+-	case S_LOG:
+-		return "log";
+-	case S_LLITE:
+-		return "llite";
+-	case S_RPC:
+-		return "rpc";
+-	case S_LNET:
+-		return "lnet";
+-	case S_LND:
+-		return "lnd";
+-	case S_PINGER:
+-		return "pinger";
+-	case S_FILTER:
+-		return "filter";
+-	case S_ECHO:
+-		return "echo";
+-	case S_LDLM:
+-		return "ldlm";
+-	case S_LOV:
+-		return "lov";
+-	case S_LQUOTA:
+-		return "lquota";
+-	case S_OSD:
+-		return "osd";
+-	case S_LMV:
+-		return "lmv";
+-	case S_SEC:
+-		return "sec";
+-	case S_GSS:
+-		return "gss";
+-	case S_MGC:
+-		return "mgc";
+-	case S_MGS:
+-		return "mgs";
+-	case S_FID:
+-		return "fid";
+-	case S_FLD:
+-		return "fld";
 -	}
-+	if (!reqmsg)
-+		GOTO(out_free, rc = -ENOMEM);
+-}
  
- 	*reqcopy = *req;
- 	reqcopy->rq_reply_state = NULL;
-@@ -1370,7 +1368,8 @@ out_put:
- out:
- 	sptlrpc_svc_ctx_decref(reqcopy);
- 	OBD_FREE_LARGE(reqmsg, req->rq_reqlen);
--	OBD_FREE(reqcopy, sizeof(*reqcopy));
-+out_free:
-+	ptlrpc_request_cache_free(reqcopy);
- 	return rc;
++	return libcfs_debug_subsystems[subsys];
++}
+ /* libcfs_debug_token2mask() expects the returned
+  * string in lower-case */
+-const char *
+-libcfs_debug_dbg2str(int debug)
++const char *libcfs_debug_dbg2str(int debug)
+ {
+-	switch (1 << debug) {
+-	default:
++	static const char *libcfs_debug_masks[] = LIBCFS_DEBUG_MASKS_NAMES;
++
++	if (debug >= ARRAY_SIZE(libcfs_debug_masks))
+ 		return NULL;
+-	case D_TRACE:
+-		return "trace";
+-	case D_INODE:
+-		return "inode";
+-	case D_SUPER:
+-		return "super";
+-	case D_EXT2:
+-		return "ext2";
+-	case D_MALLOC:
+-		return "malloc";
+-	case D_CACHE:
+-		return "cache";
+-	case D_INFO:
+-		return "info";
+-	case D_IOCTL:
+-		return "ioctl";
+-	case D_NETERROR:
+-		return "neterror";
+-	case D_NET:
+-		return "net";
+-	case D_WARNING:
+-		return "warning";
+-	case D_BUFFS:
+-		return "buffs";
+-	case D_OTHER:
+-		return "other";
+-	case D_DENTRY:
+-		return "dentry";
+-	case D_NETTRACE:
+-		return "nettrace";
+-	case D_PAGE:
+-		return "page";
+-	case D_DLMTRACE:
+-		return "dlmtrace";
+-	case D_ERROR:
+-		return "error";
+-	case D_EMERG:
+-		return "emerg";
+-	case D_HA:
+-		return "ha";
+-	case D_RPCTRACE:
+-		return "rpctrace";
+-	case D_VFSTRACE:
+-		return "vfstrace";
+-	case D_READA:
+-		return "reada";
+-	case D_MMAP:
+-		return "mmap";
+-	case D_CONFIG:
+-		return "config";
+-	case D_CONSOLE:
+-		return "console";
+-	case D_QUOTA:
+-		return "quota";
+-	case D_SEC:
+-		return "sec";
+-	case D_LFSCK:
+-		return "lfsck";
+-	}
++
++	return libcfs_debug_masks[debug];
  }
+ 
+ int
+diff --git a/drivers/staging/lustre/lustre/llite/dir.c b/drivers/staging/lustre/lustre/llite/dir.c
+index 1b217c8..044aa095 100644
+--- a/drivers/staging/lustre/lustre/llite/dir.c
++++ b/drivers/staging/lustre/lustre/llite/dir.c
+@@ -1804,6 +1804,11 @@ out_rmdir:
+ 		/* Compute the whole struct size */
+ 		totalsize = hur_len(hur);
+ 		OBD_FREE_PTR(hur);
++
++		/* Make sure the size is reasonable */
++		if (totalsize >= MDS_MAXREQSIZE)
++			return -E2BIG;
++
+ 		OBD_ALLOC_LARGE(hur, totalsize);
+ 		if (hur == NULL)
+ 			return -ENOMEM;
+diff --git a/drivers/staging/lustre/lustre/llite/file.c b/drivers/staging/lustre/lustre/llite/file.c
+index d3f375d..04dc9ce 100644
+--- a/drivers/staging/lustre/lustre/llite/file.c
++++ b/drivers/staging/lustre/lustre/llite/file.c
+@@ -881,7 +881,7 @@ int ll_lease_close(struct obd_client_handle *och, struct inode *inode,
+ 		lock_res_and_lock(lock);
+ 		cancelled = ldlm_is_cancel(lock);
+ 		unlock_res_and_lock(lock);
+-		ldlm_lock_put(lock);
++		LDLM_LOCK_PUT(lock);
+ 	}
+ 
+ 	CDEBUG(D_INODE, "lease for "DFID" broken? %d\n",
+@@ -2478,7 +2478,7 @@ long ll_file_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 					rc = och->och_flags &
+ 						(FMODE_READ | FMODE_WRITE);
+ 				unlock_res_and_lock(lock);
+-				ldlm_lock_put(lock);
++				LDLM_LOCK_PUT(lock);
+ 			}
+ 		}
+ 		mutex_unlock(&lli->lli_och_mutex);
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_lib.c b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
+index 91f6876..a839c96 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_lib.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
+@@ -504,7 +504,7 @@ static void mdc_hsm_release_pack(struct ptlrpc_request *req,
+ 		lock = ldlm_handle2lock(&op_data->op_lease_handle);
+ 		if (lock != NULL) {
+ 			data->cd_handle = lock->l_remote_handle;
+-			ldlm_lock_put(lock);
++			LDLM_LOCK_PUT(lock);
+ 		}
+ 		ldlm_cli_cancel(&op_data->op_lease_handle, LCF_LOCAL);
  
 -- 
 1.7.9.5
