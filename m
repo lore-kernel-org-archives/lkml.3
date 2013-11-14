@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333Ab3KNP3z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 10:29:55 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54963 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753748Ab3KNP3s (ORCPT
+	id S1754229Ab3KNPct (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 10:32:49 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:52081 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762Ab3KNPcn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 10:29:48 -0500
-Date: Thu, 14 Nov 2013 15:29:07 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Dave P Martin <Dave.Martin@arm.com>
-Subject: Re: [PATCH 4/4] arm64: advertise CPU features for modalias matching
-Message-ID: <20131114152907.GL20261@arm.com>
-References: <1384165175-16134-1-git-send-email-ard.biesheuvel@linaro.org>
- <1384165175-16134-5-git-send-email-ard.biesheuvel@linaro.org>
+	Thu, 14 Nov 2013 10:32:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384165175-16134-5-git-send-email-ard.biesheuvel@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131114135209.0a8a15ff@alan.etchedpixels.co.uk>
+References: <20131113183418.GA1593@thinkpad.fritz.box>
+	<20131114135209.0a8a15ff@alan.etchedpixels.co.uk>
+Date: Thu, 14 Nov 2013 16:32:41 +0100
+Message-ID: <CAMeQTsYuP-zMMJS3kLveDf=TWa7SnWVLkS=TFXjP8A-vZ8-nXQ@mail.gmail.com>
+Subject: Re: Black screen with GMA500 driver on Atom E680 (invalid VBT signature)
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Andreas Werner <wernerandy@gmx.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 10:19:35AM +0000, Ard Biesheuvel wrote:
-> +ssize_t arch_print_cpu_modalias(struct device *dev,
-> +				struct device_attribute *attr,
-> +				char *buf)
-> +{
-> +	unsigned int caps;
-> +	ssize_t n;
-> +	int i;
-> +
-> +	/*
-> +	 * With 32 features maximum (taking 5 bytes each to print), we don't
-> +	 * need to worry about overrunning the PAGE_SIZE sized buffer.
-> +	 */
-> +	n = sprintf(buf, "cpu:type:arm64:feature:");
+On Thu, Nov 14, 2013 at 2:52 PM, One Thousand Gnomes
+<gnomes@lxorguk.ukuu.org.uk> wrote:
+>> My question now is, is it a bug in the driver or in the VGA Bios?
+>>
+>> I´ve checked the VGA bios and did a hex dump but there is really no "$VBT" string.
+>> On an Atom Gen1 CPU with intel GMA500 Graphic there is the string in the VGA BIOS.
+>> But if i create the VGA BIOS for intel Atom E680 which has a GMA600 Graphic
+>> there is no string.
+>>
+>> Does anybody of you running the GMA500 driver with and Atom E680 without having this
+>> problem? Or does anybody know how to get this string into the VGA BIOS?
+>
+> E680 I believe will try and use the other style of parsing. I never got
+> my hands on one to confirm that but in general E6xx seems to use
+> Moorestown style tables instead and you'll only get support for some
+> outputs.
 
-I would use "aarch64" here instead of arm64 for consistency with the
-architecture mode, compiler triplet and ELF_PLATFORM definition in the
-kernel.
+As Alan says, Moorestown should use GCT as in mid_bios.c and the signature
+should be $GCT instead of $VBT. Though I don't know if you get any LVDS info
+from from that or just MIPI stuff.
 
--- 
-Catalin
+In my last set of patches I included 0x4108 in the IS_MRST macro which might
+make gma500 find the LVDS modes via I2C. In the same patchset there is also
+support for SDVO on Moorestown.
+
+Patches are available in Dave Airlies drm-next and heading for 3.13-rc1
+
+Thanks
+Patrik
