@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab3KNMUZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 07:20:25 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42865 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649Ab3KNMT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 07:19:58 -0500
+	id S1753830Ab3KNMUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 07:20:52 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:56860 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753486Ab3KNMTu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 07:19:50 -0500
 From: Sricharan R <r.sricharan@ti.com>
 To: <r.sricharan@ti.com>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
@@ -15,9 +16,9 @@ To: <r.sricharan@ti.com>, <linux-kernel@vger.kernel.org>,
         <grant.likely@linaro.org>, <mark.rutland@arm.com>,
         <robherring2@gmail.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
         <rob.herring@calxeda.com>, <nm@ti.com>, <bcousson@baylibre.com>
-Subject: [PATCH V4 2/4] DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP
-Date: Thu, 14 Nov 2013 17:48:48 +0530
-Message-ID: <1384431530-2166-3-git-send-email-r.sricharan@ti.com>
+Subject: [PATCH V4 1/4] DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable irqs
+Date: Thu, 14 Nov 2013 17:48:47 +0530
+Message-ID: <1384431530-2166-2-git-send-email-r.sricharan@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384431530-2166-1-git-send-email-r.sricharan@ti.com>
 References: <1384431530-2166-1-git-send-email-r.sricharan@ti.com>
@@ -27,18 +28,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some socs have a large number of interrupts requests to service
-the needs of its many peripherals and subsystems. All of the
-interrupt lines from the subsystems are not needed at the same
-time, so they have to be muxed to the irq-controller appropriately.
-In such places a interrupt controllers are preceded by an CROSSBAR
-that provides flexibility in muxing the device requests to the controller
-inputs.
+In some socs the gic can be preceded by a crossbar IP which
+routes the peripheral interrupts to the gic inputs. The peripheral
+interrupts are associated with a fixed crossbar input line and the
+crossbar routes that to one of the free gic input line.
 
-This driver takes care a allocating a free irq and then configuring the
-crossbar IP as a part of the mpu's irqchip callbacks. crossbar_init should
-be called right before the irqchip_init, so that it is setup to handle the
-irqchip callbacks.
+The DT entries for peripherals provides the fixed crossbar input line
+as its interrupt number and the mapping code should associate this with
+a free gic input line. This patch adds the support inside the gic irqchip
+to handle such routable irqs. The routable irqs are registered in a linear
+domain. The registered routable domain's callback should be implemented
+to get a free irq and to configure the IP to route it.
 
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linus Walleij <linus.walleij@linaro.org>
@@ -50,315 +50,198 @@ Cc: Marc Zyngier <marc.zyngier@arm.com>
 Cc: Grant Likely <grant.likely@linaro.org>
 Cc: Rob Herring <rob.herring@calxeda.com>
 Signed-off-by: Sricharan R <r.sricharan@ti.com>
-Acked-by: Kumar Gala <galak@codeaurora.org> (for DT binding portion)
 Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- [V2] Addressed Thomas Gleixner <tglx@linutronix.de> comments
-      and renamed the bindings as per Kumar Gala <galak@codeaurora.org>
-      comments.
- [V3] Changed static inline const to static inline int and removed
-      unnecessary variable initialization as per
-      Thomas Gleixner <tglx@linutronix.de>. Updated commit tags
- [V4] Renamed crossbar_init as irqcrossbar_init as per
-      Rajendra Nayak <rnayak@ti.com> suggestion.
+ [V2] Added default routable-irqs functions to avoid
+      unnecessary if checks as per Thomas Gleixner comments
+      and renamed routable-irq binding as per
+      Kumar Gala <galak@codeaurora.org> comments.
 
- .../devicetree/bindings/arm/omap/crossbar.txt      |   27 +++
- drivers/irqchip/Kconfig                            |    8 +
- drivers/irqchip/Makefile                           |    1 +
- drivers/irqchip/irq-crossbar.c                     |  206 ++++++++++++++++++++
- include/linux/irqchip/irq-crossbar.h               |   11 ++
- 5 files changed, 253 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
- create mode 100644 drivers/irqchip/irq-crossbar.c
- create mode 100644 include/linux/irqchip/irq-crossbar.h
+ [V3] Addressed unnecessary warn-on and updated default
+      xlate function as per Thomas Gleixner comments
 
-diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-new file mode 100644
-index 0000000..fb88585
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-@@ -0,0 +1,27 @@
-+Some socs have a large number of interrupts requests to service
-+the needs of its many peripherals and subsystems. All of the
-+interrupt lines from the subsystems are not needed at the same
-+time, so they have to be muxed to the irq-controller appropriately.
-+In such places a interrupt controllers are preceded by an CROSSBAR
-+that provides flexibility in muxing the device requests to the controller
-+inputs.
+ Documentation/devicetree/bindings/arm/gic.txt |    6 ++
+ drivers/irqchip/irq-gic.c                     |   81 ++++++++++++++++++++++---
+ include/linux/irqchip/arm-gic.h               |    7 ++-
+ 3 files changed, 83 insertions(+), 11 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+index 3dfb0c0..5357745 100644
+--- a/Documentation/devicetree/bindings/arm/gic.txt
++++ b/Documentation/devicetree/bindings/arm/gic.txt
+@@ -49,6 +49,11 @@ Optional
+   regions, used when the GIC doesn't have banked registers. The offset is
+   cpu-offset * cpu-nr.
+ 
++- arm,routable-irqs : Total number of gic irq inputs which are not directly
++		  connected from the peripherals, but are routed dynamically
++		  by a crossbar/multiplexer preceding the GIC. The GIC irq
++		  input line is assigned dynamically when the corresponding
++		  peripheral's crossbar line is mapped.
+ Example:
+ 
+ 	intc: interrupt-controller@fff11000 {
+@@ -56,6 +61,7 @@ Example:
+ 		#interrupt-cells = <3>;
+ 		#address-cells = <1>;
+ 		interrupt-controller;
++		arm,routable-irqs = <160>;
+ 		reg = <0xfff11000 0x1000>,
+ 		      <0xfff10100 0x100>;
+ 	};
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 9031171..b7b39a7 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -824,16 +824,25 @@ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
+ 		irq_set_chip_and_handler(irq, &gic_chip,
+ 					 handle_fasteoi_irq);
+ 		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
 +
-+Required properties:
-+- compatible : Should be "ti,irq-crossbar"
-+- reg: Base address and the size of the crossbar registers.
-+- ti,max-irqs: Total number of irqs available at the interrupt controller.
-+- ti,reg-size: Size of a individual register in bytes. Every individual
-+	    register is assumed to be of same size. Valid sizes are 1, 2, 4.
-+- ti,irqs-reserved: List of the reserved irq lines that are not muxed using
-+		 crossbar. These interrupt lines are reserved in the soc,
-+		 so crossbar bar driver should not consider them as free
-+		 lines.
++		gic_routable_irq_domain_ops->map(d, irq, hw);
+ 	}
+ 	irq_set_chip_data(irq, d->host_data);
+ 	return 0;
+ }
+ 
++static void gic_irq_domain_unmap(struct irq_domain *d, unsigned int irq)
++{
++	gic_routable_irq_domain_ops->unmap(d, irq);
++}
 +
-+Examples:
-+		crossbar_mpu: @4a020000 {
-+			compatible = "ti,irq-crossbar";
-+			reg = <0x4a002a48 0x130>;
-+			ti,max-irqs = <160>;
-+			ti,reg-size = <2>;
-+			ti,irqs-reserved = <0 1 2 3 5 6 131 132 139 140>;
-+		};
-diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index 3792a1a..2efcde6 100644
---- a/drivers/irqchip/Kconfig
-+++ b/drivers/irqchip/Kconfig
-@@ -61,3 +61,11 @@ config VERSATILE_FPGA_IRQ_NR
-        int
-        default 4
-        depends on VERSATILE_FPGA_IRQ
+ static int gic_irq_domain_xlate(struct irq_domain *d,
+ 				struct device_node *controller,
+ 				const u32 *intspec, unsigned int intsize,
+ 				unsigned long *out_hwirq, unsigned int *out_type)
+ {
++	unsigned long ret = 0;
 +
-+config IRQ_CROSSBAR
-+	bool
-+	help
-+	  Support for a CROSSBAR ip that preceeds the main interrupt controller.
-+	  The primary irqchip invokes the crossbar's callback which inturn allocates
-+	  a free irq and configures the IP. Thus the peripheral interrupts are
-+	  routed to one of the free irqchip interrupt lines.
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index c60b901..2edead9 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -22,3 +22,4 @@ obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
- obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
- obj-$(CONFIG_ARCH_VT8500)		+= irq-vt8500.o
- obj-$(CONFIG_TB10X_IRQC)		+= irq-tb10x.o
-+obj-$(CONFIG_IRQ_CROSSBAR)		+= irq-crossbar.o
-diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-new file mode 100644
-index 0000000..2b9c5f3
---- /dev/null
-+++ b/drivers/irqchip/irq-crossbar.c
-@@ -0,0 +1,206 @@
-+/*
-+ *  drivers/irqchip/irq-crossbar.c
-+ *
-+ *  Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-+ *  Author: Sricharan R <r.sricharan@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/slab.h>
-+#include <linux/irqchip/arm-gic.h>
+ 	if (d->of_node != controller)
+ 		return -EINVAL;
+ 	if (intsize < 3)
+@@ -843,11 +852,20 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
+ 	*out_hwirq = intspec[1] + 16;
+ 
+ 	/* For SPIs, we need to add 16 more to get the GIC irq ID number */
+-	if (!intspec[0])
+-		*out_hwirq += 16;
++	if (!intspec[0]) {
++		ret = gic_routable_irq_domain_ops->xlate(d, controller,
++							 intspec,
++							 intsize,
++							 out_hwirq,
++							 out_type);
 +
-+#define IRQ_FREE	-1
-+#define GIC_IRQ_START	32
++		if (IS_ERR_VALUE(ret))
++			return ret;
++	}
+ 
+ 	*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
+-	return 0;
 +
-+/*
-+ * @int_max: maximum number of supported interrupts
-+ * @irq_map: array of interrupts to crossbar number mapping
-+ * @crossbar_base: crossbar base address
-+ * @register_offsets: offsets for each irq number
-+ */
-+struct crossbar_device {
-+	uint int_max;
-+	uint *irq_map;
-+	void __iomem *crossbar_base;
-+	int *register_offsets;
-+	void (*write) (int, int);
++	return ret;
+ }
+ 
+ #ifdef CONFIG_SMP
+@@ -871,9 +889,41 @@ static struct notifier_block gic_cpu_notifier = {
+ 
+ const struct irq_domain_ops gic_irq_domain_ops = {
+ 	.map = gic_irq_domain_map,
++	.unmap = gic_irq_domain_unmap,
+ 	.xlate = gic_irq_domain_xlate,
+ };
+ 
++/* Default functions for routable irq domain */
++static int gic_routable_irq_domain_map(struct irq_domain *d, unsigned int irq,
++			      irq_hw_number_t hw)
++{
++	return 0;
++}
++
++static void gic_routable_irq_domain_unmap(struct irq_domain *d,
++					  unsigned int irq)
++{
++}
++
++static int gic_routable_irq_domain_xlate(struct irq_domain *d,
++				struct device_node *controller,
++				const u32 *intspec, unsigned int intsize,
++				unsigned long *out_hwirq,
++				unsigned int *out_type)
++{
++	*out_hwirq += 16;
++	return 0;
++}
++
++const struct irq_domain_ops gic_default_routable_irq_domain_ops = {
++	.map = gic_routable_irq_domain_map,
++	.unmap = gic_routable_irq_domain_unmap,
++	.xlate = gic_routable_irq_domain_xlate,
 +};
 +
-+static struct crossbar_device *cb;
++const struct irq_domain_ops *gic_routable_irq_domain_ops =
++					&gic_default_routable_irq_domain_ops;
 +
-+static inline void crossbar_writel(int irq_no, int cb_no)
-+{
-+	writel(cb_no, cb->crossbar_base + cb->register_offsets[irq_no]);
-+}
+ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 			   void __iomem *dist_base, void __iomem *cpu_base,
+ 			   u32 percpu_offset, struct device_node *node)
+@@ -881,6 +931,7 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 	irq_hw_number_t hwirq_base;
+ 	struct gic_chip_data *gic;
+ 	int gic_irqs, irq_base, i;
++	int nr_routable_irqs;
+ 
+ 	BUG_ON(gic_nr >= MAX_GIC_NR);
+ 
+@@ -946,14 +997,24 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 	gic->gic_irqs = gic_irqs;
+ 
+ 	gic_irqs -= hwirq_base; /* calculate # of irqs to allocate */
+-	irq_base = irq_alloc_descs(irq_start, 16, gic_irqs, numa_node_id());
+-	if (IS_ERR_VALUE(irq_base)) {
+-		WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
+-		     irq_start);
+-		irq_base = irq_start;
 +
-+static inline void crossbar_writew(int irq_no, int cb_no)
-+{
-+	writew(cb_no, cb->crossbar_base + cb->register_offsets[irq_no]);
-+}
-+
-+static inline void crossbar_writeb(int irq_no, int cb_no)
-+{
-+	writeb(cb_no, cb->crossbar_base + cb->register_offsets[irq_no]);
-+}
-+
-+static inline int allocate_free_irq(int cb_no)
-+{
-+	int i;
-+
-+	for (i = 0; i < cb->int_max; i++) {
-+		if (cb->irq_map[i] == IRQ_FREE) {
-+			cb->irq_map[i] = cb_no;
-+			return i;
++	if (of_property_read_u32(node, "arm,routable-irqs", &nr_routable_irqs)) {
++		irq_base = irq_alloc_descs(irq_start, 16, gic_irqs,
++					   numa_node_id());
++		if (IS_ERR_VALUE(irq_base)) {
++			WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
++			     irq_start);
++			irq_base = irq_start;
 +		}
-+	}
 +
-+	return -ENODEV;
-+}
++		gic->domain = irq_domain_add_legacy(node, gic_irqs, irq_base,
++					hwirq_base, &gic_irq_domain_ops, gic);
++	} else {
++		gic->domain = irq_domain_add_linear(node, nr_routable_irqs,
++						    &gic_irq_domain_ops,
++						    gic);
+ 	}
+-	gic->domain = irq_domain_add_legacy(node, gic_irqs, irq_base,
+-				    hwirq_base, &gic_irq_domain_ops, gic);
 +
-+static int crossbar_domain_map(struct irq_domain *d, unsigned int irq,
-+			       irq_hw_number_t hw)
+ 	if (WARN_ON(!gic->domain))
+ 		return;
+ 
+diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
+index cac496b..fcb02d7 100644
+--- a/include/linux/irqchip/arm-gic.h
++++ b/include/linux/irqchip/arm-gic.h
+@@ -81,6 +81,11 @@ int gic_get_cpu_id(unsigned int cpu);
+ void gic_migrate_target(unsigned int new_cpu_id);
+ unsigned long gic_get_sgir_physaddr(void);
+ 
++extern const struct irq_domain_ops *gic_routable_irq_domain_ops;
++static inline void __init register_routable_domain_ops
++					(const struct irq_domain_ops *ops)
 +{
-+	cb->write(hw - GIC_IRQ_START, cb->irq_map[hw - GIC_IRQ_START]);
-+	return 0;
++	gic_routable_irq_domain_ops = ops;
 +}
-+
-+static void crossbar_domain_unmap(struct irq_domain *d, unsigned int irq)
-+{
-+	irq_hw_number_t hw = irq_get_irq_data(irq)->hwirq;
-+
-+	if (hw > GIC_IRQ_START)
-+		cb->irq_map[hw - GIC_IRQ_START] = IRQ_FREE;
-+}
-+
-+static int crossbar_domain_xlate(struct irq_domain *d,
-+				 struct device_node *controller,
-+				 const u32 *intspec, unsigned int intsize,
-+				 unsigned long *out_hwirq,
-+				 unsigned int *out_type)
-+{
-+	unsigned long ret;
-+
-+	ret = allocate_free_irq(intspec[1]);
-+
-+	if (IS_ERR_VALUE(ret))
-+		return ret;
-+
-+	*out_hwirq = ret + GIC_IRQ_START;
-+	return 0;
-+}
-+
-+const struct irq_domain_ops routable_irq_domain_ops = {
-+	.map = crossbar_domain_map,
-+	.unmap = crossbar_domain_unmap,
-+	.xlate = crossbar_domain_xlate
-+};
-+
-+static int __init crossbar_of_init(struct device_node *node)
-+{
-+	int i, size, max, reserved = 0, entry;
-+	const __be32 *irqsr;
-+
-+	cb = kzalloc(sizeof(struct cb_device *), GFP_KERNEL);
-+
-+	if (!cb)
-+		return -ENOMEM;
-+
-+	cb->crossbar_base = of_iomap(node, 0);
-+	if (!cb->crossbar_base)
-+		goto err1;
-+
-+	of_property_read_u32(node, "ti,max-irqs", &max);
-+	cb->irq_map = kzalloc(max * sizeof(int), GFP_KERNEL);
-+	if (!cb->irq_map)
-+		goto err2;
-+
-+	cb->int_max = max;
-+
-+	for (i = 0; i < max; i++)
-+		cb->irq_map[i] = IRQ_FREE;
-+
-+	/* Get and mark reserved irqs */
-+	irqsr = of_get_property(node, "ti,irqs-reserved", &size);
-+	if (irqsr) {
-+		size /= sizeof(__be32);
-+
-+		for (i = 0; i < size; i++) {
-+			entry = be32_to_cpup(irqsr + i);
-+			if (entry > max) {
-+				pr_err("Invalid reserved entry\n");
-+				goto err3;
-+			}
-+			cb->irq_map[entry] = 0;
-+		}
-+	}
-+
-+	cb->register_offsets = kzalloc(max * sizeof(int), GFP_KERNEL);
-+	if (!cb->register_offsets)
-+		goto err3;
-+
-+	of_property_read_u32(node, "ti,reg-size", &size);
-+
-+	switch (size) {
-+	case 1:
-+		cb->write = crossbar_writeb;
-+		break;
-+	case 2:
-+		cb->write = crossbar_writew;
-+		break;
-+	case 4:
-+		cb->write = crossbar_writel;
-+		break;
-+	default:
-+		pr_err("Invalid reg-size property\n");
-+		goto err4;
-+		break;
-+	}
-+
-+	/*
-+	 * Register offsets are not linear because of the
-+	 * reserved irqs. so find and store the offsets once.
-+	 */
-+	for (i = 0; i < max; i++) {
-+		if (!cb->irq_map[i])
-+			continue;
-+
-+		cb->register_offsets[i] = reserved;
-+		reserved += size;
-+	}
-+
-+	register_routable_domain_ops(&routable_irq_domain_ops);
-+	return 0;
-+
-+err4:
-+	kfree(cb->register_offsets);
-+err3:
-+	kfree(cb->irq_map);
-+err2:
-+	iounmap(cb->crossbar_base);
-+err1:
-+	kfree(cb);
-+	return -ENOMEM;
-+}
-+
-+static const struct of_device_id crossbar_match[] __initconst = {
-+	{ .compatible = "ti,irq-crossbar" },
-+	{}
-+};
-+
-+int irqcrossbar_init(void)
-+{
-+	struct device_node *np;
-+	np = of_find_matching_node(NULL, crossbar_match);
-+	if (!np)
-+		return -ENODEV;
-+
-+	crossbar_of_init(np);
-+	return 0;
-+}
-diff --git a/include/linux/irqchip/irq-crossbar.h b/include/linux/irqchip/irq-crossbar.h
-new file mode 100644
-index 0000000..e5537b8
---- /dev/null
-+++ b/include/linux/irqchip/irq-crossbar.h
-@@ -0,0 +1,11 @@
-+/*
-+ *  drivers/irqchip/irq-crossbar.h
-+ *
-+ *  Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+int irqcrossbar_init(void);
+ #endif /* __ASSEMBLY */
+-
+ #endif
 -- 
 1.7.9.5
 
