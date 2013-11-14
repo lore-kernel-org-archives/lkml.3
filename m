@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab3KNQPt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:15:49 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:55239 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816Ab3KNQOo (ORCPT
+	id S1754987Ab3KNQPS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:15:18 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:43419 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754710Ab3KNQO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:14:44 -0500
+	Thu, 14 Nov 2013 11:14:28 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, "John L. Hammond" <john.hammond@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Peng Tao <tao.peng@emc.com>,
         Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 05/40] staging/lustre: validate open handle cookies
-Date: Fri, 15 Nov 2013 00:13:07 +0800
-Message-Id: <1384445622-12346-6-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 02/40] staging/lustre: remove lu_target.h
+Date: Fri, 15 Nov 2013 00:13:04 +0800
+Message-Id: <1384445622-12346-3-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
 References: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
@@ -22,124 +22,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John L. Hammond" <john.hammond@intel.com>
+From: Peng Tao <tao.peng@emc.com>
 
-Add a const void *h_owner member to struct portals_handle. Add a const
-void *owner parameter to class_handle2object() which must be matched
-by the h_owner member of the handle in addition to the cookie.  Adjust
-the callers of class_handle2object() accordingly, using NULL as the
-argument to the owner parameter, except in the case of
-mdt_handle2mfd() where we add an explicit mdt_export_data parameter
-which we use as the owner when searching for a MFD. When allocating a
-new MFD, pass a pointer to the mdt_export_data into mdt_mfd_new() and
-store it in h_owner. This allows the MDT to validate that the client
-has not sent the wrong open handle cookie, or sent the right cookie to
-the wrong MDT.
+It is only needed by server code.
 
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3233
-Lustre-change: http://review.whamcloud.com/6938
-Signed-off-by: John L. Hammond <john.hammond@intel.com>
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: Fan Yong <fan.yong@intel.com>
-Reviewed-by: Mike Pershin <mike.pershin@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- .../staging/lustre/lustre/include/lustre_handles.h |    5 +++--
- drivers/staging/lustre/lustre/ldlm/ldlm_lock.c     |    2 +-
- drivers/staging/lustre/lustre/lov/lov_internal.h   |    4 ++--
- drivers/staging/lustre/lustre/obdclass/genops.c    |    2 +-
- .../lustre/lustre/obdclass/lustre_handles.c        |    4 ++--
- 5 files changed, 9 insertions(+), 8 deletions(-)
+ drivers/staging/lustre/lustre/include/lu_target.h |   91 ---------------------
+ 1 file changed, 91 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/include/lu_target.h
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre_handles.h b/drivers/staging/lustre/lustre/include/lustre_handles.h
-index fcd40f3..5671f62 100644
---- a/drivers/staging/lustre/lustre/include/lustre_handles.h
-+++ b/drivers/staging/lustre/lustre/include/lustre_handles.h
-@@ -66,7 +66,8 @@ struct portals_handle_ops {
- struct portals_handle {
- 	struct list_head			h_link;
- 	__u64				h_cookie;
--	struct portals_handle_ops	*h_ops;
-+	const void		       *h_owner;
-+	struct portals_handle_ops      *h_ops;
- 
- 	/* newly added fields to handle the RCU issue. -jxiong */
- 	cfs_rcu_head_t			h_rcu;
-@@ -83,7 +84,7 @@ void class_handle_hash(struct portals_handle *,
- 		       struct portals_handle_ops *ops);
- void class_handle_unhash(struct portals_handle *);
- void class_handle_hash_back(struct portals_handle *);
--void *class_handle2object(__u64 cookie);
-+void *class_handle2object(__u64 cookie, const void *owner);
- void class_handle_free_cb(cfs_rcu_head_t *);
- int class_handle_init(void);
- void class_handle_cleanup(void);
-diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c b/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-index 3900a69..d81ca5c 100644
---- a/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-+++ b/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-@@ -570,7 +570,7 @@ struct ldlm_lock *__ldlm_handle2lock(const struct lustre_handle *handle,
- 
- 	LASSERT(handle);
- 
--	lock = class_handle2object(handle->cookie);
-+	lock = class_handle2object(handle->cookie, NULL);
- 	if (lock == NULL)
- 		return NULL;
- 
-diff --git a/drivers/staging/lustre/lustre/lov/lov_internal.h b/drivers/staging/lustre/lustre/lov/lov_internal.h
-index 796da89..79ac458 100644
---- a/drivers/staging/lustre/lustre/lov/lov_internal.h
-+++ b/drivers/staging/lustre/lustre/lov/lov_internal.h
-@@ -107,10 +107,10 @@ static inline void lov_put_reqset(struct lov_request_set *set)
- }
- 
- static inline struct lov_lock_handles *
--lov_handle2llh(struct lustre_handle *handle)
-+lov_handle2llh(const struct lustre_handle *handle)
- {
- 	LASSERT(handle != NULL);
--	return(class_handle2object(handle->cookie));
-+	return class_handle2object(handle->cookie, NULL);
- }
- 
- static inline void lov_llh_put(struct lov_lock_handles *llh)
-diff --git a/drivers/staging/lustre/lustre/obdclass/genops.c b/drivers/staging/lustre/lustre/obdclass/genops.c
-index f6fae16..0da0034 100644
---- a/drivers/staging/lustre/lustre/obdclass/genops.c
-+++ b/drivers/staging/lustre/lustre/obdclass/genops.c
-@@ -701,7 +701,7 @@ struct obd_export *class_conn2export(struct lustre_handle *conn)
- 	}
- 
- 	CDEBUG(D_INFO, "looking for export cookie "LPX64"\n", conn->cookie);
--	export = class_handle2object(conn->cookie);
-+	export = class_handle2object(conn->cookie, NULL);
- 	return export;
- }
- EXPORT_SYMBOL(class_conn2export);
-diff --git a/drivers/staging/lustre/lustre/obdclass/lustre_handles.c b/drivers/staging/lustre/lustre/obdclass/lustre_handles.c
-index be31d32..c6406c3 100644
---- a/drivers/staging/lustre/lustre/obdclass/lustre_handles.c
-+++ b/drivers/staging/lustre/lustre/obdclass/lustre_handles.c
-@@ -147,7 +147,7 @@ void class_handle_hash_back(struct portals_handle *h)
- }
- EXPORT_SYMBOL(class_handle_hash_back);
- 
--void *class_handle2object(__u64 cookie)
-+void *class_handle2object(__u64 cookie, const void *owner)
- {
- 	struct handle_bucket *bucket;
- 	struct portals_handle *h;
-@@ -161,7 +161,7 @@ void *class_handle2object(__u64 cookie)
- 
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(h, &bucket->head, h_link) {
--		if (h->h_cookie != cookie)
-+		if (h->h_cookie != cookie || h->h_owner != owner)
- 			continue;
- 
- 		spin_lock(&h->h_lock);
+diff --git a/drivers/staging/lustre/lustre/include/lu_target.h b/drivers/staging/lustre/lustre/include/lu_target.h
+deleted file mode 100644
+index 8d48cf4..0000000
+--- a/drivers/staging/lustre/lustre/include/lu_target.h
++++ /dev/null
+@@ -1,91 +0,0 @@
+-/*
+- * GPL HEADER START
+- *
+- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 only,
+- * as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but
+- * WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * General Public License version 2 for more details (a copy is included
+- * in the LICENSE file that accompanied this code).
+- *
+- * You should have received a copy of the GNU General Public License
+- * version 2 along with this program; If not, see
+- * http://www.sun.com/software/products/lustre/docs/GPLv2.pdf
+- *
+- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
+- * CA 95054 USA or visit www.sun.com if you need additional information or
+- * have any questions.
+- *
+- * GPL HEADER END
+- */
+-/*
+- * Copyright (c) 2009, 2010, Oracle and/or its affiliates. All rights reserved.
+- * Use is subject to license terms.
+- *
+- * Copyright (c) 2011, 2012, Intel Corporation.
+- */
+-/*
+- * This file is part of Lustre, http://www.lustre.org/
+- * Lustre is a trademark of Sun Microsystems, Inc.
+- */
+-
+-#ifndef _LUSTRE_LU_TARGET_H
+-#define _LUSTRE_LU_TARGET_H
+-
+-#include <dt_object.h>
+-#include <lustre_disk.h>
+-
+-struct lu_target {
+-	struct obd_device       *lut_obd;
+-	struct dt_device	*lut_bottom;
+-	/** last_rcvd file */
+-	struct dt_object	*lut_last_rcvd;
+-	/* transaction callbacks */
+-	struct dt_txn_callback   lut_txn_cb;
+-	/** server data in last_rcvd file */
+-	struct lr_server_data    lut_lsd;
+-	/** Server last transaction number */
+-	__u64		    lut_last_transno;
+-	/** Lock protecting last transaction number */
+-	spinlock_t		 lut_translock;
+-	/** Lock protecting client bitmap */
+-	spinlock_t		 lut_client_bitmap_lock;
+-	/** Bitmap of known clients */
+-	unsigned long	   *lut_client_bitmap;
+-};
+-
+-typedef void (*tgt_cb_t)(struct lu_target *lut, __u64 transno,
+-			 void *data, int err);
+-struct tgt_commit_cb {
+-	tgt_cb_t  tgt_cb_func;
+-	void     *tgt_cb_data;
+-};
+-
+-void tgt_boot_epoch_update(struct lu_target *lut);
+-int tgt_last_commit_cb_add(struct thandle *th, struct lu_target *lut,
+-			   struct obd_export *exp, __u64 transno);
+-int tgt_new_client_cb_add(struct thandle *th, struct obd_export *exp);
+-int tgt_init(const struct lu_env *env, struct lu_target *lut,
+-	     struct obd_device *obd, struct dt_device *dt);
+-void tgt_fini(const struct lu_env *env, struct lu_target *lut);
+-int tgt_client_alloc(struct obd_export *exp);
+-void tgt_client_free(struct obd_export *exp);
+-int tgt_client_del(const struct lu_env *env, struct obd_export *exp);
+-int tgt_client_add(const struct lu_env *env, struct obd_export *exp, int);
+-int tgt_client_new(const struct lu_env *env, struct obd_export *exp);
+-int tgt_client_data_read(const struct lu_env *env, struct lu_target *tg,
+-			 struct lsd_client_data *lcd, loff_t *off, int index);
+-int tgt_client_data_write(const struct lu_env *env, struct lu_target *tg,
+-			  struct lsd_client_data *lcd, loff_t *off, struct thandle *th);
+-int tgt_server_data_read(const struct lu_env *env, struct lu_target *tg);
+-int tgt_server_data_write(const struct lu_env *env, struct lu_target *tg,
+-			  struct thandle *th);
+-int tgt_server_data_update(const struct lu_env *env, struct lu_target *tg, int sync);
+-int tgt_truncate_last_rcvd(const struct lu_env *env, struct lu_target *tg, loff_t off);
+-
+-#endif /* __LUSTRE_LU_TARGET_H */
 -- 
 1.7.9.5
 
