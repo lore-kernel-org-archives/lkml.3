@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab3KNTLY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 14:11:24 -0500
-Received: from mms3.broadcom.com ([216.31.210.19]:2788 "EHLO mms3.broadcom.com"
+	id S1756849Ab3KNTMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 14:12:15 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:2779 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752943Ab3KNTLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 14:11:08 -0500
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+	id S1755263Ab3KNTLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 14:11:10 -0500
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
 From: "Tim Kryger" <tim.kryger@linaro.org>
 To: "Christian Daudt" <bcm@fixthebug.org>,
         "Rob Herring" <rob.herring@calxeda.com>,
@@ -22,52 +22,65 @@ cc: "Tim Kryger" <tim.kryger@linaro.org>,
         "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
         "Linux MMC List" <linux-mmc@vger.kernel.org>,
         "Linaro Patches List" <patches@linaro.org>
-Subject: [PATCH v3 3/8] Documentation: dt: kona-sdhci: Add clocks
- property
-Date: Thu, 14 Nov 2013 11:10:38 -0800
-Message-ID: <1384456243-27053-4-git-send-email-tim.kryger@linaro.org>
+Subject: [PATCH v3 7/8] clocksource: kona: Add basic use of external
+ clock
+Date: Thu, 14 Nov 2013 11:10:42 -0800
+Message-ID: <1384456243-27053-8-git-send-email-tim.kryger@linaro.org>
 X-Mailer: git-send-email 1.8.0.1
 In-Reply-To: <1384456243-27053-1-git-send-email-tim.kryger@linaro.org>
 References: <1384456243-27053-1-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
-X-WSS-ID: 7E9BFF981SC8091015-01-01
+X-WSS-ID: 7E9BFFA34RS8193360-01-01
 Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kona SDHCI block requires a clock that must be specified in the
-device tree.  Update the documentation to reflect this requirement.
+When an clock is specified in the device tree, enable it and use it to
+determine the external clock frequency.
 
 Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 Reviewed-by: Matt Porter <matt.porter@linaro.org>
 ---
- Documentation/devicetree/bindings/mmc/kona-sdhci.txt | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/clocksource/bcm_kona_timer.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mmc/kona-sdhci.txt b/Documentation/devicetree/bindings/mmc/kona-sdhci.txt
-index 789fb07..42a57c6 100644
---- a/Documentation/devicetree/bindings/mmc/kona-sdhci.txt
-+++ b/Documentation/devicetree/bindings/mmc/kona-sdhci.txt
-@@ -6,12 +6,17 @@ and the properties present in the bcm281xx SDHCI
- Required properties:
- - compatible : Should be "brcm,kona-sdhci"
- - DEPRECATED: compatible : Should be "bcm,kona-sdhci"
-+- clocks: clock specifier for the kona i2c external clock
+diff --git a/drivers/clocksource/bcm_kona_timer.c b/drivers/clocksource/bcm_kona_timer.c
+index 0d7d8c3..8a4ab36 100644
+--- a/drivers/clocksource/bcm_kona_timer.c
++++ b/drivers/clocksource/bcm_kona_timer.c
+@@ -17,6 +17,7 @@
+ #include <linux/jiffies.h>
+ #include <linux/clockchips.h>
+ #include <linux/types.h>
++#include <linux/clk.h>
+ 
+ #include <linux/io.h>
+ #include <asm/mach/time.h>
+@@ -107,11 +108,18 @@ static const struct of_device_id bcm_timer_ids[] __initconst = {
+ static void __init kona_timers_init(struct device_node *node)
+ {
+ 	u32 freq;
++	struct clk *external_clk;
+ 
+-	if (!of_property_read_u32(node, "clock-frequency", &freq))
++	external_clk = of_clk_get_by_name(node, NULL);
 +
-+Refer to clocks/clock-bindings.txt for generic clock consumer
-+properties.
++	if (!IS_ERR(external_clk)) {
++		arch_timer_rate = clk_get_rate(external_clk);
++		clk_prepare_enable(external_clk);
++	} else if (!of_property_read_u32(node, "clock-frequency", &freq)) {
+ 		arch_timer_rate = freq;
+-	else
+-		panic("clock-frequency not set in the .dts file");
++	} else {
++		panic("unable to determine clock-frequency");
++	}
  
- Example:
- 
- sdio2: sdio@0x3f1a0000 {
- 	compatible = "brcm,kona-sdhci";
- 	reg = <0x3f1a0000 0x10000>;
-+	clocks = <&sdio3_clk>;
- 	interrupts = <0x0 74 0x4>;
- };
- 
+ 	/* Setup IRQ numbers */
+ 	timers.tmr_irq = irq_of_parse_and_map(node, 0);
 -- 
 1.8.0.1
 
