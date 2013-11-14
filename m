@@ -1,234 +1,415 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab3KNRUI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 12:20:08 -0500
-Received: from dkim2.fusionio.com ([66.114.96.54]:40493 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab3KNRT7 convert rfc822-to-8bit (ORCPT
+	id S1755999Ab3KNRYh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 12:24:37 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50527 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754318Ab3KNRY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 12:19:59 -0500
-X-ASG-Debug-ID: 1384449597-03d6a54d1a1dfaf0001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Content-Type: text/plain; charset="utf-8"
+	Thu, 14 Nov 2013 12:24:28 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Cc: gleb@redhat.com
+Subject: [GIT PULL] KVM changes for 3.13
+Date: Thu, 14 Nov 2013 18:24:18 +0100
+Message-Id: <1384449858-12875-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-btrfs@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Message-ID: <20131114171952.3802.93244@localhost.localdomain>
-From: Chris Mason <chris.mason@fusionio.com>
-User-Agent: alot/0.3.4
-Subject: [GIT PULL] Btrfs
-Date: Thu, 14 Nov 2013 12:19:52 -0500
-X-ASG-Orig-Subj: [GIT PULL] Btrfs
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
-X-Barracuda-Start-Time: 1384449597
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.142312
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Linus,
 
-Please pull my for-linus branch:
+The following changes since commit 34ec4de42be5006abdd8d0c08b306ffaa64d0d5d:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+  Merge tag 'devicetree-for-linus' of git://git.secretlab.ca/git/linux (2013-10-15 17:14:13 -0700)
 
-This is our usual merge window set of bug fixes, performance
-improvements and cleanups.  Miao Xie has some really nice optimizations
-for writeback.
+are available in the git repository at:
 
-Josef also expanded our sanity checks quite a bit; these make up a big
-chunk of the new lines.
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
 
-This was tested both on 3.12 and your current git
+for you to fetch changes up to e504c9098ed6acd9e1079c5e10e4910724ad429f:
 
-Josef Bacik (30) commits (+2038/-419):
-    Btrfs: make sure the delalloc workers actually flush compressed writes (+12/-6)
-    Btrfs: do not free the dirty bytes from the trans block rsv on cleanup (+0/-2)
-    Btrfs: add a sanity test for a vacant extent at the front of a file (+128/-5)
-    Btrfs: take ordered root lock when removing ordered operations inode (+2/-0)
-    Btrfs: stop committing the transaction so much during relocate (+13/-20)
-    Btrfs: do not bug_on if we try to cow a free space cache inode (+4/-1)
-    Btrfs: add an assert to btrfs_lookup_csums_range for alignment (+3/-0)
-    Btrfs: cleanup reserved space when freeing tree log on error (+25/-22)
-    Btrfs: fix two use-after-free bugs with transaction cleanup (+52/-82)
-    Btrfs: don't delete ordered roots from list during cleanup (+2/-1)
-    Btrfs: do a full search everytime in btrfs_search_old_slot (+6/-2)
-    Btrfs: handle a missing extent for the first file extent (+9/-2)
-    Btrfs: return an error from btrfs_wait_ordered_range (+78/-41)
-    Btrfs: remove all BUG_ON()'s from commit_cowonly_roots (+8/-5)
-    Btrfs: don't abort transaction in run_delalloc_nocow (+5/-15)
-    Btrfs: do not release metadata for space cache inodes (+7/-1)
-    Btrfs: relocate csums properly with prealloc extents (+15/-3)
-    Btrfs: free reserved space on error in a few places (+21/-2)
-    Btrfs: check file extent type before anything else (+5/-5)
-    Btrfs: stop all workers after we free block groups (+2/-2)
-    Btrfs: add tests for find_lock_delalloc_range (+389/-9)
-    Btrfs: add a sanity test for btrfs_split_item (+283/-7)
-    Btrfs: fix up seek_hole/seek_data handling (+19/-75)
-    Btrfs: free up block groups after everything (+2/-2)
-    Btrfs: reset intwrite on transaction abort (+2/-0)
-    Btrfs: fix hole check in log_one_extent (+1/-1)
-    Btrfs: add tests for btrfs_get_extent (+861/-2)
-    Btrfs: stop using vfs_read in send (+72/-103)
-    Btrfs: cleanup transaction on abort (+6/-1)
-    Btrfs: fixup reserved trace points (+6/-2)
+  kvm, vmx: Fix lazy FPU on nested guest (2013-11-13 18:46:54 +0100)
 
-Filipe David Borba Manana (19) commits (+127/-104):
-    Btrfs: fix sync fs to actually wait for all data to be persisted (+9/-3)
-    Btrfs: fix csum search offset/length calculation in log tree (+7/-7)
-    Btrfs: optimize extent item search in run_delayed_extent_op (+20/-7)
-    Btrfs: remove path arg from btrfs_truncate_free_space_cache (+3/-15)
-    Btrfs: remove unused max_key arg from btrfs_search_forward (+7/-30)
-    Btrfs: don't leak delayed node on path allocation failure (+3/-1)
-    Btrfs: remove unnecessary tree search when logging inode (+5/-5)
-    Btrfs: log recovery, don't unlink inode always on error (+4/-1)
-    Btrfs: fix btrfs_prev_leaf() previous key computation (+8/-4)
-    Btrfs: remove unnecessary key copy when logging inode (+2/-3)
-    Btrfs: fix memory leaks on transaction commit failure (+8/-4)
-    Btrfs: remove duplicated ino cache's inode lookup (+5/-9)
-    Btrfs: improve inode hash function/inode lookup (+25/-3)
-    Btrfs: don't store NULL byte in symlink extents (+2/-2)
-    Btrfs: optimize tree-log.c:count_inode_refs() (+5/-0)
-    Btrfs: fix tracking of orphan inode count (+8/-5)
-    Btrfs: don't leak block group on error (+1/-2)
-    Btrfs: fix incorrect inode acl reset (+1/-1)
-    Btrfs: fix verification of dir_item (+4/-2)
+Not using -rc1 as usual as the base, because the PPC guys based
+their 3.13 work on something after -rc4, and decided to do the same
+for KVM-PPC.  The above commit comes just after -rc5; the backmerge
+is commit 13acfd571514 (Powerpc KVM work is based on a commit after rc4).
 
-Miao Xie (10) commits (+121/-52):
-    Btrfs: remove unnecessary initialization and memory barrior in shrink_delalloc() (+3/-4)
-    Btrfs: pick up the code for the item number calculation in flush_space() (+16/-9)
-    Btrfs: fix the free space write out failure when there is no data space (+12/-3)
-    Btrfs: don't wait for all the async delalloc when shrinking delalloc (+12/-2)
-    Btrfs: fix the confusion between delalloc bytes and metadata bytes (+6/-0)
-    Btrfs: improve jitter performance of the sequential buffered write (+4/-3)
-    Btrfs: don't wait for the completion of all the ordered extents (+31/-18)
-    Btrfs: fix BUG_ON() casued by the reserved space migration (+28/-3)
-    Btrfs: wait for the ordered extent only when we want (+2/-1)
-    Btrfs: rename btrfs_start_all_delalloc_inodes (+7/-9)
+With all the work going into PPC, there were unfortunately some duplicate
+commits, and with them came conflicts.  Your tree has already the correct
+version of the affected files, except for arch/powerpc/kernel/traps.c
+which has bad coding style in your tree and good in ours.
 
-Liu Bo (7) commits (+69/-32):
-    Btrfs: fix a crash when running balance and defrag concurrently (+3/-0)
-    Btrfs: do not run snapshot-aware defragment on error (+28/-19)
-    Btrfs: export btrfs space shared info to userspace (+33/-1)
-    Btrfs: fixup error path in __btrfs_inc_extent_ref (+2/-8)
-    Btrfs: kill unused code in btrfs_search_forward (+0/-2)
-    Btrfs: fix memory leak of chunks' extent map (+2/-0)
-    Btrfs: cleanup dead code of defragment (+1/-2)
+----------------------------------------------------------------
+Here are the 3.13 KVM changes.  There was a lot of work on the PPC
+side: the HV and emulation flavors can now coexist in a single kernel
+is probably the most interesting change from a user point of view.
+On the x86 side there are nested virtualization improvements and a
+few bugfixes.  ARM got transparent huge page support, improved
+overcommit, and support for big endian guests.
 
-Stefan Behrens (6) commits (+25/-21):
-    Btrfs: Wait for uuid-tree rebuild task on remount read-only (+6/-0)
-    Btrfs: fix check_int 'leaf item out of bounce' regression (+1/-1)
-    Btrfs: eliminate the exceptional root_tree refs=0 (+10/-15)
-    Btrfs: Don't allocate inode that is already in use (+1/-1)
-    Btrfs: check_int, remove warning for mixed-mode (+5/-4)
-    Btrfs: init device stats for new devices (+2/-0)
+Finally, there is a new interface to connect KVM with VFIO.  This
+helps with devices that use NoSnoop PCI transactions, letting the
+driver in the guest execute WBINVD instructions.  This includes
+some nVidia cards on Windows, that fail to start without these
+patches and the corresponding userspace changes.
 
-Dulshani Gunawardhana (6) commits (+68/-111):
-    btrfs: Enclose macros with complex values within parenthesis (+4/-4)
-    btrfs: Use WARN_ON()'s return value in place of WARN_ON(1) (+28/-70)
-    btrfs: Fix checkpatch.pl warning of spacing issues (+19/-19)
-    btrfs: Remove redundant local zero structure (+2/-3)
-    btrfs: Replace kmalloc with kmalloc_array (+5/-5)
-    btrfs: Pack struct btrfs_device (+10/-10)
+----------------------------------------------------------------
+Alex Williamson (3):
+      kvm: Add VFIO device
+      kvm/x86: Convert iommu_flags to iommu_noncoherent
+      kvm: Create non-coherent DMA registeration
 
-Ilya Dryomov (4) commits (+16/-7):
-    Btrfs: nuke a bogus rw_devices decrement in __btrfs_close_devices (+2/-1)
-    Btrfs: disallow 'btrfs {balance,replace} cancel' on ro mounts (+6/-0)
-    Btrfs: don't leak ioctl args in btrfs_ioctl_dev_replace (+5/-4)
-    Btrfs: fix the dev-replace suspend sequence (+3/-2)
+Andre Richter (1):
+      virt/kvm/iommu.c: Add leading zeros to device's BDF notation in debug messages
 
-Zach Brown (3) commits (+11/-56):
-    btrfs: use get_seconds() instead of btrfs wrapper (+4/-12)
-    btrfs: remove fs/btrfs/compat.h (+6/-26)
-    btrfs: remove move_pages() (+1/-18)
+Aneesh Kumar K.V (11):
+      kvm: powerpc: book3s: pr: Rename KVM_BOOK3S_PR to KVM_BOOK3S_PR_POSSIBLE
+      kvm: powerpc: book3s: Add a new config variable CONFIG_KVM_BOOK3S_HV_POSSIBLE
+      kvm: powerpc: Add kvmppc_ops callback
+      kvm: powerpc: book3s: Cleanup interrupt handling code
+      kvm: powerpc: book3s: Add is_hv_enabled to kvmppc_ops
+      kvm: powerpc: book3s: pr: move PR related tracepoints to a separate header
+      kvm: powerpc: booke: Move booke related tracepoints to separate header
+      kvm: powerpc: book3s: Support building HV and PR KVM as module
+      kvm: Add struct kvm arg to memslot APIs
+      kvm: powerpc: book3s: Allow the HV and PR selection per virtual machine
+      kvm: powerpc: book3s: drop is_hv_enabled
 
-Rashika (3) commits (+24/-49):
-    btrfs: Replace multiple atomic_inc() with atomic_add() (+4/-4)
-    btrfs: Remove useless variable in write_ctree_super() (+1/-4)
-    btrfs: Add helper function for free_root_pointers() (+19/-41)
+Anthoine Bourgeois (1):
+      kvm, vmx: Fix lazy FPU on nested guest
 
-Wang Shilong (3) commits (+19/-34):
-    Btrfs: use 'u64' rather than 'int' to get extent's generation (+1/-1)
-    Btrfs: remove scrub_super_lock holding in btrfs_sync_log() (+8/-20)
-    Btrfs: avoid unnecessary scrub workers allocation (+10/-13)
+Anup Patel (5):
+      KVM: ARM: Fix typo in comments of inject_abt()
+      ARM: KVM: Implement kvm_vcpu_preferred_target() function
+      ARM64: KVM: Implement kvm_vcpu_preferred_target() function
+      ARM/ARM64: KVM: Implement KVM_ARM_PREFERRED_TARGET ioctl
+      KVM: Add documentation for KVM_ARM_PREFERRED_TARGET ioctl
 
-Ross Kirk (2) commits (+41/-42):
-    btrfs: remove unused parameter from btrfs_header_fsid (+10/-10)
-    btrfs: drop unused parameter from btrfs_item_nr (+31/-32)
+Arthur Chunqi Li (1):
+      KVM: nVMX: Fully support nested VMX preemption timer
 
-Geyslan G. Bem (2) commits (+22/-22):
-    btrfs: simplify kmalloc+copy_from_user to memdup_user (+3/-8)
-    btrfs: Fix memory leakage in the tree-log.c (+19/-14)
+Bharat Bhushan (10):
+      powerpc: book3e: _PAGE_LENDIAN must be _PAGE_ENDIAN
+      kvm: powerpc: allow guest control "E" attribute in mas2
+      kvm: powerpc: allow guest control "G" attribute in mas2
+      kvm: powerpc: e500: mark page accessed when mapping a guest page
+      powerpc: remove unnecessary line continuations
+      powerpc: move debug registers in a structure
+      powerpc: export debug registers save function for KVM
+      KVM: PPC: E500: exit to user space on "ehpriv 1" instruction
+      KVM: PPC: E500: Using "struct debug_reg"
+      KVM: PPC: E500: Add userspace debug stub support
 
-Jeff Mahoney (1) commits (+7/-0):
-    btrfs: add tracing for failed reservations
+Borislav Petkov (6):
+      kvm: Add KVM_GET_EMULATED_CPUID
+      kvm, emulator: Use opcode length
+      kvm, emulator: Rename VendorSpecific flag
+      kvm, emulator: Add initial three-byte insns support
+      kvm: Emulate MOVBE
+      kvm, cpuid: Fix sparse warning
 
-Chandra Seetharaman (1) commits (+28/-40):
-    Btrfs: Simplify the logic in alloc_extent_buffer() for existing extent buffer case
+Christoffer Dall (14):
+      KVM: Move gfn_to_index to x86 specific code
+      KVM: ARM: Get rid of KVM_HPAGE defines
+      KVM: arm64: Get rid of KVM_HPAGE defines
+      KVM: mips: Get rid of KVM_HPAGE defines
+      KVM: ia64: Get rid of KVM_HPAGE defines
+      KVM: PPC: Get rid of KVM_HPAGE defines
+      KVM: s390: Get rid of KVM_HPAGE defines
+      KVM: ARM: Remove non-ASCII space characters
+      KVM: ARM: Update comments for kvm_handle_wfi
+      KVM: ARM: Update comments for kvm_handle_wfi
+      KVM: ARM: Support hugetlbfs backed huge pages
+      KVM: ARM: Transparent huge page (THP) support
+      Merge remote-tracking branch 'kvm/next' into kvm-arm-next
+      Merge branch 'kvm-arm-next-3.13-2' into kvm-arm-next
 
-chandan (1) commits (+1/-1):
-    Btrfs: btrfs_add_ordered_operation: Fix last modified transaction comparison.
+Gleb Natapov (11):
+      KVM: nVMX: Amend nested_run_pending logic
+      KVM: nVMX: Do not put exception that caused vmexit to IDT_VECTORING_INFO
+      KVM: nVMX: Check all exceptions for intercept during delivery to L2
+      KVM: nVMX: Do not generate #DF if #PF happens during exception delivery into L2
+      Merge tag 'kvm-arm-for-3.13-1' of git://git.linaro.org/people/cdall/linux-kvm-arm into next
+      Powerpc KVM work is based on a commit after rc4.
+      Merge branch 'kvm-ppc-queue' of git://github.com/agraf/linux-2.6 into queue
+      KVM: emulator: check rex prefix inside decode_register()
+      KVM: emulator: cleanup decode_register_operand() a bit
+      KVM: x86: trace cpuid emulation when called from emulator
+      KVM: remove vm mmap method
 
-Total: (98) commits (+2601 /-974)
+Greg Edwards (1):
+      KVM: IOMMU: hva align mapping page size
 
- fs/btrfs/Makefile                    |   4 +-
- fs/btrfs/acl.c                       |   2 +-
- fs/btrfs/async-thread.c              |   2 +-
- fs/btrfs/backref.c                   |   8 +-
- fs/btrfs/btrfs_inode.h               |  20 +
- fs/btrfs/check-integrity.c           |  18 +-
- fs/btrfs/compat.h                    |   7 -
- fs/btrfs/compression.c               |   3 +-
- fs/btrfs/ctree.c                     |  75 +--
- fs/btrfs/ctree.h                     |  36 +-
- fs/btrfs/delayed-inode.c             |  19 +-
- fs/btrfs/dev-replace.c               |  26 +-
- fs/btrfs/dir-item.c                  |   8 +-
- fs/btrfs/disk-io.c                   | 248 ++++-----
- fs/btrfs/disk-io.h                   |   4 +
- fs/btrfs/export.c                    |   1 -
- fs/btrfs/extent-tree.c               | 174 +++++--
- fs/btrfs/extent_io.c                 | 135 +++--
- fs/btrfs/extent_io.h                 |   8 +-
- fs/btrfs/extent_map.h                |   8 +-
- fs/btrfs/file-item.c                 |   7 +-
- fs/btrfs/file.c                      | 163 +++---
- fs/btrfs/free-space-cache.c          |  21 +-
- fs/btrfs/free-space-cache.h          |   4 +-
- fs/btrfs/inode-item.c                |   2 +-
- fs/btrfs/inode-map.c                 |  13 +-
- fs/btrfs/inode.c                     | 207 ++++----
- fs/btrfs/ioctl.c                     |  74 ++-
- fs/btrfs/ordered-data.c              |  52 +-
- fs/btrfs/ordered-data.h              |   6 +-
- fs/btrfs/print-tree.c                |   2 +-
- fs/btrfs/raid56.c                    |   1 -
- fs/btrfs/relocation.c                |  94 ++--
- fs/btrfs/scrub.c                     |  46 +-
- fs/btrfs/send.c                      | 193 +++----
- fs/btrfs/super.c                     |  31 +-
- fs/btrfs/tests/btrfs-tests.c         |  74 +++
- fs/btrfs/tests/btrfs-tests.h         |  25 +
- fs/btrfs/tests/extent-buffer-tests.c | 229 +++++++++
- fs/btrfs/tests/extent-io-tests.c     | 276 ++++++++++
- fs/btrfs/tests/inode-tests.c         | 955 +++++++++++++++++++++++++++++++++++
- fs/btrfs/transaction.c               |  81 ++-
- fs/btrfs/transaction.h               |   2 +
- fs/btrfs/tree-defrag.c               |   5 +-
- fs/btrfs/tree-log.c                  | 148 +++---
- fs/btrfs/uuid-tree.c                 |   6 +-
- fs/btrfs/volumes.c                   |  26 +-
- fs/btrfs/volumes.h                   |  24 +-
- include/uapi/linux/magic.h           |   2 +-
- 49 files changed, 2601 insertions(+), 974 deletions(-)
+Jan Kiszka (7):
+      KVM: nVMX: Replace kvm_set_cr0 with vmx_set_cr0 in load_vmcs12_host_state
+      KVM: nVMX: Do not set identity page map for L2
+      KVM: nVMX: Implement support for EFER saving on VM-exit
+      KVM: nVMX: Enable unrestricted guest mode support
+      KVM: nVMX: Report 2MB EPT pages as supported
+      nVMX: Fix pick-up of uninjected NMIs
+      nVMX: Report CPU_BASED_VIRTUAL_NMI_PENDING as supported
+
+Jonathan Austin (3):
+      KVM: ARM: Fix calculation of virtual CPU ID
+      KVM: ARM: fix the size of TTBCR_{T0SZ,T1SZ} masks
+      KVM: ARM: Add support for Cortex-A7
+
+Josh Triplett (2):
+      kvm: Delete prototype for non-existent function complete_pio
+      kvm: Delete prototype for non-existent function kvm_check_iopl
+
+Marc Zyngier (9):
+      ARM: KVM: Yield CPU when vcpu executes a WFE
+      ARM: KVM: Yield CPU when vcpu executes a WFE
+      ARM: KVM: Fix MPIDR computing to support virtual clusters
+      ARM: KVM: fix L2CTLR to be per-cluster
+      ARM: KVM: drop limitation to 4 CPU VMs
+      arm/arm64: KVM: PSCI: use MPIDR to identify a target CPU
+      arm64: KVM: Yield CPU when vcpu executes a WFE
+      arm/arm64: KVM: MMIO support for BE guest
+      arm/arm64: KVM: PSCI: propagate caller endianness to the incoming vcpu
+
+Marcelo Tosatti (2):
+      pvclock: detect watchdog reset at pvclock read
+      hung_task: add method to reset detector
+
+Michael Neuling (1):
+      KVM: PPC: Book3S HV: Reserve POWER8 space in get/set_one_reg
+
+Michael S. Tsirkin (4):
+      kvm/vmx: error message typo fix
+      kvm_host: typo fix
+      srcu: API for barrier after srcu read unlock
+      kvm: optimize out smp_mb after srcu_read_unlock
+
+Paolo Bonzini (17):
+      KVM: cleanup (physical) CPU hotplug
+      KVM: protect kvm_usage_count with its own spinlock
+      KVM: Convert kvm_lock back to non-raw spinlock
+      KVM: x86: mask unsupported XSAVE entries from leaf 0Dh index 0
+      KVM: x86: prevent setting unsupported XSAVE states
+      KVM: x86: only copy XSAVE state for the supported features
+      KVM: mmu: remove uninteresting MMU "free" callbacks
+      KVM: mmu: remove uninteresting MMU "new_cr3" callbacks
+      KVM: mmu: unify destroy_kvm_mmu with kvm_mmu_unload
+      KVM: mmu: change useless int return types to void
+      Merge tag 'kvm-arm-for-3.13-2' of git://git.linaro.org/people/cdall/linux-kvm-arm into kvm-queue
+      KVM: x86: fix KVM_SET_XCRS for CPUs that do not support XSAVE
+      KVM: x86: fix KVM_SET_XCRS loop
+      KVM: x86: emulate SAHF instruction
+      KVM: x86: fix emulation of "movzbl %bpl, %eax"
+      Merge tag 'kvm-arm-for-3.13-3' of git://git.linaro.org/people/cdall/linux-kvm-arm into kvm-next
+      Merge tag 'kvm-arm64/for-3.13-1' of git://git.kernel.org/.../maz/arm-platforms into kvm-next
+
+Paul Mackerras (29):
+      KVM: PPC: Book3S HV: Save/restore SIAR and SDAR along with other PMU registers
+      KVM: PPC: Book3S HV: Implement timebase offset for guests
+      KVM: PPC: Book3S: Add GET/SET_ONE_REG interface for VRSAVE
+      KVM: PPC: Book3S HV: Implement H_CONFER
+      KVM: PPC: Book3S HV: Restructure kvmppc_hv_entry to be a subroutine
+      KVM: PPC: Book3S HV: Pull out interrupt-reading code into a subroutine
+      KVM: PPC: Book3S HV: Avoid unbalanced increments of VPA yield count
+      KVM: PPC: BookE: Add GET/SET_ONE_REG interface for VRSAVE
+      KVM: PPC: Book3S HV: Store LPCR value for each virtual core
+      KVM: PPC: Book3S HV: Add support for guest Program Priority Register
+      KVM: PPC: Book3S HV: Support POWER6 compatibility mode on POWER7
+      KVM: PPC: Book3S HV: Don't crash host on unknown guest interrupt
+      KVM: PPC: Book3S PR: Fix compilation without CONFIG_ALTIVEC
+      KVM: PPC: Book3S PR: Keep volatile reg values in vcpu rather than shadow_vcpu
+      KVM: PPC: Book3S PR: Allow guest to use 64k pages
+      KVM: PPC: Book3S PR: Use 64k host pages where possible
+      KVM: PPC: Book3S PR: Handle PP0 page-protection bit in guest HPTEs
+      KVM: PPC: Book3S PR: Correct errors in H_ENTER implementation
+      KVM: PPC: Book3S PR: Make HPT accesses and updates SMP-safe
+      KVM: PPC: Book3S PR: Allocate kvm_vcpu structs from kvm_vcpu_cache
+      KVM: PPC: Book3S: Move skip-interrupt handlers to common code
+      KVM: PPC: Book3S PR: Better handling of host-side read-only pages
+      KVM: PPC: Book3S PR: Use mmu_notifier_retry() in kvmppc_mmu_map_page()
+      KVM: PPC: Book3S PR: Mark pages accessed, and dirty if being written
+      KVM: PPC: Book3S PR: Reduce number of shadow PTEs invalidated by MMU notifiers
+      kvm: powerpc: book3s hv: Fix vcore leak
+      KVM: PPC: Book3S HV: Better handling of exceptions that happen in real mode
+      kvm: powerpc: book3s: remove kvmppc_handler_highmem label
+      kvm: powerpc: book3s: move book3s_64_vio_hv.c into the main kernel binary
+
+Radim Krčmář (1):
+      kvm: remove .done from struct kvm_async_pf
+
+Raghavendra K T (1):
+      Documentation/kvm: Update cpuid documentation for steal time and pv eoi
+
+Ramkumar Ramachandra (3):
+      MAINTAINERS: fix broken link to www.linux-kvm.org
+      Documentation/kvm: add a 00-INDEX file
+      MAINTAINERS: add tree for kvm.git
+
+Thomas Huth (9):
+      KVM: Add documentation for kvm->srcu lock
+      KVM: s390: Remove dead "rerun vcpu" code
+      KVM: s390: Split up __vcpu_run into three parts
+      KVM: s390: Push run loop into __vcpu_run
+      KVM: s390: Lock kvm->srcu at the appropriate places
+      KVM: s390: Allow NULL parameter for kvm_s390_get_regs_rre
+      KVM: s390: Helper for converting real addresses to absolute
+      KVM: s390: Implement TEST BLOCK
+      KVM: s390: Intercept SCK instruction
+
+Yang Zhang (1):
+      KVM: Mapping IOMMU pages after updating memslot
+
+chai wen (1):
+      KVM: Drop FOLL_GET in GUP when doing async page fault
+
+ Documentation/virtual/kvm/00-INDEX         |  24 ++
+ Documentation/virtual/kvm/api.txt          | 152 ++++++-
+ Documentation/virtual/kvm/cpuid.txt        |   7 +
+ Documentation/virtual/kvm/devices/vfio.txt |  22 +
+ Documentation/virtual/kvm/locking.txt      |  19 +-
+ MAINTAINERS                                |   3 +-
+ arch/arm/include/asm/kvm_arm.h             |   9 +-
+ arch/arm/include/asm/kvm_asm.h             |   2 +-
+ arch/arm/include/asm/kvm_emulate.h         |  51 +++
+ arch/arm/include/asm/kvm_host.h            |   6 +-
+ arch/arm/include/asm/kvm_mmu.h             |  17 +-
+ arch/arm/include/asm/pgtable-3level.h      |   2 +
+ arch/arm/include/uapi/asm/kvm.h            |   3 +-
+ arch/arm/kvm/Kconfig                       |   1 +
+ arch/arm/kvm/Makefile                      |   2 +-
+ arch/arm/kvm/arm.c                         |  18 +-
+ arch/arm/kvm/coproc.c                      | 120 ++++++
+ arch/arm/kvm/coproc_a15.c                  | 117 +-----
+ arch/arm/kvm/coproc_a7.c                   |  54 +++
+ arch/arm/kvm/emulate.c                     |   2 +-
+ arch/arm/kvm/guest.c                       |  24 +-
+ arch/arm/kvm/handle_exit.c                 |  20 +-
+ arch/arm/kvm/mmio.c                        |  86 +++-
+ arch/arm/kvm/mmu.c                         | 223 +++++++++--
+ arch/arm/kvm/psci.c                        |  21 +-
+ arch/arm/kvm/reset.c                       |  15 +-
+ arch/arm64/include/asm/kvm_arm.h           |   8 +-
+ arch/arm64/include/asm/kvm_emulate.h       |  61 +++
+ arch/arm64/include/asm/kvm_host.h          |   6 +-
+ arch/arm64/include/asm/kvm_mmu.h           |  12 +-
+ arch/arm64/include/asm/pgtable-hwdef.h     |   2 +
+ arch/arm64/kvm/Kconfig                     |   1 +
+ arch/arm64/kvm/guest.c                     |  20 +
+ arch/arm64/kvm/handle_exit.c               |  18 +-
+ arch/ia64/include/asm/kvm_host.h           |   6 +-
+ arch/ia64/kvm/kvm-ia64.c                   |   5 +-
+ arch/mips/include/asm/kvm_host.h           |   7 -
+ arch/mips/kvm/kvm_mips.c                   |   5 +-
+ arch/powerpc/include/asm/disassemble.h     |   4 +
+ arch/powerpc/include/asm/exception-64s.h   |  21 +-
+ arch/powerpc/include/asm/kvm_asm.h         |   4 +
+ arch/powerpc/include/asm/kvm_book3s.h      | 232 +----------
+ arch/powerpc/include/asm/kvm_book3s_32.h   |   2 +-
+ arch/powerpc/include/asm/kvm_book3s_64.h   |   8 +-
+ arch/powerpc/include/asm/kvm_book3s_asm.h  |   9 +-
+ arch/powerpc/include/asm/kvm_booke.h       |   7 +-
+ arch/powerpc/include/asm/kvm_host.h        |  57 +--
+ arch/powerpc/include/asm/kvm_ppc.h         | 107 +++--
+ arch/powerpc/include/asm/paca.h            |   2 +-
+ arch/powerpc/include/asm/processor.h       |  37 +-
+ arch/powerpc/include/asm/pte-book3e.h      |   2 +-
+ arch/powerpc/include/asm/reg.h             |  15 +
+ arch/powerpc/include/asm/reg_booke.h       |   8 +-
+ arch/powerpc/include/asm/switch_to.h       |   1 +
+ arch/powerpc/include/uapi/asm/kvm.h        |  86 +++-
+ arch/powerpc/kernel/asm-offsets.c          |  23 +-
+ arch/powerpc/kernel/exceptions-64s.S       |  30 +-
+ arch/powerpc/kernel/idle_power7.S          |   2 +-
+ arch/powerpc/kernel/process.c              |  45 ++-
+ arch/powerpc/kernel/ptrace.c               | 154 +++----
+ arch/powerpc/kernel/ptrace32.c             |   2 +-
+ arch/powerpc/kernel/signal_32.c            |   6 +-
+ arch/powerpc/kernel/traps.c                |  35 +-
+ arch/powerpc/kvm/44x.c                     |  58 ++-
+ arch/powerpc/kvm/44x_emulate.c             |   8 +-
+ arch/powerpc/kvm/44x_tlb.c                 |   2 +-
+ arch/powerpc/kvm/Kconfig                   |  28 +-
+ arch/powerpc/kvm/Makefile                  |  29 +-
+ arch/powerpc/kvm/book3s.c                  | 257 +++++++++++-
+ arch/powerpc/kvm/book3s.h                  |  34 ++
+ arch/powerpc/kvm/book3s_32_mmu.c           |  73 ++--
+ arch/powerpc/kvm/book3s_32_mmu_host.c      |  16 +-
+ arch/powerpc/kvm/book3s_64_mmu.c           | 181 +++++++--
+ arch/powerpc/kvm/book3s_64_mmu_host.c      | 106 +++--
+ arch/powerpc/kvm/book3s_64_mmu_hv.c        |  24 +-
+ arch/powerpc/kvm/book3s_64_vio_hv.c        |   1 +
+ arch/powerpc/kvm/book3s_emulate.c          |  18 +-
+ arch/powerpc/kvm/book3s_exports.c          |   5 +-
+ arch/powerpc/kvm/book3s_hv.c               | 389 ++++++++++++++----
+ arch/powerpc/kvm/book3s_hv_interrupts.S    |   3 -
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S    | 618 +++++++++++++++++------------
+ arch/powerpc/kvm/book3s_interrupts.S       |  32 +-
+ arch/powerpc/kvm/book3s_mmu_hpte.c         |  66 ++-
+ arch/powerpc/kvm/book3s_pr.c               | 498 ++++++++++++++++-------
+ arch/powerpc/kvm/book3s_pr_papr.c          |  52 ++-
+ arch/powerpc/kvm/book3s_rmhandlers.S       |  32 +-
+ arch/powerpc/kvm/book3s_rtas.c             |   1 +
+ arch/powerpc/kvm/book3s_segment.S          |   4 +-
+ arch/powerpc/kvm/book3s_xics.c             |   7 +-
+ arch/powerpc/kvm/booke.c                   | 337 ++++++++++++++--
+ arch/powerpc/kvm/booke.h                   |  29 ++
+ arch/powerpc/kvm/e500.c                    |  59 ++-
+ arch/powerpc/kvm/e500.h                    |   2 +-
+ arch/powerpc/kvm/e500_emulate.c            |  34 +-
+ arch/powerpc/kvm/e500_mmu.c                |   4 +-
+ arch/powerpc/kvm/e500_mmu_host.c           |   6 +-
+ arch/powerpc/kvm/e500mc.c                  |  58 ++-
+ arch/powerpc/kvm/emulate.c                 |  12 +-
+ arch/powerpc/kvm/powerpc.c                 | 171 ++++----
+ arch/powerpc/kvm/trace.h                   | 429 --------------------
+ arch/powerpc/kvm/trace_booke.h             | 177 +++++++++
+ arch/powerpc/kvm/trace_pr.h                | 297 ++++++++++++++
+ arch/s390/include/asm/kvm_host.h           |   8 -
+ arch/s390/kvm/diag.c                       |   4 +-
+ arch/s390/kvm/gaccess.h                    |  21 +-
+ arch/s390/kvm/intercept.c                  |   6 -
+ arch/s390/kvm/interrupt.c                  |   3 +
+ arch/s390/kvm/kvm-s390.c                   |  96 +++--
+ arch/s390/kvm/kvm-s390.h                   |   9 +-
+ arch/s390/kvm/priv.c                       |  61 +++
+ arch/x86/include/asm/kvm_emulate.h         |  10 +-
+ arch/x86/include/asm/kvm_host.h            |  23 +-
+ arch/x86/include/asm/pvclock.h             |   2 +
+ arch/x86/include/uapi/asm/kvm.h            |   6 +-
+ arch/x86/include/uapi/asm/msr-index.h      |   1 +
+ arch/x86/kernel/kvmclock.c                 |   1 +
+ arch/x86/kernel/pvclock.c                  |  13 +
+ arch/x86/kvm/Kconfig                       |   1 +
+ arch/x86/kvm/Makefile                      |   2 +-
+ arch/x86/kvm/cpuid.c                       | 115 +++++-
+ arch/x86/kvm/cpuid.h                       |   5 +-
+ arch/x86/kvm/emulate.c                     | 130 ++++--
+ arch/x86/kvm/mmu.c                         | 115 ++----
+ arch/x86/kvm/mmu.h                         |   4 +-
+ arch/x86/kvm/svm.c                         |   8 +-
+ arch/x86/kvm/vmx.c                         | 158 +++++---
+ arch/x86/kvm/x86.c                         | 108 +++--
+ arch/x86/kvm/x86.h                         |   1 +
+ include/linux/kvm_host.h                   |  42 +-
+ include/linux/sched.h                      |   8 +
+ include/linux/srcu.h                       |  14 +
+ include/trace/events/kvm.h                 |  10 +-
+ include/uapi/linux/kvm.h                   |  11 +
+ kernel/hung_task.c                         |  11 +
+ virt/kvm/Kconfig                           |   3 +
+ virt/kvm/async_pf.c                        |  22 +-
+ virt/kvm/iommu.c                           |  38 +-
+ virt/kvm/kvm_main.c                        | 134 +++----
+ virt/kvm/vfio.c                            | 264 ++++++++++++
+ 139 files changed, 5317 insertions(+), 2378 deletions(-)
+ create mode 100644 Documentation/virtual/kvm/00-INDEX
+ create mode 100644 Documentation/virtual/kvm/devices/vfio.txt
+ create mode 100644 arch/arm/kvm/coproc_a7.c
+ create mode 100644 arch/powerpc/kvm/book3s.h
+ create mode 100644 arch/powerpc/kvm/trace_booke.h
+ create mode 100644 arch/powerpc/kvm/trace_pr.h
+ create mode 100644 virt/kvm/vfio.c
