@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab3KNIim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 03:38:42 -0500
-Received: from mail.abilis.ch ([195.70.19.74]:17197 "EHLO mail.abilis.ch"
+	id S1752534Ab3KNIi4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 03:38:56 -0500
+Received: from mail.abilis.ch ([195.70.19.74]:17249 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751284Ab3KNIik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 03:38:40 -0500
+	id S1751284Ab3KNIiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 03:38:54 -0500
 From: Christian Ruppert <christian.ruppert@abilis.com>
 To: Pavel Roskin <proski@gnu.org>, Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>,
         Noam Camus <noamc@ezchip.com>,
         Christian Ruppert <christian.ruppert@abilis.com>
-Subject: [PATCH 1/2] init/Kconfig: add option to disable kernel compression
-Date: Thu, 14 Nov 2013 09:38:15 +0100
-Message-Id: <1384418296-10374-1-git-send-email-christian.ruppert@abilis.com>
+Subject: [PATCH 2/2] x86: Add support for uncompressed kernel images
+Date: Thu, 14 Nov 2013 09:38:16 +0100
+Message-Id: <1384418296-10374-2-git-send-email-christian.ruppert@abilis.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20131114083247.GB9687@ab42.lan>
 References: <20131114083247.GB9687@ab42.lan>
@@ -22,69 +22,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some ARC users say they can boot faster with without kernel compression.
-This probably depends on things like the FLASH chip they use etc.
-
-Until now, kernel compression can only be disabled by removing "select
-HAVE_<compression>" lines from the architecture Kconfig.  So add the
-Kconfig logic to permit disabling of kernel compression.
-
 Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
 ---
- arch/arc/Kconfig |  2 ++
- init/Kconfig     | 12 +++++++++++-
- 2 files changed, 13 insertions(+), 1 deletion(-)
+ arch/x86/Kconfig                  |  1 +
+ arch/x86/boot/compressed/Makefile | 14 ++++++------
+ arch/x86/boot/compressed/misc.c   |  4 ++++
+ lib/decompress_copy.c             | 47 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 59 insertions(+), 7 deletions(-)
+ create mode 100644 lib/decompress_copy.c
 
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 91dbb27..3991f03 100644
---- a/arch/arc/Kconfig
-+++ b/arch/arc/Kconfig
-@@ -21,6 +21,8 @@ config ARC
- 	select HAVE_ARCH_KGDB
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_IOREMAP_PROT
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index f67e839..2a32df9 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -61,6 +61,7 @@ config X86
+ 	select USER_STACKTRACE_SUPPORT
+ 	select HAVE_REGS_AND_STACK_ACCESS_API
+ 	select HAVE_DMA_API_DEBUG
 +	select HAVE_KERNEL_UNCOMPRESSED
-+	select HAVE_KERNEL_GZIP
- 	select HAVE_KPROBES
- 	select HAVE_KRETPROBES
- 	select HAVE_MEMBLOCK
-diff --git a/init/Kconfig b/init/Kconfig
-index 3ecd8a1..b1a6f92 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -97,6 +97,9 @@ config LOCALVERSION_AUTO
+ 	select HAVE_KERNEL_GZIP
+ 	select HAVE_KERNEL_BZIP2
+ 	select HAVE_KERNEL_LZMA
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index dcd90df..f65e444 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -67,16 +67,16 @@ $(obj)/vmlinux.bin.lzo: $(vmlinux.bin.all-y) FORCE
+ $(obj)/vmlinux.bin.lz4: $(vmlinux.bin.all-y) FORCE
+ 	$(call if_changed,lz4)
  
- 	  which is done within the script "scripts/setlocalversion".)
+-suffix-$(CONFIG_KERNEL_GZIP)	:= gz
+-suffix-$(CONFIG_KERNEL_BZIP2)	:= bz2
+-suffix-$(CONFIG_KERNEL_LZMA)	:= lzma
+-suffix-$(CONFIG_KERNEL_XZ)	:= xz
+-suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
+-suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
++suffix-$(CONFIG_KERNEL_GZIP)	:= .gz
++suffix-$(CONFIG_KERNEL_BZIP2)	:= .bz2
++suffix-$(CONFIG_KERNEL_LZMA)	:= .lzma
++suffix-$(CONFIG_KERNEL_XZ)	:= .xz
++suffix-$(CONFIG_KERNEL_LZO) 	:= .lzo
++suffix-$(CONFIG_KERNEL_LZ4) 	:= .lz4
  
-+config HAVE_KERNEL_UNCOMPRESSED
-+        bool
+ quiet_cmd_mkpiggy = MKPIGGY $@
+       cmd_mkpiggy = $(obj)/mkpiggy $< > $@ || ( rm -f $@ ; false )
+ 
+ targets += piggy.S
+-$(obj)/piggy.S: $(obj)/vmlinux.bin.$(suffix-y) $(obj)/mkpiggy FORCE
++$(obj)/piggy.S: $(obj)/vmlinux.bin$(suffix-y) $(obj)/mkpiggy FORCE
+ 	$(call if_changed,mkpiggy)
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 434f077..c210314 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -149,6 +149,10 @@ static int lines, cols;
+ #include "../../../../lib/decompress_unlz4.c"
+ #endif
+ 
++#ifdef CONFIG_KERNEL_UNCOMPRESSED
++#include "../../../../lib/decompress_copy.c"
++#endif
 +
- config HAVE_KERNEL_GZIP
- 	bool
- 
-@@ -118,7 +121,6 @@ config HAVE_KERNEL_LZ4
- choice
- 	prompt "Kernel compression mode"
- 	default KERNEL_GZIP
--	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
- 	help
- 	  The linux kernel is a kind of self-extracting executable.
- 	  Several compression algorithms are available, which differ
-@@ -137,6 +139,14 @@ choice
- 
- 	  If in doubt, select 'gzip'
- 
-+config KERNEL_UNCOMPRESSED
-+	bool "No compression"
-+	depends on HAVE_KERNEL_UNCOMPRESSED || ! ( HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4 )
-+	help
-+	  No compression at all. The kernel is huge but the compression and
-+	  decompression times are zero.
-+	  This is usually not what you want.
+ static void scroll(void)
+ {
+ 	int i;
+diff --git a/lib/decompress_copy.c b/lib/decompress_copy.c
+new file mode 100644
+index 0000000..8a41090
+--- /dev/null
++++ b/lib/decompress_copy.c
+@@ -0,0 +1,47 @@
++#include <linux/decompress/mm.h>
 +
- config KERNEL_GZIP
- 	bool "Gzip"
- 	depends on HAVE_KERNEL_GZIP
++#define NOZIP_BUFSZ (16 * 1024)
++STATIC int INIT nozip(unsigned char *buf, int len,
++			int(*fill)(void*, unsigned int),
++			int(*flush)(void*, unsigned int),
++			unsigned char *outbuf,
++			int *pos,
++			void(*error)(char *x))
++{
++	char *b;
++
++	if (buf)
++		b = buf;
++	else
++		b = malloc(NOZIP_BUFSZ);
++
++	if (!b) {
++		error("Out of memory while allocating buffer");
++		return -1;
++	}
++
++	if (flush) {
++		if (!len)
++			len = fill(b, NOZIP_BUFSZ);
++
++		len = flush(b, len);
++	} else {
++		if (!len)
++			len = fill(outbuf, NOZIP_BUFSZ);
++		else {
++			int i;
++			for (i = 0; i < len; i++)
++				outbuf[i] = b[i];
++		}
++	}
++
++	if (pos)
++		*pos = len;
++
++	if (!buf)
++		free(b);
++
++	return 0;
++}
++
++#define decompress nozip
 -- 
 1.8.4
 
