@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab3KNOUR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 09:20:17 -0500
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:43139 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab3KNOUL (ORCPT
+	id S1753996Ab3KNOVl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 09:21:41 -0500
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.116]:8136 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753293Ab3KNOVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 09:20:11 -0500
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Nov 2013 09:20:11 EST
-Message-ID: <5284DA88.6060809@linaro.org>
-Date: Thu, 14 Nov 2013 09:13:28 -0500
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 14 Nov 2013 09:21:35 -0500
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-7.tower-194.messagelabs.com!1384438891!9325988!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.13; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 14 Nov 2013 15:21:32 +0100
+Date: Thu, 14 Nov 2013 15:21:25 +0100
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Borislav Petkov <bp@alien8.de>
+CC: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Robert Richter <rric@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-edac@vger.kernel.org>,
+        Aristeu Rozanski Filho <arozansk@redhat.com>
+Subject: Re: [GIT PULL] mpc85xx_edac changes for 3.13
+Message-ID: <20131114142125.GA29214@jtlinux>
+References: <20131112161901.GA15637@jtlinux>
+ <CA+55aFzJhyo8bKBchYq0Q=rwPv_-v-xWgOKWxKBcSBycMZcmTg@mail.gmail.com>
+ <20131114054750.GA27791@kroah.com>
+ <20131114092009.GA4960@pd.tnic>
+ <20131114091843.4bb72afc@samsung.com>
+ <20131114112418.GH4960@pd.tnic>
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 07/13] ARM: move generic thumb instruction parsing
- code to new files for use by other features
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org>  <1381871068-27660-8-git-send-email-dave.long@linaro.org> <1384362541.3392.40.camel@linaro1.home>
-In-Reply-To: <1384362541.3392.40.camel@linaro1.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20131114112418.GH4960@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 14 Nov 2013 14:21:31.0033 (UTC) FILETIME=[D0607090:01CEE144]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/13 12:09, Jon Medhurst (Tixy) wrote:
-> On Tue, 2013-10-15 at 17:04 -0400, David Long wrote:
->> From: "David A. Long" <dave.long@linaro.org>
->>
->> Move the thumb version of the kprobes instruction parsing code into more generic
+On Thu, Nov 14, 2013 at 12:24:18PM +0100, Borislav Petkov wrote:
+> On Thu, Nov 14, 2013 at 09:18:43AM -0200, Mauro Carvalho Chehab wrote:
+> > So, in practice, Borislav was working as a maintainer for amd64 EDAC
+> > patches, and I working mainly as Intel EDAC maintainer. The (few)
+> > other arm EDAC patches were either coming via my tree or via Boris
+> > tree, depending on who got them first.
 >
-> This patch is moving the 'ARM' instructions, not 'thumb' instructions,
-> so both description and title needs fixing for that.
-
-Indeed.  I've fixed it for the next version.
-
-> Actually, after looking at patch 08/13, that one seems to erroneously
-> include the thumb reorg, I'm guessing that was meant to be in this patch
-> instead, or in a standalone patch?
-
-I've now broken the thumb reorg out into its own patch with appropriate 
-description.
-
->> files from where it can be used by uprobes and possibly other subsystems. The
->> symbol names will be made more generic in a subsequent part of this patchset.
->>
->> Signed-off-by: David A. Long <dave.long@linaro.org>
->> ---
->>   arch/arm/include/asm/probes.h    |   2 +
->>   arch/arm/kernel/Makefile         |   4 +-
->>   arch/arm/kernel/kprobes-arm.c    | 723 +-------------------------------------
->>   arch/arm/kernel/kprobes-common.c | 422 +---------------------
->>   arch/arm/kernel/kprobes-test.c   |   1 +
->>   arch/arm/kernel/kprobes-thumb.c  |   1 +
->>   arch/arm/kernel/kprobes.c        |   1 +
->>   arch/arm/kernel/kprobes.h        | 372 --------------------
->>   arch/arm/kernel/probes-arm.c     | 730 +++++++++++++++++++++++++++++++++++++++
->>   arch/arm/kernel/probes-arm.h     |  38 ++
->>   arch/arm/kernel/probes.c         | 441 +++++++++++++++++++++++
->>   arch/arm/kernel/probes.h         | 395 +++++++++++++++++++++
->>   12 files changed, 1622 insertions(+), 1508 deletions(-)
->>   create mode 100644 arch/arm/kernel/probes-arm.c
->>   create mode 100644 arch/arm/kernel/probes-arm.h
->>   create mode 100644 arch/arm/kernel/probes.c
->>   create mode 100644 arch/arm/kernel/probes.h
+> Yeah, and I think this has worked pretty good in the past so if you want
+> to, we can continue the same thing of sharing the load on EDAC patches
+> and we both do interim maintainers until Doug steps in.
 >
-> A git tip: if you use the -C argument with git format-patch (and
-> send-email I assume) then it will detect files which are copies of
-> others and produce a much smaller patch, as well as a more informative
-> file summary. I believe that this is OK for submissions posted to
-> mailing lists, I know that I've seen people regularly reminded to use -M
-> (which detects file renames).
+> And since it won't change any workflow for Linus, he's probably fine
+> with it too.
 >
-> [...]
+> Yes, no? Comments?
 
-I will give this a try with the next round.
+OK for me. For the MPC85xx EDAC I'll do the testing then and either Borislav or
+Mauro send them upstream.
 
->
->> --- a/arch/arm/kernel/kprobes-arm.c
->> +++ b/arch/arm/kernel/kprobes-arm.c
->> @@ -63,10 +63,8 @@
->>   #include <linux/module.h>
->>
->>   #include "kprobes.h"
->> -
->> -#define sign_extend(x, signbit) ((x) | (0 - ((x) & (1 << (signbit)))))
->> -
->> -#define branch_displacement(insn) sign_extend(((insn) & 0xffffff) << 2, 25)
->> +#include "probes.h"
->
-> Rather than include "probes.h" after "kprobes.h" here, (and in the other
-> 7 places in this patch, and other patches) I think it would make more
-> sense to have kprobes.h include probes.h as kprobes code is always going
-> to depend on the new generic probe functions.
-
-Suggested change applied for next version.
-
--dl
-
-
+Regards,
+	Johannes
