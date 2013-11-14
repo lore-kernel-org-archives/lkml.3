@@ -1,141 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab3KNDZU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 22:25:20 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:36969 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751372Ab3KNDZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 22:25:19 -0500
-Date: Wed, 13 Nov 2013 22:25:08 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add memory.oom_control notification for
- system oom
-Message-ID: <20131114032508.GL707@cmpxchg.org>
-References: <alpine.DEB.2.02.1310301838300.13556@chino.kir.corp.google.com>
- <20131031054942.GA26301@cmpxchg.org>
- <alpine.DEB.2.02.1311131416460.23211@chino.kir.corp.google.com>
- <20131113233419.GJ707@cmpxchg.org>
- <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
+	id S1752476Ab3KNDl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 22:41:29 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:36806 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260Ab3KNDlU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 22:41:20 -0500
+From: Elena Ufimtseva <ufimtseva@gmail.com>
+To: xen-devel@lists.xenproject.org
+Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, akpm@linux-foundation.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com, ian.campbell@citrix.com,
+        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
+        linux-kernel@vger.kernel.org, Elena Ufimtseva <ufimtseva@gmail.com>
+Subject: [PATCH 0/2] xen: vnuma introduction for pv guest
+Date: Wed, 13 Nov 2013 22:36:17 -0500
+Message-Id: <1384400179-24404-1-git-send-email-ufimtseva@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 04:56:09PM -0800, David Rientjes wrote:
-> On Wed, 13 Nov 2013, Johannes Weiner wrote:
-> 
-> > > > > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> > > > > --- a/include/linux/memcontrol.h
-> > > > > +++ b/include/linux/memcontrol.h
-> > > > > @@ -155,6 +155,7 @@ static inline bool task_in_memcg_oom(struct task_struct *p)
-> > > > >  }
-> > > > >  
-> > > > >  bool mem_cgroup_oom_synchronize(bool wait);
-> > > > > +void mem_cgroup_root_oom_notify(void);
-> > > > >  
-> > > > >  #ifdef CONFIG_MEMCG_SWAP
-> > > > >  extern int do_swap_account;
-> > > > > @@ -397,6 +398,10 @@ static inline bool mem_cgroup_oom_synchronize(bool wait)
-> > > > >  	return false;
-> > > > >  }
-> > > > >  
-> > > > > +static inline void mem_cgroup_root_oom_notify(void)
-> > > > > +{
-> > > > > +}
-> > > > > +
-> > > > >  static inline void mem_cgroup_inc_page_stat(struct page *page,
-> > > > >  					    enum mem_cgroup_stat_index idx)
-> > > > >  {
-> > > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > > > --- a/mm/memcontrol.c
-> > > > > +++ b/mm/memcontrol.c
-> > > > > @@ -5641,6 +5641,15 @@ static void mem_cgroup_oom_notify(struct mem_cgroup *memcg)
-> > > > >  		mem_cgroup_oom_notify_cb(iter);
-> > > > >  }
-> > > > >  
-> > > > > +/*
-> > > > > + * Notify any process waiting on the root memcg's memory.oom_control, but do not
-> > > > > + * notify any child memcgs to avoid triggering their per-memcg oom handlers.
-> > > > > + */
-> > > > > +void mem_cgroup_root_oom_notify(void)
-> > > > > +{
-> > > > > +	mem_cgroup_oom_notify_cb(root_mem_cgroup);
-> > > > > +}
-> > > > > +
-> > > > >  static int mem_cgroup_usage_register_event(struct cgroup_subsys_state *css,
-> > > > >  	struct cftype *cft, struct eventfd_ctx *eventfd, const char *args)
-> > > > >  {
-> > > > > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> > > > > --- a/mm/oom_kill.c
-> > > > > +++ b/mm/oom_kill.c
-> > > > > @@ -632,6 +632,10 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
-> > > > >  		return;
-> > > > >  	}
-> > > > >  
-> > > > > +	/* Avoid waking up processes for oom kills triggered by sysrq */
-> > > > > +	if (!force_kill)
-> > > > > +		mem_cgroup_root_oom_notify();
-> > > > 
-> > > > We have an API for global OOM notifications, please just use
-> > > > register_oom_notifier() instead.
-> > > > 
-> > > 
-> > > We can't use register_oom_notifier() because we don't want to notify the 
-> > > root memcg for a system oom handler if existing oom notifiers free memory 
-> > > (powerpc or s390).  We also don't want to notify the root memcg when 
-> > > current is exiting or has a pending SIGKILL, we just want to silently give 
-> > > it access to memory reserves and exit.  The mem_cgroup_root_oom_notify() 
-> > > here is placed correctly.
-> > 
-> > This is all handwaving.
-> 
-> I'm defining the semantics of the system oom notification for the root 
-> memcg.  Userspace oom handlers are not going to want to wakeup when a 
-> kernel oom notifier is capable of freeing memory to prevent the oom killer 
-> from doing anything at all or if current simply needs access to memory 
-> reserves to make forward progress.  Userspace oom handlers want a wakeup 
-> when a process must be killed to free memory, and thus this is correctly 
-> placed.
+Xen vnuma introduction.
 
-Userspace may very much be interested in an OOM situation, REGARDLESS
-of what action needs to be taken.  Userspace has always the ability to
-filter out events and look at the stats after the notification, but it
-can not know situations it's not told about.
+The patchset introduces vnuma to paravirtualized Xen guests
+runnning as domU.
+Xen subop hypercall is used to retreive vnuma topology information.
+Bases on the retreived topology from Xen, NUMA number of nodes,
+memory ranges, distance table and cpumask is being set.
+If initialization is incorrect, sets 'dummy' node and unsets
+nodemask.
+vNUMA topology is constructed by Xen toolstack. Xen patchset is 
+available at https://git.gitorious.org/xenvnuma/xenvnuma.git.
 
-> > Somebody called out_of_memory() after they
-> > failed reclaim, the machine is OOM.
-> 
-> While momentarily oom, the oom notifiers in powerpc and s390 have the 
-> ability to free memory without requiring a kill.
+Example of vnuma enabled pv domain dmesg:
 
-So either
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x00001000-0x0009ffff]
+[    0.000000]   node   0: [mem 0x00100000-0xffffffff]
+[    0.000000]   node   1: [mem 0x100000000-0x1ffffffff]
+[    0.000000]   node   2: [mem 0x200000000-0x2ffffffff]
+[    0.000000]   node   3: [mem 0x300000000-0x3ffffffff]
+[    0.000000] On node 0 totalpages: 1048479
+[    0.000000]   DMA zone: 56 pages used for memmap
+[    0.000000]   DMA zone: 21 pages reserved
+[    0.000000]   DMA zone: 3999 pages, LIFO batch:0
+[    0.000000]   DMA32 zone: 14280 pages used for memmap
+[    0.000000]   DMA32 zone: 1044480 pages, LIFO batch:31
+[    0.000000] On node 1 totalpages: 1048576
+[    0.000000]   Normal zone: 14336 pages used for memmap
+[    0.000000]   Normal zone: 1048576 pages, LIFO batch:31
+[    0.000000] On node 2 totalpages: 1048576
+[    0.000000]   Normal zone: 14336 pages used for memmap
+[    0.000000]   Normal zone: 1048576 pages, LIFO batch:31
+[    0.000000] On node 3 totalpages: 1048576
+[    0.000000]   Normal zone: 14336 pages used for memmap
+[    0.000000]   Normal zone: 1048576 pages, LIFO batch:31
+[    0.000000] SFI: Simple Firmware Interface v0.81 http://simplefirmware.org
+[    0.000000] smpboot: Allowing 4 CPUs, 0 hotplug CPUs
+[    0.000000] No local APIC present
+[    0.000000] APIC: disable apic facility
+[    0.000000] APIC: switched to apic NOOP
+[    0.000000] nr_irqs_gsi: 16
+[    0.000000] PM: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+[    0.000000] e820: cannot find a gap in the 32bit address range
+[    0.000000] e820: PCI devices with unassigned 32bit BARs may break!
+[    0.000000] e820: [mem 0x400100000-0x4004fffff] available for PCI devices
+[    0.000000] Booting paravirtualized kernel on Xen
+[    0.000000] Xen version: 4.4-unstable (preserve-AD)
+[    0.000000] setup_percpu: NR_CPUS:512 nr_cpumask_bits:512 nr_cpu_ids:4 nr_node_ids:4
+[    0.000000] PERCPU: Embedded 28 pages/cpu @ffff8800ffc00000 s85376 r8192 d21120 u2097152
+[    0.000000] pcpu-alloc: s85376 r8192 d21120 u2097152 alloc=1*2097152
 
-1) they should be part of the regular reclaim process, or
 
-2) their invocation is severe enough to not be part of reclaim, at
-   which point we should probably tell userspace about the OOM
+numactl output:
+root@heatpipe:~# numactl --hardware
+available: 4 nodes (0-3)
+node 0 cpus: 0
+node 0 size: 4031 MB
+node 0 free: 3997 MB
+node 1 cpus: 1
+node 1 size: 4039 MB
+node 1 free: 4022 MB
+node 2 cpus: 2
+node 2 size: 4039 MB
+node 2 free: 4023 MB
+node 3 cpus: 3
+node 3 size: 3975 MB
+node 3 free: 3963 MB
+node distances:
+node   0   1   2   3
+  0:  10  20  20  20
+  1:  20  10  20  20
+  2:  20  20  10  20
+  3:  20  20  20  10
 
-> > The fact that current is exiting
-> > without requiring a kill is coincidental and irrelevant.  You want an
-> > OOM notification, use the OOM notifiers, that's what they're for.
-> > 
-> 
-> I think you're misunderstanding the kernel oom notifiers, they exist 
-> solely to free memory so that the oom killer actually doesn't have to kill 
-> anything.  The fact that they use kernel notifiers is irrelevant and 
-> userspace oom notification is separate.  Userspace is only going to want a 
-> notification when the oom killer has to kill something, the EXACT same 
-> semantics as the non-root-memcg memory.oom_control.
+Current patchset is available at https://git.gitorious.org/xenvnuma/linuxvnuma.git
 
-That's actually not true, we invoke the OOM notifier before calling
-mem_cgroup_out_of_memory(), which then may skip the kill in favor of
-letting current exit.  It does this for when the kernel handler is
-enabled, which would be the equivalent for what you are implementing.
+TODO
+*	dom0 vnuma support;
+*	multiple memory ranges per node support;
+
+Elena Ufimtseva (2):
+  xen: vnuma support for PV guests running as domU.
+  xen: enable Xen vnuma for PV guest.
+
+ arch/x86/include/asm/xen/vnuma.h |   12 ++++
+ arch/x86/mm/numa.c               |    5 ++
+ arch/x86/xen/Makefile            |    2 +-
+ arch/x86/xen/setup.c             |    6 +-
+ arch/x86/xen/vnuma.c             |  119 ++++++++++++++++++++++++++++++++++++++
+ include/xen/interface/memory.h   |   28 +++++++++
+ 6 files changed, 170 insertions(+), 2 deletions(-)
+ create mode 100644 arch/x86/include/asm/xen/vnuma.h
+ create mode 100644 arch/x86/xen/vnuma.c
+
+-- 
+1.7.10.4
+
