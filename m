@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab3KNMbF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 07:31:05 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59706 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753192Ab3KNMbD (ORCPT
+	id S1753722Ab3KNMbs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 07:31:48 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:48820 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901Ab3KNMbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 07:31:03 -0500
-Date: Thu, 14 Nov 2013 12:30:57 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Tim Harvey <tharvey@gateworks.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20131114123057.GO26614@sirena.org.uk>
-References: <1383715045-15341-1-git-send-email-tharvey@gateworks.com>
+	Thu, 14 Nov 2013 07:31:46 -0500
+Message-ID: <5284C2B9.2020805@cogentembedded.com>
+Date: Thu, 14 Nov 2013 16:31:53 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xTKfHyrFnSV9DG3y"
-Content-Disposition: inline
-In-Reply-To: <1383715045-15341-1-git-send-email-tharvey@gateworks.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 149.254.58.211
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulator: pfuze100: allow misprogrammed ID
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: gaowanlong@cn.fujitsu.com, linux-sh@vger.kernel.org, lethal@linux-sh.org
+CC: linux-kernel@vger.kernel.org, fengguang.wu@intel.com, kbuild-all@01.org
+Subject: Re: [PATCH] sh: fix kernel build error
+References: <1384353504-21886-1-git-send-email-gaowanlong@cn.fujitsu.com> <5283C19D.4050601@cogentembedded.com> <528418B1.6090507@cn.fujitsu.com>
+In-Reply-To: <528418B1.6090507@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
---xTKfHyrFnSV9DG3y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 14-11-2013 4:26, Wanlong Gao wrote:
 
-On Tue, Nov 05, 2013 at 09:17:25PM -0800, Tim Harvey wrote:
-> prior to week 08 of 2013 Freescale misprogrammed between 1 and 3% of
-> PFUZE1000 parts with a ID=0x8 instead of the expected ID=0x0
+>>>      arch/sh/kernel/kgdb.c: In function 'sleeping_thread_to_gdb_regs':
+>>>>> arch/sh/kernel/kgdb.c:225:32: error: implicit declaration of function 'task_stack_page' [-Werror=implicit-function-declaration]
+>>>>> arch/sh/kernel/kgdb.c:242:23: error: dereferencing pointer to incomplete type
+>>>>> arch/sh/kernel/kgdb.c:243:22: error: dereferencing pointer to incomplete type
+>>>      arch/sh/kernel/kgdb.c: In function 'singlestep_trap_handler':
+>>>>> arch/sh/kernel/kgdb.c:310:27: error: 'SIGTRAP' undeclared (first use in this function)
+>>>      arch/sh/kernel/kgdb.c:310:27: note: each undeclared identifier is reported only once for each function it appears in
+>>>      cc1: all warnings being treated as errors
 
-Applied, thanks.
+>>     Strange quoting...
 
---xTKfHyrFnSV9DG3y
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> Strange? It's the build error log.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+    I've never seen the leading > characters in gcc's error output.
 
-iQIcBAEBAgAGBQJShMJ+AAoJELSic+t+oim9jgYP/3Avte624fex/TqBeEU6aO4v
-lGVhJ4m0myp6hI+wJvfwpHMrWVQ8Zs6BbwWeCXxCT2dBTPDJSLlCtZQwSyKffPAx
-5RXC4UmTh9/4gNsS9vVRhg/yAIW99axRXLnKsUpZd/NI0jnhS8CRofy/NIzrotwz
-9v5h9utG11IcC/s0L9AsdKep+WF9HVBvS46xZpuOMktOS319gdtAofltkECihhob
-Is0zZhPY1Ynwq5alclL1goDKdBArsDiRzOUgB30xSXUh3qZBwF2bLlidvLvKzlkv
-CGAEXnZknYxBHAU0XoIup5zlkyKcbPlWqsJbt3EvWX1HWD1TekpYV671aMNGtwgq
-X6dC728JL+qLRfE6jpY884ZdeohEWzyf3qK/qhqBu5IWDIm9+YfRjFUDOIQDgjT/
-t3GJx0BrSTK4O96OZkIxs8VsdTiPnlkpSvwe/xeF9/NhJnhRgBbH5vDnjyOFF6QD
-yzLYKpujKXb3kQTF4tso7F/nAK0i6cIPpRoUa+EuCuixs0LYNNw6rsKjNBLYekC5
-dt+5qh8kve5cacKc9murYjJaUtt33FtyJbfifYkMzOnnqJWN1zwJkf3igUF1HPvI
-w6cXh0ZLpkjlYT8/ZsUHrBlPDmb8Iqjfz7Ocycg/rELLAH5C1npruwVzREMsThhd
-XCAI/1mUT+SEo9wZcmEf
-=Fas/
------END PGP SIGNATURE-----
+>>> This is introduced by commit 16559ae.
 
---xTKfHyrFnSV9DG3y--
+>>     Please also specify that commit's summary line in parens.
+
+> commit 16559ae48c76f1ceb970b9719dea62b77eb5d06b
+> Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Date:   Mon Feb 4 15:35:26 2013 -0800
+
+>      kgdb: remove #include <linux/serial_8250.h> from kgdb.h
+>
+>      There's no reason kgdb.h itself needs to include the 8250 serial port
+>      header file.  So push it down to the _very_ limited number of individual
+>      drivers that need the values in that file, and fix up the places where
+>      people really wanted serial_core.h and platform_device.h.
+
+>      Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+
+> And the line caused this build error is:
+
+> diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
+> index 4dff0c6..c6e091b 100644
+> --- a/include/linux/kgdb.h
+> +++ b/include/linux/kgdb.h
+> @@ -13,7 +13,6 @@
+>   #ifndef _KGDB_H_
+>   #define _KGDB_H_
+>
+> -#include <linux/serial_8250.h>
+>   #include <linux/linkage.h>
+>   #include <linux/init.h>
+>   #include <linux/atomic.h>
+
+    That's all interesting but what I asked you to do is add the summary line 
+("kgdb: remove #include <linux/serial_8250.h> from kgdb.h" in this case) 
+enclosed into parentheses to your commit log. There was no need to tell me all 
+the gory details of your fix. :-)
+
+> Thanks,
+> Wanlong Gao
+
+WBR, Sergei
+
