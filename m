@@ -1,164 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab3KNQ4k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:56:40 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:34353 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026Ab3KNQjU (ORCPT
+	id S932307Ab3KNQ5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:57:16 -0500
+Received: from smtprelay0166.hostedemail.com ([216.40.44.166]:52690 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755786Ab3KNQ5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:39:20 -0500
-From: Peng Tao <bergwolf@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>,
-        Peng Tao <bergwolf@gmail.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 13/39] staging/lustre/lmv: update coding style
-Date: Fri, 15 Nov 2013 00:32:36 +0800
-Message-Id: <1384446782-13741-14-git-send-email-bergwolf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
-References: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
+	Thu, 14 Nov 2013 11:57:04 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3834:3865:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4560:5007:6119:6120:7576:7652:7901:7903:9025:9545:10004:10400:10848:10967:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12555:12698:12737:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesia
+X-HE-Tag: goose74_2021e293b6c1a
+X-Filterd-Recvd-Size: 2662
+Message-ID: <1384448222.15774.12.camel@joe-AO722>
+Subject: Re: [PATCH] alx: Reset phy speed after resume
+From: Joe Perches <joe@perches.com>
+To: hahnjo <linux@hahnjo.de>
+Cc: jcliburn@gmail.com, chris.snook@gmail.com, davem@davemloft.net,
+        johannes@sipsolutions.net, wangyijing@huawei.com,
+        maarten.lankhorst@canonical.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 14 Nov 2013 08:57:02 -0800
+In-Reply-To: <1384445773.29057.5.camel@localhost.tld>
+References: <1384445773.29057.5.camel@localhost.tld>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+On Thu, 2013-11-14 at 17:16 +0100, hahnjo wrote:
+> From 27744b24f9291782c1342dbd6cac511e68da907c Mon Sep 17 00:00:00 2001
+> From: hahnjo <hahnjo@hahnjo.de>
+> Date: Tue, 12 Nov 2013 18:19:24 +0100
+> Subject: [PATCH] alx: Reset phy speed after resume
+> 
+> This fixes bug 62491 (https://bugzilla.kernel.org/show_bug.cgi?id=62491).
+> After resuming some users got the following error flooding the kernel log:
+> alx 0000:02:00.0: invalid PHY speed/duplex: 0xffff
+> 
+> Signed-off-by: Jonas Hahnfeld <linux@hahnjo.de>
+> ---
+>  drivers/net/ethernet/atheros/alx/main.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
+> index fc95b23..6305a5d 100644
+> --- a/drivers/net/ethernet/atheros/alx/main.c
+> +++ b/drivers/net/ethernet/atheros/alx/main.c
+> @@ -1389,6 +1389,9 @@ static int alx_resume(struct device *dev)
+>  {
+>  	struct pci_dev *pdev = to_pci_dev(dev);
+>  	struct alx_priv *alx = pci_get_drvdata(pdev);
+> +	struct alx_hw *hw = &alx->hw;
+> +
+> +	alx_reset_phy(hw);
+>  
+>  	if (!netif_running(alx->dev))
+>  		return 0;
 
-in lmv_obd.c:
-- Correct wrong coding styles introduced by HSM (and others)
-- Remove useless include
-
-Lustre-change: http://review.whamcloud.com/7252
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3709
-Signed-off-by: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
-Reviewed-by: John L. Hammond <john.hammond@intel.com>
-Reviewed-by: Jinshan Xiong <jinshan.xiong@intel.com>
-Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
-Signed-off-by: Peng Tao <bergwolf@gmail.com>
-Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+Perhaps this would help too:
 ---
- drivers/staging/lustre/lustre/lmv/lmv_obd.c |   42 +++++++++++++--------------
- 1 file changed, 21 insertions(+), 21 deletions(-)
+ drivers/net/ethernet/atheros/alx/hw.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/lustre/lmv/lmv_obd.c b/drivers/staging/lustre/lustre/lmv/lmv_obd.c
-index c286604..9d36014 100644
---- a/drivers/staging/lustre/lustre/lmv/lmv_obd.c
-+++ b/drivers/staging/lustre/lustre/lmv/lmv_obd.c
-@@ -43,7 +43,6 @@
- #include <asm/div64.h>
- #include <linux/seq_file.h>
- #include <linux/namei.h>
--#include <asm/uaccess.h>
+diff --git a/drivers/net/ethernet/atheros/alx/hw.c b/drivers/net/ethernet/atheros/alx/hw.c
+index 1e8c24a..3396224 100644
+--- a/drivers/net/ethernet/atheros/alx/hw.c
++++ b/drivers/net/ethernet/atheros/alx/hw.c
+@@ -908,7 +908,8 @@ int alx_read_phy_link(struct alx_hw *hw)
+ 	return 0;
  
- #include <lustre/lustre_idl.h>
- #include <obd_support.h>
-@@ -802,10 +801,10 @@ static void lmv_hsm_req_build(struct lmv_obd *lmv,
- 	nr_out = 0;
- 	for (i = 0; i < hur_in->hur_request.hr_itemcount; i++) {
- 		curr_tgt = lmv_find_target(lmv,
--					&hur_in->hur_user_item[i].hui_fid);
-+					   &hur_in->hur_user_item[i].hui_fid);
- 		if (obd_uuid_equals(&curr_tgt->ltd_uuid, &tgt_mds->ltd_uuid)) {
- 			hur_out->hur_user_item[nr_out] =
--				hur_in->hur_user_item[i];
-+						hur_in->hur_user_item[i];
- 			nr_out++;
- 		}
- 	}
-@@ -851,17 +850,18 @@ static int lmv_hsm_ct_register(struct lmv_obd *lmv, unsigned int cmd, int len,
- 		if (err) {
- 			if (lmv->tgts[i]->ltd_active) {
- 				/* permanent error */
--				CERROR("error: iocontrol MDC %s on MDT"
--				       "idx %d cmd %x: err = %d\n",
--					lmv->tgts[i]->ltd_uuid.uuid,
--					i, cmd, err);
-+				CERROR("%s: iocontrol MDC %s on MDT"
-+				       " idx %d cmd %x: err = %d\n",
-+				       class_exp2obd(lmv->exp)->obd_name,
-+				       lmv->tgts[i]->ltd_uuid.uuid,
-+				       i, cmd, err);
- 				rc = err;
- 				lk->lk_flags |= LK_FLG_STOP;
- 				/* unregister from previous MDS */
- 				for (j = 0; j < i; j++)
- 					obd_iocontrol(cmd,
--						  lmv->tgts[j]->ltd_exp,
--						  len, lk, uarg);
-+						      lmv->tgts[j]->ltd_exp,
-+						      len, lk, uarg);
- 				return rc;
- 			}
- 			/* else: transient error.
-@@ -924,8 +924,8 @@ static int lmv_iocontrol(unsigned int cmd, struct obd_export *exp,
+ wrong_speed:
+-	dev_err(&pdev->dev, "invalid PHY speed/duplex: 0x%x\n", giga);
++	dev_err_ratelimited(&pdev->dev, "invalid PHY speed/duplex: 0x%x\n",
++			    giga);
+ 	return -EINVAL;
+ }
  
- 		/* copy UUID */
- 		if (copy_to_user(data->ioc_pbuf2, obd2cli_tgt(mdc_obd),
--				     min((int) data->ioc_plen2,
--					 (int) sizeof(struct obd_uuid))))
-+				 min((int) data->ioc_plen2,
-+				     (int) sizeof(struct obd_uuid))))
- 			return -EFAULT;
- 
- 		rc = obd_statfs(NULL, lmv->tgts[index]->ltd_exp, &stat_buf,
-@@ -934,8 +934,8 @@ static int lmv_iocontrol(unsigned int cmd, struct obd_export *exp,
- 		if (rc)
- 			return rc;
- 		if (copy_to_user(data->ioc_pbuf1, &stat_buf,
--				     min((int) data->ioc_plen1,
--					 (int) sizeof(stat_buf))))
-+				 min((int) data->ioc_plen1,
-+				     (int) sizeof(stat_buf))))
- 			return -EFAULT;
- 		break;
- 	}
-@@ -1020,10 +1020,10 @@ static int lmv_iocontrol(unsigned int cmd, struct obd_export *exp,
- 
- 		tgt = lmv_find_target(lmv, &op_data->op_fid1);
- 		if (IS_ERR(tgt))
--				return PTR_ERR(tgt);
-+			return PTR_ERR(tgt);
- 
- 		if (tgt->ltd_exp == NULL)
--				return -EINVAL;
-+			return -EINVAL;
- 
- 		rc = obd_iocontrol(cmd, tgt->ltd_exp, len, karg, uarg);
- 		break;
-@@ -1069,7 +1069,7 @@ static int lmv_iocontrol(unsigned int cmd, struct obd_export *exp,
- 				/* build a request with fids for this MDS */
- 				reqlen = offsetof(typeof(*hur),
- 						  hur_user_item[nr])
--					 + hur->hur_request.hr_data_len;
-+						+ hur->hur_request.hr_data_len;
- 				OBD_ALLOC_LARGE(req, reqlen);
- 				if (req == NULL)
- 					return -ENOMEM;
-@@ -1134,9 +1134,9 @@ static int lmv_iocontrol(unsigned int cmd, struct obd_export *exp,
- 			} else if (err) {
- 				if (lmv->tgts[i]->ltd_active) {
- 					CERROR("error: iocontrol MDC %s on MDT"
--					       "idx %d cmd %x: err = %d\n",
--						lmv->tgts[i]->ltd_uuid.uuid,
--						i, cmd, err);
-+					       " idx %d cmd %x: err = %d\n",
-+					       lmv->tgts[i]->ltd_uuid.uuid,
-+					       i, cmd, err);
- 					if (!rc)
- 						rc = err;
- 				}
-@@ -1342,8 +1342,8 @@ static int lmv_setup(struct obd_device *obd, struct lustre_cfg *lcfg)
- 					0444, &lmv_proc_target_fops, obd);
- 		if (rc)
- 			CWARN("%s: error adding LMV target_obd file: rc = %d\n",
--			       obd->obd_name, rc);
--       }
-+			      obd->obd_name, rc);
-+	}
- #endif
- 	rc = fld_client_init(&lmv->lmv_fld, obd->obd_name,
- 			     LUSTRE_CLI_FLD_HASH_DHT);
--- 
-1.7.9.5
+
 
