@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab3KNP0E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 10:26:04 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57177 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab3KNPZ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 10:25:57 -0500
-Date: Thu, 14 Nov 2013 16:25:49 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Joseph Schuchart <joseph.schuchart@tu-dresden.de>,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        thomas.ilsche@tu-dresden.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Perf: Correct Assumptions about Sample Timestamps in
- Passes
-Message-ID: <20131114152549.GL16796@laptop.programming.kicks-ass.net>
-References: <528484CB.7@tu-dresden.de>
- <20131114083930.GC16543@gmail.com>
- <528490DE.4080204@tu-dresden.de>
- <20131114100552.GA5064@gmail.com>
- <5284DD7E.30604@gmail.com>
- <20131114144444.GK16796@laptop.programming.kicks-ass.net>
- <5284E618.6060701@gmail.com>
+	id S1754528Ab3KNP0s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 10:26:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9210 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754177Ab3KNP0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 10:26:43 -0500
+Date: Thu, 14 Nov 2013 10:26:23 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: jerry.hoemann@hp.com, rob@landley.net, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, matt.fleming@intel.com,
+        yinghai@kernel.org, penberg@kernel.org, akpm@linux-foundation.org,
+        linux-doc@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+Message-ID: <20131114152623.GC3913@redhat.com>
+References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com>
+ <d73ccce9-6a0d-4470-bda3-f0c6eb96b5e4@email.android.com>
+ <20131113224503.GB25344@anatevka.fc.hp.com>
+ <52840206.5020006@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5284E618.6060701@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <52840206.5020006@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 08:02:48AM -0700, David Ahern wrote:
-> On 11/14/13, 7:44 AM, Peter Zijlstra wrote:
-> >On Thu, Nov 14, 2013 at 07:26:06AM -0700, David Ahern wrote:
-> >>On 11/14/13, 3:05 AM, Ingo Molnar wrote:
-> >>
-> >>>What am I missing?
-> >>
-> >>I have spent quite a bit of time on this problem on this well. I think the
-> >>flush time needs to be based on the start time of each round, not the
-> >>minimum time observed across mmaps. I have tried the minimum time stamp
-> >>route and it still fails often enough to be annoying.
-> >>
-> >>See builtin-kvm.c, perf_kvm__mmap_read(). The problem is that it takes time
-> >>to move from mmap to mmap and sample can come in behind you - an mmap that
-> >>has already be scanned with a timestamp less than what is determined to be
-> >>the lowest minimum for the samples actually read. 'perf kvm stat live' in a
-> >>nested environment is a stress test for the problem.
-> >
-> >In which case you need the sliding sort window to be n*buf_size, where n
-> >is the number of buffers flushed into the one file. Or move to one file
-> >per buffer and merge sort the lot, buffers should be monotonic.
-> 
-> The one file per buffer does not work for live commands -- like perf-top and
-> kvm-stat-live. perf-trace is not using the ordered samples code, but I think
-> it needs to - especially for system wide.
+On Wed, Nov 13, 2013 at 02:49:42PM -0800, H. Peter Anvin wrote:
 
-Why would you need files for live things? Just merge sort the buffers
-directly.
+[..]
+> In other words, allocating the crashkernel high has ALL the advantages,
+> plus a few more, and NONE of the disadvantages.
+
+It allocates low memory for swiotlb. So that extra 72M allocation is the
+disadvantage. With so many virtual machines on a single host, I don't
+want to reserve extra 72MB on each virtual machine while I could
+easily do away with memory reservation below 4G. 
+
+So I do think that first trying memory below 896M, then below 4G and then
+above 4G makes sense and we should modify crashkernel=X to handle that.
+
+Thanks
+Vivek
