@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab3KNQoe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:44:34 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:61774 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757157Ab3KNQoQ (ORCPT
+	id S1755675Ab3KNQom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:44:42 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:41193 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757173Ab3KNQoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:44:16 -0500
+	Thu, 14 Nov 2013 11:44:20 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Nikitas Angelinas <nikitas_angelinas@xyratex.com>,
         Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 12/26] staging/lustre/ldlm: Fix flock detection for different mounts
-Date: Fri, 15 Nov 2013 00:42:59 +0800
-Message-Id: <1384447393-13838-13-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 13/26] staging/lustre/nrs: Fix a race condition in the ORR policy
+Date: Fri, 15 Nov 2013 00:43:00 +0800
+Message-Id: <1384447393-13838-14-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384447393-13838-1-git-send-email-bergwolf@gmail.com>
 References: <1384447393-13838-1-git-send-email-bergwolf@gmail.com>
@@ -22,107 +23,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
+From: Nikitas Angelinas <nikitas_angelinas@xyratex.com>
 
-Deadlock can happen when 2 processes take concurrent locks
-on files situated in different mountpoints.
+Checking the atomic oo_ref in nrs_orr_hop_put_free() and then
+taking the bucket lock leaves a race window open, by which a
+second thread can attempt to free an already-freed
+nrs_orr_object. Fix this, and change the hash bucket lock type
+from an rwlock to a spinlock, as there are now as many calls on
+the write path, as there are on the read path. Rehashing is not
+used on the hashes, so libcfs_hash API usage can also be
+simplified.
 
-Modify flock detection algorithm to distinguish process by
-pair PID+NID instead of PID+export.
-It is done by searching for a blocking owner in all OBD's
-exports with the same NID.
-
-Lustre-change: http://review.whamcloud.com/3276
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-1601
-Signed-off-by: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
-Reviewed-by: Vitaly Fertman <vitaly_fertman@xyratex.com>
-Reviewed-by: Bruce Korb <bruce_korb@xyratex.com>
-Reviewed-by: Keith Mannthey <keith.mannthey@intel.com>
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3430
+Lustre-change: http://review.whamcloud.com/7623
+Signed-off-by: Nikitas Angelinas <nikitas_angelinas@xyratex.com>
+Reviewed-by: Liang Zhen <liang.zhen@intel.com>
+Reviewed-by: Emoly Liu <emoly.liu@intel.com>
+Reviewed-by: Li Xi <pkuelelixi@gmail.com>
 Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
+[pick up only client side of change -- Peng Tao]
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/ldlm/ldlm_flock.c |   45 +++++++++++++++++++++--
- 1 file changed, 41 insertions(+), 4 deletions(-)
+ drivers/staging/lustre/lustre/include/lustre_net.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c b/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c
-index 37ebd2a..396e58b 100644
---- a/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c
-+++ b/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c
-@@ -161,6 +161,31 @@ ldlm_flock_destroy(struct ldlm_lock *lock, ldlm_mode_t mode, __u64 flags)
-  * one client holds a lock on something and want a lock on something
-  * else and at the same time another client has the opposite situation).
-  */
-+
-+struct ldlm_flock_lookup_cb_data {
-+	__u64 *bl_owner;
-+	struct ldlm_lock *lock;
-+	struct obd_export *exp;
-+};
-+
-+static int ldlm_flock_lookup_cb(struct cfs_hash *hs, struct cfs_hash_bd *bd,
-+				 struct hlist_node *hnode, void *data)
-+{
-+	struct ldlm_flock_lookup_cb_data *cb_data = data;
-+	struct obd_export *exp = cfs_hash_object(hs, hnode);
-+	struct ldlm_lock *lock;
-+
-+	lock = cfs_hash_lookup(exp->exp_flock_hash, cb_data->bl_owner);
-+	if (lock == NULL)
-+		return 0;
-+
-+	/* Stop on first found lock. Same process can't sleep twice */
-+	cb_data->lock = lock;
-+	cb_data->exp = class_export_get(exp);
-+
-+	return 1;
-+}
-+
- static int
- ldlm_flock_deadlock(struct ldlm_lock *req, struct ldlm_lock *bl_lock)
- {
-@@ -175,16 +200,26 @@ ldlm_flock_deadlock(struct ldlm_lock *req, struct ldlm_lock *bl_lock)
- 
- 	class_export_get(bl_exp);
- 	while (1) {
-+		struct ldlm_flock_lookup_cb_data cb_data = {
-+					.bl_owner = &bl_owner,
-+					.lock = NULL,
-+					.exp = NULL };
- 		struct obd_export *bl_exp_new;
- 		struct ldlm_lock *lock = NULL;
- 		struct ldlm_flock *flock;
- 
--		if (bl_exp->exp_flock_hash != NULL)
--			lock = cfs_hash_lookup(bl_exp->exp_flock_hash,
--					       &bl_owner);
-+		if (bl_exp->exp_flock_hash != NULL) {
-+			cfs_hash_for_each_key(bl_exp->exp_obd->obd_nid_hash,
-+				&bl_exp->exp_connection->c_peer.nid,
-+				ldlm_flock_lookup_cb, &cb_data);
-+			lock = cb_data.lock;
-+		}
- 		if (lock == NULL)
- 			break;
- 
-+		class_export_put(bl_exp);
-+		bl_exp = cb_data.exp;
-+
- 		LASSERT(req != lock);
- 		flock = &lock->l_policy_data.l_flock;
- 		LASSERT(flock->owner == bl_owner);
-@@ -198,7 +233,9 @@ ldlm_flock_deadlock(struct ldlm_lock *req, struct ldlm_lock *bl_lock)
- 		if (bl_exp->exp_failed)
- 			break;
- 
--		if (bl_owner == req_owner && bl_exp == req_exp) {
-+		if (bl_owner == req_owner &&
-+		    (bl_exp->exp_connection->c_peer.nid ==
-+		     req_exp->exp_connection->c_peer.nid)) {
- 			class_export_put(bl_exp);
- 			return 1;
- 		}
+diff --git a/drivers/staging/lustre/lustre/include/lustre_net.h b/drivers/staging/lustre/lustre/include/lustre_net.h
+index 80227e9..8edf542 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_net.h
++++ b/drivers/staging/lustre/lustre/include/lustre_net.h
+@@ -1569,7 +1569,7 @@ struct nrs_orr_data {
+ 	struct ptlrpc_nrs_resource	od_res;
+ 	cfs_binheap_t		       *od_binheap;
+ 	struct cfs_hash		       *od_obj_hash;
+-	struct kmem_cache		       *od_cache;
++	struct kmem_cache	       *od_cache;
+ 	/**
+ 	 * Used when a new scheduling round commences, in order to synchronize
+ 	 * all object or OST batches with the new round number.
+@@ -1626,7 +1626,7 @@ struct nrs_orr_object {
+ 	 * scheduling RPCs
+ 	 */
+ 	struct nrs_orr_key		oo_key;
+-	atomic_t			oo_ref;
++	long				oo_ref;
+ 	/**
+ 	 * Round Robin quantum; the maximum number of RPCs that are allowed to
+ 	 * be scheduled for the object or OST in a single batch of each round.
 -- 
 1.7.9.5
 
