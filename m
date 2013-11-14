@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab3KNNCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 08:02:52 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53375 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068Ab3KNNCt (ORCPT
+	id S1753858Ab3KNNHv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 08:07:51 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:36108 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753536Ab3KNNHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 08:02:49 -0500
-Date: Thu, 14 Nov 2013 13:02:40 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Oskar Schirmer <oskar@scara.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Sascha Hauer <s.hauer@pengutronix.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Message-ID: <20131114130240.GQ26614@sirena.org.uk>
-References: <1384271198-18974-1-git-send-email-oskar@scara.com>
+	Thu, 14 Nov 2013 08:07:49 -0500
+Message-ID: <5284CB22.7000604@hitachi.com>
+Date: Thu, 14 Nov 2013 22:07:46 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4SRTEifjNkXp0Rce"
-Content-Disposition: inline
-In-Reply-To: <1384271198-18974-1-git-send-email-oskar@scara.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 149.254.58.211
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: fsl: imx-pcm-fiq: omit fiq counter to avoid harm
- in unbalanced situations
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v3 4/8] x86: speed up int3-based patching using direct
+ write
+References: <1384425686-21018-1-git-send-email-pmladek@suse.cz>  <1384425686-21018-5-git-send-email-pmladek@suse.cz>  <5284B5D2.70206@hitachi.com> <1384433199.17374.19.camel@pathway.suse.cz>
+In-Reply-To: <1384433199.17374.19.camel@pathway.suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2013/11/14 21:46), Petr Mladek wrote:
+> Masami Hiramatsu píše v Čt 14. 11. 2013 v 20:36 +0900:
+>> (2013/11/14 19:41), Petr Mladek wrote:
+>>> @@ -837,7 +882,7 @@ static void recover_iter(struct text_poke_bp_iter *iterator,
+>>>  	}
+>>>  
+>>>  	/* Finally, put back the first byte from the old code */
+>>> -	err = text_poke(addr, old_opcode, sizeof(bp_int3));
+>>> +	err = text_poke_part(addr, old_opcode, sizeof(bp_int3));
+>>>  	/* we can not continue if the interrupt is still there */
+>>>  	BUG_ON(err);
+>>>  }
+>>> @@ -865,7 +910,9 @@ static void recover_iter(struct text_poke_bp_iter *iterator,
+>>>   * It is a bit more paranoid than text_poke_bp because it checks the actual
+>>>   * code before patching. This is a good practice proposed by the ftrace code.
+>>>   *
+>>> - * Note: This function must be called under text_mutex.
+>>> + * Note: This function must be called under text_mutex. Also the caller is
+>>> + * responsible for making the patched code read-write, for example using
+>>> + * set_kernel_text_rw() and set_all_modules_text_rw()
+>>
+>> OK, I got the reason why we can do it.
+>> But if so, we should change all existing caller of text_poke_bp() to
+>> call it in this patch, or they must fail at this point.
+> 
+> Ah, I used "text_poke_part" only in "text_poke_bp_iter" in the end. This
+> function is currently used only in ftrace that sets the code read-write
+> in "ftrace_arch_code_modify_prepare", see arch/x86/kernel/ftrace.c.
 
---4SRTEifjNkXp0Rce
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Oh, I see, I missed that.
 
-On Tue, Nov 12, 2013 at 03:46:38PM +0000, Oskar Schirmer wrote:
-> Unbalanced calls to snd_imx_pcm_trigger() may result in endless
-> FIQ activity and thus provoke eternal sound. While on the first glance,
-> the switch statement looks pretty symmetric, the SUSPEND/RESUME
+> Note that "text_poke_bp" still uses "text_poke". It seems that the
+> remapping is faster if you patch only one address.
+> 
+> So, we should be on the safe side.
 
-Applied, thanks.
+OK, so this looks good for me. :)
 
---4SRTEifjNkXp0Rce
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Thank you,
 
-iQIcBAEBAgAGBQJShMnsAAoJELSic+t+oim9TIAQAJOcYOS1vFXVLpISAKKT7Br6
-0NAdB03z356Zoi6Z71GFETBP6H9rZlRGCA3AK4WKFSixYVvxanBHC4DHwxJTkLl6
-WsOYg47PBjsE4VhKlrau6oYNGjKOscgxcC++8Lj7Fp/cArnhMRxU+efNwpAB7uMO
-egdkXJ2iUrYtQbAMPGu/MmRkY1TCsUHmmeuLdRePiHuFnKAzpVZMI+b6AVqr8+ew
-6ZmSRGbz3BH5Q9/FRNqy2yX+ZxZLiECCgyCLSFWUZ/35uGjHm50kTkj4tROap2MV
-cl7Rd55veQlodmQBZJjtR83kcvtewO6hOccHBBx5vcCf0YwLG61GateWy8cWzpA3
-DsOiHgoCZ0HvGRbPAf7IJufdgYLVkyIgLXH2xTUbS3Q48EOamxrTcqDqsgqwKaE4
-UVidDoihStyVjLAQ3hjjGPQ07MS2aY/r7KYks79RpbzAg3x9v4MEVSCh8umsCI5y
-bA3I0N86diF7Y4dwK0NMRVshiFkCv6Tg1VvL3tyuLlbvpOqK9TytKrx4aByH2GVt
-l2OyVfR7eY4QhGYnYwznQQaozDAGVu6WMcp77b/OdGDZL+xjKIf6jkJBA7ieHneL
-87T1Xo6oAt+57YM7VD3/n5Rwu/7w5G5r5ca9KX+gJ0XnUrAL8oZD1742PHw3fTTv
-DZYhGtHqB33VeePMmLdu
-=xCkV
------END PGP SIGNATURE-----
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
---4SRTEifjNkXp0Rce--
+
