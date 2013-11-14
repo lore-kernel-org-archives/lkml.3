@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759Ab3KNIuP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 03:50:15 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:33344 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab3KNIuL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 03:50:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <4743540.rTIWauTJHg@avalon>
-References: <20131113225927.21449.78044.sendpatchset@w520>
-	<1906707.rpHAsqdqKq@avalon>
-	<CANqRtoR+ngS5o77Lw1gUUzq-qcHuBZtfiiAnALvH_GsNMvNN7A@mail.gmail.com>
-	<4743540.rTIWauTJHg@avalon>
-Date: Thu, 14 Nov 2013 17:50:09 +0900
-Message-ID: <CANqRtoSkTBG1o1Vrfay_qPxwoyCuitH5cJNCjDdEuiPf0XjvUw@mail.gmail.com>
-Subject: Re: [PATCH 01/03] gpio: rcar: Use lazy disable and mask on suspend
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Simon Horman [Horms]" <horms@verge.net.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752298Ab3KNIxc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 03:53:32 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:47342 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751185Ab3KNIxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 03:53:30 -0500
+X-IronPort-AV: E=Sophos;i="4.93,698,1378828800"; 
+   d="scan'208";a="9033427"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH] perf kvm record: Change the default value of perf_guest to 0.
+Date: Thu, 14 Nov 2013 16:51:58 -0500
+Message-Id: <1384465918-14085-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/14 16:51:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/14 16:51:42,
+	Serialize complete at 2013/11/14 16:51:42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+Currently, we can not record the event counters of host to perf.data.host.
+Example:
+   perf kvm --host record -a sleep 1
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.625 MB perf.data.guest (~27290 samples) ]
 
-On Thu, Nov 14, 2013 at 11:17 AM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Magnus,
->
-> On Thursday 14 November 2013 11:03:06 Magnus Damm wrote:
->> On Thu, Nov 14, 2013 at 9:07 AM, Laurent Pinchart wrote:
->> > On Thursday 14 November 2013 07:59:36 Magnus Damm wrote:
->> >> From: Magnus Damm <damm@opensource.se>
->> >>
->> >> Set the ->irq_enable() and ->irq_disable() methods to NULL
->> >> to enable lazy disable of interrupts.
->> >
->> > Is that just for optimization purpose, or is there another reason ?
->>
->> It is needed for IRQCHIP_MASK_ON_SUSPEND operation, which in turn is
->> needed for Suspend-to-RAM.
->>
->> >> Also extend the code to set IRQCHIP_MASK_ON_SUSPEND which tells the core
->> >> that only IRQs marked as wakeups need to stay enabled during
->> >> Suspend-to-RAM.
->> >
->> > Shouldn't this be split to a separate patch ?
->>
->> I could split them up, but since there is a dependency and since I
->> mainly care about making sure Suspend-to-RAM works I preferred to keep
->> them together.
->
-> Fine with me. Could you then please update the commit message to mention that
-> lazy disabling is required for IRQCHIP_MASK_ON_SUSPEND ? Same comment for
-> patch 03/03.
+The record file is named 'perf.data.kvm' and the content of it is about host
+and guest. But we expect the record file is named 'perf.data.host' with the
+counters only about host.
 
-Since when is it common practise to describe the dependencies for the
-various components included in a single commit? My opinion is that the
-person reading the code if requiring more information will have to
-grep for IRQCHIP_MASK_ON_SUSPEND in the friendly source code and learn
-how the subsystem is held together.
+The issue was introduced by 1aed267(perf kvm: Do guest-only counting by default).
 
-In the case you have some special detailed commit message that you
-would like me to use then please feel free to propose that. If not
-then I will then split up the patches.
+Actually, the following code can make sure that do guest-only by default:
+    if (!perf_host)
+        perf_guest = 1;
 
-/ magnus
+So, changing the default value from 0 to 1 is not a good idea, it prevents
+us from getting 'perf.data.host' by '--host'.
+
+With this patch applied, the behavior of perf-kvm is shown as below:
+	* Default 	 -> perf.data.guest
+	* --host  	 -> perf.data.host
+	* --guest 	 -> perf.data.guest
+	* --host --guest -> perf.data.kvm
+
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+ tools/perf/builtin-kvm.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index cd9f920..eac8269 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1709,8 +1709,7 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		NULL
+ 	};
+ 
+-	perf_host  = 0;
+-	perf_guest = 1;
++	perf_host = perf_guest = 0;
+ 
+ 	argc = parse_options(argc, argv, kvm_options, kvm_usage,
+ 			PARSE_OPT_STOP_AT_NON_OPTION);
+-- 
+1.8.2.1
+
