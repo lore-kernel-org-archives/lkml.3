@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab3KNSe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 13:34:26 -0500
-Received: from mail.eperm.de ([89.247.134.16]:37334 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754408Ab3KNSeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 13:34:18 -0500
-From: Stephan Mueller <smueller@chronox.de>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Pavel Machek <pavel@ucw.cz>,
-        sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
-Date: Thu, 14 Nov 2013 19:34:04 +0100
-Message-ID: <1442638.aGWDm8aNpM@tauon>
-User-Agent: KMail/4.11.3 (Linux/3.11.7-200.fc19.x86_64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <528516BE.2040204@ladisch.de>
-References: <2579337.FPgJGgHYdz@tauon> <3127174.i8ueAho43m@tauon> <528516BE.2040204@ladisch.de>
+	id S1755880Ab3KNSfq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 13:35:46 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30242 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754832Ab3KNSfj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 13:35:39 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+VBrO3FMU8VipzLoWazJkp
+Date: Thu, 14 Nov 2013 10:35:36 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] ARM: OMAP4460: cpuidle: Extend
+ PM_OMAP4_ROM_SMP_BOOT_ERRATUM_GICD on cpuidle
+Message-ID: <20131114183535.GL10317@atomide.com>
+References: <1382467484-16957-1-git-send-email-grygorii.strashko@ti.com>
+ <5266CCE3.1090801@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5266CCE3.1090801@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 14. November 2013, 19:30:22 schrieb Clemens Ladisch:
+* Grygorii Strashko <grygorii.strashko@ti.com> [131022 12:09]:
+> The same workaround as ff999b8a0983ee15668394ed49e38d3568fc6859
+> "ARM: OMAP4460: Workaround for ROM bug because of CA9 r2pX GIC ..."
+> need to be applied not only when system is booting, but when MPUSS hits
+> OSWR state through CPUIdle too. Without this WA the same issue is
+> reproduced now on boards PandaES and Tablet/Blaze with SOM OMAP4460
+> when CONFIG_CPU_IDLE is enabled.
+> After MPUSS has enterred OSWR and waken up:
+> - GIC distributor became disabled forever
+> - scheduling is not performed any more
+> 
+> Cc: Kevin Hilman <khilman@linaro.org>
+> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Reported-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 
-Hi Clemens,
+Applying into omap-for-v3.13/fixes thanks.
 
->Stephan Mueller wrote:
->> Am Donnerstag, 14. November 2013, 11:51:03 schrieb Clemens Ladisch:
->>> An attacker would not try to detect patterns; he would apply
->>> knowledge
->>> of the internals.
->> 
->> I do not buy that argument, because if an attacker can detect or
->> deduce the internals of the CPU, he surely can detect the state of
->> the input_pool or the other entropy pools behind /dev/random.
->
->With "internals", I do not mean the actual state of the CPU, but the
->behaviour of all the CPU's execution engines.
->
->An Intel engineer might know how to affect the CPU so that the CPU
->jitter code measures a deterministic pattern, but he will not know the
->contents of my memory.
-
-Here I agree fully.
->
->>> Statistical tests are useful only for detecting the absence of
->>> entropy, not for the opposite.
->> 
->> Again, I fully agree. But it is equally important to understand that
->> entropy is relative.
->
->In cryptography, we care about absolute entropy, i.e., _nobody_ must be
->able to predict the RNG output, not even any CPU engineer.
-
-With your clarification above, I agree here fully.
-
-And now my task is to verify the root cause which I seem to have found.
-
-Let me do my homework.
-
-Ciao
-Stephan
+Tony
