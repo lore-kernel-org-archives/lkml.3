@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab3KNCDl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 21:03:41 -0500
-Received: from imap.thunk.org ([74.207.234.97]:58329 "EHLO imap.thunk.org"
+	id S1752288Ab3KNCH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 21:07:56 -0500
+Received: from mx5.zte.com.cn ([63.217.80.70]:37218 "EHLO mx5.zte.com.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751170Ab3KNCDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 21:03:37 -0500
-Date: Wed, 13 Nov 2013 21:03:32 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: /dev/random changes for 3.13
-Message-ID: <20131114020332.GA10961@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+	id S1751000Ab3KNCHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 21:07:51 -0500
+X-Greylist: delayed 945 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Nov 2013 21:07:51 EST
+Subject: kmod: avoid propagating PF_NO_SETAFFINITY into userspace child
+X-KeepSent: C3933D9B:5510E97E-48257C23:0007B7CD;
+ type=4; name=$KeepSent
+To: linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Oleg Nesterov <oleg@redhat.com>
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+Message-ID: <OFC3933D9B.5510E97E-ON48257C23.0007B7CD-48257C23.000A4246@zte.com.cn>
+From: zhang.yi20@zte.com.cn
+Date: Thu, 14 Nov 2013 09:51:47 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-11-14 09:51:51
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-type: text/plain; charset=US-ASCII
+X-MAIL: mse01.zte.com.cn rAE1pxoo019904
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6e4664525b1db28f8c4e1130957f70a94c19213e:
 
-  Linux 3.11 (2013-09-02 13:46:10 -0700)
+The kernel worker thread has the PF_NO_SETAFFINITY flag, and it is propagated
+into the userspace child. Clearing this flag in usersapce child to enable its
+migrating capability.
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/random.git tags/random_for_linus
+Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
 
-for you to fetch changes up to 392a546dc8368d1745f9891ef3f8f7c380de8650:
+--- linux3-12/kernel/kmod.c	2013-11-14 09:06:58.991781656 +0000
++++ linux3-12/kernel/kmod.c	2013-11-14 09:08:47.511781621 +0000
+@@ -217,6 +217,7 @@ static int ____call_usermodehelper(void
+ 	 * Avoid propagating that into the userspace child.
+ 	 */
+ 	set_user_nice(current, 0);
++	current->flags &= ~PF_NO_SETAFFINITY;
 
-  random: add debugging code to detect early use of get_random_bytes() (2013-11-03 18:24:08 -0500)
+ 	retval = -ENOMEM;
+ 	new = prepare_kernel_cred(current);
 
-----------------------------------------------------------------
-The /dev/random changes for 3.13 including a number of improvements in
-the following areas: performance, avoiding waste of entropy, better
-tracking of entropy estimates, support for non-x86 platforms that have
-a register which can't be used for fine-grained timekeeping, but which
-might be good enough for the random driver.
-
-Also add some printk's so that we can see how quickly /dev/urandom can
-get initialized, and when programs try to use /dev/urandom before it
-is fully initialized (since this could be a security issue).  This
-shouldn't be an issue on x86 desktop/laptops --- a test on my Lenovo
-T430s laptop shows that /dev/urandom is getting fully initialized
-approximately two seconds before the root file system is mounted
-read/write --- this may be an issue with ARM and MIPS embedded/mobile
-systems, though.  These printk's will be a useful canary before
-potentially adding a future change to start blocking processes which
-try to read from /dev/urandom before it is initialized, which is
-something FreeBSD does already for security reasons, and which
-security folks have been agitating for Linux to also adopt.
-
-----------------------------------------------------------------
-H. Peter Anvin (3):
-      random: statically compute poolbitshift, poolbytes, poolbits
-      random: allow fractional bits to be tracked
-      random: account for entropy loss due to overwrites
-
-Theodore Ts'o (17):
-      random: run random_int_secret_init() run after all late_initcalls
-      random: allow architectures to optionally define random_get_entropy()
-      random: mix in architectural randomness earlier in extract_buf()
-      random: fix the tracepoint for get_random_bytes(_arch)
-      random: optimize spinlock use in add_device_randomness()
-      random: optimize the entropy_store structure
-      random: cap the rate which the /dev/urandom pool gets reseeded
-      random: speed up the fast_mix function by a factor of four
-      random: adjust the generator polynomials in the mixing function slightly
-      random: drop trickle mode
-      random: push extra entropy to the output pools
-      random: convert DEBUG_ENT to tracepoints
-      random: make add_timer_randomness() fill the nonblocking pool first
-      random: printk notifications for urandom pool initialization
-      random: don't zap entropy count in rand_initialize()
-      random: initialize the last_time field in struct timer_rand_state
-      random: add debugging code to detect early use of get_random_bytes()
-
- drivers/char/random.c         | 652 ++++++++++++++++++++++++++++++++-------------------
- include/linux/random.h        |   1 +
- include/linux/timex.h         |  14 ++
- include/trace/events/random.h | 183 ++++++++++++++-
- init/main.c                   |   2 +
- 5 files changed, 608 insertions(+), 244 deletions(-)
