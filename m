@@ -1,46 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab3KNOgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 09:36:22 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:54982 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293Ab3KNOgO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 09:36:14 -0500
-Date: Thu, 14 Nov 2013 14:36:06 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: cw00.choi@samsung.com, myungjoo.ham@samsung.com, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/7] extcon: arizona: Add defines for microphone
- detection levels
-Message-ID: <20131114143606.GA4996@lee--X1>
-References: <1384438297-27851-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	id S1754077Ab3KNOiN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 09:38:13 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:48315 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753361Ab3KNOiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 09:38:08 -0500
+Message-ID: <5284DFE7.70308@ti.com>
+Date: Thu, 14 Nov 2013 09:36:23 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1384438297-27851-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 10/12] mtd: nand: davinci: don't set timings if AEMIF
+ is used
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>, <1384187188-5776-11-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D53@DNCE04.ent.ti.com> <528307F0.6000805@ti.com> <52838941.4060207@ti.com> <5284ABB9.70608@ti.com>
+In-Reply-To: <5284ABB9.70608@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Nov 2013, Charles Keepax wrote:
-
-> Improve readability by creating a define for each microphone detection
-> level.
+On Thursday 14 November 2013 05:53 AM, Nori, Sekhar wrote:
+> On Wednesday 13 November 2013 07:44 PM, Santosh Shilimkar wrote:
+>> On Wednesday 13 November 2013 12:02 AM, Sekhar Nori wrote:
+>>> On Monday 11 November 2013 10:40 PM, Khoronzhuk, Ivan wrote:
+>>>> If Davinci AEMIF is used we don't need to set timings and bus width.
+>>>> It is done by AEMIF driver (drivers/memory/davinci-aemfi.c).
+>>>>
+>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>>> ---
+>>>>  drivers/mtd/nand/davinci_nand.c |   22 +++++++++++++++-------
+>>>>  1 file changed, 15 insertions(+), 7 deletions(-)
+>>>>
+>>>> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+>>>> index 4705214..879e915 100644
+>>>> --- a/drivers/mtd/nand/davinci_nand.c
+>>>> +++ b/drivers/mtd/nand/davinci_nand.c
+>>>> @@ -742,27 +742,35 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+>>>>                 goto err_clk_enable;
+>>>>         }
+>>>>
+>>>> +#if !IS_ENABLED(CONFIG_TI_DAVINCI_AEMIF)
+>>>
+>>> This is a hack! Just because AEMIF driver is enabled, it does not
+>>> guarantee that the timings have been setup by it. Instead of configuring
+>>> timings in two drivers, why not just convert everyone over to use the
+>>> new driver. Dont worry about breaking old platforms, I will help test
+>>> and ack them.
+>>>
+>> How about you take a stab at and convert the DaVinci code over to make
+>> use of new driver. We are trying to re-use as much as possible from the
+>> common drivers and also making an option so that the DaVinci arch can
+>> move over to these drivers if they want to.
 > 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> ---
->  drivers/extcon/extcon-arizona.c       |   19 ++++++++++++++-----
->  include/linux/mfd/arizona/registers.h |    9 +++++++++
->  2 files changed, 23 insertions(+), 5 deletions(-)
+> Sure I could.
+> 
+Thanks
 
-You've missed off my Ack for the MFD parts.
+> Ivan,
+> 
+> The AEMIF driver does not use platfrom_data currently. Is that something
+> you can add or you want me to take a stab at that as well?
+> 
+The AEMIF new driver is device tree only and thats the direction. So the
+better thing would be to convert Davinci to DT and then make use of this
+new driver. Thats how most of the new drivers used on arm socs are
+moving. Adding platform data to new driver is a step in backward
+direction so I would want to avoid that.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Once you start using new driver the $subject patch code skipping
+is trivial. Till then I would like to proceed with current approach
+which allows Nand support for Keystone.
+
+Regards,
+Santosh
+
