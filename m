@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab3KNCdE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 21:33:04 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:41866 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895Ab3KNCcy (ORCPT
+	id S1752680Ab3KNCji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 21:39:38 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:62338 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab3KNCj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 21:32:54 -0500
-X-Auth-Info: /buvm+pbaHCzVxNGC8Kfh9od4Myrl0hIXYcOFjZ93Hs=
-From: Marek Vasut <marex@denx.de>
-To: Andreas Werner <wernerandy@gmx.de>
-Subject: Re: [PATCH] I2C: busses: Do not print error message in syslog if no ACK received
-Date: Wed, 13 Nov 2013 20:24:06 +0100
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
-Cc: wsa@the-dreams.de, jacmet@sunsite.dk, baohua.song@csr.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1384278336-3694-1-git-send-email-wernerandy@gmx.de> <201311121933.41038.marex@denx.de> <20131113182415.GA1458@thinkpad.fritz.box>
-In-Reply-To: <20131113182415.GA1458@thinkpad.fritz.box>
+	Wed, 13 Nov 2013 21:39:29 -0500
+X-Spam-Score: -100.8
+Message-ID: <5284385F.4030904@asianux.com>
+Date: Thu, 14 Nov 2013 10:41:35 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: Re: [PATCH] arch: arm: uapi: be sure of "_UAPI" prefix for all guard
+ macros
+References: <527C5ECD.8010208@asianux.com>
+In-Reply-To: <527C5ECD.8010208@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201311132024.06853.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Andreas Werner,
-
-> On Tue, Nov 12, 2013 at 07:33:40PM +0100, Marek Vasut wrote:
-> > Dear Andreas Werner,
-> > 
-> > > On Tue, Nov 12, 2013 at 07:00:59PM +0100, Marek Vasut wrote:
-> > > > Dear Andreas Werner,
-> > > > 
-> > > > > Using the i2c-eg20t driver and call i2cdetect or probe on the bus,
-> > > > > the driver will print a lot of error messages if there was no ACK
-> > > > > received.
-> > > > > 
-> > > > > i2cdetect normally print a table with all the available devices. If
-> > > > > there is no device on the address, the table will be empty.
-> > > > > Currently with the i2c-eg20t driver, the table is not visible
-> > > > > because the error messages destroy the table.
-> > > > > 
-> > > > > Error message: pch_i2c_getack return -71
-> > > > > 
-> > > > > This patch prevent the driver to print the messages to syslog if
-> > > > > debug is not set.
-> > > > > 
-> > > > > Tested on Intel Atom E6xx and Eg20t Chipset.
-> > > > > 
-> > > > > Signed-off-by: Andreas Werner <wernerandy@gmx.de>
-> > > > > ---
-> > > > > 
-> > > > >  drivers/i2c/busses/i2c-eg20t.c | 2 +-
-> > > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > > > 
-> > > > > diff --git a/drivers/i2c/busses/i2c-eg20t.c
-> > > > > b/drivers/i2c/busses/i2c-eg20t.c index 0f37529..b10c651 100644
-> > > > > --- a/drivers/i2c/busses/i2c-eg20t.c
-> > > > > +++ b/drivers/i2c/busses/i2c-eg20t.c
-> > > > > @@ -322,7 +322,7 @@ static s32 pch_i2c_getack(struct
-> > > > > i2c_algo_pch_data *adap) reg_val = ioread32(p + PCH_I2CSR) &
-> > > > > PCH_GETACK;
-> > > > > 
-> > > > >  	if (reg_val != 0) {
-> > > > > 
-> > > > > -		pch_err(adap, "return%d\n", -EPROTO);
-> > > > > +		pch_dbg(adap, "return%d\n", -EPROTO);
-> > > > > 
-> > > > >  		return -EPROTO;
-> > > > >  	
-> > > > >  	}
-> > > > 
-> > > > I'd just kill the pch_err() line altogether:
-> > >   But why? I think there a few pch_err message which are interesting to
-> > > 
-> > > have in syslog, without building the dbg driver.
-> > 
-> > See below for explanation why this one particular pch_err() line can go.
-> > Sorry if I was not clear enough, I meant only this one particular
-> > pch_err() line, NOT all of them.
-> > 
-> > > > if (reg_val)
-> > > > 
-> > > > 	return -EPROTO;
-> > > > 
-> > > > That is because if you look at the only caller of this function,
-> > > > which is pch_i2c_wait_for_check_xfer(), you will see that at the
-> > > > only place where pch_i2c_getack() is called there is already
-> > > > pch_dbg():
-> > > > 
-> > > > 369         if (pch_i2c_getack(adap)) {
-> > > > 370                 pch_dbg(adap, "Receive NACK for slave address"
-> > > > 371                         "setting\n");
-> > > > 372                 return -EIO;
-> > > > 373         }
+On 11/08/2013 11:47 AM, Chen Gang wrote:
+> For all uapi headers, need use "_UAPI" prefix for its guard macro
+> (which will be stripped by "scripts/headers_installer.sh").
 > 
-> Sorry i misunderstood that. You are absolutly right, thats the best
-> solution for that. Remove the pch_err at getack so that only the pch_dbg
-> get printed where getack is called. This should be enough information.
+> Additional completions:
+> 
+>  - be sure that all "endif" need be appended related comment, also it
+>    has and only has one empty line above and no any lines below either.
+> 
+>  - be sure that all normal uapi header files need content guard macro.
+> 
+>  - remove the default "kvm_para.h" which was added in Kbuild.
 
-No problem ;-)
+Oh, sorry, it should use 'generic-y' instead of 'header-y' in Kbuild. I
+will send patch v2 for it.
+
+> 
+>  - remove the detail address of Free Software Foundation (or can not
+>    pass "scripts/checkpatch.pl").
+> 
+
+Thanks.
+-- 
+Chen Gang
