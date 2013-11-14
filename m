@@ -1,86 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab3KNQzC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:55:02 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:62852 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756494Ab3KNQyq (ORCPT
+	id S932264Ab3KNQzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:55:25 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:50924 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754676Ab3KNQjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:54:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <5284AF90.7060506@cn.fujitsu.com>
-References: <878uzmhkqg.fsf@xmission.com> <52749663.2000701@cn.fujitsu.com>
- <527C4D88.10907@cn.fujitsu.com> <87k3gigmgj.fsf@xmission.com>
- <5283299B.8080702@cn.fujitsu.com> <5284AF90.7060506@cn.fujitsu.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 14 Nov 2013 08:54:24 -0800
-Message-ID: <CALCETrXtWtF=JgiwENNzh7UZKnXijHauOQ5ZjHYxYJC-BAU5Aw@mail.gmail.com>
-Subject: Re: [REVIEW][PATCH 1/2] userns: Better restrictions on when proc and
- sysfs can be mounted
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 14 Nov 2013 11:39:35 -0500
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Jinshan Xiong <jinshan.xiong@intel.com>,
+        Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH 17/39] staging/lustre/llite: reset writeback index in ll_writepages
+Date: Fri, 15 Nov 2013 00:32:40 +0800
+Message-Id: <1384446782-13741-18-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
+References: <1384446782-13741-1-git-send-email-bergwolf@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 3:10 AM, Gao feng <gaofeng@cn.fujitsu.com> wrote:
-> On 11/13/2013 03:26 PM, Gao feng wrote:
->> On 11/09/2013 01:42 PM, Eric W. Biederman wrote:
->>> Right now I would rather not have the empty directory exception than
->>> remove this code.
->>>
->>> The test is a little trickier to write than it might otherwise be
->>> because /proc and /sys tend to be slightly imperfect filesystems.
->>>
->>> I think the only way to really test that is to call readdir on the
->>> directory itself :(  I don't like that thought.
->>>
->>> I don't know what I was thinking when I wrote that test but I definitely
->>> goofed up.  Grr!
->>>
->>> I can certainly filter out any directory with nlink > 2.  That would be
->>> an easy partial step forward.
->>>
->>> The real question though is how do I detect directories it is safe to
->>> mount on where there will not be files in them.  I can't call iterate
->>> with the namespace_lock held so things are a bit tricky.
->>>
->>
->> I know this problem is not easy to be resolved. why not let the user
->> make the decision?  maybe we can introduce a new mount option MS_LOCK,
->> if user wants to use mount to hide something, he should use mount with
->> option MS_LOCK. so the unpriviged user can't umount this filesystem and
->> fail to mount the filesystem if one of it's child mount is mounted with
->> MS_LOCK option otherwise he use MS_REC too.
->>
->
-> Something like this.
->
-> From 437f33ea366623c7a9d557b2e84cae424876a44f Mon Sep 17 00:00:00 2001
-> From: Gao feng <gaofeng@cn.fujitsu.com>
-> Date: Wed, 13 Nov 2013 16:06:46 +0800
-> Subject: [PATCH] userns: introduce new mount option MS_LOCK
->
-> After commit 5ff9d8a65ce80efb509ce4e8051394e9ed2cd942
-> vfs: Lock in place mounts from more privileged users,
-> in userns, the mounts of child mntns which copied from
-> parent mntns is locked and user has no rights to umount/move
-> them, it's too strict.
->
-> The core purpose of above commit is trying to prevent
-> unprivileged user from accessing files hidden by mount.
-> This patch introduces a new mount option MS_LOCK, this
-> gives user the capable to mount filesystem as the type
-> of lock if he wants to use mount to hide something.
->
+From: Jinshan Xiong <jinshan.xiong@intel.com>
 
-This is bad -- if something was secure in old kernels, it needs to
-stay secure.  If you had MS_NOT_A_LOCK, that would be okay, but it
-might not solve your problem.
+Otherwise after one round the writeback index will become beyond
+the file size and ->writepages() turns into an empty operation.
 
---Andy
+Also, a safety guard is added to limit the wait time for grant to
+10 minutes(take recovery into consideration) at maximum in the
+osc_enter_cache() function. Otherwise, EDQUOT will be returned to
+the applications to start sync write.
+
+Lustre-change: http://review.whamcloud.com/6554
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3416
+Signed-off-by: Jinshan Xiong <jinshan.xiong@intel.com>
+Reviewed-by: Bobi Jam <bobijam@gmail.com>
+Reviewed-by: Niu Yawei <yawei.niu@intel.com>
+Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
+Signed-off-by: Peng Tao <bergwolf@gmail.com>
+Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+---
+ drivers/staging/lustre/lustre/llite/rw.c      |    5 ++--
+ drivers/staging/lustre/lustre/osc/osc_cache.c |   32 +++++++++++++++++--------
+ 2 files changed, 25 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/llite/rw.c b/drivers/staging/lustre/lustre/llite/rw.c
+index 112368f..9fe12d3 100644
+--- a/drivers/staging/lustre/lustre/llite/rw.c
++++ b/drivers/staging/lustre/lustre/llite/rw.c
+@@ -1262,8 +1262,9 @@ int ll_writepages(struct address_space *mapping, struct writeback_control *wbc)
+ 
+ 	if (wbc->range_cyclic || (range_whole && wbc->nr_to_write > 0)) {
+ 		if (end == OBD_OBJECT_EOF)
+-			end = i_size_read(inode);
+-		mapping->writeback_index = (end >> PAGE_CACHE_SHIFT) + 1;
++			mapping->writeback_index = 0;
++		else
++			mapping->writeback_index = (end >> PAGE_CACHE_SHIFT) +1;
+ 	}
+ 	return result;
+ }
+diff --git a/drivers/staging/lustre/lustre/osc/osc_cache.c b/drivers/staging/lustre/lustre/osc/osc_cache.c
+index 00295da..7d63a37 100644
+--- a/drivers/staging/lustre/lustre/osc/osc_cache.c
++++ b/drivers/staging/lustre/lustre/osc/osc_cache.c
+@@ -1296,15 +1296,19 @@ static int osc_completion(const struct lu_env *env, struct osc_async_page *oap,
+ 	return 0;
+ }
+ 
+-#define OSC_DUMP_GRANT(cli, fmt, args...) do {				      \
++#define OSC_DUMP_GRANT(lvl, cli, fmt, args...) do {			      \
+ 	struct client_obd *__tmp = (cli);				      \
+-	CDEBUG(D_CACHE, "%s: { dirty: %ld/%ld dirty_pages: %d/%d "	      \
+-	       "dropped: %ld avail: %ld, reserved: %ld, flight: %d } " fmt,   \
++	CDEBUG(lvl, "%s: grant { dirty: %ld/%ld dirty_pages: %d/%d "	      \
++	       "dropped: %ld avail: %ld, reserved: %ld, flight: %d } "	      \
++	       "lru {in list: %d, left: %d, waiters: %d }" fmt,		      \
+ 	       __tmp->cl_import->imp_obd->obd_name,			      \
+ 	       __tmp->cl_dirty, __tmp->cl_dirty_max,			      \
+ 	       atomic_read(&obd_dirty_pages), obd_max_dirty_pages,	      \
+ 	       __tmp->cl_lost_grant, __tmp->cl_avail_grant,		      \
+-	       __tmp->cl_reserved_grant, __tmp->cl_w_in_flight, ##args);      \
++	       __tmp->cl_reserved_grant, __tmp->cl_w_in_flight,		      \
++	       atomic_read(&__tmp->cl_lru_in_list),			      \
++	       atomic_read(&__tmp->cl_lru_busy),			      \
++	       atomic_read(&__tmp->cl_lru_shrinkers), ##args);	      \
+ } while (0)
+ 
+ /* caller must hold loi_list_lock */
+@@ -1441,7 +1445,7 @@ static int osc_enter_cache_try(struct client_obd *cli,
+ {
+ 	int rc;
+ 
+-	OSC_DUMP_GRANT(cli, "need:%d.\n", bytes);
++	OSC_DUMP_GRANT(D_CACHE, cli, "need:%d.\n", bytes);
+ 
+ 	rc = osc_reserve_grant(cli, bytes);
+ 	if (rc < 0)
+@@ -1485,10 +1489,11 @@ static int osc_enter_cache(const struct lu_env *env, struct client_obd *cli,
+ 	struct osc_object *osc = oap->oap_obj;
+ 	struct lov_oinfo  *loi = osc->oo_oinfo;
+ 	struct osc_cache_waiter ocw;
+-	struct l_wait_info lwi = LWI_INTR(LWI_ON_SIGNAL_NOOP, NULL);
++	struct l_wait_info lwi = LWI_TIMEOUT_INTR(cfs_time_seconds(600), NULL,
++						  LWI_ON_SIGNAL_NOOP, NULL);
+ 	int rc = -EDQUOT;
+ 
+-	OSC_DUMP_GRANT(cli, "need:%d.\n", bytes);
++	OSC_DUMP_GRANT(D_CACHE, cli, "need:%d.\n", bytes);
+ 
+ 	client_obd_list_lock(&cli->cl_loi_list_lock);
+ 
+@@ -1526,8 +1531,15 @@ static int osc_enter_cache(const struct lu_env *env, struct client_obd *cli,
+ 
+ 		client_obd_list_lock(&cli->cl_loi_list_lock);
+ 
+-		/* l_wait_event is interrupted by signal */
++		/* l_wait_event is interrupted by signal, or timed out */
+ 		if (rc < 0) {
++			if (rc == -ETIMEDOUT) {
++				OSC_DUMP_GRANT(D_ERROR, cli,
++						"try to reserve %d.\n", bytes);
++				osc_extent_tree_dump(D_ERROR, osc);
++				rc = -EDQUOT;
++			}
++
+ 			list_del_init(&ocw.ocw_entry);
+ 			GOTO(out, rc);
+ 		}
+@@ -1542,7 +1554,7 @@ static int osc_enter_cache(const struct lu_env *env, struct client_obd *cli,
+ 	}
+ out:
+ 	client_obd_list_unlock(&cli->cl_loi_list_lock);
+-	OSC_DUMP_GRANT(cli, "returned %d.\n", rc);
++	OSC_DUMP_GRANT(D_CACHE, cli, "returned %d.\n", rc);
+ 	return rc;
+ }
+ 
+@@ -2868,7 +2880,7 @@ int osc_cache_writeback_range(const struct lu_env *env, struct osc_object *obj,
+ 			result = rc;
+ 	}
+ 
+-	OSC_IO_DEBUG(obj, "cache page out.\n");
++	OSC_IO_DEBUG(obj, "pageout [%lu, %lu], %d.\n", start, end, result);
+ 	return result;
+ }
+ 
+-- 
+1.7.9.5
+
