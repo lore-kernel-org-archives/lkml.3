@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757755Ab3KNU1o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 15:27:44 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36307 "EHLO
+	id S1757807Ab3KNU1v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 15:27:51 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36290 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756855Ab3KNUZ0 (ORCPT
+	with ESMTP id S1756772Ab3KNUZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 15:25:26 -0500
+	Thu, 14 Nov 2013 15:25:24 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 05/10] perf tools: Use perf_evlist__{first,last}, perf_evsel__next
-Date: Thu, 14 Nov 2013 17:25:10 -0300
-Message-Id: <1384460715-23198-6-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 02/10] perf tools: Remove trivial extra semincolon
+Date: Thu, 14 Nov 2013 17:25:07 -0300
+Message-Id: <1384460715-23198-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384460715-23198-1-git-send-email-acme@infradead.org>
 References: <1384460715-23198-1-git-send-email-acme@infradead.org>
@@ -29,73 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-In a few remaining places where the equivalent open coded variant was
-still being used.
+Accidentally ran into these, get rid of them.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-4vjnloi5fisilykwxalb5nel@git.kernel.org
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Link: http://lkml.kernel.org/r/1384323864.2527.8.camel@buesod1.americas.hpqcorp.net
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/parse-events.c | 3 +--
- tools/perf/ui/browsers/hists.c  | 9 ++++-----
- 2 files changed, 5 insertions(+), 7 deletions(-)
+ tools/perf/ui/browser.c  | 2 +-
+ tools/perf/util/evlist.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index ef671cd41bb3..3cbd10496087 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -441,9 +441,8 @@ static int test__checkevent_pmu_name(struct perf_evlist *evlist)
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+index bbc782e364b0..3648d4ec041f 100644
+--- a/tools/perf/ui/browser.c
++++ b/tools/perf/ui/browser.c
+@@ -680,7 +680,7 @@ static void __ui_browser__line_arrow_down(struct ui_browser *browser,
+ 	if (end >= browser->top_idx + browser->height)
+ 		end_row = browser->height - 1;
+ 	else
+-		end_row = end - browser->top_idx;;
++		end_row = end - browser->top_idx;
  
- static int test__checkevent_pmu_events(struct perf_evlist *evlist)
- {
--	struct perf_evsel *evsel;
-+	struct perf_evsel *evsel = perf_evlist__first(evlist);
+ 	ui_browser__gotorc(browser, row, column);
+ 	SLsmg_draw_vline(end_row - row + 1);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index dc6fa3fbb180..5ce2ace2d6c1 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -1148,7 +1148,7 @@ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp)
+ 				   perf_evsel__name(evsel));
+ 	}
  
--	evsel = list_entry(evlist->entries.next, struct perf_evsel, node);
- 	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
- 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
- 	TEST_ASSERT_VAL("wrong exclude_user",
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 16848bb4c418..089fd3713783 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1847,13 +1847,13 @@ browse_hists:
- 			switch (key) {
- 			case K_TAB:
- 				if (pos->node.next == &evlist->entries)
--					pos = list_entry(evlist->entries.next, struct perf_evsel, node);
-+					pos = perf_evlist__first(evlist);
- 				else
--					pos = list_entry(pos->node.next, struct perf_evsel, node);
-+					pos = perf_evsel__next(pos);
- 				goto browse_hists;
- 			case K_UNTAB:
- 				if (pos->node.prev == &evlist->entries)
--					pos = list_entry(evlist->entries.prev, struct perf_evsel, node);
-+					pos = perf_evlist__last(evlist);
- 				else
- 					pos = list_entry(pos->node.prev, struct perf_evsel, node);
- 				goto browse_hists;
-@@ -1943,8 +1943,7 @@ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
+-	return printed + fprintf(fp, "\n");;
++	return printed + fprintf(fp, "\n");
+ }
  
- single_entry:
- 	if (nr_entries == 1) {
--		struct perf_evsel *first = list_entry(evlist->entries.next,
--						      struct perf_evsel, node);
-+		struct perf_evsel *first = perf_evlist__first(evlist);
- 		const char *ev_name = perf_evsel__name(first);
- 
- 		return perf_evsel__hists_browse(first, nr_entries, help,
+ int perf_evlist__strerror_tp(struct perf_evlist *evlist __maybe_unused,
 -- 
 1.8.1.4
 
