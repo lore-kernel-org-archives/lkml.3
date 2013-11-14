@@ -1,102 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab3KNOyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 09:54:47 -0500
-Received: from 33.106-14-84.ripe.coltfrance.com ([84.14.106.33]:45530 "EHLO
-	proxy.6wind.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab3KNOyn (ORCPT
+	id S1754368Ab3KNOzH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 09:55:07 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:63828 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324Ab3KNOy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 09:54:43 -0500
-X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Nov 2013 09:54:43 EST
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        gregkh@linuxfoundation.org, williams@redhat.com,
-        linux-rt-users@vger.kernel.org, lclaudio@uudg.org, davem@davemloft.net,
-        netdev@vger.kernel.org, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Willem de Bruijn <willemb@google.com>
-Subject: [PATCH net] ip6tnl: fix use after free of fb_tnl_dev
-Date: Thu, 14 Nov 2013 15:47:03 +0100
-Message-Id: <1384440423-4275-1-git-send-email-nicolas.dichtel@6wind.com>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <20131113211430.1ad3bb7d@gandalf.local.home>
-References: <20131113211430.1ad3bb7d@gandalf.local.home>
+	Thu, 14 Nov 2013 09:54:59 -0500
+From: Laszlo Papp <lpapp@kde.org>
+To: hjk@hansjkoch.de
+Cc: linux@roeck-us.net, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, Laszlo Papp <lpapp@kde.org>
+Subject: [PATCH] hwmon: (max6650) Add support for gpiodef
+Date: Thu, 14 Nov 2013 14:51:01 +0000
+Message-Id: <1384440661-3769-1-git-send-email-lpapp@kde.org>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bug has been introduced by commit bb8140947a24 ("ip6tnl: allow to use rtnl ops
-on fb tunnel").
+It is necessary for end users when they are using the gpio pins connected to the
+fan controller. There is a separate gpiodef register provided, but it is unused
+under the usual circumstances and that is probably the reason why this feature
+has not been added before. It is necessary for our board to function properly.
 
-When ip6_tunnel.ko is unloaded, FB device is delete by rtnl_link_unregister()
-and then we try to use the pointer in ip6_tnl_destroy_tunnels().
-
-Let's add an handler for dellink, which will never remove the FB tunnel. With
-this patch it will no more be possible to remove it via 'ip link del ip6tnl0',
-but it's safer.
-
-The same fix was already proposed by Willem de Bruijn <willemb@google.com> for
-sit interfaces.
-
-CC: Willem de Bruijn <willemb@google.com>
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: Laszlo Papp <lpapp@kde.org>
 ---
- net/ipv6/ip6_tunnel.c | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ Documentation/hwmon/max6650 |   5 +++
+ drivers/hwmon/max6650.c     | 107 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 112 insertions(+)
 
-diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-index 583b77e2f69b..c1e11b5d6ccc 100644
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1635,6 +1635,15 @@ static int ip6_tnl_changelink(struct net_device *dev, struct nlattr *tb[],
- 	return ip6_tnl_update(t, &p);
+diff --git a/Documentation/hwmon/max6650 b/Documentation/hwmon/max6650
+index 58d9644..32c69a8 100644
+--- a/Documentation/hwmon/max6650
++++ b/Documentation/hwmon/max6650
+@@ -39,6 +39,11 @@ pwm1		rw	relative speed (0-255), 255=max. speed.
+ fan1_div	rw	sets the speed range the inputs can handle. Legal
+ 			values are 1, 2, 4, and 8. Use lower values for
+ 			faster fans.
++gpio0     	rw	sets the gpio 0 PIN. Legal values are 0, 1, 2, and 3.
++gpio1     	rw	sets the gpio 1 PIN. Legal values are 0, 1, 2, and 3.
++gpio2     	rw	sets the gpio 2 PIN. Legal values are 0, 1, 2, and 3.
++gpio3     	rw	sets the gpio 3 PIN. Legal values are 0, and 1.
++gpio4     	rw	sets the gpio 4 PIN. Legal values are 0, and 1.
+ 
+ Usage notes
+ -----------
+diff --git a/drivers/hwmon/max6650.c b/drivers/hwmon/max6650.c
+index 0cafc39..2268142 100644
+--- a/drivers/hwmon/max6650.c
++++ b/drivers/hwmon/max6650.c
+@@ -90,6 +90,16 @@ module_param(clock, int, S_IRUGO);
+ #define MAX6650_COUNT_MASK		0x03
+ 
+ /*
++ * Gpio Def register bits
++ */
++
++#define MAX6650_GPIO_DEF_GPIO0_LOW  0x03
++#define MAX6650_GPIO_DEF_GPIO1_LOW  0x0C
++#define MAX6650_GPIO_DEF_GPIO2_LOW  0x30
++#define MAX6650_GPIO_DEF_GPIO3      0x40
++#define MAX6650_GPIO_DEF_GPIO4      0x80
++
++/*
+  * Alarm status register bits
+  */
+ 
+@@ -145,6 +155,7 @@ struct max6650_data {
+ 	/* register values */
+ 	u8 speed;
+ 	u8 config;
++	u8 gpiodef;
+ 	u8 tach[4];
+ 	u8 count;
+ 	u8 dac;
+@@ -461,6 +472,90 @@ static ssize_t get_alarm(struct device *dev, struct device_attribute *devattr,
+ 	return sprintf(buf, "%d\n", alarm);
  }
  
-+static void ip6_tnl_dellink(struct net_device *dev, struct list_head *head)
++static ssize_t get_gpio(struct device *dev, struct device_attribute *devattr,
++			 char *buf)
 +{
-+	struct net *net = dev_net(dev);
-+	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	struct max6650_data *data = max6650_update_device(dev);
 +
-+	if (dev != ip6n->fb_tnl_dev)
-+		unregister_netdevice_queue(dev, head);
++	int gpio = 0;
++
++	switch (attr->index) {
++	case 0:
++		gpio = data->gpiodef & MAX6650_GPIO_DEF_GPIO0_LOW;
++		break;
++	case 1:
++		gpio = (data->gpiodef & MAX6650_GPIO_DEF_GPIO1_LOW) >> 2;
++		break;
++	case 2:
++		gpio = (data->gpiodef & MAX6650_GPIO_DEF_GPIO2_LOW) >> 4;
++		break;
++	case 3:
++		gpio = (data->gpiodef & MAX6650_GPIO_DEF_GPIO3) >> 6;
++		break;
++	case 4:
++		gpio = (data->gpiodef & MAX6650_GPIO_DEF_GPIO4) >> 7;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return sprintf(buf, "%d\n", gpio);
 +}
 +
- static size_t ip6_tnl_get_size(const struct net_device *dev)
- {
- 	return
-@@ -1699,6 +1708,7 @@ static struct rtnl_link_ops ip6_link_ops __read_mostly = {
- 	.validate	= ip6_tnl_validate,
- 	.newlink	= ip6_tnl_newlink,
- 	.changelink	= ip6_tnl_changelink,
-+	.dellink	= ip6_tnl_dellink,
- 	.get_size	= ip6_tnl_get_size,
- 	.fill_info	= ip6_tnl_fill_info,
++static ssize_t set_gpio(struct device *dev, struct device_attribute *devattr,
++			 char *buf, size_t count)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	struct max6650_data *data = max6650_update_device(dev);
++	struct i2c_client *client = to_i2c_client(dev);
++	u8 gpio;
++	int err;
++
++	err = kstrtoul(buf, 10, &gpio);
++	if (err)
++		return err;
++
++	mutex_lock(&data->update_lock);
++
++	switch (attr->index) {
++	case 0:
++		data->gpiodef &= ~MAX6650_GPIO_DEF_GPIO0_LOW;
++		data->gpiodef |= gpio;
++		break;
++	case 1:
++		data->gpiodef &= ~MAX6650_GPIO_DEF_GPIO1_LOW;
++		data->gpiodef &= (gpio << 2);
++		break;
++	case 2:
++		data->gpiodef &= ~MAX6650_GPIO_DEF_GPIO2_LOW;
++		data->gpiodef &= (gpio << 4);
++		break;
++	case 3:
++		data->gpiodef &= ~MAX6650_GPIO_DEF_GPIO3;
++		data->gpiodef &= (gpio << 6);
++		break;
++	case 4:
++		data->gpiodef &= ~MAX6650_GPIO_DEF_GPIO4;
++		data->gpiodef &= (gpio << 7);
++		break;
++	default:
++	    mutex_unlock(&data->update_lock);
++		return -EINVAL;
++	}
++
++	if (i2c_smbus_write_byte_data(client, MAX6650_REG_GPIO_DEF,
++							data->gpiodef)) {
++		dev_err(&client->dev, "Gpiodef write error, aborting.\n");
++	    mutex_unlock(&data->update_lock);
++		return err;
++	}
++
++	mutex_unlock(&data->update_lock);
++
++	return count;
++}
++
+ static SENSOR_DEVICE_ATTR(fan1_input, S_IRUGO, get_fan, NULL, 0);
+ static SENSOR_DEVICE_ATTR(fan2_input, S_IRUGO, get_fan, NULL, 1);
+ static SENSOR_DEVICE_ATTR(fan3_input, S_IRUGO, get_fan, NULL, 2);
+@@ -479,6 +574,11 @@ static SENSOR_DEVICE_ATTR(gpio1_alarm, S_IRUGO, get_alarm, NULL,
+ 			  MAX6650_ALRM_GPIO1);
+ static SENSOR_DEVICE_ATTR(gpio2_alarm, S_IRUGO, get_alarm, NULL,
+ 			  MAX6650_ALRM_GPIO2);
++static SENSOR_DEVICE_ATTR(gpio0, S_IWUSR | S_IRUGO, get_gpio, set_gpio, 0);
++static SENSOR_DEVICE_ATTR(gpio1, S_IWUSR | S_IRUGO, get_gpio, set_gpio, 1);
++static SENSOR_DEVICE_ATTR(gpio2, S_IWUSR | S_IRUGO, get_gpio, set_gpio, 2);
++static SENSOR_DEVICE_ATTR(gpio3, S_IWUSR | S_IRUGO, get_gpio, set_gpio, 3);
++static SENSOR_DEVICE_ATTR(gpio4, S_IWUSR | S_IRUGO, get_gpio, set_gpio, 4);
+ 
+ static umode_t max6650_attrs_visible(struct kobject *kobj, struct attribute *a,
+ 				    int n)
+@@ -516,6 +616,8 @@ static struct attribute *max6650_attrs[] = {
+ 	&sensor_dev_attr_fan1_fault.dev_attr.attr,
+ 	&sensor_dev_attr_gpio1_alarm.dev_attr.attr,
+ 	&sensor_dev_attr_gpio2_alarm.dev_attr.attr,
++	&sensor_dev_attr_gpio0.dev_attr.attr,
++	&sensor_dev_attr_gpio1.dev_attr.attr,
+ 	NULL
  };
-@@ -1715,9 +1725,9 @@ static struct xfrm6_tunnel ip6ip6_handler __read_mostly = {
- 	.priority	=	1,
+ 
+@@ -528,6 +630,9 @@ static struct attribute *max6651_attrs[] = {
+ 	&sensor_dev_attr_fan2_input.dev_attr.attr,
+ 	&sensor_dev_attr_fan3_input.dev_attr.attr,
+ 	&sensor_dev_attr_fan4_input.dev_attr.attr,
++	&sensor_dev_attr_gpio2.dev_attr.attr,
++	&sensor_dev_attr_gpio3.dev_attr.attr,
++	&sensor_dev_attr_gpio4.dev_attr.attr,
+ 	NULL
  };
  
--static void __net_exit ip6_tnl_destroy_tunnels(struct ip6_tnl_net *ip6n)
-+static void __net_exit ip6_tnl_destroy_tunnels(struct net *net)
- {
--	struct net *net = dev_net(ip6n->fb_tnl_dev);
-+	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
- 	struct net_device *dev, *aux;
- 	int h;
- 	struct ip6_tnl *t;
-@@ -1785,10 +1795,8 @@ err_alloc_dev:
- 
- static void __net_exit ip6_tnl_exit_net(struct net *net)
- {
--	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
--
- 	rtnl_lock();
--	ip6_tnl_destroy_tunnels(ip6n);
-+	ip6_tnl_destroy_tunnels(net);
- 	rtnl_unlock();
- }
- 
+@@ -704,6 +809,8 @@ static struct max6650_data *max6650_update_device(struct device *dev)
+ 						       MAX6650_REG_SPEED);
+ 		data->config = i2c_smbus_read_byte_data(client,
+ 							MAX6650_REG_CONFIG);
++		data->gpiodef = i2c_smbus_read_byte_data(client,
++							MAX6650_REG_GPIO_DEF);
+ 		for (i = 0; i < data->nr_fans; i++) {
+ 			data->tach[i] = i2c_smbus_read_byte_data(client,
+ 								 tach_reg[i]);
 -- 
-1.8.4.1
+1.8.4.2
 
