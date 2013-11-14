@@ -1,289 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab3KNOLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 09:11:22 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:53027 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626Ab3KNOLO (ORCPT
+	id S1754071Ab3KNOLc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 09:11:32 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:33924 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754048Ab3KNOLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 09:11:14 -0500
-X-IronPort-AV: E=Sophos;i="4.93,699,1378857600"; 
-   d="scan'208";a="71913744"
-Date: Thu, 14 Nov 2013 14:11:11 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Elena Ufimtseva <ufimtseva@gmail.com>
-CC: <xen-devel@lists.xenproject.org>, <akpm@linux-foundation.org>,
-        <wency@cn.fujitsu.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>,
-        <mingo@redhat.com>, <david.vrabel@citrix.com>, <hpa@zytor.com>,
-        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>,
-        <stefano.stabellini@eu.citrix.com>, <ian.campbell@citrix.com>
+	Thu, 14 Nov 2013 09:11:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <1384429730.29902.129.camel@Abyss>
+References: <1384400179-24404-1-git-send-email-ufimtseva@gmail.com>
+	<1384400179-24404-2-git-send-email-ufimtseva@gmail.com>
+	<1384414000.29902.25.camel@Abyss>
+	<5284B238.6020601@citrix.com>
+	<1384429730.29902.129.camel@Abyss>
+Date: Thu, 14 Nov 2013 09:11:20 -0500
+Message-ID: <CAEr7rXjwnb9QB6=8Dy+_BU97dK5bOYLhwqtcS=YAZVUSdrEeGA@mail.gmail.com>
 Subject: Re: [Xen-devel] [PATCH 1/2] xen: vnuma support for PV guests running
  as domU.
-In-Reply-To: <1384400179-24404-2-git-send-email-ufimtseva@gmail.com>
-Message-ID: <alpine.DEB.2.02.1311141406190.4714@kaball.uk.xensource.com>
-References: <1384400179-24404-1-git-send-email-ufimtseva@gmail.com> <1384400179-24404-2-git-send-email-ufimtseva@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+From: Elena Ufimtseva <ufimtseva@gmail.com>
+To: Dario Faggioli <dario.faggioli@citrix.com>
+Cc: David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>, wency@cn.fujitsu.com,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, tangchen@cn.fujitsu.com,
+        mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com,
+        xen-devel@lists.xenproject.org, akpm@linux-foundation.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Nov 2013, Elena Ufimtseva wrote:
-> Issues Xen hypercall subop XENMEM_get_vnumainfo and sets the
-> NUMA topology, otherwise sets dummy NUMA node and prevents
-> numa_init from calling other numa initializators as they may
-> break other guests.
-> 
-> Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
-> ---
->  arch/x86/include/asm/xen/vnuma.h |   12 ++++
->  arch/x86/mm/numa.c               |    5 ++
->  arch/x86/xen/Makefile            |    2 +-
->  arch/x86/xen/vnuma.c             |  119 ++++++++++++++++++++++++++++++++++++++
->  include/xen/interface/memory.h   |   28 +++++++++
->  5 files changed, 165 insertions(+), 1 deletion(-)
->  create mode 100644 arch/x86/include/asm/xen/vnuma.h
->  create mode 100644 arch/x86/xen/vnuma.c
-> 
-> diff --git a/arch/x86/include/asm/xen/vnuma.h b/arch/x86/include/asm/xen/vnuma.h
-> new file mode 100644
-> index 0000000..1ba1e06
-> --- /dev/null
-> +++ b/arch/x86/include/asm/xen/vnuma.h
-> @@ -0,0 +1,12 @@
-> +#ifndef _ASM_X86_VNUMA_H
-> +#define _ASM_X86_VNUMA_H
-> +
-> +#ifdef CONFIG_XEN
-> +int xen_vnuma_supported(void);
-> +int xen_numa_init(void);
-> +#else
-> +int xen_vnuma_supported(void) { return 0; };
-> +int xen_numa_init(void) { return -1; };
-
-static inline?
-
-> +#endif
+On Thu, Nov 14, 2013 at 6:48 AM, Dario Faggioli
+<dario.faggioli@citrix.com> wrote:
+> On gio, 2013-11-14 at 11:21 +0000, David Vrabel wrote:
+>> On 14/11/13 07:26, Dario Faggioli wrote:
+>> > IIRC, it's more something that was already happening (the breakage, I
+>> > mean), than a "safety net" for the unforeseeable future. Might be worth
+>> > giving some context about it, perhaps referencing the email thread or
+>> > the git commit hash in the comment.
+>>
+>> Yes, a comment like:
+>>
+>> /*
+>>  * Set a dummy node and return success.  This prevents calling any
+>>  * hardware-specific initializers which do not work in a PV guest.
+>>  */
+>>
+>> is better.  No need to refer to any specific threads.  It's pretty clear
+>> that any hardware-specific init isn't appropriate for a PV guest.
+>>
+> Ok.
 >
-> +#endif /* _ASM_X86_VNUMA_H */
-> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-> index 8bf93ba..c8a61dc 100644
-> --- a/arch/x86/mm/numa.c
-> +++ b/arch/x86/mm/numa.c
-> @@ -19,6 +19,7 @@
->  #include <asm/amd_nb.h>
->  
->  #include "numa_internal.h"
-> +#include "asm/xen/vnuma.h"
->  
->  int __initdata numa_off;
->  nodemask_t numa_nodes_parsed __initdata;
-> @@ -621,6 +622,10 @@ static int __init dummy_numa_init(void)
->  void __init x86_numa_init(void)
->  {
->  	if (!numa_off) {
-> +#ifdef CONFIG_XEN
-> +		if (xen_vnuma_supported() && !numa_init(xen_numa_init))
-> +			return;
-> +#endif
+>> >> +  if (rc != 0) {
+>> >> +          for (i = 0; i < MAX_LOCAL_APIC; i++)
+>> >> +                  set_apicid_to_node(i, NUMA_NO_NODE);
+>> >> +          nodes_clear(numa_nodes_parsed);
+>> >> +          nodes_clear(node_possible_map);
+>> >> +          nodes_clear(node_online_map);
+>> >> +          node_set(0, numa_nodes_parsed);
+>> >> +          numa_add_memblk(0, 0, PFN_PHYS(max_pfn));
+>> >> +  }
+>> >> +  return 0;
+>> >>
+>> > Ok, so, we always return 'success', as we were saying during last round.
+>> > However, we do not call dummy_numa_init() directly, and instead we do
+>> > all these stuff, with the last two statements being exactly what
+>> > dummy_numa_init() does. Reason is linking, i.e., the fact that
+>> > dummy_numa_init() is not exported and you can't reach it from here,
+>> > right?
 
-Given the non-Xen function definitions above, you can remove the ifdef
-CONFIG_XEN here.
+Ah, my bad, I left these comments and they dont make sense :)
+>>
+>> I think this bit is fine as-is.
+>>
+> Ok, cool. :-) Shouldn't we then kill or reformulate the comments where
+> dummy_numa_init is explicitly referenced then?
+>
+> E.g., this one: /* will pass to dummy_numa_init */
+>
+> It might be me, but I find it rather confusing. After seeing that, I'd
+> expect to see that, at some point, either the function returns failure
+> (which of course we don't want), or a direct call dummy_numa_init().
+>
+> Dario
+>
+> --
+> <<This happens because I choose it to happen!>> (Raistlin Majere)
+> -----------------------------------------------------------------
+> Dario Faggioli, Ph.D, http://about.me/dario.faggioli
+> Senior Software Engineer, Citrix Systems R&D Ltd., Cambridge (UK)
+>
 
 
->  #ifdef CONFIG_X86_NUMAQ
->  		if (!numa_init(numaq_numa_init))
->  			return;
-> diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
-> index 96ab2c0..de9deab 100644
-> --- a/arch/x86/xen/Makefile
-> +++ b/arch/x86/xen/Makefile
-> @@ -13,7 +13,7 @@ CFLAGS_mmu.o			:= $(nostackp)
->  obj-y		:= enlighten.o setup.o multicalls.o mmu.o irq.o \
->  			time.o xen-asm.o xen-asm_$(BITS).o \
->  			grant-table.o suspend.o platform-pci-unplug.o \
-> -			p2m.o
-> +			p2m.o vnuma.o
->  
->  obj-$(CONFIG_EVENT_TRACING) += trace.o
->  
-> diff --git a/arch/x86/xen/vnuma.c b/arch/x86/xen/vnuma.c
-> new file mode 100644
-> index 0000000..b4fc667
-> --- /dev/null
-> +++ b/arch/x86/xen/vnuma.c
-> @@ -0,0 +1,119 @@
-> +#include <linux/err.h>
-> +#include <linux/memblock.h>
-> +#include <xen/interface/xen.h>
-> +#include <xen/interface/memory.h>
-> +#include <asm/xen/interface.h>
-> +#include <asm/xen/hypercall.h>
-> +#include <asm/xen/vnuma.h>
-> +
-> +#ifdef CONFIG_NUMA
-> +
-> +/* Checks if hypercall is suported */
-                               ^ supported
-> +int xen_vnuma_supported()
-> +{
-> +	return HYPERVISOR_memory_op(XENMEM_get_vnuma_info, NULL) == -ENOSYS ? 0 : 1;
-> +}
-> +
-> +int __init xen_numa_init(void)
-> +{
-> +	int rc;
-> +	unsigned int i, j, nr_nodes, cpu, idx, pcpus;
-> +	u64 physm, physd, physc;
-> +	unsigned int *vdistance, *cpu_to_node;
-> +	unsigned long mem_size, dist_size, cpu_to_node_size;
 
-physm, physd and physc need to be initialized to 0, otherwise the
-vnumaout error path below is erroneous
-
-> +	struct vmemrange *vblock;
-> +
-> +	struct vnuma_topology_info numa_topo = {
-> +		.domid = DOMID_SELF,
-> +		.__pad = 0
-> +	};
-> +	rc = -EINVAL;
-> +
-> +	/* For now only PV guests are supported */
-> +	if (!xen_pv_domain())
-> +		return rc;
-> +
-> +	pcpus = num_possible_cpus();
-> +
-> +	mem_size =  pcpus * sizeof(struct vmemrange);
-> +	dist_size = pcpus * pcpus * sizeof(*numa_topo.vdistance);
-> +	cpu_to_node_size = pcpus * sizeof(*numa_topo.cpu_to_node);
-> +
-> +	physm = memblock_alloc(mem_size, PAGE_SIZE);
-> +	vblock = __va(physm);
-> +
-> +	physd = memblock_alloc(dist_size, PAGE_SIZE);
-> +	vdistance  = __va(physd);
-> +
-> +	physc = memblock_alloc(cpu_to_node_size, PAGE_SIZE);
-> +	cpu_to_node  = __va(physc);
-> +
-> +	if (!physm || !physc || !physd)
-> +		goto vnumaout;
-> +
-> +	set_xen_guest_handle(numa_topo.nr_nodes, &nr_nodes);
-> +	set_xen_guest_handle(numa_topo.vmemblks, vblock);
-> +	set_xen_guest_handle(numa_topo.vdistance, vdistance);
-> +	set_xen_guest_handle(numa_topo.cpu_to_node, cpu_to_node);
-> +
-> +	rc = HYPERVISOR_memory_op(XENMEM_get_vnuma_info, &numa_topo);
-> +
-> +	if (rc < 0)
-> +		goto vnumaout;
-> +	if (*numa_topo.nr_nodes == 0) {
-> +		/* will pass to dummy_numa_init */
-> +		goto vnumaout;
-> +	}
-> +	if (*numa_topo.nr_nodes > num_possible_cpus()) {
-> +		pr_debug("vNUMA: Node without cpu is not supported in this version.\n");
-> +		goto vnumaout;
-> +	}
-> +	/*
-> +	 * NUMA nodes memory ranges are in pfns, constructed and
-> +	 * aligned based on e820 ram domain map.
-> +	 */
-> +	for (i = 0; i < *numa_topo.nr_nodes; i++) {
-> +		if (numa_add_memblk(i, vblock[i].start, vblock[i].end))
-> +			/* pass to numa_dummy_init */
-> +			goto vnumaout;
-> +		node_set(i, numa_nodes_parsed);
-> +	}
-> +	setup_nr_node_ids();
-> +	/* Setting the cpu, apicid to node */
-> +	for_each_cpu(cpu, cpu_possible_mask) {
-> +		set_apicid_to_node(cpu, cpu_to_node[cpu]);
-> +		numa_set_node(cpu, cpu_to_node[cpu]);
-> +		cpumask_set_cpu(cpu, node_to_cpumask_map[cpu_to_node[cpu]]);
-> +	}
-> +	for (i = 0; i < *numa_topo.nr_nodes; i++) {
-> +		for (j = 0; j < *numa_topo.nr_nodes; j++) {
-> +			idx = (j * *numa_topo.nr_nodes) + i;
-> +			numa_set_distance(i, j, *(vdistance + idx));
-> +		}
-> +	}
-> +	rc = 0;
-> +vnumaout:
-> +	if (physm)
-> +		memblock_free(__pa(physm), mem_size);
-> +	if (physd)
-> +		memblock_free(__pa(physd), dist_size);
-> +	if (physc)
-> +		memblock_free(__pa(physc), cpu_to_node_size);
-> +	/*
-> +	 * Set the "dummy" node and exit without error so Linux
-> +	 * will not try any NUMA init functions which might break
-> +	 * guests in the future. This will discard all previous
-> +	 * settings.
-> +	 */
-> +	if (rc != 0) {
-> +		for (i = 0; i < MAX_LOCAL_APIC; i++)
-> +			set_apicid_to_node(i, NUMA_NO_NODE);
-> +		nodes_clear(numa_nodes_parsed);
-> +		nodes_clear(node_possible_map);
-> +		nodes_clear(node_online_map);
-> +		node_set(0, numa_nodes_parsed);
-> +		numa_add_memblk(0, 0, PFN_PHYS(max_pfn));
-> +	}
-> +	return 0;
-> +}
-> +#endif
-> diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-> index 2ecfe4f..3974e9a 100644
-> --- a/include/xen/interface/memory.h
-> +++ b/include/xen/interface/memory.h
-> @@ -263,4 +263,32 @@ struct xen_remove_from_physmap {
->  };
->  DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
->  
-> +/* vNUMA structures */
-> +struct vmemrange {
-> +	uint64_t start, end;
-> +	struct vmemrange *next;
-> +};
-> +DEFINE_GUEST_HANDLE_STRUCT(vmemrange);
-> +
-> +struct vnuma_topology_info {
-> +	/* OUT */
-> +	domid_t domid;
-> +	uint32_t __pad;
-> +	/* IN */
-> +	GUEST_HANDLE(uint) nr_nodes; /* number of virtual numa nodes */
-> +	/* distance table */
-> +	GUEST_HANDLE(uint) vdistance;
-> +	/* cpu mapping to vnodes */
-> +	GUEST_HANDLE(uint) cpu_to_node;
-> +	/*
-> +	* array of numa memory areas constructed by Xen
-> +	* where start and end are pfn numbers of the area
-> +	* Xen takes into account domains e820 map
-> +	*/
-> +	GUEST_HANDLE(vmemrange) vmemblks;
-> +};
-> +DEFINE_GUEST_HANDLE_STRUCT(vnuma_topology_info);
-> +
-> +#define XENMEM_get_vnuma_info	25
-> +
->  #endif /* __XEN_PUBLIC_MEMORY_H__ */
-> -- 
-> 1.7.10.4
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
-> 
+-- 
+Elena
