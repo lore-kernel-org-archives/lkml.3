@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab3KNDmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 22:42:05 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:36344 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab3KNDlV (ORCPT
+	id S1752823Ab3KNDoV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 22:44:21 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:63146 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab3KNDoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 22:41:21 -0500
-From: Elena Ufimtseva <ufimtseva@gmail.com>
-To: xen-devel@lists.xenproject.org
-Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, akpm@linux-foundation.org,
-        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com, ian.campbell@citrix.com,
-        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
-        linux-kernel@vger.kernel.org, Elena Ufimtseva <ufimtseva@gmail.com>
-Subject: [PATCH 2/2] xen: enable vnuma for PV guest.
-Date: Wed, 13 Nov 2013 22:36:19 -0500
-Message-Id: <1384400179-24404-3-git-send-email-ufimtseva@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1384400179-24404-1-git-send-email-ufimtseva@gmail.com>
-References: <1384400179-24404-1-git-send-email-ufimtseva@gmail.com>
+	Wed, 13 Nov 2013 22:44:13 -0500
+From: Daniel Jeong <gshark.jeong@gmail.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Daniel Jeong <gshark.jeong@gmail.com>, <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        <linux-media@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [PATCH -next] [media] media: i2c: lm3560: fix missing unlock error in lm3560_get_ctrl().
+Date: Thu, 14 Nov 2013 12:43:27 +0900
+Message-Id: <1384400607-18504-1-git-send-email-gshark.jeong@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enables numa if vnuma topology hypercall is supported and it is domU.
+Add the missing unlock before return from function lm3560_get_ctrl()
+to avoid deadlock. Thanks to Dan Carpenter.
 
-Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
+Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
 ---
- arch/x86/xen/setup.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/media/i2c/lm3560.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 09f3059..fe23ec2 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -20,6 +20,7 @@
- #include <asm/numa.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
-+#include <asm/xen/vnuma.h>
+diff --git a/drivers/media/i2c/lm3560.c b/drivers/media/i2c/lm3560.c
+index 3317a9a..5d6eef0 100644
+--- a/drivers/media/i2c/lm3560.c
++++ b/drivers/media/i2c/lm3560.c
+@@ -172,16 +172,16 @@ static int lm3560_flash_brt_ctrl(struct lm3560_flash *flash,
+ static int lm3560_get_ctrl(struct v4l2_ctrl *ctrl, enum lm3560_led_id led_no)
+ {
+ 	struct lm3560_flash *flash = to_lm3560_flash(ctrl, led_no);
++	int rval = -EINVAL;
  
- #include <xen/xen.h>
- #include <xen/page.h>
-@@ -598,6 +599,9 @@ void __init xen_arch_setup(void)
- 	WARN_ON(xen_set_default_idle());
- 	fiddle_vdso();
- #ifdef CONFIG_NUMA
--	numa_off = 1;
-+	if (!xen_initial_domain() && xen_vnuma_supported())
-+		numa_off = 0;
-+	else
-+		numa_off = 1;
- #endif
+ 	mutex_lock(&flash->lock);
+ 
+ 	if (ctrl->id == V4L2_CID_FLASH_FAULT) {
+-		int rval;
+ 		s32 fault = 0;
+ 		unsigned int reg_val;
+ 		rval = regmap_read(flash->regmap, REG_FLAG, &reg_val);
+ 		if (rval < 0)
+-			return rval;
++			goto out;
+ 		if (rval & FAULT_SHORT_CIRCUIT)
+ 			fault |= V4L2_FLASH_FAULT_SHORT_CIRCUIT;
+ 		if (rval & FAULT_OVERTEMP)
+@@ -189,11 +189,11 @@ static int lm3560_get_ctrl(struct v4l2_ctrl *ctrl, enum lm3560_led_id led_no)
+ 		if (rval & FAULT_TIMEOUT)
+ 			fault |= V4L2_FLASH_FAULT_TIMEOUT;
+ 		ctrl->cur.val = fault;
+-		return 0;
+ 	}
+ 
++out:
+ 	mutex_unlock(&flash->lock);
+-	return -EINVAL;
++	return rval;
  }
+ 
+ static int lm3560_set_ctrl(struct v4l2_ctrl *ctrl, enum lm3560_led_id led_no)
 -- 
-1.7.10.4
+1.7.9.5
 
