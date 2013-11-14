@@ -1,143 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab3KNKnE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 05:43:04 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42418 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753087Ab3KNKm7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 05:42:59 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <5284A920.8090404@jp.fujitsu.com>
-Date: Thu, 14 Nov 2013 19:42:40 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v5 2/3] x86, apic: Add disable_cpu_apicid kernel parameter
-References: <20131112094952.4902.72689.stgit@localhost6.localdomain6> <20131112095158.4902.75396.stgit@localhost6.localdomain6> <20131112104423.GB12849@pd.tnic>
-In-Reply-To: <20131112104423.GB12849@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753372Ab3KNKnT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 05:43:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43728 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753087Ab3KNKnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 05:43:15 -0500
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Petr Mladek <pmladek@suse.cz>
+Subject: [PATCH v3 4/8] x86: speed up int3-based patching using direct write
+Date: Thu, 14 Nov 2013 11:41:22 +0100
+Message-Id: <1384425686-21018-5-git-send-email-pmladek@suse.cz>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1384425686-21018-1-git-send-email-pmladek@suse.cz>
+References: <1384425686-21018-1-git-send-email-pmladek@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/12 19:44), Borislav Petkov wrote:
-> On Tue, Nov 12, 2013 at 06:51:58PM +0900, HATAYAMA Daisuke wrote:
->> Add disable_cpu_apicid kernel parameter. To use this kernel parameter,
->> specify an initial APIC ID of the corresponding CPU you want to
->> disable.
->>
->> This is mostly used for the kdump 2nd kernel to disable BSP to wake up
->> multiple CPUs without causing system reset or hang due to sending INIT
->> from AP to BSP.
->>
->> Kdump users first figure out initial APIC ID of the BSP, CPU0 in the
->> 1st kernel, for example from /proc/cpuinfo and then set up this kernel
->> parameter for the 2nd kernel using the obtained APIC ID.
->>
->> However, doing this procedure at each boot time manually is awkward,
->> which should be automatically done by user-land service scripts, for
->> example, kexec-tools on fedora/RHEL distributions.
->>
->> This design is more flexible than disabling BSP in kernel boot time
->> automatically in that in kernel boot time we have no choice but
->> referring to ACPI/MP table to obtain initial APIC ID for BSP, meaning
->> that the method is not applicable to the systems without such BIOS
->> tables.
->>
->> One assumption behind this design is that users get initial APIC ID of
->> the BSP in still healthy state and so BSP is uniquely kept in
->> CPU0. Thus, through the kernel parameter, only one initial APIC ID can
->> be specified.
->>
->> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
->> ---
->>   arch/x86/kernel/apic/apic.c |   29 +++++++++++++++++++++++++++++
->>   1 file changed, 29 insertions(+)
->>
->> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
->> index b60ad92..075bf23 100644
->> --- a/arch/x86/kernel/apic/apic.c
->> +++ b/arch/x86/kernel/apic/apic.c
->> @@ -78,6 +78,13 @@ unsigned int max_physical_apicid;
->>   physid_mask_t phys_cpu_present_map;
->>
->>   /*
->> + * Processor to be disabled specified by kernel parameter
->> + * disable_cpu_apicid=<int>, mostly used for the kdump 2nd kernel to
->> + * avoid undefined behaviour caused by sending INIT from AP to BSP.
->> + */
->> +unsigned int disabled_cpu_apicid = BAD_APICID;
->> +
->> +/*
->>    * Map cpu index to physical APIC ID
->>    */
->>   DEFINE_EARLY_PER_CPU_READ_MOSTLY(u16, x86_cpu_to_apicid, BAD_APICID);
->> @@ -2117,6 +2124,19 @@ void generic_processor_info(int apicid, int version)
->>   	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
->>   				phys_cpu_present_map);
->>
->> +	if (disabled_cpu_apicid != BAD_APICID &&
->> +	    disabled_cpu_apicid != boot_cpu_physical_apicid &&
->> +	    disabled_cpu_apicid == apicid) {
->> +		int thiscpu = num_processors + disabled_cpus;
->> +
->> +		pr_warning("ACPI: Disable specified CPU."
->> +			   " Processor %d/0x%x ignored.\n",
->> +			   thiscpu, apicid);
->
-> How am I to parse this message - that 'thiscpu' is being disabled
-> currently? What does "Processor ... ignored" mean?
->
-> Why not just write:
->
-> 	ACPI: Disabling requested CPU %d (APIC ID: 0x%x)
->
-> and everyone knows what's happening?
->
+When trying to use text_poke_bp_iter in ftrace, the result was slower than
+the original implementation.
 
-It seems "Disabling requested CPU %d" part is by far better than mine.
-I'll apply this in the next patch.
+It turned out that one difference was in text_poke vs. ftrace_write.
+text_poke did many extra operations to make sure that code was read-write
+and the change was atomic.
 
-For the latter part "(APIC ID: 0x%x)", there are other two messages about
-disabling processors and I tried to use a message consistent with these.
-So, I think "Processor %d/0x%x ignored.\n" should be used.
+In fact, we do not need the atomic operation inside text_poke_bp_iter because
+the modified code is guarded by the int3 handler. The int3 interrupt itself
+is added and removed by an atomic operation because we modify only one byte.
 
-         /*
-          * If boot cpu has not been detected yet, then only allow upto
-          * nr_cpu_ids - 1 processors and keep one slot free for boot cpu
-          */
-         if (!boot_cpu_detected && num_processors >= nr_cpu_ids - 1 &&
-             apicid != boot_cpu_physical_apicid) {
-                 int thiscpu = max + disabled_cpus - 1;
+Also if we patch many functions, it is more effective to set the whole text code
+read-write instead of remapping each address into a helper address space.
 
-                 pr_warning(
-                         "ACPI: NR_CPUS/possible_cpus limit of %i almost"
-                         " reached. Keeping one slot for boot cpu."
-                         "  Processor %d/0x%x ignored.\n", max, thiscpu, apicid);
+This patch adds text_poke_part which is inspired by ftrace_write.
+Then it is used in text_poke_bp_iter instead of the slower text_poke.
+It adds the limitation that text_poke_bp_iter user is responsible for
+setting the patched code read-write.
 
-                 disabled_cpus++;
-                 return;
-         }
+Note that we can't use it in text_poke because it is not effective
+to set the page or two read-write just because patching one piece.
 
-         if (num_processors >= nr_cpu_ids) {
-                 int thiscpu = max + disabled_cpus;
+For example, I tried to switch between 7 tracers: blk, branch, function_graph,
+wakeup_rt, irqsoff, function, and nop. Every tracer has also been enabled and
+disabled. With 100 cycles, I got these times with text_poke:
 
-                 pr_warning(
-                         "ACPI: NR_CPUS/possible_cpus limit of %i reached."
-                         "  Processor %d/0x%x ignored.\n", max, thiscpu, apicid);
+    real    25m7.380s     25m13.44s     25m9.072s
+    user    0m0.004s      0m0.004s      0m0.004s
+    sys     0m3.480s      0m3.508s      0m3.420s
 
-                 disabled_cpus++;
-                 return;
-         }
+and with text_poke_part:
 
+    real    3m23.335s     3m24.422s     3m26.686s
+    user    0m0.004s      0m0.004s	0m0.004s
+    sys     0m3.724s      0m3.772s	0m3.588s
+
+Signed-off-by: Petr Mladek <pmladek@suse.cz>
+---
+ arch/x86/kernel/alternative.c | 67 ++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 57 insertions(+), 10 deletions(-)
+
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index cac8764..2ff0b6d 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -599,6 +599,51 @@ int __kprobes text_poke(void *addr, const void *opcode, size_t len)
+ 	return 0;
+ }
+ 
++/**
++ * text_poke_part - Update part of the instruction on a live kernel when using
++ * 		    int3 breakpoint
++ * @addr:   address to modify
++ * @opcode: source of the copy
++ * @len:    length to copy
++ *
++ * If we patch instructions using int3 interrupt, we do not need to be so
++ * careful about an atomic write. Adding and removing the interrupt is atomic
++ * because we modify only one byte. The rest of the instruction could be
++ * modified in several steps because it is guarded by the interrupt handler.
++ * Hence we could use faster code here. See also text_poke_bp_iter below
++ * for more details.
++ *
++ * Note: This function must be called under text_mutex. Also the caller is
++ * responsible for setting the patched code read-write. This is more effective
++ * only when you patch many addresses at the same time.
++ */
++static int text_poke_part(void *addr, const void *opcode, size_t len)
++{
++	int ret;
++
++	/* The patching makes sense only for a text code */
++	if (unlikely((unsigned long)addr < (unsigned long)_text) ||
++	    unlikely((unsigned long)addr >= (unsigned long)_etext))
++		return -EFAULT;
++
++#if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
++	/*
++	 * On x86_64, the kernel text mapping is always mapped read-only with
++	 * CONFIG_DEBUG_RODATA. Instead, we need to use the kernel identity
++	 * mapping that can be set read-write, for example using
++	 * set_kernel_text_rw().
++	 */
++	addr = __va(__pa_symbol(addr));
++#endif
++
++	ret = probe_kernel_write(addr, opcode, len);
++	if (unlikely(ret))
++		return -EPERM;
++
++	sync_core();
++	return 0;
++}
++
+ static void do_sync_core(void *info)
+ {
+ 	sync_core();
+@@ -753,7 +798,7 @@ static int add_iter_breakpoint(struct text_poke_bp_iter *iterator,
+ 
+ 	if (likely(!ret))
+ 		/* write the breakpoint */
+-		ret = text_poke(addr, &bp_int3, sizeof(bp_int3));
++		ret = text_poke_part(addr, &bp_int3, sizeof(bp_int3));
+ 
+ 	return ret;
+ }
+@@ -771,9 +816,9 @@ static int update_iter_code(struct text_poke_bp_iter *iterator,
+ 
+ 	/* write all but the first byte */
+ 	addr = iterator->get_addr(iter);
+-	return text_poke(addr + sizeof(bp_int3),
+-			 opcode + sizeof(bp_int3),
+-			 bp_int3_len - sizeof(bp_int3));
++	return text_poke_part(addr + sizeof(bp_int3),
++			      opcode + sizeof(bp_int3),
++			      bp_int3_len - sizeof(bp_int3));
+ }
+ 
+ static int finish_iter_update(struct text_poke_bp_iter *iterator,
+@@ -787,7 +832,7 @@ static int finish_iter_update(struct text_poke_bp_iter *iterator,
+ 	if (opcode) {
+ 		/* write the first byte if defined */
+ 		addr = iterator->get_addr(iter);
+-		ret = text_poke(addr, opcode, sizeof(bp_int3));
++		ret = text_poke_part(addr, opcode, sizeof(bp_int3));
+ 	}
+ 
+ 	/* Patching has finished. Let's update the status flag if any. */
+@@ -823,9 +868,9 @@ static void recover_iter(struct text_poke_bp_iter *iterator,
+ 	if (memcmp(actual + sizeof(bp_int3),
+ 		   old_opcode + sizeof(bp_int3),
+ 		   bp_int3_len - sizeof(bp_int3)) != 0) {
+-		err = text_poke(addr + sizeof(bp_int3),
+-				old_opcode + sizeof(bp_int3),
+-				bp_int3_len - sizeof(bp_int3));
++		err = text_poke_part(addr + sizeof(bp_int3),
++				     old_opcode + sizeof(bp_int3),
++				     bp_int3_len - sizeof(bp_int3));
+ 		/* we should not continue if recovering has failed */
+ 		BUG_ON(err);
+ 		/*
+@@ -837,7 +882,7 @@ static void recover_iter(struct text_poke_bp_iter *iterator,
+ 	}
+ 
+ 	/* Finally, put back the first byte from the old code */
+-	err = text_poke(addr, old_opcode, sizeof(bp_int3));
++	err = text_poke_part(addr, old_opcode, sizeof(bp_int3));
+ 	/* we can not continue if the interrupt is still there */
+ 	BUG_ON(err);
+ }
+@@ -865,7 +910,9 @@ static void recover_iter(struct text_poke_bp_iter *iterator,
+  * It is a bit more paranoid than text_poke_bp because it checks the actual
+  * code before patching. This is a good practice proposed by the ftrace code.
+  *
+- * Note: This function must be called under text_mutex.
++ * Note: This function must be called under text_mutex. Also the caller is
++ * responsible for making the patched code read-write, for example using
++ * set_kernel_text_rw() and set_all_modules_text_rw()
+  */
+ int text_poke_bp_list(struct text_poke_bp_iter *iterator)
+ {
 -- 
-Thanks.
-HATAYAMA, Daisuke
+1.8.4
 
