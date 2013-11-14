@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab3KNCCs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 21:02:48 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:64716 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170Ab3KNCCm (ORCPT
+	id S1752668Ab3KNCDT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 21:03:19 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:64483 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170Ab3KNCDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 21:02:42 -0500
-From: Olof Johansson <olof@lixom.net>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Duncan Laurie <dlaurie@chromium.org>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH] i915: Use 120MHz LVDS SSC clock for gen5/gen6/gen7
-Date: Wed, 13 Nov 2013 17:59:43 -0800
-Message-Id: <1384394383-8582-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.8.4.1.601.g02b3b1d
+	Wed, 13 Nov 2013 21:03:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <1906707.rpHAsqdqKq@avalon>
+References: <20131113225927.21449.78044.sendpatchset@w520>
+	<20131113225936.21449.29529.sendpatchset@w520>
+	<1906707.rpHAsqdqKq@avalon>
+Date: Thu, 14 Nov 2013 11:03:06 +0900
+Message-ID: <CANqRtoR+ngS5o77Lw1gUUzq-qcHuBZtfiiAnALvH_GsNMvNN7A@mail.gmail.com>
+Subject: Re: [PATCH 01/03] gpio: rcar: Use lazy disable and mask on suspend
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Simon Horman [Horms]" <horms@verge.net.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Duncan Laurie <dlaurie@chromium.org>
+Hi Laurent,
 
-We had been using a DMI table workaround to select the right
-frequency for devices, but this is fragile and must be updated
-with every new platform.
+Thanks for checking the patches.
 
-Instead the default case when VBT is missing is changed to use
-120MHz clock for LVDS SSC for these generations.
+On Thu, Nov 14, 2013 at 9:07 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Magnus,
+>
+> Thank you for the patch.
+>
+> On Thursday 14 November 2013 07:59:36 Magnus Damm wrote:
+>> From: Magnus Damm <damm@opensource.se>
+>>
+>> Set the ->irq_enable() and ->irq_disable() methods to NULL
+>> to enable lazy disable of interrupts.
+>
+> Is that just for optimization purpose, or is there another reason ?
 
-The docs for 2010-Core, SandyBridge, and IvyBridge all indicate
-that the reference frequency for LVDS is 120MHz:
+It is needed for IRQCHIP_MASK_ON_SUSPEND operation, which in turn is
+needed for Suspend-to-RAM.
 
-"2010 Core"
-http://intellinuxgraphics.org/IHD_OS_Vol3_Part3r2.pdf
-page 38
-Reference Frequency: 120MHz for CRT and LVDS.  100MHz for the FDI.
+>> Also extend the code to set IRQCHIP_MASK_ON_SUSPEND which tells the core
+>> that only IRQs marked as wakeups need to stay enabled during Suspend-to-RAM.
+>
+> Shouldn't this be split to a separate patch ?
 
-"2011 SandyBridge"
-http://intellinuxgraphics.org/documentation/SNB/IHD_OS_Vol3_Part3.pdf
-page 33
-Reference Frequency: 120MHz for CRT, HDMI, LVDS.  100MHz for the FDI.
+I could split them up, but since there is a dependency and since I
+mainly care about making sure Suspend-to-RAM works I preferred to keep
+them together.
 
-"2012 IvyBridge"
-http://intellinuxgraphics.org/documentation/IVB/IHD_OS_Vol3_Part4.pdf
-page 27
-Reference Frequency: 120 MHz for CRT, HDMI, LVDS, 100MHz for the FDI.
+>> Tested on the Lager board with GPIO-keys and Suspend-to-RAM.
+>>
+>> Signed-off-by: Magnus Damm <damm@opensource.se>
+>> ---
+>>
+>>  drivers/gpio/gpio-rcar.c |    3 +--
+>>  1 file changed, 1 insertion(+), 2 deletions(-)
+>>
+>> --- 0001/drivers/gpio/gpio-rcar.c
+>> +++ work/drivers/gpio/gpio-rcar.c     2013-11-13 19:26:26.000000000 +0900
+>> @@ -368,10 +368,9 @@ static int gpio_rcar_probe(struct platfo
+>>       irq_chip->name = name;
+>>       irq_chip->irq_mask = gpio_rcar_irq_disable;
+>>       irq_chip->irq_unmask = gpio_rcar_irq_enable;
+>> -     irq_chip->irq_enable = gpio_rcar_irq_enable;
+>> -     irq_chip->irq_disable = gpio_rcar_irq_disable;
+>>       irq_chip->irq_set_type = gpio_rcar_irq_set_type;
+>>       irq_chip->flags = IRQCHIP_SKIP_SET_WAKE | IRQCHIP_SET_TYPE_MASKED;
+>> +     irq_chip->flags |= IRQCHIP_MASK_ON_SUSPEND;
+>
+> You can write it as
+>
+>         irq_chip->flags = IRQCHIP_SKIP_SET_WAKE | IRQCHIP_SET_TYPE_MASKED
+>                         | IRQCHIP_MASK_ON_SUSPEND;
 
-Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
-[olof: Fixup for recent base, switched from if/else to single call]
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
+I know. =) If that's the preferred way then..
 
-Daniel,
+Cheers,
 
-This applies on top of -next, which I'm presuming is close to your
-for-3.13 base right now. It'd be good to see this go in since it's needed
-to boot on Chromebooks (with developer mode off), and is thus blocking
-testing next/mainline on a regular basis here.
-
-Thanks!
-
--Olof
-
- drivers/gpu/drm/i915/intel_bios.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
-index 6dd622d733b9..e4fba39631a5 100644
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -790,7 +790,12 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
- 
- 	/* Default to using SSC */
- 	dev_priv->vbt.lvds_use_ssc = 1;
--	dev_priv->vbt.lvds_ssc_freq = intel_bios_ssc_frequency(dev, 1);
-+	/*
-+	 * Core/SandyBridge/IvyBridge use alternative (120MHz) reference
-+	 * clock for LVDS.
-+	 */
-+	dev_priv->vbt.lvds_ssc_freq = intel_bios_ssc_frequency(dev,
-+			!HAS_PCH_SPLIT(dev));
- 	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->vbt.lvds_ssc_freq);
- 
- 	for (port = PORT_A; port < I915_MAX_PORTS; port++) {
--- 
-1.8.4.1.601.g02b3b1d
-
+/ magnus
