@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab3KNR1U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 12:27:20 -0500
-Received: from mga14.intel.com ([143.182.124.37]:37020 "EHLO mga14.intel.com"
+	id S1755032Ab3KNR3O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 12:29:14 -0500
+Received: from sauhun.de ([89.238.76.85]:54630 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754408Ab3KNR1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 12:27:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="320883193"
-Message-ID: <528508FA.5040109@linux.intel.com>
-Date: Thu, 14 Nov 2013 09:31:38 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1753652Ab3KNR3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 12:29:05 -0500
+Date: Thu, 14 Nov 2013 18:29:01 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: James Ralston <james.d.ralston@intel.com>
+Cc: linux-doc@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Seth Heasley <seth.heasley@intel.com>
+Subject: Re: [PATCH 3/4] i2c-i801: Add Device IDs for Intel Wildcat Point-LP
+ PCH
+Message-ID: <20131114172901.GE11022@katana>
+References: <1383586188-4717-1-git-send-email-james.d.ralston@intel.com>
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: matthew.garrett@nebula.com, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eric.ernst@linux.intel.com,
-        Kuppuswamy Sathyanarayanan 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>
-Subject: Re: [PATCH 2/3] ipc: Enabled ipc support for additional intel platforms
-References: <1384373671-12814-1-git-send-email-david.a.cohen@linux.intel.com> <1384373671-12814-3-git-send-email-david.a.cohen@linux.intel.com> <20131114134311.01d24bc5@alan.etchedpixels.co.uk>
-In-Reply-To: <20131114134311.01d24bc5@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xJK8B5Wah2CMJs8h"
+Content-Disposition: inline
+In-Reply-To: <1383586188-4717-1-git-send-email-james.d.ralston@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2013 05:43 AM, One Thousand Gnomes wrote:
-> On Wed, 13 Nov 2013 12:14:30 -0800
-> David Cohen <david.a.cohen@linux.intel.com> wrote:
->
->> From: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
->>
->> Enabled ipc support for penwell, clovertrail & tangier platforms.
->
-> At some point this really ought to be discoverable in your SFI, ACPI or
-> similar data tables not continually hard coded.
 
-Agreed. But it depends on fw changes, which I believe to happen on
-newer platforms only. On driver side we need to fill the missing
-resource info with hardcoded values :/
+--xJK8B5Wah2CMJs8h
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Br, David
+On Mon, Nov 04, 2013 at 09:29:48AM -0800, James Ralston wrote:
+> This patch adds the SMBus Device IDs for the Intel Wildcat Point-LP PCH.
+>=20
+> Signed-off-by: James Ralston <james.d.ralston@intel.com>
+
+Applied to for-next, thanks! Please ensure that the introductory message
+also goes to the relevant mailing lists.
+
+
+--xJK8B5Wah2CMJs8h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJShQhdAAoJEBQN5MwUoCm2OzUP/0FjZIrhK2ETBSPYTjLEIn0o
+MHqg8G8fafIqk2iNTVPwRFvsSFzqHAwHvvaU2bnzDz3Q0SIQKCbF1kL5fQXNKS4L
+bgwTvO15zp6cz9mwxYoDuwPA+QGi0pLf98JYzM8zFK74i76hxSqP2XbSGa+bTUuI
+gkZLT8TeVrBFb/26yhvid6w8jGndSGE0Z42wsxZSEa4OCHZ2ImQkSifDMNcP9cFD
+9uuYiFjzuIjyGw1cdLhjJw+HWPDWyF2DFfgsS6GHfaLPUjj2eKo8O661B89UDKA3
+381AsrnNuA7Nbi/6F8df73C3KCTsoAzW8pnVVXHijTFx2cE0UzFMAs/OjH/xfwLA
+gL3TPIJiYJGzUzGySFOuVwZyUjjAgiEDk1INsLLdOuLcUTVnNnCyOG37c55XjGKF
+c7HTTX/CGGd5fWQNcCPDVzq/et1FVtgnf0XXlIC0wRbAaZVZIAARvwC4k+q5PbRp
+uaGq7NfZSwh5i6gmhk1OMo7sLXF7SNTl21m/htz/1pWD2chfltJupDAHQ0gdTC0/
+2BDWt4srLfW3ThMmbGppmPjaaqyBPNlUtiERR0oNrLDZtASlzF2H5O6NeLAJWKKf
+Nk8HpCVoQ8JCbrOH29ibgrdqzhl8moDA+f6CJ9Mf1FfaMAIgOJWq1K+VI/k1fGk8
+jptK2IxDtSFSvnREBw/G
+=6qu0
+-----END PGP SIGNATURE-----
+
+--xJK8B5Wah2CMJs8h--
