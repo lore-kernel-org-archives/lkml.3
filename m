@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab3KNCOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 21:14:32 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:35025 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809Ab3KNCOY (ORCPT
+	id S1752663Ab3KNCOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 21:14:43 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:48862 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474Ab3KNCOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 21:14:24 -0500
+	Wed, 13 Nov 2013 21:14:25 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 5/5] OF: Introduce utility helper functions
+Subject: Re: [PATCH v3 2/3] OF: Introduce DT overlay support.
 To: Pantelis Antoniou <panto@antoniou-consulting.com>
 Cc: Rob Herring <robherring2@gmail.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
@@ -23,103 +23,356 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Sascha Hauer <s.hauer@pengutronix.de>,
         Michael Bohan <mbohan@codeaurora.org>,
         Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <F88335D9-6515-4E48-A21F-25039F16754A@antoniou-consulting.com>
-References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com> <1383673816-29293-6-git-send-email-panto@antoniou-consulting.com> <20131111163743.D136CC42330@trevor.secretlab.ca> <89491720-464B-47EC-A888-9CDE29B035F5@antoniou-consulting.com> <20131113013459.D3886C40F49@trevor.secretlab.ca> <F88335D9-6515-4E48-A21F-25039F16754A@antoniou-consulting.com>
-Date: Thu, 14 Nov 2013 10:44:20 +0900
-Message-Id: <20131114014420.E871CC4054D@trevor.secretlab.ca>
+        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <ED51965C-6EC8-48AE-A59C-CD09FFD57731@antoniou-consulting.com>
+References: <1383923170-24914-1-git-send-email-panto@antoniou-consulting.com> <1383923170-24914-3-git-send-email-panto@antoniou-consulting.com> <20131111184245.D569DC4234A@trevor.secretlab.ca> <ED51965C-6EC8-48AE-A59C-CD09FFD57731@antoniou-consulting.com>
+Date: Thu, 14 Nov 2013 10:31:24 +0900
+Message-Id: <20131114013124.7DD0AC404DF@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Nov 2013 10:03:37 +0100, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> On Nov 13, 2013, at 2:34 AM, Grant Likely wrote:
-> > On Tue, 12 Nov 2013 11:39:08 +0100, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> >>> On Tue,  5 Nov 2013 19:50:16 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> >>>> +	} else {
-> >>>> +		pr_warn("%s: node %p cannot be freed; memory is gone\n",
-> >>>> +				__func__, node);
-> >>>> +	}
-> >>>> +}
-> >>> 
-> >>> All of the above is potentially dangerous. There is no way to determine
-> >>> if anything still holds a reference to a node. The proper way to handle
-> >>> removal of properties is to have a release method when the last
-> >>> of_node_put is called.
-> >>> 
+On Tue, 12 Nov 2013 10:30:37 +0100, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+> Hi Grant,
+> 
+> On Nov 11, 2013, at 7:42 PM, Grant Likely wrote:
+> 
+> > On Fri,  8 Nov 2013 17:06:09 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+> >> Introduce DT overlay support.
+> >> Using this functionality it is possible to dynamically overlay a part of
+> >> the kernel's tree with another tree that's been dynamically loaded.
+> >> It is also possible to remove node and properties.
 > >> 
-> >> This is safe, and expected to be called only on a dynamically created tree,
-> >> that's what all the checks against OF_DYNAMIC guard against.
+> >> Note that the I2C client devices are 'special', as in they're not platform
+> >> devices. They need to be registered with an I2C specific method.
 > >> 
-> >> It is not ever meant to be called on an arbitrary tree, created by unflattening
-> >> a blob.
+> >> In general I2C is just no good platform device citizen and needs
+> >> special casing.
+> >> 
+> >> PCI is another special case where PCI device insertion and removal
+> >> is implemented in the PCI subsystem.
 > > 
-> > I am talking about when being used on a dynamic tree. The problem is
-> > when a driver or other code holds a reference to a dynamic nodes, but
-> > doesn't release it correctly. The memory must not be freed until all of
-> > the references are relased. OF_DYNAMIC doesn't actually help in that
-> > case, and it is the reason for of_node_get()/of_node_put()
+> > Actually. I2C isn't special in this regard; SPI, MDIO, PCI, USB are all
+> > in the same boat. platform_device just happens to be able to make a few
+> > assumptions. If anything, platform_device is the 'special' one. :-)
 > > 
 > 
-> I know, but even that is not enough. of_node_get()/of_node_put() handles the
-> case of references to the nodes, but not what happens with references to
-> properties. deadprops is mitigating the problem somewhat, but if we're going
-> to go to all the trouble of kobjectification let's do the props as well.
-> 
-> of_get_property could be modified to return a devm_kmalloced copy of the real
-> property and that would deal with most of the callers. Of course for
-> the small sized scalar data we can avoid the copy.
-> 
-> By using the devm_* interface we also avoid having to mess too much with the callers.
-> 
-> I.e. what about something like devm_of_get_property()?
+> I'm of the opinion that 'platform_device' shouldn't exist at all btw :)
+> Most of it's functionality can pretty easily be subsumed by device proper
+> and the world would be a better place :)
 
-Reference counting is already a horrible pain to keep correct. I don't
-see a better way to handle it in the dynamic case, so we're stuck with
-it, but I don't want to make it any harder. Adding ref counting to
-properties will make it harder than it already is to get the code right.
-I'm absolutely fine with a little bit of wasted memory in the form of
-deadprops when the alternative is so horrible. References at the node
-level is enough granularity.
+I'm fine for merging some/all of the platform_device fields into struct
+device. There are a few things, like resources, which would probably be
+useful to have common on all struct device variants. However,
+platform_device is far more about matching drivers to devices. Even if
+all of platform_device went into struct device, there would still need
+to be the platform_bus_type as the collection point for the device
+drivers.
 
-I don't think kduping the property is the solution either. I strongly
-suspect that will be far more expensive than the deadprop solution.
-
-> >>>> +{
-> >>>> +	struct device_node *node;
-> >>>> +
-> >>>> +	node = kzalloc(sizeof(*node), flags);
-> >>>> +	if (node == NULL)
-> >>>> +		return NULL;
-> >>>> +
-> >>>> +	node->name = kstrdup(name, flags);
-> >>>> +	if (node->name == NULL)
-> >>>> +		goto err_return;
-> >>>> +
-> >>>> +	node->type = kstrdup(type, flags);
-> >>>> +	if (node->type == NULL)
-> >>>> +		goto err_return;
-> >>>> +
-> >>>> +	node->full_name = kstrdup(full_name, flags);
-> >>>> +	if (node->type == NULL)
-> >>>> +		goto err_return;
-> >>> 
-> >>> Again, who do you expect the user of this function to be? If it is part
-> >>> of unflattening an overlay tree, is there a reason that the passed in
-> >>> names cannot be used directly instead of kmallocing them?
-> >>> 
-> >> 
-> >> I want to be able to get rid of the blob eventually; I don't need to keep
-> >> dragging it around.
+> > In all cases it must be the underlying subsystem that should be
+> > responsible for creation/removal of devices described in the overlay.
+> > Sometimes that will extend right down into the individual bus device
+> > drivers, but it is better if that can be avoided.
 > > 
-> > Why? It really doesn't hurt and it means data does not need to be
-> > copied.
 > 
-> Copying data lead to less problems that having to drag that blob around. 
-> That's just preference, so not a big issue.
+> Yes, that's the right way to handle this, but we're talking about 
+> serious modification in almost every kind of device core.
+> 
+> Just getting the basic concept of overlays in is hard without having
+> to tackle something like this.
+> 
+> In the future, I'd be ecstatic if we could get a per device class
+> filter, but it's nothing we can fix right now.
+> 
+> IMHO of course.
 
-Can you elaborate? What problems do you foresee being created by keeping
-the blob?
+It's fine to limit yourself to only platform_devices and i2c for now,
+but that doesn't give license to do the wrong thing with the
+implementation. The subsystem modifications really shouldn't be very
+invasive. It will need a per-subsystem notifier callback to deal with
+the add/remove events, and it will require the subsystem to maintain a
+list of parent bus nodes that it cares about and should create children
+for.
+
+Doing it with a central function like this patch does is not a good
+approach at all.
+
+> 
+> >> 
+> >> Bug fixes & PCI support by Guenter Roeck <groeck@juniper.net>
+> >> 
+> 
+> [snip]
+> 
+> >> +so a bar platform device will be registered and if a matching device driver
+> >> +is loaded the device will be created as expected.
+> >> +
+> >> +Overlay in-kernel API
+> >> +---------------------
+> >> +
+> >> +The steps typically required to get an overlay to work are as follows:
+> >> +
+> >> +1. Use of_build_overlay_info() to create an array of initialized and
+> >> +ready to use of_overlay_info structures.
+> >> +2. Call of_overlay() to apply the overlays declared in the array.
+> >> +3. If the overlay needs to be removed, call of_overlay_revert().
+> >> +4. Finally release the memory taken by the overlay info array by
+> >> +of_free_overlay_info().
+> > 
+> > Make of_overlay_info a kobject and use a release method to free it when
+> > all users go away. Freeing directly is a dangerous thing to do.
+> > 
+> 
+> It's more dangerous than even that. We also have the mess with the way
+> unflattening works (properties point directly to binary blob area
+> with no way to free per property data). In general freeing/releasing
+> device tree nodes is tricky on a good day.
+
+Repeating from my comment on the previous email, don't throw away the
+blob. There is no need and it makes your job harder.
+
+> 
+> I agree we have to move to a kobject model eventually. 
+> 
+> >> +
+> >> +/**
+> >> + * of_build_overlay_info	- Build an overlay info array
+> >> + * @tree:	Device node containing all the overlays
+> >> + * @cntp:	Pointer to where the overlay info count will be help
+> >> + * @ovinfop:	Pointer to the pointer of an overlay info structure.
+> >> + *
+> >> + * Helper function that given a tree containing overlay information,
+> >> + * allocates and builds an overlay info array containing it, ready
+> >> + * for use using of_overlay.
+> >> + *
+> >> + * Returns 0 on success with the @cntp @ovinfop pointers valid,
+> >> + * while on error a negative error value is returned.
+> >> + */
+> >> +int of_build_overlay_info(struct device_node *tree,
+> >> +		int *cntp, struct of_overlay_info **ovinfop);
+> >> +
+> >> +/**
+> >> + * of_free_overlay_info	- Free an overlay info array
+> >> + * @count:	Number of of_overlay_info's
+> >> + * @ovinfo_tab:	Array of overlay_info's to free
+> >> + *
+> >> + * Releases the memory of a previously allocate ovinfo array
+> >> + * by of_build_overlay_info.
+> >> + * Returns 0, or an error if the arguments are bogus.
+> >> + */
+> >> +int of_free_overlay_info(int count, struct of_overlay_info *ovinfo_tab);
+> >> +
+> >> +/**
+> >> + * of_overlay	- Apply @count overlays pointed at by @ovinfo_tab
+> >> + * @count:	Number of of_overlay_info's
+> >> + * @ovinfo_tab:	Array of overlay_info's to apply
+> >> + *
+> >> + * Applies the overlays given, while handling all error conditions
+> >> + * appropriately. Either the operation succeeds, or if it fails the
+> >> + * live tree is reverted to the state before the attempt.
+> >> + * Returns 0, or an error if the overlay attempt failed.
+> >> + */
+> >> +int of_overlay(int count, struct of_overlay_info *ovinfo_tab);
+> >> +
+> >> +/**
+> >> + * of_overlay_revert	- Revert a previously applied overlay
+> >> + * @count:	Number of of_overlay_info's
+> >> + * @ovinfo_tab:	Array of overlay_info's to apply
+> >> + *
+> >> + * Revert a previous overlay. The state of the live tree
+> >> + * is reverted to the one before the overlay.
+> >> + * Returns 0, or an error if the overlay table is not given.
+> >> + */
+> >> +int of_overlay_revert(int count, struct of_overlay_info *ovinfo_tab);
+> >> +
+> >> +Overlay DTS Format
+> >> +------------------
+> >> +
+> >> +The DTS of an overlay should have the following format:
+> >> +
+> >> +{
+> >> +	/* ignored properties by the overlay */
+> >> +
+> >> +	fragment@0 {	/* first child node */
+> >> +		target=<phandle>;	/* target of the overlay */
+> >> +		__overlay__ {
+> >> +			property-a;	/* add property-a to the target */
+> >> +			-property-b;	/* remove property-b from target */
+> >> +			node-a {	/* add to an existing, or create a node-a */
+> >> +				...
+> >> +			};
+> >> +			-node-b {	/* remove an existing node-b */
+> >> +				...
+> >> +			};
+> > 
+> > Are the node & property removals reversable? What about property
+> > modifications? If they are not, then it would be better to not support
+> > removals at all for now. Otherwise we'll end up with overlays that
+> > cannot be removed and I don't want to inadvertently put users into that
+> > situation.
+> 
+> Yes, everything is reversible. Doesn't mean that the drivers/driver core
+> can handle it. Using overlays is an excellent way to trigger bugs in
+> device removal as I've found out :)
+
+:)
+
+> 
+> > 
+> >> +		};
+> >> +	}
+> >> +	fragment@1 {	/* second child node */
+> >> +		...
+> >> +	};
+> >> +	/* more fragments follow */
+> >> +}
+> 
+> [snip]
+> 
+> >> +
+> >> +static int of_overlay_device_entry_change(struct of_overlay_info *ovinfo,
+> >> +		struct of_overlay_device_entry *de, int revert)
+> >> +{
+> > 
+> > I've got big problems here. This is entirely the wrong place to create
+> > and delete devices. Each subsystem needs to create and remove its own
+> > device types. To begin with, only the subsystem knows which busses are
+> > appropriate for creating child devices.
+> > 
+> 
+> It was the best I could under the circumstances, without having to touch
+> every subsystem.
+> 
+> 
+> > Second, it is incorrect to create a platform_device for every single
+> > node by default. Some nodes aren't devices at all. Just looking for a
+> > compatible property isn't sufficient either.
+> > 
+> 
+> Yep. 
+> 
+> > The solution here is for each subsystem to have it's own notifier, and
+> > only create a child device if the changed node has a parent the
+> > subsystem already knows about (because it's already populated device
+> > tree devices from that parent). This is also true for platform_devices.
+> > 
+> > Finally, sometimes the tips of the tree will get populated, but not
+> > until after some parent nodes have been delt with. In that case the
+> > creation of devices needs to be deferred back to the driver for the
+> > parent bus.
+> > 
+> 
+> Well, any solution that requires each and every subsystem to do dynamic
+> child insertions/removal is going to be hard sell.
+
+They have to do it /anyway/! How many subsystems are we talking about?
+SPI, I2C, platform_device (and amba_device). Maybe MDIO. To get to a
+useful subset it isn't very many targets. SPI and I2C will probably be
+receptive, so no problem there. The maintainer of drivers/of/platform.c
+is friendly too. :-) Haven't asked about MDIO.
+
+> 
+> What about something more gentle?
+> 
+> For example, I know that most of the cases fall into a couple of set
+> patterns for my case
+> 
+> a) Target is the ocp node (on chip peripheral node) and results in
+> the creation of platform devices under that node.
+
+No, I'm going to be hard-line on this. The code needs to be very
+explicit about which nodes cause devices to be created for nodes. It
+cannot be based on some arbitrary heuristics.
+
+I'm not asking you to do something hard though. For the platform devices
+I'd be fine with of_platform_populate() marking some kind of flag on
+struct device_node that says children of it should be used to create
+more platform_devices.
+
+> b) Target is one of the disabled devices under the ocp node
+> and the status property is modified, plus optional nodes are
+> added that result in the creation of more devices under the bus this
+> node controls. This is the case of enabled an I2C/SPI bus and inserting
+> children devices.
+
+Close, but again it has to match with what I've said above. The various
+subsystems need to keep track of which nodes describe a subsystem bus
+and only create devices on those nodes. It would be valuable to have a
+simple library for keeping track of that information which is usable by
+all subsystems, but it still needs to be under the control of the
+subsystem.
+
+> 
+> Perhaps the trick is having hooks about what to do in case certain
+> nodes are modified in a certain way, i.e. a notifier on the ocp node
+> would 'catch' those. The problem is a having a way to present this
+> information to the notifier in a way that's easy to be handled.
+> 
+> What do you think?
+
+It would probably work to have a single notifier for each entire
+subsystem instead of a separate notifier for each and every bus node.
+Once a subsystem marks a node as interesting, it is quite simple for a
+generic subsystem notifier callback to decide whether to create devices
+based on it. If done right, it should work without any changes to the
+SPI/I2C/etc bus drivers.
+
+> 
+> >> +
+> >> +/**
+> >> + * Revert one overlay
+> >> + * Either due to an error, or due to normal overlay removal.
+> >> + * Using the log entries, we revert any change to the live tree.
+> >> + * In the same manner, using the device entries we enable/disable
+> >> + * the platform devices appropriately.
+> >> + */
+> >> +static void of_overlay_revert_one(struct of_overlay_info *ovinfo)
+> >> +{
+> >> +	struct of_overlay_device_entry *de, *den;
+> >> +	struct of_overlay_log_entry *le, *len;
+> >> +	struct property *prop, **propp;
+> >> +	int ret;
+> >> +	unsigned long flags;
+> >> +
+> >> +	if (!ovinfo || !ovinfo->target || !ovinfo->overlay)
+> >> +		return;
+> >> +
+> >> +	pr_debug("%s: Reverting overlay on '%s'\n", __func__,
+> >> +			ovinfo->target->full_name);
+> >> +
+> >> +	/* overlay applied correctly, now create/destroy pdevs */
+> >> +	list_for_each_entry_safe_reverse(de, den, &ovinfo->de_list, node) {
+> >> +		of_overlay_device_entry_change(ovinfo, de, 1);
+> >> +		of_node_put(de->np);
+> >> +		list_del(&de->node);
+> >> +		kfree(de);
+> >> +	}
+> > 
+> > Can overlays interact in bad ways? If overlay 1 is installed before
+> > overlay 2, what happens if overlay 1 is removed?
+> > 
+> 
+> Yes, they can. It is not something easily fixed; the proper way would
+> be to calculate overlay intersection points and refuse to unload.
+
+I think this is important. If it cannot be solved immediately, then the
+kernel should enforce overlays always get removed in the reverse order
+that they were added. There may be use-cases that don't like it, but it
+is safe.
+
+> 
+> > Okay, my brain is tired. It's a complicated series and I don't see any
+> > obvious bits that can be split off and be independently useful. I would
+> > *really* like to see some test cases for this functionality. It's
+> > complicated enough to make me quite nervous.... in fact I would really
+> > like to see drivers/of/selftest.c become an early user of overlays. That
+> > would make the DT selftests executable on any platform.
+> > 
+> 
+> OK, I see your point. My brain is tired too, and I'm on travel too for
+> this week and the next. I'll see what I can come up with.
+
+Enjoy your trip.
 
 g.
