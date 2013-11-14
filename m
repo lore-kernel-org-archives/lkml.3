@@ -1,64 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab3KNRdt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 12:33:49 -0500
-Received: from sauhun.de ([89.238.76.85]:54666 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752952Ab3KNRdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 12:33:41 -0500
-Date: Thu, 14 Nov 2013 18:33:34 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Christian Ruppert <christian.ruppert@abilis.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: designware: add new ACPI IDs
-Message-ID: <20131114173334.GG11022@katana>
-References: <1384250250-10643-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1754954Ab3KNRgU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 12:36:20 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:52965 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753295Ab3KNRgM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 12:36:12 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0qt3EE9wi45a2ZFX"
-Content-Disposition: inline
-In-Reply-To: <1384250250-10643-1-git-send-email-mika.westerberg@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20131114165142.GA11645@bratislava.fso.intel.com>
+References: <1384394383-8582-1-git-send-email-olof@lixom.net>
+	<20131114165142.GA11645@bratislava.fso.intel.com>
+Date: Thu, 14 Nov 2013 09:36:10 -0800
+Message-ID: <CAOesGMjbwV=kJUHPnr5Nk7sYTXjM4Z3kxqDUDNJEbda8HWNFTA@mail.gmail.com>
+Subject: Re: [PATCH] i915: Use 120MHz LVDS SSC clock for gen5/gen6/gen7
+From: Olof Johansson <olof@lixom.net>
+To: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Duncan Laurie <dlaurie@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 14, 2013 at 8:53 AM, Rodrigo Vivi <rodrigo.vivi@gmail.com> wrote:
+> On Wed, Nov 13, 2013 at 05:59:43PM -0800, Olof Johansson wrote:
+>> From: Duncan Laurie <dlaurie@chromium.org>
+>>
+>> We had been using a DMI table workaround to select the right
+>> frequency for devices, but this is fragile and must be updated
+>> with every new platform.
+>>
+>> Instead the default case when VBT is missing is changed to use
+>> 120MHz clock for LVDS SSC for these generations.
+>>
+>> The docs for 2010-Core, SandyBridge, and IvyBridge all indicate
+>> that the reference frequency for LVDS is 120MHz:
+>>
+>> "2010 Core"
+>> http://intellinuxgraphics.org/IHD_OS_Vol3_Part3r2.pdf
+>> page 38
+>> Reference Frequency: 120MHz for CRT and LVDS.  100MHz for the FDI.
+>>
+>> "2011 SandyBridge"
+>> http://intellinuxgraphics.org/documentation/SNB/IHD_OS_Vol3_Part3.pdf
+>> page 33
+>> Reference Frequency: 120MHz for CRT, HDMI, LVDS.  100MHz for the FDI.
+>>
+>> "2012 IvyBridge"
+>> http://intellinuxgraphics.org/documentation/IVB/IHD_OS_Vol3_Part4.pdf
+>> page 27
+>> Reference Frequency: 120 MHz for CRT, HDMI, LVDS, 100MHz for the FDI.
+>
+> Checked. You are right.
+> And actually true even for HSW and BDW. 120 is the default and 100 is for test mode.
 
---0qt3EE9wi45a2ZFX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yeah, the patch predates HSW/BDW, so it was not mentioned.
 
-On Tue, Nov 12, 2013 at 11:57:30AM +0200, Mika Westerberg wrote:
-> Newer Intel PCHs with LPSS have the same Designware I2C controllers than
-> Haswell but the ACPI IDs differ. Add these IDs to the driver list.
->=20
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>> Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
+>> [olof: Fixup for recent base, switched from if/else to single call]
+>> Signed-off-by: Olof Johansson <olof@lixom.net>
+>> ---
+>>
+>> Daniel,
+>>
+>> This applies on top of -next, which I'm presuming is close to your
+>> for-3.13 base right now. It'd be good to see this go in since it's needed
+>> to boot on Chromebooks (with developer mode off), and is thus blocking
+>> testing next/mainline on a regular basis here.
+>>
+>> Thanks!
+>>
+>> -Olof
+>>
+>>  drivers/gpu/drm/i915/intel_bios.c | 7 ++++++-
+>>  1 file changed, 6 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
+>> index 6dd622d733b9..e4fba39631a5 100644
+>> --- a/drivers/gpu/drm/i915/intel_bios.c
+>> +++ b/drivers/gpu/drm/i915/intel_bios.c
+>> @@ -790,7 +790,12 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
+>>
+>>       /* Default to using SSC */
+>>       dev_priv->vbt.lvds_use_ssc = 1;
+>> -     dev_priv->vbt.lvds_ssc_freq = intel_bios_ssc_frequency(dev, 1);
+>> +     /*
+>> +      * Core/SandyBridge/IvyBridge use alternative (120MHz) reference
+>> +      * clock for LVDS.
+>> +      */
+>> +     dev_priv->vbt.lvds_ssc_freq = intel_bios_ssc_frequency(dev,
+>> +                     !HAS_PCH_SPLIT(dev));
+>
+> I'm just not convinced this is the right way to fix this here.
+> Mainly because for most of platforms the alternate is 100 and default is 120.
+> The ideal in my opinion should be to invert the alternate inside ssc_freqeuncy function and use the exception, that is probably IS_PINEVIEW(dev)...
+>
+> Not sure though... just a guess since this alternate was implemented for pineview...
 
-Applied to for-next, thanks!
+Seeing the history of some of this code (changes, followed by reverts,
+etc), I wanted to stay conservative with what we know works from a few
+years in the field by now. The vbt defaults are only used by
+Chromebooks, as far as I know, so it's not a code path shared with
+other platforms today. Also, the ssc_freq bit from the vbios table is
+passed into this function, so I don't think there's much point in
+reversing the logic in there just for one of the two code paths.
+
+Finally, from elsewhere in the same file:
+
+/*
+ * The genX designation typically refers to the render engine, so render
+ * capability related checks should use IS_GEN, while display and other checks
+ * have their own (e.g. HAS_PCH_SPLIT for ILK+ display, IS_foo for
+particular
+ * chips, etc.).
+ */
+
+Since this is display and not rendering related, that seems like the
+right thing to base it on instead of generation tests.
+
+I'm open for suggestions on improvements though, of course.
 
 
---0qt3EE9wi45a2ZFX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJShQluAAoJEBQN5MwUoCm2OQQQAKVOCsDMjSzo5P4I7j+jk1E1
-QXsi8DEMp2mPZf/kFddLZYlot2RaYkTV+swzqb3t+pCNpIBnPVqxVk1AgNed8EaT
-RnvNw/TSNwtVQQlgwwW92BKZvY0WCQk0PD2+xvmW33sRMUHqgrbeMor7Bx0ouup2
-A76MiD6S97DeTS//WyD2QEzEf1JYz9ECjwp7kA2Uqv/o5muC/7NvkWCdZ83oSBnr
-4iYFiN+mwmrjJ69OHaHGiwSSb34bAtf+LEtS7snTboxlB3oe2MCd/U/Fx2JDE/Oy
-yHS565Lcp0WlM9HxHGXtjSs0VbzSRKVANIKpRe1RTiJxOe01tcGPQw71l1R2yGb+
-DfaEHANzxrGupfbZj9oZem/1ugdT8Jc943qrw/MEBGlGM7cb6C3Sh8B00k+2aMKi
-8j6MjlzPwSxxt8tYuVwV0kWuuv2o/4LsQsc1adEcI3Tfbx84H/INHjkPnkd0gAol
-NhaLFgp1FBNJ9gj/3SmkwUYCNMb/H3SIYc1sA4YYOrJeI06VEgj4K9xzd3T+7Fim
-1PdSOjbLrqwudNqbmVF8GQYF6hUopMWtf88hVfdzc1NLr10yNNr2NMBz7Qrt5Xjt
-cSSTt4OlXPd5GdhPoXe+OFb6AdecYzHzcyDGqVigpiTzuGC2X+PHUbC8XFinix0f
-gdQGwgBhB+DKkRj/Eln1
-=cUp6
------END PGP SIGNATURE-----
-
---0qt3EE9wi45a2ZFX--
+-Olof
