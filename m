@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab3KNLQY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 06:16:24 -0500
-Received: from [204.155.152.216] ([204.155.152.216]:45719 "EHLO shutemov.name"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752928Ab3KNLQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 06:16:18 -0500
-Date: Thu, 14 Nov 2013 12:19:48 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ramfs: Fix memory leak on ramfs_fill_super error paths
-Message-ID: <20131114101948.GA12195@shutemov.name>
-References: <1384412359.28992.3.camel@phoenix>
+	id S1753469Ab3KNLRa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 06:17:30 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46416 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323Ab3KNLR1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 06:17:27 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <5284B11C.3020103@jp.fujitsu.com>
+Date: Thu, 14 Nov 2013 20:16:44 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384412359.28992.3.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: hpa@linux.intel.com
+CC: ebiederm@xmission.com, vgoyal@redhat.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, bp@alien8.de, akpm@linux-foundation.org,
+        fengguang.wu@intel.com, jingbai.ma@hp.com
+Subject: Re: [PATCH v5 1/3] x86, apic: add bsp_physical_apicid
+References: <20131112094952.4902.72689.stgit@localhost6.localdomain6> <20131112095153.4902.51290.stgit@localhost6.localdomain6>
+In-Reply-To: <20131112095153.4902.51290.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 02:59:19PM +0800, Axel Lin wrote:
-> The memory leak was introduced by commit 318ceed0884
-> "tidy up after d_make_root() conversion".
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  fs/ramfs/inode.c | 12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
-> index 39d1465..868a41e 100644
-> --- a/fs/ramfs/inode.c
-> +++ b/fs/ramfs/inode.c
-> @@ -221,7 +221,7 @@ int ramfs_fill_super(struct super_block *sb, void *data, int silent)
->  
->  	err = ramfs_parse_options(data, &fsi->mount_opts);
->  	if (err)
-> -		return err;
-> +		goto fail;
->  
->  	sb->s_maxbytes		= MAX_LFS_FILESIZE;
->  	sb->s_blocksize		= PAGE_CACHE_SIZE;
-> @@ -232,10 +232,16 @@ int ramfs_fill_super(struct super_block *sb, void *data, int silent)
->  
->  	inode = ramfs_get_inode(sb, NULL, S_IFDIR | fsi->mount_opts.mode, 0);
->  	sb->s_root = d_make_root(inode);
-> -	if (!sb->s_root)
-> -		return -ENOMEM;
-> +	if (!sb->s_root) {
-> +		err = -ENOMEM;
-> +		goto fail;
+Hello HPA,
+
+I have another question relevant to http://lkml.org/lkml/2013/11/12/311.
+
+(2013/11/12 18:51), HATAYAMA Daisuke wrote:
+<cut>
+> @@ -2589,3 +2593,14 @@ static int __init lapic_insert_resource(void)
+>    * that is using request_resource
+>    */
+>   late_initcall(lapic_insert_resource);
+> +
+> +void __init bsp_physical_apicid_init(void)
+> +{
+> +	u32 l, h;
+> +
+> +	if (boot_cpu_data.x86 >= 6 && cpu_has_apic) {
+> +		rdmsr(MSR_IA32_APICBASE, l, h);
+> +		if (!(l & MSR_IA32_APICBASE_BSP))
+> +			bsp_physical_apicid = boot_cpu_data.initial_apicid;
 > +	}
->  
->  	return 0;
-> +fail:
-> +	kfree(fsi);
-> +	sb->s_fs_info = NULL;
+> +}
 
-Why do we need this?
-mount_nodev() seems just drop super block if filler fails.
+So, rigrously, we should not use rdmsr for MSR_IA32_APICBASE here since this can
+return wrong value on some clustered system?
 
-> +	return err;
+At least all the mpparse.c, amdtopology.c and visws_quirks.c has referred to
+MP table only, so there's no issue by simply dropping this code.
+
+> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+> index 2793d1f..28bea2c 100644
+> --- a/arch/x86/kernel/cpu/common.c
+> +++ b/arch/x86/kernel/cpu/common.c
+> @@ -681,7 +681,7 @@ static void identify_cpu_without_cpuid(struct cpuinfo_x86 *c)
+>  /*
+>   * Do minimum CPU detection early.
+>   * Fields really needed: vendor, cpuid_level, family, model, mask,
+> - * cache alignment.
+> + * cache alignment, initial_apicid.
+>   * The others are not touched to avoid unwanted side effects.
+>   *
+>   * WARNING: this function is only called on the BP.  Don't add code here
+> @@ -725,6 +725,9 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
+>  		this_cpu->c_bsp_init(c);
+>
+>  	setup_force_cpu_cap(X86_FEATURE_ALWAYS);
+> +
+> +	if (c->cpuid_level >= 0x00000001)
+> +		c->initial_apicid = (cpuid_ebx(1) >> 24) & 0xFF;
 >  }
->  
->  struct dentry *ramfs_mount(struct file_system_type *fs_type,
+
+Can the initial APID IDs obtained in this way using cpuid duplicate on some
+clustered system?
+
+Can we consider each apic->get_apic_id() method return *initial* APIC ID?
+According to 8.4 Multiple-Processor (MP) Initialization, Intel System Programming
+Guide, the APID IDs written into MADT and MP table are the initial ones.
+So, APID IDs to be compared with these must be the initial ones.
+
 -- 
- Kirill A. Shutemov
+Thanks.
+HATAYAMA, Daisuke
+
