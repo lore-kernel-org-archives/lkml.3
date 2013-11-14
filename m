@@ -1,138 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab3KNRHx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 12:07:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40958 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab3KNRHo (ORCPT
+	id S1755705Ab3KNRIU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 12:08:20 -0500
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:27545 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755350Ab3KNRII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 12:07:44 -0500
-Date: Thu, 14 Nov 2013 09:06:38 -0800
-From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-e310718d0e83aeb9969264dc577c45db16d9104d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, will.deacon@arm.com,
-        jean.pihet@linaro.org, rmk@arm.linux.org.uk, jolsa@redhat.com,
-        acme@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        will.deacon@arm.com, torvalds@linux-foundation.org,
-        jean.pihet@linaro.org, rmk@arm.linux.org.uk, jolsa@redhat.com,
-        acme@infradead.org, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tools/perf/build:
-  Fix feature-libunwind-debug-frame handling
-Git-Commit-ID: e310718d0e83aeb9969264dc577c45db16d9104d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 14 Nov 2013 09:06:45 -0800 (PST)
+	Thu, 14 Nov 2013 12:08:08 -0500
+X-AuditID: cbfec372-b7fcc6d0000068fc-5a-528503778795
+Date: Thu, 14 Nov 2013 15:08:00 -0200
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Robert Richter <rric@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-edac@vger.kernel.org,
+        Aristeu Rozanski Filho <arozansk@redhat.com>
+Subject: Re: [GIT PULL] mpc85xx_edac changes for 3.13
+Message-id: <20131114150800.7adc9577@samsung.com>
+In-reply-to: <20131114142125.GA29214@jtlinux>
+References: <20131112161901.GA15637@jtlinux>
+ <CA+55aFzJhyo8bKBchYq0Q=rwPv_-v-xWgOKWxKBcSBycMZcmTg@mail.gmail.com>
+ <20131114054750.GA27791@kroah.com> <20131114092009.GA4960@pd.tnic>
+ <20131114091843.4bb72afc@samsung.com> <20131114112418.GH4960@pd.tnic>
+ <20131114142125.GA29214@jtlinux>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t/hQN1y5tYgg3U/NCzaTvxms/i84R+b
+	xcR+TYury84yWTQvXs9mMXn/JTaLC6camCwu75rDZnFw1UYmi0d9b9kduDy+t/axeGxa1cnm
+	cWLGbxaP/XPXsHvs2vOWxeP9vqtsHptPV3t83iTnMeVQO0sAZxSXTUpqTmZZapG+XQJXxpHe
+	DSwFEzgq3r7UaWCcx9bFyMkhIWAisfPoWSYIW0ziwr31QHEuDiGBJYwSH9//YIFwupkkJj9f
+	DVbFIqAqsXHWNhYQm03ASOJVYwsriC0CZG+9fJsRpIFZ4A+TRNePaWANwgKmEoeuXWcGsXkF
+	DCWev5sH1sApoCvRvmEdE8SGxUwS7Z1/gKZyAN3hJLH7gBREvaDEj8n3wJYxC2hJbN7WxAph
+	y0tsXvOWeQKjwCwkZbOQlM1CUraAkXkVo2hpcXJBcVJ6rqFecWJucWleul5yfu4mRkikFO1g
+	fLbB6hCjAAejEg9vwc7mICHWxLLiytxDjBIczEoivDyMrUFCvCmJlVWpRfnxRaU5qcWHGJk4
+	OKUaGKOOil2vjMnyvvn2fWR06n2+e5lp/h9f2wq5nrh7pfMxW/Fm9p+3VPwlonuYJrUdc/ab
+	sbju7lIRp/w5d9ueibxKdXF0aPuc4RCXKCZhbWLSJVPzUkm1WOrhDK9V6Xzzr9S479y1mkdt
+	3oT/9zRyTtan6aZ/Fffb8FK0ROXQEs7tX8qbf7kcUmIpzkg01GIuKk4EAGZCllJyAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e310718d0e83aeb9969264dc577c45db16d9104d
-Gitweb:     http://git.kernel.org/tip/e310718d0e83aeb9969264dc577c45db16d9104d
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Thu, 14 Nov 2013 08:25:24 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 14 Nov 2013 18:00:45 +0100
+Em Thu, 14 Nov 2013 15:21:25 +0100
+Johannes Thumshirn <johannes.thumshirn@men.de> escreveu:
 
-tools/perf/build: Fix feature-libunwind-debug-frame handling
+> On Thu, Nov 14, 2013 at 12:24:18PM +0100, Borislav Petkov wrote:
+> > On Thu, Nov 14, 2013 at 09:18:43AM -0200, Mauro Carvalho Chehab wrote:
+> > > So, in practice, Borislav was working as a maintainer for amd64 EDAC
+> > > patches, and I working mainly as Intel EDAC maintainer. The (few)
+> > > other arm EDAC patches were either coming via my tree or via Boris
+> > > tree, depending on who got them first.
+> >
+> > Yeah, and I think this has worked pretty good in the past
 
-Set feature-libunwind-debug-frame. We don't want it in
-CORE_FEATURE_TESTS because it's not the generic case, but we
-need to set it in the !feature-libunwind case.
+Fully agreed.
 
-Also, because x86 distributions typically don't have
-dwarf_find_debug_frame() unwinding method:
+> > so if you want
+> > to, we can continue the same thing of sharing the load on EDAC patches
+> > and we both do interim maintainers until Doug steps in.
 
-  test-libunwind-debug-frame.c:(.text+0x31): undefined reference to `_Ux86_64_dwarf_find_debug_frame'
+Works for me.
 
-Restrict this new API to ARM for the time being.
+> >
+> > And since it won't change any workflow for Linus, he's probably fine
+> > with it too.
+> >
+> > Yes, no? Comments?
+> 
+> OK for me. For the MPC85xx EDAC I'll do the testing then and either Borislav or
+> Mauro send them upstream.
 
-With this patch test-all.c works again, so repeat perf builds
-are  fast again:
+Ok.
 
-  comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
-  [...]
-
-       0,452899660 seconds time elapsed                                          ( +-  0,11% )
-
-While with before it was:
-
-  comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
-  [...]
-
-       1,674001829 seconds time elapsed                                          ( +-  0,16% )
-
-[ Includes fix to config/feature-checks/Makefile from Will Deacon. ]
-
-Tested-by: Will Deacon <will.deacon@arm.com>
-Tested-by: Jean Pihet <jean.pihet@linaro.org>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-scsoctqzmou3rpkixCHezy9e@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/config/Makefile                  | 10 ++++++++--
- tools/perf/config/feature-checks/Makefile   |  3 +++
- tools/perf/config/feature-checks/test-all.c |  4 ----
- 3 files changed, 11 insertions(+), 6 deletions(-)
-
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 861379e..f7d11a8 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -329,8 +329,14 @@ ifndef NO_LIBUNWIND
-     msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 1.1);
-     NO_LIBUNWIND := 1
-   else
--    ifneq ($(feature-libunwind-debug-frame), 1)
--      msg := $(warning No debug_frame support found in libunwind);
-+    ifeq ($(ARCH),arm)
-+      $(call feature_check,libunwind-debug-frame)
-+      ifneq ($(feature-libunwind-debug-frame), 1)
-+        msg := $(warning No debug_frame support found in libunwind);
-+        CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
-+      endif
-+    else
-+      # non-ARM has no dwarf_find_debug_frame() function:
-       CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
-     endif
-   endif
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index e8e195f..87e7900 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -76,6 +76,9 @@ test-libnuma:
- test-libunwind:
- 	$(BUILD) $(LIBUNWIND_LIBS) -lelf
- 
-+test-libunwind-debug-frame:
-+	$(BUILD) $(LIBUNWIND_LIBS) -lelf
-+
- test-libaudit:
- 	$(BUILD) -laudit
- 
-diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
-index 799865b..59e7a70 100644
---- a/tools/perf/config/feature-checks/test-all.c
-+++ b/tools/perf/config/feature-checks/test-all.c
-@@ -49,10 +49,6 @@
- # include "test-libunwind.c"
- #undef main
- 
--#define main main_test_libunwind_debug_frame
--# include "test-libunwind-debug-frame.c"
--#undef main
--
- #define main main_test_libaudit
- # include "test-libaudit.c"
- #undef main
+Regards,
+Mauro
