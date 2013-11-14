@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab3KNMnb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 07:43:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38080 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753860Ab3KNMnZ (ORCPT
+	id S1753949Ab3KNMoI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 07:44:08 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:6881 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631Ab3KNMoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 07:43:25 -0500
-Date: Thu, 14 Nov 2013 04:43:07 -0800
-From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-bb4c5500c9c5b809696eee212843e731721a6e15@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, torvalds@linux-foundation.org, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tools/perf/build: Fix timerfd feature check
-Git-Commit-ID: bb4c5500c9c5b809696eee212843e731721a6e15
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 14 Nov 2013 07:44:05 -0500
+Message-ID: <5284C45F.5050400@huawei.com>
+Date: Thu, 14 Nov 2013 20:38:55 +0800
+From: Weng Meiling <wengmeiling.weng@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] nfsd:add '\n' when read file supported_krb5_enctypes
+References: <52786412.5030403@huawei.com> <527C9170.9030005@huawei.com> <20131113160937.GI28033@fieldses.org>
+In-Reply-To: <20131113160937.GI28033@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 14 Nov 2013 04:43:13 -0800 (PST)
+X-Originating-IP: [10.135.68.127]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bb4c5500c9c5b809696eee212843e731721a6e15
-Gitweb:     http://git.kernel.org/tip/bb4c5500c9c5b809696eee212843e731721a6e15
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Thu, 14 Nov 2013 08:33:24 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 14 Nov 2013 13:36:00 +0100
+On 2013/11/14 0:09, J. Bruce Fields wrote:
+> On Fri, Nov 08, 2013 at 03:23:28PM +0800, Weng Meiling wrote:
+>>
+>> From: Weng Meiling <wengmeiling.weng@huawei.com>
+> 
+> I agree completely that a \n at the end would make more sense.
+> 
+> Have you tested that this nfs-utils is OK with this change?
+> 
+> I suspect that the only code that reads this file anywhere is
+> 
+> 	nfs-utils/utils/gssd/svcgssd_krb5.c:parse_enctypes()
+> 
+> And on a quick skim of that function.... I *think* it should be fine.
+> But I'd be happier if you could confirm that you've tested it.
+> 
+> --b.
+> 
+After this change， starting the nfs server， other host can use the
+server's shared files normally :-).
 
-tools/perf/build: Fix timerfd feature check
+Thanks！
+Weng Meilling
+>>
+>> Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+>> ---
+>>  fs/nfsd/nfsctl.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+>> index 7f55517..31db42c 100644
+>> --- a/fs/nfsd/nfsctl.c
+>> +++ b/fs/nfsd/nfsctl.c
+>> @@ -188,7 +188,7 @@ static const struct file_operations export_features_operations = {
+>>  #if defined(CONFIG_SUNRPC_GSS) || defined(CONFIG_SUNRPC_GSS_MODULE)
+>>  static int supported_enctypes_show(struct seq_file *m, void *v)
+>>  {
+>> -	seq_printf(m, KRB5_SUPPORTED_ENCTYPES);
+>> +	seq_printf(m, "%s\n", KRB5_SUPPORTED_ENCTYPES);
+>>  	return 0;
+>>  }
+>>
+>> -- 
+>> 1.8.3.1
+>>
+>>
+>>
+>>
+> 
+> 
 
-'feature_timerfd' is checked all the time and calculated explicitly,
-in a serial fashion. Add it to CORE_FEATURE_TESTS which causes it to
-be built in parallel, using the newfangled parallel build autodetection
-code.
 
-This shaves 137 msecs off the perf build time on my system, which
-speeds up the common case cached build by 43%:
-
-Before:
-
-  comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
-  [...]
-         0,453771441 seconds time elapsed                                          ( +-  0,09% )
-
-After:
-
-  comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
-  [...]
-         0,316290185 seconds time elapsed                                          ( +-  0,24% )
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-bb92CmexihopoSyqnkqepvsy@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/config/Makefile | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index f5905f2..861379e 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -142,7 +142,8 @@ CORE_FEATURE_TESTS =			\
- 	libunwind			\
- 	on-exit				\
- 	stackprotector			\
--	stackprotector-all
-+	stackprotector-all		\
-+	timerfd
- 
- #
- # So here we detect whether test-all was rebuilt, to be able
-@@ -405,7 +406,6 @@ else
-   endif
- endif
- 
--$(call feature_check,timerfd)
- ifeq ($(feature-timerfd), 1)
-   CFLAGS += -DHAVE_TIMERFD_SUPPORT
- else
