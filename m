@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab3KNQah (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:30:37 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:52815 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754829Ab3KNQa1 (ORCPT
+	id S1755128Ab3KNQdC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:33:02 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:56725 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab3KNQcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:30:27 -0500
+	Thu, 14 Nov 2013 11:32:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <26648741.38OpUJA4ry@vostro.rjw.lan>
-References: <1384289548-26015-1-git-send-email-amit.pundir@linaro.org>
- <44678154.uI915mOzGH@vostro.rjw.lan> <CAMi1Hd06=-DrdoM7nFkOo5VFB2h7oYMc_7Y2ujop6d_vtWLgpw@mail.gmail.com>
- <26648741.38OpUJA4ry@vostro.rjw.lan>
-From: Amit Pundir <amit.pundir@linaro.org>
-Date: Thu, 14 Nov 2013 21:59:44 +0530
-Message-ID: <CAMi1Hd2F5iWGztjMOM7UarEeXdUTCGh7ZV=XxhX1u-kKCRt-LQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH v2] epoll: allow EPOLLWAKEUP flag if PM_SLEEP is enabled
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        John Stultz <john.stultz@linaro.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [139.11.160.113]
+In-Reply-To: <11018682.0TjgocUWod@flatron>
+References: <5283BC93.1090801@koalo.de>
+	<2385512.qcT1vt8HYp@flatron>
+	<CABDT8WyUK6tDneDEm0G3o0zJHXaVTZp8JAMxOp5LRKQYG-7Umw@mail.gmail.com>
+	<11018682.0TjgocUWod@flatron>
+Date: Thu, 14 Nov 2013 17:32:53 +0100
+Message-ID: <CABDT8Wxy-aA5CbZUSXRtod3i_9rBhXqGyGi+tBYGkYtygQmmpw@mail.gmail.com>
+Subject: Re: [PATCHv4] dmaengine: Add support for BCM2835
+From: Florian Meier <florian.meier@koalo.de>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree <devicetree@vger.kernel.org>, alsa-devel@alsa-project.org,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        dmaengine <dmaengine@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Matt Porter <matt.porter@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 November 2013 03:14, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Wednesday, November 13, 2013 01:35:38 PM Amit Pundir wrote:
->> On 13 November 2013 05:29, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Wednesday, November 13, 2013 02:22:28 AM Amit Pundir wrote:
->> >> ep_create_wakeup_source() reports ENOMEM
+2013/11/14 Tomasz Figa <tomasz.figa@gmail.com>:
+> On Thursday 14 of November 2013 17:14:31 Florian Meier wrote:
+>> >> >> I am becoming desperate anyway that this migration will ever fully
+>> >> >> take place....
+>> >> >
+>> >> > Why not? It's just a matter of people like you working on this (and
+>> >> > addressing some review comments ;)).
+>> >>
+>> >> The most common comment about this is that people will not put effort in
+>> >> the upstream kernel as long as there is no comfortable way for debugging
+>> >> in the upstream kernel (i.e. at least USB support).......
 >> >
->> > That needs to be fixed too.  I suppose we can make the wakeup_source_register()
->> > stub for CONFIG_PM_SLEEP unset return ERR_PTR(-ENOSYS) or something like that
->> > and ep_create_wakeup_source() return that instead of -ENOMEM.  It looks like
->> > eventpoll.c is the only user of it built for CONFIG_PM_SLEEP unset, but that
->> > needs to be double checked.
+>> > Right, you need USB to have ethernet working. Still, IMHO UART (for
+>> > console) + ethernet (for file transfer or NFS root) is the reasonable
+>> > setup allowing you to debug further drivers in a comfortable way.
 >>
->> Instead of modifying wakeup_source_register() stub, what if I make
->> ep_create_wakeup_source() static inline as well and use its stub to
->> return -ENOSYS when CONFIG_PM_SLEEP is not set?
->> ep_create_wakeup_source() is used only in fs/eventpoll.c anyway.
+>> I am fine with UART and switching SD cards :-)
+>> But apparently this is not generally accepted.
 >
-> Well, you can do that too.
->
+> Still, isn't some work on USB support for RPi already going on? I believe
+> Matt Porter (now on Cc) has been working on unifying dwc2 host-mode
+> driver with Samsung s3c-hsotg device-mode driver (for the same IP) to
+> get full OTG support on all applicable platforms.
 
-On second thought we may skip modifying ep_create_wakeup_source() or
-wakeup_source_register() altogether because once we drop EPOLLWAKEUP
-from epoll events mask(if PM_SLEEP is unset) then I don't see us
-running into ep_create_wakeup_source() again. And the only reason for
-ep_create_wakeup_source() failure will be -ENOMEM as far as I can see.
-
->> >> if wakeup_source_register()
->> >> returns NULL. ep_create_wakeup_source() assumes that NULL is only
->> >> returned if we run into ENOMEM but NULL is also returned when
->> >> CONFIG_PM_SLEEP is disabled.
->> >>
->> >> Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
->> >> ---
->> >> Changed in v2:
->> >> Using static inline functions instead of #ifdefs
->> >> ---
->> >>  fs/eventpoll.c                 |    3 +--
->> >>  include/uapi/linux/eventpoll.h |   12 ++++++++++++
->> >>  2 files changed, 13 insertions(+), 2 deletions(-)
->> >>
->> >> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
->> >> index 473e09d..10f9c43 100644
->> >> --- a/fs/eventpoll.c
->> >> +++ b/fs/eventpoll.c
->> >> @@ -1820,8 +1820,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
->> >>               goto error_tgt_fput;
->> >>
->> >>       /* Check if EPOLLWAKEUP is allowed */
->> >> -     if ((epds.events & EPOLLWAKEUP) && !capable(CAP_BLOCK_SUSPEND))
->> >> -             epds.events &= ~EPOLLWAKEUP;
->> >> +     ep_epollwakeup_check(&epds.events);
->> >
->> > The "check" part of the name kind of suggests that the function will not change
->> > things.  What about ep_adjust_epollwakeup() or something along these lines?
->>
->> I see couple of ep_set_* functions in eventpoll.c. Does it make sense
->> to have something like ep_set_epollwakeup()?
->
-> This particular one doesn't really set anything.  I suppose that a name like
-> "ep_take_care_of_epollwakeup" might be somewhat closer to what it really does ...
-
-I'm running out of ideas on this one, lets go with
-"ep_take_care_of_epollwakeup".
-
-Regards,
-Amit Pundir
-
->
-> Thanks!
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+That sounds great! I never heard about that.
+Maybe some day it really happens that Raspbian uses the upstream kernel :-)
