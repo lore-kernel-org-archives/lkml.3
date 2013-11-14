@@ -1,42 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab3KNNwc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 08:52:32 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57379 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729Ab3KNNwY convert rfc822-to-8bit (ORCPT
+	id S1753945Ab3KNOBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 09:01:13 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58441 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753488Ab3KNOBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 08:52:24 -0500
-Date: Thu, 14 Nov 2013 13:52:09 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Andreas Werner <wernerandy@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Black screen with GMA500 driver on Atom E680 (invalid VBT
- signature)
-Message-ID: <20131114135209.0a8a15ff@alan.etchedpixels.co.uk>
-In-Reply-To: <20131113183418.GA1593@thinkpad.fritz.box>
-References: <20131113183418.GA1593@thinkpad.fritz.box>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 14 Nov 2013 09:01:06 -0500
+Date: Thu, 14 Nov 2013 14:01:03 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Sricharan R <r.sricharan@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony@atomide.com" <tony@atomide.com>, "rnayak@ti.com" <rnayak@ti.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "nm@ti.com" <nm@ti.com>,
+        "bcousson@baylibre.com" <bcousson@baylibre.com>
+Subject: Re: [PATCH V4 1/4] DRIVERS: IRQCHIP: IRQ-GIC: Add support for
+ routable irqs
+Message-ID: <20131114140103.GA28328@e106331-lin.cambridge.arm.com>
+References: <1384431530-2166-1-git-send-email-r.sricharan@ti.com>
+ <1384431530-2166-2-git-send-email-r.sricharan@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384431530-2166-2-git-send-email-r.sricharan@ti.com>
+Thread-Topic: [PATCH V4 1/4] DRIVERS: IRQCHIP: IRQ-GIC: Add support for
+ routable irqs
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> My question now is, is it a bug in the driver or in the VGA Bios?
+On Thu, Nov 14, 2013 at 12:18:47PM +0000, Sricharan R wrote:
+> In some socs the gic can be preceded by a crossbar IP which
+> routes the peripheral interrupts to the gic inputs. The peripheral
+> interrupts are associated with a fixed crossbar input line and the
+> crossbar routes that to one of the free gic input line.
 > 
-> I´ve checked the VGA bios and did a hex dump but there is really no "$VBT" string.
-> On an Atom Gen1 CPU with intel GMA500 Graphic there is the string in the VGA BIOS.
-> But if i create the VGA BIOS for intel Atom E680 which has a GMA600 Graphic
-> there is no string.
+> The DT entries for peripherals provides the fixed crossbar input line
+> as its interrupt number and the mapping code should associate this with
+> a free gic input line. This patch adds the support inside the gic irqchip
+> to handle such routable irqs. The routable irqs are registered in a linear
+> domain. The registered routable domain's callback should be implemented
+> to get a free irq and to configure the IP to route it.
 > 
-> Does anybody of you running the GMA500 driver with and Atom E680 without having this
-> problem? Or does anybody know how to get this string into the VGA BIOS?
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Rajendra Nayak <rnayak@ti.com>
+> Cc: Marc Zyngier <marc.zyngier@arm.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+>  [V2] Added default routable-irqs functions to avoid
+>       unnecessary if checks as per Thomas Gleixner comments
+>       and renamed routable-irq binding as per
+>       Kumar Gala <galak@codeaurora.org> comments.
+> 
+>  [V3] Addressed unnecessary warn-on and updated default
+>       xlate function as per Thomas Gleixner comments
+> 
+>  Documentation/devicetree/bindings/arm/gic.txt |    6 ++
+>  drivers/irqchip/irq-gic.c                     |   81 ++++++++++++++++++++++---
+>  include/linux/irqchip/arm-gic.h               |    7 ++-
+>  3 files changed, 83 insertions(+), 11 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+> index 3dfb0c0..5357745 100644
+> --- a/Documentation/devicetree/bindings/arm/gic.txt
+> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+> @@ -49,6 +49,11 @@ Optional
+>    regions, used when the GIC doesn't have banked registers. The offset is
+>    cpu-offset * cpu-nr.
+>  
+> +- arm,routable-irqs : Total number of gic irq inputs which are not directly
+> +		  connected from the peripherals, but are routed dynamically
+> +		  by a crossbar/multiplexer preceding the GIC. The GIC irq
+> +		  input line is assigned dynamically when the corresponding
+> +		  peripheral's crossbar line is mapped.
 
-E680 I believe will try and use the other style of parsing. I never got
-my hands on one to confirm that but in general E6xx seems to use
-Moorestown style tables instead and you'll only get support for some
-outputs.
+I'm not keen on the design of the arm,routable-irqs property. The set of
+IRQs which the crossbar IP can use is a property of which IRQ lines it
+has routed to the GIC. I don't see why that should be considered a
+property of the GIC; it's a property of the crossbar IP's attachment to
+the GIC.
 
+Given we already have a mechanism for describing the attachment (i.e.
+the interrupts property) where the property appears on the node for the
+device generating/propagating the interrupt, I don't see why we should
+do differently here.
+
+Listing 160 interrupts in the crossbar node is clearly something we
+don't want to have to do.  If we had a property that we could use to
+define a range (or multiple ranges) of interrupts, then the crossbar
+driver could go and request those ranges from its interrupt-parent (the
+GIC) and the GIC driver could reserve/allocate the irqdomain at that
+time.
+
+This feels like a point-hack, counter in style to the vast majority of
+provider/consumer bindings. It only allows for one multiplexer before
+the GIC. What if we had multiple multiplexers feeding into the GIC?
+Describing the attachment on the multiplexer allows that to be handled,
+describing that on the GIC does not.
+
+Describing the attachement on the multiplexer would also prevent the
+duplication of information (i.e. the max-irqs property in the crossbar
+binding).
+
+Thanks,
+Mark.
