@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755Ab3KNQUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 11:20:19 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:53873 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299Ab3KNQQ7 (ORCPT
+	id S1755815Ab3KNQUj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 11:20:39 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:59478 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755092Ab3KNQQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 11:16:59 -0500
+	Thu, 14 Nov 2013 11:16:51 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>,
-        Henri Doreau <henri.doreau@cea.fr>, Peng Tao <bergwolf@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Andreas Dilger <adilger@whamcloud.com>,
+        "John L. Hammond" <john.hammond@intel.com>,
+        Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 39/40] staging/lustre/utils: HSM Posix CopyTool
-Date: Fri, 15 Nov 2013 00:13:41 +0800
-Message-Id: <1384445622-12346-40-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 37/40] staging/lustre/idl: remove LASSERT/CLASSERT from lustre_idl.h
+Date: Fri, 15 Nov 2013 00:13:39 +0800
+Message-Id: <1384445622-12346-38-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
 References: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
@@ -23,129 +23,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+From: Andreas Dilger <adilger@whamcloud.com>
 
-POSIX HSM CopyTool utils named lhsmtool_posix.
-This user space command is the 'glue" between Lustre-HSM
-and a POSIX filesytem used as a backend.
-The main functionalities implemented are:
-daemon mode:
-- archive: read in lustre write with POSIX backend
-- restore: read in POSIX backend write to Lustre
-- remove: remove an entry from backend
-cmd line mode:
-- import: create in lustre a released file from a backend file
-- rebind: change the FID associated to a file in the backend
-- maxseq: get the larger sequence of FID found in the backend
+Remove the usage of LASSERT() and CLASSERT() from lustre_idl.h, so
+that it is usable from userspace programs if needed.  These have
+crept in over the years, but are not intended to be there.
 
-The 2 last options are used for disaster recovery mode
+The CLASSERT() checks for fid swabbing were largely redundant, and
+have been moved to lustre/fid/fid_handler.c.
 
-This tools is also used for all the non regression tests made in
-sanity-hsm.sh
+The fid_is_sane() macro has been modified to remove the check that
+f_ver == 0, since this will eventually not be true, and the client
+or server should not crash if it sees such a FID during usage.
 
-Lustre-change: http://review.whamcloud.com/4737
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2062
-Signed-off-by: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
-Signed-off-by: Henri Doreau <henri.doreau@cea.fr>
-Reviewed-by: John L. Hammond <john.hammond@intel.com>
+There are still a few LASSERTs that need to be removed when FID-on-OST
+is landed, but I don't want to remove them before that code lands.
+
+There are also uses of CERROR() that could be removed at that time.
+
+Lustre-change: http://review.whamcloud.com/5682
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-1606
+Signed-off-by: Andreas Dilger <adilger@whamcloud.com>
+Signed-off-by: John L. Hammond <john.hammond@intel.com>
 Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+Reviewed-by: Christopher J. Morrone <chris.morrone.llnl@gmail.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- .../lustre/lustre/include/lustre/lustre_user.h     |    9 ++---
- .../lustre/lustre/include/lustre/lustreapi.h       |   36 +++++++++++++-------
- 2 files changed, 26 insertions(+), 19 deletions(-)
+ .../lustre/lustre/include/lustre/lustre_idl.h      |   43 ++++----------------
+ 1 file changed, 8 insertions(+), 35 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-index 49ab5be..c63a1ae 100644
---- a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-+++ b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-@@ -311,6 +311,9 @@ struct ost_id {
- #define LOV_ALL_STRIPES       0xffff /* only valid for directories */
- #define LOV_V1_INSANE_STRIPE_COUNT 65532 /* maximum stripe count bz13933 */
+diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
+index 5505cc5..9d3bc29 100644
+--- a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
++++ b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
+@@ -91,8 +91,8 @@
+ #ifndef _LUSTRE_IDL_H_
+ #define _LUSTRE_IDL_H_
  
-+#define XATTR_LUSTRE_PREFIX	"lustre."
-+#define XATTR_LUSTRE_LOV	XATTR_LUSTRE_PREFIX"lov"
-+
- #define lov_user_ost_data lov_user_ost_data_v1
- struct lov_user_ost_data_v1 {     /* per-stripe data structure */
- 	struct ost_id l_ost_oi;	  /* OST object ID */
-@@ -1158,12 +1161,6 @@ struct hsm_progress {
- 	__u32			padding;
- };
+-#if !defined(LASSERT) && !defined(LPU64)
+-#include <linux/libcfs/libcfs.h> /* for LASSERT, LPUX64, etc */
++#if !defined(LPU64)
++#include <linux/libcfs/libcfs.h> /* for LPUX64, etc */
+ #endif
  
--/**
-- * Use by copytool during any hsm request they handled.
-- * This structure is initialized by llapi_hsm_copy_start()
-- * which is an helper over the ioctl() interface
-- * Store Lustre, internal use only, data.
-- */
- struct hsm_copy {
- 	__u64			hc_data_version;
- 	__u16			hc_flags;
-diff --git a/drivers/staging/lustre/lustre/include/lustre/lustreapi.h b/drivers/staging/lustre/lustre/include/lustre/lustreapi.h
-index 1748138..0bb3c9f 100644
---- a/drivers/staging/lustre/lustre/include/lustre/lustreapi.h
-+++ b/drivers/staging/lustre/lustre/include/lustre/lustreapi.h
-@@ -219,8 +219,8 @@ extern int llapi_lmv_get_uuids(int fd, struct obd_uuid *uuidp, int *mdt_count);
- extern int llapi_is_lustre_mnttype(const char *type);
- extern int llapi_search_ost(char *fsname, char *poolname, char *ostname);
- extern int llapi_get_obd_count(char *mnt, int *count, int is_mdt);
--extern int parse_size(char *optarg, unsigned long long *size,
--		      unsigned long long *size_units, int bytes_spec);
-+extern int llapi_parse_size(const char *optarg, unsigned long long *size,
-+			    unsigned long long *size_units, int bytes_spec);
- extern int llapi_search_mounts(const char *pathname, int index,
- 			       char *mntdir, char *fsname);
- extern int llapi_search_fsname(const char *pathname, char *fsname);
-@@ -298,18 +298,27 @@ extern int llapi_changelog_clear(const char *mdtname, const char *idstr,
-  * priv is private state, managed internally by these functions
+ /* Defn's shared with user-space. */
+@@ -231,7 +231,6 @@ static inline unsigned fld_range_is_any(const struct lu_seq_range *range)
+ static inline void fld_range_set_type(struct lu_seq_range *range,
+ 				      unsigned flags)
+ {
+-	LASSERT(!(flags & ~LU_SEQ_RANGE_MASK));
+ 	range->lsr_flags |= flags;
+ }
+ 
+@@ -615,7 +614,6 @@ static inline obd_id fid_idif_id(obd_seq seq, __u32 oid, __u32 ver)
+ /* extract ost index from IDIF FID */
+ static inline __u32 fid_idif_ost_idx(const struct lu_fid *fid)
+ {
+-	LASSERT(fid_is_idif(fid));
+ 	return (fid_seq(fid) >> 16) & 0xffff;
+ }
+ 
+@@ -833,11 +831,6 @@ static inline void lu_igif_build(struct lu_fid *fid, __u32 ino, __u32 gen)
   */
- struct hsm_copytool_private;
--extern int llapi_hsm_copytool_start(struct hsm_copytool_private **priv,
--				    char *fsname, int flags,
--				    int archive_count, int *archives);
--extern int llapi_hsm_copytool_fini(struct hsm_copytool_private **priv);
-+struct hsm_copyaction_private;
-+
-+extern int llapi_hsm_copytool_register(struct hsm_copytool_private **priv,
-+				       const char *mnt, int flags,
-+				       int archive_count, int *archives);
-+extern int llapi_hsm_copytool_unregister(struct hsm_copytool_private **priv);
- extern int llapi_hsm_copytool_recv(struct hsm_copytool_private *priv,
- 				   struct hsm_action_list **hal, int *msgsize);
--extern int llapi_hsm_copytool_free(struct hsm_action_list **hal);
--extern int llapi_hsm_copy_start(char *mnt, struct hsm_copy *copy,
--				const struct hsm_action_item *hai);
--extern int llapi_hsm_copy_end(char *mnt, struct hsm_copy *copy,
--			      const struct hsm_progress *hp);
--extern int llapi_hsm_progress(char *mnt, struct hsm_progress *hp);
-+extern void llapi_hsm_action_list_free(struct hsm_action_list **hal);
-+extern int llapi_hsm_action_begin(struct hsm_copyaction_private **hcp,
-+				  const struct hsm_copytool_private *ct_priv,
-+				  const struct hsm_action_item *hai,
-+				  bool is_error);
-+extern int llapi_hsm_action_end(struct hsm_copyaction_private **hcp,
-+				const struct hsm_extent *he, int flags,
-+				int errval);
-+extern int llapi_hsm_action_progress(struct hsm_copyaction_private *hcp,
-+				     const struct hsm_extent *he, int hp_flags);
-+extern int llapi_hsm_action_get_dfid(const struct hsm_copyaction_private *hcp,
-+				     lustre_fid *fid);
-+extern int llapi_hsm_action_get_fd(const struct hsm_copyaction_private *hcp);
- extern int llapi_hsm_import(const char *dst, int archive, const struct stat *st,
- 			    unsigned long long stripe_size, int stripe_offset,
- 			    int stripe_count, int stripe_pattern,
-@@ -318,7 +327,8 @@ extern int llapi_hsm_import(const char *dst, int archive, const struct stat *st,
- /* HSM user interface */
- extern struct hsm_user_request *llapi_hsm_user_request_alloc(int itemcount,
- 							     int data_len);
--extern int llapi_hsm_request(char *mnt, struct hsm_user_request *request);
-+extern int llapi_hsm_request(const char *path,
-+			     const struct hsm_user_request *request);
- extern int llapi_hsm_current_action(const char *path,
- 				    struct hsm_current_action *hca);
- /** @} llapi */
+ static inline void fid_cpu_to_le(struct lu_fid *dst, const struct lu_fid *src)
+ {
+-	/* check that all fields are converted */
+-	CLASSERT(sizeof(*src) ==
+-		 sizeof(fid_seq(src)) +
+-		 sizeof(fid_oid(src)) +
+-		 sizeof(fid_ver(src)));
+ 	dst->f_seq = cpu_to_le64(fid_seq(src));
+ 	dst->f_oid = cpu_to_le32(fid_oid(src));
+ 	dst->f_ver = cpu_to_le32(fid_ver(src));
+@@ -845,11 +838,6 @@ static inline void fid_cpu_to_le(struct lu_fid *dst, const struct lu_fid *src)
+ 
+ static inline void fid_le_to_cpu(struct lu_fid *dst, const struct lu_fid *src)
+ {
+-	/* check that all fields are converted */
+-	CLASSERT(sizeof(*src) ==
+-		 sizeof(fid_seq(src)) +
+-		 sizeof(fid_oid(src)) +
+-		 sizeof(fid_ver(src)));
+ 	dst->f_seq = le64_to_cpu(fid_seq(src));
+ 	dst->f_oid = le32_to_cpu(fid_oid(src));
+ 	dst->f_ver = le32_to_cpu(fid_ver(src));
+@@ -857,11 +845,6 @@ static inline void fid_le_to_cpu(struct lu_fid *dst, const struct lu_fid *src)
+ 
+ static inline void fid_cpu_to_be(struct lu_fid *dst, const struct lu_fid *src)
+ {
+-	/* check that all fields are converted */
+-	CLASSERT(sizeof(*src) ==
+-		 sizeof(fid_seq(src)) +
+-		 sizeof(fid_oid(src)) +
+-		 sizeof(fid_ver(src)));
+ 	dst->f_seq = cpu_to_be64(fid_seq(src));
+ 	dst->f_oid = cpu_to_be32(fid_oid(src));
+ 	dst->f_ver = cpu_to_be32(fid_ver(src));
+@@ -869,11 +852,6 @@ static inline void fid_cpu_to_be(struct lu_fid *dst, const struct lu_fid *src)
+ 
+ static inline void fid_be_to_cpu(struct lu_fid *dst, const struct lu_fid *src)
+ {
+-	/* check that all fields are converted */
+-	CLASSERT(sizeof(*src) ==
+-		 sizeof(fid_seq(src)) +
+-		 sizeof(fid_oid(src)) +
+-		 sizeof(fid_ver(src)));
+ 	dst->f_seq = be64_to_cpu(fid_seq(src));
+ 	dst->f_oid = be32_to_cpu(fid_oid(src));
+ 	dst->f_ver = be32_to_cpu(fid_ver(src));
+@@ -897,11 +875,6 @@ extern void lustre_swab_lu_seq_range(struct lu_seq_range *range);
+ 
+ static inline int lu_fid_eq(const struct lu_fid *f0, const struct lu_fid *f1)
+ {
+-	/* Check that there is no alignment padding. */
+-	CLASSERT(sizeof(*f0) ==
+-		 sizeof(f0->f_seq) +
+-		 sizeof(f0->f_oid) +
+-		 sizeof(f0->f_ver));
+ 	return memcmp(f0, f1, sizeof(*f0)) == 0;
+ }
+ 
+@@ -3315,9 +3288,10 @@ struct obdo {
+ #define o_grant_used o_data_version
+ 
+ static inline void lustre_set_wire_obdo(struct obd_connect_data *ocd,
+-					struct obdo *wobdo, struct obdo *lobdo)
++					struct obdo *wobdo,
++					const struct obdo *lobdo)
+ {
+-	memcpy(wobdo, lobdo, sizeof(*lobdo));
++	*wobdo = *lobdo;
+ 	wobdo->o_flags &= ~OBD_FL_LOCAL_MASK;
+ 	if (ocd == NULL)
+ 		return;
+@@ -3332,16 +3306,15 @@ static inline void lustre_set_wire_obdo(struct obd_connect_data *ocd,
+ }
+ 
+ static inline void lustre_get_wire_obdo(struct obd_connect_data *ocd,
+-					struct obdo *lobdo, struct obdo *wobdo)
++					struct obdo *lobdo,
++					const struct obdo *wobdo)
+ {
+ 	obd_flag local_flags = 0;
+ 
+ 	if (lobdo->o_valid & OBD_MD_FLFLAGS)
+ 		 local_flags = lobdo->o_flags & OBD_FL_LOCAL_MASK;
+ 
+-	LASSERT(!(wobdo->o_flags & OBD_FL_LOCAL_MASK));
+-
+-	memcpy(lobdo, wobdo, sizeof(*lobdo));
++	*lobdo = *wobdo;
+ 	if (local_flags != 0) {
+ 		lobdo->o_valid |= OBD_MD_FLFLAGS;
+ 		lobdo->o_flags &= ~OBD_FL_LOCAL_MASK;
 -- 
 1.7.9.5
 
