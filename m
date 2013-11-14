@@ -1,105 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab3KNIKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 03:10:18 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:36449 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab3KNIKO (ORCPT
+	id S1752346Ab3KNIPn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 03:15:43 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:39502 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab3KNIPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 03:10:14 -0500
-Date: Thu, 14 Nov 2013 09:10:07 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] s390/mm,tlb: race of lazy TLB flush vs. recreation
- of TLB entries
-Message-ID: <20131114091007.0b15dde2@mschwide>
-In-Reply-To: <CAHkRjk6LAmQpkioBdFxH5htYHi75bR2xhfXzfvmQL5Br0kMgvg@mail.gmail.com>
-References: <1384330574-18418-1-git-send-email-schwidefsky@de.ibm.com>
-	<1384330574-18418-3-git-send-email-schwidefsky@de.ibm.com>
-	<CAHkRjk6LAmQpkioBdFxH5htYHi75bR2xhfXzfvmQL5Br0kMgvg@mail.gmail.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111408-0342-0000-0000-000006DB6790
+	Thu, 14 Nov 2013 03:15:41 -0500
+X-AuditID: cbfec7f4-b7fee6d000004b2d-25-528486ab98e0
+Message-id: <1384416937.5901.6.camel@AMDC1943>
+Subject: Re: [PATCH 1/4] mfd: max14577: Add max14577 MFD driver core
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Date: Thu, 14 Nov 2013 09:15:37 +0100
+In-reply-to: <20131113131328.GF878@sirena.org.uk>
+References: <1384328457-5147-1-git-send-email-k.kozlowski@samsung.com>
+ <1384328457-5147-2-git-send-email-k.kozlowski@samsung.com>
+ <20131113131328.GF878@sirena.org.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t/xa7qr21qCDC7/YLI4uFXTYuOM9awW
+	Ux8+YbO4/uU5q8X8I+dYLSaunMxsceDPDkaLs01v2C3ufz3KaPHtSgeTxeVdc9gs1h65y25x
+	u3EFm8XhFQeYLE53szrweyz4fIXdY0L/J0aPnbPusntsXqHlsWlVJ5vHnWt72DzmnQz06Nuy
+	itHj8ya5AM4oLpuU1JzMstQifbsErowrL/+xFPRJVbT+amFuYDwk0sXIwSEhYCLx61hxFyMn
+	kCkmceHeerYuRi4OIYGljBKtz0+wgiSEBD4zSjRscwWxeQX0JDbte8EO0iss4CLxr7UAJMwm
+	YCyxefkSNhBbREBZ4ur3vSwgc5gFNrBIfHv+jBEkwSKgKrF45mlGkF5OAUOJyQtiIHatYpRY
+	eamTHaSGWUBdYtK8RcwQBylJ7G6HictLbF7zlhniBkGJH5PvsUxgFJiFpGUWkrJZSMoWMDKv
+	YhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAiJqS87GBcfszrEKMDBqMTDW7CzOUiINbGsuDL3
+	EKMEB7OSCO+jxpYgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYyZYnMDt0j8Wa9Z6qsuuqzr7rYL
+	ott4H7/xV3n7RXtCafCMiYIxU9hkSoMuT//kxqzM/P/X+hTXtHVP3cNLmL0l/jMXt265xHKs
+	6t2p31k7xWOf5ZRwZwbt/W44q9/rzv3kr4f0PrRaSzqlFIcW3390S/ji2f3/o84Jy+Syp6fH
+	apfkSVpZsSmxFGckGmoxFxUnAgCgEqwZhwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Nov 2013 16:16:35 +0000
-Catalin Marinas <catalin.marinas@arm.com> wrote:
+Hi,
 
-> On 13 November 2013 08:16, Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
-> > diff --git a/arch/s390/include/asm/mmu_context.h b/arch/s390/include/asm/mmu_context.h
-> > index 5d1f950..e91afeb 100644
-> > --- a/arch/s390/include/asm/mmu_context.h
-> > +++ b/arch/s390/include/asm/mmu_context.h
-> > @@ -48,13 +48,38 @@ static inline void update_mm(struct mm_struct *mm, struct task_struct *tsk)
-> >  static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
-> >                              struct task_struct *tsk)
-> >  {
-> > -       cpumask_set_cpu(smp_processor_id(), mm_cpumask(next));
-> > -       update_mm(next, tsk);
-> > +       int cpu = smp_processor_id();
-> > +
-> > +       if (prev == next)
-> > +               return;
-> > +       if (atomic_inc_return(&next->context.attach_count) >> 16) {
-> > +               /* Delay update_mm until all TLB flushes are done. */
-> > +               set_tsk_thread_flag(tsk, TIF_TLB_WAIT);
-> > +       } else {
-> > +               cpumask_set_cpu(cpu, mm_cpumask(next));
-> > +               update_mm(next, tsk);
-> > +               if (next->context.flush_mm)
-> > +                       /* Flush pending TLBs */
-> > +                       __tlb_flush_mm(next);
-> > +       }
-> >         atomic_dec(&prev->context.attach_count);
-> >         WARN_ON(atomic_read(&prev->context.attach_count) < 0);
-> > -       atomic_inc(&next->context.attach_count);
-> > -       /* Check for TLBs not flushed yet */
-> > -       __tlb_flush_mm_lazy(next);
-> > +}
-> > +
-> > +#define finish_switch_mm finish_switch_mm
-> > +static inline void finish_switch_mm(struct mm_struct *mm,
-> > +                                   struct task_struct *tsk)
-> > +{
-> > +       if (!test_and_clear_tsk_thread_flag(tsk, TIF_TLB_WAIT))
-> > +               return;
-> > +
-> > +       while (atomic_read(&mm->context.attach_count) >> 16)
-> > +               cpu_relax();
-> > +
-> > +       cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
-> > +       update_mm(mm, tsk);
-> > +       if (mm->context.flush_mm)
-> > +               __tlb_flush_mm(mm);
-> >  }
+On Wed, 2013-11-13 at 13:13 +0000, Mark Brown wrote:
+> On Wed, Nov 13, 2013 at 08:40:54AM +0100, Krzysztof Kozlowski wrote:
 > 
-> Some care is needed here with preemption (we had this on arm and I
-> think we need a fix on arm64 as well). Basically you set TIF_TLB_WAIT
-> on a thread but you get preempted just before finish_switch_mm(). The
-> new thread has the same mm as the preempted on and switch_mm() exits
-> early without setting another flag. So finish_switch_mm() wouldn't do
-> anything but you still switched to the new mm. The fix is to make the
-> flag per mm rather than thread (see commit bdae73cd374e).
+> > +/**
+> > + * After resuming from suspend it may happen that IRQ is signalled but
+> > + * IRQ GPIO is not high. Also the interrupt registers won't have any data
+> > + * (all of them equal to 0x00).
+> > + *
+> > + * In such case retry few times reading the interrupt registers.
+> > + */
+> > +#define IRQ_READ_REG_RETRY_CNT		5
+> 
+> What is the cause here?  This smells like an unreliable workaround for
+> some other behaviour.  In general this all looks very like standard
+> regmap code.
+> 
+> > +	for (i = 0; i < MAX14577_IRQ_REGS_NUM; i++) {
+> > +		u8 mask_reg = max14577_mask_reg[i];
+> > +
+> > +		if (mask_reg == MAX14577_REG_INVALID ||
+> > +				IS_ERR_OR_NULL(max14577->regmap))
+> > +			continue;
+> 
+> Why would this code even be running if you don't have a register map?
+> 
+> > +		dev_info(max14577->dev, "Got interrupts [1:0x%02x, 2:0x%02x, 3:0x%02x]\n",
+> > +			irq_reg[MAX14577_IRQ_INT1], irq_reg[MAX14577_IRQ_INT2],
+> > +			irq_reg[MAX14577_IRQ_INT3]);
+> 
+> This is far too noisy, dev_dbg() at most.
+> 
+> > +		gpio_val = gpio_get_value(pdata->irq_gpio);
+> > +
+> > +		if (gpio_get_value(pdata->irq_gpio) == 0)
+> > +			dev_warn(max14577->dev, "IRQ GPIO is not high, retry reading interrupt registers\n");
+> > +	} while (gpio_val == 0 && --retry > 0);
+> 
+> This looks very strange...
+> 
+> > +	max14577->irq = gpio_to_irq(pdata->irq_gpio);
+> > +	ret = gpio_request(pdata->irq_gpio, "max14577_irq");
+> > +	if (ret) {
+> > +		dev_err(max14577->dev, "Failed requesting GPIO %d: %d\n",
+> > +				pdata->irq_gpio, ret);
+> > +		goto err;
+> > +	}
+> > +	gpio_direction_input(pdata->irq_gpio);
+> > +	gpio_free(pdata->irq_gpio);
+> 
+> This means the GPIO handling code that was present in the handling is
+> broken, it's trying to use the GPIO after it was freed.
+> 
+> > +	ret = request_threaded_irq(max14577->irq, NULL, max14577_irq_thread,
+> > +				   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+> > +				   "max14577-irq", max14577);
+> 
+> Are you *positive* this is a falling triggered IRQ?  All the code to do
+> with spinning reading the GPIO state during handling makes it look like
+> this is in fact an active low interrupt and a lot of the code in here is
+> working around trying to handle that as the wrong kind of IRQ.
+> 
+> > +int max14577_bulk_write(struct regmap *map, u8 reg, u8 *buf, int count)
+> > +{
+> > +	return regmap_bulk_write(map, reg, buf, count);
+> > +}
+> > +EXPORT_SYMBOL_GPL(max14577_bulk_write);
+> 
+> Given that these are basically all trivial wrappers around regmap they
+> probably ought to be static inlines in the header.
+> 
+> > +static struct max14577_platform_data *max14577_i2c_parse_dt(struct device *dev)
+> > +{
+> 
+> There's no DT binding document?
+> 
+> > +const struct dev_pm_ops max14577_pm = {
+> > +	.suspend = max14577_suspend,
+> > +	.resume = max14577_resume,
+> > +};
+> 
+> SET_SYSTEM_SLEEP_PM_OPS().
+> 
+> > +static int __init max14577_i2c_init(void)
+> > +{
+> > +	return i2c_add_driver(&max14577_i2c_driver);
+> > +}
+> > +subsys_initcall(max14577_i2c_init);
+> 
+> Why not module_i2c_driver?
 
-Interesting. For s390 I need to make sure that each task attaching an
-mm waits for the completion of concurrent TLB flush operations. If the
-scheduler does not switch the mm I don't care, the mm is still attached.
-For the s390 issue a TIF bit seems appropriate. But I have to add an
-preempt_enable/preempt_disable pair to finish_switch_mm, otherwise the
-task can get hit by preemption after the while loop.
+Thanks for review. I'll the fix issues and send later new version of
+patch.
 
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+Best regards,
+Krzysztof
 
