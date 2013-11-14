@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab3KNByj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 20:54:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27689 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751170Ab3KNByd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 20:54:33 -0500
-Date: Thu, 14 Nov 2013 09:53:46 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de
-Subject: Re: [patch 7/7 v2] x86: add xloadflags bit for efi runtime support
- on kexec
-Message-ID: <20131114015346.GF4081@dhcp-16-126.nay.redhat.com>
-References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com>
- <20131105082719.416282009@dhcp-16-126.nay.redhat.com>
- <20131113155037.GE17248@console-pimps.org>
+	id S1752637Ab3KNB5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 20:57:36 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:62673 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab3KNB53 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Nov 2013 20:57:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131113155037.GE17248@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1383749353-3510-1-git-send-email-ethan.kernel@gmail.com>
+References: <1383749353-3510-1-git-send-email-ethan.kernel@gmail.com>
+Date: Thu, 14 Nov 2013 09:57:28 +0800
+Message-ID: <CABawtvOXCOhLDy5nQ2OOQGCqkoi2fwa3tPwEYjwBkRa0ZrHNzQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Init NumVFs register to zero in sriov_init()
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: yu.zhao@intel.com, Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "ethan.zhao" <ethan.kernel@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/13 at 03:50pm, Matt Fleming wrote:
-> On Tue, 05 Nov, at 04:20:14PM, dyoung@redhat.com wrote:
-> > Old kexec-tools can not load new kernel. The reason is previously kexec-tools
-> > do not fill efi_info in x86 setup header thus efi init fail and switch
-> > to noefi boot. In new kexec-tools it will by default fill efi_info and
-> > pass other efi required infomation to 2nd kernel so kexec kernel efi
-> > initialization will success finally.
-> > 
-> > To prevent from breaking userspace, add a new xloadflags bit so kexec-tools
-> > will check the flag and switch to old logic.
-> > 
-> > Signed-off-by: Dave Young <dyoung@redhat.com>
-> > ---
-> >  arch/x86/boot/header.S                |    9 ++++++++-
-> >  arch/x86/include/uapi/asm/bootparam.h |    1 +
-> >  2 files changed, 9 insertions(+), 1 deletion(-)
-> > 
-> > --- linux-2.6.orig/arch/x86/boot/header.S
-> > +++ linux-2.6/arch/x86/boot/header.S
-> > @@ -391,7 +391,14 @@ xloadflags:
-> >  #else
-> >  # define XLF23 0
-> >  #endif
-> > -			.word XLF0 | XLF1 | XLF23
-> > +
-> > +#if defined(CONFIG_X86_64) && defined(CONFIG_EFI)
-> 
-> && defined(CONFIG_KEXEC) ?
+Yinghai,
+     Could you help to take a look, we need it in our downstream kernel.
 
-Will add above.
 
-> 
-> > +# define XLF4 XLF_EFI_KEXEC
-> > +#else
-> > +# define XLF4 0
-> > +#endif
-> > +
-> 
-> -- 
-> Matt Fleming, Intel Open Source Technology Center
+Thanks,
+Ethan
+
+On Wed, Nov 6, 2013 at 10:49 PM, ethan.zhao <ethan.kernel@gmail.com> wrote:
+> Though no specification about NumVFs register initial value after POST, to void the confusion
+> lspci output as following before VF was enabled, we should clear the NumVFs value left by BIOS
+> to zero:
+>
+> $lspci -vvv -s 03:00.0
+> Ethernet controller: Intel Corporation 82599EB 10-Gigabit SFI/SFP+ Network Connection (rev 01)
+> ~
+> Capabilities: [160 v1] Single Root I/O Virtualization (SR-IOV)
+>                 IOVCap: Migration-, Interrupt Message Number: 000
+>                 IOVCtl: Enable+ Migration- Interrupt- MSE+ ARIHierarchy+
+>                 IOVSta: Migration-
+>                 Initial VFs: 64, Total VFs: 64, Number of VFs: 64, Function Dependency Link: 00
+>                                                               ^dazed !
+> ~
+> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
+> ---
+>  drivers/pci/iov.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> index de8ffac..a4941ad 100644
+> --- a/drivers/pci/iov.c
+> +++ b/drivers/pci/iov.c
+> @@ -439,6 +439,8 @@ static int sriov_init(struct pci_dev *dev, int pos)
+>
+>  found:
+>         pci_write_config_word(dev, pos + PCI_SRIOV_CTRL, ctrl);
+> +       /* VF Enable is cleared, so we could init the NumVFs register to 0 */
+> +       pci_write_config_word(dev, pos + PCI_SRIOV_NUM_VF, 0);
+>         pci_read_config_word(dev, pos + PCI_SRIOV_VF_OFFSET, &offset);
+>         pci_read_config_word(dev, pos + PCI_SRIOV_VF_STRIDE, &stride);
+>         if (!offset || (total > 1 && !stride))
+> --
+> 1.8.3.4 (Apple Git-47)
+>
