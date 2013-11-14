@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab3KNCCb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 21:02:31 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:60322 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170Ab3KNCCX (ORCPT
+	id S1752645Ab3KNCCs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 21:02:48 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:64716 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170Ab3KNCCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 21:02:23 -0500
-Message-ID: <52842F2C.1030701@hitachi.com>
-Date: Thu, 14 Nov 2013 11:02:20 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: David Long <dave.long@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        Rabin Vincent <rabin@rab.in>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: Re: [PATCH v2 10/13] kprobes: Remove uneeded kernel dependency
- on struct arch_specific_insn
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org>  <1381871068-27660-11-git-send-email-dave.long@linaro.org> <1384362833.3392.42.camel@linaro1.home>
-In-Reply-To: <1384362833.3392.42.camel@linaro1.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Nov 2013 21:02:42 -0500
+From: Olof Johansson <olof@lixom.net>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Duncan Laurie <dlaurie@chromium.org>, Olof Johansson <olof@lixom.net>
+Subject: [PATCH] i915: Use 120MHz LVDS SSC clock for gen5/gen6/gen7
+Date: Wed, 13 Nov 2013 17:59:43 -0800
+Message-Id: <1384394383-8582-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.8.4.1.601.g02b3b1d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/14 2:13), Jon Medhurst (Tixy) wrote:
-> On Tue, 2013-10-15 at 17:04 -0400, David Long wrote:
->> From: "David A. Long" <dave.long@linaro.org>
->>
->> Instead of depending on include/asm/kprobes.h to provide a dummy definition
->> for struct arch_specific_insn, do so in include/linux/kprobes.h.
-> 
-> That change description doesn't quite seem to quite make sense to me.
-> 
-> Anyway, what we're trying to do with this patch is to allow us to use
-> arch_specific_insn for purposes additional to implementing kprobes. This
-> patch enables that but I'm wary that the kprobes code assumes that ainsn
-> is a struct arch_specific_insn, e.g. in linux/kernel/kprobes.c we have:
-> 
-> 	memcpy(&p->ainsn, &ap->ainsn, sizeof(struct arch_specific_insn));
-> 
-> Now, that code isn't compiled when kprobes isn't configured, but it
-> seams to me to be safer if that was also changed to 
-> 
-> 	memcpy(&p->ainsn, &ap->ainsn, sizeof(p->ainsn));
+From: Duncan Laurie <dlaurie@chromium.org>
 
-This kind of cleanup looks good for me, but I don't agree to change
-the type of the member (removing is OK) by Kconfig. If you want to
-change the framework of kprobes and uprobes itself (unification),
-I'm appreciate to discuss with you and uprobes people, because it
-will involve all arch dependent code change, *NOT ONLY* the ARM issue.
+We had been using a DMI table workaround to select the right
+frequency for devices, but this is fragile and must be updated
+with every new platform.
 
-> However, I also wonder if we should instead leave arch_specific_insn as
-> a kprobes specific structure and on ARM define it in terms of a new more
-> generic 'struct probe_insn'? The drawback with that is that we'd
-> probably end up with a struct just containing a single member which
-> seems a bit redundant:
->
-> struct arch_specific_insn {
-> 	struct probe_insn pinsn;
-> };
+Instead the default case when VBT is missing is changed to use
+120MHz clock for LVDS SSC for these generations.
 
-I also disagree it. If you have a plan to integrate uprobes and kprobes
-arch specific code, please share it with us. I'm happy to work with you.
-There are already many maintainers on each feature who is responsible for
-it (even it is a piece of code), and scripts/get_maintainers.pl gives you
-who are.
+The docs for 2010-Core, SandyBridge, and IvyBridge all indicate
+that the reference frequency for LVDS is 120MHz:
 
-Srikar, Oleg, I think it's a good time to merge such arch_specific mechanism
-of uprobes and kprobes. Would you think we can do similar thing on x86 too?
+"2010 Core"
+http://intellinuxgraphics.org/IHD_OS_Vol3_Part3r2.pdf
+page 38
+Reference Frequency: 120MHz for CRT and LVDS.  100MHz for the FDI.
 
-Thank you,
+"2011 SandyBridge"
+http://intellinuxgraphics.org/documentation/SNB/IHD_OS_Vol3_Part3.pdf
+page 33
+Reference Frequency: 120MHz for CRT, HDMI, LVDS.  100MHz for the FDI.
 
+"2012 IvyBridge"
+http://intellinuxgraphics.org/documentation/IVB/IHD_OS_Vol3_Part4.pdf
+page 27
+Reference Frequency: 120 MHz for CRT, HDMI, LVDS, 100MHz for the FDI.
 
+Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
+[olof: Fixup for recent base, switched from if/else to single call]
+Signed-off-by: Olof Johansson <olof@lixom.net>
+---
+
+Daniel,
+
+This applies on top of -next, which I'm presuming is close to your
+for-3.13 base right now. It'd be good to see this go in since it's needed
+to boot on Chromebooks (with developer mode off), and is thus blocking
+testing next/mainline on a regular basis here.
+
+Thanks!
+
+-Olof
+
+ drivers/gpu/drm/i915/intel_bios.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
+index 6dd622d733b9..e4fba39631a5 100644
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -790,7 +790,12 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
+ 
+ 	/* Default to using SSC */
+ 	dev_priv->vbt.lvds_use_ssc = 1;
+-	dev_priv->vbt.lvds_ssc_freq = intel_bios_ssc_frequency(dev, 1);
++	/*
++	 * Core/SandyBridge/IvyBridge use alternative (120MHz) reference
++	 * clock for LVDS.
++	 */
++	dev_priv->vbt.lvds_ssc_freq = intel_bios_ssc_frequency(dev,
++			!HAS_PCH_SPLIT(dev));
+ 	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->vbt.lvds_ssc_freq);
+ 
+ 	for (port = PORT_A; port < I915_MAX_PORTS; port++) {
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.8.4.1.601.g02b3b1d
 
