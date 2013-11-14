@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab3KNROY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 12:14:24 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60525 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab3KNROQ (ORCPT
+	id S1753056Ab3KNRRF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 12:17:05 -0500
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:57153 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752530Ab3KNRQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 12:14:16 -0500
-Date: Thu, 14 Nov 2013 18:14:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: perf/tracepoint: another fuzzer generated lockup
-Message-ID: <20131114171405.GA2965@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1311081440440.7281@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu>
- <20131108200244.GB14606@localhost.localdomain>
- <alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu>
- <20131108204839.GD14606@localhost.localdomain>
- <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu>
- <20131108223657.GF14606@localhost.localdomain>
- <20131109151014.GN16117@laptop.programming.kicks-ass.net>
- <20131114152304.GC5364@laptop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1311141217470.8746@vincent-weaver-1.um.maine.edu>
+	Thu, 14 Nov 2013 12:16:53 -0500
+Message-ID: <52850555.90304@st.com>
+Date: Thu, 14 Nov 2013 18:16:05 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1311141217470.8746@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: <srinivas.kandagatla@st.com>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-i2c@vger.kernel.org>,
+        <stephen.gallimore@st.com>, <stuart.menefy@st.com>,
+        Lee Jones <lee.jones@linaro.org>, <gabriel.fernandez@st.com>
+Subject: Re: [PATCH v6 1/4] i2c: busses: i2c-st: Add ST I2C controller
+References: <1383726315-27534-1-git-send-email-maxime.coquelin@st.com> <1383726315-27534-2-git-send-email-maxime.coquelin@st.com> <20131114170026.GA11022@katana>
+In-Reply-To: <20131114170026.GA11022@katana>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.19.60]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 12:20:35PM -0500, Vince Weaver wrote:
-> 
-> possibly not an issue with your patch, but found in nearby code:
-> 
-> in perf_trace_init:
-> 
->         int event_id = p_event->attr.config;
-> 
-> 	...
-> 
->                 if (tp_event->event.type == event_id &&
-> 
-> 
-> note that "attr.config" is 64-bit but "event_id" is only 32-bit,
-> so things like 0xffffffff00000018 will map to irq_work_exit.
 
-I will have a look.
 
-> I'm not sure if your PERM code properly handles this case, I don't have 
-> time to work through the macro-magic in your patch.
+On 11/14/2013 06:00 PM, Wolfram Sang wrote:
+> On Wed, Nov 06, 2013 at 09:25:12AM +0100, Maxime COQUELIN wrote:
+>> This patch adds support to SSC (Synchronous Serial Controller)
+>> I2C driver. This IP also supports SPI protocol, but this is not
+>> the aim of this driver.
+>>
+>> This IP is embedded in all ST SoCs for Set-top box platorms, and
+>> supports I2C Standard and Fast modes.
+>>
+>> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+>
+> Applied to for-next, thanks!
+>
 
-Can't blame you; took me a fair chunk of the day to come up with this.
-That trace event stuff is horrid.
+Thanks Wolfram!
