@@ -1,91 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab3KNLRa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 06:17:30 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46416 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab3KNLR1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 06:17:27 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <5284B11C.3020103@jp.fujitsu.com>
-Date: Thu, 14 Nov 2013 20:16:44 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753552Ab3KNLSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 06:18:32 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:63096 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752778Ab3KNLS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 06:18:29 -0500
+X-IronPort-AV: E=Sophos;i="4.93,699,1378857600"; 
+   d="scan'208";a="74402865"
+Message-ID: <5284B181.4010704@citrix.com>
+Date: Thu, 14 Nov 2013 11:18:25 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-To: hpa@linux.intel.com
-CC: ebiederm@xmission.com, vgoyal@redhat.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v5 1/3] x86, apic: add bsp_physical_apicid
-References: <20131112094952.4902.72689.stgit@localhost6.localdomain6> <20131112095153.4902.51290.stgit@localhost6.localdomain6>
-In-Reply-To: <20131112095153.4902.51290.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Elena Ufimtseva <ufimtseva@gmail.com>
+CC: <xen-devel@lists.xenproject.org>, <konrad.wilk@oracle.com>,
+        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <x86@kernel.org>, <akpm@linux-foundation.org>,
+        <tangchen@cn.fujitsu.com>, <wency@cn.fujitsu.com>,
+        <ian.campbell@citrix.com>, <stefano.stabellini@eu.citrix.com>,
+        <mukesh.rathor@oracle.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] xen: vnuma support for PV guests running as domU.
+References: <1384400179-24404-1-git-send-email-ufimtseva@gmail.com> <1384400179-24404-2-git-send-email-ufimtseva@gmail.com>
+In-Reply-To: <1384400179-24404-2-git-send-email-ufimtseva@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello HPA,
+On 14/11/13 03:36, Elena Ufimtseva wrote:
+> Issues Xen hypercall subop XENMEM_get_vnumainfo and sets the
+> NUMA topology, otherwise sets dummy NUMA node and prevents
+> numa_init from calling other numa initializators as they may
+> break other guests.
 
-I have another question relevant to http://lkml.org/lkml/2013/11/12/311.
+"break other guests" doesn't seem correct to me.  "...which prevents
+numa_init() from calling other hardware-specific initializers (which do
+not work in PV guests)." reads better I think.
 
-(2013/11/12 18:51), HATAYAMA Daisuke wrote:
-<cut>
-> @@ -2589,3 +2593,14 @@ static int __init lapic_insert_resource(void)
->    * that is using request_resource
->    */
->   late_initcall(lapic_insert_resource);
+> --- /dev/null
+> +++ b/arch/x86/include/asm/xen/vnuma.h
+> @@ -0,0 +1,12 @@
+> +#ifndef _ASM_X86_VNUMA_H
+> +#define _ASM_X86_VNUMA_H
 > +
-> +void __init bsp_physical_apicid_init(void)
-> +{
-> +	u32 l, h;
+> +#ifdef CONFIG_XEN
+> +int xen_vnuma_supported(void);
+> +int xen_numa_init(void);
+> +#else
+> +int xen_vnuma_supported(void) { return 0; };
+
+Return bool.
+
+> +int xen_numa_init(void) { return -1; };
+
+I don't think you need this stub.
+
+> +#endif
 > +
-> +	if (boot_cpu_data.x86 >= 6 && cpu_has_apic) {
-> +		rdmsr(MSR_IA32_APICBASE, l, h);
-> +		if (!(l & MSR_IA32_APICBASE_BSP))
-> +			bsp_physical_apicid = boot_cpu_data.initial_apicid;
-> +	}
-> +}
+> +#endif /* _ASM_X86_VNUMA_H */
+> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> index 8bf93ba..c8a61dc 100644
+> --- a/arch/x86/mm/numa.c
+> +++ b/arch/x86/mm/numa.c
+> @@ -19,6 +19,7 @@
+>  #include <asm/amd_nb.h>
 
-So, rigrously, we should not use rdmsr for MSR_IA32_APICBASE here since this can
-return wrong value on some clustered system?
+#include <asm/xen/vnuma.h> here..
 
-At least all the mpparse.c, amdtopology.c and visws_quirks.c has referred to
-MP table only, so there's no issue by simply dropping this code.
+>  #include "numa_internal.h"
+> +#include "asm/xen/vnuma.h"
 
-> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> index 2793d1f..28bea2c 100644
-> --- a/arch/x86/kernel/cpu/common.c
-> +++ b/arch/x86/kernel/cpu/common.c
-> @@ -681,7 +681,7 @@ static void identify_cpu_without_cpuid(struct cpuinfo_x86 *c)
->  /*
->   * Do minimum CPU detection early.
->   * Fields really needed: vendor, cpuid_level, family, model, mask,
-> - * cache alignment.
-> + * cache alignment, initial_apicid.
->   * The others are not touched to avoid unwanted side effects.
->   *
->   * WARNING: this function is only called on the BP.  Don't add code here
-> @@ -725,6 +725,9 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
->  		this_cpu->c_bsp_init(c);
->
->  	setup_force_cpu_cap(X86_FEATURE_ALWAYS);
+...not here.
+
+>  int __initdata numa_off;
+>  nodemask_t numa_nodes_parsed __initdata;
+> @@ -621,6 +622,10 @@ static int __init dummy_numa_init(void)
+>  void __init x86_numa_init(void)
+>  {
+>  	if (!numa_off) {
+> +#ifdef CONFIG_XEN
+> +		if (xen_vnuma_supported() && !numa_init(xen_numa_init))
+> +			return;
+> +#endif
+
+I would put the xen_vnuma_supported() call into xen_numa_init().
+
+>  #ifdef CONFIG_X86_NUMAQ
+>  		if (!numa_init(numaq_numa_init))
+>  			return;
+> diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
+> index 96ab2c0..de9deab 100644
+> --- a/arch/x86/xen/Makefile
+> +++ b/arch/x86/xen/Makefile
+> @@ -13,7 +13,7 @@ CFLAGS_mmu.o			:= $(nostackp)
+>  obj-y		:= enlighten.o setup.o multicalls.o mmu.o irq.o \
+>  			time.o xen-asm.o xen-asm_$(BITS).o \
+>  			grant-table.o suspend.o platform-pci-unplug.o \
+> -			p2m.o
+> +			p2m.o vnuma.o
+
+obj-$(CONFIG_NUMA) += vnuma.o
+
+Then you can remove the #ifdef CONFIG_NUMA from xen/vnuma.c
+
+> --- a/include/xen/interface/memory.h
+> +++ b/include/xen/interface/memory.h
+> @@ -263,4 +263,32 @@ struct xen_remove_from_physmap {
+>  };
+>  DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
+>  
+> +/* vNUMA structures */
+> +struct vmemrange {
+> +	uint64_t start, end;
+> +	struct vmemrange *next;
+
+A pointer in a ABI structure looks wrong.
+
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(vmemrange);
 > +
-> +	if (c->cpuid_level >= 0x00000001)
-> +		c->initial_apicid = (cpuid_ebx(1) >> 24) & 0xFF;
->  }
+> +struct vnuma_topology_info {
+> +	/* OUT */
+> +	domid_t domid;
+> +	uint32_t __pad;
+> +	/* IN */
+> +	GUEST_HANDLE(uint) nr_nodes; /* number of virtual numa nodes */
+> +	/* distance table */
+> +	GUEST_HANDLE(uint) vdistance;
+> +	/* cpu mapping to vnodes */
+> +	GUEST_HANDLE(uint) cpu_to_node;
+> +	/*
+> +	* array of numa memory areas constructed by Xen
+> +	* where start and end are pfn numbers of the area
+> +	* Xen takes into account domains e820 map
+> +	*/
+> +	GUEST_HANDLE(vmemrange) vmemblks;
+> +};
 
-Can the initial APID IDs obtained in this way using cpuid duplicate on some
-clustered system?
+The structure has different size on 32-bit and 64-bit x86 guests.  Is
+this intentional?  The __pad field suggests not.
 
-Can we consider each apic->get_apic_id() method return *initial* APIC ID?
-According to 8.4 Multiple-Processor (MP) Initialization, Intel System Programming
-Guide, the APID IDs written into MADT and MP table are the initial ones.
-So, APID IDs to be compared with these must be the initial ones.
-
--- 
-Thanks.
-HATAYAMA, Daisuke
-
+David
