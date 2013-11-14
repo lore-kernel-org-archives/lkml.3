@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab3KNUjH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 15:39:07 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:35745 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548Ab3KNUi7 (ORCPT
+	id S1757388Ab3KNUkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 15:40:06 -0500
+Received: from georges.telenet-ops.be ([195.130.137.68]:38770 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757281Ab3KNUkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 15:38:59 -0500
-Message-ID: <528534E0.3030209@gmail.com>
-Date: Thu, 14 Nov 2013 13:38:56 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, mingo@kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf kvm record: Change the default value of perf_guest
- to 0.
-References: <1384465918-14085-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-In-Reply-To: <1384465918-14085-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Nov 2013 15:40:03 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] MAINTAINERS: Add an entry for the Macintosh HFSPlus Filesystem
+Date: Thu, 14 Nov 2013 21:39:23 +0100
+Message-Id: <1384461563-4487-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/13, 2:51 PM, Dongsheng Yang wrote:
-> Currently, we can not record the event counters of host to perf.data.host.
-> Example:
->     perf kvm --host record -a sleep 1
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.625 MB perf.data.guest (~27290 samples) ]
+To make scripts/get_maintainer.pl output something sensible.
 
-perf kvm by definition wants --guest enabled. Host profiling is done 
-with just 'perf record'; no need for the kvm layer at all. If you really 
-want to go through perf-kvm to record host events disable guest actions:
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+I guess it's orphaned, just like HFS?
 
-$ perf kvm --host --no-guest record -a sleep 1
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.029 MB perf.data.host (~1255 samples) ]
+ MAINTAINERS |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
+diff --git a/MAINTAINERS b/MAINTAINERS
+index f23575ed1416..f1a0e7464ce0 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3921,6 +3921,12 @@ S:	Orphan
+ F:	Documentation/filesystems/hfs.txt
+ F:	fs/hfs/
+ 
++HFSPLUS FILESYSTEM
++L:	linux-fsdevel@vger.kernel.org
++S:	Orphan
++F:	Documentation/filesystems/hfsplus.txt
++F:	fs/hfsplus/
++
+ HGA FRAMEBUFFER DRIVER
+ M:	Ferenc Bakonyi <fero@drama.obuda.kando.hu>
+ L:	linux-nvidia@lists.surfsouth.com
+-- 
+1.7.9.5
 
-David
