@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab3KNB5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 20:57:36 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:62673 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000Ab3KNB53 (ORCPT
+	id S1752520Ab3KNCCb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 21:02:31 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:60322 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170Ab3KNCCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 20:57:29 -0500
+	Wed, 13 Nov 2013 21:02:23 -0500
+Message-ID: <52842F2C.1030701@hitachi.com>
+Date: Thu, 14 Nov 2013 11:02:20 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <1383749353-3510-1-git-send-email-ethan.kernel@gmail.com>
-References: <1383749353-3510-1-git-send-email-ethan.kernel@gmail.com>
-Date: Thu, 14 Nov 2013 09:57:28 +0800
-Message-ID: <CABawtvOXCOhLDy5nQ2OOQGCqkoi2fwa3tPwEYjwBkRa0ZrHNzQ@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Init NumVFs register to zero in sriov_init()
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: yu.zhao@intel.com, Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "ethan.zhao" <ethan.kernel@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+Cc: David Long <dave.long@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        Rabin Vincent <rabin@rab.in>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: [PATCH v2 10/13] kprobes: Remove uneeded kernel dependency
+ on struct arch_specific_insn
+References: <1381871068-27660-1-git-send-email-dave.long@linaro.org>  <1381871068-27660-11-git-send-email-dave.long@linaro.org> <1384362833.3392.42.camel@linaro1.home>
+In-Reply-To: <1384362833.3392.42.camel@linaro1.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai,
-     Could you help to take a look, we need it in our downstream kernel.
+(2013/11/14 2:13), Jon Medhurst (Tixy) wrote:
+> On Tue, 2013-10-15 at 17:04 -0400, David Long wrote:
+>> From: "David A. Long" <dave.long@linaro.org>
+>>
+>> Instead of depending on include/asm/kprobes.h to provide a dummy definition
+>> for struct arch_specific_insn, do so in include/linux/kprobes.h.
+> 
+> That change description doesn't quite seem to quite make sense to me.
+> 
+> Anyway, what we're trying to do with this patch is to allow us to use
+> arch_specific_insn for purposes additional to implementing kprobes. This
+> patch enables that but I'm wary that the kprobes code assumes that ainsn
+> is a struct arch_specific_insn, e.g. in linux/kernel/kprobes.c we have:
+> 
+> 	memcpy(&p->ainsn, &ap->ainsn, sizeof(struct arch_specific_insn));
+> 
+> Now, that code isn't compiled when kprobes isn't configured, but it
+> seams to me to be safer if that was also changed to 
+> 
+> 	memcpy(&p->ainsn, &ap->ainsn, sizeof(p->ainsn));
+
+This kind of cleanup looks good for me, but I don't agree to change
+the type of the member (removing is OK) by Kconfig. If you want to
+change the framework of kprobes and uprobes itself (unification),
+I'm appreciate to discuss with you and uprobes people, because it
+will involve all arch dependent code change, *NOT ONLY* the ARM issue.
+
+> However, I also wonder if we should instead leave arch_specific_insn as
+> a kprobes specific structure and on ARM define it in terms of a new more
+> generic 'struct probe_insn'? The drawback with that is that we'd
+> probably end up with a struct just containing a single member which
+> seems a bit redundant:
+>
+> struct arch_specific_insn {
+> 	struct probe_insn pinsn;
+> };
+
+I also disagree it. If you have a plan to integrate uprobes and kprobes
+arch specific code, please share it with us. I'm happy to work with you.
+There are already many maintainers on each feature who is responsible for
+it (even it is a piece of code), and scripts/get_maintainers.pl gives you
+who are.
+
+Srikar, Oleg, I think it's a good time to merge such arch_specific mechanism
+of uprobes and kprobes. Would you think we can do similar thing on x86 too?
+
+Thank you,
 
 
-Thanks,
-Ethan
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-On Wed, Nov 6, 2013 at 10:49 PM, ethan.zhao <ethan.kernel@gmail.com> wrote:
-> Though no specification about NumVFs register initial value after POST, to void the confusion
-> lspci output as following before VF was enabled, we should clear the NumVFs value left by BIOS
-> to zero:
->
-> $lspci -vvv -s 03:00.0
-> Ethernet controller: Intel Corporation 82599EB 10-Gigabit SFI/SFP+ Network Connection (rev 01)
-> ~
-> Capabilities: [160 v1] Single Root I/O Virtualization (SR-IOV)
->                 IOVCap: Migration-, Interrupt Message Number: 000
->                 IOVCtl: Enable+ Migration- Interrupt- MSE+ ARIHierarchy+
->                 IOVSta: Migration-
->                 Initial VFs: 64, Total VFs: 64, Number of VFs: 64, Function Dependency Link: 00
->                                                               ^dazed !
-> ~
-> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
-> ---
->  drivers/pci/iov.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-> index de8ffac..a4941ad 100644
-> --- a/drivers/pci/iov.c
-> +++ b/drivers/pci/iov.c
-> @@ -439,6 +439,8 @@ static int sriov_init(struct pci_dev *dev, int pos)
->
->  found:
->         pci_write_config_word(dev, pos + PCI_SRIOV_CTRL, ctrl);
-> +       /* VF Enable is cleared, so we could init the NumVFs register to 0 */
-> +       pci_write_config_word(dev, pos + PCI_SRIOV_NUM_VF, 0);
->         pci_read_config_word(dev, pos + PCI_SRIOV_VF_OFFSET, &offset);
->         pci_read_config_word(dev, pos + PCI_SRIOV_VF_STRIDE, &stride);
->         if (!offset || (total > 1 && !stride))
-> --
-> 1.8.3.4 (Apple Git-47)
->
+
