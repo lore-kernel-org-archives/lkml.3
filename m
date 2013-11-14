@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888Ab3KNG7d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 01:59:33 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:37517 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab3KNG7Y (ORCPT
+	id S1752083Ab3KNHEE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 02:04:04 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:48003 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab3KNHD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 01:59:24 -0500
-Message-ID: <1384412359.28992.3.camel@phoenix>
-Subject: [PATCH] ramfs: Fix memory leak on ramfs_fill_super error paths
-From: Axel Lin <axel.lin@ingics.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 14 Nov 2013 14:59:19 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	Thu, 14 Nov 2013 02:03:57 -0500
+Date: Thu, 14 Nov 2013 02:03:55 -0500 (EST)
+Message-Id: <20131114.020355.1973894145326845195.davem@davemloft.net>
+To: johunt@akamai.com
+Cc: netdev@vger.kernel.org, venkat.x.venkatsubra@oracle.com,
+        linux-kernel@vger.kernel.org, jjolly@suse.com, fenlason@redhat.com,
+        honli@redhat.com
+Subject: Re: [PATCH] rds: fix local ping DoS
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1384391743-9342-1-git-send-email-johunt@akamai.com>
+References: <1384391743-9342-1-git-send-email-johunt@akamai.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 13 Nov 2013 23:03:57 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memory leak was introduced by commit 318ceed0884
-"tidy up after d_make_root() conversion".
+From: Josh Hunt <johunt@akamai.com>
+Date: Wed, 13 Nov 2013 17:15:43 -0800
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- fs/ramfs/inode.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+> The rds_ib_xmit function in net/rds/ib_send.c in the Reliable Datagram Sockets
+> (RDS) protocol implementation allows local users to cause a denial of service
+> (BUG_ON and kernel panic) by establishing an RDS connection with the source
+> IP address equal to the IPoIB interface's own IP address, as demonstrated by
+> rds-ping.
+> 
+> A local unprivileged user could use this flaw to crash the system.
+> 
+> CVE-2012-2372
+> 
+> Reported-by: Honggang Li <honli@redhat.com>
+> Signed-off-by: Josh Hunt <johunt@akamai.com>
 
-diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
-index 39d1465..868a41e 100644
---- a/fs/ramfs/inode.c
-+++ b/fs/ramfs/inode.c
-@@ -221,7 +221,7 @@ int ramfs_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	err = ramfs_parse_options(data, &fsi->mount_opts);
- 	if (err)
--		return err;
-+		goto fail;
- 
- 	sb->s_maxbytes		= MAX_LFS_FILESIZE;
- 	sb->s_blocksize		= PAGE_CACHE_SIZE;
-@@ -232,10 +232,16 @@ int ramfs_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	inode = ramfs_get_inode(sb, NULL, S_IFDIR | fsi->mount_opts.mode, 0);
- 	sb->s_root = d_make_root(inode);
--	if (!sb->s_root)
--		return -ENOMEM;
-+	if (!sb->s_root) {
-+		err = -ENOMEM;
-+		goto fail;
-+	}
- 
- 	return 0;
-+fail:
-+	kfree(fsi);
-+	sb->s_fs_info = NULL;
-+	return err;
- }
- 
- struct dentry *ramfs_mount(struct file_system_type *fs_type,
--- 
-1.8.1.2
+I'm sorry I can't apply this.  This commit message needs to be much
+less terse and explain things more.
 
+First of all, why is the "off % RDS_FRAG_SIZE" important?
 
+And, even more importantly, why is is OK to avoid this assertion just
+because we're going over loopback?
 
+Furthermore, why doesn't net/rds/iw_send.c:rds_iw_xmit() have the same
+exact problem?  It makes the same exact assertion check.
+
+I know this RDS code is a steaming pile of poo, but that doesn't mean
+we just randomly adjust assertions to make crashes go away without
+sufficient understanding of exactly what's going on.
+
+Thanks.
