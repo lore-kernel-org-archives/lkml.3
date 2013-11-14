@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192Ab3KNUZj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 15:25:39 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36275 "EHLO
+	id S1757338Ab3KNUZt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 15:25:49 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36312 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755853Ab3KNUZW (ORCPT
+	with ESMTP id S1756919Ab3KNUZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 15:25:22 -0500
+	Thu, 14 Nov 2013 15:25:28 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Azat Khuzhin <a3at.mail@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/10] perf top: Add missing newline if the 'uid' is invalid
-Date: Thu, 14 Nov 2013 17:25:08 -0300
-Message-Id: <1384460715-23198-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 09/10] perf probe: Add '--demangle'/'--no-demangle'
+Date: Thu, 14 Nov 2013 17:25:14 -0300
+Message-Id: <1384460715-23198-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384460715-23198-1-git-send-email-acme@infradead.org>
 References: <1384460715-23198-1-git-send-email-acme@infradead.org>
@@ -26,55 +25,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+From: Azat Khuzhin <a3at.mail@gmail.com>
 
-Add missing newline if the 'uid' is invalid:
+You can't pass demangled name into "perf probe", because of special chars:
+./perf probe -f -x /tmp/a.out 'foo(int)'
+Semantic error :There is non-digit char in line number.
 
-  hubble:~> perf top --stdio -u help
-  Error:
-  Invalid User: helphubble:~>
+And you can't even pass without demangling (because it search symbol in
+DSO with demangle=true):
+./perf probe -f -x /tmp/a.out _Z3fooi
+no symbols found in /tmp/a.out, maybe install a debug package?
 
-Fixed by this patch:
+However:
+nm /tmp/a.out | grep foo
+000000000040056d T _Z3fooi
 
-  comet:~/tip/tools/perf> perf top --stdio -u help
-  Error:
-  Invalid User: help
-  comet:~/tip/tools/perf>
+After this patch, using the next command:
+./perf probe -f --no-demangle -x /tmp/a.out _Z3fooi
 
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/20131112232609.GA31474@gmail.com
+probe will be successfully added.
+
+Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1382947464-31266-1-git-send-email-a3at.mail@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/builtin-probe.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index b8f8e29db332..71e6402729a8 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1172,7 +1172,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	status = target__validate(target);
- 	if (status) {
- 		target__strerror(target, status, errbuf, BUFSIZ);
--		ui__warning("%s", errbuf);
-+		ui__warning("%s\n", errbuf);
- 	}
- 
- 	status = target__parse_uid(target);
-@@ -1180,7 +1180,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 		int saved_errno = errno;
- 
- 		target__strerror(target, status, errbuf, BUFSIZ);
--		ui__error("%s", errbuf);
-+		ui__error("%s\n", errbuf);
- 
- 		status = -saved_errno;
- 		goto out_delete_evlist;
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 89acc17cf2a0..6ea9e85bdc00 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -325,6 +325,8 @@ int cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		     opt_set_filter),
+ 	OPT_CALLBACK('x', "exec", NULL, "executable|path",
+ 			"target executable name or path", opt_set_target),
++	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
++		    "Disable symbol demangling"),
+ 	OPT_END()
+ 	};
+ 	int ret;
 -- 
 1.8.1.4
 
