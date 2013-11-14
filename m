@@ -1,176 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab3KNVwT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 16:52:19 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:61578 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756874Ab3KNVwN (ORCPT
+	id S1758096Ab3KNV5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 16:57:12 -0500
+Received: from smtprelay0121.hostedemail.com ([216.40.44.121]:44767 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755637Ab3KNV5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 16:52:13 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: swarren@wwwdotorg.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ian.campbell@citrix.com, rob.herring@calxeda.com, linux@roeck-us.net,
-        rui.zhang@intel.com, wni@nvidia.com, grant.likely@linaro.org,
-        durgadoss.r@intel.com, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        cpufreq@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCHv5 05/20] cpufreq: cpufreq-cpu0: add dt node parsing for cooling device properties
-Date: Thu, 14 Nov 2013 23:04:44 +0100
-Message-ID: <2269244.zUpqHC68eo@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <5284CD61.3000302@ti.com>
-References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com> <1384285582-16933-6-git-send-email-eduardo.valentin@ti.com> <5284CD61.3000302@ti.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Thu, 14 Nov 2013 16:57:03 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 26,1.8,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:1:2:41:355:379:541:800:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1593:1594:1730:1747:1777:1792:2197:2199:2393:2505:2553:2559:2562:2828:2892:3138:3139:3140:3141:3142:3354:3653:3865:3866:3867:3868:3870:3871:3872:3873:3874:4052:4605:5007:6119:7652:7903:7974:8957:9010:9545:10004:10848:11026:11232:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:12740:13161:13184:13209:13229:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wing10_200dcb3187904
+X-Filterd-Recvd-Size: 10539
+Message-ID: <1384466219.2897.29.camel@joe-AO722>
+Subject: [PATCH] get_maintainer: Add commit author information to --rolestats
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Chen Gang <gang.chen@asianux.com>
+Date: Thu, 14 Nov 2013 13:56:59 -0800
+In-Reply-To: <1382069821.22110.168.camel@joe-AO722>
+References: <alpine.DEB.2.02.1310161738410.10147@chino.kir.corp.google.com>
+	 <alpine.DEB.2.02.1310162046090.30995@chino.kir.corp.google.com>
+	 <20131017121215.826ab6cced73118f3dba8d4f@linux-foundation.org>
+	 <1382069821.22110.168.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 14, 2013 09:17:21 AM Eduardo Valentin wrote:
-> On 12-11-2013 15:46, Eduardo Valentin wrote:
-> > This patch changes the cpufreq-cpu0 driver to consider if
-> > a cpu needs cooling (with cpufreq). In case the cooling is needed,
-> > the cpu0 device tree node needs to be properly configured
-> > with cooling device properties.
-> > 
-> > In case these properties are present,, the driver will
-> > load a cpufreq cooling device in the system. The cpufreq-cpu0
-> > driver is not interested in determining how the system should
-> > be using the cooling device. The driver is responsible
-> > only of loading the cooling device.
-> > 
-> > Describing how the cooling device will be used can be
-> > accomplished by setting up a thermal zone that references
-> > and is composed by the cpufreq cooling device.
-> > 
-> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> 
-> Rafael, Can I still assume you are OK with this patch and add your
-> acked-by [1]?
-> http://www.spinics.net/lists/lm-sensors/msg39136.html
-> 
-> It has changed a few bits from V1 to here. The idea is still same though.
+get_maintainer currently uses "Signed-off-by" style lines
+to find interested parties to send patches to when the
+MAINTAINERS file does not have a specific section entry
+with a matching file pattern.
 
-Well, this is fine by me, personally, but I'd like someone from the ARM camp to
-ACK this to be honest.
+Add statistics for commit authors and lines added and
+deleted to the information provided by --rolestats.
 
-Thanks!
+These statistics are also emitted whenever --rolestats
+and --git are selected even when there is a specified
+maintainer.
 
-> > Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> > Cc: Grant Likely <grant.likely@linaro.org>
-> > Cc: Rob Herring <rob.herring@calxeda.com>
-> > Cc: cpufreq@vger.kernel.org
-> > Cc: linux-pm@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org
-> > Cc: devicetree-discuss@lists.ozlabs.org
-> > Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> > ---
-> >  .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt         |  7 +++++++
-> >  drivers/cpufreq/Kconfig                                  |  2 +-
-> >  drivers/cpufreq/cpufreq-cpu0.c                           | 16 ++++++++++++++++
-> >  3 files changed, 24 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-> > index 051f764..f055515 100644
-> > --- a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-> > +++ b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-> > @@ -15,6 +15,10 @@ Optional properties:
-> >  - clock-latency: Specify the possible maximum transition latency for clock,
-> >    in unit of nanoseconds.
-> >  - voltage-tolerance: Specify the CPU voltage tolerance in percentage.
-> > +- #cooling-cells:
-> > +- cooling-min-level:
-> > +- cooling-max-level:
-> > +     Please refer to Documentation/devicetree/bindings/thermal/thermal.txt.
-> >  
-> >  Examples:
-> >  
-> > @@ -33,6 +37,9 @@ cpus {
-> >  			198000  850000
-> >  		>;
-> >  		clock-latency = <61036>; /* two CLK32 periods */
-> > +		#cooling-cells = <2>;
-> > +		cooling-min-level = <0>;
-> > +		cooling-max-level = <2>;
-> >  	};
-> >  
-> >  	cpu@1 {
-> > diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-> > index 534fcb8..fc1e9a5 100644
-> > --- a/drivers/cpufreq/Kconfig
-> > +++ b/drivers/cpufreq/Kconfig
-> > @@ -186,7 +186,7 @@ config CPU_FREQ_GOV_CONSERVATIVE
-> >  
-> >  config GENERIC_CPUFREQ_CPU0
-> >  	tristate "Generic CPU0 cpufreq driver"
-> > -	depends on HAVE_CLK && REGULATOR && PM_OPP && OF
-> > +	depends on HAVE_CLK && REGULATOR && PM_OPP && OF && THERMAL && CPU_THERMAL
-> >  	select CPU_FREQ_TABLE
-> >  	help
-> >  	  This adds a generic cpufreq driver for CPU0 frequency management.
-> > diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-> > index c522a95..568aaf3 100644
-> > --- a/drivers/cpufreq/cpufreq-cpu0.c
-> > +++ b/drivers/cpufreq/cpufreq-cpu0.c
-> > @@ -13,7 +13,9 @@
-> >  
-> >  #include <linux/clk.h>
-> >  #include <linux/cpu.h>
-> > +#include <linux/cpu_cooling.h>
-> >  #include <linux/cpufreq.h>
-> > +#include <linux/cpumask.h>
-> >  #include <linux/err.h>
-> >  #include <linux/module.h>
-> >  #include <linux/of.h>
-> > @@ -21,6 +23,7 @@
-> >  #include <linux/platform_device.h>
-> >  #include <linux/regulator/consumer.h>
-> >  #include <linux/slab.h>
-> > +#include <linux/thermal.h>
-> >  
-> >  static unsigned int transition_latency;
-> >  static unsigned int voltage_tolerance; /* in percentage */
-> > @@ -29,6 +32,7 @@ static struct device *cpu_dev;
-> >  static struct clk *cpu_clk;
-> >  static struct regulator *cpu_reg;
-> >  static struct cpufreq_frequency_table *freq_table;
-> > +static struct thermal_cooling_device *cdev;
-> >  
-> >  static int cpu0_verify_speed(struct cpufreq_policy *policy)
-> >  {
-> > @@ -260,6 +264,17 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
-> >  		goto out_free_table;
-> >  	}
-> >  
-> > +	/*
-> > +	 * For now, just loading the cooling device;
-> > +	 * thermal DT code takes care of matching them.
-> > +	 */
-> > +	if (of_find_property(np, "#cooling-cells", NULL)) {
-> > +		cdev = of_cpufreq_cooling_register(np, cpu_present_mask);
-> > +		if (IS_ERR(cdev))
-> > +			pr_err("running cpufreq without cooling device: %ld\n",
-> > +			       PTR_ERR(cdev));
-> > +	}
-> > +
-> >  	of_node_put(np);
-> >  	return 0;
-> >  
-> > @@ -272,6 +287,7 @@ out_put_node:
-> >  
-> >  static int cpu0_cpufreq_remove(struct platform_device *pdev)
-> >  {
-> > +	cpufreq_cooling_unregister(cdev);
-> >  	cpufreq_unregister_driver(&cpu0_cpufreq_driver);
-> >  	opp_free_cpufreq_table(cpu_dev, &freq_table);
-> >  
-> > 
-> 
-> 
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+This can have the effect of expanding the number of people
+that are shown as possible "maintainers" of a particular
+file because "authors", "added_lines", and "removed_lines"
+are also used as criterion for the --max-maintainers option
+separate from the "commit_signers".
+
+The first "--git-max-maintainers" values of each criterion
+are emitted.  Any "ties" are not shown.
+
+For example: (forcedeth does not have a named maintainer)
+
+Old output:
+
+$ ./scripts/get_maintainer.pl -f drivers/net/ethernet/nvidia/forcedeth.c
+"David S. Miller" <davem@davemloft.net> (commit_signer:8/10=80%)
+Jiri Pirko <jiri@resnulli.us> (commit_signer:2/10=20%)
+Patrick McHardy <kaber@trash.net> (commit_signer:2/10=20%)
+Larry Finger <Larry.Finger@lwfinger.net> (commit_signer:1/10=10%)
+Peter Zijlstra <peterz@infradead.org> (commit_signer:1/10=10%)
+netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
+linux-kernel@vger.kernel.org (open list)
+
+New output:
+
+$ ./scripts/get_maintainer.pl -f drivers/net/ethernet/nvidia/forcedeth.c 
+"David S. Miller" <davem@davemloft.net> (commit_signer:8/10=80%)
+Jiri Pirko <jiri@resnulli.us> (commit_signer:2/10=20%,authored:2/10=20%,removed_lines:3/33=9%)
+Patrick McHardy <kaber@trash.net> (commit_signer:2/10=20%,authored:2/10=20%,added_lines:12/95=13%,removed_lines:10/33=30%)
+Larry Finger <Larry.Finger@lwfinger.net> (commit_signer:1/10=10%,authored:1/10=10%,added_lines:35/95=37%)
+Peter Zijlstra <peterz@infradead.org> (commit_signer:1/10=10%)
+"Peter Hüwe" <PeterHuewe@gmx.de> (authored:1/10=10%,removed_lines:15/33=45%)
+Joe Perches <joe@perches.com> (authored:1/10=10%)
+Neil Horman <nhorman@tuxdriver.com> (added_lines:40/95=42%)
+Bill Pemberton <wfp5p@virginia.edu> (removed_lines:3/33=9%)
+netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
+linux-kernel@vger.kernel.org (open list)
+
+Signed-off-by: Joe Perches <joe@perches.com>
+
+---
+
+Andrew, please replace the get_maintainer "try this"
+patch with this.
+
+It also fixes a defect in that proposal you may have
+picked up separately.  That fix isn't yet in -next.
+
+ scripts/get_maintainer.pl | 91 +++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 85 insertions(+), 6 deletions(-)
+
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index 5e4fb14..9c3986f 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -98,6 +98,7 @@ my %VCS_cmds_git = (
+     "available" => '(which("git") ne "") && (-d ".git")',
+     "find_signers_cmd" =>
+ 	"git log --no-color --follow --since=\$email_git_since " .
++	    '--numstat --no-merges ' .
+ 	    '--format="GitCommit: %H%n' .
+ 		      'GitAuthor: %an <%ae>%n' .
+ 		      'GitDate: %aD%n' .
+@@ -106,6 +107,7 @@ my %VCS_cmds_git = (
+ 	    " -- \$file",
+     "find_commit_signers_cmd" =>
+ 	"git log --no-color " .
++	    '--numstat ' .
+ 	    '--format="GitCommit: %H%n' .
+ 		      'GitAuthor: %an <%ae>%n' .
+ 		      'GitDate: %aD%n' .
+@@ -114,6 +116,7 @@ my %VCS_cmds_git = (
+ 	    " -1 \$commit",
+     "find_commit_author_cmd" =>
+ 	"git log --no-color " .
++	    '--numstat ' .
+ 	    '--format="GitCommit: %H%n' .
+ 		      'GitAuthor: %an <%ae>%n' .
+ 		      'GitDate: %aD%n' .
+@@ -125,6 +128,7 @@ my %VCS_cmds_git = (
+     "blame_commit_pattern" => "^([0-9a-f]+) ",
+     "author_pattern" => "^GitAuthor: (.*)",
+     "subject_pattern" => "^GitSubject: (.*)",
++    "stat_pattern" => "^(\\d+)\\t(\\d+)\\t\$file\$",
+ );
+ 
+ my %VCS_cmds_hg = (
+@@ -152,6 +156,7 @@ my %VCS_cmds_hg = (
+     "blame_commit_pattern" => "^([ 0-9a-f]+):",
+     "author_pattern" => "^HgAuthor: (.*)",
+     "subject_pattern" => "^HgSubject: (.*)",
++    "stat_pattern" => "^(\\d+)\t(\\d+)\t\$file\$",
+ );
+ 
+ my $conf = which_conf(".get_maintainer.conf");
+@@ -1269,20 +1274,30 @@ sub extract_formatted_signatures {
+ }
+ 
+ sub vcs_find_signers {
+-    my ($cmd) = @_;
++    my ($cmd, $file) = @_;
+     my $commits;
+     my @lines = ();
+     my @signatures = ();
++    my @authors = ();
++    my @stats = ();
+ 
+     @lines = &{$VCS_cmds{"execute_cmd"}}($cmd);
+ 
+     my $pattern = $VCS_cmds{"commit_pattern"};
++    my $author_pattern = $VCS_cmds{"author_pattern"};
++    my $stat_pattern = $VCS_cmds{"stat_pattern"};
++
++    $stat_pattern =~ s/(\$\w+)/$1/eeg;		#interpolate $stat_pattern
+ 
+     $commits = grep(/$pattern/, @lines);	# of commits
+ 
++    @authors = grep(/$author_pattern/, @lines);
+     @signatures = grep(/^[ \t]*${signature_pattern}.*\@.*$/, @lines);
++    @stats = grep(/$stat_pattern/, @lines);
+ 
+-    return (0, @signatures) if !@signatures;
++#    print("stats: <@stats>\n");
++
++    return (0, \@signatures, \@authors, \@stats) if !@signatures;
+ 
+     save_commits_by_author(@lines) if ($interactive);
+     save_commits_by_signer(@lines) if ($interactive);
+@@ -1291,9 +1306,10 @@ sub vcs_find_signers {
+ 	@signatures = grep(!/${penguin_chiefs}/i, @signatures);
+     }
+ 
++    my ($author_ref, $authors_ref) = extract_formatted_signatures(@authors);
+     my ($types_ref, $signers_ref) = extract_formatted_signatures(@signatures);
+ 
+-    return ($commits, @$signers_ref);
++    return ($commits, $signers_ref, $authors_ref, \@stats);
+ }
+ 
+ sub vcs_find_author {
+@@ -1849,7 +1865,12 @@ sub vcs_assign {
+ sub vcs_file_signoffs {
+     my ($file) = @_;
+ 
++    my $authors_ref;
++    my $signers_ref;
++    my $stats_ref;
++    my @authors = ();
+     my @signers = ();
++    my @stats = ();
+     my $commits;
+ 
+     $vcs_used = vcs_exists();
+@@ -1858,13 +1879,59 @@ sub vcs_file_signoffs {
+     my $cmd = $VCS_cmds{"find_signers_cmd"};
+     $cmd =~ s/(\$\w+)/$1/eeg;		# interpolate $cmd
+ 
+-    ($commits, @signers) = vcs_find_signers($cmd);
++    ($commits, $signers_ref, $authors_ref, $stats_ref) = vcs_find_signers($cmd, $file);
++
++    @signers = @{$signers_ref} if defined $signers_ref;
++    @authors = @{$authors_ref} if defined $authors_ref;
++    @stats = @{$stats_ref} if defined $stats_ref;
++
++#    print("commits: <$commits>\nsigners:<@signers>\nauthors: <@authors>\nstats: <@stats>\n");
+ 
+     foreach my $signer (@signers) {
+ 	$signer = deduplicate_email($signer);
+     }
+ 
+     vcs_assign("commit_signer", $commits, @signers);
++    vcs_assign("authored", $commits, @authors);
++    if ($#authors == $#stats) {
++	my $stat_pattern = $VCS_cmds{"stat_pattern"};
++	$stat_pattern =~ s/(\$\w+)/$1/eeg;	#interpolate $stat_pattern
++
++	my $added = 0;
++	my $deleted = 0;
++	for (my $i = 0; $i <= $#stats; $i++) {
++	    if ($stats[$i] =~ /$stat_pattern/) {
++		$added += $1;
++		$deleted += $2;
++	    }
++	}
++	my @tmp_authors = uniq(@authors);
++	foreach my $author (@tmp_authors) {
++	    $author = deduplicate_email($author);
++	}
++	@tmp_authors = uniq(@tmp_authors);
++	my @list_added = ();
++	my @list_deleted = ();
++	foreach my $author (@tmp_authors) {
++	    my $auth_added = 0;
++	    my $auth_deleted = 0;
++	    for (my $i = 0; $i <= $#stats; $i++) {
++		if ($author eq deduplicate_email($authors[$i]) &&
++		    $stats[$i] =~ /$stat_pattern/) {
++		    $auth_added += $1;
++		    $auth_deleted += $2;
++		}
++	    }
++	    for (my $i = 0; $i < $auth_added; $i++) {
++		push(@list_added, $author);
++	    }
++	    for (my $i = 0; $i < $auth_deleted; $i++) {
++		push(@list_deleted, $author);
++	    }
++	}
++	vcs_assign("added_lines", $added, @list_added);
++	vcs_assign("removed_lines", $deleted, @list_deleted);
++    }
+ }
+ 
+ sub vcs_file_blame {
+@@ -1887,6 +1954,10 @@ sub vcs_file_blame {
+     if ($email_git_blame_signatures) {
+ 	if (vcs_is_hg()) {
+ 	    my $commit_count;
++	    my $commit_authors_ref;
++	    my $commit_signers_ref;
++	    my $stats_ref;
++	    my @commit_authors = ();
+ 	    my @commit_signers = ();
+ 	    my $commit = join(" -r ", @commits);
+ 	    my $cmd;
+@@ -1894,19 +1965,27 @@ sub vcs_file_blame {
+ 	    $cmd = $VCS_cmds{"find_commit_signers_cmd"};
+ 	    $cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
+ 
+-	    ($commit_count, @commit_signers) = vcs_find_signers($cmd);
++	    ($commit_count, $commit_signers_ref, $commit_authors_ref, $stats_ref) = vcs_find_signers($cmd, $file);
++	    @commit_authors = @{$commit_authors_ref} if defined $commit_authors_ref;
++	    @commit_signers = @{$commit_signers_ref} if defined $commit_signers_ref;
+ 
+ 	    push(@signers, @commit_signers);
+ 	} else {
+ 	    foreach my $commit (@commits) {
+ 		my $commit_count;
++		my $commit_authors_ref;
++		my $commit_signers_ref;
++		my $stats_ref;
++		my @commit_authors = ();
+ 		my @commit_signers = ();
+ 		my $cmd;
+ 
+ 		$cmd = $VCS_cmds{"find_commit_signers_cmd"};
+ 		$cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
+ 
+-		($commit_count, @commit_signers) = vcs_find_signers($cmd);
++		($commit_count, $commit_signers_ref, $commit_authors_ref, $stats_ref) = vcs_find_signers($cmd, $file);
++		@commit_authors = @{$commit_authors_ref} if defined $commit_authors_ref;
++		@commit_signers = @{$commit_signers_ref} if defined $commit_signers_ref;
+ 
+ 		push(@signers, @commit_signers);
+ 	    }
+
+
