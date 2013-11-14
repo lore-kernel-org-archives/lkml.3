@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751489Ab3KNGPc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 01:15:32 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43701 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751048Ab3KNGPY (ORCPT
+	id S1751723Ab3KNGQw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 01:16:52 -0500
+Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.102]:28751
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751048Ab3KNGQq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 01:15:24 -0500
-Message-ID: <1384409722.2062.4.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] scsi: avoid use of reclaimed reference
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: David Decotigny <decot@googlers.com>
-Cc: Bart Van Assche <bvanassche@acm.org>, linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 13 Nov 2013 22:15:22 -0800
-In-Reply-To: <CAG88wWa-U5LoXOvBb+eOAutidgV-cyteQ5aS5EQKDkswSJnH-w@mail.gmail.com>
-References: <cover.1384304973.git.decot@googlers.com>
-	 <643cda2192c25962f37c8bba65e22f70a57167d0.1384304973.git.decot@googlers.com>
-	 <52836B53.4080204@acm.org>
-	 <CAG88wWa-U5LoXOvBb+eOAutidgV-cyteQ5aS5EQKDkswSJnH-w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Nov 2013 01:16:46 -0500
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Dear Account Owner..
+To: Recipients <234@vvyr.onmicrosoft.com>
+From: WEBMAIL UPGRADE <234@vvyr.onmicrosoft.com>
+Date: Thu, 14 Nov 2013 11:46:05 +0530
+Reply-To: <webmailcenter649@yahoo.com.hk>
+X-Antivirus: avast! (VPS 131113-2, 11/13/2013), Outbound message
+X-Antivirus-Status: Clean
+Message-ID: <14def7de-b77a-4bae-9aed-871331b56ca5@SINPR02MB075.apcprd02.prod.outlook.com>
+X-Originating-IP: [180.215.207.135]
+X-ClientProxiedBy: BLUPR06CA006.namprd06.prod.outlook.com (10.255.223.144)
+ To SINPR02MB075.apcprd02.prod.outlook.com (10.141.109.144)
+X-Forefront-PRVS: 0030839EEE
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(189002)(199002)(69226001)(87976001)(64872004)(87266001)(47736001)(81342001)(47976001)(74366001)(81542001)(76176001)(76576001)(76796001)(76786001)(56816003)(77096001)(46102001)(551544002)(23756003)(49866001)(33646001)(50986001)(4396001)(51856001)(47446002)(74502001)(54356001)(74662001)(42186004)(74316001)(43066001)(83072001)(566704002)(47776003)(85306002)(19580395003)(31686002)(74706001)(81686001)(50466002)(63696002)(66066001)(80022001)(74876001)(81816001)(65816001)(83322001)(19580405001)(56776001)(80976001)(59766001)(77982001)(54316002)(53256004)(79102001)(76482001)(84722001);DIR:OUT;SFP:1501;SCL:5;SRVR:SINPR02MB075;H:[180.215.207.135];CLIP:180.215.207.135;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: vvyr.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-11-13 at 18:50 -0800, David Decotigny wrote:
-> Hello,
-> 
-> Thank you for looking into this. I could reproduce the oops on some
-> Dell Poweredge R720 with the following config flags, otherwise the
-> problem goes un-noticed:
-> 
-> CONFIG_DEBUG_PAGEALLOC=y
-> CONFIG_DEBUG_SLAB=y
-> 
-> [    4.924033] BUG: unable to handle kernel paging request at ffff88000004dd10
-> [    4.931823] IP: [<ffffffff8139797f>] __scsi_scan_target+0x3ef/0x6f0
-> [    4.938846] PGD 1ba1067 PUD 1ba2067 PMD 1ba3067 PTE 800000000004d060
-> [    4.945985] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-> [    4.951074] Modules linked in:
-> [    4.954492] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-smp-scsi01 #1
-> 
-> This points to this line on the return path of scsi_report_lun_scan:
-> if (scsi_device_created(sdev))
-> 
-> Kernel is jejb/scsi/for-next at 2aee240c68ed32 and I could reproduce
-> the bug with other 3.x kernels on same hardware. For me, it is 100%
-> reproducible.
-> 
-> The ref counter values I indicated in my previous email are the result
-> of a basic instrumentation. It shows that ref count drops from 3 to 1
-> as a result of scsi_probe_and_add_lun(). I believe this is because the
-> latter calls __scsi_remove_device(sdev).
-> 
-> Now, if sdev reclaiming is not allowed to happen at the end of
-> scsi_report_lun_scan by design because someone else is expected to
-> hold a reference to it, then I'd be happy to add a BUG_ON() on the
-> return path and explicit the post-condition in the function
-> documentation, and also try to find out where a ref is killed by
-> mistake. However, if sdev relcaiming at the end of
-> scsi_report_lun_scan is allowed, then I'd argue that the "if
-> (scsi_device_created(sdev))" on the potentially reclaimed sdev is not
-> right, that's why I was proposing this patch.
+Dear Web-master Email Account Owner,
 
-Heh, perhaps this is why bug reports are so useful.  Your patch told me
-where you thought the bug was but this report actually tells me where
-the bug is: it's in scsi_probe_and_add_luns().  There's no way that
-routine should reduce the refcount of a struct scsi_device.  It should
-either leave it as it is, or if an sdevp is specified, increment the
-reference and return the sdev in sdevp.  This should be enough
-information for you to come up with the fix.  Please document it with
-the actual bug details like you have above and I'll apply it.
+   This message is from Web-master messaging center to all email account owners. We are currently upgrading our data base and e-mail account center. We are deleting all unused email account to create more space for new accounts. To prevent your account from closing you will have to update it below so that we will know that it's a present used account.
 
-James
+Failure to do this will immediately render your email address deactivated from our database. To complete your Web-mail account, you must reply to this email immediately and enter your
 
+User-name: (           )
+password: (           )
+Confim Password: (            )
 
+Warning!!! Account owner that refuses to update his or her account within Seven days of receiving this warning will lose his or her account permanently.
+
+Warning Code:VX2G99AAJ
+Welcome to Web-master Web-mail
+upgrade@undelservices.com
+Web-mail Support
