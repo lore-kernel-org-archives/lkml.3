@@ -1,130 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab3KNKvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 05:51:19 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:44788 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752514Ab3KNKvK (ORCPT
+	id S1753049Ab3KNKx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 05:53:56 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:49881 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896Ab3KNKxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 05:51:10 -0500
-X-Sasl-enc: SudsStN4GhIbliDKzHusL3B/JuXnur89aWBDT4KJM6gO 1384426265
-Message-ID: <5284AB17.5050802@ladisch.de>
-Date: Thu, 14 Nov 2013 11:51:03 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Stephan Mueller <smueller@chronox.de>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Pavel Machek <pavel@ucw.cz>,
-        sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and
- /dev/random
-References: <2579337.FPgJGgHYdz@tauon> <1391779.T98KINxAMQ@myon.chronox.de> <528367D0.6010900@ladisch.de> <27146362.bQgmetPpTV@tauon>
-In-Reply-To: <27146362.bQgmetPpTV@tauon>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Nov 2013 05:53:54 -0500
+X-AuditID: cbfec7f5-b7fe66d00000432e-57-5284abc01872
+Message-id: <5284ABBF.3080802@samsung.com>
+Date: Thu, 14 Nov 2013 11:53:51 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.0
+MIME-version: 1.0
+To: Mark Brown <broonie@kernel.org>, Kyungmin Park <kmpark@infradead.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH 1/4] mfd: max14577: Add max14577 MFD driver core
+References: <1384328457-5147-1-git-send-email-k.kozlowski@samsung.com>
+ <1384328457-5147-2-git-send-email-k.kozlowski@samsung.com>
+ <20131113131328.GF878@sirena.org.uk>
+ <CAH9JG2U9VDnRW9JZ7j7OyRmVhSXWJ5Yp_gNqUPK=xCST7SY=xg@mail.gmail.com>
+ <20131114102419.GE26614@sirena.org.uk>
+In-reply-to: <20131114102419.GE26614@sirena.org.uk>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t/xy7oHVrcEGSzq1rA4uFXTYuOM9awW
+	Ux8+YbO4/uU5q8X8I+dYLSaunMxsceDPDkaL1y8MLW5dXsVicf/rUUaLb1c6mCwu75rDZnG7
+	cQWbxeEVB5gsTnezOvB7LPh8hd1jQv8nRo+ds+6ye2xeoeWxaVUnm8eda3vYPOadDPTo27KK
+	0ePzJrkAzigum5TUnMyy1CJ9uwSujDWnd7EWvOCruPylk6WB8R53FyMnh4SAicSqlU/ZIWwx
+	iQv31rN1MXJxCAksZZTY8u4LM4TziVHi3JU9bCBVvAJaEqfmXmAFsVkEVCVOH5sLZrMJGEp0
+	ve0CqxEVCJVoOLuLEaJeUOLH5HssILaIgKfE4ufbwYYyC7SySBx90Q60moNDWMBF4l9rAUiN
+	kMAsJonWm5IgNqeAscTbtSfBZjILmEk8alnHDGHLS2xe85Z5AqPALCQrZiEpm4WkbAEj8ypG
+	0dTS5ILipPRcI73ixNzi0rx0veT83E2MkKj6uoNx6TGrQ4wCHIxKPLwFO5uDhFgTy4orcw8x
+	SnAwK4nw/lrZEiTEm5JYWZValB9fVJqTWnyIkYmDU6qBceOJp9M2Xpxl8+f2+svFqgv5r6u/
+	PJb1yuV08d1/MhnOof03HEIs/mzemFEiKMEZN6l61b5Xuok3Dn/LlfPYnmw0yVvWxXSjtEgD
+	42RNKbYvaSYeoectdNbvmPT64iLN7EvHH87aLtq7le+m7wrhq/stfu5X2vb/4XG5jJMX/h/Y
+	L1e41FMpjEOJpTgj0VCLuag4EQCN3ljuiAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephan Mueller wrote:
-> Am Mittwoch, 13. November 2013, 12:51:44 schrieb Clemens Ladisch:
->> (And any setting that increases accesses to main memory is likey to
->> introduce more entropy due to clock drift between the processor and the
->> memory bus.  Or where do you assume the entropy comes from?)
+Hello,
+
+On 2013-11-14 11:24, Mark Brown wrote:
+> On Thu, Nov 14, 2013 at 10:33:22AM +0900, Kyungmin Park wrote:
+> > On Wed, Nov 13, 2013 at 10:13 PM, Mark Brown <broonie@kernel.org> wrote:
 >
-> You nailed it. When I disable the caches using the CR0 setting, I get a
-> massive increase in variations and thus entropy.
-
-Now this would be an opportunity to use the number of main memory
-accesses to estimate entropy.  (And when you're running out of the
-cache, i.e., deterministically, is there any entropy?)
-
->>> XOR is a bijective operation.
->>
->> Only XOR with a constant, which is not what you're doing.
+> > > Are you *positive* this is a falling triggered IRQ?  All the code to do
+> > > with spinning reading the GPIO state during handling makes it look like
+> > > this is in fact an active low interrupt and a lot of the code in here is
+> > > working around trying to handle that as the wrong kind of IRQ.
 >
-> If you want to regain the full 64 bit input bit stream, then you are
-> right.
+> > It's not work with level triggering. as wm8994, it requires edge
+> > triggering. previous time I send RFC patch to handle edge triggering
+> > at regmap.
 >
-> But still, XOR is bijective with respect to the two bits that go into
-> the operation.
-
-Please look up what "bijective" actually means:
-<http://en.wikipedia.org/wiki/Bijection>
-
-> folding based on XOR is an appropriate way to collapse the string and
-> yet retain entropy.
-
-Correct, but the reason for that is not being bijective.
-
->> If the observations are not independent, you cannot just assume that
->> the estimate is off by a certain factor.  It means that the estimate
->> is not applicable _at all_.
+> No, wm8994 is level triggered only - the edge triggering stuff there is
+> to work around some SoCs that could only support edge triggering and not
+> level triggering.  Is this a similar issue or is there something else
+> going on, what's the differeence with a level triggered scheme?
 >
-> Well, I am not so sure here.
-
-So, what is the factor that you are saying is large enough?
-
->>> The RNG has the following safety margins where it is more conservative than
->>> measurements indicate:
->>
->> You _cannot_ measure entropy by looking at the output.  How would you
->> differentiate between /dev/random and /dev/urandom?
+> > >> +static int __init max14577_i2c_init(void)
+> > >> +{
+> > >> +     return i2c_add_driver(&max14577_i2c_driver);
+> > >> +}
+> > >> +subsys_initcall(max14577_i2c_init);
 >
-> I think regarding the independence you can very well draw the conclusion
-> based on the output, because any dependencies will ultimately form a
-> pattern.
-
-The output of a pure PRNG (such as /dev/urandom without entropy) is
-dependent on the internal state, but there are no patterns detectable
-from the output alone.
-
-> In addition, we need to keep in mind that the independence claim is
-> relative
-
-No, independence is a property of the process that generates the
-samples.
-
-> If you have an output string that has no detectable patterns, i.e. looks
-> like white noise, you can only assume that the observations are
-> independent of each other. If there are patterns, you know that there
-> are dependencies.
+> > > Why not module_i2c_driver?
 >
-> That statement may *not* apply any more if you look at the internals of
-> the RNG. In such a case, you may have even strong dependencies.
+> > there's ordering issue, it should provide regulator which is used
+> > others before USB probe. if not, it failed to use USB.
+> > Other PMICs use also subsys_initcall for this reason.
 >
-> The best example on this matter are deterministic RNGs with a
-> cryptographic output function. When you see the output string, you only
-> see white noise. As you cannot detect a pattern, you have to assume that
-> the string provides independent observations. At least for you who looks
-> from the outside cannot draw any conclusions from observing some output
-> bit stream which would be the future bit stream. Yet, when you know the
-> state of the RNG, you entire future output bit stream has no
-> independence.
+> Modern systems should be able to use deferred probing to resolve these
+> dependencies, subsys_initcall() is mostly there for legacy reasons and
+> new systems ought to be able to move away from it.
 
-You cannot restrict the analysis to observations from the outside;
-there are many people who can know about the CPU's internal structure.
+The main problem here is usb gadget subsystem, which simply doesn't support
+deferred probe yet. UDC driver (which uses those regulators) need to be
+initialized before usb gadget driver (i.e. mass storage or cdc ethernet)
+has been registered.
 
-> Coming back to the jitter RNG: I applied a large array of statistical
-> tests and all of them concluded that the output is white noise, as
-> explained in the documentation. That means when looking from the
-> outside, there are no dependencies visible. Now you may say that this
-> conclusion does not mean that there are no dependencies -- but I reply
-> again, if there would be any, none of the array of statistical tests can
-> detect it. So, how would an attacker detect patterns?
+Best regards
+-- 
+Marek Szyprowski
+Samsung R&D Institute Poland
 
-An attacker would not try to detect patterns; he would apply knowledge
-of the internals.
-
-Statistical tests are useful only for detecting the absence of entropy,
-not for the opposite.
-
-
-All your arguments about the output of the CPU jitter RNG also apply to
-the output of /dev/urandom.  So are you saying that it would be a good
-idea to loop the output of /dev/urandom back into /dev/random?
-
-
-Regards,
-Clemens
