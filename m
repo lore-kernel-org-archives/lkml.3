@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab3KNIxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 03:53:32 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:47342 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751185Ab3KNIxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 03:53:30 -0500
-X-IronPort-AV: E=Sophos;i="4.93,698,1378828800"; 
-   d="scan'208";a="9033427"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH] perf kvm record: Change the default value of perf_guest to 0.
-Date: Thu, 14 Nov 2013 16:51:58 -0500
-Message-Id: <1384465918-14085-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/14 16:51:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/14 16:51:42,
-	Serialize complete at 2013/11/14 16:51:42
+	id S1752726Ab3KNIzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 03:55:33 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:44107 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab3KNIz3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 03:55:29 -0500
+X-Spam-Score: -100.8
+Message-ID: <52849084.1010606@asianux.com>
+Date: Thu, 14 Nov 2013 16:57:40 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Richard Weinberger <richard@nod.at>
+CC: Hugh Dickins <hughd@google.com>, Jeff Dike <jdike@addtoit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>
+Subject: Re: [PATCH] arch: um: kernel: skas: mmu: remove pmd_free() and pud_free()
+ for failure processing in init_stub_pte()
+References: <alpine.LNX.2.00.1310150330350.9078@eggly.anvils> <528308E8.8040203@asianux.com> <alpine.LNX.2.00.1311132041200.1785@eggly.anvils> <52847237.5030405@asianux.com> <52847CD5.1030105@asianux.com> <528481E2.9030707@nod.at>
+In-Reply-To: <528481E2.9030707@nod.at>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we can not record the event counters of host to perf.data.host.
-Example:
-   perf kvm --host record -a sleep 1
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.625 MB perf.data.guest (~27290 samples) ]
+On 11/14/2013 03:55 PM, Richard Weinberger wrote:
+> Am 14.11.2013 08:33, schrieb Chen Gang:
+>> > On 11/14/2013 02:48 PM, Chen Gang wrote:
+>>>> >>> >From the look of it, if an error did occur in init_stub_pte(),
+>>>>> >>>> then the special mapping of STUB_CODE and STUB_DATA would not
+>>>>> >>>> be installed, so this area would be invisible to munmap and exit,
+>>>>> >>>> and with your patch then the pages allocated likely to be leaked.
+>>>>> >>>>
+>>> >> It sounds reasonable to me: "although 'pgd' related with 'mm', but they
+>>> >> are not installed". But just like you said originally: "better get ACK
+>>> >> from some mm guys".
+>>> >>
+>>> >>
+>>> >> Hmm... is it another issue: "after STUB_CODE succeeds, but STUB_DATA
+>>> >> fails, the STUB_CODE will be leaked".
+>>> >>
+>>> >>
+>>>>> >>>> Which is not to say that the existing code is actually correct:
+>>>>> >>>> you're probably right that it's technically wrong.  But it would
+>>>>> >>>> be very hard to get init_stub_pte() to fail, and has anyone
+>>>>> >>>> reported a problem with it?  My guess is not, and my own
+>>>>> >>>> inclination to dabble here is zero.
+>>>>> >>>>
+>>> >> Yeah.
+>>> >>
+>> > 
+>> > If we can not get ACK from any mm guys, and we have no enough time
+>> > resource to read related source code, for me, I still recommend to
+>> > remove p?d_free() in failure processing.
+> It's rather easy, does your commit fix a real problem you are facing?
+> If the answer is "yes" we can talk.
+> 
 
-The record file is named 'perf.data.kvm' and the content of it is about host
-and guest. But we expect the record file is named 'perf.data.host' with the
-counters only about host.
+We have met many code which *should* be correct, but in really world it
+is incorrect (most of reasons come from related interface definition).
+I want to let these code less and less.
 
-The issue was introduced by 1aed267(perf kvm: Do guest-only counting by default).
+Now I want to make clear all p?d_free() related things, and except our
+um, also 3 areas use it.
 
-Actually, the following code can make sure that do guest-only by default:
-    if (!perf_host)
-        perf_guest = 1;
+  arch/arm/mm/pgd.c:100:  pud_free(mm, new_pud);
+  arch/arm/mm/pgd.c:137:  pud_free(mm, pud);
+  arch/arm/mm/pgd.c:155:          pud_free(mm, pud);
+  drivers/iommu/arm-smmu.c:947:   pud_free(NULL, pud_base);
+  mm/memory.c:3835:               pud_free(mm, new);
 
-So, changing the default value from 0 to 1 is not a good idea, it prevents
-us from getting 'perf.data.host' by '--host'.
+I am checking all of them (include um), and now for me, the related
+code under um can be improved, so I communicate with you (send the
+related patch).
 
-With this patch applied, the behavior of perf-kvm is shown as below:
-	* Default 	 -> perf.data.guest
-	* --host  	 -> perf.data.host
-	* --guest 	 -> perf.data.guest
-	* --host --guest -> perf.data.kvm
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- tools/perf/builtin-kvm.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> Chen, If you really want to help us, please investigate into existing/real problems.
+> Toralf does a very good job in finding strange issues using trinity.
+> You could help him resolving the issue described in that thread:
+> "[uml-devel] fuzz tested 32 bit user mode linux image hangs in radix_tree_next_chunk()"
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index cd9f920..eac8269 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1709,8 +1709,7 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
- 		NULL
- 	};
- 
--	perf_host  = 0;
--	perf_guest = 1;
-+	perf_host = perf_guest = 0;
- 
- 	argc = parse_options(argc, argv, kvm_options, kvm_usage,
- 			PARSE_OPT_STOP_AT_NON_OPTION);
+Excuse me, at least now, I have no related plan to analyze issues which
+not find by myself. The reasons are:
+
+ - I am not quite familiar with kernel, I need preparing (what I am doing is just familiar kernel step by step).
+
+ - my current/original plan about public kernel is delayed.
+
+ - originally I plan (not declare to outside) to solve the issues from Bugzilla of public kernel in next year (2014).
+   it will (of cause) also be delayed (I even can not dare to declare it, now).
+
+
+Thanks.
 -- 
-1.8.2.1
-
+Chen Gang
