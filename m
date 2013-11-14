@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab3KNMkv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 07:40:51 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62299 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab3KNMku (ORCPT
+	id S1753895Ab3KNMnb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 07:43:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38080 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860Ab3KNMnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 07:40:50 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH v2 01/03] clocksource: Add Kconfig entries for CMT, MTU2, TMU and STI
-Date: Thu, 14 Nov 2013 13:40:37 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        khilman@linaro.org, linux-sh@vger.kernel.org,
-        daniel.lezcano@linaro.org, horms@verge.net.au, olof@lixom.net,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <20131106110508.6806.48070.sendpatchset@w520> <20131106110518.6806.79333.sendpatchset@w520> <CANcMJZDJPbctuYgG0Wr64htUeak-XLf3EYK0vz-BbG320UkFGg@mail.gmail.com>
-In-Reply-To: <CANcMJZDJPbctuYgG0Wr64htUeak-XLf3EYK0vz-BbG320UkFGg@mail.gmail.com>
+	Thu, 14 Nov 2013 07:43:25 -0500
+Date: Thu, 14 Nov 2013 04:43:07 -0800
+From: tip-bot for Ingo Molnar <tipbot@zytor.com>
+Message-ID: <tip-bb4c5500c9c5b809696eee212843e731721a6e15@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, torvalds@linux-foundation.org, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] tools/perf/build: Fix timerfd feature check
+Git-Commit-ID: bb4c5500c9c5b809696eee212843e731721a6e15
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201311141340.38208.arnd@arndb.de>
-X-Provags-ID: V02:K0:21iuzbZeNlRgywmAZeIumQXd0WxOfoxLNAVZ11z6CNB
- Vmhj89IhkWYWLbspyF2rwtZgSv36Vu653peMicrW1BcHWh2jGN
- skbv54sxp6kynbEB+ZWx3ApsRLTAwUOOKHFSke3NtxAXPrSqRF
- 6m2GWhbNF+J+Sinj7opbb1D5QUOMwec4+GXpep27P/7Z92azEP
- 2FDSM0hO68XiXe4/bbFIUAX7qhMrKhV0sSvY6dqcW/gBLGCn6V
- j3nuQvpnnu7L9Wv4dLXr7z38jWuHDw6/yb8sbPPDGf/uV9yBPz
- viFY6keS8L4J+GvHTpmnNBPmdDPICoXBl+HW9YWBK9M+3jFg+E
- BjRCSXfdEEE8rQ28yiCA=
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 14 Nov 2013 04:43:13 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 13 November 2013, John Stultz wrote:
-> > +config EM_TIMER_STI
-> > +       bool "STI timer driver"
-> > +       default y if ARM
-> > +       help
-> > +         This enables build of the STI timer driver.
-> 
-> 
-> So since I do want to avoid adding user-selectable configs if
-> possible, here are some concrete thoughts on this patch, trying to
-> provide an example from my more abstract rants down thread. :)
+Commit-ID:  bb4c5500c9c5b809696eee212843e731721a6e15
+Gitweb:     http://git.kernel.org/tip/bb4c5500c9c5b809696eee212843e731721a6e15
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Thu, 14 Nov 2013 08:33:24 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 14 Nov 2013 13:36:00 +0100
 
-I think we should be using the CONFIG_BUILD_TEST (or whatever
-it's called) here to allow building the drivers everywhere but
-at the same time be specific with the platform. How about this:
+tools/perf/build: Fix timerfd feature check
 
-config EM_TIMER_STI
-	bool "Renesas EMMA EV2 STI timer driver" if BUILD_TEST && !ARCH_EMEV2
-	default ARCH_EMEV2
-	help
-	  ...
+'feature_timerfd' is checked all the time and calculated explicitly,
+in a serial fashion. Add it to CORE_FEATURE_TESTS which causes it to
+be built in parallel, using the newfangled parallel build autodetection
+code.
 
-This makes it a silent option that is set correctly all the time
-but lets you enable it everywhere when BUILD_TEST is set.
+This shaves 137 msecs off the perf build time on my system, which
+speeds up the common case cached build by 43%:
 
-We could skip the "&& !ARCH_EMEV2" part to allow building an
-EMEV2 kernel without this driver when build testing if that
-is possible.
+Before:
 
-	Arnd
+  comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
+  [...]
+         0,453771441 seconds time elapsed                                          ( +-  0,09% )
+
+After:
+
+  comet:~/tip> perf stat --null --repeat 5 make -C tools/perf/
+  [...]
+         0,316290185 seconds time elapsed                                          ( +-  0,24% )
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-bb92CmexihopoSyqnkqepvsy@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/config/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index f5905f2..861379e 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -142,7 +142,8 @@ CORE_FEATURE_TESTS =			\
+ 	libunwind			\
+ 	on-exit				\
+ 	stackprotector			\
+-	stackprotector-all
++	stackprotector-all		\
++	timerfd
+ 
+ #
+ # So here we detect whether test-all was rebuilt, to be able
+@@ -405,7 +406,6 @@ else
+   endif
+ endif
+ 
+-$(call feature_check,timerfd)
+ ifeq ($(feature-timerfd), 1)
+   CFLAGS += -DHAVE_TIMERFD_SUPPORT
+ else
