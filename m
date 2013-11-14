@@ -1,114 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab3KNTdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 14:33:40 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:57649 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755803Ab3KNTdc convert rfc822-to-8bit (ORCPT
+	id S1756724Ab3KNTfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 14:35:52 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53501 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755049Ab3KNTfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 14:33:32 -0500
+	Thu, 14 Nov 2013 14:35:42 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Amit Pundir <amit.pundir@linaro.org>
+Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>
+Subject: Re: [RFC][PATCH v2] epoll: allow EPOLLWAKEUP flag if PM_SLEEP is enabled
+Date: Thu, 14 Nov 2013 20:48:13 +0100
+Message-ID: <2226686.lJvXUupyWo@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAMi1Hd2F5iWGztjMOM7UarEeXdUTCGh7ZV=XxhX1u-kKCRt-LQ@mail.gmail.com>
+References: <1384289548-26015-1-git-send-email-amit.pundir@linaro.org> <26648741.38OpUJA4ry@vostro.rjw.lan> <CAMi1Hd2F5iWGztjMOM7UarEeXdUTCGh7ZV=XxhX1u-kKCRt-LQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5DD_H8_auWZ9QAVPLk85=Zcviv3RjeEWmHQkHPnFPCzA@mail.gmail.com>
-References: <20131029214631.GA19354@kroah.com> <CAErSpo5YpE-aoTbXd5=0xBDe+_aQPEO4PejrG=+JoEM=w2ZxQw@mail.gmail.com>
- <20131102155054.GD23938@kroah.com> <CAErSpo5DD_H8_auWZ9QAVPLk85=Zcviv3RjeEWmHQkHPnFPCzA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 14 Nov 2013 12:33:11 -0700
-Message-ID: <CAErSpo6Q3LvDN0QkOf4HnsDZf7neNgSE2nz2Z191Ajp62OLVrQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] PCI: export MSI mode using attributes, not kobjects
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Neil Horman <nhorman@tuxdriver.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 11:55 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Sat, Nov 2, 2013 at 9:50 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
->> On Fri, Nov 01, 2013 at 05:40:02PM -0600, Bjorn Helgaas wrote:
->>> On Tue, Oct 29, 2013 at 3:46 PM, Greg Kroah-Hartman
->>> <gregkh@linuxfoundation.org> wrote:
->>> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>> >
->>> > The PCI MSI sysfs code is a mess with kobjects for things that don't
->>> > really need to be kobjects.  This patch creates attributes dynamically
->>> > for the MSI interrupts instead of using kobjects.
->>> >
->>> > Note, this does not delete the existing sysfs MSI code, but puts the
->>> > attributes under a "msi_irqs_2" directory for testing / example.
->>> >
->>> > Also note, this removes a directory from the current MSI interrupt sysfs
->>> > code:
->>> >
->>> > old MSI kobjects:
->>> > pci_device
->>> >    └── msi_irqs
->>> >        └── 40
->>> >            └── mode
->>> >
->>> > new MSI attributes:
->>> > pci_device
->>> >    └── msi_irqs_2
->>> >        └── 40
->>> >
->>> > As there was only one file "mode" with the kobject model, the interrupt
->>> > number is now a file that returns the "mode" of the interrupt (msi vs.
->>> > msix).
->>> >
->>> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>> > ---
->>> >
->>> > Bjorn, I can make up a patch that rips out the existing kobject code
->>> > here, but I figured this patch would make things easier to follow
->>> > instead of having to dig through the removed logic at the same time.
->>> >
->>> > I'll clean up the error handling path for the create attribute logic as
->>> > well, this was just a proof of concept that this could be done.
->>> >
->>> > Do you think that anyone cares about the current mode files in sysfs to
->>> > move things in this manner?
->>>
->>> I like this a lot better than trying to fix all the holes in the
->>> current kobject code.
->>
->> Great.
->>
->>> I have no idea who, if anybody, cares about the "mode" files.  I
->>> assume there's a way to create the "mode" files with attributes, too?
->>> If so, we could replicate the existing structure with one patch, and
->>> simplify it with a second patch, so it would be easier to revert the
->>> directory change while keeping the fix.
->>
->> No, we can't create a 2-level deep attribute at the moment, only one
->> level, like the patch does.
->>
->> Based on Neil's comments, I think we should be fine with this as-is as
->> no one is messing with these files directly (which implies that we could
->> possibly just remove them entirely to save us the overall pain...)
->
-> Hmmm.  https://bugzilla.redhat.com/show_bug.cgi?id=744012 suggests
-> that irqbalance might be reading these files.
+On Thursday, November 14, 2013 09:59:44 PM Amit Pundir wrote:
+> On 14 November 2013 03:14, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Wednesday, November 13, 2013 01:35:38 PM Amit Pundir wrote:
+> >> On 13 November 2013 05:29, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > On Wednesday, November 13, 2013 02:22:28 AM Amit Pundir wrote:
+> >> >> ep_create_wakeup_source() reports ENOMEM
+> >> >
+> >> > That needs to be fixed too.  I suppose we can make the wakeup_source_register()
+> >> > stub for CONFIG_PM_SLEEP unset return ERR_PTR(-ENOSYS) or something like that
+> >> > and ep_create_wakeup_source() return that instead of -ENOMEM.  It looks like
+> >> > eventpoll.c is the only user of it built for CONFIG_PM_SLEEP unset, but that
+> >> > needs to be double checked.
+> >>
+> >> Instead of modifying wakeup_source_register() stub, what if I make
+> >> ep_create_wakeup_source() static inline as well and use its stub to
+> >> return -ENOSYS when CONFIG_PM_SLEEP is not set?
+> >> ep_create_wakeup_source() is used only in fs/eventpoll.c anyway.
+> >
+> > Well, you can do that too.
+> >
+> 
+> On second thought we may skip modifying ep_create_wakeup_source() or
+> wakeup_source_register() altogether because once we drop EPOLLWAKEUP
+> from epoll events mask(if PM_SLEEP is unset) then I don't see us
+> running into ep_create_wakeup_source() again. And the only reason for
+> ep_create_wakeup_source() failure will be -ENOMEM as far as I can see.
 
-I looked at the current irqbalance on github [1], and I *think* it
-never reads the "mode" files.  It reads the entries in the "msi_irqs"
-directory, which you're proposing to change from directories to files,
-but I think it only uses the names.
+OK
 
-It looks like it should be safe at least for irqbalance to make this a
-one-level attribute.  It's possible we'll break somebody's scripts,
-but I'm willing to try making this change because it really makes the
-refcounting much simpler.
+> >> >> if wakeup_source_register()
+> >> >> returns NULL. ep_create_wakeup_source() assumes that NULL is only
+> >> >> returned if we run into ENOMEM but NULL is also returned when
+> >> >> CONFIG_PM_SLEEP is disabled.
+> >> >>
+> >> >> Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
+> >> >> ---
+> >> >> Changed in v2:
+> >> >> Using static inline functions instead of #ifdefs
+> >> >> ---
+> >> >>  fs/eventpoll.c                 |    3 +--
+> >> >>  include/uapi/linux/eventpoll.h |   12 ++++++++++++
+> >> >>  2 files changed, 13 insertions(+), 2 deletions(-)
+> >> >>
+> >> >> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+> >> >> index 473e09d..10f9c43 100644
+> >> >> --- a/fs/eventpoll.c
+> >> >> +++ b/fs/eventpoll.c
+> >> >> @@ -1820,8 +1820,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+> >> >>               goto error_tgt_fput;
+> >> >>
+> >> >>       /* Check if EPOLLWAKEUP is allowed */
+> >> >> -     if ((epds.events & EPOLLWAKEUP) && !capable(CAP_BLOCK_SUSPEND))
+> >> >> -             epds.events &= ~EPOLLWAKEUP;
+> >> >> +     ep_epollwakeup_check(&epds.events);
+> >> >
+> >> > The "check" part of the name kind of suggests that the function will not change
+> >> > things.  What about ep_adjust_epollwakeup() or something along these lines?
+> >>
+> >> I see couple of ep_set_* functions in eventpoll.c. Does it make sense
+> >> to have something like ep_set_epollwakeup()?
+> >
+> > This particular one doesn't really set anything.  I suppose that a name like
+> > "ep_take_care_of_epollwakeup" might be somewhat closer to what it really does ...
+> 
+> I'm running out of ideas on this one, lets go with
+> "ep_take_care_of_epollwakeup".
 
-Bjorn
+Well, that's fine by me, if no one else has any better ideas.
 
-[1] https://github.com/Irqbalance/irqbalance/blob/master/classify.c#L357
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
