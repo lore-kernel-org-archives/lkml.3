@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab3KNOzn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 09:55:43 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:34079 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753514Ab3KNOzg (ORCPT
+	id S1754529Ab3KNO4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 09:56:42 -0500
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:42071 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754178Ab3KNO4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 09:55:36 -0500
-Message-ID: <5284E467.6040502@tilera.com>
-Date: Thu, 14 Nov 2013 09:55:35 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 14 Nov 2013 09:56:33 -0500
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+To: <linux-arm-kernel@lists.infradead.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <srinivas.kandagatla@st.com>
+Subject: [PATCH] ARM: dove: Fix typo in device_type property of phy node
+Date: Thu, 14 Nov 2013 14:54:59 +0000
+Message-ID: <1384440899-3622-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/17] tile: Remove tile-specific _sinitdata and _einitdata
-References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org> <1384285347-13506-11-git-send-email-geert@linux-m68k.org> <528414A6.8090208@tilera.com> <alpine.DEB.2.02.1311140927170.9407@ayla.of.borg>
-In-Reply-To: <alpine.DEB.2.02.1311140927170.9407@ayla.of.borg>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.65.51.59]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2013 3:31 AM, Geert Uytterhoeven wrote:
-> Feel free to take v2 below. Thanks!
->
-> From d761d4d63945ff0a6eab5a9058c132f870c92aff Mon Sep 17 00:00:00 2001
-> From: Geert Uytterhoeven <geert@linux-m68k.org>
-> Date: Fri, 8 Nov 2013 21:33:29 +0100
-> Subject: [PATCH -v2] tile: Remove tile-specific _sinitdata and _einitdata
->
-> Use standard __init_begin and __init_end instead.
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+This patch fixes a typo for device_type property of phy node.
+This can work as of today but once a checks are added in generic code
+this typo will stop phy from working.
 
-Taken into the tile tree; thanks!  (I did fix one extra place where it mentioned _sinitdata in a comment.)
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+---
+ arch/arm/boot/dts/dove.dtsi |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+index cc27916..b4a6559 100644
+--- a/arch/arm/boot/dts/dove.dtsi
++++ b/arch/arm/boot/dts/dove.dtsi
+@@ -481,7 +481,7 @@
+ 			status = "disabled";
+ 
+ 			ethphy: ethernet-phy {
+-				device-type = "ethernet-phy";
++				device_type = "ethernet-phy";
+ 				/* set phy address in board file */
+ 			};
+ 		};
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.7.6.5
 
