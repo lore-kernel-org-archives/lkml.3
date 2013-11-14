@@ -1,91 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab3KNEBJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Nov 2013 23:01:09 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:54121 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab3KNEBB (ORCPT
+	id S1752743Ab3KNEET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Nov 2013 23:04:19 -0500
+Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.102]:25735
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752560Ab3KNEEM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Nov 2013 23:01:01 -0500
-Date: Wed, 13 Nov 2013 20:00:34 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Minchan Kim <minchan@kernel.org>
-cc: Greg KH <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, lliubbo@gmail.com,
-        jmarchan@redhat.com, mgorman@suse.de, riel@redhat.com,
-        linux-mm@kvack.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Luigi Semenzato <semenzato@google.com>
-Subject: Re: [PATCH] staging: zsmalloc: Ensure handle is never 0 on success
-In-Reply-To: <20131112154137.GA3330@gmail.com>
-Message-ID: <alpine.LNX.2.00.1311131811030.1120@eggly.anvils>
-References: <20131107070451.GA10645@bbox> <20131112154137.GA3330@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 13 Nov 2013 23:04:12 -0500
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: My name is Miss. AMINA HASSAN
+To: Recipients <email5@ipsocks015.onmicrosoft.com>
+From: draminahassan <email5@ipsocks015.onmicrosoft.com>
+Date: Thu, 14 Nov 2013 09:33:28 +0530
+Reply-To: <draminahassan110@live.com>
+Message-ID: <a4b35c7d-c945-4383-9f6f-a16ce382ce5d@HKNPR02MB114.apcprd02.prod.outlook.com>
+X-Originating-IP: [116.202.87.134]
+X-ClientProxiedBy: BY2PR05CA012.namprd05.prod.outlook.com (10.141.216.22) To
+ HKNPR02MB114.apcprd02.prod.outlook.com (10.141.18.153)
+X-Forefront-PRVS: 0030839EEE
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(42186004)(54356001)(74316001)(74366001)(76176001)(46102001)(74876001)(83072001)(74706001)(81542001)(76482001)(50466002)(51856001)(43066001)(59766001)(47776003)(81342001)(63696002)(76576001)(53256004)(76786001)(56816003)(77096001)(79102001)(23756003)(66066001)(87266001)(85306002)(76796001)(65816001)(19580405001)(64872004)(80022001)(83322001)(81686001)(47446002)(87976001)(56776001)(80976001)(74662001)(69226001)(4396001)(74502001)(31686002)(33646001)(54316002)(19580395003)(77982001)(50986001)(47976001)(47736001)(49866001)(555904002)(81816001)(62346009)(41943001);DIR:OUT;SFP:1501;SCL:5;SRVR:HKNPR02MB114;H:[116.202.87.134];CLIP:116.202.87.134;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: ipsocks015.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Nov 2013, Minchan Kim wrote:
-> On Thu, Nov 07, 2013 at 04:04:51PM +0900, Minchan Kim wrote:
-> > On Wed, Nov 06, 2013 at 07:05:11PM -0800, Greg KH wrote:
-> > > On Wed, Nov 06, 2013 at 03:46:19PM -0800, Nitin Gupta wrote:
-> > >  > I'm getting really tired of them hanging around in here for many years
-> > > > > now...
-> > > > >
-> > > > 
-> > > > Minchan has tried many times to promote zram out of staging. This was
-> > > > his most recent attempt:
-> > > > 
-> > > > https://lkml.org/lkml/2013/8/21/54
-...
-> 
-> Hello Andrew,
-> 
-> I'd like to listen your opinion.
-> 
-> The zram promotion trial started since Aug 2012 and I already have get many
-> Acked/Reviewed feedback and positive feedback from Rik and Bob in this thread.
-> (ex, Jens Axboe[1], Konrad Rzeszutek Wilk[2], Nitin Gupta[3], Pekka Enberg[4])
-> In Linuxcon, Hugh gave positive feedback about zram(Hugh, If I misunderstood,
-> please correct me!). And there are lots of users already in embedded industry
-> ex, (most of TV in the world, Chromebook, CyanogenMod, Android Kitkat.)
-> They are not idiot. Zram is really effective for embedded world.
+My name is Miss. AMINA HASSAN,a medical doctor working with NATO currently in Syria.
 
-Sorry for taking so long to respond, Minchan: no, you do not misrepresent
-me at all.  Promotion of zram and zsmalloc from staging is way overdue:
-they long ago proved their worth, look tidy, and have an active maintainer.
+I got your esteemed contact during my comprehensive research for a reliable and trustworthy individual in your country; I will need your help in this situation I find myself. I am really afraid and I don't know whom to confide in. I have some money I made in the president of Syrian compound Bashar al-Assads during our search in rescue team NATO.I have kept it as secret for a little while and I need someone I can trust to work and transfer this money out of Syria as a medical documents. Please I will need your help on this for I can forfeit 25 percent of this money to make sure is safely used for me until I will be living the army next year. I will need to work with you in getting this money out of SYRIA.Please,get back to me and I will make the arrangement on how to get this done because I have no one to confide in, I joined the army as an orphan and I don't have someone to confide in as I believe you will be of helpful to me. I will be reviling the said amount immediately  you give me your word of confidence to go ahead for this is a very huge amount of money, I had in mind to open and opera, If you feel we can do this together judiciously, reply me via Email for more details:(draminahassan110@live.com)
 
-Putting them into drivers/staging was always a mistake, and I quite
-understand Greg's impatience with them by now; but please let's move
-them to where they belong instead of removing them.
-
-I would not have lent support to zswap if I'd thought that was going to
-block zram.  And I was not the only one surprised when zswap replaced its
-use of zsmalloc by zbud: we had rather expected a zbud option to be added,
-and I still assume that zsmalloc support will be added back to zswap later.
-
-I think your August 2013 posting moved zsmalloc under zram and moved it
-all to drivers/block?  That is the right place for zram, but I do think
-zsmalloc.c (I'm not very keen on _drvs and -mains myself) should be
-alongside zbud.c in mm, where we can better keep an eye on its
-struct-pageyness.
-
-IMHO
-Hugh
-
-> 
-> We spent much time with preventing zram enhance since it have been in staging
-> and Greg never want to improve without promotion.
-> 
-> Please consider promotion and let us improve it.
-> I think only remained thing is your decision.
-> 
-> 
-> 1. https://lkml.org/lkml/2012/9/11/551
-> 2. https://lkml.org/lkml/2012/8/9/636
-> 3. https://lkml.org/lkml/2012/8/8/390
-> 4. https://lkml.org/lkml/2012/9/26/126
+Regards,
+DR MISS AMINA HASSAN
