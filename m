@@ -1,301 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096Ab3KNV5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 16:57:12 -0500
-Received: from smtprelay0121.hostedemail.com ([216.40.44.121]:44767 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755637Ab3KNV5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 16:57:03 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 26,1.8,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:1:2:41:355:379:541:800:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1593:1594:1730:1747:1777:1792:2197:2199:2393:2505:2553:2559:2562:2828:2892:3138:3139:3140:3141:3142:3354:3653:3865:3866:3867:3868:3870:3871:3872:3873:3874:4052:4605:5007:6119:7652:7903:7974:8957:9010:9545:10004:10848:11026:11232:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:12740:13161:13184:13209:13229:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: wing10_200dcb3187904
-X-Filterd-Recvd-Size: 10539
-Message-ID: <1384466219.2897.29.camel@joe-AO722>
-Subject: [PATCH] get_maintainer: Add commit author information to --rolestats
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Chen Gang <gang.chen@asianux.com>
-Date: Thu, 14 Nov 2013 13:56:59 -0800
-In-Reply-To: <1382069821.22110.168.camel@joe-AO722>
-References: <alpine.DEB.2.02.1310161738410.10147@chino.kir.corp.google.com>
-	 <alpine.DEB.2.02.1310162046090.30995@chino.kir.corp.google.com>
-	 <20131017121215.826ab6cced73118f3dba8d4f@linux-foundation.org>
-	 <1382069821.22110.168.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1758127Ab3KNWFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 17:05:09 -0500
+Received: from mail.tpi.com ([74.45.170.26]:33849 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757796Ab3KNWFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 17:05:04 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>
+Subject: [PATCH linux-next] SELinux: security_load_policy: Silence frame-larger-than warning
+Date: Thu, 14 Nov 2013 15:04:51 -0700
+Message-Id: <1384466691-42392-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_maintainer currently uses "Signed-off-by" style lines
-to find interested parties to send patches to when the
-MAINTAINERS file does not have a specific section entry
-with a matching file pattern.
+Dynamically allocate a couple of the larger stack variables in order to
+reduce the stack footprint below 1024. gcc-4.8
 
-Add statistics for commit authors and lines added and
-deleted to the information provided by --rolestats.
+security/selinux/ss/services.c: In function 'security_load_policy':
+security/selinux/ss/services.c:1964:1: warning: the frame size of 1104 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+ }
 
-These statistics are also emitted whenever --rolestats
-and --git are selected even when there is a specified
-maintainer.
+Also silence a couple of checkpatch warnings at the same time.
 
-This can have the effect of expanding the number of people
-that are shown as possible "maintainers" of a particular
-file because "authors", "added_lines", and "removed_lines"
-are also used as criterion for the --max-maintainers option
-separate from the "commit_signers".
+WARNING: sizeof policydb should be sizeof(policydb)
++	memcpy(oldpolicydb, &policydb, sizeof policydb);
 
-The first "--git-max-maintainers" values of each criterion
-are emitted.  Any "ties" are not shown.
+WARNING: sizeof policydb should be sizeof(policydb)
++	memcpy(&policydb, newpolicydb, sizeof policydb);
 
-For example: (forcedeth does not have a named maintainer)
-
-Old output:
-
-$ ./scripts/get_maintainer.pl -f drivers/net/ethernet/nvidia/forcedeth.c
-"David S. Miller" <davem@davemloft.net> (commit_signer:8/10=80%)
-Jiri Pirko <jiri@resnulli.us> (commit_signer:2/10=20%)
-Patrick McHardy <kaber@trash.net> (commit_signer:2/10=20%)
-Larry Finger <Larry.Finger@lwfinger.net> (commit_signer:1/10=10%)
-Peter Zijlstra <peterz@infradead.org> (commit_signer:1/10=10%)
-netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
-linux-kernel@vger.kernel.org (open list)
-
-New output:
-
-$ ./scripts/get_maintainer.pl -f drivers/net/ethernet/nvidia/forcedeth.c 
-"David S. Miller" <davem@davemloft.net> (commit_signer:8/10=80%)
-Jiri Pirko <jiri@resnulli.us> (commit_signer:2/10=20%,authored:2/10=20%,removed_lines:3/33=9%)
-Patrick McHardy <kaber@trash.net> (commit_signer:2/10=20%,authored:2/10=20%,added_lines:12/95=13%,removed_lines:10/33=30%)
-Larry Finger <Larry.Finger@lwfinger.net> (commit_signer:1/10=10%,authored:1/10=10%,added_lines:35/95=37%)
-Peter Zijlstra <peterz@infradead.org> (commit_signer:1/10=10%)
-"Peter Hüwe" <PeterHuewe@gmx.de> (authored:1/10=10%,removed_lines:15/33=45%)
-Joe Perches <joe@perches.com> (authored:1/10=10%)
-Neil Horman <nhorman@tuxdriver.com> (added_lines:40/95=42%)
-Bill Pemberton <wfp5p@virginia.edu> (removed_lines:3/33=9%)
-netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
-linux-kernel@vger.kernel.org (open list)
-
-Signed-off-by: Joe Perches <joe@perches.com>
-
+Cc: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: James Morris <james.l.morris@oracle.com>
+Cc: Eric Paris <eparis@parisplace.org>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 ---
+ security/selinux/ss/services.c |   54 ++++++++++++++++++++++++----------------
+ 1 file changed, 32 insertions(+), 22 deletions(-)
 
-Andrew, please replace the get_maintainer "try this"
-patch with this.
-
-It also fixes a defect in that proposal you may have
-picked up separately.  That fix isn't yet in -next.
-
- scripts/get_maintainer.pl | 91 +++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 85 insertions(+), 6 deletions(-)
-
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index 5e4fb14..9c3986f 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -98,6 +98,7 @@ my %VCS_cmds_git = (
-     "available" => '(which("git") ne "") && (-d ".git")',
-     "find_signers_cmd" =>
- 	"git log --no-color --follow --since=\$email_git_since " .
-+	    '--numstat --no-merges ' .
- 	    '--format="GitCommit: %H%n' .
- 		      'GitAuthor: %an <%ae>%n' .
- 		      'GitDate: %aD%n' .
-@@ -106,6 +107,7 @@ my %VCS_cmds_git = (
- 	    " -- \$file",
-     "find_commit_signers_cmd" =>
- 	"git log --no-color " .
-+	    '--numstat ' .
- 	    '--format="GitCommit: %H%n' .
- 		      'GitAuthor: %an <%ae>%n' .
- 		      'GitDate: %aD%n' .
-@@ -114,6 +116,7 @@ my %VCS_cmds_git = (
- 	    " -1 \$commit",
-     "find_commit_author_cmd" =>
- 	"git log --no-color " .
-+	    '--numstat ' .
- 	    '--format="GitCommit: %H%n' .
- 		      'GitAuthor: %an <%ae>%n' .
- 		      'GitDate: %aD%n' .
-@@ -125,6 +128,7 @@ my %VCS_cmds_git = (
-     "blame_commit_pattern" => "^([0-9a-f]+) ",
-     "author_pattern" => "^GitAuthor: (.*)",
-     "subject_pattern" => "^GitSubject: (.*)",
-+    "stat_pattern" => "^(\\d+)\\t(\\d+)\\t\$file\$",
- );
+diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
+index b4feecc..c8317c8 100644
+--- a/security/selinux/ss/services.c
++++ b/security/selinux/ss/services.c
+@@ -1828,7 +1828,7 @@ static int security_preserve_bools(struct policydb *p);
+  */
+ int security_load_policy(void *data, size_t len)
+ {
+-	struct policydb oldpolicydb, newpolicydb;
++	struct policydb *oldpolicydb, *newpolicydb;
+ 	struct sidtab oldsidtab, newsidtab;
+ 	struct selinux_mapping *oldmap, *map = NULL;
+ 	struct convert_context_args args;
+@@ -1837,12 +1837,19 @@ int security_load_policy(void *data, size_t len)
+ 	int rc = 0;
+ 	struct policy_file file = { data, len }, *fp = &file;
  
- my %VCS_cmds_hg = (
-@@ -152,6 +156,7 @@ my %VCS_cmds_hg = (
-     "blame_commit_pattern" => "^([ 0-9a-f]+):",
-     "author_pattern" => "^HgAuthor: (.*)",
-     "subject_pattern" => "^HgSubject: (.*)",
-+    "stat_pattern" => "^(\\d+)\t(\\d+)\t\$file\$",
- );
++	oldpolicydb = kzalloc(2 * sizeof(*oldpolicydb), GFP_KERNEL);
++	if (!oldpolicydb) {
++		rc = -ENOMEM;
++		goto out;
++	}
++	newpolicydb = oldpolicydb + 1;
++
+ 	if (!ss_initialized) {
+ 		avtab_cache_init();
+ 		rc = policydb_read(&policydb, fp);
+ 		if (rc) {
+ 			avtab_cache_destroy();
+-			return rc;
++			goto out;
+ 		}
  
- my $conf = which_conf(".get_maintainer.conf");
-@@ -1269,20 +1274,30 @@ sub extract_formatted_signatures {
+ 		policydb.len = len;
+@@ -1852,14 +1859,14 @@ int security_load_policy(void *data, size_t len)
+ 		if (rc) {
+ 			policydb_destroy(&policydb);
+ 			avtab_cache_destroy();
+-			return rc;
++			goto out;
+ 		}
+ 
+ 		rc = policydb_load_isids(&policydb, &sidtab);
+ 		if (rc) {
+ 			policydb_destroy(&policydb);
+ 			avtab_cache_destroy();
+-			return rc;
++			goto out;
+ 		}
+ 
+ 		security_load_policycaps();
+@@ -1871,36 +1878,36 @@ int security_load_policy(void *data, size_t len)
+ 		selinux_status_update_policyload(seqno);
+ 		selinux_netlbl_cache_invalidate();
+ 		selinux_xfrm_notify_policyload();
+-		return 0;
++		goto out;
+ 	}
+ 
+ #if 0
+ 	sidtab_hash_eval(&sidtab, "sids");
+ #endif
+ 
+-	rc = policydb_read(&newpolicydb, fp);
++	rc = policydb_read(newpolicydb, fp);
+ 	if (rc)
+-		return rc;
++		goto out;
+ 
+-	newpolicydb.len = len;
++	newpolicydb->len = len;
+ 	/* If switching between different policy types, log MLS status */
+-	if (policydb.mls_enabled && !newpolicydb.mls_enabled)
++	if (policydb.mls_enabled && !newpolicydb->mls_enabled)
+ 		printk(KERN_INFO "SELinux: Disabling MLS support...\n");
+-	else if (!policydb.mls_enabled && newpolicydb.mls_enabled)
++	else if (!policydb.mls_enabled && newpolicydb->mls_enabled)
+ 		printk(KERN_INFO "SELinux: Enabling MLS support...\n");
+ 
+-	rc = policydb_load_isids(&newpolicydb, &newsidtab);
++	rc = policydb_load_isids(newpolicydb, &newsidtab);
+ 	if (rc) {
+ 		printk(KERN_ERR "SELinux:  unable to load the initial SIDs\n");
+-		policydb_destroy(&newpolicydb);
+-		return rc;
++		policydb_destroy(newpolicydb);
++		goto out;
+ 	}
+ 
+-	rc = selinux_set_mapping(&newpolicydb, secclass_map, &map, &map_size);
++	rc = selinux_set_mapping(newpolicydb, secclass_map, &map, &map_size);
+ 	if (rc)
+ 		goto err;
+ 
+-	rc = security_preserve_bools(&newpolicydb);
++	rc = security_preserve_bools(newpolicydb);
+ 	if (rc) {
+ 		printk(KERN_ERR "SELinux:  unable to preserve booleans\n");
+ 		goto err;
+@@ -1918,7 +1925,7 @@ int security_load_policy(void *data, size_t len)
+ 	 * in the new SID table.
+ 	 */
+ 	args.oldp = &policydb;
+-	args.newp = &newpolicydb;
++	args.newp = newpolicydb;
+ 	rc = sidtab_map(&newsidtab, convert_context, &args);
+ 	if (rc) {
+ 		printk(KERN_ERR "SELinux:  unable to convert the internal"
+@@ -1928,12 +1935,12 @@ int security_load_policy(void *data, size_t len)
+ 	}
+ 
+ 	/* Save the old policydb and SID table to free later. */
+-	memcpy(&oldpolicydb, &policydb, sizeof policydb);
++	memcpy(oldpolicydb, &policydb, sizeof(policydb));
+ 	sidtab_set(&oldsidtab, &sidtab);
+ 
+ 	/* Install the new policydb and SID table. */
+ 	write_lock_irq(&policy_rwlock);
+-	memcpy(&policydb, &newpolicydb, sizeof policydb);
++	memcpy(&policydb, newpolicydb, sizeof(policydb));
+ 	sidtab_set(&sidtab, &newsidtab);
+ 	security_load_policycaps();
+ 	oldmap = current_mapping;
+@@ -1943,7 +1950,7 @@ int security_load_policy(void *data, size_t len)
+ 	write_unlock_irq(&policy_rwlock);
+ 
+ 	/* Free the old policydb and SID table. */
+-	policydb_destroy(&oldpolicydb);
++	policydb_destroy(oldpolicydb);
+ 	sidtab_destroy(&oldsidtab);
+ 	kfree(oldmap);
+ 
+@@ -1953,14 +1960,17 @@ int security_load_policy(void *data, size_t len)
+ 	selinux_netlbl_cache_invalidate();
+ 	selinux_xfrm_notify_policyload();
+ 
+-	return 0;
++	rc = 0;
++	goto out;
+ 
+ err:
+ 	kfree(map);
+ 	sidtab_destroy(&newsidtab);
+-	policydb_destroy(&newpolicydb);
+-	return rc;
++	policydb_destroy(newpolicydb);
+ 
++out:
++	kfree(oldpolicydb);
++	return rc;
  }
  
- sub vcs_find_signers {
--    my ($cmd) = @_;
-+    my ($cmd, $file) = @_;
-     my $commits;
-     my @lines = ();
-     my @signatures = ();
-+    my @authors = ();
-+    my @stats = ();
- 
-     @lines = &{$VCS_cmds{"execute_cmd"}}($cmd);
- 
-     my $pattern = $VCS_cmds{"commit_pattern"};
-+    my $author_pattern = $VCS_cmds{"author_pattern"};
-+    my $stat_pattern = $VCS_cmds{"stat_pattern"};
-+
-+    $stat_pattern =~ s/(\$\w+)/$1/eeg;		#interpolate $stat_pattern
- 
-     $commits = grep(/$pattern/, @lines);	# of commits
- 
-+    @authors = grep(/$author_pattern/, @lines);
-     @signatures = grep(/^[ \t]*${signature_pattern}.*\@.*$/, @lines);
-+    @stats = grep(/$stat_pattern/, @lines);
- 
--    return (0, @signatures) if !@signatures;
-+#    print("stats: <@stats>\n");
-+
-+    return (0, \@signatures, \@authors, \@stats) if !@signatures;
- 
-     save_commits_by_author(@lines) if ($interactive);
-     save_commits_by_signer(@lines) if ($interactive);
-@@ -1291,9 +1306,10 @@ sub vcs_find_signers {
- 	@signatures = grep(!/${penguin_chiefs}/i, @signatures);
-     }
- 
-+    my ($author_ref, $authors_ref) = extract_formatted_signatures(@authors);
-     my ($types_ref, $signers_ref) = extract_formatted_signatures(@signatures);
- 
--    return ($commits, @$signers_ref);
-+    return ($commits, $signers_ref, $authors_ref, \@stats);
- }
- 
- sub vcs_find_author {
-@@ -1849,7 +1865,12 @@ sub vcs_assign {
- sub vcs_file_signoffs {
-     my ($file) = @_;
- 
-+    my $authors_ref;
-+    my $signers_ref;
-+    my $stats_ref;
-+    my @authors = ();
-     my @signers = ();
-+    my @stats = ();
-     my $commits;
- 
-     $vcs_used = vcs_exists();
-@@ -1858,13 +1879,59 @@ sub vcs_file_signoffs {
-     my $cmd = $VCS_cmds{"find_signers_cmd"};
-     $cmd =~ s/(\$\w+)/$1/eeg;		# interpolate $cmd
- 
--    ($commits, @signers) = vcs_find_signers($cmd);
-+    ($commits, $signers_ref, $authors_ref, $stats_ref) = vcs_find_signers($cmd, $file);
-+
-+    @signers = @{$signers_ref} if defined $signers_ref;
-+    @authors = @{$authors_ref} if defined $authors_ref;
-+    @stats = @{$stats_ref} if defined $stats_ref;
-+
-+#    print("commits: <$commits>\nsigners:<@signers>\nauthors: <@authors>\nstats: <@stats>\n");
- 
-     foreach my $signer (@signers) {
- 	$signer = deduplicate_email($signer);
-     }
- 
-     vcs_assign("commit_signer", $commits, @signers);
-+    vcs_assign("authored", $commits, @authors);
-+    if ($#authors == $#stats) {
-+	my $stat_pattern = $VCS_cmds{"stat_pattern"};
-+	$stat_pattern =~ s/(\$\w+)/$1/eeg;	#interpolate $stat_pattern
-+
-+	my $added = 0;
-+	my $deleted = 0;
-+	for (my $i = 0; $i <= $#stats; $i++) {
-+	    if ($stats[$i] =~ /$stat_pattern/) {
-+		$added += $1;
-+		$deleted += $2;
-+	    }
-+	}
-+	my @tmp_authors = uniq(@authors);
-+	foreach my $author (@tmp_authors) {
-+	    $author = deduplicate_email($author);
-+	}
-+	@tmp_authors = uniq(@tmp_authors);
-+	my @list_added = ();
-+	my @list_deleted = ();
-+	foreach my $author (@tmp_authors) {
-+	    my $auth_added = 0;
-+	    my $auth_deleted = 0;
-+	    for (my $i = 0; $i <= $#stats; $i++) {
-+		if ($author eq deduplicate_email($authors[$i]) &&
-+		    $stats[$i] =~ /$stat_pattern/) {
-+		    $auth_added += $1;
-+		    $auth_deleted += $2;
-+		}
-+	    }
-+	    for (my $i = 0; $i < $auth_added; $i++) {
-+		push(@list_added, $author);
-+	    }
-+	    for (my $i = 0; $i < $auth_deleted; $i++) {
-+		push(@list_deleted, $author);
-+	    }
-+	}
-+	vcs_assign("added_lines", $added, @list_added);
-+	vcs_assign("removed_lines", $deleted, @list_deleted);
-+    }
- }
- 
- sub vcs_file_blame {
-@@ -1887,6 +1954,10 @@ sub vcs_file_blame {
-     if ($email_git_blame_signatures) {
- 	if (vcs_is_hg()) {
- 	    my $commit_count;
-+	    my $commit_authors_ref;
-+	    my $commit_signers_ref;
-+	    my $stats_ref;
-+	    my @commit_authors = ();
- 	    my @commit_signers = ();
- 	    my $commit = join(" -r ", @commits);
- 	    my $cmd;
-@@ -1894,19 +1965,27 @@ sub vcs_file_blame {
- 	    $cmd = $VCS_cmds{"find_commit_signers_cmd"};
- 	    $cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
- 
--	    ($commit_count, @commit_signers) = vcs_find_signers($cmd);
-+	    ($commit_count, $commit_signers_ref, $commit_authors_ref, $stats_ref) = vcs_find_signers($cmd, $file);
-+	    @commit_authors = @{$commit_authors_ref} if defined $commit_authors_ref;
-+	    @commit_signers = @{$commit_signers_ref} if defined $commit_signers_ref;
- 
- 	    push(@signers, @commit_signers);
- 	} else {
- 	    foreach my $commit (@commits) {
- 		my $commit_count;
-+		my $commit_authors_ref;
-+		my $commit_signers_ref;
-+		my $stats_ref;
-+		my @commit_authors = ();
- 		my @commit_signers = ();
- 		my $cmd;
- 
- 		$cmd = $VCS_cmds{"find_commit_signers_cmd"};
- 		$cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
- 
--		($commit_count, @commit_signers) = vcs_find_signers($cmd);
-+		($commit_count, $commit_signers_ref, $commit_authors_ref, $stats_ref) = vcs_find_signers($cmd, $file);
-+		@commit_authors = @{$commit_authors_ref} if defined $commit_authors_ref;
-+		@commit_signers = @{$commit_signers_ref} if defined $commit_signers_ref;
- 
- 		push(@signers, @commit_signers);
- 	    }
-
+ size_t security_policydb_len(void)
+-- 
+1.7.9.5
 
