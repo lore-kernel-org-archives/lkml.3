@@ -1,81 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab3KNRFA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 12:05:00 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:55502 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab3KNREw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 12:04:52 -0500
-Message-ID: <528502AC.4010604@ti.com>
-Date: Thu, 14 Nov 2013 11:04:44 -0600
+	id S932122Ab3KNRFw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 12:05:52 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:41176 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728Ab3KNRFo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 12:05:44 -0500
 From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+To: Tony Lindgren <tony@atomide.com>, <paul@pwsan.com>
+CC: <rnayak@ti.com>, <khilman@linaro.org>, <balbi@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH V3] ARM: OMAP2+: omap_device: maintain sane runtime pm status around suspend/resume
+Date: Thu, 14 Nov 2013 11:05:16 -0600
+Message-ID: <1384448716-3186-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384297710-29694-1-git-send-email-nm@ti.com>
+References: <1384297710-29694-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: viresh kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [RFC PATCH] cpufreq: cpufreq-cpu0: do not allow transitions with
- regulators suspended
-References: <1382638087-32054-1-git-send-email-nm@ti.com> <CAKohponJOOfGX4BHn76LTBDTm58+2QxPf_rv1i4avVfrWhfkRg@mail.gmail.com> <52824522.7020401@ti.com> <CAKohpomB=wnct88wrTvW-qixLQPQGjVrCVF3V-BSbY7mhsSYQg@mail.gmail.com> <20131113151645.GA17828@kahuna> <52842671.40703@linaro.org> <5284DDB9.7040502@ti.com> <5284FE48.8040802@linaro.org>
-In-Reply-To: <5284FE48.8040802@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2013 10:46 AM, viresh kumar wrote:
-> On Thursday 14 November 2013 07:57 PM, Nishanth Menon wrote:
->> I am guessing this is a little too early for restarting policy here
->> considering syscore_ops->resume is pretty early..
-> 
-> Yeah, looks like that..
-> 
->> http://pastebin.mozilla.org/3602746 is the equivalent patch for v3.12
->> http://pastebin.mozilla.org/3602747 is the result.
-> 
-> Can you try this instead of last diff I sent?
-> 
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index dc67fa0..e70e906 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1324,6 +1324,15 @@ static void handle_update(struct work_struct *work)
->                 container_of(work, struct cpufreq_policy, update);
->         unsigned int cpu = policy->cpu;
->         pr_debug("handle_update for cpu %u called\n", cpu);
-> +
-> +       if (has_target() && !policy->governor_enabled) {
-> +               if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
-> +                       (ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
-> +                       pr_err("%s: Failed to start governor\n", __func__);
-> +                       goto fail;
-> +               }
-> +       }
-> +
->         cpufreq_update_policy(cpu);
->  }
-> 
-> 
-I think it is still too early to do so :(
+OMAP device hooks around suspend|resume_noirq ensures that hwmod
+devices are forced to idle using omap_device_idle/enable as part of
+the last stage of suspend activity.
 
-equivalent patch: http://pastebin.mozilla.org/3603467 (with minor
-changes for build)
+For a device such as i2c who uses autosuspend, it is possible to enter
+the suspend path with dev->power.runtime_status = RPM_ACTIVE.
 
-Basic tests: http://pastebin.mozilla.org/3603456 (governor is
-functional, but governor kicks in early before i2c is resumed)
+As part of the suspend flow, the generic runtime logic would increment
+it's dev->power.disable_depth to 1. This should prevent further
+pm_runtime_get_sync from succeeding once the runtime_status has been
+set to RPM_SUSPENDED.
 
-With call stack: http://pastebin.mozilla.org/3603455 to highlight call
-sequences
+Now, as part of the suspend_noirq handler in omap_device, we force the
+following: if the device status is !suspended, we force the device
+to idle using omap_device_idle (clocks are cut etc..). This ensures
+that from a hardware perspective, the device is "suspended". However,
+runtime_status is left to be active.
 
-Seems like we might want to pause governor as early in the suspend
-sequence as possible to allow SoC and regulator stuff to suspend
-themselves without cpufreq interfering.. just my 2 cents..
+*if* an operation is attempted after this point to
+pm_runtime_get_sync, runtime framework depends on runtime_status to
+indicate accurately the device status, and since it sees it to be
+ACTIVE, it assumes the module is functional and returns a non-error
+value. As a result the user will see pm_runtime_get succeed, however a
+register access will crash due to the lack of clocks.
 
+To prevent this from happening, we should ensure that runtime_status
+exactly indicates the device status. As a result of this change
+any further calls to pm_runtime_get* would return -EACCES (since
+disable_depth is 1). On resume, we restore the clocks and runtime
+status exactly as we suspended with. These operations are not expected
+to fail as we update the states after the core runtime framework has
+suspended itself and restore before the core runtime framework has
+resumed.
+
+Reported-by: J Keerthy <j-keerthy@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Rajendra Nayak <rnayak@ti.com>
+Acked-by: Kevin Hilman <khilman@linaro.org>
+---
+Changes in V3:
+	- Added WARN in case of unexpected failure of runtime pm status restore
+v2: https://patchwork.kernel.org/patch/3176501/
+v1: https://patchwork.kernel.org/patch/3154501/
+
+patch baseline: V3.12 tag (also applies on linux-next next-20131107 tag)
+
+ arch/arm/mach-omap2/omap_device.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+index b69dd9a..53f0735 100644
+--- a/arch/arm/mach-omap2/omap_device.c
++++ b/arch/arm/mach-omap2/omap_device.c
+@@ -621,6 +621,7 @@ static int _od_suspend_noirq(struct device *dev)
+ 
+ 	if (!ret && !pm_runtime_status_suspended(dev)) {
+ 		if (pm_generic_runtime_suspend(dev) == 0) {
++			pm_runtime_set_suspended(dev);
+ 			omap_device_idle(pdev);
+ 			od->flags |= OMAP_DEVICE_SUSPENDED;
+ 		}
+@@ -634,10 +635,18 @@ static int _od_resume_noirq(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct omap_device *od = to_omap_device(pdev);
+ 
+-	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+-	    !pm_runtime_status_suspended(dev)) {
++	if (od->flags & OMAP_DEVICE_SUSPENDED) {
+ 		od->flags &= ~OMAP_DEVICE_SUSPENDED;
+ 		omap_device_enable(pdev);
++		/*
++		 * XXX: we run before core runtime pm has resumed itself. At
++		 * this point in time, we just restore the runtime pm state and
++		 * considering symmetric operations in resume, we donot expect
++		 * to fail. If we failed, something changed in core runtime_pm
++		 * framework OR some device driver messed things up, hence, WARN
++		 */
++		WARN(pm_runtime_set_active(dev),
++		     "Could not set %s runtime state active\n", dev_name(dev));
+ 		pm_generic_runtime_resume(dev);
+ 	}
+ 
 -- 
-Regards,
-Nishanth Menon
+1.7.9.5
+
