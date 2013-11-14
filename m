@@ -1,108 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab3KNXD6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 18:03:58 -0500
-Received: from ring0.de ([91.143.88.219]:57765 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab3KNXDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 18:03:51 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Thu, 14 Nov 2013 23:03:33 +0000
-From: Sebastian Reichel <sre@debian.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Luciano Coelho <luca@coelho.fi>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Felipe Balbi <balbi@ti.com>, Sachin Kamat <sachin.kamat@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        Luciano Coelho <coelho@ti.com>
-Subject: Re: [PATCH 1/4] wl1251: split wl251 platform data to a separate
- structure
-Message-ID: <20131114230330.GB6383@earth.universe>
-Mail-Followup-To: Tony Lindgren <tony@atomide.com>,
-	Luciano Coelho <luca@coelho.fi>,
-	Rob Herring <rob.herring@calxeda.com>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Stephen Warren <swarren@wwwdotorg.org>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Rob Landley <rob@landley.net>,
-	Russell King <linux@arm.linux.org.uk>,
-	"John W. Linville" <linville@tuxdriver.com>,
-	Felipe Balbi <balbi@ti.com>, Sachin Kamat <sachin.kamat@linaro.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Bill Pemberton <wfp5p@virginia.edu>, devicetree@vger.kernel.org,
-	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-	Luciano Coelho <coelho@ti.com>
-References: <1382890469-25286-1-git-send-email-sre@debian.org>
- <1382890469-25286-2-git-send-email-sre@debian.org>
- <20131114185132.GQ10317@atomide.com>
+	id S1753043Ab3KNXLb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 18:11:31 -0500
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:35311 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699Ab3KNXLX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 18:11:23 -0500
+Date: Thu, 14 Nov 2013 15:05:32 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+cc: Tony Luck <tony.luck@intel.com>, Chen Gong <gong.chen@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch x86/mce] ACPI, x86: Export boot_cpu_physical_apicid to
+ modules
+Message-ID: <alpine.DEB.2.02.1311141504080.30112@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="V0207lvV8h4k8FAm"
-Content-Disposition: inline
-In-Reply-To: <20131114185132.GQ10317@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+"ACPI, x86: Fix extended error log driver to depend on CONFIG_X86_LOCAL_APIC" 
+fixed a build error when CONFIG_X86_LOCAL_APIC was not selected and !CONFIG_SMP.
+However, since CONFIG_ACPI_EXTLOG is tristate, there is a second build error:
 
---V0207lvV8h4k8FAm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ERROR: "boot_cpu_physical_apicid" [drivers/acpi/acpi_extlog.ko] undefined!
 
-On Thu, Nov 14, 2013 at 10:51:33AM -0800, Tony Lindgren wrote:
-> [...]
->
-> If this is not going into v3.13, these will cause conflicts
-> with the mach-omap2/board-*.c files for v3.14.
->=20
-> So it might be best to do a minimal header patch first that
-> can be merged in by both linux-omap and wireless trees.
+The symbol needs to be exported for it to be available.
 
-I guess this patch is pretty minimal. It also seems to be acked by
-the involved Maintainers, so maybe just merge Patch 1 without the
-other patches?
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ arch/x86/kernel/apic/apic.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-This does not solve the problem with the struct modification from
-the second patch, but I guess it's the more intrusive patch.
-
--- Sebastian
-
---V0207lvV8h4k8FAm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJShVbCAAoJENju1/PIO/qa3ygP+QFNNsOwF5PZp0uSpTuxh3II
-kdL4jIoihLkpJ1dgG6rMsJIqyHAk09XUd5TZjsKandyiv1XCSLzEbC6S3X6kBT15
-/gxWHWUYMCDx7l21DFG5/zaEVCtGMalg2kxX9rClbcEdv1uJtVzw2qywyccWGNmp
-N/D84+/Xu7P6n+AJvdJOMqGT1hMcerZCDc0x/8Ggcu9GMc+Ok6uYNwuoVPWhJbot
-iP7+p9A+tz8n6RwLCmIF45TzDjXbx2dSh66qTChpV5LdOxunCXJe5GchEFbfAorx
-3sEIddHZzC4yT3ArTqm/liyCIOUrVXcw0Hjal05XK+5lFKDSLZSGme6UTT0BzfsJ
-wmrnD3Yo49PZrxYzfzonm8kpJ6YjHWX/b7kLQyY2U2W9f/StCE/WAwImp5Fj/SRC
-ZthE7CNdj8L4OdciRSWgIrs8ttpkSIUhIkQ+0LZH6k/gfQWXD+uSdKJXH7zYnByd
-63SgS+Rj9aaIpNyYTXOuWymeRFhh5Zw7wItrLxhZCZMOkcZ0fFMEqDo+zpNHCB4+
-rblAhOdhDjJxpiOivWprhIUptYDl7VwePRG3XUrJaULDYM9S3rEY45MWCZ83QhkZ
-xmSQm2t5voPfTvTnXKYZhj9WHdKGGCKz/sSaz2Y0c1cZ4qA5FpjKbVqPezovCvaM
-rztAFbkFtnT9Tf9BvnZJ
-=yaNn
------END PGP SIGNATURE-----
-
---V0207lvV8h4k8FAm--
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -62,6 +62,7 @@ unsigned disabled_cpus;
+ 
+ /* Processor that is doing the boot up */
+ unsigned int boot_cpu_physical_apicid = -1U;
++EXPORT_SYMBOL(boot_cpu_physical_apicid);
+ 
+ /*
+  * The highest APIC ID seen during enumeration.
