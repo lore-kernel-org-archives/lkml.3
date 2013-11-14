@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab3KNSb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 13:31:29 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:39483 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752999Ab3KNSbT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 13:31:19 -0500
-X-Sasl-enc: MqwN4TLYBv8fF0LQ3sPxQTi8rhlfdkuYvACFzKslBIkG 1384453875
-Message-ID: <528516BE.2040204@ladisch.de>
-Date: Thu, 14 Nov 2013 19:30:22 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1755605Ab3KNSbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 13:31:39 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:42056 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754779Ab3KNSbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 13:31:20 -0500
+Date: Thu, 14 Nov 2013 19:30:53 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Robert Richter <rric@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-edac@vger.kernel.org,
+        Aristeu Rozanski Filho <arozansk@redhat.com>
+Subject: Re: [GIT PULL] mpc85xx_edac changes for 3.13
+Message-ID: <20131114183053.GH13376@pd.tnic>
+References: <20131112161901.GA15637@jtlinux>
+ <CA+55aFzJhyo8bKBchYq0Q=rwPv_-v-xWgOKWxKBcSBycMZcmTg@mail.gmail.com>
+ <20131114054750.GA27791@kroah.com>
+ <20131114092009.GA4960@pd.tnic>
+ <20131114091843.4bb72afc@samsung.com>
+ <20131114112418.GH4960@pd.tnic>
+ <20131114142125.GA29214@jtlinux>
 MIME-Version: 1.0
-To: Stephan Mueller <smueller@chronox.de>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Pavel Machek <pavel@ucw.cz>,
-        sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and
- /dev/random
-References: <2579337.FPgJGgHYdz@tauon> <27146362.bQgmetPpTV@tauon> <5284AB17.5050802@ladisch.de> <3127174.i8ueAho43m@tauon>
-In-Reply-To: <3127174.i8ueAho43m@tauon>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131114142125.GA29214@jtlinux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephan Mueller wrote:
-> Am Donnerstag, 14. November 2013, 11:51:03 schrieb Clemens Ladisch:
->> An attacker would not try to detect patterns; he would apply knowledge
->> of the internals.
->
-> I do not buy that argument, because if an attacker can detect or deduce
-> the internals of the CPU, he surely can detect the state of the
-> input_pool or the other entropy pools behind /dev/random.
+On Thu, Nov 14, 2013 at 03:21:25PM +0100, Johannes Thumshirn wrote:
+> OK for me. For the MPC85xx EDAC I'll do the testing then and either
+> Borislav or Mauro send them upstream.
 
-With "internals", I do not mean the actual state of the CPU, but the
-behaviour of all the CPU's execution engines.
+Btw, would you send the patches to the list so that I can pick them up?
 
-An Intel engineer might know how to affect the CPU so that the CPU
-jitter code measures a deterministic pattern, but he will not know the
-contents of my memory.
+Thanks.
 
->> Statistical tests are useful only for detecting the absence of entropy,
->> not for the opposite.
->
-> Again, I fully agree. But it is equally important to understand that
-> entropy is relative.
+-- 
+Regards/Gruss,
+    Boris.
 
-In cryptography, we care about absolute entropy, i.e., _nobody_ must be
-able to predict the RNG output, not even any CPU engineer.
-
-
-Regards,
-Clemens
+Sent from a fat crate under my desk. Formatting is fine.
+--
