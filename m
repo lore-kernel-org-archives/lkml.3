@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab3KNX0z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 18:26:55 -0500
-Received: from mga01.intel.com ([192.55.52.88]:39690 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752107Ab3KNX0u convert rfc822-to-8bit (ORCPT
+	id S1753952Ab3KNX1I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 18:27:08 -0500
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:60467 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753802Ab3KNX0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 18:26:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,702,1378882800"; 
-   d="scan'208";a="433728396"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: Chen Gong <gong.chen@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [patch x86/mce] ACPI, x86: Export boot_cpu_physical_apicid to
- modules
-Thread-Topic: [patch x86/mce] ACPI, x86: Export boot_cpu_physical_apicid to
- modules
-Thread-Index: AQHO4Y4NBW/b3dchAkqmOAl2WwcKZJolXB6g
-Date: Thu, 14 Nov 2013 23:26:21 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31D6D644@ORSMSX106.amr.corp.intel.com>
-References: <alpine.DEB.2.02.1311141504080.30112@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1311141504080.30112@chino.kir.corp.google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 14 Nov 2013 18:26:54 -0500
+Date: Thu, 14 Nov 2013 15:26:51 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+In-Reply-To: <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1310301838300.13556@chino.kir.corp.google.com> <20131031054942.GA26301@cmpxchg.org> <alpine.DEB.2.02.1311131416460.23211@chino.kir.corp.google.com> <20131113233419.GJ707@cmpxchg.org> <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
+ <20131114032508.GL707@cmpxchg.org> <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ERROR: "boot_cpu_physical_apicid" [drivers/acpi/acpi_extlog.ko] undefined!
->
-> The symbol needs to be exported for it to be available.
+When current has a pending SIGKILL or is already in the exit path, it
+only needs access to memory reserves to fully exit.  In that sense, the
+memcg is not actually oom for current, it simply needs to bypass memory
+charges to exit and free its memory, which is guarantee itself that
+memory will be freed.
 
-Good - but I wonder how many more useless layers there are to this onion :-(
+We only want to notify userspace for actionable oom conditions where
+something needs to be done (and all oom handling can already be deferred
+to userspace through this method by disabling the memcg oom killer with
+memory.oom_control), not simply when a memcg has reached its limit, which
+would actually have to happen before memcg reclaim actually frees memory
+for charges.
 
-First I had to add a "#include <asm/cpu.h>"
-Then add the dependency on CONFIG_X86_LOCAL_APIC
-Now we need to export boot_cpu_physical_apicid
+Reported-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ mm/memcontrol.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-all for the CONFIG_SMP=n case ... which I think is useless because there
-is no conceivable way anyone would run a uniprocessor kernel on a system
-that supports the extended error log. (Hint: multi-socket server multiplied by
-high-core-count processors multiplied by 2xHyperThread) is a number bigger
-than one).
-
-Perhaps we should just have:
-
-	depends on SMP && X86_MCE
-
-and stop the madness?
-
--Tony
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1783,16 +1783,6 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 	unsigned int points = 0;
+ 	struct task_struct *chosen = NULL;
+ 
+-	/*
+-	 * If current has a pending SIGKILL or is exiting, then automatically
+-	 * select it.  The goal is to allow it to allocate so that it may
+-	 * quickly exit and free its memory.
+-	 */
+-	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
+-		set_thread_flag(TIF_MEMDIE);
+-		return;
+-	}
+-
+ 	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, order, NULL);
+ 	totalpages = mem_cgroup_get_limit(memcg) >> PAGE_SHIFT ? : 1;
+ 	for_each_mem_cgroup_tree(iter, memcg) {
+@@ -2243,6 +2233,16 @@ bool mem_cgroup_oom_synchronize(bool handle)
+ 	if (!handle)
+ 		goto cleanup;
+ 
++	/*
++	 * If current has a pending SIGKILL or is exiting, then automatically
++	 * select it.  The goal is to allow it to allocate so that it may
++	 * quickly exit and free its memory.
++	 */
++	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
++		set_thread_flag(TIF_MEMDIE);
++		goto cleanup;
++	}
++
+ 	owait.memcg = memcg;
+ 	owait.wait.flags = 0;
+ 	owait.wait.func = memcg_oom_wake_function;
