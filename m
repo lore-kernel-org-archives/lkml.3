@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab3KOQjU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 11:39:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55511 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754Ab3KOQjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 11:39:13 -0500
-Date: Fri, 15 Nov 2013 17:39:57 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jeff Liu <jeff.liu@oracle.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        "xfs@oss.sgi.com" <xfs@oss.sgi.com>, cluster-devel@redhat.com,
-        linux-mtd@lists.infradead.org, jfs-discussion@lists.sourceforge.net,
-        jiri@resnulli.us, gregkh@linuxfoundation.org
-Subject: Re: [PATCH 3/6] gfs2: simplify current_tail() via
-	list_last_entry_or_null()
-Message-ID: <20131115163957.GA28467@redhat.com>
-References: <5285A3F4.4040000@oracle.com>
+	id S1753001Ab3KOQj6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 11:39:58 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57020 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751754Ab3KOQjv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 11:39:51 -0500
+Date: Fri, 15 Nov 2013 16:39:36 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
+        Jiang Liu <liuj97@gmail.com>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: Re: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping
+ support
+Message-ID: <20131115163936.GI19468@mudshark.cambridge.arm.com>
+References: <CA+b37P3U=cAbUvs=2B9wA4F7S9o49vh7d-KamjPsHcz-b9ZYLA@mail.gmail.com>
+ <52808D53.7080904@hitachi.com>
+ <5280B6C8.7050807@hitachi.com>
+ <20131111105812.GC28302@mudshark.cambridge.arm.com>
+ <528114C4.5000506@hitachi.com>
+ <CA+b37P08cLAvBYAXSkozLPzrpuXn=N0SUetwL6N8JL+10AtYjQ@mail.gmail.com>
+ <5281D848.7000502@hitachi.com>
+ <CA+b37P1sNsEXrJFfVL51sZ-SeGNCBiwXnOwCiFY8CBwSXPw+mQ@mail.gmail.com>
+ <20131113143110.GF28881@mudshark.cambridge.arm.com>
+ <CA+b37P1-DPtSu5vB+_4HamUtDNSFn0qNbPWk9A6+vUAp4tu6_w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5285A3F4.4040000@oracle.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+b37P1-DPtSu5vB+_4HamUtDNSFn0qNbPWk9A6+vUAp4tu6_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15, Jeff Liu wrote:
->
-> @@ -441,13 +441,9 @@ static unsigned int current_tail(struct gfs2_sbd *sdp)
->  
->  	spin_lock(&sdp->sd_ail_lock);
->  
-> -	if (list_empty(&sdp->sd_ail1_list)) {
-> -		tail = sdp->sd_log_head;
-> -	} else {
-> -		tr = list_entry(sdp->sd_ail1_list.prev, struct gfs2_trans,
-> -				tr_list);
-> -		tail = tr->tr_first;
-> -	}
-> +	tr = list_last_entry_or_null(&sdp->sd_ail1_list, struct gfs2_trans,
-> +				     tr_list);
-> +	tail = tr ? tr->tr_first : sdp->sd_log_head;
->  
+On Wed, Nov 13, 2013 at 03:55:42PM +0000, Sandeepa Prabhu wrote:
+> On 13 November 2013 20:01, Will Deacon <will.deacon@arm.com> wrote:
+> > On Wed, Nov 13, 2013 at 06:55:33AM +0000, Sandeepa Prabhu wrote:
+> >> 1.  Placing watchpoint ( attr.bp_type = HW_BREAKPOINT_W |
+> >> HW_BREAKPOINT_R) upon vfs_symlink symbol, but seems watch-point is not
+> >> triggering at all.
+> >
+> > vfs_symlink is a function. Why would you expect to write it?
+> This is generic test module (samples/hw_breakpoint/data_breakpoint.ko)
+> which places watchpoint for bothe read/write.
+> Atleast watchpt should have triggered for Read right? I also tried
+> with othe functions like do_fork, vfs_read etc but no hit.
 
-Personally I agree with Steven. At least in this case
-list_last_entry_or_null() doesn't really help to simplify the code.
+You'd need to place something for exec if you want to see anything on the
+instruction side. A read by the instruction fetcher does not trigger a read
+watchpoint on ARM.
 
-But probably list_last_entry() makes sense in the "else" branch,
-athough this is minor.
+> >> 2.  Placing text breakpoint (modified sample module with attr.bp_type
+> >> = HW_BREAKPOINT_X) upon vfs_symlink, and run "ln -s /dev/null
+> >> /tmp/foo".  This time, breakpoint hit but exception is re-cursing
+> >> infinitely!
+> >
+> > The problem here is that we expect the overflow handler to deal with the
+> > stepping (like GDB does via ptrace). If you don't register a handler, the
+> > kernel will do the step (like you would get if you used perf stat -e
+> > mem:0xNNNN:x).
+> [This test was done on upstream branch, without kprobes patches.]
+> Hmm, then this is expected with test breakpoint right? is this
+> handling to be done by perf and ptrace?
 
+perf stat doesn't register an overflow handler, so the hw_breakpoint
+backend will handle the step. ptrace registers a handler which sends a
+SIGTRAP to the debugger (e.g. gdb), which handles the step manually
+(probably using a PTRACE_SINGLESTEP request).
 
-Off-topic. Not sure this really makes sense, but I was thinking about
+> I did not see arm64 support in linux/tools/perf/,  there are multiple
+> patches in mailing list though. Are you aware of any version of perf
+> that work with arm64?
 
-	list_get_first(pos, head, member)	\
-		((pos) = list_first_entry(head, typeof(*pos), member))
+The perf tool should work fine on arm64 using mainline. Are you seeing
+problems?
 
-and list_get_first() last of course. The obvious advantage is that
-compared to
-
-	tr = list_last_entry(sdp->sd_ail1_list, struct gfs2_trans, tr_list);
-
-above you do not need to type "struct gfs2_trans",
-
-	list_get_last(tr, sdp->sd_ail1_list, tr_list);
-
-looks a bit better.
-
-Oleg.
-
+Will
