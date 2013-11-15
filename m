@@ -1,91 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938Ab3KOJuB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 04:50:01 -0500
-Received: from mail.abilis.ch ([195.70.19.74]:15091 "EHLO mail.abilis.ch"
+	id S1758024Ab3KOJvg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 04:51:36 -0500
+Received: from mail.southpole.se ([37.247.8.11]:45670 "EHLO mail.southpole.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756590Ab3KOJtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 04:49:53 -0500
-Date: Fri, 15 Nov 2013 10:49:33 +0100
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Pavel Roskin <proski@gnu.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Noam Camus <noamc@ezchip.com>
-Subject: Re: [PATCH 2/2] x86: Add support for uncompressed kernel images
-Message-ID: <20131115094931.GB31656@ab42.lan>
-References: <20131114083247.GB9687@ab42.lan>
- <1384418296-10374-2-git-send-email-christian.ruppert@abilis.com>
- <52850C28.8010800@zytor.com>
+	id S1751645Ab3KOJvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 04:51:32 -0500
+Message-ID: <5285EED9.6090401@southpole.se>
+Date: Fri, 15 Nov 2013 10:52:25 +0100
+From: Jonas Bonn <jonas@southpole.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52850C28.8010800@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kevin Mehall <contact@kevinmehall.net>,
+        linux@openrisc.net
+Subject: Re: [ORLinux] [PATCH] openrisc: Add DTS and defconfig for DE0-Nano
+References: <1384029451-16555-1-git-send-email-geert@linux-m68k.org> <20131110055145.GA7947@chokladfabriken.org>
+In-Reply-To: <20131110055145.GA7947@chokladfabriken.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Assp-Version: 2.3.3(13276) on assp.southpole.se
+X-Assp-ID: assp.southpole.se 09090-04339
+X-Assp-Session: 7F739B635E40 (mail 1)
+X-Assp-Client-TLS: yes
+X-Assp-Server-TLS: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 09:45:12AM -0800, H. Peter Anvin wrote:
-> On 11/14/2013 12:38 AM, Christian Ruppert wrote:
-> > diff --git a/lib/decompress_copy.c b/lib/decompress_copy.c
-> > new file mode 100644
-> > index 0000000..8a41090
-> > --- /dev/null
-> > +++ b/lib/decompress_copy.c
-> > @@ -0,0 +1,47 @@
-> > +#include <linux/decompress/mm.h>
-> > +
-> > +#define NOZIP_BUFSZ (16 * 1024)
-> > +STATIC int INIT nozip(unsigned char *buf, int len,
-> > +			int(*fill)(void*, unsigned int),
-> > +			int(*flush)(void*, unsigned int),
-> > +			unsigned char *outbuf,
-> > +			int *pos,
-> > +			void(*error)(char *x))
-> > +{
-> > +	char *b;
-> > +
-> > +	if (buf)
-> > +		b = buf;
-> > +	else
-> > +		b = malloc(NOZIP_BUFSZ);
-> > +
-> > +	if (!b) {
-> > +		error("Out of memory while allocating buffer");
-> > +		return -1;
-> > +	}
-> > +
-> > +	if (flush) {
-> > +		if (!len)
-> > +			len = fill(b, NOZIP_BUFSZ);
-> > +
-> > +		len = flush(b, len);
-> > +	} else {
-> > +		if (!len)
-> > +			len = fill(outbuf, NOZIP_BUFSZ);
-> > +		else {
-> > +			int i;
-> > +			for (i = 0; i < len; i++)
-> > +				outbuf[i] = b[i];
-> 
-> Clever way of doing memcpy().  I know some other compression
-> implementations open-code memmove(), but using it for the entire data
-> set in the most common case is atrocious.  If we need to get a default
-> implementation of memmove() we should just do that.
+On 11/10/2013 06:51 AM, Stefan Kristiansson wrote:
+> On Sat, Nov 09, 2013 at 09:37:31PM +0100, Geert Uytterhoeven wrote:
+>> Notable changes:
+>>    - Change flash0 to spansion,s25sl064p, due to kernel message
+>>      m25p80 spi32766.0: found s25sl064p, expected m25p10
+>
+> This is due to Altera changing the EPCS chip on newer revisions
+> of that board, older versions are "relabeled" m25p10 and
+> newer once s25sl064p.
+> The change is fine though, you have to pick one.
 
-Actually, the x86 architecture already contains a basic implementation
-of memcpy in its self-decompressor. Correct me if I'm wrong but I guess
-memmove is not required since I don't expect the output of a generic
-decompression function to overlap with its input.
+Actually, you want two DTS's: one for each version of the board with a 
+'compatible' property to help select the right one.  What do the 
+revision numbers for these boards look like?
 
-We can simply use that function if we agree that
-. either nozip is x86 specific
-. or every architecture using this code must bring along its own memcpy
-  implementation in its self-decompressor.
-
-Do you think that would be OK?
-
-Greetings,
-  Christian
+/Jonas
