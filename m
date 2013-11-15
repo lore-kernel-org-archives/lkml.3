@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab3KOP1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 10:27:41 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:41301 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab3KOP13 (ORCPT
+	id S1752473Ab3KOPal (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 10:30:41 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55572 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751262Ab3KOPae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 10:27:29 -0500
-Message-ID: <52863D5E.7080606@linux.com>
-Date: Fri, 15 Nov 2013 16:27:26 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: Levente Kurusa <levex@linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 15 Nov 2013 10:30:34 -0500
+Date: Fri, 15 Nov 2013 15:30:15 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Marek Belisko <marek@goldelico.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "neilb@suse.de" <neilb@suse.de>,
+        "hns@goldelico.com" <hns@goldelico.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] misc: bmp085: Add DT bindings for EOC gpio line
+ and direct irq.
+Message-ID: <20131115153015.GD24831@e106331-lin.cambridge.arm.com>
+References: <1384465609-26485-1-git-send-email-marek@goldelico.com>
+ <1384465609-26485-3-git-send-email-marek@goldelico.com>
 MIME-Version: 1.0
-To: "Maciej W. Rozycki" <macro@linux-mips.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] tc: account for device_register() failure
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384465609-26485-3-git-send-email-marek@goldelico.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the TURBOchannel driver bail out if the call
-to device_register() failed.
+On Thu, Nov 14, 2013 at 09:46:48PM +0000, Marek Belisko wrote:
+> Signed-off-by: Marek Belisko <marek@goldelico.com>
+> ---
+>  Documentation/devicetree/bindings/misc/bmp085.txt |  8 ++++
+>  drivers/misc/bmp085.c                             | 53 ++++++++++++++++++++---
+>  2 files changed, 55 insertions(+), 6 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/misc/bmp085.txt b/Documentation/devicetree/bindings/misc/bmp085.txt
+> index 91dfda2..c6033d5 100644
+> --- a/Documentation/devicetree/bindings/misc/bmp085.txt
+> +++ b/Documentation/devicetree/bindings/misc/bmp085.txt
+> @@ -8,6 +8,9 @@ Optional properties:
+>  - temp-measurement-period: temperature measurement period (milliseconds)
+>  - default-oversampling: default oversampling value to be used at startup,
+>    value range is 0-3 with rising sensitivity.
+> +- gpio: if device is using EOC irq line gpio can be specified to setup interrupt
+> +  handling
+> +- irq: interrupt with no gpio
+>  
+>  Example:
+>  
+> @@ -17,4 +20,9 @@ pressure@77 {
+>  	chip-id = <10>;
+>  	temp-measurement-period = <100>;
+>  	default-oversampling = <2>;
+> +	gpio = <&gpio0 17 0>;
+> +
+> +	OR
+> +
+> +	irq = <75>;
 
-Signed-off-by: Levente Kurusa <levex@linux.com>
----
- tc.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+There's some contention over the description of gpio-based IRQs in DT.
+>From the point of view of the device there is a logical IRQ output; the
+fact that this happens to be wired up to a GPIO pin that can happen to
+generate interrupts isn't anything to do with the device itself. There
+are plenty of device we have now whose interrupt lines could be wired to
+GPIOs. I see no reason to extend their bindings to support explicit
+GPIOs for IRQs, and I see no reason the driver should have to handle
+this.
 
-diff --git a/drivers/tc/tc.c b/drivers/tc/tc.c
-index a8aaf6a..6b3a038 100644
---- a/drivers/tc/tc.c
-+++ b/drivers/tc/tc.c
-@@ -129,7 +129,10 @@ static void __init tc_bus_add_devices(struct tc_bus *tbus)
+It would be far nicer for the device binding to just have the interrupts
+property, and for the gpio controller to act as an interrupt-controller,
+with the appropriate pin management.
 
- 		tc_device_get_irq(tdev);
-
--		device_register(&tdev->dev);
-+		if (device_register(&tdev->dev)) {
-+			put_device(&tdev->dev);
-+			goto out_err;
-+		}
- 		list_add_tail(&tdev->node, &tbus->devices);
-
- out_err:
-@@ -148,7 +151,10 @@ static int __init tc_init(void)
-
- 	INIT_LIST_HEAD(&tc_bus.devices);
- 	dev_set_name(&tc_bus.dev, "tc");
--	device_register(&tc_bus.dev);
-+	if (device_register(&tc_bus.dev)) {
-+		put_device(&tc_bus.dev);
-+		return 0;	
-+	}
-
- 	if (tc_bus.info.slot_size) {
- 		unsigned int tc_clock = tc_get_speed(&tc_bus) / 100000;
+Thanks,
+Mark.
