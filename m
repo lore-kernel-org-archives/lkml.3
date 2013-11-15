@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab3KOITm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 03:19:42 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:51163 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005Ab3KOITe (ORCPT
+	id S1754099Ab3KOIcm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 03:32:42 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:42058 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab3KOIci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 03:19:34 -0500
-Date: Fri, 15 Nov 2013 17:19:29 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Shawn Bohrer <shawn.bohrer@gmail.com>
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: 3.10.16 cgroup css_set_lock deadlock
-Message-ID: <20131115081929.GA11530@mtj.dyndns.org>
-References: <20131114232529.GB16725@sbohrermbp13-local.rgmadvisors.com>
+	Fri, 15 Nov 2013 03:32:38 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID rAF8WPaP006257, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <wei_wang@realsil.com.cn>,
+        <rogerable@realtek.com>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH 0/3] mfd: rtsx: Decrease driver size and add new device
+Date: Fri, 15 Nov 2013 16:34:10 +0800
+Message-ID: <cover.1384503048.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131114232529.GB16725@sbohrermbp13-local.rgmadvisors.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 05:25:29PM -0600, Shawn Bohrer wrote:
-> In trying to reproduce the cgroup_mutex deadlock I reported earlier
-> in https://lkml.org/lkml/2013/11/11/574 I believe I encountered a
-> different issue that I'm also unable to understand. This machine
-> started out reporting some soft lockups that look to me like they are
-> on a read_lock(css_set_lock):
-> 
-...
-> RIP: 0010:[<ffffffff8109253c>]  [<ffffffff8109253c>] cgroup_attach_task+0xdc/0x7a0
-...
->  [<ffffffff81092e87>] attach_task_by_pid+0x167/0x1a0
->  [<ffffffff81092ef3>] cgroup_tasks_write+0x13/0x20
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-Most likely the bug fixed by ea84753c98a7 ("cgroup: fix to break the
-while loop in cgroup_attach_task() correctly").  3.10.19 contains the
-backported fix.
+With the recent added support request of yet another device, the
+burden of duplicated code was becoming a little messy. To rectify is,
+we init rtl8411-like chips to 8411 param first, then modify the
+different values according each chip.
 
-Thanks.
+Lee Jones (2):
+  mfd: rtsx: reduce code duplication in rtl8411
+  mfd: rtsx: Prevent 'used uninitialised' warnings
 
--- 
-tejun
+Micky Ching (1):
+  mfd: rtsx: add card reader rtl8402
+
+ drivers/mfd/rtl8411.c  |  111 +++++++++++++++++++++++-------------------------
+ drivers/mfd/rtsx_pcr.c |    9 ++--
+ drivers/mfd/rtsx_pcr.h |    9 +++-
+ 3 files changed, 65 insertions(+), 64 deletions(-)
+
+--
+1.7.9.5
