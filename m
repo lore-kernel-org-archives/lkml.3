@@ -1,139 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab3KON3R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:29:17 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35299 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752227Ab3KON3H (ORCPT
+	id S1752595Ab3KON3w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 08:29:52 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:55079 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab3KON3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:29:07 -0500
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lgirdwood@gmail.org, lee.jones@linaro.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] regulator: arizona-micsupp: Correct wm5110 voltage selection
-Date: Fri, 15 Nov 2013 13:13:33 +0000
-Message-Id: <1384521213-27141-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1384521213-27141-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1384521213-27141-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Fri, 15 Nov 2013 08:29:46 -0500
+Date: Fri, 15 Nov 2013 14:29:28 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] s390/mm,tlb: race of lazy TLB flush vs. recreation
+ of TLB entries
+Message-ID: <20131115142928.76688783@mschwide>
+In-Reply-To: <20131115115701.GA1047@darko.cambridge.arm.com>
+References: <1384330574-18418-1-git-send-email-schwidefsky@de.ibm.com>
+	<1384330574-18418-3-git-send-email-schwidefsky@de.ibm.com>
+	<CAHkRjk6LAmQpkioBdFxH5htYHi75bR2xhfXzfvmQL5Br0kMgvg@mail.gmail.com>
+	<20131114091007.0b15dde2@mschwide>
+	<20131114132223.GG20261@arm.com>
+	<20131114173359.2e3cbd60@mschwide>
+	<20131115104437.GA573@darko.cambridge.arm.com>
+	<20131115121000.69219fa4@mschwide>
+	<20131115121736.72170c36@mschwide>
+	<20131115115701.GA1047@darko.cambridge.arm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111513-0342-0000-0000-000006DFABF8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wm5110 provides different voltage configurations than the other Arizona
-parts, this patch adds support for this into the regulator driver. Also
-fixup the default for the configuration register for wm5110.
+On Fri, 15 Nov 2013 11:57:01 +0000
+Catalin Marinas <catalin.marinas@arm.com> wrote:
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm5110-tables.c         |    2 +-
- drivers/regulator/arizona-micsupp.c |   54 +++++++++++++++++++++++++++++++++-
- 2 files changed, 53 insertions(+), 3 deletions(-)
+> On Fri, Nov 15, 2013 at 11:17:36AM +0000, Martin Schwidefsky wrote:
+> > On Fri, 15 Nov 2013 12:10:00 +0100
+> > Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
+> > 
+> > > On Fri, 15 Nov 2013 10:44:37 +0000
+> > > Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > > > 1. thread-A running with mm-A
+> > > > 2. context_switch() to thread-B1 causing a switch_mm(mm-B)
+> > > > 3. switch_mm(mm-B) sets thread-B1's TIF_TLB_WAIT but does _not_ call
+> > > >    update_mm(mm-B). Hardware still using mm-A
+> > > > 4. scheduler unlocks and is about to call finish_mm_switch(mm-B)
+> > > > 5. interrupt and preemption before finish_mm_switch(mm-B)
+> > > > 6. context_switch() to thread-B2 causing a switch_mm(mm-B) (note here
+> > > >    that thread-B1 and thread-B2 have the same mm-B)
+> > > > 7. switch_mm() as in this patch exits early because prev == next
+> > > > 8. finish_mm_switch(mm-B) is indeed called but TIF_TLB_WAIT is not set
+> > > >    for thread-B2, therefore no call to update_mm(mm-B)
+> > > > 
+> > > > So after point 8, you get thread-B2 running (and possibly returning to
+> > > > user space) with mm-A. Do you see a problem here?
+> > > 
+> > > Oh, now I get it. Thanks for the patience, this is indeed a problem.
+> > > And I concur, a per-mm flag is the 'obvious' solution.
+> > 
+> > Having said that and looking at the code I find this to be not as obvious
+> > any more. If you have multiple cpus using a per-mm flag can get you into
+> > trouble:
+> > 
+> > 1. cpu #1 calls switch_mm and finds that irqs are disabled.
+> >    mm->context.switch_pending is set
+> > 2. cpu #2 calls switch_mm for the same mm and finds that irqs are disabled.
+> >    mm->context.switch_pending is set again
+> > 3. cpu #1 reaches finish_arch_post_lock_switch and finds switch_pending == 1
+> > 4. cpu #1 zeroes mm->switch_pending and calls cpu_switch_mm
+> > 5. cpu #2 reaches finish_arch_post_lock_switch and finds switch_pending == 0
+> > 6. cpu #2 continues with the old mm
+> > 
+> > This is a race, no?
+> 
+> Yes, but we only use this on ARMv5 and earlier and there is no SMP
+> support.
+> 
+> On arm64 however, I need to fix that and you made a good point. In my
+> (not yet public) patch, the switch_pending is cleared after all the
+> IPIs have been acknowledged but it needs some more thinking. A solution
+> could be to always do the cpu_switch_mm() in finish_mm_switch() without
+> any checks but this requires that any switch_mm() call from the kernel
+> needs to be paired with finish_mm_switch(). So your first patch comes in
+> handy (but I still need to figure out a quick arm64 fix for cc stable).
+ 
+I am currently thinking about the following solution for s390: keep the
+TIF_TLB_FLUSH bit per task but do a preempt_disable() in switch_mm()
+if the switch is incomplete. This pairs with a preempt_enable() in
+finish_switch_mm() after the update_mm has been done.
 
-diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
-index 3113e39..daf2fe8 100644
---- a/drivers/mfd/wm5110-tables.c
-+++ b/drivers/mfd/wm5110-tables.c
-@@ -498,7 +498,7 @@ static const struct reg_default wm5110_reg_default[] = {
- 	{ 0x000001AA, 0x0004 },    /* R426   - FLL2 GPIO Clock */
- 	{ 0x00000200, 0x0006 },    /* R512   - Mic Charge Pump 1 */
- 	{ 0x00000210, 0x0184 },    /* R528   - LDO1 Control 1 */
--	{ 0x00000213, 0x0344 },    /* R531   - LDO2 Control 1 */
-+	{ 0x00000213, 0x03E4 },    /* R531   - LDO2 Control 1 */
- 	{ 0x00000218, 0x01A6 },    /* R536   - Mic Bias Ctrl 1 */
- 	{ 0x00000219, 0x01A6 },    /* R537   - Mic Bias Ctrl 2 */
- 	{ 0x0000021A, 0x01A6 },    /* R538   - Mic Bias Ctrl 3 */
-diff --git a/drivers/regulator/arizona-micsupp.c b/drivers/regulator/arizona-micsupp.c
-index 3c75bf8..034ece7 100644
---- a/drivers/regulator/arizona-micsupp.c
-+++ b/drivers/regulator/arizona-micsupp.c
-@@ -144,6 +144,33 @@ static const struct regulator_desc arizona_micsupp = {
- 	.owner = THIS_MODULE,
- };
- 
-+static const struct regulator_linear_range arizona_micsupp_ext_ranges[] = {
-+	REGULATOR_LINEAR_RANGE(900000,  0,    0x14, 25000),
-+	REGULATOR_LINEAR_RANGE(1500000, 0x15, 0x27, 100000),
-+};
-+
-+static const struct regulator_desc arizona_micsupp_ext = {
-+	.name = "MICVDD",
-+	.supply_name = "CPVDD",
-+	.type = REGULATOR_VOLTAGE,
-+	.n_voltages = 40,
-+	.ops = &arizona_micsupp_ops,
-+
-+	.vsel_reg = ARIZONA_LDO2_CONTROL_1,
-+	.vsel_mask = ARIZONA_LDO2_VSEL_MASK,
-+	.enable_reg = ARIZONA_MIC_CHARGE_PUMP_1,
-+	.enable_mask = ARIZONA_CPMIC_ENA,
-+	.bypass_reg = ARIZONA_MIC_CHARGE_PUMP_1,
-+	.bypass_mask = ARIZONA_CPMIC_BYPASS,
-+
-+	.linear_ranges = arizona_micsupp_ext_ranges,
-+	.n_linear_ranges = ARRAY_SIZE(arizona_micsupp_ext_ranges),
-+
-+	.enable_time = 3000,
-+
-+	.owner = THIS_MODULE,
-+};
-+
- static const struct regulator_init_data arizona_micsupp_default = {
- 	.constraints = {
- 		.valid_ops_mask = REGULATOR_CHANGE_STATUS |
-@@ -156,9 +183,22 @@ static const struct regulator_init_data arizona_micsupp_default = {
- 	.num_consumer_supplies = 1,
- };
- 
-+static const struct regulator_init_data arizona_micsupp_ext_default = {
-+	.constraints = {
-+		.valid_ops_mask = REGULATOR_CHANGE_STATUS |
-+				REGULATOR_CHANGE_VOLTAGE |
-+				REGULATOR_CHANGE_BYPASS,
-+		.min_uV = 900000,
-+		.max_uV = 3300000,
-+	},
-+
-+	.num_consumer_supplies = 1,
-+};
-+
- static int arizona_micsupp_probe(struct platform_device *pdev)
- {
- 	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
-+	const struct regulator_desc *desc;
- 	struct regulator_config config = { };
- 	struct arizona_micsupp *micsupp;
- 	int ret;
-@@ -177,7 +217,17 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
- 	 * default init_data for it.  This will be overridden with
- 	 * platform data if provided.
- 	 */
--	micsupp->init_data = arizona_micsupp_default;
-+	switch (arizona->type) {
-+	case WM5110:
-+		desc = &arizona_micsupp_ext;
-+		micsupp->init_data = arizona_micsupp_ext_default;
-+		break;
-+	default:
-+		desc = &arizona_micsupp;
-+		micsupp->init_data = arizona_micsupp_default;
-+		break;
-+	}
-+
- 	micsupp->init_data.consumer_supplies = &micsupp->supply;
- 	micsupp->supply.supply = "MICVDD";
- 	micsupp->supply.dev_name = dev_name(arizona->dev);
-@@ -196,7 +246,7 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
- 			   ARIZONA_CPMIC_BYPASS, 0);
- 
- 	micsupp->regulator = devm_regulator_register(&pdev->dev,
--						     &arizona_micsupp,
-+						     desc,
- 						     &config);
- 	if (IS_ERR(micsupp->regulator)) {
- 		ret = PTR_ERR(micsupp->regulator);
 -- 
-1.7.2.5
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
