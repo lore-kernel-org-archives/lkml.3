@@ -1,295 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758145Ab3KOLJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 06:09:58 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:36364 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752940Ab3KOLJv (ORCPT
+	id S1758409Ab3KOLKP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 06:10:15 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:35162 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754914Ab3KOLKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 06:09:51 -0500
-Message-ID: <528600F9.4040701@atmel.com>
-Date: Fri, 15 Nov 2013 12:09:45 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Johan Hovold <jhovold@gmail.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <rtc-linux@googlegroups.com>
-Subject: Re: [PATCH v3 1/3] ARM: at91: fix hanged boot due to early rtc-interrupt
-References: <1363025279-17615-1-git-send-email-jhovold@gmail.com> <1381917376-21107-1-git-send-email-jhovold@gmail.com> <1381917376-21107-2-git-send-email-jhovold@gmail.com>
-In-Reply-To: <1381917376-21107-2-git-send-email-jhovold@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Fri, 15 Nov 2013 06:10:06 -0500
+Date: Fri, 15 Nov 2013 12:10:00 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] s390/mm,tlb: race of lazy TLB flush vs. recreation
+ of TLB entries
+Message-ID: <20131115121000.69219fa4@mschwide>
+In-Reply-To: <20131115104437.GA573@darko.cambridge.arm.com>
+References: <1384330574-18418-1-git-send-email-schwidefsky@de.ibm.com>
+	<1384330574-18418-3-git-send-email-schwidefsky@de.ibm.com>
+	<CAHkRjk6LAmQpkioBdFxH5htYHi75bR2xhfXzfvmQL5Br0kMgvg@mail.gmail.com>
+	<20131114091007.0b15dde2@mschwide>
+	<20131114132223.GG20261@arm.com>
+	<20131114173359.2e3cbd60@mschwide>
+	<20131115104437.GA573@darko.cambridge.arm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111511-0342-0000-0000-000006DF32E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/10/2013 11:56, Johan Hovold :
-> Make sure the RTC-interrupts are masked at boot by adding a new helper
-> function to be used at SOC-init.
->
-> This fixes hanged boot on all AT91 SOCs with an RTC (but RM9200), for
-> example, after a reset during an RTC-update or if an RTC-alarm goes off
-> after shutdown (e.g. when using RTC wakeup).
->
-> The RTC and RTT-peripherals are powered by backup power (VDDBU) (on all
-> AT91 SOCs but RM9200) and are not reset on wake-up, user, watchdog or
-> software reset. This means that their interrupts may be enabled during
-> early boot if, for example, they where not disabled during a previous
-> shutdown (e.g. due to a buggy driver or a non-clean shutdown such as a
-> user reset). Furthermore, an RTC or RTT-alarm may also be active.
->
-> The RTC and RTT-interrupts use the shared system-interrupt line, which
-> is also used by the PIT, and if an interrupt occurs before a handler
-> (e.g. RTC-driver) has been installed this leads to the system interrupt
-> being disabled and prevents the system from booting.
->
-> Note that when boot hangs due to an early RTC or RTT-interrupt, the only
-> way to get the system to start again is to remove the backup power (e.g.
-> battery) or to disable the interrupt manually from the bootloader. In
-> particular, a user reset is not sufficient.
->
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+On Fri, 15 Nov 2013 10:44:37 +0000
+Catalin Marinas <catalin.marinas@arm.com> wrote:
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> On Thu, Nov 14, 2013 at 04:33:59PM +0000, Martin Schwidefsky wrote:
+> > On Thu, 14 Nov 2013 13:22:23 +0000
+> > Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > 
+> > > On Thu, Nov 14, 2013 at 08:10:07AM +0000, Martin Schwidefsky wrote:
+> > > > On Wed, 13 Nov 2013 16:16:35 +0000
+> > > > Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > > > 
+> > > > > On 13 November 2013 08:16, Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
+> > > > > > diff --git a/arch/s390/include/asm/mmu_context.h b/arch/s390/include/asm/mmu_context.h
+> > > > > > index 5d1f950..e91afeb 100644
+> > > > > > --- a/arch/s390/include/asm/mmu_context.h
+> > > > > > +++ b/arch/s390/include/asm/mmu_context.h
+> > > > > > @@ -48,13 +48,38 @@ static inline void update_mm(struct mm_struct *mm, struct task_struct *tsk)
+> > > > > >  static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+> > > > > >                              struct task_struct *tsk)
+> > > > > >  {
+> > > > > > -       cpumask_set_cpu(smp_processor_id(), mm_cpumask(next));
+> > > > > > -       update_mm(next, tsk);
+> > > > > > +       int cpu = smp_processor_id();
+> > > > > > +
+> > > > > > +       if (prev == next)
+> > > > > > +               return;
+> > > > > > +       if (atomic_inc_return(&next->context.attach_count) >> 16) {
+> > > > > > +               /* Delay update_mm until all TLB flushes are done. */
+> > > > > > +               set_tsk_thread_flag(tsk, TIF_TLB_WAIT);
+> > > > > > +       } else {
+> > > > > > +               cpumask_set_cpu(cpu, mm_cpumask(next));
+> > > > > > +               update_mm(next, tsk);
+> > > > > > +               if (next->context.flush_mm)
+> > > > > > +                       /* Flush pending TLBs */
+> > > > > > +                       __tlb_flush_mm(next);
+> > > > > > +       }
+> > > > > >         atomic_dec(&prev->context.attach_count);
+> > > > > >         WARN_ON(atomic_read(&prev->context.attach_count) < 0);
+> > > > > > -       atomic_inc(&next->context.attach_count);
+> > > > > > -       /* Check for TLBs not flushed yet */
+> > > > > > -       __tlb_flush_mm_lazy(next);
+> > > > > > +}
+> > > > > > +
+> > > > > > +#define finish_switch_mm finish_switch_mm
+> > > > > > +static inline void finish_switch_mm(struct mm_struct *mm,
+> > > > > > +                                   struct task_struct *tsk)
+> > > > > > +{
+> > > > > > +       if (!test_and_clear_tsk_thread_flag(tsk, TIF_TLB_WAIT))
+> > > > > > +               return;
+> > > > > > +
+> > > > > > +       while (atomic_read(&mm->context.attach_count) >> 16)
+> > > > > > +               cpu_relax();
+> > > > > > +
+> > > > > > +       cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
+> > > > > > +       update_mm(mm, tsk);
+> > > > > > +       if (mm->context.flush_mm)
+> > > > > > +               __tlb_flush_mm(mm);
+> > > > > >  }
+> > > > > 
+> > > > > Some care is needed here with preemption (we had this on arm and I
+> > > > > think we need a fix on arm64 as well). Basically you set TIF_TLB_WAIT
+> > > > > on a thread but you get preempted just before finish_switch_mm(). The
+> > > > > new thread has the same mm as the preempted on and switch_mm() exits
+> > > > > early without setting another flag. So finish_switch_mm() wouldn't do
+> > > > > anything but you still switched to the new mm. The fix is to make the
+> > > > > flag per mm rather than thread (see commit bdae73cd374e).
+> > > > 
+> > > > Interesting. For s390 I need to make sure that each task attaching an
+> > > > mm waits for the completion of concurrent TLB flush operations. If the
+> > > > scheduler does not switch the mm I don't care, the mm is still attached.
+> > > 
+> > > I assume the actual hardware mm switch happens via update_mm(). If you
+> > > have a context_switch() to a thread which requires an update_mm() but you
+> > > defer this until finish_switch_mm(), you may be preempted before the
+> > > hardware update. If the new context_switch() schedules a thread with the
+> > > same mm as the preempted one, you no longer call update_mm(). So the new
+> > > thread actually uses an old hardware mm.
+> >  
+> > If the code gets preempted between switch_mm() and finish_switch_mm()
+> > the worst that can happen is that finish_switch_mm() is called twice.
+> 
+> Yes, it's called twice, but you only set the TIF_TLB_WAIT the first
+> time. Here's the scenario:
+> 
+> 1. thread-A running with mm-A
+> 2. context_switch() to thread-B1 causing a switch_mm(mm-B)
+> 3. switch_mm(mm-B) sets thread-B1's TIF_TLB_WAIT but does _not_ call
+>    update_mm(mm-B). Hardware still using mm-A
+> 4. scheduler unlocks and is about to call finish_mm_switch(mm-B)
+> 5. interrupt and preemption before finish_mm_switch(mm-B)
+> 6. context_switch() to thread-B2 causing a switch_mm(mm-B) (note here
+>    that thread-B1 and thread-B2 have the same mm-B)
+> 7. switch_mm() as in this patch exits early because prev == next
+> 8. finish_mm_switch(mm-B) is indeed called but TIF_TLB_WAIT is not set
+>    for thread-B2, therefore no call to update_mm(mm-B)
+> 
+> So after point 8, you get thread-B2 running (and possibly returning to
+> user space) with mm-A. Do you see a problem here?
 
-and added to the at91-3.13-fixes-non-critical branch with the "stable" tag:
-Cc: stable@vger.kernel.org # 3.11.x
+Oh, now I get it. Thanks for the patience, this is indeed a problem.
+And I concur, a per-mm flag is the 'obvious' solution.
 
-Thanks a lot Johan.
-
-> ---
->   arch/arm/mach-at91/Makefile                   |  2 +-
->   arch/arm/mach-at91/at91sam9g45.c              |  2 ++
->   arch/arm/mach-at91/at91sam9n12.c              |  6 ++++
->   arch/arm/mach-at91/at91sam9rl.c               |  2 ++
->   arch/arm/mach-at91/at91sam9x5.c               |  6 ++++
->   arch/arm/mach-at91/generic.h                  |  1 +
->   arch/arm/mach-at91/include/mach/at91sam9n12.h |  5 +++
->   arch/arm/mach-at91/include/mach/at91sam9x5.h  |  5 +++
->   arch/arm/mach-at91/include/mach/sama5d3.h     |  5 +++
->   arch/arm/mach-at91/sama5d3.c                  |  6 ++++
->   arch/arm/mach-at91/sysirq_mask.c              | 47 +++++++++++++++++++++++++++
->   11 files changed, 86 insertions(+), 1 deletion(-)
->   create mode 100644 arch/arm/mach-at91/sysirq_mask.c
->
-> diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-> index aa33b0f..8879a41 100644
-> --- a/arch/arm/mach-at91/Makefile
-> +++ b/arch/arm/mach-at91/Makefile
-> @@ -2,7 +2,7 @@
->   # Makefile for the linux kernel.
->   #
->
-> -obj-y		:= irq.o gpio.o setup.o
-> +obj-y		:= irq.o gpio.o setup.o sysirq_mask.o
->   obj-m		:=
->   obj-n		:=
->   obj-		:=
-> diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
-> index b9fe138..8d4da6d 100644
-> --- a/arch/arm/mach-at91/at91sam9g45.c
-> +++ b/arch/arm/mach-at91/at91sam9g45.c
-> @@ -379,6 +379,8 @@ static void __init at91sam9g45_initialize(void)
->   	arm_pm_idle = at91sam9_idle;
->   	arm_pm_restart = at91sam9g45_restart;
->
-> +	at91_sysirq_mask_rtc(AT91SAM9G45_BASE_RTC);
-> +
->   	/* Register GPIO subsystem */
->   	at91_gpio_init(at91sam9g45_gpio, 5);
->   }
-> diff --git a/arch/arm/mach-at91/at91sam9n12.c b/arch/arm/mach-at91/at91sam9n12.c
-> index c7d670d..4d6001c 100644
-> --- a/arch/arm/mach-at91/at91sam9n12.c
-> +++ b/arch/arm/mach-at91/at91sam9n12.c
-> @@ -223,7 +223,13 @@ static void __init at91sam9n12_map_io(void)
->   	at91_init_sram(0, AT91SAM9N12_SRAM_BASE, AT91SAM9N12_SRAM_SIZE);
->   }
->
-> +static void __init at91sam9n12_initialize(void)
-> +{
-> +	at91_sysirq_mask_rtc(AT91SAM9N12_BASE_RTC);
-> +}
-> +
->   AT91_SOC_START(at91sam9n12)
->   	.map_io = at91sam9n12_map_io,
->   	.register_clocks = at91sam9n12_register_clocks,
-> +	.init = at91sam9n12_initialize,
->   AT91_SOC_END
-> diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
-> index d4ec0d9..b5a8c9d 100644
-> --- a/arch/arm/mach-at91/at91sam9rl.c
-> +++ b/arch/arm/mach-at91/at91sam9rl.c
-> @@ -294,6 +294,8 @@ static void __init at91sam9rl_initialize(void)
->   	arm_pm_idle = at91sam9_idle;
->   	arm_pm_restart = at91sam9_alt_restart;
->
-> +	at91_sysirq_mask_rtc(AT91SAM9RL_BASE_RTC);
-> +
->   	/* Register GPIO subsystem */
->   	at91_gpio_init(at91sam9rl_gpio, 4);
->   }
-> diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
-> index 916e5a1..e8a2e07 100644
-> --- a/arch/arm/mach-at91/at91sam9x5.c
-> +++ b/arch/arm/mach-at91/at91sam9x5.c
-> @@ -322,6 +322,11 @@ static void __init at91sam9x5_map_io(void)
->   	at91_init_sram(0, AT91SAM9X5_SRAM_BASE, AT91SAM9X5_SRAM_SIZE);
->   }
->
-> +static void __init at91sam9x5_initialize(void)
-> +{
-> +	at91_sysirq_mask_rtc(AT91SAM9X5_BASE_RTC);
-> +}
-> +
->   /* --------------------------------------------------------------------
->    *  Interrupt initialization
->    * -------------------------------------------------------------------- */
-> @@ -329,4 +334,5 @@ static void __init at91sam9x5_map_io(void)
->   AT91_SOC_START(at91sam9x5)
->   	.map_io = at91sam9x5_map_io,
->   	.register_clocks = at91sam9x5_register_clocks,
-> +	.init = at91sam9x5_initialize,
->   AT91_SOC_END
-> diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-> index dc6e2f5..80269bd 100644
-> --- a/arch/arm/mach-at91/generic.h
-> +++ b/arch/arm/mach-at91/generic.h
-> @@ -34,6 +34,7 @@ extern int  __init at91_aic_of_init(struct device_node *node,
->   				    struct device_node *parent);
->   extern int  __init at91_aic5_of_init(struct device_node *node,
->   				    struct device_node *parent);
-> +extern void __init at91_sysirq_mask_rtc(u32 rtc_base);
->
->
->    /* Timer */
-> diff --git a/arch/arm/mach-at91/include/mach/at91sam9n12.h b/arch/arm/mach-at91/include/mach/at91sam9n12.h
-> index d374b87..0151bcf 100644
-> --- a/arch/arm/mach-at91/include/mach/at91sam9n12.h
-> +++ b/arch/arm/mach-at91/include/mach/at91sam9n12.h
-> @@ -49,6 +49,11 @@
->   #define AT91SAM9N12_BASE_USART3	0xf8028000
->
->   /*
-> + * System Peripherals
-> + */
-> +#define AT91SAM9N12_BASE_RTC	0xfffffeb0
-> +
-> +/*
->    * Internal Memory.
->    */
->   #define AT91SAM9N12_SRAM_BASE	0x00300000	/* Internal SRAM base address */
-> diff --git a/arch/arm/mach-at91/include/mach/at91sam9x5.h b/arch/arm/mach-at91/include/mach/at91sam9x5.h
-> index c75ee19..2fc76c4 100644
-> --- a/arch/arm/mach-at91/include/mach/at91sam9x5.h
-> +++ b/arch/arm/mach-at91/include/mach/at91sam9x5.h
-> @@ -55,6 +55,11 @@
->   #define AT91SAM9X5_BASE_USART2	0xf8024000
->
->   /*
-> + * System Peripherals
-> + */
-> +#define AT91SAM9X5_BASE_RTC	0xfffffeb0
-> +
-> +/*
->    * Internal Memory.
->    */
->   #define AT91SAM9X5_SRAM_BASE	0x00300000	/* Internal SRAM base address */
-> diff --git a/arch/arm/mach-at91/include/mach/sama5d3.h b/arch/arm/mach-at91/include/mach/sama5d3.h
-> index 31096a8..25613d8 100644
-> --- a/arch/arm/mach-at91/include/mach/sama5d3.h
-> +++ b/arch/arm/mach-at91/include/mach/sama5d3.h
-> @@ -73,6 +73,11 @@
->   #define SAMA5D3_BASE_USART3	0xf8024000
->
->   /*
-> + * System Peripherals
-> + */
-> +#define SAMA5D3_BASE_RTC	0xfffffeb0
-> +
-> +/*
->    * Internal Memory
->    */
->   #define SAMA5D3_SRAM_BASE	0x00300000	/* Internal SRAM base address */
-> diff --git a/arch/arm/mach-at91/sama5d3.c b/arch/arm/mach-at91/sama5d3.c
-> index 4012797..3ea8642 100644
-> --- a/arch/arm/mach-at91/sama5d3.c
-> +++ b/arch/arm/mach-at91/sama5d3.c
-> @@ -371,7 +371,13 @@ static void __init sama5d3_map_io(void)
->   	at91_init_sram(0, SAMA5D3_SRAM_BASE, SAMA5D3_SRAM_SIZE);
->   }
->
-> +static void __init sama5d3_initialize(void)
-> +{
-> +	at91_sysirq_mask_rtc(SAMA5D3_BASE_RTC);
-> +}
-> +
->   AT91_SOC_START(sama5d3)
->   	.map_io = sama5d3_map_io,
->   	.register_clocks = sama5d3_register_clocks,
-> +	.init = sama5d3_initialize,
->   AT91_SOC_END
-> diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
-> new file mode 100644
-> index 0000000..ee3e22c
-> --- /dev/null
-> +++ b/arch/arm/mach-at91/sysirq_mask.c
-> @@ -0,0 +1,47 @@
-> +/*
-> + * sysirq_mask.c - System-interrupt masking
-> + *
-> + * Copyright (C) 2013 Johan Hovold <jhovold@gmail.com>
-> + *
-> + * Functions to disable system interrupts from backup-powered peripherals.
-> + *
-> + * The RTC and RTT-peripherals are generally powered by backup power (VDDBU)
-> + * and are not reset on wake-up, user, watchdog or software reset. This means
-> + * that their interrupts may be enabled during early boot (e.g. after a user
-> + * reset).
-> + *
-> + * As the RTC and RTT share the system-interrupt line with the PIT, an
-> + * interrupt occurring before a handler has been installed would lead to the
-> + * system interrupt being disabled and prevent the system from booting.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + */
-> +
-> +#include <linux/io.h>
-> +
-> +#include "generic.h"
-> +
-> +#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
-> +#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
-> +
-> +void __init at91_sysirq_mask_rtc(u32 rtc_base)
-> +{
-> +	void __iomem *base;
-> +	u32 mask;
-> +
-> +	base = ioremap(rtc_base, 64);
-> +	if (!base)
-> +		return;
-> +
-> +	mask = readl_relaxed(base + AT91_RTC_IMR);
-> +	if (mask) {
-> +		pr_info("AT91: Disabling rtc irq\n");
-> +		writel_relaxed(mask, base + AT91_RTC_IDR);
-> +		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
-> +	}
-> +
-> +	iounmap(base);
-> +}
->
-
+> > But back to the original question: would it cause a problem for arm
+> > if we add the two additional calls to finish_arch_post_lock_switch()
+> > to idle_task_exit() and use_mm() ?
+> 
+> There shouldn't be any issue on ARM as we only flag the need for switch
+> in switch_mm(). We may be able to remove the irqs_disabled() check if we
+> are always guaranteed the final call. But I'll follow up on the first
+> patch, didn't get to read it in detail.
+ 
+Ok, please do so. It would be good if we can use a common hook.
 
 -- 
-Nicolas Ferre
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
