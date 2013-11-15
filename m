@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161Ab3KOO3K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:29:10 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:43286 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab3KOO26 (ORCPT
+	id S1752677Ab3KOO3d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:29:33 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52045 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181Ab3KOO3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:28:58 -0500
-Date: Fri, 15 Nov 2013 15:28:54 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: perf/tracepoint: another fuzzer generated lockup
-Message-ID: <20131115142851.GA17498@localhost.localdomain>
-References: <alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu>
- <20131108204839.GD14606@localhost.localdomain>
- <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu>
- <20131108223657.GF14606@localhost.localdomain>
- <20131109151014.GN16117@laptop.programming.kicks-ass.net>
- <20131114152304.GC5364@laptop.programming.kicks-ass.net>
- <20131114153301.GD5364@laptop.programming.kicks-ass.net>
- <528575E2.4000700@hitachi.com>
- <20131115122833.GE10456@twins.programming.kicks-ass.net>
- <20131115091521.3ad917fe@gandalf.local.home>
+	Fri, 15 Nov 2013 09:29:24 -0500
+Date: Fri, 15 Nov 2013 14:29:19 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Message-ID: <20131115142919.GK26614@sirena.org.uk>
+References: <1384523303-25943-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1384523303-25943-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZkK3DH7HIvxYLwhR"
 Content-Disposition: inline
-In-Reply-To: <20131115091521.3ad917fe@gandalf.local.home>
+In-Reply-To: <1384523303-25943-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Cookie: You will contract a rare disease.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 149.254.56.239
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/2] regulator: arizona-micsupp: Correct wm5110
+ voltage selection
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 09:15:21AM -0500, Steven Rostedt wrote:
-> On Fri, 15 Nov 2013 13:28:33 +0100
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Fri, Nov 15, 2013 at 10:16:18AM +0900, Masami Hiramatsu wrote:
-> > > Kprobes itself can detect nested call by using per-cpu current-running
-> > > kprobe pointer. And if it is nested, it just skips calling handlers.
-> > > Anyway, I don't recommend to probe inside the handlers, but yes,
-> > > you can trace perf-handler by ftrace B). I actually traced a kprobe-bug
-> > > by kprobe-tracer last night, that was amazing :)
-> > 
-> > Ah, ok, so that would avoid the worst problems. Good. Should we still
-> > mark the entire perf swevent path as __kprobes just to be sure?
-> 
-> I wouldn't unless we can prove that it breaks. It's sometimes nice to
-> be able to debug the debugging facilities with the debugging
-> facilities ;-)
 
-Even with the existing __kprobes annotations, I'm sure we can find many ways to
-break the kernel.
+--ZkK3DH7HIvxYLwhR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-We can reproduce that bug with irq_work recursion with setting a kprobe in
-the end of the irq_work() arch low level handler for example. Or simply
-somewhere in irq_exit().
+On Fri, Nov 15, 2013 at 01:48:23PM +0000, Charles Keepax wrote:
+> wm5110 provides different voltage configurations than the other Arizona
+> parts, this patch adds support for this into the regulator driver. Also
+> fixup the default for the configuration register for wm5110.
 
-I think we could do dangerous things with breakpoints as well. Setting breakpoints
-in do_debug() or stuffs like that.
+Applied, thanks.
 
-So keeping up with __kprobes annotations to every potential dangerous site
-is not viable IMHO. It's important to maintain basic sanity with tagging sites
-that are used by kprobes itself but we can't really prevent from any issue.
+--ZkK3DH7HIvxYLwhR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-At some point it's up to the user to know what he's doing and avoid recursion.
-As long as kprobes can be set only by root.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-OTOH it would be nice to detect these kind of behaviour (thinking about irq_work for
-example) and warn when something wrong is suspected.
+iQIcBAEBAgAGBQJShi+8AAoJELSic+t+oim9sN0P/RnOorPZYq7D9RNe8ouWVO6y
+PiufwA0qb0IQgR3+WZoruL3J23TLS3mrAxDWiW3liljIdaLp01qpTG9p9L69hUzn
+vUGDVDC+eN7fQ7QXYyOIQNo1hV+O1K6nzD4TXjWO3ye6jJfU0fU/ER3xr3AP07TU
+UDrs1JNKRehVwju0+zC3BtEv2st0BM3PIYYaTroPa3D3/JWP1Z7DbS5UKXqMNntZ
+0AwV/V7EvI74sBEGeokd0huPZS8SKtDaYygyc70S9owxk/HrAN0cjUiBjikN8MEi
+KodmFNDpiTkOjdM4AKIphGMvEx9fI+Kavp3W1FfpFvSH5dXyx+JkjK144/xdIKkp
+KWO/FoTs8nOmYMOqvC+e1Odd8oIe4eC0WygVu486w2/L4QErJgKKEOHJ3dtY1KkT
+u5EB2MfdUOK4CIDf5QNWgsfXW436tZb5HLX7Sh6rrEj2hlZdR+4eTHyH6AbvaD4v
+MB4Yone1FNxRtNpKMqzgmaTYCLv9nH1dU04VaLuN5DkD9m5hi1h/p40TpxLDYUr/
+NVvObUuDkVrWEveWNk6U8WWd5a1tYKxyEqKM6GAFSAqNROwoUdYq5Rv7nsZKxs3I
+T/HwdrW97LhXfVobrlbyzu/5PWeC/967WEMeDwOGeZ3TdInZjE7uw3CnKdR44Itd
+cOJIfRztyN/Ki2Eklh2p
+=BYvw
+-----END PGP SIGNATURE-----
+
+--ZkK3DH7HIvxYLwhR--
