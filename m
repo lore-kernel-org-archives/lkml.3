@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab3KOPHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 10:07:00 -0500
-Received: from shell.v3.sk ([195.168.3.45]:42124 "EHLO shell.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751598Ab3KOPGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 10:06:53 -0500
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Lubomir Rintel <lkundrak@v3.sk>
-Subject: [RESEND PATCH] drm/radeon: Don't limit fb console on 32M cards to 8 bpp
-Date: Fri, 15 Nov 2013 16:06:32 +0100
-Message-Id: <1384527992-23679-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
+	id S1753183Ab3KOPIU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 10:08:20 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54947 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753147Ab3KOPIO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 10:08:14 -0500
+Date: Fri, 15 Nov 2013 15:07:45 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux@openrisc.net" <linux@openrisc.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kevin Mehall <contact@kevinmehall.net>,
+        Marek Czerski <ma.czerski@gmail.com>,
+        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Subject: Re: [PATCH] openrisc: Add DTS and defconfig for DE0-Nano
+Message-ID: <20131115150745.GB24831@e106331-lin.cambridge.arm.com>
+References: <1384029451-16555-1-git-send-email-geert@linux-m68k.org>
+ <5285EE5A.1070202@southpole.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5285EE5A.1070202@southpole.se>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment suggests that intention was to limit 16M cards to save memory while
-code did something a bit different.
+On Fri, Nov 15, 2013 at 09:50:18AM +0000, Jonas Bonn wrote:
+[...]
 
-32bpp is a lot more useful with today's apps, such as Weston's fbdev backend
-and 32M cards are probably hardly used in apps where dedicating a bit more to
-pinned console would matter.
+> > +	gpio0: gpio@91000000 {
+> > +		compatible = "opencores,jbtrivial";
+> 
+> There's no project called 'jbtrivial' at OpenCores.  Should this be 
+> "linux,jbtrivial" to indicate that this refers to a Linux driver?
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
----
- drivers/gpu/drm/radeon/radeon_fb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I would prefer not. Having driver names in bindings is an antipattern;
+drivers should be free to change independently of the hardware or
+bindings, and we should be able to create new drivers that handle
+existing bindings.
 
-diff --git a/drivers/gpu/drm/radeon/radeon_fb.c b/drivers/gpu/drm/radeon/radeon_fb.c
-index 665ced3..cef3bc7 100644
---- a/drivers/gpu/drm/radeon/radeon_fb.c
-+++ b/drivers/gpu/drm/radeon/radeon_fb.c
-@@ -344,7 +344,7 @@ int radeon_fbdev_init(struct radeon_device *rdev)
- 	int ret;
- 
- 	/* select 8 bpp console on RN50 or 16MB cards */
--	if (ASIC_IS_RN50(rdev) || rdev->mc.real_vram_size <= (32*1024*1024))
-+	if (ASIC_IS_RN50(rdev) || rdev->mc.real_vram_size <= (16*1024*1024))
- 		bpp_sel = 8;
- 
- 	rfbdev = kzalloc(sizeof(struct radeon_fbdev), GFP_KERNEL);
--- 
-1.7.1
+Either a new compatible string should be allcoated, or one of the
+generic bindings should be used. While we do have drivers for the
+generic cases, the *-generic bindings are treated as a specification
+that hardware can meet, and are not intended to change. They are also
+there fore independent of Linux.
 
+Thanks,
+Mark.
