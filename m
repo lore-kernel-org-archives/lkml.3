@@ -1,252 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab3KOVex (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 16:34:53 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:40403 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab3KOVer (ORCPT
+	id S1753093Ab3KOVq3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 16:46:29 -0500
+Received: from smtprelay0137.hostedemail.com ([216.40.44.137]:45023 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751996Ab3KOVqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 16:34:47 -0500
-From: Peter Wu <lekensteyn@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION] coredumps truncated after "new helper: dump_align()"
-Date: Fri, 15 Nov 2013 22:34:43 +0100
-Message-ID: <8708646.IsEyNQP0iB@al>
-User-Agent: KMail/4.11.3 (Linux/3.12.0-custom-09579-g049ffa8; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20131115203838.GJ13318@ZenIV.linux.org.uk>
-References: <11835033.kIc1RH0rS1@al> <20131115203838.GJ13318@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="nextPart1961897.CYsEHfRkoF"
-Content-Transfer-Encoding: 7Bit
+	Fri, 15 Nov 2013 16:46:21 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:2:41:69:355:379:541:599:960:966:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1593:1594:1605:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2828:2896:2898:3138:3139:3140:3141:3142:3622:3865:3866:3867:3870:3872:3874:4051:4120:4250:4321:4385:4605:5007:7652:10004:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12740,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: ducks71_8e6069d47ce51
+X-Filterd-Recvd-Size: 9619
+Message-ID: <1384551981.18739.36.camel@joe-AO722>
+Subject: Re: [PATCH] power: Replace printks with pr_* routines
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Shuah Khan <shuah.kh@samsung.com>, len.brown@intel.com, pavel@ucw.cz,
+        rjw@rjwysocki.net, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Date: Fri, 15 Nov 2013 13:46:21 -0800
+In-Reply-To: <20131115211922.GB14410@kroah.com>
+References: <1384531806-11500-1-git-send-email-shuah.kh@samsung.com>
+	 <20131115211922.GB14410@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
-
---nextPart1961897.CYsEHfRkoF
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-
-On Friday 15 November 2013 20:38:38 Al Viro wrote:
-> On Fri, Nov 15, 2013 at 03:26:10PM +0100, Peter Wu wrote:
-> > Hi Al,
-> > 
-> > Somewhere in the merge window of 3.13, coredumps appear truncated.
-> > Instead of 319488 bytes, I get 868 bytes (tested with x86_64 only).
-> > 
-> > The latest Linus' master (v3.12-9579-g049ffa8) is still affected.
-> > Bisection leads to:
-> > 
-> > commit 22a8cb8248ba5d340307ba72432253b1dbdb5cf7
-> > Author: Al Viro <viro@zeniv.linux.org.uk>
-> > Date:   Tue Oct 8 11:05:01 2013 -0400
-> > 
-> >     new helper: dump_align()
-> >     
-> >     dump_skip to given alignment...
+On Sat, 2013-11-16 at 06:19 +0900, Greg KH wrote:
+> On Fri, Nov 15, 2013 at 09:10:06AM -0700, Shuah Khan wrote:
+> > Replaced printks with pr_* routines. dev_* routines could have been used,
+> > but chose to use pr_* to avoid breaking scripts that might be relying on
+> > a specific text.
 > 
-> Argh...  Really dumb braino when getting rid of long long division in
-> dump_align().  Please, see if this gets rid of the entire problem on your
-> setup - it definitely fixes a bug in there and it seems to restore the
-> normal behaviour on the reproducer I've got here, but...
-> 
-> I'm going to send that to Linus, along with another coredump fix
-> (dump_emit() ought to use __kernel_write() instead of vfs_write())
-> shortly anyway, but if you spot anything still broken...
-> 
-> diff --git a/fs/coredump.c b/fs/coredump.c
-> index 62406b6..a2856f7 100644
-> --- a/fs/coredump.c
-> +++ b/fs/coredump.c
-> @@ -733,7 +733,7 @@ int dump_align(struct coredump_params *cprm, int align)
->  {
->  	unsigned mod = cprm->written & (align - 1);
->  	if (align & (align - 1))
-> -		return -EINVAL;
-> -	return mod ? dump_skip(cprm, align - mod) : 0;
-> +		return 0;
-> +	return mod ? dump_skip(cprm, align - mod) : 1;
->  }
->  EXPORT_SYMBOL(dump_align);
+> I'd really like to switch to dev_* instead, even changing to pr_* should
+> change the output prefix (if it's set for this file, odds are it isn't
+> though...)
 
-Unfortunately, this patch still does not fix the issue. I rm'd the output 
-directory just to be sure, but the bug is still there. What does this commit 
-do anyway? The commit message is quite vague.
+It's not.
 
-Please find the files to reproduce the bug in the tarball. Edit bisecter.sh to 
-change the paths to the initrd, object output directory and serial output 
-("dmesg") as needed.
+Something like this?
 
-The initrd should contain:
-/init
-/bin/busybox (statically linked)
-/bin/segfault (also statically linked, source included)
+Pass a struct device * through to the PM
+suspend logging routines.  Use dev_<level>
+instead of printks.
 
-initrd containing these three files can be generated with:
-find | cpio --owner=root:root -H newc -o > initrd
+---
 
-The .config file (named qemucore.config) which I use for reproduction is also 
-included. The resulting segfault program is 742752 bytes (stripped).
---nextPart1961897.CYsEHfRkoF
-Content-Disposition: attachment; filename="bisect-kernel.tar.gz"
-Content-Transfer-Encoding: base64
-Content-Type: application/x-compressed-tar; name="bisect-kernel.tar.gz"
+ drivers/base/power/main.c  | 20 ++++++++++----------
+ drivers/pci/pci-driver.c   | 18 +++++++++---------
+ drivers/pnp/driver.c       |  2 +-
+ drivers/usb/core/hcd-pci.c |  4 ++--
+ include/linux/pm.h         | 14 ++++++++------
+ 5 files changed, 30 insertions(+), 28 deletions(-)
 
-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
-UIc61KEOdahDHerwB4f/Ai88VPgAoAAA
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index c12e9b9..e0c12e6 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -351,8 +351,8 @@ static void pm_dev_dbg(struct device *dev, pm_message_t state, char *info)
+ static void pm_dev_err(struct device *dev, pm_message_t state, char *info,
+ 			int error)
+ {
+-	printk(KERN_ERR "PM: Device %s failed to %s%s: error %d\n",
+-		dev_name(dev), pm_verb(state.event), info, error);
++	dev_err(dev, "PM: failed to %s%s: error %d\n",
++		pm_verb(state.event), info, error);
+ }
+ 
+ static void dpm_show_time(ktime_t starttime, pm_message_t state, char *info)
+@@ -385,7 +385,7 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
+ 
+ 	pm_dev_dbg(dev, state, info);
+ 	error = cb(dev);
+-	suspend_report_result(cb, error);
++	suspend_report_result(dev, cb, error);
+ 
+ 	initcall_debug_report(dev, calltime, error, state, info);
+ 
+@@ -1112,7 +1112,7 @@ static int legacy_suspend(struct device *dev, pm_message_t state,
+ 	calltime = initcall_debug_start(dev);
+ 
+ 	error = cb(dev, state);
+-	suspend_report_result(cb, error);
++	suspend_report_result(dev, cb, error);
+ 
+ 	initcall_debug_report(dev, calltime, error, state, info);
+ 
+@@ -1345,7 +1345,7 @@ static int device_prepare(struct device *dev, pm_message_t state)
+ 
+ 	if (callback) {
+ 		error = callback(dev);
+-		suspend_report_result(callback, error);
++		suspend_report_result(dev, callback, error);
+ 	}
+ 
+ 	device_unlock(dev);
+@@ -1381,9 +1381,8 @@ int dpm_prepare(pm_message_t state)
+ 				error = 0;
+ 				continue;
+ 			}
+-			printk(KERN_INFO "PM: Device %s not prepared "
+-				"for power transition: code %d\n",
+-				dev_name(dev), error);
++			dev_info(dev, "PM: not prepared for power transition: code %d\n",
++				 error);
+ 			put_device(dev);
+ 			break;
+ 		}
+@@ -1417,10 +1416,11 @@ int dpm_suspend_start(pm_message_t state)
+ }
+ EXPORT_SYMBOL_GPL(dpm_suspend_start);
+ 
+-void __suspend_report_result(const char *function, void *fn, int ret)
++void __suspend_report_result(const struct device *dev,
++			     const char *function, void *fn, int ret)
+ {
+ 	if (ret)
+-		printk(KERN_ERR "%s(): %pF returns %d\n", function, fn, ret);
++		dev_err(dev, "PM: %s(): %pF returns %d\n", function, fn, ret);
+ }
+ EXPORT_SYMBOL_GPL(__suspend_report_result);
+ 
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 4548535..340de34 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -484,7 +484,7 @@ static int pci_legacy_suspend(struct device *dev, pm_message_t state)
+ 		int error;
+ 
+ 		error = drv->suspend(pci_dev, state);
+-		suspend_report_result(drv->suspend, error);
++		suspend_report_result(dev, drv->suspend, error);
+ 		if (error)
+ 			return error;
+ 
+@@ -511,7 +511,7 @@ static int pci_legacy_suspend_late(struct device *dev, pm_message_t state)
+ 		int error;
+ 
+ 		error = drv->suspend_late(pci_dev, state);
+-		suspend_report_result(drv->suspend_late, error);
++		suspend_report_result(dev, drv->suspend_late, error);
+ 		if (error)
+ 			return error;
+ 
+@@ -638,7 +638,7 @@ static int pci_pm_suspend(struct device *dev)
+ 		int error;
+ 
+ 		error = pm->suspend(dev);
+-		suspend_report_result(pm->suspend, error);
++		suspend_report_result(dev, pm->suspend, error);
+ 		if (error)
+ 			return error;
+ 
+@@ -674,7 +674,7 @@ static int pci_pm_suspend_noirq(struct device *dev)
+ 		int error;
+ 
+ 		error = pm->suspend_noirq(dev);
+-		suspend_report_result(pm->suspend_noirq, error);
++		suspend_report_result(dev, pm->suspend_noirq, error);
+ 		if (error)
+ 			return error;
+ 
+@@ -791,7 +791,7 @@ static int pci_pm_freeze(struct device *dev)
+ 		int error;
+ 
+ 		error = pm->freeze(dev);
+-		suspend_report_result(pm->freeze, error);
++		suspend_report_result(dev, pm->freeze, error);
+ 		if (error)
+ 			return error;
+ 	}
+@@ -814,7 +814,7 @@ static int pci_pm_freeze_noirq(struct device *dev)
+ 		int error;
+ 
+ 		error = drv->pm->freeze_noirq(dev);
+-		suspend_report_result(drv->pm->freeze_noirq, error);
++		suspend_report_result(dev, drv->pm->freeze_noirq, error);
+ 		if (error)
+ 			return error;
+ 	}
+@@ -898,7 +898,7 @@ static int pci_pm_poweroff(struct device *dev)
+ 		int error;
+ 
+ 		error = pm->poweroff(dev);
+-		suspend_report_result(pm->poweroff, error);
++		suspend_report_result(dev, pm->poweroff, error);
+ 		if (error)
+ 			return error;
+ 	}
+@@ -927,7 +927,7 @@ static int pci_pm_poweroff_noirq(struct device *dev)
+ 		int error;
+ 
+ 		error = drv->pm->poweroff_noirq(dev);
+-		suspend_report_result(drv->pm->poweroff_noirq, error);
++		suspend_report_result(dev, drv->pm->poweroff_noirq, error);
+ 		if (error)
+ 			return error;
+ 	}
+@@ -1040,7 +1040,7 @@ static int pci_pm_runtime_suspend(struct device *dev)
+ 	pci_dev->state_saved = false;
+ 	pci_dev->no_d3cold = false;
+ 	error = pm->runtime_suspend(dev);
+-	suspend_report_result(pm->runtime_suspend, error);
++	suspend_report_result(dev, pm->runtime_suspend, error);
+ 	if (error)
+ 		return error;
+ 	if (!pci_dev->d3cold_allowed)
+diff --git a/drivers/pnp/driver.c b/drivers/pnp/driver.c
+index 6936e0a..1e70fc6 100644
+--- a/drivers/pnp/driver.c
++++ b/drivers/pnp/driver.c
+@@ -165,7 +165,7 @@ static int __pnp_bus_suspend(struct device *dev, pm_message_t state)
+ 
+ 	if (pnp_drv->driver.pm && pnp_drv->driver.pm->suspend) {
+ 		error = pnp_drv->driver.pm->suspend(dev);
+-		suspend_report_result(pnp_drv->driver.pm->suspend, error);
++		suspend_report_result(dev, pnp_drv->driver.pm->suspend, error);
+ 		if (error)
+ 			return error;
+ 	}
+diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
+index dfe9d0f..890ae99 100644
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -453,7 +453,7 @@ static int suspend_common(struct device *dev, bool do_wakeup)
+ 				HCD_WAKEUP_PENDING(hcd->shared_hcd))
+ 			return -EBUSY;
+ 		retval = hcd->driver->pci_suspend(hcd, do_wakeup);
+-		suspend_report_result(hcd->driver->pci_suspend, retval);
++		suspend_report_result(dev, hcd->driver->pci_suspend, retval);
+ 
+ 		/* Check again in case wakeup raced with pci_suspend */
+ 		if ((retval == 0 && do_wakeup && HCD_WAKEUP_PENDING(hcd)) ||
+@@ -566,7 +566,7 @@ static int hcd_pci_suspend_noirq(struct device *dev)
+ 		dev_dbg(dev, "--> PCI %s\n",
+ 				pci_power_name(pci_dev->current_state));
+ 	} else {
+-		suspend_report_result(pci_prepare_to_sleep, retval);
++		suspend_report_result(dev, pci_prepare_to_sleep, retval);
+ 		return retval;
+ 	}
+ 
+diff --git a/include/linux/pm.h b/include/linux/pm.h
+index a224c7f..d2a525a 100644
+--- a/include/linux/pm.h
++++ b/include/linux/pm.h
+@@ -644,12 +644,11 @@ extern int dpm_suspend_start(pm_message_t state);
+ extern int dpm_suspend(pm_message_t state);
+ extern int dpm_prepare(pm_message_t state);
+ 
+-extern void __suspend_report_result(const char *function, void *fn, int ret);
++extern void __suspend_report_result(const struct device *dev,
++				    const char *function, void *fn, int ret);
+ 
+-#define suspend_report_result(fn, ret)					\
+-	do {								\
+-		__suspend_report_result(__func__, fn, ret);		\
+-	} while (0)
++#define suspend_report_result(dev, fn, ret)				\
++	__suspend_report_result(dev, __func__, fn, ret)
+ 
+ extern int device_pm_wait_for_dev(struct device *sub, struct device *dev);
+ extern void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *));
+@@ -685,7 +684,10 @@ static inline int dpm_suspend_start(pm_message_t state)
+ 	return 0;
+ }
+ 
+-#define suspend_report_result(fn, ret)		do {} while (0)
++static inline void suspend_report_result(const struct device *dev,
++					 const char *fn, int ret)
++{
++}
+ 
+ static inline int device_pm_wait_for_dev(struct device *a, struct device *b)
+ {
 
---nextPart1961897.CYsEHfRkoF--
 
