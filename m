@@ -1,116 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab3KOO40 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:56:26 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:60949 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab3KOO4U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:56:20 -0500
-Date: Fri, 15 Nov 2013 09:56:09 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Chang Xiangzhong <changxiangzhong@gmail.com>, davem@davemloft.net,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dreibh@simula.no, ernstgr@simula.no
-Subject: Re: [PATCH] net: sctp: recover a tranport when an ack comes
-Message-ID: <20131115145609.GC29877@hmsreliant.think-freely.org>
-References: <1384461624-17636-1-git-send-email-changxiangzhong@gmail.com>
- <5285884F.8030907@gmail.com>
- <20131115123055.GA29877@hmsreliant.think-freely.org>
- <5286291A.7060507@gmail.com>
+	id S1752637Ab3KOO4n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:56:43 -0500
+Received: from ring0.de ([91.143.88.219]:60825 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752481Ab3KOO4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 09:56:34 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Fri, 15 Nov 2013 14:55:56 +0000
+From: Sebastian Reichel <sre@debian.org>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Tony Lindgren <tony@atomide.com>, Luciano Coelho <luca@coelho.fi>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Felipe Balbi <balbi@ti.com>, Sachin Kamat <sachin.kamat@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        Luciano Coelho <coelho@ti.com>
+Subject: Re: [PATCH 1/4] wl1251: split wl251 platform data to a separate
+ structure
+Message-ID: <20131115145555.GA23351@earth.universe>
+Mail-Followup-To: "John W. Linville" <linville@tuxdriver.com>,
+	Tony Lindgren <tony@atomide.com>, Luciano Coelho <luca@coelho.fi>,
+	Rob Herring <rob.herring@calxeda.com>,
+	Pawel Moll <pawel.moll@arm.com>,
+	Mark Rutland <mark.rutland@arm.com>,
+	Stephen Warren <swarren@wwwdotorg.org>,
+	Ian Campbell <ijc+devicetree@hellion.org.uk>,
+	Rob Landley <rob@landley.net>,
+	Russell King <linux@arm.linux.org.uk>, Felipe Balbi <balbi@ti.com>,
+	Sachin Kamat <sachin.kamat@linaro.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Bill Pemberton <wfp5p@virginia.edu>, devicetree@vger.kernel.org,
+	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	Luciano Coelho <coelho@ti.com>
+References: <1382890469-25286-1-git-send-email-sre@debian.org>
+ <1382890469-25286-2-git-send-email-sre@debian.org>
+ <20131114185132.GQ10317@atomide.com>
+ <20131114230330.GB6383@earth.universe>
+ <20131114232217.GV10317@atomide.com>
+ <20131115143254.GA7079@tuxdriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
 Content-Disposition: inline
-In-Reply-To: <5286291A.7060507@gmail.com>
+In-Reply-To: <20131115143254.GA7079@tuxdriver.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 09:00:58AM -0500, Vlad Yasevich wrote:
-> On 11/15/2013 07:30 AM, Neil Horman wrote:
-> >On Thu, Nov 14, 2013 at 09:34:55PM -0500, Vlad Yasevich wrote:
-> >>On 11/14/2013 03:40 PM, Chang Xiangzhong wrote:
-> >>>Expected Behavior:
-> >>>When hearing an ack from a tranport/path, set its state to normal/on if it's
-> >>>in abnormal(__partial_failure__ or inactive) state.
-> >>>
-> >>>state machine of tranport->state
-> >>>Whenever a T3_RTX timer expires, then transport->error_count++.
-> >>>When (association->pf_retrans < transport->error_count < tranport->pathmaxrtx)
-> >>>	transport->state = SCTP_PF //partial failure
-> >>>
-> >>>When a heartbeat-ack comes or conventional ack acknowledged its availability,
-> >>>	transport->state = SCTP_ON
-> >>>
-> >>>Signed-off-by: Chang Xiangzhong <changxiangzhong@gmail.com>
-> >>>Fixes: 5aa93bcf66f ("sctp: Implement quick failover draft from tsvwg")
-> >>
-> >>I don't think this is right.  The spec states:
-> >>  8.  ACKs for retransmissions do not transition a PF destination back
-> >>        to Active state, since a sender cannot disambiguate whether the
-> >>        ack was for the original transmission or the retransmission(s).
-> >>
-> >>
-> >>Now, the proper way to this would would be modify
-> >>sctp_assoc_control_transport() to transition the transport state to
-> >>ACTIVE if it was PF transport that was chosen to send data.
-> >>
-> >>-vlad
-> >>
-> >I agree, this patch doesn't agree with the spec, the only time we transition
-> >from PF to ACTIVE should be on receipt of ack of new data.
-> 
-> You mean HB ACK, right?  The 02 spec that see on the ietf site doesn't
-> mention anything about transition on SACKs.  Also, there is no way to
-> tell right now if the ack is for new or retransmitted data.  We could
-> mark chunks that are retransmitted though.
-> 
-Yes, sorry I wasn't clear, I was speaknig about HB Acks.
 
-> > I'm not even sure if
-> >we should allow PF transports to be selected to send new data.  Currently a
-> >potentially failed transport will get ignored when specified, and the stack will
-> >use the active path in its place.  Only if all transports are PF will a PF
-> >transport be chosen.
-> 
-> Not even that :(.  If all transports are PF, we are going to camp on
-> the primary path instead of choosing a PF transport with the lowest
-> error count.
-> 
-Yes, we don't do the smallest error count check, though I have to wonder if
-thats really worthwhile.  If all your transports are PF, you're a step away from
-a connection reset anyway.
-Neil
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -vlad
-> 
-> >Neil
-> >
-> >>>---
-> >>>  net/sctp/outqueue.c |    1 +
-> >>>  1 file changed, 1 insertion(+)
-> >>>
-> >>>diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-> >>>index 94df758..2557fa5 100644
-> >>>--- a/net/sctp/outqueue.c
-> >>>+++ b/net/sctp/outqueue.c
-> >>>@@ -1517,6 +1517,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
-> >>>  			 * active if it is not so marked.
-> >>>  			 */
-> >>>  			if ((transport->state == SCTP_INACTIVE ||
-> >>>+			     transport->state == SCTP_PF ||
-> >>>  			     transport->state == SCTP_UNCONFIRMED) &&
-> >>>  			    sctp_cmp_addr_exact(&transport->ipaddr, saddr)) {
-> >>>  				sctp_assoc_control_transport(
-> >>>
-> >>
-> >>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+On Fri, Nov 15, 2013 at 09:32:55AM -0500, John W. Linville wrote:
+> On Thu, Nov 14, 2013 at 03:22:18PM -0800, Tony Lindgren wrote:
+> > * Sebastian Reichel <sre@debian.org> [131114 15:04]:
+> > > On Thu, Nov 14, 2013 at 10:51:33AM -0800, Tony Lindgren wrote:
+> > > > [...]
+> > > >
+> > > > If this is not going into v3.13, these will cause conflicts
+> > > > with the mach-omap2/board-*.c files for v3.14.
+> > > >=20
+> > > > So it might be best to do a minimal header patch first that
+> > > > can be merged in by both linux-omap and wireless trees.
+> > >=20
+> > > I guess this patch is pretty minimal. It also seems to be acked by
+> > > the involved Maintainers, so maybe just merge Patch 1 without the
+> > > other patches?
+> > >=20
+> > > This does not solve the problem with the struct modification from
+> > > the second patch, but I guess it's the more intrusive patch.
+> >=20
+> > Once at least the first two patches are ready, how about I queue
+> > them after -rc1 and set up an immutable branch that can be merged
+> > in by linux-omap tree and the wireless tree?
+>=20
+> That sounds reasonable to me.
+
+So what changes do you request for those patches? I will try to
+update them as soon as possible.
+
+-- Sebastian
+
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJShjX7AAoJENju1/PIO/qaOgcQAIFxSRKg6g82sFajCuGZfI7s
+t34ArIr0cWzxtFnPw0TE4lGaCPKmUpxdCj3568m6ejI7ZjZvZTD0rO02SS6v0jWM
+7tAgYLXjoBmP4haZ1OfjJitZuQmk/YsBckAjegd3dIGeKO0xroNuIe3yfTIuVFR8
+pFc6cOhFESwT2oPxjh6rAxkHBhhubXIDFnscJWc85JdhN37s8kEfIJPRpDkYWNzE
+6Wun2h3/QzYPPQeVfCLUEL956Vif3Qp/KlKfPRhhd9/5LVUjKzCRij/B2jnB1Ufq
+aZJrRgXq8k9EvIMCUamIgtRwvi3RvhNrE3gET6F0dy9qnwYb1Iqg0CLX1tW5Rrc5
+D1iAFNeYSXXyl3TtnEaoJjMjTHxIGQJhrh27eTD/ChC59kssmNCwpMEDUq13Z4NT
+Ve5tzgbOt3om4RVLdDux443wVbdPwNqjdnDQkLX52yQmMOec33deFTxzNtMEVakN
++vSdwLhHVgdd27llrqpePQGu7ELRVPRwGAKw7JBZzFkE8kbJSzNFvevpMZHe1dDX
+xacBI4c4oiOPgjd7AuEepXeEIaTJ5F+Evzw7ZZPOs4A9vWpPaPm35c0dzQoswAjH
+MHYdO5tuUU6Tm95Fy6jj+SOTjgSlHhq0XS0HbrdgC1pC97ROoLjet3j8fV/aK/mc
+pTx51yqDqRfkjjWgkydn
+=QcUk
+-----END PGP SIGNATURE-----
+
+--BXVAT5kNtrzKuDFl--
