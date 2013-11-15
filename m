@@ -1,89 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120Ab3KOLUj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 06:20:39 -0500
-Received: from mga09.intel.com ([134.134.136.24]:22701 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752943Ab3KOLUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 06:20:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="435748402"
-Message-ID: <52860529.50200@intel.com>
-Date: Fri, 15 Nov 2013 13:27:37 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1757717Ab3KOLXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 06:23:39 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50038 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753471Ab3KOLXc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 06:23:32 -0500
+Date: Fri, 15 Nov 2013 11:23:29 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Sricharan R <r.sricharan@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony@atomide.com" <tony@atomide.com>, "rnayak@ti.com" <rnayak@ti.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "nm@ti.com" <nm@ti.com>,
+        "bcousson@baylibre.com" <bcousson@baylibre.com>
+Subject: Re: [PATCH V4 1/4] DRIVERS: IRQCHIP: IRQ-GIC: Add support for
+ routable irqs
+Message-ID: <20131115112329.GE1709@e106331-lin.cambridge.arm.com>
+References: <1384431530-2166-1-git-send-email-r.sricharan@ti.com>
+ <1384431530-2166-2-git-send-email-r.sricharan@ti.com>
+ <20131114140103.GA28328@e106331-lin.cambridge.arm.com>
+ <5284FE6C.9040901@ti.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 10/10] perf record: Add an option to force per-cpu mmaps
-References: <1384460715-23198-1-git-send-email-acme@infradead.org> <1384460715-23198-11-git-send-email-acme@infradead.org> <20131115060643.GA9237@gmail.com> <5285FECE.7020802@intel.com> <20131115111032.GA18647@gmail.com>
-In-Reply-To: <20131115111032.GA18647@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5284FE6C.9040901@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/11/13 13:10, Ingo Molnar wrote:
+On Thu, Nov 14, 2013 at 04:46:36PM +0000, Sricharan R wrote:
+> Hi Mark,
 > 
-> * Adrian Hunter <adrian.hunter@intel.com> wrote:
-> 
->>> And I also raised why this shouldn't be the default event tracing 
->>> method instead of a weird config option. Per-cpu tracing is cache 
->>> compact, it is easier to size properly and in general it is pretty 
->>> easy to think about. (It also has less of the TSC timestamp 
->>> ordering problems as per thread tracing, at least in theory.)
->>>
->>> Is there something that makes per cpu tracing undesirable as the 
->>> default?
->>
->> One reason is to avoid changing the meaning of existing options.
-> 
-> Well, the way the tracing buffers are set up is a mostly tool internal 
-> matter so in that sense it should be just fine to change the default 
-> behavior - as long as output remains unchanged (which it should).
-> 
-> Or is there any material change in behavior somewhere?
+> On Thursday 14 November 2013 07:31 PM, Mark Rutland wrote:
+> > On Thu, Nov 14, 2013 at 12:18:47PM +0000, Sricharan R wrote:
+> >> In some socs the gic can be preceded by a crossbar IP which
+> >> routes the peripheral interrupts to the gic inputs. The peripheral
+> >> interrupts are associated with a fixed crossbar input line and the
+> >> crossbar routes that to one of the free gic input line.
+> >>
+> >> The DT entries for peripherals provides the fixed crossbar input line
+> >> as its interrupt number and the mapping code should associate this with
+> >> a free gic input line. This patch adds the support inside the gic irqchip
+> >> to handle such routable irqs. The routable irqs are registered in a linear
+> >> domain. The registered routable domain's callback should be implemented
+> >> to get a free irq and to configure the IP to route it.
+> >>
+> >> Cc: Thomas Gleixner <tglx@linutronix.de>
+> >> Cc: Linus Walleij <linus.walleij@linaro.org>
+> >> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >> Cc: Russell King <linux@arm.linux.org.uk>
+> >> Cc: Tony Lindgren <tony@atomide.com>
+> >> Cc: Rajendra Nayak <rnayak@ti.com>
+> >> Cc: Marc Zyngier <marc.zyngier@arm.com>
+> >> Cc: Grant Likely <grant.likely@linaro.org>
+> >> Cc: Rob Herring <rob.herring@calxeda.com>
+> >> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+> >> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >> ---
+> >>  [V2] Added default routable-irqs functions to avoid
+> >>       unnecessary if checks as per Thomas Gleixner comments
+> >>       and renamed routable-irq binding as per
+> >>       Kumar Gala <galak@codeaurora.org> comments.
+> >>
+> >>  [V3] Addressed unnecessary warn-on and updated default
+> >>       xlate function as per Thomas Gleixner comments
+> >>
+> >>  Documentation/devicetree/bindings/arm/gic.txt |    6 ++
+> >>  drivers/irqchip/irq-gic.c                     |   81 ++++++++++++++++++++++---
+> >>  include/linux/irqchip/arm-gic.h               |    7 ++-
+> >>  3 files changed, 83 insertions(+), 11 deletions(-)
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+> >> index 3dfb0c0..5357745 100644
+> >> --- a/Documentation/devicetree/bindings/arm/gic.txt
+> >> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+> >> @@ -49,6 +49,11 @@ Optional
+> >>    regions, used when the GIC doesn't have banked registers. The offset is
+> >>    cpu-offset * cpu-nr.
+> >>  
+> >> +- arm,routable-irqs : Total number of gic irq inputs which are not directly
+> >> +		  connected from the peripherals, but are routed dynamically
+> >> +		  by a crossbar/multiplexer preceding the GIC. The GIC irq
+> >> +		  input line is assigned dynamically when the corresponding
+> >> +		  peripheral's crossbar line is mapped.
+> > I'm not keen on the design of the arm,routable-irqs property. The set of
+> > IRQs which the crossbar IP can use is a property of which IRQ lines it
+> > has routed to the GIC. I don't see why that should be considered a
+> > property of the GIC; it's a property of the crossbar IP's attachment to
+> > the GIC.
+> >
+> > Given we already have a mechanism for describing the attachment (i.e.
+> > the interrupts property) where the property appears on the node for the
+> > device generating/propagating the interrupt, I don't see why we should
+> > do differently here.
+>  We did try using interrupts=<> property for all peripherals and
+>  mapping them as crossbar's parent. But that approach of representing
+>  crossbar as a interrupt parent was not accepted, since the crossbar
+>  was just routing the interrupts from peripherals to GIC and nothing more.
+>  Also  mapping all the interrupts using interrupt-map like property by a fixed way
+>  in DTS itself was considered hacky
 
-Inheritance is enabled automatically with per-cpu mmaps,
-although that is one of the reasons people want
-per-cpu mmaps.
+I'm not suggesting you should interrupt-map. I agree that that
+interrupt-map is not suitable for a dynamically configurable device like
+the crossbar.
 
-> 
->> To flip it around, ignore the patches above and apply:
-> 
->> Subject: [PATCH] perf record: Make per-cpu mmaps the default.
-> 
-> Yay!
-> 
->> +--per-thread::
->> +Use per-thread mmaps.  By default per-cpu mmaps are created.  This option
->> +overrides that and uses per-thread mmaps.  A side-effect of that is that
->> +inheritance is automatically disabled.  --per-thread is ignored with a warning
->> +if combined with -a or -C options.
-> 
-> I think this is the natural thing to do, --per-thread is the 'somewhat 
-> weird' option that cannot be used in all modes.
-> 
-> Acked-by: Ingo Molnar <mingo@kernel.org>
-> 
-> :-)
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-> 
+When you say that the crossbar is just routing the interrupts, at what
+level is it doing so? Does it accept a logical interrupt and output
+another logical interrupt, or does it just connect the two lines
+electrically?
 
+We don't necessarily have to use the interrupts property, but I still
+think that the set of GIC input IRQ lines that the crossbar is wired to
+should be described on the crossbar node.
+
+> > Listing 160 interrupts in the crossbar node is clearly something we
+> > don't want to have to do.  If we had a property that we could use to
+> > define a range (or multiple ranges) of interrupts, then the crossbar
+> > driver could go and request those ranges from its interrupt-parent (the
+> > GIC) and the GIC driver could reserve/allocate the irqdomain at that
+> > time.
+> Again, this kind of approach of crossbar requesting irqs from GIC
+> was tried earlier and it did not go anywhere. Subsequently after lot of
+> discussions this design was considered the best one.
+> 
+> http://www.spinics.net/lists/linux-omap/msg97085.html
+
+As far as I can see, the comment there was to use irqdomains, which I am
+not arguing against. I am arguing that the linkage of the GIC and the
+crossbar is being described the wrong way around. The GIC input lines
+that the crossbar is wired to should be described on the crossbar node,
+and the crossbar driver should request the appropriate domain from the
+GIC.
+
+> > This feels like a point-hack, counter in style to the vast majority of
+> > provider/consumer bindings. It only allows for one multiplexer before
+> > the GIC. What if we had multiple multiplexers feeding into the GIC?
+> > Describing the attachment on the multiplexer allows that to be handled,
+> > describing that on the GIC does not.
+>  This is case where the interrupts to GIC is not coming from full irqchip,
+>  but just a router and support added in the GIC helps to handle
+>  such cases. In the case of more than one multiplexer, the crossbar
+>  driver should really take care of handling the downward muxes and
+>  crossbar like driver can be expanded to handle if such a scenario happens.
+
+That still feels like a hack. If there are multiple instances, I see no
+reason why they should have to know about each other. It's fundamentally
+at odds to the generic composable model we have now.
+
+> > Describing the attachement on the multiplexer would also prevent the
+> > duplication of information (i.e. the max-irqs property in the crossbar
+> > binding).
+> >
+> > Thanks,
+> > Mark.
+> Here max-irqs is the total number of output lines of the crossbar itself and
+> its property.
+
+This would be implicit if the set of IRQ inputs on the GIC that these
+lines fed out to were described.
+
+Thanks,
+Mark.
