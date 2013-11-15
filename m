@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab3KOX2h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 18:28:37 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:41275 "EHLO
+	id S1754078Ab3KOX2x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 18:28:53 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:41269 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677Ab3KOX0f (ORCPT
+	with ESMTP id S1753674Ab3KOX0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 18:26:35 -0500
+	Fri, 15 Nov 2013 18:26:34 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Olof Johansson <olof@lixom.net>
 Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 09/17] ARM: OMAP1: Switch to sched_clock_register()
-Date: Fri, 15 Nov 2013 15:26:17 -0800
-Message-Id: <1384557985-9414-10-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 08/17] ARM: msm: Switch to sched_clock_register()
+Date: Fri, 15 Nov 2013 15:26:16 -0800
+Message-Id: <1384557985-9414-9-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.5.rc2
 In-Reply-To: <1384557985-9414-1-git-send-email-sboyd@codeaurora.org>
 References: <1384557985-9414-1-git-send-email-sboyd@codeaurora.org>
@@ -25,34 +25,34 @@ The 32 bit sched_clock interface now supports 64 bits. Upgrade to
 the 64 bit function to allow us to remove the 32 bit registration
 interface.
 
-Cc: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Acked-by: David Brown <davidb@codeaurora.org>
 ---
- arch/arm/mach-omap1/time.c | 4 ++--
+ arch/arm/mach-msm/timer.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap1/time.c b/arch/arm/mach-omap1/time.c
-index 6b5f298..a7588cf 100644
---- a/arch/arm/mach-omap1/time.c
-+++ b/arch/arm/mach-omap1/time.c
-@@ -181,7 +181,7 @@ static __init void omap_init_mpu_timer(unsigned long rate)
-  * ---------------------------------------------------------------------------
-  */
+diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+index 1e9c338..fd16449 100644
+--- a/arch/arm/mach-msm/timer.c
++++ b/arch/arm/mach-msm/timer.c
+@@ -187,7 +187,7 @@ static struct notifier_block msm_timer_cpu_nb = {
+ 	.notifier_call = msm_timer_cpu_notify,
+ };
  
--static u32 notrace omap_mpu_read_sched_clock(void)
-+static u64 notrace omap_mpu_read_sched_clock(void)
+-static notrace u32 msm_sched_clock_read(void)
++static u64 notrace msm_sched_clock_read(void)
  {
- 	return ~omap_mpu_timer_read(1);
+ 	return msm_clocksource.read(&msm_clocksource);
  }
-@@ -193,7 +193,7 @@ static void __init omap_init_clocksource(unsigned long rate)
- 			"%s: can't register clocksource!\n";
+@@ -229,7 +229,7 @@ err:
+ 	res = clocksource_register_hz(cs, dgt_hz);
+ 	if (res)
+ 		pr_err("clocksource_register failed\n");
+-	setup_sched_clock(msm_sched_clock_read, sched_bits, dgt_hz);
++	sched_clock_register(msm_sched_clock_read, sched_bits, dgt_hz);
+ }
  
- 	omap_mpu_timer_start(1, ~0, 1);
--	setup_sched_clock(omap_mpu_read_sched_clock, 32, rate);
-+	sched_clock_register(omap_mpu_read_sched_clock, 32, rate);
- 
- 	if (clocksource_mmio_init(&timer->read_tim, "mpu_timer2", rate,
- 			300, 32, clocksource_mmio_readl_down))
+ #ifdef CONFIG_OF
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
