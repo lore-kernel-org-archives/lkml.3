@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab3KOKrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 05:47:22 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:50072 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753707Ab3KOKrN (ORCPT
+	id S1755410Ab3KOKts (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 05:49:48 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49363 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753494Ab3KOKtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 05:47:13 -0500
+	Fri, 15 Nov 2013 05:49:40 -0500
+Date: Fri, 15 Nov 2013 11:49:28 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        David Ahern <dsahern@gmail.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [BUG] perf stat: explicit grouping yields unexpected results
+Message-ID: <20131115104928.GA10456@twins.programming.kicks-ass.net>
+References: <CABPqkBTiBHF4wZ3c_Czkh3JgvXGNWJW1LH42Jh4NG_ZJkGkbgw@mail.gmail.com>
+ <20131115063457.GB12442@gmail.com>
+ <20131115100506.GD2965@twins.programming.kicks-ass.net>
+ <CABPqkBRO=LNwHbRWKE_NnR5TUTh3sjTyp-9BOkvxQGKb2f3k7A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWA-9ax=NG_d0tyfzY3+42Ka7_r+jTeF-m5oW0eV8t1=g@mail.gmail.com>
-References: <1384029451-16555-1-git-send-email-geert@linux-m68k.org>
-	<5285EE5A.1070202@southpole.se>
-	<CAMuHMdWA-9ax=NG_d0tyfzY3+42Ka7_r+jTeF-m5oW0eV8t1=g@mail.gmail.com>
-Date: Fri, 15 Nov 2013 11:47:12 +0100
-X-Google-Sender-Auth: SuohPDOzEEB2c0h6Hf02ZM4zVHw
-Message-ID: <CAMuHMdV=u04Y2saVygB=FSPTDgqSf+0YNUb0q3=aVZ9oTORs+Q@mail.gmail.com>
-Subject: Re: [PATCH] openrisc: Add DTS and defconfig for DE0-Nano
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jonas Bonn <jonas@southpole.se>
-Cc: linux@openrisc.net,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Mehall <contact@kevinmehall.net>,
-        Marek Czerski <ma.czerski@gmail.com>,
-        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBRO=LNwHbRWKE_NnR5TUTh3sjTyp-9BOkvxQGKb2f3k7A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 11:22 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> The supplied schematics filename is de0-nano-c4-rev-c\(release_cd_rom\).pdf,
-> and the drawings mention "Rev C".
-> The block diagram on page 2 still says "EPCS16 (16 Mb), but on page 8 it
-> mentions "EPCS64", which is what's on my board.
+On Fri, Nov 15, 2013 at 11:13:27AM +0100, Stephane Eranian wrote:
+> On Fri, Nov 15, 2013 at 11:05 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Fri, Nov 15, 2013 at 07:34:57AM +0100, Ingo Molnar wrote:
+> >> Btw., does the kernel side currently support discovery of such
+> >> impossible group scheduling constraints at group setup time?
+> >
+> > Up to a point.
+> >
+> It is only looking at the group itself  not the overall condition
+> of the system, e.g., the other HT thread is case of shared
+> resources.
+> I think all it guarantees is that if the events in the group
+> are compatible with each other. And I think it covers the case
+> where the events use different counters but the same shared
+> resource, e.g., offcore_response on Intel X86.
+> 
+> >> If not
+> >> then it probably should and it should reject them straight away.
+> >
+> > We do I think, for the case where its obvious it can never fit.
+> >
+> > That said, if you have a pinned cpu event, it all comes apart.
+> 
+> You mean in the group?
 
-I found the Rev B schematics on the web. It lacks the EPCS drawing
-on page 8.
+No, outside of the group, so that the above validation doesn't guarantee
+actual schedulability. Yes it could all fit on the PMU in one go, but
+since we _have_ to also fit this pinned task, it really will never get
+scheduled.
 
-According to
-http://forums.parallax.com/showthread.php/132578-Getting-started-with-FPGAs/page7
-there are also versions with a 64 Mbit Altera EPCS64.
 
-So my guess is:
-  Rev A: EPCS16
-  Rev B: Altera EPCS64
-  Rev C: Spansian EPCS64
-
-Unless Andrew and I have Rev Fs, as there's no "C" on our boards.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
