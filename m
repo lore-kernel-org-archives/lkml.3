@@ -1,45 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab3KOQLd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 11:11:33 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:55261 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473Ab3KOQL1 (ORCPT
+	id S1753346Ab3KOQLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 11:11:50 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:29729 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab3KOQLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 11:11:27 -0500
+	Fri, 15 Nov 2013 11:11:42 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+AnBCxE/DnUWizxXc1xmOV
+Date: Fri, 15 Nov 2013 08:11:37 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] ARM: OMAP4460: cpuidle: Extend
+ PM_OMAP4_ROM_SMP_BOOT_ERRATUM_GICD on cpuidle
+Message-ID: <20131115161137.GY10317@atomide.com>
+References: <1382467484-16957-1-git-send-email-grygorii.strashko@ti.com>
+ <5266CCE3.1090801@ti.com>
+ <20131114183535.GL10317@atomide.com>
+ <20131115153608.GX10317@atomide.com>
+ <52864585.6030206@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20131115151958.3802.1019@localhost.localdomain>
-References: <20131115151958.3802.1019@localhost.localdomain>
-Date: Fri, 15 Nov 2013 17:11:26 +0100
-X-Google-Sender-Auth: pBkDXAge7wnB3gzC1KknLh3FZlo
-Message-ID: <CAMuHMdXousEc1jFsZOxq5chbbWb-E+mBX5hWfh3f_wmnTHaMJg@mail.gmail.com>
-Subject: Re: [GIT PULL] Btrfs
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Chris Mason <chris.mason@fusionio.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52864585.6030206@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 4:19 PM, Chris Mason <chris.mason@fusionio.com> wrote:
-> Chris Mason (1) commits (+7/-2):
->     btrfs: fix empty_zero_page misusage
+* Taras Kondratiuk <taras.kondratiuk@linaro.org> [131115 08:03]:
+> On 11/15/2013 05:36 PM, Tony Lindgren wrote:
+> > * Tony Lindgren <tony@atomide.com> [131114 10:36]:
+> >> * Grygorii Strashko <grygorii.strashko@ti.com> [131022 12:09]:
+> >>> The same workaround as ff999b8a0983ee15668394ed49e38d3568fc6859
+> >>> "ARM: OMAP4460: Workaround for ROM bug because of CA9 r2pX GIC ..."
+> >>> need to be applied not only when system is booting, but when MPUSS hits
+> >>> OSWR state through CPUIdle too. Without this WA the same issue is
+> >>> reproduced now on boards PandaES and Tablet/Blaze with SOM OMAP4460
+> >>> when CONFIG_CPU_IDLE is enabled.
+> >>> After MPUSS has enterred OSWR and waken up:
+> >>> - GIC distributor became disabled forever
+> >>> - scheduling is not performed any more
+> >>>
+> >>> Cc: Kevin Hilman <khilman@linaro.org>
+> >>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >>> Reported-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+> >>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> >>
+> >> Applying into omap-for-v3.13/fixes thanks.
+> > 
+> > Hmm looks like this breaks the build with randconfigs at least
+> > with the attached .config, so dropping for now.
+> 
+> Hi Tony
+> Have you forgot to attach .config?
 
-https://git.kernel.org/cgit/linux/kernel/git/mason/linux-btrfs.git/commit/?h=for-linus&id=46e0f66a0cf9e1fe25bfdcf4a60c08aface85998
+Oops, sorry looks like I removed it already as I rebuilt the tree
+and started a new set of randconfig build tests.
+ 
+> > arch/arm/mach-omap2/built-in.o: In function `omap_enter_idle_coupled':
+> > :(.text+0xb48c): undefined reference to `pm44xx_errata'
+> 
+> I assume that .config doesn't have CONFIG_SMP enabled while
+> pm44xx_errata is defined in omap-smp.c.
+> I think it should be a separate patch to move pm44xx_errata somewhere
+> else, so this patch will remain the same.
 
-FYI, you may want to loop over longs instead of bytes.
+Yes something like that probably. Sounds like that should be then
+patches before this fix.
+ 
+> Btw, do we need omap_enter_idle_coupled() in UP?
 
-Gr{oetje,eeting}s,
+That should be checked, am43xx may need it.
 
-                        Geert
+Regards,
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Tony
