@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548Ab3KONBD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:01:03 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:54369 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064Ab3KONAy (ORCPT
+	id S1751618Ab3KONIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 08:08:53 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:32262 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab3KONIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:00:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <C3050A4DBA34F345975765E43127F10F1C08BAEF@szxeml512-mbs.china.huawei.com>
-References: <C3050A4DBA34F345975765E43127F10F1C08BAEF@szxeml512-mbs.china.huawei.com>
-Date: Fri, 15 Nov 2013 11:00:54 -0200
-Message-ID: <CAGG-pUT22xoksid-2GmJsDmVQk8gR8zHvAr=r3Z2E4BLf+1jJA@mail.gmail.com>
-Subject: Re: [PATCH] regmap: Fix 'ret' would return an uninitialized value
-From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
-To: Caizhiyong <caizhiyong@hisilicon.com>
-Cc: Mark Brown <broonie@kernel.org>,
+	Fri, 15 Nov 2013 08:08:46 -0500
+Date: Fri, 15 Nov 2013 16:08:20 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, devel@driverdev.osuosl.org,
+        Johan Hedberg <johan.hedberg@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        Levente Kurusa <ilevex.linux@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Yu-Chen Cho <acho@suse.com>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>
+Subject: Re: [PATCH] Staging: btmtk_usb: Add hdev parameter to hdev->send
+ driver callback
+Message-ID: <20131115130820.GS5302@mwanda>
+References: <1384517231-1605-1-git-send-email-geert@linux-m68k.org>
+ <D32EAC93-D2DE-431C-9DCB-885C5AA10A3A@holtmann.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D32EAC93-D2DE-431C-9DCB-885C5AA10A3A@holtmann.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/15 Caizhiyong <caizhiyong@hisilicon.com>:
-> From: Cai Zhiyong <caizhiyong@huawei.com>
-> Date: Mon, 11 Nov 2013 19:26:14 +0800
-> Subject: [PATCH] regmap: Fix 'ret' would return an uninitialized value
->
-> This patch give a warning when calling regmap_register_patch with
-> parameter num_regs <= 0.
->
-> When the num_regs parameter is zero and krealloc doesn't fail,
-> then the code would return an uninitialized value. However,
-> calling this function with num_regs == 0, would be a waste as it
-> essentially does nothing.
->
-> Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
-Reviewed-by: Geyslan G. Bem <geyslan@gmail.com>
+On Fri, Nov 15, 2013 at 09:30:04PM +0900, Marcel Holtmann wrote:
+> 
+> while this is patch is correct, I do not really care about staging drivers that actually bluntly violate my copyright.
+> 
 
-Seems a good approach.
+That's very cryptic.
+
+What is going on here?  I googled it and I wasn't able to find what you
+are talking about.  Care to give us a hint and what you want us to do
+here?
+
+I have also added Johan Hedberg to the CC list because he also helped
+break the build.  Don't do that.
+
+regards,
+dan carpenter
+
