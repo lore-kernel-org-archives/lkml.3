@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab3KOBMa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 20:12:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8221 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754939Ab3KOBMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 20:12:10 -0500
-Date: Thu, 14 Nov 2013 16:39:59 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3 04/15] KVM: MMU: flush tlb out of mmu lock when
- write-protect the sptes
-Message-ID: <20131114183959.GA27064@amt.cnet>
-References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1382534973-13197-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20131114003609.GA15692@amt.cnet>
- <52845C6C.6060708@linux.vnet.ibm.com>
+	id S1755259Ab3KOBQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 20:16:27 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:53265 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab3KOBQV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 20:16:21 -0500
+Message-ID: <528575E2.4000700@hitachi.com>
+Date: Fri, 15 Nov 2013 10:16:18 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52845C6C.6060708@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: perf/tracepoint: another fuzzer generated lockup
+References: <alpine.DEB.2.10.1311081440440.7281@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu> <20131108200244.GB14606@localhost.localdomain> <alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu> <20131108204839.GD14606@localhost.localdomain> <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu> <20131108223657.GF14606@localhost.localdomain> <20131109151014.GN16117@laptop.programming.kicks-ass.net> <20131114152304.GC5364@laptop.programming.kicks-ass.net> <20131114153301.GD5364@laptop.programming.kicks-ass.net>
+In-Reply-To: <20131114153301.GD5364@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 01:15:24PM +0800, Xiao Guangrong wrote:
+(2013/11/15 0:33), Peter Zijlstra wrote:
+> On Thu, Nov 14, 2013 at 04:23:04PM +0100, Peter Zijlstra wrote:
+>>  /*
+>> + * We must dis-allow sampling irq_work_exit() because perf event sampling
+>> + * itself can cause irq_work, which would lead to an infinite loop;
+>> + *
+>> + *  1) irq_work_exit happens
+>> + *  2) generates perf sample
+>> + *  3) generates irq_work
+>> + *  4) goto 1
+>> + */
+>> +TRACE_EVENT_PERF_PERM(irq_work_exit, is_sampling_event(p_event) ? -EPERM : 0);
 > 
-> Hi Marcelo,
+> And the only reason this doesn't feed fwd itself into oblivion for
+> irq_work_enter() is because the irq_work_list must not be empty when the
+> interrupt is raised, and queueing further work does not re-raise the
+> IPI.
 > 
-> On 11/14/2013 08:36 AM, Marcelo Tosatti wrote:
 > 
-> > 
-> > Any code location which reads the writable bit in the spte and assumes if its not
-> > set, that the translation which the spte refers to is not cached in a
-> > remote CPU's TLB can become buggy. (*)
-> > 
-> > It might be the case that now its not an issue, but its so subtle that
-> > it should be improved.
-> > 
-> > Can you add a fat comment on top of is_writeable_bit describing this?
-> > (and explain why is_writable_pte users do not make an assumption
-> > about (*). 
-> > 
-> > "Writeable bit of locklessly modifiable sptes might be cleared
-> > but TLBs not flushed: so whenever reading locklessly modifiable sptes
-> > you cannot assume TLBs are flushed".
-> > 
-> > For example this one is unclear:
-> > 
-> >                 if (!can_unsync && is_writable_pte(*sptep))
-> >                         goto set_pte;
-> > And:
-> > 
-> >         if (!is_writable_pte(spte) &&
-> >               !(pt_protect && spte_is_locklessly_modifiable(spte)))
-> >                 return false;
-> > 
-> > This is safe because get_dirty_log/kvm_mmu_slot_remove_write_access are
-> > serialized by a single mutex (if there were two mutexes, it would not be
-> > safe). Can you add an assert to both
-> > kvm_mmu_slot_remove_write_access/kvm_vm_ioctl_get_dirty_log 
-> > for (slots_lock) is locked, and explain?
-> > 
-> > So just improve the comments please, thanks (no need to resend whole
-> > series).
-> 
-> Thank you very much for your time to review it and really appreciate
-> for you detailed the issue so clearly to me.
-> 
-> I will do it on the top of this patchset or after it is merged
-> (if it's possiable).
+> Also, we should probably do something 'smart' for kprobes, as all of
+> irq_work.c and plenty of perf itself is not __kprobe marked so you're
+> all free to insert kprobes in the middle of perf and then attach perf to
+> such a thing.
 
-Ok, can you explain why every individual caller of is_writable_pte have
-no such assumption now? (the one mentioned above is not clear to me for
-example, should explain all of them).
+Kprobes itself can detect nested call by using per-cpu current-running
+kprobe pointer. And if it is nested, it just skips calling handlers.
+Anyway, I don't recommend to probe inside the handlers, but yes,
+you can trace perf-handler by ftrace B). I actually traced a kprobe-bug
+by kprobe-tracer last night, that was amazing :)
 
-OK to improve comments later.
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
