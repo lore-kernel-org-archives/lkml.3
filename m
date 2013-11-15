@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab3KOXkl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 18:40:41 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51391 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751701Ab3KOXkd (ORCPT
+	id S1753285Ab3KOXnV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 18:43:21 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:65335 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab3KOXnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 18:40:33 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Amit Pundir <amit.pundir@linaro.org>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH v3] epoll: drop EPOLLWAKEUP if PM_SLEEP is disabled
-Date: Sat, 16 Nov 2013 00:53:05 +0100
-Message-ID: <3183942.lOJ03BL8GG@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <5286A1A4.2020905@linaro.org>
-References: <1384500391-20513-1-git-send-email-amit.pundir@linaro.org> <2338693.sZIlYGM98f@vostro.rjw.lan> <5286A1A4.2020905@linaro.org>
+	Fri, 15 Nov 2013 18:43:12 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20131115225540.GA5485@anatevka.fc.hp.com>
+References: <20131114180455.GA32212@anatevka.fc.hp.com>
+	<CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
+	<20131115005049.GJ5116@anatevka.fc.hp.com>
+	<20131115062417.GB9237@gmail.com>
+	<CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
+	<5285C639.5040203@zytor.com>
+	<20131115140738.GB6637@redhat.com>
+	<CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
+	<20131115180324.GD6637@redhat.com>
+	<CAE9FiQU_OstEq3VWwBB879O4EY0DE+zVWVens+w0MLFUQmr3sw@mail.gmail.com>
+	<20131115225540.GA5485@anatevka.fc.hp.com>
+Date: Fri, 15 Nov 2013 15:43:12 -0800
+X-Google-Sender-Auth: clq9rK5AOw029ejCBHtgO5Do5so
+Message-ID: <CAE9FiQVOeDmdKMgnuV1kt6_aEbLG9aNKcRJqoL61pUzermMDbg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+From: Yinghai Lu <yinghai@kernel.org>
+To: jerry.hoemann@hp.com
+Cc: Vivek Goyal <vgoyal@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
+        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 15, 2013 02:35:16 PM John Stultz wrote:
-> On 11/15/2013 02:40 PM, Rafael J. Wysocki wrote:
-> > On Friday, November 15, 2013 10:53:01 AM John Stultz wrote:
-> >> On 11/15/2013 07:10 AM, Rafael J. Wysocki wrote:
-> >>> On Friday, November 15, 2013 12:56:31 PM Amit Pundir wrote:
-> >>>> Drop EPOLLWAKEUP from epoll events mask if CONFIG_PM_SLEEP is disabled.
-> >>>>
-> >>>> Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
-> >>> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >>>
-> >>> Or am I supposed to take care of this?
-> >> I would assume it would be you, but maybe Al would prefer to take it?
-> >>
-> >> Also, should this be also marked for stable?
-> > Well, do people see it in production?
-> 
-> I guess its unlikely, but it seems like its possible. I guess I've got
-> no objection to holding off unless someone else hits this.
+On Fri, Nov 15, 2013 at 2:55 PM,  <jerry.hoemann@hp.com> wrote:
+>> You may need bunch of PCIe cards installed.
+>>
+>> The system with 6TiB + 16 PCIe cards, second kernel OOM.
+>> The system with 4.5TiB + 16 PCIe cards, second kernel works with vmcore dumped.
+>
+> Yinghai,
+>
+> Your original email said you were using "legacy mode".  Does this mean
+> you're not running makedumpfile in cyclic mode?  Cyclic mode makes
+> a *big* difference in memory foot print of makedumpfile.
 
-OK, I'll pick this up over the weekend if Al doesn't do that first.
+I mean: boot linux with legacy bios mode instead UEFI native boot.
 
-Thanks!
+Thanks
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Yinghai
