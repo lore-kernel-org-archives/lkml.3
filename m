@@ -1,60 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab3KOGGz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 01:06:55 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:52561 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472Ab3KOGGr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 01:06:47 -0500
-Date: Fri, 15 Nov 2013 07:06:43 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 10/10] perf record: Add an option to force per-cpu mmaps
-Message-ID: <20131115060643.GA9237@gmail.com>
-References: <1384460715-23198-1-git-send-email-acme@infradead.org>
- <1384460715-23198-11-git-send-email-acme@infradead.org>
+	id S1753333Ab3KOGOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 01:14:09 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:64898 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751878Ab3KOGOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 01:14:05 -0500
+X-IronPort-AV: E=Sophos;i="4.93,704,1378828800"; 
+   d="scan'208";a="9041682"
+Message-ID: <5285BBE2.7010001@cn.fujitsu.com>
+Date: Fri, 15 Nov 2013 14:14:58 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384460715-23198-11-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [REVIEW][PATCH 1/2] userns: Better restrictions on when proc
+ and sysfs can be mounted
+References: <878uzmhkqg.fsf@xmission.com> <52749663.2000701@cn.fujitsu.com>	<527C4D88.10907@cn.fujitsu.com> <87k3gigmgj.fsf@xmission.com>	<5283299B.8080702@cn.fujitsu.com> <5284AF90.7060506@cn.fujitsu.com>	<CALCETrXtWtF=JgiwENNzh7UZKnXijHauOQ5ZjHYxYJC-BAU5Aw@mail.gmail.com>	<528575EC.2030309@cn.fujitsu.com> <87txfexo25.fsf@xmission.com>
+In-Reply-To: <87txfexo25.fsf@xmission.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/15 14:12:08,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/15 14:12:14,
+	Serialize complete at 2013/11/15 14:12:14
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/15/2013 12:54 PM, Eric W. Biederman wrote:
+> Gao feng <gaofeng@cn.fujitsu.com> writes:
+> 
+>> On 11/15/2013 12:54 AM, Andy Lutomirski wrote:
+>>> On Thu, Nov 14, 2013 at 3:10 AM, Gao feng <gaofeng@cn.fujitsu.com> wrote:
+>>>> On 11/13/2013 03:26 PM, Gao feng wrote:
+>>>>> On 11/09/2013 01:42 PM, Eric W. Biederman wrote:
+>>>>>> Right now I would rather not have the empty directory exception than
+>>>>>> remove this code.
+>>>>>>
+>>>>>> The test is a little trickier to write than it might otherwise be
+>>>>>> because /proc and /sys tend to be slightly imperfect filesystems.
+>>>>>>
+>>>>>> I think the only way to really test that is to call readdir on the
+>>>>>> directory itself :(  I don't like that thought.
+>>>>>>
+>>>>>> I don't know what I was thinking when I wrote that test but I definitely
+>>>>>> goofed up.  Grr!
+>>>>>>
+>>>>>> I can certainly filter out any directory with nlink > 2.  That would be
+>>>>>> an easy partial step forward.
+>>>>>>
+>>>>>> The real question though is how do I detect directories it is safe to
+>>>>>> mount on where there will not be files in them.  I can't call iterate
+>>>>>> with the namespace_lock held so things are a bit tricky.
+>>>>>>
+>>>>>
+>>>>> I know this problem is not easy to be resolved. why not let the user
+>>>>> make the decision?  maybe we can introduce a new mount option MS_LOCK,
+>>>>> if user wants to use mount to hide something, he should use mount with
+>>>>> option MS_LOCK. so the unpriviged user can't umount this filesystem and
+>>>>> fail to mount the filesystem if one of it's child mount is mounted with
+>>>>> MS_LOCK option otherwise he use MS_REC too.
+>>>>>
+>>>>
+>>>> Something like this.
+>>>>
+>>>> From 437f33ea366623c7a9d557b2e84cae424876a44f Mon Sep 17 00:00:00 2001
+>>>> From: Gao feng <gaofeng@cn.fujitsu.com>
+>>>> Date: Wed, 13 Nov 2013 16:06:46 +0800
+>>>> Subject: [PATCH] userns: introduce new mount option MS_LOCK
+>>>>
+>>>> After commit 5ff9d8a65ce80efb509ce4e8051394e9ed2cd942
+>>>> vfs: Lock in place mounts from more privileged users,
+>>>> in userns, the mounts of child mntns which copied from
+>>>> parent mntns is locked and user has no rights to umount/move
+>>>> them, it's too strict.
+>>>>
+>>>> The core purpose of above commit is trying to prevent
+>>>> unprivileged user from accessing files hidden by mount.
+>>>> This patch introduces a new mount option MS_LOCK, this
+>>>> gives user the capable to mount filesystem as the type
+>>>> of lock if he wants to use mount to hide something.
+>>>>
+>>>
+>>> This is bad -- if something was secure in old kernels, it needs to
+>>> stay secure.  If you had MS_NOT_A_LOCK, that would be okay, but it
+>>> might not solve your problem.
+>>>
+>>
+>> what you mean old kernels here? I saw patch "vfs: Lock in place mounts from more privileged users"
+>> is merged into upstream in linux 3.12-rc1, this is not very old. I think there
+>> are not many userspace processes rely on this feature.
+> 
+> Sort of true.  Most people aren't that silly.  This feature was added to
+> defend against a theoretical attack that you can use with mount
+> namespaces.
+> 
+> In particular the scenario we are concerned with is:
+> 
+> Suppose the file system looks like:
+> 
+> Suppose there are two filesystems a and b that look like:
+> 
+> a:/usr/
+> a:/usr/my_very_secret_file
+> a:/dev/
+> a:/etc/
+> a:/lib/
+> 
+> b:/bin/
+> b:/etc/
+> b:/games/
+> b:/include/
+> b:/lib/
+> b:/lib32/
+> b:/local/
+> b:/sbin/
+> b:/share/
+> b:/src/
+> 
+> And filesystem b is mounted on a:/usr hiding a:/usr/my_very_secret_file
+> 
+> So the filesystem looks like:
+> 
+> /usr/
+> /usr/bin/
+> /usr/etc/
+> /usr/games/
+> /usr/include/
+> /usr/lib/
+> /usr/lib32/
+> /usr/local/
+> /usr/sbin/
+> /usr/share/
+> /usr/src/
+> /dev/
+> /etc/
+> /lib/
+> 
+> Without locking mounts into place an unprivileged user can clone the
+> mount namespace and do "umount /usr" and read /usr/my_very_secret_file.
+> 
+> Most systems don't hide sensitive things with mounts but it is very
+> possible and guarding against is fairly cheap and easy.  And while a
+> little annoying it should not be a large impediment to unprivileged user
+> of the user namespace because pivot root still works.
+> 
+> This thread started talking about bugs in fs_fully_visible.  And those
+> bugs are fixable and I aim to get to them shortly.  At the very least
+> I can lie and test for nlink <= 2 which fixes the regression in mounting
+> proc.
+> 
+> Then I can write the fun version that takes references and drops locks
+> so it can call the internal version of readdir to see if a directory is
+> actually empty.
+> 
+> But the principle remains the same we really don't want to reveal
+> anything that is hidden under a mount on purpose or by mistake.  Just
+> because then we don't have to think about those things from a security
+> point of view making everyone's life easier.
+> 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Ok,I agree with you that we should make container security by default.
 
-> +--force-per-cpu::
-> + Force the use of per-cpu mmaps.  By default, when tasks are specified (i.e. -p,
-> + -t or -u options) per-thread mmaps are created.  This option overrides that and
-> + forces per-cpu mmaps.  A side-effect of that is that inheritance is
-> + automatically enabled.  Add the -i option also to disable inheritance.
+What's your idea that introduces option MS_NOT_A_LOCK just like Andy's
+advisement?
 
-So I still haven't seen an explanation why it's called 'force' 
-anything. AFAICS nothing is 'forced' really, this is simply another 
-trace-ringbuffer setup method, right?
+In libvirt, host creates dev and devpts directories for container,then
+mount devpts, tmpfs on them and create device nodes inside these dirs
+for container. and then in container, these filesystems are moved to
+container's /dev/ /dev/pts directory. We really have no need to lock
+these mounts. they are just created for container.
 
-And I also raised why this shouldn't be the default event tracing 
-method instead of a weird config option. Per-cpu tracing is cache 
-compact, it is easier to size properly and in general it is pretty 
-easy to think about. (It also has less of the TSC timestamp ordering 
-problems as per thread tracing, at least in theory.)
-
-Is there something that makes per cpu tracing undesirable as the 
-default?
-
-Thanks,
-
-	Ingo
+Thanks
