@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758311Ab3KOLwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 06:52:01 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50443 "EHLO
+	id S1758428Ab3KOLw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 06:52:58 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50459 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab3KOLvy (ORCPT
+	with ESMTP id S1753983Ab3KOLwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 06:51:54 -0500
-Date: Fri, 15 Nov 2013 12:51:50 +0100
+	Fri, 15 Nov 2013 06:52:53 -0500
+Date: Fri, 15 Nov 2013 12:52:45 +0100
 From: Peter Zijlstra <peterz@infradead.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf code using smp_processor_id() in preemptible [00000000] code
-Message-ID: <20131115115150.GC10456@twins.programming.kicks-ass.net>
-References: <20131115032907.GA25243@redhat.com>
- <20131115100254.GC2965@twins.programming.kicks-ass.net>
- <20131115101946.GG1754@moon>
- <20131115113046.GA26143@moon>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        David Ahern <dsahern@gmail.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [BUG] perf stat: explicit grouping yields unexpected results
+Message-ID: <20131115115245.GD10456@twins.programming.kicks-ass.net>
+References: <CABPqkBTiBHF4wZ3c_Czkh3JgvXGNWJW1LH42Jh4NG_ZJkGkbgw@mail.gmail.com>
+ <20131115063457.GB12442@gmail.com>
+ <CABPqkBQ2wD_knJP9FQxThSxNng4DZhtRxeUUAW0efAs9=jBXEA@mail.gmail.com>
+ <20131115103405.GA18264@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131115113046.GA26143@moon>
+In-Reply-To: <20131115103405.GA18264@gmail.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 03:30:46PM +0400, Cyrill Gorcunov wrote:
-
->  arch/x86/kernel/cpu/perf_event_p4.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+On Fri, Nov 15, 2013 at 11:34:05AM +0100, Ingo Molnar wrote:
+> That brings up an interesting question: what is better for users, if 
+> we schedule as many as we can and say 'not supported' to the rest 
+> (current behavior), or if we fail the whole group?
 > 
-> Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-> ===================================================================
-> --- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-> +++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-> @@ -1207,7 +1207,7 @@ static int p4_pmu_schedule_events(struct
->  {
->  	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
->  	unsigned long escr_mask[BITS_TO_LONGS(P4_ESCR_MSR_TABLE_SIZE)];
-> -	int cpu = smp_processor_id();
-> +	int cpu = get_cpu();
->  	struct hw_perf_event *hwc;
->  	struct p4_event_bind *bind;
->  	unsigned int i, thread, num;
-> @@ -1267,6 +1267,7 @@ reserve:
->  	}
->  
->  done:
-> +	put_cpu();
->  	return num ? -EINVAL : 0;
->  }
+> I'd say that the default behavior should be what Jiri implemented: get 
+> the most out of the situation and inform. But you are right in that 
+> 'forcing' all elements of a group to be valid should be possible as 
+> well - if a special perf stat option or event format is used.
 
-
-ok, this will make the error go away, but what about the semantics of
-the case? Does it really matter for the grouping on which cpu we compute
-it? That is can we end up with a different group for one cpu as for
-another?
-
-Or do we simply need a coherent single cpu to do the computation with?
-In which case raw_smp_processor_id() would also suffice.
-
-
-If we can indeed get a different result depending on which cpu we do the
-computation, then things are broken, because it might be a task group
-we're building which has to be able to migrate around with the task.
-
-In that case we must compute the maximal group that can be scheduled on
-all cpus.
-
-This wasn't at all clear.
+So I don't agree, but if you want to keep this IMO weird behaviour at
+least WARN about it in big blinking neon letters that the user isn't
+getting what he asked for.
