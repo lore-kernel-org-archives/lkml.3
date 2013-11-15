@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab3KODnB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 22:43:01 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:42985 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199Ab3KODmy convert rfc822-to-8bit (ORCPT
+	id S1757085Ab3KODo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 22:44:26 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58095 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756133Ab3KODoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 22:42:54 -0500
+	Thu, 14 Nov 2013 22:44:19 -0500
+Message-Id: <1384487058.27598.47721737.4F2B26E4@webmail.messagingengine.com>
+X-Sasl-Enc: cn7/Tww7Fj9KEX5yJGeZs0zPoXxfHFqXkRyUAz/qR3y/ 1384487058
+From: randmedia@123mail.org
+To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <528097A3.9040908@cn.fujitsu.com>
-References: <1383300583-6953-1-git-send-email-duanj.fnst@cn.fujitsu.com>
-	<CAPgLHd_p+LJmBX6FCy1+mF3VTHkBoPa83SNXciqb28pa3QE7TA@mail.gmail.com>
-	<528097A3.9040908@cn.fujitsu.com>
-Date: Fri, 15 Nov 2013 11:42:52 +0800
-Message-ID: <CAPgLHd-3mrt_NpSz4dgXg_jJ0Lopm7rzWVAE_NLnyy1xtutPOw@mail.gmail.com>
-Subject: Re: [PATCH] drivers: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: duanj.fnst@cn.fujitsu.com
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-d4893488
+In-Reply-To: <1384362765.13620.47030097.09D237AE@webmail.messagingengine.com>
+References: <1384360284.28215.47013129.162FF17C@webmail.messagingengine.com>
+ <5283AE49.6030302@xs4all.nl>
+ <1384362765.13620.47030097.09D237AE@webmail.messagingengine.com>
+Subject: Re: How to correctly disable LIRC-related MCE*/IR_* modules,
+ to remove ID of RemoteControl as BOTH keyboard & remote?
+Date: Thu, 14 Nov 2013 19:44:18 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 04:38 PM, Duan Jiong wrote:
-> äºŽ 2013å¹´11æœˆ11æ—¥ 15:43, Wei Yongjun å†™é“:
->> On 11/01/2013 06:09 PM, Duan Jiong wrote:
->>> This patch fixes coccinelle error regarding usage of IS_ERR and
->>> PTR_ERR instead of PTR_ERR_OR_ZERO.
->>>
->>> Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
->>> ---
->>>  drivers/misc/carma/carma-fpga.c | 5 +----
->>>  1 file changed, 1 insertion(+), 4 deletions(-)
->>>
->>> diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
->>> index 08b18f3..9a32e98 100644
->>> --- a/drivers/misc/carma/carma-fpga.c
->>> +++ b/drivers/misc/carma/carma-fpga.c
->>> @@ -956,10 +956,7 @@ static int data_debugfs_init(struct fpga_device *priv)
->>>  {
->>>  	priv->dbg_entry = debugfs_create_file(drv_name, S_IRUGO, NULL, priv,
->>>  					      &data_debug_fops);
->>> -	if (IS_ERR(priv->dbg_entry))
->>> -		return PTR_ERR(priv->dbg_entry);
->>> -
->>> -	return 0;
->>> +	return PTR_ERR_OR_ZERO(priv->dbg_entry);
->>>  }
->> Those code has make sure that CONFIG_DEBUG_FS is enabled, so
->> debugfs_create_file() never return PTR_ERR(), only NULL will
->> be returned when error occurs.
->>
->>
-> You can see the definition about PTR_ERR_OR_ZERO in include/linux/err.h,
-> it is merely used to simplify the code.
+Hi all,
 
-I means that the orig code has bug. You should fix the bug, not only do
-some cleanup like this.
+Bump, please.  Or a pointer to the appropriate list would be helpful.
+I'm clearly getting lost amidst the patch traffic and deluge of spam, so
+suspect I may be in the wrong place ...
 
-Also, the module name should be 'carma-fpga', not 'drivers'. You should send
-something like this:
-
-[PATCH] carma-fpga: fix the return value check in data_debugfs_init()
-
-In case of error, the function debugfs_create_file() returns NULL
-pointer not ERR_PTR() if CONFIG_DEBUG_FS is enabled. The IS_ERR()
-test in the return value check should be replaced with NULL test.
-
-...
-
--       if (IS_ERR(priv->dbg_entry))
--               return PTR_ERR(priv->dbg_entry);
-+       if (!priv->dbg_entry)
-+               return -ENOMEM;
-...
+Thanks.
 
 
-
+On Wed, Nov 13, 2013, at 09:12 AM, randmedia@123mail.org wrote:
+> Hi Jim,
+> 
+> On Wed, Nov 13, 2013, at 08:52 AM, Jim Bos wrote:
+> > Have you looked at this sysfs-file, specifically tried this:
+> > 
+> > echo lirc > /sys/class/rc/rc0/protocols
+> 
+> In short, yes.
+> 
+> atm, I've this udev rule,
+> 
+> 	cat /etc/udev/rules.d/70-infrared.rules
+> 		ACTION=="add", SUBSYSTEM=="rc",
+> 		RUN+="/usr/bin/ir-keytable --clear --protocol=LIRC
+> 		--write=/etc/rc_keymaps/my_streamzap_rpi"
+> 
+> which ensures after boot
+> 
+> 	ir-keytable
+> 	Found /sys/class/rc/rc0/ (/dev/input/event2) with:
+> 	        Driver streamzap, table rc-streamzap
+> 	        Supported protocols: LIRC 
+> 	        Enabled protocols: LIRC 
+> 	        Repeat delay = 500 ms, repeat period = 125 ms
+> 
+> which correlates to
+> 
+> 	cat  /sys/class/rc/rc0/protocols 
+> 		[lirc]
+> 
+> i.e., the same effect as the manual intervetion of
+> 
+> 	echo lirc > /sys/class/rc/rc0/protocols
+> 
+> nonetheless, that _alone_, does NOT 'do the trick'.  if those MCE*
+> kernel mods are around, i.e., if I have NOT disabled them in the kernel
+> (re)compile, or, similarly, use the distro-provided kernel which
+> compiles the mods by default, then -- at boot -- the Streamzap is
+> recognized/assigned as an MCE keyboard/remote.
+> 
+> rand
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
