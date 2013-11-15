@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab3KOMN6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 07:13:58 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:4156 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750861Ab3KOMNr convert rfc822-to-8bit (ORCPT
+	id S1752604Ab3KOMTT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 07:19:19 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:14704 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab3KOMTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 07:13:47 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Hante Meuleman" <meuleman@broadcom.com>
-To: "Geyslan G. Bem" <geyslan@gmail.com>
-cc: "Brett Rudley" <brudley@broadcom.com>,
-        "Arend Van Spriel" <arend@broadcom.com>,
-        "Franky Lin" <frankyl@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Pieter-Paul Giesberts" <pieterpg@broadcom.com>,
-        "Piotr Haber" <phaber@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] brcmfmac: fix possible memory leak
-Thread-Topic: [PATCH] brcmfmac: fix possible memory leak
-Thread-Index: AQHO4fpMK2ChQlgc2UWX5OSdFp3HBpomMogA
-Date: Fri, 15 Nov 2013 12:13:37 +0000
-Message-ID: <F51492713EF10846800D8C0ED37A7DCE0186947A@SJEXCHMB15.corp.ad.broadcom.com>
-References: <1384516475-26589-1-git-send-email-geyslan@gmail.com>
-In-Reply-To: <1384516475-26589-1-git-send-email-geyslan@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
-MIME-Version: 1.0
-X-WSS-ID: 7E98D0691508419282-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+	Fri, 15 Nov 2013 07:19:11 -0500
+X-AuditID: cbfec7f5-b7fe66d00000432e-ba-5286113c40dd
+Subject: [PATCH] arm: check stack pointer in get_wchan
+To: Russell King <linux@arm.linux.org.uk>
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+Date: Fri, 15 Nov 2013 16:19:07 +0400
+Message-id: <20131115121907.4707.82671.stgit@buzz>
+User-Agent: StGit/0.15
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e/4FV0bwbYgg4vTDS02Pb7GanF51xw2
+	i9uXeS2mzvjB7sDi0dLcw+axeUm9R9+WVYwenzfJBbBEcdmkpOZklqUW6dslcGV8PXaFuWAq
+	X8Wt51dYGxivcXcxcnBICJhINNzN7mLkBDLFJC7cW8/WxcjFISSwlFHiftNGJginkUni9+Hd
+	LCANwgJmEheviII0iAhoSpxafJEZxGYDCm/bd5sRxGYWKJLoudHGBmKzCKhKPPhzlQmklVfA
+	SGL1LjmQsCjQrjWXTjKB2LwCghI/Jt8Dm84soC4xZUouxBR5ic1r3jJPYOSbhaRqFkLVLCRV
+	CxiZVzGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEBODXHYxLj1kdYhTgYFTi4Y2Qbg0SYk0s
+	K67MPcQowcGsJMJ79w1QiDclsbIqtSg/vqg0J7X4ECMTB6dUA2NcOqcHS6IKU/N/wWk/NWaf
+	UEi3+d5aEuX/pGmqmqLDg2XHrp8IYO65detj4EP/o7nSGlfmWD9gXzaN4/01+77P1UzRk3Uv
+	vPTiS15mLGqucZ1FtSl4aem1XVYWNc637Q79WXLJbprByfqqKZvZvkVYBXFPvyxfcEX13ucS
+	x4UZ/mKrZJ+deKbEUpyRaKjFXFScCACmR8w3HgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good find, wrong solution. The chanspecs is a temporarily variable which should be freed when exiting the function. Not only when there is an error. I personally would have preferred just a  free at the end of the " if (request->n_channels) {". So something like this:
+get_wchan() is lockless. Task may wakeup at any time and change its own stack,
+thus each next stack frame may be overwritten and filled with random stuff.
 
-		}
-		err = brcmf_p2p_escan(p2p, num_nodfs, chanspecs, search_state,
-				      action, P2PAPI_BSSCFG_DEVICE);
-+		kfree(chanspecs);
-	}
+/proc/$pid/stack interface had been disabled for non-current tasks, see [1]
+But 'wchan' still allows to trigger stack frame unwinding on volatile stack.
 
-In this case the pointer doesn't have to be initialized to NULL.
+This patch fixes oops in unwind_frame() by adding stack pointer validation on
+each step (as x86 code do), unwind_frame() already checks frame pointer.
 
+Also I've found another report of this oops on stackoverflow (irony).
 
-Regards,
-Hante
-
------Original Message-----
-From: Geyslan G. Bem [mailto:geyslan@gmail.com] 
-Sent: vrijdag 15 november 2013 12:54
-To: geyslan@gmail.com
-Cc: Brett Rudley; Arend Van Spriel; Franky Lin; Hante Meuleman; John W. Linville; Pieter-Paul Giesberts; Piotr Haber; linux-wireless@vger.kernel.org; brcm80211-dev-list; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: [PATCH] brcmfmac: fix possible memory leak
-
-In case of error free 'chanspecs'.
-
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Cc: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+Link: http://www.spinics.net/lists/arm-kernel/msg110589.html [1]
+Link: http://stackoverflow.com/questions/18479894/unwind-frame-cause-a-kernel-paging-error
 ---
- drivers/net/wireless/brcm80211/brcmfmac/p2p.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/arm/kernel/process.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-index d7a9745..aea2c2e 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-@@ -771,7 +771,7 @@ static s32 brcmf_p2p_run_escan(struct brcmf_cfg80211_info *cfg,
- 	struct brcmf_cfg80211_vif *vif;
- 	struct net_device *dev = NULL;
- 	int i, num_nodfs = 0;
--	u16 *chanspecs;
-+	u16 *chanspecs = NULL;
- 
- 	brcmf_dbg(TRACE, "enter\n");
- 
-@@ -825,8 +825,10 @@ static s32 brcmf_p2p_run_escan(struct brcmf_cfg80211_info *cfg,
- 				      action, P2PAPI_BSSCFG_DEVICE);
- 	}
- exit:
--	if (err)
-+	if (err) {
- 		brcmf_err("error (%d)\n", err);
-+		kfree(chanspecs);
-+	}
- 	return err;
- }
- 
--- 
-1.8.4.2
-
-
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 94f6b05..92f7b15 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -404,6 +404,7 @@ EXPORT_SYMBOL(dump_fpu);
+ unsigned long get_wchan(struct task_struct *p)
+ {
+ 	struct stackframe frame;
++	unsigned long stack_page;
+ 	int count = 0;
+ 	if (!p || p == current || p->state == TASK_RUNNING)
+ 		return 0;
+@@ -412,9 +413,11 @@ unsigned long get_wchan(struct task_struct *p)
+ 	frame.sp = thread_saved_sp(p);
+ 	frame.lr = 0;			/* recovered from the stack */
+ 	frame.pc = thread_saved_pc(p);
++	stack_page = (unsigned long)task_stack_page(p);
+ 	do {
+-		int ret = unwind_frame(&frame);
+-		if (ret < 0)
++		if (frame.sp < stack_page ||
++		    frame.sp >= stack_page + THREAD_SIZE ||
++		    unwind_frame(&frame) < 0)
+ 			return 0;
+ 		if (!in_sched_functions(frame.pc))
+ 			return frame.pc;
 
