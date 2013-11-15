@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab3KOWEg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 17:04:36 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:52011 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752797Ab3KOWEa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 17:04:30 -0500
-Message-ID: <52869A6C.8060900@gmail.com>
-Date: Fri, 15 Nov 2013 23:04:28 +0100
-From: Chang <changxiangzhong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753152Ab3KOWFl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 17:05:41 -0500
+Received: from mout.gmx.net ([212.227.17.22]:50015 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752678Ab3KOWFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 17:05:33 -0500
+Date: Fri, 15 Nov 2013 23:05:29 +0100
+From: Helge Deller <deller@gmx.de>
+To: Benjamin LaHaise <bcrl@kvack.org>, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: [PATCH] aio: fix D-cache aliasing issues
+Message-ID: <20131115220529.GA3160@ls3530.box>
 MIME-Version: 1.0
-To: Vlad Yasevich <vyasevich@gmail.com>, nhorman@tuxdriver.com
-CC: davem@davemloft.net, linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dreibh@simula.no, ernstgr@simula.no
-Subject: Re: [PATCH] net: sctp: recover a tranport when an ack comes
-References: <1384461624-17636-1-git-send-email-changxiangzhong@gmail.com> <5285884F.8030907@gmail.com>
-In-Reply-To: <5285884F.8030907@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V03:K0:QEGQpSHiQu672/idkoFpa5IuyTANU+SSrUpebIYpu0uTXCvp8q2
+ KxPDQ04PzO/tGNeIpbAVbTTeIT7vFy7mW8GwM8/qTytyvgzh6N1iGS3nv7qyvBafZa9gIx7
+ in9Ws/AbyDhVnkcBdY6DP6/SEDG7eES2dh8klLxlzHhgWBAzJTNmYP2cS64uGJ0MxF4LdFN
+ tskjP5DgQwc0vlGD71JZA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When a user page mapping is released via kunmap*() functions, the D-cache needs
+to be flushed via flush_dcache_page() to avoid D-cache aliasing issues.
 
-On 11/15/2013 03:34 AM, Vlad Yasevich wrote:
-> I don't think this is right.  The spec states:
->  8.  ACKs for retransmissions do not transition a PF destination back
->        to Active state, since a sender cannot disambiguate whether the
->        ack was for the original transmission or the retransmission(s).
->
-Could you please reconsider my proposal?
+This patch fixes aio on the parisc platform (and probably others).
 
-In the rule 8, it clearly specifies ACKs for *retransmission* do not 
-transition ... But those chunks were not retransmitted!
+Signed-off-by: Helge Deller <deller@gmx.de>
+To: Benjamin LaHaise <bcrl@kvack.org>
+To: linux-aio@kvack.org
+Cc: stable@vger.kernel.org    # 3.12+
 
-Every transport maintains its own [transport->transmitted] queue, when 
-retransmit happens (no matter time_out or fast_retransmit). The chunk 
-would be removed from the queue and moved to the sctp_outq->retransmit.
-
-static void sctp_check_transmitted(...) {
-...
-     if (transport) {  /*<=======This proves that its not the 
-outq->retransmit (the retransmitted queue)*/
-         if (bytes_acked) {
-         ...
-         if((transport->state in [INACTIVE, UNCONFIRMED, PF]...)
-             sctp_assoc_control_transport(..., SCTP_TRANSPORT_UP).
-
-
-In addition, if its not appropriate to transition PF->ACTIVE, why is it 
-appropriate to transition INACTIVE->ACTIVE (the original implementation).
->
-> Now, the proper way to this would would be modify 
-> sctp_assoc_control_transport() to transition the transport state to
-> ACTIVE if it was PF transport that was chosen to send data.
->
-> -vlad
->
->> ---
->>   net/sctp/outqueue.c |    1 +
->>   1 file changed, 1 insertion(+)
->>
->> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
->> index 94df758..2557fa5 100644
->> --- a/net/sctp/outqueue.c
->> +++ b/net/sctp/outqueue.c
->> @@ -1517,6 +1517,7 @@ static void sctp_check_transmitted(struct 
->> sctp_outq *q,
->>                * active if it is not so marked.
->>                */
->>               if ((transport->state == SCTP_INACTIVE ||
->> +                 transport->state == SCTP_PF ||
->>                    transport->state == SCTP_UNCONFIRMED) &&
->>                   sctp_cmp_addr_exact(&transport->ipaddr, saddr)) {
->>                   sctp_assoc_control_transport(
->>
->
+diff --git a/fs/aio.c b/fs/aio.c
+index 823efcb..2181821 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -514,6 +514,7 @@ static void free_ioctx(struct work_struct *work)
+ 		atomic_add(avail, &ctx->reqs_available);
+ 		ring->head = ring->tail;
+ 		kunmap_atomic(ring);
++		flush_dcache_page(ctx->ring_pages[0]);
+ 
+ 		if (atomic_read(&ctx->reqs_available) >= ctx->nr_events - 1)
+ 			break;
+@@ -568,6 +569,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+ 					ring = kmap_atomic(ctx->ring_pages[0]);
+ 					ring->id = ctx->id;
+ 					kunmap_atomic(ring);
++					flush_dcache_page(ctx->ring_pages[0]);
+ 					return 0;
+ 				}
+ 
+@@ -1032,6 +1034,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 	head = ring->head;
+ 	tail = ring->tail;
+ 	kunmap_atomic(ring);
++	flush_dcache_page(ctx->ring_pages[0]);
+ 
+ 	pr_debug("h%u t%u m%u\n", head, tail, ctx->nr_events);
+ 
 
