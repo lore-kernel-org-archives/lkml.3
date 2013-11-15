@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758634Ab3KOMHU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 07:07:20 -0500
-Received: from juliette.telenet-ops.be ([195.130.137.74]:44897 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105Ab3KOMHQ (ORCPT
+	id S1758665Ab3KOMJJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 07:09:09 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:63356 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754115Ab3KOMJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 07:07:16 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yu-Chen Cho <acho@suse.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>, devel@driverdev.osuosl.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] Staging: btmtk_usb: Add hdev parameter to hdev->send driver callback
-Date: Fri, 15 Nov 2013 13:07:11 +0100
-Message-Id: <1384517231-1605-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 15 Nov 2013 07:09:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1384486702-6736-1-git-send-email-dsahern@gmail.com>
+References: <1384486702-6736-1-git-send-email-dsahern@gmail.com>
+Date: Fri, 15 Nov 2013 13:08:59 +0100
+Message-ID: <CAFTL4hzam5NSZPKvh0yxXjZPmPLPGwQ5aMiuJeONUa1nbXWpUw@mail.gmail.com>
+Subject: Re: [PATCH] perf script: Print callchains and symbols if they exist
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/staging/btmtk_usb/btmtk_usb.c: In function ‘btmtk_usb_probe’:
-drivers/staging/btmtk_usb/btmtk_usb.c:1610: warning: assignment from incompatible pointer type
+2013/11/15 David Ahern <dsahern@gmail.com>:
+> The intent of perf-script is to dump the events and information
+> in the file. H/W, S/W and raw events all dump callchains if they
+> are present; might as well make that the default for tracepoints
+> too.
+>
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  tools/perf/builtin-script.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+> index baf17989a216..6f96f8414047 100644
+> --- a/tools/perf/builtin-script.c
+> +++ b/tools/perf/builtin-script.c
+> @@ -99,7 +99,9 @@ static struct {
+>
+>                 .fields = PERF_OUTPUT_COMM | PERF_OUTPUT_TID |
+>                                   PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
+> -                                 PERF_OUTPUT_EVNAME | PERF_OUTPUT_TRACE,
+> +                                 PERF_OUTPUT_EVNAME | PERF_OUTPUT_TRACE |
+> +                             PERF_OUTPUT_IP | PERF_OUTPUT_SYM |
+> +                                 PERF_OUTPUT_DSO,
 
-Add the new hdev parameter, cfr. commit
-7bd8f09f69f8a190f9b8334a07bb0a9237612314 ("Bluetooth: Add hdev parameter to
-hdev->send driver callback").
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/staging/btmtk_usb/btmtk_usb.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Right it's important to dump callchains on tracepoint by default.
 
-diff --git a/drivers/staging/btmtk_usb/btmtk_usb.c b/drivers/staging/btmtk_usb/btmtk_usb.c
-index 7a9bf3b57810..9a5ebd6cc512 100644
---- a/drivers/staging/btmtk_usb/btmtk_usb.c
-+++ b/drivers/staging/btmtk_usb/btmtk_usb.c
-@@ -1284,9 +1284,8 @@ done:
- 	kfree_skb(skb);
- }
- 
--static int btmtk_usb_send_frame(struct sk_buff *skb)
-+static int btmtk_usb_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
- {
--	struct hci_dev *hdev = (struct hci_dev *)skb->dev;
- 	struct btmtk_usb_data *data = hci_get_drvdata(hdev);
- 	struct usb_ctrlrequest *dr;
- 	struct urb *urb;
--- 
-1.7.9.5
+DSO are not important though because tracepoints always happen in the
+kernel anyway. Although there is uprobes now hmm....
 
+Same for ip/sym, most of the time the ip where the event happened is
+not that relevant because it's often called from a same helper.
+If SYM is required to dump callchains, I suggest that we only enable
+SYM when callchains are present. Or have a seperate PERF_OUTPOUT
+symbol for that may be.
+
+Thanks.
