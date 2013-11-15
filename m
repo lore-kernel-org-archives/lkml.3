@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab3KOQPb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 11:15:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48851 "EHLO mx2.suse.de"
+	id S1751958Ab3KOQSS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 11:18:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48955 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab3KOQPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 11:15:22 -0500
-Date: Fri, 15 Nov 2013 17:15:20 +0100
+	id S1751053Ab3KOQSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 11:18:07 -0500
+Date: Fri, 15 Nov 2013 17:18:01 +0100
 From: Michal Marek <mmarek@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ben@decadent.org.uk, mmarek@suse.cz, regid23@nt1.in, walch.martin@web.de,
+Cc: michael.opdenacker@free-electrons.com, mpagano@gentoo.org,
+        rdunlap@infradead.org, tkhai@yandex.ru, wsa@the-dreams.de,
         linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] kconfig changes for v3.13-rc1
-Message-ID: <20131115161520.GA19769@sepie.suse.cz>
+Subject: [GIT] kbuild misc changes for v3.13-rc1
+Message-ID: <20131115161801.GA20232@sepie.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,15 +24,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-please pull these kconfig changes for v3.13-rc1:
-- xconfig stores its setting in a meaningful path
-  (~/.config/kernel.org/qconf.conf)
-- kconfig symbol search fix
-- documentation fixes
-- cleanup & comment update
-- fix warning when a kconfig symbol is defined with two different types
-- Yann is now officially listed as maintainer of kconfig, but he prefers
-  me to send pull requests for now
+please pull these script updates for v3.13-rc1:
+- make tags fixes again
+- scripts/show_delta fix for newer python
+- scripts/kernel-doc does not fail on unknown function prototype
+- One less coccinelle check this time
 
 Thanks,
 Michal
@@ -42,38 +39,31 @@ The following changes since commit 272b98c6455f00884f0350f775c5342358ebb73f:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kconfig
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git misc
 
-for you to fetch changes up to e125096e733e966e055ee6033169f68233f9bf9c:
+for you to fetch changes up to 6cf3a6eff77273a55b996a5a43f342b150cfba09:
 
-  Merge branch 'yem/kconfig-for-next' of git://gitorious.org/linux-kconfig/linux-kconfig into kbuild/kconfig (2013-10-31 11:58:59 +0100)
+  scripts/tags.sh: remove obsolete __devinit[const|data] (2013-11-08 10:57:20 +0100)
 
 ----------------------------------------------------------------
+Kirill Tkhai (1):
+      scripts/tags.sh: Increase identifier list
 
-Ben Hutchings (1):
-      xconfig: Fix the filename for GUI settings
+Michael Opdenacker (1):
+      scripts/tags.sh: remove obsolete __devinit[const|data]
 
-Martin Walch (5):
-      kconfig: add short explanation to SYMBOL_WRITE
-      kconfig: fix trivial typos and update mconf documentation
-      kconfig: adjust warning message for conflicting types
-      kconfig: remove unused definition from scanner
-      kconfig: fix bug in search results string: use strlen(gstr->s), not gstr->len
+Mike Pagano (1):
+      show_delta: Update script to support python versions 2.5 through 3.3
 
-Michal Marek (2):
-      MAINTAINERS: New kconfig maintainer
-      Merge branch 'yem/kconfig-for-next' of git://gitorious.org/linux-kconfig/linux-kconfig into kbuild/kconfig
+Randy Dunlap (1):
+      scripts/kernel-doc: make unknown function prototype a Warning instead of an Error
 
-Regid Ichira (1):
-      Documentation/kbuild/kconfig.txt: 'make listnewconfig' replaces: yes "" | make oldconfig
+Wolfram Sang (1):
+      scripts/coccinelle/api: remove devm_request_and_ioremap.cocci
 
- Documentation/kbuild/kconfig.txt | 11 ++------
- MAINTAINERS                      |  5 ++--
- scripts/kconfig/expr.h           |  2 +-
- scripts/kconfig/mconf.c          | 60 +++++++++++++++++++---------------------
- scripts/kconfig/menu.c           | 11 ++++----
- scripts/kconfig/qconf.cc         |  5 ++++
- scripts/kconfig/qconf.h          |  1 +
- scripts/kconfig/symbol.c         |  2 +-
- scripts/kconfig/zconf.l          |  1 -
- 9 files changed, 48 insertions(+), 50 deletions(-)
+ .../coccinelle/api/devm_request_and_ioremap.cocci  | 105 ---------------------
+ scripts/kernel-doc                                 |   3 +-
+ scripts/show_delta                                 |  12 +--
+ scripts/tags.sh                                    |   9 +-
+ 4 files changed, 12 insertions(+), 117 deletions(-)
+ delete mode 100644 scripts/coccinelle/api/devm_request_and_ioremap.cocci
