@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab3KOCPF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 21:15:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54065 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005Ab3KOCPA (ORCPT
+	id S1756044Ab3KOCVF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 21:21:05 -0500
+Received: from mailuogwhop.emc.com ([168.159.213.141]:29458 "EHLO
+	mailuogwhop.emc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755148Ab3KOCVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 21:15:00 -0500
-Date: Fri, 15 Nov 2013 11:09:59 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: rjw@rjwysocki.net, shuahkhan@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Add Legacy PM OPS usage checks to class, bus, and
- driver register functions
-Message-ID: <20131115020959.GA8644@kroah.com>
-References: <cover.1383868060.git.shuah.kh@samsung.com>
- <5284EF9F.5050508@samsung.com>
+	Thu, 14 Nov 2013 21:21:00 -0500
+X-Greylist: delayed 1310 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Nov 2013 21:21:00 EST
+X-DKIM: OpenDKIM Filter v2.4.3 mailuogwprd04.lss.emc.com rAF1wVSl012207
+X-DKIM: OpenDKIM Filter v2.4.3 mailuogwprd04.lss.emc.com rAF1wVSl012207
+From: "Peng, Tao" <tao.peng@emc.com>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, peng tao <bergwolf@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "andreas.dilger@intel.com" <andreas.dilger@intel.com>,
+        hpdd-discuss <hpdd-discuss@ml01.01.org>
+Subject: RE: linux-next: Tree for Nov 14 (lustre)
+Thread-Topic: linux-next: Tree for Nov 14 (lustre)
+Thread-Index: AQHO4WxykqLfAHUfK0KXwzToraw/LJoliVFQ
+Date: Fri, 15 Nov 2013 01:58:07 +0000
+Message-ID: <1882637210201641A747464075FFC6491D1D9C45@MX101CL02.corp.emc.com>
+References: <20131114152253.105a4978427b3cd0555ee877@canb.auug.org.au>
+ <52851EBC.9010803@infradead.org>
+In-Reply-To: <52851EBC.9010803@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.32.216.136]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5284EF9F.5050508@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+X-Sentrion-Hostname: mailusrhubprd51.lss.emc.com
+X-RSA-Classifications: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAF2LT1b011739
 
-On Thu, Nov 14, 2013 at 08:43:27AM -0700, Shuah Khan wrote:
-> On 11/07/2013 05:03 PM, Shuah Khan wrote:
-> > Add Legacy PM OPS usage checks to class, bus, and driver register functions.
-> > If Legacy PM OPS usage is found, print warning message to indicate the driver
-> > code needs updating to use Dev PM OPS interfaces. This will help serve as a way
-> > to track drivers that still use Legacy PM OPS and fix them.
-> >
-> > This patch set adds Legacy PM OPS usage check and warning to bus_register(),
-> > __class_register(), and driver_register() functions.
-> >
-> > Individual patches in this series are not dependent on each other. The only
-> > reason this is a series is for context and facilitating discussion on the
-> > overall change as opposed individual patches.
-> >
-> > Shuah Khan (3):
-> >    drivers/bus: Add Legacy PM OPS usage check and warning to
-> >      bus_register()
-> >    drivers/class: Add Legacy PM OPS usage check and warning to
-> >      __class_register()
-> >    driver: Add Legacy PM OPS usage check and warning to driver_register()
-> >
-> >   drivers/base/bus.c    | 3 +++
-> >   drivers/base/class.c  | 4 ++++
-> >   drivers/base/driver.c | 4 ++++
-> >   3 files changed, 11 insertions(+)
-> >
-> 
-> Greg/Rafael,
-> 
-> Any feedback on this series? Haven't gotten to it or don't like it?
 
-It's the middle of the merge window, where I can't apply any new
-patches, and I'm traveling in Korea, so nothing is getting done on any
-patches anyone has sent me, you aren't alone :)
 
-Wait until 3.13-rc1 is out, then I'll start digging through my patch
-queue and reviewing them, your's is in there as well.
+>-----Original Message-----
+>From: Randy Dunlap [mailto:rdunlap@infradead.org]
+>Sent: Friday, November 15, 2013 3:04 AM
+>To: Stephen Rothwell; linux-next@vger.kernel.org
+>Cc: LKML; peng tao; Peng, Tao; Greg Kroah-Hartman;
+>andreas.dilger@intel.com; hpdd-discuss
+>Subject: Re: linux-next: Tree for Nov 14 (lustre)
+>
+>On 11/13/13 20:22, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Please do *not* add any v3.14 material to linux-next until after
+>> v3.13-rc1 is released.
+>>
+>> Changes since 20131113:
+>>
+>
+>Please fix MANY build errors that show up when CONFIG_PROC_FS is not
+>enabled.
+>
+I'll look into this.
 
-thanks,
+Thanks,
+Tao
 
-greg k-h
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
