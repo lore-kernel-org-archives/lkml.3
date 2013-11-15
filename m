@@ -1,145 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab3KOKkj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 05:40:39 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47069 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752940Ab3KOKkc (ORCPT
+	id S1754164Ab3KOKld (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 05:41:33 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:64578 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab3KOKl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 05:40:32 -0500
-Message-ID: <5285FA0A.2080802@parallels.com>
-Date: Fri, 15 Nov 2013 14:40:10 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 15 Nov 2013 05:41:28 -0500
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>, <linux-nfs@vger.kernel.org>,
-        <devel@openvz.org>, <ebiederm@xmission.com>, <oleg@redhat.com>,
-        <bfields@fieldses.org>, <bharrosh@panasas.com>
-Subject: Re: call_usermodehelper in containers
-References: <20131111071825.62da01d1@tlielax.poochiereds.net>	<20131112004703.GB15377@kroah.com>	<20131112061201.04cf25ab@tlielax.poochiereds.net>	<528226EC.4050701@parallels.com> <20131112083043.0ab78e67@tlielax.poochiereds.net>
-In-Reply-To: <20131112083043.0ab78e67@tlielax.poochiereds.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.31.245]
+In-Reply-To: <20131115103405.GA18264@gmail.com>
+References: <CABPqkBTiBHF4wZ3c_Czkh3JgvXGNWJW1LH42Jh4NG_ZJkGkbgw@mail.gmail.com>
+	<20131115063457.GB12442@gmail.com>
+	<CABPqkBQ2wD_knJP9FQxThSxNng4DZhtRxeUUAW0efAs9=jBXEA@mail.gmail.com>
+	<20131115103405.GA18264@gmail.com>
+Date: Fri, 15 Nov 2013 11:41:27 +0100
+Message-ID: <CABPqkBTAWSSY8meG7MBm6+3LUEQ31nP83CPvDG_nsi13s7ALJA@mail.gmail.com>
+Subject: Re: [BUG] perf stat: explicit grouping yields unexpected results
+From: Stephane Eranian <eranian@google.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        David Ahern <dsahern@gmail.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-12.11.2013 17:30, Jeff Layton пишет:
-> On Tue, 12 Nov 2013 17:02:36 +0400
-> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+On Fri, Nov 15, 2013 at 11:34 AM, Ingo Molnar <mingo@kernel.org> wrote:
 >
->> 12.11.2013 15:12, Jeff Layton пишет:
->>> On Mon, 11 Nov 2013 16:47:03 -0800
->>> Greg KH <gregkh@linuxfoundation.org> wrote:
->>>
->>>> On Mon, Nov 11, 2013 at 07:18:25AM -0500, Jeff Layton wrote:
->>>>> We have a bit of a problem wrt to upcalls that use call_usermodehelper
->>>>> with containers and I'd like to bring this to some sort of resolution...
->>>>>
->>>>> A particularly problematic case (though there are others) is the
->>>>> nfsdcltrack upcall. It basically uses call_usermodehelper to run a
->>>>> program in userland to track some information on stable storage for
->>>>> nfsd.
->>>>
->>>> I thought the discussion at the kernel summit about this issue was:
->>>> 	- don't do this.
->>>> 	- don't do it.
->>>> 	- if you really need to do this, fix nfsd
->>>>
->>>
->>> Sorry, I couldn't make the kernel summit so I missed that discussion. I
->>> guess LWN didn't cover it?
->>>
->>> In any case, I guess then that we'll either have to come up with some
->>> way to fix nfsd here, or simply ensure that nfsd can never be started
->>> unless root in the container has a full set of a full set of
->>> capabilities.
->>>
->>> One sort of Rube Goldberg possibility to fix nfsd is:
->>>
->>> - when we start nfsd in a container, fork off an extra kernel thread
->>>     that just sits idle. That thread would need to be a descendant of the
->>>     userland process that started nfsd, so we'd need to create it with
->>>     kernel_thread().
->>>
->>> - Have the kernel just start up the UMH program in the init_ns mount
->>>     namespace as it currently does, but also pass the pid of the idle
->>>     kernel thread to the UMH upcall.
->>>
->>> - The program will then use /proc/<pid>/root and /proc/<pid>/ns/* to set
->>>     itself up for doing things properly.
->>>
->>> Note that with this mechanism we can't actually run a different binary
->>> per container, but that's probably fine for most purposes.
->>>
+> * Stephane Eranian <eranian@google.com> wrote:
+>
+>> On Fri, Nov 15, 2013 at 7:34 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>> >
+>> > * Stephane Eranian <eranian@google.com> wrote:
+>> >
+>> >> Jiri,
+>> >>
+>> >> I was trying the grouping support in perf stat and I was surprised
+>> >> to see that if I create a group that is too big to be scheduled, and
+>> >> where only N out of P events can fit, perf stat still yields counts
+>> >> for the N events. I was expecting 0 counts or <not supported>.
+>> >>
+>> >> The kernel semantic is to schedule all the events in a group or
+>> >> none. Perf does something different and this is confusing. If you
+>> >> use explicit grouping then I think you want to group to fail if not
+>> >> all the events can be scheduled:
+>> >>
+>> >> On an IvyBridge:
+>> >> $ perf stat --g -e
+>> >> '{cycles,instructions,branches,branches,branches,branches,branches}'
+>> >> noploop 1
+>> >>      3 229 417 079 cycles
+>> >>      3 223 919 023 instructions              #    1,00  insns per cycle
+>> >>      3 220 868 098 branches
+>> >>      3 220 868 098 branches
+>> >>      3 220 868 098 branches
+>> >>      3 220 868 098 branches
+>> >>    <not supported> branches
+>> >>
+>> >> I think it should be: <not supported> for all events.
+>> >
+>> > Btw., does the kernel side currently support discovery of such
+>> > impossible group scheduling constraints at group setup time? If not
+>> > then it probably should and it should reject them straight away.
 >>
->> Hmmm... Why we can't? We can go a bit further with userspace idea.
->>
->> We use UMH some very limited number of user programs. For 2, actually:
->> 1) /sbin/nfs_cache_getent
->> 2) /sbin/nfsdcltrack
->>
+>> The kernel does validate events as they are added to a group. That's
+>> why we have validate_event(), validate_group() and the fake_cpuc
+>> mode.
 >
-> No, the kernel uses them for a lot more than that. Pretty much all of
-> the keys API upcalls use it. See all of the callers of
-> call_usermodehelper. All of them are running user binaries out of the
-> kernel, and almost all of them are certainly broken wrt containers.
+> So the problem here isn't really that the kernel doesn't tell
+> userspace about it, but that perf stat does not interpret the
+> validation result properly.
 >
->> If we convert them into proxies, which use /proc/<pid>/root and /proc/<pid>/ns/*, this will allow us to lookup the right binary.
->> The only limitation here is presence of this "proxy" binaries on "host".
->>
->
-> Suppose I spawn my own container as a user, using all of this spiffy
-> new user namespace stuff. Then I make the kernel use
-> call_usermodehelper to call the upcall in the init_ns, and then trick
-> it into running my new "escape_from_namespace" program with "real" root
-> privileges.
->
-> I don't think we can reasonably assume that having the kernel exec an
-> arbitrary binary inside of a container is safe. Doing so inside of the
-> init_ns is marginally more safe, but only marginally so...
->
->> And we don't need any significant changes in kernel.
->>
->> BTW, Jeff, could you remind me, please, why exactly we need to use UMH to run the binary?
->> What are this capabilities, which force us to do so?
->>
->
-> Nothing _forces_ us to do so, but upcalls are very difficult to handle,
-> and UMH has a lot of advantages over a long-running daemon launched by
-> userland.
->
-> Originally, I created the nfsdcltrack upcall as a running daemon called
-> nfsdcld, and the kernel used rpc_pipefs to communicate with it.
->
-> Everyone hated it because no one likes to have to run daemons for
-> infrequently used upcalls. It's a pain for users to ensure that it's
-> running and it's a pain to handle when it isn't. So, I was encouraged
-> to turn that instead into a UMH upcall.
->
-> But leaving that aside, this problem is a lot larger than just nfsd. We
-> have a *lot* of UMH upcalls in the kernel, so this problem is more
-> general than just "fixing" nfsd's.
->
+Correct.
 
-Ok. So we are talking about generic approach to UMH support in a container (and/or namespace).
-
-Actually, as far as I can see, there are more that one aspect, which is not supported.
-One one them is executing of the right binary. Another one is capabilities (and maybe there are more, like user namespaces), but I don't really care about them 
-for now.
-Executing the right binary, actually, is not about namespaces at all. This is about lookup implementation in VFS (do_execve_common).
-
-Would be great to unshare FS for forked UHM kthread and swap it to desired root. This will solve the problem with proper lookup. However, as far as I 
-understand, this approach is not welcome by the community.
-
-This problem, probably, can be solved by constructing full binary path (i.e. not in a container, but in kernel thread root context) in UMH "init" callack. 
-However, this will help only is the dentry is accessible from "init" root. Which is usually no true in case on mount namespaces, if I understand them right.
-
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
+> That brings up an interesting question: what is better for users, if
+> we schedule as many as we can and say 'not supported' to the rest
+> (current behavior), or if we fail the whole group?
+>
+> I'd say that the default behavior should be what Jiri implemented: get
+> the most out of the situation and inform. But you are right in that
+> 'forcing' all elements of a group to be valid should be possible as
+> well - if a special perf stat option or event format is used.
+>
+> Even in that second case it shouldn't say <unsupported> for everything
+> in the result, but should deny the run immediately and return with an
+> error, and should tell the user how many events in the group fit and
+> which ones didn't.
+>
+Fine with me.
