@@ -1,173 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758137Ab3KOLHd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 06:07:33 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49735 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753407Ab3KOLHY (ORCPT
+	id S1758145Ab3KOLJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 06:09:58 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:36364 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752940Ab3KOLJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 06:07:24 -0500
-Date: Fri, 15 Nov 2013 11:07:21 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Sricharan R <r.sricharan@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony@atomide.com" <tony@atomide.com>, "rnayak@ti.com" <rnayak@ti.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "nm@ti.com" <nm@ti.com>,
-        "bcousson@baylibre.com" <bcousson@baylibre.com>
-Subject: Re: [PATCH V4 2/4] DRIVERS: IRQCHIP: CROSSBAR: Add support for
- Crossbar IP
-Message-ID: <20131115110720.GD1709@e106331-lin.cambridge.arm.com>
-References: <1384431530-2166-1-git-send-email-r.sricharan@ti.com>
- <1384431530-2166-3-git-send-email-r.sricharan@ti.com>
- <20131114141225.GB28328@e106331-lin.cambridge.arm.com>
- <5284FD45.6090109@ti.com>
+	Fri, 15 Nov 2013 06:09:51 -0500
+Message-ID: <528600F9.4040701@atmel.com>
+Date: Fri, 15 Nov 2013 12:09:45 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5284FD45.6090109@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Johan Hovold <jhovold@gmail.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <rtc-linux@googlegroups.com>
+Subject: Re: [PATCH v3 1/3] ARM: at91: fix hanged boot due to early rtc-interrupt
+References: <1363025279-17615-1-git-send-email-jhovold@gmail.com> <1381917376-21107-1-git-send-email-jhovold@gmail.com> <1381917376-21107-2-git-send-email-jhovold@gmail.com>
+In-Reply-To: <1381917376-21107-2-git-send-email-jhovold@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 04:41:41PM +0000, Sricharan R wrote:
-> Hi Mark,
-> 
-> On Thursday 14 November 2013 07:42 PM, Mark Rutland wrote:
-> > On Thu, Nov 14, 2013 at 12:18:48PM +0000, Sricharan R wrote:
-> >> Some socs have a large number of interrupts requests to service
-> >> the needs of its many peripherals and subsystems. All of the
-> >> interrupt lines from the subsystems are not needed at the same
-> >> time, so they have to be muxed to the irq-controller appropriately.
-> >> In such places a interrupt controllers are preceded by an CROSSBAR
-> >> that provides flexibility in muxing the device requests to the controller
-> >> inputs.
-> >>
-> >> This driver takes care a allocating a free irq and then configuring the
-> >> crossbar IP as a part of the mpu's irqchip callbacks. crossbar_init should
-> >> be called right before the irqchip_init, so that it is setup to handle the
-> >> irqchip callbacks.
-> >>
-> >> Cc: Thomas Gleixner <tglx@linutronix.de>
-> >> Cc: Linus Walleij <linus.walleij@linaro.org>
-> >> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >> Cc: Russell King <linux@arm.linux.org.uk>
-> >> Cc: Tony Lindgren <tony@atomide.com>
-> >> Cc: Rajendra Nayak <rnayak@ti.com>
-> >> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> >> Cc: Grant Likely <grant.likely@linaro.org>
-> >> Cc: Rob Herring <rob.herring@calxeda.com>
-> >> Signed-off-by: Sricharan R <r.sricharan@ti.com>
-> >> Acked-by: Kumar Gala <galak@codeaurora.org> (for DT binding portion)
-> >> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >> ---
-> >>  [V2] Addressed Thomas Gleixner <tglx@linutronix.de> comments
-> >>       and renamed the bindings as per Kumar Gala <galak@codeaurora.org>
-> >>       comments.
-> >>  [V3] Changed static inline const to static inline int and removed
-> >>       unnecessary variable initialization as per
-> >>       Thomas Gleixner <tglx@linutronix.de>. Updated commit tags
-> >>  [V4] Renamed crossbar_init as irqcrossbar_init as per
-> >>       Rajendra Nayak <rnayak@ti.com> suggestion.
-> >>
-> >>  .../devicetree/bindings/arm/omap/crossbar.txt      |   27 +++
-> >>  drivers/irqchip/Kconfig                            |    8 +
-> >>  drivers/irqchip/Makefile                           |    1 +
-> >>  drivers/irqchip/irq-crossbar.c                     |  206 ++++++++++++++++++++
-> >>  include/linux/irqchip/irq-crossbar.h               |   11 ++
-> >>  5 files changed, 253 insertions(+)
-> >>  create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
-> >>  create mode 100644 drivers/irqchip/irq-crossbar.c
-> >>  create mode 100644 include/linux/irqchip/irq-crossbar.h
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-> >> new file mode 100644
-> >> index 0000000..fb88585
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-> >> @@ -0,0 +1,27 @@
-> >> +Some socs have a large number of interrupts requests to service
-> >> +the needs of its many peripherals and subsystems. All of the
-> >> +interrupt lines from the subsystems are not needed at the same
-> >> +time, so they have to be muxed to the irq-controller appropriately.
-> >> +In such places a interrupt controllers are preceded by an CROSSBAR
-> >> +that provides flexibility in muxing the device requests to the controller
-> >> +inputs.
-> >> +
-> >> +Required properties:
-> >> +- compatible : Should be "ti,irq-crossbar"
-> >> +- reg: Base address and the size of the crossbar registers.
-> >> +- ti,max-irqs: Total number of irqs available at the interrupt controller.
-> >> +- ti,reg-size: Size of a individual register in bytes. Every individual
-> >> +	    register is assumed to be of same size. Valid sizes are 1, 2, 4.
-> >> +- ti,irqs-reserved: List of the reserved irq lines that are not muxed using
-> >> +		 crossbar. These interrupt lines are reserved in the soc,
-> >> +		 so crossbar bar driver should not consider them as free
-> >> +		 lines.
-> > The combination of the ti,max-irqs and ti,irqs-reserved properties seems
-> > backwards to me. Why can we not describe the set of IRQs that _can_ be
-> > used?
->  Total set of irqs that are usable is max - reserved. Since reserved irqs
->  are not continuous, we have to give the list. During the init we count
->  the total number of reserved and get the usable one.
+On 16/10/2013 11:56, Johan Hovold :
+> Make sure the RTC-interrupts are masked at boot by adding a new helper
+> function to be used at SOC-init.
+>
+> This fixes hanged boot on all AT91 SOCs with an RTC (but RM9200), for
+> example, after a reset during an RTC-update or if an RTC-alarm goes off
+> after shutdown (e.g. when using RTC wakeup).
+>
+> The RTC and RTT-peripherals are powered by backup power (VDDBU) (on all
+> AT91 SOCs but RM9200) and are not reset on wake-up, user, watchdog or
+> software reset. This means that their interrupts may be enabled during
+> early boot if, for example, they where not disabled during a previous
+> shutdown (e.g. due to a buggy driver or a non-clean shutdown such as a
+> user reset). Furthermore, an RTC or RTT-alarm may also be active.
+>
+> The RTC and RTT-interrupts use the shared system-interrupt line, which
+> is also used by the PIT, and if an interrupt occurs before a handler
+> (e.g. RTC-driver) has been installed this leads to the system interrupt
+> being disabled and prevents the system from booting.
+>
+> Note that when boot hangs due to an early RTC or RTT-interrupt, the only
+> way to get the system to start again is to remove the backup power (e.g.
+> battery) or to disable the interrupt manually from the bootloader. In
+> particular, a user reset is not sufficient.
+>
+> Signed-off-by: Johan Hovold <jhovold@gmail.com>
 
-So why not describe the set of usable IRQs, rather than a set of IRQs
-for which only some are usable then subtracting the set of unusable
-IRQs?
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-It seems backwards to me to have a binding for a device describe
-resources it doesn't have.
+and added to the at91-3.13-fixes-non-critical branch with the "stable" tag:
+Cc: stable@vger.kernel.org # 3.11.x
 
-> >> +
-> >> +Examples:
-> >> +		crossbar_mpu: @4a020000 {
-> >> +			compatible = "ti,irq-crossbar";
-> >> +			reg = <0x4a002a48 0x130>;
-> >> +			ti,max-irqs = <160>;
-> >> +			ti,reg-size = <2>;
-> >> +			ti,irqs-reserved = <0 1 2 3 5 6 131 132 139 140>;
-> >> +		};
-> > [...]
-> >
-> >> +	/* Get and mark reserved irqs */
-> >> +	irqsr = of_get_property(node, "ti,irqs-reserved", &size);
-> >> +	if (irqsr) {
-> >> +		size /= sizeof(__be32);
-> >> +
-> >> +		for (i = 0; i < size; i++) {
-> >> +			entry = be32_to_cpup(irqsr + i);
-> >> +			if (entry > max) {
-> >> +				pr_err("Invalid reserved entry\n");
-> >> +				goto err3;
-> >> +			}
-> >> +			cb->irq_map[entry] = 0;
-> >> +		}
-> >> +	}
-> > Don't deal with the raw DTB. Use of_property_read_u32_index.
->  Ok, i will correct this.
-> >> +
-> >> +	cb->register_offsets = kzalloc(max * sizeof(int), GFP_KERNEL);
-> >> +	if (!cb->register_offsets)
-> >> +		goto err3;
-> >> +
-> >> +	of_property_read_u32(node, "ti,reg-size", &size);
-> > If "ti,reg-size" isn't present, size is uninitialized. Please check the
-> > return value of of_property_read_u32.
-> Ok, will correct this.
+Thanks a lot Johan.
 
-Cheers.
+> ---
+>   arch/arm/mach-at91/Makefile                   |  2 +-
+>   arch/arm/mach-at91/at91sam9g45.c              |  2 ++
+>   arch/arm/mach-at91/at91sam9n12.c              |  6 ++++
+>   arch/arm/mach-at91/at91sam9rl.c               |  2 ++
+>   arch/arm/mach-at91/at91sam9x5.c               |  6 ++++
+>   arch/arm/mach-at91/generic.h                  |  1 +
+>   arch/arm/mach-at91/include/mach/at91sam9n12.h |  5 +++
+>   arch/arm/mach-at91/include/mach/at91sam9x5.h  |  5 +++
+>   arch/arm/mach-at91/include/mach/sama5d3.h     |  5 +++
+>   arch/arm/mach-at91/sama5d3.c                  |  6 ++++
+>   arch/arm/mach-at91/sysirq_mask.c              | 47 +++++++++++++++++++++++++++
+>   11 files changed, 86 insertions(+), 1 deletion(-)
+>   create mode 100644 arch/arm/mach-at91/sysirq_mask.c
+>
+> diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
+> index aa33b0f..8879a41 100644
+> --- a/arch/arm/mach-at91/Makefile
+> +++ b/arch/arm/mach-at91/Makefile
+> @@ -2,7 +2,7 @@
+>   # Makefile for the linux kernel.
+>   #
+>
+> -obj-y		:= irq.o gpio.o setup.o
+> +obj-y		:= irq.o gpio.o setup.o sysirq_mask.o
+>   obj-m		:=
+>   obj-n		:=
+>   obj-		:=
+> diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+> index b9fe138..8d4da6d 100644
+> --- a/arch/arm/mach-at91/at91sam9g45.c
+> +++ b/arch/arm/mach-at91/at91sam9g45.c
+> @@ -379,6 +379,8 @@ static void __init at91sam9g45_initialize(void)
+>   	arm_pm_idle = at91sam9_idle;
+>   	arm_pm_restart = at91sam9g45_restart;
+>
+> +	at91_sysirq_mask_rtc(AT91SAM9G45_BASE_RTC);
+> +
+>   	/* Register GPIO subsystem */
+>   	at91_gpio_init(at91sam9g45_gpio, 5);
+>   }
+> diff --git a/arch/arm/mach-at91/at91sam9n12.c b/arch/arm/mach-at91/at91sam9n12.c
+> index c7d670d..4d6001c 100644
+> --- a/arch/arm/mach-at91/at91sam9n12.c
+> +++ b/arch/arm/mach-at91/at91sam9n12.c
+> @@ -223,7 +223,13 @@ static void __init at91sam9n12_map_io(void)
+>   	at91_init_sram(0, AT91SAM9N12_SRAM_BASE, AT91SAM9N12_SRAM_SIZE);
+>   }
+>
+> +static void __init at91sam9n12_initialize(void)
+> +{
+> +	at91_sysirq_mask_rtc(AT91SAM9N12_BASE_RTC);
+> +}
+> +
+>   AT91_SOC_START(at91sam9n12)
+>   	.map_io = at91sam9n12_map_io,
+>   	.register_clocks = at91sam9n12_register_clocks,
+> +	.init = at91sam9n12_initialize,
+>   AT91_SOC_END
+> diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+> index d4ec0d9..b5a8c9d 100644
+> --- a/arch/arm/mach-at91/at91sam9rl.c
+> +++ b/arch/arm/mach-at91/at91sam9rl.c
+> @@ -294,6 +294,8 @@ static void __init at91sam9rl_initialize(void)
+>   	arm_pm_idle = at91sam9_idle;
+>   	arm_pm_restart = at91sam9_alt_restart;
+>
+> +	at91_sysirq_mask_rtc(AT91SAM9RL_BASE_RTC);
+> +
+>   	/* Register GPIO subsystem */
+>   	at91_gpio_init(at91sam9rl_gpio, 4);
+>   }
+> diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
+> index 916e5a1..e8a2e07 100644
+> --- a/arch/arm/mach-at91/at91sam9x5.c
+> +++ b/arch/arm/mach-at91/at91sam9x5.c
+> @@ -322,6 +322,11 @@ static void __init at91sam9x5_map_io(void)
+>   	at91_init_sram(0, AT91SAM9X5_SRAM_BASE, AT91SAM9X5_SRAM_SIZE);
+>   }
+>
+> +static void __init at91sam9x5_initialize(void)
+> +{
+> +	at91_sysirq_mask_rtc(AT91SAM9X5_BASE_RTC);
+> +}
+> +
+>   /* --------------------------------------------------------------------
+>    *  Interrupt initialization
+>    * -------------------------------------------------------------------- */
+> @@ -329,4 +334,5 @@ static void __init at91sam9x5_map_io(void)
+>   AT91_SOC_START(at91sam9x5)
+>   	.map_io = at91sam9x5_map_io,
+>   	.register_clocks = at91sam9x5_register_clocks,
+> +	.init = at91sam9x5_initialize,
+>   AT91_SOC_END
+> diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
+> index dc6e2f5..80269bd 100644
+> --- a/arch/arm/mach-at91/generic.h
+> +++ b/arch/arm/mach-at91/generic.h
+> @@ -34,6 +34,7 @@ extern int  __init at91_aic_of_init(struct device_node *node,
+>   				    struct device_node *parent);
+>   extern int  __init at91_aic5_of_init(struct device_node *node,
+>   				    struct device_node *parent);
+> +extern void __init at91_sysirq_mask_rtc(u32 rtc_base);
+>
+>
+>    /* Timer */
+> diff --git a/arch/arm/mach-at91/include/mach/at91sam9n12.h b/arch/arm/mach-at91/include/mach/at91sam9n12.h
+> index d374b87..0151bcf 100644
+> --- a/arch/arm/mach-at91/include/mach/at91sam9n12.h
+> +++ b/arch/arm/mach-at91/include/mach/at91sam9n12.h
+> @@ -49,6 +49,11 @@
+>   #define AT91SAM9N12_BASE_USART3	0xf8028000
+>
+>   /*
+> + * System Peripherals
+> + */
+> +#define AT91SAM9N12_BASE_RTC	0xfffffeb0
+> +
+> +/*
+>    * Internal Memory.
+>    */
+>   #define AT91SAM9N12_SRAM_BASE	0x00300000	/* Internal SRAM base address */
+> diff --git a/arch/arm/mach-at91/include/mach/at91sam9x5.h b/arch/arm/mach-at91/include/mach/at91sam9x5.h
+> index c75ee19..2fc76c4 100644
+> --- a/arch/arm/mach-at91/include/mach/at91sam9x5.h
+> +++ b/arch/arm/mach-at91/include/mach/at91sam9x5.h
+> @@ -55,6 +55,11 @@
+>   #define AT91SAM9X5_BASE_USART2	0xf8024000
+>
+>   /*
+> + * System Peripherals
+> + */
+> +#define AT91SAM9X5_BASE_RTC	0xfffffeb0
+> +
+> +/*
+>    * Internal Memory.
+>    */
+>   #define AT91SAM9X5_SRAM_BASE	0x00300000	/* Internal SRAM base address */
+> diff --git a/arch/arm/mach-at91/include/mach/sama5d3.h b/arch/arm/mach-at91/include/mach/sama5d3.h
+> index 31096a8..25613d8 100644
+> --- a/arch/arm/mach-at91/include/mach/sama5d3.h
+> +++ b/arch/arm/mach-at91/include/mach/sama5d3.h
+> @@ -73,6 +73,11 @@
+>   #define SAMA5D3_BASE_USART3	0xf8024000
+>
+>   /*
+> + * System Peripherals
+> + */
+> +#define SAMA5D3_BASE_RTC	0xfffffeb0
+> +
+> +/*
+>    * Internal Memory
+>    */
+>   #define SAMA5D3_SRAM_BASE	0x00300000	/* Internal SRAM base address */
+> diff --git a/arch/arm/mach-at91/sama5d3.c b/arch/arm/mach-at91/sama5d3.c
+> index 4012797..3ea8642 100644
+> --- a/arch/arm/mach-at91/sama5d3.c
+> +++ b/arch/arm/mach-at91/sama5d3.c
+> @@ -371,7 +371,13 @@ static void __init sama5d3_map_io(void)
+>   	at91_init_sram(0, SAMA5D3_SRAM_BASE, SAMA5D3_SRAM_SIZE);
+>   }
+>
+> +static void __init sama5d3_initialize(void)
+> +{
+> +	at91_sysirq_mask_rtc(SAMA5D3_BASE_RTC);
+> +}
+> +
+>   AT91_SOC_START(sama5d3)
+>   	.map_io = sama5d3_map_io,
+>   	.register_clocks = sama5d3_register_clocks,
+> +	.init = sama5d3_initialize,
+>   AT91_SOC_END
+> diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
+> new file mode 100644
+> index 0000000..ee3e22c
+> --- /dev/null
+> +++ b/arch/arm/mach-at91/sysirq_mask.c
+> @@ -0,0 +1,47 @@
+> +/*
+> + * sysirq_mask.c - System-interrupt masking
+> + *
+> + * Copyright (C) 2013 Johan Hovold <jhovold@gmail.com>
+> + *
+> + * Functions to disable system interrupts from backup-powered peripherals.
+> + *
+> + * The RTC and RTT-peripherals are generally powered by backup power (VDDBU)
+> + * and are not reset on wake-up, user, watchdog or software reset. This means
+> + * that their interrupts may be enabled during early boot (e.g. after a user
+> + * reset).
+> + *
+> + * As the RTC and RTT share the system-interrupt line with the PIT, an
+> + * interrupt occurring before a handler has been installed would lead to the
+> + * system interrupt being disabled and prevent the system from booting.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#include <linux/io.h>
+> +
+> +#include "generic.h"
+> +
+> +#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
+> +#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
+> +
+> +void __init at91_sysirq_mask_rtc(u32 rtc_base)
+> +{
+> +	void __iomem *base;
+> +	u32 mask;
+> +
+> +	base = ioremap(rtc_base, 64);
+> +	if (!base)
+> +		return;
+> +
+> +	mask = readl_relaxed(base + AT91_RTC_IMR);
+> +	if (mask) {
+> +		pr_info("AT91: Disabling rtc irq\n");
+> +		writel_relaxed(mask, base + AT91_RTC_IDR);
+> +		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
+> +	}
+> +
+> +	iounmap(base);
+> +}
+>
 
-Mark.
+
+-- 
+Nicolas Ferre
