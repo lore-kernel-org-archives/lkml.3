@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab3KOWYe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 17:24:34 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:57236 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab3KOWY0 (ORCPT
+	id S1753143Ab3KOW0w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 17:26:52 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:34139 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938Ab3KOW0p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 17:24:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131115180324.GD6637@redhat.com>
-References: <20131113235708.GC25344@anatevka.fc.hp.com>
-	<CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
-	<20131114180455.GA32212@anatevka.fc.hp.com>
-	<CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
-	<20131115005049.GJ5116@anatevka.fc.hp.com>
-	<20131115062417.GB9237@gmail.com>
-	<CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
-	<5285C639.5040203@zytor.com>
-	<20131115140738.GB6637@redhat.com>
-	<CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
-	<20131115180324.GD6637@redhat.com>
-Date: Fri, 15 Nov 2013 14:24:25 -0800
-X-Google-Sender-Auth: eqPxhn-zuUz2arynnBBu_7RVt0o
-Message-ID: <CAE9FiQU_OstEq3VWwBB879O4EY0DE+zVWVens+w0MLFUQmr3sw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-From: Yinghai Lu <yinghai@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
-        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 15 Nov 2013 17:26:45 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
+Subject: Re: [PATCH] Staging: btmtk_usb: Add hdev parameter to hdev->send driver callback
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20131115212936.GC14897@kroah.com>
+Date: Sat, 16 Nov 2013 07:26:30 +0900
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, devel@driverdev.osuosl.org,
+        Johan Hedberg <johan.hedberg@intel.com>, Yu-Chen Cho <acho@suse.com>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>,
+        jay.hung@mediatek.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6C5AC1E9-D9A0-473A-B47A-345018DFAC3C@holtmann.org>
+References: <1384517231-1605-1-git-send-email-geert@linux-m68k.org> <D32EAC93-D2DE-431C-9DCB-885C5AA10A3A@holtmann.org> <20131115130820.GS5302@mwanda> <F615BA13-BEC1-457B-8002-BC6C149039EA@holtmann.org> <20131115212936.GC14897@kroah.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1822)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 10:03 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Fri, Nov 15, 2013 at 09:33:41AM -0800, Yinghai Lu wrote:
+Hi Greg,
 
->> I have one system with 6TiB memory, kdump does not work even
->> crashkernel=512M in legacy mode. ( it only work on system with
->> 4.5TiB).
->
-> Recently I tested one system with 6TB of memory and dumped successfully
-> with 512MB reserved under 896MB. Also I have heard reports of successful
-> dump of 12TB system with 512MB reserved below 896MB (due to cyclic
-> mode of makedumpfile).
->
-> So with newer releases only reason one might want to reserve more
-> memory is that it might provide speed benefits. We need more testing
-> to quantify this.
+>>>> while this is patch is correct, I do not really care about staging drivers that actually bluntly violate my copyright.
+>>>> 
+>>> 
+>>> That's very cryptic.
+>>> 
+>>> What is going on here?  I googled it and I wasn't able to find what you
+>>> are talking about.  Care to give us a hint and what you want us to do
+>>> here?
+>> 
+>> the last time I checked, the majority of drivers/bluetooth/btusb.c has been written by myself. Now go and compare btusb.c to btmtk_usb.[ch].
+>> 
+>>> I have also added Johan Hedberg to the CC list because he also helped
+>>> break the build.  Don't do that.
+>> 
+>> Yes, we are doing exactly that. It is a staging driver. I could not care less if a staging drivers breaks the build or not.
+>> 
+>> If anybody cares about this driver, then take the time to merge it upstream. It has never been submitted to linux-bluetooth mailing list.
+>> 
+>> There are drivers that should have never been merged into staging.
+>> This is one of them. Look for yourself and explain to me why this
+>> driver is part of staging in the first place.
+> 
+> Because it was sent to me by a developer?
 
-You may need bunch of PCIe cards installed.
+it is a problem when staging just becomes a dumping ground for drivers that the distributions find somewhere on the Internet or CD-ROMs. And then nobody has any intentions to clean up and integrate properly. This one did not even go through linux-bluetooth mailing list once. It was submitted right to staging. And then the submitter walked away.
 
-The system with 6TiB + 16 PCIe cards, second kernel OOM.
-The system with 4.5TiB + 16 PCIe cards, second kernel works with vmcore dumped.
+> Seriously, what's the issue here, I didn't notice it was a fork of your
+> code, sorry, I didn't check.  I figured it would be eventually cleaned
+> up properly and then it will be sent to linux-bluetooth for proper
+> merging.
 
->
->> --- first kernel can reserve the 512M under 896M, second kernel will
->> OOM as it load driver for every pci devices...
->>
->> So why would RH guys not spend some time on optimizing your kdump initrd
->> build scripts and only put dump device related driver in it?
->
-> Try latest Fedora and that's what we do. Now we have moved to dracut
-> based initramfs generation and we tell dracut that build initramfs for
-> host and additional dump destination and dracut builds it for those only.
-> I think there might be scope for further optimization, but I don't think
-> that's the problem any more.
+Kernel subsystem maintainers should not be responsible for fixing staging drivers. I did not even know that this driver existed in staging. I remember you saying that we can just ignore staging. The group of people looking after staging will take care of drivers that break.
 
-Good. Assume that will be in RHEL 7.
+Actually I am taken personal offense when someone takes my code, removes my copyright and slaps their copyright notice on top of it. Yes, I am looking at you Mediatek. I feel completely in my right to say that I am not touching this driver or care if it breaks.
 
->
-> So issue remains that crashkernel=X,high is not a good default choice
-> because it consumes extra 72M which we don't have to.
+And of course there is the technical problem that this driver as it is should not exist in the first place. We do not need duplicated code. The only difference between btusb.c and btmtk_usb.c is the driver init for loading firmware and poking at vendor specific registers. The Bluetooth subsystem has a vendor specific driver setup stage for exactly this. That should be used instead of forking the driver.
 
-then if it falls into 896~4G, user may still need to update kexec-tools ?
+> Yu-Chen, what's the satus of getting this cleaned up "properly"?  You
+> haven't really done anything on this since I took the driver in May.
 
-Thanks
+My comment above stands, distributions do not seem to care :(
 
-Yinghai
+The Realtek Bluetooth driver is the same mess. I rejected it for the same reasons, but so far nobody made the effort to clean it up and build it as mini-driver of btusb.c.
+
+Only our Intel guys managed to get that one done properly for their hardware. So yes, it can be done. I am not talking about unicorns here ;)
+
+Regards
+
+Marcel
+
