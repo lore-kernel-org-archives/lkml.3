@@ -1,66 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab3KOGfH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 01:35:07 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:36558 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472Ab3KOGfB (ORCPT
+	id S1754172Ab3KOGiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 01:38:09 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:48000 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab3KOGiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 01:35:01 -0500
-Date: Fri, 15 Nov 2013 07:34:57 +0100
+	Fri, 15 Nov 2013 01:38:06 -0500
+Date: Fri, 15 Nov 2013 07:38:02 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        David Ahern <dsahern@gmail.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [BUG] perf stat: explicit grouping yields unexpected results
-Message-ID: <20131115063457.GB12442@gmail.com>
-References: <CABPqkBTiBHF4wZ3c_Czkh3JgvXGNWJW1LH42Jh4NG_ZJkGkbgw@mail.gmail.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Azat Khuzhin <a3at.mail@gmail.com>, Bill Gray <bgray@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Richard Fowles <rfowles@redhat.com>, stable@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>, v.karpov@samsung.com,
+        Waiman Long <Waiman.Long@hp.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/10] perf/core improvements and fixes
+Message-ID: <20131115063802.GC12442@gmail.com>
+References: <1384460715-23198-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBTiBHF4wZ3c_Czkh3JgvXGNWJW1LH42Jh4NG_ZJkGkbgw@mail.gmail.com>
+In-Reply-To: <1384460715-23198-1-git-send-email-acme@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Stephane Eranian <eranian@google.com> wrote:
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-> Jiri,
+> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 > 
-> I was trying the grouping support in perf stat and I was surprised 
-> to see that if I create a group that is too big to be scheduled, and 
-> where only N out of P events can fit, perf stat still yields counts 
-> for the N events. I was expecting 0 counts or <not supported>.
+> Hi Ingo,
 > 
-> The kernel semantic is to schedule all the events in a group or 
-> none. Perf does something different and this is confusing. If you 
-> use explicit grouping then I think you want to group to fail if not 
-> all the events can be scheduled:
+> 	Please consider pulling, done on top of tip/perf/urgent.
 > 
-> On an IvyBridge:
-> $ perf stat --g -e
-> '{cycles,instructions,branches,branches,branches,branches,branches}'
-> noploop 1
->      3 229 417 079 cycles
->      3 223 919 023 instructions              #    1,00  insns per cycle
->      3 220 868 098 branches
->      3 220 868 098 branches
->      3 220 868 098 branches
->      3 220 868 098 branches
->    <not supported> branches
+> - Arnaldo
 > 
-> I think it should be: <not supported> for all events.
+> The following changes since commit e310718d0e83aeb9969264dc577c45db16d9104d:
+> 
+>   tools/perf/build: Fix feature-libunwind-debug-frame handling (2013-11-14 18:00:45 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 539e6bb71e350541105e67e3d6c31392d9da25ef:
+> 
+>   perf record: Add an option to force per-cpu mmaps (2013-11-14 16:10:27 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> . Synthesize anon MMAP records again, fix from Don Zickus.
+> 
+> . Add an option in 'perf record' to force per-cpu mmaps, from Adrian Hunter.
+> 
+> . Limit max callchain using max_stack on DWARF unwinding too.
+> 
+> . Fix segfault in the UI browser caused by off by one handling END key.
+> 
+> . Add '--demangle'/'--no-demangle' to perf probe, so that we can overcome
+>   current limitations in handling C++ symbols, from Azat Khuzhin .
+> 
+> . Tweak 'perf trace' summary output, from Pekka Enberg.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Adrian Hunter (1):
+>       perf record: Add an option to force per-cpu mmaps
+> 
+> Arnaldo Carvalho de Melo (4):
+>       perf tools: Use perf_evlist__{first,last}, perf_evsel__next
+>       perf evsel: Introduce perf_evsel__prev() method
+>       perf symbols: Limit max callchain using max_stack on DWARF unwinding too
+>       perf ui browser: Fix segfault caused by off by one handling END key
+> 
+> Azat Khuzhin (1):
+>       perf probe: Add '--demangle'/'--no-demangle'
+> 
+> Davidlohr Bueso (1):
+>       perf tools: Remove trivial extra semincolon
+> 
+> Don Zickus (1):
+>       perf tools: Synthesize anon MMAP records again
+> 
+> Ingo Molnar (1):
+>       perf top: Add missing newline if the 'uid' is invalid
+> 
+> Pekka Enberg (1):
+>       perf trace: Tweak summary output
+> 
+>  tools/perf/Documentation/perf-record.txt |  6 ++++++
+>  tools/perf/builtin-probe.c               |  2 ++
+>  tools/perf/builtin-record.c              |  2 ++
+>  tools/perf/builtin-top.c                 |  4 ++--
+>  tools/perf/builtin-trace.c               | 10 +++++-----
+>  tools/perf/tests/parse-events.c          |  3 +--
+>  tools/perf/ui/browser.c                  |  4 ++--
+>  tools/perf/ui/browsers/hists.c           | 11 +++++------
+>  tools/perf/util/event.c                  |  6 ++++--
+>  tools/perf/util/evlist.c                 |  6 ++++--
+>  tools/perf/util/evsel.c                  |  4 ++--
+>  tools/perf/util/evsel.h                  |  5 +++++
+>  tools/perf/util/machine.c                |  2 +-
+>  tools/perf/util/target.h                 |  1 +
+>  tools/perf/util/unwind.c                 |  9 +++++----
+>  tools/perf/util/unwind.h                 |  5 +++--
+>  16 files changed, 50 insertions(+), 30 deletions(-)
 
-Btw., does the kernel side currently support discovery of such 
-impossible group scheduling constraints at group setup time? If not 
-then it probably should and it should reject them straight away.
-
-Thanks,
+Pulled, thanks a lot Arnaldo!
 
 	Ingo
