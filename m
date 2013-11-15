@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab3KOAcy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 19:32:54 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:6696 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540Ab3KOAcp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 19:32:45 -0500
-Message-ID: <52856B9B.7000307@huawei.com>
-Date: Fri, 15 Nov 2013 08:32:27 +0800
-From: Weng Meiling <wengmeiling.weng@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1754822Ab3KOAdr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 19:33:47 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:37549 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752540Ab3KOAdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 19:33:40 -0500
+Date: Thu, 14 Nov 2013 18:33:38 -0600
+From: Ben Myers <bpm@sgi.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: elder@kernel.org, Mark Tinguely <tinguely@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, Christoph Hellwig <hch@infradead.org>,
+        Ric Wheeler <rwheeler@redhat.com>
+Subject: Re: [PATCH] update xfs maintainers
+Message-ID: <20131115003338.GF1935@sgi.com>
+References: <20131107220208.GY1935@sgi.com>
+ <527C0F64.3010906@sgi.com>
+ <527C4B27.6020205@redhat.com>
+ <527CC50D.4060905@redhat.com>
+ <20131108180337.GO10553@sgi.com>
+ <20131108193424.GA11052@infradead.org>
+ <20131108204605.GA1935@sgi.com>
+ <527D4E8D.3000109@redhat.com>
+ <20131108220309.GB1935@sgi.com>
+ <20131114062226.GN6188@dastard>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] nfsd:add '\n' when read file supported_krb5_enctypes
-References: <52786412.5030403@huawei.com> <527C9170.9030005@huawei.com> <20131113160937.GI28033@fieldses.org> <5284C45F.5050400@huawei.com> <20131114132517.GA20059@fieldses.org>
-In-Reply-To: <20131114132517.GA20059@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.68.127]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131114062226.GN6188@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/11/14 21:25, J. Bruce Fields wrote:
-> On Thu, Nov 14, 2013 at 08:38:55PM +0800, Weng Meiling wrote:
->> On 2013/11/14 0:09, J. Bruce Fields wrote:
->>> On Fri, Nov 08, 2013 at 03:23:28PM +0800, Weng Meiling wrote:
->>>>
->>>> From: Weng Meiling <wengmeiling.weng@huawei.com>
->>>
->>> I agree completely that a \n at the end would make more sense.
->>>
->>> Have you tested that this nfs-utils is OK with this change?
->>>
->>> I suspect that the only code that reads this file anywhere is
->>>
->>> 	nfs-utils/utils/gssd/svcgssd_krb5.c:parse_enctypes()
->>>
->>> And on a quick skim of that function.... I *think* it should be fine.
->>> But I'd be happier if you could confirm that you've tested it.
->>>
->>> --b.
->>>
->> After this change， starting the nfs server， other host can use the
->> server's shared files normally :-).
+On Thu, Nov 14, 2013 at 05:22:26PM +1100, Dave Chinner wrote:
+> On Fri, Nov 08, 2013 at 04:03:10PM -0600, Ben Myers wrote:
+> > From: Ben Myers <bpm@sgi.com>
+> > 
+> > xfs: update maintainers 
+> > 
+> > Add Dave as maintainer of XFS.
+> > 
+> > Signed-off-by: Ben Myers <bpm@sgi.com>
+> > ---
+> >  MAINTAINERS |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > Index: b/MAINTAINERS
+> > ===================================================================
+> > --- a/MAINTAINERS	2013-11-08 15:20:18.935186245 -0600
+> > +++ b/MAINTAINERS	2013-11-08 15:22:50.685245977 -0600
+> > @@ -9387,8 +9387,8 @@ F:	drivers/xen/*swiotlb*
+> >  
+> >  XFS FILESYSTEM
+> >  P:	Silicon Graphics Inc
+> > +M:	Dave Chinner <dchinner@fromorbit.com>
+> >  M:	Ben Myers <bpm@sgi.com>
+> > -M:	Alex Elder <elder@kernel.org>
+> >  M:	xfs@oss.sgi.com
+> >  L:	xfs@oss.sgi.com
+> >  W:	http://oss.sgi.com/projects/xfs
 > 
-> I don't see how that tests parse_enctypes().
-> 
-> --b.
-> 
-yes，this did not test parse_enctypes() specially, I just try to use nfs with this change,
-I'll test it later.
+> Reviewed-by: Dave Chinner <david@fromorbit.com>
 
-Thanks!
-Weng Meiling
->>
->> Thanks！
->> Weng Meilling
->>>>
->>>> Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
->>>> ---
->>>>  fs/nfsd/nfsctl.c | 2 +-
->>>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>>
->>>> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
->>>> index 7f55517..31db42c 100644
->>>> --- a/fs/nfsd/nfsctl.c
->>>> +++ b/fs/nfsd/nfsctl.c
->>>> @@ -188,7 +188,7 @@ static const struct file_operations export_features_operations = {
->>>>  #if defined(CONFIG_SUNRPC_GSS) || defined(CONFIG_SUNRPC_GSS_MODULE)
->>>>  static int supported_enctypes_show(struct seq_file *m, void *v)
->>>>  {
->>>> -	seq_printf(m, KRB5_SUPPORTED_ENCTYPES);
->>>> +	seq_printf(m, "%s\n", KRB5_SUPPORTED_ENCTYPES);
->>>>  	return 0;
->>>>  }
->>>>
->>>> -- 
->>>> 1.8.3.1
->>>>
->>>>
->>>>
->>>>
->>>
->>>
->>
->>
-> 
-> .
-> 
-
-
+Applied.  ;)
