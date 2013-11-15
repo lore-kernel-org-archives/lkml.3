@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab3KOKGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 05:06:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51888 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752949Ab3KOKGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 05:06:36 -0500
-Message-ID: <5285F209.1070204@zytor.com>
-Date: Fri, 15 Nov 2013 02:06:01 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1758259Ab3KOKH1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 05:07:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48638 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949Ab3KOKHT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 05:07:19 -0500
+Date: Fri, 15 Nov 2013 11:07:15 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH TRIVIAL] sched: Fix comments in struct root_domain
+Message-ID: <20131115100715.GE2965@twins.programming.kicks-ass.net>
+References: <1384505917-18366-1-git-send-email-kamalesh@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Christian Ruppert <christian.ruppert@abilis.com>
-CC: Pavel Roskin <proski@gnu.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Noam Camus <noamc@ezchip.com>
-Subject: Re: [PATCH 2/2] x86: Add support for uncompressed kernel images
-References: <20131114083247.GB9687@ab42.lan> <1384418296-10374-2-git-send-email-christian.ruppert@abilis.com> <52850C28.8010800@zytor.com> <20131115094931.GB31656@ab42.lan>
-In-Reply-To: <20131115094931.GB31656@ab42.lan>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384505917-18366-1-git-send-email-kamalesh@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 01:49 AM, Christian Ruppert wrote:
+On Fri, Nov 15, 2013 at 02:28:37PM +0530, Kamalesh Babulal wrote:
+> Move comments related to RT overload, above rto_count.
 > 
-> Actually, the x86 architecture already contains a basic implementation
-> of memcpy in its self-decompressor. Correct me if I'm wrong but I guess
-> memmove is not required since I don't expect the output of a generic
-> decompression function to overlap with its input.
+> Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+> ---
+>  kernel/sched/sched.h | 9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
 > 
-> We can simply use that function if we agree that
-> . either nozip is x86 specific
-> . or every architecture using this code must bring along its own memcpy
->   implementation in its self-decompressor.
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 88c85b21d633..ca452e63f203 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -372,19 +372,18 @@ struct rt_rq {
+>   * fully partitioning the member cpus from any other cpuset. Whenever a new
+>   * exclusive cpuset is created, we also create and attach a new root-domain
+>   * object.
+> - *
+>   */
+>  struct root_domain {
+>  	atomic_t refcount;
+> -	atomic_t rto_count;
+> -	struct rcu_head rcu;
+> -	cpumask_var_t span;
+> -	cpumask_var_t online;
+
+The span and online mask aren't actually related to the overload muck.
+
+>  
+>  	/*
+>  	 * The "RT overload" flag: it gets set if a CPU has more than
+>  	 * one runnable RT task.
+>  	 */
+> +	atomic_t rto_count;
+> +	struct rcu_head rcu;
+> +	cpumask_var_t span;
+> +	cpumask_var_t online;
+>  	cpumask_var_t rto_mask;
+>  	struct cpupri cpupri;
+>  };
+> -- 
+> 1.8.4.474.g128a96c
 > 
-> Do you think that would be OK?
-> 
-
-I think all of them have memcpy().
-
-	-hpa
-
-
