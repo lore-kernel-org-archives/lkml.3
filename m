@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863Ab3KOQww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 11:52:52 -0500
-Received: from mail.abilis.ch ([195.70.19.74]:25320 "EHLO mail.abilis.ch"
+	id S1752148Ab3KOQxP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 11:53:15 -0500
+Received: from ra.se.axis.com ([195.60.68.13]:57567 "EHLO ra.se.axis.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178Ab3KOQwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 11:52:43 -0500
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pavel Roskin <proski@gnu.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, Noam Camus <noamc@ezchip.com>,
-        Joe Perches <joe@perches.com>
-Subject: [PATCH] [FIX] init/Kconfig: fix option to disable kernel compression
-Date: Fri, 15 Nov 2013 17:51:07 +0100
-Message-Id: <1384534267-14746-1-git-send-email-christian.ruppert@abilis.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1384494227-24029-1-git-send-email-hpa@zytor.com>
-References: <1384494227-24029-1-git-send-email-hpa@zytor.com>
+	id S1751904Ab3KOQxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 11:53:03 -0500
+Date: Fri, 15 Nov 2013 17:52:59 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>
+Subject: Re: [PATCH 02/17] cris: Use Kbuild logic to include
+ <asm-generic/sections.h>
+Message-ID: <20131115165259.GO17608@axis.com>
+References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org>
+ <1384285347-13506-3-git-send-email-geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384285347-13506-3-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some architectures with self-decompressing kernel images did not compile
-with commit 69f0554ec261fd686ac7fa1c598cc9eb27b83a80 because they don't
-provide a non-decompression mechanism for uncompressed kernels.
+On Tue, Nov 12, 2013 at 08:42:12PM +0100, Geert Uytterhoeven wrote:
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Mikael Starvik <starvik@axis.com>
 
-Rectify this problem by allowing uncompressed kernels only for architectures
-which explicitly state they support them.
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
 
-Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
----
- arch/arc/Kconfig | 2 ++
- init/Kconfig     | 5 +++++
- 2 files changed, 7 insertions(+)
+> Cc: linux-cris-kernel@axis.com
+> ---
+>  arch/cris/include/asm/Kbuild     |    1 +
+>  arch/cris/include/asm/sections.h |    7 -------
+>  2 files changed, 1 insertion(+), 7 deletions(-)
+>  delete mode 100644 arch/cris/include/asm/sections.h
+> 
+> diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
+> index b06caf649a95..44e7d0dbcf32 100644
+> --- a/arch/cris/include/asm/Kbuild
+> +++ b/arch/cris/include/asm/Kbuild
+> @@ -8,6 +8,7 @@ generic-y += exec.h
+>  generic-y += kvm_para.h
+>  generic-y += linkage.h
+>  generic-y += module.h
+> +generic-y += sections.h
+>  generic-y += trace_clock.h
+>  generic-y += vga.h
+>  generic-y += xor.h
+> diff --git a/arch/cris/include/asm/sections.h b/arch/cris/include/asm/sections.h
+> deleted file mode 100644
+> index 2c998ce8967b..000000000000
+> --- a/arch/cris/include/asm/sections.h
+> +++ /dev/null
+> @@ -1,7 +0,0 @@
+> -#ifndef _CRIS_SECTIONS_H
+> -#define _CRIS_SECTIONS_H
+> -
+> -/* nothing to see, move along */
+> -#include <asm-generic/sections.h>
+> -
+> -#endif
+> -- 
+> 1.7.9.5
 
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 2ee0c9b..15f4c3d 100644
---- a/arch/arc/Kconfig
-+++ b/arch/arc/Kconfig
-@@ -21,6 +21,8 @@ config ARC
- 	select HAVE_ARCH_KGDB
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_IOREMAP_PROT
-+	select HAVE_KERNEL_UNCOMPRESSED
-+	select HAVE_KERNEL_GZIP
- 	select HAVE_KPROBES
- 	select HAVE_KRETPROBES
- 	select HAVE_MEMBLOCK
-diff --git a/init/Kconfig b/init/Kconfig
-index 5496f30..d4baf2e 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -97,6 +97,9 @@ config LOCALVERSION_AUTO
- 
- 	  which is done within the script "scripts/setlocalversion".)
- 
-+config HAVE_KERNEL_UNCOMPRESSED
-+        bool
-+
- config HAVE_KERNEL_GZIP
- 	bool
- 
-@@ -118,6 +121,7 @@ config HAVE_KERNEL_LZ4
- choice
- 	prompt "Kernel compression mode"
- 	default KERNEL_GZIP
-+	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4 || HAVE_KERNEL_UNCOMPRESSED
- 	help
- 	  The linux kernel is a kind of self-extracting executable.
- 	  Several compression algorithms are available, which differ
-@@ -138,6 +142,7 @@ choice
- 
- config KERNEL_UNCOMPRESSED
- 	bool "No compression"
-+	depends on HAVE_KERNEL_UNCOMPRESSED
- 	help
- 	  No compression at all. The kernel is huge but the compression and
- 	  decompression times are zero.
+/^JN - Jesper Nilsson
 -- 
-1.8.4
-
+               Jesper Nilsson -- jesper.nilsson@axis.com
