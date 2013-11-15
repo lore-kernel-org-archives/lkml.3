@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757319Ab3KOEcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 23:32:17 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50471 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757060Ab3KOEcG (ORCPT
+	id S1757478Ab3KOEdk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 23:33:40 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:43755 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757176Ab3KOEdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 23:32:06 -0500
-Message-ID: <5285A39C.4030507@oracle.com>
-Date: Fri, 15 Nov 2013 12:31:24 +0800
+	Thu, 14 Nov 2013 23:33:32 -0500
+Message-ID: <5285A3F4.4040000@oracle.com>
+Date: Fri, 15 Nov 2013 12:32:52 +0800
 From: Jeff Liu <jeff.liu@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
@@ -17,72 +17,43 @@ CC: akpm@linux-foundation.org, "xfs@oss.sgi.com" <xfs@oss.sgi.com>,
         cluster-devel@redhat.com, linux-mtd@lists.infradead.org,
         jfs-discussion@lists.sourceforge.net, oleg@redhat.com,
         jiri@resnulli.us, gregkh@linuxfoundation.org
-Subject: [PATCH 2/6] xfs: simplify xfs_ail_max() via list_last_entry_or_null()
+Subject: [PATCH 3/6] gfs2: simplify current_tail() via list_last_entry_or_null()
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jie Liu <jeff.liu@oracle.com>
 
-Simplify xfs_ail_max() with list_last_entry_or_null(), and move it to
-xfs_trans_priv.h as an inline function as now it is one line.
+Simplify the code in current_tail() via list_last_entry_or_null().
 
 Signed-off-by: Jie Liu <jeff.liu@oracle.com>
 ---
- fs/xfs/xfs_trans_ail.c  | 14 --------------
- fs/xfs/xfs_trans_priv.h | 12 ++++++++++++
- 2 files changed, 12 insertions(+), 14 deletions(-)
+ fs/gfs2/log.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/fs/xfs/xfs_trans_ail.c b/fs/xfs/xfs_trans_ail.c
-index a728735..af605d0 100644
---- a/fs/xfs/xfs_trans_ail.c
-+++ b/fs/xfs/xfs_trans_ail.c
-@@ -62,20 +62,6 @@ xfs_ail_check(
- #endif /* DEBUG */
+diff --git a/fs/gfs2/log.c b/fs/gfs2/log.c
+index 610613f..555f767 100644
+--- a/fs/gfs2/log.c
++++ b/fs/gfs2/log.c
+@@ -441,13 +441,9 @@ static unsigned int current_tail(struct gfs2_sbd *sdp)
  
- /*
-- * Return a pointer to the last item in the AIL.  If the AIL is empty, then
-- * return NULL.
-- */
--static xfs_log_item_t *
--xfs_ail_max(
--	struct xfs_ail  *ailp)
--{
--	if (list_empty(&ailp->xa_ail))
--		return NULL;
--
--	return list_entry(ailp->xa_ail.prev, xfs_log_item_t, li_ail);
--}
--
--/*
-  * Return a pointer to the item which follows the given item in the AIL.  If
-  * the given item is the last item in the list, then return NULL.
-  */
-diff --git a/fs/xfs/xfs_trans_priv.h b/fs/xfs/xfs_trans_priv.h
-index 12e86af..b1d93ae 100644
---- a/fs/xfs/xfs_trans_priv.h
-+++ b/fs/xfs/xfs_trans_priv.h
-@@ -97,6 +97,18 @@ xfs_ail_min(
- 					li_ail);
- }
+ 	spin_lock(&sdp->sd_ail_lock);
  
-+/*
-+ * Return a pointer to the last item in the AIL.  If the AIL is empty, then
-+ * return NULL.
-+ */
-+static inline struct xfs_log_item *
-+xfs_ail_max(
-+	struct xfs_ail  *ailp)
-+{
-+	return list_last_entry_or_null(&ailp->xa_ail, struct xfs_log_item,
-+				       li_ail);
-+}
-+
- static inline void
- xfs_trans_ail_update(
- 	struct xfs_ail		*ailp,
+-	if (list_empty(&sdp->sd_ail1_list)) {
+-		tail = sdp->sd_log_head;
+-	} else {
+-		tr = list_entry(sdp->sd_ail1_list.prev, struct gfs2_trans,
+-				tr_list);
+-		tail = tr->tr_first;
+-	}
++	tr = list_last_entry_or_null(&sdp->sd_ail1_list, struct gfs2_trans,
++				     tr_list);
++	tail = tr ? tr->tr_first : sdp->sd_log_head;
+ 
+ 	spin_unlock(&sdp->sd_ail_lock);
+ 
 -- 
 1.8.3.2
