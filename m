@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492Ab3KOOQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:16:29 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37478 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3KOOQY (ORCPT
+	id S1752897Ab3KOOS7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:18:59 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48281 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751723Ab3KOOSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:16:24 -0500
-Date: Fri, 15 Nov 2013 09:15:18 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] swiotlb-xen: add missing xen_dma_map_page call
-Message-ID: <20131115141518.GD27991@phenom.dumpdata.com>
-References: <1384516653-28165-1-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384516653-28165-1-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 15 Nov 2013 09:18:52 -0500
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: wm5110: Correct default for register LDO2 Control 1
+Date: Fri, 15 Nov 2013 14:03:19 +0000
+Message-Id: <1384524199-7358-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 11:57:33AM +0000, Stefano Stabellini wrote:
-> swiotlb-xen is missing a xen_dma_map_page call in
-> xen_swiotlb_map_sg_attrs, in the bounce buffer path.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-Thank you!
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm5110-tables.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
+index bf8b3b5..d3d7531 100644
+--- a/drivers/mfd/wm5110-tables.c
++++ b/drivers/mfd/wm5110-tables.c
+@@ -504,7 +504,7 @@ static const struct reg_default wm5110_reg_default[] = {
+ 	{ 0x000001AA, 0x0004 },    /* R426   - FLL2 GPIO Clock */
+ 	{ 0x00000200, 0x0006 },    /* R512   - Mic Charge Pump 1 */
+ 	{ 0x00000210, 0x0184 },    /* R528   - LDO1 Control 1 */
+-	{ 0x00000213, 0x0344 },    /* R531   - LDO2 Control 1 */
++	{ 0x00000213, 0x03E4 },    /* R531   - LDO2 Control 1 */
+ 	{ 0x00000218, 0x01A6 },    /* R536   - Mic Bias Ctrl 1 */
+ 	{ 0x00000219, 0x01A6 },    /* R537   - Mic Bias Ctrl 2 */
+ 	{ 0x0000021A, 0x01A6 },    /* R538   - Mic Bias Ctrl 3 */
+-- 
+1.7.2.5
 
-> Changes in v2:
-> - reworked commit message.
-> ---
->  drivers/xen/swiotlb-xen.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> index a224bc7..1eac073 100644
-> --- a/drivers/xen/swiotlb-xen.c
-> +++ b/drivers/xen/swiotlb-xen.c
-> @@ -555,6 +555,11 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
->  				sg_dma_len(sgl) = 0;
->  				return 0;
->  			}
-> +			xen_dma_map_page(hwdev, pfn_to_page(map >> PAGE_SHIFT),
-> +						map & ~PAGE_MASK,
-> +						sg->length,
-> +						dir,
-> +						attrs);
->  			sg->dma_address = xen_phys_to_bus(map);
->  		} else {
->  			/* we are not interested in the dma_addr returned by
-> -- 
-> 1.7.2.5
-> 
