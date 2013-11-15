@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab3KOKyw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 05:54:52 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:51858 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798Ab3KOKyn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 05:54:43 -0500
+	id S1758067Ab3KOK4q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 05:56:46 -0500
+Received: from mail.southpole.se ([37.247.8.11]:45765 "EHLO mail.southpole.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753494Ab3KOK4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 05:56:41 -0500
+Message-ID: <5285FE1D.3020800@southpole.se>
+Date: Fri, 15 Nov 2013 11:57:33 +0100
+From: Jonas Bonn <jonas@southpole.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1384503334-18809-1-git-send-email-tianyu.lan@intel.com>
-References: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com>
-	<1384503334-18809-1-git-send-email-tianyu.lan@intel.com>
-Date: Fri, 15 Nov 2013 16:24:42 +0530
-Message-ID: <CAKohponu0UFZig3xXTAnn8fKnqc5FnFMpxp2JfYQPQjOjAULTw@mail.gmail.com>
-Subject: Re: [Update PATCH 1/1] Cpufreq: Make governor data on nonboot cpus
- across system suspend/resume
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lan Tianyu <tianyu.lan@intel.com>, rainer.kaluscha@web.de
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux@openrisc.net,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kevin Mehall <contact@kevinmehall.net>,
+        Marek Czerski <ma.czerski@gmail.com>,
+        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Subject: Re: [PATCH] openrisc: Add DTS and defconfig for DE0-Nano
+References: <1384029451-16555-1-git-send-email-geert@linux-m68k.org> <5285EE5A.1070202@southpole.se> <CAMuHMdWA-9ax=NG_d0tyfzY3+42Ka7_r+jTeF-m5oW0eV8t1=g@mail.gmail.com>
+In-Reply-To: <CAMuHMdWA-9ax=NG_d0tyfzY3+42Ka7_r+jTeF-m5oW0eV8t1=g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Assp-Version: 2.3.3(13276) on assp.southpole.se
+X-Assp-ID: assp.southpole.se 12998-02349
+X-Assp-Session: 7F739AB3DDD0 (mail 1)
+X-Assp-Client-TLS: yes
+X-Assp-Server-TLS: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Rainer as well
-
-On 15 November 2013 13:45, Lan Tianyu <tianyu.lan@intel.com> wrote:
-> Currently, governor of nonboot cpus will be put to EXIT when system suspend.
-> Since all these cpus will be unplugged and the governor usage_count decreases
-> to zero. The governor data and its sysfs interfaces will be freed or released.
-> This makes user config of these governors loss during suspend and resume.
+On 11/15/2013 11:22 AM, Geert Uytterhoeven wrote:
+>> This should probably be "altera,de0_nano".  We also need to put a version
 >
-> This doesn't happen on the governor covering boot cpu because it isn't
-> unplugged during system suspend.
+> "terasic,de0_nano"? The board says "Designed and manufactured by Terasic".
+> Hmm, the sticker on the box says "Altera DE0-Nano".
+
+Good question...
+
+>>
+>> Version number needed.  OpenCores wanted "projectname-rtlsvn###" where ###
+>> is the SVN commit number of the RTL directory in the project's source
+>> repository.
 >
-> To fix this issue, skipping governor exit during system suspend and check
-> policy governor data to determine whether the governor is really needed
-> to be initialized when do init. If not, return EALREADY to indicate the
-> governor has been initialized and should do nothing. __cpufreq_governor()
-> convert EALREADY to 0 as return value for INIT event since governor is
-> still under INIT state and can do START operation.
+> That's gonna need some information diving, as Stefan's orpsoc git repositories
+> only contains references to orpsocv2 git-svn-ids, not the svn ids of
+> the original
+> component repositories.
 
-Though the patch I have sent fixes a problem similar to this but I don't think
-patch of any of us will solve the issue Rainer is facing..
+Stefan?  Where's the "official" home of these cores nowadays?  Have they 
+been modified since they were copied from OpenCores into orpsocv2?
 
-I checked his system configuration and its like this:
-- Four CPUs, all having separate clock domains (atleast from kernel
-perspective) and so separate policy structure.
-- All are using ondemand governor
-- not using CPUFREQ_HAVE_GOVERNOR_PER_POLICY feature
-- So there is a single set of tunables for ondemand governor that is applicable
-across all CPUs..
+>> Like I mentioned earlier, I'd like to see this thing disappear altogether
+>> and be replaced with gpio-generic.
+>
+> That needs device-tree support and published bindings first. IIRC, you
+> had some preliminary code?
 
-The way INIT/EXIT are designed in cpufreq_governor.c should take care
-of this scenario.
+I thought I did, but I was mistaken.  I don't have anything for 
+gpio-generic.
 
-memory for tunables must not be freed unless all the CPUs are removed.
-Which can't happen, as we only offline non-boot CPUs and so I believe
-that memory isn't getting freed and so your solution wouldn't address his
-problem..
-
-Sorry if I said something stupid enough :)
-
---
-viresh
+/Jonas
