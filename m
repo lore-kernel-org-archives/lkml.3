@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab3KOIdM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 03:33:12 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:42134 "EHLO
+	id S1756448Ab3KOIdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 03:33:18 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:42132 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754781Ab3KOIdC (ORCPT
+	with ESMTP id S1754616Ab3KOIdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Nov 2013 03:33:02 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID rAF8Wpn2007059, This message is accepted by code: ctloc85258
+X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID rAF8WrSn007073, This message is accepted by code: ctloc85258
 From: <micky_ching@realsil.com.cn>
 To: <sameo@linux.intel.com>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <gregkh@linuxfoundation.org>, <wei_wang@realsil.com.cn>,
-        <rogerable@realtek.com>, Lee Jones <lee.jones@linaro.org>,
-        Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH 1/3] mfd: rtsx: reduce code duplication in rtl8411
-Date: Fri, 15 Nov 2013 16:34:11 +0800
-Message-ID: <8ce8175c28355c0d69c3ac4825d3dce6c00fc2ba.1384503048.git.micky_ching@realsil.com.cn>
+        <rogerable@realtek.com>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH 2/3] mfd: rtsx: add card reader rtl8402
+Date: Fri, 15 Nov 2013 16:34:12 +0800
+Message-ID: <225f6d5d8ab73afbe6b600f07583dada2145ebaa.1384503048.git.micky_ching@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1384503048.git.micky_ching@realsil.com.cn>
 References: <cover.1384503048.git.micky_ching@realsil.com.cn>
@@ -27,184 +26,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Jones <lee.jones@linaro.org>
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-in order to remove duplicated code in rtl8411, we make 8411 as the base
-init params, and other like-8411 chips will just change the different
-value with 8411, this can save some source code.
+Add card reader rtl8042, rtl8402 is much like rtl8411, so just add it to
+rtl8411.c
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
 ---
- drivers/mfd/rtl8411.c  |   76 +++++++++++++-----------------------------------
- drivers/mfd/rtsx_pcr.c |    7 ++---
- drivers/mfd/rtsx_pcr.h |    9 +++++-
- 3 files changed, 31 insertions(+), 61 deletions(-)
+ drivers/mfd/rtl8411.c  |   29 +++++++++++++++++++++++++++++
+ drivers/mfd/rtsx_pcr.c |    2 ++
+ 2 files changed, 31 insertions(+)
 
 diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
-index 5280135..4de1045 100644
+index 4de1045..8e4b546 100644
 --- a/drivers/mfd/rtl8411.c
 +++ b/drivers/mfd/rtl8411.c
-@@ -279,7 +279,7 @@ static int rtl8411_conv_clk_and_div_n(int input, int dir)
- 	return output;
+@@ -216,6 +216,31 @@ static int rtl8411_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ 	return rtsx_pci_write_register(pcr, LDO_CTL, mask, val);
  }
  
--static const struct pcr_ops rtl8411_pcr_ops = {
-+static struct pcr_ops rtl8411_pcr_ops = {
- 	.fetch_vendor_settings = rtl8411_fetch_vendor_settings,
- 	.extra_init_hw = rtl8411_extra_init_hw,
- 	.optimize_phy = NULL,
-@@ -295,22 +295,6 @@ static const struct pcr_ops rtl8411_pcr_ops = {
- 	.force_power_down = rtl8411_force_power_down,
- };
- 
--static const struct pcr_ops rtl8411b_pcr_ops = {
--	.fetch_vendor_settings = rtl8411b_fetch_vendor_settings,
--	.extra_init_hw = rtl8411b_extra_init_hw,
--	.optimize_phy = NULL,
--	.turn_on_led = rtl8411_turn_on_led,
--	.turn_off_led = rtl8411_turn_off_led,
--	.enable_auto_blink = rtl8411_enable_auto_blink,
--	.disable_auto_blink = rtl8411_disable_auto_blink,
--	.card_power_on = rtl8411_card_power_on,
--	.card_power_off = rtl8411_card_power_off,
--	.switch_output_voltage = rtl8411_switch_output_voltage,
--	.cd_deglitch = rtl8411_cd_deglitch,
--	.conv_clk_and_div_n = rtl8411_conv_clk_and_div_n,
--	.force_power_down = rtl8411_force_power_down,
--};
--
- /* SD Pull Control Enable:
-  *     SD_DAT[3:0] ==> pull up
-  *     SD_CD       ==> pull up
-@@ -441,11 +425,10 @@ static const u32 rtl8411b_qfn48_ms_pull_ctl_disable_tbl[] = {
- 	0,
- };
- 
--void rtl8411_init_params(struct rtsx_pcr *pcr)
-+void rtl8411_init_base_params(struct rtsx_pcr *pcr)
- {
- 	pcr->extra_caps = EXTRA_CAPS_SD_SDR50 | EXTRA_CAPS_SD_SDR104;
- 	pcr->num_slots = 2;
--	pcr->ops = &rtl8411_pcr_ops;
- 
- 	pcr->flags = 0;
- 	pcr->card_drive_sel = RTL8411_CARD_DRIVE_DEFAULT;
-@@ -456,45 +439,28 @@ void rtl8411_init_params(struct rtsx_pcr *pcr)
- 	pcr->rx_initial_phase = SET_CLOCK_PHASE(4, 3, 10);
- 
- 	pcr->ic_version = rtl8411_get_ic_version(pcr);
--	pcr->sd_pull_ctl_enable_tbl = rtl8411_sd_pull_ctl_enable_tbl;
--	pcr->sd_pull_ctl_disable_tbl = rtl8411_sd_pull_ctl_disable_tbl;
--	pcr->ms_pull_ctl_enable_tbl = rtl8411_ms_pull_ctl_enable_tbl;
--	pcr->ms_pull_ctl_disable_tbl = rtl8411_ms_pull_ctl_disable_tbl;
- }
- 
--void rtl8411b_init_params(struct rtsx_pcr *pcr)
-+void rtl8411_init_params(struct rtsx_pcr *pcr)
- {
--	pcr->extra_caps = EXTRA_CAPS_SD_SDR50 | EXTRA_CAPS_SD_SDR104;
--	pcr->num_slots = 2;
--	pcr->ops = &rtl8411b_pcr_ops;
--
--	pcr->flags = 0;
--	pcr->card_drive_sel = RTL8411_CARD_DRIVE_DEFAULT;
--	pcr->sd30_drive_sel_1v8 = DRIVER_TYPE_B;
--	pcr->sd30_drive_sel_3v3 = DRIVER_TYPE_D;
--	pcr->aspm_en = ASPM_L1_EN;
--	pcr->tx_initial_phase = SET_CLOCK_PHASE(23, 7, 14);
--	pcr->rx_initial_phase = SET_CLOCK_PHASE(4, 3, 10);
--
--	pcr->ic_version = rtl8411_get_ic_version(pcr);
-+	/* rtl8411 params */
-+	rtl8411_init_base_params(pcr);
-+	set_pull_ctrl_tables(rtl8411);
++static int rtl8402_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
++{
++	u8 mask, val;
++	int err;
 +
-+	/* different with rtl8411 */
-+	switch (PCI_PID(pcr)) {
-+	case 0x5287:
-+		rtl8411_pcr_ops.fetch_vendor_settings =
-+			rtl8411b_fetch_vendor_settings;
-+		rtl8411_pcr_ops.extra_init_hw = rtl8411b_extra_init_hw;
++	mask = (BPP_REG_TUNED18 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_MASK;
++	if (voltage == OUTPUT_3V3) {
++		err = rtsx_pci_write_register(pcr,
++				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_3v3);
++		if (err < 0)
++			return err;
++		val = (BPP_ASIC_3V3 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_3V3;
++	} else if (voltage == OUTPUT_1V8) {
++		err = rtsx_pci_write_register(pcr,
++				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_1v8);
++		if (err < 0)
++			return err;
++		val = (BPP_ASIC_2V0 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_1V8;
++	} else {
++		return -EINVAL;
++	}
 +
-+		if (rtl8411b_is_qfn48(pcr))
-+			set_pull_ctrl_tables(rtl8411b_qfn48);
-+		else
-+			set_pull_ctrl_tables(rtl8411b_qfn64);
++	return rtsx_pci_write_register(pcr, LDO_CTL, mask, val);
++}
++
+ static unsigned int rtl8411_cd_deglitch(struct rtsx_pcr *pcr)
+ {
+ 	unsigned int card_exist;
+@@ -460,6 +485,10 @@ void rtl8411_init_params(struct rtsx_pcr *pcr)
+ 			set_pull_ctrl_tables(rtl8411b_qfn64);
  
--	if (rtl8411b_is_qfn48(pcr)) {
--		pcr->sd_pull_ctl_enable_tbl =
--			rtl8411b_qfn48_sd_pull_ctl_enable_tbl;
--		pcr->sd_pull_ctl_disable_tbl =
--			rtl8411b_qfn48_sd_pull_ctl_disable_tbl;
--		pcr->ms_pull_ctl_enable_tbl =
--			rtl8411b_qfn48_ms_pull_ctl_enable_tbl;
--		pcr->ms_pull_ctl_disable_tbl =
--			rtl8411b_qfn48_ms_pull_ctl_disable_tbl;
--	} else {
--		pcr->sd_pull_ctl_enable_tbl =
--			rtl8411b_qfn64_sd_pull_ctl_enable_tbl;
--		pcr->sd_pull_ctl_disable_tbl =
--			rtl8411b_qfn64_sd_pull_ctl_disable_tbl;
--		pcr->ms_pull_ctl_enable_tbl =
--			rtl8411b_qfn64_ms_pull_ctl_enable_tbl;
--		pcr->ms_pull_ctl_disable_tbl =
--			rtl8411b_qfn64_ms_pull_ctl_disable_tbl;
+ 		break;
++	case 0x5286:
++		rtl8411_pcr_ops.switch_output_voltage =
++			rtl8402_switch_output_voltage;
 +		break;
  	}
-+
-+	pcr->ops = &rtl8411_pcr_ops;
- }
+ 
+ 	pcr->ops = &rtl8411_pcr_ops;
 diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 11e20af..ecc6852 100644
+index ecc6852..865d209 100644
 --- a/drivers/mfd/rtsx_pcr.c
 +++ b/drivers/mfd/rtsx_pcr.c
-@@ -1046,10 +1046,6 @@ static int rtsx_pci_init_chip(struct rtsx_pcr *pcr)
- 		rts5229_init_params(pcr);
- 		break;
+@@ -57,6 +57,7 @@ static DEFINE_PCI_DEVICE_TABLE(rtsx_pci_ids) = {
+ 	{ PCI_DEVICE(0x10EC, 0x5227), PCI_CLASS_OTHERS << 16, 0xFF0000 },
+ 	{ PCI_DEVICE(0x10EC, 0x5249), PCI_CLASS_OTHERS << 16, 0xFF0000 },
+ 	{ PCI_DEVICE(0x10EC, 0x5287), PCI_CLASS_OTHERS << 16, 0xFF0000 },
++	{ PCI_DEVICE(0x10EC, 0x5286), PCI_CLASS_OTHERS << 16, 0xFF0000 },
+ 	{ 0, }
+ };
  
--	case 0x5289:
--		rtl8411_init_params(pcr);
--		break;
--
- 	case 0x5227:
- 		rts5227_init_params(pcr);
- 		break;
-@@ -1059,7 +1055,8 @@ static int rtsx_pci_init_chip(struct rtsx_pcr *pcr)
- 		break;
+@@ -1056,6 +1057,7 @@ static int rtsx_pci_init_chip(struct rtsx_pcr *pcr)
  
  	case 0x5287:
--		rtl8411b_init_params(pcr);
-+	case 0x5289:
-+		rtl8411_init_params(pcr);
+ 	case 0x5289:
++	case 0x5286:
+ 		rtl8411_init_params(pcr);
  		break;
  	}
- 
-diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
-index 947e79b..dd435d7 100644
---- a/drivers/mfd/rtsx_pcr.h
-+++ b/drivers/mfd/rtsx_pcr.h
-@@ -32,7 +32,6 @@ void rts5229_init_params(struct rtsx_pcr *pcr);
- void rtl8411_init_params(struct rtsx_pcr *pcr);
- void rts5227_init_params(struct rtsx_pcr *pcr);
- void rts5249_init_params(struct rtsx_pcr *pcr);
--void rtl8411b_init_params(struct rtsx_pcr *pcr);
- 
- static inline u8 map_sd_drive(int idx)
- {
-@@ -63,4 +62,12 @@ static inline u8 map_sd_drive(int idx)
- #define rtl8411_reg_to_sd30_drive_sel_3v3(reg)	(((reg) >> 5) & 0x07)
- #define rtl8411b_reg_to_sd30_drive_sel_3v3(reg)	((reg) & 0x03)
- 
-+#define set_pull_ctrl_tables(__device)				\
-+do {								\
-+	pcr->sd_pull_ctl_enable_tbl  = __device##_sd_pull_ctl_enable_tbl;  \
-+	pcr->sd_pull_ctl_disable_tbl = __device##_sd_pull_ctl_disable_tbl; \
-+	pcr->ms_pull_ctl_enable_tbl  = __device##_ms_pull_ctl_enable_tbl;  \
-+	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
-+} while (0)
-+
- #endif
 -- 
 1.7.9.5
 
