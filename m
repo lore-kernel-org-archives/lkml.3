@@ -1,127 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab3KOGiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 01:38:09 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:48000 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab3KOGiG (ORCPT
+	id S1754797Ab3KOGko (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 01:40:44 -0500
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:51453
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751472Ab3KOGkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 01:38:06 -0500
-Date: Fri, 15 Nov 2013 07:38:02 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Azat Khuzhin <a3at.mail@gmail.com>, Bill Gray <bgray@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Joe Mario <jmario@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Richard Fowles <rfowles@redhat.com>, stable@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>, v.karpov@samsung.com,
-        Waiman Long <Waiman.Long@hp.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/10] perf/core improvements and fixes
-Message-ID: <20131115063802.GC12442@gmail.com>
-References: <1384460715-23198-1-git-send-email-acme@infradead.org>
+	Fri, 15 Nov 2013 01:40:36 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 15 Nov 2013 14:42:01 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Nicolin Chen <b42378@freescale.com>
+CC: <timur@tabi.org>, <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
+        <linux@arm.linux.org.uk>, <ijc+devicetree@hellion.org.uk>,
+        <swarren@wwwdotorg.org>, <mark.rutland@arm.com>, <pawel.moll@arm.com>,
+        <rob.herring@calxeda.com>, <lgirdwood@gmail.com>
+Subject: Re: [PATCH 1/2] ARM: dts: imx: specify the value of audmux pinctrl
+ instead of 0x80000000
+Message-ID: <20131115064159.GG11014@S2101-09.ap.freescale.net>
+References: <1384427230-979-1-git-send-email-b42378@freescale.com>
+ <1384427230-979-2-git-send-email-b42378@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1384460715-23198-1-git-send-email-acme@infradead.org>
+In-Reply-To: <1384427230-979-2-git-send-email-b42378@freescale.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 14, 2013 at 07:07:09PM +0800, Nicolin Chen wrote:
+> We must specify the value of audmux pinctrl if we want to use pinctrl_pm().
+> Thus change bypass value 0x80000000 to what we exactly need.
+> 
+> This patch also seperately unset PUE bit for TXD so that IOMUX won't pull
+> up/down the pin after turning into tristate. When we use SSI normal mode to
+> playback monaural audio via I2S signal, there'd be a pulled curve occur to
+> its signal at the second slot if setting PUE bit for TXD. And it will make
+> the second channel to play a constant noise. So by keeping the signal level
+> in the second slot, we can get a constant high level signal (-1) or a low
+> level one (0).
+> 
+> Signed-off-by: Nicolin Chen <b42378@freescale.com>
+> ---
+>  arch/arm/boot/dts/imx6qdl.dtsi | 22 +++++++++++-----------
+>  1 file changed, 11 insertions(+), 11 deletions(-)
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+We have moved all pin groups settings into
+arch/arm/boot/dts/imx6qdl-pingrp.h.  I just rebased and applied the
+patch.  Please check my imx/dt branch and ensure I applied the changes
+correctly.
 
-> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> 
-> Hi Ingo,
-> 
-> 	Please consider pulling, done on top of tip/perf/urgent.
-> 
-> - Arnaldo
-> 
-> The following changes since commit e310718d0e83aeb9969264dc577c45db16d9104d:
-> 
->   tools/perf/build: Fix feature-libunwind-debug-frame handling (2013-11-14 18:00:45 +0100)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 539e6bb71e350541105e67e3d6c31392d9da25ef:
-> 
->   perf record: Add an option to force per-cpu mmaps (2013-11-14 16:10:27 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> . Synthesize anon MMAP records again, fix from Don Zickus.
-> 
-> . Add an option in 'perf record' to force per-cpu mmaps, from Adrian Hunter.
-> 
-> . Limit max callchain using max_stack on DWARF unwinding too.
-> 
-> . Fix segfault in the UI browser caused by off by one handling END key.
-> 
-> . Add '--demangle'/'--no-demangle' to perf probe, so that we can overcome
->   current limitations in handling C++ symbols, from Azat Khuzhin .
-> 
-> . Tweak 'perf trace' summary output, from Pekka Enberg.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Adrian Hunter (1):
->       perf record: Add an option to force per-cpu mmaps
-> 
-> Arnaldo Carvalho de Melo (4):
->       perf tools: Use perf_evlist__{first,last}, perf_evsel__next
->       perf evsel: Introduce perf_evsel__prev() method
->       perf symbols: Limit max callchain using max_stack on DWARF unwinding too
->       perf ui browser: Fix segfault caused by off by one handling END key
-> 
-> Azat Khuzhin (1):
->       perf probe: Add '--demangle'/'--no-demangle'
-> 
-> Davidlohr Bueso (1):
->       perf tools: Remove trivial extra semincolon
-> 
-> Don Zickus (1):
->       perf tools: Synthesize anon MMAP records again
-> 
-> Ingo Molnar (1):
->       perf top: Add missing newline if the 'uid' is invalid
-> 
-> Pekka Enberg (1):
->       perf trace: Tweak summary output
-> 
->  tools/perf/Documentation/perf-record.txt |  6 ++++++
->  tools/perf/builtin-probe.c               |  2 ++
->  tools/perf/builtin-record.c              |  2 ++
->  tools/perf/builtin-top.c                 |  4 ++--
->  tools/perf/builtin-trace.c               | 10 +++++-----
->  tools/perf/tests/parse-events.c          |  3 +--
->  tools/perf/ui/browser.c                  |  4 ++--
->  tools/perf/ui/browsers/hists.c           | 11 +++++------
->  tools/perf/util/event.c                  |  6 ++++--
->  tools/perf/util/evlist.c                 |  6 ++++--
->  tools/perf/util/evsel.c                  |  4 ++--
->  tools/perf/util/evsel.h                  |  5 +++++
->  tools/perf/util/machine.c                |  2 +-
->  tools/perf/util/target.h                 |  1 +
->  tools/perf/util/unwind.c                 |  9 +++++----
->  tools/perf/util/unwind.h                 |  5 +++--
->  16 files changed, 50 insertions(+), 30 deletions(-)
+Shawn
 
-Pulled, thanks a lot Arnaldo!
+> 
+> diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
+> index 6e096ca..6b76e55 100644
+> --- a/arch/arm/boot/dts/imx6qdl.dtsi
+> +++ b/arch/arm/boot/dts/imx6qdl.dtsi
+> @@ -601,27 +601,27 @@
+>  				audmux {
+>  					pinctrl_audmux_1: audmux-1 {
+>  						fsl,pins = <
+> -							MX6QDL_PAD_SD2_DAT0__AUD4_RXD  0x80000000
+> -							MX6QDL_PAD_SD2_DAT3__AUD4_TXC  0x80000000
+> -							MX6QDL_PAD_SD2_DAT2__AUD4_TXD  0x80000000
+> -							MX6QDL_PAD_SD2_DAT1__AUD4_TXFS 0x80000000
+> +							MX6QDL_PAD_SD2_DAT0__AUD4_RXD  0x130b0
+> +							MX6QDL_PAD_SD2_DAT3__AUD4_TXC  0x130b0
+> +							MX6QDL_PAD_SD2_DAT2__AUD4_TXD  0x110b0
+> +							MX6QDL_PAD_SD2_DAT1__AUD4_TXFS 0x130b0
+>  						>;
+>  					};
+>  
+>  					pinctrl_audmux_2: audmux-2 {
+>  						fsl,pins = <
+> -							MX6QDL_PAD_CSI0_DAT7__AUD3_RXD  0x80000000
+> -							MX6QDL_PAD_CSI0_DAT4__AUD3_TXC  0x80000000
+> -							MX6QDL_PAD_CSI0_DAT5__AUD3_TXD  0x80000000
+> -							MX6QDL_PAD_CSI0_DAT6__AUD3_TXFS 0x80000000
+> +							MX6QDL_PAD_CSI0_DAT7__AUD3_RXD  0x130b0
+> +							MX6QDL_PAD_CSI0_DAT4__AUD3_TXC  0x130b0
+> +							MX6QDL_PAD_CSI0_DAT5__AUD3_TXD  0x110b0
+> +							MX6QDL_PAD_CSI0_DAT6__AUD3_TXFS 0x130b0
+>  						>;
+>  					};
+>  
+>  					pinctrl_audmux_3: audmux-3 {
+>  						fsl,pins = <
+> -							MX6QDL_PAD_DISP0_DAT16__AUD5_TXC  0x80000000
+> -							MX6QDL_PAD_DISP0_DAT18__AUD5_TXFS 0x80000000
+> -							MX6QDL_PAD_DISP0_DAT19__AUD5_RXD  0x80000000
+> +							MX6QDL_PAD_DISP0_DAT16__AUD5_TXC  0x130b0
+> +							MX6QDL_PAD_DISP0_DAT18__AUD5_TXFS 0x130b0
+> +							MX6QDL_PAD_DISP0_DAT19__AUD5_RXD  0x130b0
+>  						>;
+>  					};
+>  				};
+> -- 
+> 1.8.4
+> 
+> 
 
-	Ingo
