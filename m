@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab3KOHZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 02:25:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50326 "EHLO
+	id S1756550Ab3KOH0P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 02:26:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50371 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939Ab3KOHZM (ORCPT
+	with ESMTP id S1756250Ab3KOH0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 02:25:12 -0500
-Date: Thu, 14 Nov 2013 23:24:59 -0800
-From: tip-bot for Don Zickus <tipbot@zytor.com>
-Message-ID: <tip-bo4akalno7579shpz29u867j@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, jmario@redhat.com, rfowles@redhat.com,
-        jolsa@redhat.com, tglx@linutronix.de, bgray@redhat.com,
-        dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, jmario@redhat.com,
-        jolsa@redhat.com, rfowles@redhat.com, bgray@redhat.com,
-        tglx@linutronix.de, dzickus@redhat.com
+	Fri, 15 Nov 2013 02:26:04 -0500
+Date: Thu, 14 Nov 2013 23:25:18 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-d09l4lejp5427enuf3igpckw@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Synthesize anon MMAP records again
-Git-Commit-ID: 9d4ecc8893832337daf241236841db966fa53489
+Subject: [tip:perf/urgent] perf evsel: Introduce perf_evsel__prev() method
+Git-Commit-ID: d87fcb4a2d990ba2de9284ede84a816c5066d54b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,65 +31,66 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 14 Nov 2013 23:25:05 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 14 Nov 2013 23:25:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9d4ecc8893832337daf241236841db966fa53489
-Gitweb:     http://git.kernel.org/tip/9d4ecc8893832337daf241236841db966fa53489
-Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Wed, 13 Nov 2013 15:32:06 -0300
+Commit-ID:  d87fcb4a2d990ba2de9284ede84a816c5066d54b
+Gitweb:     http://git.kernel.org/tip/d87fcb4a2d990ba2de9284ede84a816c5066d54b
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Wed, 13 Nov 2013 15:56:40 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 14 Nov 2013 16:00:01 -0300
+CommitDate: Thu, 14 Nov 2013 16:00:16 -0300
 
-perf tools: Synthesize anon MMAP records again
+perf evsel: Introduce perf_evsel__prev() method
 
-When introducing the PERF_RECORD_MMAP2 in:
+Just one use so far, on the hists browser, for completeness since there
+we use perf_evlist__{first,last} and perf_evsel__next() for handling the
+TAB and UNTAB keys.
 
-5c5e854bc760 perf tools: Add attr->mmap2 support
-
-A check for the number of entries parsed by sscanf was introduced that
-assumed all of the 8 fields needed to be correctly parsed so that
-particular /proc/pid/maps line would be considered synthesizable.
-
-That broke anon records synthesizing, as it doesn't have the 'execname'
-field.
-
-Fix it by keeping the sscanf return check, changing it to not require
-that the 'execname' variable be parsed, so that the preexisting logic
-can kick in and set it to '//anon'.
-
-This should get things like JIT profiling working again.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: Bill Gray <bgray@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Joe Mario <jmario@redhat.com>
-Cc: Richard Fowles <rfowles@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/n/tip-bo4akalno7579shpz29u867j@git.kernel.org
-[ commit log message is mine, dzickus reported the problem with a patch ]
+Link: http://lkml.kernel.org/n/tip-d09l4lejp5427enuf3igpckw@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/event.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ tools/perf/ui/browsers/hists.c | 2 +-
+ tools/perf/util/evsel.h        | 5 +++++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 6e3a846..bb788c1 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -209,8 +209,10 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		       &event->mmap.start, &event->mmap.len, prot,
- 		       &event->mmap.pgoff,
- 		       execname);
--
--		if (n != 5)
-+		/*
-+ 		 * Anon maps don't have the execname.
-+ 		 */
-+		if (n < 4)
- 			continue;
- 		/*
- 		 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 089fd37..a440e03 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1855,7 +1855,7 @@ browse_hists:
+ 				if (pos->node.prev == &evlist->entries)
+ 					pos = perf_evlist__last(evlist);
+ 				else
+-					pos = list_entry(pos->node.prev, struct perf_evsel, node);
++					pos = perf_evsel__prev(pos);
+ 				goto browse_hists;
+ 			case K_ESC:
+ 				if (!ui_browser__dialog_yesno(&menu->b,
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index f502965..1ea7c92 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -279,6 +279,11 @@ static inline struct perf_evsel *perf_evsel__next(struct perf_evsel *evsel)
+ 	return list_entry(evsel->node.next, struct perf_evsel, node);
+ }
+ 
++static inline struct perf_evsel *perf_evsel__prev(struct perf_evsel *evsel)
++{
++	return list_entry(evsel->node.prev, struct perf_evsel, node);
++}
++
+ /**
+  * perf_evsel__is_group_leader - Return whether given evsel is a leader event
+  *
