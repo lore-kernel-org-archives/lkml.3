@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab3KOOS7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:18:59 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48281 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751723Ab3KOOSw (ORCPT
+	id S1753036Ab3KOOUl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:20:41 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:48506 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438Ab3KOOUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:18:52 -0500
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: wm5110: Correct default for register LDO2 Control 1
-Date: Fri, 15 Nov 2013 14:03:19 +0000
-Message-Id: <1384524199-7358-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	Fri, 15 Nov 2013 09:20:36 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] ARM: kirkwood: mark guruplug sdio as non-removable
+Date: Fri, 15 Nov 2013 15:20:25 +0100
+Message-Id: <1384525225-591-2-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1384525225-591-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1384525225-591-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm5110-tables.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Globalscale Guruplug has AW-GH381 WiFi/BT on sdio which is always
+present and cannot be detected in any way. Therefore, mark the node
+as non-removable instead of broken-cd. While at it, also put a note
+about connected WiFi/BT chip above.
 
-diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
-index bf8b3b5..d3d7531 100644
---- a/drivers/mfd/wm5110-tables.c
-+++ b/drivers/mfd/wm5110-tables.c
-@@ -504,7 +504,7 @@ static const struct reg_default wm5110_reg_default[] = {
- 	{ 0x000001AA, 0x0004 },    /* R426   - FLL2 GPIO Clock */
- 	{ 0x00000200, 0x0006 },    /* R512   - Mic Charge Pump 1 */
- 	{ 0x00000210, 0x0184 },    /* R528   - LDO1 Control 1 */
--	{ 0x00000213, 0x0344 },    /* R531   - LDO2 Control 1 */
-+	{ 0x00000213, 0x03E4 },    /* R531   - LDO2 Control 1 */
- 	{ 0x00000218, 0x01A6 },    /* R536   - Mic Bias Ctrl 1 */
- 	{ 0x00000219, 0x01A6 },    /* R537   - Mic Bias Ctrl 2 */
- 	{ 0x0000021A, 0x01A6 },    /* R538   - Mic Bias Ctrl 3 */
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: devicetree@vger.kernel.org 
+Cc: linux-arm-kernel@lists.infradead.org 
+Cc: linux-kernel@vger.kernel.org 
+---
+ .../arm/boot/dts/kirkwood-guruplug-server-plus.dts |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
+index 6548b9d..4ebe720 100644
+--- a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
++++ b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
+@@ -65,10 +65,10 @@
+ 			nr-ports = <1>;
+ 		};
+ 
++		/* AzureWave AW-GH381 WiFi/BT */
+ 		mvsdio@90000 {
+ 			status = "okay";
+-			/* No CD or WP GPIOs */
+-			broken-cd;
++			non-removable;
+ 		};
+ 	};
+ 
 -- 
 1.7.2.5
 
