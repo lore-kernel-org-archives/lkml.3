@@ -1,107 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab3KOKWc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 05:22:32 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:47277 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab3KOKWX (ORCPT
+	id S1755158Ab3KOKWk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 05:22:40 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:37155 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753155Ab3KOKWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 05:22:23 -0500
+	Fri, 15 Nov 2013 05:22:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <5285EE5A.1070202@southpole.se>
-References: <1384029451-16555-1-git-send-email-geert@linux-m68k.org>
-	<5285EE5A.1070202@southpole.se>
-Date: Fri, 15 Nov 2013 11:22:22 +0100
-X-Google-Sender-Auth: GivS5x12hRXo5Sg2OIiYohVtVaI
-Message-ID: <CAMuHMdWA-9ax=NG_d0tyfzY3+42Ka7_r+jTeF-m5oW0eV8t1=g@mail.gmail.com>
-Subject: Re: [PATCH] openrisc: Add DTS and defconfig for DE0-Nano
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jonas Bonn <jonas@southpole.se>
-Cc: linux@openrisc.net,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Mehall <contact@kevinmehall.net>,
-        Marek Czerski <ma.czerski@gmail.com>,
-        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1384503334-18809-1-git-send-email-tianyu.lan@intel.com>
+References: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com>
+	<1384503334-18809-1-git-send-email-tianyu.lan@intel.com>
+Date: Fri, 15 Nov 2013 15:52:24 +0530
+Message-ID: <CAKohpokjtaCJj3QCDyoQ+1UviLX8ZSnpWk05Jh4U02pmrq897g@mail.gmail.com>
+Subject: Re: [Update PATCH 1/1] Cpufreq: Make governor data on nonboot cpus
+ across system suspend/resume
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonas,
-
-On Fri, Nov 15, 2013 at 10:50 AM, Jonas Bonn <jonas@southpole.se> wrote:
->> +++ b/arch/openrisc/boot/dts/de0_nano.dts
->> @@ -0,0 +1,158 @@
->> +/dts-v1/;
->> +/ {
->> +       compatible = "opencores,de0_nano";
+On 15 November 2013 13:45, Lan Tianyu <tianyu.lan@intel.com> wrote:
+> Currently, governor of nonboot cpus will be put to EXIT when system suspend.
+> Since all these cpus will be unplugged and the governor usage_count decreases
+> to zero. The governor data and its sysfs interfaces will be freed or released.
+> This makes user config of these governors loss during suspend and resume.
 >
-> This should probably be "altera,de0_nano".  We also need to put a version
-
-"terasic,de0_nano"? The board says "Designed and manufactured by Terasic".
-Hmm, the sticker on the box says "Altera DE0-Nano".
-
-> number of some kind on this thing.  How are the de0_nano boards versioned?
-
-That's a good question...
-
-See also Andrew back's email and my response.
-
-The supplied schematics filename is de0-nano-c4-rev-c\(release_cd_rom\).pdf,
-and the drawings mention "Rev C".
-The block diagram on page 2 still says "EPCS16 (16 Mb), but on page 8 it
-mentions "EPCS64", which is what's on my board.
-
->> +       i2c0: ocores@a0000000 {
->> +               #address-cells = <1>;
->> +               #size-cells = <0>;
->> +               compatible = "opencores,i2c-ocores";
+> This doesn't happen on the governor covering boot cpu because it isn't
+> unplugged during system suspend.
 >
+> To fix this issue, skipping governor exit during system suspend and check
+> policy governor data to determine whether the governor is really needed
+> to be initialized when do init. If not, return EALREADY to indicate the
+> governor has been initialized and should do nothing. __cpufreq_governor()
+> convert EALREADY to 0 as return value for INIT event since governor is
+> still under INIT state and can do START operation.
 >
-> Version number needed.  OpenCores wanted "projectname-rtlsvn###" where ###
-> is the SVN commit number of the RTL directory in the project's source
-> repository.
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
 
-That's gonna need some information diving, as Stefan's orpsoc git repositories
-only contains references to orpsocv2 git-svn-ids, not the svn ids of
-the original
-component repositories.
+Hi Lan..
 
->> +       gpio0: gpio@91000000 {
->> +               compatible = "opencores,jbtrivial";
->
->
-> There's no project called 'jbtrivial' at OpenCores.  Should this be
-> "linux,jbtrivial" to indicate that this refers to a Linux driver?
->
->> +               reg = <0x91000000 0x2>;
->> +               #gpio-cells = <2>;
->> +               gpio-controller;
->> +               xlnx,data-offset = <0>;
->> +               xlnx,tri-offset = <1>;
->> +               xlnx,gpio-width = <8>;
->
->
-> Yuck... I wrote this driver with a similar driver for a Xilinx part as a
-> starting point.  Apparently I left the Xilenx (xlnx) tags in there for the
-> device properties.  We can't really have it like this, though.
->
-> Like I mentioned earlier, I'd like to see this thing disappear altogether
-> and be replaced with gpio-generic.
+Apologies!!
 
-That needs device-tree support and published bindings first. IIRC, you
-had some preliminary code?
+I already had a solution for this as this was reported by few Broadcom people
+as well. But I haven't send it to mainline yet as it was untested. It
+looked similar
+to what you had..
 
-Thanks for review!
+And so I would have taken your patch (as you have sent it first to the list and
+there is no real advantage of my patch over yours, they were almost same) :)
 
-Gr{oetje,eeting}s,
+But then I went chasing another bug posted by Nishant:
 
-                        Geert
+https://lkml.org/lkml/2013/10/24/369
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+And the final solution I have to write solved all the problems you and he
+reported.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Please have a look at that patch (you are cc'd) and give it a try to see
+if it fixes your problem..
+
+Btw, One question about your setup:
+- you must have a multi cluster/socket SoC as you have atleast one more
+policy structure than used for group containing boot cpu..
+- Are you using separate governor for both groups?
+- Or are you using CPUFREQ_HAVE_GOVERNOR_PER_POLICY stuff
+to use same governor with separate tunables for both groups?
+
+Just wanted to know if somebody else is also using
+CPUFREQ_HAVE_GOVERNOR_PER_POLICY :)
