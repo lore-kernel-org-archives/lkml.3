@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab3KOTxa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 14:53:30 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:51422 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab3KOTx0 (ORCPT
+	id S1752746Ab3KOTz7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 14:55:59 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:38281 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab3KOTzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 14:53:26 -0500
+	Fri, 15 Nov 2013 14:55:54 -0500
 MIME-Version: 1.0
-Date: Fri, 15 Nov 2013 17:53:25 -0200
-Message-ID: <CAGG-pUSG0sngtW_F3j=Koa1KmjsLKE-2RU9Jy5Zm_=eUoe5rOg@mail.gmail.com>
-Subject: [RFC] drivers/scsi/dc395x.c - msgin_qtag()
-From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
-To: Oliver Neukum <oliver@neukum.org>, Ali Akcaagac <aliakc@web.de>,
-        Jamie Lenehan <lenehan@twibble.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>, dc395x@twibble.org
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        hch@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAMP44s0q06Qe9BTHTaamFNkic+8_ecATXVACRVNqpRDqw6r5Qg@mail.gmail.com>
+References: <1384180814-21823-1-git-send-email-felipe.contreras@gmail.com>
+	<20131113000358.GA2420@gmail.com>
+	<CAMP44s17p0ZpFx0Y2E_K7Oq9c4tk2J+9uXRWDYChAD-yM-4JjQ@mail.gmail.com>
+	<52850B89.10605@linux.com>
+	<52853fe6b0fd9_bf6d31e7c1a@nysa.notmuch>
+	<CAMP44s0kGhPvuVZMe4zpmqFLtxrLW2gBPu6eHg0G6DFYKNpW7Q@mail.gmail.com>
+	<52861DCB.9020206@linux.com>
+	<CAMP44s0q06Qe9BTHTaamFNkic+8_ecATXVACRVNqpRDqw6r5Qg@mail.gmail.com>
+Date: Fri, 15 Nov 2013 11:55:53 -0800
+X-Google-Sender-Auth: G79JDSgGVeThFmEV-_6vWv2TBC8
+Message-ID: <CA+55aFwGGutF+6dioSFTEsMfXeJysjkt+W_z+qYL7widL2uTtA@mail.gmail.com>
+Subject: Re: [PATCH v2] panic: setup panic_timeout early
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Levente Kurusa <levex@linux.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Fri, Nov 15, 2013 at 11:33 AM, Felipe Contreras
+<felipe.contreras@gmail.com> wrote:
+>
+> I am irrelevant, the code is what matter
 
-In the function msgin_qtag() [line 2632], this dereference was intentional?
+Not so. You are relevant in the sense that you need to communicate why
+people should take patches from you.
 
-static struct ScsiReqBlk *msgin_qtag(struct AdapterCtlBlk *acb,
-        struct DeviceCtlBlk *dcb, u8 tag)
-{
-    struct ScsiReqBlk *srb = NULL;
-    struct ScsiReqBlk *i;
-    dprintkdbg(DBG_0, "msgin_qtag: (0x%p) tag=%i srb=%p\n",
-           srb->cmd, tag, srb);
-...
+I know people who just put you in their kill-files because they can't
+bother with the endless argumentative flames you generate. At which
+point all the code you produce is kind of irrelevant, because people
+won't see it.
 
-There is a srb (NULL) dereference in the dprintkdbg() parameteres.
+Seriously, felipe. You pissed off Junio, who is *hard* to annoy. Just
+learn from your mistakes, instead of repeating them over and over.
 
-If not, what approach do you suggest me for a patch?
+It's not just code. You need to also explain *why* people should apply
+it, and stop the f*cking idiotic arguing every time somebody comments
+about your patches.
 
--- 
-Regards,
+Because it literally seems to be *EVERY* single time.
 
-Geyslan G. Bem
-hackingbits.com
+          Linus
