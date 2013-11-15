@@ -1,15 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab3KOSnU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 13:43:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59114 "EHLO mx1.redhat.com"
+	id S1752909Ab3KOSrQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 13:47:16 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57670 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015Ab3KOSnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 13:43:02 -0500
-Date: Fri, 15 Nov 2013 13:30:02 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+	id S1751338Ab3KOSrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 13:47:07 -0500
+Message-ID: <52866C0D.3050006@zytor.com>
+Date: Fri, 15 Nov 2013 10:46:37 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>,
         jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
         Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
@@ -19,86 +22,30 @@ Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>,
         "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
         linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH 0/3] Early use of boot service memory
-Message-ID: <20131115183002.GE6637@redhat.com>
-References: <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
- <20131114180455.GA32212@anatevka.fc.hp.com>
- <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
- <20131115005049.GJ5116@anatevka.fc.hp.com>
- <20131115062417.GB9237@gmail.com>
- <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
- <5285C639.5040203@zytor.com>
- <20131115140738.GB6637@redhat.com>
- <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
- <52865CA1.5020309@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52865CA1.5020309@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com> <20131114180455.GA32212@anatevka.fc.hp.com> <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com> <20131115005049.GJ5116@anatevka.fc.hp.com> <20131115062417.GB9237@gmail.com> <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com> <5285C639.5040203@zytor.com> <20131115140738.GB6637@redhat.com> <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com> <52865CA1.5020309@zytor.com> <20131115183002.GE6637@redhat.com>
+In-Reply-To: <20131115183002.GE6637@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 09:40:49AM -0800, H. Peter Anvin wrote:
-> On 11/15/2013 09:33 AM, Yinghai Lu wrote:
-> > 
-> > If the system support intel IOMMU, we only need to that 72M for SWIOTLB
-> > or AMD workaround.
-> > If the user really care that for intel iommu enable system, they could use
-> > "crashkernel=0,low" to have that 72M back.
-> > 
-> > and that 72M is under 4G instead of 896M.
-> > 
-> > so reserve 72M is not better than reserve 128M?
-> > 
+On 11/15/2013 10:30 AM, Vivek Goyal wrote:
 > 
-> Those 72M are in addition to 128M, which does add up quite a bit.
-> However, the presence of a working IOMMU in the system is something that
-> should be possible to know at setup time.
+> I agree taking assistance of hypervisor should be useful.
+> 
+> One reason we use kdump for VM too because it makes life simple. There
+> is no difference in how we configure, start and manage crash dumps
+> in baremetal or inside VM. And in practice have not heard of lot of
+> failures of kdump in VM environment.
+> 
+> So while reliability remains a theoritical concern, in practice it
+> has not been a real concern and that's one reason I think we have
+> not seen a major push for alternative method in VM environment.
 > 
 
-And IOMMU support is very flaky with kdump. And IOMMU's can be turned
-off at command line. And that would force one to remove crahkernel_low=0.
-So change of one command line option forces change of another. It is
-complicated.
+Another reason, again, is that it doesn't sit on all that memory.
 
-Also there are very few systems which work with IOMMU on. A lot more
-which work without IOMMU. We have all these DMAR issues and still nobody
-has been able to address IOMMU issues properly.
+	-hpa
 
-> Now, this was discussed partly in the context of VMs.  I want to say, as
-> I have again and again: the right way to dump a VM is with hypervisor
-> assistance rather than an in-image dumper which is both expensive and
-> may be corrupted by the failure.
-
-I agree taking assistance of hypervisor should be useful.
-
-One reason we use kdump for VM too because it makes life simple. There
-is no difference in how we configure, start and manage crash dumps
-in baremetal or inside VM. And in practice have not heard of lot of
-failures of kdump in VM environment.
-
-So while reliability remains a theoritical concern, in practice it
-has not been a real concern and that's one reason I think we have
-not seen a major push for alternative method in VM environment.
-
-> 
-> It would be good if the various VMs with interest in Linux would agree
-> on a mechanism for launching a dumper.  This can be done either inband
-> (on the execution of a specific hypercall, the hypervisor terminates I/O
-> to the guest, inserts a dumper into the address space and launches it)
-> or out-of-band (the hypervisor itself, or an assistant program, writes a
-> dump file) or as a hybrid (a new dump guest is launched with the
-> hypervisor-written or hypervisor-preserved crashed guest image somehow
-> passed to it.)
-
-virsh can take dumps of KVM guest, so hypervisor calling out to an
-assistant program might help here.
-
-Anyway, we will gladly use any new dump mechanism for VM once things
-start working seamlessly. So till all this materializes, forcing user
-to reserve that extra 72M concerns me (both in bare-metal and virtualized
-environments).
-
-Thanks
-Vivek
