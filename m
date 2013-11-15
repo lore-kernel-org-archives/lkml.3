@@ -1,84 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab3KOPal (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 10:30:41 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55572 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751262Ab3KOPae (ORCPT
+	id S1752245Ab3KOPdF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 10:33:05 -0500
+Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.100]:17123
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750924Ab3KOPc4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 10:30:34 -0500
-Date: Fri, 15 Nov 2013 15:30:15 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Marek Belisko <marek@goldelico.com>
-Cc: "arnd@arndb.de" <arnd@arndb.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "neilb@suse.de" <neilb@suse.de>,
-        "hns@goldelico.com" <hns@goldelico.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] misc: bmp085: Add DT bindings for EOC gpio line
- and direct irq.
-Message-ID: <20131115153015.GD24831@e106331-lin.cambridge.arm.com>
-References: <1384465609-26485-1-git-send-email-marek@goldelico.com>
- <1384465609-26485-3-git-send-email-marek@goldelico.com>
+	Fri, 15 Nov 2013 10:32:56 -0500
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384465609-26485-3-git-send-email-marek@goldelico.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: XMAS PROMOTION
+To: Recipients <81@MoorePeter249.onmicrosoft.com>
+From: Peter Moore <81@MoorePeter249.onmicrosoft.com>
+Date: Fri, 15 Nov 2013 20:47:03 +0530
+Reply-To: <qatarfoundationwin@hotmail.com>
+Message-ID: <514e8912-7224-4ed6-a6fa-13eaaf30deb3@HKXPR01MB037.apcprd01.prod.exchangelabs.com>
+X-Originating-IP: [180.215.45.240]
+X-ClientProxiedBy: BN1PR06CA012.namprd06.prod.outlook.com (10.141.56.32) To
+ HKXPR01MB037.apcprd01.prod.exchangelabs.com (10.242.99.11)
+X-Forefront-PRVS: 0031A0FFAF
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(76482001)(65816001)(31686002)(221733001)(81342001)(17643785005)(59766001)(42186004)(54356001)(33646001)(43066001)(77096001)(47446002)(23756003)(81686001)(74366001)(87266001)(76786001)(74502001)(63696002)(76796001)(77982001)(51856001)(76176001)(79102001)(56816003)(46102001)(66066001)(80022001)(69226001)(87976001)(53256004)(74662001)(47976001)(81816001)(47776003)(54316002)(81542001)(56776001)(4396001)(50986001)(74876001)(558084003)(19580395003)(47736001)(49866001)(83072001)(19580405001)(83322001)(85306002)(74706001)(50466002)(80976001)(74316001)(64872004)(84722001);DIR:OUT;SFP:1501;SCL:5;SRVR:HKXPR01MB037;H:[180.215.45.240];CLIP:180.215.45.240;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: MoorePeter249.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 09:46:48PM +0000, Marek Belisko wrote:
-> Signed-off-by: Marek Belisko <marek@goldelico.com>
-> ---
->  Documentation/devicetree/bindings/misc/bmp085.txt |  8 ++++
->  drivers/misc/bmp085.c                             | 53 ++++++++++++++++++++---
->  2 files changed, 55 insertions(+), 6 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/misc/bmp085.txt b/Documentation/devicetree/bindings/misc/bmp085.txt
-> index 91dfda2..c6033d5 100644
-> --- a/Documentation/devicetree/bindings/misc/bmp085.txt
-> +++ b/Documentation/devicetree/bindings/misc/bmp085.txt
-> @@ -8,6 +8,9 @@ Optional properties:
->  - temp-measurement-period: temperature measurement period (milliseconds)
->  - default-oversampling: default oversampling value to be used at startup,
->    value range is 0-3 with rising sensitivity.
-> +- gpio: if device is using EOC irq line gpio can be specified to setup interrupt
-> +  handling
-> +- irq: interrupt with no gpio
->  
->  Example:
->  
-> @@ -17,4 +20,9 @@ pressure@77 {
->  	chip-id = <10>;
->  	temp-measurement-period = <100>;
->  	default-oversampling = <2>;
-> +	gpio = <&gpio0 17 0>;
-> +
-> +	OR
-> +
-> +	irq = <75>;
-
-There's some contention over the description of gpio-based IRQs in DT.
->From the point of view of the device there is a logical IRQ output; the
-fact that this happens to be wired up to a GPIO pin that can happen to
-generate interrupts isn't anything to do with the device itself. There
-are plenty of device we have now whose interrupt lines could be wired to
-GPIOs. I see no reason to extend their bindings to support explicit
-GPIOs for IRQs, and I see no reason the driver should have to handle
-this.
-
-It would be far nicer for the device binding to just have the interrupts
-property, and for the gpio controller to act as an interrupt-controller,
-with the appropriate pin management.
-
-Thanks,
-Mark.
+CONGRATULATIONS! YOU HAVE BEEN AWARDED 1 MILLION POUNDS FROM QATAR
+FOUNDATION XMAS PROMOTION..CONTACT FOR MORE INFORMATION.qatarfoundationwin@hotmail.com
