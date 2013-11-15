@@ -1,82 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab3KOWwy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 17:52:54 -0500
-Received: from sauhun.de ([89.238.76.85]:44829 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752060Ab3KOWwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 17:52:45 -0500
-Date: Fri, 15 Nov 2013 23:52:34 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Christian Daudt <bcm@fixthebug.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux Doc List <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux I2C List <linux-i2c@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linaro Patches List <patches@linaro.org>
-Subject: Re: [PATCH v2 0/5] Add-Broadcom-Kona-I2C-Support
-Message-ID: <20131115225234.GC2672@katana>
-References: <1384462936-7906-1-git-send-email-tim.kryger@linaro.org>
+	id S1753554Ab3KOWzu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 17:55:50 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:27268 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab3KOWzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 17:55:45 -0500
+Date: Fri, 15 Nov 2013 15:55:40 -0700
+From: jerry.hoemann@hp.com
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
+        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+Message-ID: <20131115225540.GA5485@anatevka.fc.hp.com>
+Reply-To: jerry.hoemann@hp.com
+References: <20131114180455.GA32212@anatevka.fc.hp.com>
+ <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
+ <20131115005049.GJ5116@anatevka.fc.hp.com>
+ <20131115062417.GB9237@gmail.com>
+ <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
+ <5285C639.5040203@zytor.com>
+ <20131115140738.GB6637@redhat.com>
+ <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
+ <20131115180324.GD6637@redhat.com>
+ <CAE9FiQU_OstEq3VWwBB879O4EY0DE+zVWVens+w0MLFUQmr3sw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gr/z0/N6AeWAPJVB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384462936-7906-1-git-send-email-tim.kryger@linaro.org>
+In-Reply-To: <CAE9FiQU_OstEq3VWwBB879O4EY0DE+zVWVens+w0MLFUQmr3sw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 15, 2013 at 02:24:25PM -0800, Yinghai Lu wrote:
+> On Fri, Nov 15, 2013 at 10:03 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Fri, Nov 15, 2013 at 09:33:41AM -0800, Yinghai Lu wrote:
+> 
+> >> I have one system with 6TiB memory, kdump does not work even
+> >> crashkernel=512M in legacy mode. ( it only work on system with
+> >> 4.5TiB).
+> >
+> > Recently I tested one system with 6TB of memory and dumped successfully
+> > with 512MB reserved under 896MB. Also I have heard reports of successful
+> > dump of 12TB system with 512MB reserved below 896MB (due to cyclic
+> > mode of makedumpfile).
+> >
+> > So with newer releases only reason one might want to reserve more
+> > memory is that it might provide speed benefits. We need more testing
+> > to quantify this.
+> 
+> You may need bunch of PCIe cards installed.
+> 
+> The system with 6TiB + 16 PCIe cards, second kernel OOM.
+> The system with 4.5TiB + 16 PCIe cards, second kernel works with vmcore dumped.
 
---gr/z0/N6AeWAPJVB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yinghai,
 
-On Thu, Nov 14, 2013 at 01:02:11PM -0800, Tim Kryger wrote:
-> This series adds support for the Kona I2C bus found on Broadcom mobile
-> SoCs like the bcm11351 (aka bcm281xx) and enables it on the bcm28155-ap
-> board.
->=20
-> It depends upon the following commit:
->   http://lkml.indiana.edu/hypermail/linux/kernel/1311.1/03583.html
+Your original email said you were using "legacy mode".  Does this mean
+you're not running makedumpfile in cyclic mode?  Cyclic mode makes
+a *big* difference in memory foot print of makedumpfile.
 
-Fixed Kconfig sorting, squashed broken out patches 1-3 into one and
-applied to for-next, thanks! Let me know if I should take patches 4-5
-also, but usually they go via arm-soc. Also, please provide a "Changes
-since V1" log which will speed up reviewing.
-
-Thanks,
-
-   Wolfram
+thanks
 
 
---gr/z0/N6AeWAPJVB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Jerry
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
 
-iQIcBAEBAgAGBQJShqWyAAoJEBQN5MwUoCm29OgQAIaT+x3Kn4hRankq0+PVqnjB
-PAiCLkq1zJMq5ne6mZ8YQzg0cDnHmN3o9liVMV+kZKgiveizSpEhrWTlH1XzOUxE
-EkRUnVQWWrjZnKzmY8pEIYWn0MMG+ThkjN9PydG7T3ZFoNjlQXeoBUl2Y1r6wRJx
-xGYgB1ZmZRrBx+RIjrCiVQ8RmSCae7bFODCZC1ADMRi5N46mANSf1XazifbuUasd
-Rm6u00JAFHoPDOPhPj5B6NTy0piJmC2zvZcqUHLq2rdCCjBI8TZsfwoI/CgVMo12
-e+v/VZQlxFC4Jr9QNqb+cSpMmIcGj4ahCaHk2jOraXuuhBzF8lIzF3BILDWfQnay
-htTGFqId38gLaXx8W/vxEh9o+p3BRzzU+sjVDazFRqCFi+jw9Q6yzwN45hoDnCiQ
-EcWA8Jyf/ry/0zbt1OaepNet5uq6kyzNUkfLxw0ztn/1W/cwE6LQeotI3yZthdSQ
-GE0Twov3LV11Jpo5PmUY8uvNLRw4voaqvUIah+4bbo+w/i/hwYlMfL6L4t0djjqU
-3nTOEx6ODRv18CxGEA6KmgsdPqSmp5x/BGV7/yMFaX2qNTLpHF7ioQj3L342xBuC
-FQL36DeBfqCPxJLfuz4MP1jPZlteoh6IMxuegHealNlXtYd3ei8zogqLAT+MGnzG
-VetCw+10ADyinFSqDWBq
-=3CHQ
------END PGP SIGNATURE-----
+> 
+> >
+> >> --- first kernel can reserve the 512M under 896M, second kernel will
+> >> OOM as it load driver for every pci devices...
+> >>
+> >> So why would RH guys not spend some time on optimizing your kdump initrd
+> >> build scripts and only put dump device related driver in it?
+> >
+> > Try latest Fedora and that's what we do. Now we have moved to dracut
+> > based initramfs generation and we tell dracut that build initramfs for
+> > host and additional dump destination and dracut builds it for those only.
+> > I think there might be scope for further optimization, but I don't think
+> > that's the problem any more.
+> 
+> Good. Assume that will be in RHEL 7.
+> 
+> >
+> > So issue remains that crashkernel=X,high is not a good default choice
+> > because it consumes extra 72M which we don't have to.
+> 
+> then if it falls into 896~4G, user may still need to update kexec-tools ?
+> 
+> Thanks
+> 
+> Yinghai
 
---gr/z0/N6AeWAPJVB--
+-- 
+
+----------------------------------------------------------------------------
+Jerry Hoemann            Software Engineer              Hewlett-Packard
+
+3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
+Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
+                                                email:  jerry.hoemann@hp.com
+----------------------------------------------------------------------------
+
