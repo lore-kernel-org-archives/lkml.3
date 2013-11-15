@@ -1,230 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab3KONpd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:45:33 -0500
-Received: from mga01.intel.com ([192.55.52.88]:32564 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751598Ab3KONpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:45:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,708,1378882800"; 
-   d="scan'208";a="434039211"
-Message-ID: <5286271D.3020808@intel.com>
-Date: Fri, 15 Nov 2013 15:52:29 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752280Ab3KONqf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 08:46:35 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:54214 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab3KONq2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 08:46:28 -0500
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Adrian Hunter <adrian.hunter@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH V2] perf record: Make per-cpu mmaps the default.
-References: <1384460715-23198-1-git-send-email-acme@infradead.org> <1384460715-23198-11-git-send-email-acme@infradead.org> <20131115060643.GA9237@gmail.com> <5285FECE.7020802@intel.com>
-In-Reply-To: <5285FECE.7020802@intel.com>
+In-Reply-To: <20131115142928.76688783@mschwide>
+References: <1384330574-18418-1-git-send-email-schwidefsky@de.ibm.com>
+ <1384330574-18418-3-git-send-email-schwidefsky@de.ibm.com>
+ <CAHkRjk6LAmQpkioBdFxH5htYHi75bR2xhfXzfvmQL5Br0kMgvg@mail.gmail.com>
+ <20131114091007.0b15dde2@mschwide> <20131114132223.GG20261@arm.com>
+ <20131114173359.2e3cbd60@mschwide> <20131115104437.GA573@darko.cambridge.arm.com>
+ <20131115121000.69219fa4@mschwide> <20131115121736.72170c36@mschwide>
+ <20131115115701.GA1047@darko.cambridge.arm.com> <20131115142928.76688783@mschwide>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Fri, 15 Nov 2013 13:46:07 +0000
+X-Google-Sender-Auth: VPCiQVTi6s8uwEn2bJChM3aYvdk
+Message-ID: <CAHkRjk7-iD-2x5tvm4+5jp7HATL-7EdzfOqd=Sqe+XyA3CqC6Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] s390/mm,tlb: race of lazy TLB flush vs. recreation of
+ TLB entries
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This affects the -p, -t and -u options that
-previously defaulted to per-thread mmaps.
+On 15 November 2013 13:29, Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
+> On Fri, 15 Nov 2013 11:57:01 +0000
+> Catalin Marinas <catalin.marinas@arm.com> wrote:
+>
+>> On Fri, Nov 15, 2013 at 11:17:36AM +0000, Martin Schwidefsky wrote:
+>> > On Fri, 15 Nov 2013 12:10:00 +0100
+>> > Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
+>> >
+>> > > On Fri, 15 Nov 2013 10:44:37 +0000
+>> > > Catalin Marinas <catalin.marinas@arm.com> wrote:
+>> > > > 1. thread-A running with mm-A
+>> > > > 2. context_switch() to thread-B1 causing a switch_mm(mm-B)
+>> > > > 3. switch_mm(mm-B) sets thread-B1's TIF_TLB_WAIT but does _not_ call
+>> > > >    update_mm(mm-B). Hardware still using mm-A
+>> > > > 4. scheduler unlocks and is about to call finish_mm_switch(mm-B)
+>> > > > 5. interrupt and preemption before finish_mm_switch(mm-B)
+>> > > > 6. context_switch() to thread-B2 causing a switch_mm(mm-B) (note here
+>> > > >    that thread-B1 and thread-B2 have the same mm-B)
+>> > > > 7. switch_mm() as in this patch exits early because prev == next
+>> > > > 8. finish_mm_switch(mm-B) is indeed called but TIF_TLB_WAIT is not set
+>> > > >    for thread-B2, therefore no call to update_mm(mm-B)
+>> > > >
+>> > > > So after point 8, you get thread-B2 running (and possibly returning to
+>> > > > user space) with mm-A. Do you see a problem here?
+>> > >
+>> > > Oh, now I get it. Thanks for the patience, this is indeed a problem.
+>> > > And I concur, a per-mm flag is the 'obvious' solution.
+>> >
+>> > Having said that and looking at the code I find this to be not as obvious
+>> > any more. If you have multiple cpus using a per-mm flag can get you into
+>> > trouble:
+>> >
+>> > 1. cpu #1 calls switch_mm and finds that irqs are disabled.
+>> >    mm->context.switch_pending is set
+>> > 2. cpu #2 calls switch_mm for the same mm and finds that irqs are disabled.
+>> >    mm->context.switch_pending is set again
+>> > 3. cpu #1 reaches finish_arch_post_lock_switch and finds switch_pending == 1
+>> > 4. cpu #1 zeroes mm->switch_pending and calls cpu_switch_mm
+>> > 5. cpu #2 reaches finish_arch_post_lock_switch and finds switch_pending == 0
+>> > 6. cpu #2 continues with the old mm
+>> >
+>> > This is a race, no?
+>>
+>> Yes, but we only use this on ARMv5 and earlier and there is no SMP
+>> support.
+>>
+>> On arm64 however, I need to fix that and you made a good point. In my
+>> (not yet public) patch, the switch_pending is cleared after all the
+>> IPIs have been acknowledged but it needs some more thinking. A solution
+>> could be to always do the cpu_switch_mm() in finish_mm_switch() without
+>> any checks but this requires that any switch_mm() call from the kernel
+>> needs to be paired with finish_mm_switch(). So your first patch comes in
+>> handy (but I still need to figure out a quick arm64 fix for cc stable).
+>
+> I am currently thinking about the following solution for s390: keep the
+> TIF_TLB_FLUSH bit per task but do a preempt_disable() in switch_mm()
+> if the switch is incomplete. This pairs with a preempt_enable() in
+> finish_switch_mm() after the update_mm has been done.
 
-Consequently add an option to select
-per-thread mmaps to support the old
-behaviour.
+That's the first thing I tried when I noticed the problem but I got
+weird kernel warnings with preempt_enable/disabling spanning across
+the scheduler unlocking. So doesn't seem safe.
 
-Note that per-thread can be used with a
-workload-only (i.e. none of -p, -t, -u,
--a or -C is selected) to get a per-thread
-mmap with no inheritance.
+It may work if instead a simple flag you use atomic_inc/dec for the mm flag.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
-
-Changes in V2:
-
-	Ensure PERF_SAMPLE_TIME is set for per-cpu mmaps.
-
-
- tools/perf/Documentation/perf-record.txt     | 10 +++++-----
- tools/perf/builtin-record.c                  |  5 +++--
- tools/perf/tests/attr/test-record-no-inherit |  2 +-
- tools/perf/util/evlist.c                     |  6 ++++--
- tools/perf/util/evsel.c                      |  5 +++--
- tools/perf/util/target.c                     | 11 ++++++++++-
- tools/perf/util/target.h                     |  4 +++-
- 7 files changed, 29 insertions(+), 14 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 43b42c4..6ac867e 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -201,11 +201,11 @@ abort events and some memory events in precise mode on modern Intel CPUs.
- --transaction::
- Record transaction flags for transaction related events.
- 
----force-per-cpu::
--Force the use of per-cpu mmaps.  By default, when tasks are specified (i.e. -p,
---t or -u options) per-thread mmaps are created.  This option overrides that and
--forces per-cpu mmaps.  A side-effect of that is that inheritance is
--automatically enabled.  Add the -i option also to disable inheritance.
-+--per-thread::
-+Use per-thread mmaps.  By default per-cpu mmaps are created.  This option
-+overrides that and uses per-thread mmaps.  A side-effect of that is that
-+inheritance is automatically disabled.  --per-thread is ignored with a warning
-+if combined with -a or -C options.
- 
- SEE ALSO
- --------
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 7c8020a..f5b18b8 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -800,6 +800,7 @@ static struct perf_record record = {
- 		.freq		     = 4000,
- 		.target		     = {
- 			.uses_mmap   = true,
-+			.default_per_cpu = true,
- 		},
- 	},
- };
-@@ -888,8 +889,8 @@ const struct option record_options[] = {
- 		    "sample by weight (on special events only)"),
- 	OPT_BOOLEAN(0, "transaction", &record.opts.sample_transaction,
- 		    "sample transaction flags (special events only)"),
--	OPT_BOOLEAN(0, "force-per-cpu", &record.opts.target.force_per_cpu,
--		    "force the use of per-cpu mmaps"),
-+	OPT_BOOLEAN(0, "per-thread", &record.opts.target.per_thread,
-+		    "use per-thread mmaps"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/tests/attr/test-record-no-inherit b/tools/perf/tests/attr/test-record-no-inherit
-index 9079a25..44edcb2 100644
---- a/tools/perf/tests/attr/test-record-no-inherit
-+++ b/tools/perf/tests/attr/test-record-no-inherit
-@@ -3,5 +3,5 @@ command = record
- args    = -i kill >/dev/null 2>&1
- 
- [event:base-record]
--sample_type=259
-+sample_type=263
- inherit=0
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index bbc746a..76fa764 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -819,8 +819,10 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
- 	if (evlist->threads == NULL)
- 		return -1;
- 
--	if (target->force_per_cpu)
--		evlist->cpus = cpu_map__new(target->cpu_list);
-+	if (target->default_per_cpu)
-+		evlist->cpus = target->per_thread ?
-+					cpu_map__dummy_new() :
-+					cpu_map__new(target->cpu_list);
- 	else if (target__has_task(target))
- 		evlist->cpus = cpu_map__dummy_new();
- 	else if (!target__has_cpu(target) && !target->uses_mmap)
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 46dd4c2..77e38ff 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -572,6 +572,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 	struct perf_evsel *leader = evsel->leader;
- 	struct perf_event_attr *attr = &evsel->attr;
- 	int track = !evsel->idx; /* only the first counter needs these */
-+	bool per_cpu = opts->target.default_per_cpu && !opts->target.per_thread;
- 
- 	attr->sample_id_all = perf_missing_features.sample_id_all ? 0 : 1;
- 	attr->inherit	    = !opts->no_inherit;
-@@ -645,7 +646,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 		}
- 	}
- 
--	if (target__has_cpu(&opts->target) || opts->target.force_per_cpu)
-+	if (target__has_cpu(&opts->target))
- 		perf_evsel__set_sample_bit(evsel, CPU);
- 
- 	if (opts->period)
-@@ -653,7 +654,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 
- 	if (!perf_missing_features.sample_id_all &&
- 	    (opts->sample_time || !opts->no_inherit ||
--	     target__has_cpu(&opts->target) || opts->target.force_per_cpu))
-+	     target__has_cpu(&opts->target) || per_cpu))
- 		perf_evsel__set_sample_bit(evsel, TIME);
- 
- 	if (opts->raw_samples) {
-diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
-index 3c778a0..e74c596 100644
---- a/tools/perf/util/target.c
-+++ b/tools/perf/util/target.c
-@@ -55,6 +55,13 @@ enum target_errno target__validate(struct target *target)
- 			ret = TARGET_ERRNO__UID_OVERRIDE_SYSTEM;
- 	}
- 
-+	/* THREAD and SYSTEM/CPU are mutually exclusive */
-+	if (target->per_thread && (target->system_wide || target->cpu_list)) {
-+		target->per_thread = false;
-+		if (ret == TARGET_ERRNO__SUCCESS)
-+			ret = TARGET_ERRNO__SYSTEM_OVERRIDE_THREAD;
-+	}
-+
- 	return ret;
- }
- 
-@@ -100,6 +107,7 @@ static const char *target__error_str[] = {
- 	"UID switch overriding CPU",
- 	"PID/TID switch overriding SYSTEM",
- 	"UID switch overriding SYSTEM",
-+	"SYSTEM/CPU switch overriding PER-THREAD",
- 	"Invalid User: %s",
- 	"Problems obtaining information for user %s",
- };
-@@ -131,7 +139,8 @@ int target__strerror(struct target *target, int errnum,
- 	msg = target__error_str[idx];
- 
- 	switch (errnum) {
--	case TARGET_ERRNO__PID_OVERRIDE_CPU ... TARGET_ERRNO__UID_OVERRIDE_SYSTEM:
-+	case TARGET_ERRNO__PID_OVERRIDE_CPU ...
-+	     TARGET_ERRNO__SYSTEM_OVERRIDE_THREAD:
- 		snprintf(buf, buflen, "%s", msg);
- 		break;
- 
-diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
-index 2d0c506..31dd2e9 100644
---- a/tools/perf/util/target.h
-+++ b/tools/perf/util/target.h
-@@ -12,7 +12,8 @@ struct target {
- 	uid_t	     uid;
- 	bool	     system_wide;
- 	bool	     uses_mmap;
--	bool	     force_per_cpu;
-+	bool	     default_per_cpu;
-+	bool	     per_thread;
- };
- 
- enum target_errno {
-@@ -33,6 +34,7 @@ enum target_errno {
- 	TARGET_ERRNO__UID_OVERRIDE_CPU,
- 	TARGET_ERRNO__PID_OVERRIDE_SYSTEM,
- 	TARGET_ERRNO__UID_OVERRIDE_SYSTEM,
-+	TARGET_ERRNO__SYSTEM_OVERRIDE_THREAD,
- 
- 	/* for target__parse_uid() */
- 	TARGET_ERRNO__INVALID_UID,
 -- 
-1.7.11.7
-
+Catalin
