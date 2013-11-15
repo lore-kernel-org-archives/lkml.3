@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab3KONrn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:47:43 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:59043 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab3KONr3 (ORCPT
+	id S1752905Ab3KONrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 08:47:52 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:47310 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046Ab3KONrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:47:29 -0500
+	Fri, 15 Nov 2013 08:47:35 -0500
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
         zohar@us.ibm.com, d.kasatkin@samsung.com, james.l.morris@oracle.com,
         Roberto Sassu <roberto.sassu@polito.it>,
         Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH 1/6] ima: change the default hash algorithm to SHA1 in ima_eventdigest_ng_init()
-Date: Fri, 15 Nov 2013 14:45:39 +0100
-Message-Id: <1384523146-9290-2-git-send-email-roberto.sassu@polito.it>
+Subject: [PATCH 2/6] ima: pass HASH_ALGO__LAST as hash algo in ima_eventdigest_init()
+Date: Fri, 15 Nov 2013 14:45:40 +0100
+Message-Id: <1384523146-9290-3-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384523146-9290-1-git-send-email-roberto.sassu@polito.it>
 References: <1384523146-9290-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----912ECA0033307D608F90927AE2FE486F"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----5B3AC0294305DE87D655E22589CC0F7C"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------912ECA0033307D608F90927AE2FE486F
+------5B3AC0294305DE87D655E22589CC0F7C
 
-Replace HASH_ALGO__LAST with HASH_ALGO_SHA1 as the initial value of
-the hash algorithm so that the prefix 'sha1:' is added to violation
-digests.
+Replace the '-1' value with HASH_ALGO__LAST in ima_eventdigest_init()
+as the called function ima_eventdigest_init_common() expects an unsigned
+char.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- security/integrity/ima/ima_template_lib.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/integrity/ima/ima_template_lib.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
-index 6d66ad6..c2ba481 100644
+index c2ba481..4752a53 100644
 --- a/security/integrity/ima/ima_template_lib.c
 +++ b/security/integrity/ima/ima_template_lib.c
-@@ -251,7 +251,7 @@ int ima_eventdigest_ng_init(struct integrity_iint_cache *iint,
- 			    struct evm_ima_xattr_data *xattr_value,
- 			    int xattr_len, struct ima_field_data *field_data)
- {
--	u8 *cur_digest = NULL, hash_algo = HASH_ALGO__LAST;
-+	u8 *cur_digest = NULL, hash_algo = HASH_ALGO_SHA1;
- 	u32 cur_digestsize = 0;
+@@ -239,8 +239,8 @@ int ima_eventdigest_init(struct integrity_iint_cache *iint, struct file *file,
+ 	cur_digest = hash.hdr.digest;
+ 	cur_digestsize = hash.hdr.length;
+ out:
+-	return ima_eventdigest_init_common(cur_digest, cur_digestsize, -1,
+-					   field_data, true);
++	return ima_eventdigest_init_common(cur_digest, cur_digestsize,
++					   HASH_ALGO__LAST, field_data, true);
+ }
  
- 	/* If iint is NULL, we are recording a violation. */
+ /*
 -- 
 1.8.1.4
 
 
-------912ECA0033307D608F90927AE2FE486F
+------5B3AC0294305DE87D655E22589CC0F7C
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -94,17 +96,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMTUxMzQ1NThaMCMGCSqG
-SIb3DQEJBDEWBBSy2HPwukiqtb/Bg1y+fa7qF9Wf9jB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMTUxMzQ2MDVaMCMGCSqG
+SIb3DQEJBDEWBBQq5SaZEdmpbSmmqepjQzsj6WMaTTB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBj1KH2gb2SGzM8KqbNIK3Vs43F
-Fle5wPxNqHk0tmcwAjLDNRdb7t1XY7WaixieqtEhDIqiZYT78kBVpKWQSbEEcRp/
-VM+MKAndkJnA83F72q55HeHRJD1QVDHVpni4mEiPjfg7zRjj32ufP0M2eo30NAGT
-9C9FuduHVIel2mxl4gHLN0mGLgzfgL6CzA2f/bPgNTVqD0WwqXeXjZbKDDFW5rxj
-arEMUOXzeoAb0DpfI10hSr3SrpKZ6zHvt0AMeQFOzV3ZI73YJL4Im61naSH89GrQ
-hKh8q6UZiBcRN4juV5FXfZl4I+YiyLsN2K/spmABBXoIB0db/luKUktwN52g
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBt0V5OLKcRJyGUJOkx5744Qlpv
+Jffpwy1BMSRsz5916LILFKEfdxwPlnxB7uvH6wOFTjVEN7q2OnkLczBq+PFOMmGB
+kyLw7+hnPkk68nt7l2geHDhMsuWEvXhcIEUtC6lHm8zjvxEPi9oFk06lvvNc+pMK
+5ZxO0qKBRiXGpFkBAhV8yuyIjsaZecw+DYKsTVrK2/jLBURJhTAGHvAxynQ5B+Ly
+XOuTIxBBnGT5kkkwSKAxOJv5kV1gTIwWkLPyWsjH2QPG3non7tL5PQvLEfmgYa2X
+aF9yFMbILqj3nA7gzHxnf+VVF3J6OIIGLJSg8xLX18UmV7tHuqCfY4WSs4Fz
 
-------912ECA0033307D608F90927AE2FE486F--
+------5B3AC0294305DE87D655E22589CC0F7C--
 
 
