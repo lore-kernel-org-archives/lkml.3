@@ -1,41 +1,503 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab3KOTHu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 14:07:50 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:53956 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab3KOTHL (ORCPT
+	id S1753442Ab3KOTIA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 14:08:00 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:43889 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab3KOTHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Nov 2013 14:07:11 -0500
 From: Grant Likely <grant.likely@linaro.org>
 To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 0/3] Kobjectify device tree structures
-Date: Fri, 15 Nov 2013 17:46:41 +0000
-Message-Id: <1384537604-5032-1-git-send-email-grant.likely@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: [PATCH v5 3/3] of: remove /proc/device-tree
+Date: Fri, 15 Nov 2013 17:46:44 +0000
+Message-Id: <1384537604-5032-4-git-send-email-grant.likely@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1384537604-5032-1-git-send-email-grant.likely@linaro.org>
+References: <1384537604-5032-1-git-send-email-grant.likely@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Grant Likely <grant.likely@secretlab.ca>
 
-I've resurrected this series and am posting it for review. I think I've
-got the last problem that I know about solved. That was the problem that
-Nathan pointed out that modified properties don't get reflected in the
-sysfs representation. As I mentioned the last time I posted this series,
-I will probably put a kernel release between patches 1&2 and patch 3 so
-that if there is any problems then the old /proc method is still
-available.
+The same data is now available in sysfs, so we can remove the code
+that exports it in /proc and replace it with a symlink to the sysfs
+version.
 
-I'm posting this for review, but I've only compile tested on ARM and
-PowerPC, and boot tested on ARM. I'll be going though a full set of
-builds when I'm no longer on an airplane.  :-)
+Tested on versatile qemu model and mpc5200 eval board. More testing
+would be appreciated.
 
-The existing device-tree userspace ABI remains the same with this series
-applied.
+v5: Fixed up conflicts with mainline changes
 
-Nathan, I would particularly appreciate if you can test this on PowerPC
-machines with OF_DYNAMIC.
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Cc: Pantelis Antoniou <panto@antoniou-consulting.com>
+---
+ drivers/of/Kconfig     |   8 --
+ drivers/of/base.c      |  52 +----------
+ fs/proc/Makefile       |   1 -
+ fs/proc/internal.h     |   7 --
+ fs/proc/proc_devtree.c | 240 -------------------------------------------------
+ fs/proc/root.c         |   3 -
+ include/linux/of.h     |  11 ---
+ 7 files changed, 1 insertion(+), 321 deletions(-)
+ delete mode 100644 fs/proc/proc_devtree.c
 
-g.
+diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+index de6f8990246f..46e211e2bc51 100644
+--- a/drivers/of/Kconfig
++++ b/drivers/of/Kconfig
+@@ -7,14 +7,6 @@ config OF
+ menu "Device Tree and Open Firmware support"
+ 	depends on OF
+ 
+-config PROC_DEVICETREE
+-	bool "Support for device tree in /proc"
+-	depends on PROC_FS && !SPARC
+-	help
+-	  This option adds a device-tree directory under /proc which contains
+-	  an image of the device tree that the kernel copies from Open
+-	  Firmware or other boot firmware. If unsure, say Y here.
+-
+ config OF_SELFTEST
+ 	bool "Device Tree Runtime self tests"
+ 	depends on OF_IRQ
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index efcfead5ba2d..4f76d5ff53aa 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -279,11 +279,9 @@ static int __init of_init(void)
+ 		__of_node_add(np);
+ 	mutex_unlock(&of_aliases_mutex);
+ 
+-#if !defined(CONFIG_PROC_DEVICETREE)
+-	/* Symlink to the new tree when PROC_DEVICETREE is disabled */
++	/* Symlink in /proc as required by userspace ABI */
+ 	if (of_allnodes)
+ 		proc_symlink("device-tree", NULL, "/sys/firmware/devicetree/base");
+-#endif /* CONFIG_PROC_DEVICETREE */
+ 
+ 	return 0;
+ }
+@@ -1630,12 +1628,6 @@ int of_add_property(struct device_node *np, struct property *prop)
+ 
+ 	__of_add_property(np, prop);
+ 
+-#ifdef CONFIG_PROC_DEVICETREE
+-	/* try to add to proc as well if it was initialized */
+-	if (np->pde)
+-		proc_device_tree_add_prop(np->pde, prop);
+-#endif /* CONFIG_PROC_DEVICETREE */
+-
+ 	return 0;
+ }
+ 
+@@ -1678,12 +1670,6 @@ int of_remove_property(struct device_node *np, struct property *prop)
+ 
+ 	sysfs_remove_bin_file(&np->kobj, &prop->attr);
+ 
+-#ifdef CONFIG_PROC_DEVICETREE
+-	/* try to remove the proc node as well */
+-	if (np->pde)
+-		proc_device_tree_remove_prop(np->pde, prop);
+-#endif /* CONFIG_PROC_DEVICETREE */
+-
+ 	return 0;
+ }
+ 
+@@ -1736,12 +1722,6 @@ int of_update_property(struct device_node *np, struct property *newprop)
+ 	sysfs_remove_bin_file(&np->kobj, &oldprop->attr);
+ 	__of_add_property(np, newprop);
+ 
+-#ifdef CONFIG_PROC_DEVICETREE
+-	/* try to add to proc as well if it was initialized */
+-	if (np->pde)
+-		proc_device_tree_update_prop(np->pde, newprop, oldprop);
+-#endif /* CONFIG_PROC_DEVICETREE */
+-
+ 	return 0;
+ }
+ 
+@@ -1776,22 +1756,6 @@ int of_reconfig_notify(unsigned long action, void *p)
+ 	return notifier_to_errno(rc);
+ }
+ 
+-#ifdef CONFIG_PROC_DEVICETREE
+-static void of_add_proc_dt_entry(struct device_node *dn)
+-{
+-	struct proc_dir_entry *ent;
+-
+-	ent = proc_mkdir(strrchr(dn->full_name, '/') + 1, dn->parent->pde);
+-	if (ent)
+-		proc_device_tree_add_node(dn, ent);
+-}
+-#else
+-static void of_add_proc_dt_entry(struct device_node *dn)
+-{
+-	return;
+-}
+-#endif
+-
+ /**
+  * of_attach_node - Plug a device node into the tree and global list.
+  */
+@@ -1813,22 +1777,9 @@ int of_attach_node(struct device_node *np)
+ 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+ 
+ 	of_node_add(np);
+-	of_add_proc_dt_entry(np);
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PROC_DEVICETREE
+-static void of_remove_proc_dt_entry(struct device_node *dn)
+-{
+-	proc_remove(dn->pde);
+-}
+-#else
+-static void of_remove_proc_dt_entry(struct device_node *dn)
+-{
+-	return;
+-}
+-#endif
+-
+ /**
+  * of_detach_node - "Unplug" a node from the device tree.
+  *
+@@ -1884,7 +1835,6 @@ int of_detach_node(struct device_node *np)
+ 	of_node_set_flag(np, OF_DETACHED);
+ 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+ 
+-	of_remove_proc_dt_entry(np);
+ 	of_node_remove(np);
+ 	return rc;
+ }
+diff --git a/fs/proc/Makefile b/fs/proc/Makefile
+index ab30716584f5..239493ec718e 100644
+--- a/fs/proc/Makefile
++++ b/fs/proc/Makefile
+@@ -27,6 +27,5 @@ proc-$(CONFIG_PROC_SYSCTL)	+= proc_sysctl.o
+ proc-$(CONFIG_NET)		+= proc_net.o
+ proc-$(CONFIG_PROC_KCORE)	+= kcore.o
+ proc-$(CONFIG_PROC_VMCORE)	+= vmcore.o
+-proc-$(CONFIG_PROC_DEVICETREE)	+= proc_devtree.o
+ proc-$(CONFIG_PRINTK)	+= kmsg.o
+ proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index 651d09a11dde..3ab6d14e71c5 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -211,13 +211,6 @@ extern int proc_fill_super(struct super_block *);
+ extern void proc_entry_rundown(struct proc_dir_entry *);
+ 
+ /*
+- * proc_devtree.c
+- */
+-#ifdef CONFIG_PROC_DEVICETREE
+-extern void proc_device_tree_init(void);
+-#endif
+-
+-/*
+  * proc_namespaces.c
+  */
+ extern const struct inode_operations proc_ns_dir_inode_operations;
+diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+deleted file mode 100644
+index 70779b2fc209..000000000000
+--- a/fs/proc/proc_devtree.c
++++ /dev/null
+@@ -1,240 +0,0 @@
+-/*
+- * proc_devtree.c - handles /proc/device-tree
+- *
+- * Copyright 1997 Paul Mackerras
+- */
+-#include <linux/errno.h>
+-#include <linux/init.h>
+-#include <linux/time.h>
+-#include <linux/proc_fs.h>
+-#include <linux/seq_file.h>
+-#include <linux/printk.h>
+-#include <linux/stat.h>
+-#include <linux/string.h>
+-#include <linux/of.h>
+-#include <linux/export.h>
+-#include <linux/slab.h>
+-#include <asm/uaccess.h>
+-#include "internal.h"
+-
+-static inline void set_node_proc_entry(struct device_node *np,
+-				       struct proc_dir_entry *de)
+-{
+-	np->pde = de;
+-}
+-
+-static struct proc_dir_entry *proc_device_tree;
+-
+-/*
+- * Supply data on a read from /proc/device-tree/node/property.
+- */
+-static int property_proc_show(struct seq_file *m, void *v)
+-{
+-	struct property *pp = m->private;
+-
+-	seq_write(m, pp->value, pp->length);
+-	return 0;
+-}
+-
+-static int property_proc_open(struct inode *inode, struct file *file)
+-{
+-	return single_open(file, property_proc_show, __PDE_DATA(inode));
+-}
+-
+-static const struct file_operations property_proc_fops = {
+-	.owner		= THIS_MODULE,
+-	.open		= property_proc_open,
+-	.read		= seq_read,
+-	.llseek		= seq_lseek,
+-	.release	= single_release,
+-};
+-
+-/*
+- * For a node with a name like "gc@10", we make symlinks called "gc"
+- * and "@10" to it.
+- */
+-
+-/*
+- * Add a property to a node
+- */
+-static struct proc_dir_entry *
+-__proc_device_tree_add_prop(struct proc_dir_entry *de, struct property *pp,
+-		const char *name)
+-{
+-	struct proc_dir_entry *ent;
+-
+-	/*
+-	 * Unfortunately proc_register puts each new entry
+-	 * at the beginning of the list.  So we rearrange them.
+-	 */
+-	ent = proc_create_data(name,
+-			       strncmp(name, "security-", 9) ? S_IRUGO : S_IRUSR,
+-			       de, &property_proc_fops, pp);
+-	if (ent == NULL)
+-		return NULL;
+-
+-	if (!strncmp(name, "security-", 9))
+-		ent->size = 0; /* don't leak number of password chars */
+-	else
+-		ent->size = pp->length;
+-
+-	return ent;
+-}
+-
+-
+-void proc_device_tree_add_prop(struct proc_dir_entry *pde, struct property *prop)
+-{
+-	__proc_device_tree_add_prop(pde, prop, prop->name);
+-}
+-
+-void proc_device_tree_remove_prop(struct proc_dir_entry *pde,
+-				  struct property *prop)
+-{
+-	remove_proc_entry(prop->name, pde);
+-}
+-
+-void proc_device_tree_update_prop(struct proc_dir_entry *pde,
+-				  struct property *newprop,
+-				  struct property *oldprop)
+-{
+-	struct proc_dir_entry *ent;
+-
+-	if (!oldprop) {
+-		proc_device_tree_add_prop(pde, newprop);
+-		return;
+-	}
+-
+-	for (ent = pde->subdir; ent != NULL; ent = ent->next)
+-		if (ent->data == oldprop)
+-			break;
+-	if (ent == NULL) {
+-		pr_warn("device-tree: property \"%s\" does not exist\n",
+-			oldprop->name);
+-	} else {
+-		ent->data = newprop;
+-		ent->size = newprop->length;
+-	}
+-}
+-
+-/*
+- * Various dodgy firmware might give us nodes and/or properties with
+- * conflicting names. That's generally ok, except for exporting via /proc,
+- * so munge names here to ensure they're unique.
+- */
+-
+-static int duplicate_name(struct proc_dir_entry *de, const char *name)
+-{
+-	struct proc_dir_entry *ent;
+-	int found = 0;
+-
+-	spin_lock(&proc_subdir_lock);
+-
+-	for (ent = de->subdir; ent != NULL; ent = ent->next) {
+-		if (strcmp(ent->name, name) == 0) {
+-			found = 1;
+-			break;
+-		}
+-	}
+-
+-	spin_unlock(&proc_subdir_lock);
+-
+-	return found;
+-}
+-
+-static const char *fixup_name(struct device_node *np, struct proc_dir_entry *de,
+-		const char *name)
+-{
+-	char *fixed_name;
+-	int fixup_len = strlen(name) + 2 + 1; /* name + #x + \0 */
+-	int i = 1, size;
+-
+-realloc:
+-	fixed_name = kmalloc(fixup_len, GFP_KERNEL);
+-	if (fixed_name == NULL) {
+-		pr_err("device-tree: Out of memory trying to fixup "
+-		       "name \"%s\"\n", name);
+-		return name;
+-	}
+-
+-retry:
+-	size = snprintf(fixed_name, fixup_len, "%s#%d", name, i);
+-	size++; /* account for NULL */
+-
+-	if (size > fixup_len) {
+-		/* We ran out of space, free and reallocate. */
+-		kfree(fixed_name);
+-		fixup_len = size;
+-		goto realloc;
+-	}
+-
+-	if (duplicate_name(de, fixed_name)) {
+-		/* Multiple duplicates. Retry with a different offset. */
+-		i++;
+-		goto retry;
+-	}
+-
+-	pr_warn("device-tree: Duplicate name in %s, renamed to \"%s\"\n",
+-		np->full_name, fixed_name);
+-
+-	return fixed_name;
+-}
+-
+-/*
+- * Process a node, adding entries for its children and its properties.
+- */
+-void proc_device_tree_add_node(struct device_node *np,
+-			       struct proc_dir_entry *de)
+-{
+-	struct property *pp;
+-	struct proc_dir_entry *ent;
+-	struct device_node *child;
+-	const char *p;
+-
+-	set_node_proc_entry(np, de);
+-	for (child = NULL; (child = of_get_next_child(np, child));) {
+-		/* Use everything after the last slash, or the full name */
+-		p = kbasename(child->full_name);
+-
+-		if (duplicate_name(de, p))
+-			p = fixup_name(np, de, p);
+-
+-		ent = proc_mkdir(p, de);
+-		if (ent == NULL)
+-			break;
+-		proc_device_tree_add_node(child, ent);
+-	}
+-	of_node_put(child);
+-
+-	for (pp = np->properties; pp != NULL; pp = pp->next) {
+-		p = pp->name;
+-
+-		if (strchr(p, '/'))
+-			continue;
+-
+-		if (duplicate_name(de, p))
+-			p = fixup_name(np, de, p);
+-
+-		ent = __proc_device_tree_add_prop(de, pp, p);
+-		if (ent == NULL)
+-			break;
+-	}
+-}
+-
+-/*
+- * Called on initialization to set up the /proc/device-tree subtree
+- */
+-void __init proc_device_tree_init(void)
+-{
+-	struct device_node *root;
+-
+-	proc_device_tree = proc_mkdir("device-tree", NULL);
+-	if (proc_device_tree == NULL)
+-		return;
+-	root = of_find_node_by_path("/");
+-	if (root == NULL) {
+-		pr_debug("/proc/device-tree: can't find root\n");
+-		return;
+-	}
+-	proc_device_tree_add_node(root, proc_device_tree);
+-	of_node_put(root);
+-}
+diff --git a/fs/proc/root.c b/fs/proc/root.c
+index 87dbcbef7fe4..7bbeb5257af1 100644
+--- a/fs/proc/root.c
++++ b/fs/proc/root.c
+@@ -183,9 +183,6 @@ void __init proc_root_init(void)
+ 	proc_mkdir("openprom", NULL);
+ #endif
+ 	proc_tty_init();
+-#ifdef CONFIG_PROC_DEVICETREE
+-	proc_device_tree_init();
+-#endif
+ 	proc_mkdir("bus", NULL);
+ 	proc_sys_init();
+ }
+diff --git a/include/linux/of.h b/include/linux/of.h
+index c899a89de9a8..06d32ad62bc0 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -57,7 +57,6 @@ struct device_node {
+ 	struct	device_node *sibling;
+ 	struct	device_node *next;	/* next device of same type */
+ 	struct	device_node *allnext;	/* next in list of all nodes */
+-	struct	proc_dir_entry *pde;	/* this node's proc directory */
+ 	struct	kobject kobj;
+ 	unsigned long _flags;
+ 	void	*data;
+@@ -638,14 +637,4 @@ static inline int of_property_read_u32(const struct device_node *np,
+ 		s;						\
+ 		s = of_prop_next_string(prop, s))
+ 
+-#if defined(CONFIG_PROC_FS) && defined(CONFIG_PROC_DEVICETREE)
+-extern void proc_device_tree_add_node(struct device_node *, struct proc_dir_entry *);
+-extern void proc_device_tree_add_prop(struct proc_dir_entry *pde, struct property *prop);
+-extern void proc_device_tree_remove_prop(struct proc_dir_entry *pde,
+-					 struct property *prop);
+-extern void proc_device_tree_update_prop(struct proc_dir_entry *pde,
+-					 struct property *newprop,
+-					 struct property *oldprop);
+-#endif
+-
+ #endif /* _LINUX_OF_H */
+-- 
+1.8.3.2
 
