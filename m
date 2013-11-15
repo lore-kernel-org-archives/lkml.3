@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758712Ab3KOL5v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 06:57:51 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:23743 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758690Ab3KOL5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 06:57:40 -0500
-X-IronPort-AV: E=Sophos;i="4.93,707,1378857600"; 
-   d="scan'208";a="74838972"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <konrad.wilk@oracle.com>
-CC: <stefano.stabellini@eu.citrix.com>, <xen-devel@lists.xensource.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] swiotlb-xen: add missing xen_dma_map_page call
-Date: Fri, 15 Nov 2013 11:57:33 +0000
-Message-ID: <1384516653-28165-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1758600Ab3KOL6E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 06:58:04 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:41244 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758717Ab3KOL5w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 06:57:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+In-Reply-To: <CAKaYPCNqzYcSyTUjjb9H3naErjzqjLDBthE2xfQ98j-YOzQWwg@mail.gmail.com>
+References: <1384029451-16555-1-git-send-email-geert@linux-m68k.org>
+	<5285EE5A.1070202@southpole.se>
+	<CAMuHMdWA-9ax=NG_d0tyfzY3+42Ka7_r+jTeF-m5oW0eV8t1=g@mail.gmail.com>
+	<5285FE1D.3020800@southpole.se>
+	<CAKaYPCNqzYcSyTUjjb9H3naErjzqjLDBthE2xfQ98j-YOzQWwg@mail.gmail.com>
+Date: Fri, 15 Nov 2013 12:57:51 +0100
+X-Google-Sender-Auth: y8UzsLoflAzwu9qOPiSl4Yf2dT8
+Message-ID: <CAMuHMdW4qTm5RbXAo1Vrp+TB0Rb4oxWVAU=78G3iFBSuVtcNyA@mail.gmail.com>
+Subject: Re: [ORLinux] [PATCH] openrisc: Add DTS and defconfig for DE0-Nano
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Olof Kindgren <olof.kindgren@gmail.com>
+Cc: Jonas Bonn <jonas@southpole.se>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kevin Mehall <contact@kevinmehall.net>, linux <linux@openrisc.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-swiotlb-xen is missing a xen_dma_map_page call in
-xen_swiotlb_map_sg_attrs, in the bounce buffer path.
+On Fri, Nov 15, 2013 at 12:39 PM, Olof Kindgren <olof.kindgren@gmail.com> wrote:
+> More generally, can Linux use out-of-tree DTS files in an easy way? It's
+> handy to have them in the kernel, but the best fit might actually be to put
+> them in the corresponding orpsocv3 system directory. That would also make it
+> easier to have separate device trees for differently configured FPGAs (they
+> are reprogrammable after all).
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+If I'm not mistaken, this is ORPSoC v2?
 
-Changes in v2:
-- reworked commit message.
----
- drivers/xen/swiotlb-xen.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+Yes, it would be nice to have the DTS in ORPSoc itself.
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index a224bc7..1eac073 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -555,6 +555,11 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 				sg_dma_len(sgl) = 0;
- 				return 0;
- 			}
-+			xen_dma_map_page(hwdev, pfn_to_page(map >> PAGE_SHIFT),
-+						map & ~PAGE_MASK,
-+						sg->length,
-+						dir,
-+						attrs);
- 			sg->dma_address = xen_phys_to_bus(map);
- 		} else {
- 			/* we are not interested in the dma_addr returned by
--- 
-1.7.2.5
+Still, we would need overlays for the devices that are not defined in
+ORPSoC, e.g. on-board (and off-board) devices on i2c and spi.
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
