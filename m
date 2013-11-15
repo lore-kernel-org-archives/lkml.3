@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758022Ab3KOExf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 23:53:35 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:40671 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757658Ab3KOExY (ORCPT
+	id S1758179Ab3KOEx7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 23:53:59 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:57507 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757835Ab3KOEx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 23:53:24 -0500
-X-AuditID: 85900ec0-cff26b9000001514-df-5285a8c081b2
-Subject: [PATCH -tip RFC v2 01/22] kprobes: Prohibit probing on .entry.text
- code
+	Thu, 14 Nov 2013 23:53:28 -0500
+X-AuditID: 85900ec0-cff26b9000001514-e2-5285a8c613c3
+Subject: [PATCH -tip RFC v2 03/22] kprobes: Show blacklist entries via
+ debugfs
 To: Ingo Molnar <mingo@kernel.org>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
         "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
         virtualization@lists.linux-foundation.org,
-        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
         "David S. Miller" <davem@davemloft.net>
-Date: Fri, 15 Nov 2013 04:53:18 +0000
-Message-ID: <20131115045318.27580.69554.stgit@kbuild-fedora.novalocal>
+Date: Fri, 15 Nov 2013 04:53:25 +0000
+Message-ID: <20131115045325.27580.67011.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <20131115045312.27580.95902.stgit@kbuild-fedora.novalocal>
 References: <20131115045312.27580.95902.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.16
@@ -35,207 +30,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-.entry.text is a code area which is used for interrupt/syscall
-entries, and there are many sensitive codes.
-Thus, it is better to prohibit probing on all of such codes
-instead of a part of that.
-Since some symbols are already registered on kprobe blacklist,
-this also removes them from the blacklist.
+Show blacklist entries (function names with the address
+range) via /sys/kernel/debug/kprobes/blacklist.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
- arch/x86/kernel/entry_32.S |   33 ---------------------------------
- arch/x86/kernel/entry_64.S |   20 --------------------
- kernel/kprobes.c           |   10 +++++-----
- 3 files changed, 5 insertions(+), 58 deletions(-)
+ kernel/kprobes.c |   61 +++++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 53 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 51e2988..02c2fef 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -315,10 +315,6 @@ ENTRY(ret_from_kernel_thread)
- ENDPROC(ret_from_kernel_thread)
- 
- /*
-- * Interrupt exit functions should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
--/*
-  * Return to user mode is not as complex as all this looks,
-  * but we want the default path for a system call return to
-  * go as quickly as possible which is why some of this is
-@@ -372,10 +368,6 @@ need_resched:
- END(resume_kernel)
- #endif
- 	CFI_ENDPROC
--/*
-- * End of kprobes section
-- */
--	.popsection
- 
- /* SYSENTER_RETURN points to after the "sysenter" instruction in
-    the vsyscall page.  See vsyscall-sysentry.S, which defines the symbol.  */
-@@ -495,10 +487,6 @@ sysexit_audit:
- 	PTGS_TO_GS_EX
- ENDPROC(ia32_sysenter_target)
- 
--/*
-- * syscall stub including irq exit should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
- 	# system call handler stub
- ENTRY(system_call)
- 	RING0_INT_FRAME			# can't unwind into user space anyway
-@@ -691,10 +679,6 @@ syscall_badsys:
- 	jmp resume_userspace
- END(syscall_badsys)
- 	CFI_ENDPROC
--/*
-- * End of kprobes section
-- */
--	.popsection
- 
- .macro FIXUP_ESPFIX_STACK
- /*
-@@ -781,10 +765,6 @@ common_interrupt:
- ENDPROC(common_interrupt)
- 	CFI_ENDPROC
- 
--/*
-- *  Irq entries should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
- #define BUILD_INTERRUPT3(name, nr, fn)	\
- ENTRY(name)				\
- 	RING0_INT_FRAME;		\
-@@ -961,10 +941,6 @@ ENTRY(spurious_interrupt_bug)
- 	jmp error_code
- 	CFI_ENDPROC
- END(spurious_interrupt_bug)
--/*
-- * End of kprobes section
-- */
--	.popsection
- 
- #ifdef CONFIG_XEN
- /* Xen doesn't set %esp to be precisely what the normal sysenter
-@@ -1239,11 +1215,6 @@ return_to_handler:
- 	jmp *%ecx
- #endif
- 
--/*
-- * Some functions should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
--
- #ifdef CONFIG_TRACING
- ENTRY(trace_page_fault)
- 	RING0_EC_FRAME
-@@ -1453,7 +1424,3 @@ ENTRY(async_page_fault)
- END(async_page_fault)
- #endif
- 
--/*
-- * End of kprobes section
-- */
--	.popsection
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index e21b078..c48f8f9 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -487,8 +487,6 @@ ENDPROC(native_usergs_sysret64)
- 	TRACE_IRQS_OFF
- 	.endm
- 
--/* save complete stack frame */
--	.pushsection .kprobes.text, "ax"
- ENTRY(save_paranoid)
- 	XCPT_FRAME 1 RDI+8
- 	cld
-@@ -517,7 +515,6 @@ ENTRY(save_paranoid)
- 1:	ret
- 	CFI_ENDPROC
- END(save_paranoid)
--	.popsection
- 
- /*
-  * A newly forked process directly context switches into this address.
-@@ -975,10 +972,6 @@ END(interrupt)
- 	call \func
- 	.endm
- 
--/*
-- * Interrupt entry/exit should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
- 	/*
- 	 * The interrupt stubs push (~vector+0x80) onto the stack and
- 	 * then jump to common_interrupt.
-@@ -1113,10 +1106,6 @@ ENTRY(retint_kernel)
- 
- 	CFI_ENDPROC
- END(common_interrupt)
--/*
-- * End of kprobes section
-- */
--       .popsection
- 
- /*
-  * APIC interrupts.
-@@ -1477,11 +1466,6 @@ apicinterrupt3 HYPERVISOR_CALLBACK_VECTOR \
- 	hyperv_callback_vector hyperv_vector_handler
- #endif /* CONFIG_HYPERV */
- 
--/*
-- * Some functions should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
--
- paranoidzeroentry_ist debug do_debug DEBUG_STACK
- paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
- paranoiderrorentry stack_segment do_stack_segment
-@@ -1898,7 +1882,3 @@ ENTRY(ignore_sysret)
- 	CFI_ENDPROC
- END(ignore_sysret)
- 
--/*
-- * End of kprobes section
-- */
--	.popsection
 diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index a0d367a..ec0dbc7 100644
+index a3b323e..007235e 100644
 --- a/kernel/kprobes.c
 +++ b/kernel/kprobes.c
-@@ -96,9 +96,6 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
- static struct kprobe_blackpoint kprobe_blacklist[] = {
- 	{"preempt_schedule",},
- 	{"native_get_debugreg",},
--	{"irq_entries_start",},
--	{"common_interrupt",},
--	{"mcount",},	/* mcount can be called from everywhere */
- 	{NULL}    /* Terminator */
+@@ -2224,6 +2224,46 @@ static const struct file_operations debugfs_kprobes_operations = {
+ 	.release        = seq_release,
  };
  
-@@ -1328,8 +1325,11 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
++/* kprobes/blacklist -- shows which functions can not be probed */
++static void *kprobe_blacklist_seq_start(struct seq_file *m, loff_t *pos)
++{
++	return seq_list_start(&kprobe_blacklist, *pos);
++}
++
++static void *kprobe_blacklist_seq_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	return seq_list_next(v, &kprobe_blacklist, pos);
++}
++
++static int kprobe_blacklist_seq_show(struct seq_file *m, void *v)
++{
++	struct kprobe_blackpoint *bp =
++		list_entry(v, struct kprobe_blackpoint, list);
++
++	seq_printf(m, "0x%p-0x%p\t%s\n", (void *)bp->start_addr,
++		   (void *)(bp->start_addr + bp->range), bp->name);
++	return 0;
++}
++
++static const struct seq_operations kprobe_blacklist_seq_ops = {
++	.start = kprobe_blacklist_seq_start,
++	.next  = kprobe_blacklist_seq_next,
++	.stop  = kprobe_seq_stop,	/* Reuse void function */
++	.show  = kprobe_blacklist_seq_show,
++};
++
++static int kprobe_blacklist_open(struct inode *inode, struct file *filp)
++{
++	return seq_open(filp, &kprobe_blacklist_seq_ops);
++}
++
++static const struct file_operations debugfs_kprobe_blacklist_ops = {
++	.open           = kprobe_blacklist_open,
++	.read           = seq_read,
++	.llseek         = seq_lseek,
++	.release        = seq_release,
++};
++
+ static void __kprobes arm_all_kprobes(void)
  {
- 	struct kprobe_blackpoint *kb;
+ 	struct hlist_head *head;
+@@ -2347,19 +2387,24 @@ static int __kprobes debugfs_kprobe_init(void)
  
--	if (addr >= (unsigned long)__kprobes_text_start &&
--	    addr < (unsigned long)__kprobes_text_end)
-+	/* The __kprobes marked functions and entry code must not be probed */
-+	if ((addr >= (unsigned long)__kprobes_text_start &&
-+	     addr < (unsigned long)__kprobes_text_end) ||
-+	    (addr >= (unsigned long)__entry_text_start &&
-+	     addr < (unsigned long)__entry_text_end))
- 		return -EINVAL;
- 	/*
- 	 * If there exists a kprobe_blacklist, verify and
+ 	file = debugfs_create_file("list", 0444, dir, NULL,
+ 				&debugfs_kprobes_operations);
+-	if (!file) {
+-		debugfs_remove(dir);
+-		return -ENOMEM;
+-	}
++	if (!file)
++		goto error;
+ 
+ 	file = debugfs_create_file("enabled", 0600, dir,
+ 					&value, &fops_kp);
+-	if (!file) {
+-		debugfs_remove(dir);
+-		return -ENOMEM;
+-	}
++	if (!file)
++		goto error;
++
++	file = debugfs_create_file("blacklist", 0444, dir, NULL,
++				&debugfs_kprobe_blacklist_ops);
++	if (!file)
++		goto error;
+ 
+ 	return 0;
++
++error:
++	debugfs_remove(dir);
++	return -ENOMEM;
+ }
+ 
+ late_initcall(debugfs_kprobe_init);
 
