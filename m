@@ -1,124 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab3KOT7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 14:59:52 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:60604 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002Ab3KOT7q (ORCPT
+	id S1752852Ab3KOUEn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 15:04:43 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:52829 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab3KOUEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 14:59:46 -0500
-Message-ID: <52867D2E.2090907@gmail.com>
-Date: Fri, 15 Nov 2013 20:59:42 +0100
-From: Chang <changxiangzhong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 15 Nov 2013 15:04:36 -0500
+Date: Fri, 15 Nov 2013 20:04:35 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Tony Lindgren <tony@atomide.com>
+cc: Nishanth Menon <nm@ti.com>, rnayak@ti.com, khilman@linaro.org,
+        balbi@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] ARM: OMAP2+: omap_device: maintain sane runtime pm
+ status around suspend/resume
+In-Reply-To: <20131115143736.GW10317@atomide.com>
+Message-ID: <alpine.DEB.2.02.1311152002500.25958@utopia.booyaka.com>
+References: <1384297710-29694-1-git-send-email-nm@ti.com> <1384448716-3186-1-git-send-email-nm@ti.com> <alpine.DEB.2.02.1311150806220.15980@utopia.booyaka.com> <528621E5.4030201@ti.com> <20131115143736.GW10317@atomide.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Neil Horman <nhorman@tuxdriver.com>, Vlad Yasevich <vyasevich@gmail.com>
-CC: davem@davemloft.net, linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dreibh@simula.no, ernstgr@simula.no
-Subject: Re: [PATCH] net: sctp: recover a tranport when an ack comes
-References: <1384461624-17636-1-git-send-email-changxiangzhong@gmail.com> <5285884F.8030907@gmail.com> <20131115123055.GA29877@hmsreliant.think-freely.org> <5286291A.7060507@gmail.com> <20131115145609.GC29877@hmsreliant.think-freely.org>
-In-Reply-To: <20131115145609.GC29877@hmsreliant.think-freely.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've tried to catch you guys up~
+On Fri, 15 Nov 2013, Tony Lindgren wrote:
 
-Here's a quick question:
+> I can take it unless you have other fixes pending right now.
 
-Where are the default [transport->pf_retrans] and 
-[transport->pathmaxrtx] set? I could figure out that they could be set 
-through setsockopt(SCTP_PEER_ADDR_THLDS, ...) (but it seems like the 
-SCTP library has not supported such option yet, maybe that's due to my 
-library is out of date). So by default both of the two threshold are zero.
+Ran a quick test with the patch applied on v3.12, results here:
 
-Here's my question: Does it go conflict with "the recommended value for 
-Path.Max.Retrans in the standard is 5"?
+http://www.pwsan.com/omap/testlogs/test_nm_omap_device_fix_v3.12-rc/20131115123132/
 
-Thanks!
+No other fixes queued here right now, so:
 
-On 11/15/2013 03:56 PM, Neil Horman wrote:
-> On Fri, Nov 15, 2013 at 09:00:58AM -0500, Vlad Yasevich wrote:
->> On 11/15/2013 07:30 AM, Neil Horman wrote:
->>> On Thu, Nov 14, 2013 at 09:34:55PM -0500, Vlad Yasevich wrote:
->>>> On 11/14/2013 03:40 PM, Chang Xiangzhong wrote:
->>>>> Expected Behavior:
->>>>> When hearing an ack from a tranport/path, set its state to normal/on if it's
->>>>> in abnormal(__partial_failure__ or inactive) state.
->>>>>
->>>>> state machine of tranport->state
->>>>> Whenever a T3_RTX timer expires, then transport->error_count++.
->>>>> When (association->pf_retrans < transport->error_count < tranport->pathmaxrtx)
->>>>> 	transport->state = SCTP_PF //partial failure
->>>>>
->>>>> When a heartbeat-ack comes or conventional ack acknowledged its availability,
->>>>> 	transport->state = SCTP_ON
->>>>>
->>>>> Signed-off-by: Chang Xiangzhong <changxiangzhong@gmail.com>
->>>>> Fixes: 5aa93bcf66f ("sctp: Implement quick failover draft from tsvwg")
->>>> I don't think this is right.  The spec states:
->>>>   8.  ACKs for retransmissions do not transition a PF destination back
->>>>         to Active state, since a sender cannot disambiguate whether the
->>>>         ack was for the original transmission or the retransmission(s).
->>>>
->>>>
->>>> Now, the proper way to this would would be modify
->>>> sctp_assoc_control_transport() to transition the transport state to
->>>> ACTIVE if it was PF transport that was chosen to send data.
->>>>
->>>> -vlad
->>>>
->>> I agree, this patch doesn't agree with the spec, the only time we transition
->> >from PF to ACTIVE should be on receipt of ack of new data.
->>
->> You mean HB ACK, right?  The 02 spec that see on the ietf site doesn't
->> mention anything about transition on SACKs.  Also, there is no way to
->> tell right now if the ack is for new or retransmitted data.  We could
->> mark chunks that are retransmitted though.
->>
-> Yes, sorry I wasn't clear, I was speaknig about HB Acks.
->
->>> I'm not even sure if
->>> we should allow PF transports to be selected to send new data.  Currently a
->>> potentially failed transport will get ignored when specified, and the stack will
->>> use the active path in its place.  Only if all transports are PF will a PF
->>> transport be chosen.
->> Not even that :(.  If all transports are PF, we are going to camp on
->> the primary path instead of choosing a PF transport with the lowest
->> error count.
->>
-> Yes, we don't do the smallest error count check, though I have to wonder if
-> thats really worthwhile.  If all your transports are PF, you're a step away from
-> a connection reset anyway.
-> Neil
->
->> -vlad
->>
->>> Neil
->>>
->>>>> ---
->>>>>   net/sctp/outqueue.c |    1 +
->>>>>   1 file changed, 1 insertion(+)
->>>>>
->>>>> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
->>>>> index 94df758..2557fa5 100644
->>>>> --- a/net/sctp/outqueue.c
->>>>> +++ b/net/sctp/outqueue.c
->>>>> @@ -1517,6 +1517,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
->>>>>   			 * active if it is not so marked.
->>>>>   			 */
->>>>>   			if ((transport->state == SCTP_INACTIVE ||
->>>>> +			     transport->state == SCTP_PF ||
->>>>>   			     transport->state == SCTP_UNCONFIRMED) &&
->>>>>   			    sctp_cmp_addr_exact(&transport->ipaddr, saddr)) {
->>>>>   				sctp_assoc_control_transport(
->>>>>
->>>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
+Acked-by: Paul Walmsley <paul@pwsan.com>
 
+
+- Paul
