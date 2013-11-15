@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab3KOQJf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 11:09:35 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:43410 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab3KOQJU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 11:09:20 -0500
+	id S1753033Ab3KOQKF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 11:10:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48627 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752101Ab3KOQJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 11:09:57 -0500
+Date: Fri, 15 Nov 2013 17:09:52 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ak@linux.intel.com, andi@firstfloor.org, bp@suse.de,
+        fabio.estevam@freescale.com, jmario@redhat.com, josh@joshtriplett.org,
+        keescook@chromium.org, mmarek@suse.cz, slyfox@gentoo.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild changes for v3.13-rc1
+Message-ID: <20131115160952.GA19669@sepie.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20131115155822.GN26614@sirena.org.uk>
-References: <C3050A4DBA34F345975765E43127F10F1C08BAEF@szxeml512-mbs.china.huawei.com>
-	<CAGG-pUT22xoksid-2GmJsDmVQk8gR8zHvAr=r3Z2E4BLf+1jJA@mail.gmail.com>
-	<5286215A.4020009@linux.com>
-	<CAGG-pUQWnFN1pGFGw9BaE7kDt9ODfpCfmuNB1vV0Jn=mTXTVXA@mail.gmail.com>
-	<20131115155822.GN26614@sirena.org.uk>
-Date: Fri, 15 Nov 2013 14:09:19 -0200
-Message-ID: <CAGG-pUQ7pykDycLZZ1q1-ShqAN=XdX0DuhdzNtwTS5+C+GLfVQ@mail.gmail.com>
-Subject: Re: [PATCH] regmap: Fix 'ret' would return an uninitialized value
-From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: levex@linux.com, Caizhiyong <caizhiyong@hisilicon.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        Levente Kurusa <ilevex.linux@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/15 Mark Brown <broonie@kernel.org>:
-> On Fri, Nov 15, 2013 at 01:52:19PM -0200, Geyslan Gregório Bem wrote:
->
->> +       if (WARN_ONCE(num_regs <= 0, "number of registers [%d] must be
->> major than 0", num_regs))
->> +               return 0;
->
-> "must be more than" but yes.
+Hi Linus,
 
-Tks. Sorry for my poor english. :D
+please pull these kbuild commits for v3.13-rc1:
+- LTO fixes, but the kallsyms part had to be reverted
+- -Werror=implicit-int and -Werror=strict-prototypes is passsed to the
+  compiler by default
+- snprintf fix in modpost
+- GREP_OPTIONS is removed from the environment to be immune against
+  exotic grep option settings
 
--- 
-Regards,
+Thanks,
+Michal
 
-Geyslan G. Bem
-hackingbits.com
+
+The following changes since commit 272b98c6455f00884f0350f775c5342358ebb73f:
+
+  Linux 3.12-rc1 (2013-09-16 16:17:51 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kbuild
+
+for you to fetch changes up to 480f439c3db0d45d817d66caf3fa8e81a6fac01a:
+
+  kallsyms: Revert back to 128 max symbol length (2013-11-13 15:58:19 +0100)
+
+----------------------------------------------------------------
+Andi Kleen (2):
+      Kbuild: Handle longer symbols in kallsyms.c
+      kbuild, bloat-o-meter: fix static detection
+
+Borislav Petkov (1):
+      Kbuild: Ignore GREP_OPTIONS env variable
+
+Fabio Estevam (1):
+      scripts: kallsyms: Use %zu to print 'size_t'
+
+Joe Mario (1):
+      kbuild: Increase kallsyms max symbol length
+
+Josh Triplett (2):
+      scripts/bloat-o-meter: ignore changes in the size of linux_banner
+      scripts/bloat-o-meter: use .startswith rather than fragile slicing
+
+Kees Cook (1):
+      kbuild: replace unbounded sprintf call in modpost
+
+Michal Marek (1):
+      kallsyms: Revert back to 128 max symbol length
+
+Sergei Trofimovich (1):
+      Makefile: enable -Werror=implicit-int and -Werror=strict-prototypes by default
+
+ Makefile                 | 9 +++++++++
+ scripts/bloat-o-meter    | 7 ++++---
+ scripts/kallsyms.c       | 6 ++++++
+ scripts/mod/sumversion.c | 2 +-
+ 4 files changed, 20 insertions(+), 4 deletions(-)
