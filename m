@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab3KOPgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 10:36:20 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:38277 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab3KOPgM (ORCPT
+	id S1752778Ab3KOPhV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 10:37:21 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:39636 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab3KOPhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 10:36:12 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19vLi09LJ0aYg+IBZFVvdEb
-Date: Fri, 15 Nov 2013 07:36:08 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] ARM: OMAP4460: cpuidle: Extend
- PM_OMAP4_ROM_SMP_BOOT_ERRATUM_GICD on cpuidle
-Message-ID: <20131115153608.GX10317@atomide.com>
-References: <1382467484-16957-1-git-send-email-grygorii.strashko@ti.com>
- <5266CCE3.1090801@ti.com>
- <20131114183535.GL10317@atomide.com>
+	Fri, 15 Nov 2013 10:37:15 -0500
+Date: Fri, 15 Nov 2013 15:37:08 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: micky <micky_ching@realsil.com.cn>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, linus.walleij@linaro.org
+Subject: Re: [PATCH 2/4] mfd: rtsx: Generify the switch voltage routine
+Message-ID: <20131115153708.GE4996@lee--X1>
+References: <1384421355-4434-1-git-send-email-lee.jones@linaro.org>
+ <1384421355-4434-3-git-send-email-lee.jones@linaro.org>
+ <52858DF6.7010800@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131114183535.GL10317@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52858DF6.7010800@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [131114 10:36]:
-> * Grygorii Strashko <grygorii.strashko@ti.com> [131022 12:09]:
-> > The same workaround as ff999b8a0983ee15668394ed49e38d3568fc6859
-> > "ARM: OMAP4460: Workaround for ROM bug because of CA9 r2pX GIC ..."
-> > need to be applied not only when system is booting, but when MPUSS hits
-> > OSWR state through CPUIdle too. Without this WA the same issue is
-> > reproduced now on boards PandaES and Tablet/Blaze with SOM OMAP4460
-> > when CONFIG_CPU_IDLE is enabled.
-> > After MPUSS has enterred OSWR and waken up:
-> > - GIC distributor became disabled forever
-> > - scheduling is not performed any more
-> > 
-> > Cc: Kevin Hilman <khilman@linaro.org>
-> > Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> > Reported-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-> > Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> Switch output voltage may have some problem here.
+> 1. modify params of function in pcr_ops may affect other chips, like
+> rts52xx, and we may add other registers or value in the future, just
+> add params may not enough to handle this case. So I think different
+> chip should use a different function here, and modify the function
+> will not affect others.
+
+Okay, I agree to a certain extent. I'll drop this patch for now.
+
+Can you please try to find a way to consolidate them. I'm really not
+keen on keeping 6 functions around that are mostly identical.
+
+> 2. rtl8402 has another difference with 8411 here, it doesn't use
+>  BPP_ASIC_1V8, but use BPP_ASIC_2V0.
 > 
-> Applying into omap-for-v3.13/fixes thanks.
+> so, I will send another patch to fix this problem.
+> 
+> >-static int rtl8411_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+> >+static int rtl84xx_switch_output_voltage(struct rtsx_pcr *pcr,
+> >+					 u8 voltage, int shift)
+> >  {
+> >  	u8 mask, val;
+> >  	int err;
+> >-	mask = (BPP_REG_TUNED18 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_MASK;
+> >+	mask = (BPP_REG_TUNED18 << shift) | BPP_PAD_MASK;
+> >  	if (voltage == OUTPUT_3V3) {
+> >  		err = rtsx_pci_write_register(pcr,
+> >  				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_3v3);
+> >  		if (err < 0)
+> >  			return err;
+> >-		val = (BPP_ASIC_3V3 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_3V3;
+> >+		val = (BPP_ASIC_3V3 << shift) | BPP_PAD_3V3;
+> >  	} else if (voltage == OUTPUT_1V8) {
+> >  		err = rtsx_pci_write_register(pcr,
+> >  				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_1v8);
+> >  		if (err < 0)
+> >  			return err;
+> >-		val = (BPP_ASIC_1V8 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_1V8;
+> >+		val = (BPP_ASIC_1V8 << shift) | BPP_PAD_1V8;
+> >  	} else {
+> >  		return -EINVAL;
+> >  	}
+> 
+> 
 
-Hmm looks like this breaks the build with randconfigs at least
-with the attached .config, so dropping for now.
-
-arch/arm/mach-omap2/built-in.o: In function `omap_enter_idle_coupled':
-:(.text+0xb48c): undefined reference to `pm44xx_errata'
-
-Can you please check and repost?
-
-Thanks,
-
-Tony
-
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
