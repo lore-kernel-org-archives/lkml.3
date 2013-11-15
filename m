@@ -1,124 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699Ab3KOQhi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 11:37:38 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56958 "EHLO
+	id S1752354Ab3KOQis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 11:38:48 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56987 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751053Ab3KOQhb (ORCPT
+	by vger.kernel.org with ESMTP id S1751053Ab3KOQih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 11:37:31 -0500
-Date: Fri, 15 Nov 2013 16:37:18 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Fri, 15 Nov 2013 11:38:37 -0500
+Date: Fri, 15 Nov 2013 16:38:18 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "davidb@codeaurora.org" <davidb@codeaurora.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping support
-Message-ID: <20131115163718.GH19468@mudshark.cambridge.arm.com>
-References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
- <1382008671-4515-3-git-send-email-sandeepa.prabhu@linaro.org>
- <20131108165639.GD15074@mudshark.cambridge.arm.com>
- <CA+b37P2Yt8Hb_fgtLfw56DO=ZGC0LxVkxJHftHdxa45HQTXJcQ@mail.gmail.com>
- <20131111112110.GD28302@mudshark.cambridge.arm.com>
- <CA+b37P1REzXJabkiNEc5Ji+n6p02PfuSdaPrb-k4P25kgfkLNQ@mail.gmail.com>
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4 10/15] usb: phy: msm: Add device tree support and
+ binding information
+Message-ID: <20131115163818.GH24831@e106331-lin.cambridge.arm.com>
+References: <1384267910-32066-1-git-send-email-iivanov@mm-sol.com>
+ <1384267910-32066-11-git-send-email-iivanov@mm-sol.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+b37P1REzXJabkiNEc5Ji+n6p02PfuSdaPrb-k4P25kgfkLNQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1384267910-32066-11-git-send-email-iivanov@mm-sol.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 06:52:51AM +0000, Sandeepa Prabhu wrote:
-> On 11 November 2013 16:51, Will Deacon <will.deacon@arm.com> wrote:
-> > On Mon, Nov 11, 2013 at 05:35:37AM +0000, Sandeepa Prabhu wrote:
-> >> On 8 November 2013 22:26, Will Deacon <will.deacon@arm.com> wrote:
-> >> >> +#define MAX_INSN_SIZE                  2
-> >> >
-> >> > Why is this 2?
-> >> Second entry is to hold NOP instruction, absence of it cause abort
-> >> while instruction decode.
-> >
-> > Hmm, can you elaborate please? I'm not sure why you should get an abort
-> > decoding kernel addresses.
-> well, kprobes does not step from kernel address, but it prepares a
-> allocated memory(executable),  copies the instruction and update the
-> single step address (ELR) to enable stepping while ERET.
-> So, don't we need NOP at next location after the instruction because
-> next instruction will be in decode stage and might throw "undefined
-> instruction" error?
+On Tue, Nov 12, 2013 at 02:51:45PM +0000, Ivan T. Ivanov wrote:
+> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> 
+> Allows MSM OTG controller to be specified via device tree.
+> 
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> Cc: devicetree@vger.kernel.org
+> ---
+>  .../devicetree/bindings/usb/msm-hsusb.txt          |   57 +++++++++++++-
+>  drivers/usb/phy/phy-msm-usb.c                      |   79 +++++++++++++++++---
+>  2 files changed, 124 insertions(+), 12 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/usb/msm-hsusb.txt b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+> index 0a85eba..f1045e3 100644
+> --- a/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+> +++ b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+> @@ -30,4 +30,59 @@ Required properties:
+>  		dr_mode = "peripheral";
+>  		interrupts = <0 134 0>;
+>  		usb-phy = <&usb_otg>;
+> -	};
+> \ No newline at end of file
+> +	};
+> +
+> +USB PHY with optional OTG:
+> +
+> +Required properties:
+> +- compatible:	should contain "qcom,usb-otg-ci" for chipsets with
+> +				Chipidea 45nm PHY or "qcom,usb-otg-snps" for chipsets
+> +				with Synopsys 28nm PHY
 
-You can't take speculative prefetch aborts like that, so unless you actually
-go and *execute* garbage, you don't need that NOP. From the sounds of it, it's
-not required, as long as you handle the step exception correctly.
+To make this easier to read and extend in future, I'd reorganise this
+like so:
 
-> >> > NAK. Unmasking debug exceptions from within a debug exception is not safe.
-> >> > I'd much rather we returned from handling this exception, then took whatever
-> >> > other pending exception there was.
-> >> well, kprobes needs recursive breakpoints to be handled, and I am not
-> >> sure if this can be achieved other way than unmasking D-flag for a
-> >> shorter duration where we can expect re-entry (I would check if this
-> >> can be done without re-cursing)
-> >> I want to understand why unmasking D-flag is unsafe here, kprobes make
-> >> sure that recursion depth is only 2 (i.e. does not generate 3rd
-> >> Breakpoint trap) and interrupts are kept masked while recursion/single
-> >> stepping. Is it unsafe only if conflict with hardware breakpoint on
-> >> same CPU?
-> >
-> > Is this recursion only to support setting kprobes on the kprobe
-> > implementation? The problem is that the rest of the debug infrastructure is
-> > not set up to deal with recursive exceptions, so allowing them can break
-> > state machines maintained by code like hw_breakpoint.
-> No, upon one kprobe hit for an address, the subsystem can call the
-> user-defined handlers (pre- and -post) which can call same function
-> again. Example, if we place kprobe on "printk" entry, and registered
-> handler can invoke printk to print more info.
+compatible: should contain:
+ * "qcom,usb-otg-ci" for chipsets with Chipidea 45nm PHY
+ * "qcom,usb-otg-snps" for chipsets with Synopsys 28nm PHY
 
-Hang on, I think I'm missing something here. If you run into a recursive
-probe, you'll simply hit another BRK instruction, right? That should be
-fine, since PSTATE.D doesn't mask software breakpoint exceptions. The
-tricky part comes when you try to step over that guy, but you might be ok
-if you clear PSTATE.D *only* while you step your single instruction that you
-copied out to the buffer.
+> +- regs:			offset and length of the register set in the memory map
+> +- interrupts:	interrupt-specifier for the OTG interrupt.
+> +
+> +- clocks:		A list of phandle + clock-specifier pairs for the
+> +				clocks listed in clock-names
+> +- clock-names:	Should contain the following:
+> +  "phy"			USB PHY reference clock
+> +  "core"		Protocol engine clock
+> +  "iface"		Interface bus clock
+> +  "alt_core"	Optional: Protocol engine clock for targets with asynchronous
+> +				reset methodology.
 
-What do you think? I'd really like you to try testing something like:
+I'd rearrange that last entry:
 
-  1. Place a hardware breakpoint in the kernel
-  2. Place a kprobe on the same address
-  3. Place a kprobe somewhere in the pre- hook for the kprobe placed in (2)
+"alt_core": Protocol engine clock for targets with asynchronous
+            reset methodology. (optional)
 
-then check that (a) we manage to get through that lot without locking up and
-(b) each probe/breakpoint is hit exactly once.
+> +
+> +- dr_mode:		One of "host", "peripheral" or "otg". Defaults to "otg"
 
-> This will make kprobe to trigger again and re-enter, so the kprobe
-> subsystem need to handle the 2nd instance first, and then return back
-> to previous execution. D-flag is enabled only the duration when the
-> pre- and post- handler are called, so they they can recurse and handle
-> single stepping, after that, D-flag is kept disabled.   I am yet to
-> test the concurrency with hw_breakpoint, would update once I run these
-> tests.
+If this has a default and thus isn't required, it should be listed as
+optional.
 
-If you really want to support this, you need to do more than just clear the
-D flag. Not only do you need to deal with hardware breakpoints, but also
-things like scheduling... Assuming that the user-defined handlers can block,
-then you run the risk of context-switching with the D-flag set, which
-introduces a significant black-out period to kernel debugging. There are
-also issues like returning to userspace with MDSCR_EL1.SS set because of a
-context switch triggered by the pre- handler, resulting in a single-step
-exception from userspace.
+> +
+> +- vdccx-supply:	phandle to the regulator for the vdd supply for
+> +				digital circuit operation.
+> +- v1p8-supply:	phandle to the regulator for the 1.8V supply
+> +- v3p3-supply:	phandle to the regulator for the 3.3V supply
+> +
+> +- qcom,otg-control: OTG control (VBUS and ID notifications) can be one of
+> +				1 - PHY control
+> +				2 - PMIC control
+> +				3 - User control (via debugfs)
 
-I reckon what I suggested above might work, but I'd like your input.
+NAK. This does not seem like a description of the hardware, and given
+the debugfs comment is fundamentally tied to the way Linux functions
+today.
 
-Will
+> +
+> +Optional properties:
+> +- qcom,phy-init-sequence: PHY configuration sequence. val, reg pairs
+> +				terminate with -1
+
+What is this? I'm really not keen on having arbitrary register/memory
+poking sequences in the dt.
+
+Why does it need to be terminated? Surely the size of the property tells
+you that it's terminated.
+
+> +
+> +Example HSUSB OTG controller device node:
+> +
+> +	usb@f9a55000 {
+> +		compatible = "qcom,usb-otg-snps";
+> +		reg = <0xf9a55000 0x400>;
+> +		interrupts = <0 134 0>;;
+
+s/;;/;/
+
+> +		dr_mode = "peripheral";
+> +
+> +		clocks = <&gcc GCC_XO_CLK>, <&gcc GCC_USB_HS_SYSTEM_CLK>,
+> +				<&gcc GCC_USB_HS_AHB_CLK>;
+> +
+> +		clock-names = "phy", "core", "iface";
+> +
+> +		vddcx-supply = <&pm8841_s2_corner>;
+> +		v1p8-supply = <&pm8941_l6>;
+> +		v3p3-supply = <&pm8941_l24>;
+> +
+> +		qcom,otg-control = <1>;
+> +		qcom,phy-init-sequence = <0x01 0x90 0xffffffff>;
+
+I believe modern dtc versions can handle negative numbers directly.
+
+[...]
+
+> +static int msm_otg_read_dt(struct platform_device *pdev, struct msm_otg *motg)
+> +{
+> +	struct msm_otg_platform_data *pdata;
+> +	const struct of_device_id *id;
+> +	struct device_node *node = pdev->dev.of_node;
+> +	int len = 0;
+> +	u32 val;
+> +
+> +	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+> +	if (!pdata)
+> +		return -ENOMEM;
+> +
+> +	motg->pdata = pdata;
+> +
+> +	id = of_match_device(msm_otg_dt_match, &pdev->dev);
+> +	pdata->phy_type = (int) id->data;
+> +
+> +	pdata->mode = of_usb_get_dr_mode(node);
+> +	if (pdata->mode == USB_DR_MODE_UNKNOWN)
+> +		pdata->mode = USB_DR_MODE_OTG;
+> +
+> +	pdata->otg_control = OTG_PHY_CONTROL;
+> +	if (!of_property_read_u32(node, "qcom,otg-control", &val))
+> +		pdata->otg_control = val;
+
+Is this validated elsewhere?
+
+Thanks,
+Mark.
