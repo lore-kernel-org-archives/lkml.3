@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab3KOMWK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 07:22:10 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42887 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab3KOMV6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 07:21:58 -0500
-Date: Fri, 15 Nov 2013 12:21:08 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolin Chen <b42378@freescale.com>
-Cc: timur@tabi.org, shawn.guo@linaro.org, broonie@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        alsa-devel@alsa-project.org, ijc+devicetree@hellion.org.uk,
-        swarren@wwwdotorg.org, mark.rutland@arm.com, pawel.moll@arm.com,
-        rob.herring@calxeda.com, lgirdwood@gmail.com
-Subject: Re: [PATCH 2/2] ASoC: fsl_ssi: Add monaural audio support for
-	non-ac97 interface
-Message-ID: <20131115122107.GK16735@n2100.arm.linux.org.uk>
-References: <1384427230-979-1-git-send-email-b42378@freescale.com> <1384427230-979-3-git-send-email-b42378@freescale.com>
+	id S1751220Ab3KOM0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 07:26:37 -0500
+Received: from mga02.intel.com ([134.134.136.20]:25565 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750960Ab3KOM03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 07:26:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="409327949"
+Message-ID: <5286149E.9040800@intel.com>
+Date: Fri, 15 Nov 2013 14:33:34 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384427230-979-3-git-send-email-b42378@freescale.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 10/10] perf record: Add an option to force per-cpu mmaps
+References: <1384460715-23198-1-git-send-email-acme@infradead.org> <1384460715-23198-11-git-send-email-acme@infradead.org> <20131115060643.GA9237@gmail.com> <5285FECE.7020802@intel.com> <20131115111032.GA18647@gmail.com> <52860529.50200@intel.com> <20131115115629.GB19004@gmail.com> <20131115120329.GH2965@twins.programming.kicks-ass.net> <20131115120525.GA20855@gmail.com>
+In-Reply-To: <20131115120525.GA20855@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 07:07:10PM +0800, Nicolin Chen wrote:
-> The normal mode of SSI allows it to send/receive data to/from the first
-> slot of each period. So we can use this normal mode to trick I2S signal
-> by puting/getting data to/from the first slot only (the left channel)
-> so as to support monaural audio playback and recording.
+On 15/11/13 14:05, Ingo Molnar wrote:
 > 
-> Signed-off-by: Nicolin Chen <b42378@freescale.com>
-> ---
->  sound/soc/fsl/fsl_ssi.c | 22 +++++++++++++++++++---
->  1 file changed, 19 insertions(+), 3 deletions(-)
+> * Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
-> index f43be6d..ccf1d38 100644
-> --- a/sound/soc/fsl/fsl_ssi.c
-> +++ b/sound/soc/fsl/fsl_ssi.c
-> @@ -517,10 +517,12 @@ static int fsl_ssi_hw_params(struct snd_pcm_substream *substream,
->  {
->  	struct fsl_ssi_private *ssi_private = snd_soc_dai_get_drvdata(cpu_dai);
->  	struct ccsr_ssi __iomem *ssi = ssi_private->ssi;
-> +	unsigned int channels = params_channels(hw_params);
->  	unsigned int sample_size =
->  		snd_pcm_format_width(params_format(hw_params));
->  	u32 wl = CCSR_SSI_SxCCR_WL(sample_size);
->  	int enabled = read_ssi(&ssi->scr) & CCSR_SSI_SCR_SSIEN;
-> +	static u8 i2s_mode;
+>> On Fri, Nov 15, 2013 at 12:56:29PM +0100, Ingo Molnar wrote:
+>>> So, here's the current status quo, there's 4 basic types of profiling 
+>>> that 99% of the people are using, in order of popularity:
+>>>
+>>> 	perf record <cmd>
+>>> 	perf record -a sleep N
+>>> 	perf record -p <PID>
+>>> 	perf record -t <TID>
+>>>
+>>> The first two (which I'd guess comprise about 95% of real-world usage) 
+>>> have inheritance enabled.
+>>>
+>>> The last two (-p/-t) have inheritance disabled by default.
+>>
+>> Yes, and I would expect it to be disabled for the TID option as you 
+>> explicitly select a single threads.
+> 
+> Correct.
+> 
+>> For the process wide thing it would make sense to enable inheritance 
+>> by default though.
+>>
+>> So the big trade-off is that for single threaded processes which do 
+>> not fork you now have a single buffer, whereas with the inheritance 
+>> option you'll end up with nr_cpus buffers by default.
+>>
+>> I suppose for most normal people that's not really an issue; and I 
+>> suppose all people with silly large machines already pay extra 
+>> attention -- but at least make it explicit and very clear that this 
+>> is so.
+> 
+> Do the first variant, 'perf record <cmd>', already use per CPU 
+> buffers?
 
-Throwing a static variable into the middle of a driver with none is a
-really horrid thing to do and is very bad programming practice.  What
-if some freescale device decides to have to of these interfaces?  Both
-will try to use this same static variable.
+Yes.
 
-This is extremely bad programming practice.
+Another difference (and I need to fix the patch) is that per-cpu mmaps
+require PERF_SAMPLE_TIME so that the events do not appear out of order.
 
->  
->  	/*
->  	 * If we're in synchronous mode, and the SSI is already enabled,
-> @@ -546,6 +548,21 @@ static int fsl_ssi_hw_params(struct snd_pcm_substream *substream,
->  	else
->  		write_ssi_mask(&ssi->srccr, CCSR_SSI_SxCCR_WL_MASK, wl);
->  
-> +	if (ssi_private->imx_ac97)
-> +		return 0;
-> +
-> +	/* Save i2s mode configuration so that we can restore it later */
-> +	switch (read_ssi(&ssi->scr) & CCSR_SSI_SCR_I2S_MODE_MASK) {
-> +	case CCSR_SSI_SCR_I2S_MODE_SLAVE:
-> +	case CCSR_SSI_SCR_I2S_MODE_MASTER:
-> +		i2s_mode = read_ssi(&ssi->scr) & CCSR_SSI_SCR_I2S_MODE_MASK;
-> +	default:
-> +		break;
-> +	}
-
-So all you're doing is saving the mode only if it specifies master or
-slave mode, but not if it's normal mode (== 0).  This just looks like
-it's complicated just for the sake of being complicated.
-
-Since we know what mode this is in when we run fsl_ssi_setup(), can we
-not save that value into the fsl_ssi_private structure and re-use it
-here?
