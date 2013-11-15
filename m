@@ -1,55 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab3KOXGw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 18:06:52 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:2121 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab3KOXGp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 18:06:45 -0500
-Message-ID: <1384556525.1791.4.camel@misato.fc.hp.com>
-Subject: Re: [patch 1/7 v2] Add function efi_remap_region for remapping to
- saved virt address
-From: Toshi Kani <toshi.kani@hp.com>
-To: dyoung@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de
-Date: Fri, 15 Nov 2013 16:02:05 -0700
-In-Reply-To: <20131105082715.502723229@dhcp-16-126.nay.redhat.com>
-References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com>
-	 <20131105082715.502723229@dhcp-16-126.nay.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753571Ab3KOXHO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 18:07:14 -0500
+Received: from mga14.intel.com ([143.182.124.37]:37226 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753373Ab3KOXHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 18:07:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,710,1378882800"; 
+   d="scan'208";a="428544786"
+Subject: [v3][PATCH 2/2] mm: thp: give transparent hugepage code a separate copy_page
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, dave.jiang@intel.com,
+        akpm@linux-foundation.org, dhillf@gmail.com,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Mel Gorman <mgorman@suse.de>, Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Fri, 15 Nov 2013 14:55:53 -0800
+References: <20131115225550.737E5C33@viggo.jf.intel.com>
+In-Reply-To: <20131115225550.737E5C33@viggo.jf.intel.com>
+Message-Id: <20131115225553.B0E9DFFB@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-05 at 16:20 +0800, dyoung@redhat.com wrote:
-> Kexec kernel will use saved runtime virtual mapping, so add a
-> new function efi_remap_region to remapping it directly without
-> calculate the virt addr from efi_va.
-> 
-> The md is passed in from 1st kernel, the virtual addr is
-> saved in md->virt_addr.
 
- :
+Changes from v2:
+ * 
+Changes from v1:
+ * removed explicit might_sleep() in favor of the one that we
+   get from the cond_resched();
 
-> +/*
-> + * kexec kernel will use efi_map_region_fixed to map efi
-> + * runtime memory ranges. md->virt_addr is the original virtual
-> + * address which had been mapped in kexec 1st kernel.
-> + */
-> +void __init efi_map_region_fixed(efi_memory_desc_t *md)
+--
 
-Can you simply use __map_region() instead of creating this function?
-Both functions seem to do the same thing.  (In __map_region(), size and
-end are not used.)
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-Thanks,
--Toshi
+Right now, the migration code in migrate_page_copy() uses
+copy_huge_page() for hugetlbfs and thp pages:
 
+       if (PageHuge(page) || PageTransHuge(page))
+                copy_huge_page(newpage, page);
+
+So, yay for code reuse.  But:
+
+void copy_huge_page(struct page *dst, struct page *src)
+{
+        struct hstate *h = page_hstate(src);
+
+and a non-hugetlbfs page has no page_hstate().  This works 99% of
+the time because page_hstate() determines the hstate from the
+page order alone.  Since the page order of a THP page matches the
+default hugetlbfs page order, it works.
+
+But, if you change the default huge page size on the boot
+command-line (say default_hugepagesz=1G), then we might not even
+*have* a 2MB hstate so page_hstate() returns null and
+copy_huge_page() oopses pretty fast since copy_huge_page()
+dereferences the hstate:
+
+void copy_huge_page(struct page *dst, struct page *src)
+{
+        struct hstate *h = page_hstate(src);
+        if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
+...
+
+Mel noticed that the migration code is really the only user of
+these functions.  This moves all the copy code over to migrate.c
+and makes copy_huge_page() work for THP by checking for it
+explicitly.
+
+I believe the bug was introduced in b32967ff101:
+Author: Mel Gorman <mgorman@suse.de>
+Date:   Mon Nov 19 12:35:47 2012 +0000
+mm: numa: Add THP migration for the NUMA working set scanning fault case.
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
+
+ linux.git-davehans/include/linux/hugetlb.h |    4 --
+ linux.git-davehans/mm/hugetlb.c            |   34 --------------------
+ linux.git-davehans/mm/migrate.c            |   48 +++++++++++++++++++++++++++++
+ 3 files changed, 48 insertions(+), 38 deletions(-)
+
+diff -puN mm/migrate.c~copy-huge-separate-from-copy-transhuge mm/migrate.c
+--- linux.git/mm/migrate.c~copy-huge-separate-from-copy-transhuge	2013-11-15 14:44:55.256970259 -0800
++++ linux.git-davehans/mm/migrate.c	2013-11-15 14:45:17.457963844 -0800
+@@ -442,6 +442,54 @@ int migrate_huge_page_move_mapping(struc
+ }
+ 
+ /*
++ * Gigantic pages are so large that the we do not guarantee
++ * that page++ pointer arithmetic will work across the
++ * entire page.  We need something more specialized.
++ */
++static void __copy_gigantic_page(struct page *dst, struct page *src,
++				int nr_pages)
++{
++	int i;
++	struct page *dst_base = dst;
++	struct page *src_base = src;
++
++	for (i = 0; i < nr_pages; ) {
++		cond_resched();
++		copy_highpage(dst, src);
++
++		i++;
++		dst = mem_map_next(dst, dst_base, i);
++		src = mem_map_next(src, src_base, i);
++	}
++}
++
++static void copy_huge_page(struct page *dst, struct page *src)
++{
++	int i;
++	int nr_pages;
++
++	if (PageHuge(src)) {
++		/* hugetlbfs page */
++		struct hstate *h = page_hstate(src);
++		nr_pages = pages_per_huge_page(h);
++
++		if (unlikely(nr_pages > MAX_ORDER_NR_PAGES)) {
++			__copy_gigantic_page(dst, src, nr_pages);
++			return;
++		}
++	} else {
++		/* thp page */
++		BUG_ON(!PageTransHuge(src));
++		nr_pages = hpage_nr_pages(src);
++	}
++
++	for (i = 0; i < nr_pages; i++ ) {
++		cond_resched();
++		copy_highpage(dst + i, src + i);
++	}
++}
++
++/*
+  * Copy the page to its new location
+  */
+ void migrate_page_copy(struct page *newpage, struct page *page)
+diff -puN mm/hugetlb.c~copy-huge-separate-from-copy-transhuge mm/hugetlb.c
+--- linux.git/mm/hugetlb.c~copy-huge-separate-from-copy-transhuge	2013-11-15 14:44:55.261970484 -0800
++++ linux.git-davehans/mm/hugetlb.c	2013-11-15 14:44:55.389976227 -0800
+@@ -476,40 +476,6 @@ static int vma_has_reserves(struct vm_ar
+ 	return 0;
+ }
+ 
+-static void copy_gigantic_page(struct page *dst, struct page *src)
+-{
+-	int i;
+-	struct hstate *h = page_hstate(src);
+-	struct page *dst_base = dst;
+-	struct page *src_base = src;
+-
+-	for (i = 0; i < pages_per_huge_page(h); ) {
+-		cond_resched();
+-		copy_highpage(dst, src);
+-
+-		i++;
+-		dst = mem_map_next(dst, dst_base, i);
+-		src = mem_map_next(src, src_base, i);
+-	}
+-}
+-
+-void copy_huge_page(struct page *dst, struct page *src)
+-{
+-	int i;
+-	struct hstate *h = page_hstate(src);
+-
+-	if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
+-		copy_gigantic_page(dst, src);
+-		return;
+-	}
+-
+-	might_sleep();
+-	for (i = 0; i < pages_per_huge_page(h); i++) {
+-		cond_resched();
+-		copy_highpage(dst + i, src + i);
+-	}
+-}
+-
+ static void enqueue_huge_page(struct hstate *h, struct page *page)
+ {
+ 	int nid = page_to_nid(page);
+diff -puN include/linux/hugetlb.h~copy-huge-separate-from-copy-transhuge include/linux/hugetlb.h
+--- linux.git/include/linux/hugetlb.h~copy-huge-separate-from-copy-transhuge	2013-11-15 14:44:55.263970574 -0800
++++ linux.git-davehans/include/linux/hugetlb.h	2013-11-15 14:44:55.325973356 -0800
+@@ -69,7 +69,6 @@ int dequeue_hwpoisoned_huge_page(struct
+ bool isolate_huge_page(struct page *page, struct list_head *list);
+ void putback_active_hugepage(struct page *page);
+ bool is_hugepage_active(struct page *page);
+-void copy_huge_page(struct page *dst, struct page *src);
+ 
+ #ifdef CONFIG_ARCH_WANT_HUGE_PMD_SHARE
+ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud);
+@@ -140,9 +139,6 @@ static inline int dequeue_hwpoisoned_hug
+ #define isolate_huge_page(p, l) false
+ #define putback_active_hugepage(p)	do {} while (0)
+ #define is_hugepage_active(x)	false
+-static inline void copy_huge_page(struct page *dst, struct page *src)
+-{
+-}
+ 
+ static inline unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+ 		unsigned long address, unsigned long end, pgprot_t newprot)
+_
