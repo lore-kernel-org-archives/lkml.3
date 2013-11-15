@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758282Ab3KOEyY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 23:54:24 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:57692 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758225Ab3KOEyM (ORCPT
+	id S932353Ab3KOE5u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 23:57:50 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:35236 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758261Ab3KOEyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 23:54:12 -0500
-X-AuditID: 85900ec0-d0927b9000001514-f2-5285a8f1dd2d
-Subject: [PATCH -tip RFC v2 18/22] x86/dumpstack: Use NOKPROBE_SYMBOL macro
- in dumpstack.c
+	Thu, 14 Nov 2013 23:54:23 -0500
+X-AuditID: 85900ec0-cff26b9000001514-f8-5285a8fc75c3
+Subject: [PATCH -tip RFC v2 22/22] sched: Use NOKPROBE_SYMBOL macro in sched
 To: Ingo Molnar <mingo@kernel.org>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Vineet Gupta <vgupta@synopsys.com>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
         lkml <linux-kernel@vger.kernel.org>,
         "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
         virtualization@lists.linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jiri Slaby <jslaby@suse.cz>, "David S. Miller" <davem@davemloft.net>
-Date: Fri, 15 Nov 2013 04:54:08 +0000
-Message-ID: <20131115045408.27580.10378.stgit@kbuild-fedora.novalocal>
+        Ingo Molnar <mingo@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Fri, 15 Nov 2013 04:54:19 +0000
+Message-ID: <20131115045419.27580.71058.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <20131115045312.27580.95902.stgit@kbuild-fedora.novalocal>
 References: <20131115045312.27580.95902.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.16
@@ -34,63 +31,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use NOKPROBE_SYMBOL macro for protecting functions
-from kprobes instead of __kprobes annotation in
-dumpstack.c.
+Use NOKPROBE_SYMBOL macro to protect functions from
+kprobes instead of __kprobes annotation in sched/core.c.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Vineet Gupta <vgupta@synopsys.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/x86/kernel/dumpstack.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ kernel/sched/core.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index d9c12d3..b74ebc7 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -200,7 +200,7 @@ static arch_spinlock_t die_lock = __ARCH_SPIN_LOCK_UNLOCKED;
- static int die_owner = -1;
- static unsigned int die_nest_count;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 504fdbd..fece2e3 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2342,7 +2342,7 @@ notrace unsigned long get_parent_ip(unsigned long addr)
+ #if defined(CONFIG_PREEMPT) && (defined(CONFIG_DEBUG_PREEMPT) || \
+ 				defined(CONFIG_PREEMPT_TRACER))
  
--unsigned __kprobes long oops_begin(void)
-+unsigned long oops_begin(void)
+-void __kprobes preempt_count_add(int val)
++void preempt_count_add(int val)
  {
- 	int cpu;
- 	unsigned long flags;
-@@ -223,8 +223,9 @@ unsigned __kprobes long oops_begin(void)
- 	return flags;
+ #ifdef CONFIG_DEBUG_PREEMPT
+ 	/*
+@@ -2363,8 +2363,9 @@ void __kprobes preempt_count_add(int val)
+ 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
  }
- EXPORT_SYMBOL_GPL(oops_begin);
-+NOKPROBE_SYMBOL(oops_begin);
+ EXPORT_SYMBOL(preempt_count_add);
++NOKPROBE_SYMBOL(preempt_count_add);
  
--void __kprobes oops_end(unsigned long flags, struct pt_regs *regs, int signr)
-+void oops_end(unsigned long flags, struct pt_regs *regs, int signr)
+-void __kprobes preempt_count_sub(int val)
++void preempt_count_sub(int val)
  {
- 	if (regs && kexec_should_crash(current))
- 		crash_kexec(regs);
-@@ -247,8 +248,9 @@ void __kprobes oops_end(unsigned long flags, struct pt_regs *regs, int signr)
- 		panic("Fatal exception");
- 	do_exit(signr);
+ #ifdef CONFIG_DEBUG_PREEMPT
+ 	/*
+@@ -2385,6 +2386,7 @@ void __kprobes preempt_count_sub(int val)
+ 	__preempt_count_sub(val);
  }
-+NOKPROBE_SYMBOL(oops_end);
+ EXPORT_SYMBOL(preempt_count_sub);
++NOKPROBE_SYMBOL(preempt_count_sub);
  
--int __kprobes __die(const char *str, struct pt_regs *regs, long err)
-+int __die(const char *str, struct pt_regs *regs, long err)
- {
- #ifdef CONFIG_X86_32
- 	unsigned short ss;
-@@ -291,6 +293,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
  #endif
- 	return 0;
- }
-+NOKPROBE_SYMBOL(__die);
  
- /*
-  * This is gone through when something in the kernel has done something bad
 
