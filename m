@@ -1,119 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058Ab3KOAvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 19:51:00 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:45138 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860Ab3KOAux (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 19:50:53 -0500
-Date: Thu, 14 Nov 2013 17:50:49 -0700
-From: jerry.hoemann@hp.com
-To: Pekka Enberg <penberg@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86 maintainers <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "list@ebiederm.org:DOCUMENTATION <linux-doc@vger.kernel.org>,
-	list@ebiederm.org:MEMORY MANAGEMENT <linux-mm@kvack.org>," 
-	<linux-doc@vger.kernel.org>,
-        linux-efi@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-Message-ID: <20131115005049.GJ5116@anatevka.fc.hp.com>
-Reply-To: jerry.hoemann@hp.com
-References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com>
- <d73ccce9-6a0d-4470-bda3-f0c6eb96b5e4@email.android.com>
- <20131113224503.GB25344@anatevka.fc.hp.com>
- <52840206.5020006@zytor.com>
- <20131113235708.GC25344@anatevka.fc.hp.com>
- <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
- <20131114180455.GA32212@anatevka.fc.hp.com>
- <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
+	id S1755174Ab3KOAwq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 19:52:46 -0500
+Received: from mga09.intel.com ([134.134.136.24]:61385 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753602Ab3KOAwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 19:52:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="435538644"
+Date: Thu, 14 Nov 2013 19:52:30 -0500
+From: robert.valiquette@intel.com
+To: wsa@the-dreams.de, nhorman@tuxdriver.com, seth.heasley@intel.com
+Cc: robert.valiquette@intel.com, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: [PATCH 1/1] i2c-ismt: add the support of the
+ I2C_SMBUS_I2C_BLOCK_DATA transaction type
+Message-ID: <5285704e.jwiZWyk8R3ZEoySS%robert.valiquette@intel.com>
+User-Agent: nail 11.25 7/29/05
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 08:44:04PM +0200, Pekka Enberg wrote:
-> On Thu, Nov 14, 2013 at 8:04 PM,  <jerry.hoemann@hp.com> wrote:
-> > Making this issue a quirk will be a lot more practical.  Its a small, focused
-> > change whose implications are limited and more easily understood.
-> 
-> There's nothing practical with requiring users to pass a kernel option
-> to make kdump work.  It's a workaround, sure, but it's not a proper
-> fix.
+This patch adds the support of the I2C_SMBUS_I2C_BLOCK_DATA transaction type for the iSMT SMBus Controller.
 
-
-One already has to specify command line arguments to enable kdump.
-See "crashkernel=" in Documentation/kernel-parameters.txt.
-
-As i said in an earlier mail we are working w/ distros.  distros
-can and do specify lots of interesting command line arguments for
-their systems.  Distros have tools for configuring kdump.
-User must already use these tools or manually edit multiple config files,
-to get kdump to work.  I would work with distros to help integrate this
-change into their tools.
-
-
-As i said in earlier mail, i am willing to change implementation
-to some type of black/white listing.
-
-> 
-> And once you add whitelisting to make it practical, implications are
-> no longer limited nor easily understood nor actually testable unless
-> you happen to have access every single firmware out there.
-
-Perhaps we have a different understanding of black/white listings.
-
-Here is what i mean:
-
-the use of efi_reserve_boot_services is a work around for system
-with fw bugs.
-
-Black list:
-1. In general, assume systems don't need the work around.
-2. The black list are those specific system on which the work around
-   is applied.
-
-White list:
-1. In general, assume systems require the work around.
-2. The white list are those specific system in which the work around
-   is not applied.
-
-
-In the white list case, the list of platforms would be the ones
-that i specifically test and verify don't need the work around.
-the only difference is whether BootService Code/Data is reserved/freed
-early.
-
-all other platforms remain the same.
-
-
-> 
-> Yes, we have plenty of quirks in the x86 boot code but that doesn't
-> mean it's a good idea to add more of the unless we absolutely must.
-
-given that life is optional, how can one argue any piece of software be
-an absolute must?  :)  :)
-
-Jerry
-
-> 
->                                 Pekka
-
--- 
-
-----------------------------------------------------------------------------
-Jerry Hoemann            Software Engineer              Hewlett-Packard/MODL
-
-3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
-Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
-                                                email:  jerry.hoemann@hp.com
-----------------------------------------------------------------------------
-
+Signed-off-by: Robert Valiquette <robert.valiquette@intel.com>
+---
+--- a/drivers/i2c/busses/i2c-ismt.c	2013-11-14 11:36:15.830322000 -0500
++++ b/drivers/i2c/busses/i2c-ismt.c	2013-11-14 16:01:56.532356000 -0500
+@@ -344,6 +344,7 @@
+ 			data->word = dma_buffer[0] | (dma_buffer[1] << 8);
+ 			break;
+ 		case I2C_SMBUS_BLOCK_DATA:
++		case I2C_SMBUS_I2C_BLOCK_DATA:
+ 			memcpy(&data->block[1], dma_buffer, desc->rxbytes);
+ 			data->block[0] = desc->rxbytes;
+ 			break;
+@@ -509,6 +510,41 @@
+ 		}
+ 		break;
+ 
++	case I2C_SMBUS_I2C_BLOCK_DATA:
++		/* Make sure the lenght is valid */
++		if (data->block[0] < 1)
++			data->block[0] = 1;
++
++		if (data->block[0] > I2C_SMBUS_BLOCK_MAX)
++			data->block[0] = I2C_SMBUS_BLOCK_MAX;
++
++		if (read_write == I2C_SMBUS_WRITE) {
++			/* i2c Block Write */
++			dev_dbg(dev, "I2C_SMBUS_I2C_BLOCK_DATA:  WRITE\n");
++			dma_size = data->block[0] + 1;
++			dma_direction = DMA_TO_DEVICE;
++			desc->wr_len_cmd = dma_size;
++			desc->control |= ISMT_DESC_I2C;
++			priv->dma_buffer[0] = command;
++			memcpy(&priv->dma_buffer[1], &data->block[1], dma_size);
++		} else {
++			/* i2c Block Read */
++			dev_dbg(dev, "I2C_SMBUS_I2C_BLOCK_DATA:  READ\n");
++			dma_size = data->block[0];
++			dma_direction = DMA_FROM_DEVICE;
++			desc->rd_len = dma_size;
++			desc->wr_len_cmd = command;
++			desc->control |= (ISMT_DESC_I2C | ISMT_DESC_CWRL);
++			/*
++			 * Per the "Table 15-15. I2C Commands",
++			 * in the External Design Specification (EDS),
++			 * (Document Number: 508084, Revision: 2.0),
++			 * the _rw bit must be 0
++			 */
++			desc->tgtaddr_rw = ISMT_DESC_ADDR_RW(addr, 0);
++		}
++		break;
++
+ 	default:
+ 		dev_err(dev, "Unsupported transaction %d\n",
+ 			size);
+@@ -582,6 +618,7 @@
+ 	       I2C_FUNC_SMBUS_WORD_DATA		|
+ 	       I2C_FUNC_SMBUS_PROC_CALL		|
+ 	       I2C_FUNC_SMBUS_BLOCK_DATA	|
++	       I2C_FUNC_SMBUS_I2C_BLOCK		|
+ 	       I2C_FUNC_SMBUS_PEC;
+ }
+ 
