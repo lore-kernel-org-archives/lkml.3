@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab3KOO0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:26:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37980 "EHLO mx1.redhat.com"
+	id S1752983Ab3KOO20 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:28:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65438 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751512Ab3KOO0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:26:43 -0500
-Date: Fri, 15 Nov 2013 09:26:17 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: Baoquan He <bhe@redhat.com>,
-        Kexec Mailing List <kexec@lists.infradead.org>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dave Young <dyoung@redhat.com>, WANG Chao <chaowang@redhat.com>
-Subject: Re: /proc/vmcore mmap() failure issue
-Message-ID: <20131115142617.GC6637@redhat.com>
-References: <20131113204130.GD7613@redhat.com>
- <5284A689.70903@jp.fujitsu.com>
- <20131114151359.GA3913@redhat.com>
- <5285EC60.1060906@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5285EC60.1060906@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751626Ab3KOO2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 09:28:20 -0500
+Subject: Re: [Cluster-devel] [PATCH 0/6] list: introduce
+ list_last_entry_or_null()
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jeff Liu <jeff.liu@oracle.com>, jfs-discussion@lists.sourceforge.net,
+        jiri@resnulli.us, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, "xfs@oss.sgi.com" <xfs@oss.sgi.com>,
+        cluster-devel@redhat.com, linux-mtd@lists.infradead.org,
+        oleg@redhat.com, akpm@linux-foundation.org
+In-Reply-To: <20131115141100.GA17659@infradead.org>
+References: <5285A33C.4040808@oracle.com>
+	 <20131115141100.GA17659@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Fri, 15 Nov 2013 14:26:53 +0000
+Message-ID: <1384525613.2747.60.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 06:41:52PM +0900, HATAYAMA Daisuke wrote:
+Hi,
 
-[..]
-> >Given the fact that hpa does not like fixing it in kernel. We are left
-> >with option of fixing it in following places.
-> >
-> >- Drop partial pages in kexec-tools
-> >- Drop partial pages in makeudmpfile.
-> >- Read partial pages using read() interface in makedumpfile
-> >- Modify /proc/vmcore to copy partial pages in second kernel's memory.
-> >
-> >It is not clear to me that partial pages are really useful.  So I want
-> >to avoid modifying /proc/vmcore to deal with partial pages and increase
-> >complexity.
-> >
-> >So fixing makedumpfile (either option2 or option 3) seems least risky
-> >to me. In fact I would say let us keep it simple and truncate partial
-> >pages in makedumpfile to keep it simple. And look at option 3 once we
-> >have a strong use case for partial pages.
-> >
-> >What do you think?
-> >
+On Fri, 2013-11-15 at 06:11 -0800, Christoph Hellwig wrote:
+> On Fri, Nov 15, 2013 at 12:29:48PM +0800, Jeff Liu wrote:
+> > Hi Folks,
+> > 
+> > This patch is trying to introduce a new list helper to retrieve the
+> > last entry or return NULL if the list is empty corresponding to it,
+> > which is inspired by Jiri Pirko's list_first_entry_or_null().
 > 
-> As you say, it's not clear that partial pages are really useful, but on
-> the other hand, it seems to me not clear that they are really useless.
-> I think we should get them as long as we have access to them.
+> How did we end up with the stupid _or_null prefix there?  I think the
+> functionality is useful, but the naming is way to verbose, especially
+> given that a list_first_entry or list_last_entry that optimizes away
+> that one check doesn't seem useful.
 > 
-> It seems best to me the option 3). Switching between read and mmap would
-> be not so complex and also it's by far flexible in makedumpfile than in
-> kernel.
+> Instead of encoding detailed semantics in the name a good kerneldoc
+> comment is way better.
+> 
 
-Ok, I am fine with option 3. It is more complicated option but safe
-option.
+Also, in two of the cases (patch 3 and patch 6) we don't want NULL in
+the case that the list is empty, and instead want another pointer which,
+after the patches, requires an extra "if". Now I suspect that the
+optimizer will sort that out (I've not checked) so its probably not too
+big an issue. However, if instead of returning NULL for list empty, we
+had an extra argument to the function, then it could return whatever
+pointer was required for each case, whether NULL or otherwise,
 
-Is there any chance that you could look into fixing this. I have no
-experience writing code for makedumpfile.
+Steve.
 
-Thanks
-Vivek
+
