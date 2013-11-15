@@ -1,59 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab3KON7U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:59:20 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:54869 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab3KON7J (ORCPT
+	id S1752664Ab3KOOBE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:01:04 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:47029 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab3KOOBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:59:09 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Marek Belisko <marek@goldelico.com>
-Subject: Re: [PATCH 3/3] misc: bmp085: Add missing platform data.
-Date: Fri, 15 Nov 2013 14:58:59 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: gregkh@linuxfoundation.org, neilb@suse.de, hns@goldelico.com,
-        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk, rob@landley.net,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1384465609-26485-1-git-send-email-marek@goldelico.com> <1384465609-26485-4-git-send-email-marek@goldelico.com>
-In-Reply-To: <1384465609-26485-4-git-send-email-marek@goldelico.com>
+	Fri, 15 Nov 2013 09:01:02 -0500
+Message-ID: <5286291A.7060507@gmail.com>
+Date: Fri, 15 Nov 2013 09:00:58 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: Chang Xiangzhong <changxiangzhong@gmail.com>, davem@davemloft.net,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dreibh@simula.no, ernstgr@simula.no
+Subject: Re: [PATCH] net: sctp: recover a tranport when an ack comes
+References: <1384461624-17636-1-git-send-email-changxiangzhong@gmail.com> <5285884F.8030907@gmail.com> <20131115123055.GA29877@hmsreliant.think-freely.org>
+In-Reply-To: <20131115123055.GA29877@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201311151459.00293.arnd@arndb.de>
-X-Provags-ID: V02:K0:EJzTa53RrD5LId/Vk3eRigsqW7hIpdcyxQXVra+DyQ7
- BoW41b9I3wZBh2WZ+6TEx/4779UwVQcbsmu8HeiCKzKhdZwle2
- LjBwgZj80SshXkvQLTP09uMcUm3bZo1P4m2mjciXu60kzwBUEF
- PrQkyuRbfzubAPU/WWJmSxRDntgY39Aw/43RHVyOp8EFBIgyEH
- j0ORgP3fKS8pBzSlvBvELjSjv4x34Y8jhduiPai0Mbp9JStQRI
- C+0gD7/9IHA2/XUp+0H8HaemVruX4YnQtfURd+cDA6Mu3cq3He
- gf2ghyV+26QO65ASohthwngT+bIQHcEUzlV+vmln22pWfOMlGy
- HjJbpI8EudIDlLcC69I8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 14 November 2013, Marek Belisko wrote:
-> DT bindings contains more parameters to set so add them to platform data also
-> to have possibility to use on arch where DT isn't available yet.
-> 
-> Signed-off-by: Marek Belisko <marek@goldelico.com>
+On 11/15/2013 07:30 AM, Neil Horman wrote:
+> On Thu, Nov 14, 2013 at 09:34:55PM -0500, Vlad Yasevich wrote:
+>> On 11/14/2013 03:40 PM, Chang Xiangzhong wrote:
+>>> Expected Behavior:
+>>> When hearing an ack from a tranport/path, set its state to normal/on if it's
+>>> in abnormal(__partial_failure__ or inactive) state.
+>>>
+>>> state machine of tranport->state
+>>> Whenever a T3_RTX timer expires, then transport->error_count++.
+>>> When (association->pf_retrans < transport->error_count < tranport->pathmaxrtx)
+>>> 	transport->state = SCTP_PF //partial failure
+>>>
+>>> When a heartbeat-ack comes or conventional ack acknowledged its availability,
+>>> 	transport->state = SCTP_ON
+>>>
+>>> Signed-off-by: Chang Xiangzhong <changxiangzhong@gmail.com>
+>>> Fixes: 5aa93bcf66f ("sctp: Implement quick failover draft from tsvwg")
+>>
+>> I don't think this is right.  The spec states:
+>>   8.  ACKs for retransmissions do not transition a PF destination back
+>>         to Active state, since a sender cannot disambiguate whether the
+>>         ack was for the original transmission or the retransmission(s).
+>>
+>>
+>> Now, the proper way to this would would be modify
+>> sctp_assoc_control_transport() to transition the transport state to
+>> ACTIVE if it was PF transport that was chosen to send data.
+>>
+>> -vlad
+>>
+> I agree, this patch doesn't agree with the spec, the only time we transition
+> from PF to ACTIVE should be on receipt of ack of new data.
 
-Can you give an example of a platform that uses this chip and cannot
-yet use DT in the mainline kernel? 
-If it's only for out-of-tree platforms, I'd prefer to leave this
-patch out of tree as well and put the burden on whoever maintains
-a non-DT platform in a private kernel.
+You mean HB ACK, right?  The 02 spec that see on the ietf site doesn't
+mention anything about transition on SACKs.  Also, there is no way to
+tell right now if the ack is for new or retransmitted data.  We could
+mark chunks that are retransmitted though.
 
+>  I'm not even sure if
+> we should allow PF transports to be selected to send new data.  Currently a
+> potentially failed transport will get ignored when specified, and the stack will
+> use the active path in its place.  Only if all transports are PF will a PF
+> transport be chosen.
 
-> diff --git a/include/linux/i2c/bmp085.h b/include/linux/i2c/bmp085.h
-> index b66cb98..addb972 100644
-> --- a/include/linux/i2c/bmp085.h
-> +++ b/include/linux/i2c/bmp085.h
+Not even that :(.  If all transports are PF, we are going to camp on
+the primary path instead of choosing a PF transport with the lowest
+error count.
 
-Shouldn't this be in include/linux/platform_data? 
+-vlad
 
-	Arnd
+> Neil
+>
+>>> ---
+>>>   net/sctp/outqueue.c |    1 +
+>>>   1 file changed, 1 insertion(+)
+>>>
+>>> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+>>> index 94df758..2557fa5 100644
+>>> --- a/net/sctp/outqueue.c
+>>> +++ b/net/sctp/outqueue.c
+>>> @@ -1517,6 +1517,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+>>>   			 * active if it is not so marked.
+>>>   			 */
+>>>   			if ((transport->state == SCTP_INACTIVE ||
+>>> +			     transport->state == SCTP_PF ||
+>>>   			     transport->state == SCTP_UNCONFIRMED) &&
+>>>   			    sctp_cmp_addr_exact(&transport->ipaddr, saddr)) {
+>>>   				sctp_assoc_control_transport(
+>>>
+>>
+>>
+
