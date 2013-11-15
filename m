@@ -1,111 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab3KOGko (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 01:40:44 -0500
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:51453
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751472Ab3KOGkg (ORCPT
+	id S1754764Ab3KOGpc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 01:45:32 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:35781 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab3KOGpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 01:40:36 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 15 Nov 2013 14:42:01 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Nicolin Chen <b42378@freescale.com>
-CC: <timur@tabi.org>, <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
-        <linux@arm.linux.org.uk>, <ijc+devicetree@hellion.org.uk>,
-        <swarren@wwwdotorg.org>, <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>, <lgirdwood@gmail.com>
-Subject: Re: [PATCH 1/2] ARM: dts: imx: specify the value of audmux pinctrl
- instead of 0x80000000
-Message-ID: <20131115064159.GG11014@S2101-09.ap.freescale.net>
-References: <1384427230-979-1-git-send-email-b42378@freescale.com>
- <1384427230-979-2-git-send-email-b42378@freescale.com>
+	Fri, 15 Nov 2013 01:45:23 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Sebastian Reichel <sre@debian.org>
+Subject: Re: [PATCH 1/2] isp1704_charger: Add DT support
+Date: Fri, 15 Nov 2013 07:45:16 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.2; x86_64; ; )
+Cc: Tony Lindgren <tony@atomide.com>, Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+References: <1384432734-1490-1-git-send-email-sre@debian.org> <201311141905.11046@pali> <20131114223416.GA6383@earth.universe>
+In-Reply-To: <20131114223416.GA6383@earth.universe>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1384427230-979-2-git-send-email-b42378@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: multipart/signed;
+  boundary="nextPart1397715.gDSUgNYlmo";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201311150745.18408@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 07:07:09PM +0800, Nicolin Chen wrote:
-> We must specify the value of audmux pinctrl if we want to use pinctrl_pm().
-> Thus change bypass value 0x80000000 to what we exactly need.
-> 
-> This patch also seperately unset PUE bit for TXD so that IOMUX won't pull
-> up/down the pin after turning into tristate. When we use SSI normal mode to
-> playback monaural audio via I2S signal, there'd be a pulled curve occur to
-> its signal at the second slot if setting PUE bit for TXD. And it will make
-> the second channel to play a constant noise. So by keeping the signal level
-> in the second slot, we can get a constant high level signal (-1) or a low
-> level one (0).
-> 
-> Signed-off-by: Nicolin Chen <b42378@freescale.com>
-> ---
->  arch/arm/boot/dts/imx6qdl.dtsi | 22 +++++++++++-----------
->  1 file changed, 11 insertions(+), 11 deletions(-)
+--nextPart1397715.gDSUgNYlmo
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-We have moved all pin groups settings into
-arch/arm/boot/dts/imx6qdl-pingrp.h.  I just rebased and applied the
-patch.  Please check my imx/dt branch and ensure I applied the changes
-correctly.
+On Thursday 14 November 2013 23:34:19 Sebastian Reichel wrote:
+> On Thu, Nov 14, 2013 at 07:05:06PM +0100, Pali Roh=C3=A1r wrote:
+> > On Thursday 14 November 2013 13:38:53 Sebastian Reichel=20
+wrote:
+> > > diff --git a/drivers/power/isp1704_charger.c
+> > > b/drivers/power/isp1704_charger.c index fc04d19..db96778
+> > > 100644
+> > > --- a/drivers/power/isp1704_charger.c
+> > > +++ b/drivers/power/isp1704_charger.c
+> > > @@ -28,6 +28,8 @@
+> > >=20
+> > >  #include <linux/platform_device.h>
+> > >  #include <linux/power_supply.h>
+> > >  #include <linux/delay.h>
+> > >=20
+> > > +#include <linux/of.h>
+> > > +#include <linux/of_gpio.h>
+> > >=20
+> > >  #include <linux/usb/otg.h>
+> > >  #include <linux/usb/ulpi.h>
+> > >=20
+> > > @@ -89,8 +91,8 @@ static void
+> > > isp1704_charger_set_power(struct isp1704_charger *isp,
+> > > bool on) {
+> > >=20
+> > >  	struct isp1704_charger_data	*board =3D
+> > >=20
+> > > isp->dev->platform_data;
+> > >=20
+> > > -	if (board && board->set_power)
+> > > -		board->set_power(on);
+> > > +	if (board)
+> > > +		gpio_set_value(board->enable_gpio, on);
+> > >=20
+> > >  }
+> >=20
+> > You need to check if enable_gpio in board data was defined
+> > or not.
+>=20
+> The device is not successful probed without valid enable_gpio.
+>=20
+> -- Sebastian
 
-Shawn
+Then, OK.
 
-> 
-> diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
-> index 6e096ca..6b76e55 100644
-> --- a/arch/arm/boot/dts/imx6qdl.dtsi
-> +++ b/arch/arm/boot/dts/imx6qdl.dtsi
-> @@ -601,27 +601,27 @@
->  				audmux {
->  					pinctrl_audmux_1: audmux-1 {
->  						fsl,pins = <
-> -							MX6QDL_PAD_SD2_DAT0__AUD4_RXD  0x80000000
-> -							MX6QDL_PAD_SD2_DAT3__AUD4_TXC  0x80000000
-> -							MX6QDL_PAD_SD2_DAT2__AUD4_TXD  0x80000000
-> -							MX6QDL_PAD_SD2_DAT1__AUD4_TXFS 0x80000000
-> +							MX6QDL_PAD_SD2_DAT0__AUD4_RXD  0x130b0
-> +							MX6QDL_PAD_SD2_DAT3__AUD4_TXC  0x130b0
-> +							MX6QDL_PAD_SD2_DAT2__AUD4_TXD  0x110b0
-> +							MX6QDL_PAD_SD2_DAT1__AUD4_TXFS 0x130b0
->  						>;
->  					};
->  
->  					pinctrl_audmux_2: audmux-2 {
->  						fsl,pins = <
-> -							MX6QDL_PAD_CSI0_DAT7__AUD3_RXD  0x80000000
-> -							MX6QDL_PAD_CSI0_DAT4__AUD3_TXC  0x80000000
-> -							MX6QDL_PAD_CSI0_DAT5__AUD3_TXD  0x80000000
-> -							MX6QDL_PAD_CSI0_DAT6__AUD3_TXFS 0x80000000
-> +							MX6QDL_PAD_CSI0_DAT7__AUD3_RXD  0x130b0
-> +							MX6QDL_PAD_CSI0_DAT4__AUD3_TXC  0x130b0
-> +							MX6QDL_PAD_CSI0_DAT5__AUD3_TXD  0x110b0
-> +							MX6QDL_PAD_CSI0_DAT6__AUD3_TXFS 0x130b0
->  						>;
->  					};
->  
->  					pinctrl_audmux_3: audmux-3 {
->  						fsl,pins = <
-> -							MX6QDL_PAD_DISP0_DAT16__AUD5_TXC  0x80000000
-> -							MX6QDL_PAD_DISP0_DAT18__AUD5_TXFS 0x80000000
-> -							MX6QDL_PAD_DISP0_DAT19__AUD5_RXD  0x80000000
-> +							MX6QDL_PAD_DISP0_DAT16__AUD5_TXC  0x130b0
-> +							MX6QDL_PAD_DISP0_DAT18__AUD5_TXFS 0x130b0
-> +							MX6QDL_PAD_DISP0_DAT19__AUD5_RXD  0x130b0
->  						>;
->  					};
->  				};
-> -- 
-> 1.8.4
-> 
-> 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
+--nextPart1397715.gDSUgNYlmo
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlKFwv4ACgkQi/DJPQPkQ1JKvwCfftQMP0wzZ0b7Y9hoA5FRDhxg
+HYcAnA8cdZf1SD+3XcWHIEDh6WpP+DNZ
+=aF0P
+-----END PGP SIGNATURE-----
+
+--nextPart1397715.gDSUgNYlmo--
