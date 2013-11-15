@@ -1,94 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422Ab3KOQSx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 11:18:53 -0500
-Received: from fieldses.org ([174.143.236.118]:53224 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053Ab3KOQSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 11:18:44 -0500
-Date: Fri, 15 Nov 2013 11:18:43 -0500
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: nfsd changes for 3.13
-Message-ID: <20131115161843.GD3371@fieldses.org>
+	id S1751782Ab3KOQWv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 11:22:51 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:50266 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab3KOQWp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 11:22:45 -0500
+Date: Fri, 15 Nov 2013 16:22:38 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: micky_ching@realsil.com.cn
+Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        wei_wang@realsil.com.cn, rogerable@realtek.com
+Subject: Re: [PATCH 2/3] mfd: rtsx: add card reader rtl8402
+Message-ID: <20131115162238.GA3638@lee--X1>
+References: <cover.1384503048.git.micky_ching@realsil.com.cn>
+ <225f6d5d8ab73afbe6b600f07583dada2145ebaa.1384503048.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <225f6d5d8ab73afbe6b600f07583dada2145ebaa.1384503048.git.micky_ching@realsil.com.cn>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull nfsd changes for 3.13 from
+On Fri, 15 Nov 2013, micky_ching@realsil.com.cn wrote:
 
-  git://linux-nfs.org/~bfields/linux.git nfsd-next
+> From: Micky Ching <micky_ching@realsil.com.cn>
+> 
+> Add card reader rtl8042, rtl8402 is much like rtl8411, so just add it to
+> rtl8411.c
+> 
+> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> ---
+>  drivers/mfd/rtl8411.c  |   29 +++++++++++++++++++++++++++++
+>  drivers/mfd/rtsx_pcr.c |    2 ++
+>  2 files changed, 31 insertions(+)
 
-This includes miscellaneous bugfixes and cleanup and a performance fix
-for write-heavy NFSv4 workloads.
+Looks like you left me off of the addressee list for this and the
+cover letter.
 
-(The most significant nfsd-relevant change this time is actually in the
-delegation patches that went through Viro, fixing a long-standing bug
-that can cause NFSv4 clients to miss updates made by non-nfs users of
-the filesystem.  Those enable some followup nfsd patches which I have
-queued locally, but those can wait till 3.14.)
+> diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
+> index 4de1045..8e4b546 100644
+> --- a/drivers/mfd/rtl8411.c
+> +++ b/drivers/mfd/rtl8411.c
+> @@ -216,6 +216,31 @@ static int rtl8411_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+>  	return rtsx_pci_write_register(pcr, LDO_CTL, mask, val);
+>  }
+>  
+> +static int rtl8402_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+> +{
+> +	u8 mask, val;
+> +	int err;
+> +
+> +	mask = (BPP_REG_TUNED18 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_MASK;
+> +	if (voltage == OUTPUT_3V3) {
+> +		err = rtsx_pci_write_register(pcr,
+> +				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_3v3);
+> +		if (err < 0)
+> +			return err;
+> +		val = (BPP_ASIC_3V3 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_3V3;
+> +	} else if (voltage == OUTPUT_1V8) {
+> +		err = rtsx_pci_write_register(pcr,
+> +				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_1v8);
+> +		if (err < 0)
+> +			return err;
+> +		val = (BPP_ASIC_2V0 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_1V8;
+> +	} else {
+> +		return -EINVAL;
+> +	}
+> +
+> +	return rtsx_pci_write_register(pcr, LDO_CTL, mask, val);
+> +}
+> +
+>  static unsigned int rtl8411_cd_deglitch(struct rtsx_pcr *pcr)
+>  {
+>  	unsigned int card_exist;
+> @@ -460,6 +485,10 @@ void rtl8411_init_params(struct rtsx_pcr *pcr)
+>  			set_pull_ctrl_tables(rtl8411b_qfn64);
+>  
+>  		break;
+> +	case 0x5286:
+> +		rtl8411_pcr_ops.switch_output_voltage =
+> +			rtl8402_switch_output_voltage;
+> +		break;
+>  	}
+>  
+>  	pcr->ops = &rtl8411_pcr_ops;
+> diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+> index ecc6852..865d209 100644
+> --- a/drivers/mfd/rtsx_pcr.c
+> +++ b/drivers/mfd/rtsx_pcr.c
+> @@ -57,6 +57,7 @@ static DEFINE_PCI_DEVICE_TABLE(rtsx_pci_ids) = {
+>  	{ PCI_DEVICE(0x10EC, 0x5227), PCI_CLASS_OTHERS << 16, 0xFF0000 },
+>  	{ PCI_DEVICE(0x10EC, 0x5249), PCI_CLASS_OTHERS << 16, 0xFF0000 },
+>  	{ PCI_DEVICE(0x10EC, 0x5287), PCI_CLASS_OTHERS << 16, 0xFF0000 },
+> +	{ PCI_DEVICE(0x10EC, 0x5286), PCI_CLASS_OTHERS << 16, 0xFF0000 },
+>  	{ 0, }
+>  };
+>  
+> @@ -1056,6 +1057,7 @@ static int rtsx_pci_init_chip(struct rtsx_pcr *pcr)
+>  
+>  	case 0x5287:
+>  	case 0x5289:
+> +	case 0x5286:
+>  		rtl8411_init_params(pcr);
+>  		break;
+>  	}
 
---b.
-
-----------------------------------------------------------------
-Al Viro (1):
-      nfsd: switch to %p[dD]
-
-Anna Schumaker (2):
-      NFSD: Combine decode operations for v4 and v4.1
-      NFSD: Add support for NFS v4.2 operation checking
-
-Benny Halevy (5):
-      nfsd: nfs4_free_stid
-      nfsd: nfs4_open_delegation needs to remove_stid rather than unhash_stid
-      nfsd: remove_stid can be incorporated into nfs4_put_delegation
-      nfsd: no need to unhash_stid before free
-      nfsd4: need to destroy revoked delegations in destroy_client
-
-Christoph Hellwig (2):
-      nfsd: fix Kconfig syntax
-      nfsd: export proper maximum file size to the client
-
-J. Bruce Fields (12):
-      svcrpc: fix gss-proxy NULL dereference in some error cases
-      svcrpc: fix error-handling on badd gssproxy downcall
-      svcrpc: handle some gssproxy encoding errors
-      gss_krb5: document that we ignore sequence number
-      nfsd: fh_update should error out in unexpected cases
-      nfsd: return better errors to exportfs
-      nfsd: -EINVAL on invalid anonuid/gid instead of silent failure
-      nfsd4: nfsd_shutdown_net needs state lock
-      nfsd4: fix discarded security labels on setattr
-      Revert "nfsd: remove_stid can be incorporated into nfs4_put_delegation"
-      sunrpc: comment typo fix
-      nfsd4: improve write performance with better sendspace reservations
-
-Jeff Layton (1):
-      sunrpc: trim off EC bytes in GSSAPI v2 unwrap
-
-Weng Meiling (1):
-      svcrpc: remove an unnecessary assignment
-
- fs/nfsd/Kconfig                       |    2 +-
- fs/nfsd/export.c                      |   24 +++++-
- fs/nfsd/nfs4recover.c                 |   12 +--
- fs/nfsd/nfs4state.c                   |   41 +++++-----
- fs/nfsd/nfs4xdr.c                     |  132 ++++++++++++++++++---------------
- fs/nfsd/nfsfh.c                       |   36 ++++-----
- fs/nfsd/nfsfh.h                       |    4 +-
- fs/nfsd/vfs.c                         |    9 +--
- include/linux/nfs4.h                  |    3 +
- net/sunrpc/auth_gss/gss_krb5_unseal.c |    8 +-
- net/sunrpc/auth_gss/gss_krb5_wrap.c   |   10 ++-
- net/sunrpc/auth_gss/gss_rpc_upcall.c  |    3 +-
- net/sunrpc/auth_gss/gss_rpc_xdr.c     |   29 ++++----
- net/sunrpc/auth_gss/svcauth_gss.c     |    4 +-
- net/sunrpc/svc.c                      |    2 -
- net/sunrpc/xprtsock.c                 |    4 +-
- 16 files changed, 179 insertions(+), 144 deletions(-)
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
