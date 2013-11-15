@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab3KOQmb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 11:42:31 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57125 "EHLO
+	id S1753175Ab3KOQnE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 11:43:04 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57144 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751346Ab3KOQmY (ORCPT
+	by vger.kernel.org with ESMTP id S1751449Ab3KOQm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 11:42:24 -0500
+	Fri, 15 Nov 2013 11:42:59 -0500
 Date: Fri, 15 Nov 2013 16:42:13 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "davidb@codeaurora.org" <davidb@codeaurora.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+From: Will Deacon <will.deacon@arm.com>
+To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo <acme@ghostprotocols.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Manu Gautam <mgautam@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4 12/15] usb: phy: msm: Add support for secondary PHY
- control
-Message-ID: <20131115164212.GI24831@e106331-lin.cambridge.arm.com>
-References: <1384267910-32066-1-git-send-email-iivanov@mm-sol.com>
- <1384267910-32066-13-git-send-email-iivanov@mm-sol.com>
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Patch Tracking <patches@linaro.org>,
+        Jean Pihet <jean.pihet@newoldbits.com>
+Subject: Re: [PATCH 0/2] ARM64: perf: add support for the perf registers and
+ dwarf unwinding
+Message-ID: <20131115164213.GJ19468@mudshark.cambridge.arm.com>
+References: <1382108078-8807-1-git-send-email-jean.pihet@linaro.org>
+ <CA+b37P0YCPm+4PWJobTOv02M0-mZyf4w02fDrBVYT0wfPL_hpA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384267910-32066-13-git-send-email-iivanov@mm-sol.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+b37P0YCPm+4PWJobTOv02M0-mZyf4w02fDrBVYT0wfPL_hpA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 02:51:47PM +0000, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+On Thu, Nov 14, 2013 at 11:04:04AM +0000, Sandeepa Prabhu wrote:
+> Hi Jean,
 > 
-> Allow support to use 2nd HSPHY with USB2 Core.
-> Some platforms may have configuration to allow USB controller
-> work with any of the two HSPHYs present. By default driver
-> configures USB core to use primary HSPHY. Add support to allow
-> user select 2nd HSPHY using DT parameter.
+> I have applied this patchset on aarch64 upstream branch,cross-compiled
+> for arm64 and try running some tests for hardware breakpoints.
 > 
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> Cc: Manu Gautam <mgautam@codeaurora.org>
-> Cc: devicetree@vger.kernel.org
-> ---
->  .../devicetree/bindings/usb/msm-hsusb.txt          |    6 +++++
->  drivers/usb/phy/phy-msm-usb.c                      |   24 ++++++++++++++++++--
->  include/linux/usb/msm_hsusb.h                      |    1 +
->  include/linux/usb/msm_hsusb_hw.h                   |    1 +
->  4 files changed, 30 insertions(+), 2 deletions(-)
+> I cross-compiled perf using linaro toolchain
+> "gcc-linaro-aarch64-linux-gnu-4.7-2013.04-20130415_linux" as
+>  $ cd tools/perf/
+>  $ make LDFLAGS=-static ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
 > 
-> diff --git a/Documentation/devicetree/bindings/usb/msm-hsusb.txt b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-> index 3f21204..d105ba9 100644
-> --- a/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-> +++ b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-> @@ -72,6 +72,12 @@ Optional properties:
->  - qcom,phy-init-sequence: PHY configuration sequence. val, reg pairs
->  				terminate with -1
->  
-> +- qcom,phy-num:	Select number of pyco-phy to use, can be one of
-> +				0 - PHY one, default
-> +				1 - Second PHY
-> +				Some platforms may have configuration to allow USB
-> +				controller work with any of the two HSPHYs present.
-> +
+> Copied the static binary to my initrd image and tried running tests to
+> place hw_breakpoint on an kernel symbol as:
+> 
+>  # perf record -e "mem:0xffffffc00013f640:x"
 
-Only one can be used at a time?
+Right, but that's not a valid invocation of perf. You have to give it
+something to record. Something like:
 
-[...]
+# perf record -e mem:0xffffffc00013f640:x -a -- sleep 10
 
-> @@ -1395,6 +1412,9 @@ static int msm_otg_read_dt(struct platform_device *pdev, struct msm_otg *motg)
->  	if (!of_property_read_u32(node, "qcom,otg-control", &val))
->  		pdata->otg_control = val;
->  
-> +	if (!of_property_read_u32(node, "qcom,phy-num", &val))
-> +		motg->phy_number = val;
+for example.
 
-No sanity checking? If not all of your tests on the value of
-motg->phy_number are the same form, you may get undepected results...
-
-Mark.
+Will
