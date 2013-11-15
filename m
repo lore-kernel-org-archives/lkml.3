@@ -1,84 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab3KOSnC (ORCPT <rfc822;w@1wt.eu>);
+	id S1752632Ab3KOSnU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 13:43:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59114 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752015Ab3KOSnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Nov 2013 13:43:02 -0500
-Received: from mail.tellerulam.com ([213.198.94.130]:48496 "EHLO
-	nitrogen.vapor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab3KOSm5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 13:42:57 -0500
-X-Greylist: delayed 501 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Nov 2013 13:42:56 EST
-Date: Fri, 15 Nov 2013 19:34:22 +0100
-From: Ian Kumlien <pomac@vapor.com>
-To: linux-kernel@vger.kernel.org
-Subject: [OOPS][3.12] BUG: unable to handle kernel NULL pointer dereference
- at 0000000c
-Message-ID: <20131115183422.GA9417@pomac.netswarm.net>
+Date: Fri, 15 Nov 2013 13:30:02 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
+        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+Message-ID: <20131115183002.GE6637@redhat.com>
+References: <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
+ <20131114180455.GA32212@anatevka.fc.hp.com>
+ <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
+ <20131115005049.GJ5116@anatevka.fc.hp.com>
+ <20131115062417.GB9237@gmail.com>
+ <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
+ <5285C639.5040203@zytor.com>
+ <20131115140738.GB6637@redhat.com>
+ <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
+ <52865CA1.5020309@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <52865CA1.5020309@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
+On Fri, Nov 15, 2013 at 09:40:49AM -0800, H. Peter Anvin wrote:
+> On 11/15/2013 09:33 AM, Yinghai Lu wrote:
+> > 
+> > If the system support intel IOMMU, we only need to that 72M for SWIOTLB
+> > or AMD workaround.
+> > If the user really care that for intel iommu enable system, they could use
+> > "crashkernel=0,low" to have that 72M back.
+> > 
+> > and that 72M is under 4G instead of 896M.
+> > 
+> > so reserve 72M is not better than reserve 128M?
+> > 
+> 
+> Those 72M are in addition to 128M, which does add up quite a bit.
+> However, the presence of a working IOMMU in the system is something that
+> should be possible to know at setup time.
+> 
 
-After a lot of wondering i finally tracked down the bug that was hitting
-me since 3.12-rc7. Since this is a firewall I haven't actually noticed
-it all the time. But when i saw that it rebooted too often, i enabled
-netconsole and this is the output:
+And IOMMU support is very flaky with kdump. And IOMMU's can be turned
+off at command line. And that would force one to remove crahkernel_low=0.
+So change of one command line option forces change of another. It is
+complicated.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000c
-IP: [<c18196db>] _decode_session6+0x8b/0x370
-*pde = 00000000
-Oops: 0000 [#1] SMP
-Modules linked in: netconsole tun
-CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0 #55
-Hardware name: MICRO-STAR INTERNATIONAL CO., LTD MS-9632/MS-9632, BIOS 6.00 PG 05/16/2007
-task: c1b64880 ti: f600a000 task.ti: c1b5a000
-EIP: 0060:[<c18196db>] EFLAGS: 00210202 CPU: 0
-EIP is at _decode_session6+0x8b/0x370
-EAX: 00000000 EBX: f2c42c00 ECX: 00000001 EDX: e351a0a2
-ESI: 00000000 EDI: f600be70 EBP: f600be34 ESP: f600bdfc
- DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-CR0: 8005003b CR2: 0000000c CR3: 235e8000 CR4: 000007d0
-Stack:
- f600be30 00282c00 00000001 c1bb24e0 f63f8000 c1baa780 f2c42c00 c17d653f
- f2c42c00 c1807178 00000001 00000000 e3791f00 e3791f00 00000000 00000000
- 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-Call Trace:
- [<c17d653f>] ? __xfrm_decode_session+0x1f/0x30
- [<c1807178>] ? icmpv6_route_lookup+0xa8/0x170
- [<c1807693>] ? icmp6_send+0x453/0x6e0
- [<c177dd7c>] ? ip_local_deliver_finish+0x7c/0x1f0
- [<c177dd00>] ? ip_rcv_finish+0x310/0x310
- [<c177db03>] ? ip_rcv_finish+0x113/0x310
- [<c1807240>] ? icmpv6_route_lookup+0x170/0x170
- [<c182dc64>] ? icmpv6_send+0x24/0x30
- [<c180df2f>] ? ip6_expire_frag_queue+0x16f/0x180
- [<c1823390>] ? nf_ct_net_init+0x60/0x60
- [<c1075efc>] ? call_timer_fn.isra.27+0x1c/0x80
- [<c155ff1b>] ? e1000e_poll+0x13b/0x2e0
- [<c1823390>] ? nf_ct_net_init+0x60/0x60
- [<c1076094>] ? run_timer_softirq+0x134/0x1d0
- [<c1071255>] ? __do_softirq+0xa5/0x160
- [<c10711b0>] ? remote_softirq_cpu_notify+0xa0/0xa0
- <IRQ>
- [<c1071416>] ? irq_exit+0x66/0x90
- [<c105dff5>] ? smp_apic_timer_interrupt+0x35/0x50
- [<c187196d>] ? apic_timer_interrupt+0x2d/0x34
- [<c103d8d2>] ? default_idle+0x2/0x10
- [<c103df26>] ? arch_cpu_idle+0x16/0x20
- [<c10a1ed9>] ? cpu_startup_entry+0x49/0x130
- [<c1bc4948>] ? start_kernel+0x29e/0x2a3
- [<c1bc44ef>] ? repair_env_string+0x4d/0x4d
-Code: 00 00 f3 ab 74 08 66 c7 07 00 00 83 c7 02 83 e6 01 74 03 c6 07 00 8b 83 90 00 00 00 8b 4c 24 08 89 45 08 8b 43 48 83 e0 fe 85 c9 <8b> 40 0c 8b 80 88 00 00 00 89 45 00 0f 84 1b 01 00 00 8b 42 08
-EIP: [<c18196db>] _decode_session6+0x8b/0x370 SS:ESP 0068:f600bdfc
-CR2: 000000000000000c
----[ end trace 0cbf7fb6e6aa1f45 ]---
-Kernel panic - not syncing: Fatal exception in interrupt
----
+Also there are very few systems which work with IOMMU on. A lot more
+which work without IOMMU. We have all these DMAR issues and still nobody
+has been able to address IOMMU issues properly.
 
-Any clue besides just disabling ipv6? ;)
+> Now, this was discussed partly in the context of VMs.  I want to say, as
+> I have again and again: the right way to dump a VM is with hypervisor
+> assistance rather than an in-image dumper which is both expensive and
+> may be corrupted by the failure.
 
+I agree taking assistance of hypervisor should be useful.
+
+One reason we use kdump for VM too because it makes life simple. There
+is no difference in how we configure, start and manage crash dumps
+in baremetal or inside VM. And in practice have not heard of lot of
+failures of kdump in VM environment.
+
+So while reliability remains a theoritical concern, in practice it
+has not been a real concern and that's one reason I think we have
+not seen a major push for alternative method in VM environment.
+
+> 
+> It would be good if the various VMs with interest in Linux would agree
+> on a mechanism for launching a dumper.  This can be done either inband
+> (on the execution of a specific hypercall, the hypervisor terminates I/O
+> to the guest, inserts a dumper into the address space and launches it)
+> or out-of-band (the hypervisor itself, or an assistant program, writes a
+> dump file) or as a hybrid (a new dump guest is launched with the
+> hypervisor-written or hypervisor-preserved crashed guest image somehow
+> passed to it.)
+
+virsh can take dumps of KVM guest, so hypervisor calling out to an
+assistant program might help here.
+
+Anyway, we will gladly use any new dump mechanism for VM once things
+start working seamlessly. So till all this materializes, forcing user
+to reserve that extra 72M concerns me (both in bare-metal and virtualized
+environments).
+
+Thanks
+Vivek
