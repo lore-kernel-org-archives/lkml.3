@@ -1,326 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab3KORuL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 12:50:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37061 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753004Ab3KORuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 12:50:06 -0500
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Khalid Aziz <khalid.aziz@oracle.com>,
-        Pravin Shelar <pshelar@nicira.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Minchan Kim <minchan@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 1/3] mm: hugetlbfs: fix hugetlbfs optimization
-Date: Fri, 15 Nov 2013 18:47:46 +0100
-Message-Id: <1384537668-10283-2-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1384537668-10283-1-git-send-email-aarcange@redhat.com>
-References: <1384537668-10283-1-git-send-email-aarcange@redhat.com>
+	id S1753068Ab3KORwV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 12:52:21 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42935 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab3KORwM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 12:52:12 -0500
+Date: Fri, 15 Nov 2013 17:51:55 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+Cc: Florian Meier <florian.meier@koalo.de>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, dmaengine <dmaengine@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv5] dmaengine: Add support for BCM2835
+Message-ID: <20131115175155.GQ16735@n2100.arm.linux.org.uk>
+References: <52864BBC.7000506@koalo.de> <1384537403.14845.131.camel@smile>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384537403.14845.131.camel@smile>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch from commit 7cb2ef56e6a8b7b368b2e883a0a47d02fed66911 can
-cause dereference of a dangling pointer if split_huge_page runs during
-PageHuge() if there are updates to the tail_page->private field.
+On Fri, Nov 15, 2013 at 05:43:45PM +0000, Shevchenko, Andriy wrote:
+> On Fri, 2013-11-15 at 17:28 +0100, Florian Meier wrote:
+> > +static size_t bcm2835_dma_desc_size_pos(struct bcm2835_desc *d, dma_addr_t addr)
+> > +{
+> > +	unsigned i;
+> > +	size_t size;
+> 
+> size = 0 here is better.
 
-Also it is repeating compound_head twice for hugetlbfs and it is
-running compound_head+compound_trans_head for THP when a single one is
-needed in both cases.
+See my other comment to Joe.
 
-The new code within the PageSlab() check doesn't need to verify that
-the THP page size is never bigger than the smallest hugetlbfs page
-size, to avoid memory corruption.
+> > +	for (size = i = 0; i < d->frames; i++) {
+> > +		struct bcm2835_dma_cb *control_block =
+> > +			&d->control_block_base[i];
+> > +		size_t this_size = control_block->length;
+> > +		dma_addr_t dma;
+> > +
+> > +		if (d->dir == DMA_DEV_TO_MEM)
+> > +			dma = control_block->dst;
+> > +		else
+> > +			dma = control_block->src;
+> 
+> Do you think it must be dependent on the direction?
 
-A longstanding theoretical race condition was found while fixing the
-above (see the change right after the skip_unlock label, that is
-relevant for the compound_lock path too).
+Of course it does.  Take a moment to think about it please.
 
-By re-establishing the _mapcount tail refcounting for all compound
-pages, this also fixes the below problem:
+> Do you have information of how many bytes transferred already in the DMA
+> controller registers? Would it be better to use it?
+> 
+> > +		if (size)
+> > +			size += this_size;
+> > +		else if (addr >= dma && addr < dma + this_size)
+> > +			size += dma + this_size - addr;
+> 
+> += -> =
 
-echo 0 >/sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+No functional change, as 'size' has to be initialised anyway.  The
+code is fine.
 
-BUG: Bad page state in process bash  pfn:59a01
-page:ffffea000139b038 count:0 mapcount:10 mapping:          (null) index:0x0
-page flags: 0x1c00000000008000(tail)
-Modules linked in:
-CPU: 6 PID: 2018 Comm: bash Not tainted 3.12.0+ #25
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
- 0000000000000009 ffff880079cb5cc8 ffffffff81640e8b 0000000000000006
- ffffea000139b038 ffff880079cb5ce8 ffffffff8115bb15 00000000000002c1
- ffffea000139b038 ffff880079cb5d48 ffffffff8115bd83 ffff880079cb5de8
-Call Trace:
- [<ffffffff81640e8b>] dump_stack+0x55/0x76
- [<ffffffff8115bb15>] bad_page+0xd5/0x130
- [<ffffffff8115bd83>] free_pages_prepare+0x213/0x280
- [<ffffffff8115df16>] __free_pages+0x36/0x80
- [<ffffffff8119b011>] update_and_free_page+0xc1/0xd0
- [<ffffffff8119b512>] free_pool_huge_page+0xc2/0xe0
- [<ffffffff8119b8cc>] set_max_huge_pages.part.58+0x14c/0x220
- [<ffffffff81308a8c>] ? _kstrtoull+0x2c/0x90
- [<ffffffff8119ba70>] nr_hugepages_store_common.isra.60+0xd0/0xf0
- [<ffffffff8119bac3>] nr_hugepages_store+0x13/0x20
- [<ffffffff812f763f>] kobj_attr_store+0xf/0x20
- [<ffffffff812354e9>] sysfs_write_file+0x189/0x1e0
- [<ffffffff811baff5>] vfs_write+0xc5/0x1f0
- [<ffffffff811bb505>] SyS_write+0x55/0xb0
- [<ffffffff81651712>] system_call_fastpath+0x16/0x1b
+> > +	if (!pdev->dev.dma_mask)
+> > +		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+> > +
+> > +	rc = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
+> > +	if (rc)
+> > +		return rc;
+> > +	dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+> 
+> There is nice helper you may use instead of those two above and remove
+> 'if' condition as well.
 
-Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- include/linux/hugetlb.h |   6 ++
- mm/hugetlb.c            |  17 ++++++
- mm/swap.c               | 143 ++++++++++++++++++++++++++++--------------------
- 3 files changed, 106 insertions(+), 60 deletions(-)
+There is _now_ but at the time this is being developed, it wasn't there.
+Such a change is probably only appropriate at least after -rc1 has
+happened.  Since I'm the one who introduced that helper, and I haven't
+said to use it yet in this driver, that suggests I've already thought
+about this point...
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index acd2010..d4f3dbf 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -31,6 +31,7 @@ struct hugepage_subpool *hugepage_new_subpool(long nr_blocks);
- void hugepage_put_subpool(struct hugepage_subpool *spool);
- 
- int PageHuge(struct page *page);
-+int PageHeadHuge(struct page *page_head);
- 
- void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
- int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
-@@ -104,6 +105,11 @@ static inline int PageHuge(struct page *page)
- 	return 0;
- }
- 
-+static inline int PageHeadHuge(struct page *page_head)
-+{
-+	return 0;
-+}
-+
- static inline void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
- {
- }
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 7d57af2..14737f8e 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -736,6 +736,23 @@ int PageHuge(struct page *page)
- }
- EXPORT_SYMBOL_GPL(PageHuge);
- 
-+/*
-+ * PageHeadHuge() only returns true for hugetlbfs head page, but not for
-+ * normal or transparent huge pages.
-+ */
-+int PageHeadHuge(struct page *page_head)
-+{
-+	compound_page_dtor *dtor;
-+
-+	if (!PageHead(page_head))
-+		return 0;
-+
-+	dtor = get_compound_page_dtor(page_head);
-+
-+	return dtor == free_huge_page;
-+}
-+EXPORT_SYMBOL_GPL(PageHeadHuge);
-+
- pgoff_t __basepage_index(struct page *page)
- {
- 	struct page *page_head = compound_head(page);
-diff --git a/mm/swap.c b/mm/swap.c
-index 7a9f80d..84b26aa 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -82,19 +82,6 @@ static void __put_compound_page(struct page *page)
- 
- static void put_compound_page(struct page *page)
- {
--	/*
--	 * hugetlbfs pages cannot be split from under us.  If this is a
--	 * hugetlbfs page, check refcount on head page and release the page if
--	 * the refcount becomes zero.
--	 */
--	if (PageHuge(page)) {
--		page = compound_head(page);
--		if (put_page_testzero(page))
--			__put_compound_page(page);
--
--		return;
--	}
--
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
- 		struct page *page_head = compound_trans_head(page);
-@@ -111,14 +98,31 @@ static void put_compound_page(struct page *page)
- 			 * still hot on arches that do not support
- 			 * this_cpu_cmpxchg_double().
- 			 */
--			if (PageSlab(page_head)) {
--				if (PageTail(page)) {
-+			if (PageSlab(page_head) || PageHeadHuge(page_head)) {
-+				if (likely(PageTail(page))) {
-+					/*
-+					 * __split_huge_page_refcount
-+					 * cannot race here.
-+					 */
-+					VM_BUG_ON(!PageHead(page_head));
-+					atomic_dec(&page->_mapcount);
- 					if (put_page_testzero(page_head))
- 						VM_BUG_ON(1);
--
--					atomic_dec(&page->_mapcount);
--					goto skip_lock_tail;
-+					if (put_page_testzero(page_head))
-+						__put_compound_page(page_head);
-+					return;
- 				} else
-+					/*
-+					 * __split_huge_page_refcount
-+					 * run before us, "page" was a
-+					 * THP tail. The split
-+					 * page_head has been freed
-+					 * and reallocated as slab or
-+					 * hugetlbfs page of smaller
-+					 * order (only possible if
-+					 * reallocated as slab on
-+					 * x86).
-+					 */
- 					goto skip_lock;
- 			}
- 			/*
-@@ -132,8 +136,27 @@ static void put_compound_page(struct page *page)
- 				/* __split_huge_page_refcount run before us */
- 				compound_unlock_irqrestore(page_head, flags);
- skip_lock:
--				if (put_page_testzero(page_head))
--					__put_single_page(page_head);
-+				if (put_page_testzero(page_head)) {
-+					/*
-+					 * The head page may have been
-+					 * freed and reallocated as a
-+					 * compound page of smaller
-+					 * order and then freed again.
-+					 * All we know is that it
-+					 * cannot have become: a THP
-+					 * page, a compound page of
-+					 * higher order, a tail page.
-+					 * That is because we still
-+					 * hold the refcount of the
-+					 * split THP tail and
-+					 * page_head was the THP head
-+					 * before the split.
-+					 */
-+					if (PageHead(page_head))
-+						__put_compound_page(page_head);
-+					else
-+						__put_single_page(page_head);
-+				}
- out_put_single:
- 				if (put_page_testzero(page))
- 					__put_single_page(page);
-@@ -155,7 +178,6 @@ out_put_single:
- 			VM_BUG_ON(atomic_read(&page->_count) != 0);
- 			compound_unlock_irqrestore(page_head, flags);
- 
--skip_lock_tail:
- 			if (put_page_testzero(page_head)) {
- 				if (PageHead(page_head))
- 					__put_compound_page(page_head);
-@@ -198,51 +220,52 @@ bool __get_page_tail(struct page *page)
- 	 * proper PT lock that already serializes against
- 	 * split_huge_page().
- 	 */
-+	unsigned long flags;
- 	bool got = false;
--	struct page *page_head;
--
--	/*
--	 * If this is a hugetlbfs page it cannot be split under us.  Simply
--	 * increment refcount for the head page.
--	 */
--	if (PageHuge(page)) {
--		page_head = compound_head(page);
--		atomic_inc(&page_head->_count);
--		got = true;
--	} else {
--		unsigned long flags;
-+	struct page *page_head = compound_trans_head(page);
- 
--		page_head = compound_trans_head(page);
--		if (likely(page != page_head &&
--					get_page_unless_zero(page_head))) {
--
--			/* Ref to put_compound_page() comment. */
--			if (PageSlab(page_head)) {
--				if (likely(PageTail(page))) {
--					__get_page_tail_foll(page, false);
--					return true;
--				} else {
--					put_page(page_head);
--					return false;
--				}
--			}
--
--			/*
--			 * page_head wasn't a dangling pointer but it
--			 * may not be a head page anymore by the time
--			 * we obtain the lock. That is ok as long as it
--			 * can't be freed from under us.
--			 */
--			flags = compound_lock_irqsave(page_head);
--			/* here __split_huge_page_refcount won't run anymore */
-+	if (likely(page != page_head && get_page_unless_zero(page_head))) {
-+		/* Ref to put_compound_page() comment. */
-+		if (PageSlab(page_head) || PageHeadHuge(page_head)) {
- 			if (likely(PageTail(page))) {
-+				/*
-+				 * This is a hugetlbfs page or a slab
-+				 * page. __split_huge_page_refcount
-+				 * cannot race here.
-+				 */
-+				VM_BUG_ON(!PageHead(page_head));
- 				__get_page_tail_foll(page, false);
--				got = true;
--			}
--			compound_unlock_irqrestore(page_head, flags);
--			if (unlikely(!got))
-+				return true;
-+			} else {
-+				/*
-+				 * __split_huge_page_refcount run
-+				 * before us, "page" was a THP
-+				 * tail. The split page_head has been
-+				 * freed and reallocated as slab or
-+				 * hugetlbfs page of smaller order
-+				 * (only possible if reallocated as
-+				 * slab on x86).
-+				 */
- 				put_page(page_head);
-+				return false;
-+			}
-+		}
-+
-+		/*
-+		 * page_head wasn't a dangling pointer but it
-+		 * may not be a head page anymore by the time
-+		 * we obtain the lock. That is ok as long as it
-+		 * can't be freed from under us.
-+		 */
-+		flags = compound_lock_irqsave(page_head);
-+		/* here __split_huge_page_refcount won't run anymore */
-+		if (likely(PageTail(page))) {
-+			__get_page_tail_foll(page, false);
-+			got = true;
- 		}
-+		compound_unlock_irqrestore(page_head, flags);
-+		if (unlikely(!got))
-+			put_page(page_head);
- 	}
- 	return got;
- }
+> > +module_platform_driver(bcm2835_dma_driver);
+> 
+> Is it possible to get driver initialized after that one that uses it?
+
+Doesn't quite make sense.  If you're asking whether other drivers can
+try to make use of this driver before it's initialised, then the answer
+is no.  We have mechanisms to cope with that - see deferred probing.
