@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab3KOH6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 02:58:51 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:56221 "EHLO
+	id S1757281Ab3KOH7P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 02:59:15 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:56222 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754484Ab3KOH6V (ORCPT
+	with ESMTP id S1755031Ab3KOH6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Nov 2013 02:58:21 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID rAF7wJtj026208, This message is accepted by code: ctloc85258
+X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID rAF7wJxM026243, This message is accepted by code: ctloc85258
 From: Hayes Wang <hayeswang@realtek.com>
 To: <netdev@vger.kernel.org>
 CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net v3 3/4] r8152: support stopping/waking tx queue
-Date: Fri, 15 Nov 2013 15:57:58 +0800
-Message-ID: <1384502279-9959-4-git-send-email-hayeswang@realtek.com>
+Subject: [PATCH net v3 4/4] r8152: fix incorrect type in assignment
+Date: Fri, 15 Nov 2013 15:57:59 +0800
+Message-ID: <1384502279-9959-5-git-send-email-hayeswang@realtek.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1384502279-9959-1-git-send-email-hayeswang@realtek.com>
 References: <1384502279-9959-1-git-send-email-hayeswang@realtek.com>
@@ -25,74 +25,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The maximum packet number which a tx aggregation buffer could contain
-is the buffer size / (packet size + descriptor size).
-
-If the tx buffer is empty and the tx queue length is more than the
-maximum value which is defined above, stop the tx queue. Wake the tx
-queue after any queued packet is filled in a available tx buffer.
+The data from the hardware should be little endian. Correct the
+declaration.
 
 Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- drivers/net/usb/r8152.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/net/usb/r8152.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 763234d..81a4171 100644
+index 81a4171..25e8fa8 100644
 --- a/drivers/net/usb/r8152.c
 +++ b/drivers/net/usb/r8152.c
-@@ -365,6 +365,7 @@ struct r8152 {
- 	struct mii_if_info mii;
- 	int intr_interval;
- 	u32 msg_enable;
-+	u32 tx_qlen;
- 	u16 ocp_base;
- 	u8 *intr_buff;
- 	u8 version;
-@@ -1173,6 +1174,9 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
- 		remain = rx_buf_sz - (int)(tx_agg_align(tx_data) - agg->head);
- 	}
+@@ -307,22 +307,22 @@ enum rtl8152_flags {
+ #define MCU_TYPE_USB			0x0000
  
-+	if (netif_queue_stopped(tp->netdev))
-+		netif_wake_queue(tp->netdev);
-+
- 	usb_fill_bulk_urb(agg->urb, tp->udev, usb_sndbulkpipe(tp->udev, 2),
- 			  agg->head, (int)(tx_data - (u8 *)agg->head),
- 			  (usb_complete_t)write_bulk_callback, agg);
-@@ -1393,6 +1397,10 @@ static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
+ struct rx_desc {
+-	u32 opts1;
++	__le32 opts1;
+ #define RX_LEN_MASK			0x7fff
+-	u32 opts2;
+-	u32 opts3;
+-	u32 opts4;
+-	u32 opts5;
+-	u32 opts6;
++	__le32 opts2;
++	__le32 opts3;
++	__le32 opts4;
++	__le32 opts5;
++	__le32 opts6;
+ };
  
- 	skb_queue_tail(&tp->tx_queue, skb);
+ struct tx_desc {
+-	u32 opts1;
++	__le32 opts1;
+ #define TX_FS			(1 << 31) /* First segment of a packet */
+ #define TX_LS			(1 << 30) /* Final segment of a packet */
+ #define TX_LEN_MASK		0x3ffff
  
-+	if (list_empty(&tp->tx_free) &&
-+	    skb_queue_len(&tp->tx_queue) > tp->tx_qlen)
-+		netif_stop_queue(netdev);
-+
- 	if (!list_empty(&tp->tx_free))
- 		tasklet_schedule(&tp->tl);
- 
-@@ -1423,6 +1431,14 @@ static void rtl8152_nic_reset(struct r8152 *tp)
- 	}
- }
- 
-+static void set_tx_qlen(struct r8152 *tp)
-+{
-+	struct net_device *netdev = tp->netdev;
-+
-+	tp->tx_qlen = rx_buf_sz / (netdev->mtu + VLAN_ETH_HLEN + VLAN_HLEN +
-+				   sizeof(struct tx_desc));
-+}
-+
- static inline u8 rtl8152_get_speed(struct r8152 *tp)
+-	u32 opts2;
++	__le32 opts2;
+ #define UDP_CS			(1 << 31) /* Calculate UDP/IP checksum */
+ #define TCP_CS			(1 << 30) /* Calculate TCP/IP checksum */
+ #define IPV4_CS			(1 << 29) /* Calculate IPv4 checksum */
+@@ -877,7 +877,7 @@ static void write_bulk_callback(struct urb *urb)
+ static void intr_callback(struct urb *urb)
  {
- 	return ocp_read_byte(tp, MCU_TYPE_PLA, PLA_PHYSTATUS);
-@@ -1434,6 +1450,7 @@ static int rtl8152_enable(struct r8152 *tp)
- 	int i, ret;
- 	u8 speed;
+ 	struct r8152 *tp;
+-	__u16 *d;
++	__le16 *d;
+ 	int status = urb->status;
+ 	int res;
  
-+	set_tx_qlen(tp);
- 	speed = rtl8152_get_speed(tp);
- 	if (speed & _10bps) {
- 		ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_EEEP_CR);
 -- 
 1.8.3.1
 
