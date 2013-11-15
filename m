@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab3KOTOu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 14:14:50 -0500
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:51176 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab3KOTOl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 14:14:41 -0500
+	id S1753292Ab3KOTQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 14:16:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57947 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751566Ab3KOTQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 14:16:51 -0500
+Message-ID: <52867309.4040406@zytor.com>
+Date: Fri, 15 Nov 2013 11:16:25 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <1384514665-32174-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1384514665-32174-1-git-send-email-nicolas.ferre@atmel.com>
-Date: Fri, 15 Nov 2013 11:14:40 -0800
-Message-ID: <CAOesGMhTMxsqeAoGZ0VUSPC4c4i9_g3J38yyQRryRmSGPZ_Xnw@mail.gmail.com>
-Subject: Re: [GIT PULL] at91: non-critical fixes for 3.13 #1
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Johan Hovold <jhovold@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
+        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+References: <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com> <20131114180455.GA32212@anatevka.fc.hp.com> <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com> <20131115005049.GJ5116@anatevka.fc.hp.com> <20131115062417.GB9237@gmail.com> <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com> <5285C639.5040203@zytor.com> <20131115140738.GB6637@redhat.com> <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com> <52865CA1.5020309@zytor.com> <20131115183002.GE6637@redhat.com> <52866C0D.3050006@zytor.com>
+In-Reply-To: <52866C0D.3050006@zytor.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 3:24 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> Arnd, Olof, Kevin,
->
-> This is a pull-request for AT91 about non-critical fixes for 3.13. This means
-> that you can certainly plan it for early 3.14.
-> It is not a 3.13 regression as this issue has been present for ages. I have
-> tagged the patch for "-stable" down to 3.11.y as they need modification to
-> apply on older kernels.
->
-> Thanks, best regards,
->
-> The following changes since commit 15c03dd4859ab16f9212238f29dd315654aa94f6:
->
->   Linux 3.12-rc3 (2013-09-29 15:02:38 -0700)
->
-> are available in the git repository at:
->
->   git://github.com/at91linux/linux-at91.git tags/at91-fixes-non-critical
->
-> for you to fetch changes up to 94c4c79f2f1acca6e69a50bff5a7d9027509c16b:
->
->   ARM: at91: fix hanged boot due to early rtt-interrupt (2013-11-15 12:13:33 +0100)
->
-> ----------------------------------------------------------------
-> Fixes for RTT & RTC interrupts that can fire early
-> during boot process and kill the system.
-> This fix has been discussed for months and it is time
-> for it to reach mainline.
+On 11/15/2013 10:46 AM, H. Peter Anvin wrote:
+> On 11/15/2013 10:30 AM, Vivek Goyal wrote:
+>>
+>> I agree taking assistance of hypervisor should be useful.
+>>
+>> One reason we use kdump for VM too because it makes life simple. There
+>> is no difference in how we configure, start and manage crash dumps
+>> in baremetal or inside VM. And in practice have not heard of lot of
+>> failures of kdump in VM environment.
+>>
+>> So while reliability remains a theoritical concern, in practice it
+>> has not been a real concern and that's one reason I think we have
+>> not seen a major push for alternative method in VM environment.
+>>
+> 
+> Another reason, again, is that it doesn't sit on all that memory.
+> 
 
+This led me to a potentially interesting idea.  If we can tell the
+hypervisor about which memory blocks belong to kdump, we can still use
+kdump in its current form with only a few hypervisor calls thrown in.
 
-It's a bummer that this can't be fixed in firmware instead (since
-there's a lot of devices out there with flashed firmware already,
-etc).
+One set of calls would mark memory ranges as belonging to kdump.  This
+would (a) make them protected, and (b) tell the hypervisor that these
+memory ranges will not be accessed and don't need to occupy physical RAM.
 
-We're early in the release cycle, and this is marked for -stable, so I
-am pulling this into fixes for 3.13. It doesn't make sense to hold off
-if it'll have to hit 3.13.y anyway.
+On a crash, we would them execute another hypercall to reanimate the
+kdump areas.  Since this is a once-in-a-lifetime (literally) event, this
+can be arbitrarily slow.
 
-So; pulled into fixes.
+This would only require a small number of hypercalls inserted into
+already existing code paths, and provide most of the benefit of
+hypervisor-assisted crash dumping.
 
+	-hpa
 
--Olof
