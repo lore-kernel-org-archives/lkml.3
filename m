@@ -1,125 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758390Ab3KOKMS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 05:12:18 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39312 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756590Ab3KOKMD (ORCPT
+	id S1758440Ab3KOKMv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 05:12:51 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:36948 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757438Ab3KOKMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 05:12:03 -0500
-Message-ID: <5285F36D.7010708@hitachi.com>
-Date: Fri, 15 Nov 2013 19:11:57 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: David Long <dave.long@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        Rabin Vincent <rabin@rab.in>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: Re: Re: [PATCH v2 10/13] kprobes: Remove uneeded kernel dependency
- on struct arch_specific_insn
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org>   <1381871068-27660-11-git-send-email-dave.long@linaro.org>  <1384362833.3392.42.camel@linaro1.home> <52842F2C.1030701@hitachi.com> <1384438551.3388.78.camel@linaro1.home>
-In-Reply-To: <1384438551.3388.78.camel@linaro1.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Nov 2013 05:12:42 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tianyu.lan@intel.com, nm@ti.com,
+        jinchoi@broadcom.com, sebastian.capella@linaro.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: suspend/resume governors with PM notifiers
+Date: Fri, 15 Nov 2013 15:42:29 +0530
+Message-Id: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/14 23:15), Jon Medhurst (Tixy) wrote:
-> On Thu, 2013-11-14 at 11:02 +0900, Masami Hiramatsu wrote:
->> (2013/11/14 2:13), Jon Medhurst (Tixy) wrote:
->>> On Tue, 2013-10-15 at 17:04 -0400, David Long wrote:
->>>> From: "David A. Long" <dave.long@linaro.org>
->>>>
->>>> Instead of depending on include/asm/kprobes.h to provide a dummy definition
->>>> for struct arch_specific_insn, do so in include/linux/kprobes.h.
->>>
->>> That change description doesn't quite seem to quite make sense to me.
->>>
->>> Anyway, what we're trying to do with this patch is to allow us to use
->>> arch_specific_insn for purposes additional to implementing kprobes. This
->>> patch enables that but I'm wary that the kprobes code assumes that ainsn
->>> is a struct arch_specific_insn, e.g. in linux/kernel/kprobes.c we have:
->>>
->>> 	memcpy(&p->ainsn, &ap->ainsn, sizeof(struct arch_specific_insn));
->>>
->>> Now, that code isn't compiled when kprobes isn't configured, but it
->>> seams to me to be safer if that was also changed to 
->>>
->>> 	memcpy(&p->ainsn, &ap->ainsn, sizeof(p->ainsn));
->>
->> This kind of cleanup looks good for me, but I don't agree to change
->> the type of the member (removing is OK) by Kconfig.
-> 
-> Wouldn't that still require an #ifdef CONFIG_KPROBES around ainsn?
-> Admittedly a less ugly one than one to change its type to an int.
+This patch adds PM notifiers for handling suspend/resume of cpufreq governors.
+This is required for early suspend and late resume of governors.
 
-Yeah, that's the point.
+There are multiple reasons that support this patch:
+- Firstly it looks very much logical to stop governors when we know we are going
+  into suspend. But the question is when? Is PM notifiers the right place?
+  Following reasons are the supporting hands for this decision.
+- Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board
+  wasn't working well with suspend/resume as calls for removing non-boot CPUs
+  was turning out into a call to drivers ->target() which then tries to play
+  with regulators. But regulators and their I2C bus were already suspended and
+  this resulted in a failure. This is why we need a PM notifier here.
+- Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found another issue where
+  tunables configuration for clusters/sockets with non-boot CPUs was getting
+  lost after suspend/resume, as we were notifying governors with
+  CPUFREQ_GOV_POLICY_EXIT on removal of the last cpu for that policy and so
+  deallocating memory for tunables.
 
-> 
->>  If you want to
->> change the framework of kprobes and uprobes itself (unification),
->> I'm appreciate to discuss with you and uprobes people, because it
->> will involve all arch dependent code change, *NOT ONLY* the ARM issue.
-> 
-> Well, I don't think the goal wasn't unification as such. For kprobes on
-> ARM we have to decode and simulate pretty much the entire instruction
-> set(s) and the attempt to implement uprobes on ARM have tried to make
-> use of as much of that as possible. The tricky bit has been as to where
-> to try and draw the level of abstraction, and it seems this may well be
-> leaking out of the arch specific arena.
+All above problems get fixed with having a PM notifier in place which will stop
+any operation on governor. Hence no need to do any special handling of variables
+like (frozen) in suspend/resume paths.
 
-I see, I've heard that from Sandeepa who are working on arm64 kprobes.
-His patch series now has generic interface of decoder/simulator.
+Reported-by: Lan Tianyu <tianyu.lan@intel.com>
+Reported-by: Nishanth Menon <nm@ti.com>
+Reported-by: Jinhyuk Choi <jinchoi@broadcom.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
 
-> Bit of background, Dave Long has been working on ARM uprobes based on
-> Rabin Vincent's earlier work, and I, as author of a large part of the
-> current ARM kprobes code, have been reviewing (not very satisfactorily I
-> admit) the bits that impact that. One of my motivations has been to push
-> the kprobes instruction decoding to be more generic, rather than special
-> casing things to cope with uprobes. This is because I'm aware of the
-> reoccurring theme on the ARM lists that it would be good to not have all
-> the different methods of instruction decoding, for probes, debug and
-> simulation, etc. (I'm sceptical that a one-size-fits-all is possible,
-> but consolidation where practical is good).
+Hi Guys,
 
-Same as x86, we still have different code base of kprobes and uprobes
-Fortunately, x86 instruction decoder is separated, but single-stepping
-and other parts are not well shared.
+Can you please verify if this fixes issues reported by you? I have tested this
+for multiple suspend-resumes on my thinkpad. It doesn't crash :)
 
->>> However, I also wonder if we should instead leave arch_specific_insn as
->>> a kprobes specific structure and on ARM define it in terms of a new more
->>> generic 'struct probe_insn'? The drawback with that is that we'd
->>> probably end up with a struct just containing a single member which
->>> seems a bit redundant:
->>>
->>> struct arch_specific_insn {
->>> 	struct probe_insn pinsn;
->>> };
->>
->> I also disagree it. If you have a plan to integrate uprobes and kprobes
->> arch specific code, please share it with us.
-> 
-> There's not really a 'plan', just an attempt to reuse the instruction
-> decoding code used by kprobes in the implementation of uprobes, i.e. the
-> patch series [1] which this mail thread is in reply to.
-> 
-> [1] http://thread.gmane.org/gmane.linux.kernel/1579985
+ drivers/cpufreq/cpufreq.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 63 insertions(+)
 
-OK, and I think similar method we can use on x86 too. :)
-In that case, we may be able to simplify the arch_specific_insn.
-
-Thank you,
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 02d534d..c87ced9 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -26,6 +26,7 @@
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
++#include <linux/suspend.h>
+ #include <linux/syscore_ops.h>
+ #include <linux/tick.h>
+ #include <trace/events/power.h>
+@@ -47,6 +48,9 @@ static LIST_HEAD(cpufreq_policy_list);
+ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+ #endif
+ 
++/* Flag to suspend/resume CPUFreq governors */
++static bool cpufreq_suspended;
++
+ static inline bool has_target(void)
+ {
+ 	return cpufreq_driver->target_index || cpufreq_driver->target;
+@@ -1462,6 +1466,54 @@ static struct subsys_interface cpufreq_interface = {
+ 	.remove_dev	= cpufreq_remove_dev,
+ };
+ 
++/*
++ * PM Notifier for suspending governors as some platforms can't change frequency
++ * after this point in suspend cycle. Because some of the devices (like: i2c,
++ * regulators, etc) they use for changing frequency are suspended quickly after
++ * this point.
++ */
++static int cpufreq_pm_notify(struct notifier_block *nb, unsigned long action,
++		void *data)
++{
++	struct cpufreq_policy *policy;
++	unsigned long flags;
++
++	if (!has_target())
++		return NOTIFY_OK;
++
++	if (action == PM_SUSPEND_PREPARE) {
++		pr_debug("%s: Suspending Governors\n", __func__);
++
++		list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
++			if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
++				pr_err("%s: Failed to stop governor for policy: %p\n",
++						__func__, policy);
++
++		write_lock_irqsave(&cpufreq_driver_lock, flags);
++		cpufreq_suspended = true;
++		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
++	} else if (action == PM_POST_SUSPEND) {
++		pr_debug("%s: Resuming Governors\n", __func__);
++
++		write_lock_irqsave(&cpufreq_driver_lock, flags);
++		cpufreq_suspended = false;
++		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
++
++		list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
++			if (__cpufreq_governor(policy, CPUFREQ_GOV_START) ||
++					__cpufreq_governor(policy,
++						CPUFREQ_GOV_LIMITS))
++				pr_err("%s: Failed to start governor for policy: %p\n",
++						__func__, policy);
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block cpufreq_pm_notifier = {
++	.notifier_call = cpufreq_pm_notify,
++};
++
+ /**
+  * cpufreq_bp_suspend - Prepare the boot CPU for system suspend.
+  *
+@@ -1752,6 +1804,8 @@ EXPORT_SYMBOL_GPL(cpufreq_driver_target);
+ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 					unsigned int event)
+ {
++	unsigned long flags;
++	bool is_suspended;
+ 	int ret;
+ 
+ 	/* Only must be defined when default governor is known to have latency
+@@ -1764,6 +1818,14 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 	struct cpufreq_governor *gov = NULL;
+ #endif
+ 
++	/* Don't start any governor operations if we are entering suspend */
++	read_lock_irqsave(&cpufreq_driver_lock, flags);
++	is_suspended = cpufreq_suspended;
++	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
++
++	if (is_suspended)
++		return 0;
++
+ 	if (policy->governor->max_transition_latency &&
+ 	    policy->cpuinfo.transition_latency >
+ 	    policy->governor->max_transition_latency) {
+@@ -2222,6 +2284,7 @@ static int __init cpufreq_core_init(void)
+ 	cpufreq_global_kobject = kobject_create();
+ 	BUG_ON(!cpufreq_global_kobject);
+ 	register_syscore_ops(&cpufreq_syscore_ops);
++	register_pm_notifier(&cpufreq_pm_notifier);
+ 
+ 	return 0;
+ }
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.12.rc2.18.g61b472e
 
