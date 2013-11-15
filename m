@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab3KOXXA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 18:23:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32915 "EHLO mx2.suse.de"
+	id S1753575Ab3KOXXI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 18:23:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32916 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699Ab3KOXWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 18:22:51 -0500
-Date: Sat, 16 Nov 2013 00:22:43 +0100 (CET)
+	id S1752937Ab3KOXWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 18:22:54 -0500
+Date: Sat, 16 Nov 2013 00:22:51 +0100 (CET)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] trivial
-Message-ID: <alpine.LNX.2.00.1311160019490.6919@pobox.suse.cz>
+Subject: [GIT] HID
+Message-ID: <alpine.LNX.2.00.1311160014150.6919@pobox.suse.cz>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,174 +24,131 @@ Linus,
 
 please pull from
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
 
-to receive 
+to receive
 
-
-- usual earth-shaking, news-breaking, rocket science pile from trivial.git
-
-
-
-You are going to encounter this merge conflict:
-
-	https://lkml.org/lkml/2013/10/15/425
-
-The resolution is rather simple -- just replace any occurence of 
-'indentified' in net/netfilter/xt_set.c by 'identified' :)
-
-If you want me to prepare a branch with this conflict resolved, just let 
-me know, I'll be happy to do that.
+- i2c-hid is not querying init reports any more, as it's not mandated by 
+  the spec, and annoys quite a few devices during enumeration, by Bibek 
+  Basu
+- a lot of fixes for Logitech devices, by Simon Wood
+- hid-apple now has an option to switch between Option and Command mode, 
+  by Nanno Langstraat
+- Some more workarounds for severely broken ELO devices, by Oliver Neukum
+- more devm conversions, by Benjamin Tissoires
+- wiimote correctness fixes, by David Herrmann
+- a lot of added support for various new device IDs and random small fixes 
+  here and there
 
 Thanks.
 
 
+Anders F. U. Kiær (1):
+      HID: add support for LEETGION Hellion Gaming Mouse
 
-Anoop Thomas Mathew (1):
-      doc: typo on word accounting in kprobes.c in mutliple architectures
+Benjamin Tissoires (3):
+      HID: lenovo-tpkbd: devm conversion
+      HID: lenovo-tpkbd: remove usb dependency
+      HID: sony: use hid_get_raw_report() instead of a direct call to usb
 
-Ezequiel Garcia (1):
-      clk: fixed-factor: Fix a trivial typo
+Bibek Basu (1):
+      HID: i2c-hid: Stop querying for init reports
 
-Geert Uytterhoeven (2):
-      kexec: Typo s/the/then/
-      mm/Kconfig: Grammar s/an/a/
+Dan Carpenter (1):
+      HID: logitech-dj: small cleanup in rdcat()
 
-Henrik Austad (2):
-      mm: update 00-INDEX
-      doc: add missing files to timers/00-INDEX
+David Herrmann (2):
+      HID: wiimote: fix inverted pro-controller axes
+      HID: wiimote: add pro-controller analog stick calibration
 
-Jingoo Han (1):
-      SCSI: remove unnecessary pci_set_drvdata()
+Elias Vanderstuyft (1):
+      HID: logitech - lg2ff: Add IDs for Formula Vibration Feedback Wheel
 
-LABBE Corentin (1):
-      Correct some typos for word frequency
+Felix Rueegg (1):
+      HID: remove self-assignment from hid_input_report
 
-Masanari Iida (3):
-      treewide: Fix typo in Kconfig
-      treewide: Fix typo in printk
-      doc: usb: Fix typo in Documentation/usb/gadget_configs.txt
+Forest Bond (3):
+      HID: hid-multitouch: add support for SiS panels
+      HID: don't ignore eGalax/D-Wav/EETI HIDs
+      Input: usbtouchscreen: ignore eGalax/D-Wav/EETI HIDs
 
-Maxime Jayat (1):
-      treewide: Fix common typo in "identify"
+Jan Matějka (1):
+      HID: multitouch: add manufacturer to Kconfig help text
 
-Michael Opdenacker (2):
-      treewide: fix "distingush" typo
-      treewide: fix "usefull" typo
+Jiri Kosina (2):
+      HID: apple: swap_opt_cmd is already zero-initialized
+      Merge branches 'for-3.12/upstream-fixes', 'for-3.13/holtek', 'for-3.13/i2c-hid', 'for-3.13/logitech', 'for-3.13/multitouch', 'for-3.13/roccat', 'for-3.13/upstream' and 'for-3.13/wiimote' into for-linus
 
-Michael Witten (2):
-      Docs: Kconfig: `devlopers' -> `developers'
-      DRM: comment: `halve' -> `half'
+Luosong (1):
+      HID: multitouch: Fix GeneralTouch products and add more PIDs
 
-Paul Gortmaker (1):
-      NUMA: fix typos in Kconfig help text
+Nanno Langstraat (1):
+      HID: apple: option to swap the 'Option' ("Alt") and 'Command' ("Flag") keys.
 
-Raghavendra K T (1):
-      Documentation/kvm: Update cpuid documentation for steal time and pv eoi
+Oliver Neukum (1):
+      HID: hid-elo: some systems cannot stomach work around
 
-Xie XiuQi (3):
-      irq: Fix some trivial typos in comments
-      mm: Fix some trivial typos in comments
-      timekeeping: Fix some trivial typos in comments
+Simon Wood (8):
+      HID: lg: fix ReportDescriptor for Logitech Formula Vibration
+      HID: lg: fix Report Descriptor for Logitech MOMO Force (Black)
+      HID: Correct Kconfig MOMO description
+      HID:hid-lg4ff: Scale autocentering force properly on Logitech wheel
+      HID:hid-lg4ff: Switch autocentering off when strength is set to zero.
+      HID:hid-lg4ff: ensure ConstantForce is disabled when set to 0
+      HID:hid-lg4ff: Initialize device properties before we touch autocentering.
+      HID:hid-lg4ff: Correct Auto-center strength for wheels other than MOMO and MOMO2
 
-Xishi Qiu (1):
-      doc: Documentation/DMA-attributes.txt fix typo
+Srinivas Pandruvada (1):
+      HID: hid-sensor-hub: fix report size
 
-Zhang Yanfei (1):
-      __page_to_pfn: Fix typo in comment
+Stefan Achatz (5):
+      HID: roccat: add new device return value
+      HID: roccat: generalize some common code
+      HID: roccat: add support for Ryos MK keyboards
+      HID: roccat: fix Coverity CID 141438
+      HID: roccat: add missing special driver declarations
 
- Documentation/DMA-attributes.txt                   |    6 +++---
- Documentation/timers/00-INDEX                      |    4 ++++
- Documentation/usb/gadget_configfs.txt              |    6 +++---
- Documentation/virtual/kvm/cpuid.txt                |    7 +++++++
- Documentation/vm/00-INDEX                          |   20 ++++++++++++--------
- arch/arc/kernel/kprobes.c                          |    2 +-
- arch/arm/mach-sti/Kconfig                          |    4 ++--
- arch/ia64/kernel/kprobes.c                         |    2 +-
- arch/m32r/include/asm/mmu_context.h                |    2 +-
- arch/mips/include/asm/octeon/cvmx-pip.h            |    4 ++--
- arch/mn10300/include/asm/mmu_context.h             |    2 +-
- arch/powerpc/kernel/kprobes.c                      |    2 +-
- arch/powerpc/platforms/pseries/nvram.c             |    2 +-
- arch/s390/kernel/kprobes.c                         |    2 +-
- arch/sh/include/asm/mmu_context.h                  |    2 +-
- arch/sparc/kernel/kprobes.c                        |    2 +-
- arch/x86/kernel/cpu/amd.c                          |    2 +-
- arch/x86/kernel/cpu/intel_cacheinfo.c              |    2 +-
- arch/x86/kernel/cpu/scattered.c                    |    2 +-
- drivers/acpi/acpica/utobject.c                     |    2 +-
- drivers/base/dma-contiguous.c                      |    2 +-
- drivers/clk/clk-fixed-factor.c                     |    2 +-
- drivers/cpufreq/Kconfig.x86                        |    2 +-
- drivers/cpufreq/exynos-cpufreq.c                   |    2 +-
- drivers/dma/Kconfig                                |    2 +-
- drivers/fmc/Kconfig                                |    2 +-
- drivers/gpu/drm/drm_irq.c                          |    4 ++--
- drivers/infiniband/ulp/isert/Kconfig               |    4 ++--
- drivers/input/serio/i8042.c                        |    2 +-
- drivers/md/raid5.h                                 |    2 +-
- drivers/media/i2c/Kconfig                          |    2 +-
- drivers/media/i2c/adv7183.c                        |    2 +-
- drivers/media/i2c/s5c73m3/s5c73m3-core.c           |    2 +-
- drivers/media/rc/keymaps/rc-dib0700-nec.c          |    2 +-
- drivers/media/rc/keymaps/rc-dib0700-rc5.c          |    2 +-
- drivers/mfd/Kconfig                                |    4 ++--
- drivers/mtd/nand/docg4.c                           |    2 +-
- drivers/net/ethernet/mellanox/mlx4/fw.c            |    2 +-
- .../net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c    |    2 +-
- drivers/net/irda/ali-ircc.c                        |    2 +-
- drivers/net/irda/nsc-ircc.c                        |    2 +-
- drivers/net/wireless/ath/ath10k/pci.c              |    2 +-
- drivers/net/wireless/ath/ath5k/dma.c               |    2 +-
- drivers/regulator/tps65910-regulator.c             |    2 +-
- drivers/s390/scsi/zfcp_dbf.c                       |    6 +++---
- drivers/scsi/arcmsr/arcmsr_hba.c                   |    1 -
- drivers/scsi/atp870u.c                             |    2 --
- drivers/scsi/bfa/bfad.c                            |    1 -
- drivers/scsi/bnx2i/bnx2i_hwi.c                     |   16 ++++++++--------
- drivers/scsi/bnx2i/bnx2i_iscsi.c                   |   14 +++++++-------
- drivers/scsi/csiostor/csio_init.c                  |    2 --
- drivers/scsi/dc395x.c                              |    1 -
- drivers/scsi/fnic/fnic_main.c                      |    1 -
- drivers/scsi/gdth.c                                |    2 --
- drivers/scsi/hpsa.c                                |    1 -
- drivers/scsi/lpfc/lpfc_init.c                      |    3 ---
- drivers/scsi/megaraid/megaraid_mbox.c              |    6 ------
- drivers/scsi/megaraid/megaraid_sas_base.c          |    5 -----
- drivers/scsi/mvsas/mv_init.c                       |    1 -
- drivers/scsi/mvsas/mv_sas.c                        |    2 +-
- drivers/scsi/mvumi.c                               |    2 --
- drivers/scsi/ncr53c8xx.c                           |    2 +-
- drivers/scsi/pm8001/pm8001_init.c                  |    1 -
- drivers/scsi/pmcraid.c                             |    1 -
- drivers/scsi/qla2xxx/qla_os.c                      |    1 -
- drivers/scsi/qla4xxx/ql4_os.c                      |    1 -
- drivers/scsi/stex.c                                |    2 --
- drivers/scsi/sym53c8xx_2/sym_glue.h                |    2 +-
- drivers/scsi/tmscsim.c                             |    1 -
- drivers/scsi/ufs/ufshcd-pci.c                      |    1 -
- drivers/scsi/vmw_pvscsi.c                          |    2 --
- drivers/staging/iio/adc/ad7606.h                   |    2 +-
- drivers/usb/core/Kconfig                           |    2 +-
- fs/btrfs/Kconfig                                   |    3 ++-
- include/asm-generic/memory_model.h                 |    2 +-
- include/linux/amba/serial.h                        |    2 +-
- include/linux/devfreq.h                            |    2 +-
- include/linux/mfd/si476x-core.h                    |    2 +-
- include/linux/netdevice.h                          |    2 +-
- include/net/bluetooth/l2cap.h                      |    2 +-
- init/Kconfig                                       |    4 ++--
- kernel/irq/chip.c                                  |    2 +-
- kernel/irq/manage.c                                |    2 +-
- kernel/kexec.c                                     |    2 +-
- kernel/time/timekeeping.c                          |    3 ++-
- mm/Kconfig                                         |    2 +-
- mm/slub.c                                          |    2 +-
- net/can/af_can.c                                   |    2 +-
- net/netfilter/xt_set.c                             |    4 ++--
- net/vmw_vsock/Kconfig                              |    2 +-
- sound/soc/codecs/alc5632.c                         |    2 +-
- 91 files changed, 118 insertions(+), 139 deletions(-)
+Sven Eckelmann (1):
+      HID: sony: Add force feedback support for Dualshock3 USB
+
+Tristan Rice (1):
+      HID: enable Mayflash USB Gamecube Adapter
+
+ .../ABI/testing/sysfs-driver-hid-roccat-ryos       |  178 +++++++++++++++
+ Documentation/ABI/testing/sysfs-driver-hid-wiimote |   18 ++
+ drivers/hid/Kconfig                                |   22 ++-
+ drivers/hid/Makefile                               |    2 +-
+ drivers/hid/hid-apple.c                            |   22 ++
+ drivers/hid/hid-axff.c                             |    3 +-
+ drivers/hid/hid-core.c                             |   25 +-
+ drivers/hid/hid-elo.c                              |   35 +++-
+ drivers/hid/hid-holtek-mouse.c                     |    4 +
+ drivers/hid/hid-ids.h                              |   16 ++-
+ drivers/hid/hid-lenovo-tpkbd.c                     |   50 ++---
+ drivers/hid/hid-lg.c                               |  138 +++++++++++
+ drivers/hid/hid-lg2ff.c                            |    2 +-
+ drivers/hid/hid-lg4ff.c                            |  101 +++++++--
+ drivers/hid/hid-logitech-dj.c                      |   14 +-
+ drivers/hid/hid-multitouch.c                       |   27 ++-
+ drivers/hid/hid-roccat-common.c                    |   65 +++++-
+ drivers/hid/hid-roccat-common.h                    |   62 +++++
+ drivers/hid/hid-roccat-konepure.c                  |  158 +++----------
+ drivers/hid/hid-roccat-konepure.h                  |   72 ------
+ drivers/hid/hid-roccat-kovaplus.c                  |    4 +
+ drivers/hid/hid-roccat-ryos.c                      |  241 ++++++++++++++++++++
+ drivers/hid/hid-roccat-savu.c                      |  123 ++---------
+ drivers/hid/hid-roccat-savu.h                      |   32 ---
+ drivers/hid/hid-sensor-hub.c                       |   13 +-
+ drivers/hid/hid-sony.c                             |   63 +++++-
+ drivers/hid/hid-wiimote-modules.c                  |  117 +++++++++-
+ drivers/hid/hid-wiimote.h                          |    2 +
+ drivers/hid/i2c-hid/i2c-hid.c                      |    4 -
+ drivers/hid/usbhid/hid-quirks.c                    |    2 +
+ drivers/input/touchscreen/usbtouchscreen.c         |    4 +-
+ 31 files changed, 1168 insertions(+), 451 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-roccat-ryos
+ delete mode 100644 drivers/hid/hid-roccat-konepure.h
+ create mode 100644 drivers/hid/hid-roccat-ryos.c
 
 -- 
 Jiri Kosina
