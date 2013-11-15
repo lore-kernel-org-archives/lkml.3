@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab3KOHZu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 02:25:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50319 "EHLO
+	id S1756215Ab3KOHZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 02:25:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50326 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754781Ab3KOHZD (ORCPT
+	with ESMTP id S1754939Ab3KOHZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 02:25:03 -0500
-Date: Thu, 14 Nov 2013 23:24:50 -0800
-From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-ea432a8bb940e6bea2aaeca3c0ff3d931ad81f2e@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de
-In-Reply-To: <20131112232609.GA31474@gmail.com>
-References: <20131112232609.GA31474@gmail.com>
+	Fri, 15 Nov 2013 02:25:12 -0500
+Date: Thu, 14 Nov 2013 23:24:59 -0800
+From: tip-bot for Don Zickus <tipbot@zytor.com>
+Message-ID: <tip-bo4akalno7579shpz29u867j@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, jmario@redhat.com, rfowles@redhat.com,
+        jolsa@redhat.com, tglx@linutronix.de, bgray@redhat.com,
+        dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, jmario@redhat.com,
+        jolsa@redhat.com, rfowles@redhat.com, bgray@redhat.com,
+        tglx@linutronix.de, dzickus@redhat.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf top: Add missing newline if the 'uid'
-  is invalid
-Git-Commit-ID: ea432a8bb940e6bea2aaeca3c0ff3d931ad81f2e
+Subject: [tip:perf/urgent] perf tools: Synthesize anon MMAP records again
+Git-Commit-ID: 9d4ecc8893832337daf241236841db966fa53489
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,64 +29,65 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 14 Nov 2013 23:24:56 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 14 Nov 2013 23:25:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ea432a8bb940e6bea2aaeca3c0ff3d931ad81f2e
-Gitweb:     http://git.kernel.org/tip/ea432a8bb940e6bea2aaeca3c0ff3d931ad81f2e
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Wed, 13 Nov 2013 00:26:09 +0100
+Commit-ID:  9d4ecc8893832337daf241236841db966fa53489
+Gitweb:     http://git.kernel.org/tip/9d4ecc8893832337daf241236841db966fa53489
+Author:     Don Zickus <dzickus@redhat.com>
+AuthorDate: Wed, 13 Nov 2013 15:32:06 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 14 Nov 2013 15:59:50 -0300
+CommitDate: Thu, 14 Nov 2013 16:00:01 -0300
 
-perf top: Add missing newline if the 'uid' is invalid
+perf tools: Synthesize anon MMAP records again
 
-Add missing newline if the 'uid' is invalid:
+When introducing the PERF_RECORD_MMAP2 in:
 
-  hubble:~> perf top --stdio -u help
-  Error:
-  Invalid User: helphubble:~>
+5c5e854bc760 perf tools: Add attr->mmap2 support
 
-Fixed by this patch:
+A check for the number of entries parsed by sscanf was introduced that
+assumed all of the 8 fields needed to be correctly parsed so that
+particular /proc/pid/maps line would be considered synthesizable.
 
-  comet:~/tip/tools/perf> perf top --stdio -u help
-  Error:
-  Invalid User: help
-  comet:~/tip/tools/perf>
+That broke anon records synthesizing, as it doesn't have the 'execname'
+field.
 
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
+Fix it by keeping the sscanf return check, changing it to not require
+that the 'execname' variable be parsed, so that the preexisting logic
+can kick in and set it to '//anon'.
+
+This should get things like JIT profiling working again.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Cc: Bill Gray <bgray@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/20131112232609.GA31474@gmail.com
+Cc: Joe Mario <jmario@redhat.com>
+Cc: Richard Fowles <rfowles@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/n/tip-bo4akalno7579shpz29u867j@git.kernel.org
+[ commit log message is mine, dzickus reported the problem with a patch ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/event.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index b8f8e29..71e6402 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1172,7 +1172,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	status = target__validate(target);
- 	if (status) {
- 		target__strerror(target, status, errbuf, BUFSIZ);
--		ui__warning("%s", errbuf);
-+		ui__warning("%s\n", errbuf);
- 	}
- 
- 	status = target__parse_uid(target);
-@@ -1180,7 +1180,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 		int saved_errno = errno;
- 
- 		target__strerror(target, status, errbuf, BUFSIZ);
--		ui__error("%s", errbuf);
-+		ui__error("%s\n", errbuf);
- 
- 		status = -saved_errno;
- 		goto out_delete_evlist;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 6e3a846..bb788c1 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -209,8 +209,10 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		       &event->mmap.start, &event->mmap.len, prot,
+ 		       &event->mmap.pgoff,
+ 		       execname);
+-
+-		if (n != 5)
++		/*
++ 		 * Anon maps don't have the execname.
++ 		 */
++		if (n < 4)
+ 			continue;
+ 		/*
+ 		 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
