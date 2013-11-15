@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab3KOO0c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:26:32 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:39846 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138Ab3KOO0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:26:25 -0500
-From: Peter Wu <lekensteyn@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [REGRESSION] coredumps truncated after "new helper: dump_align()"
-Date: Fri, 15 Nov 2013 15:26:10 +0100
-Message-ID: <11835033.kIc1RH0rS1@al>
-User-Agent: KMail/4.11.3 (Linux/3.12.0-1-custom; KDE/4.11.3; x86_64; ; )
+	id S1753088Ab3KOO0v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:26:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37980 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751512Ab3KOO0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 09:26:43 -0500
+Date: Fri, 15 Nov 2013 09:26:17 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Baoquan He <bhe@redhat.com>,
+        Kexec Mailing List <kexec@lists.infradead.org>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Dave Young <dyoung@redhat.com>, WANG Chao <chaowang@redhat.com>
+Subject: Re: /proc/vmcore mmap() failure issue
+Message-ID: <20131115142617.GC6637@redhat.com>
+References: <20131113204130.GD7613@redhat.com>
+ <5284A689.70903@jp.fujitsu.com>
+ <20131114151359.GA3913@redhat.com>
+ <5285EC60.1060906@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5285EC60.1060906@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+On Fri, Nov 15, 2013 at 06:41:52PM +0900, HATAYAMA Daisuke wrote:
 
-Somewhere in the merge window of 3.13, coredumps appear truncated.
-Instead of 319488 bytes, I get 868 bytes (tested with x86_64 only).
+[..]
+> >Given the fact that hpa does not like fixing it in kernel. We are left
+> >with option of fixing it in following places.
+> >
+> >- Drop partial pages in kexec-tools
+> >- Drop partial pages in makeudmpfile.
+> >- Read partial pages using read() interface in makedumpfile
+> >- Modify /proc/vmcore to copy partial pages in second kernel's memory.
+> >
+> >It is not clear to me that partial pages are really useful.  So I want
+> >to avoid modifying /proc/vmcore to deal with partial pages and increase
+> >complexity.
+> >
+> >So fixing makedumpfile (either option2 or option 3) seems least risky
+> >to me. In fact I would say let us keep it simple and truncate partial
+> >pages in makedumpfile to keep it simple. And look at option 3 once we
+> >have a strong use case for partial pages.
+> >
+> >What do you think?
+> >
+> 
+> As you say, it's not clear that partial pages are really useful, but on
+> the other hand, it seems to me not clear that they are really useless.
+> I think we should get them as long as we have access to them.
+> 
+> It seems best to me the option 3). Switching between read and mmap would
+> be not so complex and also it's by far flexible in makedumpfile than in
+> kernel.
 
-The latest Linus' master (v3.12-9579-g049ffa8) is still affected.
-Bisection leads to:
+Ok, I am fine with option 3. It is more complicated option but safe
+option.
 
-commit 22a8cb8248ba5d340307ba72432253b1dbdb5cf7
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Tue Oct 8 11:05:01 2013 -0400
+Is there any chance that you could look into fixing this. I have no
+experience writing code for makedumpfile.
 
-    new helper: dump_align()
-    
-    dump_skip to given alignment...
-    
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-
-:040000 040000 880920de653955485453c8cc11045bb09e2934f7 f8b348d32b59ae7a16cbc3eb2a6319f4df0210eb M      arch
-:040000 040000 eaeffe2378806e95d23b3f3a9dc0fa8f078d6052 88866abde93296a05b4adda869280bc05403936f M      fs
-:040000 040000 218263e01dd7473998c54a5a68ed5ae072854d24 ff531dce919862b662fef19a9a049f0de3db38ce M      include
-
-I first noticed this bug on my laptop (v3.12-7033-g42a2d92) and
-reproduced this bug in a QEMU virtual machine too. If you want, I
-can also provide the git bisect script that starts QEMU and tests
-the serial output. That allows a kernel to be verified in two seconds
-(minus build times).
-
-Regards,
-Peter
+Thanks
+Vivek
