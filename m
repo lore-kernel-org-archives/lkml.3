@@ -1,159 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab3KOMau (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 07:30:50 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:42747 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab3KOMaX (ORCPT
+	id S1751933Ab3KOMbP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 07:31:15 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:59539 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab3KOMbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 07:30:23 -0500
-Date: Fri, 15 Nov 2013 20:29:37 +0800
-From: ZHAO Gang <gamerh2o@gmail.com>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] staging: et131x: drop packet when error occurs in
- et131x_tx
-Message-ID: <c55eeb3252a868e9e62655baed8d6b11992b9cbe.1384518190.git.gamerh2o@gmail.com>
-Mail-Followup-To: ZHAO Gang <gamerh2o@gmail.com>,
-	Mark Einon <mark.einon@gmail.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	linux-kernel@vger.kernel.org
-References: <62a00a45d2fc38d1881f153f35ba282e85d78a3e.1384518190.git.gamerh2o@gmail.com>
+	Fri, 15 Nov 2013 07:31:07 -0500
+Date: Fri, 15 Nov 2013 07:30:55 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Vlad Yasevich <vyasevich@gmail.com>
+Cc: Chang Xiangzhong <changxiangzhong@gmail.com>, davem@davemloft.net,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dreibh@simula.no, ernstgr@simula.no
+Subject: Re: [PATCH] net: sctp: recover a tranport when an ack comes
+Message-ID: <20131115123055.GA29877@hmsreliant.think-freely.org>
+References: <1384461624-17636-1-git-send-email-changxiangzhong@gmail.com>
+ <5285884F.8030907@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <62a00a45d2fc38d1881f153f35ba282e85d78a3e.1384518190.git.gamerh2o@gmail.com>
+In-Reply-To: <5285884F.8030907@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As TODO file suggested, drop packet instead of return NETDEV_TX_BUSY
-when tx failed.
+On Thu, Nov 14, 2013 at 09:34:55PM -0500, Vlad Yasevich wrote:
+> On 11/14/2013 03:40 PM, Chang Xiangzhong wrote:
+> >Expected Behavior:
+> >When hearing an ack from a tranport/path, set its state to normal/on if it's
+> >in abnormal(__partial_failure__ or inactive) state.
+> >
+> >state machine of tranport->state
+> >Whenever a T3_RTX timer expires, then transport->error_count++.
+> >When (association->pf_retrans < transport->error_count < tranport->pathmaxrtx)
+> >	transport->state = SCTP_PF //partial failure
+> >
+> >When a heartbeat-ack comes or conventional ack acknowledged its availability,
+> >	transport->state = SCTP_ON
+> >
+> >Signed-off-by: Chang Xiangzhong <changxiangzhong@gmail.com>
+> >Fixes: 5aa93bcf66f ("sctp: Implement quick failover draft from tsvwg")
+> 
+> I don't think this is right.  The spec states:
+>  8.  ACKs for retransmissions do not transition a PF destination back
+>        to Active state, since a sender cannot disambiguate whether the
+>        ack was for the original transmission or the retransmission(s).
+> 
+> 
+> Now, the proper way to this would would be modify
+> sctp_assoc_control_transport() to transition the transport state to
+> ACTIVE if it was PF transport that was chosen to send data.
+> 
+> -vlad
+> 
+I agree, this patch doesn't agree with the spec, the only time we transition
+from PF to ACTIVE should be on receipt of ack of new data.  I'm not even sure if
+we should allow PF transports to be selected to send new data.  Currently a
+potentially failed transport will get ignored when specified, and the stack will
+use the active path in its place.  Only if all transports are PF will a PF
+transport be chosen.
+Neil
 
-et131x_tx calls function et131x_send_packets, I put the work of
-et131x_send_packets directly into et131x_tx, and made some changes to
-let the code more readable.
-
-Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
----
- drivers/staging/et131x/et131x.c | 84 +++++++++++------------------------------
- 1 file changed, 22 insertions(+), 62 deletions(-)
-
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 836a4db..cda037a 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -3123,55 +3123,6 @@ static int send_packet(struct sk_buff *skb, struct et131x_adapter *adapter)
- 	return 0;
- }
- 
--/* et131x_send_packets - This function is called by the OS to send packets
-- * @skb: the packet(s) to send
-- * @netdev:device on which to TX the above packet(s)
-- *
-- * Return 0 in almost all cases; non-zero value in extreme hard failure only
-- */
--static int et131x_send_packets(struct sk_buff *skb, struct net_device *netdev)
--{
--	int status = 0;
--	struct et131x_adapter *adapter = netdev_priv(netdev);
--
--	/* Send these packets
--	 *
--	 * NOTE: The Linux Tx entry point is only given one packet at a time
--	 * to Tx, so the PacketCount and it's array used makes no sense here
--	 */
--
--	/* TCB is not available */
--	if (adapter->tx_ring.used >= NUM_TCB) {
--		/* NOTE: If there's an error on send, no need to queue the
--		 * packet under Linux; if we just send an error up to the
--		 * netif layer, it will resend the skb to us.
--		 */
--		status = -ENOMEM;
--	} else {
--		/* We need to see if the link is up; if it's not, make the
--		 * netif layer think we're good and drop the packet
--		 */
--		if ((adapter->flags & FMP_ADAPTER_FAIL_SEND_MASK) ||
--					!netif_carrier_ok(netdev)) {
--			dev_kfree_skb_any(skb);
--			skb = NULL;
--
--			adapter->net_stats.tx_dropped++;
--		} else {
--			status = send_packet(skb, adapter);
--			if (status != 0 && status != -ENOMEM) {
--				/* On any other error, make netif think we're
--				 * OK and drop the packet
--				 */
--				dev_kfree_skb_any(skb);
--				skb = NULL;
--				adapter->net_stats.tx_dropped++;
--			}
--		}
--	}
--	return status;
--}
--
- /* free_send_packet - Recycle a struct tcb
-  * @adapter: pointer to our adapter
-  * @tcb: pointer to struct tcb
-@@ -4537,12 +4488,9 @@ static void et131x_multicast(struct net_device *netdev)
- /* et131x_tx - The handler to tx a packet on the device
-  * @skb: data to be Tx'd
-  * @netdev: device on which data is to be Tx'd
-- *
-- * Returns 0 on success, errno on failure (as defined in errno.h)
-  */
--static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
-+static netdev_tx_t et131x_tx(struct sk_buff *skb, struct net_device *netdev)
- {
--	int status = 0;
- 	struct et131x_adapter *adapter = netdev_priv(netdev);
- 
- 	/* stop the queue if it's getting full */
-@@ -4553,17 +4501,29 @@ static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
- 	/* Save the timestamp for the TX timeout watchdog */
- 	netdev->trans_start = jiffies;
- 
--	/* Call the device-specific data Tx routine */
--	status = et131x_send_packets(skb, netdev);
-+	/* TCB is not available */
-+	if (adapter->tx_ring.used >= NUM_TCB)
-+		goto drop;
- 
--	/* Check status and manage the netif queue if necessary */
--	if (status != 0) {
--		if (status == -ENOMEM)
--			status = NETDEV_TX_BUSY;
--		else
--			status = NETDEV_TX_OK;
-+	/* We need to see if the link is up; if it's not, make the
-+	 * netif layer think we're good and drop the packet
-+	 */
-+	if ((adapter->flags & FMP_ADAPTER_FAIL_SEND_MASK) ||
-+	    !netif_carrier_ok(netdev)) {
-+		goto drop;
-+	} else {
-+		if (!send_packet(skb, adapter))
-+			goto out;
-+		/* On error (send_packet returns != 0), make netif
-+		 * think we're OK and drop the packet
-+		 */
- 	}
--	return status;
-+
-+drop:
-+	dev_kfree_skb_any(skb);
-+	adapter->net_stats.tx_dropped++;
-+out:
-+	return NETDEV_TX_OK;
- }
- 
- /* et131x_tx_timeout - Timeout handler
--- 
-1.8.3.1
-
+> >---
+> >  net/sctp/outqueue.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> >diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+> >index 94df758..2557fa5 100644
+> >--- a/net/sctp/outqueue.c
+> >+++ b/net/sctp/outqueue.c
+> >@@ -1517,6 +1517,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+> >  			 * active if it is not so marked.
+> >  			 */
+> >  			if ((transport->state == SCTP_INACTIVE ||
+> >+			     transport->state == SCTP_PF ||
+> >  			     transport->state == SCTP_UNCONFIRMED) &&
+> >  			    sctp_cmp_addr_exact(&transport->ipaddr, saddr)) {
+> >  				sctp_assoc_control_transport(
+> >
+> 
+> 
