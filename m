@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab3KOMbP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 07:31:15 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:59539 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab3KOMbH (ORCPT
+	id S1752210Ab3KOMbr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 07:31:47 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:43721 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab3KOMbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 07:31:07 -0500
-Date: Fri, 15 Nov 2013 07:30:55 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Chang Xiangzhong <changxiangzhong@gmail.com>, davem@davemloft.net,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dreibh@simula.no, ernstgr@simula.no
-Subject: Re: [PATCH] net: sctp: recover a tranport when an ack comes
-Message-ID: <20131115123055.GA29877@hmsreliant.think-freely.org>
-References: <1384461624-17636-1-git-send-email-changxiangzhong@gmail.com>
- <5285884F.8030907@gmail.com>
+	Fri, 15 Nov 2013 07:31:40 -0500
+Date: Fri, 15 Nov 2013 20:31:12 +0800
+From: ZHAO Gang <gamerh2o@gmail.com>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] staging: et131x: stop read when hit max delay in
+ et131x_phy_mii_read
+Message-ID: <943804b6ad98cdabb3a51bf88c3a8f59617627e9.1384518190.git.gamerh2o@gmail.com>
+Mail-Followup-To: ZHAO Gang <gamerh2o@gmail.com>,
+	Mark Einon <mark.einon@gmail.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	linux-kernel@vger.kernel.org
+References: <62a00a45d2fc38d1881f153f35ba282e85d78a3e.1384518190.git.gamerh2o@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5285884F.8030907@gmail.com>
+In-Reply-To: <62a00a45d2fc38d1881f153f35ba282e85d78a3e.1384518190.git.gamerh2o@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 09:34:55PM -0500, Vlad Yasevich wrote:
-> On 11/14/2013 03:40 PM, Chang Xiangzhong wrote:
-> >Expected Behavior:
-> >When hearing an ack from a tranport/path, set its state to normal/on if it's
-> >in abnormal(__partial_failure__ or inactive) state.
-> >
-> >state machine of tranport->state
-> >Whenever a T3_RTX timer expires, then transport->error_count++.
-> >When (association->pf_retrans < transport->error_count < tranport->pathmaxrtx)
-> >	transport->state = SCTP_PF //partial failure
-> >
-> >When a heartbeat-ack comes or conventional ack acknowledged its availability,
-> >	transport->state = SCTP_ON
-> >
-> >Signed-off-by: Chang Xiangzhong <changxiangzhong@gmail.com>
-> >Fixes: 5aa93bcf66f ("sctp: Implement quick failover draft from tsvwg")
-> 
-> I don't think this is right.  The spec states:
->  8.  ACKs for retransmissions do not transition a PF destination back
->        to Active state, since a sender cannot disambiguate whether the
->        ack was for the original transmission or the retransmission(s).
-> 
-> 
-> Now, the proper way to this would would be modify
-> sctp_assoc_control_transport() to transition the transport state to
-> ACTIVE if it was PF transport that was chosen to send data.
-> 
-> -vlad
-> 
-I agree, this patch doesn't agree with the spec, the only time we transition
-from PF to ACTIVE should be on receipt of ack of new data.  I'm not even sure if
-we should allow PF transports to be selected to send new data.  Currently a
-potentially failed transport will get ignored when specified, and the stack will
-use the active path in its place.  Only if all transports are PF will a PF
-transport be chosen.
-Neil
+stop read and return error when hit max delay time.
 
-> >---
-> >  net/sctp/outqueue.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> >diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-> >index 94df758..2557fa5 100644
-> >--- a/net/sctp/outqueue.c
-> >+++ b/net/sctp/outqueue.c
-> >@@ -1517,6 +1517,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
-> >  			 * active if it is not so marked.
-> >  			 */
-> >  			if ((transport->state == SCTP_INACTIVE ||
-> >+			     transport->state == SCTP_PF ||
-> >  			     transport->state == SCTP_UNCONFIRMED) &&
-> >  			    sctp_cmp_addr_exact(&transport->ipaddr, saddr)) {
-> >  				sctp_assoc_control_transport(
-> >
-> 
-> 
+Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
+---
+ drivers/staging/et131x/et131x.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index cda037a..6254a6b 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -1392,6 +1392,7 @@ static int et131x_phy_mii_read(struct et131x_adapter *adapter, u8 addr,
+ 			    mii_indicator);
+ 
+ 		status = -EIO;
++		goto out;
+ 	}
+ 
+ 	/* If we hit here we were able to read the register and we need to
+@@ -1399,6 +1400,7 @@ static int et131x_phy_mii_read(struct et131x_adapter *adapter, u8 addr,
+ 	 */
+ 	*value = readl(&mac->mii_mgmt_stat) & ET_MAC_MIIMGMT_STAT_PHYCRTL_MASK;
+ 
++out:
+ 	/* Stop the read operation */
+ 	writel(0, &mac->mii_mgmt_cmd);
+ 
+-- 
+1.8.3.1
+
