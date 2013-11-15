@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab3KOMaa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 07:30:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51099 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab3KOMaW (ORCPT
+	id S1751974Ab3KOMak (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 07:30:40 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:53619 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab3KOMaW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Nov 2013 07:30:22 -0500
-Date: Fri, 15 Nov 2013 13:30:13 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 10/10] perf record: Add an option to force per-cpu mmaps
-Message-ID: <20131115123013.GF10456@twins.programming.kicks-ass.net>
-References: <1384460715-23198-1-git-send-email-acme@infradead.org>
- <1384460715-23198-11-git-send-email-acme@infradead.org>
- <20131115060643.GA9237@gmail.com>
- <5285FECE.7020802@intel.com>
- <20131115111032.GA18647@gmail.com>
- <52860529.50200@intel.com>
- <20131115115629.GB19004@gmail.com>
- <20131115120329.GH2965@twins.programming.kicks-ass.net>
- <20131115120525.GA20855@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131115120525.GA20855@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
+Subject: Re: [PATCH] Staging: btmtk_usb: Add hdev parameter to hdev->send driver callback
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1384517231-1605-1-git-send-email-geert@linux-m68k.org>
+Date: Fri, 15 Nov 2013 21:30:04 +0900
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yu-Chen Cho <acho@suse.com>, devel@driverdev.osuosl.org,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D32EAC93-D2DE-431C-9DCB-885C5AA10A3A@holtmann.org>
+References: <1384517231-1605-1-git-send-email-geert@linux-m68k.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+X-Mailer: Apple Mail (2.1822)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 01:05:25PM +0100, Ingo Molnar wrote:
-> Do the first variant, 'perf record <cmd>', already use per CPU 
-> buffers?
+Hi Geert,
 
-Yes.. this is required for inheritance to work.
+> drivers/staging/btmtk_usb/btmtk_usb.c: In function ‘btmtk_usb_probe’:
+> drivers/staging/btmtk_usb/btmtk_usb.c:1610: warning: assignment from incompatible pointer type
+> 
+> Add the new hdev parameter, cfr. commit
+> 7bd8f09f69f8a190f9b8334a07bb0a9237612314 ("Bluetooth: Add hdev parameter to
+> hdev->send driver callback").
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+> drivers/staging/btmtk_usb/btmtk_usb.c |    3 +--
+> 1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/btmtk_usb/btmtk_usb.c b/drivers/staging/btmtk_usb/btmtk_usb.c
+> index 7a9bf3b57810..9a5ebd6cc512 100644
+> --- a/drivers/staging/btmtk_usb/btmtk_usb.c
+> +++ b/drivers/staging/btmtk_usb/btmtk_usb.c
+> @@ -1284,9 +1284,8 @@ done:
+> 	kfree_skb(skb);
+> }
+> 
+> -static int btmtk_usb_send_frame(struct sk_buff *skb)
+> +static int btmtk_usb_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
+> {
+> -	struct hci_dev *hdev = (struct hci_dev *)skb->dev;
+> 	struct btmtk_usb_data *data = hci_get_drvdata(hdev);
+> 	struct usb_ctrlrequest *dr;
+> 	struct urb *urb;
+
+while this is patch is correct, I do not really care about staging drivers that actually bluntly violate my copyright.
+
+Regards
+
+Marcel
+
