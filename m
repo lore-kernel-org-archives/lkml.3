@@ -1,101 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448Ab3KOH7V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 02:59:21 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:56220 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753155Ab3KOH6U (ORCPT
+	id S1754952Ab3KOIHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 03:07:44 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:49412 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772Ab3KOIHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 02:58:20 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID rAF7wIQw026167, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net v3 2/4] r8152: modify the tx flow
-Date: Fri, 15 Nov 2013 15:57:57 +0800
-Message-ID: <1384502279-9959-3-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1384502279-9959-1-git-send-email-hayeswang@realtek.com>
-References: <1384502279-9959-1-git-send-email-hayeswang@realtek.com>
+	Fri, 15 Nov 2013 03:07:35 -0500
+Date: Fri, 15 Nov 2013 08:07:34 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Nishanth Menon <nm@ti.com>
+cc: Tony Lindgren <tony@atomide.com>, rnayak@ti.com, khilman@linaro.org,
+        balbi@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] ARM: OMAP2+: omap_device: maintain sane runtime pm
+ status around suspend/resume
+In-Reply-To: <1384448716-3186-1-git-send-email-nm@ti.com>
+Message-ID: <alpine.DEB.2.02.1311150806220.15980@utopia.booyaka.com>
+References: <1384297710-29694-1-git-send-email-nm@ti.com> <1384448716-3186-1-git-send-email-nm@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the code for sending the packet in the rtl8152_start_xmit().
-Let rtl8152_start_xmit() to queue the packet only, and schedule a
-tasklet to send the queued packets. This simplify the code and make
-sure all the packet would be sent by the original order.
+On Thu, 14 Nov 2013, Nishanth Menon wrote:
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 46 +++-------------------------------------------
- 1 file changed, 3 insertions(+), 43 deletions(-)
+> OMAP device hooks around suspend|resume_noirq ensures that hwmod
+> devices are forced to idle using omap_device_idle/enable as part of
+> the last stage of suspend activity.
+> 
+> For a device such as i2c who uses autosuspend, it is possible to enter
+> the suspend path with dev->power.runtime_status = RPM_ACTIVE.
+> 
+> As part of the suspend flow, the generic runtime logic would increment
+> it's dev->power.disable_depth to 1. This should prevent further
+> pm_runtime_get_sync from succeeding once the runtime_status has been
+> set to RPM_SUSPENDED.
+> 
+> Now, as part of the suspend_noirq handler in omap_device, we force the
+> following: if the device status is !suspended, we force the device
+> to idle using omap_device_idle (clocks are cut etc..). This ensures
+> that from a hardware perspective, the device is "suspended". However,
+> runtime_status is left to be active.
+> 
+> *if* an operation is attempted after this point to
+> pm_runtime_get_sync, runtime framework depends on runtime_status to
+> indicate accurately the device status, and since it sees it to be
+> ACTIVE, it assumes the module is functional and returns a non-error
+> value. As a result the user will see pm_runtime_get succeed, however a
+> register access will crash due to the lack of clocks.
+> 
+> To prevent this from happening, we should ensure that runtime_status
+> exactly indicates the device status. As a result of this change
+> any further calls to pm_runtime_get* would return -EACCES (since
+> disable_depth is 1). On resume, we restore the clocks and runtime
+> status exactly as we suspended with. These operations are not expected
+> to fail as we update the states after the core runtime framework has
+> suspended itself and restore before the core runtime framework has
+> resumed.
+> 
+> Reported-by: J Keerthy <j-keerthy@ti.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> Acked-by: Rajendra Nayak <rnayak@ti.com>
+> Acked-by: Kevin Hilman <khilman@linaro.org>
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 5dbfe50..763234d 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -1388,53 +1388,13 @@ static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
- 					    struct net_device *netdev)
- {
- 	struct r8152 *tp = netdev_priv(netdev);
--	struct net_device_stats *stats = rtl8152_get_stats(netdev);
--	unsigned long flags;
--	struct tx_agg *agg = NULL;
--	struct tx_desc *tx_desc;
--	unsigned int len;
--	u8 *tx_data;
--	int res;
- 
- 	skb_tx_timestamp(skb);
- 
--	/* If tx_queue is not empty, it means at least one previous packt */
--	/* is waiting for sending. Don't send current one before it.      */
--	if (skb_queue_empty(&tp->tx_queue))
--		agg = r8152_get_tx_agg(tp);
--
--	if (!agg) {
--		skb_queue_tail(&tp->tx_queue, skb);
--		return NETDEV_TX_OK;
--	}
--
--	tx_desc = (struct tx_desc *)agg->head;
--	tx_data = agg->head + sizeof(*tx_desc);
--	agg->skb_num = agg->skb_len = 0;
-+	skb_queue_tail(&tp->tx_queue, skb);
- 
--	len = skb->len;
--	r8152_tx_csum(tp, tx_desc, skb);
--	memcpy(tx_data, skb->data, len);
--	dev_kfree_skb_any(skb);
--	agg->skb_num++;
--	agg->skb_len += len;
--	usb_fill_bulk_urb(agg->urb, tp->udev, usb_sndbulkpipe(tp->udev, 2),
--			  agg->head, len + sizeof(*tx_desc),
--			  (usb_complete_t)write_bulk_callback, agg);
--	res = usb_submit_urb(agg->urb, GFP_ATOMIC);
--	if (res) {
--		/* Can we get/handle EPIPE here? */
--		if (res == -ENODEV) {
--			netif_device_detach(tp->netdev);
--		} else {
--			netif_warn(tp, tx_err, netdev,
--				   "failed tx_urb %d\n", res);
--			stats->tx_dropped++;
--			spin_lock_irqsave(&tp->tx_lock, flags);
--			list_add_tail(&agg->list, &tp->tx_free);
--			spin_unlock_irqrestore(&tp->tx_lock, flags);
--		}
--	}
-+	if (!list_empty(&tp->tx_free))
-+		tasklet_schedule(&tp->tl);
- 
- 	return NETDEV_TX_OK;
- }
--- 
-1.8.3.1
+Looks reasonable to me.  Looks like this should be considered for -stable 
+- Nishanth, what do you think?
 
+Tony or Kevin, do you want to take this one, or want me to?
+
+
+- Paul
