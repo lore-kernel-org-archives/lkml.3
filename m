@@ -1,116 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575Ab3KOUqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 15:46:42 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:49859 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268Ab3KOUqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 15:46:38 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] staging: gdm724x: fix leak at failure path in gdm_usb_probe()
-Date: Sat, 16 Nov 2013 00:46:24 +0400
-Message-Id: <1384548384-3835-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.1.2
+	id S1752102Ab3KOUy7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 15:54:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35971 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab3KOUyv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 15:54:51 -0500
+Date: Sat, 16 Nov 2013 05:54:54 +0900
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: [PATCH 00/40] staging/lustre: patch bomb 1
+Message-ID: <20131115205454.GA13144@kroah.com>
+References: <1384445622-12346-1-git-send-email-bergwolf@gmail.com>
+ <20131115035918.GA11032@kroah.com>
+ <CA+a=Yy5B9o4YUaSkW8sjhfBvn2Ma1J2gvPKWAbda9evR9=qDyg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+a=Yy5B9o4YUaSkW8sjhfBvn2Ma1J2gvPKWAbda9evR9=qDyg@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Error handling code in gdm_usb_probe() deallocates all resources,
-but calls usb_get_dev(usbdev) and returns error code after that.
+On Fri, Nov 15, 2013 at 05:51:14PM +0800, Peng Tao wrote:
+> On Fri, Nov 15, 2013 at 11:59 AM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > Some of the stuff here looks a lot like "new features / functionality"
+> > to me, insead of just cleanups and fixes.
+> >
+> > Ideally, you all would only work on cleanups and getting this code out
+> > of staging, and not add new things while it's sitting here.  But I know
+> > that's going to be hard as you all are still working with an external
+> > tree.
+> >
+> > That external tree is going to be tough to keep up over time, I
+> > _strongly_ suggest you drop it as soon as possible and only use the
+> > upstream tree.  Otherwise this whole thing really isn't going to work
+> > out at all.
+> >
+> There are many users of the external tree so we cannot just abandon
+> it, especially that the upstream client is not shipped in any
+> distribution yet. Thanks for your understanding.
 
-The patch fixes it and, by the way, several other issues:
-- no need to use GFP_ATOMIC in probe();
-- return -ENODEV instead of -1;
-- kmalloc+memset -> kzalloc
+What is keeping people using that tree?  Support for older/distro
+kernels?
 
-Found by Linux Driver Verification project (linuxtesting.org).
+Is it the fact that the server code isn't in the kernel?  Should that be
+added now too so that we can get a proper view of what can and can not
+be changed?  Some of your patches are showing that things are shared by
+the two chunks of code, so does that mean if I delete things in the
+client code that don't look to be used by anything, you will have
+problems because the server now breaks?
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/staging/gdm724x/gdm_usb.c | 40 +++++++++++++++++----------------------
- 1 file changed, 17 insertions(+), 23 deletions(-)
+I think it's time to just merge the server and deal with the whole thing
+all at once, otherwise this dependancy on your external tree, and
+external code to the kernel, is going to doom the ability to ever get
+this code cleaned up and merged properly.
 
-diff --git a/drivers/staging/gdm724x/gdm_usb.c b/drivers/staging/gdm724x/gdm_usb.c
-index 781134af69d1..33458a583142 100644
---- a/drivers/staging/gdm724x/gdm_usb.c
-+++ b/drivers/staging/gdm724x/gdm_usb.c
-@@ -830,24 +830,19 @@ static int gdm_usb_probe(struct usb_interface *intf, const struct usb_device_id
- 
- 	if (bInterfaceNumber > NETWORK_INTERFACE) {
- 		pr_info("not a network device\n");
--		return -1;
-+		return -ENODEV;
- 	}
- 
--	phy_dev = kmalloc(sizeof(struct phy_dev), GFP_ATOMIC);
--	if (!phy_dev) {
--		ret = -ENOMEM;
--		goto out;
--	}
-+	phy_dev = kzalloc(sizeof(struct phy_dev), GFP_KERNEL);
-+	if (!phy_dev)
-+		return -ENOMEM;
- 
--	udev = kmalloc(sizeof(struct lte_udev), GFP_ATOMIC);
-+	udev = kzalloc(sizeof(struct lte_udev), GFP_KERNEL);
- 	if (!udev) {
- 		ret = -ENOMEM;
--		goto out;
-+		goto err_udev;
- 	}
- 
--	memset(phy_dev, 0, sizeof(struct phy_dev));
--	memset(udev, 0, sizeof(struct lte_udev));
--
- 	phy_dev->priv_dev = (void *)udev;
- 	phy_dev->send_hci_func = gdm_usb_hci_send;
- 	phy_dev->send_sdu_func = gdm_usb_sdu_send;
-@@ -858,7 +853,7 @@ static int gdm_usb_probe(struct usb_interface *intf, const struct usb_device_id
- 	ret = init_usb(udev);
- 	if (ret < 0) {
- 		pr_err("init_usb func failed\n");
--		goto out;
-+		goto err_init_usb;
- 	}
- 	udev->intf = intf;
- 
-@@ -875,23 +870,22 @@ static int gdm_usb_probe(struct usb_interface *intf, const struct usb_device_id
- 	ret = request_mac_address(udev);
- 	if (ret < 0) {
- 		pr_err("request Mac address failed\n");
--		goto out;
-+		goto err_mac_address;
- 	}
- 
- 	start_rx_proc(phy_dev);
--out:
--
--	if (ret < 0) {
--		kfree(phy_dev);
--		if (udev) {
--			release_usb(udev);
--			kfree(udev);
--		}
--	}
--
- 	usb_get_dev(usbdev);
- 	usb_set_intfdata(intf, phy_dev);
- 
-+	return 0;
-+
-+err_mac_address:
-+	release_usb(udev);
-+err_init_usb:
-+	kfree(udev);
-+err_udev:
-+	kfree(phy_dev);
-+
- 	return ret;
- }
- 
--- 
-1.8.1.2
+thanks,
 
+greg k-h
