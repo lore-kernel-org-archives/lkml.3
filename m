@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab3KOWtF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 17:49:05 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:60945 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab3KOWs7 (ORCPT
+	id S1753422Ab3KOWwS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 17:52:18 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:60383 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab3KOWwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 17:48:59 -0500
-Message-ID: <5286A4D4.10905@gmail.com>
-Date: Fri, 15 Nov 2013 17:48:52 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 15 Nov 2013 17:52:11 -0500
 MIME-Version: 1.0
-To: Chang <changxiangzhong@gmail.com>, nhorman@tuxdriver.com
-CC: davem@davemloft.net, linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dreibh@simula.no, ernstgr@simula.no
-Subject: Re: [PATCH] net: sctp: recover a tranport when an ack comes
-References: <1384461624-17636-1-git-send-email-changxiangzhong@gmail.com> <5285884F.8030907@gmail.com> <52869A6C.8060900@gmail.com>
-In-Reply-To: <52869A6C.8060900@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.02.1311151007340.15200@pianoman.cluster.toy>
+References: <CABPqkBTiBHF4wZ3c_Czkh3JgvXGNWJW1LH42Jh4NG_ZJkGkbgw@mail.gmail.com>
+	<20131115063457.GB12442@gmail.com>
+	<alpine.DEB.2.02.1311151007340.15200@pianoman.cluster.toy>
+Date: Fri, 15 Nov 2013 23:52:10 +0100
+Message-ID: <CABPqkBQHyWUGkeu=ctGifDegUq_7oA_iFRdS-02qoGifY63F9Q@mail.gmail.com>
+Subject: Re: [BUG] perf stat: explicit grouping yields unexpected results
+From: Stephane Eranian <eranian@google.com>
+To: Vince Weaver <vince@deater.net>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, David Ahern <dsahern@gmail.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 05:04 PM, Chang wrote:
->
-> On 11/15/2013 03:34 AM, Vlad Yasevich wrote:
->> I don't think this is right.  The spec states:
->>  8.  ACKs for retransmissions do not transition a PF destination back
->>        to Active state, since a sender cannot disambiguate whether the
->>        ack was for the original transmission or the retransmission(s).
+On Fri, Nov 15, 2013 at 4:08 PM, Vince Weaver <vince@deater.net> wrote:
+> On Fri, 15 Nov 2013, Ingo Molnar wrote:
 >>
-> Could you please reconsider my proposal?
+>> Btw., does the kernel side currently support discovery of such
+>> impossible group scheduling constraints at group setup time? If not
+>> then it probably should and it should reject them straight away.
 >
-> In the rule 8, it clearly specifies ACKs for *retransmission* do not
-> transition ... But those chunks were not retransmitted!
+> It does not, or at least I'm pretty sure it can't if the NMI watchdog is
+> enabled (Stephane, are you doing your tests with NMI watchdog disabled?)
 >
-> Every transport maintains its own [transport->transmitted] queue, when
-> retransmit happens (no matter time_out or fast_retransmit). The chunk
-> would be removed from the queue and moved to the sctp_outq->retransmit.
->
+I think my tests were with watchdog disabled.
 
-Yes,  this is their temporary holding area.  Once the chunks are
-transmitted again, they are placed on the transports transmitted list.
-See sctp_outq_flush_rtx().
-
-> static void sctp_check_transmitted(...) {
-> ...
->     if (transport) {  /*<=======This proves that its not the
-> outq->retransmit (the retransmitted queue)*/
-
-Retransmit queue may hold more data then can be drained in a single
-push.  Thus is usually holds data that is pending retransmission, but
-is not retransmitted yet.  If a late SACK arrives acknowledging this
-data, we need to properly mark it.  That is what this code tries
-to do.
-
--vlad
->         if (bytes_acked) {
->         ...
->         if((transport->state in [INACTIVE, UNCONFIRMED, PF]...)
->             sctp_assoc_control_transport(..., SCTP_TRANSPORT_UP).
+> This is a big problem with PAPI.  If the NMI watchdog is enabled you can't
+> tell if a group will fail until the first read, the kernel can't tell you
+> at setup time.
 >
->
-> In addition, if its not appropriate to transition PF->ACTIVE, why is it
-> appropriate to transition INACTIVE->ACTIVE (the original implementation).
->>
->> Now, the proper way to this would would be modify
->> sctp_assoc_control_transport() to transition the transport state to
->> ACTIVE if it was PF transport that was chosen to send data.
->>
->> -vlad
->>
->>> ---
->>>   net/sctp/outqueue.c |    1 +
->>>   1 file changed, 1 insertion(+)
->>>
->>> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
->>> index 94df758..2557fa5 100644
->>> --- a/net/sctp/outqueue.c
->>> +++ b/net/sctp/outqueue.c
->>> @@ -1517,6 +1517,7 @@ static void sctp_check_transmitted(struct
->>> sctp_outq *q,
->>>                * active if it is not so marked.
->>>                */
->>>               if ((transport->state == SCTP_INACTIVE ||
->>> +                 transport->state == SCTP_PF ||
->>>                    transport->state == SCTP_UNCONFIRMED) &&
->>>                   sctp_cmp_addr_exact(&transport->ipaddr, saddr)) {
->>>                   sctp_assoc_control_transport(
->>>
->>
->
-
+Unless, you build the group and measure in for a short bit of time to validate
+runtime execution. But then there is no guarantee either. Because the
+perf_events
+situation may change, e.g., you may get another pinned event. So I don't think
+you will ever get that guarantee at setup time. I goes back to the core design
+idea behind perf_events.
