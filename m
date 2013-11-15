@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab3KOQSS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 11:18:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48955 "EHLO mx2.suse.de"
+	id S1751422Ab3KOQSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 11:18:53 -0500
+Received: from fieldses.org ([174.143.236.118]:53224 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053Ab3KOQSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 11:18:07 -0500
-Date: Fri, 15 Nov 2013 17:18:01 +0100
-From: Michal Marek <mmarek@suse.cz>
+	id S1751053Ab3KOQSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 11:18:44 -0500
+Date: Fri, 15 Nov 2013 11:18:43 -0500
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: michael.opdenacker@free-electrons.com, mpagano@gentoo.org,
-        rdunlap@infradead.org, tkhai@yandex.ru, wsa@the-dreams.de,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild misc changes for v3.13-rc1
-Message-ID: <20131115161801.GA20232@sepie.suse.cz>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: nfsd changes for 3.13
+Message-ID: <20131115161843.GD3371@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Please pull nfsd changes for 3.13 from
 
-please pull these script updates for v3.13-rc1:
-- make tags fixes again
-- scripts/show_delta fix for newer python
-- scripts/kernel-doc does not fail on unknown function prototype
-- One less coccinelle check this time
+  git://linux-nfs.org/~bfields/linux.git nfsd-next
 
-Thanks,
-Michal
+This includes miscellaneous bugfixes and cleanup and a performance fix
+for write-heavy NFSv4 workloads.
 
-The following changes since commit 272b98c6455f00884f0350f775c5342358ebb73f:
+(The most significant nfsd-relevant change this time is actually in the
+delegation patches that went through Viro, fixing a long-standing bug
+that can cause NFSv4 clients to miss updates made by non-nfs users of
+the filesystem.  Those enable some followup nfsd patches which I have
+queued locally, but those can wait till 3.14.)
 
-  Linux 3.12-rc1 (2013-09-16 16:17:51 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git misc
-
-for you to fetch changes up to 6cf3a6eff77273a55b996a5a43f342b150cfba09:
-
-  scripts/tags.sh: remove obsolete __devinit[const|data] (2013-11-08 10:57:20 +0100)
+--b.
 
 ----------------------------------------------------------------
-Kirill Tkhai (1):
-      scripts/tags.sh: Increase identifier list
+Al Viro (1):
+      nfsd: switch to %p[dD]
 
-Michael Opdenacker (1):
-      scripts/tags.sh: remove obsolete __devinit[const|data]
+Anna Schumaker (2):
+      NFSD: Combine decode operations for v4 and v4.1
+      NFSD: Add support for NFS v4.2 operation checking
 
-Mike Pagano (1):
-      show_delta: Update script to support python versions 2.5 through 3.3
+Benny Halevy (5):
+      nfsd: nfs4_free_stid
+      nfsd: nfs4_open_delegation needs to remove_stid rather than unhash_stid
+      nfsd: remove_stid can be incorporated into nfs4_put_delegation
+      nfsd: no need to unhash_stid before free
+      nfsd4: need to destroy revoked delegations in destroy_client
 
-Randy Dunlap (1):
-      scripts/kernel-doc: make unknown function prototype a Warning instead of an Error
+Christoph Hellwig (2):
+      nfsd: fix Kconfig syntax
+      nfsd: export proper maximum file size to the client
 
-Wolfram Sang (1):
-      scripts/coccinelle/api: remove devm_request_and_ioremap.cocci
+J. Bruce Fields (12):
+      svcrpc: fix gss-proxy NULL dereference in some error cases
+      svcrpc: fix error-handling on badd gssproxy downcall
+      svcrpc: handle some gssproxy encoding errors
+      gss_krb5: document that we ignore sequence number
+      nfsd: fh_update should error out in unexpected cases
+      nfsd: return better errors to exportfs
+      nfsd: -EINVAL on invalid anonuid/gid instead of silent failure
+      nfsd4: nfsd_shutdown_net needs state lock
+      nfsd4: fix discarded security labels on setattr
+      Revert "nfsd: remove_stid can be incorporated into nfs4_put_delegation"
+      sunrpc: comment typo fix
+      nfsd4: improve write performance with better sendspace reservations
 
- .../coccinelle/api/devm_request_and_ioremap.cocci  | 105 ---------------------
- scripts/kernel-doc                                 |   3 +-
- scripts/show_delta                                 |  12 +--
- scripts/tags.sh                                    |   9 +-
- 4 files changed, 12 insertions(+), 117 deletions(-)
- delete mode 100644 scripts/coccinelle/api/devm_request_and_ioremap.cocci
+Jeff Layton (1):
+      sunrpc: trim off EC bytes in GSSAPI v2 unwrap
+
+Weng Meiling (1):
+      svcrpc: remove an unnecessary assignment
+
+ fs/nfsd/Kconfig                       |    2 +-
+ fs/nfsd/export.c                      |   24 +++++-
+ fs/nfsd/nfs4recover.c                 |   12 +--
+ fs/nfsd/nfs4state.c                   |   41 +++++-----
+ fs/nfsd/nfs4xdr.c                     |  132 ++++++++++++++++++---------------
+ fs/nfsd/nfsfh.c                       |   36 ++++-----
+ fs/nfsd/nfsfh.h                       |    4 +-
+ fs/nfsd/vfs.c                         |    9 +--
+ include/linux/nfs4.h                  |    3 +
+ net/sunrpc/auth_gss/gss_krb5_unseal.c |    8 +-
+ net/sunrpc/auth_gss/gss_krb5_wrap.c   |   10 ++-
+ net/sunrpc/auth_gss/gss_rpc_upcall.c  |    3 +-
+ net/sunrpc/auth_gss/gss_rpc_xdr.c     |   29 ++++----
+ net/sunrpc/auth_gss/svcauth_gss.c     |    4 +-
+ net/sunrpc/svc.c                      |    2 -
+ net/sunrpc/xprtsock.c                 |    4 +-
+ 16 files changed, 179 insertions(+), 144 deletions(-)
