@@ -1,48 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758090Ab3KOJvy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 04:51:54 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:46918 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758012Ab3KOJvg (ORCPT
+	id S1758106Ab3KOJzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 04:55:09 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:55487 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844Ab3KOJzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 04:51:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131115035918.GA11032@kroah.com>
-References: <1384445622-12346-1-git-send-email-bergwolf@gmail.com> <20131115035918.GA11032@kroah.com>
-From: Peng Tao <bergwolf@gmail.com>
-Date: Fri, 15 Nov 2013 17:51:14 +0800
-Message-ID: <CA+a=Yy5B9o4YUaSkW8sjhfBvn2Ma1J2gvPKWAbda9evR9=qDyg@mail.gmail.com>
-Subject: Re: [PATCH 00/40] staging/lustre: patch bomb 1
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 15 Nov 2013 04:55:00 -0500
+From: Bo Shen <voice.shen@atmel.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: plagnioj@jcrosoft.com, nicolas.ferre@atmel.com,
+        alexandre.belloni@free-electrons.com, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        galak@codeaurora.org, devicetree@vger.kernel.org,
+        Bo Shen <voice.shen@atmel.com>
+Subject: [PATCH v7 2/2] PWM: atmel-pwm: add device tree binding document
+Date: Fri, 15 Nov 2013 17:53:28 +0800
+Message-Id: <1384509208-10762-2-git-send-email-voice.shen@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384509208-10762-1-git-send-email-voice.shen@atmel.com>
+References: <1384509208-10762-1-git-send-email-voice.shen@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 11:59 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> Some of the stuff here looks a lot like "new features / functionality"
-> to me, insead of just cleanups and fixes.
->
-> Ideally, you all would only work on cleanups and getting this code out
-> of staging, and not add new things while it's sitting here.  But I know
-> that's going to be hard as you all are still working with an external
-> tree.
->
-> That external tree is going to be tough to keep up over time, I
-> _strongly_ suggest you drop it as soon as possible and only use the
-> upstream tree.  Otherwise this whole thing really isn't going to work
-> out at all.
->
-There are many users of the external tree so we cannot just abandon
-it, especially that the upstream client is not shipped in any
-distribution yet. Thanks for your understanding.
+Add atmel pwm driver device tree binding document
 
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Kumar Gala <galak@codeaurora.org>
+---
+Changes in v7: None
+Changes in v6:
+  - New, split binding document as a separate patch
 
-> I'll go dig through these and see what they look like, thanks...
->
-Thanks,
-Tao
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
+Changes in v2: None
+
+ .../devicetree/bindings/pwm/atmel-pwm.txt          |   41 ++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+
+diff --git a/Documentation/devicetree/bindings/pwm/atmel-pwm.txt b/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+new file mode 100644
+index 0000000..1c1a5fa
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+@@ -0,0 +1,41 @@
++Atmel PWM controller
++
++Required properties:
++  - compatible: should be one of:
++    - "atmel,at91sam9rl-pwm"
++    - "atmel,sama5d3-pwm"
++  - reg: physical base address and length of the controller's registers
++  - #pwm-cells: Should be 3. See pwm.txt in this directory for a
++    description of the cells format
++
++Example:
++
++	pwm0: pwm@f8034000 {
++		compatible = "atmel,at91sam9rl-pwm";
++		reg = <0xf8034000 0x400>;
++		#pwm-cells = <3>;
++	};
++
++The following the pwm led based example:
++
++	pwm0: pwm@f8034000 {
++		compatible = "atmel,at91sam9rl-pwm";
++		reg = <0xf8034000 0x400>;
++		#pwm-cells = <3>;
++	};
++
++	pwdleds {
++		compatible = "pwm-leds";
++
++		d1 {
++			label = "d1";
++			pwms = <&pwm0 3 5000 0>
++			max-brightness = <255>;
++		};
++
++		d2 {
++			label = "d2";
++			pwms = <&pwm0 1 5000 1>
++			max-brightness = <255>;
++		};
++	};
+-- 
+1.7.9.5
+
