@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab3KOOEL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:04:11 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39408 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751699Ab3KOOD4 (ORCPT
+	id S1752870Ab3KOOE3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:04:29 -0500
+Received: from 4.mo2.mail-out.ovh.net ([87.98.172.75]:52946 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751767Ab3KOOER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:03:56 -0500
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lgirdwood@gmail.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH v2 2/2] regulator: arizona-micsupp: Correct wm5110 voltage selection
-Date: Fri, 15 Nov 2013 13:48:23 +0000
-Message-Id: <1384523303-25943-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1384523303-25943-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1384523303-25943-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Fri, 15 Nov 2013 09:04:17 -0500
+Date: Fri, 15 Nov 2013 14:41:30 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91/dt: binding: add precision to AIC documentation
+Message-ID: <20131115134130.GM28304@ns203013.ovh.net>
+References: <1384510173-15901-1-git-send-email-nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384510173-15901-1-git-send-email-nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 2595762236399790956
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wm5110 provides different voltage configurations than the other Arizona
-parts, this patch adds support for this into the regulator driver. Also
-fixup the default for the configuration register for wm5110.
+On 11:09 Fri 15 Nov     , Nicolas Ferre wrote:
+> In response to the "undocumented compatible strings" message, here is a
+> patch which is adding the precision of two "chips" that should be used for
+> the "atmel,<chip>-aic" compatibility string.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/regulator/arizona-micsupp.c |   54 +++++++++++++++++++++++++++++++++-
- 1 files changed, 52 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/regulator/arizona-micsupp.c b/drivers/regulator/arizona-micsupp.c
-index 3c75bf8..034ece7 100644
---- a/drivers/regulator/arizona-micsupp.c
-+++ b/drivers/regulator/arizona-micsupp.c
-@@ -144,6 +144,33 @@ static const struct regulator_desc arizona_micsupp = {
- 	.owner = THIS_MODULE,
- };
- 
-+static const struct regulator_linear_range arizona_micsupp_ext_ranges[] = {
-+	REGULATOR_LINEAR_RANGE(900000,  0,    0x14, 25000),
-+	REGULATOR_LINEAR_RANGE(1500000, 0x15, 0x27, 100000),
-+};
-+
-+static const struct regulator_desc arizona_micsupp_ext = {
-+	.name = "MICVDD",
-+	.supply_name = "CPVDD",
-+	.type = REGULATOR_VOLTAGE,
-+	.n_voltages = 40,
-+	.ops = &arizona_micsupp_ops,
-+
-+	.vsel_reg = ARIZONA_LDO2_CONTROL_1,
-+	.vsel_mask = ARIZONA_LDO2_VSEL_MASK,
-+	.enable_reg = ARIZONA_MIC_CHARGE_PUMP_1,
-+	.enable_mask = ARIZONA_CPMIC_ENA,
-+	.bypass_reg = ARIZONA_MIC_CHARGE_PUMP_1,
-+	.bypass_mask = ARIZONA_CPMIC_BYPASS,
-+
-+	.linear_ranges = arizona_micsupp_ext_ranges,
-+	.n_linear_ranges = ARRAY_SIZE(arizona_micsupp_ext_ranges),
-+
-+	.enable_time = 3000,
-+
-+	.owner = THIS_MODULE,
-+};
-+
- static const struct regulator_init_data arizona_micsupp_default = {
- 	.constraints = {
- 		.valid_ops_mask = REGULATOR_CHANGE_STATUS |
-@@ -156,9 +183,22 @@ static const struct regulator_init_data arizona_micsupp_default = {
- 	.num_consumer_supplies = 1,
- };
- 
-+static const struct regulator_init_data arizona_micsupp_ext_default = {
-+	.constraints = {
-+		.valid_ops_mask = REGULATOR_CHANGE_STATUS |
-+				REGULATOR_CHANGE_VOLTAGE |
-+				REGULATOR_CHANGE_BYPASS,
-+		.min_uV = 900000,
-+		.max_uV = 3300000,
-+	},
-+
-+	.num_consumer_supplies = 1,
-+};
-+
- static int arizona_micsupp_probe(struct platform_device *pdev)
- {
- 	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
-+	const struct regulator_desc *desc;
- 	struct regulator_config config = { };
- 	struct arizona_micsupp *micsupp;
- 	int ret;
-@@ -177,7 +217,17 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
- 	 * default init_data for it.  This will be overridden with
- 	 * platform data if provided.
- 	 */
--	micsupp->init_data = arizona_micsupp_default;
-+	switch (arizona->type) {
-+	case WM5110:
-+		desc = &arizona_micsupp_ext;
-+		micsupp->init_data = arizona_micsupp_ext_default;
-+		break;
-+	default:
-+		desc = &arizona_micsupp;
-+		micsupp->init_data = arizona_micsupp_default;
-+		break;
-+	}
-+
- 	micsupp->init_data.consumer_supplies = &micsupp->supply;
- 	micsupp->supply.supply = "MICVDD";
- 	micsupp->supply.dev_name = dev_name(arizona->dev);
-@@ -196,7 +246,7 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
- 			   ARIZONA_CPMIC_BYPASS, 0);
- 
- 	micsupp->regulator = devm_regulator_register(&pdev->dev,
--						     &arizona_micsupp,
-+						     desc,
- 						     &config);
- 	if (IS_ERR(micsupp->regulator)) {
- 		ret = PTR_ERR(micsupp->regulator);
--- 
-1.7.2.5
-
+Best Regards,
+J.
+> ---
+>  Documentation/devicetree/bindings/arm/atmel-aic.txt | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/atmel-aic.txt b/Documentation/devicetree/bindings/arm/atmel-aic.txt
+> index ad031211..2742e9c 100644
+> --- a/Documentation/devicetree/bindings/arm/atmel-aic.txt
+> +++ b/Documentation/devicetree/bindings/arm/atmel-aic.txt
+> @@ -2,6 +2,7 @@
+>  
+>  Required properties:
+>  - compatible: Should be "atmel,<chip>-aic"
+> +  <chip> can be "at91rm9200" or "sama5d3"
+>  - interrupt-controller: Identifies the node as an interrupt controller.
+>  - interrupt-parent: For single AIC system, it is an empty property.
+>  - #interrupt-cells: The number of cells to define the interrupts. It should be 3.
+> -- 
+> 1.8.2.2
+> 
