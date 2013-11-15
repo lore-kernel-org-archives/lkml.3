@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3KOWUi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 17:20:38 -0500
-Received: from mga14.intel.com ([143.182.124.37]:7962 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750992Ab3KOWUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 17:20:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="389296593"
-Message-ID: <52869F3E.30702@linux.intel.com>
-Date: Fri, 15 Nov 2013 14:25:02 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1753010Ab3KOWYe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 17:24:34 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:57236 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab3KOWY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 17:24:26 -0500
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, lenb@kernel.org
-Subject: Re: [PATCH 0/3] Bring SFI support to out-of-tree driver modules on
- Intel Mid
-References: <1384294420-9124-1-git-send-email-david.a.cohen@linux.intel.com> <20131113081445.GA19388@infradead.org>
-In-Reply-To: <20131113081445.GA19388@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131115180324.GD6637@redhat.com>
+References: <20131113235708.GC25344@anatevka.fc.hp.com>
+	<CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
+	<20131114180455.GA32212@anatevka.fc.hp.com>
+	<CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
+	<20131115005049.GJ5116@anatevka.fc.hp.com>
+	<20131115062417.GB9237@gmail.com>
+	<CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
+	<5285C639.5040203@zytor.com>
+	<20131115140738.GB6637@redhat.com>
+	<CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
+	<20131115180324.GD6637@redhat.com>
+Date: Fri, 15 Nov 2013 14:24:25 -0800
+X-Google-Sender-Auth: eqPxhn-zuUz2arynnBBu_7RVt0o
+Message-ID: <CAE9FiQU_OstEq3VWwBB879O4EY0DE+zVWVens+w0MLFUQmr3sw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
+        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 12:14 AM, Christoph Hellwig wrote:
-> On Tue, Nov 12, 2013 at 02:13:37PM -0800, David Cohen wrote:
->> Hi,
+On Fri, Nov 15, 2013 at 10:03 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Fri, Nov 15, 2013 at 09:33:41AM -0800, Yinghai Lu wrote:
 
-Hi Christoph,
-
->>
->> This patchset extends sfi_device() macro support to driver modules.
->> The main use case is to allow external driver modules to be enumerated by SFI
->> on Intel Mid platforms.
+>> I have one system with 6TiB memory, kdump does not work even
+>> crashkernel=512M in legacy mode. ( it only work on system with
+>> 4.5TiB).
 >
-> How about you merge those module again?  Remember code added to the
-> kernel without users isn't testable, and out of tree modules do not
-> bring us any value add.
+> Recently I tested one system with 6TB of memory and dumped successfully
+> with 512MB reserved under 896MB. Also I have heard reports of successful
+> dump of 12TB system with 512MB reserved below 896MB (due to cyclic
+> mode of makedumpfile).
+>
+> So with newer releases only reason one might want to reserve more
+> memory is that it might provide speed benefits. We need more testing
+> to quantify this.
 
-I got your point.
-Here's the testable user:
-https://patchwork.kernel.org/patch/3179381/
-By simply 'make ARCH=i386 allyesconfig' it will be selected.
+You may need bunch of PCIe cards installed.
 
-But I think there is a misunderstanding here :)
-My main target is to sync Intel MID codes from our internal tree to
-upstream. These patches I am sending are useful to protect Intel MID
-from drivers I don't own and not ready for upstreaming.
-My main intention is to upstream more Intel MID codes in a faster and
-more reliably way (if internal tree == upstream my tests will be
-better).
+The system with 6TiB + 16 PCIe cards, second kernel OOM.
+The system with 4.5TiB + 16 PCIe cards, second kernel works with vmcore dumped.
 
-Since Intel MID users are too sensitive to time to market (sorry to
-bring this scenario but we can't run from it on embedded world) I can't
-prevent drivers not ready yet for upstreaming to use sfi_device() macro.
+>
+>> --- first kernel can reserve the 512M under 896M, second kernel will
+>> OOM as it load driver for every pci devices...
+>>
+>> So why would RH guys not spend some time on optimizing your kdump initrd
+>> build scripts and only put dump device related driver in it?
+>
+> Try latest Fedora and that's what we do. Now we have moved to dracut
+> based initramfs generation and we tell dracut that build initramfs for
+> host and additional dump destination and dracut builds it for those only.
+> I think there might be scope for further optimization, but I don't think
+> that's the problem any more.
 
-So, given my intention is to increase upstreamed codes, do you think it
-makes sense to have this sfi_device() modularization support?
+Good. Assume that will be in RHEL 7.
 
-Br, David Cohen
+>
+> So issue remains that crashkernel=X,high is not a good default choice
+> because it consumes extra 72M which we don't have to.
+
+then if it falls into 896~4G, user may still need to update kexec-tools ?
+
+Thanks
+
+Yinghai
