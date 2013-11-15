@@ -1,104 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302Ab3KOKXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 05:23:51 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:52485 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451Ab3KOKXq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 05:23:46 -0500
-Message-ID: <5285F62D.5010407@hitachi.com>
-Date: Fri, 15 Nov 2013 19:23:41 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1756878Ab3KOK0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 05:26:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34296 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752844Ab3KOK0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 05:26:32 -0500
+Date: Fri, 15 Nov 2013 10:26:28 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, dave.jiang@intel.com,
+        akpm@linux-foundation.org, dhillf@gmail.com,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: Re: [PATCH 2/2] mm: thp: give transparent hugepage code a separate
+ copy_page
+Message-ID: <20131115102628.GD26002@suse.de>
+References: <20131114233357.90EE35C1@viggo.jf.intel.com>
+ <20131114233400.A729214D@viggo.jf.intel.com>
 MIME-Version: 1.0
-To: David Long <dave.long@linaro.org>
-Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: Re: [PATCH v2 10/13] kprobes: Remove uneeded kernel dependency
- on struct arch_specific_insn
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org>   <1381871068-27660-11-git-send-email-dave.long@linaro.org>  <1384362833.3392.42.camel@linaro1.home> <52842F2C.1030701@hitachi.com> <1384438551.3388.78.camel@linaro1.home> <52853389.7080105@linaro.org>
-In-Reply-To: <52853389.7080105@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131114233400.A729214D@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/15 5:33), David Long wrote:
-> On 11/14/13 09:15, Jon Medhurst (Tixy) wrote:
->> On Thu, 2013-11-14 at 11:02 +0900, Masami Hiramatsu wrote:
->>> (2013/11/14 2:13), Jon Medhurst (Tixy) wrote:
->>>> On Tue, 2013-10-15 at 17:04 -0400, David Long wrote:
->>>>> From: "David A. Long" <dave.long@linaro.org>
->>>>>
->>>>> Instead of depending on include/asm/kprobes.h to provide a dummy definition
->>>>> for struct arch_specific_insn, do so in include/linux/kprobes.h.
->>>>
->>>> That change description doesn't quite seem to quite make sense to me.
->>>>
->>>> Anyway, what we're trying to do with this patch is to allow us to use
->>>> arch_specific_insn for purposes additional to implementing kprobes. This
->>>> patch enables that but I'm wary that the kprobes code assumes that ainsn
->>>> is a struct arch_specific_insn, e.g. in linux/kernel/kprobes.c we have:
->>>>
->>>> 	memcpy(&p->ainsn, &ap->ainsn, sizeof(struct arch_specific_insn));
->>>>
->>>> Now, that code isn't compiled when kprobes isn't configured, but it
->>>> seams to me to be safer if that was also changed to
->>>>
->>>> 	memcpy(&p->ainsn, &ap->ainsn, sizeof(p->ainsn));
->>>
+On Thu, Nov 14, 2013 at 03:34:00PM -0800, Dave Hansen wrote:
 > 
-> That does look like an important improvement.
-
-Agreed.
-
->>> This kind of cleanup looks good for me, but I don't agree to change
->>> the type of the member (removing is OK) by Kconfig.
->>
->> Wouldn't that still require an #ifdef CONFIG_KPROBES around ainsn?
->> Admittedly a less ugly one than one to change its type to an int.
->>
+> Changes from v1:
+>  * removed explicit might_sleep() in favor of the one that we
+>    get from the cond_resched();
 > 
-> It is also possible to make the include of asm/kprobes.h unconditional, 
-> although that might only cause the #ifdef to appear in more than one 
-> include file.
-
-Good point!
-
->>> Srikar, Oleg, I think it's a good time to merge such arch_specific mechanism
->>> of uprobes and kprobes. Would you think we can do similar thing on x86 too?
->>
+> --
 > 
-> I welcome input from people who have experience in this area.  I have no 
-> desire to complicate efforts that might be attempted on other 
-> architectures, but the existing code was unique to ARM and the goal here 
-> was just to share it on ARM in implementing the currently non-existant 
-> ARM uprobes feature.  It seems to me the leakage of these changes into 
-> generic kprobes code is exceedingly small, and unlikely to be a 
-> hinderance to any future work (if any is even needed or planned) 
-> supporting uprobes or kprobes on other architectures.  In the meantime 
-> we have ARM users who have been asking for uprobes support for a while 
-> and this is, IMHO, a fairly clean approach to providing it.
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> Right now, the migration code in migrate_page_copy() uses 
+> copy_huge_page() for hugetlbfs and thp pages:
+> 
+>        if (PageHuge(page) || PageTransHuge(page))
+>                 copy_huge_page(newpage, page);
+> 
+> So, yay for code reuse.  But:
+> 
+> void copy_huge_page(struct page *dst, struct page *src)
+> {
+>         struct hstate *h = page_hstate(src);
+> 
+> and a non-hugetlbfs page has no page_hstate().  This
+> works 99% of the time because page_hstate() determines
+> the hstate from the page order alone.  Since the page
+> order of a THP page matches the default hugetlbfs page
+> order, it works.
+> 
+> But, if you change the default huge page size on the
+> boot command-line (say default_hugepagesz=1G), then
+> we might not even *have* a 2MB hstate so page_hstate()
+> returns null and copy_huge_page() oopses pretty fast
+> since copy_huge_page() dereferences the hstate:
+> 
+> void copy_huge_page(struct page *dst, struct page *src)
+> {
+>         struct hstate *h = page_hstate(src);
+>         if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
+> ...
+> 
+> This patch creates a copy_high_order_page() which can
+> be used on THP pages.
+> 
+> I believe the bug was introduced in b32967ff101:
+> Author: Mel Gorman <mgorman@suse.de>
+> Date:   Mon Nov 19 12:35:47 2012 +0000
+> mm: numa: Add THP migration for the NUMA working set scanning fault case.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-I see. I'd just like to suggest you that your improvement on ONE arch
-can also be useful idea for the other archs. In that case, there would be
-better, more efficient way to do that.
-Since we are on the same (or, next) track, we can learn many things each other. :)
+It is a mild pity that there are variants of this like copy_user_huge_page
+for COW. They could be collapsed but the result API would not be pretty.
 
-Thank you,
+A rename of copy_huge_page to copy_hugetlbfs_page is justified to avoid
+a repeat mistake. Alternatively, there seems to be little reason to add
+hugetlbfs and thp specific apis when you could just do something like this
+(untested)
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 0b7656e..784313a 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -476,40 +476,6 @@ static int vma_has_reserves(struct vm_area_struct *vma, long chg)
+ 	return 0;
+ }
+ 
+-static void copy_gigantic_page(struct page *dst, struct page *src)
+-{
+-	int i;
+-	struct hstate *h = page_hstate(src);
+-	struct page *dst_base = dst;
+-	struct page *src_base = src;
+-
+-	for (i = 0; i < pages_per_huge_page(h); ) {
+-		cond_resched();
+-		copy_highpage(dst, src);
+-
+-		i++;
+-		dst = mem_map_next(dst, dst_base, i);
+-		src = mem_map_next(src, src_base, i);
+-	}
+-}
+-
+-void copy_huge_page(struct page *dst, struct page *src)
+-{
+-	int i;
+-	struct hstate *h = page_hstate(src);
+-
+-	if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
+-		copy_gigantic_page(dst, src);
+-		return;
+-	}
+-
+-	might_sleep();
+-	for (i = 0; i < pages_per_huge_page(h); i++) {
+-		cond_resched();
+-		copy_highpage(dst + i, src + i);
+-	}
+-}
+-
+ static void enqueue_huge_page(struct hstate *h, struct page *page)
+ {
+ 	int nid = page_to_nid(page);
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 9167b22..843b96d 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -440,6 +440,49 @@ int migrate_huge_page_move_mapping(struct address_space *mapping,
+ 	return MIGRATEPAGE_SUCCESS;
+ }
+ 
++static void copy_gigantic_page(struct page *dst, struct page *src,
++				int nr_pages)
++{
++	int i;
++	struct page *dst_base = dst;
++	struct page *src_base = src;
++
++	for (i = 0; i < nr_pages; ) {
++		cond_resched();
++		copy_highpage(dst, src);
++
++		i++;
++		dst = mem_map_next(dst, dst_base, i);
++		src = mem_map_next(src, src_base, i);
++	}
++}
++
++void copy_huge_page(struct page *dst, struct page *src)
++{
++	int i;
++	int nr_pages;
++
++	if (PageHuge(src)) {
++		/* hugetlbfs page */
++		struct hstate *h = page_hstate(src);
++		nr_pages = pages_per_huge_page(h);
++
++		if (unlikely(nr_pages > MAX_ORDER_NR_PAGES)) {
++			copy_gigantic_page(dst, src, nr_pages);
++			return;
++		}
++	} else {
++		/* thp page */
++		BUG_ON(!PageTransHuge(src));
++		nr_pages = HPAGE_PMD_NR;
++	}
++
++	for (i = 0; i < nr_pages; i++) {
++		cond_resched();
++		copy_highpage(dst + i, src + i);
++	}
++}
++
+ /*
+  * Copy the page to its new location
+  */
