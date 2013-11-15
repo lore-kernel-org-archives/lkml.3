@@ -1,150 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751192Ab3KONKb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:10:31 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:46553 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab3KONKW (ORCPT
+	id S1752006Ab3KONMx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 08:12:53 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:36963 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab3KONMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:10:22 -0500
-From: Alex Ling <kasimling@gmail.com>
-To: rob.herring@calxeda.com, mark.rutland@arm.com, linux@arm.linux.org.uk,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
-        kgene.kim@samsung.com, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Alex Ling <kasimling@gmail.com>
-Subject: [PATCH] ARM: dts: add board dts file for EXYNOS4412 based TINY4412 board
-Date: Fri, 15 Nov 2013 21:09:29 +0800
-Message-Id: <1384520969-2450-1-git-send-email-kasimling@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 15 Nov 2013 08:12:46 -0500
+Message-ID: <52861DCB.9020206@linux.com>
+Date: Fri, 15 Nov 2013 14:12:43 +0100
+From: Levente Kurusa <levex@linux.com>
+Reply-To: levex@linux.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Felipe Contreras <felipe.contreras@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] panic: setup panic_timeout early
+References: <1384180814-21823-1-git-send-email-felipe.contreras@gmail.com>	<20131113000358.GA2420@gmail.com>	<CAMP44s17p0ZpFx0Y2E_K7Oq9c4tk2J+9uXRWDYChAD-yM-4JjQ@mail.gmail.com>	<52850B89.10605@linux.com>	<52853fe6b0fd9_bf6d31e7c1a@nysa.notmuch> <CAMP44s0kGhPvuVZMe4zpmqFLtxrLW2gBPu6eHg0G6DFYKNpW7Q@mail.gmail.com>
+In-Reply-To: <CAMP44s0kGhPvuVZMe4zpmqFLtxrLW2gBPu6eHg0G6DFYKNpW7Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a minimal board dts file for EXYNOS4412 based FriendlyARM's
-TINY4412 board. This patch including adds the node to support
-peripherals like UART, SD card on SDMMC2 port, and this patch
-adds GPIO connected LEDS and configure its properties like
-following:
-LED1: use 'heartbeat' trigger, blinking while the board is running.
-LED4: use 'mmc0' trigger, on when mmc0 is accessing.
-LED2 and LED3 can be controlled from userspace.
+2013-11-14 23:32 keltezéssel, Felipe Contreras írta:
+> Hi,
+> 
+> Sending again since the previous one was rejected by the server.
+> 
+> On Thu, Nov 14, 2013 at 3:25 PM, Felipe Contreras
+> <felipe.contreras@gmail.com> wrote:
+>> Levente Kurusa wrote:
+>>> 2013-11-14 12:16 keltezéssel, Felipe Contreras írta:
+>>>> On Tue, Nov 12, 2013 at 6:03 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>>>>>
+>>>>> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
+>>>>>
+>>>>>> Otherwise we might not reboot when the user needs it the most (early
+>>>>>> on).
+>>>>>>
+>>>>>> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+>>>>>> ---
+>>>>>>
+>>>>> [...]
+>>>>>>
+>>>>>> diff --git a/kernel/panic.c b/kernel/panic.c
+>>>>>> index b6c482c..d865263 100644
+>>>>>> --- a/kernel/panic.c
+>>>>>> +++ b/kernel/panic.c
+>>>>>> @@ -468,9 +468,23 @@ EXPORT_SYMBOL(__stack_chk_fail);
+>>>>>>
+>>>>>>  #endif
+>>>>>>
+>>>>>> -core_param(panic, panic_timeout, int, 0644);
+>>>>>>  core_param(pause_on_oops, pause_on_oops, int, 0644);
+>>>>>>
+>>>>>> +static int __init set_panic_timeout(char *val)
+>>>>>> +{
+>>>>>> +     long timeout;
+>>>>>> +     int ret;
+>>>>>> +
+>>>>>> +     ret = kstrtol(val, 0, &timeout);
+>>>>>> +     if (ret < 0)
+>>>>>> +             return ret;
+>>>>>> +
+>>>>>> +     panic_timeout = timeout;
+>>>>>> +     return 0;
+>>>>>> +}
+>>>>>
+>>>>> I think the type of the 'timeout' local variable should match the type of
+>>>>> 'panic_timeout' (which is 'int', not 'long').
+>>>>
+>>>> So you would rather have this?
+>>>>
+>>>>   kstrtol(val, 0, (long *)&timeout);
+>>>>
+>>>> Couldn't that potentially write the value beyond the memory allocated
+>>>> to 'timeout'?
+>>>>
+>>>
+>>> No, 'panic_timeout' is a variable of type 'int'.
+>>> Your 'long timeout;' line is wrong and should say 'int timeout;'
+>>
+>> Oh really? Something like this?
+>>
+>>   --- a/kernel/panic.c
+>>   +++ b/kernel/panic.c
+>>   @@ -472,7 +472,7 @@ core_param(pause_on_oops, pause_on_oops, int, 0644);
+>>
+>>    static int __init set_panic_timeout(char *val)
+>>    {
+>>   -       long timeout;
+>>   +       int timeout;
+>>           int ret;
+>>
+>>           ret = kstrtol(val, 0, &timeout);
+>>
+>> And then what happens?
+>>
+>>   kernel/panic.c: In function ‘set_panic_timeout’:
+>>   kernel/panic.c:478:2: warning: passing argument 3 of ‘kstrtol’ from incompatible pointer type [enabled by default]
+>>     ret = kstrtol(val, 0, &timeout);
+>>     ^
+>>   In file included from include/linux/debug_locks.h:4:0,
+>>                    from kernel/panic.c:11:
+>>   include/linux/kernel.h:268:95: note: expected ‘long int *’ but argument is of type ‘int *’
+>>    static inline int __must_check kstrtol(const char *s, unsigned int base, long *res)
+>>
+>> To fix that warning you need this:
+>>                                                                                                  ^
+>>   --- a/kernel/panic.c
+>>   +++ b/kernel/panic.c
+>>   @@ -472,10 +472,10 @@ core_param(pause_on_oops, pause_on_oops, int, 0644);
+>>
+>>    static int __init set_panic_timeout(char *val)
+>>    {
+>>   -       long timeout;
+>>   +       int timeout;
+>>           int ret;
+>>
+>>   -       ret = kstrtol(val, 0, &timeout);
+>>   +       ret = kstrtol(val, 0, (long *)&timeout);
+>>           if (ret < 0)
+>>                   return ret;
+>>
+>>
+>> Which is the only logical conclusion I arrived to. What else do you suggest to
+>> fix the problem that kstrtol() expects a long? And since this fix is not what
+>> we want because we would be writing to the wrong memory, we don't want 'timeout'
+>> to be int.
+>>
+>> Therefore 'timeout' should be a long. How is that not clear?
+>>
+>> You can even see that it's already done this way for parameters:
+>>
+>>   STANDARD_PARAM_DEF(int, int, "%i", long, kstrtol);
+>>
+>>   #define STANDARD_PARAM_DEF(name, type, format, tmptype, strtolfn)             \
+>>           int param_set_##name(const char *val, const struct kernel_param *kp) \
+>>           {                                                             \
+>>                   tmptype l;                                            \
+>>                   int ret;                                              \
+>>                                                                           \
+>>                   ret = strtolfn(val, 0, &l);                           \
+>>                   if (ret < 0 || ((type)l != l))                                \
+>>                           return ret < 0 ? ret : -EINVAL;                       \
+>>                   *((type *)kp->arg) = l;                                       \
+>>                   return 0;                                             \
+>>           }                                                             \
+>>
+>> So yes, we obviously want the temporary variable 'timeout' to be a long, even
+>> though the final destination is an int.
+> 
 
-Signed-off-by: Alex Ling <kasimling@gmail.com>
----
- arch/arm/boot/dts/Makefile                |    1 +
- arch/arm/boot/dts/exynos4412-tiny4412.dts |   89 +++++++++++++++++++++++++++++
- 2 files changed, 90 insertions(+)
- create mode 100644 arch/arm/boot/dts/exynos4412-tiny4412.dts
+Hi,
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 802720e..91671a2 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -59,6 +59,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
- 	exynos4412-odroidx.dtb \
- 	exynos4412-origen.dtb \
- 	exynos4412-smdk4412.dtb \
-+	exynos4412-tiny4412.dtb \
- 	exynos4412-trats2.dtb \
- 	exynos5250-arndale.dtb \
- 	exynos5250-smdk5250.dtb \
-diff --git a/arch/arm/boot/dts/exynos4412-tiny4412.dts b/arch/arm/boot/dts/exynos4412-tiny4412.dts
-new file mode 100644
-index 0000000..78ace14
---- /dev/null
-+++ b/arch/arm/boot/dts/exynos4412-tiny4412.dts
-@@ -0,0 +1,89 @@
-+/*
-+ * FriendlyARM's Exynos4412 based TINY4412 board device tree source
-+ *
-+ * Copyright (c) 2013 Alex Ling <kasimling@gmail.com>
-+ *
-+ * Device tree source file for FriendlyARM's TINY4412 board which is based on
-+ * Samsung's Exynos4412 SoC.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
-+
-+/dts-v1/;
-+#include "exynos4412.dtsi"
-+
-+/ {
-+	model = "FriendlyARM TINY4412 board based on Exynos4412";
-+	compatible = "friendlyarm,tiny4412", "samsung,exynos4412";
-+
-+	memory {
-+		reg = <0x40000000 0x40000000>;
-+	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+		led1 {
-+			label = "led1:heart";
-+			gpios = <&gpm4 0 1>;
-+			default-state = "off";
-+			linux,default-trigger = "heartbeat";
-+		};
-+		led2 {
-+			label = "led2";
-+			gpios = <&gpm4 1 1>;
-+			default-state = "off";
-+		};
-+		led3 {
-+			label = "led3";
-+			gpios = <&gpm4 2 1>;
-+			default-state = "off";
-+		};
-+		led4 {
-+			label = "led4:mmc0";
-+			gpios = <&gpm4 3 1>;
-+			default-state = "off";
-+			linux,default-trigger = "mmc0";
-+		};
-+	};
-+
-+	rtc@10070000 {
-+		status = "okay";
-+	};
-+
-+	sdhci@12530000 {
-+		bus-width = <4>;
-+		pinctrl-0 = <&sd2_clk &sd2_cmd &sd2_cd &sd2_bus4>;
-+		pinctrl-names = "default";
-+		status = "okay";
-+	};
-+
-+	serial@13800000 {
-+		status = "okay";
-+	};
-+
-+	serial@13810000 {
-+		status = "okay";
-+	};
-+
-+	serial@13820000 {
-+		status = "okay";
-+	};
-+
-+	serial@13830000 {
-+		status = "okay";
-+	};
-+
-+	fixed-rate-clocks {
-+		xxti {
-+			compatible = "samsung,clock-xxti";
-+			clock-frequency = <0>;
-+		};
-+
-+		xusbxti {
-+			compatible = "samsung,clock-xusbxti";
-+			clock-frequency = <24000000>;
-+		};
-+	};
-+};
+No, you don't want timeout to be a long, and instead of kstrtol, you should use
+kstrtoint(char *s, int base, int *res)
+which is defined in lib/ktstrtox.c
+
+Also, a bit of advice: Calm down. If you continue to act childish nobody will take
+you seriously. Before acting like you are the king here, please at least take the time
+to research other options.
+
 -- 
-1.7.9.5
-
+Regards,
+Levente Kurusa
