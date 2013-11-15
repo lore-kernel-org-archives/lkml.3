@@ -1,68 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab3KOOpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:45:43 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:60791 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab3KOOpd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:45:33 -0500
-Date: Fri, 15 Nov 2013 09:32:55 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Luciano Coelho <luca@coelho.fi>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Felipe Balbi <balbi@ti.com>, Sachin Kamat <sachin.kamat@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        Luciano Coelho <coelho@ti.com>
-Subject: Re: [PATCH 1/4] wl1251: split wl251 platform data to a separate
- structure
-Message-ID: <20131115143254.GA7079@tuxdriver.com>
-References: <1382890469-25286-1-git-send-email-sre@debian.org>
- <1382890469-25286-2-git-send-email-sre@debian.org>
- <20131114185132.GQ10317@atomide.com>
- <20131114230330.GB6383@earth.universe>
- <20131114232217.GV10317@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131114232217.GV10317@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751959Ab3KOOws (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:52:48 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:7485 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751185Ab3KOOwl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 09:52:41 -0500
+Date: Fri, 15 Nov 2013 09:52:40 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Terje =?UTF-8?B?QmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Erik Faye-Lund <kusmabite@gmail.com>
+Subject: Re: Why have another variable deciding a tracepoint?
+Message-ID: <20131115095240.334c9f6b@gandalf.local.home>
+In-Reply-To: <5285D8A5.6030903@nvidia.com>
+References: <20131114234812.3bf7bce9@gandalf.local.home>
+ <5285D8A5.6030903@nvidia.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 03:22:18PM -0800, Tony Lindgren wrote:
-> * Sebastian Reichel <sre@debian.org> [131114 15:04]:
-> > On Thu, Nov 14, 2013 at 10:51:33AM -0800, Tony Lindgren wrote:
-> > > [...]
-> > >
-> > > If this is not going into v3.13, these will cause conflicts
-> > > with the mach-omap2/board-*.c files for v3.14.
-> > > 
-> > > So it might be best to do a minimal header patch first that
-> > > can be merged in by both linux-omap and wireless trees.
+On Fri, 15 Nov 2013 10:17:41 +0200
+Terje Bergström <tbergstrom@nvidia.com> wrote:
+
+> On 15.11.2013 06:48, Steven Rostedt wrote:
+> > I've been reviewing different users of tracepoints and I stumbled
+> > across this:
 > > 
-> > I guess this patch is pretty minimal. It also seems to be acked by
-> > the involved Maintainers, so maybe just merge Patch 1 without the
-> > other patches?
+> > drivers/gpu/host1x/cdma.c: host1x_cdma_push()
 > > 
-> > This does not solve the problem with the struct modification from
-> > the second patch, but I guess it's the more intrusive patch.
+> > 	if (host1x_debug_trace_cmdbuf)
+> > 		trace_host1x_cdma_push(dev_name(cdma_to_channel(cdma)->dev),
+> > 				       op1, op2);
+> > 
+> > That host1x_debug_trace_cmdbuf is a variable that gets set by another
+> > debugfs file "trace_cmdbuf" that is custom to this driver.
+> > 
+> > Why?
 > 
-> Once at least the first two patches are ready, how about I queue
-> them after -rc1 and set up an immutable branch that can be merged
-> in by linux-omap tree and the wireless tree?
+> This is because it takes a lot of time to prepare for dumping the cmdbuf
+> data, like mapping buffer and unmapping after tracing. We want to avoid
+> all that preparation time.
+> 
 
-That sounds reasonable to me.
+So let me get this straight. The recording of the cdma_push() data is
+slow, correct? What mapping are you talking about?
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+	trace_host1x_cdma_push(dev_name(cdma_to_channel(cdma)->dev),
+				       op1, op2);
+
+#define cdma_to_channel(cdma) container_of(cdma, struct host1x_channel, cdma)
+
+That just references the cdma field of struct host1x_channel, to get
+the dev field, which does dev_name() that just gets the dev->init_name
+(if defined, or kobject_name() if not). And the two u32 fields that are
+passed in.
+
+The tracepoint assigns with:
+
+	TP_fast_assign(
+		__entry->name = name;
+		__entry->op1 = op1;
+		__entry->op2 = op2;
+	),
+
+So I still have to ask; what do you have to set up and take down here?
+
+
+
+> > The tracepoint host1x_cdma_push is already controlled by either ftrace
+> > or perf. If it gets enabled by perf or ftrace, it still wont be traced
+> > unless we also enable this trace_cmdbuf. Is there some reason for this?
+> > I can't figure it out from the change log: 6236451d83a720 ("gpu:
+> > host1x: Add debug support").
+> > 
+> > As tracepoints uses jump labels, there is no branch cost associated
+> > with them. That is, they are either a direct jump, or a nop (in most
+> > cases a nop). But here you added the overhead of a conditional branch
+> > depending on this variable.
+> > 
+> > If this is truly needed, then use TRACE_EVENT_CONDITION() for that
+> > tracepoint.
+> 
+> TRACE_EVENT_CONDITION() isn't documented, so I don't know how that would
+> help.
+> 
+
+It's documented in the code ;-)  (kidding)
+
+Yeah, I need to get that out a bit more. That's actually how I found
+this code, I'm doing searches for all the locations that can benefit
+from TRACE_EVENT_CONDITION(), and I'm trying to fix them up. I'm still
+not convinced that this extra variable checking is required for this
+tracepoint.
+
+As you state though, I'll have to get time to document CONDITION() and
+how and when to use it.
+
+Thanks,
+
+-- Steve
