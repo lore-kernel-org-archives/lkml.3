@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757085Ab3KODo0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 22:44:26 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58095 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756133Ab3KODoT (ORCPT
+	id S1756300Ab3KODvj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 22:51:39 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:61552 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755031Ab3KODvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 22:44:19 -0500
-Message-Id: <1384487058.27598.47721737.4F2B26E4@webmail.messagingengine.com>
-X-Sasl-Enc: cn7/Tww7Fj9KEX5yJGeZs0zPoXxfHFqXkRyUAz/qR3y/ 1384487058
-From: randmedia@123mail.org
-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-d4893488
-In-Reply-To: <1384362765.13620.47030097.09D237AE@webmail.messagingengine.com>
-References: <1384360284.28215.47013129.162FF17C@webmail.messagingengine.com>
- <5283AE49.6030302@xs4all.nl>
- <1384362765.13620.47030097.09D237AE@webmail.messagingengine.com>
-Subject: Re: How to correctly disable LIRC-related MCE*/IR_* modules,
- to remove ID of RemoteControl as BOTH keyboard & remote?
-Date: Thu, 14 Nov 2013 19:44:18 -0800
+	Thu, 14 Nov 2013 22:51:33 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH] perf top: Make -g refer to callchains
+Date: Thu, 14 Nov 2013 20:51:30 -0700
+Message-Id: <1384487490-6865-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+In most commands -g is used for callchains. Make perf-top follow suit.
+Move group to just --group with no short cut making it similar to
+perf-record.
 
-Bump, please.  Or a pointer to the appropriate list would be helpful.
-I'm clearly getting lost amidst the patch traffic and deluge of spam, so
-suspect I may be in the wrong place ...
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/Documentation/perf-top.txt | 5 ++---
+ tools/perf/builtin-top.c              | 4 ++--
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
-Thanks.
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 7de01dd79688..cdd8d4946dba 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -50,7 +50,6 @@ Default is to monitor all CPUS.
+ --count-filter=<count>::
+ 	Only display functions with more events than this.
+ 
+--g::
+ --group::
+         Put the counters into a counter group.
+ 
+@@ -143,12 +142,12 @@ Default is to monitor all CPUS.
+ --asm-raw::
+ 	Show raw instruction encoding of assembly instructions.
+ 
+--G::
++-g::
+ 	Enables call-graph (stack chain/backtrace) recording.
+ 
+ --call-graph::
+ 	Setup and enable call-graph (stack chain/backtrace) recording,
+-	implies -G.
++	implies -g.
+ 
+ --max-stack::
+ 	Set the stack depth limit when parsing the callchain, anything
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 71e6402729a8..531522d3d97b 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1084,7 +1084,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			    "dump the symbol table used for profiling"),
+ 	OPT_INTEGER('f', "count-filter", &top.count_filter,
+ 		    "only display functions with more events than this"),
+-	OPT_BOOLEAN('g', "group", &opts->group,
++	OPT_BOOLEAN(0, "group", &opts->group,
+ 			    "put the counters into a counter group"),
+ 	OPT_BOOLEAN('i', "no-inherit", &opts->no_inherit,
+ 		    "child tasks do not inherit counters"),
+@@ -1105,7 +1105,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   " abort, in_tx, transaction"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+-	OPT_CALLBACK_NOOPT('G', NULL, &top.record_opts,
++	OPT_CALLBACK_NOOPT('g', NULL, &top.record_opts,
+ 			   NULL, "enables call-graph recording",
+ 			   &callchain_opt),
+ 	OPT_CALLBACK(0, "call-graph", &top.record_opts,
+-- 
+1.8.3.4 (Apple Git-47)
 
-
-On Wed, Nov 13, 2013, at 09:12 AM, randmedia@123mail.org wrote:
-> Hi Jim,
-> 
-> On Wed, Nov 13, 2013, at 08:52 AM, Jim Bos wrote:
-> > Have you looked at this sysfs-file, specifically tried this:
-> > 
-> > echo lirc > /sys/class/rc/rc0/protocols
-> 
-> In short, yes.
-> 
-> atm, I've this udev rule,
-> 
-> 	cat /etc/udev/rules.d/70-infrared.rules
-> 		ACTION=="add", SUBSYSTEM=="rc",
-> 		RUN+="/usr/bin/ir-keytable --clear --protocol=LIRC
-> 		--write=/etc/rc_keymaps/my_streamzap_rpi"
-> 
-> which ensures after boot
-> 
-> 	ir-keytable
-> 	Found /sys/class/rc/rc0/ (/dev/input/event2) with:
-> 	        Driver streamzap, table rc-streamzap
-> 	        Supported protocols: LIRC 
-> 	        Enabled protocols: LIRC 
-> 	        Repeat delay = 500 ms, repeat period = 125 ms
-> 
-> which correlates to
-> 
-> 	cat  /sys/class/rc/rc0/protocols 
-> 		[lirc]
-> 
-> i.e., the same effect as the manual intervetion of
-> 
-> 	echo lirc > /sys/class/rc/rc0/protocols
-> 
-> nonetheless, that _alone_, does NOT 'do the trick'.  if those MCE*
-> kernel mods are around, i.e., if I have NOT disabled them in the kernel
-> (re)compile, or, similarly, use the distro-provided kernel which
-> compiles the mods by default, then -- at boot -- the Streamzap is
-> recognized/assigned as an MCE keyboard/remote.
-> 
-> rand
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
