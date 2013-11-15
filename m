@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab3KOGXy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 01:23:54 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:59838 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab3KOGXr (ORCPT
+	id S1754015Ab3KOGY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 01:24:29 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:47087 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab3KOGYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 01:23:47 -0500
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: grant.likely@linaro.org
-Cc: rob.herring@calxeda.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Florian Fainelli <f.fainelli@gmail.com>
-Subject: [PATCH v2] of: make of_get_phy_mode parse 'phy-connection-type'
-Date: Fri, 15 Nov 2013 06:23:32 +0000
-Message-Id: <1384496612-28392-1-git-send-email-f.fainelli@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20131114074711.9A8C5C402E1@trevor.secretlab.ca>
-References: <20131114074711.9A8C5C402E1@trevor.secretlab.ca>
+	Fri, 15 Nov 2013 01:24:21 -0500
+Date: Fri, 15 Nov 2013 07:24:17 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: jerry.hoemann@hp.com
+Cc: Pekka Enberg <penberg@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "list@ebiederm.org:DOCUMENTATION <linux-doc@vger.kernel.org>,
+	list@ebiederm.org:MEMORY MANAGEMENT <linux-mm@kvack.org>," 
+	<linux-doc@vger.kernel.org>,
+        linux-efi@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+Message-ID: <20131115062417.GB9237@gmail.com>
+References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com>
+ <d73ccce9-6a0d-4470-bda3-f0c6eb96b5e4@email.android.com>
+ <20131113224503.GB25344@anatevka.fc.hp.com>
+ <52840206.5020006@zytor.com>
+ <20131113235708.GC25344@anatevka.fc.hp.com>
+ <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
+ <20131114180455.GA32212@anatevka.fc.hp.com>
+ <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
+ <20131115005049.GJ5116@anatevka.fc.hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131115005049.GJ5116@anatevka.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Per the ePAPR v1.1 specification, 'phy-connection-type' is the canonical
-property name for describing an Ethernet to PHY connection type. Make
-sure that of_get_phy_mode() also attempts to parse that property and
-update the comments mentioning 'phy-mode' to also include
-'phy-connection-type'.
 
-Acked-by: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
----
-Changes since v2:
-- reworked the error condition to look nicer per Grant's suggestion
-- added Grant's Acked-by tag
-- fixed a typo in the commit message on "mentioning"
+* jerry.hoemann@hp.com <jerry.hoemann@hp.com> wrote:
 
- drivers/of/of_net.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+> On Thu, Nov 14, 2013 at 08:44:04PM +0200, Pekka Enberg wrote:
+> > On Thu, Nov 14, 2013 at 8:04 PM,  <jerry.hoemann@hp.com> wrote:
+> > > Making this issue a quirk will be a lot more practical.  Its a small, focused
+> > > change whose implications are limited and more easily understood.
+> > 
+> > There's nothing practical with requiring users to pass a kernel option
+> > to make kdump work.  It's a workaround, sure, but it's not a proper
+> > fix.
+> 
+> One already has to specify command line arguments to enable kdump. 
+> See "crashkernel=" in Documentation/kernel-parameters.txt.
 
-diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
-index 8f9be2e..651e249 100644
---- a/drivers/of/of_net.c
-+++ b/drivers/of/of_net.c
-@@ -13,8 +13,8 @@
- 
- /**
-  * It maps 'enum phy_interface_t' found in include/linux/phy.h
-- * into the device tree binding of 'phy-mode', so that Ethernet
-- * device driver can get phy interface from device tree.
-+ * into the device tree binding of 'phy-mode' or 'phy-connection-type',
-+ * so that Ethernet device driver can get phy interface from device tree.
-  */
- static const char *phy_modes[] = {
- 	[PHY_INTERFACE_MODE_NA]		= "",
-@@ -36,8 +36,9 @@ static const char *phy_modes[] = {
-  * of_get_phy_mode - Get phy mode for given device_node
-  * @np:	Pointer to the given device_node
-  *
-- * The function gets phy interface string from property 'phy-mode',
-- * and return its index in phy_modes table, or errno in error case.
-+ * The function gets phy interface string from property 'phy-mode' or
-+ * 'phy-connection-type', and return its index in phy_modes table, or errno in
-+ * error case.
-  */
- int of_get_phy_mode(struct device_node *np)
- {
-@@ -46,6 +47,8 @@ int of_get_phy_mode(struct device_node *np)
- 
- 	err = of_property_read_string(np, "phy-mode", &pm);
- 	if (err < 0)
-+		err = of_property_read_string(np, "phy-connection-type", &pm);
-+	if (err < 0)
- 		return err;
- 
- 	for (i = 0; i < ARRAY_SIZE(phy_modes); i++)
--- 
-1.8.3.2
+That option is already a usability barrier. Adding yet another 
+usability barrier improves things how?
 
+> As i said in an earlier mail we are working w/ distros. [...]
+
+The point being?
+
+> [...]  distros can and do specify lots of interesting command line 
+> arguments for their systems.  Distros have tools for configuring 
+> kdump. User must already use these tools or manually edit multiple 
+> config files, to get kdump to work.  I would work with distros to 
+> help integrate this change into their tools.
+
+Here you describe a method that has already successfully cut the kdump 
+user base to a fraction of its potential size. Why should we assist to 
+that effort of engineered obscurity?
+
+> As i said in earlier mail, i am willing to change implementation to 
+> some type of black/white listing.
+
+Is it possible to fix it the way hpa suggested?
+
+Thanks,
+
+	Ingo
