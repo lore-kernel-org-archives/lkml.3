@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132Ab3KOGqS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 01:46:18 -0500
-Received: from us01smtp3.synopsys.com ([198.182.44.81]:60717 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab3KOGqH (ORCPT
+	id S1755540Ab3KOGtx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 01:49:53 -0500
+Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:47218
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751664Ab3KOGtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 01:46:07 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        David Daney <david.daney@cavium.com>, Michal Marek <mmarek@suse.cz>,
-        Francois Bedard <Francois.Bedard@synopsys.com>
-Subject: [PATCH] ARC: extable: Enable sorting at build time
-Date: Fri, 15 Nov 2013 12:15:42 +0530
-Message-ID: <1384497942-26810-1-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 15 Nov 2013 01:49:47 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1155h)
+Date: Fri, 15 Nov 2013 14:40:09 +0800
+From: Nicolin Chen <b42378@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: <timur@tabi.org>, <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
+        <linux@arm.linux.org.uk>, <ijc+devicetree@hellion.org.uk>,
+        <swarren@wwwdotorg.org>, <mark.rutland@arm.com>, <pawel.moll@arm.com>,
+        <rob.herring@calxeda.com>, <lgirdwood@gmail.com>
+Subject: Re: [PATCH 1/2] ARM: dts: imx: specify the value of audmux pinctrl
+ instead of 0x80000000
+Message-ID: <20131115064009.GD745@MrMyself>
+References: <1384427230-979-1-git-send-email-b42378@freescale.com>
+ <1384427230-979-2-git-send-email-b42378@freescale.com>
+ <20131115064159.GG11014@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.99]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20131115064159.GG11014@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoids wasting cycles at boot specially on slower simulators
+On Fri, Nov 15, 2013 at 02:42:01PM +0800, Shawn Guo wrote:
+> On Thu, Nov 14, 2013 at 07:07:09PM +0800, Nicolin Chen wrote:
+> > We must specify the value of audmux pinctrl if we want to use pinctrl_pm().
+> > Thus change bypass value 0x80000000 to what we exactly need.
+> > 
+> > This patch also seperately unset PUE bit for TXD so that IOMUX won't pull
+> > up/down the pin after turning into tristate. When we use SSI normal mode to
+> > playback monaural audio via I2S signal, there'd be a pulled curve occur to
+> > its signal at the second slot if setting PUE bit for TXD. And it will make
+> > the second channel to play a constant noise. So by keeping the signal level
+> > in the second slot, we can get a constant high level signal (-1) or a low
+> > level one (0).
+> > 
+> > Signed-off-by: Nicolin Chen <b42378@freescale.com>
+> > ---
+> >  arch/arm/boot/dts/imx6qdl.dtsi | 22 +++++++++++-----------
+> >  1 file changed, 11 insertions(+), 11 deletions(-)
+> 
+> We have moved all pin groups settings into
+> arch/arm/boot/dts/imx6qdl-pingrp.h.  I just rebased and applied the
+> patch.  Please check my imx/dt branch and ensure I applied the changes
+> correctly.
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: David Daney <david.daney@cavium.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Francois Bedard <fbedard@synopsys.com>
-Cc: linux-kernel@vger.kernel.org
+Simply perfect. Thank you.
+Nicolin
+
 ---
- arch/arc/Kconfig      | 1 +
- scripts/sortextable.c | 5 +++++
- 2 files changed, 6 insertions(+)
 
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 91dbb2757afd..080580216301 100644
---- a/arch/arc/Kconfig
-+++ b/arch/arc/Kconfig
-@@ -8,6 +8,7 @@
- 
- config ARC
- 	def_bool y
-+	select BUILDTIME_EXTABLE_SORT
- 	select CLONE_BACKWARDS
- 	# ARC Busybox based initramfs absolutely relies on DEVTMPFS for /dev
- 	select DEVTMPFS if !INITRAMFS_SOURCE=""
-diff --git a/scripts/sortextable.c b/scripts/sortextable.c
-index 7c2310c5b996..e3fb1c36ed0f 100644
---- a/scripts/sortextable.c
-+++ b/scripts/sortextable.c
-@@ -31,6 +31,10 @@
- #include <tools/be_byteshift.h>
- #include <tools/le_byteshift.h>
- 
-+#ifndef EM_ARCOMPACT
-+#define EM_ARCOMPACT	93
-+#endif
-+
- #ifndef EM_AARCH64
- #define EM_AARCH64	183
- #endif
-@@ -244,6 +248,7 @@ do_file(char const *const fname)
- 	case EM_S390:
- 		custom_sort = sort_relative_table;
- 		break;
-+	case EM_ARCOMPACT:
- 	case EM_ARM:
- 	case EM_AARCH64:
- 	case EM_MIPS:
--- 
-1.8.1.2
 
