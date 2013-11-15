@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab3KONat (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:30:49 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:58131 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab3KONaj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:30:39 -0500
-Message-ID: <528621E5.4030201@ti.com>
-Date: Fri, 15 Nov 2013 07:30:13 -0600
+	id S1752046Ab3KONdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 08:33:44 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:33691 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751046Ab3KONdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 08:33:35 -0500
+Message-ID: <528622AB.1050500@ti.com>
+Date: Fri, 15 Nov 2013 07:33:31 -0600
 From: Nishanth Menon <nm@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Paul Walmsley <paul@pwsan.com>
-CC: Tony Lindgren <tony@atomide.com>, <rnayak@ti.com>, <khilman@linaro.org>,
-        <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3] ARM: OMAP2+: omap_device: maintain sane runtime pm
- status around suspend/resume
-References: <1384297710-29694-1-git-send-email-nm@ti.com> <1384448716-3186-1-git-send-email-nm@ti.com> <alpine.DEB.2.02.1311150806220.15980@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.02.1311150806220.15980@utopia.booyaka.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [RFC PATCH] cpufreq: cpufreq-cpu0: do not allow transitions with
+ regulators suspended
+References: <1382638087-32054-1-git-send-email-nm@ti.com>	<CAKohponJOOfGX4BHn76LTBDTm58+2QxPf_rv1i4avVfrWhfkRg@mail.gmail.com>	<52824522.7020401@ti.com>	<CAKohpomB=wnct88wrTvW-qixLQPQGjVrCVF3V-BSbY7mhsSYQg@mail.gmail.com>	<20131113151645.GA17828@kahuna>	<52842671.40703@linaro.org>	<5284DDB9.7040502@ti.com>	<5284FE48.8040802@linaro.org>	<528502AC.4010604@ti.com> <CAKohpokz6YEqz8ZNmQ77y8K3qvKYu3ffgVmiEcDyh2M9FsDGPg@mail.gmail.com>
+In-Reply-To: <CAKohpokz6YEqz8ZNmQ77y8K3qvKYu3ffgVmiEcDyh2M9FsDGPg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 02:07 AM, Paul Walmsley wrote:
-> On Thu, 14 Nov 2013, Nishanth Menon wrote:
+On 11/15/2013 04:27 AM, Viresh Kumar wrote:
+> On 14 November 2013 22:34, Nishanth Menon <nm@ti.com> wrote:
+>> I think it is still too early to do so :(
 > 
->> OMAP device hooks around suspend|resume_noirq ensures that hwmod
->> devices are forced to idle using omap_device_idle/enable as part of
->> the last stage of suspend activity.
->>
->> For a device such as i2c who uses autosuspend, it is possible to enter
->> the suspend path with dev->power.runtime_status = RPM_ACTIVE.
->>
->> As part of the suspend flow, the generic runtime logic would increment
->> it's dev->power.disable_depth to 1. This should prevent further
->> pm_runtime_get_sync from succeeding once the runtime_status has been
->> set to RPM_SUSPENDED.
->>
->> Now, as part of the suspend_noirq handler in omap_device, we force the
->> following: if the device status is !suspended, we force the device
->> to idle using omap_device_idle (clocks are cut etc..). This ensures
->> that from a hardware perspective, the device is "suspended". However,
->> runtime_status is left to be active.
->>
->> *if* an operation is attempted after this point to
->> pm_runtime_get_sync, runtime framework depends on runtime_status to
->> indicate accurately the device status, and since it sees it to be
->> ACTIVE, it assumes the module is functional and returns a non-error
->> value. As a result the user will see pm_runtime_get succeed, however a
->> register access will crash due to the lack of clocks.
->>
->> To prevent this from happening, we should ensure that runtime_status
->> exactly indicates the device status. As a result of this change
->> any further calls to pm_runtime_get* would return -EACCES (since
->> disable_depth is 1). On resume, we restore the clocks and runtime
->> status exactly as we suspended with. These operations are not expected
->> to fail as we update the states after the core runtime framework has
->> suspended itself and restore before the core runtime framework has
->> resumed.
->>
->> Reported-by: J Keerthy <j-keerthy@ti.com>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> Acked-by: Rajendra Nayak <rnayak@ti.com>
->> Acked-by: Kevin Hilman <khilman@linaro.org>
-> 
-> Looks reasonable to me.  Looks like this should be considered for -stable 
-> - Nishanth, what do you think?
-
-Every product kernel since 3.4 needed to be hacked (we have hacked in
-different ways so far) to work around this (since we never spend time
-digging deeper :( ), So, I do agree with your view that a -stable tag
-will be most beneficial.
+> :)
+:D
 
 > 
-> Tony or Kevin, do you want to take this one, or want me to?
+>> equivalent patch: http://pastebin.mozilla.org/3603467 (with minor
+>> changes for build)
+>>
+>> Basic tests: http://pastebin.mozilla.org/3603456 (governor is
+>> functional, but governor kicks in early before i2c is resumed)
+>>
+>> With call stack: http://pastebin.mozilla.org/3603455 to highlight call
+>> sequences
+>>
+>> Seems like we might want to pause governor as early in the suspend
+>> sequence as possible to allow SoC and regulator stuff to suspend
+>> themselves without cpufreq interfering.. just my 2 cents..
 > 
+> You made me spend a day on this :)
+> It wasn't a day's job really but I got into a really hard to crack bug with my
+> patch, I was calling __cpufreq_governor() from under write_lock_irqsave
+> for cpufreq_driver_lock. And __cpufreq_governor() had:
 > 
-> - Paul
+>  read_lock_irqsave(&cpufreq_driver_lock, flags);
 > 
+> I wasn't able to suspend my system: ARM, X86.. It simply stopped
+> printing anything and I didn't had a clue of what's going on.. Hacked
+> everything possible, even kernel/power/suspend.c to return early
+> (yeah I used freezer > pm_test as well, but I wanted to return before
+> freezing userspace)...
+> 
+> Then somehow I got to know that this is the wrong piece of code :)
 
+Thanks a ton for your efforts in helping come with a generic solution.
+
+> 
+> But probably I have a solution now to which you can't say:
+
+https://patchwork.kernel.org/patch/3187511/ as a link for the records :)
+
+> 
+> "I think it is still too early to do so :("
+> 
+> :)
+> 
+> Give it a try and give a Tested-by please :)
+> 
+Definitely - on it.. will feedback further on the patch in proposal.
 
 -- 
 Regards,
