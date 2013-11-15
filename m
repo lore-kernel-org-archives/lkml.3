@@ -1,31 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab3KOUiZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 15:38:25 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:41458 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab3KOUiR (ORCPT
+	id S1753297Ab3KOUis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 15:38:48 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51809 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102Ab3KOUij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 15:38:17 -0500
-Message-ID: <52868637.40007@gmail.com>
-Date: Fri, 15 Nov 2013 21:38:15 +0100
-From: Chang <changxiangzhong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 15 Nov 2013 15:38:39 -0500
+Date: Fri, 15 Nov 2013 20:38:38 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Peter Wu <lekensteyn@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] coredumps truncated after "new helper: dump_align()"
+Message-ID: <20131115203838.GJ13318@ZenIV.linux.org.uk>
+References: <11835033.kIc1RH0rS1@al>
 MIME-Version: 1.0
-To: Vlad Yasevich <vyasevich@gmail.com>, Neil Horman <nhorman@tuxdriver.com>
-CC: davem@davemloft.net, linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dreibh@simula.no, ernstgr@simula.no
-Subject: Re: [PATCH] net: sctp: recover a tranport when an ack comes
-References: <1384461624-17636-1-git-send-email-changxiangzhong@gmail.com> <5285884F.8030907@gmail.com> <20131115123055.GA29877@hmsreliant.think-freely.org> <5286291A.7060507@gmail.com> <20131115145609.GC29877@hmsreliant.think-freely.org> <52867D2E.2090907@gmail.com> <52868582.2020509@gmail.com>
-In-Reply-To: <52868582.2020509@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <11835033.kIc1RH0rS1@al>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you very much Neil and Vlad!
-That's exactly what I've been looking for. I'm quite unfamiliar iwth the 
-sctp_net_init part.
+On Fri, Nov 15, 2013 at 03:26:10PM +0100, Peter Wu wrote:
+> Hi Al,
+> 
+> Somewhere in the merge window of 3.13, coredumps appear truncated.
+> Instead of 319488 bytes, I get 868 bytes (tested with x86_64 only).
+> 
+> The latest Linus' master (v3.12-9579-g049ffa8) is still affected.
+> Bisection leads to:
+> 
+> commit 22a8cb8248ba5d340307ba72432253b1dbdb5cf7
+> Author: Al Viro <viro@zeniv.linux.org.uk>
+> Date:   Tue Oct 8 11:05:01 2013 -0400
+> 
+>     new helper: dump_align()
+>     
+>     dump_skip to given alignment...
 
-Have a nice weekend!
+Argh...  Really dumb braino when getting rid of long long division in
+dump_align().  Please, see if this gets rid of the entire problem on your
+setup - it definitely fixes a bug in there and it seems to restore the
+normal behaviour on the reproducer I've got here, but...
+
+I'm going to send that to Linus, along with another coredump fix
+(dump_emit() ought to use __kernel_write() instead of vfs_write())
+shortly anyway, but if you spot anything still broken...
+
+diff --git a/fs/coredump.c b/fs/coredump.c
+index 62406b6..a2856f7 100644
+--- a/fs/coredump.c
++++ b/fs/coredump.c
+@@ -733,7 +733,7 @@ int dump_align(struct coredump_params *cprm, int align)
+ {
+ 	unsigned mod = cprm->written & (align - 1);
+ 	if (align & (align - 1))
+-		return -EINVAL;
+-	return mod ? dump_skip(cprm, align - mod) : 0;
++		return 0;
++	return mod ? dump_skip(cprm, align - mod) : 1;
+ }
+ EXPORT_SYMBOL(dump_align);
