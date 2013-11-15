@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab3KOJ5p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 04:57:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33205 "EHLO mx2.suse.de"
+	id S1758212Ab3KOJ6s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 04:58:48 -0500
+Received: from mail.southpole.se ([37.247.8.11]:45681 "EHLO mail.southpole.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753494Ab3KOJ5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 04:57:40 -0500
-Date: Fri, 15 Nov 2013 09:57:31 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, dave.jiang@intel.com,
-        akpm@linux-foundation.org, dhillf@gmail.com,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: [PATCH 1/2] mm: hugetlbfs: Add some VM_BUG_ON()s to catch
- non-hugetlbfs pages
-Message-ID: <20131115095731.GC26002@suse.de>
-References: <20131114233357.90EE35C1@viggo.jf.intel.com>
- <20131114233358.2B10EA33@viggo.jf.intel.com>
+	id S1757589Ab3KOJ6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 04:58:40 -0500
+Message-ID: <5285F085.5060105@southpole.se>
+Date: Fri, 15 Nov 2013 10:59:33 +0100
+From: Jonas Bonn <jonas@southpole.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20131114233358.2B10EA33@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux@openrisc.net
+Subject: Re: [PATCH 13/17] openrisc: Refactor or32_early_setup()
+References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org> <1384285347-13506-14-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1384285347-13506-14-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Assp-Version: 2.3.3(13276) on assp.southpole.se
+X-Assp-ID: assp.southpole.se 09519-06645
+X-Assp-Session: 7F739AE75018 (mail 1)
+X-Assp-Client-TLS: yes
+X-Assp-Server-TLS: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 03:33:58PM -0800, Dave Hansen wrote:
-> 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> Dave Jiang reported that he was seeing oopses when running
-> NUMA systems and default_hugepagesz=1G.  I traced the issue down
-> to migrate_page_copy() trying to use the same code for hugetlb
-> pages and transparent hugepages.  It should not have been trying
-> to pass thp pages in there.
-> 
-> So, add some VM_BUG_ON()s for the next hapless VM developer that
-> tries the same thing.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> 
+On 11/12/2013 08:42 PM, Geert Uytterhoeven wrote:
+>    - Change fdt pointer (passed from head.S) from unsigned int to void *,
+>      which allows to kill a cast, and makes it compatible with __dtb_start.
+>    - Use pr_info(),
+>    - Extract common part.
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Jonas Bonn <jonas@southpole.se>
+> Cc: linux@lists.openrisc.net
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+Thanks, I'll take this one directly into the OpenRISC tree.
 
--- 
-Mel Gorman
-SUSE Labs
+/Jonas
