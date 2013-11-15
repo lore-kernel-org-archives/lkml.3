@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab3KOFzd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 00:55:33 -0500
-Received: from kiruna.synopsys.com ([198.182.44.80]:52800 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab3KOFzZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 00:55:25 -0500
-Message-ID: <5285B739.9060000@synopsys.com>
-Date: Fri, 15 Nov 2013 11:25:05 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-Newsgroups: gmane.linux.ports.openrisc,gmane.linux.kbuild.devel,gmane.linux.kernel
-To: Geert Uytterhoeven <geert@linux-m68k.org>, Jonas Bonn <jonas@southpole.se>,
-        <linux-kbuild@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux@openrisc.net>
-Subject: Re: [PATCH] [RFC] initramfs: Prefix simple paths with $(srctree)
-References: <1384467283-14806-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1384467283-14806-1-git-send-email-geert@linux-m68k.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.99]
+	id S1754456Ab3KOGBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 01:01:51 -0500
+Received: from mga03.intel.com ([143.182.124.21]:17510 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751472Ab3KOGBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 01:01:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,704,1378882800"; 
+   d="scan'208";a="428053601"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: rjw@rjwysocki.net, viresh.kumar@linaro.org
+Cc: Lan Tianyu <tianyu.lan@intel.com>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] Cpufreq: Make governor data on nonboot cpus across system syspend/resume
+Date: Fri, 15 Nov 2013 14:01:34 +0800
+Message-Id: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 03:44 AM, Geert Uytterhoeven wrote:
-> If CONFIG_INITRAMFS_SOURCE contains relative paths inside the source tree
-> (e.g. in a defconfig pointing to arch-specific files), the corresponding
-> file system entries are not found when building outside the source tree.
-> 
-> Prefix all simple paths (paths not starting with "/", "../", or "./") with
-> $(srctree) to fix this.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
-> This issue happens when building an OpenRISC defconfig from
-> git://openrisc.net/jonas/linux. Mainline doesn't have the OpenRISC
-> initramfs.
+Currently, governor of nonboot cpus will be put to EXIT when system syspend.
+Since all these cpus will be unplugged and the governor usage_count decreases
+to zero. The governor data and its sysfs interfaces will be freed or released.
+This makes user config of these governors loss during suspend and resume.
 
-+1.
-This applies to ARC defconfig too.
+This doesn't happen on the governor covering boot cpu because it isn't
+unplugged during system suspend.
 
-> 
-> Questions:
->   1. Is this an acceptable solution for mainline?
->   2. My make-foo is limited. is there a better way to accomplish this, than
->      by prefixing all paths and removing the prefixes again where they're
->      not wanted?
->    
->  usr/Makefile |    6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/usr/Makefile b/usr/Makefile
-> index e767f019accf..2170c38936ce 100644
-> --- a/usr/Makefile
-> +++ b/usr/Makefile
-> @@ -41,6 +41,12 @@ hostprogs-y := gen_init_cpio
->  initramfs   := $(CONFIG_SHELL) $(srctree)/scripts/gen_initramfs_list.sh
->  ramfs-input := $(if $(filter-out "",$(CONFIG_INITRAMFS_SOURCE)), \
->  			$(shell echo $(CONFIG_INITRAMFS_SOURCE)),-d)
-> +ifneq ("$(ramfs-input)", "-d")
-> +ramfs-input := $(patsubst %, $(srctree)/%, $(ramfs-input))
-> +ramfs-input := $(patsubst $(srctree)//%, /%, $(ramfs-input))
-> +ramfs-input := $(patsubst $(srctree)/../%, ../%, $(ramfs-input))
-> +ramfs-input := $(patsubst $(srctree)/./%, ./%, $(ramfs-input))
-> +endif
->  ramfs-args  := \
->          $(if $(CONFIG_INITRAMFS_ROOT_UID), -u $(CONFIG_INITRAMFS_ROOT_UID)) \
->          $(if $(CONFIG_INITRAMFS_ROOT_GID), -g $(CONFIG_INITRAMFS_ROOT_GID))
-> 
+To fix this issue, skipping governor exit during system suspend and check
+policy governor data to determine whether the governor is really needed
+to be initialized when do init. If not, return EALREADY to indicate the
+governor has been initialized and should do nothing. __cpufreq_governor()
+convert EALREADY to 0 as return value for INIT event since governor is
+still under INIT state and can do START operation.
+
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ drivers/cpufreq/cpufreq.c          |  5 ++++-
+ drivers/cpufreq/cpufreq_governor.c | 13 ++++++++++++-
+ 2 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 02d534d..38f2e4a 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1239,7 +1239,7 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
+ 
+ 	/* If cpu is last user of policy, free policy */
+ 	if (cpus == 1) {
+-		if (has_target()) {
++		if (has_target() && !frozen) {
+ 			ret = __cpufreq_governor(policy,
+ 					CPUFREQ_GOV_POLICY_EXIT);
+ 			if (ret) {
+@@ -1822,6 +1822,9 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 			((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
+ 		module_put(policy->governor->owner);
+ 
++	if ((event == CPUFREQ_GOV_POLICY_INIT) && ret == -EALREADY)
++		ret = 0;
++
+ 	return ret;
+ }
+ 
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index 0806c31..ddb93af 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -204,9 +204,20 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 
+ 	switch (event) {
+ 	case CPUFREQ_GOV_POLICY_INIT:
++		/*
++		 * In order to keep governor data across suspend/resume,
++		 * Governor doesn't exit when suspend and will be
++		 * reinitialized when resume. Here check policy governor
++		 * data to determine whether the governor has been exited.
++		 * If not, return EALREADY.
++		 */
+ 		if (have_governor_per_policy()) {
+-			WARN_ON(dbs_data);
++			if (dbs_data)
++				return -EALREADY;
+ 		} else if (dbs_data) {
++			if (policy->governor_data == dbs_data)
++				return -EALREADY;
++
+ 			dbs_data->usage_count++;
+ 			policy->governor_data = dbs_data;
+ 			return 0;
+-- 
+1.8.2.1
 
