@@ -1,75 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab3KOOxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:53:22 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:33838 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab3KOOxP (ORCPT
+	id S1751822Ab3KOO40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:56:26 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:60949 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab3KOO4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:53:15 -0500
-Message-ID: <5286355A.9060509@hp.com>
-Date: Fri, 15 Nov 2013 09:53:14 -0500
-From: Don Morris <don.morris@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 15 Nov 2013 09:56:20 -0500
+Date: Fri, 15 Nov 2013 09:56:09 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Vlad Yasevich <vyasevich@gmail.com>
+Cc: Chang Xiangzhong <changxiangzhong@gmail.com>, davem@davemloft.net,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dreibh@simula.no, ernstgr@simula.no
+Subject: Re: [PATCH] net: sctp: recover a tranport when an ack comes
+Message-ID: <20131115145609.GC29877@hmsreliant.think-freely.org>
+References: <1384461624-17636-1-git-send-email-changxiangzhong@gmail.com>
+ <5285884F.8030907@gmail.com>
+ <20131115123055.GA29877@hmsreliant.think-freely.org>
+ <5286291A.7060507@gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Shawn Bohrer <shawn.bohrer@gmail.com>
-CC: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Mel Gorman <mgorman@suse.de>
-Subject: Re: 3.10.16 cgroup css_set_lock deadlock
-References: <20131114232529.GB16725@sbohrermbp13-local.rgmadvisors.com> <20131115081929.GA11530@mtj.dyndns.org>
-In-Reply-To: <20131115081929.GA11530@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5286291A.7060507@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 03:19 AM, Tejun Heo wrote:
-> On Thu, Nov 14, 2013 at 05:25:29PM -0600, Shawn Bohrer wrote:
->> In trying to reproduce the cgroup_mutex deadlock I reported earlier
->> in https://lkml.org/lkml/2013/11/11/574 I believe I encountered a
->> different issue that I'm also unable to understand. This machine
->> started out reporting some soft lockups that look to me like they are
->> on a read_lock(css_set_lock):
->>
-> ...
->> RIP: 0010:[<ffffffff8109253c>]  [<ffffffff8109253c>] cgroup_attach_task+0xdc/0x7a0
-> ...
->>  [<ffffffff81092e87>] attach_task_by_pid+0x167/0x1a0
->>  [<ffffffff81092ef3>] cgroup_tasks_write+0x13/0x20
-
-I've been getting this hang intermittently with the numad daemon
-running on CentOS/Fedora while running numa balancing tests. Started
-around 3.9 or so.
-
+On Fri, Nov 15, 2013 at 09:00:58AM -0500, Vlad Yasevich wrote:
+> On 11/15/2013 07:30 AM, Neil Horman wrote:
+> >On Thu, Nov 14, 2013 at 09:34:55PM -0500, Vlad Yasevich wrote:
+> >>On 11/14/2013 03:40 PM, Chang Xiangzhong wrote:
+> >>>Expected Behavior:
+> >>>When hearing an ack from a tranport/path, set its state to normal/on if it's
+> >>>in abnormal(__partial_failure__ or inactive) state.
+> >>>
+> >>>state machine of tranport->state
+> >>>Whenever a T3_RTX timer expires, then transport->error_count++.
+> >>>When (association->pf_retrans < transport->error_count < tranport->pathmaxrtx)
+> >>>	transport->state = SCTP_PF //partial failure
+> >>>
+> >>>When a heartbeat-ack comes or conventional ack acknowledged its availability,
+> >>>	transport->state = SCTP_ON
+> >>>
+> >>>Signed-off-by: Chang Xiangzhong <changxiangzhong@gmail.com>
+> >>>Fixes: 5aa93bcf66f ("sctp: Implement quick failover draft from tsvwg")
+> >>
+> >>I don't think this is right.  The spec states:
+> >>  8.  ACKs for retransmissions do not transition a PF destination back
+> >>        to Active state, since a sender cannot disambiguate whether the
+> >>        ack was for the original transmission or the retransmission(s).
+> >>
+> >>
+> >>Now, the proper way to this would would be modify
+> >>sctp_assoc_control_transport() to transition the transport state to
+> >>ACTIVE if it was PF transport that was chosen to send data.
+> >>
+> >>-vlad
+> >>
+> >I agree, this patch doesn't agree with the spec, the only time we transition
+> >from PF to ACTIVE should be on receipt of ack of new data.
 > 
-> Most likely the bug fixed by ea84753c98a7 ("cgroup: fix to break the
-> while loop in cgroup_attach_task() correctly").  3.10.19 contains the
-> backported fix.
+> You mean HB ACK, right?  The 02 spec that see on the ietf site doesn't
+> mention anything about transition on SACKs.  Also, there is no way to
+> tell right now if the ack is for new or retransmitted data.  We could
+> mark chunks that are retransmitted though.
 > 
-> Thanks.
+Yes, sorry I wasn't clear, I was speaknig about HB Acks.
+
+> > I'm not even sure if
+> >we should allow PF transports to be selected to send new data.  Currently a
+> >potentially failed transport will get ignored when specified, and the stack will
+> >use the active path in its place.  Only if all transports are PF will a PF
+> >transport be chosen.
 > 
+> Not even that :(.  If all transports are PF, we are going to camp on
+> the primary path instead of choosing a PF transport with the lowest
+> error count.
+> 
+Yes, we don't do the smallest error count check, though I have to wonder if
+thats really worthwhile.  If all your transports are PF, you're a step away from
+a connection reset anyway.
+Neil
 
-Yes, that definitely looks like the right change -- and I ran
-post-3.12-rc6 for over a week without hitting the issue again.
-I'm willing to call that verified by since previously I couldn't
-go more than 2 days without encountering the bug.
-
-Ok, stupid question time since I stared at that loop several
-times while trying to figure out how things got stuck there.
-Apologies in advance if I'm just thick today -- but I'd
-really like to grok this bug.
-
-Are we getting some other thread from while_each_task()
-repeatedly keeping us in the loop? Or is there something
-else going on? The gut instinct is that calling something
-like while_each_task() on an exiting thread would either
-reliably give other threads in the group or quit [if the
-thread is the only one left in the group or if an exiting
-thread is no longer part of the group], but since that would
-make the continue work, obviously I'm missing something.
-
-Mel, I don't know how much time you've given to this since the
-last email, but this clears it up. Thanks for your time.
-
-Don Morris
+> -vlad
+> 
+> >Neil
+> >
+> >>>---
+> >>>  net/sctp/outqueue.c |    1 +
+> >>>  1 file changed, 1 insertion(+)
+> >>>
+> >>>diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+> >>>index 94df758..2557fa5 100644
+> >>>--- a/net/sctp/outqueue.c
+> >>>+++ b/net/sctp/outqueue.c
+> >>>@@ -1517,6 +1517,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+> >>>  			 * active if it is not so marked.
+> >>>  			 */
+> >>>  			if ((transport->state == SCTP_INACTIVE ||
+> >>>+			     transport->state == SCTP_PF ||
+> >>>  			     transport->state == SCTP_UNCONFIRMED) &&
+> >>>  			    sctp_cmp_addr_exact(&transport->ipaddr, saddr)) {
+> >>>  				sctp_assoc_control_transport(
+> >>>
+> >>
+> >>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
