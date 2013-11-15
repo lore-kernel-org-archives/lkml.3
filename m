@@ -1,123 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab3KOAqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 19:46:19 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:27790 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752540Ab3KOAqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 19:46:10 -0500
-X-IronPort-AV: E=Sophos;i="4.93,703,1378828800"; 
-   d="scan'208";a="9038461"
-Message-ID: <52856F0D.8090206@cn.fujitsu.com>
-Date: Fri, 15 Nov 2013 08:47:09 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754881Ab3KOAsd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 19:48:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:28874 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab3KOAs1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 19:48:27 -0500
+Message-ID: <52856F3D.4090500@oracle.com>
+Date: Fri, 15 Nov 2013 08:47:57 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: containers@lists.linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        serge@hallyn.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] userns: allow privileged user to operate locked mount
-References: <1384327663-12032-1-git-send-email-gaofeng@cn.fujitsu.com> <874n7e4k78.fsf@xmission.com>
-In-Reply-To: <874n7e4k78.fsf@xmission.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/15 08:44:19,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/15 08:44:20,
-	Serialize complete at 2013/11/15 08:44:20
+To: Seth Jennings <sjennings@variantweb.net>
+CC: Hugh Dickins <hughd@google.com>, Minchan Kim <minchan@kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, lliubbo@gmail.com,
+        jmarchan@redhat.com, mgorman@suse.de, riel@redhat.com,
+        linux-mm@kvack.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Luigi Semenzato <semenzato@google.com>
+Subject: Re: [PATCH] staging: zsmalloc: Ensure handle is never 0 on success
+References: <20131107070451.GA10645@bbox> <20131112154137.GA3330@gmail.com> <alpine.LNX.2.00.1311131811030.1120@eggly.anvils> <20131114162103.GA4370@cerebellum.variantweb.net>
+In-Reply-To: <20131114162103.GA4370@cerebellum.variantweb.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 07:50 AM, Eric W. Biederman wrote:
-> Gao feng <gaofeng@cn.fujitsu.com> writes:
-> 
->> Privileged user should have rights to mount/umount/move
->> these even locked mount.
-> 
-> Hmm. This is pretty much a can't happen case, as the only exist in mount
-> namespaces where the global root isn't the root.  How are you getting
-> into this situation?  Using setns() ?
-> 
 
-Before, priviged user can use setns to set his mount namespace to the
-container's mount namespace, and change container's mount directly.
-this patch just gives back host the control of container.
-
-> Why would we even care?
-> 
-> As implemented this patch does not handle nested user namespaces and
-> that really worries me at a semantic level.
-> 
-> We don't want to design cases where we can create containers in
-> containers.
-> 
-> Eric
-> 
-> 
->> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
->> ---
->>  fs/namespace.c | 14 ++++++++++----
->>  1 file changed, 10 insertions(+), 4 deletions(-)
+On 11/15/2013 12:21 AM, Seth Jennings wrote:
+> On Wed, Nov 13, 2013 at 08:00:34PM -0800, Hugh Dickins wrote:
+>> On Wed, 13 Nov 2013, Minchan Kim wrote:
+>> ...
+>>>
+>>> Hello Andrew,
+>>>
+>>> I'd like to listen your opinion.
+>>>
+>>> The zram promotion trial started since Aug 2012 and I already have get many
+>>> Acked/Reviewed feedback and positive feedback from Rik and Bob in this thread.
+>>> (ex, Jens Axboe[1], Konrad Rzeszutek Wilk[2], Nitin Gupta[3], Pekka Enberg[4])
+>>> In Linuxcon, Hugh gave positive feedback about zram(Hugh, If I misunderstood,
+>>> please correct me!). And there are lots of users already in embedded industry
+>>> ex, (most of TV in the world, Chromebook, CyanogenMod, Android Kitkat.)
+>>> They are not idiot. Zram is really effective for embedded world.
 >>
->> diff --git a/fs/namespace.c b/fs/namespace.c
->> index da5c494..7097fc7 100644
->> --- a/fs/namespace.c
->> +++ b/fs/namespace.c
->> @@ -1297,6 +1297,11 @@ static inline bool may_mount(void)
->>  	return ns_capable(current->nsproxy->mnt_ns->user_ns, CAP_SYS_ADMIN);
->>  }
->>  
->> +static inline bool may_mount_lock(struct mount *mnt)
->> +{
->> +	return !(mnt->mnt.mnt_flags & MNT_LOCKED) || capable(CAP_SYS_ADMIN);
->> +}
->> +
->>  /*
->>   * Now umount can handle mount points as well as block devices.
->>   * This is important for filesystems which use unnamed block devices.
->> @@ -1330,7 +1335,7 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
->>  		goto dput_and_out;
->>  	if (!check_mnt(mnt))
->>  		goto dput_and_out;
->> -	if (mnt->mnt.mnt_flags & MNT_LOCKED)
->> +	if (!may_mount_lock(mnt))
->>  		goto dput_and_out;
->>  
->>  	retval = do_umount(mnt, flags);
->> @@ -1768,7 +1773,8 @@ static int do_loopback(struct path *path, const char *old_name,
->>  	if (!check_mnt(parent) || !check_mnt(old))
->>  		goto out2;
->>  
->> -	if (!recurse && has_locked_children(old, old_path.dentry))
->> +	if (!recurse && has_locked_children(old, old_path.dentry) &&
->> +	    !capable(CAP_SYS_ADMIN))
->>  		goto out2;
->>  
->>  	if (recurse)
->> @@ -1895,7 +1901,7 @@ static int do_move_mount(struct path *path, const char *old_name)
->>  	if (!check_mnt(p) || !check_mnt(old))
->>  		goto out1;
->>  
->> -	if (old->mnt.mnt_flags & MNT_LOCKED)
->> +	if (!may_mount_lock(old))
->>  		goto out1;
->>  
->>  	err = -EINVAL;
->> @@ -2679,7 +2685,7 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
->>  		goto out4;
->>  	if (!check_mnt(root_mnt) || !check_mnt(new_mnt))
->>  		goto out4;
->> -	if (new_mnt->mnt.mnt_flags & MNT_LOCKED)
->> +	if (!may_mount_lock(new_mnt))
->>  		goto out4;
->>  	error = -ENOENT;
->>  	if (d_unlinked(new.dentry))
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>> Sorry for taking so long to respond, Minchan: no, you do not misrepresent
+>> me at all.  Promotion of zram and zsmalloc from staging is way overdue:
+>> they long ago proved their worth, look tidy, and have an active maintainer.
+>>
+>> Putting them into drivers/staging was always a mistake, and I quite
+>> understand Greg's impatience with them by now; but please let's move
+>> them to where they belong instead of removing them.
+>>
+>> I would not have lent support to zswap if I'd thought that was going to
+>> block zram.  And I was not the only one surprised when zswap replaced its
+>> use of zsmalloc by zbud: we had rather expected a zbud option to be added,
+>> and I still assume that zsmalloc support will be added back to zswap later.
+> 
+> Yes, it is still the plan to reintroduce zsmalloc as an option (possibly
+> _the_ option) for zswap.
+> 
+> An idea being tossed around is making zswap writethrough instead of
+> delayed writeback.
+>
+> Doing this would be mean that zswap would no longer reduce swap out
+> traffic, but would continue to reduce swap in latency by reading out of
+> the compressed cache instead of the swap device.
+> 
+> For that loss, we gain a benefit: the compressed pages in the cache are
+> clean, meaning we can reclaim them at any time with no writeback
+> cost.  This addresses Mel's initial concern (the one that led to zswap
+> moving to zbud) about writeback latency when the zswap pool is full.
 > 
 
+Agree!
+
+> If there is no writeback cost for reclaiming space in the compressed
+> pool, then we can use higher density packing like zsmalloc.
+> 
+
+But zsmalloc will compact several 0-order pages together as a zpage
+which cause it not easy to reclaim one 0-order page directly from it.
+Especially if we want to make zswap pool can be dynamically managed in
+future.
+
+> Making zswap writethough would also make the difference between zswap
+> and zram, both in terms of operation and application, more apparent,
+> demonstrating the need for both.
+> 
+
+-- 
+Regards,
+-Bob
