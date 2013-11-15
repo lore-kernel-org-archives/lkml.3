@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab3KOIOs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 03:14:48 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:14035 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867Ab3KOIOi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 03:14:38 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 15 Nov 2013 00:12:58 -0800
-Message-ID: <5285D8A5.6030903@nvidia.com>
-Date: Fri, 15 Nov 2013 10:17:41 +0200
-From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
-CC: Arto Merilainen <amerilainen@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Erik Faye-Lund <kusmabite@gmail.com>
-Subject: Re: Why have another variable deciding a tracepoint?
-References: <20131114234812.3bf7bce9@gandalf.local.home>
-In-Reply-To: <20131114234812.3bf7bce9@gandalf.local.home>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755399Ab3KOIQF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 03:16:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:55664 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751867Ab3KOIP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 03:15:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="409227764"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: rjw@rjwysocki.net, viresh.kumar@linaro.org
+Cc: Lan Tianyu <tianyu.lan@intel.com>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [Update PATCH 1/1] Cpufreq: Make governor data on nonboot cpus across system suspend/resume
+Date: Fri, 15 Nov 2013 16:15:34 +0800
+Message-Id: <1384503334-18809-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com>
+References: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.11.2013 06:48, Steven Rostedt wrote:
-> I've been reviewing different users of tracepoints and I stumbled
-> across this:
-> 
-> drivers/gpu/host1x/cdma.c: host1x_cdma_push()
-> 
-> 	if (host1x_debug_trace_cmdbuf)
-> 		trace_host1x_cdma_push(dev_name(cdma_to_channel(cdma)->dev),
-> 				       op1, op2);
-> 
-> That host1x_debug_trace_cmdbuf is a variable that gets set by another
-> debugfs file "trace_cmdbuf" that is custom to this driver.
-> 
-> Why?
+Currently, governor of nonboot cpus will be put to EXIT when system suspend.
+Since all these cpus will be unplugged and the governor usage_count decreases
+to zero. The governor data and its sysfs interfaces will be freed or released.
+This makes user config of these governors loss during suspend and resume.
 
-This is because it takes a lot of time to prepare for dumping the cmdbuf
-data, like mapping buffer and unmapping after tracing. We want to avoid
-all that preparation time.
+This doesn't happen on the governor covering boot cpu because it isn't
+unplugged during system suspend.
 
-> The tracepoint host1x_cdma_push is already controlled by either ftrace
-> or perf. If it gets enabled by perf or ftrace, it still wont be traced
-> unless we also enable this trace_cmdbuf. Is there some reason for this?
-> I can't figure it out from the change log: 6236451d83a720 ("gpu:
-> host1x: Add debug support").
-> 
-> As tracepoints uses jump labels, there is no branch cost associated
-> with them. That is, they are either a direct jump, or a nop (in most
-> cases a nop). But here you added the overhead of a conditional branch
-> depending on this variable.
-> 
-> If this is truly needed, then use TRACE_EVENT_CONDITION() for that
-> tracepoint.
+To fix this issue, skipping governor exit during system suspend and check
+policy governor data to determine whether the governor is really needed
+to be initialized when do init. If not, return EALREADY to indicate the
+governor has been initialized and should do nothing. __cpufreq_governor()
+convert EALREADY to 0 as return value for INIT event since governor is
+still under INIT state and can do START operation.
 
-TRACE_EVENT_CONDITION() isn't documented, so I don't know how that would
-help.
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+Fix some typos
 
-Terje
+ drivers/cpufreq/cpufreq.c          |  5 ++++-
+ drivers/cpufreq/cpufreq_governor.c | 13 ++++++++++++-
+ 2 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 02d534d..38f2e4a 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1239,7 +1239,7 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
+ 
+ 	/* If cpu is last user of policy, free policy */
+ 	if (cpus == 1) {
+-		if (has_target()) {
++		if (has_target() && !frozen) {
+ 			ret = __cpufreq_governor(policy,
+ 					CPUFREQ_GOV_POLICY_EXIT);
+ 			if (ret) {
+@@ -1822,6 +1822,9 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 			((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
+ 		module_put(policy->governor->owner);
+ 
++	if ((event == CPUFREQ_GOV_POLICY_INIT) && ret == -EALREADY)
++		ret = 0;
++
+ 	return ret;
+ }
+ 
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index 0806c31..ddb93af 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -204,9 +204,20 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 
+ 	switch (event) {
+ 	case CPUFREQ_GOV_POLICY_INIT:
++		/*
++		 * In order to keep governor data across suspend/resume,
++		 * Governor doesn't exit when suspend and will be
++		 * reinitialized when resume. Here check policy governor
++		 * data to determine whether the governor has been exited.
++		 * If not, return EALREADY.
++		 */
+ 		if (have_governor_per_policy()) {
+-			WARN_ON(dbs_data);
++			if (dbs_data)
++				return -EALREADY;
+ 		} else if (dbs_data) {
++			if (policy->governor_data == dbs_data)
++				return -EALREADY;
++
+ 			dbs_data->usage_count++;
+ 			policy->governor_data = dbs_data;
+ 			return 0;
+-- 
+1.8.2.1
+
