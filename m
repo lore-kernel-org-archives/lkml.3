@@ -1,144 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab3KOO7G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:59:06 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:34041 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab3KOO6s (ORCPT
+	id S1752947Ab3KOO76 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:59:58 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54346 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab3KOO7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:58:48 -0500
-Date: Fri, 15 Nov 2013 14:58:40 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        wei_wang@realsil.com.cn, rogerable@realtek.com
-Subject: Re: [PATCH 1/3] mfd: rtsx: reduce code duplication in rtl8411
-Message-ID: <20131115145840.GC4996@lee--X1>
-References: <cover.1384503048.git.micky_ching@realsil.com.cn>
- <8ce8175c28355c0d69c3ac4825d3dce6c00fc2ba.1384503048.git.micky_ching@realsil.com.cn>
+	Fri, 15 Nov 2013 09:59:51 -0500
+Date: Fri, 15 Nov 2013 15:59:44 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf sw_event related lockup
+Message-ID: <20131115145944.GA3694@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1311131739560.5706@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <8ce8175c28355c0d69c3ac4825d3dce6c00fc2ba.1384503048.git.micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.10.1311131739560.5706@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Lee Jones <lee.jones@linaro.org>
+On Wed, Nov 13, 2013 at 05:45:59PM -0500, Vince Weaver wrote:
+> Hello
 > 
-> in order to remove duplicated code in rtl8411, we make 8411 as the base
-> init params, and other like-8411 chips will just change the different
-> value with 8411, this can save some source code.
+> so with the perf_fuzzer modified to avoid the tracepoint issues, I've 
+> triggered this software-event related soft lockup.
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> From what I can gather from the backtraces, they all map to the loop
+> in do_perf_sw_event() in kernel/events/core.c
+> 
+>         hlist_for_each_entry_rcu(event, head, hlist_entry) {
+>                 if (perf_swevent_match(event, type, event_id, data, regs))
+>                         perf_swevent_event(event, nr, data, regs);
+>         }
+> 
+> is it possible to get stuck in that as an infinite loop?
+> 
+> below is the dmesg from the lockup, I eventually had to reboot to clear 
+> the problem:
 
-It's not good etiquette to send patches 'From:' and 'Signed-off-by:' a
-person when they are neither from or signed-off by that person.
+> [  416.755310] NOHZ: local_softirq_pending 100
+> [  452.232000] BUG: soft lockup - CPU#1 stuck for 23s! [perf_fuzzer:7211]
+> [  452.232000] RIP: 0010:[<ffffffff810caa4c>]  [<ffffffff810caa4c>] __perf_sw_event+0x9a/0x1a5
+> [  452.232000] Call Trace:
+> [  452.232000]  [<ffffffff81520fa3>] ? __do_page_fault+0x191/0x3f5
+> [  452.232000]  [<ffffffff81066edb>] ? sched_clock_local+0x13/0x76
+> [  452.232000]  [<ffffffff81066edb>] ? sched_clock_local+0x13/0x76
+> [  452.232000]  [<ffffffff8151e232>] ? page_fault+0x22/0x30
+> [  452.232000]  [<ffffffff8129cfe0>] ? __put_user_4+0x20/0x30
+> [  452.232000]  [<ffffffff81066629>] ? schedule_tail+0x5c/0x60
+> [  452.232000]  [<ffffffff81524b7f>] ? ret_from_fork+0xf/0xb0
 
-It's much better practice to reply to the original patches with
-comments placed directly under the code you wish to reference.
+> [  480.232000] RIP: 0010:[<ffffffff810cab0c>]  [<ffffffff810cab0c>] __perf_sw_event+0x15a/0x1a5
+> [  480.232000] Call Trace:
+> [  480.232000]  [<ffffffff81520fa3>] ? __do_page_fault+0x191/0x3f5
+> [  480.232000]  [<ffffffff81066edb>] ? sched_clock_local+0x13/0x76
+> [  480.232000]  [<ffffffff81066edb>] ? sched_clock_local+0x13/0x76
+> [  480.232000]  [<ffffffff8151e232>] ? page_fault+0x22/0x30
+> [  480.232000]  [<ffffffff8129cfe0>] ? __put_user_4+0x20/0x30
+> [  480.232000]  [<ffffffff81066629>] ? schedule_tail+0x5c/0x60
+> [  480.232000]  [<ffffffff81524b7f>] ? ret_from_fork+0xf/0xb0
 
-<snip>
+> [  486.528000] RIP: 0010:[<ffffffff8129c063>]  [<ffffffff8129c063>] delay_tsc+0x23/0x50
+> [  486.528000] Call Trace:
+> [  486.528000]  <EOI>  [<ffffffff810cab38>] ? __perf_sw_event+0x186/0x1a5
+> [  486.528000]  [<ffffffff810cab40>] ? __perf_sw_event+0x18e/0x1a5
+> [  486.528000]  [<ffffffff81520fa3>] ? __do_page_fault+0x191/0x3f5
+> [  486.528000]  [<ffffffff81066edb>] ? sched_clock_local+0x13/0x76
+> [  486.528000]  [<ffffffff81066edb>] ? sched_clock_local+0x13/0x76
+> [  486.528000]  [<ffffffff8151e232>] ? page_fault+0x22/0x30
+> [  486.528000]  [<ffffffff8129cfe0>] ? __put_user_4+0x20/0x30
+> [  486.528000]  [<ffffffff81066629>] ? schedule_tail+0x5c/0x60
+> [  486.528000]  [<ffffffff81524b7f>] ? ret_from_fork+0xf/0xb0
 
-> -void rtl8411b_init_params(struct rtsx_pcr *pcr)
-> +void rtl8411_init_params(struct rtsx_pcr *pcr)
->  {
-> -	pcr->extra_caps = EXTRA_CAPS_SD_SDR50 | EXTRA_CAPS_SD_SDR104;
-> -	pcr->num_slots = 2;
-> -	pcr->ops = &rtl8411b_pcr_ops;
-> -
-> -	pcr->flags = 0;
-> -	pcr->card_drive_sel = RTL8411_CARD_DRIVE_DEFAULT;
-> -	pcr->sd30_drive_sel_1v8 = DRIVER_TYPE_B;
-> -	pcr->sd30_drive_sel_3v3 = DRIVER_TYPE_D;
-> -	pcr->aspm_en = ASPM_L1_EN;
+> [  486.528000] Call Trace:
+> [  486.528000]  [<ffffffff810cab38>] ? __perf_sw_event+0x186/0x1a5
+> [  486.528000]  [<ffffffff810cab40>] ? __perf_sw_event+0x18e/0x1a5
+> [  486.528000]  [<ffffffff81520fa3>] ? __do_page_fault+0x191/0x3f5
+> [  486.528000]  [<ffffffff81066edb>] ? sched_clock_local+0x13/0x76
+> [  486.528000]  [<ffffffff81066edb>] ? sched_clock_local+0x13/0x76
+> [  486.528000]  [<ffffffff8151e232>] ? page_fault+0x22/0x30
+> [  486.528000]  [<ffffffff8129cfe0>] ? __put_user_4+0x20/0x30
+> [  486.528000]  [<ffffffff81066629>] ? schedule_tail+0x5c/0x60
+> [  486.528000]  [<ffffffff81524b7f>] ? ret_from_fork+0xf/0xb0
 
-> -	pcr->tx_initial_phase = SET_CLOCK_PHASE(23, 7, 14);
-> -	pcr->rx_initial_phase = SET_CLOCK_PHASE(4, 3, 10);
-
-So what happened to these?
-
-> -	pcr->ic_version = rtl8411_get_ic_version(pcr);
-> +	/* rtl8411 params */
-> +	rtl8411_init_base_params(pcr);
-> +	set_pull_ctrl_tables(rtl8411);
-> +
-> +	/* different with rtl8411 */
-> +	switch (PCI_PID(pcr)) {
-> +	case 0x5287:
-> +		rtl8411_pcr_ops.fetch_vendor_settings =
-> +			rtl8411b_fetch_vendor_settings;
-> +		rtl8411_pcr_ops.extra_init_hw = rtl8411b_extra_init_hw;
-> +
-> +		if (rtl8411b_is_qfn48(pcr))
-> +			set_pull_ctrl_tables(rtl8411b_qfn48);
-> +		else
-> +			set_pull_ctrl_tables(rtl8411b_qfn64);
-
-I'm not a big fan of this.
-
-<snip>
-
-> diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-> index 11e20af..ecc6852 100644
-> --- a/drivers/mfd/rtsx_pcr.c
-> +++ b/drivers/mfd/rtsx_pcr.c
-> @@ -1046,10 +1046,6 @@ static int rtsx_pci_init_chip(struct rtsx_pcr *pcr)
->  		rts5229_init_params(pcr);
->  		break;
->  
-> -	case 0x5289:
-> -		rtl8411_init_params(pcr);
-> -		break;
-> -
->  	case 0x5227:
->  		rts5227_init_params(pcr);
->  		break;
-> @@ -1059,7 +1055,8 @@ static int rtsx_pci_init_chip(struct rtsx_pcr *pcr)
->  		break;
->  
->  	case 0x5287:
-> -		rtl8411b_init_params(pcr);
-> +	case 0x5289:
-> +		rtl8411_init_params(pcr);
->  		break;
->  	}
-
-I see where you're going with this, but my personal opinion is that it
-looks neater and more readable set out as two separate init functions.
-
-> diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
-> index 947e79b..dd435d7 100644
-> --- a/drivers/mfd/rtsx_pcr.h
-> +++ b/drivers/mfd/rtsx_pcr.h
-> @@ -32,7 +32,6 @@ void rts5229_init_params(struct rtsx_pcr *pcr);
->  void rtl8411_init_params(struct rtsx_pcr *pcr);
->  void rts5227_init_params(struct rtsx_pcr *pcr);
->  void rts5249_init_params(struct rtsx_pcr *pcr);
-> -void rtl8411b_init_params(struct rtsx_pcr *pcr);
->  
->  static inline u8 map_sd_drive(int idx)
->  {
-> @@ -63,4 +62,12 @@ static inline u8 map_sd_drive(int idx)
->  #define rtl8411_reg_to_sd30_drive_sel_3v3(reg)	(((reg) >> 5) & 0x07)
->  #define rtl8411b_reg_to_sd30_drive_sel_3v3(reg)	((reg) & 0x03)
->  
-> +#define set_pull_ctrl_tables(__device)				\
-> +do {								\
-> +	pcr->sd_pull_ctl_enable_tbl  = __device##_sd_pull_ctl_enable_tbl;  \
-> +	pcr->sd_pull_ctl_disable_tbl = __device##_sd_pull_ctl_disable_tbl; \
-> +	pcr->ms_pull_ctl_enable_tbl  = __device##_ms_pull_ctl_enable_tbl;  \
-> +	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
-> +} while (0)
-
-Great spot Micky. I'll fix this up and resend.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Please enable CONFIG_FRAME_POINTER to get better backtraces, but the
+above suggests the pagefault swevent, will have a look.
