@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab3KOSrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 13:47:16 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57670 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751338Ab3KOSrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 13:47:07 -0500
-Message-ID: <52866C0D.3050006@zytor.com>
-Date: Fri, 15 Nov 2013 10:46:37 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753065Ab3KOSsS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 13:48:18 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:64405 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab3KOSsK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 13:48:10 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 2/3] misc: bmp085: Add DT bindings for EOC gpio line and direct irq.
+Date: Fri, 15 Nov 2013 19:47:50 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Marek Belisko <marek@goldelico.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "neilb@suse.de" <neilb@suse.de>,
+        "hns@goldelico.com" <hns@goldelico.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1384465609-26485-1-git-send-email-marek@goldelico.com> <1384465609-26485-3-git-send-email-marek@goldelico.com> <20131115153015.GD24831@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20131115153015.GD24831@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
-        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-References: <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com> <20131114180455.GA32212@anatevka.fc.hp.com> <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com> <20131115005049.GJ5116@anatevka.fc.hp.com> <20131115062417.GB9237@gmail.com> <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com> <5285C639.5040203@zytor.com> <20131115140738.GB6637@redhat.com> <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com> <52865CA1.5020309@zytor.com> <20131115183002.GE6637@redhat.com>
-In-Reply-To: <20131115183002.GE6637@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201311151947.51196.arnd@arndb.de>
+X-Provags-ID: V02:K0:uVU4YpbseyG4OY3gGvpykHJcPKladbcuXq0vcE5vtwh
+ LGlQF99HxdSOgUIYW+U3u/0sIjQwsG/eYtbWLSGe6sfGSc3QYx
+ 3/Iyfmv8prfgNgFUMk+/Esk9ZZbGrS8WDPA5kNjkYKB6vGNlXT
+ 7QEUys6lSWryCAlL9oaYCNGFt2T15tTrKBETVc/wBGxUhFEbW0
+ LE0+x1Cu/sw04H6bzMngGaNw/39yZvlNp7AevBIK5YfXAEn6qN
+ qPw5oYwEqk/6cIzg4makbOFsVabUcj+GWqIGFJNyBWEXOnIesF
+ w2r7MSEpeSZ8MJSK0iT2TlXoHfPrSk3KqNbsFnojShe/fe542H
+ RUB+ZFDr+ET9RHWsnORQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 10:30 AM, Vivek Goyal wrote:
+On Friday 15 November 2013, Mark Rutland wrote:
+> There's some contention over the description of gpio-based IRQs in DT.
+> From the point of view of the device there is a logical IRQ output; the
+> fact that this happens to be wired up to a GPIO pin that can happen to
+> generate interrupts isn't anything to do with the device itself. There
+> are plenty of device we have now whose interrupt lines could be wired to
+> GPIOs. I see no reason to extend their bindings to support explicit
+> GPIOs for IRQs, and I see no reason the driver should have to handle
+> this.
 > 
-> I agree taking assistance of hypervisor should be useful.
-> 
-> One reason we use kdump for VM too because it makes life simple. There
-> is no difference in how we configure, start and manage crash dumps
-> in baremetal or inside VM. And in practice have not heard of lot of
-> failures of kdump in VM environment.
-> 
-> So while reliability remains a theoritical concern, in practice it
-> has not been a real concern and that's one reason I think we have
-> not seen a major push for alternative method in VM environment.
-> 
+> It would be far nicer for the device binding to just have the interrupts
+> property, and for the gpio controller to act as an interrupt-controller,
+> with the appropriate pin management.
 
-Another reason, again, is that it doesn't sit on all that memory.
+Yes, agreed. I missed this point in my review: the GPIO is used only
+as an interrupt pin here, so there is no reason to know the GPIO number.
 
-	-hpa
-
+	Arnd
