@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768Ab3KOOXJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:23:09 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:61148 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab3KOOWp (ORCPT
+	id S1753437Ab3KOOXf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:23:35 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:53001 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402Ab3KOOWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Nov 2013 09:22:45 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -15,20 +15,19 @@ Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] mmc: mvsdio: workaround for spurious irqs
-Date: Fri, 15 Nov 2013 15:22:33 +0100
-Message-Id: <1384525354-901-3-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 3/3] mmc: mvsdio: silence card detect notice
+Date: Fri, 15 Nov 2013 15:22:34 +0100
+Message-Id: <1384525354-901-4-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1384525354-901-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1384525354-901-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SDIO controllers found on Marvell Kirkwood SoCs seem to cause a late,
-spurious irq although all interrupts have been disabled. This irq
-doesn't do any harm, neither to HW nor driver. To avoid some
-"unexpected irq" warning later, we workaround above issue by bailing
-out of irq handler early, if we didn't expect any.
+mvsdio reports method of card detection with dev_notice, while for
+removable cards it may be sane, for non-removable cards it is not.
+Also, as the user cannot do anything about it, silence the message
+by reducing it from dev_notice to dev_dbg.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -41,35 +40,26 @@ Cc: linux-mmc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/mmc/host/mvsdio.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ drivers/mmc/host/mvsdio.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
-index 06c5b0b..25f51be 100644
+index 25f51be..d17b399 100644
 --- a/drivers/mmc/host/mvsdio.c
 +++ b/drivers/mmc/host/mvsdio.c
-@@ -354,6 +354,21 @@ static irqreturn_t mvsd_irq(int irq, void *dev)
- 		intr_status, mvsd_read(MVSD_NOR_INTR_EN),
- 		mvsd_read(MVSD_HW_STATE));
+@@ -816,10 +816,9 @@ static int __init mvsd_probe(struct platform_device *pdev)
+ 		goto out;
  
-+	/*
-+	 * It looks like, SDIO IP can issue one late, spurious irq
-+	 * although all irqs should be disabled. To work around this,
-+	 * bail out early, if we didn't expect any irqs to occur.
-+	 */
-+	if (!mvsd_read(MVSD_NOR_INTR_EN) && !mvsd_read(MVSD_ERR_INTR_EN)) {
-+		dev_dbg(host->dev,
-+			"spurious irq detected intr 0x%04x intr_en 0x%04x erri 0x%04x erri_en 0x%04x\n",
-+			mvsd_read(MVSD_NOR_INTR_STATUS),
-+			mvsd_read(MVSD_NOR_INTR_EN),
-+			mvsd_read(MVSD_ERR_INTR_STATUS),
-+			mvsd_read(MVSD_ERR_INTR_EN));
-+		return IRQ_HANDLED;
-+	}
-+
- 	spin_lock(&host->lock);
+ 	if (!(mmc->caps & MMC_CAP_NEEDS_POLL))
+-		dev_notice(&pdev->dev, "using GPIO for card detection\n");
++		dev_dbg(&pdev->dev, "using GPIO for card detection\n");
+ 	else
+-		dev_notice(&pdev->dev,
+-			   "lacking card detect (fall back to polling)\n");
++		dev_dbg(&pdev->dev, "lacking card detect, fall back to polling\n");
+ 	return 0;
  
- 	/* PIO handling, if needed. Messy business... */
+ out:
 -- 
 1.7.2.5
 
