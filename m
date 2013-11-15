@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab3KOGpc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 01:45:32 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:35781 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab3KOGpX (ORCPT
+	id S1755132Ab3KOGqS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 01:46:18 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:60717 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab3KOGqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 01:45:23 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Sebastian Reichel <sre@debian.org>
-Subject: Re: [PATCH 1/2] isp1704_charger: Add DT support
-Date: Fri, 15 Nov 2013 07:45:16 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.2; x86_64; ; )
-Cc: Tony Lindgren <tony@atomide.com>, Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-References: <1384432734-1490-1-git-send-email-sre@debian.org> <201311141905.11046@pali> <20131114223416.GA6383@earth.universe>
-In-Reply-To: <20131114223416.GA6383@earth.universe>
+	Fri, 15 Nov 2013 01:46:07 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        David Daney <david.daney@cavium.com>, Michal Marek <mmarek@suse.cz>,
+        Francois Bedard <Francois.Bedard@synopsys.com>
+Subject: [PATCH] ARC: extable: Enable sorting at build time
+Date: Fri, 15 Nov 2013 12:15:42 +0530
+Message-ID: <1384497942-26810-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1397715.gDSUgNYlmo";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201311150745.18408@pali>
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1397715.gDSUgNYlmo
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Avoids wasting cycles at boot specially on slower simulators
 
-On Thursday 14 November 2013 23:34:19 Sebastian Reichel wrote:
-> On Thu, Nov 14, 2013 at 07:05:06PM +0100, Pali Roh=C3=A1r wrote:
-> > On Thursday 14 November 2013 13:38:53 Sebastian Reichel=20
-wrote:
-> > > diff --git a/drivers/power/isp1704_charger.c
-> > > b/drivers/power/isp1704_charger.c index fc04d19..db96778
-> > > 100644
-> > > --- a/drivers/power/isp1704_charger.c
-> > > +++ b/drivers/power/isp1704_charger.c
-> > > @@ -28,6 +28,8 @@
-> > >=20
-> > >  #include <linux/platform_device.h>
-> > >  #include <linux/power_supply.h>
-> > >  #include <linux/delay.h>
-> > >=20
-> > > +#include <linux/of.h>
-> > > +#include <linux/of_gpio.h>
-> > >=20
-> > >  #include <linux/usb/otg.h>
-> > >  #include <linux/usb/ulpi.h>
-> > >=20
-> > > @@ -89,8 +91,8 @@ static void
-> > > isp1704_charger_set_power(struct isp1704_charger *isp,
-> > > bool on) {
-> > >=20
-> > >  	struct isp1704_charger_data	*board =3D
-> > >=20
-> > > isp->dev->platform_data;
-> > >=20
-> > > -	if (board && board->set_power)
-> > > -		board->set_power(on);
-> > > +	if (board)
-> > > +		gpio_set_value(board->enable_gpio, on);
-> > >=20
-> > >  }
-> >=20
-> > You need to check if enable_gpio in board data was defined
-> > or not.
->=20
-> The device is not successful probed without valid enable_gpio.
->=20
-> -- Sebastian
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: David Daney <david.daney@cavium.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Francois Bedard <fbedard@synopsys.com>
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arc/Kconfig      | 1 +
+ scripts/sortextable.c | 5 +++++
+ 2 files changed, 6 insertions(+)
 
-Then, OK.
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index 91dbb2757afd..080580216301 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -8,6 +8,7 @@
+ 
+ config ARC
+ 	def_bool y
++	select BUILDTIME_EXTABLE_SORT
+ 	select CLONE_BACKWARDS
+ 	# ARC Busybox based initramfs absolutely relies on DEVTMPFS for /dev
+ 	select DEVTMPFS if !INITRAMFS_SOURCE=""
+diff --git a/scripts/sortextable.c b/scripts/sortextable.c
+index 7c2310c5b996..e3fb1c36ed0f 100644
+--- a/scripts/sortextable.c
++++ b/scripts/sortextable.c
+@@ -31,6 +31,10 @@
+ #include <tools/be_byteshift.h>
+ #include <tools/le_byteshift.h>
+ 
++#ifndef EM_ARCOMPACT
++#define EM_ARCOMPACT	93
++#endif
++
+ #ifndef EM_AARCH64
+ #define EM_AARCH64	183
+ #endif
+@@ -244,6 +248,7 @@ do_file(char const *const fname)
+ 	case EM_S390:
+ 		custom_sort = sort_relative_table;
+ 		break;
++	case EM_ARCOMPACT:
+ 	case EM_ARM:
+ 	case EM_AARCH64:
+ 	case EM_MIPS:
+-- 
+1.8.1.2
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1397715.gDSUgNYlmo
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlKFwv4ACgkQi/DJPQPkQ1JKvwCfftQMP0wzZ0b7Y9hoA5FRDhxg
-HYcAnA8cdZf1SD+3XcWHIEDh6WpP+DNZ
-=aF0P
------END PGP SIGNATURE-----
-
---nextPart1397715.gDSUgNYlmo--
