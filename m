@@ -1,119 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3KOMMM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 07:12:12 -0500
-Received: from mail.southpole.se ([37.247.8.11]:45861 "EHLO mail.southpole.se"
+	id S1752610Ab3KOMN6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 07:13:58 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:4156 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750861Ab3KOML6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 07:11:58 -0500
-Message-ID: <52860FC1.6050500@southpole.se>
-Date: Fri, 15 Nov 2013 13:12:49 +0100
-From: Jonas Bonn <jonas@southpole.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1750861Ab3KOMNr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 07:13:47 -0500
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+From: "Hante Meuleman" <meuleman@broadcom.com>
+To: "Geyslan G. Bem" <geyslan@gmail.com>
+cc: "Brett Rudley" <brudley@broadcom.com>,
+        "Arend Van Spriel" <arend@broadcom.com>,
+        "Franky Lin" <frankyl@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Pieter-Paul Giesberts" <pieterpg@broadcom.com>,
+        "Piotr Haber" <phaber@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        brcm80211-dev-list <brcm80211-dev-list@broadcom.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] brcmfmac: fix possible memory leak
+Thread-Topic: [PATCH] brcmfmac: fix possible memory leak
+Thread-Index: AQHO4fpMK2ChQlgc2UWX5OSdFp3HBpomMogA
+Date: Fri, 15 Nov 2013 12:13:37 +0000
+Message-ID: <F51492713EF10846800D8C0ED37A7DCE0186947A@SJEXCHMB15.corp.ad.broadcom.com>
+References: <1384516475-26589-1-git-send-email-geyslan@gmail.com>
+In-Reply-To: <1384516475-26589-1-git-send-email-geyslan@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
 MIME-Version: 1.0
-To: Olof Kindgren <olof.kindgren@gmail.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Mehall <contact@kevinmehall.net>, linux <linux@openrisc.net>
-Subject: Re: [ORLinux] [PATCH] openrisc: Add DTS and defconfig for DE0-Nano
-References: <1384029451-16555-1-git-send-email-geert@linux-m68k.org> <5285EE5A.1070202@southpole.se> <CAMuHMdWA-9ax=NG_d0tyfzY3+42Ka7_r+jTeF-m5oW0eV8t1=g@mail.gmail.com> <5285FE1D.3020800@southpole.se> <CAKaYPCNqzYcSyTUjjb9H3naErjzqjLDBthE2xfQ98j-YOzQWwg@mail.gmail.com>
-In-Reply-To: <CAKaYPCNqzYcSyTUjjb9H3naErjzqjLDBthE2xfQ98j-YOzQWwg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Assp-Version: 2.3.3(13276) on assp.southpole.se
-X-Assp-ID: assp.southpole.se 17514-10313
-X-Assp-Session: B709D10 (mail 1)
-X-Assp-Client-TLS: yes
-X-Assp-Server-TLS: yes
+X-WSS-ID: 7E98D0691508419282-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 12:39 PM, Olof Kindgren wrote:
-> 2013/11/15 Jonas Bonn <jonas@southpole.se>
->
->> On 11/15/2013 11:22 AM, Geert Uytterhoeven wrote:
->>
->>> This should probably be "altera,de0_nano".  We also need to put a version
->>>>
->>>
->>> "terasic,de0_nano"? The board says "Designed and manufactured by Terasic".
->>> Hmm, the sticker on the box says "Altera DE0-Nano".
->>>
->>
->> Good question...
->>
->>
->>
-> terasic makes more sense than Altera. Altera just provides one of the
-> components on the board
+Good find, wrong solution. The chanspecs is a temporarily variable which should be freed when exiting the function. Not only when there is an error. I personally would have preferred just a  free at the end of the " if (request->n_channels) {". So something like this:
 
-OK, terasic is probably better then.
+		}
+		err = brcmf_p2p_escan(p2p, num_nodfs, chanspecs, search_state,
+				      action, P2PAPI_BSSCFG_DEVICE);
++		kfree(chanspecs);
+	}
 
->
->
->>
->>>> Version number needed.  OpenCores wanted "projectname-rtlsvn###" where
->>>> ###
->>>> is the SVN commit number of the RTL directory in the project's source
->>>> repository.
->>>>
->>>
->>> That's gonna need some information diving, as Stefan's orpsoc git
->>> repositories
->>> only contains references to orpsocv2 git-svn-ids, not the svn ids of
->>> the original
->>> component repositories.
->>>
->>
->> Stefan?  Where's the "official" home of these cores nowadays?  Have they
->> been modified since they were copied from OpenCores into orpsocv2?
->>
->>
-> Most cores are fetched directly from OpenCores SVN. Out of these, some are
-> patched on the fly by ORPSoC before they are being built. Most of the new
-> cores are only available on github
-
-The version number is important in order to ensure _driver_ 
-compatibility.  As long as the patches don't make changes that requires 
-changes to the Linux driver then it's OK to just put the SVN version 
-number on them.  If incompatible changes are being made, then we really 
-need to find a "home" for these cores so that we can manage their 
-version numbers in some way.
-
->
-> More generally, can Linux use out-of-tree DTS files in an easy way? It's
-> handy to have them in the kernel, but the best fit might actually be to put
-> them in the corresponding orpsocv3 system directory. That would also make
-> it easier to have separate device trees for differently configured FPGAs
-> (they are reprogrammable after all).
-
-Yes, the DTS files don't really belong in the kernel tree at all.  They 
-belong "near the hardware".  For these FPGA projects it definitely makes 
-sense to keep (or automatically generate) the DTS files in the RTL build 
-system, i.e. orpsoc.
-
-We generally build the DTB into the kernel image itself, but that's not 
-really necessary.  You just need to get the DTB into memory and pass the 
-kernel a pointer to it.  If you can find some way to build the DTB into 
-the FPGA image (block RAM?) then you've got a self-describing HW image: 
-  have the OpenRISC core initialize itself with r3 containing the 
-address of the DTB and jump to the kernel entry point (reset vector) and 
-everything should just work.  If you put device tree logic into newlib 
-as well then you can use this HW description for (other) bare metal 
-apps, as well.
-
-The device tree compiler is in the Linux kernel tree... but it's usable 
-outside of the Linux build system, as well.  You'll find the binary in 
-script/dtc/dtc in the kernel tree... run it with --help to get an idea 
-of how it's used.  It really isn't supposed to have anything to do with 
-Linux at all; it's a generic tool for a generic HW description.
-
-/Jonas
+In this case the pointer doesn't have to be initialized to NULL.
 
 
->
->
-> //Olof
->
+Regards,
+Hante
+
+-----Original Message-----
+From: Geyslan G. Bem [mailto:geyslan@gmail.com] 
+Sent: vrijdag 15 november 2013 12:54
+To: geyslan@gmail.com
+Cc: Brett Rudley; Arend Van Spriel; Franky Lin; Hante Meuleman; John W. Linville; Pieter-Paul Giesberts; Piotr Haber; linux-wireless@vger.kernel.org; brcm80211-dev-list; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: [PATCH] brcmfmac: fix possible memory leak
+
+In case of error free 'chanspecs'.
+
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ drivers/net/wireless/brcm80211/brcmfmac/p2p.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+index d7a9745..aea2c2e 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+@@ -771,7 +771,7 @@ static s32 brcmf_p2p_run_escan(struct brcmf_cfg80211_info *cfg,
+ 	struct brcmf_cfg80211_vif *vif;
+ 	struct net_device *dev = NULL;
+ 	int i, num_nodfs = 0;
+-	u16 *chanspecs;
++	u16 *chanspecs = NULL;
+ 
+ 	brcmf_dbg(TRACE, "enter\n");
+ 
+@@ -825,8 +825,10 @@ static s32 brcmf_p2p_run_escan(struct brcmf_cfg80211_info *cfg,
+ 				      action, P2PAPI_BSSCFG_DEVICE);
+ 	}
+ exit:
+-	if (err)
++	if (err) {
+ 		brcmf_err("error (%d)\n", err);
++		kfree(chanspecs);
++	}
+ 	return err;
+ }
+ 
+-- 
+1.8.4.2
+
+
+
