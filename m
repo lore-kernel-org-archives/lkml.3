@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289Ab3KOL1p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 06:27:45 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:49000 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951Ab3KOL1i (ORCPT
+	id S1758359Ab3KOL16 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 06:27:58 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50142 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757907Ab3KOL1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 06:27:38 -0500
-Date: Fri, 15 Nov 2013 12:27:35 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] panic: setup panic_timeout early
-Message-ID: <20131115112735.GA19004@gmail.com>
-References: <1384180814-21823-1-git-send-email-felipe.contreras@gmail.com>
- <20131113000358.GA2420@gmail.com>
- <CAMP44s17p0ZpFx0Y2E_K7Oq9c4tk2J+9uXRWDYChAD-yM-4JjQ@mail.gmail.com>
+	Fri, 15 Nov 2013 06:27:49 -0500
+Date: Fri, 15 Nov 2013 11:26:50 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Tony Lindgren <tony@atomide.com>, Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Subject: Re: [PATCH 2/2] dt: binding documentation for isp1704 charger
+Message-ID: <20131115112650.GF1709@e106331-lin.cambridge.arm.com>
+References: <1384432734-1490-1-git-send-email-sre@debian.org>
+ <1384432734-1490-2-git-send-email-sre@debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMP44s17p0ZpFx0Y2E_K7Oq9c4tk2J+9uXRWDYChAD-yM-4JjQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1384432734-1490-2-git-send-email-sre@debian.org>
+Thread-Topic: [PATCH 2/2] dt: binding documentation for isp1704 charger
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Felipe Contreras <felipe.contreras@gmail.com> wrote:
-
-> On Tue, Nov 12, 2013 at 6:03 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> >> +static int __init set_panic_timeout(char *val)
-> >> +{
-> >> +     long timeout;
-> >> +     int ret;
-> >> +
-> >> +     ret = kstrtol(val, 0, &timeout);
-> >> +     if (ret < 0)
-> >> +             return ret;
-> >> +
-> >> +     panic_timeout = timeout;
-> >> +     return 0;
-> >> +}
-> >
-> > I think the type of the 'timeout' local variable should match the type of
-> > 'panic_timeout' (which is 'int', not 'long').
+On Thu, Nov 14, 2013 at 12:38:54PM +0000, Sebastian Reichel wrote:
+> Add devicetree binding documentation for isp1704-charger.
 > 
-> So you would rather have this?
+> Signed-off-by: Sebastian Reichel <sre@debian.org>
+> ---
+>  Documentation/devicetree/bindings/power/isp1704.txt | 17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/power/isp1704.txt
 > 
->   kstrtol(val, 0, (long *)&timeout);
-> 
-> Couldn't that potentially write the value beyond the memory 
-> allocated to 'timeout'?
+> diff --git a/Documentation/devicetree/bindings/power/isp1704.txt b/Documentation/devicetree/bindings/power/isp1704.txt
+> new file mode 100644
+> index 0000000..bbeec11
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/power/isp1704.txt
+> @@ -0,0 +1,17 @@
+> +Binding for NXP ISP1704 USB Charger Detection
+> +
+> +Required properties:
+> +- compatible: Should contain one of the following:
+> + * "nxp,isp1704"
+> +- nxp,enable-gpio: Should contain a phandle to the
 
-No, casting that to 'long *' is actively wrong, I'd use a
-string -> integer conversion method that deals with ints,
-not longs, such as kstrtoint().
+Nit: phandle + gpio-specifier
 
-Thanks,
+Otherwise this looks fine.
 
-	Ingo
+Mark.
