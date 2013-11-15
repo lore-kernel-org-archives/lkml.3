@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab3KONrd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:47:33 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:57594 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab3KONrY (ORCPT
+	id S1752809Ab3KONrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 08:47:43 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:59043 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab3KONr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:47:24 -0500
+	Fri, 15 Nov 2013 08:47:29 -0500
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
         zohar@us.ibm.com, d.kasatkin@samsung.com, james.l.morris@oracle.com,
-        Roberto Sassu <roberto.sassu@polito.it>
-Subject: [PATCH 0/6] ima: fixes for the new template management mechanism
-Date: Fri, 15 Nov 2013 14:45:38 +0100
-Message-Id: <1384523146-9290-1-git-send-email-roberto.sassu@polito.it>
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH 1/6] ima: change the default hash algorithm to SHA1 in ima_eventdigest_ng_init()
+Date: Fri, 15 Nov 2013 14:45:39 +0100
+Message-Id: <1384523146-9290-2-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1384523146-9290-1-git-send-email-roberto.sassu@polito.it>
+References: <1384523146-9290-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----14E65DC0B285C3136B1790BB0674AC1D"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----912ECA0033307D608F90927AE2FE486F"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------14E65DC0B285C3136B1790BB0674AC1D
+------912ECA0033307D608F90927AE2FE486F
 
-Hi everyone
+Replace HASH_ALGO__LAST with HASH_ALGO_SHA1 as the initial value of
+the hash algorithm so that the prefix 'sha1:' is added to violation
+digests.
 
-this patch set fixes some issues in the new template management mechanism.
-In particular, first four patches are simple bug fixes, explained in the patch
-description, while last two restore the original IMA behavior when producing
-a measurement entry with the old 'ima' template'. In respect to the behavior
-adopted for newly introduced templates ('ima-ng' and 'ima-sig'), where
-the total template length and the field length are sent through the
-'binary_runtime_measurements' interface and the latter information is included
-in the calculation of the template digest, for the old 'ima' template it is
-necessary to handle the following exceptions:
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+---
+ security/integrity/ima/ima_template_lib.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- - the event digest field length is NOT sent through the userspace interface
-   and is NOT included in the template digest calculation;
- - the event name field length is sent through the userspace interface
-   but is NOT included in the template digest calculation.
-
-
-Regards
-
-Roberto Sassu
-
-
-Roberto Sassu (6):
-  ima: change the default hash algorithm to SHA1 in
-    ima_eventdigest_ng_init()
-  ima: pass HASH_ALGO__LAST as hash algo in ima_eventdigest_init()
-  ima: remove unneeded size_limit argument from
-    ima_eventdigest_init_common()
-  ima: check result of crypto_shash_update() in
-    ima_calc_field_array_hash_tfm
-  ima: do not include field length in template digest calc for ima
-    template
-  ima: do not send field length to userspace for digest of ima template
-
- security/integrity/ima/ima.h              |  6 ++++--
- security/integrity/ima/ima_api.c          |  1 +
- security/integrity/ima/ima_crypto.c       | 17 ++++++++++++-----
- security/integrity/ima/ima_fs.c           | 14 +++++++++++---
- security/integrity/ima/ima_template_lib.c | 24 +++++++++++++-----------
- 5 files changed, 41 insertions(+), 21 deletions(-)
-
+diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
+index 6d66ad6..c2ba481 100644
+--- a/security/integrity/ima/ima_template_lib.c
++++ b/security/integrity/ima/ima_template_lib.c
+@@ -251,7 +251,7 @@ int ima_eventdigest_ng_init(struct integrity_iint_cache *iint,
+ 			    struct evm_ima_xattr_data *xattr_value,
+ 			    int xattr_len, struct ima_field_data *field_data)
+ {
+-	u8 *cur_digest = NULL, hash_algo = HASH_ALGO__LAST;
++	u8 *cur_digest = NULL, hash_algo = HASH_ALGO_SHA1;
+ 	u32 cur_digestsize = 0;
+ 
+ 	/* If iint is NULL, we are recording a violation. */
 -- 
 1.8.1.4
 
 
-------14E65DC0B285C3136B1790BB0674AC1D
+------912ECA0033307D608F90927AE2FE486F
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -110,17 +94,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMTUxMzQ1NDZaMCMGCSqG
-SIb3DQEJBDEWBBROddF/9oiDX2MKFGFPvVpXltZv3DB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMTUxMzQ1NThaMCMGCSqG
+SIb3DQEJBDEWBBSy2HPwukiqtb/Bg1y+fa7qF9Wf9jB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCTdlzFENSZvCeTcH0XhcUhQCMV
-Re2Oyx24uAacLmoijf+P8czsjJlweAZ5egjZ3L3FyoZv1ugSoi+Zpkm1vgadfDHs
-lrJb97HYkG5wlGUrVGGfuqT+2NLSxPOIJe4lPYhao1bcHCEs0a2goSS7fOTHQqaO
-4ZBKQCkHrDrDudZUboglFOahxj5oV1jqD/dBv7IKtd6nkOLwtjxiQisx2Q8iGvDY
-cSGC0s46ff27QVWK+VzL+OeVWXAnFmu9GJ4yBDstvPsF8Whe32xJkOxAhavDC7FM
-qbKb/jCBoHlR3d5Z+gpCU1rmDNRLMq9iveBgVtfA/4NBGckD50mgxzJj/YTV
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBj1KH2gb2SGzM8KqbNIK3Vs43F
+Fle5wPxNqHk0tmcwAjLDNRdb7t1XY7WaixieqtEhDIqiZYT78kBVpKWQSbEEcRp/
+VM+MKAndkJnA83F72q55HeHRJD1QVDHVpni4mEiPjfg7zRjj32ufP0M2eo30NAGT
+9C9FuduHVIel2mxl4gHLN0mGLgzfgL6CzA2f/bPgNTVqD0WwqXeXjZbKDDFW5rxj
+arEMUOXzeoAb0DpfI10hSr3SrpKZ6zHvt0AMeQFOzV3ZI73YJL4Im61naSH89GrQ
+hKh8q6UZiBcRN4juV5FXfZl4I+YiyLsN2K/spmABBXoIB0db/luKUktwN52g
 
-------14E65DC0B285C3136B1790BB0674AC1D--
+------912ECA0033307D608F90927AE2FE486F--
 
 
