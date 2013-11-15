@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab3KOVES (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 16:04:18 -0500
-Received: from mms3.broadcom.com ([216.31.210.19]:2768 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751352Ab3KOVEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 16:04:10 -0500
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-From: "Markus Mayer" <markus.mayer@linaro.org>
-To: "Wim Van Sebroeck" <wim@iguana.be>, "Guenter Roeck" <linux@roeck-us.net>,
-        "Christian Daudt" <bcm@fixthebug.org>
-cc: "Linaro Patches" <patches@linaro.org>,
-        "Matt Porter" <matt.porter@linaro.org>,
-        "Linux Watchdog List" <linux-watchdog@vger.kernel.org>,
-        "ARM Kernel List" <linux-arm-kernel@lists.infradead.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Markus Mayer" <markus.mayer@linaro.org>
-Subject: [PATCH v2 2/2] ARM: bcm281xx: watchdog configuration
-Date: Fri, 15 Nov 2013 12:58:01 -0800
-Message-ID: <1384549081-9571-3-git-send-email-markus.mayer@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1384549081-9571-1-git-send-email-markus.mayer@linaro.org>
-References: <1384549081-9571-1-git-send-email-markus.mayer@linaro.org>
+	id S1752872Ab3KOVTW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 16:19:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36092 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab3KOVTQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 16:19:16 -0500
+Date: Sat, 16 Nov 2013 06:19:22 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: len.brown@intel.com, pavel@ucw.cz, rjw@rjwysocki.net,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: Re: [PATCH] power: Replace printks with pr_* routines
+Message-ID: <20131115211922.GB14410@kroah.com>
+References: <1384531806-11500-1-git-send-email-shuah.kh@samsung.com>
 MIME-Version: 1.0
-X-WSS-ID: 7E9856881SC8451387-10-01
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384531806-11500-1-git-send-email-shuah.kh@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit enables the watchdog driver for the BCM281xx family of SoCs.
+On Fri, Nov 15, 2013 at 09:10:06AM -0700, Shuah Khan wrote:
+> Replaced printks with pr_* routines. dev_* routines could have been used,
+> but chose to use pr_* to avoid breaking scripts that might be relying on
+> a specific text.
 
-Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
-Reviewed-by: Matt Porter <matt.porter@linaro.org>
----
- arch/arm/configs/bcm_defconfig |    3 +++
- 1 file changed, 3 insertions(+)
+I'd really like to switch to dev_* instead, even changing to pr_* should
+change the output prefix (if it's set for this file, odds are it isn't
+though...)
 
-diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
-index 6e49310..8b98e11 100644
---- a/arch/arm/configs/bcm_defconfig
-+++ b/arch/arm/configs/bcm_defconfig
-@@ -130,3 +130,6 @@ CONFIG_CRC_ITU_T=y
- CONFIG_CRC7=y
- CONFIG_XZ_DEC=y
- CONFIG_AVERAGE=y
-+CONFIG_WATCHDOG=y
-+CONFIG_BCM_KONA_WDT=y
-+CONFIG_BCM_KONA_WDT_DEBUG=y
--- 
-1.7.9.5
+thanks,
 
-
+greg k-h
