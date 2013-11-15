@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab3KOBXt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 20:23:49 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:50017 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab3KOBXk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 20:23:40 -0500
-Date: Fri, 15 Nov 2013 12:23:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the idle tree with the pm tree
-Message-Id: <20131115122329.1479981f032f0f863c786c84@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__15_Nov_2013_12_23_29_+1100_zRf.pr1j17pWKf6w"
+	id S1755666Ab3KOBY1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 20:24:27 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:33970 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754175Ab3KOBYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 20:24:18 -0500
+X-IronPort-AV: E=Sophos;i="4.93,703,1378828800"; 
+   d="scan'208";a="9038783"
+Message-ID: <528575EC.2030309@cn.fujitsu.com>
+Date: Fri, 15 Nov 2013 09:16:28 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [REVIEW][PATCH 1/2] userns: Better restrictions on when proc
+ and sysfs can be mounted
+References: <878uzmhkqg.fsf@xmission.com> <52749663.2000701@cn.fujitsu.com> <527C4D88.10907@cn.fujitsu.com> <87k3gigmgj.fsf@xmission.com> <5283299B.8080702@cn.fujitsu.com> <5284AF90.7060506@cn.fujitsu.com> <CALCETrXtWtF=JgiwENNzh7UZKnXijHauOQ5ZjHYxYJC-BAU5Aw@mail.gmail.com>
+In-Reply-To: <CALCETrXtWtF=JgiwENNzh7UZKnXijHauOQ5ZjHYxYJC-BAU5Aw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/15 09:13:38,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/15 09:22:28,
+	Serialize complete at 2013/11/15 09:22:28
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__15_Nov_2013_12_23_29_+1100_zRf.pr1j17pWKf6w
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/15/2013 12:54 AM, Andy Lutomirski wrote:
+> On Thu, Nov 14, 2013 at 3:10 AM, Gao feng <gaofeng@cn.fujitsu.com> wrote:
+>> On 11/13/2013 03:26 PM, Gao feng wrote:
+>>> On 11/09/2013 01:42 PM, Eric W. Biederman wrote:
+>>>> Right now I would rather not have the empty directory exception than
+>>>> remove this code.
+>>>>
+>>>> The test is a little trickier to write than it might otherwise be
+>>>> because /proc and /sys tend to be slightly imperfect filesystems.
+>>>>
+>>>> I think the only way to really test that is to call readdir on the
+>>>> directory itself :(  I don't like that thought.
+>>>>
+>>>> I don't know what I was thinking when I wrote that test but I definitely
+>>>> goofed up.  Grr!
+>>>>
+>>>> I can certainly filter out any directory with nlink > 2.  That would be
+>>>> an easy partial step forward.
+>>>>
+>>>> The real question though is how do I detect directories it is safe to
+>>>> mount on where there will not be files in them.  I can't call iterate
+>>>> with the namespace_lock held so things are a bit tricky.
+>>>>
+>>>
+>>> I know this problem is not easy to be resolved. why not let the user
+>>> make the decision?  maybe we can introduce a new mount option MS_LOCK,
+>>> if user wants to use mount to hide something, he should use mount with
+>>> option MS_LOCK. so the unpriviged user can't umount this filesystem and
+>>> fail to mount the filesystem if one of it's child mount is mounted with
+>>> MS_LOCK option otherwise he use MS_REC too.
+>>>
+>>
+>> Something like this.
+>>
+>> From 437f33ea366623c7a9d557b2e84cae424876a44f Mon Sep 17 00:00:00 2001
+>> From: Gao feng <gaofeng@cn.fujitsu.com>
+>> Date: Wed, 13 Nov 2013 16:06:46 +0800
+>> Subject: [PATCH] userns: introduce new mount option MS_LOCK
+>>
+>> After commit 5ff9d8a65ce80efb509ce4e8051394e9ed2cd942
+>> vfs: Lock in place mounts from more privileged users,
+>> in userns, the mounts of child mntns which copied from
+>> parent mntns is locked and user has no rights to umount/move
+>> them, it's too strict.
+>>
+>> The core purpose of above commit is trying to prevent
+>> unprivileged user from accessing files hidden by mount.
+>> This patch introduces a new mount option MS_LOCK, this
+>> gives user the capable to mount filesystem as the type
+>> of lock if he wants to use mount to hide something.
+>>
+> 
+> This is bad -- if something was secure in old kernels, it needs to
+> stay secure.  If you had MS_NOT_A_LOCK, that would be okay, but it
+> might not solve your problem.
+> 
 
-Hi Len,
+what you mean old kernels here? I saw patch "vfs: Lock in place mounts from more privileged users"
+is merged into upstream in linux 3.12-rc1, this is not very old. I think there
+are not many userspace processes rely on this feature.
 
-Today's linux-next merge of the idle tree got a conflict in
-drivers/idle/intel_idle.c between commit fab04b2208dd ("intel_idle:
-Support Intel Atom Processor C2000 Product Family") from the pm tree and
-commit 0654c50d7a0b ("intel_idle: Support Intel Atom Processor C2000
-Product Family") from the idle tree.
+If user think host needs to be secure, he should use MS_LOCK to mount filesystem.
+we can't make decison for user.
 
-I fixed it up (I used the version from the pm tree since it was much
-newer) and can carry the fix as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__15_Nov_2013_12_23_29_+1100_zRf.pr1j17pWKf6w
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJShXeVAAoJEMDTa8Ir7ZwVahQP/3sLka1yrejW+g8nIi0FiYOc
-8a7EWUIfsh3DBbYTkO5aNh3StWAzby5y5LXQsJwy4DB1akI29yEKkTcxYfLyKejM
-9oBSVAEcSIAs6O36AqD9ySu0XJAHfe11KxC7UsnSXzLEyegy1O7oiWrt0/u9uS28
-EB1+9L7o6SnAtBs2N0elU4iZZYk5kTeyRtIuIjtrhFALYARdLr8aRhPdgE5qInjG
-XMNimRAD5rOJS/tTN4h2P/q/bONOJs8+Jztbr/FFGrw2JMEhp0R41E78Vu4I5UJ6
-5OKmrruZ8vJOSHgZKLhv+qrqvtsVzWWjX6UTyQBK93kIkOs0Bqa+pYtPb6lZuveM
-m+C2LS6NiUd6TxJOfI3/IJ6aW9PTInxyOXbqHny6vNno/3tii6eK07W4nwHPUFl0
-LCALdzGcPA3BSXUuAvpCSh9tQIhGiuom8+EtxCV9QCWoKxeeglgxAWTz4NqkxFRH
-clhF0h1HdRUjD+KXMwUSyJ32pdXy4eIMfmYDEvtfBgTrrWaZ21i0ZrffmcwrQBR6
-Foi2CeC4irm1h6/h8sZe81VaeR2ucLhcwosw1kj0CqGlBL3wVZBdFsi5202WbwVI
-fV/XilhGL6NUqEWK+2tuO0V9/7su/sc8Wj0MV5DaZ8zJiv2h8sKduycit/HVi8Zt
-OBfueQR1dYH8pOtU5r7h
-=Gx15
------END PGP SIGNATURE-----
-
---Signature=_Fri__15_Nov_2013_12_23_29_+1100_zRf.pr1j17pWKf6w--
+Thanks
