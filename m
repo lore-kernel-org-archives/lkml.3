@@ -1,32 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab3KOOZN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:25:13 -0500
-Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.106]:65005
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751407Ab3KOOZG convert rfc822-to-8bit (ORCPT
+	id S1753467Ab3KOO0c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:26:32 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:39846 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138Ab3KOO0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:25:06 -0500
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 15 Nov 2013 09:26:25 -0500
+From: Peter Wu <lekensteyn@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [REGRESSION] coredumps truncated after "new helper: dump_align()"
+Date: Fri, 15 Nov 2013 15:26:10 +0100
+Message-ID: <11835033.kIc1RH0rS1@al>
+User-Agent: KMail/4.11.3 (Linux/3.12.0-1-custom; KDE/4.11.3; x86_64; ; )
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: XMAS PROMOTION
-To: Recipients <90@MoorePeter382.onmicrosoft.com>
-From: Peter Moore <90@MoorePeter382.onmicrosoft.com>
-Date: Fri, 15 Nov 2013 19:39:27 +0530
-Reply-To: <qatarfoundationwin@hotmail.com>
-Message-ID: <ad09de65-4f21-40ce-a66c-165701eafeac@HKXPR01MB006.apcprd01.prod.exchangelabs.com>
-X-Originating-IP: [180.215.45.240]
-X-ClientProxiedBy: BLUPR01CA006.prod.exchangelabs.com (10.255.223.164) To
- HKXPR01MB006.apcprd01.prod.exchangelabs.com (10.242.98.16)
-X-Forefront-PRVS: 0031A0FFAF
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(19580405001)(80022001)(46102001)(83322001)(56776001)(23756003)(74662001)(66066001)(47446002)(74502001)(47976001)(19580395003)(50986001)(65816001)(31686002)(81342001)(43066001)(54316002)(87266001)(80976001)(4396001)(17643785005)(64872004)(74366001)(87976001)(221733001)(49866001)(81816001)(47736001)(74316001)(81686001)(81542001)(558084003)(56816003)(50466002)(76176001)(77982001)(51856001)(79102001)(53256004)(54356001)(42186004)(76796001)(74876001)(76786001)(74706001)(33646001)(83072001)(76482001)(69226001)(77096001)(59766001)(63696002)(85306002)(47776003)(84722001);DIR:OUT;SFP:1501;SCL:5;SRVR:HKXPR01MB006;H:[180.215.45.240];CLIP:180.215.45.240;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: MoorePeter382.onmicrosoft.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONGRATULATIONS! YOU HAVE BEEN AWARDED 1 MILLION POUNDS FROM QATAR
-FOUNDATION XMAS PROMOTION..CONTACT FOR MORE INFORMATION.qatarfoundationwin@hotmail.com
+Hi Al,
+
+Somewhere in the merge window of 3.13, coredumps appear truncated.
+Instead of 319488 bytes, I get 868 bytes (tested with x86_64 only).
+
+The latest Linus' master (v3.12-9579-g049ffa8) is still affected.
+Bisection leads to:
+
+commit 22a8cb8248ba5d340307ba72432253b1dbdb5cf7
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Tue Oct 8 11:05:01 2013 -0400
+
+    new helper: dump_align()
+    
+    dump_skip to given alignment...
+    
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+:040000 040000 880920de653955485453c8cc11045bb09e2934f7 f8b348d32b59ae7a16cbc3eb2a6319f4df0210eb M      arch
+:040000 040000 eaeffe2378806e95d23b3f3a9dc0fa8f078d6052 88866abde93296a05b4adda869280bc05403936f M      fs
+:040000 040000 218263e01dd7473998c54a5a68ed5ae072854d24 ff531dce919862b662fef19a9a049f0de3db38ce M      include
+
+I first noticed this bug on my laptop (v3.12-7033-g42a2d92) and
+reproduced this bug in a QEMU virtual machine too. If you want, I
+can also provide the git bisect script that starts QEMU and tests
+the serial output. That allows a kernel to be verified in two seconds
+(minus build times).
+
+Regards,
+Peter
