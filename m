@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab3KOGY3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 01:24:29 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:47087 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab3KOGYV (ORCPT
+	id S1754680Ab3KOGZJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 01:25:09 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:47242 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472Ab3KOGZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 01:24:21 -0500
-Date: Fri, 15 Nov 2013 07:24:17 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: jerry.hoemann@hp.com
-Cc: Pekka Enberg <penberg@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "list@ebiederm.org:DOCUMENTATION <linux-doc@vger.kernel.org>,
-	list@ebiederm.org:MEMORY MANAGEMENT <linux-mm@kvack.org>," 
-	<linux-doc@vger.kernel.org>,
-        linux-efi@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-Message-ID: <20131115062417.GB9237@gmail.com>
-References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com>
- <d73ccce9-6a0d-4470-bda3-f0c6eb96b5e4@email.android.com>
- <20131113224503.GB25344@anatevka.fc.hp.com>
- <52840206.5020006@zytor.com>
- <20131113235708.GC25344@anatevka.fc.hp.com>
- <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
- <20131114180455.GA32212@anatevka.fc.hp.com>
- <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
- <20131115005049.GJ5116@anatevka.fc.hp.com>
+	Fri, 15 Nov 2013 01:25:05 -0500
+Date: Fri, 15 Nov 2013 15:24:58 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Shawn Bohrer <shawn.bohrer@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Markus Blank-Burian <burian@muenster.de>
+Subject: Re: 3.10.16 cgroup_mutex deadlock
+Message-ID: <20131115062458.GA9755@mtj.dyndns.org>
+References: <20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com>
+ <52820030.6000806@huawei.com>
+ <20131112143147.GB6049@dhcp22.suse.cz>
+ <20131112155530.GA2860@sbohrermbp13-local.rgmadvisors.com>
+ <20131112165504.GF6049@dhcp22.suse.cz>
+ <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131115005049.GJ5116@anatevka.fc.hp.com>
+In-Reply-To: <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* jerry.hoemann@hp.com <jerry.hoemann@hp.com> wrote:
+On Thu, Nov 14, 2013 at 04:56:49PM -0600, Shawn Bohrer wrote:
+> After running both concurrently on 40 machines for about 12 hours I've
+> managed to reproduce the issue at least once, possibly more.  One
+> machine looked identical to this reported issue.  It has a bunch of
+> stuck cgroup_free_fn() kworker threads and one thread in cpuset_attach
+> waiting on lru_add_drain_all().  A sysrq+l shows all CPUs are idle
+> except for the one triggering the sysrq+l.  The sysrq+w unfortunately
+> wrapped dmesg so we didn't get the stacks of all blocked tasks.  We
+> did however also cat /proc/<pid>/stack of all kworker threads on the
+> system.  There were 265 kworker threads that all have the following
+> stack:
 
-> On Thu, Nov 14, 2013 at 08:44:04PM +0200, Pekka Enberg wrote:
-> > On Thu, Nov 14, 2013 at 8:04 PM,  <jerry.hoemann@hp.com> wrote:
-> > > Making this issue a quirk will be a lot more practical.  Its a small, focused
-> > > change whose implications are limited and more easily understood.
-> > 
-> > There's nothing practical with requiring users to pass a kernel option
-> > to make kdump work.  It's a workaround, sure, but it's not a proper
-> > fix.
-> 
-> One already has to specify command line arguments to enable kdump. 
-> See "crashkernel=" in Documentation/kernel-parameters.txt.
+Umm... so, WQ_DFL_ACTIVE is 256.  It's just an arbitrarily largish
+number which is supposed to serve as protection against runaway
+kworker creation.  The assumption there is that there won't be a
+dependency chain which can be longer than that and if there are it
+should be separated out into a separate workqueue.  It looks like we
+*can* have such long chain of dependency with high enough rate of
+cgroup destruction.  kworkers trying to destroy cgroups get blocked by
+an earlier one which is holding cgroup_mutex.  If the blocked ones
+completely consume max_active and then the earlier one tries to
+perform an operation which makes use of the system_wq, the forward
+progress guarantee gets broken.
 
-That option is already a usability barrier. Adding yet another 
-usability barrier improves things how?
+So, yeah, it makes sense now.  We're just gonna have to separate out
+cgroup destruction to a separate workqueue.  Hugh's temp fix achieved
+about the same effect by putting the affected part of destruction to a
+different workqueue.  I probably should have realized that we were
+hitting max_active when I was told that moving some part to a
+different workqueue makes the problem go away.
 
-> As i said in an earlier mail we are working w/ distros. [...]
+Will send out a patch soon.
 
-The point being?
+Thanks.
 
-> [...]  distros can and do specify lots of interesting command line 
-> arguments for their systems.  Distros have tools for configuring 
-> kdump. User must already use these tools or manually edit multiple 
-> config files, to get kdump to work.  I would work with distros to 
-> help integrate this change into their tools.
-
-Here you describe a method that has already successfully cut the kdump 
-user base to a fraction of its potential size. Why should we assist to 
-that effort of engineered obscurity?
-
-> As i said in earlier mail, i am willing to change implementation to 
-> some type of black/white listing.
-
-Is it possible to fix it the way hpa suggested?
-
-Thanks,
-
-	Ingo
+-- 
+tejun
