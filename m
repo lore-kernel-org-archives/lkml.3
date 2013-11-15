@@ -1,86 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab3KONkf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:40:35 -0500
-Received: from dkim2.fusionio.com ([66.114.96.54]:48952 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab3KONk0 convert rfc822-to-8bit (ORCPT
+	id S1752355Ab3KONly (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 08:41:54 -0500
+Received: from mo2.mail-out.ovh.net ([178.32.228.2]:43621 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab3KONls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:40:26 -0500
-X-ASG-Debug-ID: 1384522825-0421b57ae5ecea0001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Content-Type: text/plain; charset="utf-8"
+	Fri, 15 Nov 2013 08:41:48 -0500
+Date: Fri, 15 Nov 2013 14:44:00 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Bo Shen <voice.shen@atmel.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>, nicolas.ferre@atmel.com,
+        alexandre.belloni@free-electrons.com, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        galak@codeaurora.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v7 2/2] PWM: atmel-pwm: add device tree binding document
+Message-ID: <20131115134400.GN28304@ns203013.ovh.net>
+References: <1384509208-10762-1-git-send-email-voice.shen@atmel.com>
+ <1384509208-10762-2-git-send-email-voice.shen@atmel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-From: Chris Mason <chris.mason@fusionio.com>
-In-Reply-To: <20131115122131.3802.25439@localhost.localdomain>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-btrfs@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Mark Brown <broonie@kernel.org>
-References: <20131114171952.3802.93244@localhost.localdomain>
- <20131115113216.GA7777@osiris>
- <20131115122131.3802.25439@localhost.localdomain>
-Message-ID: <20131115134019.3802.51473@localhost.localdomain>
-User-Agent: alot/0.3.4
-Subject: Re: [GIT PULL] Btrfs
-Date: Fri, 15 Nov 2013 08:40:19 -0500
-X-ASG-Orig-Subj: Re: [GIT PULL] Btrfs
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
-X-Barracuda-Start-Time: 1384522825
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.142337
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384509208-10762-2-git-send-email-voice.shen@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 2637983483287087923
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Chris Mason (2013-11-15 07:21:31)
-> Quoting Heiko Carstens (2013-11-15 06:32:16)
-> > On Thu, Nov 14, 2013 at 12:19:52PM -0500, Chris Mason wrote:
-> > > Hi Linus,
-> > > 
-> > > Please pull my for-linus branch:
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
-> > > 
-> > > This is our usual merge window set of bug fixes, performance
-> > > improvements and cleanups.  Miao Xie has some really nice optimizations
-> > > for writeback.
-> > > 
-> > > Josef also expanded our sanity checks quite a bit; these make up a big
-> > > chunk of the new lines.
-> > 
-> > Hmm..  b19e68439375  "btrfs: Remove redundant local zero structure" seems to
-> > use the empty_zero_page incorrectly and causes this compile warning on s390:
-> > 
-> >   CC      fs/btrfs/ioctl.o
-> > fs/btrfs/ioctl.c: In function 'btrfs_is_empty_uuid':
-> > fs/btrfs/ioctl.c:372:2: warning: passing argument 2 of 'memcmp' makes pointer from
-> >                         integer without a cast [enabled by default]
-> >   return !memcmp(uuid, empty_zero_page, BTRFS_UUID_SIZE);
-> >   ^
-> > 
-> > In fact there seem to be two more incorrect usages in the kernel. The patch
-> > below is not really tested.
+On 17:53 Fri 15 Nov     , Bo Shen wrote:
+> Add atmel pwm driver device tree binding document
 > 
-> Thanks Heiko,
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> Acked-by: Kumar Gala <galak@codeaurora.org>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+
+Best Regards,
+J.
+> ---
+> Changes in v7: None
+> Changes in v6:
+>   - New, split binding document as a separate patch
 > 
-> I'll make a new pull with the btrfs part of this.
-
-Or something slightly different ;)
-
-BUG: unable to handle kernel paging request at 0000000001ba6000
-IP: [<ffffffff812b3656>] memcmp+0xf/0x22
-
--chris
-
+> Changes in v5: None
+> Changes in v4: None
+> Changes in v3: None
+> Changes in v2: None
+> 
+>  .../devicetree/bindings/pwm/atmel-pwm.txt          |   41 ++++++++++++++++++++
+>  1 file changed, 41 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/pwm/atmel-pwm.txt b/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+> new file mode 100644
+> index 0000000..1c1a5fa
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+> @@ -0,0 +1,41 @@
+> +Atmel PWM controller
+> +
+> +Required properties:
+> +  - compatible: should be one of:
+> +    - "atmel,at91sam9rl-pwm"
+> +    - "atmel,sama5d3-pwm"
+> +  - reg: physical base address and length of the controller's registers
+> +  - #pwm-cells: Should be 3. See pwm.txt in this directory for a
+> +    description of the cells format
+> +
+> +Example:
+> +
+> +	pwm0: pwm@f8034000 {
+> +		compatible = "atmel,at91sam9rl-pwm";
+> +		reg = <0xf8034000 0x400>;
+> +		#pwm-cells = <3>;
+> +	};
+> +
+> +The following the pwm led based example:
+> +
+> +	pwm0: pwm@f8034000 {
+> +		compatible = "atmel,at91sam9rl-pwm";
+> +		reg = <0xf8034000 0x400>;
+> +		#pwm-cells = <3>;
+> +	};
+> +
+> +	pwdleds {
+> +		compatible = "pwm-leds";
+> +
+> +		d1 {
+> +			label = "d1";
+> +			pwms = <&pwm0 3 5000 0>
+> +			max-brightness = <255>;
+> +		};
+> +
+> +		d2 {
+> +			label = "d2";
+> +			pwms = <&pwm0 1 5000 1>
+> +			max-brightness = <255>;
+> +		};
+> +	};
+> -- 
+> 1.7.9.5
+> 
