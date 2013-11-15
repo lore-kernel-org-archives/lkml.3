@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab3KOQCX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 11:02:23 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:42391 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab3KOQCQ (ORCPT
+	id S1752745Ab3KOQDV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 11:03:21 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:42961 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563Ab3KOQDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 11:02:16 -0500
-Message-ID: <52864585.6030206@linaro.org>
-Date: Fri, 15 Nov 2013 18:02:13 +0200
-From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 15 Nov 2013 11:03:16 -0500
+Message-ID: <528645C1.3060601@linux.com>
+Date: Fri, 15 Nov 2013 17:03:13 +0100
+From: Levente Kurusa <levex@linux.com>
+Reply-To: Levente Kurusa <levex@linux.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] ARM: OMAP4460: cpuidle: Extend PM_OMAP4_ROM_SMP_BOOT_ERRATUM_GICD
- on cpuidle
-References: <1382467484-16957-1-git-send-email-grygorii.strashko@ti.com> <5266CCE3.1090801@ti.com> <20131114183535.GL10317@atomide.com> <20131115153608.GX10317@atomide.com>
-In-Reply-To: <20131115153608.GX10317@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: =?windows-1252?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+CC: Caizhiyong <caizhiyong@hisilicon.com>, Mark Brown <broonie@kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
+        Levente Kurusa <levex@linux.com>
+Subject: Re: [PATCH] regmap: Fix 'ret' would return an uninitialized value
+References: <C3050A4DBA34F345975765E43127F10F1C08BAEF@szxeml512-mbs.china.huawei.com>	<CAGG-pUT22xoksid-2GmJsDmVQk8gR8zHvAr=r3Z2E4BLf+1jJA@mail.gmail.com>	<5286215A.4020009@linux.com> <CAGG-pUQWnFN1pGFGw9BaE7kDt9ODfpCfmuNB1vV0Jn=mTXTVXA@mail.gmail.com>
+In-Reply-To: <CAGG-pUQWnFN1pGFGw9BaE7kDt9ODfpCfmuNB1vV0Jn=mTXTVXA@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 05:36 PM, Tony Lindgren wrote:
-> * Tony Lindgren <tony@atomide.com> [131114 10:36]:
->> * Grygorii Strashko <grygorii.strashko@ti.com> [131022 12:09]:
->>> The same workaround as ff999b8a0983ee15668394ed49e38d3568fc6859
->>> "ARM: OMAP4460: Workaround for ROM bug because of CA9 r2pX GIC ..."
->>> need to be applied not only when system is booting, but when MPUSS hits
->>> OSWR state through CPUIdle too. Without this WA the same issue is
->>> reproduced now on boards PandaES and Tablet/Blaze with SOM OMAP4460
->>> when CONFIG_CPU_IDLE is enabled.
->>> After MPUSS has enterred OSWR and waken up:
->>> - GIC distributor became disabled forever
->>> - scheduling is not performed any more
+2013-11-15 16:52 keltezéssel, Geyslan Gregório Bem írta:
+> 2013/11/15 Levente Kurusa <levex@linux.com>:
+>> 2013-11-15 14:00 keltezéssel, Geyslan Gregório Bem írta:
+>>> 2013/11/15 Caizhiyong <caizhiyong@hisilicon.com>:
+>>>> From: Cai Zhiyong <caizhiyong@huawei.com>
+>>>> Date: Mon, 11 Nov 2013 19:26:14 +0800
+>>>> Subject: [PATCH] regmap: Fix 'ret' would return an uninitialized value
+>>>>
+>>>> This patch give a warning when calling regmap_register_patch with
+>>>> parameter num_regs <= 0.
+>>>>
+>>>> When the num_regs parameter is zero and krealloc doesn't fail,
+>>>> then the code would return an uninitialized value. However,
+>>>> calling this function with num_regs == 0, would be a waste as it
+>>>> essentially does nothing.
+>>>>
+>>>> Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
+>>> Reviewed-by: Geyslan G. Bem <geyslan@gmail.com>
 >>>
->>> Cc: Kevin Hilman <khilman@linaro.org>
->>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>> Reported-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
->>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>>> Seems a good approach.
+>>>
 >>
->> Applying into omap-for-v3.13/fixes thanks.
+>> The patch doesn't apply. After manually applying this it
+>> threw a compilation error:
+>>
+>> drivers/base/regmap/regmap.c: In function ‘regmap_register_patch’:
+>> drivers/base/regmap/regmap.c:2176:6: error: expected expression before ‘)’ token
+>>
+>>
+>> Cai,
+>> You have missed the second parameter of WARN_ONCE().
+>> Please append what you'd prefer to have outputten once the condition evaluates to true.
+>>
+>> --
+>> Regards,
+>> Levente Kurusa
+> Cai, Levente,
 > 
-> Hmm looks like this breaks the build with randconfigs at least
-> with the attached .config, so dropping for now.
+> Maybe this:
+> 
+> +       if (WARN_ONCE(num_regs <= 0, "number of registers [%d] must be
+> major than 0", num_regs))
+> +               return 0;
+> +
+> 
 
-Hi Tony
-Have you forgot to attach .config?
-
-> arch/arm/mach-omap2/built-in.o: In function `omap_enter_idle_coupled':
-> :(.text+0xb48c): undefined reference to `pm44xx_errata'
-
-I assume that .config doesn't have CONFIG_SMP enabled while
-pm44xx_errata is defined in omap-smp.c.
-I think it should be a separate patch to move pm44xx_errata somewhere
-else, so this patch will remain the same.
-
-Btw, do we need omap_enter_idle_coupled() in UP?
+It is fine, but I think outputting num_regs is unnecessary.
+Also, that line is more than 80 characters, so please wrap it.
 
 -- 
-Taras Kondratiuk
+Regards,
+Levente Kurusa
