@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab3KOGtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 01:49:53 -0500
-Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:47218
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751664Ab3KOGtr (ORCPT
+	id S1754714Ab3KOGzi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 01:55:38 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:50285 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab3KOGz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 01:49:47 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1155h)
-Date: Fri, 15 Nov 2013 14:40:09 +0800
-From: Nicolin Chen <b42378@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: <timur@tabi.org>, <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
-        <linux@arm.linux.org.uk>, <ijc+devicetree@hellion.org.uk>,
-        <swarren@wwwdotorg.org>, <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>, <lgirdwood@gmail.com>
-Subject: Re: [PATCH 1/2] ARM: dts: imx: specify the value of audmux pinctrl
- instead of 0x80000000
-Message-ID: <20131115064009.GD745@MrMyself>
-References: <1384427230-979-1-git-send-email-b42378@freescale.com>
- <1384427230-979-2-git-send-email-b42378@freescale.com>
- <20131115064159.GG11014@S2101-09.ap.freescale.net>
+	Fri, 15 Nov 2013 01:55:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20131115064159.GG11014@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20131115062417.GB9237@gmail.com>
+References: <1384222558-38527-1-git-send-email-jerry.hoemann@hp.com>
+	<d73ccce9-6a0d-4470-bda3-f0c6eb96b5e4@email.android.com>
+	<20131113224503.GB25344@anatevka.fc.hp.com>
+	<52840206.5020006@zytor.com>
+	<20131113235708.GC25344@anatevka.fc.hp.com>
+	<CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
+	<20131114180455.GA32212@anatevka.fc.hp.com>
+	<CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
+	<20131115005049.GJ5116@anatevka.fc.hp.com>
+	<20131115062417.GB9237@gmail.com>
+Date: Thu, 14 Nov 2013 22:55:28 -0800
+X-Google-Sender-Auth: BxgS98HAly3yaCEfQuYoOGHdQhs
+Message-ID: <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "list@ebiederm.org:DOCUMENTATION <linux-doc@vger.kernel.org>,
+	list@ebiederm.org:MEMORY MANAGEMENT <linux-mm@kvack.org>," 
+	<linux-doc@vger.kernel.org>,
+        linux-efi@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 02:42:01PM +0800, Shawn Guo wrote:
-> On Thu, Nov 14, 2013 at 07:07:09PM +0800, Nicolin Chen wrote:
-> > We must specify the value of audmux pinctrl if we want to use pinctrl_pm().
-> > Thus change bypass value 0x80000000 to what we exactly need.
-> > 
-> > This patch also seperately unset PUE bit for TXD so that IOMUX won't pull
-> > up/down the pin after turning into tristate. When we use SSI normal mode to
-> > playback monaural audio via I2S signal, there'd be a pulled curve occur to
-> > its signal at the second slot if setting PUE bit for TXD. And it will make
-> > the second channel to play a constant noise. So by keeping the signal level
-> > in the second slot, we can get a constant high level signal (-1) or a low
-> > level one (0).
-> > 
-> > Signed-off-by: Nicolin Chen <b42378@freescale.com>
-> > ---
-> >  arch/arm/boot/dts/imx6qdl.dtsi | 22 +++++++++++-----------
-> >  1 file changed, 11 insertions(+), 11 deletions(-)
-> 
-> We have moved all pin groups settings into
-> arch/arm/boot/dts/imx6qdl-pingrp.h.  I just rebased and applied the
-> patch.  Please check my imx/dt branch and ensure I applied the changes
-> correctly.
+On Thu, Nov 14, 2013 at 10:24 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * jerry.hoemann@hp.com <jerry.hoemann@hp.com> wrote:
+>
+>> On Thu, Nov 14, 2013 at 08:44:04PM +0200, Pekka Enberg wrote:
+>> > On Thu, Nov 14, 2013 at 8:04 PM,  <jerry.hoemann@hp.com> wrote:
+>> > > Making this issue a quirk will be a lot more practical.  Its a small, focused
+>> > > change whose implications are limited and more easily understood.
+>> >
+>> > There's nothing practical with requiring users to pass a kernel option
+>> > to make kdump work.  It's a workaround, sure, but it's not a proper
+>> > fix.
+>>
+>> One already has to specify command line arguments to enable kdump.
+>> See "crashkernel=" in Documentation/kernel-parameters.txt.
+>
+>> As i said in an earlier mail we are working w/ distros. [...]
 
-Simply perfect. Thank you.
-Nicolin
+Why just asking distros to append ",high" in their installation
+program for 64bit by default?
 
----
+If they don't want to do that, you can add instruction in your product notes, to
+ask user/admin to add that if kdump fails.
 
+>
+>
+>> As i said in earlier mail, i am willing to change implementation to
+>> some type of black/white listing.
+>
+> Is it possible to fix it the way hpa suggested?
+>
 
+What is hpa's suggestion?
+
+Yinghai
