@@ -1,78 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758529Ab3KOLbc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 06:31:32 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50292 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758464Ab3KOLbX (ORCPT
+	id S1758579Ab3KOLdp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 06:33:45 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:58562 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758119Ab3KOLdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 06:31:23 -0500
-Date: Fri, 15 Nov 2013 11:31:06 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCH] rtc: rtc-ds1742: Add devicetree support
-Message-ID: <20131115113106.GG1709@e106331-lin.cambridge.arm.com>
-References: <1384432362-26102-1-git-send-email-shc_work@mail.ru>
+	Fri, 15 Nov 2013 06:33:40 -0500
+Date: Fri, 15 Nov 2013 12:32:16 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Chris Mason <chris.mason@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [GIT PULL] Btrfs
+Message-ID: <20131115113216.GA7777@osiris>
+References: <20131114171952.3802.93244@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384432362-26102-1-git-send-email-shc_work@mail.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131114171952.3802.93244@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111511-1948-0000-0000-000006E7CBB8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 12:32:42PM +0000, Alexander Shiyan wrote:
-> This patch allows the driver to be enabled with devicetree.
+On Thu, Nov 14, 2013 at 12:19:52PM -0500, Chris Mason wrote:
+> Hi Linus,
 > 
-> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-> ---
->  Documentation/devicetree/bindings/rtc/maxim,ds1742.txt | 14 ++++++++++++++
->  drivers/rtc/rtc-ds1742.c                               | 10 +++++++++-
->  2 files changed, 23 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/devicetree/bindings/rtc/maxim,ds1742.txt
+> Please pull my for-linus branch:
 > 
-> diff --git a/Documentation/devicetree/bindings/rtc/maxim,ds1742.txt b/Documentation/devicetree/bindings/rtc/maxim,ds1742.txt
-> new file mode 100644
-> index 0000000..d2ddd71
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/rtc/maxim,ds1742.txt
-> @@ -0,0 +1,14 @@
-> +* Maxim (Dallas) DS1742/DS1743 Real Time Clock
-> +
-> +Register a Maxim DS1742-compatible RTC.
+> git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+> 
+> This is our usual merge window set of bug fixes, performance
+> improvements and cleanups.  Miao Xie has some really nice optimizations
+> for writeback.
+> 
+> Josef also expanded our sanity checks quite a bit; these make up a big
+> chunk of the new lines.
 
-The driver registration has nothing to do with the binding.
+Hmm..  b19e68439375  "btrfs: Remove redundant local zero structure" seems to
+use the empty_zero_page incorrectly and causes this compile warning on s390:
 
-Either add a brief description of the device or remove this line
-entirely.
+  CC      fs/btrfs/ioctl.o
+fs/btrfs/ioctl.c: In function 'btrfs_is_empty_uuid':
+fs/btrfs/ioctl.c:372:2: warning: passing argument 2 of 'memcmp' makes pointer from
+                        integer without a cast [enabled by default]
+  return !memcmp(uuid, empty_zero_page, BTRFS_UUID_SIZE);
+  ^
 
-> +
-> +Required properties:
-> +- compatible: Should be "maxim,ds1742".
+In fact there seem to be two more incorrect usages in the kernel. The patch
+below is not really tested.
 
-s/be/contain/
 
-> +- reg: Physical base address of the RTC and length of memory
-> +  mapped region.
-> +
-> +Example:
-> +	rtc: rtc@10000000 {
-> +		compatible = "maxim,ds1742";
-> +		reg = <0x10000000 0x800>;
-> +	};
+>From c2a9d3a453629466f0528aacbc6cbecc4247cff5 Mon Sep 17 00:00:00 2001
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+Date: Fri, 15 Nov 2013 12:14:55 +0100
+Subject: [PATCH] fix empty_zero_page misusage
 
-Otherwise this binding looks fine to me, with those changes.
+The definition of empty_zero_page is architecture specific.
+It is (currently) either a character array, an unsigned long containing
+the address of the empty_zero_page, or even worse only the address
+of the struct page belonging to the empty_zero_page.
 
-Acked-by: Mark Rutland <mark.rutland@arm.com>
+So using empty_zero_page as source address to e.g. clear something may
+give random results.
+ZERO_PAGE() however returns across all architectures the pointer to
+the struct page belonging to the empty_zero_page.
 
-Mark.
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ drivers/spi/spi-fsl-cpm.c | 3 ++-
+ fs/btrfs/ioctl.c          | 4 +++-
+ virt/kvm/kvm_main.c       | 5 +++--
+ 3 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/spi/spi-fsl-cpm.c b/drivers/spi/spi-fsl-cpm.c
+index 54b06376f03c..3807bbf8a48f 100644
+--- a/drivers/spi/spi-fsl-cpm.c
++++ b/drivers/spi/spi-fsl-cpm.c
+@@ -280,6 +280,7 @@ static unsigned long fsl_spi_cpm_get_pram(struct mpc8xxx_spi *mspi)
+ 
+ int fsl_spi_cpm_init(struct mpc8xxx_spi *mspi)
+ {
++	const void *zero_page = (const void *) page_to_phys(ZERO_PAGE(0));
+ 	struct device *dev = mspi->dev;
+ 	struct device_node *np = dev->of_node;
+ 	const u32 *iprop;
+@@ -324,7 +325,7 @@ int fsl_spi_cpm_init(struct mpc8xxx_spi *mspi)
+ 		goto err_bds;
+ 	}
+ 
+-	mspi->dma_dummy_tx = dma_map_single(dev, empty_zero_page, PAGE_SIZE,
++	mspi->dma_dummy_tx = dma_map_single(dev, zero_page, PAGE_SIZE,
+ 					    DMA_TO_DEVICE);
+ 	if (dma_mapping_error(dev, mspi->dma_dummy_tx)) {
+ 		dev_err(dev, "unable to map dummy tx buffer\n");
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index 1d04b5559e61..83f2b3e4fbf0 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -368,8 +368,10 @@ static noinline int btrfs_ioctl_fitrim(struct file *file, void __user *arg)
+ 
+ int btrfs_is_empty_uuid(u8 *uuid)
+ {
++	const void *zero_page = (const void *) page_to_phys(ZERO_PAGE(0));
++
+ 	BUILD_BUG_ON(BTRFS_UUID_SIZE > PAGE_SIZE);
+-	return !memcmp(uuid, empty_zero_page, BTRFS_UUID_SIZE);
++	return !memcmp(uuid, zero_page, BTRFS_UUID_SIZE);
+ }
+ 
+ static noinline int create_subvol(struct inode *dir,
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 662f34c3287e..01edf1c19332 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1615,8 +1615,9 @@ EXPORT_SYMBOL_GPL(kvm_read_guest_cached);
+ 
+ int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len)
+ {
+-	return kvm_write_guest_page(kvm, gfn, (const void *) empty_zero_page,
+-				    offset, len);
++	const void *zero_page = (const void *) page_to_phys(ZERO_PAGE(0));
++
++	return kvm_write_guest_page(kvm, gfn, zero_page, offset, len);
+ }
+ EXPORT_SYMBOL_GPL(kvm_clear_guest_page);
+ 
+-- 
+1.8.3.4
+
