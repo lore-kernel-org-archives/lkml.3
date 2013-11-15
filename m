@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab3KOSF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 13:05:56 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:58209 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473Ab3KOSFs (ORCPT
+	id S1752353Ab3KOSUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 13:20:35 -0500
+Received: from smtprelay0203.hostedemail.com ([216.40.44.203]:42524 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751566Ab3KOSUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 13:05:48 -0500
-Message-ID: <52866265.2020302@gmail.com>
-Date: Sat, 16 Nov 2013 02:05:25 +0800
-From: Lennox Wu <lennox.wu@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chen Liqin <liqin.linux@gmail.com>
-Subject: Re: [PATCH 05/17] score: Use Kbuild logic to include <asm-generic/sections.h>
-References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org> <1384285347-13506-6-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1384285347-13506-6-git-send-email-geert@linux-m68k.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="42XAxbj6C0511c4Lgxhs57B4VvUKKJQdu"
+	Fri, 15 Nov 2013 13:20:24 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2110:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:6691:7652:8603:10004:10400:10848:11026:1
+X-HE-Tag: ant36_5a76f52e54700
+X-Filterd-Recvd-Size: 2237
+Message-ID: <1384539624.18739.27.camel@joe-AO722>
+Subject: Re: [PATCHv5] dmaengine: Add support for BCM2835
+From: Joe Perches <joe@perches.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Florian Meier <florian.meier@koalo.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        devicetree <devicetree@vger.kernel.org>, alsa-devel@alsa-project.org,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        dmaengine <dmaengine@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 15 Nov 2013 10:20:24 -0800
+In-Reply-To: <20131115174337.GP16735@n2100.arm.linux.org.uk>
+References: <52864BBC.7000506@koalo.de>
+	 <1384535016.18739.23.camel@joe-AO722>
+	 <20131115174337.GP16735@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---42XAxbj6C0511c4Lgxhs57B4VvUKKJQdu
-Content-Type: text/plain; charset=Big5
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2013-11-15 at 17:43 +0000, Russell King - ARM Linux wrote:
+> On Fri, Nov 15, 2013 at 09:03:36AM -0800, Joe Perches wrote:
+> > On Fri, 2013-11-15 at 17:28 +0100, Florian Meier wrote:
+> > > +static size_t bcm2835_dma_desc_size_pos(struct bcm2835_desc *d, dma_addr_t addr)
+> > > +{
+> > > +	unsigned i;
+> > > +	size_t size;
+> > 
+> > Please set size to 0 here and not in the for loop
+> > > +
+> > > +	for (size = i = 0; i < d->frames; i++) {
+> 
+> I disagree with that comment; I think the above is not only cleaner, but
+> also more obvious that _this_ loop is calculating _this_ size.
 
+I think that using
+	size_t size = 0;
+is not only _much_ more commonly used
+throughout the kernel but makes it
+clearer that the initialization of the
+return value is done before the loop.
 
-  Acked-by: Lennox Wu <lennox.wu@gmail.com>
+Reasonable minds can differ and there
+is no style guide that prefers one over
+the other.
 
-=A9=F3 2013/11/13 =A4W=A4=C8 03:42, Geert Uytterhoeven =B4=A3=A8=EC:
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Chen Liqin <liqin.linux@gmail.com>
-> Cc: Lennox Wu <lennox.wu@gmail.com>
-> ---
->  arch/score/include/asm/Kbuild     |    1 +
->  arch/score/include/asm/sections.h |    6 ------
->  2 files changed, 1 insertion(+), 6 deletions(-)
->  delete mode 100644 arch/score/include/asm/sections.h
->
-> diff --git a/arch/score/include/asm/Kbuild b/arch/score/include/asm/Kbu=
-ild
-> index f3414ade77a3..32cd967c19a4 100644
-> --- a/arch/score/include/asm/Kbuild
-> +++ b/arch/score/include/asm/Kbuild
-> @@ -2,6 +2,7 @@
->  header-y +=3D
-> =20
->  generic-y +=3D clkdev.h
-> +generic-y +=3D sections.h
->  generic-y +=3D trace_clock.h
->  generic-y +=3D xor.h
->  generic-y +=3D preempt.h
-> diff --git a/arch/score/include/asm/sections.h b/arch/score/include/asm=
-/sections.h
-> deleted file mode 100644
-> index 9441d23af005..000000000000
-> --- a/arch/score/include/asm/sections.h
-> +++ /dev/null
-> @@ -1,6 +0,0 @@
-> -#ifndef _ASM_SCORE_SECTIONS_H
-> -#define _ASM_SCORE_SECTIONS_H
-> -
-> -#include <asm-generic/sections.h>
-> -
-> -#endif /* _ASM_SCORE_SECTIONS_H */
+No matter really to me.
+As I said, it's trivial.
 
+cheers, Joe
 
-
---42XAxbj6C0511c4Lgxhs57B4VvUKKJQdu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.7 (MingW32)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEVAwUBUoZiaRIBnItolwGVAQLJhwf/Yq9YsAeveJsuG7dKN2Q8BJ1PooMrC2IW
-qJzwqsFST6VYV1yE3SaDtfX5cL4K/4AZeClmd9jrv8okdvVwN3CgZw6RhWYouYxZ
-2aFYPvE82KbT2LWQx/V721m0nc1PDDSwC+hH/naDzchnIuFmwDNm/Cdbd4HVv44U
-Dah1mMQq0dQSBVbxRtqAxZgBhN2FzKbq/pHE4gRMDr7MZu8Cxign5+l//5PCO55j
-D8IxNkGyVRxWq8BnJSZzgK5rpj4vqsjKmeCYhECVsqUrLXZujUJccDYGKJgTzDRz
-At1zfAlAaaEpC1dc1DtPNWLL+f9FfznOrotDQMwFRyIfcCNAyEQ+MQ==
-=bjNx
------END PGP SIGNATURE-----
-
---42XAxbj6C0511c4Lgxhs57B4VvUKKJQdu--
