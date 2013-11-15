@@ -1,118 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab3KOAbK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 19:31:10 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55447 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab3KOAbD (ORCPT
+	id S1754538Ab3KOAcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 19:32:54 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:6696 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540Ab3KOAcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 19:31:03 -0500
-X-AuditID: 9c93017e-b7cbeae0000003a9-00-52856b45fc11
-Date: Fri, 15 Nov 2013 09:31:10 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Jens Axboe <axboe@kernel.dk>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, lliubbo@gmail.com,
-        jmarchan@redhat.com, mgorman@suse.de, riel@redhat.com,
-        linux-mm@kvack.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Luigi Semenzato <semenzato@google.com>
-Subject: Re: [PATCH] staging: zsmalloc: Ensure handle is never 0 on success
-Message-ID: <20131115003110.GF4407@bbox>
-References: <20131107070451.GA10645@bbox>
- <20131112154137.GA3330@gmail.com>
- <alpine.LNX.2.00.1311131811030.1120@eggly.anvils>
+	Thu, 14 Nov 2013 19:32:45 -0500
+Message-ID: <52856B9B.7000307@huawei.com>
+Date: Fri, 15 Nov 2013 08:32:27 +0800
+From: Weng Meiling <wengmeiling.weng@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1311131811030.1120@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] nfsd:add '\n' when read file supported_krb5_enctypes
+References: <52786412.5030403@huawei.com> <527C9170.9030005@huawei.com> <20131113160937.GI28033@fieldses.org> <5284C45F.5050400@huawei.com> <20131114132517.GA20059@fieldses.org>
+In-Reply-To: <20131114132517.GA20059@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.68.127]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Hugh,
+On 2013/11/14 21:25, J. Bruce Fields wrote:
+> On Thu, Nov 14, 2013 at 08:38:55PM +0800, Weng Meiling wrote:
+>> On 2013/11/14 0:09, J. Bruce Fields wrote:
+>>> On Fri, Nov 08, 2013 at 03:23:28PM +0800, Weng Meiling wrote:
+>>>>
+>>>> From: Weng Meiling <wengmeiling.weng@huawei.com>
+>>>
+>>> I agree completely that a \n at the end would make more sense.
+>>>
+>>> Have you tested that this nfs-utils is OK with this change?
+>>>
+>>> I suspect that the only code that reads this file anywhere is
+>>>
+>>> 	nfs-utils/utils/gssd/svcgssd_krb5.c:parse_enctypes()
+>>>
+>>> And on a quick skim of that function.... I *think* it should be fine.
+>>> But I'd be happier if you could confirm that you've tested it.
+>>>
+>>> --b.
+>>>
+>> After this change， starting the nfs server， other host can use the
+>> server's shared files normally :-).
+> 
+> I don't see how that tests parse_enctypes().
+> 
+> --b.
+> 
+yes，this did not test parse_enctypes() specially, I just try to use nfs with this change,
+I'll test it later.
 
-On Wed, Nov 13, 2013 at 08:00:34PM -0800, Hugh Dickins wrote:
-> On Wed, 13 Nov 2013, Minchan Kim wrote:
-> > On Thu, Nov 07, 2013 at 04:04:51PM +0900, Minchan Kim wrote:
-> > > On Wed, Nov 06, 2013 at 07:05:11PM -0800, Greg KH wrote:
-> > > > On Wed, Nov 06, 2013 at 03:46:19PM -0800, Nitin Gupta wrote:
-> > > >  > I'm getting really tired of them hanging around in here for many years
-> > > > > > now...
-> > > > > >
-> > > > > 
-> > > > > Minchan has tried many times to promote zram out of staging. This was
-> > > > > his most recent attempt:
-> > > > > 
-> > > > > https://lkml.org/lkml/2013/8/21/54
-> ...
-> > 
-> > Hello Andrew,
-> > 
-> > I'd like to listen your opinion.
-> > 
-> > The zram promotion trial started since Aug 2012 and I already have get many
-> > Acked/Reviewed feedback and positive feedback from Rik and Bob in this thread.
-> > (ex, Jens Axboe[1], Konrad Rzeszutek Wilk[2], Nitin Gupta[3], Pekka Enberg[4])
-> > In Linuxcon, Hugh gave positive feedback about zram(Hugh, If I misunderstood,
-> > please correct me!). And there are lots of users already in embedded industry
-> > ex, (most of TV in the world, Chromebook, CyanogenMod, Android Kitkat.)
-> > They are not idiot. Zram is really effective for embedded world.
+Thanks!
+Weng Meiling
+>>
+>> Thanks！
+>> Weng Meilling
+>>>>
+>>>> Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+>>>> ---
+>>>>  fs/nfsd/nfsctl.c | 2 +-
+>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+>>>> index 7f55517..31db42c 100644
+>>>> --- a/fs/nfsd/nfsctl.c
+>>>> +++ b/fs/nfsd/nfsctl.c
+>>>> @@ -188,7 +188,7 @@ static const struct file_operations export_features_operations = {
+>>>>  #if defined(CONFIG_SUNRPC_GSS) || defined(CONFIG_SUNRPC_GSS_MODULE)
+>>>>  static int supported_enctypes_show(struct seq_file *m, void *v)
+>>>>  {
+>>>> -	seq_printf(m, KRB5_SUPPORTED_ENCTYPES);
+>>>> +	seq_printf(m, "%s\n", KRB5_SUPPORTED_ENCTYPES);
+>>>>  	return 0;
+>>>>  }
+>>>>
+>>>> -- 
+>>>> 1.8.3.1
+>>>>
+>>>>
+>>>>
+>>>>
+>>>
+>>>
+>>
+>>
 > 
-> Sorry for taking so long to respond, Minchan: no, you do not misrepresent
-> me at all.  Promotion of zram and zsmalloc from staging is way overdue:
-> they long ago proved their worth, look tidy, and have an active maintainer.
+> .
 > 
-> Putting them into drivers/staging was always a mistake, and I quite
-> understand Greg's impatience with them by now; but please let's move
-> them to where they belong instead of removing them.
-> 
-> I would not have lent support to zswap if I'd thought that was going to
-> block zram.  And I was not the only one surprised when zswap replaced its
-> use of zsmalloc by zbud: we had rather expected a zbud option to be added,
-> and I still assume that zsmalloc support will be added back to zswap later.
-> 
-> I think your August 2013 posting moved zsmalloc under zram and moved it
-> all to drivers/block?  That is the right place for zram, but I do think
-> zsmalloc.c (I'm not very keen on _drvs and -mains myself) should be
-> alongside zbud.c in mm, where we can better keep an eye on its
-> struct-pageyness.
 
-It's really no problem and it was what I want from the beginning.
-https://lkml.org/lkml/2012/9/11/551
-I will do in next posting.
 
-Before that, I'd like to listen Andrew's opinion about promoting because
-my previous trials to promote zram have ignored so it was just waste
-for my time and noisy for you guys. 
-
-Andrew, please tell us your decision. May I go ahead?
-
-> 
-> IMHO
-> Hugh
-> 
-> > 
-> > We spent much time with preventing zram enhance since it have been in staging
-> > and Greg never want to improve without promotion.
-> > 
-> > Please consider promotion and let us improve it.
-> > I think only remained thing is your decision.
-> > 
-> > 
-> > 1. https://lkml.org/lkml/2012/9/11/551
-> > 2. https://lkml.org/lkml/2012/8/9/636
-> > 3. https://lkml.org/lkml/2012/8/8/390
-> > 4. https://lkml.org/lkml/2012/9/26/126
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
