@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab3KOWmL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 17:42:11 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50877 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752530Ab3KOWmI (ORCPT
+	id S1753420Ab3KOWmp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 17:42:45 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:62686 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750992Ab3KOWmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 17:42:08 -0500
-Message-ID: <1384555325.2003.39.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] aio: fix D-cache aliasing issues
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Helge Deller <deller@gmx.de>
-Cc: Benjamin LaHaise <bcrl@kvack.org>, linux-aio@kvack.org,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
-Date: Fri, 15 Nov 2013 14:42:05 -0800
-In-Reply-To: <20131115220529.GA3160@ls3530.box>
-References: <20131115220529.GA3160@ls3530.box>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Nov 2013 17:42:37 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: rafael.j.wysocki@intel.com, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [v3.11][3.12][Regression]  ACPI / processor: Use common hotplug infrastructure
+Date: Fri, 15 Nov 2013 23:55:10 +0100
+Message-ID: <19794987.1PROc0XFg1@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <52865D6B.1080902@canonical.com>
+References: <52865D6B.1080902@canonical.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-15 at 23:05 +0100, Helge Deller wrote:
-> When a user page mapping is released via kunmap*() functions, the D-cache needs
-> to be flushed via flush_dcache_page() to avoid D-cache aliasing issues.
+On Friday, November 15, 2013 12:44:11 PM Joseph Salisbury wrote:
+> Hi Rafael,
 > 
-> This patch fixes aio on the parisc platform (and probably others).
-
-This should be flush_kernel_dcache_page().  flush_dcache_page() is for
-full coherency but for unmap, we know the page was coherent going in and
-may have been modified by the kernel, so only the kernel view needs to
-be sync'd.  Technically, by the kernel API, the flush should be done
-*before* unmapping.  This would have mattered on parisc until we did
-flush via tmpalias which means we no-longer care if the mapping for the
-flush exists or not because we always recreate it via the tmpalias
-pages.
-
-James
-
-> Signed-off-by: Helge Deller <deller@gmx.de>
-> To: Benjamin LaHaise <bcrl@kvack.org>
-> To: linux-aio@kvack.org
-> Cc: stable@vger.kernel.org    # 3.12+
+> A kernel bug affecting several users was opened against Ubuntu[0]. 
+> After a bisect, it was found the following commit introduced the regression:
 > 
-> diff --git a/fs/aio.c b/fs/aio.c
-> index 823efcb..2181821 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -514,6 +514,7 @@ static void free_ioctx(struct work_struct *work)
->  		atomic_add(avail, &ctx->reqs_available);
->  		ring->head = ring->tail;
->  		kunmap_atomic(ring);
-> +		flush_dcache_page(ctx->ring_pages[0]);
->  
->  		if (atomic_read(&ctx->reqs_available) >= ctx->nr_events - 1)
->  			break;
-> @@ -568,6 +569,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
->  					ring = kmap_atomic(ctx->ring_pages[0]);
->  					ring->id = ctx->id;
->  					kunmap_atomic(ring);
-> +					flush_dcache_page(ctx->ring_pages[0]);
->  					return 0;
->  				}
->  
-> @@ -1032,6 +1034,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
->  	head = ring->head;
->  	tail = ring->tail;
->  	kunmap_atomic(ring);
-> +	flush_dcache_page(ctx->ring_pages[0]);
->  
->  	pr_debug("h%u t%u m%u\n", head, tail, ctx->nr_events);
->  
+> commit ac212b6980d8d5eda705864fc5a8ecddc6d6eacc
+> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Date: Fri May 3 00:26:22 2013 +0200
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-parisc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>     ACPI / processor: Use common hotplug infrastructure
+> 
+> The regression was introduced as of v3.11-rc1.
+> 
+> This commit doesn't revert cleanly in 3.12, and requires the revert of
+> other commits as well.  I wanted to get your feedback since you are the
+> author.
 
+Well, that commit has nothing to do with PCMCIA, so I'm not sure how the
+breakage is related to it.
 
+Moreover, comment #8 reports 3.11.0-11.17 as working and the change you're
+asking about should be in that kernel as well.
 
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
