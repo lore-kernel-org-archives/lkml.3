@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab3KOWmp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 17:42:45 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:62686 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750992Ab3KOWmh (ORCPT
+	id S1753454Ab3KOWog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 17:44:36 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:60301 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab3KOWo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 17:42:37 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: rafael.j.wysocki@intel.com, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [v3.11][3.12][Regression]  ACPI / processor: Use common hotplug infrastructure
-Date: Fri, 15 Nov 2013 23:55:10 +0100
-Message-ID: <19794987.1PROc0XFg1@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <52865D6B.1080902@canonical.com>
-References: <52865D6B.1080902@canonical.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 15 Nov 2013 17:44:28 -0500
+Date: Fri, 15 Nov 2013 17:44:26 -0500 (EST)
+Message-Id: <20131115.174426.1448825246187940374.davem@davemloft.net>
+To: bhelgaas@google.com
+Cc: pomac@vapor.com, linux-kernel@vger.kernel.org, edumazet@google.com,
+        netdev@vger.kernel.org, alex.aring@gmail.com
+Subject: Re: [OOPS][3.12] BUG: unable to handle kernel NULL pointer
+ dereference at 0000000c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAErSpo4jh7pO=jhZTvHD+sT2O12Ly6V3e_oiac8gHqmdmqevkg@mail.gmail.com>
+References: <20131115183422.GA9417@pomac.netswarm.net>
+	<CAErSpo4jh7pO=jhZTvHD+sT2O12Ly6V3e_oiac8gHqmdmqevkg@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 15 Nov 2013 14:44:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 15, 2013 12:44:11 PM Joseph Salisbury wrote:
-> Hi Rafael,
-> 
-> A kernel bug affecting several users was opened against Ubuntu[0]. 
-> After a bisect, it was found the following commit introduced the regression:
-> 
-> commit ac212b6980d8d5eda705864fc5a8ecddc6d6eacc
-> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Date: Fri May 3 00:26:22 2013 +0200
-> 
->     ACPI / processor: Use common hotplug infrastructure
-> 
-> The regression was introduced as of v3.11-rc1.
-> 
-> This commit doesn't revert cleanly in 3.12, and requires the revert of
-> other commits as well.  I wanted to get your feedback since you are the
-> author.
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 15 Nov 2013 15:29:53 -0700
 
-Well, that commit has nothing to do with PCMCIA, so I'm not sure how the
-breakage is related to it.
+> [+cc David, Eric, Alex, netdev]
+> 
+> Alex reported a similar issue at
+> http://marc.info/?l=linux-netdev&m=138355719901790&w=4
 
-Moreover, comment #8 reports 3.11.0-11.17 as working and the change you're
-asking about should be in that kernel as well.
+Fixed by:
 
-Thanks!
+commit 84502b5ef9849a9694673b15c31bd3ac693010ae
+Author: Steffen Klassert <steffen.klassert@secunet.com>
+Date:   Wed Oct 30 11:16:28 2013 +0100
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+    xfrm: Fix null pointer dereference when decoding sessions
+    
+    On some codepaths the skb does not have a dst entry
+    when xfrm_decode_session() is called. So check for
+    a valid skb_dst() before dereferencing the device
+    interface index. We use 0 as the device index if
+    there is no valid skb_dst(), or at reverse decoding
+    we use skb_iif as device interface index.
+    
+    Bug was introduced with git commit bafd4bd4dc
+    ("xfrm: Decode sessions with output interface.").
+    
+    Reported-by: Meelis Roos <mroos@linux.ee>
+    Tested-by: Meelis Roos <mroos@linux.ee>
+    Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+
+diff --git a/net/ipv4/xfrm4_policy.c b/net/ipv4/xfrm4_policy.c
+index 4764ee4..e1a6393 100644
+--- a/net/ipv4/xfrm4_policy.c
++++ b/net/ipv4/xfrm4_policy.c
+@@ -104,10 +104,14 @@ _decode_session4(struct sk_buff *skb, struct flowi *fl, int reverse)
+ 	const struct iphdr *iph = ip_hdr(skb);
+ 	u8 *xprth = skb_network_header(skb) + iph->ihl * 4;
+ 	struct flowi4 *fl4 = &fl->u.ip4;
++	int oif = 0;
++
++	if (skb_dst(skb))
++		oif = skb_dst(skb)->dev->ifindex;
+ 
+ 	memset(fl4, 0, sizeof(struct flowi4));
+ 	fl4->flowi4_mark = skb->mark;
+-	fl4->flowi4_oif = skb_dst(skb)->dev->ifindex;
++	fl4->flowi4_oif = reverse ? skb->skb_iif : oif;
+ 
+ 	if (!ip_is_fragment(iph)) {
+ 		switch (iph->protocol) {
+diff --git a/net/ipv6/xfrm6_policy.c b/net/ipv6/xfrm6_policy.c
+index dd503a3..5f8e128 100644
+--- a/net/ipv6/xfrm6_policy.c
++++ b/net/ipv6/xfrm6_policy.c
+@@ -135,10 +135,14 @@ _decode_session6(struct sk_buff *skb, struct flowi *fl, int reverse)
+ 	struct ipv6_opt_hdr *exthdr;
+ 	const unsigned char *nh = skb_network_header(skb);
+ 	u8 nexthdr = nh[IP6CB(skb)->nhoff];
++	int oif = 0;
++
++	if (skb_dst(skb))
++		oif = skb_dst(skb)->dev->ifindex;
+ 
+ 	memset(fl6, 0, sizeof(struct flowi6));
+ 	fl6->flowi6_mark = skb->mark;
+-	fl6->flowi6_oif = skb_dst(skb)->dev->ifindex;
++	fl6->flowi6_oif = reverse ? skb->skb_iif : oif;
+ 
+ 	fl6->daddr = reverse ? hdr->saddr : hdr->daddr;
+ 	fl6->saddr = reverse ? hdr->daddr : hdr->saddr;
