@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab3KOOW5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:22:57 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:37107 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab3KOOWo (ORCPT
+	id S1751768Ab3KOOXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:23:09 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:61148 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab3KOOWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:22:44 -0500
+	Fri, 15 Nov 2013 09:22:45 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+        Nicolas Pitre <nico@fluxnic.net>, Chris Ball <cjb@laptop.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] irqchip: orion: reverse irq handling priority
-Date: Fri, 15 Nov 2013 15:22:32 +0100
-Message-Id: <1384525354-901-2-git-send-email-sebastian.hesselbarth@gmail.com>
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] mmc: mvsdio: workaround for spurious irqs
+Date: Fri, 15 Nov 2013 15:22:33 +0100
+Message-Id: <1384525354-901-3-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1384525354-901-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1384525354-901-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Non-DT irq handlers were working through irq causes from most-significant
-to least-significant bit, while DT irqchip driver does it the other way
-round. This revealed some more HW issues on Kirkwood peripheral IP, where
-spurious sdio irqs can happen although IP's irq enable registers are all
-zero. Although, not directly related with the described issue, reverse
-irq bit handling back to original order by replacing ffs() with fls().
+SDIO controllers found on Marvell Kirkwood SoCs seem to cause a late,
+spurious irq although all interrupts have been disabled. This irq
+doesn't do any harm, neither to HW nor driver. To avoid some
+"unexpected irq" warning later, we workaround above issue by bailing
+out of irq handler early, if we didn't expect any.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Nicolas Pitre <nico@fluxnic.net>
+Cc: Chris Ball <cjb@laptop.org>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Cc: Jason Cooper <jason@lakedaemon.net>
 Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-mmc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/irqchip/irq-orion.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/mmc/host/mvsdio.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
-index e51d400..de30d5c 100644
---- a/drivers/irqchip/irq-orion.c
-+++ b/drivers/irqchip/irq-orion.c
-@@ -42,7 +42,7 @@ __exception_irq_entry orion_handle_irq(struct pt_regs *regs)
- 		u32 stat = readl_relaxed(gc->reg_base + ORION_IRQ_CAUSE) &
- 			gc->mask_cache;
- 		while (stat) {
--			u32 hwirq = ffs(stat) - 1;
-+			u32 hwirq = __fls(stat);
- 			u32 irq = irq_find_mapping(orion_irq_domain,
- 						   gc->irq_base + hwirq);
- 			handle_IRQ(irq, regs);
-@@ -116,7 +116,7 @@ static void orion_bridge_irq_handler(unsigned int irq, struct irq_desc *desc)
- 		   gc->mask_cache;
+diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
+index 06c5b0b..25f51be 100644
+--- a/drivers/mmc/host/mvsdio.c
++++ b/drivers/mmc/host/mvsdio.c
+@@ -354,6 +354,21 @@ static irqreturn_t mvsd_irq(int irq, void *dev)
+ 		intr_status, mvsd_read(MVSD_NOR_INTR_EN),
+ 		mvsd_read(MVSD_HW_STATE));
  
- 	while (stat) {
--		u32 hwirq = ffs(stat) - 1;
-+		u32 hwirq = __fls(stat);
++	/*
++	 * It looks like, SDIO IP can issue one late, spurious irq
++	 * although all irqs should be disabled. To work around this,
++	 * bail out early, if we didn't expect any irqs to occur.
++	 */
++	if (!mvsd_read(MVSD_NOR_INTR_EN) && !mvsd_read(MVSD_ERR_INTR_EN)) {
++		dev_dbg(host->dev,
++			"spurious irq detected intr 0x%04x intr_en 0x%04x erri 0x%04x erri_en 0x%04x\n",
++			mvsd_read(MVSD_NOR_INTR_STATUS),
++			mvsd_read(MVSD_NOR_INTR_EN),
++			mvsd_read(MVSD_ERR_INTR_STATUS),
++			mvsd_read(MVSD_ERR_INTR_EN));
++		return IRQ_HANDLED;
++	}
++
+ 	spin_lock(&host->lock);
  
- 		generic_handle_irq(irq_find_mapping(d, gc->irq_base + hwirq));
- 		stat &= ~(1 << hwirq);
+ 	/* PIO handling, if needed. Messy business... */
 -- 
 1.7.2.5
 
