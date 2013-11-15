@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758460Ab3KOLbU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 06:31:20 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:57089 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab3KOLbI convert rfc822-to-8bit (ORCPT
+	id S1758529Ab3KOLbc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 06:31:32 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50292 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758464Ab3KOLbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 06:31:08 -0500
-From: Caizhiyong <caizhiyong@hisilicon.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Fri, 15 Nov 2013 06:31:23 -0500
+Date: Fri, 15 Nov 2013 11:31:06 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        Levente Kurusa <ilevex.linux@gmail.com>
-Subject: [PATCH] regmap: Fix 'ret' would return an uninitialized value
-Thread-Topic: [PATCH] regmap: Fix 'ret' would return an uninitialized value
-Thread-Index: Ac7h9iW7v/9w7+s6RcaZ6yoGka5jaA==
-Date: Fri, 15 Nov 2013 11:30:55 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F1C08BAEF@szxeml512-mbs.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.67.223.36]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: Re: [PATCH] rtc: rtc-ds1742: Add devicetree support
+Message-ID: <20131115113106.GG1709@e106331-lin.cambridge.arm.com>
+References: <1384432362-26102-1-git-send-email-shc_work@mail.ru>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384432362-26102-1-git-send-email-shc_work@mail.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cai Zhiyong <caizhiyong@huawei.com>
-Date: Mon, 11 Nov 2013 19:26:14 +0800
-Subject: [PATCH] regmap: Fix 'ret' would return an uninitialized value
+On Thu, Nov 14, 2013 at 12:32:42PM +0000, Alexander Shiyan wrote:
+> This patch allows the driver to be enabled with devicetree.
+> 
+> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> ---
+>  Documentation/devicetree/bindings/rtc/maxim,ds1742.txt | 14 ++++++++++++++
+>  drivers/rtc/rtc-ds1742.c                               | 10 +++++++++-
+>  2 files changed, 23 insertions(+), 1 deletion(-)
+>  create mode 100644 Documentation/devicetree/bindings/rtc/maxim,ds1742.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/rtc/maxim,ds1742.txt b/Documentation/devicetree/bindings/rtc/maxim,ds1742.txt
+> new file mode 100644
+> index 0000000..d2ddd71
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/rtc/maxim,ds1742.txt
+> @@ -0,0 +1,14 @@
+> +* Maxim (Dallas) DS1742/DS1743 Real Time Clock
+> +
+> +Register a Maxim DS1742-compatible RTC.
 
-This patch give a warning when calling regmap_register_patch with
-parameter num_regs <= 0.
+The driver registration has nothing to do with the binding.
 
-When the num_regs parameter is zero and krealloc doesn't fail,
-then the code would return an uninitialized value. However,
-calling this function with num_regs == 0, would be a waste as it
-essentially does nothing.
+Either add a brief description of the device or remove this line
+entirely.
 
-Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
----
- drivers/base/regmap/regmap.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+> +
+> +Required properties:
+> +- compatible: Should be "maxim,ds1742".
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 9c021d9..7b5c28a 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -2170,9 +2170,12 @@ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
- 			  int num_regs)
- {
- 	struct reg_default *p;
- 	int i, ret;
- 	bool bypass;
- 
-+	if (WARN_ONCE(num_regs <= 0))
-+		return 0;
-+
- 	map->lock(map->lock_arg);
- 
- 	bypass = map->cache_bypass;
--- 
-1.8.1.5
+s/be/contain/
 
+> +- reg: Physical base address of the RTC and length of memory
+> +  mapped region.
+> +
+> +Example:
+> +	rtc: rtc@10000000 {
+> +		compatible = "maxim,ds1742";
+> +		reg = <0x10000000 0x800>;
+> +	};
+
+Otherwise this binding looks fine to me, with those changes.
+
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+
+Mark.
