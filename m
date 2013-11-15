@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab3KOU6F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 15:58:05 -0500
-Received: from mms3.broadcom.com ([216.31.210.19]:4439 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab3KOU55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 15:57:57 -0500
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-From: "Markus Mayer" <markus.mayer@linaro.org>
-To: "Wim Van Sebroeck" <wim@iguana.be>, "Guenter Roeck" <linux@roeck-us.net>,
-        "Christian Daudt" <bcm@fixthebug.org>
-cc: "Linaro Patches" <patches@linaro.org>,
-        "Matt Porter" <matt.porter@linaro.org>,
-        "Linux Watchdog List" <linux-watchdog@vger.kernel.org>,
-        "ARM Kernel List" <linux-arm-kernel@lists.infradead.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Markus Mayer" <markus.mayer@linaro.org>
-Subject: [PATCH v2 0/2] watchdog: bcm281xx: Watchdog Driver
+	id S1753391Ab3KOU6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 15:58:16 -0500
+Received: from smtprelay0198.hostedemail.com ([216.40.44.198]:45154 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753269Ab3KOU56 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 15:57:58 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:4321:5007:7652:10004:10400:10848:11232:11658:11914:12043:12296:12438:12517:12519:12555:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: slip24_b31da1a5a900
+X-Filterd-Recvd-Size: 1960
+Message-ID: <1384549079.18739.33.camel@joe-AO722>
+Subject: Re: [REGRESSION] coredumps truncated after "new helper:
+ dump_align()"
+From: Joe Perches <joe@perches.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Peter Wu <lekensteyn@gmail.com>, linux-kernel@vger.kernel.org
 Date: Fri, 15 Nov 2013 12:57:59 -0800
-Message-ID: <1384549081-9571-1-git-send-email-markus.mayer@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-X-WSS-ID: 7E98552B1SC8453299-01-01
-Content-Type: text/plain
+In-Reply-To: <20131115203838.GJ13318@ZenIV.linux.org.uk>
+References: <11835033.kIc1RH0rS1@al>
+	 <20131115203838.GJ13318@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is version 2 of the watchdog driver for the BCM281xx family of mobile SoCs.
+On Fri, 2013-11-15 at 20:38 +0000, Al Viro wrote:
+> On Fri, Nov 15, 2013 at 03:26:10PM +0100, Peter Wu wrote:
+> > Somewhere in the merge window of 3.13, coredumps appear truncated.
+> > Instead of 319488 bytes, I get 868 bytes (tested with x86_64 only).
+> > 
+> > The latest Linus' master (v3.12-9579-g049ffa8) is still affected.
+> > Bisection leads to:
+> > 
+> > commit 22a8cb8248ba5d340307ba72432253b1dbdb5cf7
 
-Changes since version 1:
+trivia:
 
-- Added module name to "help" section in Kconfig
-- A few cosmetic code simplifications and fixes
-- Removed most dev_info() calls and changed the remaining ones to dev_dbg()
-- Renamed SECWDOG_WD_LOAD_FLAG_MASK to SECWDOG_WD_LOAD_FLAG
-- Added some comments to secure_register_read() and struct bcm_kona_wdt
-- Added delay to secure_register_read()
-- Reduced maximum retry loop from 10000 to 1000
-- Introduced "busy_count" variable to count how often secure_register_read()
-  gets stalled; this is available through debugfs
-- Simplified secure_register_read() to return -ETIMEDOUT rather than using
-  a variable parameter to indicate a timeout error
-- Got rid of all uses of -EAGAIN
-- Fixed return value check for debugfs_create_dir()
-- Simplified bcm_kona_wdt_debugfs_init() by getting rid of goto
-- Created new generic function bcm_kona_wdt_ctrl_reg_modify()
-- The following functions now use bcm_kona_wdt_ctrl_reg_modify():
-    - bcm_kona_wdt_set_resolution_reg()
-    - bcm_kona_wdt_set_timeout_reg()
-    - bcm_kona_wdt_stop()
-- Made bcm_kona_wdt_set_timeout_reg() more generic, so bcm_kona_wdt_start()
-  can use it
-- Removed MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR)
+> diff --git a/fs/coredump.c b/fs/coredump.c
+[]
+> @@ -733,7 +733,7 @@ int dump_align(struct coredump_params *cprm, int align)
+>  {
+>  	unsigned mod = cprm->written & (align - 1);
+>  	if (align & (align - 1))
+> -		return -EINVAL;
+> -	return mod ? dump_skip(cprm, align - mod) : 0;
+> +		return 0;
+> +	return mod ? dump_skip(cprm, align - mod) : 1;
+>  }
+>  EXPORT_SYMBOL(dump_align);
 
+extern int dump_skip(struct coredump_params *cprm, size_t nr);
+extern int dump_emit(struct coredump_params *cprm, const void *addr, int nr);
+extern int dump_align(struct coredump_params *cprm, int align);
 
-Markus Mayer (2):
-  watchdog: bcm281xx: Watchdog Driver
-  ARM: bcm281xx: watchdog configuration
-
- arch/arm/configs/bcm_defconfig  |    3 +
- drivers/watchdog/Kconfig        |   22 +++
- drivers/watchdog/Makefile       |    1 +
- drivers/watchdog/bcm_kona_wdt.c |  367 +++++++++++++++++++++++++++++++++++++++
- 4 files changed, 393 insertions(+)
- create mode 100644 drivers/watchdog/bcm_kona_wdt.c
-
--- 
-1.7.9.5
+Perhaps all of these should return bool not int.
+Is there a reason these should be EXPORT_SYMBOL?
 
 
