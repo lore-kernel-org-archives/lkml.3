@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab3KOSxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 13:53:13 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:57992 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab3KOSxF (ORCPT
+	id S1752759Ab3KOSzA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 13:55:00 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:50192 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab3KOSyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 13:53:05 -0500
-Message-ID: <52866D8D.6070801@linaro.org>
-Date: Fri, 15 Nov 2013 10:53:01 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 15 Nov 2013 13:54:53 -0500
+Date: Fri, 15 Nov 2013 19:54:58 +0100
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-efi <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>, roy.franz@linaro.org,
+        msalter@redhat.com
+Subject: Re: [PATCH v2 0/3] arm: [U]EFI runtime services support
+Message-ID: <20131115185458.GA30374@rocoto.smurfnet.nu>
+References: <1380799481-5470-1-git-send-email-leif.lindholm@linaro.org>
+ <CAOesGMh+2Qs_cVMtdkpyXR44NJkQscs0eP_=pxwKXHkopaAKog@mail.gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Amit Pundir <amit.pundir@linaro.org>
-CC: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH v3] epoll: drop EPOLLWAKEUP if PM_SLEEP is disabled
-References: <1384500391-20513-1-git-send-email-amit.pundir@linaro.org> <4921878.yXb9shUEsy@vostro.rjw.lan>
-In-Reply-To: <4921878.yXb9shUEsy@vostro.rjw.lan>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMh+2Qs_cVMtdkpyXR44NJkQscs0eP_=pxwKXHkopaAKog@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 07:10 AM, Rafael J. Wysocki wrote:
-> On Friday, November 15, 2013 12:56:31 PM Amit Pundir wrote:
->> Drop EPOLLWAKEUP from epoll events mask if CONFIG_PM_SLEEP is disabled.
->>
->> Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
-> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> Or am I supposed to take care of this?
+Hi Olof,
 
-I would assume it would be you, but maybe Al would prefer to take it?
+Many thanks for having a look.
 
-Also, should this be also marked for stable?
+On Fri, Nov 15, 2013 at 10:04:22AM -0800, Olof Johansson wrote:
+> This series is generally looking sane to me without looking at the
+> code in very close detail.
 
-thanks
--john
+In the interest of full disclosure, I would like to point out that I
+will be posting another version next week, based on the output of the
+discussions around the DT bindings and documentation.
+ 
+This set needs to be tested in combination with Roy's UEFI stub patches
+is recommended, as this is the intended boot mechanism on UEFI
+platforms. https://wiki.linaro.org/LEG/Engineering/Kernel/UEFI/EFIstub
 
+> Do you have a test setup that you've been using for this that you
+> could give a pointer to?
+
+Well, I have been using vexpress ca9 and ca15_a7 (TC2), or the ARM
+commercial software models (RTSM) of the same. I have also tested on
+Arndale, but I don't know if that is fully supported by mainline yet.
+
+Prebuilt UEFI images are available from
+http://releases.linaro.org/13.09/components/kernel/uefi-linaro
+
+efibootmgr is probably the best utility to test the runtime services,
+if scanning the /sys entries are not sufficient. It builds for armhf
+without modification.
+
+/
+    Leif
