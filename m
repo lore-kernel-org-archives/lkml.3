@@ -1,104 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab3KON3w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:29:52 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:55079 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab3KON3q (ORCPT
+	id S1752649Ab3KONat (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 08:30:49 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:58131 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab3KONaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:29:46 -0500
-Date: Fri, 15 Nov 2013 14:29:28 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] s390/mm,tlb: race of lazy TLB flush vs. recreation
- of TLB entries
-Message-ID: <20131115142928.76688783@mschwide>
-In-Reply-To: <20131115115701.GA1047@darko.cambridge.arm.com>
-References: <1384330574-18418-1-git-send-email-schwidefsky@de.ibm.com>
-	<1384330574-18418-3-git-send-email-schwidefsky@de.ibm.com>
-	<CAHkRjk6LAmQpkioBdFxH5htYHi75bR2xhfXzfvmQL5Br0kMgvg@mail.gmail.com>
-	<20131114091007.0b15dde2@mschwide>
-	<20131114132223.GG20261@arm.com>
-	<20131114173359.2e3cbd60@mschwide>
-	<20131115104437.GA573@darko.cambridge.arm.com>
-	<20131115121000.69219fa4@mschwide>
-	<20131115121736.72170c36@mschwide>
-	<20131115115701.GA1047@darko.cambridge.arm.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 15 Nov 2013 08:30:39 -0500
+Message-ID: <528621E5.4030201@ti.com>
+Date: Fri, 15 Nov 2013 07:30:13 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Paul Walmsley <paul@pwsan.com>
+CC: Tony Lindgren <tony@atomide.com>, <rnayak@ti.com>, <khilman@linaro.org>,
+        <balbi@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3] ARM: OMAP2+: omap_device: maintain sane runtime pm
+ status around suspend/resume
+References: <1384297710-29694-1-git-send-email-nm@ti.com> <1384448716-3186-1-git-send-email-nm@ti.com> <alpine.DEB.2.02.1311150806220.15980@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.02.1311150806220.15980@utopia.booyaka.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111513-0342-0000-0000-000006DFABF8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Nov 2013 11:57:01 +0000
-Catalin Marinas <catalin.marinas@arm.com> wrote:
+On 11/15/2013 02:07 AM, Paul Walmsley wrote:
+> On Thu, 14 Nov 2013, Nishanth Menon wrote:
+> 
+>> OMAP device hooks around suspend|resume_noirq ensures that hwmod
+>> devices are forced to idle using omap_device_idle/enable as part of
+>> the last stage of suspend activity.
+>>
+>> For a device such as i2c who uses autosuspend, it is possible to enter
+>> the suspend path with dev->power.runtime_status = RPM_ACTIVE.
+>>
+>> As part of the suspend flow, the generic runtime logic would increment
+>> it's dev->power.disable_depth to 1. This should prevent further
+>> pm_runtime_get_sync from succeeding once the runtime_status has been
+>> set to RPM_SUSPENDED.
+>>
+>> Now, as part of the suspend_noirq handler in omap_device, we force the
+>> following: if the device status is !suspended, we force the device
+>> to idle using omap_device_idle (clocks are cut etc..). This ensures
+>> that from a hardware perspective, the device is "suspended". However,
+>> runtime_status is left to be active.
+>>
+>> *if* an operation is attempted after this point to
+>> pm_runtime_get_sync, runtime framework depends on runtime_status to
+>> indicate accurately the device status, and since it sees it to be
+>> ACTIVE, it assumes the module is functional and returns a non-error
+>> value. As a result the user will see pm_runtime_get succeed, however a
+>> register access will crash due to the lack of clocks.
+>>
+>> To prevent this from happening, we should ensure that runtime_status
+>> exactly indicates the device status. As a result of this change
+>> any further calls to pm_runtime_get* would return -EACCES (since
+>> disable_depth is 1). On resume, we restore the clocks and runtime
+>> status exactly as we suspended with. These operations are not expected
+>> to fail as we update the states after the core runtime framework has
+>> suspended itself and restore before the core runtime framework has
+>> resumed.
+>>
+>> Reported-by: J Keerthy <j-keerthy@ti.com>
+>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>> Acked-by: Rajendra Nayak <rnayak@ti.com>
+>> Acked-by: Kevin Hilman <khilman@linaro.org>
+> 
+> Looks reasonable to me.  Looks like this should be considered for -stable 
+> - Nishanth, what do you think?
 
-> On Fri, Nov 15, 2013 at 11:17:36AM +0000, Martin Schwidefsky wrote:
-> > On Fri, 15 Nov 2013 12:10:00 +0100
-> > Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
-> > 
-> > > On Fri, 15 Nov 2013 10:44:37 +0000
-> > > Catalin Marinas <catalin.marinas@arm.com> wrote:
-> > > > 1. thread-A running with mm-A
-> > > > 2. context_switch() to thread-B1 causing a switch_mm(mm-B)
-> > > > 3. switch_mm(mm-B) sets thread-B1's TIF_TLB_WAIT but does _not_ call
-> > > >    update_mm(mm-B). Hardware still using mm-A
-> > > > 4. scheduler unlocks and is about to call finish_mm_switch(mm-B)
-> > > > 5. interrupt and preemption before finish_mm_switch(mm-B)
-> > > > 6. context_switch() to thread-B2 causing a switch_mm(mm-B) (note here
-> > > >    that thread-B1 and thread-B2 have the same mm-B)
-> > > > 7. switch_mm() as in this patch exits early because prev == next
-> > > > 8. finish_mm_switch(mm-B) is indeed called but TIF_TLB_WAIT is not set
-> > > >    for thread-B2, therefore no call to update_mm(mm-B)
-> > > > 
-> > > > So after point 8, you get thread-B2 running (and possibly returning to
-> > > > user space) with mm-A. Do you see a problem here?
-> > > 
-> > > Oh, now I get it. Thanks for the patience, this is indeed a problem.
-> > > And I concur, a per-mm flag is the 'obvious' solution.
-> > 
-> > Having said that and looking at the code I find this to be not as obvious
-> > any more. If you have multiple cpus using a per-mm flag can get you into
-> > trouble:
-> > 
-> > 1. cpu #1 calls switch_mm and finds that irqs are disabled.
-> >    mm->context.switch_pending is set
-> > 2. cpu #2 calls switch_mm for the same mm and finds that irqs are disabled.
-> >    mm->context.switch_pending is set again
-> > 3. cpu #1 reaches finish_arch_post_lock_switch and finds switch_pending == 1
-> > 4. cpu #1 zeroes mm->switch_pending and calls cpu_switch_mm
-> > 5. cpu #2 reaches finish_arch_post_lock_switch and finds switch_pending == 0
-> > 6. cpu #2 continues with the old mm
-> > 
-> > This is a race, no?
+Every product kernel since 3.4 needed to be hacked (we have hacked in
+different ways so far) to work around this (since we never spend time
+digging deeper :( ), So, I do agree with your view that a -stable tag
+will be most beneficial.
+
 > 
-> Yes, but we only use this on ARMv5 and earlier and there is no SMP
-> support.
+> Tony or Kevin, do you want to take this one, or want me to?
 > 
-> On arm64 however, I need to fix that and you made a good point. In my
-> (not yet public) patch, the switch_pending is cleared after all the
-> IPIs have been acknowledged but it needs some more thinking. A solution
-> could be to always do the cpu_switch_mm() in finish_mm_switch() without
-> any checks but this requires that any switch_mm() call from the kernel
-> needs to be paired with finish_mm_switch(). So your first patch comes in
-> handy (but I still need to figure out a quick arm64 fix for cc stable).
- 
-I am currently thinking about the following solution for s390: keep the
-TIF_TLB_FLUSH bit per task but do a preempt_disable() in switch_mm()
-if the switch is incomplete. This pairs with a preempt_enable() in
-finish_switch_mm() after the update_mm has been done.
+> 
+> - Paul
+> 
+
 
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Regards,
+Nishanth Menon
