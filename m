@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab3KOV6O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 16:58:14 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:53701 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab3KOV6H (ORCPT
+	id S1753249Ab3KOV74 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 16:59:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36214 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab3KOV7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 16:58:07 -0500
+	Fri, 15 Nov 2013 16:59:48 -0500
+Date: Sat, 16 Nov 2013 06:29:36 +0900
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, devel@driverdev.osuosl.org,
+        Johan Hedberg <johan.hedberg@intel.com>, Yu-Chen Cho <acho@suse.com>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>
+Subject: Re: [PATCH] Staging: btmtk_usb: Add hdev parameter to hdev->send
+ driver callback
+Message-ID: <20131115212936.GC14897@kroah.com>
+References: <1384517231-1605-1-git-send-email-geert@linux-m68k.org>
+ <D32EAC93-D2DE-431C-9DCB-885C5AA10A3A@holtmann.org>
+ <20131115130820.GS5302@mwanda>
+ <F615BA13-BEC1-457B-8002-BC6C149039EA@holtmann.org>
 MIME-Version: 1.0
-In-Reply-To: <20131114065212.GA13618@thunk.org>
-References: <20131114020332.GA10961@thunk.org>
-	<20131114065212.GA13618@thunk.org>
-Date: Fri, 15 Nov 2013 13:58:05 -0800
-X-Google-Sender-Auth: _qehb7ztIq-QykMGq92j9gX0GYs
-Message-ID: <CA+55aFyyENCDErpcYGcy4qf2M8mBtRo_9_nT0HaUPuY+kozk7g@mail.gmail.com>
-Subject: Re: /dev/random changes for 3.13
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F615BA13-BEC1-457B-8002-BC6C149039EA@holtmann.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 10:52 PM, Theodore Ts'o <tytso@mit.edu> wrote:
->
-> There will be a merge conflict thanks to changes from the net tree.
-> Here is the proposed resolution:
+On Fri, Nov 15, 2013 at 10:26:41PM +0900, Marcel Holtmann wrote:
+> Hi Dan,
+> 
+> >> while this is patch is correct, I do not really care about staging drivers that actually bluntly violate my copyright.
+> >> 
+> > 
+> > That's very cryptic.
+> > 
+> > What is going on here?  I googled it and I wasn't able to find what you
+> > are talking about.  Care to give us a hint and what you want us to do
+> > here?
+> 
+> the last time I checked, the majority of drivers/bluetooth/btusb.c has been written by myself. Now go and compare btusb.c to btmtk_usb.[ch].
+> 
+> > I have also added Johan Hedberg to the CC list because he also helped
+> > break the build.  Don't do that.
+> 
+> Yes, we are doing exactly that. It is a staging driver. I could not care less if a staging drivers breaks the build or not.
+> 
+> If anybody cares about this driver, then take the time to merge it upstream. It has never been submitted to linux-bluetooth mailing list.
+> 
+> There are drivers that should have never been merged into staging.
+> This is one of them. Look for yourself and explain to me why this
+> driver is part of staging in the first place.
 
-Ok, I finally got around to the random tree, but your proposed merge
-resolution makes no sense, so I didn't end up applying it.
+Because it was sent to me by a developer?
 
-> - -     r->entropy_total += nbits;
->         if (!r->initialized && nbits > 0) {
-> +               r->entropy_total += nbits;
+Seriously, what's the issue here, I didn't notice it was a fork of your
+code, sorry, I didn't check.  I figured it would be eventually cleaned
+up properly and then it will be sent to linux-bluetooth for proper
+merging.
 
-This part undoes your commit 6265e169cd31 ("random: push extra entropy
-to the output pools"), and the "entropy_total" field will now never be
-non-zero when "r->initialized" is set. So then the rest of your
-commit, which looks like this:
+Yu-Chen, what's the satus of getting this cleaned up "properly"?  You
+haven't really done anything on this since I took the driver in May.
 
-+ /* If the input pool is getting full, send some
-+ * entropy to the two output pools, flipping back and
-+ * forth between them, until the output pools are 75%
-+ * full.
-+ */
-+ if (entropy_bytes > random_write_wakeup_thresh &&
-+    r->initialized &&
-+    r->entropy_total >= 2*random_read_wakeup_thresh) {
-+ static struct entropy_store *last = &blocking_pool;
-+ struct entropy_store *other = &blocking_pool;
+thanks,
 
-can never trigger (because "r->initialized && r->entropy_total >=
-2*random_read_wakeup_thresh" is never true).
-
-So your merge resolution diff makes no sense to me.
-
-That said, the networking change seems to be simpler and largely
-equivalent to that commit, so maybe you meant to basically castrate
-that commit 6265e169cd31? Or maybe the diff you posted was incomplete
-and just doesn't show the undone part (because "git diff --cc" will
-not show parts that match the other branch).
-
-So I think the correct resolution is to basically take the code that
-the networking tree added, and undo the "If the input pool is getting
-full.." part of commit 6265e169cd31.
-
-Hmm?
-
-Just verifying that we're on the same page before merging this..
-
-            Linus
+greg k-h
