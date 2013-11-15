@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab3KODYf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 22:24:35 -0500
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:43513
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752774Ab3KODY1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 22:24:27 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz98dI1432I168aJzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1155h)
-Date: Fri, 15 Nov 2013 11:15:37 +0800
-From: Nicolin Chen <b42378@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: <timur@tabi.org>, <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
-        <linux@arm.linux.org.uk>, <ijc+devicetree@hellion.org.uk>,
-        <swarren@wwwdotorg.org>, <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>, <lgirdwood@gmail.com>
-Subject: Re: [PATCH 0/2] Add monaural audio support for fsl_ssi.c
-Message-ID: <20131115031536.GB745@MrMyself>
-References: <1384427230-979-1-git-send-email-b42378@freescale.com>
- <20131115030247.GC11014@S2101-09.ap.freescale.net>
- <20131115025956.GA745@MrMyself>
- <20131115032250.GD11014@S2101-09.ap.freescale.net>
+	id S1756478Ab3KOD3s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Nov 2013 22:29:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25045 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752928Ab3KOD3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Nov 2013 22:29:43 -0500
+Date: Thu, 14 Nov 2013 22:29:07 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: perf code using smp_processor_id() in preemptible [00000000] code
+Message-ID: <20131115032907.GA25243@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Ingo Molnar <mingo@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131115032250.GD11014@S2101-09.ap.freescale.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 11:22:52AM +0800, Shawn Guo wrote:
-> On Fri, Nov 15, 2013 at 10:59:57AM +0800, Nicolin Chen wrote:
-> > Hi Shawn,
-> >    
-> > On Fri, Nov 15, 2013 at 11:02:49AM +0800, Shawn Guo wrote:
-> > > On Thu, Nov 14, 2013 at 07:07:08PM +0800, Nicolin Chen wrote:
-> > > > This series of patches need to be applied into one single tree because
-> > > > the second patch depends on the first one. Without it, SSI would playback
-> > > > constant noise to the right channel when playback monaural audio files on
-> > > > i.MX6 Series board.
-> > > 
-> > > Let me try to understand if the dependency is true.
-> > > 
-> > > Saying I apply the DTS patch on IMX tree while Mark apply the fsl_ssi
-> > > patch on his tree, will there be any regression on either IMX tree or
-> > > Mark's tree?  The monaural playback on imx6qdl never worked, so it's not
-> > > a regression.  If there is no regression on either tree, there is no
-> > > dependency to maintain.
-> > 
-> > It's fair enough to understand in this way. It looks like I misunderstood
-> > the dependency here.
-> > 
-> > Do I need to resend them separately?
-> 
-> No, I will just pick up the DTS patch with some testing.
-> 
-> Shawn
-
-Thank you.
-Nicolin Chen
-
+BUG: using smp_processor_id() in preemptible [00000000] code: trinity-main/890
+caller is p4_pmu_schedule_events+0x25/0x4c0
+CPU: 0 PID: 890 Comm: trinity-main Not tainted 3.12.0+ #3 
+Hardware name: Dell Inc.                 Precision WorkStation 470    /0P7996, BIOS A05 05/18/2005
+ ffff88001e675668 ffff880025e79d00 ffffffff8171f332 0000000000000000
+ ffff880025e79d18 ffffffff8133132a 0000000000000002 ffff880025e79dc0
+ ffffffff81018e55 ffff88001e675668 00000000000080d0 ffff88001e675668
+Call Trace:
+ [<ffffffff8171f332>] dump_stack+0x4e/0x7a
+ [<ffffffff8133132a>] debug_smp_processor_id+0xca/0xe0
+ [<ffffffff81018e55>] p4_pmu_schedule_events+0x25/0x4c0
+ [<ffffffff811a5c9f>] ? kmem_cache_alloc_trace+0x12f/0x2d0
+ [<ffffffff810160ff>] ? allocate_fake_cpuc+0x2f/0x90
+ [<ffffffff81016443>] x86_pmu_event_init+0x193/0x440
+ [<ffffffff81146850>] perf_init_event+0x250/0x330
+ [<ffffffff81146600>] ? perf_pmu_unregister+0x160/0x160
+ [<ffffffff81146ca8>] perf_event_alloc+0x378/0x420
+ [<ffffffff81147335>] SYSC_perf_event_open+0x5e5/0xa80
+ [<ffffffff81147b89>] SyS_perf_event_open+0x9/0x10
+ [<ffffffff81731ee4>] tracesys+0xdd/0xe2
 
