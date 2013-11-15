@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342Ab3KOM1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 07:27:24 -0500
-Received: from mail-gg0-f182.google.com ([209.85.161.182]:63488 "EHLO
-	mail-gg0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab3KOM1R (ORCPT
+	id S1751473Ab3KOM26 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 07:28:58 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51071 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab3KOM2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 07:27:17 -0500
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: geyslan@gmail.com
-Cc: Brett Rudley <brudley@broadcom.com>, Arend van Spriel <arend@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
-        Piotr Haber <phaber@broadcom.com>,
-        linux-wireless@vger.kernel.org (open list:BROADCOM BRCM8021...),
-        brcm80211-dev-list@broadcom.com (open list:BROADCOM BRCM8021...),
-        netdev@vger.kernel.org (open list:NETWORKING DRIVERS),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v2] brcmfmac: fix possible memory leak
-Date: Fri, 15 Nov 2013 09:21:47 -0300
-Message-Id: <1384518113-3079-1-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4.2
+	Fri, 15 Nov 2013 07:28:51 -0500
+Date: Fri, 15 Nov 2013 13:28:33 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: perf/tracepoint: another fuzzer generated lockup
+Message-ID: <20131115122833.GE10456@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1311081504400.7281@vincent-weaver-1.um.maine.edu>
+ <20131108200244.GB14606@localhost.localdomain>
+ <alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu>
+ <20131108204839.GD14606@localhost.localdomain>
+ <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu>
+ <20131108223657.GF14606@localhost.localdomain>
+ <20131109151014.GN16117@laptop.programming.kicks-ass.net>
+ <20131114152304.GC5364@laptop.programming.kicks-ass.net>
+ <20131114153301.GD5364@laptop.programming.kicks-ass.net>
+ <528575E2.4000700@hitachi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528575E2.4000700@hitachi.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free temporary 'chanspecs' avoiding leakage.
+On Fri, Nov 15, 2013 at 10:16:18AM +0900, Masami Hiramatsu wrote:
+> Kprobes itself can detect nested call by using per-cpu current-running
+> kprobe pointer. And if it is nested, it just skips calling handlers.
+> Anyway, I don't recommend to probe inside the handlers, but yes,
+> you can trace perf-handler by ftrace B). I actually traced a kprobe-bug
+> by kprobe-tracer last night, that was amazing :)
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
----
- drivers/net/wireless/brcm80211/brcmfmac/p2p.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-index d7a9745..fcc5e7c 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-@@ -823,6 +823,7 @@ static s32 brcmf_p2p_run_escan(struct brcmf_cfg80211_info *cfg,
- 		}
- 		err = brcmf_p2p_escan(p2p, num_nodfs, chanspecs, search_state,
- 				      action, P2PAPI_BSSCFG_DEVICE);
-+		kfree(chanspecs);
- 	}
- exit:
- 	if (err)
--- 
-1.8.4.2
-
+Ah, ok, so that would avoid the worst problems. Good. Should we still
+mark the entire perf swevent path as __kprobes just to be sure?
