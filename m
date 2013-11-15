@@ -1,118 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782Ab3KOQWv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 11:22:51 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:50266 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab3KOQWp (ORCPT
+	id S1751837Ab3KOQZg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 11:25:36 -0500
+Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:16965
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751023Ab3KOQZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 11:22:45 -0500
-Date: Fri, 15 Nov 2013 16:22:38 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        wei_wang@realsil.com.cn, rogerable@realtek.com
-Subject: Re: [PATCH 2/3] mfd: rtsx: add card reader rtl8402
-Message-ID: <20131115162238.GA3638@lee--X1>
-References: <cover.1384503048.git.micky_ching@realsil.com.cn>
- <225f6d5d8ab73afbe6b600f07583dada2145ebaa.1384503048.git.micky_ching@realsil.com.cn>
+	Fri, 15 Nov 2013 11:25:29 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(zz154dIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
+From: Nicolin Chen <b42378@freescale.com>
+To: <timur@tabi.org>, <broonie@kernel.org>, <linux@arm.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <alsa-devel@alsa-project.org>, <lgirdwood@gmail.com>
+Subject: [PATCH v2] ASoC: fsl_ssi: Add monaural audio support for non-ac97 interface
+Date: Sat, 16 Nov 2013 00:25:29 +0800
+Message-ID: <1384532729-6588-1-git-send-email-b42378@freescale.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <225f6d5d8ab73afbe6b600f07583dada2145ebaa.1384503048.git.micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Nov 2013, micky_ching@realsil.com.cn wrote:
+The normal mode of SSI allows it to send/receive data to/from the first
+slot of each period. So we can use this normal mode to trick I2S signal
+by puting/getting data to/from the first slot only (the left channel)
+so as to support monaural audio playback and recording.
 
-> From: Micky Ching <micky_ching@realsil.com.cn>
-> 
-> Add card reader rtl8042, rtl8402 is much like rtl8411, so just add it to
-> rtl8411.c
-> 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> ---
->  drivers/mfd/rtl8411.c  |   29 +++++++++++++++++++++++++++++
->  drivers/mfd/rtsx_pcr.c |    2 ++
->  2 files changed, 31 insertions(+)
+Signed-off-by: Nicolin Chen <b42378@freescale.com>
+---
+Changelog
+v2:
+ * Moved i2s_mode to ssi_private so that we can save and retore it as needed
+ * And dropped the horrible static thing.
 
-Looks like you left me off of the addressee list for this and the
-cover letter.
+ sound/soc/fsl/fsl_ssi.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-> diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
-> index 4de1045..8e4b546 100644
-> --- a/drivers/mfd/rtl8411.c
-> +++ b/drivers/mfd/rtl8411.c
-> @@ -216,6 +216,31 @@ static int rtl8411_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
->  	return rtsx_pci_write_register(pcr, LDO_CTL, mask, val);
->  }
->  
-> +static int rtl8402_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
-> +{
-> +	u8 mask, val;
-> +	int err;
-> +
-> +	mask = (BPP_REG_TUNED18 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_MASK;
-> +	if (voltage == OUTPUT_3V3) {
-> +		err = rtsx_pci_write_register(pcr,
-> +				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_3v3);
-> +		if (err < 0)
-> +			return err;
-> +		val = (BPP_ASIC_3V3 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_3V3;
-> +	} else if (voltage == OUTPUT_1V8) {
-> +		err = rtsx_pci_write_register(pcr,
-> +				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_1v8);
-> +		if (err < 0)
-> +			return err;
-> +		val = (BPP_ASIC_2V0 << BPP_TUNED18_SHIFT_8402) | BPP_PAD_1V8;
-> +	} else {
-> +		return -EINVAL;
-> +	}
-> +
-> +	return rtsx_pci_write_register(pcr, LDO_CTL, mask, val);
-> +}
-> +
->  static unsigned int rtl8411_cd_deglitch(struct rtsx_pcr *pcr)
->  {
->  	unsigned int card_exist;
-> @@ -460,6 +485,10 @@ void rtl8411_init_params(struct rtsx_pcr *pcr)
->  			set_pull_ctrl_tables(rtl8411b_qfn64);
->  
->  		break;
-> +	case 0x5286:
-> +		rtl8411_pcr_ops.switch_output_voltage =
-> +			rtl8402_switch_output_voltage;
-> +		break;
->  	}
->  
->  	pcr->ops = &rtl8411_pcr_ops;
-> diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-> index ecc6852..865d209 100644
-> --- a/drivers/mfd/rtsx_pcr.c
-> +++ b/drivers/mfd/rtsx_pcr.c
-> @@ -57,6 +57,7 @@ static DEFINE_PCI_DEVICE_TABLE(rtsx_pci_ids) = {
->  	{ PCI_DEVICE(0x10EC, 0x5227), PCI_CLASS_OTHERS << 16, 0xFF0000 },
->  	{ PCI_DEVICE(0x10EC, 0x5249), PCI_CLASS_OTHERS << 16, 0xFF0000 },
->  	{ PCI_DEVICE(0x10EC, 0x5287), PCI_CLASS_OTHERS << 16, 0xFF0000 },
-> +	{ PCI_DEVICE(0x10EC, 0x5286), PCI_CLASS_OTHERS << 16, 0xFF0000 },
->  	{ 0, }
->  };
->  
-> @@ -1056,6 +1057,7 @@ static int rtsx_pci_init_chip(struct rtsx_pcr *pcr)
->  
->  	case 0x5287:
->  	case 0x5289:
-> +	case 0x5286:
->  		rtl8411_init_params(pcr);
->  		break;
->  	}
-
+diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
+index f43be6d..cba5c4d 100644
+--- a/sound/soc/fsl/fsl_ssi.c
++++ b/sound/soc/fsl/fsl_ssi.c
+@@ -144,6 +144,7 @@ struct fsl_ssi_private {
+ 	bool imx_ac97;
+ 	bool use_dma;
+ 	bool use_dual_fifo;
++	u8 i2s_mode;
+ 	struct clk *clk;
+ 	struct snd_dmaengine_dai_dma_data dma_params_tx;
+ 	struct snd_dmaengine_dai_dma_data dma_params_rx;
+@@ -325,14 +326,13 @@ static irqreturn_t fsl_ssi_isr(int irq, void *dev_id)
+ static int fsl_ssi_setup(struct fsl_ssi_private *ssi_private)
+ {
+ 	struct ccsr_ssi __iomem *ssi = ssi_private->ssi;
+-	u8 i2s_mode;
+ 	u8 wm;
+ 	int synchronous = ssi_private->cpu_dai_drv.symmetric_rates;
+ 
+ 	if (ssi_private->imx_ac97)
+-		i2s_mode = CCSR_SSI_SCR_I2S_MODE_NORMAL | CCSR_SSI_SCR_NET;
++		ssi_private->i2s_mode = CCSR_SSI_SCR_I2S_MODE_NORMAL | CCSR_SSI_SCR_NET;
+ 	else
+-		i2s_mode = CCSR_SSI_SCR_I2S_MODE_SLAVE;
++		ssi_private->i2s_mode = CCSR_SSI_SCR_I2S_MODE_SLAVE;
+ 
+ 	/*
+ 	 * Section 16.5 of the MPC8610 reference manual says that the SSI needs
+@@ -349,7 +349,7 @@ static int fsl_ssi_setup(struct fsl_ssi_private *ssi_private)
+ 	write_ssi_mask(&ssi->scr,
+ 		CCSR_SSI_SCR_I2S_MODE_MASK | CCSR_SSI_SCR_SYN,
+ 		CCSR_SSI_SCR_TFR_CLK_DIS |
+-		i2s_mode |
++		ssi_private->i2s_mode |
+ 		(synchronous ? CCSR_SSI_SCR_SYN : 0));
+ 
+ 	write_ssi(CCSR_SSI_STCR_TXBIT0 | CCSR_SSI_STCR_TFEN0 |
+@@ -517,6 +517,7 @@ static int fsl_ssi_hw_params(struct snd_pcm_substream *substream,
+ {
+ 	struct fsl_ssi_private *ssi_private = snd_soc_dai_get_drvdata(cpu_dai);
+ 	struct ccsr_ssi __iomem *ssi = ssi_private->ssi;
++	unsigned int channels = params_channels(hw_params);
+ 	unsigned int sample_size =
+ 		snd_pcm_format_width(params_format(hw_params));
+ 	u32 wl = CCSR_SSI_SxCCR_WL(sample_size);
+@@ -546,6 +547,11 @@ static int fsl_ssi_hw_params(struct snd_pcm_substream *substream,
+ 	else
+ 		write_ssi_mask(&ssi->srccr, CCSR_SSI_SxCCR_WL_MASK, wl);
+ 
++	if (!ssi_private->imx_ac97)
++		write_ssi_mask(&ssi->scr,
++				CCSR_SSI_SCR_NET | CCSR_SSI_SCR_I2S_MODE_MASK,
++				channels == 1 ? 0 : ssi_private->i2s_mode);
++
+ 	return 0;
+ }
+ 
+@@ -658,14 +664,13 @@ static const struct snd_soc_dai_ops fsl_ssi_dai_ops = {
+ static struct snd_soc_dai_driver fsl_ssi_dai_template = {
+ 	.probe = fsl_ssi_dai_probe,
+ 	.playback = {
+-		/* The SSI does not support monaural audio. */
+-		.channels_min = 2,
++		.channels_min = 1,
+ 		.channels_max = 2,
+ 		.rates = FSLSSI_I2S_RATES,
+ 		.formats = FSLSSI_I2S_FORMATS,
+ 	},
+ 	.capture = {
+-		.channels_min = 2,
++		.channels_min = 1,
+ 		.channels_max = 2,
+ 		.rates = FSLSSI_I2S_RATES,
+ 		.formats = FSLSSI_I2S_FORMATS,
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.4
+
+
