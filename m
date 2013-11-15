@@ -1,79 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab3KOPhV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 10:37:21 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:39636 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab3KOPhP (ORCPT
+	id S1751672Ab3KOPqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 10:46:16 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:48926 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab3KOPqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 10:37:15 -0500
-Date: Fri, 15 Nov 2013 15:37:08 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: micky <micky_ching@realsil.com.cn>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, linus.walleij@linaro.org
-Subject: Re: [PATCH 2/4] mfd: rtsx: Generify the switch voltage routine
-Message-ID: <20131115153708.GE4996@lee--X1>
-References: <1384421355-4434-1-git-send-email-lee.jones@linaro.org>
- <1384421355-4434-3-git-send-email-lee.jones@linaro.org>
- <52858DF6.7010800@realsil.com.cn>
+	Fri, 15 Nov 2013 10:46:03 -0500
+Message-ID: <528641B7.2080409@linaro.org>
+Date: Fri, 15 Nov 2013 10:45:59 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52858DF6.7010800@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 11/13] ARM: Finish renaming ARM kprobes APIs for sharing
+ with uprobes
+References: <1381871068-27660-1-git-send-email-dave.long@linaro.org>  <1381871068-27660-12-git-send-email-dave.long@linaro.org> <1384363014.3392.44.camel@linaro1.home>
+In-Reply-To: <1384363014.3392.44.camel@linaro1.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Switch output voltage may have some problem here.
-> 1. modify params of function in pcr_ops may affect other chips, like
-> rts52xx, and we may add other registers or value in the future, just
-> add params may not enough to handle this case. So I think different
-> chip should use a different function here, and modify the function
-> will not affect others.
+On 11/13/13 12:16, Jon Medhurst (Tixy) wrote:
+> On Tue, 2013-10-15 at 17:04 -0400, David Long wrote:
+>> From: "David A. Long" <dave.long@linaro.org>
+>>
+>> Use the prefix "probes_" for APIs and definitions to be shared between
+>> kprobes and uprobes. Pass additional information into the lower-level decoding
+>> functions to avoid having to duplicate architecture-specfific data structures.
+>> Make susbsystem-specific APIs static (non-global) again.  Make a couple of utility
+>> functions (probes_simulate_nop and probes_emulate_none) sharable and in a common
+>> file. Keep the current "action" tables specific to kprobes, as this is where
+>> uprobes functionality will be connected up to the instruction interpreter.
+>
+> That's a rather long list of things this patch is reorganising and makes
+> it very difficult to review. For those class of changes which are
+> independent of each other, can you do them as separate patches?
+>
+> Particularly, the change from using the function arguments
+>
+>      struct kprobe *p
+>
+> to
+>      probes_opcode_t opcode, probes_opcode_t *addr, struct arch_specific_insn *asi
+>
+> should be in it's own separate patch as that is spread out across multiple files
+> and functions.
 
-Okay, I agree to a certain extent. I'll drop this patch for now.
+OK, I will break this down further into separate patches.
 
-Can you please try to find a way to consolidate them. I'm really not
-keen on keeping 6 functions around that are mostly identical.
+> I have a few general comments on this patch...
+>
+> 1. I don't think we actually need to pass 'probes_opcode_t *addr' to the
+> simulation functions, this will be the same as regs->ARM_pc (except that
+> for thumb code 'addr' has bit0 set, which we don't actually care about).
+> So drop the new 'addr' argument, and we can also delete the definition of
+> thumb_probe_pc() and replace its use with 'regs->ARM_pc + 4'
 
-> 2. rtl8402 has another difference with 8411 here, it doesn't use
->  BPP_ASIC_1V8, but use BPP_ASIC_2V0.
-> 
-> so, I will send another patch to fix this problem.
-> 
-> >-static int rtl8411_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
-> >+static int rtl84xx_switch_output_voltage(struct rtsx_pcr *pcr,
-> >+					 u8 voltage, int shift)
-> >  {
-> >  	u8 mask, val;
-> >  	int err;
-> >-	mask = (BPP_REG_TUNED18 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_MASK;
-> >+	mask = (BPP_REG_TUNED18 << shift) | BPP_PAD_MASK;
-> >  	if (voltage == OUTPUT_3V3) {
-> >  		err = rtsx_pci_write_register(pcr,
-> >  				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_3v3);
-> >  		if (err < 0)
-> >  			return err;
-> >-		val = (BPP_ASIC_3V3 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_3V3;
-> >+		val = (BPP_ASIC_3V3 << shift) | BPP_PAD_3V3;
-> >  	} else if (voltage == OUTPUT_1V8) {
-> >  		err = rtsx_pci_write_register(pcr,
-> >  				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_1v8);
-> >  		if (err < 0)
-> >  			return err;
-> >-		val = (BPP_ASIC_1V8 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_1V8;
-> >+		val = (BPP_ASIC_1V8 << shift) | BPP_PAD_1V8;
-> >  	} else {
-> >  		return -EINVAL;
-> >  	}
-> 
-> 
+I had some trouble getting that to work before, but I'll try again.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> 2. Now we pass 'probes_opcode_t opcode' to simulation functions a lot of
+> them end up doing the redundant...
+>
+>     kprobe_opcode_t insn = opcode
+>
+> I would suggest deleting all of these assignments and either rename all
+> use of 'insn' to 'opcode' or just changing the function argument name to
+> 'insn'.
+
+OK, I'll have a go at that.
+
+> 3. I've a comment about the change to probes_decode_insn, I've snipped
+> the rest of the patch...
+>
+> [...]
+>>   int __kprobes
+>> -kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+>> +probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
+>>   				const union decode_item *table, bool thumb,
+>> -				const union decode_item *actions)
+>> +				bool usermode, const union decode_item *actions)
+>>   {
+>
+> The new argument 'usermode' is named for the use you are using it for,
+> i.e. uprobes, I think the code is more intuitive if it was called
+> something like 'no_emulate', because what the argument does is force all
+> emulate operations to become 'custom'.
+>
+> Perhaps to avoid double negatives like !no_emulate, the logic of the
+> argument could be inverted and it called 'use_emulation' or something.
+
+Or maybe just "emulate".
+
+>> -	const struct decode_header *h = (struct decode_header *)table;
+>> -	const struct decode_header *next;
+>> +	struct decode_header *h = (struct decode_header *)table;
+>> +	struct decode_header *next;
+>>   	bool matched = false;
+>>
+>> -	insn = prepare_emulated_insn(insn, asi, thumb);
+>> +	if (!usermode)
+>> +		insn = prepare_emulated_insn(insn, asi, thumb);
+>>
+>>   	for (;; h = next) {
+>>   		enum decode_type type = h->type_regs.bits & DECODE_TYPE_MASK;
+>> @@ -401,7 +412,7 @@ kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+>>   		if (!matched && (insn & h->mask.bits) != h->value.bits)
+>>   			continue;
+>>
+>> -		if (!decode_regs(&insn, regs))
+>> +		if (!decode_regs(&insn, regs, !usermode))
+>>   			return INSN_REJECTED;
+>>
+>>   		switch (type) {
+>> @@ -414,7 +425,8 @@ kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+>>
+>>   		case DECODE_TYPE_CUSTOM: {
+>>   			struct decode_custom *d = (struct decode_custom *)h;
+>> -			return actions[d->decoder.bits].decoder(insn, asi, h);
+>> +			return actions[d->decoder.bits].decoder(insn,
+>> +					asi, h);
+>>   		}
+>>
+>>   		case DECODE_TYPE_SIMULATE: {
+>> @@ -425,6 +437,11 @@ kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+>>
+>>   		case DECODE_TYPE_EMULATE: {
+>>   			struct decode_emulate *d = (struct decode_emulate *)h;
+>> +
+>> +			if (usermode)
+>> +				return actions[d->handler.bits].decoder(insn,
+>> +								asi, h);
+>> +
+>>   			asi->insn_handler = actions[d->handler.bits].handler;
+>>   			set_emulated_insn(insn, asi, thumb);
+>>   			return INSN_GOOD;
+>
+> [...]
+>
+
