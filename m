@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487Ab3KOOH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 09:07:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39868 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751727Ab3KOOHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 09:07:51 -0500
-Date: Fri, 15 Nov 2013 09:07:38 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
-        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-Message-ID: <20131115140738.GB6637@redhat.com>
-References: <20131113224503.GB25344@anatevka.fc.hp.com>
- <52840206.5020006@zytor.com>
- <20131113235708.GC25344@anatevka.fc.hp.com>
- <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
- <20131114180455.GA32212@anatevka.fc.hp.com>
- <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
- <20131115005049.GJ5116@anatevka.fc.hp.com>
- <20131115062417.GB9237@gmail.com>
- <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
- <5285C639.5040203@zytor.com>
+	id S1752514Ab3KOOLQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 09:11:16 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:57208 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617Ab3KOOLD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 09:11:03 -0500
+Date: Fri, 15 Nov 2013 06:11:00 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeff Liu <jeff.liu@oracle.com>
+Cc: linux-kernel@vger.kernel.org, jfs-discussion@lists.sourceforge.net,
+        jiri@resnulli.us, gregkh@linuxfoundation.org, oleg@redhat.com,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>, cluster-devel@redhat.com,
+        linux-mtd@lists.infradead.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 0/6] list: introduce list_last_entry_or_null()
+Message-ID: <20131115141100.GA17659@infradead.org>
+References: <5285A33C.4040808@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5285C639.5040203@zytor.com>
+In-Reply-To: <5285A33C.4040808@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 10:59:05PM -0800, H. Peter Anvin wrote:
-> On 11/14/2013 10:55 PM, Yinghai Lu wrote:
-> > 
-> > Why just asking distros to append ",high" in their installation
-> > program for 64bit by default?
-> > 
-> [...]
-> > 
-> > What is hpa's suggestion?
-> > 
+On Fri, Nov 15, 2013 at 12:29:48PM +0800, Jeff Liu wrote:
+> Hi Folks,
 > 
-> Pretty much what you just said ;)
+> This patch is trying to introduce a new list helper to retrieve the
+> last entry or return NULL if the list is empty corresponding to it,
+> which is inspired by Jiri Pirko's list_first_entry_or_null().
 
-I think crashkernel=X,high is not a good default choice for distros. 
-Reserving memory high reserves 72MB (or more) low memory for swiotlb. We
-work hard to keep crashkernel memory amount low and currently reserve
-128M by default. Now suddenly our total memory reservation will shoot
-to 200 MB if we choose ,high option. That's jump of more than 50%. It
-is not needed.
+How did we end up with the stupid _or_null prefix there?  I think the
+functionality is useful, but the naming is way to verbose, especially
+given that a list_first_entry or list_last_entry that optimizes away
+that one check doesn't seem useful.
 
-We can do dumping operation successfully in *less* reserved memory by
-reserving memory below 4G. And hence crashkernel=,high is not a good
-default.
-
-Instead, crashkernel=X is a good default if we are ready to change
-semantics a bit. If sufficient crashkernel memory is not available
-in low memory area, look for it above 4G. This incurs penalty of
-72M *only* if it has to and not by default on most of the systems.
-
-And this should solve jerry's problem too on *latest* kernels. For
-older kernels, we don't have ,high support. So using that is not
-an option. (until and unless somebody is ready to backport everything
-needed to boot old kernel above 4G).
-
-Thanks
-Vivek
+Instead of encoding detailed semantics in the name a good kerneldoc
+comment is way better.
