@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab3KON1L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:27:11 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:60104 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab3KON1B convert rfc822-to-8bit (ORCPT
+	id S1752145Ab3KON2C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 08:28:02 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:42633 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab3KON15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:27:01 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
-Subject: Re: [PATCH] Staging: btmtk_usb: Add hdev parameter to hdev->send driver callback
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20131115130820.GS5302@mwanda>
-Date: Fri, 15 Nov 2013 22:26:41 +0900
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, devel@driverdev.osuosl.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
+	Fri, 15 Nov 2013 08:27:57 -0500
+Message-ID: <5286215A.4020009@linux.com>
+Date: Fri, 15 Nov 2013 14:27:54 +0100
+From: Levente Kurusa <levex@linux.com>
+Reply-To: levex@linux.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: =?windows-1252?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>,
+        Caizhiyong <caizhiyong@hisilicon.com>
+CC: Mark Brown <broonie@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yu-Chen Cho <acho@suse.com>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F615BA13-BEC1-457B-8002-BC6C149039EA@holtmann.org>
-References: <1384517231-1605-1-git-send-email-geert@linux-m68k.org> <D32EAC93-D2DE-431C-9DCB-885C5AA10A3A@holtmann.org> <20131115130820.GS5302@mwanda>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-X-Mailer: Apple Mail (2.1822)
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
+        Levente Kurusa <ilevex.linux@gmail.com>
+Subject: Re: [PATCH] regmap: Fix 'ret' would return an uninitialized value
+References: <C3050A4DBA34F345975765E43127F10F1C08BAEF@szxeml512-mbs.china.huawei.com> <CAGG-pUT22xoksid-2GmJsDmVQk8gR8zHvAr=r3Z2E4BLf+1jJA@mail.gmail.com>
+In-Reply-To: <CAGG-pUT22xoksid-2GmJsDmVQk8gR8zHvAr=r3Z2E4BLf+1jJA@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
-
->> while this is patch is correct, I do not really care about staging drivers that actually bluntly violate my copyright.
->> 
+2013-11-15 14:00 keltezéssel, Geyslan Gregório Bem írta:
+> 2013/11/15 Caizhiyong <caizhiyong@hisilicon.com>:
+>> From: Cai Zhiyong <caizhiyong@huawei.com>
+>> Date: Mon, 11 Nov 2013 19:26:14 +0800
+>> Subject: [PATCH] regmap: Fix 'ret' would return an uninitialized value
+>>
+>> This patch give a warning when calling regmap_register_patch with
+>> parameter num_regs <= 0.
+>>
+>> When the num_regs parameter is zero and krealloc doesn't fail,
+>> then the code would return an uninitialized value. However,
+>> calling this function with num_regs == 0, would be a waste as it
+>> essentially does nothing.
+>>
+>> Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
+> Reviewed-by: Geyslan G. Bem <geyslan@gmail.com>
 > 
-> That's very cryptic.
+> Seems a good approach.
 > 
-> What is going on here?  I googled it and I wasn't able to find what you
-> are talking about.  Care to give us a hint and what you want us to do
-> here?
 
-the last time I checked, the majority of drivers/bluetooth/btusb.c has been written by myself. Now go and compare btusb.c to btmtk_usb.[ch].
+The patch doesn't apply. After manually applying this it
+threw a compilation error:
 
-> I have also added Johan Hedberg to the CC list because he also helped
-> break the build.  Don't do that.
+drivers/base/regmap/regmap.c: In function ‘regmap_register_patch’:
+drivers/base/regmap/regmap.c:2176:6: error: expected expression before ‘)’ token
 
-Yes, we are doing exactly that. It is a staging driver. I could not care less if a staging drivers breaks the build or not.
 
-If anybody cares about this driver, then take the time to merge it upstream. It has never been submitted to linux-bluetooth mailing list.
+Cai,
+You have missed the second parameter of WARN_ONCE().
+Please append what you'd prefer to have outputten once the condition evaluates to true.
 
-There are drivers that should have never been merged into staging. This is one of them. Look for yourself and explain to me why this driver is part of staging in the first place.
-
-Regards
-
-Marcel
-
+-- 
+Regards,
+Levente Kurusa
