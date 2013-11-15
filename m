@@ -1,100 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab3KOIQF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 03:16:05 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55664 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867Ab3KOIP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 03:15:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="409227764"
-From: Lan Tianyu <tianyu.lan@intel.com>
-To: rjw@rjwysocki.net, viresh.kumar@linaro.org
-Cc: Lan Tianyu <tianyu.lan@intel.com>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [Update PATCH 1/1] Cpufreq: Make governor data on nonboot cpus across system suspend/resume
-Date: Fri, 15 Nov 2013 16:15:34 +0800
-Message-Id: <1384503334-18809-1-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com>
-References: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com>
+	id S1756430Ab3KOITm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 03:19:42 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:51163 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab3KOITe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 03:19:34 -0500
+Date: Fri, 15 Nov 2013 17:19:29 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Shawn Bohrer <shawn.bohrer@gmail.com>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: 3.10.16 cgroup css_set_lock deadlock
+Message-ID: <20131115081929.GA11530@mtj.dyndns.org>
+References: <20131114232529.GB16725@sbohrermbp13-local.rgmadvisors.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131114232529.GB16725@sbohrermbp13-local.rgmadvisors.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, governor of nonboot cpus will be put to EXIT when system suspend.
-Since all these cpus will be unplugged and the governor usage_count decreases
-to zero. The governor data and its sysfs interfaces will be freed or released.
-This makes user config of these governors loss during suspend and resume.
+On Thu, Nov 14, 2013 at 05:25:29PM -0600, Shawn Bohrer wrote:
+> In trying to reproduce the cgroup_mutex deadlock I reported earlier
+> in https://lkml.org/lkml/2013/11/11/574 I believe I encountered a
+> different issue that I'm also unable to understand. This machine
+> started out reporting some soft lockups that look to me like they are
+> on a read_lock(css_set_lock):
+> 
+...
+> RIP: 0010:[<ffffffff8109253c>]  [<ffffffff8109253c>] cgroup_attach_task+0xdc/0x7a0
+...
+>  [<ffffffff81092e87>] attach_task_by_pid+0x167/0x1a0
+>  [<ffffffff81092ef3>] cgroup_tasks_write+0x13/0x20
 
-This doesn't happen on the governor covering boot cpu because it isn't
-unplugged during system suspend.
+Most likely the bug fixed by ea84753c98a7 ("cgroup: fix to break the
+while loop in cgroup_attach_task() correctly").  3.10.19 contains the
+backported fix.
 
-To fix this issue, skipping governor exit during system suspend and check
-policy governor data to determine whether the governor is really needed
-to be initialized when do init. If not, return EALREADY to indicate the
-governor has been initialized and should do nothing. __cpufreq_governor()
-convert EALREADY to 0 as return value for INIT event since governor is
-still under INIT state and can do START operation.
+Thanks.
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
----
-Fix some typos
-
- drivers/cpufreq/cpufreq.c          |  5 ++++-
- drivers/cpufreq/cpufreq_governor.c | 13 ++++++++++++-
- 2 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 02d534d..38f2e4a 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1239,7 +1239,7 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
- 
- 	/* If cpu is last user of policy, free policy */
- 	if (cpus == 1) {
--		if (has_target()) {
-+		if (has_target() && !frozen) {
- 			ret = __cpufreq_governor(policy,
- 					CPUFREQ_GOV_POLICY_EXIT);
- 			if (ret) {
-@@ -1822,6 +1822,9 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
- 			((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
- 		module_put(policy->governor->owner);
- 
-+	if ((event == CPUFREQ_GOV_POLICY_INIT) && ret == -EALREADY)
-+		ret = 0;
-+
- 	return ret;
- }
- 
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 0806c31..ddb93af 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -204,9 +204,20 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 
- 	switch (event) {
- 	case CPUFREQ_GOV_POLICY_INIT:
-+		/*
-+		 * In order to keep governor data across suspend/resume,
-+		 * Governor doesn't exit when suspend and will be
-+		 * reinitialized when resume. Here check policy governor
-+		 * data to determine whether the governor has been exited.
-+		 * If not, return EALREADY.
-+		 */
- 		if (have_governor_per_policy()) {
--			WARN_ON(dbs_data);
-+			if (dbs_data)
-+				return -EALREADY;
- 		} else if (dbs_data) {
-+			if (policy->governor_data == dbs_data)
-+				return -EALREADY;
-+
- 			dbs_data->usage_count++;
- 			policy->governor_data = dbs_data;
- 			return 0;
 -- 
-1.8.2.1
-
+tejun
