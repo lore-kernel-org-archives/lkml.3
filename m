@@ -1,243 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab3KONok (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:44:40 -0500
-Received: from 7.mo2.mail-out.ovh.net ([188.165.48.182]:55864 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751456Ab3KONoe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:44:34 -0500
-X-Greylist: delayed 317 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Nov 2013 08:44:34 EST
-Date: Fri, 15 Nov 2013 14:46:46 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Bo Shen <voice.shen@atmel.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>, nicolas.ferre@atmel.com,
-        alexandre.belloni@free-electrons.com, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        galak@codeaurora.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v7 1/2] PWM: atmel-pwm: add PWM controller driver
-Message-ID: <20131115134646.GO28304@ns203013.ovh.net>
-References: <1384509208-10762-1-git-send-email-voice.shen@atmel.com>
+	id S1752683Ab3KONpd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 08:45:33 -0500
+Received: from mga01.intel.com ([192.55.52.88]:32564 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751598Ab3KONpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 08:45:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,708,1378882800"; 
+   d="scan'208";a="434039211"
+Message-ID: <5286271D.3020808@intel.com>
+Date: Fri, 15 Nov 2013 15:52:29 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384509208-10762-1-git-send-email-voice.shen@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 2684708329810668339
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+To: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Adrian Hunter <adrian.hunter@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH V2] perf record: Make per-cpu mmaps the default.
+References: <1384460715-23198-1-git-send-email-acme@infradead.org> <1384460715-23198-11-git-send-email-acme@infradead.org> <20131115060643.GA9237@gmail.com> <5285FECE.7020802@intel.com>
+In-Reply-To: <5285FECE.7020802@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17:53 Fri 15 Nov     , Bo Shen wrote:
-> Add Atmel PWM controller driver based on PWM framework.
-> 
-> This is the basic function implementation of Atmel PWM controller.
-> It can work with PWM based led and backlight.
-> 
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
-> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
-> Changes in v7:
->   - fix issue for none device tree issues.
-> 
-> Changes in v6:
->   - using relaxed version for writel and readl
->   - add none device tree support
->   - change some define from lower case to upper case
->   - split device tree binding document as a separate patch
-> 
-> Changes in v5:
->   - call clk_disable directly, if so, it won't cause more than one channel
->     enabled, the clock can not be disabled.
-> 
-> Changes in v4:
->   - check the return value of clk_prepare()
->   - change channel register size as constant
-> 
-> Changes in v3:
->   - change compatible string from "atmel,sama5-pwm" to "atmel,sama5d3-pwm"
->   - Add PWM led example in binding documentation
->   - Using micro replace hard code
-> 
-> Changes in v2:
->   - Address the comments from Thierry Reding
-> 
->  drivers/pwm/Kconfig     |    9 ++
->  drivers/pwm/Makefile    |    1 +
->  drivers/pwm/pwm-atmel.c |  380 +++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 390 insertions(+)
->  create mode 100644 drivers/pwm/pwm-atmel.c
-> 
-> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> index eece329..5043572 100644
-> --- a/drivers/pwm/Kconfig
-> +++ b/drivers/pwm/Kconfig
-> @@ -41,6 +41,15 @@ config PWM_AB8500
->  	  To compile this driver as a module, choose M here: the module
->  	  will be called pwm-ab8500.
->  
-> +config PWM_ATMEL
-> +	tristate "Atmel PWM support"
-> +	depends on ARCH_AT91
-> +	help
-> +	  Generic PWM framework driver for Atmel SoC.
-> +
-> +	  To compile this driver as a module, choose M here: the module
-> +	  will be called pwm-atmel.
-> +
->  config PWM_ATMEL_TCB
->  	tristate "Atmel TC Block PWM support"
->  	depends on ATMEL_TCLIB && OF
-> diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-> index 8b754e4..1b99cfb 100644
-> --- a/drivers/pwm/Makefile
-> +++ b/drivers/pwm/Makefile
-> @@ -1,6 +1,7 @@
->  obj-$(CONFIG_PWM)		+= core.o
->  obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
->  obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
-> +obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
->  obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
->  obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
->  obj-$(CONFIG_PWM_EP93XX)	+= pwm-ep93xx.o
-> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
-> new file mode 100644
-> index 0000000..d012538
-> --- /dev/null
-> +++ b/drivers/pwm/pwm-atmel.c
-> @@ -0,0 +1,380 @@
-> +/*
-> + * Driver for Atmel Pulse Width Modulation Controller
-> + *
-> + * Copyright (C) 2013 Atmel Corporation
-> + *		 Bo Shen <voice.shen@atmel.com>
-> + *
-> + * Licensed under GPLv2.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/err.h>
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/pwm.h>
-> +#include <linux/slab.h>
-> +
-> +/* The following is global registers for PWM controller */
-> +#define PWM_ENA			0x04
-> +#define PWM_DIS			0x08
-> +#define PWM_SR			0x0C
-> +/* Bit field in SR */
-> +#define PWM_SR_ALL_CH_ON	0x0F
-> +
-> +/* The following register is PWM channel related registers */
-> +#define PWM_CH_REG_OFFSET	0x200
-> +#define PWM_CH_REG_SIZE		0x20
-> +
-> +#define PWM_CMR			0x0
-> +/* Bit field in CMR */
-> +#define PWM_CMR_CPOL		(1 << 9)
-> +#define PWM_CMR_UPD_CDTY	(1 << 10)
-> +
-> +/* The following registers for PWM v1 */
-> +#define PWMV1_CDTY		0x04
-> +#define PWMV1_CPRD		0x08
-> +#define PWMV1_CUPD		0x10
-> +
-> +/* The following registers for PWM v2 */
-> +#define PWMV2_CDTY		0x04
-> +#define PWMV2_CDTYUPD		0x08
-> +#define PWMV2_CPRD		0x0C
-> +#define PWMV2_CPRDUPD		0x10
-> +
-> +/* Max value for duty and period
-> + *
-> + * Although the duty and period register is 32 bit,
-> + * however only the LSB 16 bits are significant.
-> + */
-> +#define PWM_MAX_DTY		0xFFFF
-> +#define PWM_MAX_PRD		0xFFFF
-> +#define PRD_MAX_PRES		10
-> +
-> +struct atmel_pwm_chip {
-> +	struct pwm_chip chip;
-> +	struct clk *clk;
-> +	void __iomem *base;
-> +
-> +	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
-> +		       int dty, int prd);
-> +};
-> +
-> +static inline struct atmel_pwm_chip *to_atmel_pwm_chip(struct pwm_chip *chip)
-> +{
-> +	return container_of(chip, struct atmel_pwm_chip, chip);
-> +}
-> +
-> +static inline u32 atmel_pwm_readl(struct atmel_pwm_chip *chip,
-> +				  unsigned long offset)
-> +{
-> +	return readl_relaxed(chip->base + offset);
-> +}
-> +
-> +static inline void atmel_pwm_writel(struct atmel_pwm_chip *chip,
-> +				    unsigned long offset, unsigned long val)
-> +{
-> +	writel_relaxed(val, chip->base + offset);
-> +}
-> +
-> +static inline u32 atmel_pwm_ch_readl(struct atmel_pwm_chip *chip,
-> +				     unsigned int ch, unsigned long offset)
-> +{
-> +	return readl_relaxed(chip->base + PWM_CH_REG_OFFSET +
-> +			ch * PWM_CH_REG_SIZE + offset);
-> +}
-> +
-> +static inline void atmel_pwm_ch_writel(struct atmel_pwm_chip *chip,
-> +				       unsigned int ch, unsigned long offset,
-> +				       unsigned long val)
-> +{
-> +	writel_relaxed(val, chip->base + PWM_CH_REG_OFFSET +
-> +			ch * PWM_CH_REG_SIZE + offset);
-> +}
-> +
-> +static int atmel_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-> +		int duty_ns, int period_ns)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-> +	unsigned long clk_rate, prd, dty;
-> +	unsigned long long div;
-> +	int ret, pres = 0;
-> +
-> +	clk_rate = clk_get_rate(atmel_pwm->clk);
-> +	div = clk_rate;
-> +
-> +	/* Calculate the period cycles */
-> +	while (div > PWM_MAX_PRD) {
-> +		div = clk_rate / (1 << pres);
-> +		div = div * period_ns;
-> +		/* 1/Hz = 100000000 ns */
-> +		do_div(div, 1000000000);
-> +
-> +		if (pres++ > PRD_MAX_PRES) {
-> +			pr_err("PRES is bigger than maximum pre-scaler\n");
-if we have more than 1 pwm with pr_err we can known which is it use dev_xxx
-instead of all pr_xx
+This affects the -p, -t and -u options that
+previously defaulted to per-thread mmaps.
+
+Consequently add an option to select
+per-thread mmaps to support the old
+behaviour.
+
+Note that per-thread can be used with a
+workload-only (i.e. none of -p, -t, -u,
+-a or -C is selected) to get a per-thread
+mmap with no inheritance.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+
+Changes in V2:
+
+	Ensure PERF_SAMPLE_TIME is set for per-cpu mmaps.
 
 
-with this Ack
+ tools/perf/Documentation/perf-record.txt     | 10 +++++-----
+ tools/perf/builtin-record.c                  |  5 +++--
+ tools/perf/tests/attr/test-record-no-inherit |  2 +-
+ tools/perf/util/evlist.c                     |  6 ++++--
+ tools/perf/util/evsel.c                      |  5 +++--
+ tools/perf/util/target.c                     | 11 ++++++++++-
+ tools/perf/util/target.h                     |  4 +++-
+ 7 files changed, 29 insertions(+), 14 deletions(-)
 
-Best Regards,
-J.
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 43b42c4..6ac867e 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -201,11 +201,11 @@ abort events and some memory events in precise mode on modern Intel CPUs.
+ --transaction::
+ Record transaction flags for transaction related events.
+ 
+---force-per-cpu::
+-Force the use of per-cpu mmaps.  By default, when tasks are specified (i.e. -p,
+--t or -u options) per-thread mmaps are created.  This option overrides that and
+-forces per-cpu mmaps.  A side-effect of that is that inheritance is
+-automatically enabled.  Add the -i option also to disable inheritance.
++--per-thread::
++Use per-thread mmaps.  By default per-cpu mmaps are created.  This option
++overrides that and uses per-thread mmaps.  A side-effect of that is that
++inheritance is automatically disabled.  --per-thread is ignored with a warning
++if combined with -a or -C options.
+ 
+ SEE ALSO
+ --------
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 7c8020a..f5b18b8 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -800,6 +800,7 @@ static struct perf_record record = {
+ 		.freq		     = 4000,
+ 		.target		     = {
+ 			.uses_mmap   = true,
++			.default_per_cpu = true,
+ 		},
+ 	},
+ };
+@@ -888,8 +889,8 @@ const struct option record_options[] = {
+ 		    "sample by weight (on special events only)"),
+ 	OPT_BOOLEAN(0, "transaction", &record.opts.sample_transaction,
+ 		    "sample transaction flags (special events only)"),
+-	OPT_BOOLEAN(0, "force-per-cpu", &record.opts.target.force_per_cpu,
+-		    "force the use of per-cpu mmaps"),
++	OPT_BOOLEAN(0, "per-thread", &record.opts.target.per_thread,
++		    "use per-thread mmaps"),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/tests/attr/test-record-no-inherit b/tools/perf/tests/attr/test-record-no-inherit
+index 9079a25..44edcb2 100644
+--- a/tools/perf/tests/attr/test-record-no-inherit
++++ b/tools/perf/tests/attr/test-record-no-inherit
+@@ -3,5 +3,5 @@ command = record
+ args    = -i kill >/dev/null 2>&1
+ 
+ [event:base-record]
+-sample_type=259
++sample_type=263
+ inherit=0
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index bbc746a..76fa764 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -819,8 +819,10 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
+ 	if (evlist->threads == NULL)
+ 		return -1;
+ 
+-	if (target->force_per_cpu)
+-		evlist->cpus = cpu_map__new(target->cpu_list);
++	if (target->default_per_cpu)
++		evlist->cpus = target->per_thread ?
++					cpu_map__dummy_new() :
++					cpu_map__new(target->cpu_list);
+ 	else if (target__has_task(target))
+ 		evlist->cpus = cpu_map__dummy_new();
+ 	else if (!target__has_cpu(target) && !target->uses_mmap)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 46dd4c2..77e38ff 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -572,6 +572,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 	struct perf_evsel *leader = evsel->leader;
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	int track = !evsel->idx; /* only the first counter needs these */
++	bool per_cpu = opts->target.default_per_cpu && !opts->target.per_thread;
+ 
+ 	attr->sample_id_all = perf_missing_features.sample_id_all ? 0 : 1;
+ 	attr->inherit	    = !opts->no_inherit;
+@@ -645,7 +646,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 		}
+ 	}
+ 
+-	if (target__has_cpu(&opts->target) || opts->target.force_per_cpu)
++	if (target__has_cpu(&opts->target))
+ 		perf_evsel__set_sample_bit(evsel, CPU);
+ 
+ 	if (opts->period)
+@@ -653,7 +654,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 
+ 	if (!perf_missing_features.sample_id_all &&
+ 	    (opts->sample_time || !opts->no_inherit ||
+-	     target__has_cpu(&opts->target) || opts->target.force_per_cpu))
++	     target__has_cpu(&opts->target) || per_cpu))
+ 		perf_evsel__set_sample_bit(evsel, TIME);
+ 
+ 	if (opts->raw_samples) {
+diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
+index 3c778a0..e74c596 100644
+--- a/tools/perf/util/target.c
++++ b/tools/perf/util/target.c
+@@ -55,6 +55,13 @@ enum target_errno target__validate(struct target *target)
+ 			ret = TARGET_ERRNO__UID_OVERRIDE_SYSTEM;
+ 	}
+ 
++	/* THREAD and SYSTEM/CPU are mutually exclusive */
++	if (target->per_thread && (target->system_wide || target->cpu_list)) {
++		target->per_thread = false;
++		if (ret == TARGET_ERRNO__SUCCESS)
++			ret = TARGET_ERRNO__SYSTEM_OVERRIDE_THREAD;
++	}
++
+ 	return ret;
+ }
+ 
+@@ -100,6 +107,7 @@ static const char *target__error_str[] = {
+ 	"UID switch overriding CPU",
+ 	"PID/TID switch overriding SYSTEM",
+ 	"UID switch overriding SYSTEM",
++	"SYSTEM/CPU switch overriding PER-THREAD",
+ 	"Invalid User: %s",
+ 	"Problems obtaining information for user %s",
+ };
+@@ -131,7 +139,8 @@ int target__strerror(struct target *target, int errnum,
+ 	msg = target__error_str[idx];
+ 
+ 	switch (errnum) {
+-	case TARGET_ERRNO__PID_OVERRIDE_CPU ... TARGET_ERRNO__UID_OVERRIDE_SYSTEM:
++	case TARGET_ERRNO__PID_OVERRIDE_CPU ...
++	     TARGET_ERRNO__SYSTEM_OVERRIDE_THREAD:
+ 		snprintf(buf, buflen, "%s", msg);
+ 		break;
+ 
+diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+index 2d0c506..31dd2e9 100644
+--- a/tools/perf/util/target.h
++++ b/tools/perf/util/target.h
+@@ -12,7 +12,8 @@ struct target {
+ 	uid_t	     uid;
+ 	bool	     system_wide;
+ 	bool	     uses_mmap;
+-	bool	     force_per_cpu;
++	bool	     default_per_cpu;
++	bool	     per_thread;
+ };
+ 
+ enum target_errno {
+@@ -33,6 +34,7 @@ enum target_errno {
+ 	TARGET_ERRNO__UID_OVERRIDE_CPU,
+ 	TARGET_ERRNO__PID_OVERRIDE_SYSTEM,
+ 	TARGET_ERRNO__UID_OVERRIDE_SYSTEM,
++	TARGET_ERRNO__SYSTEM_OVERRIDE_THREAD,
+ 
+ 	/* for target__parse_uid() */
+ 	TARGET_ERRNO__INVALID_UID,
+-- 
+1.7.11.7
+
