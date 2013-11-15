@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758359Ab3KOL16 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 06:27:58 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50142 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757907Ab3KOL1t (ORCPT
+	id S1758135Ab3KOLa5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 06:30:57 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:44192 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624Ab3KOLat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 06:27:49 -0500
-Date: Fri, 15 Nov 2013 11:26:50 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Tony Lindgren <tony@atomide.com>, Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Subject: Re: [PATCH 2/2] dt: binding documentation for isp1704 charger
-Message-ID: <20131115112650.GF1709@e106331-lin.cambridge.arm.com>
-References: <1384432734-1490-1-git-send-email-sre@debian.org>
- <1384432734-1490-2-git-send-email-sre@debian.org>
+	Fri, 15 Nov 2013 06:30:49 -0500
+Date: Fri, 15 Nov 2013 15:30:46 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf code using smp_processor_id() in preemptible [00000000] code
+Message-ID: <20131115113046.GA26143@moon>
+References: <20131115032907.GA25243@redhat.com>
+ <20131115100254.GC2965@twins.programming.kicks-ass.net>
+ <20131115101946.GG1754@moon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384432734-1490-2-git-send-email-sre@debian.org>
-Thread-Topic: [PATCH 2/2] dt: binding documentation for isp1704 charger
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131115101946.GG1754@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 12:38:54PM +0000, Sebastian Reichel wrote:
-> Add devicetree binding documentation for isp1704-charger.
+On Fri, Nov 15, 2013 at 02:19:46PM +0400, Cyrill Gorcunov wrote:
 > 
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
-> ---
->  Documentation/devicetree/bindings/power/isp1704.txt | 17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/power/isp1704.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/power/isp1704.txt b/Documentation/devicetree/bindings/power/isp1704.txt
-> new file mode 100644
-> index 0000000..bbeec11
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/power/isp1704.txt
-> @@ -0,0 +1,17 @@
-> +Binding for NXP ISP1704 USB Charger Detection
-> +
-> +Required properties:
-> +- compatible: Should contain one of the following:
-> + * "nxp,isp1704"
-> +- nxp,enable-gpio: Should contain a phandle to the
+> Thanks for report, Dave!
 
-Nit: phandle + gpio-specifier
+Dave, could you please give the patch a shot?
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: x86, perf: P4 PMU -- protect p4_pmu_schedule_events from preemption
 
-Otherwise this looks fine.
+Dave reported
 
-Mark.
+ | BUG: using smp_processor_id() in preemptible [00000000] code: trinity-main/890
+ | caller is p4_pmu_schedule_events+0x25/0x4c0
+ | CPU: 0 PID: 890 Comm: trinity-main Not tainted 3.12.0+ #3
+ | Hardware name: Dell Inc.                 Precision WorkStation 470    /0P7996, BIOS A05 05/18/2005
+ | ffff88001e675668 ffff880025e79d00 ffffffff8171f332 0000000000000000
+ | ffff880025e79d18 ffffffff8133132a 0000000000000002 ffff880025e79dc0
+ | ffffffff81018e55 ffff88001e675668 00000000000080d0 ffff88001e675668
+ |Call Trace:
+ | [<ffffffff8171f332>] dump_stack+0x4e/0x7a
+ | [<ffffffff8133132a>] debug_smp_processor_id+0xca/0xe0
+ | [<ffffffff81018e55>] p4_pmu_schedule_events+0x25/0x4c0
+ | [<ffffffff811a5c9f>] ? kmem_cache_alloc_trace+0x12f/0x2d0
+ | [<ffffffff810160ff>] ? allocate_fake_cpuc+0x2f/0x90
+ | [<ffffffff81016443>] x86_pmu_event_init+0x193/0x440
+ | [<ffffffff81146850>] perf_init_event+0x250/0x330
+ | [<ffffffff81146600>] ? perf_pmu_unregister+0x160/0x160
+ | [<ffffffff81146ca8>] perf_event_alloc+0x378/0x420
+ | [<ffffffff81147335>] SYSC_perf_event_open+0x5e5/0xa80
+ | [<ffffffff81147b89>] SyS_perf_event_open+0x9/0x10
+ | [<ffffffff81731ee4>] tracesys+0xdd/0xe2
+
+When we schedule event we need to disable preempt. The
+problem the same as fixed in commit 137351e0feeb (I simply
+managed to miss this routine in first place).
+
+Reported-by: Dave Jones <davej@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Cyrill Gorcunov <gorcunov@gmail.com>
+---
+ arch/x86/kernel/cpu/perf_event_p4.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+===================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -1207,7 +1207,7 @@ static int p4_pmu_schedule_events(struct
+ {
+ 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+ 	unsigned long escr_mask[BITS_TO_LONGS(P4_ESCR_MSR_TABLE_SIZE)];
+-	int cpu = smp_processor_id();
++	int cpu = get_cpu();
+ 	struct hw_perf_event *hwc;
+ 	struct p4_event_bind *bind;
+ 	unsigned int i, thread, num;
+@@ -1267,6 +1267,7 @@ reserve:
+ 	}
+ 
+ done:
++	put_cpu();
+ 	return num ? -EINVAL : 0;
+ }
+ 
