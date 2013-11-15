@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab3KOR4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 12:56:12 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:59761 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab3KOR4E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 12:56:04 -0500
-Date: Fri, 15 Nov 2013 13:04:23 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: perf bug: bad page map
-Message-ID: <alpine.DEB.2.10.1311151300120.12594@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1752969Ab3KOSDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 13:03:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58363 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752227Ab3KOSDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 13:03:49 -0500
+Date: Fri, 15 Nov 2013 13:03:25 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
+        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+Message-ID: <20131115180324.GD6637@redhat.com>
+References: <20131113235708.GC25344@anatevka.fc.hp.com>
+ <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
+ <20131114180455.GA32212@anatevka.fc.hp.com>
+ <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
+ <20131115005049.GJ5116@anatevka.fc.hp.com>
+ <20131115062417.GB9237@gmail.com>
+ <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
+ <5285C639.5040203@zytor.com>
+ <20131115140738.GB6637@redhat.com>
+ <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 15, 2013 at 09:33:41AM -0800, Yinghai Lu wrote:
 
-(figured out the minicom issue).
+[..]
+> > I think crashkernel=X,high is not a good default choice for distros.
+> > Reserving memory high reserves 72MB (or more) low memory for swiotlb. We
+> > work hard to keep crashkernel memory amount low and currently reserve
+> > 128M by default. Now suddenly our total memory reservation will shoot
+> > to 200 MB if we choose ,high option. That's jump of more than 50%. It
+> > is not needed.
+> 
+> If the system support intel IOMMU, we only need to that 72M for SWIOTLB
+> or AMD workaround.
+> If the user really care that for intel iommu enable system, they could use
+> "crashkernel=0,low" to have that 72M back.
+> 
+> and that 72M is under 4G instead of 896M.
+> 
+> so reserve 72M is not better than reserve 128M?
 
-Anyway while trying to reproduce the last bug I instead got this with
-the perf_fuzzer.
+This 72M is on top of 128M reserved. Also IOMMU support is very flaky
+with kdump and in fact on most of the system it might not work. So
+majority of systems will pay this cost of 72M.
 
-Is it worth continuing to run and report these issues?  I'm losing track 
-of all the open bugs.
+> 
+> >
+> > We can do dumping operation successfully in *less* reserved memory by
+> > reserving memory below 4G. And hence crashkernel=,high is not a good
+> > default.
+> >
+> > Instead, crashkernel=X is a good default if we are ready to change
+> > semantics a bit. If sufficient crashkernel memory is not available
+> > in low memory area, look for it above 4G. This incurs penalty of
+> > 72M *only* if it has to and not by default on most of the systems.
+> >
+> > And this should solve jerry's problem too on *latest* kernels. For
+> > older kernels, we don't have ,high support. So using that is not
+> > an option. (until and unless somebody is ready to backport everything
+> > needed to boot old kernel above 4G).
+> 
+> that problem looks not related.
+> 
+> I have one system with 6TiB memory, kdump does not work even
+> crashkernel=512M in legacy mode. ( it only work on system with
+> 4.5TiB).
 
-Vince
+Recently I tested one system with 6TB of memory and dumped successfully
+with 512MB reserved under 896MB. Also I have heard reports of successful
+dump of 12TB system with 512MB reserved below 896MB (due to cyclic
+mode of makedumpfile).
 
-[ 1618.118179] BUG: Bad page map in process perf_fuzzer  pte:ffff8800c4d60040 pmd:bd86a067
-[ 1618.142177] addr:0000000000409000 vm_flags:00000875 anon_vma:          (null) mapping:ffff8800cb74adf0 index:9
-[ 1618.172142] vma->vm_ops->fault: filemap_fault+0x0/0x358
-[ 1618.187783] vma->vm_file->f_op->mmap: ext4_file_mmap+0x0/0x48
-[ 1618.204981] CPU: 1 PID: 24819 Comm: perf_fuzzer Not tainted 3.12.0 #4
-[ 1618.224256] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
-[ 1618.250825]  0000000000409000 ffff8800bf6dfaa8 ffffffff8151d8ec 0000000000000000
-[ 1618.273081]  ffff8800c89ac928 ffff8800bf6dfaf8 ffffffff810ed692 dead000000200200
-[ 1618.295345]  00000000c03df067 ffff8800bf6dfbe8 0000000000409000 ffffea0002bc2fe8
-[ 1618.317603] Call Trace:
-[ 1618.324951]  [<ffffffff8151d8ec>] dump_stack+0x49/0x5d
-[ 1618.340355]  [<ffffffff810ed692>] print_bad_pte+0x1f5/0x213
-[ 1618.357059]  [<ffffffff810ef43c>] unmap_single_vma+0x511/0x666
-[ 1618.374540]  [<ffffffff810ef5c3>] unmap_vmas+0x32/0x49
-[ 1618.389934]  [<ffffffff810f3804>] exit_mmap+0x84/0x10d
-[ 1618.405343]  [<ffffffff8105bb15>] ? hrtimer_try_to_cancel+0x41/0x4b
-[ 1618.424129]  [<ffffffff8103ac43>] mmput+0x4b/0xd1
-[ 1618.438227]  [<ffffffff8103ec76>] do_exit+0x36c/0x936
-[ 1618.453366]  [<ffffffff810c7312>] ? update_context_time+0x11/0x34
-[ 1618.471628]  [<ffffffff8100951b>] ? native_sched_clock+0x3b/0x3d
-[ 1618.489635]  [<ffffffff8106730d>] ? sched_clock_local+0x1c/0x82
-[ 1618.507376]  [<ffffffff8103f2b8>] do_group_exit+0x78/0xa0
-[ 1618.523563]  [<ffffffff8104c898>] get_signal_to_deliver+0x46d/0x48a
-[ 1618.542347]  [<ffffffff810c8ac7>] ? ctx_sched_in+0x35/0x185
-[ 1618.559051]  [<ffffffff810c8c80>] ? perf_event_sched_in+0x69/0x72
-[ 1618.577318]  [<ffffffff81002513>] do_signal+0x46/0x5f5
-[ 1618.592724]  [<ffffffff810c8ffe>] ? __perf_event_task_sched_in+0x3a/0x10e
-[ 1618.613071]  [<ffffffff8106699f>] ? finish_task_switch+0x46/0x98
-[ 1618.631075]  [<ffffffff8151f832>] ? __schedule+0x51c/0x54b
-[ 1618.647516]  [<ffffffff81002aee>] do_notify_resume+0x2c/0x64
-[ 1618.664486]  [<ffffffff81520ef5>] retint_signal+0x3d/0x78
-[ 1618.680661] Disabling lock debugging due to kernel taint
+So with newer releases only reason one might want to reserve more
+memory is that it might provide speed benefits. We need more testing
+to quantify this.
 
+> --- first kernel can reserve the 512M under 896M, second kernel will
+> OOM as it load driver for every pci devices...
+> 
+> So why would RH guys not spend some time on optimizing your kdump initrd
+> build scripts and only put dump device related driver in it?
+
+Try latest Fedora and that's what we do. Now we have moved to dracut
+based initramfs generation and we tell dracut that build initramfs for
+host and additional dump destination and dracut builds it for those only.
+I think there might be scope for further optimization, but I don't think
+that's the problem any more. 
+
+So issue remains that crashkernel=X,high is not a good default choice
+because it consumes extra 72M which we don't have to.
+
+Thanks
+Vivek
