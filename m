@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab3KOWfZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 17:35:25 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:41077 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3KOWfS (ORCPT
+	id S1753286Ab3KOWhC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 17:37:02 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:46901 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017Ab3KOWgy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 17:35:18 -0500
-Message-ID: <5286A1A4.2020905@linaro.org>
-Date: Fri, 15 Nov 2013 14:35:16 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Amit Pundir <amit.pundir@linaro.org>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH v3] epoll: drop EPOLLWAKEUP if PM_SLEEP is disabled
-References: <1384500391-20513-1-git-send-email-amit.pundir@linaro.org> <4921878.yXb9shUEsy@vostro.rjw.lan> <52866D8D.6070801@linaro.org> <2338693.sZIlYGM98f@vostro.rjw.lan>
-In-Reply-To: <2338693.sZIlYGM98f@vostro.rjw.lan>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Nov 2013 17:36:54 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
+Subject: Re: [PATCH] Staging: btmtk_usb: Add hdev parameter to hdev->send driver callback
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <6C5AC1E9-D9A0-473A-B47A-345018DFAC3C@holtmann.org>
+Date: Sat, 16 Nov 2013 07:36:31 +0900
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, devel@driverdev.osuosl.org,
+        Johan Hedberg <johan.hedberg@intel.com>, Yu-Chen Cho <acho@suse.com>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>,
+        jay.hung@mediatek.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <324E99F5-B9B7-4E56-BE91-42964AFF5BA8@holtmann.org>
+References: <1384517231-1605-1-git-send-email-geert@linux-m68k.org> <D32EAC93-D2DE-431C-9DCB-885C5AA10A3A@holtmann.org> <20131115130820.GS5302@mwanda> <F615BA13-BEC1-457B-8002-BC6C149039EA@holtmann.org> <20131115212936.GC14897@kroah.com> <6C5AC1E9-D9A0-473A-B47A-345018DFAC3C@holtmann.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1822)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 02:40 PM, Rafael J. Wysocki wrote:
-> On Friday, November 15, 2013 10:53:01 AM John Stultz wrote:
->> On 11/15/2013 07:10 AM, Rafael J. Wysocki wrote:
->>> On Friday, November 15, 2013 12:56:31 PM Amit Pundir wrote:
->>>> Drop EPOLLWAKEUP from epoll events mask if CONFIG_PM_SLEEP is disabled.
->>>>
->>>> Signed-off-by: Amit Pundir <amit.pundir@linaro.org>
->>> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>
->>> Or am I supposed to take care of this?
->> I would assume it would be you, but maybe Al would prefer to take it?
->>
->> Also, should this be also marked for stable?
-> Well, do people see it in production?
+Hi Greg,
 
-I guess its unlikely, but it seems like its possible. I guess I've got
-no objection to holding off unless someone else hits this.
+>>>>> while this is patch is correct, I do not really care about staging drivers that actually bluntly violate my copyright.
+>>>>> 
+>>>> 
+>>>> That's very cryptic.
+>>>> 
+>>>> What is going on here?  I googled it and I wasn't able to find what you
+>>>> are talking about.  Care to give us a hint and what you want us to do
+>>>> here?
+>>> 
+>>> the last time I checked, the majority of drivers/bluetooth/btusb.c has been written by myself. Now go and compare btusb.c to btmtk_usb.[ch].
+>>> 
+>>>> I have also added Johan Hedberg to the CC list because he also helped
+>>>> break the build.  Don't do that.
+>>> 
+>>> Yes, we are doing exactly that. It is a staging driver. I could not care less if a staging drivers breaks the build or not.
+>>> 
+>>> If anybody cares about this driver, then take the time to merge it upstream. It has never been submitted to linux-bluetooth mailing list.
+>>> 
+>>> There are drivers that should have never been merged into staging.
+>>> This is one of them. Look for yourself and explain to me why this
+>>> driver is part of staging in the first place.
+>> 
+>> Because it was sent to me by a developer?
+> 
+> it is a problem when staging just becomes a dumping ground for drivers that the distributions find somewhere on the Internet or CD-ROMs. And then nobody has any intentions to clean up and integrate properly. This one did not even go through linux-bluetooth mailing list once. It was submitted right to staging. And then the submitter walked away.
 
-thanks
--john
+and if I quote the TODO file:
+
+  TODO:
+          - checkpatch.pl clean
+          - determine if the driver should not be using a duplicate
+            version of the usb-bluetooth interface code, but should
+            be merged into the drivers/bluetooth/ directory and
+            infrastructure instead.
+          - review by the bluetooth developer community
+
+  Please send any patches for this driver to Yu-Chen, Cho <acho@suse.com> and
+  jay.hung@mediatek.com
+
+So from the submission we can assume that the submitter knew that this was duplicated code. The code also never got submitted for review to linux-bluetooth. And now 6 month later, none of the TODO items have been actually worked on.
+
+I do not know what your timeline is for removing drivers from staging, but this one seems to be a good candidate to get removed next.
+
+Regards
+
+Marcel
 
