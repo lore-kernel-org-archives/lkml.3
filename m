@@ -1,147 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab3KONtY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 08:49:24 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:35379 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762Ab3KONrk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 08:47:40 -0500
-From: Roberto Sassu <roberto.sassu@polito.it>
-To: linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
-        zohar@us.ibm.com, d.kasatkin@samsung.com, james.l.morris@oracle.com,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH 3/6] ima: remove unneeded size_limit argument from ima_eventdigest_init_common()
-Date: Fri, 15 Nov 2013 14:45:41 +0100
-Message-Id: <1384523146-9290-4-git-send-email-roberto.sassu@polito.it>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1384523146-9290-1-git-send-email-roberto.sassu@polito.it>
-References: <1384523146-9290-1-git-send-email-roberto.sassu@polito.it>
+	id S1753383Ab3KONti (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 08:49:38 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:34168 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753315Ab3KONtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 08:49:10 -0500
+Message-ID: <52862648.4000304@ti.com>
+Date: Fri, 15 Nov 2013 07:48:56 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----2C1FC58227FBFF80ECBDB65C7EFCFFAF"
+To: Viresh Kumar <viresh.kumar@linaro.org>, <rjw@sisk.pl>
+CC: <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
+        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <tianyu.lan@intel.com>,
+        <jinchoi@broadcom.com>, <sebastian.capella@linaro.org>
+Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
+References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org>
+In-Reply-To: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an S/MIME signed message
+On 11/15/2013 04:12 AM, Viresh Kumar wrote:
+> This patch adds PM notifiers for handling suspend/resume of cpufreq governors.
+> This is required for early suspend and late resume of governors.
+> 
+> There are multiple reasons that support this patch:
+> - Firstly it looks very much logical to stop governors when we know we are going
+>   into suspend. But the question is when? Is PM notifiers the right place?
+>   Following reasons are the supporting hands for this decision.
+> - Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board
+>   wasn't working well with suspend/resume as calls for removing non-boot CPUs
+>   was turning out into a call to drivers ->target() which then tries to play
+>   with regulators. But regulators and their I2C bus were already suspended and
+>   this resulted in a failure. This is why we need a PM notifier here.
+> - Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found another issue where
+>   tunables configuration for clusters/sockets with non-boot CPUs was getting
+>   lost after suspend/resume, as we were notifying governors with
+>   CPUFREQ_GOV_POLICY_EXIT on removal of the last cpu for that policy and so
+>   deallocating memory for tunables.
+> 
+> All above problems get fixed with having a PM notifier in place which will stop
+> any operation on governor. Hence no need to do any special handling of variables
+> like (frozen) in suspend/resume paths.
+> 
+> Reported-by: Lan Tianyu <tianyu.lan@intel.com>
+> Reported-by: Nishanth Menon <nm@ti.com>
+> Reported-by: Jinhyuk Choi <jinchoi@broadcom.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> 
+> Hi Guys,
+> 
+> Can you please verify if this fixes issues reported by you? I have tested this
+> for multiple suspend-resumes on my thinkpad. It doesn't crash :)
 
-------2C1FC58227FBFF80ECBDB65C7EFCFFAF
+Yes, this does fix the issue for me.
 
-This patch removes the 'size_limit' argument
-from ima_eventdigest_init_common(). Since the 'd' field will never include
-the hash algorithm as prefix and the 'd-ng' will always have it, we can
-use the hash algorithm to differentiate the two cases in the modified
-function (it is equal to HASH_ALGO__LAST in the first case, the opposite
-in the second).
+Tested-by: Nishanth Menon <nm@ti.com>
+based on vendor kernel on top of v3.12 tag (equivalent diff:
+http://pastebin.mozilla.org/3609407)
 
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
----
- security/integrity/ima/ima_template_lib.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+OMAP5-uEVM(OMAP5432): http://pastebin.mozilla.org/3609396
 
-diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
-index 4752a53..6d01c69 100644
---- a/security/integrity/ima/ima_template_lib.c
-+++ b/security/integrity/ima/ima_template_lib.c
-@@ -158,8 +158,7 @@ void ima_show_template_sig(struct seq_file *m, enum ima_show_type show,
- }
- 
- static int ima_eventdigest_init_common(u8 *digest, u32 digestsize, u8 hash_algo,
--				       struct ima_field_data *field_data,
--				       bool size_limit)
-+				       struct ima_field_data *field_data)
- {
- 	/*
- 	 * digest formats:
-@@ -172,11 +171,10 @@ static int ima_eventdigest_init_common(u8 *digest, u32 digestsize, u8 hash_algo,
- 	enum data_formats fmt = DATA_FMT_DIGEST;
- 	u32 offset = 0;
- 
--	if (!size_limit) {
-+	if (hash_algo < HASH_ALGO__LAST) {
- 		fmt = DATA_FMT_DIGEST_WITH_ALGO;
--		if (hash_algo < HASH_ALGO__LAST)
--			offset += snprintf(buffer, CRYPTO_MAX_ALG_NAME + 1,
--					   "%s", hash_algo_name[hash_algo]);
-+		offset += snprintf(buffer, CRYPTO_MAX_ALG_NAME + 1, "%s",
-+				   hash_algo_name[hash_algo]);
- 		buffer[offset] = ':';
- 		offset += 2;
- 	}
-@@ -240,7 +238,7 @@ int ima_eventdigest_init(struct integrity_iint_cache *iint, struct file *file,
- 	cur_digestsize = hash.hdr.length;
- out:
- 	return ima_eventdigest_init_common(cur_digest, cur_digestsize,
--					   HASH_ALGO__LAST, field_data, true);
-+					   HASH_ALGO__LAST, field_data);
- }
- 
- /*
-@@ -264,7 +262,7 @@ int ima_eventdigest_ng_init(struct integrity_iint_cache *iint,
- 	hash_algo = iint->ima_hash->algo;
- out:
- 	return ima_eventdigest_init_common(cur_digest, cur_digestsize,
--					   hash_algo, field_data, false);
-+					   hash_algo, field_data);
- }
- 
- static int ima_eventname_init_common(struct integrity_iint_cache *iint,
+> 
+>  drivers/cpufreq/cpufreq.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 63 insertions(+)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 02d534d..c87ced9 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/module.h>
+>  #include <linux/mutex.h>
+>  #include <linux/slab.h>
+> +#include <linux/suspend.h>
+>  #include <linux/syscore_ops.h>
+>  #include <linux/tick.h>
+>  #include <trace/events/power.h>
+> @@ -47,6 +48,9 @@ static LIST_HEAD(cpufreq_policy_list);
+>  static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+>  #endif
+>  
+> +/* Flag to suspend/resume CPUFreq governors */
+> +static bool cpufreq_suspended;
+> +
+>  static inline bool has_target(void)
+>  {
+>  	return cpufreq_driver->target_index || cpufreq_driver->target;
+> @@ -1462,6 +1466,54 @@ static struct subsys_interface cpufreq_interface = {
+>  	.remove_dev	= cpufreq_remove_dev,
+>  };
+>  
+> +/*
+> + * PM Notifier for suspending governors as some platforms can't change frequency
+> + * after this point in suspend cycle. Because some of the devices (like: i2c,
+> + * regulators, etc) they use for changing frequency are suspended quickly after
+> + * this point.
+> + */
+> +static int cpufreq_pm_notify(struct notifier_block *nb, unsigned long action,
+> +		void *data)
+> +{
+> +	struct cpufreq_policy *policy;
+> +	unsigned long flags;
+> +
+> +	if (!has_target())
+> +		return NOTIFY_OK;
+> +
+> +	if (action == PM_SUSPEND_PREPARE) {
+> +		pr_debug("%s: Suspending Governors\n", __func__);
+> +
+> +		list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
+> +			if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
+> +				pr_err("%s: Failed to stop governor for policy: %p\n",
+> +						__func__, policy);
+> +
+> +		write_lock_irqsave(&cpufreq_driver_lock, flags);
+> +		cpufreq_suspended = true;
+> +		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +	} else if (action == PM_POST_SUSPEND) {
+> +		pr_debug("%s: Resuming Governors\n", __func__);
+> +
+> +		write_lock_irqsave(&cpufreq_driver_lock, flags);
+> +		cpufreq_suspended = false;
+> +		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +
+> +		list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
+> +			if (__cpufreq_governor(policy, CPUFREQ_GOV_START) ||
+> +					__cpufreq_governor(policy,
+> +						CPUFREQ_GOV_LIMITS))
+> +				pr_err("%s: Failed to start governor for policy: %p\n",
+> +						__func__, policy);
+> +	}
+> +
+> +	return NOTIFY_OK;
+> +}
+> +
+> +static struct notifier_block cpufreq_pm_notifier = {
+> +	.notifier_call = cpufreq_pm_notify,
+> +};
+> +
+>  /**
+>   * cpufreq_bp_suspend - Prepare the boot CPU for system suspend.
+>   *
+> @@ -1752,6 +1804,8 @@ EXPORT_SYMBOL_GPL(cpufreq_driver_target);
+>  static int __cpufreq_governor(struct cpufreq_policy *policy,
+>  					unsigned int event)
+>  {
+> +	unsigned long flags;
+> +	bool is_suspended;
+>  	int ret;
+>  
+>  	/* Only must be defined when default governor is known to have latency
+> @@ -1764,6 +1818,14 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>  	struct cpufreq_governor *gov = NULL;
+>  #endif
+>  
+> +	/* Don't start any governor operations if we are entering suspend */
+> +	read_lock_irqsave(&cpufreq_driver_lock, flags);
+> +	is_suspended = cpufreq_suspended;
+> +	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +
+> +	if (is_suspended)
+> +		return 0;
+> +
+>  	if (policy->governor->max_transition_latency &&
+>  	    policy->cpuinfo.transition_latency >
+>  	    policy->governor->max_transition_latency) {
+> @@ -2222,6 +2284,7 @@ static int __init cpufreq_core_init(void)
+>  	cpufreq_global_kobject = kobject_create();
+>  	BUG_ON(!cpufreq_global_kobject);
+>  	register_syscore_ops(&cpufreq_syscore_ops);
+> +	register_pm_notifier(&cpufreq_pm_notifier);
+>  
+>  	return 0;
+>  }
+> 
+
+
 -- 
-1.8.1.4
-
-
-------2C1FC58227FBFF80ECBDB65C7EFCFFAF
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-
-MIIICQYJKoZIhvcNAQcCoIIH+jCCB/YCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
-DQEHAaCCBWQwggVgMIIESKADAgECAgICuzANBgkqhkiG9w0BAQUFADBlMQswCQYD
-VQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTYwNAYDVQQD
-Ey1Qb2xpdGVjbmljbyBkaSBUb3Jpbm8gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkw
-HhcNMTAxMjIwMTExOTU0WhcNMTUxMjMxMjM1OTU5WjBfMQswCQYDVQQGEwJJVDEe
-MBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMRcwFQYDVQQDEw5Sb2JlcnRv
-ICBTYXNzdTEXMBUGCgmSJomT8ixkAQETB2QwMjEzMDUwggEiMA0GCSqGSIb3DQEB
-AQUAA4IBDwAwggEKAoIBAQDS6p4SaJdmmJHJu9On9ZohhBFE2GgYiY7YtRnhhQJA
-NfOtHEhSbpUMaSOfq/Pna6ipR5nAFrlM8cOGcSHZdxrPcgzeJU7F2v1fl2ThvFOc
-TIkcC1aAJGQUuCaCXDlQt+KFecJWTrRZnalMHZueO+J6cgHcvR1CQz5e88dSzo3Q
-XZy0w/hxGL9Ht9velqsl48ohBk2rs/svAOCp6GfqT1Yxwx1p87d3ViTrmuZB4/X+
-da39nJqmo6AZ/y3Zg+r91BgNcfsHVqFT0JTcG6qRIaeqTtqVYpYl+rH1rZzYCakD
-yQyys66sBvaXyaiMr0M+SpyH+LaGz5bDn5Odq16FYEq7AgMBAAGjggIeMIICGjAO
-BgNVHQ8BAf8EBAMCA/gwJwYDVR0lBCAwHgYIKwYBBQUHAwIGCCsGAQUFBwMDBggr
-BgEFBQcDBDAiBgNVHREEGzAZgRdyb2JlcnRvLnNhc3N1QHBvbGl0by5pdDAMBgNV
-HRMBAf8EAjAAMB0GA1UdDgQWBBQgKbXSXn+j769x0tsZQ9pSOzIIdDAfBgNVHSME
-GDAWgBTNm1tbnup2IcQQaOjSLTfbHy/I5DCBywYDVR0gBIHDMIHAMD4GCisGAQQB
-qQcBAQIwMDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9j
-cHMvMS4yLzBEBgorBgEEAakHAgECMDYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-aXRhbHkuZXVyb3BraS5vcmcvY2EvY3BzLzEuMi8wOAYKKwYBBAGVYgECAjAqMCgG
-CCsGAQUFBwIBFhxodHRwOi8vY2EucG9saXRvLml0L2Nwcy8yLjIvMGYGCCsGAQUF
-BwEBBFowWDAhBggrBgEFBQcwAYYVaHR0cDovL29jc3AucG9saXRvLml0MDMGCCsG
-AQUFBzAChidodHRwOi8vY2EucG9saXRvLml0L2NlcnRzL3BvbGl0b19jYS5jZXIw
-NwYDVR0fBDAwLjAsoCqgKIYmaHR0cDovL2NhLnBvbGl0by5pdC9jcmwvcG9saXRv
-X2NybC5jcmwwDQYJKoZIhvcNAQEFBQADggEBADMe0aHcBJXV6pMJPVVSt1Vazd8Y
-LuTLO45Igs9Sb2LuaO6pvcDGvq9dEJnBhP1B+zBAK6WEA1PWb66xC4QXaJnlGZTX
-S3XeBivHWm6BNOH2kNeU0HBeGZCV/n5r70TPxkEAcc7u8YY2i6CiMM428YhZK8Zj
-oN9D3QNIRf4HZgh0FTbf8eL/XvBbK/oPC+Rew+Qql6M3DHnaS1q2SKUwwO/4VXA4
-JsOdatFI68AMXH0Xx9UIcjRi+kvsyvwHlc0Z8AoAtfRMoIl4zFF4Qaowec2UunBK
-YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
-MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
-aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
-Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMTUxMzQ2MTBaMCMGCSqG
-SIb3DQEJBDEWBBQ3kAPODfM31zmOR0iBgOJjzVAkkjB5BgkqhkiG9w0BCQ8xbDBq
-MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
-DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBw18CGJSHraq2pE6PcHu+0OZAc
-ng7trT7xwc0fIFpHvIn5On2JCtXlzisQNH7Q6D5Es9ZGV5gCgIovACj9UB0PCrTI
-kh+TASlulg0M38Enj0jvb65qrIYCghMTWXpDX9Zk6be7OoFTRo2Zzz/1w+tILEoI
-n9iUBYESS6kpxu8of4AIoiY+kFl5EiO8iHQijis2v7pcQhVNnowCNZewrpuilxWX
-Ra4HWcZ/4LIODKy7iIpZ/Bm9p7oVS/MHVWOzivVX282FWKd3ujODN/m8wRPz9h70
-lXegmkZzASOZHQzEoBkK02GNfL28cIdW464gzp5InE3QlezwF4EqM9H2kDGn
-
-------2C1FC58227FBFF80ECBDB65C7EFCFFAF--
-
-
+Regards,
+Nishanth Menon
