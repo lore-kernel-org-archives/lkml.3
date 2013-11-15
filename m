@@ -1,249 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758667Ab3KOE7U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Nov 2013 23:59:20 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:40709 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757004Ab3KOExc (ORCPT
+	id S1752029Ab3KOFAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 00:00:10 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:52152 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab3KOFAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Nov 2013 23:53:32 -0500
-X-AuditID: 85900ec0-cff26b9000001514-e3-5285a8c819f8
-Subject: [PATCH -tip RFC v2 04/22] kprobes: Support blacklist functions in
- module
-To: Ingo Molnar <mingo@kernel.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arch@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org,
-        Rob Landley <rob@landley.net>, "David S. Miller" <davem@davemloft.net>
-Date: Fri, 15 Nov 2013 04:53:27 +0000
-Message-ID: <20131115045327.27580.17722.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20131115045312.27580.95902.stgit@kbuild-fedora.novalocal>
-References: <20131115045312.27580.95902.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 15 Nov 2013 00:00:07 -0500
+Date: Fri, 15 Nov 2013 16:00:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: linux-next: manual merge of the akpm tree with the sparc-next
+ tree
+Message-Id: <20131115160000.dffe5b8a2db3ca60c5c01e55@canb.auug.org.au>
+In-Reply-To: <20131115155733.b05306db95bc04bcb76c83f9@canb.auug.org.au>
+References: <20131115155733.b05306db95bc04bcb76c83f9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__15_Nov_2013_16_00_00_+1100_XIhpN2ekheZHgHDY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To blacklist the functions in a module (e.g. user-defined
-kprobe handler and the functions invoked from it), expand
-blacklist support for modules.
-With this change, users can use NOKPROBE_SYMBOL() macro in
-their own modules.
+--Signature=_Fri__15_Nov_2013_16_00_00_+1100_XIhpN2ekheZHgHDY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Rob Landley <rob@landley.net>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
----
- Documentation/kprobes.txt |    8 ++++++++
- include/linux/module.h    |    5 +++++
- kernel/kprobes.c          |   44 +++++++++++++++++++++++++++++++++++++++++---
- kernel/module.c           |    6 ++++++
- 4 files changed, 60 insertions(+), 3 deletions(-)
+[Forgot to cc Dave]
 
-diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
-index 7062631..c6634b3 100644
---- a/Documentation/kprobes.txt
-+++ b/Documentation/kprobes.txt
-@@ -512,6 +512,14 @@ int enable_jprobe(struct jprobe *jp);
- Enables *probe which has been disabled by disable_*probe(). You must specify
- the probe which has been registered.
- 
-+4.9 NOKPROBE_SYMBOL()
-+
-+#include <linux/kprobes.h>
-+NOKPROBE_SYMBOL(FUNCTION);
-+
-+Protects given FUNCTION from other kprobes. This is useful for handler
-+functions and functions called from the handlers.
-+
- 5. Kprobes Features and Limitations
- 
- Kprobes allows multiple probes at the same address.  Currently,
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 05f2447..acb682b 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -16,6 +16,7 @@
- #include <linux/kobject.h>
- #include <linux/moduleparam.h>
- #include <linux/tracepoint.h>
-+#include <linux/kprobes.h>
- #include <linux/export.h>
- 
- #include <linux/percpu.h>
-@@ -360,6 +361,10 @@ struct module
- 	unsigned int num_ftrace_callsites;
- 	unsigned long *ftrace_callsites;
- #endif
-+#ifdef CONFIG_KPROBES
-+	struct kprobe_blackpoint **kprobe_blacklist;
-+	unsigned int num_kprobe_blacklist;
-+#endif
- 
- #ifdef CONFIG_MODULE_UNLOAD
- 	/* What modules depend on me? */
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 007235e..4e8ce87 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -88,6 +88,7 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
- 
- /* Blacklist -- list of struct kprobe_blackpoint */
- static LIST_HEAD(kprobe_blacklist);
-+static DEFINE_MUTEX(kprobe_blacklist_mutex);
- 
- #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
- /*
-@@ -1416,6 +1417,7 @@ static __kprobes int check_kprobe_address_safe(struct kprobe *p,
- #endif
- 	}
- 
-+	mutex_lock(&kprobe_blacklist_mutex);
- 	jump_label_lock();
- 	preempt_disable();
- 
-@@ -1453,6 +1455,7 @@ static __kprobes int check_kprobe_address_safe(struct kprobe *p,
- out:
- 	preempt_enable();
- 	jump_label_unlock();
-+	mutex_unlock(&kprobe_blacklist_mutex);
- 
- 	return ret;
- }
-@@ -2007,6 +2010,11 @@ void __kprobes dump_kprobe(struct kprobe *kp)
- 	       kp->symbol_name, kp->addr, kp->offset);
- }
- 
-+static void populate_kprobe_blacklist(struct kprobe_blackpoint **start,
-+				      struct kprobe_blackpoint **end);
-+static void shrink_kprobe_blacklist(struct kprobe_blackpoint **start,
-+				    struct kprobe_blackpoint **end);
-+
- /* Module notifier call back, checking kprobes on the module */
- static int __kprobes kprobes_module_callback(struct notifier_block *nb,
- 					     unsigned long val, void *data)
-@@ -2017,6 +2025,16 @@ static int __kprobes kprobes_module_callback(struct notifier_block *nb,
- 	unsigned int i;
- 	int checkcore = (val == MODULE_STATE_GOING);
- 
-+	/* Add/remove module blacklist */
-+	if (val == MODULE_STATE_COMING)
-+		populate_kprobe_blacklist(mod->kprobe_blacklist,
-+					  mod->kprobe_blacklist +
-+					  mod->num_kprobe_blacklist);
-+	else if (val == MODULE_STATE_GOING)
-+		shrink_kprobe_blacklist(mod->kprobe_blacklist,
-+					mod->kprobe_blacklist +
-+					mod->num_kprobe_blacklist);
-+
- 	if (val != MODULE_STATE_GOING && val != MODULE_STATE_LIVE)
- 		return NOTIFY_DONE;
- 
-@@ -2050,6 +2068,18 @@ static struct notifier_block kprobe_module_nb = {
- 	.priority = 0
- };
- 
-+/* Shrink the blacklist */
-+static void shrink_kprobe_blacklist(struct kprobe_blackpoint **start,
-+				    struct kprobe_blackpoint **end)
-+{
-+	struct kprobe_blackpoint **iter;
-+
-+	mutex_lock(&kprobe_blacklist_mutex);
-+	for (iter = start; (unsigned long)iter < (unsigned long)end; iter++)
-+		list_del(&(*iter)->list);
-+	mutex_unlock(&kprobe_blacklist_mutex);
-+}
-+
- /*
-  * Lookup and populate the kprobe_blacklist.
-  *
-@@ -2058,14 +2088,15 @@ static struct notifier_block kprobe_module_nb = {
-  * since a kprobe need not necessarily be at the beginning
-  * of a function.
-  */
--static void __init populate_kprobe_blacklist(struct kprobe_blackpoint **start,
--					     struct kprobe_blackpoint **end)
-+static void populate_kprobe_blacklist(struct kprobe_blackpoint **start,
-+				      struct kprobe_blackpoint **end)
- {
- 	struct kprobe_blackpoint **iter, *bp;
- 	unsigned long offset = 0, size = 0;
- 	char *modname, namebuf[128];
- 	const char *symbol_name;
- 
-+	mutex_lock(&kprobe_blacklist_mutex);
- 	for (iter = start; (unsigned long)iter < (unsigned long)end; iter++) {
- 		bp = *iter;
- 		symbol_name = kallsyms_lookup(bp->start_addr,
-@@ -2077,6 +2108,7 @@ static void __init populate_kprobe_blacklist(struct kprobe_blackpoint **start,
- 		INIT_LIST_HEAD(&bp->list);
- 		list_add_tail(&bp->list, &kprobe_blacklist);
- 	}
-+	mutex_unlock(&kprobe_blacklist_mutex);
- }
- 
- extern struct kprobe_blackpoint *__start_kprobe_blacklist[];
-@@ -2227,6 +2259,7 @@ static const struct file_operations debugfs_kprobes_operations = {
- /* kprobes/blacklist -- shows which functions can not be probed */
- static void *kprobe_blacklist_seq_start(struct seq_file *m, loff_t *pos)
- {
-+	mutex_lock(&kprobe_blacklist_mutex);
- 	return seq_list_start(&kprobe_blacklist, *pos);
- }
- 
-@@ -2235,6 +2268,11 @@ static void *kprobe_blacklist_seq_next(struct seq_file *m, void *v, loff_t *pos)
- 	return seq_list_next(v, &kprobe_blacklist, pos);
- }
- 
-+static void *kprobe_blacklist_seq_stop(struct seq_file *m, loff_t *pos)
-+{
-+	mutex_unlock(&kprobe_blacklist_mutex);
-+}
-+
- static int kprobe_blacklist_seq_show(struct seq_file *m, void *v)
- {
- 	struct kprobe_blackpoint *bp =
-@@ -2248,7 +2286,7 @@ static int kprobe_blacklist_seq_show(struct seq_file *m, void *v)
- static const struct seq_operations kprobe_blacklist_seq_ops = {
- 	.start = kprobe_blacklist_seq_start,
- 	.next  = kprobe_blacklist_seq_next,
--	.stop  = kprobe_seq_stop,	/* Reuse void function */
-+	.stop  = kprobe_blacklist_seq_stop,
- 	.show  = kprobe_blacklist_seq_show,
- };
- 
-diff --git a/kernel/module.c b/kernel/module.c
-index dc58274..4cc844c 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -58,6 +58,7 @@
- #include <linux/percpu.h>
- #include <linux/kmemleak.h>
- #include <linux/jump_label.h>
-+#include <linux/kprobes.h>
- #include <linux/pfn.h>
- #include <linux/bsearch.h>
- #include <linux/fips.h>
-@@ -2796,6 +2797,11 @@ static void find_module_sections(struct module *mod, struct load_info *info)
- 					     sizeof(*mod->ftrace_callsites),
- 					     &mod->num_ftrace_callsites);
- #endif
-+#ifdef CONFIG_KPROBES
-+	mod->kprobe_blacklist = section_objs(info, "_kprobe_blacklist",
-+					     sizeof(*mod->kprobe_blacklist),
-+					     &mod->num_kprobe_blacklist);
-+#endif
- 
- 	mod->extable = section_objs(info, "__ex_table",
- 				    sizeof(*mod->extable), &mod->num_exentries);
+On Fri, 15 Nov 2013 15:57:33 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Hi Andrew,
+>=20
+> Today's linux-next merge of the akpm tree got a conflict in
+> arch/sparc/mm/init_64.c between commit 37b3a8ff3e08 ("sparc64: Move from
+> 4MB to 8MB huge pages") from the sparc-next tree and commit "sparc:
+> handle pgtable_page_ctor() fail" from the akpm tree.
+>=20
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+>=20
+> --=20
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>=20
+> diff --cc arch/sparc/mm/init_64.c
+> index bd6430ded69f,d6de9353ee11..000000000000
+> --- a/arch/sparc/mm/init_64.c
+> +++ b/arch/sparc/mm/init_64.c
+> @@@ -2563,16 -2511,21 +2563,16 @@@ pte_t *pte_alloc_one_kernel(struct mm_s
+>   pgtable_t pte_alloc_one(struct mm_struct *mm,
+>   			unsigned long address)
+>   {
+>  -	struct page *page;
+>  -	pte_t *pte;
+>  -
+>  -	pte =3D get_from_cache(mm);
+>  -	if (pte)
+>  -		return pte;
+>  +	struct page *page =3D alloc_page(GFP_KERNEL | __GFP_NOTRACK |
+>  +				       __GFP_REPEAT | __GFP_ZERO);
+> - 	pte_t *pte =3D NULL;
+>  =20
+> - 	if (page) {
+> - 		pgtable_page_ctor(page);
+> - 		pte =3D (pte_t *) page_address(page);
+>  -	page =3D __alloc_for_cache(mm);
+> + 	if (!page)
+> + 		return NULL;
+> + 	if (!pgtable_page_ctor(page)) {
+> + 		free_hot_cold_page(page, 0);
+> + 		return NULL;
+>   	}
+> -=20
+> - 	return pte;
+> + 	return (pte_t *) page_address(page);
+>   }
+>  =20
+>   void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
 
+--Signature=_Fri__15_Nov_2013_16_00_00_+1100_XIhpN2ekheZHgHDY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJShapUAAoJEMDTa8Ir7ZwV4hgP/2gWEStRKpTrb6TSrIsi/80C
+yklvNusGO+wTKodck1nQLJxyBKOI3xQcjJrPKMHCl3ZQIXdwMHMzbwcJFjNiz7Px
+pWLmCnTy7D29mu8TGkmyp66a+oeBcFAjDpINrA2qEJ1aFoTZhQNLSDVHVCr+6Zlb
+n/Dk7DoRXg9UN9U1Lo1V5R1WYxmqXrpPApnhWJLDBti0nTmJBtdZuuggA6bZEauJ
+W2EFClr08jpo2w13TtWdNmH8j8bNBUOd5QVKnN6slqI0TzhgRvPEchpE1oaKqlzi
+ahkP0NhU2wjS+ploTSq+AdlEdIIZ8dhY0ujxrccnEfS0oP+Cp/O67JEw0zz9+2t6
+Ob8Gw1vPm5xP+4xd/+2f4CJjSCwgqVmrUdY63IanOozCZF0PQvVdwMR6HI9u32Kq
+8R5pY6ZvA9XtLQs1OnqoUTN0W7LRJUNtnaL2k6EkVDeD4x63k18rND0anDBobWeT
+87mwBcxySzfqNgOgYieIJLEpeuxzw8i4Pd3+DWxSlbvsq/QrpV4uY9Pu7/Mg5X7F
+nap/tuihILbK2tQiyeqebHyR7v2u53U+QeQB3UNPLrYzmVY39RqfBllD5VW7zqFo
+BrYOSl5SWyKB+TNflf/dRBdiTz4wXHhuftosXtUNMg80vV2CPAET16NPYC+QJHZV
+kw6gxSJOhvBw+zAaBeQI
+=iboD
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__15_Nov_2013_16_00_00_+1100_XIhpN2ekheZHgHDY--
