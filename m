@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab3KORwV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 12:52:21 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42935 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab3KORwM (ORCPT
+	id S1753053Ab3KOR4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 12:56:12 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:59761 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab3KOR4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 12:52:12 -0500
-Date: Fri, 15 Nov 2013 17:51:55 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Cc: Florian Meier <florian.meier@koalo.de>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, dmaengine <dmaengine@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv5] dmaengine: Add support for BCM2835
-Message-ID: <20131115175155.GQ16735@n2100.arm.linux.org.uk>
-References: <52864BBC.7000506@koalo.de> <1384537403.14845.131.camel@smile>
+	Fri, 15 Nov 2013 12:56:04 -0500
+Date: Fri, 15 Nov 2013 13:04:23 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf bug: bad page map
+Message-ID: <alpine.DEB.2.10.1311151300120.12594@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384537403.14845.131.camel@smile>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 05:43:45PM +0000, Shevchenko, Andriy wrote:
-> On Fri, 2013-11-15 at 17:28 +0100, Florian Meier wrote:
-> > +static size_t bcm2835_dma_desc_size_pos(struct bcm2835_desc *d, dma_addr_t addr)
-> > +{
-> > +	unsigned i;
-> > +	size_t size;
-> 
-> size = 0 here is better.
 
-See my other comment to Joe.
+(figured out the minicom issue).
 
-> > +	for (size = i = 0; i < d->frames; i++) {
-> > +		struct bcm2835_dma_cb *control_block =
-> > +			&d->control_block_base[i];
-> > +		size_t this_size = control_block->length;
-> > +		dma_addr_t dma;
-> > +
-> > +		if (d->dir == DMA_DEV_TO_MEM)
-> > +			dma = control_block->dst;
-> > +		else
-> > +			dma = control_block->src;
-> 
-> Do you think it must be dependent on the direction?
+Anyway while trying to reproduce the last bug I instead got this with
+the perf_fuzzer.
 
-Of course it does.  Take a moment to think about it please.
+Is it worth continuing to run and report these issues?  I'm losing track 
+of all the open bugs.
 
-> Do you have information of how many bytes transferred already in the DMA
-> controller registers? Would it be better to use it?
-> 
-> > +		if (size)
-> > +			size += this_size;
-> > +		else if (addr >= dma && addr < dma + this_size)
-> > +			size += dma + this_size - addr;
-> 
-> += -> =
+Vince
 
-No functional change, as 'size' has to be initialised anyway.  The
-code is fine.
+[ 1618.118179] BUG: Bad page map in process perf_fuzzer  pte:ffff8800c4d60040 pmd:bd86a067
+[ 1618.142177] addr:0000000000409000 vm_flags:00000875 anon_vma:          (null) mapping:ffff8800cb74adf0 index:9
+[ 1618.172142] vma->vm_ops->fault: filemap_fault+0x0/0x358
+[ 1618.187783] vma->vm_file->f_op->mmap: ext4_file_mmap+0x0/0x48
+[ 1618.204981] CPU: 1 PID: 24819 Comm: perf_fuzzer Not tainted 3.12.0 #4
+[ 1618.224256] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
+[ 1618.250825]  0000000000409000 ffff8800bf6dfaa8 ffffffff8151d8ec 0000000000000000
+[ 1618.273081]  ffff8800c89ac928 ffff8800bf6dfaf8 ffffffff810ed692 dead000000200200
+[ 1618.295345]  00000000c03df067 ffff8800bf6dfbe8 0000000000409000 ffffea0002bc2fe8
+[ 1618.317603] Call Trace:
+[ 1618.324951]  [<ffffffff8151d8ec>] dump_stack+0x49/0x5d
+[ 1618.340355]  [<ffffffff810ed692>] print_bad_pte+0x1f5/0x213
+[ 1618.357059]  [<ffffffff810ef43c>] unmap_single_vma+0x511/0x666
+[ 1618.374540]  [<ffffffff810ef5c3>] unmap_vmas+0x32/0x49
+[ 1618.389934]  [<ffffffff810f3804>] exit_mmap+0x84/0x10d
+[ 1618.405343]  [<ffffffff8105bb15>] ? hrtimer_try_to_cancel+0x41/0x4b
+[ 1618.424129]  [<ffffffff8103ac43>] mmput+0x4b/0xd1
+[ 1618.438227]  [<ffffffff8103ec76>] do_exit+0x36c/0x936
+[ 1618.453366]  [<ffffffff810c7312>] ? update_context_time+0x11/0x34
+[ 1618.471628]  [<ffffffff8100951b>] ? native_sched_clock+0x3b/0x3d
+[ 1618.489635]  [<ffffffff8106730d>] ? sched_clock_local+0x1c/0x82
+[ 1618.507376]  [<ffffffff8103f2b8>] do_group_exit+0x78/0xa0
+[ 1618.523563]  [<ffffffff8104c898>] get_signal_to_deliver+0x46d/0x48a
+[ 1618.542347]  [<ffffffff810c8ac7>] ? ctx_sched_in+0x35/0x185
+[ 1618.559051]  [<ffffffff810c8c80>] ? perf_event_sched_in+0x69/0x72
+[ 1618.577318]  [<ffffffff81002513>] do_signal+0x46/0x5f5
+[ 1618.592724]  [<ffffffff810c8ffe>] ? __perf_event_task_sched_in+0x3a/0x10e
+[ 1618.613071]  [<ffffffff8106699f>] ? finish_task_switch+0x46/0x98
+[ 1618.631075]  [<ffffffff8151f832>] ? __schedule+0x51c/0x54b
+[ 1618.647516]  [<ffffffff81002aee>] do_notify_resume+0x2c/0x64
+[ 1618.664486]  [<ffffffff81520ef5>] retint_signal+0x3d/0x78
+[ 1618.680661] Disabling lock debugging due to kernel taint
 
-> > +	if (!pdev->dev.dma_mask)
-> > +		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
-> > +
-> > +	rc = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-> > +	if (rc)
-> > +		return rc;
-> > +	dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
-> 
-> There is nice helper you may use instead of those two above and remove
-> 'if' condition as well.
-
-There is _now_ but at the time this is being developed, it wasn't there.
-Such a change is probably only appropriate at least after -rc1 has
-happened.  Since I'm the one who introduced that helper, and I haven't
-said to use it yet in this driver, that suggests I've already thought
-about this point...
-
-> > +module_platform_driver(bcm2835_dma_driver);
-> 
-> Is it possible to get driver initialized after that one that uses it?
-
-Doesn't quite make sense.  If you're asking whether other drivers can
-try to make use of this driver before it's initialised, then the answer
-is no.  We have mechanisms to cope with that - see deferred probing.
