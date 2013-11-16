@@ -1,76 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab3KPAwh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:52:37 -0500
-Received: from cav.udesc.br ([200.19.104.6]:51662 "HELO cav.udesc.br"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752353Ab3KPAwb convert rfc822-to-8bit (ORCPT
+	id S1753716Ab3KPA5h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:57:37 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55393 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752244Ab3KPA52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 19:52:31 -0500
-X-Greylist: delayed 417 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Nov 2013 19:52:30 EST
+	Fri, 15 Nov 2013 19:57:28 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Nishanth Menon <nm@ti.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, ceh@ti.com,
+        Tobias Diedrich <ranma+xen@tdiedrich.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH] cpufreq: stats: Do not populate stats when policy->cur has no exact match
+Date: Sat, 16 Nov 2013 02:10 +0100
+Message-ID: <1423628.uM8DtnYzDe@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1384561243-30391-1-git-send-email-nm@ti.com>
+References: <1384561243-30391-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Date: Sat, 16 Nov 2013 00:46:03 +0000
-From: Univerzita Karlova <dept@cuni.cz>
-To: undisclosed-recipients:;
-Subject: =?UTF-8?Q?Spr=C3=A1vn=C3=AD=20zpr=C3=A1vy?=
-Reply-To: <2050463296@qq.com>
-Mail-Reply-To: <2050463296@qq.com>
-Message-ID: <69c6d6a9ba76989a8e5c1f7a50a36e1c@cav.udesc.br>
-User-Agent: Roundcube Webmail/0.8.1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday, November 15, 2013 06:20:43 PM Nishanth Menon wrote:
+> commit 46a310b ([CPUFREQ] Don't set stat->last_index to -1 if the
+> pol->cur has incorrect value.) tries to handle case where policy->cur
+> does not match any entry in freq_table.
+> 
+> As indicated in the above commit, the exact match search of
+> freq_table_get index will return a -1 which is stored in
+> stat->last_index. However, as a result of the above commit,
+> cpufreq_stat_notifier_trans which updates the statistics, fails
+> to update any *further* valid transitions that take place as
+> stat->last_index is -1 as the condition occurs at boot and never
+> solved.
+> 
+> So, instead of having a statistics information that never ever
+> reflects valid data in the mentioned case and scratching our heads, we
+> instead, refuse to populate any of the statistics entries and note in
+> kernel log the error condition for developers to fix. The only useable
+> information are the available frequencies which is already available
+> in other cpufreq sysfs entries.
+> 
+> Cc: Tobias Diedrich <ranma+xen@tdiedrich.de>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Dave Jones <davej@redhat.com>
+> Reported-by: Carlos Hernandez <ceh@ti.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
+I like this one.  Any objections from anyone?
 
+> ---
+> 
+> Patch based on v3.12 tag
+> 
+> Reported by Carlos on TI vendor kernel (v3.12tag based):
+> 
+> OMAP5uEVM: http://pastebin.mozilla.org/3612196
+> AM335x-evm: http://pastebin.mozilla.org/3612220
+> 
+> As can be seen, the translation table are present, however none of the
+> transition information is ever updated.
+> With the current patch, this becomes: http://pastebin.mozilla.org/3612256
+> 
+> Original commit thread seems to be:
+> https://lkml.org/lkml/2011/6/16/760 but I dont see much information if
+> this was discussed further.
+> 
+> An alternate approach possible is to try and recover from this case by
+> using an 'atmost' match to find a closest match and then giveup when
+> we cant find one, but that does not really indicate a proper statistic
+> (if freq1 < cur_freq < freq2, was the intent to be at freq1 or freq2?
+> stats should not make that policy decision)
+> 	http://pastebin.mozilla.org/3612179 (alternate approach 1)
+> 
+> Yet another option might be to update last_index using the first
+> transition into a valid index, but then, we wont have statistics
+> information 100% correct as we did not store the very first frequency
+> stat.
+> 	 http://pastebin.mozilla.org/3612241 (alternate approach 2)
+> 
+>  drivers/cpufreq/cpufreq_stats.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+> index 4cf0d28..4c8a501 100644
+> --- a/drivers/cpufreq/cpufreq_stats.c
+> +++ b/drivers/cpufreq/cpufreq_stats.c
+> @@ -251,6 +251,14 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
+>  	stat->last_time = get_jiffies_64();
+>  	stat->last_index = freq_table_get_index(stat, policy->cur);
+>  	spin_unlock(&cpufreq_stats_lock);
+> +
+> +	if (stat->last_index == -1) {
+> +		pr_err("%s: No match for current freq %u in table. Disabled!\n",
+> +		       __func__, policy->cur);
+> +		ret = -EINVAL;
+> +		goto error_out;
+> +	}
+> +
+>  	cpufreq_cpu_put(current_policy);
+>  	return 0;
+>  error_out:
+> 
 -- 
-Vážení Web - Mail Majitel účtu:
- 
-To přišlo na naše upozornění , že vaše e-mailová neprošel ověření / 
-aktualizace proces, který jsme v současné době pracuje na . V současné 
-době modernizace naší databázi a e - mailový účet centrum , čímž Smazání 
-všech starých webový e-mail e-mailový účet vytvořit více prostoru pro 
-nové účty .
-
-Chcete-li zabránit svému účtu od uzavření budete muset aktualizovat 
-tak, že budeme vědět, že jev současné době používán účet . Chcete-li 
-dokončit svůj účet re- potvrzení , musíte odpovědět na tento e-mail 
-okamžitě a zadejte své údaje o účtu , jak požaduje níže.
-
-***********************************************
-Email uživatelské jméno : ........ .....
-Heslo : ...............
-Potvrdit heslo: ...............
-Datum narození: ...............
-
-************************************************
-
-**** Důležité:
- 
-Tato aktualizace je povinná v důsledku našich nedávných serveru změní . 
-Pokud se vám nepodaří aktualizovat svou e-mailovou adresu, budete brzy 
-moci přijímat / odesílat mails.Also Váš e-mail nebude vybaven 
-nejnovějším antivirovým systémem na našich nových servers.This bude vaše 
-e-mailová a PC náchylné k útokům virů z internet .
- 
-
- Omlouváme se za způsobené nepříjemnosti .
-  Webmail účet Upgrader "
-************************************************** 
-******************************************
- Jedná se o správní Vzkaz od Univerzita Karlova a obsah musí být 
-považovány za důvěrné za všech okolností
- ************************************************** 
-****************************************
-
-
-
-
-
-------------------------------
-Centro de Ci�ncias Agroveterin�rias - CAV/UDESC - Lages
-http://www.cav.udesc.br
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
