@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab3KPAkk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:40:40 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:59607 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab3KPAfw (ORCPT
+	id S1754224Ab3KPAkv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:40:51 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:38187 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753748Ab3KPAfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Nov 2013 19:35:52 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -16,203 +16,65 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH tip/core/rcu 15/28] rcutorture: Refactor to enable non-x86 architectures
-Date: Fri, 15 Nov 2013 16:35:28 -0800
-Message-Id: <1384562141-32446-15-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 26/28] rcutorture: Record results from repeated runs of the same test scenario
+Date: Fri, 15 Nov 2013 16:35:39 -0800
+Message-Id: <1384562141-32446-26-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1384562141-32446-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20131116003517.GA31563@linux.vnet.ibm.com>
  <1384562141-32446-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111600-1542-0000-0000-0000035637B7
+x-cbid: 13111600-0928-0000-0000-0000037AA9F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit expands the checks for what architecture is running to generate
-additional qemu-system- commands, then uses the resulting qemu-system-
-command name to choose different qemu arguments as needed for different
-architectures.
+Repeatedly running a given test, for example, by repeating the name
+as in "--configs "TREE08 TREE08 TREE08" records the results only of
+the last run of this test.  This is because the earlier results are
+overwritten by the later results.
+
+This commit therefore checks for earlier results, using numbered
+file extensions to distinguish multiple runs.  The earlier example
+would therefore create directories TREE01, TREE01.2, and TREE01.3.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Greg KH <gregkh@linuxfoundation.org>
 ---
- .../testing/selftests/rcutorture/bin/functions.sh  | 78 ++++++++++++++++++++++
- .../selftests/rcutorture/bin/kvm-test-1-rcu.sh     | 27 ++++----
- tools/testing/selftests/rcutorture/bin/kvm.sh      | 10 +++
- 3 files changed, 102 insertions(+), 13 deletions(-)
+ tools/testing/selftests/rcutorture/bin/kvm.sh | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/tools/testing/selftests/rcutorture/bin/functions.sh b/tools/testing/selftests/rcutorture/bin/functions.sh
-index c974414ef7a5..d0d19ebd2a94 100644
---- a/tools/testing/selftests/rcutorture/bin/functions.sh
-+++ b/tools/testing/selftests/rcutorture/bin/functions.sh
-@@ -78,3 +78,81 @@ identify_qemu () {
- 		exit 1
- 	fi
- }
-+
-+# identify_qemu_append qemu-cmd
-+#
-+# Output arguments for the qemu "-append" string based on CPU type
-+# and the RCU_QEMU_INTERACTIVE environment variable.
-+identify_qemu_append () {
-+	case "$1" in
-+	qemu-system-x86_64|qemu-system-i386)
-+		echo noapic selinux=0 initcall_debug debug
-+		;;
-+	esac
-+	if test -n "$RCU_QEMU_INTERACTIVE"
-+	then
-+		echo root=/dev/sda
-+	else
-+		echo console=ttyS0
-+	fi
-+}
-+
-+# identify_qemu_args qemu-cmd serial-file
-+#
-+# Output arguments for qemu arguments based on the RCU_QEMU_MAC
-+# and RCU_QEMU_INTERACTIVE environment variables.
-+identify_qemu_args () {
-+	case "$1" in
-+	qemu-system-x86_64|qemu-system-i386)
-+		;;
-+	qemu-system-ppc64)
-+		echo -enable-kvm -M pseries -cpu POWER7 -nodefaults
-+		echo -device spapr-vscsi
-+		if test -n "$RCU_QEMU_INTERACTIVE" -a -n "$RCU_QEMU_MAC"
-+		then
-+			echo -device spapr-vlan,netdev=net0,mac=$RCU_QEMU_MAC
-+			echo -netdev bridge,br=br0,id=net0
-+		elif test -n "$RCU_QEMU_INTERACTIVE"
-+		then
-+			echo -net nic -net user
-+		fi
-+		;;
-+	esac
-+	if test -n "$RCU_QEMU_INTERACTIVE"
-+	then
-+		echo -monitor stdio -serial pty -S
-+	else
-+		echo -serial file:$2
-+	fi
-+}
-+
-+# identify_qemu_vcpus
-+#
-+# Returns the number of virtual CPUs available to the aggregate of the
-+# guest OSes.
-+identify_qemu_vcpus () {
-+	lscpu | grep '^CPU(s):' | sed -e 's/CPU(s)://'
-+}
-+
-+# specify_qemu_cpus qemu-cmd qemu-args #cpus
-+#
-+# Appends a string containing "-smp XXX" to qemu-args, unless the incoming
-+# qemu-args already contains "-smp".
-+specify_qemu_cpus () {
-+	local nt;
-+
-+	if echo $2 | grep -q -e -smp
-+	then
-+		echo $2
-+	else
-+		case "$1" in
-+		qemu-system-x86_64|qemu-system-i386)
-+			echo $2 -smp $3
-+			;;
-+		qemu-system-ppc64)
-+			nt="`lscpu | grep '^NUMA node0' | sed -e 's/^[^,]*,\([0-9]*\),.*$/\1/'`"
-+			echo $2 -smp cores=`expr \( $3 + $nt - 1 \) / $nt`,threads=$nt
-+			;;
-+		esac
-+	fi
-+}
-diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh
-index 5e2e79b5eaba..9fd546ccb075 100755
---- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh
-+++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh
-@@ -115,20 +115,21 @@ QEMU="`identify_qemu $builddir/vmlinux.o`"
- 
- # Generate -smp qemu argument.
- cpu_count=`configNR_CPUS.sh $config_template`
--ncpus=`grep '^processor' /proc/cpuinfo | wc -l`
--if test $cpu_count -gt $ncpus
-+vcpus=`identify_qemu_vcpus`
-+if test $cpu_count -gt $vcpus
- then
--	echo CPU count limited from $cpu_count to $ncpus
-+	echo CPU count limited from $cpu_count to $vcpus
- 	touch $resdir/Warnings
--	echo CPU count limited from $cpu_count to $ncpus >> $resdir/Warnings
--	cpu_count=$ncpus
--fi
--if echo $qemu_args | grep -q -e -smp
--then
--	echo CPU count specified by caller
--else
--	qemu_args="$qemu_args -smp $cpu_count"
-+	echo CPU count limited from $cpu_count to $vcpus >> $resdir/Warnings
-+	cpu_count=$vcpus
- fi
-+qemu_args="`specify_qemu_cpus "$QEMU" "$qemu_args" "$cpu_count"`"
-+
-+# Generate architecture-specific and interaction-specific qemu arguments
-+qemu_args="$qemu_args `identify_qemu_args "$QEMU" "$builddir/console.log"`"
-+
-+# Generate qemu -append arguments
-+qemu_append="`identify_qemu_append "$QEMU"`"
- 
- # Generate CPU-hotplug boot parameters
- boot_args="`rcutorture_param_onoff "$boot_args" $builddir/.config`"
-@@ -137,8 +138,8 @@ boot_args="`rcutorture_param_n_barrier_cbs "$boot_args"`"
- # Pull in Kconfig-fragment boot parameters
- boot_args="`configfrag_boot_params "$boot_args" "$config_template"`"
- 
--echo $QEMU -serial file:$builddir/console.log $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append \"noapic selinux=0 console=ttyS0 initcall_debug debug rcutorture.stat_interval=15 rcutorture.shutdown_secs=$seconds rcutorture.rcutorture_runnable=1 $boot_args\" > $resdir/qemu-cmd
--$QEMU -name rcu-test -serial file:$builddir/console.log $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append "noapic selinux=0 console=ttyS0 initcall_debug debug rcutorture.stat_interval=15 rcutorture.shutdown_secs=$seconds rcutorture.rcutorture_runnable=1 $boot_args" &
-+echo $QEMU $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append \"$qemu_append rcutorture.stat_interval=15 rcutorture.shutdown_secs=$seconds rcutorture.rcutorture_runnable=1 $boot_args\" > $resdir/qemu-cmd
-+$QEMU $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append "$qemu_append rcutorture.stat_interval=15 rcutorture.shutdown_secs=$seconds rcutorture.rcutorture_runnable=1 $boot_args" &
- qemu_pid=$!
- commandcompleted=0
- echo Monitoring qemu job at pid $qemu_pid
 diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-index 2af549491f23..979c34134634 100644
+index b8d278904dee..0783ec9c583e 100644
 --- a/tools/testing/selftests/rcutorture/bin/kvm.sh
 +++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-@@ -44,7 +44,9 @@ usage () {
- 	echo "       --configs \"config-file list\""
- 	echo "       --datestamp string"
- 	echo "       --duration minutes"
-+	echo "       --interactive"
- 	echo "       --kversion vN.NN"
-+	echo "       --mac nn:nn:nn:nn:nn:nn"
- 	echo "       --qemu-cmd qemu-system-..."
- 	echo "       --results absolute-pathname"
- 	echo "       --relbuilddir relative-pathname"
-@@ -96,11 +98,19 @@ do
- 		dur=$2
- 		shift
- 		;;
-+	--interactive)
-+		RCU_QEMU_INTERACTIVE=1; export RCU_QEMU_INTERACTIVE
-+		;;
- 	--kversion)
- 		checkarg --kversion "(kernel version)" $# "$2" '^v[0-9.]*$' error
- 		kversion=$2
- 		shift
- 		;;
-+	--mac)
-+		checkarg --mac "(MAC address)" $# "$2" '^\([0-9a-fA-F]\{2\}:\)\{5\}[0-9a-fA-F]\{2\}$' error
-+		RCU_QEMU_MAC=$2; export RCU_QEMU_MAC
-+		shift
-+		;;
- 	--qemu-cmd)
- 		checkarg --qemu-cmd "(qemu-system-...)" $# "$2" 'qemu-system-' '^--'
- 		RCU_QEMU_CMD="$2"; export RCU_QEMU_CMD
+@@ -204,8 +204,22 @@ fi
+ 
+ for CF in $configs
+ do
++	# Running TREE01 multiple times creates TREE01, TREE01.2, TREE01.3, ...
+ 	rd=$resdir/$ds/$CF
+-	mkdir $rd || :
++	if test -d "${rd}"
++	then
++		n="`ls -d "${rd}"* | grep '\.[0-9]\+$' |
++			sed -e 's/^.*\.\([0-9]\+\)/\1/' |
++			sort -k1n | tail -1`"
++		if test -z "$n"
++		then
++			rd="${rd}.2"
++		else
++			n="`expr $n + 1`"
++			rd="${rd}.${n}"
++		fi
++	fi
++	mkdir "${rd}"
+ 	echo Results directory: $rd
+ 	kvm-test-1-rcu.sh $CONFIGFRAG/$kversion/$CF $builddir $rd $dur "-nographic $RCU_QEMU_ARG" "rcutorture.test_no_idle_hz=1 rcutorture.verbose=1 $RCU_BOOTARGS"
+ done
 -- 
 1.8.1.5
 
