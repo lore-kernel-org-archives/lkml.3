@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab3KPPN1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 10:13:27 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42977 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab3KPPNW (ORCPT
+	id S1752905Ab3KPPRe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 10:17:34 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:40940 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab3KPPRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 10:13:22 -0500
-Date: Sat, 16 Nov 2013 15:12:42 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: ivan lam <ivan.lam2014@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: fix /proc/$PID/stack to work on SMP
-Message-ID: <20131116151242.GV16735@n2100.arm.linux.org.uk>
-References: <CAP+bzvWtq9PrcAmyVMxjGu9OCaiH9mPwo-WjQJBz9LyXDSER+w@mail.gmail.com>
+	Sat, 16 Nov 2013 10:17:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAP+bzvWtq9PrcAmyVMxjGu9OCaiH9mPwo-WjQJBz9LyXDSER+w@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <2235672.LLJc6e6dny@vostro.rjw.lan>
+References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org>
+	<5020664.HldDXMO8cr@vostro.rjw.lan>
+	<5286F536.70403@linaro.org>
+	<2235672.LLJc6e6dny@vostro.rjw.lan>
+Date: Sat, 16 Nov 2013 20:47:24 +0530
+Message-ID: <CAKohpok_zjdRVz5-ZGRmZtwysC7jORm2mgRbLWDUzo1ucYVKZg@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
+        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 16, 2013 at 10:58:44PM +0800, ivan lam wrote:
-> In arm, we can't get stack info of the other tasks via
-> /proc/$PID/stack file. for example:
-> 
-> # sleep 1000 &
-> # ps -ef | grep sleep
->   536 0          0:00 sleep 1000
->   538 0          0:00 grep sleep
-> # cat /proc/536/stack
-> [<ffffffff>] 0xffffffff
-> 
-> If a thread was scheduled out, this proc should provide
-> useful backtrace for debug. Try to unwind the stack based
-> on the previous scheduled out register file whatever a
-> thread is in Running state or not.
-> 
-> After this fix, result as:
-> 
-> # cat /proc/536/stack
-> [<8003f018>] hrtimer_nanosleep+0x8c/0x108
-> [<8003f134>] SyS_nanosleep+0xa0/0xb0
-> [<8000e220>] ret_fast_syscall+0x0/0x30
-> [<ffffffff>] 0xffffffff
-> 
-> If a thread is Running on the oher CPUs, the result is not accurate,
-> but this is acceptable. This behaviors are same as x86 and arm64 arch.
+On 16 November 2013 19:59, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
 
-As we have people running around trying to add additional checks to
-the unwinder to stop it going wrong, I've no plans to apply any patch
-like this until we're more sure that it won't open up the possibility
-for any user process to crash the kernel.  That in itself is a massive
-security issue because its an effective DoS attack.
+> Well, disabling it for the whole duration of suspend/resume and/or hibernation
+> may not be the right approach entirely, unless we force the pax perf of the
 
-Moreover, your emailer has totally screwed the patch, so it's impossible
-to apply.
+s/pax/max ?
+
+> boot CPU at least in addition to that.  Otherwise the latency of suspend and
+> the subsequent resume will depend on what perf level the CPUs where before
+> disabling the governors, which is not desirable at al.
+
+Well that is pretty much doable.
+
+>> And these are the notifications that we send:
+>> - PM_HIBERNATION_PREPARE
+>> - PM_POST_HIBERNATION
+>> - PM_RESTORE_PREPARE
+>> - PM_POST_RESTORE
+>>
+>> If I am not wrong I need to stop governors on PM_HIBERNATION_PREPARE and need to
+>> start them back on: PM_POST_HIBERNATION (I am a bit confused with this one. Does
+>> this POST_HIBERNATION one happens at the end of going into hibernation? or after
+>> booting back? I need a notifier at the end of restore)..
+>
+> You'd need both PM_POST_HIBERNATION and PM_POST_RESTORE, but I wouldn't really
+> like cpufreq governors to be disabled throughout the whole hibernation.
+
+So PM_POST_HIBERNATION is called just before shutting off the system? And
+PM_POST_RESTORE is called after system is resumed from saved image?
+
+> Actually, we use CPU offline/online during system suspend/resume to avoid
+> having to do stuff like this from PM notifiers.
+
+I didn't get the logic behind this one..
+
+> So I'd like the original problem to be addressed in a different way.
+
+Hmm..
+
+> PS
+> The sisk.pl address will start bouncing shortly, so please replace it with
+> rjw@rjwysocki.net in your address book.
+
+Okay...
