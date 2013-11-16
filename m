@@ -1,118 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab3KPTEW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 14:04:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32688 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836Ab3KPTEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 14:04:16 -0500
-Date: Sat, 16 Nov 2013 20:01:21 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "security@kernel.org" <security@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vasily Kulikov <segoon@openwall.com>,
-        Petr Matousek <pmatouse@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Alex Kelly <alex.page.kelly@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH 1/3] set_dumpable: fix the theoretical race with itself
-Message-ID: <20131116190121.GB22666@redhat.com>
-References: <20131101232521.GA23119@www.outflux.net> <20131114170337.GA11068@redhat.com> <CAGXu5jLXpLqjCAMFwKp7t7GpMq4+WBqNzSFC=up+CBvgGDuFCw@mail.gmail.com> <20131115203652.GA13476@redhat.com> <CAGXu5j+=LZYAczLVawGPAxd=9VX1FupWZq+2858GsrD1YprL3w@mail.gmail.com> <20131116190057.GA22666@redhat.com>
+	id S1752984Ab3KPTJV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 14:09:21 -0500
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:49572 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab3KPTJP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Nov 2013 14:09:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131116190057.GA22666@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1384537604-5032-3-git-send-email-grant.likely@linaro.org>
+References: <1384537604-5032-1-git-send-email-grant.likely@linaro.org>
+	<1384537604-5032-3-git-send-email-grant.likely@linaro.org>
+Date: Sat, 16 Nov 2013 13:09:13 -0600
+Message-ID: <CAL_JsqK-ejMmc36OzSLi=odHkVPv_717b4sZyuJkj=UFVxsx0g@mail.gmail.com>
+Subject: Re: [PATCH v5 2/3] of/selftest: Add self tests for manipulation of properties
+From: Rob Herring <robherring2@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-set_dumpable() updates MMF_DUMPABLE_MASK in a non-trivial way to
-ensure that get_dumpable() can't observe the intermediate state,
-but this all can't help if multiple threads call set_dumpable()
-at the same time.
+On Fri, Nov 15, 2013 at 11:46 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> Adds a few simple test cases to ensure that addition, update and removal
+> of device tree node properties works correctly.
+>
+> Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+> Cc: Pantelis Antoniou <panto@antoniou-consulting.com>
+> ---
+>  drivers/of/selftest.c | 62 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 62 insertions(+)
 
-And in theory commit_creds()->set_dumpable(SUID_DUMP_ROOT) racing
-with sys_prctl()->set_dumpable(SUID_DUMP_DISABLE) can result in
-SUID_DUMP_USER.
+Does this need to depend on or select OF_DYNAMIC?
 
-Change this code to update both bits atomically via cmpxchg().
-
-Note: this assumes that it is safe to mix bitops and cmpxchg. IOW,
-if, say, an architecture implements cmpxchg() using the locking
-(like arch/parisc/lib/bitops.c does), then it should use the same
-locks for set_bit/etc.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- fs/exec.c |   49 +++++++++++++++----------------------------------
- 1 files changed, 15 insertions(+), 34 deletions(-)
-
-diff --git a/fs/exec.c b/fs/exec.c
-index bb8afc1..613c9dc 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1621,43 +1621,24 @@ EXPORT_SYMBOL(set_binfmt);
- 
- /*
-  * set_dumpable converts traditional three-value dumpable to two flags and
-- * stores them into mm->flags.  It modifies lower two bits of mm->flags, but
-- * these bits are not changed atomically.  So get_dumpable can observe the
-- * intermediate state.  To avoid doing unexpected behavior, get get_dumpable
-- * return either old dumpable or new one by paying attention to the order of
-- * modifying the bits.
-- *
-- * dumpable |   mm->flags (binary)
-- * old  new | initial interim  final
-- * ---------+-----------------------
-- *  0    1  |   00      01      01
-- *  0    2  |   00      10(*)   11
-- *  1    0  |   01      00      00
-- *  1    2  |   01      11      11
-- *  2    0  |   11      10(*)   00
-- *  2    1  |   11      11      01
-- *
-- * (*) get_dumpable regards interim value of 10 as 11.
-+ * stores them into mm->flags.
-  */
- void set_dumpable(struct mm_struct *mm, int value)
- {
--	switch (value) {
--	case SUID_DUMP_DISABLE:
--		clear_bit(MMF_DUMPABLE, &mm->flags);
--		smp_wmb();
--		clear_bit(MMF_DUMP_SECURELY, &mm->flags);
--		break;
--	case SUID_DUMP_USER:
--		set_bit(MMF_DUMPABLE, &mm->flags);
--		smp_wmb();
--		clear_bit(MMF_DUMP_SECURELY, &mm->flags);
--		break;
--	case SUID_DUMP_ROOT:
--		set_bit(MMF_DUMP_SECURELY, &mm->flags);
--		smp_wmb();
--		set_bit(MMF_DUMPABLE, &mm->flags);
--		break;
--	}
-+	unsigned long old, new;
-+
-+	do {
-+		old = ACCESS_ONCE(mm->flags);
-+		new = old & ~MMF_DUMPABLE_MASK;
-+
-+		switch (value) {
-+		case SUID_DUMP_ROOT:
-+			new |= (1 << MMF_DUMP_SECURELY);
-+		case SUID_DUMP_USER:
-+			new |= (1<< MMF_DUMPABLE);
-+		}
-+
-+	} while (cmpxchg(&mm->flags, old, new) != old);
- }
- 
- int __get_dumpable(unsigned long mm_flags)
--- 
-1.5.5.1
-
-
+Rob
