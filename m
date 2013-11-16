@@ -1,231 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab3KPA00 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:26:26 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:43661 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753732Ab3KPAXr (ORCPT
+	id S1754536Ab3KPA05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:26:57 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:62712 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754417Ab3KPA0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 19:23:47 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, Chen Gang <gang.chen@asianux.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 14/16] rcu/torture: Dynamically allocate SRCU output buffer to avoid overflow
-Date: Fri, 15 Nov 2013 16:23:36 -0800
-Message-Id: <1384561418-30575-14-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1384561418-30575-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20131116002316.GA29049@linux.vnet.ibm.com>
- <1384561418-30575-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111600-8236-0000-0000-000003D80E33
+	Fri, 15 Nov 2013 19:26:06 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: viresh.kumar@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Update PATCH 1/1] Cpufreq: Make governor data on nonboot cpus across system suspend/resume
+Date: Sat, 16 Nov 2013 01:38:39 +0100
+Message-ID: <2368963.sKiLjXYCVt@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1384503334-18809-1-git-send-email-tianyu.lan@intel.com>
+References: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com> <1384503334-18809-1-git-send-email-tianyu.lan@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chen Gang <gang.chen@asianux.com>
+On Friday, November 15, 2013 04:15:34 PM Lan Tianyu wrote:
+> Currently, governor of nonboot cpus will be put to EXIT when system suspend.
+> Since all these cpus will be unplugged and the governor usage_count decreases
+> to zero. The governor data and its sysfs interfaces will be freed or released.
+> This makes user config of these governors loss during suspend and resume.
 
-If the rcutorture SRCU output exceeds 4096 bytes, for example, if you
-have more than about 75 CPUs, it will overflow the current statically
-allocated buffer.  This commit therefore replaces this static buffer
-with a dynamically buffer whose size is based on the number of CPUs.
+First off, do we have a pointer to a bug report related to that?
 
-Benefits:
+Second, what does need to be done to reproduce this problem?
 
- - Avoids both buffer overflow and output truncation.
- - Handles an arbitrarily large number of CPUs.
- - Straightforward implementation.
-
-Shortcomings:
-
- - Some memory is wasted:
-
-   1 cpu now comsumes 50 - 60 bytes, and this patch provides 200 bytes.
-   Therefore, for 1K CPUs, roughly 100KB of memory will be wasted.
-   However, the memory is freed immediately after printing, so this
-   wastage should not be a problem in practice.
-
-Testing (Fedora16 2 CPUs, 2GB RAM x86_64):
-
- - as module, with/without "torture_type=srcu".
- - build-in not boot runnable, with/without "torture_type=srcu".
- - build-in let boot runnable, with/without "torture_type=srcu".
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcu/torture.c | 67 ++++++++++++++++++++++++++--------------------------
- 1 file changed, 34 insertions(+), 33 deletions(-)
-
-diff --git a/kernel/rcu/torture.c b/kernel/rcu/torture.c
-index 69a4ec80a788..732f8ae3086a 100644
---- a/kernel/rcu/torture.c
-+++ b/kernel/rcu/torture.c
-@@ -139,8 +139,6 @@ MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
- #define VERBOSE_PRINTK_ERRSTRING(s) \
- 	do { if (verbose) pr_alert("%s" TORTURE_FLAG "!!! " s "\n", torture_type); } while (0)
- 
--static char printk_buf[4096];
--
- static int nrealreaders;
- static struct task_struct *writer_task;
- static struct task_struct **fakewriter_tasks;
-@@ -376,7 +374,7 @@ struct rcu_torture_ops {
- 	void (*call)(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
- 	void (*cb_barrier)(void);
- 	void (*fqs)(void);
--	int (*stats)(char *page);
-+	void (*stats)(char *page);
- 	int irq_capable;
- 	int can_boost;
- 	const char *name;
-@@ -578,21 +576,19 @@ static void srcu_torture_barrier(void)
- 	srcu_barrier(&srcu_ctl);
- }
- 
--static int srcu_torture_stats(char *page)
-+static void srcu_torture_stats(char *page)
- {
--	int cnt = 0;
- 	int cpu;
- 	int idx = srcu_ctl.completed & 0x1;
- 
--	cnt += sprintf(&page[cnt], "%s%s per-CPU(idx=%d):",
-+	page += sprintf(page, "%s%s per-CPU(idx=%d):",
- 		       torture_type, TORTURE_FLAG, idx);
- 	for_each_possible_cpu(cpu) {
--		cnt += sprintf(&page[cnt], " %d(%lu,%lu)", cpu,
-+		page += sprintf(page, " %d(%lu,%lu)", cpu,
- 			       per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[!idx],
- 			       per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[idx]);
- 	}
--	cnt += sprintf(&page[cnt], "\n");
--	return cnt;
-+	sprintf(page, "\n");
- }
- 
- static void srcu_torture_synchronize_expedited(void)
-@@ -1052,10 +1048,9 @@ rcu_torture_reader(void *arg)
- /*
-  * Create an RCU-torture statistics message in the specified buffer.
-  */
--static int
-+static void
- rcu_torture_printk(char *page)
- {
--	int cnt = 0;
- 	int cpu;
- 	int i;
- 	long pipesummary[RCU_TORTURE_PIPE_LEN + 1] = { 0 };
-@@ -1071,8 +1066,8 @@ rcu_torture_printk(char *page)
- 		if (pipesummary[i] != 0)
- 			break;
- 	}
--	cnt += sprintf(&page[cnt], "%s%s ", torture_type, TORTURE_FLAG);
--	cnt += sprintf(&page[cnt],
-+	page += sprintf(page, "%s%s ", torture_type, TORTURE_FLAG);
-+	page += sprintf(page,
- 		       "rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
- 		       rcu_torture_current,
- 		       rcu_torture_current_version,
-@@ -1080,53 +1075,52 @@ rcu_torture_printk(char *page)
- 		       atomic_read(&n_rcu_torture_alloc),
- 		       atomic_read(&n_rcu_torture_alloc_fail),
- 		       atomic_read(&n_rcu_torture_free));
--	cnt += sprintf(&page[cnt], "rtmbe: %d rtbke: %ld rtbre: %ld ",
-+	page += sprintf(page, "rtmbe: %d rtbke: %ld rtbre: %ld ",
- 		       atomic_read(&n_rcu_torture_mberror),
- 		       n_rcu_torture_boost_ktrerror,
- 		       n_rcu_torture_boost_rterror);
--	cnt += sprintf(&page[cnt], "rtbf: %ld rtb: %ld nt: %ld ",
-+	page += sprintf(page, "rtbf: %ld rtb: %ld nt: %ld ",
- 		       n_rcu_torture_boost_failure,
- 		       n_rcu_torture_boosts,
- 		       n_rcu_torture_timers);
--	cnt += sprintf(&page[cnt],
-+	page += sprintf(page,
- 		       "onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
- 		       n_online_successes, n_online_attempts,
- 		       n_offline_successes, n_offline_attempts,
- 		       min_online, max_online,
- 		       min_offline, max_offline,
- 		       sum_online, sum_offline, HZ);
--	cnt += sprintf(&page[cnt], "barrier: %ld/%ld:%ld",
-+	page += sprintf(page, "barrier: %ld/%ld:%ld",
- 		       n_barrier_successes,
- 		       n_barrier_attempts,
- 		       n_rcu_torture_barrier_error);
--	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
-+	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
- 	if (atomic_read(&n_rcu_torture_mberror) != 0 ||
- 	    n_rcu_torture_barrier_error != 0 ||
- 	    n_rcu_torture_boost_ktrerror != 0 ||
- 	    n_rcu_torture_boost_rterror != 0 ||
- 	    n_rcu_torture_boost_failure != 0 ||
- 	    i > 1) {
--		cnt += sprintf(&page[cnt], "!!! ");
-+		page += sprintf(page, "!!! ");
- 		atomic_inc(&n_rcu_torture_error);
- 		WARN_ON_ONCE(1);
- 	}
--	cnt += sprintf(&page[cnt], "Reader Pipe: ");
-+	page += sprintf(page, "Reader Pipe: ");
- 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
--		cnt += sprintf(&page[cnt], " %ld", pipesummary[i]);
--	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
--	cnt += sprintf(&page[cnt], "Reader Batch: ");
-+		page += sprintf(page, " %ld", pipesummary[i]);
-+	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
-+	page += sprintf(page, "Reader Batch: ");
- 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
--		cnt += sprintf(&page[cnt], " %ld", batchsummary[i]);
--	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
--	cnt += sprintf(&page[cnt], "Free-Block Circulation: ");
-+		page += sprintf(page, " %ld", batchsummary[i]);
-+	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
-+	page += sprintf(page, "Free-Block Circulation: ");
- 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++) {
--		cnt += sprintf(&page[cnt], " %d",
-+		page += sprintf(page, " %d",
- 			       atomic_read(&rcu_torture_wcount[i]));
- 	}
--	cnt += sprintf(&page[cnt], "\n");
-+	page += sprintf(page, "\n");
- 	if (cur_ops->stats)
--		cnt += cur_ops->stats(&page[cnt]);
--	return cnt;
-+		cur_ops->stats(page);
- }
- 
- /*
-@@ -1140,10 +1134,17 @@ rcu_torture_printk(char *page)
- static void
- rcu_torture_stats_print(void)
- {
--	int cnt;
-+	int size = nr_cpu_ids * 200 + 8192;
-+	char *buf;
- 
--	cnt = rcu_torture_printk(printk_buf);
--	pr_alert("%s", printk_buf);
-+	buf = kmalloc(size, GFP_KERNEL);
-+	if (!buf) {
-+		pr_err("rcu-torture: Out of memory, need: %d", size);
-+		return;
-+	}
-+	rcu_torture_printk(buf);
-+	pr_alert("%s", buf);
-+	kfree(buf);
- }
- 
- /*
+> This doesn't happen on the governor covering boot cpu because it isn't
+> unplugged during system suspend.
+> 
+> To fix this issue, skipping governor exit during system suspend and check
+> policy governor data to determine whether the governor is really needed
+> to be initialized when do init. If not, return EALREADY to indicate the
+> governor has been initialized and should do nothing. __cpufreq_governor()
+> convert EALREADY to 0 as return value for INIT event since governor is
+> still under INIT state and can do START operation.
+> 
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
+> Fix some typos
+> 
+>  drivers/cpufreq/cpufreq.c          |  5 ++++-
+>  drivers/cpufreq/cpufreq_governor.c | 13 ++++++++++++-
+>  2 files changed, 16 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 02d534d..38f2e4a 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1239,7 +1239,7 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
+>  
+>  	/* If cpu is last user of policy, free policy */
+>  	if (cpus == 1) {
+> -		if (has_target()) {
+> +		if (has_target() && !frozen) {
+>  			ret = __cpufreq_governor(policy,
+>  					CPUFREQ_GOV_POLICY_EXIT);
+>  			if (ret) {
+> @@ -1822,6 +1822,9 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>  			((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
+>  		module_put(policy->governor->owner);
+>  
+> +	if ((event == CPUFREQ_GOV_POLICY_INIT) && ret == -EALREADY)
+> +		ret = 0;
+> +
+>  	return ret;
+>  }
+>  
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index 0806c31..ddb93af 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -204,9 +204,20 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  
+>  	switch (event) {
+>  	case CPUFREQ_GOV_POLICY_INIT:
+> +		/*
+> +		 * In order to keep governor data across suspend/resume,
+> +		 * Governor doesn't exit when suspend and will be
+> +		 * reinitialized when resume. Here check policy governor
+> +		 * data to determine whether the governor has been exited.
+> +		 * If not, return EALREADY.
+> +		 */
+>  		if (have_governor_per_policy()) {
+> -			WARN_ON(dbs_data);
+> +			if (dbs_data)
+> +				return -EALREADY;
+>  		} else if (dbs_data) {
+> +			if (policy->governor_data == dbs_data)
+> +				return -EALREADY;
+> +
+>  			dbs_data->usage_count++;
+>  			policy->governor_data = dbs_data;
+>  			return 0;
+> 
 -- 
-1.8.1.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
