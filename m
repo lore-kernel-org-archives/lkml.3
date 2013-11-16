@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab3KPWGq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 17:06:46 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53085 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752127Ab3KPWGj (ORCPT
+	id S1753338Ab3KPWTL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 17:19:11 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:52551 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127Ab3KPWTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 17:06:39 -0500
-Message-ID: <1384639590.3614.16.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] aio: fix D-cache aliasing issues
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Simon Baatz <gmbnomis@gmail.com>
-Cc: Helge Deller <deller@gmx.de>, Benjamin LaHaise <bcrl@kvack.org>,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
-        linux-parisc@vger.kernel.org
-Date: Sat, 16 Nov 2013 14:06:30 -0800
-In-Reply-To: <20131116200717.GA18939@schnuecks.de>
-References: <20131115220529.GA3160@ls3530.box>
-	 <1384555325.2003.39.camel@dabdike.int.hansenpartnership.com>
-	 <20131116200717.GA18939@schnuecks.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
+	Sat, 16 Nov 2013 17:19:06 -0500
+Message-ID: <1384640335.7518.12.camel@fishsauce>
+Subject: Re: [tpmdd-devel] [PATCH 1/5 v2] tpm: Pull everything related to
+ /dev/tpmX into tpm-dev.c
+From: Ashley Lai <adlai@linux.vnet.ibm.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>,
+        linux-kernel@vger.kernel.org
+Date: Sat, 16 Nov 2013 16:18:55 -0600
+In-Reply-To: <1383536326-28772-2-git-send-email-jgunthorpe@obsidianresearch.com>
+References: <1383536326-28772-1-git-send-email-jgunthorpe@obsidianresearch.com>
+	 <1383536326-28772-2-git-send-email-jgunthorpe@obsidianresearch.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111622-1344-0000-0000-00000350456D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-11-16 at 21:07 +0100, Simon Baatz wrote:
-> On Fri, Nov 15, 2013 at 02:42:05PM -0800, James Bottomley wrote:
-> > On Fri, 2013-11-15 at 23:05 +0100, Helge Deller wrote:
-> > > When a user page mapping is released via kunmap*() functions, the D-cache needs
-> > > to be flushed via flush_dcache_page() to avoid D-cache aliasing issues.
-> > > 
-> > > This patch fixes aio on the parisc platform (and probably others).
-> > 
-> > This should be flush_kernel_dcache_page().  flush_dcache_page() is for
-> > full coherency but for unmap, we know the page was coherent going in and
-> > may have been modified by the kernel, so only the kernel view needs to
-> > be sync'd.  Technically, by the kernel API, the flush should be done
-> > *before* unmapping.  This would have mattered on parisc until we did
-> > flush via tmpalias which means we no-longer care if the mapping for the
-> > flush exists or not because we always recreate it via the tmpalias
-> > pages.
-> 
-> On ARM, flush_kernel_dcache_page() actually assumes that the page is
-> mapped.  It avoids double flushing of highmem pages by not flushing
-> in those cases where kunmap_atomic() already takes care of flushing.
+Nice clean up!!! The code looks much more clean after removing the
+duplicated code in all drivers.  Thanks.
 
-On Parisc, kmap/kunmap is currently a nop.  However, if we ever
-implemented highmem, we would also need to flush before we unmap, which
-is why the flush needs to go before the kunmap.
 
-I've got to say on all of this, we've implemented the most inane set of
-primitives.  It would be much easier if kmap/kunmap just took care of
-all of this.  kmap should bring userspace into coherence (because why
-else would we be kmapping) and kunmap should force coherence on the
-kernel address ... and then no-one would need to worry when to and when
-not to flush.
+> diff --git a/drivers/char/tpm/tpm-dev.c b/drivers/char/tpm/tpm-dev.c
+> new file mode 100644
+> index 0000000..8d94e97
+> --- /dev/null
+> +++ b/drivers/char/tpm/tpm-dev.c
+> + * Copyright (C) 2013 Obsidian Reearch Corp
 
-James
+Typo Research?
 
+> + * Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> + *
+
+> +
+> +int tpm_dev_add_device(struct tpm_chip *chip)
+> +{
+
+> +	rc = misc_register(&chip->vendor.miscdev);
+> +	if (rc) {
+> +		chip->vendor.miscdev.name = NULL;
+> +		dev_warn(chip->dev,
+
+Any reason why we use dev_warn here instead of dev_err?
+
+> +			"unable to misc_register %s, minor %d err=%d\n",
+> +			 chip->vendor.miscdev.name,
+> +			 chip->vendor.miscdev.minor, rc);
+> +	}
+> +	return rc;
+> +}
+> +
+
+Reviewed-by: Ashley Lai <adlai@linux.vnet.ibm.com>
+
+Regards,
+--Ashley Lai
 
