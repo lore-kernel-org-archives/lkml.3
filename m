@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab3KPAZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:25:59 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:43672 "EHLO
+	id S1754442Ab3KPA0L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:26:11 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:43662 "EHLO
 	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab3KPAXr (ORCPT
+	with ESMTP id S1753798Ab3KPAXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Nov 2013 19:23:47 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -14,308 +14,100 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, Teodora Baluta <teobaluta@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 15/16] rcu: Remove "extern" from function declarations in include/linux/*rcu*.h
-Date: Fri, 15 Nov 2013 16:23:37 -0800
-Message-Id: <1384561418-30575-15-git-send-email-paulmck@linux.vnet.ibm.com>
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 01/16] rcu: Kick CPU halfway to RCU CPU stall warning
+Date: Fri, 15 Nov 2013 16:23:23 -0800
+Message-Id: <1384561418-30575-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1384561418-30575-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20131116002316.GA29049@linux.vnet.ibm.com>
 References: <20131116002316.GA29049@linux.vnet.ibm.com>
- <1384561418-30575-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111600-8236-0000-0000-000003D80E31
+x-cbid: 13111600-8236-0000-0000-000003D80E1F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Teodora Baluta <teobaluta@gmail.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Function prototypes don't need to have the "extern" keyword since this
-is the default behavior. Its explicit use is redundant.  This commit
-therefore removes them.
+When an RCU CPU stall warning occurs, the CPU invokes resched_cpu() on
+itself.  This can help move the grace period forward in some situations,
+but it would be even better to do this -before- the RCU CPU stall warning.
+This commit therefore causes resched_cpu() to be called every five jiffies
+once the system is halfway to an RCU CPU stall warning.
 
-Signed-off-by: Teodora Baluta <teobaluta@gmail.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rculist.h  |  4 +--
- include/linux/rcupdate.h | 80 ++++++++++++++++++++++++------------------------
- include/linux/rcutiny.h  |  2 +-
- include/linux/rcutree.h  | 36 +++++++++++-----------
- 4 files changed, 61 insertions(+), 61 deletions(-)
+ kernel/rcu/tree.c | 26 +++++++++++++++++++++++++-
+ kernel/rcu/tree.h |  2 ++
+ 2 files changed, 27 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index 45a0a9e81478..dbaf99084112 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -55,8 +55,8 @@ static inline void __list_add_rcu(struct list_head *new,
- 	next->prev = new;
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 8a2c81e86dda..e00946e432ae 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -755,6 +755,12 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp,
  }
- #else
--extern void __list_add_rcu(struct list_head *new,
--		struct list_head *prev, struct list_head *next);
-+void __list_add_rcu(struct list_head *new,
-+		    struct list_head *prev, struct list_head *next);
- #endif
- 
- /**
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index a94a5805d378..52c1b13c4d76 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -50,13 +50,13 @@ extern int rcutorture_runnable; /* for sysctl */
- #endif /* #ifdef CONFIG_RCU_TORTURE_TEST */
- 
- #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
--extern void rcutorture_record_test_transition(void);
--extern void rcutorture_record_progress(unsigned long vernum);
--extern void do_trace_rcu_torture_read(const char *rcutorturename,
--				      struct rcu_head *rhp,
--				      unsigned long secs,
--				      unsigned long c_old,
--				      unsigned long c);
-+void rcutorture_record_test_transition(void);
-+void rcutorture_record_progress(unsigned long vernum);
-+void do_trace_rcu_torture_read(const char *rcutorturename,
-+			       struct rcu_head *rhp,
-+			       unsigned long secs,
-+			       unsigned long c_old,
-+			       unsigned long c);
- #else
- static inline void rcutorture_record_test_transition(void)
- {
-@@ -65,11 +65,11 @@ static inline void rcutorture_record_progress(unsigned long vernum)
- {
- }
- #ifdef CONFIG_RCU_TRACE
--extern void do_trace_rcu_torture_read(const char *rcutorturename,
--				      struct rcu_head *rhp,
--				      unsigned long secs,
--				      unsigned long c_old,
--				      unsigned long c);
-+void do_trace_rcu_torture_read(const char *rcutorturename,
-+			       struct rcu_head *rhp,
-+			       unsigned long secs,
-+			       unsigned long c_old,
-+			       unsigned long c);
- #else
- #define do_trace_rcu_torture_read(rcutorturename, rhp, secs, c_old, c) \
- 	do { } while (0)
-@@ -118,8 +118,8 @@ extern void do_trace_rcu_torture_read(const char *rcutorturename,
-  * if CPU A and CPU B are the same CPU (but again only if the system has
-  * more than one CPU).
-  */
--extern void call_rcu(struct rcu_head *head,
--			      void (*func)(struct rcu_head *head));
-+void call_rcu(struct rcu_head *head,
-+	      void (*func)(struct rcu_head *head));
- 
- #else /* #ifdef CONFIG_PREEMPT_RCU */
- 
-@@ -149,8 +149,8 @@ extern void call_rcu(struct rcu_head *head,
-  * See the description of call_rcu() for more detailed information on
-  * memory ordering guarantees.
-  */
--extern void call_rcu_bh(struct rcu_head *head,
--			void (*func)(struct rcu_head *head));
-+void call_rcu_bh(struct rcu_head *head,
-+		 void (*func)(struct rcu_head *head));
- 
- /**
-  * call_rcu_sched() - Queue an RCU for invocation after sched grace period.
-@@ -171,16 +171,16 @@ extern void call_rcu_bh(struct rcu_head *head,
-  * See the description of call_rcu() for more detailed information on
-  * memory ordering guarantees.
-  */
--extern void call_rcu_sched(struct rcu_head *head,
--			   void (*func)(struct rcu_head *rcu));
-+void call_rcu_sched(struct rcu_head *head,
-+		    void (*func)(struct rcu_head *rcu));
- 
--extern void synchronize_sched(void);
-+void synchronize_sched(void);
- 
- #ifdef CONFIG_PREEMPT_RCU
- 
--extern void __rcu_read_lock(void);
--extern void __rcu_read_unlock(void);
--extern void rcu_read_unlock_special(struct task_struct *t);
-+void __rcu_read_lock(void);
-+void __rcu_read_unlock(void);
-+void rcu_read_unlock_special(struct task_struct *t);
- void synchronize_rcu(void);
  
  /*
-@@ -216,19 +216,19 @@ static inline int rcu_preempt_depth(void)
- #endif /* #else #ifdef CONFIG_PREEMPT_RCU */
++ * This function really isn't for public consumption, but RCU is special in
++ * that context switches can allow the state machine to make progress.
++ */
++extern void resched_cpu(int cpu);
++
++/*
+  * Return true if the specified CPU has passed through a quiescent
+  * state by virtue of being in or having passed through an dynticks
+  * idle state since the last call to dyntick_save_progress_counter()
+@@ -812,16 +818,34 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
+ 	 */
+ 	rcu_kick_nohz_cpu(rdp->cpu);
  
- /* Internal to kernel */
--extern void rcu_init(void);
--extern void rcu_sched_qs(int cpu);
--extern void rcu_bh_qs(int cpu);
--extern void rcu_check_callbacks(int cpu, int user);
-+void rcu_init(void);
-+void rcu_sched_qs(int cpu);
-+void rcu_bh_qs(int cpu);
-+void rcu_check_callbacks(int cpu, int user);
- struct notifier_block;
--extern void rcu_idle_enter(void);
--extern void rcu_idle_exit(void);
--extern void rcu_irq_enter(void);
--extern void rcu_irq_exit(void);
-+void rcu_idle_enter(void);
-+void rcu_idle_exit(void);
-+void rcu_irq_enter(void);
-+void rcu_irq_exit(void);
- 
- #ifdef CONFIG_RCU_USER_QS
--extern void rcu_user_enter(void);
--extern void rcu_user_exit(void);
-+void rcu_user_enter(void);
-+void rcu_user_exit(void);
- #else
- static inline void rcu_user_enter(void) { }
- static inline void rcu_user_exit(void) { }
-@@ -262,7 +262,7 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
- 	} while (0)
- 
- #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP)
--extern bool __rcu_is_watching(void);
-+bool __rcu_is_watching(void);
- #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
- 
- /*
-@@ -289,8 +289,8 @@ void wait_rcu_gp(call_rcu_func_t crf);
-  * initialization.
-  */
- #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
--extern void init_rcu_head_on_stack(struct rcu_head *head);
--extern void destroy_rcu_head_on_stack(struct rcu_head *head);
-+void init_rcu_head_on_stack(struct rcu_head *head);
-+void destroy_rcu_head_on_stack(struct rcu_head *head);
- #else /* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
- static inline void init_rcu_head_on_stack(struct rcu_head *head)
- {
-@@ -363,7 +363,7 @@ static inline int rcu_read_lock_held(void)
-  * rcu_read_lock_bh_held() is defined out of line to avoid #include-file
-  * hell.
-  */
--extern int rcu_read_lock_bh_held(void);
-+int rcu_read_lock_bh_held(void);
- 
- /**
-  * rcu_read_lock_sched_held() - might we be in RCU-sched read-side critical section?
-@@ -449,7 +449,7 @@ static inline int rcu_read_lock_sched_held(void)
- 
- #ifdef CONFIG_PROVE_RCU
- 
--extern int rcu_my_thread_group_empty(void);
-+int rcu_my_thread_group_empty(void);
- 
- /**
-  * rcu_lockdep_assert - emit lockdep splat if specified condition not met
-@@ -1006,7 +1006,7 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
- 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
- 
- #ifdef CONFIG_RCU_NOCB_CPU
--extern bool rcu_is_nocb_cpu(int cpu);
-+bool rcu_is_nocb_cpu(int cpu);
- #else
- static inline bool rcu_is_nocb_cpu(int cpu) { return false; }
- #endif /* #else #ifdef CONFIG_RCU_NOCB_CPU */
-@@ -1014,8 +1014,8 @@ static inline bool rcu_is_nocb_cpu(int cpu) { return false; }
- 
- /* Only for use by adaptive-ticks code. */
- #ifdef CONFIG_NO_HZ_FULL_SYSIDLE
--extern bool rcu_sys_is_idle(void);
--extern void rcu_sysidle_force_exit(void);
-+bool rcu_sys_is_idle(void);
-+void rcu_sysidle_force_exit(void);
- #else /* #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
- 
- static inline bool rcu_sys_is_idle(void)
-diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index 09ebcbe9fd78..6f01771b571c 100644
---- a/include/linux/rcutiny.h
-+++ b/include/linux/rcutiny.h
-@@ -125,7 +125,7 @@ static inline void exit_rcu(void)
- 
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- extern int rcu_scheduler_active __read_mostly;
--extern void rcu_scheduler_starting(void);
-+void rcu_scheduler_starting(void);
- #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
- static inline void rcu_scheduler_starting(void)
- {
-diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index 4b9c81548742..72137ee8c603 100644
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -30,9 +30,9 @@
- #ifndef __LINUX_RCUTREE_H
- #define __LINUX_RCUTREE_H
- 
--extern void rcu_note_context_switch(int cpu);
--extern int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies);
--extern void rcu_cpu_stall_reset(void);
-+void rcu_note_context_switch(int cpu);
-+int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies);
-+void rcu_cpu_stall_reset(void);
- 
- /*
-  * Note a virtualization-based context switch.  This is simply a
-@@ -44,9 +44,9 @@ static inline void rcu_virt_note_context_switch(int cpu)
- 	rcu_note_context_switch(cpu);
++	/*
++	 * Alternatively, the CPU might be running in the kernel
++	 * for an extended period of time without a quiescent state.
++	 * Attempt to force the CPU through the scheduler to gain the
++	 * needed quiescent state, but only if the grace period has gone
++	 * on for an uncommonly long time.  If there are many stuck CPUs,
++	 * we will beat on the first one until it gets unstuck, then move
++	 * to the next.  Only do this for the primary flavor of RCU.
++	 */
++	if (rdp->rsp == rcu_state &&
++	    ULONG_CMP_GE(ACCESS_ONCE(jiffies), rdp->rsp->jiffies_resched)) {
++		rdp->rsp->jiffies_resched += 5;
++		resched_cpu(rdp->cpu);
++	}
++
+ 	return 0;
  }
  
--extern void synchronize_rcu_bh(void);
--extern void synchronize_sched_expedited(void);
--extern void synchronize_rcu_expedited(void);
-+void synchronize_rcu_bh(void);
-+void synchronize_sched_expedited(void);
-+void synchronize_rcu_expedited(void);
+ static void record_gp_stall_check_time(struct rcu_state *rsp)
+ {
+ 	unsigned long j = ACCESS_ONCE(jiffies);
++	unsigned long j1;
  
- void kfree_call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
- 
-@@ -71,25 +71,25 @@ static inline void synchronize_rcu_bh_expedited(void)
- 	synchronize_sched_expedited();
+ 	rsp->gp_start = j;
+ 	smp_wmb(); /* Record start time before stall time. */
+-	rsp->jiffies_stall = j + rcu_jiffies_till_stall_check();
++	j1 = rcu_jiffies_till_stall_check();
++	rsp->jiffies_stall = j + j1;
++	rsp->jiffies_resched = j + j1 / 2;
  }
  
--extern void rcu_barrier(void);
--extern void rcu_barrier_bh(void);
--extern void rcu_barrier_sched(void);
-+void rcu_barrier(void);
-+void rcu_barrier_bh(void);
-+void rcu_barrier_sched(void);
- 
- extern unsigned long rcutorture_testseq;
- extern unsigned long rcutorture_vernum;
--extern long rcu_batches_completed(void);
--extern long rcu_batches_completed_bh(void);
--extern long rcu_batches_completed_sched(void);
-+long rcu_batches_completed(void);
-+long rcu_batches_completed_bh(void);
-+long rcu_batches_completed_sched(void);
- 
--extern void rcu_force_quiescent_state(void);
--extern void rcu_bh_force_quiescent_state(void);
--extern void rcu_sched_force_quiescent_state(void);
-+void rcu_force_quiescent_state(void);
-+void rcu_bh_force_quiescent_state(void);
-+void rcu_sched_force_quiescent_state(void);
- 
--extern void exit_rcu(void);
-+void exit_rcu(void);
- 
--extern void rcu_scheduler_starting(void);
-+void rcu_scheduler_starting(void);
- extern int rcu_scheduler_active __read_mostly;
- 
--extern bool rcu_is_watching(void);
-+bool rcu_is_watching(void);
- 
- #endif /* __LINUX_RCUTREE_H */
+ /*
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 52be957c9fe2..8e34d8674a4e 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -453,6 +453,8 @@ struct rcu_state {
+ 						/*  but in jiffies. */
+ 	unsigned long jiffies_stall;		/* Time at which to check */
+ 						/*  for CPU stalls. */
++	unsigned long jiffies_resched;		/* Time at which to resched */
++						/*  a reluctant CPU. */
+ 	unsigned long gp_max;			/* Maximum GP duration in */
+ 						/*  jiffies. */
+ 	const char *name;			/* Name of structure. */
 -- 
 1.8.1.5
 
