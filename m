@@ -1,118 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727Ab3KPH2G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 02:28:06 -0500
-Received: from mga11.intel.com ([192.55.52.93]:2184 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208Ab3KPH17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 02:27:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,712,1378882800"; 
-   d="asc'?scan'208";a="434457059"
-Date: Sat, 16 Nov 2013 12:01:47 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-next@vger.kernel.org,
+	id S1751634Ab3KPHhY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 02:37:24 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:64839 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab3KPHhS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Nov 2013 02:37:18 -0500
+Date: Fri, 15 Nov 2013 23:34:54 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Grant Grundler <grundler@chromium.org>
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        Olof Johansson <olofj@chromium.org>, Stephen Hurd <shurd@broadcom.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the dmaengine tree with the
- slave-dma tree
-Message-ID: <20131116063147.GH8834@intel.com>
-References: <20131115125604.a12f24a58bcbf91cc26cc20e@canb.auug.org.au>
+Subject: Re: [PATCH] mmc: disable UHS on broadcom sdhci
+Message-ID: <20131116073454.GA20132@quad.lixom.net>
+References: <1384559782-7614-1-git-send-email-grundler@chromium.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fOHHtNG4YXGJ0yqR"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131115125604.a12f24a58bcbf91cc26cc20e@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1384559782-7614-1-git-send-email-grundler@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---fOHHtNG4YXGJ0yqR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Nov 15, 2013 at 03:56:22PM -0800, Grant Grundler wrote:
+> From: Stephen Hurd <shurd@broadcom.com>
+> 
+> Add two new quirks needed by BCM57785 card reader:
+> SDHCI_QUIRK2_BROKEN_UHS:
+>     Disables all UHS modes.
 
-On Fri, Nov 15, 2013 at 12:56:04PM +1100, Stephen Rothwell wrote:
-> Hi Dan,
->=20
-> Today's linux-next merge of the dmaengine tree got a conflict in
-> drivers/dma/dmatest.c between commit 19e9f99f273b ("dmaengine: dmatest:
-> use DMA_COMPLETE for dma completion status") from the slave-dma tree and
-> commit 872f05c6e9a3 ("dmatest: replace stored results mechanism, with
-> uniform messages") from the dmaengine tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
-Thanks, we are sending single PULL to linus so I am merging Dan's tree to m=
-ine
-so this should vanish
+This seems appropriate. You _could_ use SDHCI_QUIRK_MISSING_CAPS and
+hardcode them instead, but it doesn't seem to be an improvement really.
 
---
-~Vinod
->=20
-> --=20
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
->=20
-> diff --cc drivers/dma/dmatest.c
-> index 59e287f56dfc,329b7cf02f8e..000000000000
-> --- a/drivers/dma/dmatest.c
-> +++ b/drivers/dma/dmatest.c
-> @@@ -735,17 -633,17 +633,17 @@@ static int dmatest_func(void *data
->   			 * free it this time?" dancing.  For now, just
->   			 * leave it dangling.
->   			 */
-> - 			thread_result_add(info, result, DMATEST_ET_TIMEOUT,
-> - 					  total_tests, src_off, dst_off,
-> - 					  len, 0);
-> + 			dmaengine_unmap_put(um);
-> + 			result("test timed out", total_tests, src_off, dst_off,
-> + 			       len, 0);
->   			failed_tests++;
->   			continue;
->  -		} else if (status !=3D DMA_SUCCESS) {
->  +		} else if (status !=3D DMA_COMPLETE) {
-> - 			enum dmatest_error_type type =3D (status =3D=3D DMA_ERROR) ?
-> - 				DMATEST_ET_DMA_ERROR : DMATEST_ET_DMA_IN_PROGRESS;
-> - 			thread_result_add(info, result, type,
-> - 					  total_tests, src_off, dst_off,
-> - 					  len, status);
-> + 			dmaengine_unmap_put(um);
-> + 			result(status =3D=3D DMA_ERROR ?
-> + 			       "completion error status" :
-> + 			       "completion busy status", total_tests, src_off,
-> + 			       dst_off, len, ret);
->   			failed_tests++;
->   			continue;
->   		}
+> SDHCI_QUIRK2_BCM57785_CR:
+>     Bit twiddles some Broadcom-specific registers and supresses an error
+>     about the 64k bar0.
+
+I think this can be done without spending a global SDHCI quirk bit. This
+is just a one-time setup that needs to be done, isn't it? It's hard
+to tell since there's no official errata described, but if it is, then
+overriding the probe function is the way to go instead, flipping these
+bits there and then call the regular probe.
 
 
+[...]
 
---=20
+> index 7a7fb4f..cf26c0f 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -1144,6 +1144,27 @@ static void sdhci_set_clock(struct sdhci_host *host, unsigned int clock)
+>  			return;
+>  	}
+>  
+> +	if (host->quirks2 & SDHCI_QUIRK2_BCM57785_CR) {
+> +		u32 tmp;
+> +
+> +		/*
+> +		 * Register descriptions from:
+> +		 *     http://www.broadcom.com/collateral/pg/57785-PG103-R.pdf
+> +		 */
 
---fOHHtNG4YXGJ0yqR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+That's a 661 page document, that unfortunately doesn't really help decode any
+of the bits below because they are all touching reserved or marked-internal
+bits of registers. :-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Still, good to see a doc link.
 
-iQIcBAEBAgAGBQJShxFTAAoJEHwUBw8lI4NHgA8P/0bpjFfoTbF0et6lGPMiSbPN
-HCJvqN9hWlvQi7Pa9M7tCAC9C9ORv5qnWw0S3I++9+GoejFJgB9A81x3yOnPenrx
-7otuJr7lLZABCFf8NI2qa+sTF6bLd++95U9pzN0ZxZyCFGuCA5iv9QHJUweu1fv6
-0yO+Y9U3NPK7SW4AkzOEtka4/GjhbYuBRbiXpZeFXlLNG2fA+GsmmiCTOIwFoSlB
-x4GgZ+qaDpuYuYRP3Mq1fhUWDpThE5Rkh78pXYnzkoowM4O/B+c7bksxZbgtJfCz
-13TnhtJSuOiFWPw+GZyBpPhbuD3+bsNmIfgvu3+nsBnORblVgGYsZGVlgNMAkGip
-67G6z1sxQ+fyM/Gn6GFDyws1rvZwDU3k2EsZ44GBmLWcayfUgj3xyChBkYvS8Hhu
-BjzI8SGEAwatS1s2wAR90MEcK0aYtROCChNiFP92p5X1pArc9OXwYrWvaw459dfX
-5L+ZL6EQ9PFZW8u9H2Sz0xYDvpmGTif6lMmB29FhVww6RiFue2pEM+qNkTTCyuop
-oV3/1XRnfX6/yaSDKoND8wdXB+G02t8i5sEZkab1ZjJGLccfb3ApjdTkroSOryPi
-Ws6Kx9bFebF7H3NZF5/vT7vgqa0Bf+u9tjKBYDnYniC8oOlyDgDYap31K1AY/Bsu
-PZI7dml3VJJSqne4h3IH
-=Fb5f
------END PGP SIGNATURE-----
+> +		tmp = sdhci_readl(host, BCM57785_CR_MUX_CTL);
+> +		tmp &= ~0x3000;		/* bits 12:15 are reserved */
+> +		sdhci_writel(host, tmp, BCM57785_CR_MUX_CTL);
+> +		tmp = sdhci_readl(host, BCM57785_CR_CLK_CTL);
+> +		tmp &= ~(0x01a03f30);	/* Internal debug for SD3.0 */
+> +		tmp |= (0x00500000);
+> +
+> +		if ((sdhci_readw(host, SDHCI_HOST_CONTROL2) &
+> +			    SDHCI_CTRL_VDD_180) && (clock >= 200000000))
+> +			tmp |= (1<<24);
+> +		sdhci_writel(host, tmp, BCM57785_CR_CLK_CTL);
+> +	}
+> +
+>  	sdhci_writew(host, 0, SDHCI_CLOCK_CONTROL);
+>  
+>  	if (clock == 0)
+[...]
+> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+> index 3e781b8..664003a 100644
+> --- a/include/linux/mmc/sdhci.h
+> +++ b/include/linux/mmc/sdhci.h
+> @@ -98,6 +98,12 @@ struct sdhci_host {
+>  #define SDHCI_QUIRK2_CARD_ON_NEEDS_BUS_ON		(1<<4)
+>  /* Controller has a non-standard host control register */
+>  #define SDHCI_QUIRK2_BROKEN_HOST_CONTROL		(1<<5)
+> +/* UHS modes do not work */
+> +#define SDHCI_QUIRK2_BROKEN_UHS				(1<<6)
+> +/* hacks for Broadcom-specific card reader bugs */
+> +#define SDHCI_QUIRK2_BCM57785_CR			(1<<7)
+> +#define	  BCM57785_CR_MUX_CTL 0x198  /* Card Reader MUX control */
+> +#define	  BCM57785_CR_CLK_CTL 0x19c  /* Card Reader Clock Status/Ctl */
 
---fOHHtNG4YXGJ0yqR--
+These two defines should not be in a global include file; they should likely go
+in the c file instead.
+
+
+-Olof
