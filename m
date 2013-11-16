@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab3KPIZC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 03:25:02 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:36967 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369Ab3KPIYt (ORCPT
+	id S1752731Ab3KPIZO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 03:25:14 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:41907 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752473Ab3KPIYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 03:24:49 -0500
+	Sat, 16 Nov 2013 03:24:54 -0500
 From: "Du, Changbin" <changbin.du@gmail.com>
 To: jbaron@akamai.com, joe@perches.com
 Cc: linux-kernel@vger.kernel.org, marcel@holtmann.org,
         akpm@linux-foundation.org, "Du, Changbin" <changbin.du@gmail.com>
-Subject: [PATCH v5 2/3] dynamic_debug: add wildcard support to filter files/functions/modules
-Date: Sat, 16 Nov 2013 16:24:08 +0800
-Message-Id: <1384590249-16672-3-git-send-email-changbin.du@gmail.com>
+Subject: [PATCH v5 3/3] dynamic-debug-howto.txt: update since new wildcard support
+Date: Sat, 16 Nov 2013 16:24:09 +0800
+Message-Id: <1384590249-16672-4-git-send-email-changbin.du@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1384590249-16672-1-git-send-email-changbin.du@gmail.com>
 References: <1384590249-16672-1-git-send-email-changbin.du@gmail.com>
@@ -25,71 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Du, Changbin" <changbin.du@gmail.com>
 
-Add wildcard '*'(matches zero or more characters) and '?'
-(matches one character) support when qurying debug flags.
-
-Now we can open debug messages using keywords. eg:
-1. open debug logs in all usb drivers
-    echo "file drivers/usb/* +p" > <debugfs>/dynamic_debug/control
-2.  open debug logs for usb xhci code
-    echo "file *xhci* +p" > <debugfs>/dynamic_debug/control
+Add the usage of using new feature wildcard support.
 
 Signed-off-by: Du, Changbin <changbin.du@gmail.com>
 ---
- lib/dynamic_debug.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ Documentation/dynamic-debug-howto.txt | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index c37aeac..600ac57 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -8,6 +8,7 @@
-  * By Greg Banks <gnb@melbourne.sgi.com>
-  * Copyright (c) 2008 Silicon Graphics Inc.  All Rights Reserved.
-  * Copyright (C) 2011 Bart Van Assche.  All Rights Reserved.
-+ * Copyright (C) 2013 Du, Changbin <changbin.du@gmail.com>
-  */
+diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
+index 1bbdcfc..46325eb 100644
+--- a/Documentation/dynamic-debug-howto.txt
++++ b/Documentation/dynamic-debug-howto.txt
+@@ -108,6 +108,12 @@ If your query set is big, you can batch them too:
  
- #define pr_fmt(fmt) KBUILD_MODNAME ":%s: " fmt, __func__
-@@ -24,6 +25,7 @@
- #include <linux/sysctl.h>
- #include <linux/ctype.h>
- #include <linux/string.h>
-+#include <linux/parser.h>
- #include <linux/string_helpers.h>
- #include <linux/uaccess.h>
- #include <linux/dynamic_debug.h>
-@@ -147,7 +149,8 @@ static int ddebug_change(const struct ddebug_query *query,
- 	list_for_each_entry(dt, &ddebug_tables, link) {
+   ~# cat query-batch-file > <debugfs>/dynamic_debug/control
  
- 		/* match against the module name */
--		if (query->module && strcmp(query->module, dt->mod_name))
-+		if (query->module &&
-+		    !match_wildcard(query->module, dt->mod_name))
- 			continue;
++A another way is to use wildcard. The match rule support '*' (matches
++zero or more characters) and '?' (matches exactly one character).For
++example, you can match all usb drivers:
++
++  ~# echo "file drivers/usb/* +p" > <debugfs>/dynamic_debug/control
++
+ At the syntactical level, a command comprises a sequence of match
+ specifications, followed by a flags change specification.
  
- 		for (i = 0; i < dt->num_ddebugs; i++) {
-@@ -155,14 +158,16 @@ static int ddebug_change(const struct ddebug_query *query,
+@@ -315,6 +321,9 @@ nullarbor:~ # echo -n 'func svc_process -p' >
+ nullarbor:~ # echo -n 'format "nfsd: READ" +p' >
+ 				<debugfs>/dynamic_debug/control
  
- 			/* match against the source filename */
- 			if (query->filename &&
--			    strcmp(query->filename, dp->filename) &&
--			    strcmp(query->filename, kbasename(dp->filename)) &&
--			    strcmp(query->filename, trim_prefix(dp->filename)))
-+			    !match_wildcard(query->filename, dp->filename) &&
-+			    !match_wildcard(query->filename,
-+					   kbasename(dp->filename)) &&
-+			    !match_wildcard(query->filename,
-+					   trim_prefix(dp->filename)))
- 				continue;
++// enable messages in files of which the pathes include string "usb"
++nullarbor:~ # echo -n '*usb* +p' > <debugfs>/dynamic_debug/control
++
+ // enable all messages
+ nullarbor:~ # echo -n '+p' > <debugfs>/dynamic_debug/control
  
- 			/* match against the function */
- 			if (query->function &&
--			    strcmp(query->function, dp->function))
-+			    !match_wildcard(query->function, dp->function))
- 				continue;
- 
- 			/* match against the format */
 -- 
 1.8.3.2
 
