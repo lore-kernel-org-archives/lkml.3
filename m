@@ -1,91 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab3KPTuA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 14:50:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42787 "EHLO
+	id S1752984Ab3KPT7p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 14:59:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42871 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab3KPTtw (ORCPT
+	with ESMTP id S1752170Ab3KPT7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 14:49:52 -0500
-Date: Sat, 16 Nov 2013 11:50:01 -0800
+	Sat, 16 Nov 2013 14:59:38 -0500
+Date: Sat, 16 Nov 2013 11:59:47 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: "Dilger, Andreas" <andreas.dilger@intel.com>
 Cc: Peng Tao <bergwolf@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hammond, John" <john.hammond@intel.com>
-Subject: Re: [PATCH 05/40] staging/lustre: validate open handle cookies
-Message-ID: <20131116195001.GA9308@kroah.com>
-References: <20131115041324.GA28088@kroah.com>
- <CEAC98F3.818F1%andreas.dilger@intel.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/40] staging/lustre/llite: Access to released file
+ trigs a restore
+Message-ID: <20131116195947.GB9308@kroah.com>
+References: <20131115040944.GA28070@kroah.com>
+ <CEAC7771.817BF%andreas.dilger@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CEAC98F3.818F1%andreas.dilger@intel.com>
+In-Reply-To: <CEAC7771.817BF%andreas.dilger@intel.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 16, 2013 at 11:20:37AM +0000, Dilger, Andreas wrote:
-> On 2013/11/14 9:13 PM, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-> wrote:
-> 
-> >On Fri, Nov 15, 2013 at 12:13:07AM +0800, Peng Tao wrote:
-> >> From: "John L. Hammond" <john.hammond@intel.com>
-> >> 
-> >> Add a const void *h_owner member to struct portals_handle. Add a const
-> >> void *owner parameter to class_handle2object() which must be matched
-> >> by the h_owner member of the handle in addition to the cookie.
+On Sat, Nov 16, 2013 at 10:36:18AM +0000, Dilger, Andreas wrote:
+> >So, sorry, I have to stop here at this series.  I've applied the first 3
+> >to the opw-next branch of staging.git so they can live somewhere until
+> >3.13-rc1 is out.
 > >
-> >Ick ick ick.
+> >I know you spent a lot of time making these 120 patches to send me, but
+> >that too is crazy.  You shouldn't wait that long to get feedback and
+> >send patches to me at all.  Please send them in smaller series, with
+> >less time between patch submissions.
+> 
+> The reason that there are so many patches in a burst is that we are also
+> developing new features and fixing bugs in parallel with the kernel, but
+> they also need to be tested a lot before they are released.  It's not any
+> different from kernel patches testing on -next or -mm for a few months
+> before they are pushed to the mainline kernel in a batch.
+
+It's very different in that you are expecting me to suddenly accept this
+huge burst of patches all at once, and I can't review them properly.  As
+this patch series shows, there was a problem in the 4rd patch in a 100+
+series, which means that I couldn't take them all.  So you wasted a
+bunch of work preparing those other 96 patches.
+
+Send them to me in short chunks, that way you don't waste time, and you
+don't take so long between patch acceptance.
+
+> The out-of-tree development can't really stop for a year while the kernel
+> client code is cleaned up.  If the feature patches don't land into the
+> kernel client for a year (or however long it takes to do all the cleanup),
+> then it will become outdated and the whole reason for adding the client
+> into the kernel is lost.
+
+But you understand my hesitation at taking any new features when there
+really has not been any attempt by your team to do much cleanup and
+fixes of the code at all, right?  It feels like I have done more cleanup
+personally than anyone on your teams, is this not true?
+
+So, why would I believe that you all are really going to start doing the
+major cleanup work on this code that is so obviously needed?  Why would
+I take new features that you are spending your time on instead?
+
+> >> There are many users of the external tree so we cannot just abandon
+> >> it, especially that the upstream client is not shipped in any
+> >> distribution yet. Thanks for your understanding.
 > >
-> >NEVER use a void pointer if you can help it, and for a "handle", never.
-> >This isn't other operating systems, sorry.  We know what types our
-> >pointers to structures are, use them, so that the compiler can catch our
-> >problems, and don't try to cheat by using void *.
-> 
-> The portals_handle is used as a generic type for objects referenced over
-> the network, like a file handle.  The "owner" parameter is just used as
-> an extra check that the cookie passed from the client is actually a
-> valid value for the code in which it is being used (e.g. metadata or
-> data object).  It isn't actually dereferenced by anything, it is just
-> like a magic value.
-
-Then make it an explicit type, not a void *.
-
-> >> Adjust
-> >> the callers of class_handle2object() accordingly, using NULL as the
-> >> argument to the owner parameter, except in the case of
-> >> mdt_handle2mfd() where we add an explicit mdt_export_data parameter
-> >> which we use as the owner when searching for a MFD. When allocating a
-> >> new MFD, pass a pointer to the mdt_export_data into mdt_mfd_new() and
-> >> store it in h_owner. This allows the MDT to validate that the client
-> >> has not sent the wrong open handle cookie, or sent the right cookie to
-> >> the wrong MDT.
+> >What is keeping people using that tree?  Support for older/distro
+> >kernels?
 > >
-> >This changelog entry doesn't even match up with the code below.  ALl
-> >callers of class_handle2object are passing NULL here, which makes this
-> >patch pretty pointless, right?
 > 
-> As Tao wrote, this is the patch summary that matches what was committed
-> in our own tree and in this case mostly describes the changes made on the
-> server.  Keeping the same commits and comments in both trees makes it
-> easier to keep the code in sync.
+> Support for distro kernels is a big part of it.  Most HPC sites use vendor
+> kernels of various vintages, and we need to keep the code working for those
+> sites.  We also need to continue developing features needed by ever-larger
+> clusters, fixing bugs, etc.  Eventually, when Lustre is in the kernel
+> proper,
+> it will also be available in future distro kernels and we can eventually
+> stop supporting the out-of-tree code.  I expect that to be 3+ years away.
 
-Ok, but as it is, this patch does nothing to the client code, so how can
-I accept it?  A function that is only ever called with NULL as an option
-is ripe for cleanup in my eyes.
+So, originally you said it would take about a year to get this out of
+staging.  It's been 6 months already with no real progress made with the
+exception of having interns do cleanup and me doing some basic wrapper
+function removals.  What's the plan for the next 6 months?  Based on
+these 100+ patches, I don't see any major changes that are happening to
+get this cleaned up properly (or did I miss those patches in this huge
+patchbomb?)
 
-> >And that's a _very_ generic global symbol name, please don't do that, it
-> >needs to be "lustre_*" at the front to even expect it to be acceptable.
+> >Is it the fact that the server code isn't in the kernel?
 > 
-> There's already something else called a "lustre_handle", so what about
-> obdclass_handle2object(), since this is in the obdclass module?
+> Not really.  Lustre servers are on separate servers with vendor kernels
+> (ancient by your standards), and there isn't really any demand for
+> using newer kernels on those nodes.  Most importantly, the out-of-tree
+> branch is where all of the new feature development is being done.  That
+> also means if feature patches don't land into the kernel it just makes
+> the kernel version less attractive for users.
+> 
+> >  Should that be added now too so that we can get a proper view of what
+> > can and can not be changed?  Some of your patches are showing that things
+> > are shared by the two chunks of code, so does that mean if I delete
+> >things in the client code that don't look to be used by anything, you
+> > will have problems because the server now breaks?
+> 
+> Adding the server code to staging would mean another 150kLOC in staging.
+> We also haven't cleaned that code up even nearly as much as the client
+> code, so it isn't really even ready to go into staging either.  I don't
+> think you or anyone else would be happy to see that code yet, so I don't
+> think there is a real advantage to do so.
+> 
+> Deleting unused code in the kernel client isn't fatal, since we'll
+> still have the out-of-tree version, but we're trying to keep the code in
+> sync as much as possible so that it is easier to port patches in both
+> directions.  If code is deleted it means more that needs to be added
+> back later when the server eventually does get merged, and more effort
+> to resolve patch conflicts.
 
-I don't care, but make it unique to the lustre subsystem somehow.
-Haveing it start with "class_" looks like it belongs to the driver core
-which isn't ok.
+But look at the function that caused this original question to be asked.
+You want an api change that I would never accept as it doesn't do
+anything to the client code at all.  How do I "know" this is acceptable
+and needed if I can't see the server side?  How would I "know" not to
+take a cleanup patch that reverted this change if I can't see the server
+side at the same time?
 
-thanks,
+150k of code is not a big deal to me, I can easily take it.  If it means
+that we have a real chance at getting this all fixed up properly, I say
+to do it, otherwise I really don't think this project will ever succeed,
+sorry.
 
 greg k-h
