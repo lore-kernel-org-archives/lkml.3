@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab3KPPRe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 10:17:34 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:40940 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab3KPPRY (ORCPT
+	id S1752951Ab3KPPTB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 10:19:01 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:45582 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab3KPPSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 10:17:24 -0500
+	Sat, 16 Nov 2013 10:18:54 -0500
+Message-ID: <52878CD4.5080307@gmail.com>
+Date: Sat, 16 Nov 2013 08:18:44 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <2235672.LLJc6e6dny@vostro.rjw.lan>
-References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org>
-	<5020664.HldDXMO8cr@vostro.rjw.lan>
-	<5286F536.70403@linaro.org>
-	<2235672.LLJc6e6dny@vostro.rjw.lan>
-Date: Sat, 16 Nov 2013 20:47:24 +0530
-Message-ID: <CAKohpok_zjdRVz5-ZGRmZtwysC7jORm2mgRbLWDUzo1ucYVKZg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
-        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf tip: fails to convert comm
+References: <528306F5.8050307@gmail.com> <20131113180344.GA28039@localhost.localdomain> <52864BFF.20601@gmail.com> <20131116010207.GA18855@localhost.localdomain>
+In-Reply-To: <20131116010207.GA18855@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 November 2013 19:59, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-
-> Well, disabling it for the whole duration of suspend/resume and/or hibernation
-> may not be the right approach entirely, unless we force the pax perf of the
-
-s/pax/max ?
-
-> boot CPU at least in addition to that.  Otherwise the latency of suspend and
-> the subsequent resume will depend on what perf level the CPUs where before
-> disabling the governors, which is not desirable at al.
-
-Well that is pretty much doable.
-
->> And these are the notifications that we send:
->> - PM_HIBERNATION_PREPARE
->> - PM_POST_HIBERNATION
->> - PM_RESTORE_PREPARE
->> - PM_POST_RESTORE
+On 11/15/13, 6:02 PM, Frederic Weisbecker wrote:
+> On Fri, Nov 15, 2013 at 09:29:51AM -0700, David Ahern wrote:
+>> HI Frederic:
 >>
->> If I am not wrong I need to stop governors on PM_HIBERNATION_PREPARE and need to
->> start them back on: PM_POST_HIBERNATION (I am a bit confused with this one. Does
->> this POST_HIBERNATION one happens at the end of going into hibernation? or after
->> booting back? I need a notifier at the end of restore)..
+>> On 11/13/13, 11:03 AM, Frederic Weisbecker wrote:
+>>>
+>>> I see. I can reproduce, I'll check and see what happens. It would be nice if
+>>> we could have an option to dump internal perf events like comm events as well
+>>> in the perf script stream.
+>>
+>> Any progress on a solution? This is a regression in 3.13.
 >
-> You'd need both PM_POST_HIBERNATION and PM_POST_RESTORE, but I wouldn't really
-> like cpufreq governors to be disabled throughout the whole hibernation.
+> So the problem is that when a thread overrides its default ":%pid" comm, we forget
+> to tag the thread comm as overriden. Hence, this overriden comm is not inherited on
+> future forks.
+>
+> So here is a fix. Tell me if you see more issue, I'll cook a proper changelog and
+> resend if everyting looks good.
 
-So PM_POST_HIBERNATION is called just before shutting off the system? And
-PM_POST_RESTORE is called after system is resumed from saved image?
+That works for me. Thank you.
 
-> Actually, we use CPU offline/online during system suspend/resume to avoid
-> having to do stuff like this from PM notifiers.
-
-I didn't get the logic behind this one..
-
-> So I'd like the original problem to be addressed in a different way.
-
-Hmm..
-
-> PS
-> The sisk.pl address will start bouncing shortly, so please replace it with
-> rjw@rjwysocki.net in your address book.
-
-Okay...
+Tested-by: David Ahern <dsahern@gmail.com>
