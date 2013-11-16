@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab3KPUTJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 15:19:09 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:55772 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab3KPUTA (ORCPT
+	id S1753370Ab3KPUTd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 15:19:33 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:59720 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571Ab3KPUT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 15:19:00 -0500
-Date: Sat, 16 Nov 2013 12:18:53 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 4/4] documentation: Update circular buffer
- for load-acquire/store-release
-Message-ID: <20131116201853.GD4138@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131116001005.GA28191@linux.vnet.ibm.com>
- <1384560630-28719-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1384560630-28719-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131116160340.GM16796@laptop.programming.kicks-ass.net>
+	Sat, 16 Nov 2013 15:19:26 -0500
+Message-ID: <5287D34B.8010600@linux.com>
+Date: Sat, 16 Nov 2013 21:19:23 +0100
+From: Levente Kurusa <levex@linux.com>
+Reply-To: Levente Kurusa <levex@linux.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131116160340.GM16796@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111620-1542-0000-0000-0000035A5B33
+To: Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-kernel@vger.kernel.org
+CC: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/5] kstrtox: remove redundant cleanup
+References: <1384623151-31302-1-git-send-email-felipe.contreras@gmail.com> <1384623151-31302-2-git-send-email-felipe.contreras@gmail.com>
+In-Reply-To: <1384623151-31302-2-git-send-email-felipe.contreras@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 16, 2013 at 05:03:40PM +0100, Peter Zijlstra wrote:
-> On Fri, Nov 15, 2013 at 04:10:30PM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > This commit replaces full barriers by targeted use of load-acquire and
-> > store-release.
+2013-11-16 18:32 keltezéssel, Felipe Contreras írta:
+> We can't reach the cleanup code unless the flag KSTRTOX_OVERFLOW is not
+> set, so there's not no point in clearing a bit that we know is not set.
 > 
-> I guess I'd better hurry up merging the patches that introduce these
-> thingies someplace :-)
+> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+Acked-by: Levente Kurusa <levex@linux.com>
 
-+1 to that!  ;-)
+Legit one. To be honest, I don't know who will apply it, because of the stuff discussed
+earlier.
 
-							Thanx, Paul
-
+-- 
+Regards,
+Levente Kurusa
