@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab3KPO5L (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 09:57:11 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:40956 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575Ab3KPO5H (ORCPT
+	id S1752897Ab3KPO5V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 09:57:21 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59920 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752642Ab3KPO5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 09:57:07 -0500
-MIME-Version: 1.0
+	Sat, 16 Nov 2013 09:57:11 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: viresh.kumar@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Update PATCH 1/1] Cpufreq: Make governor data on nonboot cpus across system suspend/resume
+Date: Sat, 16 Nov 2013 16:09:44 +0100
+Message-ID: <2541765.pYv7UXDJWx@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
 In-Reply-To: <9847309.KdKOG5y1Zx@vostro.rjw.lan>
-References: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com>
-	<2368963.sKiLjXYCVt@vostro.rjw.lan>
-	<5286EDBF.9050001@intel.com>
-	<9847309.KdKOG5y1Zx@vostro.rjw.lan>
-Date: Sat, 16 Nov 2013 20:27:07 +0530
-Message-ID: <CAKohpomKqJ-Vb68JvmBdTM-QbrszLH1BLQ14s5H1JzVZBTzpYA@mail.gmail.com>
-Subject: Re: [Update PATCH 1/1] Cpufreq: Make governor data on nonboot cpus
- across system suspend/resume
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+References: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com> <5286EDBF.9050001@intel.com> <9847309.KdKOG5y1Zx@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 November 2013 20:11, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Saturday, November 16, 2013 11:59:59 AM Lan Tianyu wrote:
+On Saturday, November 16, 2013 03:41:10 PM Rafael J. Wysocki wrote:
 
->> Defaultly, all cpus use ondemand governor after bootup. Change one
->> non-boot cpu's governor to conservative,
->
-> Well, why would anyone want to do that?  Just out of curiosity ...
+[...]
 
-People may want to use different group/cluster/socket of CPUs differently,
-with different kind of policies. Maybe performance governor for boot cpu
-and ondemand for others.
+> > >> @@ -1822,6 +1822,9 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+> > >>   			((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
+> > >>   		module_put(policy->governor->owner);
+> > >>
+> > >> +	if ((event == CPUFREQ_GOV_POLICY_INIT) && ret == -EALREADY)
+> > >> +		ret = 0;
+> > >> +
+> 
+> -> I'd prefer this check to be combined with the one done to determine whether
+> or not we need to do the module_put().  Something like
+> 
+> 	if (event == CPUFREQ_GOV_POLICY_EXIT && ret) {
 
-This bug would also be there for big LITTLE where we want to have
-separate set of tunables for big and LITTLE clusters for the same type
-of governor.
+Obviously, that should be:
 
-> So this is acpi-cpufreq, right?
+	if (event == CPUFREQ_GOV_POLICY_INIT && ret) {
 
-Probably yes, I saw something similar somewhere.. But this is driver
-independent..
+> 		module_put(policy->governor->owner);
+> 		if (ret == -EALREADY)
+> 			return 0;
+> 	} else if (event == CPUFREQ_GOV_POLICY_EXIT && !ret) {
+> 		module_put(policy->governor->owner);
+> 	}
 
-> The patch looks basically OK to me, but ->
+Sorry for the confusion.
 
-We wouldn't need this patch if my other patch (where I am disabling
-governors in suspend/resume goes in, in any form)..
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
