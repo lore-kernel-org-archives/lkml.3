@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab3KPGzb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 01:55:31 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:19757 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab3KPGzV convert rfc822-to-8bit (ORCPT
+	id S1752126Ab3KPG4I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 01:56:08 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:17613 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab3KPG4D convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 01:55:21 -0500
+	Sat, 16 Nov 2013 01:56:03 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 15 Nov 2013 22:53:38 -0800
+	by hqnvupgp08.nvidia.com on Fri, 15 Nov 2013 22:50:14 -0800
 From: Vishal Annapurve <vannapurve@nvidia.com>
 To: Alan Stern <stern@rowland.harvard.edu>
 CC: Ming Lei <tom.leiming@gmail.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-usb <linux-usb@vger.kernel.org>
-Date: Sat, 16 Nov 2013 12:25:16 +0530
+Date: Sat, 16 Nov 2013 12:25:47 +0530
 Subject: RE: [PATCH] usb-storage: scsiglue: Changing the command result
 Thread-Topic: [PATCH] usb-storage: scsiglue: Changing the command result
-Thread-Index: Ac7imGOIxlzb1uH0RzmEJSvnbbUPZwAAEHLQ
-Message-ID: <113ACA888B71994BB56E5CF3704953486D664FCD43@BGMAIL02.nvidia.com>
+Thread-Index: Ac7imGOIxlzb1uH0RzmEJSvnbbUPZwAAEHLQAAAMOaA=
+Message-ID: <113ACA888B71994BB56E5CF3704953486D664FCD44@BGMAIL02.nvidia.com>
 Accept-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
@@ -33,7 +33,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-[PATCH 2/3] keucr: Proper cmd result assignment
+[PATCH 3/3] usb: storage: uas: Proper cmd result assignment
 
 This change replaces DID_ABORT with DID_TIMEOUT as a command result
 whenever US_FLIDX_TIMED_OUT bit is set.
@@ -51,6 +51,54 @@ but any command accessing the storage medium will time out.
 As the USB storage was setting command result as aborted rather than
 timed out, SCSI layer was not recognizing the above mentioned failure
 pattern.
+
+Signed-off-by: Vishal Annapurve <vannapurve@nvidia.com>
+---
+ drivers/usb/storage/uas.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
+index d966b59..3a4a44e 100644
+--- a/drivers/usb/storage/uas.c
++++ b/drivers/usb/storage/uas.c
+@@ -271,7 +271,10 @@ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller)
+ 	usb_free_urb(cmdinfo->data_out_urb);
+ 	if (cmdinfo->state & COMMAND_ABORTED) {
+ 		scmd_printk(KERN_INFO, cmnd, "abort completed\n");
+-		cmnd->result = DID_ABORT << 16;
++		/* Better to check for US_FLIDX_TIMED_OUT
++		 * bit settings.
++		 */
++		cmnd->result = DID_TIME_OUT << 16;
+ 	}
+ 	cmnd->scsi_done(cmnd);
+ 	return 0;
+-- 
+1.8.4.2
+
+Regards,
+Vishal
+
+-----Original Message-----
+From: Vishal Annapurve 
+Sent: Saturday, November 16, 2013 12:25 PM
+To: 'Alan Stern'
+Cc: 'Ming Lei'; 'Linux Kernel Mailing List'; 'linux-usb'
+Subject: RE: [PATCH] usb-storage: scsiglue: Changing the command result
+
+Hi,
+
+[PATCH 2/3] keucr: Proper cmd result assignment
+
+This change replaces DID_ABORT with DID_TIMEOUT as a command result whenever US_FLIDX_TIMED_OUT bit is set.
+
+This change is made to bring USB storage inline with a recent change:
+
+commit    18a4d0a22ed6c54b67af7718c305cd010f09ddf8
+
+[SCSI] Handle disk devices which can not process medium access commands We have experienced several devices which fail in a fashion we do not currently handle gracefully in SCSI. After a failure these devices will respond to the SCSI primary command set (INQUIRY, TEST UNIT READY, etc.) but any command accessing the storage medium will time out.
+
+As the USB storage was setting command result as aborted rather than timed out, SCSI layer was not recognizing the above mentioned failure pattern.
 
 Signed-off-by: Vishal Annapurve <vannapurve@nvidia.com>
 ---
@@ -79,8 +127,7 @@ index aeb2186..6f61c20 100644
 +			srb->result = DID_TIME_OUT << 16;
  			goto Handle_Errors;
  		}
- 		if (temp_result != USB_STOR_TRANSPORT_GOOD) {
-@@ -488,7 +488,7 @@ void ENE_stor_invoke_transport(struct scsi_cmnd *srb, struct us_data *us)
+ 		if (temp_result != USB_STOR_TRANSPORT_GOOD) { @@ -488,7 +488,7 @@ void ENE_stor_invoke_transport(struct scsi_cmnd *srb, struct us_data *us)
  		we need to short-circuit all other processing */
  	if (test_bit(US_FLIDX_TIMED_OUT, &us->dflags)) {
  		/* pr_info("-- command was aborted\n"); */
@@ -89,8 +136,7 @@ index aeb2186..6f61c20 100644
  		goto Handle_Errors;
  	}
  
-diff --git a/drivers/staging/keucr/usb.c b/drivers/staging/keucr/usb.c
-index a84ee63..26ec64c 100644
+diff --git a/drivers/staging/keucr/usb.c b/drivers/staging/keucr/usb.c index a84ee63..26ec64c 100644
 --- a/drivers/staging/keucr/usb.c
 +++ b/drivers/staging/keucr/usb.c
 @@ -181,7 +181,7 @@ static int usb_stor_control_thread(void *__us)
@@ -112,14 +158,14 @@ index a84ee63..26ec64c 100644
  			us->srb->scsi_done(us->srb);
  		} else {
  SkipForAbort:
--- 
+--
 1.8.4.2
 
 Regards,
 Vishal
 
 -----Original Message-----
-From: Vishal Annapurve 
+From: Vishal Annapurve
 Sent: Saturday, November 16, 2013 12:24 PM
 To: 'Alan Stern'
 Cc: Ming Lei; Linux Kernel Mailing List; linux-usb
