@@ -1,120 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab3KPALM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:11:12 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:34032 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691Ab3KPAKs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 19:10:48 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 4/4] documentation: Update circular buffer for load-acquire/store-release
-Date: Fri, 15 Nov 2013 16:10:30 -0800
-Message-Id: <1384560630-28719-4-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1384560630-28719-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20131116001005.GA28191@linux.vnet.ibm.com>
- <1384560630-28719-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111600-3532-0000-0000-00000311167E
+	id S1753707Ab3KPAM2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:12:28 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:54669 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753163Ab3KPAMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 19:12:21 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tianyu.lan@intel.com, nm@ti.com,
+        jinchoi@broadcom.com, sebastian.capella@linaro.org
+Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
+Date: Sat, 16 Nov 2013 01:24:50 +0100
+Message-ID: <5020664.HldDXMO8cr@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org>
+References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Friday, November 15, 2013 03:42:29 PM Viresh Kumar wrote:
+> This patch adds PM notifiers for handling suspend/resume of cpufreq governors.
+> This is required for early suspend and late resume of governors.
+> 
+> There are multiple reasons that support this patch:
+> - Firstly it looks very much logical to stop governors when we know we are going
+>   into suspend. But the question is when? Is PM notifiers the right place?
+>   Following reasons are the supporting hands for this decision.
+> - Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board
+>   wasn't working well with suspend/resume as calls for removing non-boot CPUs
+>   was turning out into a call to drivers ->target() which then tries to play
+>   with regulators. But regulators and their I2C bus were already suspended and
+>   this resulted in a failure. This is why we need a PM notifier here.
+> - Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found another issue where
+>   tunables configuration for clusters/sockets with non-boot CPUs was getting
+>   lost after suspend/resume, as we were notifying governors with
+>   CPUFREQ_GOV_POLICY_EXIT on removal of the last cpu for that policy and so
+>   deallocating memory for tunables.
+> 
+> All above problems get fixed with having a PM notifier in place which will stop
+> any operation on governor. Hence no need to do any special handling of variables
+> like (frozen) in suspend/resume paths.
 
-This commit replaces full barriers by targeted use of load-acquire and
-store-release.
+Will cpufreq work during system-wide power transitions (suspend/resume etc.)
+after this?  In particular, what about hibernation?
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- Documentation/circular-buffers.txt | 35 +++++++++++++++++------------------
- 1 file changed, 17 insertions(+), 18 deletions(-)
-
-diff --git a/Documentation/circular-buffers.txt b/Documentation/circular-buffers.txt
-index a36bed3db4ee..15e54ff50018 100644
---- a/Documentation/circular-buffers.txt
-+++ b/Documentation/circular-buffers.txt
-@@ -160,6 +160,7 @@ The producer will look something like this:
- 	spin_lock(&producer_lock);
- 
- 	unsigned long head = buffer->head;
-+	/* The spin_unlock() and next spin_lock() provide needed ordering. */
- 	unsigned long tail = ACCESS_ONCE(buffer->tail);
- 
- 	if (CIRC_SPACE(head, tail, buffer->size) >= 1) {
-@@ -168,9 +169,8 @@ The producer will look something like this:
- 
- 		produce_item(item);
- 
--		smp_wmb(); /* commit the item before incrementing the head */
--
--		ACCESS_ONCE(buffer->head) = (head + 1) & (buffer->size - 1);
-+		smp_store_release(buffer->head,
-+				  (head + 1) & (buffer->size - 1));
- 
- 		/* wake_up() will make sure that the head is committed before
- 		 * waking anyone up */
-@@ -200,21 +200,18 @@ The consumer will look something like this:
- 
- 	spin_lock(&consumer_lock);
- 
--	unsigned long head = ACCESS_ONCE(buffer->head);
-+	unsigned long head = smp_load_acquire(buffer->head);
- 	unsigned long tail = buffer->tail;
- 
- 	if (CIRC_CNT(head, tail, buffer->size) >= 1) {
--		/* read index before reading contents at that index */
--		smp_rmb();
- 
- 		/* extract one item from the buffer */
- 		struct item *item = buffer[tail];
- 
- 		consume_item(item);
- 
--		smp_mb(); /* finish reading descriptor before incrementing tail */
--
--		ACCESS_ONCE(buffer->tail) = (tail + 1) & (buffer->size - 1);
-+		smp_store_release(buffer->tail,
-+				  (tail + 1) & (buffer->size - 1));
- 	}
- 
- 	spin_unlock(&consumer_lock);
-@@ -223,15 +220,17 @@ This will instruct the CPU to make sure the index is up to date before reading
- the new item, and then it shall make sure the CPU has finished reading the item
- before it writes the new tail pointer, which will erase the item.
- 
--
--Note the use of ACCESS_ONCE() in both algorithms to read the opposition index.
--This prevents the compiler from discarding and reloading its cached value -
--which some compilers will do across smp_read_barrier_depends().  This isn't
--strictly needed if you can be sure that the opposition index will _only_ be
--used the once.  Similarly, ACCESS_ONCE() is used in both algorithms to
--write the thread's index.  This documents the fact that we are writing
--to something that can be read concurrently and also prevents the compiler
--from tearing the store.
-+Note the use of ACCESS_ONCE() and smp_load_acquire() to read the
-+opposition index.  This prevents the compiler from discarding and
-+reloading its cached value - which some compilers will do across
-+smp_read_barrier_depends().  This isn't strictly needed if you can
-+be sure that the opposition index will _only_ be used the once.
-+The smp_load_acquire() additionally forces the CPU to order against
-+subsequent memory references.  Similarly, smp_store_release() is used
-+in both algorithms to write the thread's index.  This documents the
-+fact that we are writing to something that can be read concurrently,
-+prevents the compiler from tearing the store, and enforces ordering
-+against previous accesses.
- 
- 
- ===============
+> Reported-by: Lan Tianyu <tianyu.lan@intel.com>
+> Reported-by: Nishanth Menon <nm@ti.com>
+> Reported-by: Jinhyuk Choi <jinchoi@broadcom.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> 
+> Hi Guys,
+> 
+> Can you please verify if this fixes issues reported by you? I have tested this
+> for multiple suspend-resumes on my thinkpad. It doesn't crash :)
+> 
+>  drivers/cpufreq/cpufreq.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 63 insertions(+)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 02d534d..c87ced9 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/module.h>
+>  #include <linux/mutex.h>
+>  #include <linux/slab.h>
+> +#include <linux/suspend.h>
+>  #include <linux/syscore_ops.h>
+>  #include <linux/tick.h>
+>  #include <trace/events/power.h>
+> @@ -47,6 +48,9 @@ static LIST_HEAD(cpufreq_policy_list);
+>  static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+>  #endif
+>  
+> +/* Flag to suspend/resume CPUFreq governors */
+> +static bool cpufreq_suspended;
+> +
+>  static inline bool has_target(void)
+>  {
+>  	return cpufreq_driver->target_index || cpufreq_driver->target;
+> @@ -1462,6 +1466,54 @@ static struct subsys_interface cpufreq_interface = {
+>  	.remove_dev	= cpufreq_remove_dev,
+>  };
+>  
+> +/*
+> + * PM Notifier for suspending governors as some platforms can't change frequency
+> + * after this point in suspend cycle. Because some of the devices (like: i2c,
+> + * regulators, etc) they use for changing frequency are suspended quickly after
+> + * this point.
+> + */
+> +static int cpufreq_pm_notify(struct notifier_block *nb, unsigned long action,
+> +		void *data)
+> +{
+> +	struct cpufreq_policy *policy;
+> +	unsigned long flags;
+> +
+> +	if (!has_target())
+> +		return NOTIFY_OK;
+> +
+> +	if (action == PM_SUSPEND_PREPARE) {
+> +		pr_debug("%s: Suspending Governors\n", __func__);
+> +
+> +		list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
+> +			if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
+> +				pr_err("%s: Failed to stop governor for policy: %p\n",
+> +						__func__, policy);
+> +
+> +		write_lock_irqsave(&cpufreq_driver_lock, flags);
+> +		cpufreq_suspended = true;
+> +		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +	} else if (action == PM_POST_SUSPEND) {
+> +		pr_debug("%s: Resuming Governors\n", __func__);
+> +
+> +		write_lock_irqsave(&cpufreq_driver_lock, flags);
+> +		cpufreq_suspended = false;
+> +		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +
+> +		list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
+> +			if (__cpufreq_governor(policy, CPUFREQ_GOV_START) ||
+> +					__cpufreq_governor(policy,
+> +						CPUFREQ_GOV_LIMITS))
+> +				pr_err("%s: Failed to start governor for policy: %p\n",
+> +						__func__, policy);
+> +	}
+> +
+> +	return NOTIFY_OK;
+> +}
+> +
+> +static struct notifier_block cpufreq_pm_notifier = {
+> +	.notifier_call = cpufreq_pm_notify,
+> +};
+> +
+>  /**
+>   * cpufreq_bp_suspend - Prepare the boot CPU for system suspend.
+>   *
+> @@ -1752,6 +1804,8 @@ EXPORT_SYMBOL_GPL(cpufreq_driver_target);
+>  static int __cpufreq_governor(struct cpufreq_policy *policy,
+>  					unsigned int event)
+>  {
+> +	unsigned long flags;
+> +	bool is_suspended;
+>  	int ret;
+>  
+>  	/* Only must be defined when default governor is known to have latency
+> @@ -1764,6 +1818,14 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>  	struct cpufreq_governor *gov = NULL;
+>  #endif
+>  
+> +	/* Don't start any governor operations if we are entering suspend */
+> +	read_lock_irqsave(&cpufreq_driver_lock, flags);
+> +	is_suspended = cpufreq_suspended;
+> +	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +
+> +	if (is_suspended)
+> +		return 0;
+> +
+>  	if (policy->governor->max_transition_latency &&
+>  	    policy->cpuinfo.transition_latency >
+>  	    policy->governor->max_transition_latency) {
+> @@ -2222,6 +2284,7 @@ static int __init cpufreq_core_init(void)
+>  	cpufreq_global_kobject = kobject_create();
+>  	BUG_ON(!cpufreq_global_kobject);
+>  	register_syscore_ops(&cpufreq_syscore_ops);
+> +	register_pm_notifier(&cpufreq_pm_notifier);
+>  
+>  	return 0;
+>  }
+> 
 -- 
-1.8.1.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
