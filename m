@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754279Ab3KPAEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:04:25 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:63032 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773Ab3KPABv (ORCPT
+	id S1754329Ab3KPAEj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:04:39 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:50358 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751Ab3KPABt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 19:01:51 -0500
+	Fri, 15 Nov 2013 19:01:49 -0500
 From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 To: linux-omap@vger.kernel.org
 Cc: linaro-networking@linaro.org, Victor Kamensky <victor.kamensky@linaro.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [RFC 16/23] ASoC: omap: mcbsp, mcpdm, dmic: raw read and write endian fix
-Date: Sat, 16 Nov 2013 02:01:19 +0200
-Message-Id: <1384560086-11994-17-git-send-email-taras.kondratiuk@linaro.org>
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC 15/23] usb: musb: raw read and write endian fix
+Date: Sat, 16 Nov 2013 02:01:18 +0200
+Message-Id: <1384560086-11994-16-git-send-email-taras.kondratiuk@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
 References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
@@ -40,93 +38,71 @@ with xxx_relaxed variant.
 Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
 Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 ---
- sound/soc/omap/mcbsp.c      |   12 ++++++------
- sound/soc/omap/omap-dmic.c  |    4 ++--
- sound/soc/omap/omap-mcpdm.c |    4 ++--
- 3 files changed, 10 insertions(+), 10 deletions(-)
+ drivers/usb/musb/musb_io.h |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/sound/soc/omap/mcbsp.c b/sound/soc/omap/mcbsp.c
-index 83433fd..86c7538 100644
---- a/sound/soc/omap/mcbsp.c
-+++ b/sound/soc/omap/mcbsp.c
-@@ -36,10 +36,10 @@ static void omap_mcbsp_write(struct omap_mcbsp *mcbsp, u16 reg, u32 val)
+diff --git a/drivers/usb/musb/musb_io.h b/drivers/usb/musb/musb_io.h
+index eebeed7..76f4d2a 100644
+--- a/drivers/usb/musb/musb_io.h
++++ b/drivers/usb/musb/musb_io.h
+@@ -42,17 +42,17 @@
+ /* NOTE:  these offsets are all in bytes */
  
- 	if (mcbsp->pdata->reg_size == 2) {
- 		((u16 *)mcbsp->reg_cache)[reg] = (u16)val;
--		__raw_writew((u16)val, addr);
-+		writew_relaxed((u16)val, addr);
- 	} else {
- 		((u32 *)mcbsp->reg_cache)[reg] = val;
--		__raw_writel(val, addr);
-+		writel_relaxed(val, addr);
- 	}
- }
+ static inline u16 musb_readw(const void __iomem *addr, unsigned offset)
+-	{ return __raw_readw(addr + offset); }
++	{ return readw_relaxed(addr + offset); }
  
-@@ -48,22 +48,22 @@ static int omap_mcbsp_read(struct omap_mcbsp *mcbsp, u16 reg, bool from_cache)
- 	void __iomem *addr = mcbsp->io_base + reg * mcbsp->pdata->reg_step;
+ static inline u32 musb_readl(const void __iomem *addr, unsigned offset)
+-	{ return __raw_readl(addr + offset); }
++	{ return readl_relaxed(addr + offset); }
  
- 	if (mcbsp->pdata->reg_size == 2) {
--		return !from_cache ? __raw_readw(addr) :
-+		return !from_cache ? readw_relaxed(addr) :
- 				     ((u16 *)mcbsp->reg_cache)[reg];
- 	} else {
--		return !from_cache ? __raw_readl(addr) :
-+		return !from_cache ? readl_relaxed(addr) :
- 				     ((u32 *)mcbsp->reg_cache)[reg];
- 	}
- }
  
- static void omap_mcbsp_st_write(struct omap_mcbsp *mcbsp, u16 reg, u32 val)
+ static inline void musb_writew(void __iomem *addr, unsigned offset, u16 data)
+-	{ __raw_writew(data, addr + offset); }
++	{ writew_relaxed(data, addr + offset); }
+ 
+ static inline void musb_writel(void __iomem *addr, unsigned offset, u32 data)
+-	{ __raw_writel(data, addr + offset); }
++	{ writel_relaxed(data, addr + offset); }
+ 
+ 
+ #if defined(CONFIG_USB_MUSB_TUSB6010) || defined (CONFIG_USB_MUSB_TUSB6010_MODULE)
+@@ -65,7 +65,7 @@ static inline u8 musb_readb(const void __iomem *addr, unsigned offset)
+ 	u16 tmp;
+ 	u8 val;
+ 
+-	tmp = __raw_readw(addr + (offset & ~1));
++	tmp = readw_relaxed(addr + (offset & ~1));
+ 	if (offset & 1)
+ 		val = (tmp >> 8);
+ 	else
+@@ -78,22 +78,22 @@ static inline void musb_writeb(void __iomem *addr, unsigned offset, u8 data)
  {
--	__raw_writel(val, mcbsp->st_data->io_base_st + reg);
-+	writel_relaxed(val, mcbsp->st_data->io_base_st + reg);
+ 	u16 tmp;
+ 
+-	tmp = __raw_readw(addr + (offset & ~1));
++	tmp = readw_relaxed(addr + (offset & ~1));
+ 	if (offset & 1)
+ 		tmp = (data << 8) | (tmp & 0xff);
+ 	else
+ 		tmp = (tmp & 0xff00) | data;
+ 
+-	__raw_writew(tmp, addr + (offset & ~1));
++	writew_relaxed(tmp, addr + (offset & ~1));
  }
  
- static int omap_mcbsp_st_read(struct omap_mcbsp *mcbsp, u16 reg)
- {
--	return __raw_readl(mcbsp->st_data->io_base_st + reg);
-+	return readl_relaxed(mcbsp->st_data->io_base_st + reg);
- }
+ #else
  
- #define MCBSP_READ(mcbsp, reg) \
-diff --git a/sound/soc/omap/omap-dmic.c b/sound/soc/omap/omap-dmic.c
-index 12e566b..1bd531d 100644
---- a/sound/soc/omap/omap-dmic.c
-+++ b/sound/soc/omap/omap-dmic.c
-@@ -61,12 +61,12 @@ struct omap_dmic {
+ static inline u8 musb_readb(const void __iomem *addr, unsigned offset)
+-	{ return __raw_readb(addr + offset); }
++	{ return readb_relaxed(addr + offset); }
  
- static inline void omap_dmic_write(struct omap_dmic *dmic, u16 reg, u32 val)
- {
--	__raw_writel(val, dmic->io_base + reg);
-+	writel_relaxed(val, dmic->io_base + reg);
- }
+ static inline void musb_writeb(void __iomem *addr, unsigned offset, u8 data)
+-	{ __raw_writeb(data, addr + offset); }
++	{ writeb_relaxed(data, addr + offset); }
  
- static inline int omap_dmic_read(struct omap_dmic *dmic, u16 reg)
- {
--	return __raw_readl(dmic->io_base + reg);
-+	return readl_relaxed(dmic->io_base + reg);
- }
+ #endif	/* CONFIG_USB_MUSB_TUSB6010 */
  
- static inline void omap_dmic_start(struct omap_dmic *dmic)
-diff --git a/sound/soc/omap/omap-mcpdm.c b/sound/soc/omap/omap-mcpdm.c
-index 90d2a7c..653ba1c 100644
---- a/sound/soc/omap/omap-mcpdm.c
-+++ b/sound/soc/omap/omap-mcpdm.c
-@@ -74,12 +74,12 @@ struct omap_mcpdm {
- 
- static inline void omap_mcpdm_write(struct omap_mcpdm *mcpdm, u16 reg, u32 val)
- {
--	__raw_writel(val, mcpdm->io_base + reg);
-+	writel_relaxed(val, mcpdm->io_base + reg);
- }
- 
- static inline int omap_mcpdm_read(struct omap_mcpdm *mcpdm, u16 reg)
- {
--	return __raw_readl(mcpdm->io_base + reg);
-+	return readl_relaxed(mcpdm->io_base + reg);
- }
- 
- #ifdef DEBUG
 -- 
 1.7.9.5
 
