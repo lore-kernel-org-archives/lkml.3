@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab3KPADT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:03:19 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:47409 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843Ab3KPACB (ORCPT
+	id S1754096Ab3KPAD0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:03:26 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:53641 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab3KPAB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 19:02:01 -0500
+	Fri, 15 Nov 2013 19:01:59 -0500
 From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 To: linux-omap@vger.kernel.org
 Cc: linaro-networking@linaro.org, Victor Kamensky <victor.kamensky@linaro.org>,
         Tony Lindgren <tony@atomide.com>,
         Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [RFC 23/23] ARM: OMAP4: enable big endian support
-Date: Sat, 16 Nov 2013 02:01:26 +0200
-Message-Id: <1384560086-11994-24-git-send-email-taras.kondratiuk@linaro.org>
+Subject: [RFC 22/23] ARM: OMAP4: sleep/smp: switch CPU to BE if compiled for BE
+Date: Sat, 16 Nov 2013 02:01:25 +0200
+Message-Id: <1384560086-11994-23-git-send-email-taras.kondratiuk@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
 References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
@@ -25,27 +25,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Victor Kamensky <victor.kamensky@linaro.org>
 
-Previous patches fixed big endian issues in OMAP4 code,
-so mark it as one that supports big endian
+If kernel operates in BE mode on device that has LE bootloader/ROM code,
+we need to switch CPU to operate in BE mode before it will start to
+access BE data. Generic secondary_startup function that is called from
+OMAP specific secondary startup code will do the switch, but we need
+to do it earlier because OMAP's secondary_startup code works with BE data.
 
 Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
 Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 ---
- arch/arm/mach-omap2/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-omap2/omap-headsmp.S |   13 +++++++++++++
+ arch/arm/mach-omap2/sleep44xx.S    |    6 ++++++
+ 2 files changed, 19 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index b5fb5f7..b5b19a3 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -48,6 +48,7 @@ config ARCH_OMAP4
- 	select COMMON_CLK
- 	select ARM_ERRATA_754322
- 	select ARM_ERRATA_775420
-+	select ARCH_SUPPORTS_BIG_ENDIAN
+diff --git a/arch/arm/mach-omap2/omap-headsmp.S b/arch/arm/mach-omap2/omap-headsmp.S
+index 75e9295..75c98d4 100644
+--- a/arch/arm/mach-omap2/omap-headsmp.S
++++ b/arch/arm/mach-omap2/omap-headsmp.S
+@@ -17,6 +17,7 @@
  
- config SOC_OMAP5
- 	bool "TI OMAP5"
+ #include <linux/linkage.h>
+ #include <linux/init.h>
++#include <asm/assembler.h>
+ 
+ #include "omap44xx.h"
+ 
+@@ -58,6 +59,12 @@ hold:	ldr	r12,=0x103
+ 	bne	hold
+ 
+ 	/*
++	 * ROM code operates in little endian mode, when we get control we
++	 * need to switch it back to big endian mode.
++	 */
++ARM_BE8(setend be)
++
++	/*
+ 	 * we've been released from the wait loop,secondary_stack
+ 	 * should now contain the SVC stack for this core
+ 	 */
+@@ -75,6 +82,12 @@ hold_2:	ldr	r12,=0x103
+ 	bne	hold_2
+ 
+ 	/*
++	 * ROM code operates in little endian mode, when we get control we
++	 * need to switch it back to big endian mode.
++	 */
++ARM_BE8(setend be)
++
++	/*
+ 	 * GIC distributor control register has changed between
+ 	 * CortexA9 r1pX and r2pX. The Control Register secure
+ 	 * banked version is now composed of 2 bits:
+diff --git a/arch/arm/mach-omap2/sleep44xx.S b/arch/arm/mach-omap2/sleep44xx.S
+index 8017016..f509dc5 100644
+--- a/arch/arm/mach-omap2/sleep44xx.S
++++ b/arch/arm/mach-omap2/sleep44xx.S
+@@ -260,6 +260,12 @@ ENDPROC(omap4_finish_suspend)
+  */
+ ENTRY(omap4_cpu_resume)
+ 	/*
++	 * ROM code operates in little endian mode, when we get control we
++	 * need to switch it back to big endian mode.
++	 */
++ARM_BE8(setend	be)
++
++	/*
+ 	 * Configure ACTRL and enable NS SMP bit access on CPU1 on HS device.
+ 	 * OMAP44XX EMU/HS devices - CPU0 SMP bit access is enabled in PPA
+ 	 * init and for CPU1, a secure PPA API provided. CPU0 must be ON
 -- 
 1.7.9.5
 
