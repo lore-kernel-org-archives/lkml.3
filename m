@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab3KPACS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:02:18 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:41907 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307Ab3KPABj (ORCPT
+	id S1753909Ab3KPACY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:02:24 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:44951 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677Ab3KPABk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 19:01:39 -0500
+	Fri, 15 Nov 2013 19:01:40 -0500
 From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 To: linux-omap@vger.kernel.org
 Cc: linaro-networking@linaro.org, Victor Kamensky <victor.kamensky@linaro.org>,
-        Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC 05/23] i2c: omap: raw read and write endian fix
-Date: Sat, 16 Nov 2013 02:01:08 +0200
-Message-Id: <1384560086-11994-6-git-send-email-taras.kondratiuk@linaro.org>
+        linux-kernel@vger.kernel.org
+Subject: [RFC 06/23] drivers: bus: omap_l3: raw read and write endian fix
+Date: Sat, 16 Nov 2013 02:01:09 +0200
+Message-Id: <1384560086-11994-7-git-send-email-taras.kondratiuk@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
 References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
@@ -37,38 +36,43 @@ with xxx_relaxed variant.
 Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
 Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 ---
- drivers/i2c/busses/i2c-omap.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/bus/omap_l3_noc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 9967a6f..d69826e 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -266,13 +266,13 @@ static const u8 reg_map_ip_v2[] = {
- static inline void omap_i2c_write_reg(struct omap_i2c_dev *i2c_dev,
- 				      int reg, u16 val)
- {
--	__raw_writew(val, i2c_dev->base +
-+	writew_relaxed(val, i2c_dev->base +
- 			(i2c_dev->regs[reg] << i2c_dev->reg_shift));
- }
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index feeecae..82de7a5 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -72,7 +72,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 		 * to determine the source
+ 		 */
+ 		base = l3->l3_base[i];
+-		err_reg = __raw_readl(base + l3_flagmux[i] +
++		err_reg = readl_relaxed(base + l3_flagmux[i] +
+ 					+ L3_FLAGMUX_REGERR0 + (inttype << 3));
  
- static inline u16 omap_i2c_read_reg(struct omap_i2c_dev *i2c_dev, int reg)
- {
--	return __raw_readw(i2c_dev->base +
-+	return readw_relaxed(i2c_dev->base +
- 				(i2c_dev->regs[reg] << i2c_dev->reg_shift));
- }
+ 		/* Get the corresponding error and analyse */
+@@ -82,9 +82,9 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
  
-@@ -1142,7 +1142,7 @@ omap_i2c_probe(struct platform_device *pdev)
- 	 * Also since the omap_i2c_read_reg uses reg_map_ip_* a
- 	 * raw_readw is done.
- 	 */
--	rev = __raw_readw(dev->base + 0x04);
-+	rev = readw_relaxed(dev->base + 0x04);
+ 			/* Read the stderrlog_main_source from clk domain */
+ 			l3_targ_base = base + *(l3_targ[i] + err_src);
+-			std_err_main =  __raw_readl(l3_targ_base +
++			std_err_main =  readl_relaxed(l3_targ_base +
+ 					L3_TARG_STDERRLOG_MAIN);
+-			masterid = __raw_readl(l3_targ_base +
++			masterid = readl_relaxed(l3_targ_base +
+ 					L3_TARG_STDERRLOG_MSTADDR);
  
- 	dev->scheme = OMAP_I2C_SCHEME(rev);
- 	switch (dev->scheme) {
+ 			switch (std_err_main & CUSTOM_ERROR) {
+@@ -93,7 +93,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 					l3_targ_inst_name[i][err_src];
+ 				WARN(true, "L3 standard error: TARGET:%s at address 0x%x\n",
+ 					target_name,
+-					__raw_readl(l3_targ_base +
++					readl_relaxed(l3_targ_base +
+ 						L3_TARG_STDERRLOG_SLVOFSLSB));
+ 				/* clear the std error log*/
+ 				clear = std_err_main | CLEAR_STDERR_LOG;
 -- 
 1.7.9.5
 
