@@ -1,44 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab3KPUhm (ORCPT <rfc822;w@1wt.eu>);
+	id S1753426Ab3KPUhw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 15:37:52 -0500
+Received: from mga02.intel.com ([134.134.136.20]:59713 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753282Ab3KPUhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 16 Nov 2013 15:37:42 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:65114 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab3KPUhg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 15:37:36 -0500
-Message-ID: <5287D78D.4070601@linux.com>
-Date: Sat, 16 Nov 2013 21:37:33 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: Levente Kurusa <levex@linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: AFS list <linux-afs@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Levente Kurusa <levex@linux.com>
-Subject: [PATCH] afs: dir: remove unused label out_skip
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="409932778"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "Thomas Gleixner" <tglx@linutronix.de>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH] x86/copy_user.S: Remove zero byte check before copy user buffer.
+Date: Sat, 16 Nov 2013 12:37:01 -0800
+Message-Id: <1384634221-6006-1-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.8.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The out_skip label is not used, so remove it.
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-Signed-off-by: Levente Kurusa <levex@linux.com>
+Operation of rep movsb instruction handles zero byte copy. As pointed out by
+Linus, there is no need to check zero size in kernel. Removing this redundant
+check saves a few cycles in copy user functions.
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- fs/afs/dir.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/x86/lib/copy_user_64.S | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/fs/afs/dir.c b/fs/afs/dir.c
-index 3756d4f..0e10b14 100644
---- a/fs/afs/dir.c
-+++ b/fs/afs/dir.c
-@@ -669,7 +669,6 @@ static int afs_d_revalidate(struct dentry *dentry, unsigned int flags)
+diff --git a/arch/x86/lib/copy_user_64.S b/arch/x86/lib/copy_user_64.S
+index a30ca15..ffe4eb9 100644
+--- a/arch/x86/lib/copy_user_64.S
++++ b/arch/x86/lib/copy_user_64.S
+@@ -236,8 +236,6 @@ ENDPROC(copy_user_generic_unrolled)
+ ENTRY(copy_user_generic_string)
+ 	CFI_STARTPROC
+ 	ASM_STAC
+-	andl %edx,%edx
+-	jz 4f
+ 	cmpl $8,%edx
+ 	jb 2f		/* less than 8 bytes, go to byte copy loop */
+ 	ALIGN_DESTINATION
+@@ -249,7 +247,7 @@ ENTRY(copy_user_generic_string)
+ 2:	movl %edx,%ecx
+ 3:	rep
+ 	movsb
+-4:	xorl %eax,%eax
++	xorl %eax,%eax
+ 	ASM_CLAC
+ 	ret
+ 
+@@ -279,12 +277,10 @@ ENDPROC(copy_user_generic_string)
+ ENTRY(copy_user_enhanced_fast_string)
+ 	CFI_STARTPROC
+ 	ASM_STAC
+-	andl %edx,%edx
+-	jz 2f
+ 	movl %edx,%ecx
+ 1:	rep
+ 	movsb
+-2:	xorl %eax,%eax
++	xorl %eax,%eax
+ 	ASM_CLAC
+ 	ret
+ 
+-- 
+1.8.0.1
 
- out_valid:
- 	dentry->d_fsdata = dir_version;
--out_skip:
- 	dput(parent);
- 	key_put(key);
- 	_leave(" = 1 [valid]");
