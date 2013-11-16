@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773Ab3KPBUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 20:20:25 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:54007 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752645Ab3KPBUR (ORCPT
+	id S1753604Ab3KPBVa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 20:21:30 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:42683 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab3KPBVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 20:20:17 -0500
-Date: Fri, 15 Nov 2013 20:20:13 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org, Yang Bai <hamo.by@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] scripts: Have make TAGS not include structure members
-Message-ID: <20131115202013.252e3a24@gandalf.local.home>
-In-Reply-To: <5286C42C.4050800@codeaurora.org>
-References: <20131115093645.6dc03918@gandalf.local.home>
-	<5286C42C.4050800@codeaurora.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Fri, 15 Nov 2013 20:21:23 -0500
+Date: Fri, 15 Nov 2013 17:21:16 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 01/28] rcutorture: Add KVM-based test
+ framework
+Message-ID: <20131116012116.GZ4138@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131116003517.GA31563@linux.vnet.ibm.com>
+ <1384562141-32446-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20131116010528.GA9112@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131116010528.GA9112@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111601-3532-0000-0000-000003114CFB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Nov 2013 17:02:36 -0800
-Stephen Boyd <sboyd@codeaurora.org> wrote:
-
-> On 11/15/13 06:36, Steven Rostedt wrote:
-> > diff --git a/scripts/tags.sh b/scripts/tags.sh
-> > index 74f02e4..b985371 100755
-> > --- a/scripts/tags.sh
-> > +++ b/scripts/tags.sh
-> > @@ -218,7 +218,7 @@ exuberant()
-> >  
-> >  emacs()
-> >  {
-> > -	all_target_sources | xargs $1 -a                        \
-> > +	all_target_sources | xargs $1 -a --no-members           \
-> >  	--regex='/^\(ENTRY\|_GLOBAL\)(\([^)]*\)).*/\2/'         \
-> >  	--regex='/^SYSCALL_DEFINE[0-9]?(\([^,)]*\).*/sys_\1/'   \
-> >  	--regex='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
-> > @@ -248,13 +248,13 @@ emacs()
-> >  	--regex='/PCI_OP_READ(\([a-z]*[a-z]\).*[1-4])/pci_bus_read_config_\1/' \
-> >  	--regex='/PCI_OP_WRITE(\([a-z]*[a-z]\).*[1-4])/pci_bus_write_config_\1/'
-> >  
-> > -	all_kconfigs | xargs $1 -a                              \
-> > +	all_kconfigs | xargs $1 -a --no-members                 \
-> >  	--regex='/^[ \t]*\(\(menu\)*config\)[ \t]+\([a-zA-Z0-9_]+\)/\3/'
-> >  
-> > -	all_kconfigs | xargs $1 -a                              \
-> > +	all_kconfigs | xargs $1 -a --no-members                 \
-> >  	--regex='/^[ \t]*\(\(menu\)*config\)[ \t]+\([a-zA-Z0-9_]+\)/CONFIG_\3/'
-> >  
-> > -	all_defconfigs | xargs -r $1 -a                         \
-> > +	all_defconfigs | xargs -r $1 -a --no-members            \
-> >  	--regex='/^#?[ \t]?\(CONFIG_[a-zA-Z0-9_]+\)/\1/'
-> >  }
-> >  
+On Fri, Nov 15, 2013 at 05:05:28PM -0800, Greg KH wrote:
+> On Fri, Nov 15, 2013 at 04:35:14PM -0800, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > This commit adds the test framework that I used to test RCU under KVM.
+> > This consists of a group of scripts and Kconfig fragments.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Greg KH <gregkh@linuxfoundation.org>
 > 
-> Does it actually matter for the kconfigs and defconfigs?
-> 
+> Yeah!  Thanks for following through on this, it will help me out a lot
+> in testing stable kernels.
 
-Actually no. I noticed that after I sent the patch. Here's v2:
+Glad you like it!  ;-)
 
+> Oh, one very minor comment on the patches, you should delete the address
+> of the FSF from your file headers, unless you want to track the office
+> movements of them for the next 40+ years.  We've been removing them from
+> kernel code where we notice them, as half of them are wrong, and I don't
+> want to have to go back and fix them again when they move again.
 
-scripts: Have make TAGS not include structure members
+I had no idea that they tend to move!  Thank you, I will remove them.
 
-It is really annoying when I use emacs TAGS to search for something
-like "dev_name" and have to go through 12 iterations before I find the
-function "dev_name". I really do not care about structures that include
-"dev_name" as one of its fields, and I'm sure pretty much all other
-developers do not care either.
+							Thanx, Paul
 
-There's a "remove_structs" variable used by the scripts/tags.sh, which
-I'm guessing is suppose to remove these structures from the TAGS file,
-but it must do a poor job at it, as I'm always hitting structures when
-I want the actual declaration.
-
-Luckily, the etags and ctags program comes with an option
-"--no-members", which does exactly what I want, and I'm sure all other
-kernel developers want too.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-Index: linux-trace.git/scripts/tags.sh
-===================================================================
---- linux-trace.git.orig/scripts/tags.sh
-+++ linux-trace.git/scripts/tags.sh
-@@ -218,7 +218,7 @@ exuberant()
- 
- emacs()
- {
--	all_target_sources | xargs $1 -a                        \
-+	all_target_sources | xargs $1 -a --no-members           \
- 	--regex='/^\(ENTRY\|_GLOBAL\)(\([^)]*\)).*/\2/'         \
- 	--regex='/^SYSCALL_DEFINE[0-9]?(\([^,)]*\).*/sys_\1/'   \
- 	--regex='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
