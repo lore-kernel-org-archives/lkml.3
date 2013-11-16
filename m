@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab3KPApU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:45:20 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:38300 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754837Ab3KPAk1 (ORCPT
+	id S1754845Ab3KPAp7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:45:59 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:41056 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753753Ab3KPAkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 19:40:27 -0500
+	Fri, 15 Nov 2013 19:40:24 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,65 +14,56 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: [PATCH tip/core/rcu 06/14] ipv6/ip6_tunnel: Apply ACCESS_ONCE() to avoid sparse false positive
-Date: Fri, 15 Nov 2013 16:40:09 -0800
-Message-Id: <1384562417-817-6-git-send-email-paulmck@linux.vnet.ibm.com>
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 01/14] rcu: Add comment on evaluate-once properties of rcu_assign_pointer().
+Date: Fri, 15 Nov 2013 16:40:04 -0800
+Message-Id: <1384562417-817-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1384562417-817-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20131116003946.GA316@linux.vnet.ibm.com>
 References: <20131116003946.GA316@linux.vnet.ibm.com>
- <1384562417-817-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111600-1344-0000-0000-0000034C9BA0
+x-cbid: 13111600-0928-0000-0000-000003BD187C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The sparse checking for rcu_assign_pointer() was recently upgraded
-to reject non-__kernel address spaces.  This also rejects __rcu,
-which is almost always the right thing to do.  However, the use in
-ip6_tnl_unlink() is legitimate: It is assigning a pointer to an element
-from an RCU-protected list, and all elements of this list are already
-visible to caller.
+The rcu_assign_pointer() macro, as with most cpp macros, must not evaluate
+its argument more than once.  And it in fact does not.  But this might
+not be obvious to the casual observer, because one of the arguments
+appears no less than three times.  However, but one expansion is only
+visible to sparse (__CHECKER__), and one lives inside a typeof (where
+it will never be evaluated), so this is in fact safe.
 
-This commit therefore silences this false positive by laundering the
-pointer using ACCESS_ONCE() as suggested by Eric Dumazet and Josh
-Triplett.
+This commit therefore adds a comment making this explicit.
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Reported-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org
 ---
- net/ipv6/ip6_tunnel.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/rcupdate.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-index 61355f7f4da5..2bea7a4e49ed 100644
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -245,7 +245,8 @@ ip6_tnl_unlink(struct ip6_tnl_net *ip6n, struct ip6_tnl *t)
- 	     (iter = rtnl_dereference(*tp)) != NULL;
- 	     tp = &iter->next) {
- 		if (t == iter) {
--			rcu_assign_pointer(*tp, t->next);
-+			/* Both --rcu and visible, so ACCESS_ONCE() is OK. */
-+			ACCESS_ONCE(*tp) = t->next;
- 			break;
- 		}
- 	}
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 39cbb889e20d..00ad28168ef0 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -911,6 +911,14 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
+  * rcu_assign_pointer() is a very bad thing that results in
+  * impossible-to-diagnose memory corruption.  So please be careful.
+  * See the RCU_INIT_POINTER() comment header for details.
++ *
++ * Note that rcu_assign_pointer() evaluates each of its arguments only
++ * once, appearances notwithstanding.  One of the "extra" evaluations
++ * is in typeof() and the other visible only to sparse (__CHECKER__),
++ * neither of which actually execute the argument.  As with most cpp
++ * macros, this execute-arguments-only-once property is important, so
++ * please be careful when making changes to rcu_assign_pointer() and the
++ * other macros that it invokes.
+  */
+ #define rcu_assign_pointer(p, v) \
+ 	__rcu_assign_pointer((p), (v), __rcu)
 -- 
 1.8.1.5
 
