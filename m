@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab3KPUhw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 15:37:52 -0500
-Received: from mga02.intel.com ([134.134.136.20]:59713 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753282Ab3KPUhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 15:37:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="409932778"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, "Ingo Molnar" <mingo@elte.hu>,
-        "Thomas Gleixner" <tglx@linutronix.de>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH] x86/copy_user.S: Remove zero byte check before copy user buffer.
-Date: Sat, 16 Nov 2013 12:37:01 -0800
-Message-Id: <1384634221-6006-1-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.8.0.1
+	id S1753394Ab3KPUnk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 15:43:40 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:57533 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab3KPUnc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Nov 2013 15:43:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <1383833644-27091-2-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1383833644-27091-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1383833644-27091-2-git-send-email-kirill.shutemov@linux.intel.com>
+Date: Sat, 16 Nov 2013 21:43:32 +0100
+X-Google-Sender-Auth: 5xfau0xpVqFXhUIvZ0AWV2iTNgo
+Message-ID: <CAMuHMdV33zBfsztXGsSv5YO+r4c2Fxh+0tH7togtS7EjdhDXeA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mm: create a separate slab for page->ptl allocation
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+On Thu, Nov 7, 2013 at 3:14 PM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
 
-Operation of rep movsb instruction handles zero byte copy. As pointed out by
-Linus, there is no need to check zero size in kernel. Removing this redundant
-check saves a few cycles in copy user functions.
+> +static inline void pgtable_init(void)
+> +{
+> +       ptlock_cache_init();
+> +       pgtable_cache_init();
+> +}
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- arch/x86/lib/copy_user_64.S | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+sparc64defconfig:
 
-diff --git a/arch/x86/lib/copy_user_64.S b/arch/x86/lib/copy_user_64.S
-index a30ca15..ffe4eb9 100644
---- a/arch/x86/lib/copy_user_64.S
-+++ b/arch/x86/lib/copy_user_64.S
-@@ -236,8 +236,6 @@ ENDPROC(copy_user_generic_unrolled)
- ENTRY(copy_user_generic_string)
- 	CFI_STARTPROC
- 	ASM_STAC
--	andl %edx,%edx
--	jz 4f
- 	cmpl $8,%edx
- 	jb 2f		/* less than 8 bytes, go to byte copy loop */
- 	ALIGN_DESTINATION
-@@ -249,7 +247,7 @@ ENTRY(copy_user_generic_string)
- 2:	movl %edx,%ecx
- 3:	rep
- 	movsb
--4:	xorl %eax,%eax
-+	xorl %eax,%eax
- 	ASM_CLAC
- 	ret
- 
-@@ -279,12 +277,10 @@ ENDPROC(copy_user_generic_string)
- ENTRY(copy_user_enhanced_fast_string)
- 	CFI_STARTPROC
- 	ASM_STAC
--	andl %edx,%edx
--	jz 2f
- 	movl %edx,%ecx
- 1:	rep
- 	movsb
--2:	xorl %eax,%eax
-+	xorl %eax,%eax
- 	ASM_CLAC
- 	ret
- 
--- 
-1.8.0.1
+include/linux/mm.h:1391:2: error: implicit declaration of function
+'pgtable_cache_init' [-Werror=implicit-function-declaration]
+arch/sparc/include/asm/pgtable_64.h:978:13: error: conflicting types
+for 'pgtable_cache_init' [-Werror]
 
+http://kisskb.ellerman.id.au/kisskb/buildresult/10040274/
+
+Has this been in -next?
+
+Probably it needs <asm/pgtable.h>.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
