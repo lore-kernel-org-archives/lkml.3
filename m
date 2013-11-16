@@ -1,108 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab3KPEdO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 23:33:14 -0500
-Received: from mga02.intel.com ([134.134.136.20]:25412 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753585Ab3KPEdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 23:33:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="409722457"
-Message-ID: <5286F57F.6000908@intel.com>
-Date: Sat, 16 Nov 2013 12:33:03 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1753897Ab3KPEnW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 23:43:22 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:63956 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab3KPEnQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 23:43:16 -0500
+Message-ID: <5286F550.10900@gmail.com>
+Date: Sat, 16 Nov 2013 12:32:16 +0800
+From: Ding Tianhong <dthxman@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>
-Subject: Re: [Update PATCH 1/1] Cpufreq: Make governor data on nonboot cpus
- across system suspend/resume
-References: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com> <1384503334-18809-1-git-send-email-tianyu.lan@intel.com> <CAKohpokjtaCJj3QCDyoQ+1UviLX8ZSnpWk05Jh4U02pmrq897g@mail.gmail.com>
-In-Reply-To: <CAKohpokjtaCJj3QCDyoQ+1UviLX8ZSnpWk05Jh4U02pmrq897g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH tip/core/rcu 11/14] bonding/bond_main: Apply ACCESS_ONCE()
+ to avoid sparse false positive
+References: <20131116003946.GA316@linux.vnet.ibm.com> <1384562417-817-1-git-send-email-paulmck@linux.vnet.ibm.com> <1384562417-817-11-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1384562417-817-11-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 06:22 PM, Viresh Kumar wrote:
-> On 15 November 2013 13:45, Lan Tianyu <tianyu.lan@intel.com> wrote:
->> Currently, governor of nonboot cpus will be put to EXIT when system suspend.
->> Since all these cpus will be unplugged and the governor usage_count decreases
->> to zero. The governor data and its sysfs interfaces will be freed or released.
->> This makes user config of these governors loss during suspend and resume.
->>
->> This doesn't happen on the governor covering boot cpu because it isn't
->> unplugged during system suspend.
->>
->> To fix this issue, skipping governor exit during system suspend and check
->> policy governor data to determine whether the governor is really needed
->> to be initialized when do init. If not, return EALREADY to indicate the
->> governor has been initialized and should do nothing. __cpufreq_governor()
->> convert EALREADY to 0 as return value for INIT event since governor is
->> still under INIT state and can do START operation.
->>
->> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
->> ---
+ÓÚ 2013/11/16 8:40, Paul E. McKenney Ð´µÀ:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 >
-> Hi Lan..
+> The sparse checking for rcu_assign_pointer() was recently upgraded
+> to reject non-__kernel address spaces.  This also rejects __rcu,
+> which is almost always the right thing to do.  However, the uses in
+> bond_change_active_slave() and __bond_release_one() are legitimate:
+> They are assigning a pointer to an element from an RCU-protected list
+> (or a NULL pointer), and all elements of this list are already visible
+> to caller.
 >
+> This commit therefore silences these false positives either by laundering
+> the pointers using ACCESS_ONCE() as suggested by Eric Dumazet and Josh
+> Triplett, or by using RCU_INIT_POINTER() for NULL pointer assignments.
+I think it is fit for net-next.
 
-Hi Viresh:
 
-> Apologies!!
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Stephen Hemminger <stephen@networkplumber.org>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: bridge@lists.linux-foundation.org
+> Cc: netdev@vger.kernel.org
+> ---
+>  drivers/net/bonding/bond_main.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
 >
-> I already had a solution for this as this was reported by few Broadcom people
-> as well. But I haven't send it to mainline yet as it was untested. It
-> looked similar
-> to what you had..
->
-> And so I would have taken your patch (as you have sent it first to the list and
-> there is no real advantage of my patch over yours, they were almost same) :)
->
-> But then I went chasing another bug posted by Nishant:
->
-> https://lkml.org/lkml/2013/10/24/369
->
-> And the final solution I have to write solved all the problems you and he
-> reported.
->
-> Please have a look at that patch (you are cc'd) and give it a try to see
-> if it fixes your problem..
+> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+> index 72df399c4ab3..bbd7fd3e46fe 100644
+> --- a/drivers/net/bonding/bond_main.c
+> +++ b/drivers/net/bonding/bond_main.c
+> @@ -890,7 +890,8 @@ void bond_change_active_slave(struct bonding *bond, struct slave *new_active)
+>  		if (new_active)
+>  			bond_set_slave_active_flags(new_active);
+>  	} else {
+> -		rcu_assign_pointer(bond->curr_active_slave, new_active);
+> +		/* Both --rcu and visible, so ACCESS_ONCE() is OK. */
+> +		ACCESS_ONCE(bond->curr_active_slave) = new_active;
+>  	}
+>  
+>  	if (bond->params.mode == BOND_MODE_ACTIVEBACKUP) {
+> @@ -1801,7 +1802,7 @@ static int __bond_release_one(struct net_device *bond_dev,
+>  	}
+>  
+>  	if (all) {
+> -		rcu_assign_pointer(bond->curr_active_slave, NULL);
+> +		RCU_INIT_POINTER(bond->curr_active_slave, NULL);
+>  	} else if (oldcurrent == slave) {
+>  		/*
+>  		 * Note that we hold RTNL over this sequence, so there
 
-Never mind. I think it should work and will try it.
-
->
-> Btw, One question about your setup:
-> - you must have a multi cluster/socket SoC as you have atleast one more
-> policy structure than used for group containing boot cpu..
-
-Actually, I test on a laptop and find this issue when reading code to 
-fix other bug. :)
-
-All cpus have their own policys.
-
-> - Are you using separate governor for both groups?
-
-Just to produce the bug, I set one non-boot cpu to conservative gov. All 
-other remain default "ondemand".
-
-> - Or are you using CPUFREQ_HAVE_GOVERNOR_PER_POLICY stuff
-> to use same governor with separate tunables for both groups?
->
-
-No, I am not using this.
-
-> Just wanted to know if somebody else is also using
-> CPUFREQ_HAVE_GOVERNOR_PER_POLICY :)
->
-
-
--- 
-Best Regards
-Tianyu Lan
