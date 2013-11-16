@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab3KPLUp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 06:20:45 -0500
-Received: from mga11.intel.com ([192.55.52.93]:60851 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751689Ab3KPLUi convert rfc822-to-8bit (ORCPT
+	id S1752222Ab3KPL2M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 06:28:12 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:59702 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab3KPL2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 06:20:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,712,1378882800"; 
-   d="scan'208";a="434528767"
-From: "Dilger, Andreas" <andreas.dilger@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peng Tao <bergwolf@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hammond, John" <john.hammond@intel.com>
-Subject: Re: [PATCH 05/40] staging/lustre: validate open handle cookies
-Thread-Topic: [PATCH 05/40] staging/lustre: validate open handle cookies
-Thread-Index: AQHO4VTD9AspSQR2kkSNfR60drRo45omNYAAgAGDlAA=
-Date: Sat, 16 Nov 2013 11:20:37 +0000
-Message-ID: <CEAC98F3.818F1%andreas.dilger@intel.com>
-In-Reply-To: <20131115041324.GA28088@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.254.124.174]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <6567E68579A5604382A66937240714C6@intel.com>
-Content-Transfer-Encoding: 8BIT
+	Sat, 16 Nov 2013 06:28:06 -0500
+Date: Sat, 16 Nov 2013 11:27:54 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        Florian Meier <florian.meier@koalo.de>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dmaengine <dmaengine@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Message-ID: <20131116112754.GT15393@sirena.org.uk>
+References: <52864BBC.7000506@koalo.de>
+ <1384537403.14845.131.camel@smile>
+ <20131115175155.GQ16735@n2100.arm.linux.org.uk>
+ <CAHp75Vf3CJNgSiSjoZ6dYjRRHWN4bTpMxRTLG37+wwtEsQbq4g@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9pS2hy4/DrI8BQlq"
+Content-Disposition: inline
+In-Reply-To: <CAHp75Vf3CJNgSiSjoZ6dYjRRHWN4bTpMxRTLG37+wwtEsQbq4g@mail.gmail.com>
+X-Cookie: Reply hazy, ask again later.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 31.99.68.145
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv5] dmaengine: Add support for BCM2835
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/11/14 9:13 PM, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-wrote:
 
->On Fri, Nov 15, 2013 at 12:13:07AM +0800, Peng Tao wrote:
->> From: "John L. Hammond" <john.hammond@intel.com>
->> 
->> Add a const void *h_owner member to struct portals_handle. Add a const
->> void *owner parameter to class_handle2object() which must be matched
->> by the h_owner member of the handle in addition to the cookie.
->
->Ick ick ick.
->
->NEVER use a void pointer if you can help it, and for a "handle", never.
->This isn't other operating systems, sorry.  We know what types our
->pointers to structures are, use them, so that the compiler can catch our
->problems, and don't try to cheat by using void *.
+--9pS2hy4/DrI8BQlq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The portals_handle is used as a generic type for objects referenced over
-the network, like a file handle.  The "owner" parameter is just used as
-an extra check that the cookie passed from the client is actually a
-valid value for the code in which it is being used (e.g. metadata or
-data object).  It isn't actually dereferenced by anything, it is just
-like a magic value.
+On Sat, Nov 16, 2013 at 11:37:54AM +0200, Andy Shevchenko wrote:
 
->> Adjust
->> the callers of class_handle2object() accordingly, using NULL as the
->> argument to the owner parameter, except in the case of
->> mdt_handle2mfd() where we add an explicit mdt_export_data parameter
->> which we use as the owner when searching for a MFD. When allocating a
->> new MFD, pass a pointer to the mdt_export_data into mdt_mfd_new() and
->> store it in h_owner. This allows the MDT to validate that the client
->> has not sent the wrong open handle cookie, or sent the right cookie to
->> the wrong MDT.
->
->This changelog entry doesn't even match up with the code below.  ALl
->callers of class_handle2object are passing NULL here, which makes this
->patch pretty pointless, right?
+> The reason why I was asking about I'm just wondering what we have to do
+> with existing drivers. Shall we convert them to be initialized as normal
+> platform drivers instead of subsys_initcall?
 
-As Tao wrote, this is the patch summary that matches what was committed
-in our own tree and in this case mostly describes the changes made on the
-server.  Keeping the same commits and comments in both trees makes it
-easier to keep the code in sync.
+We should in general be moving in that direction however it does need a
+bit of care to make sure that there aren't any dependencies which do
+things like discard error codes, fail to check errors or treat errors as
+hard failures.
 
->And that's a _very_ generic global symbol name, please don't do that, it
->needs to be "lustre_*" at the front to even expect it to be acceptable.
+--9pS2hy4/DrI8BQlq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-There's already something else called a "lustre_handle", so what about
-obdclass_handle2object(), since this is in the obdclass module?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Cheers, Andreas
--- 
-Andreas Dilger
+iQIcBAEBAgAGBQJSh1a3AAoJELSic+t+oim9bOoP+gLPtOaHguGjPBeFVlfJnf97
+UkYHBcwA0rk2m2W/mNOxuO2ljwvyC2ijxhev9zgniQfLnAEVRYNMgPCvQUj6oHjW
+DrCqVIN8AsiHSdDLr4DftRrFoUkyrcaYQv8JCdjGRAXPE+e0nDt36EMwnvtuzD89
+L73mtvWThSMolA1dc4z5AUoEuADo4CC7pvBfhK+STTcwZe2OI+rgt1mRegNlWJHk
+njm436bLhPsx+Xg2IW1GWE5fwa1T0kFnQznXvz12FSW1UihGTvRPccCsS0tgHpuL
+jd+zrQAoP5rXsg9PjqXkHYJVZmMyD/GMNpIYuyO98mXyNUQH0vwmc5j86iMH5OT3
+mU7d9/fvtUcnMcih2HBLVShieB53XsOLZnFX6D3NvXUkkdGZIZFdBGiTZ+cq8pdT
+kxPO/1lKVZM2Oasl63j1AXbhwdEQhIgnfcaQZ1f0UZscOkjZjWMGJZCXEIGo464x
+ialL1uiZx10XHyfujeoNfIhuwVinRkWLgllzmoNEreiRNNz3++VQ2YdR7wS1U6g9
+hhQwRrNZVk8zy5hvgbVcVTKmsUrH29v2/1Pp5v+znkos7j23UpgXzIXntmsCqFN9
+CHOnJssX+N75n5mW43WFIzqt+MBGaJET7BYUdt3/V7JrVDcr3L1yCRPbbVgAvg6b
+xSdVgJvWhdc0G2gMD6dj
+=wuL5
+-----END PGP SIGNATURE-----
 
-Lustre Software Architect
-Intel High Performance Data Division
-
-
+--9pS2hy4/DrI8BQlq--
