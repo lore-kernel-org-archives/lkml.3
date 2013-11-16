@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab3KPLBQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 06:01:16 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36684 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642Ab3KPLBG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 06:01:06 -0500
+	id S1752221Ab3KPLNH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 06:13:07 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:58010 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751906Ab3KPLM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Nov 2013 06:12:58 -0500
+Date: Sat, 16 Nov 2013 12:12:27 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-edac@vger.kernel.org, Frank Becker <fb@alien8.de>
+Subject: Re: [GIT PULL] A minor amd64_edac fix for 3.13
+Message-ID: <20131116111227.GD18306@pd.tnic>
+References: <20131110122638.GA17775@pd.tnic>
+ <CAADWXX_FdW4vGn8N4TA_GcNBrwuqeH_=qxmK2J7K7kfAWztxPA@mail.gmail.com>
+ <20131116100649.GB18306@pd.tnic>
+ <CA+55aFxHO9035t=CiNTRX1XK5KSxzh8HfZ3Kaspsm6yfs2O=8Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131116084505.GA26233@chokladfabriken.org>
-References: <1384029451-16555-1-git-send-email-geert@linux-m68k.org>
-	<5285EE5A.1070202@southpole.se>
-	<20131116084505.GA26233@chokladfabriken.org>
-Date: Sat, 16 Nov 2013 12:01:04 +0100
-Message-ID: <CAKaYPCNOLbX09Pqx7Zn=ivO++iBZMbBpu-pMjNgayVDBrBX1yQ@mail.gmail.com>
-Subject: Re: [ORLinux] [PATCH] openrisc: Add DTS and defconfig for DE0-Nano
-From: Olof Kindgren <olof.kindgren@gmail.com>
-To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Cc: Jonas Bonn <jonas@southpole.se>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Mehall <contact@kevinmehall.net>, linux <linux@openrisc.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxHO9035t=CiNTRX1XK5KSxzh8HfZ3Kaspsm6yfs2O=8Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/16 Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
->
-> On Fri, Nov 15, 2013 at 10:50:18AM +0100, Jonas Bonn wrote:
-> > >+
-> > >+    i2c0: ocores@a0000000 {
-> > >+            #address-cells = <1>;
-> > >+            #size-cells = <0>;
-> > >+            compatible = "opencores,i2c-ocores";
-> >
-> > Version number needed.  OpenCores wanted "projectname-rtlsvn###"
-> > where ### is the SVN commit number of the RTL directory in the
-> > project's source repository.
-> >
->
-> That will also require a change to the driver.
->
-> Using svn commit ids as version info seems a bit too fine grained to me,
-> but if that's what's agreed on, then it should be the commit id from the
-> projects official repository at opencores.org I think.
->
-> Stefan
-> _______________________________________________
-> Linux mailing list
-> Linux@lists.openrisc.net
-> http://lists.openrisc.net/listinfo/linux
+On Sat, Nov 16, 2013 at 02:50:49AM -0800, Linus Torvalds wrote:
+> As far as I can tell, only that one email had gotten caught by the
+> spam filter. So it may be something in the body of the email itself,
+> although I don't really see what that could be either..
 
+Right.
 
-I agree. I don't like doing versioning with revision numbers. It's too
-closely tied to the currently used VCS. The problem is that no one has
-bothered to do proper releases of the cores for the last ten years or
-so.
+> It happens occasionally, although it doors seem to happen much more to
+> certain particular people than to others.
 
-But since we are talking about a relatively small amount of cores
-here, I think it could be worth to take a quick glance to see if the
-latest SVN version is compatible with the latest tagged release. I
-would suspect that is the case for the majority of the cores and the
-we can just use the latest tag as version. For the other cores we
-could
-1. Use latest tag + 1 (a bit ugly if the maintainer wants to do a proper release
-2. Take over maintainership/fork and just release what's in the trunk
-(taking over maintenance is preferrable here to avoid  more repo
-confusion)
-3. Use SVN revisions
+AFAIR, it had happened once before with a pull request a couple of
+kernel releases back. Oh well, I will start sending the pull requests
+from suse.de as their range is statically allocated and this should take
+care of the dynamic IP range issues.
 
-option 2 would be my preferred choice here, given that we get someone
-to do the actual work. I could probably help out with a few of the
-cores
+> The most common reason seems to be that your email provide is
+> associated with spam, sometimes just because of a shared ISP.
 
-Jonas, you said that opencores wanted projectname-svnversion. Do you
-know where that comes from? My proposal here would conflict with that
+Sure, it is one: https://www.hetzner.de/
 
-//Olof
+> It is hard to tell with gmail, since it probably uses heuristics very
+> much like spamassassin, but doesn't make the internal scores available
+> (to avoid gaming them, I'm sure). So there are likely multiple small
+> triggers that combine, rather than one single reason. With "possibly
+> bad ISP" probably just being one of them..
+
+Right, I'm adding Frank who takes care of it, just so he's aware.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
