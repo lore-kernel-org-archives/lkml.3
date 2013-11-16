@@ -1,78 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab3KPD4S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 22:56:18 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:60291 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab3KPD4K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 22:56:10 -0500
-Date: Fri, 15 Nov 2013 19:56:03 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 01/28] rcutorture: Add KVM-based test
- framework
-Message-ID: <20131116035603.GA4138@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131116003517.GA31563@linux.vnet.ibm.com>
- <1384562141-32446-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131116010528.GA9112@kroah.com>
- <20131116012116.GZ4138@linux.vnet.ibm.com>
- <20131115204727.4b7b130d@gandalf.local.home>
- <20131116020120.GA10462@kroah.com>
+	id S1753923Ab3KPEAG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 23:00:06 -0500
+Received: from mga02.intel.com ([134.134.136.20]:36505 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752244Ab3KPEAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 23:00:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="436175725"
+Message-ID: <5286EDBF.9050001@intel.com>
+Date: Sat, 16 Nov 2013 11:59:59 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131116020120.GA10462@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111603-1344-0000-0000-0000034D18B7
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: viresh.kumar@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Update PATCH 1/1] Cpufreq: Make governor data on nonboot cpus
+ across system suspend/resume
+References: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com> <1384503334-18809-1-git-send-email-tianyu.lan@intel.com> <2368963.sKiLjXYCVt@vostro.rjw.lan>
+In-Reply-To: <2368963.sKiLjXYCVt@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 06:01:20PM -0800, Greg KH wrote:
-> On Fri, Nov 15, 2013 at 08:47:27PM -0500, Steven Rostedt wrote:
-> > On Fri, 15 Nov 2013 17:21:16 -0800
-> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > 
-> > > > Oh, one very minor comment on the patches, you should delete the address
-> > > > of the FSF from your file headers, unless you want to track the office
-> > > > movements of them for the next 40+ years.  We've been removing them from
-> > > > kernel code where we notice them, as half of them are wrong, and I don't
-> > > > want to have to go back and fix them again when they move again.
-> > > 
-> > > I had no idea that they tend to move!  Thank you, I will remove them.
-> > 
-> > From what I've been told, you should replace:
-> > 
-> > 
-> > # You should have received a copy of the GNU General Public License
-> > # along with this program; if not, write to the Free Software
-> > # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
-> > USA.
-> > 
-> > With:
-> > 
-> > # You should have received a copy of the GNU General Public License
-> > # along with this program; if not, see  <http://www.gnu.org/licenses>
-> 
-> But of course, check with your company lawyer for the specific wording,
-> I know each one of them like to phrase is all a little bit differently
-> (lawyers have to feel useful in some way...)
+On 11/16/2013 08:38 AM, Rafael J. Wysocki wrote:
+> On Friday, November 15, 2013 04:15:34 PM Lan Tianyu wrote:
+>> Currently, governor of nonboot cpus will be put to EXIT when system suspend.
+>> Since all these cpus will be unplugged and the governor usage_count decreases
+>> to zero. The governor data and its sysfs interfaces will be freed or released.
+>> This makes user config of these governors loss during suspend and resume.
+>
+> First off, do we have a pointer to a bug report related to that?
+>
 
-I get it, no problem!
+No, I found this bug when I tried to resolve other similar bug.
+https://bugzilla.kernel.org/show_bug.cgi?id=63081. I still have no idea 
+about bug 63081 and asked reporter to try this patch.
 
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, contact my lawyer.
+> Second, what does need to be done to reproduce this problem?
+>
 
-							Thanx, Paul
+Defaultly, all cpus use ondemand governor after bootup. Change one 
+non-boot cpu's governor to conservative, modify conservative config via 
+sysfs interface and then do system suspend. After resume, the config
+of conservative is reset. On my machine, all cpus have owen policy.
 
+
+>> This doesn't happen on the governor covering boot cpu because it isn't
+>> unplugged during system suspend.
+>>
+>> To fix this issue, skipping governor exit during system suspend and check
+>> policy governor data to determine whether the governor is really needed
+>> to be initialized when do init. If not, return EALREADY to indicate the
+>> governor has been initialized and should do nothing. __cpufreq_governor()
+>> convert EALREADY to 0 as return value for INIT event since governor is
+>> still under INIT state and can do START operation.
+>>
+>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>> ---
+>> Fix some typos
+>>
+>>   drivers/cpufreq/cpufreq.c          |  5 ++++-
+>>   drivers/cpufreq/cpufreq_governor.c | 13 ++++++++++++-
+>>   2 files changed, 16 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> index 02d534d..38f2e4a 100644
+>> --- a/drivers/cpufreq/cpufreq.c
+>> +++ b/drivers/cpufreq/cpufreq.c
+>> @@ -1239,7 +1239,7 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
+>>
+>>   	/* If cpu is last user of policy, free policy */
+>>   	if (cpus == 1) {
+>> -		if (has_target()) {
+>> +		if (has_target() && !frozen) {
+>>   			ret = __cpufreq_governor(policy,
+>>   					CPUFREQ_GOV_POLICY_EXIT);
+>>   			if (ret) {
+>> @@ -1822,6 +1822,9 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>>   			((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
+>>   		module_put(policy->governor->owner);
+>>
+>> +	if ((event == CPUFREQ_GOV_POLICY_INIT) && ret == -EALREADY)
+>> +		ret = 0;
+>> +
+>>   	return ret;
+>>   }
+>>
+>> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+>> index 0806c31..ddb93af 100644
+>> --- a/drivers/cpufreq/cpufreq_governor.c
+>> +++ b/drivers/cpufreq/cpufreq_governor.c
+>> @@ -204,9 +204,20 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>>
+>>   	switch (event) {
+>>   	case CPUFREQ_GOV_POLICY_INIT:
+>> +		/*
+>> +		 * In order to keep governor data across suspend/resume,
+>> +		 * Governor doesn't exit when suspend and will be
+>> +		 * reinitialized when resume. Here check policy governor
+>> +		 * data to determine whether the governor has been exited.
+>> +		 * If not, return EALREADY.
+>> +		 */
+>>   		if (have_governor_per_policy()) {
+>> -			WARN_ON(dbs_data);
+>> +			if (dbs_data)
+>> +				return -EALREADY;
+>>   		} else if (dbs_data) {
+>> +			if (policy->governor_data == dbs_data)
+>> +				return -EALREADY;
+>> +
+>>   			dbs_data->usage_count++;
+>>   			policy->governor_data = dbs_data;
+>>   			return 0;
+>>
+
+
+-- 
+Best Regards
+Tianyu Lan
