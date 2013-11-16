@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab3KPGQq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 01:16:46 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:31221 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab3KPGQi (ORCPT
+	id S1751542Ab3KPG1d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 01:27:33 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:57087 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab3KPG13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 01:16:38 -0500
-X-AuditID: cbfee61a-b7f836d0000025d7-64-52870dc4fe2a
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
-Subject: [f2fs-dev] [PATCH] f2fs: use f2fs_put_page to release page for uniform
- style
-Date: Sat, 16 Nov 2013 14:15:59 +0800
-Message-id: <000201cee293$6137cd80$23a76880$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7g2gR14SGWiU7oRD6ix9A81UH5HA==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t9jQd0jvO1BBl+a9S2u7/rLZHFpkbvF
-	nr0nWSwu75rDZtG68DyzA6vH7gWfmTz6tqxi9Pi8SS6AOYrLJiU1J7MstUjfLoErY8/jJ8wF
-	a1gqPh3YzNLAuI+5i5GTQ0LARGLClvWsELaYxIV769m6GLk4hASmM0pMm/oUyvnBKNH7+xYT
-	SBWbgIrE8o7/YLaIgKLEhvcb2EGKmAVmMEocnvsPbJSwQLjEqzOXWEBsFgFViV/P7rKB2LwC
-	lhL710+DsgUlfky+B1bDLKAh0b9oAxuELS+xec1bqPMUJHacfc0IsUxP4uXG/UwQNeISG4/c
-	YpnAKDALyahZSEbNQjJqFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCw/qZ1A7G
-	lQ0WhxgFOBiVeHh3BLQFCbEmlhVX5h5ilOBgVhLh7eZuDxLiTUmsrEotyo8vKs1JLT7EKM3B
-	oiTOe6DVOlBIID2xJDU7NbUgtQgmy8TBKdXAeOThhwV/Hz5b+8/rkmZO09dUNZ+ar62Hbq7a
-	8ER7ws1b6VUMGStfX3OxS7uhv7v+b+C5qTYvUyVWf/934YGW5Ob4c5Nyj8U4L5BduMrpxac3
-	ng9z2k/Z3ZZkZIy0uFMYsk/i3TbryymBvyP/mzElv5Lm+WqVGCF/c53Hxrdxf6bkrNhrccQh
-	e50SS3FGoqEWc1FxIgDHx0fQZwIAAA==
+	Sat, 16 Nov 2013 01:27:29 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52871050.8060006@roeck-us.net>
+Date: Fri, 15 Nov 2013 22:27:28 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Taras Kondratiuk <taras.kondratiuk@linaro.org>, linux-omap@vger.kernel.org
+CC: linaro-networking@linaro.org, Victor Kamensky <victor.kamensky@linaro.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 02/23] watchdog: omap_wdt: raw read and write endian fix
+References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org> <1384560086-11994-3-git-send-email-taras.kondratiuk@linaro.org>
+In-Reply-To: <1384560086-11994-3-git-send-email-taras.kondratiuk@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should use f2fs_put_page to release page for uniform style of f2fs code.
+On 11/15/2013 04:01 PM, Taras Kondratiuk wrote:
+> From: Victor Kamensky <victor.kamensky@linaro.org>
+>
+> All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
+> Need to use endian neutral functions to read/write h/w registers.
+> I.e instead of __raw_read[lw] and __raw_write[lw] functions code
+> need to use read[lw]_relaxed and write[lw]_relaxed functions.
+> If the first simply reads/writes register, the second will byteswap
+> it if host operates in BE mode.
+>
+> Changes are trivial sed like replacement of __raw_xxx functions
+> with xxx_relaxed variant.
+>
+> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
+> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/data.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index aa3438c..076a60c 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -714,8 +714,7 @@ static int f2fs_write_end(struct file *file,
- 		update_inode_page(inode);
- 	}
- 
--	unlock_page(page);
--	page_cache_release(page);
-+	f2fs_put_page(page, 1);
- 	return copied;
- }
- 
--- 
-1.7.9.5
+Acked-by: Guenter Roeck <linux@roeck-us.net>
 
 
