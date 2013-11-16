@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab3KPADg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:03:36 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:54276 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab3KPAB7 (ORCPT
+	id S1754158Ab3KPADn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:03:43 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:60911 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab3KPAB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 19:01:59 -0500
+	Fri, 15 Nov 2013 19:01:58 -0500
 From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 To: linux-omap@vger.kernel.org
 Cc: linaro-networking@linaro.org, Victor Kamensky <victor.kamensky@linaro.org>,
         Tony Lindgren <tony@atomide.com>,
         Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [RFC 21/23] ARM: OMAP4: sleep: byteswap data for big-endian
-Date: Sat, 16 Nov 2013 02:01:24 +0200
-Message-Id: <1384560086-11994-22-git-send-email-taras.kondratiuk@linaro.org>
+Subject: [RFC 20/23] ARM: OMAP: debug-leds: raw read and write endian fix
+Date: Sat, 16 Nov 2013 02:01:23 +0200
+Message-Id: <1384560086-11994-21-git-send-email-taras.kondratiuk@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
 References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
@@ -25,142 +25,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Victor Kamensky <victor.kamensky@linaro.org>
 
-Assembler functions defined in sleep44xx.S need to byteswap values
-after read / before write from h/w register if code compiled in big
-endian mode. Simple change to do 'rev x, x' before str instruction
-and after ldr instruction that deals with h/w registers.
+All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
+Need to use endian neutral functions to read/write h/w registers.
+I.e instead of __raw_read[lw] and __raw_write[lw] functions code
+need to use read[lw]_relaxed and write[lw]_relaxed functions.
+If the first simply reads/writes register, the second will byteswap
+it if host operates in BE mode.
+
+Changes are trivial sed like replacement of __raw_xxx functions
+with xxx_relaxed variant.
 
 Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
 Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 ---
- arch/arm/mach-omap2/sleep44xx.S |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ arch/arm/plat-omap/debug-leds.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/sleep44xx.S b/arch/arm/mach-omap2/sleep44xx.S
-index 9086ce0..8017016 100644
---- a/arch/arm/mach-omap2/sleep44xx.S
-+++ b/arch/arm/mach-omap2/sleep44xx.S
-@@ -12,6 +12,7 @@
- #include <linux/linkage.h>
- #include <asm/smp_scu.h>
- #include <asm/memory.h>
-+#include <asm/assembler.h>
- #include <asm/hardware/cache-l2x0.h>
+diff --git a/arch/arm/plat-omap/debug-leds.c b/arch/arm/plat-omap/debug-leds.c
+index aa7ebc6..48b69de 100644
+--- a/arch/arm/plat-omap/debug-leds.c
++++ b/arch/arm/plat-omap/debug-leds.c
+@@ -85,12 +85,12 @@ static void dbg_led_set(struct led_classdev *cdev,
+ 	struct dbg_led *led = container_of(cdev, struct dbg_led, cdev);
+ 	u16 reg;
  
- #include "omap-secure.h"
-@@ -74,6 +75,7 @@ ENTRY(omap4_finish_suspend)
- 	 */
- 	bl	omap4_get_sar_ram_base
- 	ldr	r9, [r0, #OMAP_TYPE_OFFSET]
-+ARM_BE8(rev	r9, r9)
- 	cmp	r9, #0x1			@ Check for HS device
- 	bne	skip_secure_l1_clean
- 	mov	r0, #SCU_PM_NORMAL
-@@ -113,12 +115,14 @@ skip_secure_l1_clean:
- 	bl	omap4_get_sar_ram_base
- 	mov	r8, r0
- 	ldr	r9, [r8, #OMAP_TYPE_OFFSET]
-+ARM_BE8(rev	r9, r9)
- 	cmp	r9, #0x1			@ Check for HS device
- 	bne	scu_gp_set
- 	mrc	p15, 0, r0, c0, c0, 5		@ Read MPIDR
- 	ands	r0, r0, #0x0f
- 	ldreq	r0, [r8, #SCU_OFFSET0]
- 	ldrne	r0, [r8, #SCU_OFFSET1]
-+ARM_BE8(rev	r0, r0)
- 	mov	r1, #0x00
- 	stmfd   r13!, {r4-r12, r14}
- 	ldr	r12, =OMAP4_MON_SCU_PWR_INDEX
-@@ -130,6 +134,7 @@ scu_gp_set:
- 	ands	r0, r0, #0x0f
- 	ldreq	r1, [r8, #SCU_OFFSET0]
- 	ldrne	r1, [r8, #SCU_OFFSET1]
-+ARM_BE8(rev	r1, r1)
- 	bl	omap4_get_scu_base
- 	bl	scu_power_mode
- skip_scu_gp_set:
-@@ -157,6 +162,7 @@ skip_scu_gp_set:
- 	ands	r5, r5, #0x0f
- 	ldreq	r0, [r8, #L2X0_SAVE_OFFSET0]	@ Retrieve L2 state from SAR
- 	ldrne	r0, [r8, #L2X0_SAVE_OFFSET1]	@ memory.
-+ARM_BE8(rev	r0, r0)
- 	cmp	r0, #3
- 	bne	do_WFI
- #ifdef CONFIG_PL310_ERRATA_727915
-@@ -167,9 +173,11 @@ skip_scu_gp_set:
- 	bl	omap4_get_l2cache_base
- 	mov	r2, r0
- 	ldr	r0, =0xffff
-+ARM_BE8(rev	r0, r0)
- 	str	r0, [r2, #L2X0_CLEAN_INV_WAY]
- wait:
- 	ldr	r0, [r2, #L2X0_CLEAN_INV_WAY]
-+ARM_BE8(rev	r0, r0)
- 	ldr	r1, =0xffff
- 	ands	r0, r0, r1
- 	bne	wait
-@@ -182,9 +190,11 @@ l2x_sync:
- 	bl	omap4_get_l2cache_base
- 	mov	r2, r0
- 	mov	r0, #0x0
-+ARM_BE8(rev	r0, r0)
- 	str	r0, [r2, #L2X0_CACHE_SYNC]
- sync:
- 	ldr	r0, [r2, #L2X0_CACHE_SYNC]
-+ARM_BE8(rev	r0, r0)
- 	ands	r0, r0, #0x1
- 	bne	sync
- #endif
-@@ -216,6 +226,7 @@ do_WFI:
- 	bl	omap4_get_sar_ram_base
- 	mov	r8, r0
- 	ldr	r9, [r8, #OMAP_TYPE_OFFSET]
-+ARM_BE8(rev	r9, r9)
- 	cmp	r9, #0x1			@ Check for HS device
- 	bne	scu_gp_clear
- 	mov	r0, #SCU_PM_NORMAL
-@@ -258,6 +269,7 @@ ENTRY(omap4_cpu_resume)
- 	 */
- 	ldr	r8, =OMAP44XX_SAR_RAM_BASE
- 	ldr	r9, [r8, #OMAP_TYPE_OFFSET]
-+ARM_BE8(rev	r9, r9)
- 	cmp	r9, #0x1			@ Skip if GP device
- 	bne	skip_ns_smp_enable
- 	mrc     p15, 0, r0, c0, c0, 5
-@@ -292,16 +304,19 @@ skip_ns_smp_enable:
- 	 */
- 	ldr	r2, =OMAP44XX_L2CACHE_BASE
- 	ldr	r0, [r2, #L2X0_CTRL]
-+ARM_BE8(rev	r0, r0)
- 	and	r0, #0x0f
- 	cmp	r0, #1
- 	beq	skip_l2en			@ Skip if already enabled
- 	ldr	r3, =OMAP44XX_SAR_RAM_BASE
- 	ldr	r1, [r3, #OMAP_TYPE_OFFSET]
-+ARM_BE8(rev	r1, r1)
- 	cmp	r1, #0x1			@ Check for HS device
- 	bne     set_gp_por
- 	ldr     r0, =OMAP4_PPA_L2_POR_INDEX
- 	ldr     r1, =OMAP44XX_SAR_RAM_BASE
- 	ldr     r4, [r1, #L2X0_PREFETCH_CTRL_OFFSET]
-+ARM_BE8(rev	r4, r4)
- 	adr     r3, ppa_por_params
- 	str     r4, [r3, #0x04]
- 	mov	r1, #0x0			@ Process ID
-@@ -313,11 +328,13 @@ skip_ns_smp_enable:
- set_gp_por:
- 	ldr     r1, =OMAP44XX_SAR_RAM_BASE
- 	ldr     r0, [r1, #L2X0_PREFETCH_CTRL_OFFSET]
-+ARM_BE8(rev	r0, r0)
- 	ldr	r12, =OMAP4_MON_L2X0_PREFETCH_INDEX	@ Setup L2 PREFETCH
- 	DO_SMC
- set_aux_ctrl:
- 	ldr     r1, =OMAP44XX_SAR_RAM_BASE
- 	ldr	r0, [r1, #L2X0_AUXCTRL_OFFSET]
-+ARM_BE8(rev	r0, r0)
- 	ldr	r12, =OMAP4_MON_L2X0_AUXCTRL_INDEX	@ Setup L2 AUXCTRL
- 	DO_SMC
- 	mov	r0, #0x1
+-	reg = __raw_readw(&fpga->leds);
++	reg = readw_relaxed(&fpga->leds);
+ 	if (b != LED_OFF)
+ 		reg |= led->mask;
+ 	else
+ 		reg &= ~led->mask;
+-	__raw_writew(reg, &fpga->leds);
++	writew_relaxed(reg, &fpga->leds);
+ }
+ 
+ static enum led_brightness dbg_led_get(struct led_classdev *cdev)
+@@ -98,7 +98,7 @@ static enum led_brightness dbg_led_get(struct led_classdev *cdev)
+ 	struct dbg_led *led = container_of(cdev, struct dbg_led, cdev);
+ 	u16 reg;
+ 
+-	reg = __raw_readw(&fpga->leds);
++	reg = readw_relaxed(&fpga->leds);
+ 	return (reg & led->mask) ? LED_FULL : LED_OFF;
+ }
+ 
+@@ -112,7 +112,7 @@ static int fpga_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 
+ 	fpga = ioremap(iomem->start, resource_size(iomem));
+-	__raw_writew(0xff, &fpga->leds);
++	writew_relaxed(0xff, &fpga->leds);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(dbg_leds); i++) {
+ 		struct dbg_led *led;
+@@ -138,15 +138,15 @@ static int fpga_probe(struct platform_device *pdev)
+ 
+ static int fpga_suspend_noirq(struct device *dev)
+ {
+-	fpga_led_state = __raw_readw(&fpga->leds);
+-	__raw_writew(0xff, &fpga->leds);
++	fpga_led_state = readw_relaxed(&fpga->leds);
++	writew_relaxed(0xff, &fpga->leds);
+ 
+ 	return 0;
+ }
+ 
+ static int fpga_resume_noirq(struct device *dev)
+ {
+-	__raw_writew(~fpga_led_state, &fpga->leds);
++	writew_relaxed(~fpga_led_state, &fpga->leds);
+ 	return 0;
+ }
+ 
 -- 
 1.7.9.5
 
