@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab3KPADA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:03:00 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:48823 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753848Ab3KPACB (ORCPT
+	id S1754034Ab3KPADJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:03:09 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:33316 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753842Ab3KPACA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 19:02:01 -0500
+	Fri, 15 Nov 2013 19:02:00 -0500
 From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 To: linux-omap@vger.kernel.org
 Cc: linaro-networking@linaro.org, Victor Kamensky <victor.kamensky@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Jarkko Lavinen <jarkko.lavinen@nokia.com>, Chris Ball <cjb@laptop.org>,
+        Balaji T K <balajitk@ti.com>, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [RFC 12/23] mfd: omap-usb-tll: raw read and write endian fix
-Date: Sat, 16 Nov 2013 02:01:15 +0200
-Message-Id: <1384560086-11994-13-git-send-email-taras.kondratiuk@linaro.org>
+Subject: [RFC 04/23] mmc: omap: raw read and write endian fix
+Date: Sat, 16 Nov 2013 02:01:07 +0200
+Message-Id: <1384560086-11994-5-git-send-email-taras.kondratiuk@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
 References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
@@ -37,40 +38,42 @@ with xxx_relaxed variant.
 Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
 Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 ---
- drivers/mfd/omap-usb-tll.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/mmc/host/omap.c       |    4 ++--
+ drivers/mmc/host/omap_hsmmc.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index e59ac4c..15bcd93 100644
---- a/drivers/mfd/omap-usb-tll.c
-+++ b/drivers/mfd/omap-usb-tll.c
-@@ -121,22 +121,22 @@ static DEFINE_SPINLOCK(tll_lock);	/* serialize access to tll_dev */
+diff --git a/drivers/mmc/host/omap.c b/drivers/mmc/host/omap.c
+index b94f38e..ef2d088 100644
+--- a/drivers/mmc/host/omap.c
++++ b/drivers/mmc/host/omap.c
+@@ -79,8 +79,8 @@
+ #define mmc_omap2()	(!mmc_omap1())
  
- static inline void usbtll_write(void __iomem *base, u32 reg, u32 val)
- {
--	__raw_writel(val, base + reg);
-+	writel_relaxed(val, base + reg);
- }
+ #define OMAP_MMC_REG(host, reg)		(OMAP_MMC_REG_##reg << (host)->reg_shift)
+-#define OMAP_MMC_READ(host, reg)	__raw_readw((host)->virt_base + OMAP_MMC_REG(host, reg))
+-#define OMAP_MMC_WRITE(host, reg, val)	__raw_writew((val), (host)->virt_base + OMAP_MMC_REG(host, reg))
++#define OMAP_MMC_READ(host, reg)        readw_relaxed((host)->virt_base + OMAP_MMC_REG(host, reg))
++#define OMAP_MMC_WRITE(host, reg, val)	writew_relaxed((val), (host)->virt_base + OMAP_MMC_REG(host, reg))
  
- static inline u32 usbtll_read(void __iomem *base, u32 reg)
- {
--	return __raw_readl(base + reg);
-+	return readl_relaxed(base + reg);
- }
+ /*
+  * Command types
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 6ac63df..fbbbfc0 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -135,10 +135,10 @@
+  * MMC Host controller read/write API's
+  */
+ #define OMAP_HSMMC_READ(base, reg)	\
+-	__raw_readl((base) + OMAP_HSMMC_##reg)
++	readl_relaxed((base) + OMAP_HSMMC_##reg)
  
- static inline void usbtll_writeb(void __iomem *base, u8 reg, u8 val)
- {
--	__raw_writeb(val, base + reg);
-+	writeb_relaxed(val, base + reg);
- }
+ #define OMAP_HSMMC_WRITE(base, reg, val) \
+-	__raw_writel((val), (base) + OMAP_HSMMC_##reg)
++	writel_relaxed((val), (base) + OMAP_HSMMC_##reg)
  
- static inline u8 usbtll_readb(void __iomem *base, u8 reg)
- {
--	return __raw_readb(base + reg);
-+	return readb_relaxed(base + reg);
- }
- 
- /*-------------------------------------------------------------------------*/
+ struct omap_hsmmc_next {
+ 	unsigned int	dma_len;
 -- 
 1.7.9.5
 
