@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab3KPLfM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 06:35:12 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47246 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab3KPLfI (ORCPT
+	id S1752170Ab3KPLmV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 06:42:21 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42973 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab3KPLmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 06:35:08 -0500
-Date: Sat, 16 Nov 2013 12:35:06 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jan Kara <jack@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
- too much
-Message-ID: <20131116113506.GA30605@amd.pavel.ucw.cz>
-References: <1383860919-1883-1-git-send-email-jack@suse.cz>
- <1383860919-1883-4-git-send-email-jack@suse.cz>
- <CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
- <20131107225733.GE2054@quack.suse.cz>
- <20131111215415.GA23331@amd.pavel.ucw.cz>
- <20131111221755.GA31266@quack.suse.cz>
+	Sat, 16 Nov 2013 06:42:12 -0500
+Date: Sat, 16 Nov 2013 11:41:34 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        Florian Meier <florian.meier@koalo.de>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dmaengine <dmaengine@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv5] dmaengine: Add support for BCM2835
+Message-ID: <20131116114134.GU16735@n2100.arm.linux.org.uk>
+References: <52864BBC.7000506@koalo.de> <1384537403.14845.131.camel@smile> <20131115175155.GQ16735@n2100.arm.linux.org.uk> <CAHp75Vf3CJNgSiSjoZ6dYjRRHWN4bTpMxRTLG37+wwtEsQbq4g@mail.gmail.com> <20131116112754.GT15393@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131111221755.GA31266@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131116112754.GT15393@sirena.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Sat, Nov 16, 2013 at 11:27:54AM +0000, Mark Brown wrote:
+> On Sat, Nov 16, 2013 at 11:37:54AM +0200, Andy Shevchenko wrote:
+> 
+> > The reason why I was asking about I'm just wondering what we have to do
+> > with existing drivers. Shall we convert them to be initialized as normal
+> > platform drivers instead of subsys_initcall?
+> 
+> We should in general be moving in that direction however it does need a
+> bit of care to make sure that there aren't any dependencies which do
+> things like discard error codes, fail to check errors or treat errors as
+> hard failures.
 
-> > > > > Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-> > > > > Signed-off-by: Jan Kara <jack@suse.cz>
-> > > > 
-> > > > When a message takes tens of seconds to be printed, it usually means
-> > > > we are in trouble somehow :)
-> > > > I wonder what printk source can trigger such a high volume.
-> > >   Machines with tens of processors and thousands of scsi devices. When
-> > > device discovery happens on boot, all processors are busily reporting new
-> > > scsi devices and one poor looser is bound to do the printing for ever and
-> > > ever until the machine dies...
-> > 
-> > Dunno. In these cases, would it make sense to:
-> > 
-> > 1) reduce amount of text printed
->   I thought about this as well. But
-> a) It doesn't seem practical as you would have to modify lots of drivers
->    and keep them rather silent. That seems rather fragile. Plus you will
->    not display some potentially useful information.
-> b) It doesn't address the real underlying problem that the way printk() is
->    currently implemented, there is no bound on the time CPU spends in the
->    loop printing from buffer to console. And the fact that this loop
->    sometimes happens with interrupts disabled makes the situation even
->    worse.
->  
-> > 2) just print [XXX characters lost] on overruns?
->   We don't overrun the printk buffer so no characters are lost. It just
-> takes too long to feed the whole printk buffer through serial console...
+I don't agree: on platforms which have done this, it's very difficult to
+tell from reading the kernel message log whether things came up correctly
+because there's soo much spew from deferred probing it's virtually
+impossible to tell whether component X initialised or whether that error
+about resource Y missing was ever resolved.
 
-Yes, I know. No characters are lost, but we spend seconds with
-interrupts disabled, breaking the system. (SCSI timeouts? We do
-keyboard autorepeat in software these days...)
+The only way that can be checked is when things work (or don't) from
+userspace.
 
-Would it be better to just drop the characters?
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+It's soo bad on some platforms that reading the kernel boot log is a
+total waste of time; you don't get any useful information from it.
+
+If we want kernel boot logs to be useful, we really need to shut up *all*
+the drivers and subsystems whinging about being deferred probing, and only
+have the driver model core reporting this status - maybe only allow
+output about why at debug level or similar.
