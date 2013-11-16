@@ -1,238 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab3KPVGV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 16:06:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56835 "EHLO mx2.suse.de"
+	id S1753426Ab3KPVKG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 16:10:06 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:6439 "EHLO mx12.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752648Ab3KPVGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 16:06:18 -0500
-Date: Sun, 17 Nov 2013 08:06:03 +1100
-From: NeilBrown <neilb@suse.de>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        Marek Belisko <marek@goldelico.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH/RFC] wait_for_completion_timeout() considered harmful.
-Message-ID: <20131117080603.2a0d3b6d@notabene.brown>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/tvzOUFjsK_h0ggfB6hAHvdC"; protocol="application/pgp-signature"
+	id S1752622Ab3KPVKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Nov 2013 16:10:01 -0500
+X-IronPort-AV: E=Sophos;i="4.93,714,1378882800"; 
+   d="asc'?scan'208";a="116338476"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Please pull NFS client bugfixes
+Thread-Topic: [GIT PULL] Please pull NFS client bugfixes
+Thread-Index: AQHO4xA0HxOJcweXrUaUnbfIN9GQVA==
+Date: Sat, 16 Nov 2013 21:09:57 +0000
+Message-ID: <1384636196.5080.1.camel@leira.trondhjem.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="=-HViyGKp+Wz80BcrajNY/"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/tvzOUFjsK_h0ggfB6hAHvdC
-Content-Type: text/plain; charset=US-ASCII
+--=-HViyGKp+Wz80BcrajNY/
+Content-Type: text/plain; charset="UTF-7"
 Content-Transfer-Encoding: quoted-printable
 
+Hi Linus
 
-It would be reasonable to assume that
+The following changes since commit fab99ebe39fe7d11fbd9b5fb84f07432af9ba36f=
+:
 
-      wait_for_completion_timeout(&wm8350->auxadc_done, msecs_to_jiffies(5)=
-);
+  NFSv4.2: Remove redundant checks in nfs+AF8-setsecurity+-nfs4+AF8-label+A=
+F8-init+AF8-security (2013-11-04 16:42:52 -0500)
 
-would wait at least 5 msecs for the auxadc_done to complete.  But it does n=
-ot.
-With a HZ of 200 or less, msecs_to_jiffies(5) has value '1', and so this
-will only wait until the next "timer tick", which could happen immediately.
+are available in the git repository at:
 
-This can lead to incorrect results - and has done so in out-of-tree patches
-for drivers/misc/bmp085.c which uses a very similar construct to enable int=
-errupt
-based result collection.
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.13-=
+2
 
-The documentation for several *_timeout* functions claim they will wait for
-"timeout jiffies" to have elapsed where this is not the case.  They will
-actually wait for "timeout" jiffies to have started implying an elapsed time
-between (timeout-1) and (timeout).
+for you to fetch changes up to 8c2fabc6542d9d0f8b16bd1045c2eda59bdcde13:
 
-This patch corrects some of this documentation, and adds a collection of
-  wait_for_completion*_msecs()
-interfaces which wait at least the given number of milliseconds for the
-completion (or a signal).
+  nfs: fix pnfs Kconfig defaults (2013-11-15 13:41:43 -0500)
 
-If accepted, we can the see which of the current:
-   wait_for_completion_timeout-*(..., msecs_to_jiffies(XXX))
-could be converted.
+----------------------------------------------------------------
+NFS client bugfixes:
 
-Reported-by: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+- Stable fix for data corruption when retransmitting O+AF8-DIRECT writes
+- Stable fix for a deep recursion/stack overflow bug in rpc+AF8-release+AF8=
+-client
+- Stable fix for infinite looping when mounting a NFSv4.x volume
+- Fix a typo in the nfs mount option parser
+- Allow pNFS layouts to be compiled into the kernel when NFSv4.1 is
 
-diff --git a/include/linux/completion.h b/include/linux/completion.h
-index 5d5aaae3af43..efe92eaf1c45 100644
---- a/include/linux/completion.h
-+++ b/include/linux/completion.h
-@@ -9,6 +9,7 @@
-  */
-=20
- #include <linux/wait.h>
-+#include <linux/jiffies.h>
-=20
- /*
-  * struct completion - structure used to maintain state for a "completion"
-@@ -106,4 +107,33 @@ extern bool completion_done(struct completion *x);
- extern void complete(struct completion *);
- extern void complete_all(struct completion *);
-=20
-+/* Following wrappers will wait at least 'msecs' milliseconds
-+ * unless completion (or signal) happens before then.
-+ */
-+static inline unsigned long wait_for_completion_msecs(
-+	struct completion *x, unsigned long msecs)
-+{
-+	return wait_for_completion_timeout(x, 1 + msecs_to_jiffies(msecs));
-+}
-+
-+static inline unsigned long wait_for_completion_io_msecs(
-+	struct completion *x, unsigned long msecs)
-+{
-+	return wait_for_completion_io_timeout(x, 1 + msecs_to_jiffies(msecs));
-+}
-+
-+static inline long wait_for_completion_interruptible_msecs(
-+	struct completion *x, unsigned long msecs)
-+{
-+	return wait_for_completion_interruptible_timeout(
-+		x, 1 + msecs_to_jiffies(msecs));
-+}
-+
-+static inline long wait_for_completion_killable_msecs(
-+	struct completion *x, unsigned long msecs)
-+{
-+	return wait_for_completion_killable_timeout(
-+		x, 1 + msecs_to_jiffies(msecs));
-+}
-+
- #endif
-diff --git a/kernel/sched/completion.c b/kernel/sched/completion.c
-index a63f4dc27909..b51902373cc0 100644
---- a/kernel/sched/completion.c
-+++ b/kernel/sched/completion.c
-@@ -126,12 +126,15 @@ EXPORT_SYMBOL(wait_for_completion);
- /**
-  * wait_for_completion_timeout: - waits for completion of a task (w/timeou=
-t)
-  * @x:  holds the state of this particular completion
-- * @timeout:  timeout value in jiffies
-+ * @timeout:  timeout value in "jiffie starts"
-  *
-  * This waits for either a completion of a specific task to be signaled or=
- for a
-  * specified timeout to expire. The timeout is in jiffies. It is not
-  * interruptible.
-  *
-+ * The timeout is in "jiffie starts".  It could take between (timeout-1)
-+ * and (timeout) jiffies for that many to start.
-+ *
-  * Return: 0 if timed out, and positive (at least 1, or number of jiffies =
-left
-  * till timeout) if completed.
-  */
-@@ -159,10 +162,11 @@ EXPORT_SYMBOL(wait_for_completion_io);
- /**
-  * wait_for_completion_io_timeout: - waits for completion of a task (w/tim=
-eout)
-  * @x:  holds the state of this particular completion
-- * @timeout:  timeout value in jiffies
-+ * @timeout:  timeout value in "jiffie starts"
-  *
-  * This waits for either a completion of a specific task to be signaled or=
- for a
-- * specified timeout to expire. The timeout is in jiffies. It is not
-+ * specified timeout to expire. The timeout is in "jiffie starts" which im=
-plies
-+ * a duration between (timeout-1) and (timeout) jiffies. It is not
-  * interruptible. The caller is accounted as waiting for IO.
-  *
-  * Return: 0 if timed out, and positive (at least 1, or number of jiffies =
-left
-@@ -196,10 +200,12 @@ EXPORT_SYMBOL(wait_for_completion_interruptible);
- /**
-  * wait_for_completion_interruptible_timeout: - waits for completion (w/(t=
-o,intr))
-  * @x:  holds the state of this particular completion
-- * @timeout:  timeout value in jiffies
-+ * @timeout:  timeout value in "jiffie starts"
-  *
-  * This waits for either a completion of a specific task to be signaled or=
- for a
-- * specified timeout to expire. It is interruptible. The timeout is in jif=
-fies.
-+ * specified timeout to expire. It is interruptible. The timeout is in
-+ * "jiffie starts" which implies a duration between (timeout-1) and
-+ * (timeout) jiffies.
-  *
-  * Return: -ERESTARTSYS if interrupted, 0 if timed out, positive (at least=
- 1,
-  * or number of jiffies left till timeout) if completed.
-@@ -233,11 +239,12 @@ EXPORT_SYMBOL(wait_for_completion_killable);
- /**
-  * wait_for_completion_killable_timeout: - waits for completion of a task =
-(w/(to,killable))
-  * @x:  holds the state of this particular completion
-- * @timeout:  timeout value in jiffies
-+ * @timeout:  timeout value in "jiffie starts"
-  *
-  * This waits for either a completion of a specific task to be
-  * signaled or for a specified timeout to expire. It can be
-- * interrupted by a kill signal. The timeout is in jiffies.
-+ * interrupted by a kill signal. The timeout is in "jiffie starts"
-+ * which implies a duration between (timeout-1) and (timeout) jiffies.
-  *
-  * Return: -ERESTARTSYS if interrupted, 0 if timed out, positive (at least=
- 1,
-  * or number of jiffies left till timeout) if completed.
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 6582b82fa966..bf8ed6adb140 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1405,16 +1405,17 @@ static void process_timeout(unsigned long __data)
-=20
- /**
-  * schedule_timeout - sleep until timeout
-- * @timeout: timeout value in jiffies
-+ * @timeout: timeout value in "jiffie starts"
-  *
-- * Make the current task sleep until @timeout jiffies have
-- * elapsed. The routine will return immediately unless
-+ * Make the current task sleep until the start of the "timeout"
-+ * jiffie from now.  This can take between (timeout-1) and (timeout)
-+ * jiffies to occur. The routine will return immediately unless
-  * the current task state has been set (see set_current_state()).
-  *
-  * You can set the task state as follows -
-  *
-  * %TASK_UNINTERRUPTIBLE - at least @timeout jiffies are guaranteed to
-- * pass before the routine returns. The routine will return 0
-+ * have started before the routine returns. The routine will return 0
-  *
-  * %TASK_INTERRUPTIBLE - the routine may return early if a signal is
-  * delivered to the current task. In this case the remaining time
+----------------------------------------------------------------
+Christoph Hellwig (1):
+      nfs: fix pnfs Kconfig defaults
 
---Sig_/tvzOUFjsK_h0ggfB6hAHvdC
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Jeff Layton (1):
+      nfs: don't retry detect+AF8-trunking with RPC+AF8-AUTH+AF8-UNIX more =
+than once
+
+NeilBrown (1):
+      NFS: correctly report misuse of +ACI-migration+ACI mount option.
+
+Trond Myklebust (2):
+      SUNRPC: Fix a data corruption issue when retransmitting RPC calls
+      SUNRPC: Avoid deep recursion in rpc+AF8-release+AF8-client
+
+ fs/nfs/Kconfig        +AHw  6 +-+-+----
+ fs/nfs/nfs4state.c    +AHw  7 +-+-+-+-+-+--
+ fs/nfs/super.c        +AHw  2 +--
+ net/sunrpc/clnt.c     +AHw 29 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-----------=
+--
+ net/sunrpc/xprtsock.c +AHw 28 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+---=
+-----
+ 5 files changed, 48 insertions(+-), 24 deletions(-)
+
+--=20
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust+AEA-netapp.com
+www.netapp.com
+
+--=-HViyGKp+Wz80BcrajNY/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIVAwUBUofeOznsnt1WYoG5AQLyfA/+Olrhc1kDMUoYboTPtJTx4HwHkhipOS4t
-z2jQVat/5+HdCz2Y+Wnr4Uskfa1tR1gA2jGsLyBIS84NIgRofnd8R6aMuscuG/yg
-MJMqV7yNLEzdpjp2pT3bPXtF8Fiudx56twYJflTOCP25ljr1S9xGg68NU5HcTZsv
-sgU/I9sYrSAcyxRcfiaDsXcOcpx9yb68/rSb7AXt47laes7DB5+SQFdthSUfmc2a
-vKvhVWzn4GOYZrWP41nyykAZ2Tc8YCbapbLMvfy/WB5MPtocv/1HwJNSFnKG12s5
-QfoWZ3SS+j0Kfvsi4FtYBuOt7oWlPgsHAusuh4gH28oL8/9ED/9kAyQiIwyXBP2h
-WPaWOiUNW93uhT4HtQPEYhRMC6FBmYc40eR6Tp2+scUOYlty1u+WpHlwlmlf4fMd
-3fFIZWv8qK62BKHrgMT4icTv5t8B/Kk0K17vArcmPNI827g19bjW3yWGQmmXgSum
-6mrYZeZ6icTlD9VfMJryjdXXjpeoODFLk8rSHyzVawVllrBrWDIvgRicSA9n035d
-RlSa2mDop2NFl5KK7IEboAxTMjFfOBUV3WxLjOwo4FwMixWRe1wO6Hlg3eSFP+S8
-Sa3KOUA5OH9I11OmSpOtkSePRxxO1k9kkC1mIWY73v/VHU1RYoHJuPvCUsstTeme
-/rKwhssKDrc=
-=5dA8
+iQIcBAABAgAGBQJSh98kAAoJEGcL54qWCgDyYVQP/i0uI/ul1H0rblNNahDNnSXR
+kILqPdlKJkIx+JqF7zK+YaY9vHB17BnLsCNVwM9K6zQZmzDl8wzEQp8uO0ZNzkVX
+DVpDEn2j6i2vDti9L7BI8uFa9OVW438DEi8CU6ceYNqjpg3bQ35v9tOKV1qRB5kv
+uLnokTs+86TCc/FhZj0iJHdXfuYqyZGvMZQHQlCnHa6Q6/wl5Qk8AfuVy+U9rd9/
+U+uV5ZlcavDJl2ZpIy5UZOpMJwUVwQRbwfuxV0gEQW5bE2yOs/9LxdvAtndDUN4Q
+Of4PlU2kroAyv8CTh9bNnHDc3dXygTznPlD4qmlV0JGU/iWs490L31DobVEFmJ7A
+9RgwZIBTFHABb4pEvtoIf7btIyiGCuNsNRb7HGHd3KRwEc33Q+Ws9Xj1OrgHxP/V
+u/8ghU/ZqAwssmNzVQtUq7qzZPL7Dl6WzRsReD6CcnGWNpYbFd3s6iKX4jLyh6WP
+7khPzZwfiTRC6rTU7W8nmJuCLDxKd+uqLZMjLiiVs28G9Us1r9nM7/1L+byEwEE4
+8O7NyVrXFeJPgc2T0SJ3OPMzSnY4g41IWUKnHoE5MKP3Gjrxid4Av/xMrO2aezHm
+W+QRHp/mY306nW6/IDlx5tnJpSWCKFovu3YAxPDaFBQmknRdXXvULbfpWi6gJYsf
+Zbsj+FoQJDMGhypm/Nbk
+=SwEk
 -----END PGP SIGNATURE-----
 
---Sig_/tvzOUFjsK_h0ggfB6hAHvdC--
+--=-HViyGKp+Wz80BcrajNY/--
