@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab3KPAC2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:02:28 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:41044 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682Ab3KPABl (ORCPT
+	id S1753373Ab3KPADA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:03:00 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:48823 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753848Ab3KPACB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 19:01:41 -0500
+	Fri, 15 Nov 2013 19:02:01 -0500
 From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 To: linux-omap@vger.kernel.org
 Cc: linaro-networking@linaro.org, Victor Kamensky <victor.kamensky@linaro.org>,
-        Deepak Saxena <dsaxena@plexity.net>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org
-Subject: [RFC 07/23] hwrng: omap - raw read and write endian fix
-Date: Sat, 16 Nov 2013 02:01:10 +0200
-Message-Id: <1384560086-11994-8-git-send-email-taras.kondratiuk@linaro.org>
+Subject: [RFC 12/23] mfd: omap-usb-tll: raw read and write endian fix
+Date: Sat, 16 Nov 2013 02:01:15 +0200
+Message-Id: <1384560086-11994-13-git-send-email-taras.kondratiuk@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
 References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
@@ -38,29 +37,40 @@ with xxx_relaxed variant.
 Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
 Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 ---
- drivers/char/hw_random/omap-rng.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mfd/omap-usb-tll.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/char/hw_random/omap-rng.c b/drivers/char/hw_random/omap-rng.c
-index 9b89ff4..d68cf8a 100644
---- a/drivers/char/hw_random/omap-rng.c
-+++ b/drivers/char/hw_random/omap-rng.c
-@@ -131,13 +131,13 @@ struct omap_rng_dev {
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index e59ac4c..15bcd93 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -121,22 +121,22 @@ static DEFINE_SPINLOCK(tll_lock);	/* serialize access to tll_dev */
  
- static inline u32 omap_rng_read(struct omap_rng_dev *priv, u16 reg)
+ static inline void usbtll_write(void __iomem *base, u32 reg, u32 val)
  {
--	return __raw_readl(priv->base + priv->pdata->regs[reg]);
-+	return readl_relaxed(priv->base + priv->pdata->regs[reg]);
+-	__raw_writel(val, base + reg);
++	writel_relaxed(val, base + reg);
  }
  
- static inline void omap_rng_write(struct omap_rng_dev *priv, u16 reg,
- 				      u32 val)
+ static inline u32 usbtll_read(void __iomem *base, u32 reg)
  {
--	__raw_writel(val, priv->base + priv->pdata->regs[reg]);
-+	writel_relaxed(val, priv->base + priv->pdata->regs[reg]);
+-	return __raw_readl(base + reg);
++	return readl_relaxed(base + reg);
  }
  
- static int omap_rng_data_present(struct hwrng *rng, int wait)
+ static inline void usbtll_writeb(void __iomem *base, u8 reg, u8 val)
+ {
+-	__raw_writeb(val, base + reg);
++	writeb_relaxed(val, base + reg);
+ }
+ 
+ static inline u8 usbtll_readb(void __iomem *base, u8 reg)
+ {
+-	return __raw_readb(base + reg);
++	return readb_relaxed(base + reg);
+ }
+ 
+ /*-------------------------------------------------------------------------*/
 -- 
 1.7.9.5
 
