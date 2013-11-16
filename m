@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab3KPUV5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 15:21:57 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:55750 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584Ab3KPUVt (ORCPT
+	id S1753414Ab3KPUYe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 15:24:34 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:64674 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752584Ab3KPUY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 15:21:49 -0500
-Message-ID: <5287D3DA.4060601@linux.com>
-Date: Sat, 16 Nov 2013 21:21:46 +0100
+	Sat, 16 Nov 2013 15:24:26 -0500
+Message-ID: <5287D477.6020609@linux.com>
+Date: Sat, 16 Nov 2013 21:24:23 +0100
 From: Levente Kurusa <levex@linux.com>
 Reply-To: Levente Kurusa <levex@linux.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
 To: Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-kernel@vger.kernel.org
-CC: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/5] cmdline: declare exported symbols immediately
-References: <1384623151-31302-1-git-send-email-felipe.contreras@gmail.com> <1384623151-31302-4-git-send-email-felipe.contreras@gmail.com>
-In-Reply-To: <1384623151-31302-4-git-send-email-felipe.contreras@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
+        Ingo Molnar <mingo@kernel.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] panic: setup panic_timeout early
+References: <CAMP44s17p0ZpFx0Y2E_K7Oq9c4tk2J+9uXRWDYChAD-yM-4JjQ@mail.gmail.com>	<52850B89.10605@linux.com>	<52853fe6b0fd9_bf6d31e7c1a@nysa.notmuch>	<CAMP44s0kGhPvuVZMe4zpmqFLtxrLW2gBPu6eHg0G6DFYKNpW7Q@mail.gmail.com>	<52861DCB.9020206@linux.com>	<CAMP44s0q06Qe9BTHTaamFNkic+8_ecATXVACRVNqpRDqw6r5Qg@mail.gmail.com>	<CA+55aFwGGutF+6dioSFTEsMfXeJysjkt+W_z+qYL7widL2uTtA@mail.gmail.com>	<CAMP44s3q8bc6ENqwetGE1yx9LYA+YdBVmEtok+DwykXLu794DQ@mail.gmail.com>	<CA+55aFyLM6qmiL3064qLKXopisn9HjQoLgMFQEyAsMY-basYAg@mail.gmail.com>	<CAMP44s0G12NxoeTAroL--QendOsMU5-dBYMsQiWtAEGBcONanA@mail.gmail.com>	<20131116174538.GA28829@gmail.com> <CAMP44s1RsbDH11VQziLcZEQXM_QH3B_xQ7nkK9moSx0rv7PbzQ@mail.gmail.com>
+In-Reply-To: <CAMP44s1RsbDH11VQziLcZEQXM_QH3B_xQ7nkK9moSx0rv7PbzQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-11-16 18:32 keltezéssel, Felipe Contreras írta:
-> WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
-> +EXPORT_SYMBOL(memparse);
+2013-11-16 19:46 keltezÃ©ssel, Felipe Contreras Ã­rta:
+> On Sat, Nov 16, 2013 at 11:45 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
 > 
-> WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
-> +EXPORT_SYMBOL(get_option);
+>> Anyway, the fact that you are argumentative even with Linus gives me
+>> little hope that you will improve your communication patterns with
+>> _me_, so I'm personally done arguing with you.
 > 
-> WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
-> +EXPORT_SYMBOL(get_options);
+> How am I being argumentative? I avoided all arguments.
 > 
-> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> ---
->  lib/cmdline.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
+>>> You don't want to argue? Then don't argue. Apply the patch. [...]
+>>
+>> *Plonk*.
 > 
-> diff --git a/lib/cmdline.c b/lib/cmdline.c
-> index 5466333..d4932f7 100644
-> --- a/lib/cmdline.c
-> +++ b/lib/cmdline.c
-> @@ -67,6 +67,7 @@ int get_option(char **str, int *pint)
->  
->  	return 1;
->  }
-> +EXPORT_SYMBOL(get_option);
->  
->  /**
->   *	get_options - Parse a string into a list of integers
-> @@ -112,6 +113,7 @@ char *get_options(const char *str, int nints, int *ints)
->  	ints[0] = i - 1;
->  	return (char *)str;
->  }
-> +EXPORT_SYMBOL(get_options);
->  
->  /**
->   *	memparse - parse a string with mem suffixes into a number
-> @@ -152,7 +154,4 @@ unsigned long long memparse(const char *ptr, char **retptr)
->  
->  	return ret;
->  }
-> -
->  EXPORT_SYMBOL(memparse);
-> -EXPORT_SYMBOL(get_option);
-> -EXPORT_SYMBOL(get_options);
+> This is exactly the opposite of what is conducive to less argumentation.
+> 
+> If you are not going to comment on the patch, then don't say anything.
+> 
+> The patch is good, and the fact that both you and Linus are avoiding
+> any comments in the patch itself doesn't speak well for your
+> intentions to avoid argumentation.
+> 
+> So I ask you again. Do you see something wrong with the patch?
 > 
 
-I don't know about this one, but I have seen lots of files where EXPORT_SYMBOLs were
-listed at the end of the file. To avoid misunderstanding, I still think that having the
-exports after the function is more appropriate.
+Out-of-joke, the patch is now in an 'appliable' state.
+
+You can add my:
+Reviewed-by: Levente Kurusa <levex@linux.com>
 
 -- 
 Regards,
