@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab3KPNfN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 08:35:13 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:42954 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab3KPNfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 08:35:06 -0500
-Message-ID: <52877484.3080507@gmail.com>
-Date: Sat, 16 Nov 2013 14:35:00 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+	id S1752664Ab3KPNjc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 08:39:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48385 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752353Ab3KPNj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Nov 2013 08:39:29 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: rjw@sisk.pl
+Cc: trenn@suse.de, linux-pm@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] clocksource: orion: Switch to sched_clock_register()
-References: <1384559315-18699-1-git-send-email-sboyd@codeaurora.org> <1384559315-18699-5-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1384559315-18699-5-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH 2/2] tools cpupower: fix wrong err msg not supported vs not available
+Date: Sat, 16 Nov 2013 14:39:22 +0100
+Message-Id: <1384609162-77010-3-git-send-email-trenn@suse.de>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1384609162-77010-1-git-send-email-trenn@suse.de>
+References: <1384609162-77010-1-git-send-email-trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2013 12:48 AM, Stephen Boyd wrote:
-> The 32 bit sched_clock interface now supports 64 bits. Upgrade to
-> the 64 bit function to allow us to remove the 32 bit registration
-> interface.
->
-> Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+idlestates in sysfs are counted from 0.
 
-Tested-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+This fixes a wrong error message.
+Current behavior on a machine with 4 sleep states is:
 
-Thanks!
+cpupower idle-set -e 4
+Idlestate 4 enabled on CPU 0
 
-> ---
->   drivers/clocksource/time-orion.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/clocksource/time-orion.c b/drivers/clocksource/time-orion.c
-> index 9c7f018..2006622 100644
-> --- a/drivers/clocksource/time-orion.c
-> +++ b/drivers/clocksource/time-orion.c
-> @@ -53,7 +53,7 @@ EXPORT_SYMBOL(orion_timer_ctrl_clrset);
->   /*
->    * Free-running clocksource handling.
->    */
-> -static u32 notrace orion_read_sched_clock(void)
-> +static u64 notrace orion_read_sched_clock(void)
->   {
->   	return ~readl(timer_base + TIMER0_VAL);
->   }
-> @@ -135,7 +135,7 @@ static void __init orion_timer_init(struct device_node *np)
->   	clocksource_mmio_init(timer_base + TIMER0_VAL, "orion_clocksource",
->   			      clk_get_rate(clk), 300, 32,
->   			      clocksource_mmio_readl_down);
-> -	setup_sched_clock(orion_read_sched_clock, 32, clk_get_rate(clk));
-> +	sched_clock_register(orion_read_sched_clock, 32, clk_get_rate(clk));
->
->   	/* setup timer1 as clockevent timer */
->   	if (setup_irq(irq, &orion_clkevt_irq))
->
+-----Wrong---------------------
+cpupower idle-set -e 5
+Idlestate enabling not supported by kernel
+-----Must and now will be -----
+cpupower idle-set -e 5
+Idlestate 6 not available on CPU 0
+-------------------------------
+
+cpupower idle-set -e 6
+Idlestate 6 not available on CPU 0
+
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+---
+ tools/power/cpupower/utils/helpers/sysfs.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/power/cpupower/utils/helpers/sysfs.c b/tools/power/cpupower/utils/helpers/sysfs.c
+index 5cdc600..851c7a1 100644
+--- a/tools/power/cpupower/utils/helpers/sysfs.c
++++ b/tools/power/cpupower/utils/helpers/sysfs.c
+@@ -278,7 +278,7 @@ static char *sysfs_idlestate_get_one_string(unsigned int cpu,
+ int sysfs_is_idlestate_disabled(unsigned int cpu,
+ 				unsigned int idlestate)
+ {
+-	if (sysfs_get_idlestate_count(cpu) < idlestate)
++	if (sysfs_get_idlestate_count(cpu) <= idlestate)
+ 		return -1;
+ 
+ 	if (!sysfs_idlestate_file_exists(cpu, idlestate,
+@@ -303,7 +303,7 @@ int sysfs_idlestate_disable(unsigned int cpu,
+ 	char value[SYSFS_PATH_MAX];
+ 	int bytes_written;
+ 
+-	if (sysfs_get_idlestate_count(cpu) < idlestate)
++	if (sysfs_get_idlestate_count(cpu) <= idlestate)
+ 		return -1;
+ 
+ 	if (!sysfs_idlestate_file_exists(cpu, idlestate,
+-- 
+1.7.6.1
 
