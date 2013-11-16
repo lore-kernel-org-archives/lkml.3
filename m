@@ -1,133 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984Ab3KPT7p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 14:59:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42871 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170Ab3KPT7i (ORCPT
+	id S1753043Ab3KPUH3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 15:07:29 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:53174 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab3KPUHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 14:59:38 -0500
-Date: Sat, 16 Nov 2013 11:59:47 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Dilger, Andreas" <andreas.dilger@intel.com>
-Cc: Peng Tao <bergwolf@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/40] staging/lustre/llite: Access to released file
- trigs a restore
-Message-ID: <20131116195947.GB9308@kroah.com>
-References: <20131115040944.GA28070@kroah.com>
- <CEAC7771.817BF%andreas.dilger@intel.com>
+	Sat, 16 Nov 2013 15:07:21 -0500
+Date: Sat, 16 Nov 2013 21:07:18 +0100
+From: Simon Baatz <gmbnomis@gmail.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Helge Deller <deller@gmx.de>, Benjamin LaHaise <bcrl@kvack.org>,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
+        linux-parisc@vger.kernel.org
+Subject: Re: [PATCH] aio: fix D-cache aliasing issues
+Message-ID: <20131116200717.GA18939@schnuecks.de>
+References: <20131115220529.GA3160@ls3530.box>
+ <1384555325.2003.39.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CEAC7771.817BF%andreas.dilger@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1384555325.2003.39.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 16, 2013 at 10:36:18AM +0000, Dilger, Andreas wrote:
-> >So, sorry, I have to stop here at this series.  I've applied the first 3
-> >to the opw-next branch of staging.git so they can live somewhere until
-> >3.13-rc1 is out.
-> >
-> >I know you spent a lot of time making these 120 patches to send me, but
-> >that too is crazy.  You shouldn't wait that long to get feedback and
-> >send patches to me at all.  Please send them in smaller series, with
-> >less time between patch submissions.
+On Fri, Nov 15, 2013 at 02:42:05PM -0800, James Bottomley wrote:
+> On Fri, 2013-11-15 at 23:05 +0100, Helge Deller wrote:
+> > When a user page mapping is released via kunmap*() functions, the D-cache needs
+> > to be flushed via flush_dcache_page() to avoid D-cache aliasing issues.
+> > 
+> > This patch fixes aio on the parisc platform (and probably others).
 > 
-> The reason that there are so many patches in a burst is that we are also
-> developing new features and fixing bugs in parallel with the kernel, but
-> they also need to be tested a lot before they are released.  It's not any
-> different from kernel patches testing on -next or -mm for a few months
-> before they are pushed to the mainline kernel in a batch.
+> This should be flush_kernel_dcache_page().  flush_dcache_page() is for
+> full coherency but for unmap, we know the page was coherent going in and
+> may have been modified by the kernel, so only the kernel view needs to
+> be sync'd.  Technically, by the kernel API, the flush should be done
+> *before* unmapping.  This would have mattered on parisc until we did
+> flush via tmpalias which means we no-longer care if the mapping for the
+> flush exists or not because we always recreate it via the tmpalias
+> pages.
 
-It's very different in that you are expecting me to suddenly accept this
-huge burst of patches all at once, and I can't review them properly.  As
-this patch series shows, there was a problem in the 4rd patch in a 100+
-series, which means that I couldn't take them all.  So you wasted a
-bunch of work preparing those other 96 patches.
+On ARM, flush_kernel_dcache_page() actually assumes that the page is
+mapped.  It avoids double flushing of highmem pages by not flushing
+in those cases where kunmap_atomic() already takes care of flushing.
 
-Send them to me in short chunks, that way you don't waste time, and you
-don't take so long between patch acceptance.
 
-> The out-of-tree development can't really stop for a year while the kernel
-> client code is cleaned up.  If the feature patches don't land into the
-> kernel client for a year (or however long it takes to do all the cleanup),
-> then it will become outdated and the whole reason for adding the client
-> into the kernel is lost.
-
-But you understand my hesitation at taking any new features when there
-really has not been any attempt by your team to do much cleanup and
-fixes of the code at all, right?  It feels like I have done more cleanup
-personally than anyone on your teams, is this not true?
-
-So, why would I believe that you all are really going to start doing the
-major cleanup work on this code that is so obviously needed?  Why would
-I take new features that you are spending your time on instead?
-
-> >> There are many users of the external tree so we cannot just abandon
-> >> it, especially that the upstream client is not shipped in any
-> >> distribution yet. Thanks for your understanding.
-> >
-> >What is keeping people using that tree?  Support for older/distro
-> >kernels?
-> >
-> 
-> Support for distro kernels is a big part of it.  Most HPC sites use vendor
-> kernels of various vintages, and we need to keep the code working for those
-> sites.  We also need to continue developing features needed by ever-larger
-> clusters, fixing bugs, etc.  Eventually, when Lustre is in the kernel
-> proper,
-> it will also be available in future distro kernels and we can eventually
-> stop supporting the out-of-tree code.  I expect that to be 3+ years away.
-
-So, originally you said it would take about a year to get this out of
-staging.  It's been 6 months already with no real progress made with the
-exception of having interns do cleanup and me doing some basic wrapper
-function removals.  What's the plan for the next 6 months?  Based on
-these 100+ patches, I don't see any major changes that are happening to
-get this cleaned up properly (or did I miss those patches in this huge
-patchbomb?)
-
-> >Is it the fact that the server code isn't in the kernel?
-> 
-> Not really.  Lustre servers are on separate servers with vendor kernels
-> (ancient by your standards), and there isn't really any demand for
-> using newer kernels on those nodes.  Most importantly, the out-of-tree
-> branch is where all of the new feature development is being done.  That
-> also means if feature patches don't land into the kernel it just makes
-> the kernel version less attractive for users.
-> 
-> >  Should that be added now too so that we can get a proper view of what
-> > can and can not be changed?  Some of your patches are showing that things
-> > are shared by the two chunks of code, so does that mean if I delete
-> >things in the client code that don't look to be used by anything, you
-> > will have problems because the server now breaks?
-> 
-> Adding the server code to staging would mean another 150kLOC in staging.
-> We also haven't cleaned that code up even nearly as much as the client
-> code, so it isn't really even ready to go into staging either.  I don't
-> think you or anyone else would be happy to see that code yet, so I don't
-> think there is a real advantage to do so.
-> 
-> Deleting unused code in the kernel client isn't fatal, since we'll
-> still have the out-of-tree version, but we're trying to keep the code in
-> sync as much as possible so that it is easier to port patches in both
-> directions.  If code is deleted it means more that needs to be added
-> back later when the server eventually does get merged, and more effort
-> to resolve patch conflicts.
-
-But look at the function that caused this original question to be asked.
-You want an api change that I would never accept as it doesn't do
-anything to the client code at all.  How do I "know" this is acceptable
-and needed if I can't see the server side?  How would I "know" not to
-take a cleanup patch that reverted this change if I can't see the server
-side at the same time?
-
-150k of code is not a big deal to me, I can easily take it.  If it means
-that we have a real chance at getting this all fixed up properly, I say
-to do it, otherwise I really don't think this project will ever succeed,
-sorry.
-
-greg k-h
+- Simon
