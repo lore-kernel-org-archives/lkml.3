@@ -1,107 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab3KPA05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:26:57 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:62712 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754417Ab3KPA0G (ORCPT
+	id S1754413Ab3KPA2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:28:36 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:43762 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712Ab3KPA2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 19:26:06 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: viresh.kumar@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Update PATCH 1/1] Cpufreq: Make governor data on nonboot cpus across system suspend/resume
-Date: Sat, 16 Nov 2013 01:38:39 +0100
-Message-ID: <2368963.sKiLjXYCVt@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1384503334-18809-1-git-send-email-tianyu.lan@intel.com>
-References: <1384495294-10565-1-git-send-email-tianyu.lan@intel.com> <1384503334-18809-1-git-send-email-tianyu.lan@intel.com>
+	Fri, 15 Nov 2013 19:28:25 -0500
+Date: Fri, 15 Nov 2013 17:28:20 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Hugh Dickins <hughd@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Li Zefan <lizefan@huawei.com>,
+        Markus Blank-Burian <burian@muenster.de>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, cgroups@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: Possible regression with cgroups in 3.11
+Message-ID: <20131116002820.GA31073@google.com>
+References: <CA+SBX_MQVMuzWKroASK7Cr5J8cu9ajGo=CWr7SRs+OWh83h4_w@mail.gmail.com>
+ <525CB337.8050105@huawei.com>
+ <CA+SBX_Ogo8HP81o+vrJ8ozSBN6gPwzc8WNOV3Uya=4AYv+CCyQ@mail.gmail.com>
+ <CA+SBX_OJBbYzrNX5Mi4rmM2SANShXMmAvuPGczAyBdx8F2hBDQ@mail.gmail.com>
+ <5270BFE7.4000602@huawei.com>
+ <alpine.LNX.2.00.1310301606080.2333@eggly.anvils>
+ <20131031130647.0ff6f2c7@gandalf.local.home>
+ <alpine.LNX.2.00.1310311442030.2633@eggly.anvils>
+ <20131113032804.GB19394@mtj.dyndns.org>
+ <20131113073806.GA23244@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131113073806.GA23244@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 15, 2013 04:15:34 PM Lan Tianyu wrote:
-> Currently, governor of nonboot cpus will be put to EXIT when system suspend.
-> Since all these cpus will be unplugged and the governor usage_count decreases
-> to zero. The governor data and its sysfs interfaces will be freed or released.
-> This makes user config of these governors loss during suspend and resume.
+On Wed, Nov 13, 2013 at 04:38:06PM +0900, Tejun Heo wrote:
+> Hey, guys.
+> 
+> cc'ing people from "workqueue, pci: INFO: possible recursive locking
+> detected" thread.
+> 
+>   http://thread.gmane.org/gmane.linux.kernel/1525779
+> 
+> So, to resolve that issue, we ripped out lockdep annotation from
+> work_on_cpu() and cgroup is now experiencing deadlock involving
+> work_on_cpu().  It *could* be that workqueue is actually broken or
+> memcg is looping but it doesn't seem like a very good idea to not have
+> lockdep annotation around work_on_cpu().
+> 
+> IIRC, there was one pci code path which called work_on_cpu()
+> recursively.  Would it be possible for that path to use something like
+> work_on_cpu_nested(XXX, depth) so that we can retain lockdep
+> annotation on work_on_cpu()?
 
-First off, do we have a pointer to a bug report related to that?
+I'm open to changing the way pci_call_probe() works, but my opinion is
+that the PCI path that causes trouble is a broken design, and we shouldn't
+complicate the work_on_cpu() interface just to accommodate that broken
+design.
 
-Second, what does need to be done to reproduce this problem?
+The problem is that when a PF .probe() method that calls
+pci_enable_sriov(), we add new VF devices and call *their* .probe()
+methods before the PF .probe() method completes.  That is ugly and
+error-prone.
 
-> This doesn't happen on the governor covering boot cpu because it isn't
-> unplugged during system suspend.
-> 
-> To fix this issue, skipping governor exit during system suspend and check
-> policy governor data to determine whether the governor is really needed
-> to be initialized when do init. If not, return EALREADY to indicate the
-> governor has been initialized and should do nothing. __cpufreq_governor()
-> convert EALREADY to 0 as return value for INIT event since governor is
-> still under INIT state and can do START operation.
-> 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> ---
-> Fix some typos
-> 
->  drivers/cpufreq/cpufreq.c          |  5 ++++-
->  drivers/cpufreq/cpufreq_governor.c | 13 ++++++++++++-
->  2 files changed, 16 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 02d534d..38f2e4a 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1239,7 +1239,7 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
->  
->  	/* If cpu is last user of policy, free policy */
->  	if (cpus == 1) {
-> -		if (has_target()) {
-> +		if (has_target() && !frozen) {
->  			ret = __cpufreq_governor(policy,
->  					CPUFREQ_GOV_POLICY_EXIT);
->  			if (ret) {
-> @@ -1822,6 +1822,9 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
->  			((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
->  		module_put(policy->governor->owner);
->  
-> +	if ((event == CPUFREQ_GOV_POLICY_INIT) && ret == -EALREADY)
-> +		ret = 0;
-> +
->  	return ret;
->  }
->  
-> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-> index 0806c31..ddb93af 100644
-> --- a/drivers/cpufreq/cpufreq_governor.c
-> +++ b/drivers/cpufreq/cpufreq_governor.c
-> @@ -204,9 +204,20 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->  
->  	switch (event) {
->  	case CPUFREQ_GOV_POLICY_INIT:
-> +		/*
-> +		 * In order to keep governor data across suspend/resume,
-> +		 * Governor doesn't exit when suspend and will be
-> +		 * reinitialized when resume. Here check policy governor
-> +		 * data to determine whether the governor has been exited.
-> +		 * If not, return EALREADY.
-> +		 */
->  		if (have_governor_per_policy()) {
-> -			WARN_ON(dbs_data);
-> +			if (dbs_data)
-> +				return -EALREADY;
->  		} else if (dbs_data) {
-> +			if (policy->governor_data == dbs_data)
-> +				return -EALREADY;
-> +
->  			dbs_data->usage_count++;
->  			policy->governor_data = dbs_data;
->  			return 0;
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+When we call .probe() methods for the VFs, we're obviously already on the
+correct node, because the VFs are on the same node as the PF, so I think
+the best short-term fix is Alexander's patch to avoid work_on_cpu() when
+we're already on the correct node -- something like the (untested) patch
+below.
+
+Bjorn
+
+
+PCI: Avoid unnecessary CPU switch when calling driver .probe() method
+
+From: Bjorn Helgaas <bhelgaas@google.com>
+
+If we are already on a CPU local to the device, call the driver .probe()
+method directly without using work_on_cpu().
+
+This is a workaround for a lockdep warning in the following scenario:
+
+  pci_call_probe
+    work_on_cpu(cpu, local_pci_probe, ...)
+      driver .probe
+        pci_enable_sriov
+          ...
+            pci_bus_add_device
+              ...
+                pci_call_probe
+                  work_on_cpu(cpu, local_pci_probe, ...)
+
+It would be better to fix PCI so we don't call VF driver .probe() methods
+from inside a PF driver .probe() method, but that's a bigger project.
+
+This patch is due to Alexander Duyck <alexander.h.duyck@intel.com>; I merely
+added the preemption disable.
+
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=65071
+Link: http://lkml.kernel.org/r/CAE9FiQXYQEAZ=0sG6+2OdffBqfLS9MpoN1xviRR9aDbxPxcKxQ@mail.gmail.com
+Link: http://lkml.kernel.org/r/20130624195942.40795.27292.stgit@ahduyck-cp1.jf.intel.com
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/pci/pci-driver.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 454853507b7e..accae06aa79a 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -293,7 +293,9 @@ static int pci_call_probe(struct pci_driver *drv, struct pci_dev *dev,
+ 	   its local memory on the right node without any need to
+ 	   change it. */
+ 	node = dev_to_node(&dev->dev);
+-	if (node >= 0) {
++	preempt_disable();
++
++	if (node >= 0 && node != numa_node_id()) {
+ 		int cpu;
+ 
+ 		get_online_cpus();
+@@ -305,6 +307,8 @@ static int pci_call_probe(struct pci_driver *drv, struct pci_dev *dev,
+ 		put_online_cpus();
+ 	} else
+ 		error = local_pci_probe(&ddi);
++
++	preempt_enable();
+ 	return error;
+ }
+ 
