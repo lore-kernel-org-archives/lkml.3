@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab3KPKTi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 05:19:38 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41466 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642Ab3KPKT1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 05:19:27 -0500
-Date: Sat, 16 Nov 2013 10:19:22 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Cc: linux-omap@vger.kernel.org, linaro-networking@linaro.org,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20131116101922.GL15393@sirena.org.uk>
-References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
- <1384560086-11994-14-git-send-email-taras.kondratiuk@linaro.org>
+	id S1752158Ab3KPKaZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 05:30:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44684 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751642Ab3KPKaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Nov 2013 05:30:21 -0500
+Date: Sat, 16 Nov 2013 11:29:47 +0100
+From: Borislav Petkov <bp@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-edac <linux-edac@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [GIT PULL] A minor amd64_edac fix for 3.13
+Message-ID: <20131116102947.GC18306@pd.tnic>
+References: <20131110122638.GA17775@pd.tnic>
+ <CAADWXX_FdW4vGn8N4TA_GcNBrwuqeH_=qxmK2J7K7kfAWztxPA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qgd2S+2VS1hsWwXW"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1384560086-11994-14-git-send-email-taras.kondratiuk@linaro.org>
-X-Cookie: Reply hazy, ask again later.
+In-Reply-To: <CAADWXX_FdW4vGn8N4TA_GcNBrwuqeH_=qxmK2J7K7kfAWztxPA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 31.99.68.145
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC 13/23] spi: omap2-mcspi: raw read and write endian fix
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+And just to test whether you're getting emails from me, I'll send this
+one again from my other mail address to try to maximize the probability
+of some version actually reaching you :-)
 
---Qgd2S+2VS1hsWwXW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Nov 15, 2013 at 06:02:59PM -0800, Linus Torvalds wrote:
+> [ This was in my spam collection. I don't quite know why, but it might
+> signify problems with your email setup. Quite often, when gmail is
+> unhappy about kernel developer emails, it's been because their email
+> provider ends up doing something odd.
+> 
+> But the headers actually have "spf=pass" and "dkim=pass", so it's
+> nothing obvious. ]
 
-On Sat, Nov 16, 2013 at 02:01:16AM +0200, Taras Kondratiuk wrote:
-> From: Victor Kamensky <victor.kamensky@linaro.org>
->=20
-> All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
-> Need to use endian neutral functions to read/write h/w registers.
-> I.e instead of __raw_read[lw] and __raw_write[lw] functions code
-> need to use read[lw]_relaxed and write[lw]_relaxed functions.
-> If the first simply reads/writes register, the second will byteswap
-> it if host operates in BE mode.
+Hmm, strange. Does this mean, you don't get other emails from my email
+address or only this pull request? Say, do you have this one, for
+example:
 
-Applied, thanks.
+http://marc.info/?l=linux-kernel&m=138442829620489&w=2
 
---Qgd2S+2VS1hsWwXW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+where I ask you whether you're fine with Mauro and me playing interim
+EDAC maintainers?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> That said, I don't much like the patch either. The "fixed' version
+> looks worse than the original. If it's an unsigned type, no extra code
+> will be generated,
 
-iQIcBAEBAgAGBQJSh0ahAAoJELSic+t+oim9d6sQAJ2WAD+rogo+Y8PLKc30XOL4
-jVj7dmC8Mj9yDgZOpyW1YsOwVv55BgCzeXlbBLwOHlgl3o1jl+KObUQ5JfzYLVX5
-SfYPmjOPKoRYhptQBb4q15XbaiW8JNoX3iqgrEsON8exPjh3FvoMe69fYw/O+Q5+
-VTgkzE/Y3L3pD4XQI4cbqI8J9fjPRf6PuFKP1z0zcQdbMizrglSKAwYhE30AOH9e
-6W98RgxDWDsP0WoGF49POhOdPvl/VCQvEIL4pWqU5B0LvVlhbQhl+WUfo1cvDKvM
-VTk1YFahKiP4GvBjfWHNIqdAgb0pbWcVVlKFtj+um7SNjpvmgaH4honX1ForaK26
-yIAnyV+omlGJry1UN9ZdVKVlwtj/skuYb7vYdgTjzeLaJK+ZymxTE5/NBs25MD3m
-hC8L45DLr856mgwF7Q3FfIfduGlFopHx7tkScpCQ2kKnkQX7bhcJdIxl1qjxYJBE
-LUVbL/cgvMUIKxYDwd60H8Yw2Tw8O/x+06qS587fU+5tm0N4ys+18wRsQ1rROnA0
-p1Q1VmbdJkw0F5TdYYMD0rF+0cYi8zmOxV9OWEcC8TpwBDnB/y04puu/EbgLG9s7
-grkO27wOJ4JD1FCiUn0IXNI5r9KMXsnfGZaCdjsNq80qMSBPF89WltczmgT2Q/2Z
-pvvEBUskftZQK5GCKSnX
-=FkQl
------END PGP SIGNATURE-----
+Yes, correct, in both cases I have here:
 
---Qgd2S+2VS1hsWwXW--
+.L779:
+        .loc 1 1579 0
+        cmpb    $4, %r10b       #, alias_channel
+        ja      .L859   #,
+.L847:
+
+> and if it's a signed type, it's correct. In either way, the code looks
+> good, and the range test means that people reading it don't even need
+> to worry about whether the type is signed or not.
+>
+> If this patch was written because of some f*cking broken compiler
+> warning, then just tell the compiler to shut the hell up about it.
+> This is a clear example of where compiler warnings are actually making
+> things worse.
+
+Yeah, no, the compiler's fine here. Dave raised the issue about not
+testing unsigned's for < 0:
+
+http://www.spinics.net/lists/kernel/msg1597525.html
+
+And I took it because it is less code in the .c source file to look at.
+But I certainly don't care all that much whether the < 0 test is there
+or not as long as the produced code is identical so...
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
+
