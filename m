@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057Ab3KPL76 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 06:59:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58443 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751040Ab3KPL7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 06:59:51 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1384560630-28719-4-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <1384560630-28719-4-git-send-email-paulmck@linux.vnet.ibm.com> <20131116001005.GA28191@linux.vnet.ibm.com> <1384560630-28719-1-git-send-email-paulmck@linux.vnet.ibm.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 4/4] documentation: Update circular buffer for load-acquire/store-release
-Date: Sat, 16 Nov 2013 11:58:45 +0000
-Message-ID: <13351.1384603125@warthog.procyon.org.uk>
+	id S1752369Ab3KPMAH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 07:00:07 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:36057 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab3KPL7x convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Nov 2013 06:59:53 -0500
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <CADDKRnBf6OK3bOS0SBKMTgwxe-NpE2K9K6Z5sdEDjhr4Z43eBQ@mail.gmail.com>
+References: <CADDKRnBf6OK3bOS0SBKMTgwxe-NpE2K9K6Z5sdEDjhr4Z43eBQ@mail.gmail.com>
+Date: Sat, 16 Nov 2013 12:59:51 +0100
+Message-ID: <CAKMK7uHiX1551kVoD1MHZN2Rz+Dm1xa7yoHu1TuABiMObFpZLw@mail.gmail.com>
+Subject: Re: [V13-prerc]: REGRESSION: "*ERROR* Timed out waiting for forcewake
+ old ack to clear"
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Mika Kuoppala <mika.kuoppala@linux.intel.com>,
+        Ben Widawsky <benjamin.widawsky@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On Sat, Nov 16, 2013 at 12:28 PM, Jörg Otte <jrg.otte@gmail.com> wrote:
+> On startup I get the following error display on the console:
+> "*ERROR* Timed out waiting for forcewake old ack to clear"
+>
+> I already reported this error a year ago at the time of v3.7
+> ( see https://lkml.org/lkml/2012/11/27/355)
+> which was fixed later on.
+>
+> Now this error is back again.  Kernel 3.12.0-09888-gf63c48
 
-> -		/* read index before reading contents at that index */
+Please boot with drm.debug=0xe, reproduce the issue and then attach
+the complete dmesg (including all the boot message, so if it takes a
+while to reproduce please grab an boot dmesg, too).
 
-> -		smp_mb(); /* finish reading descriptor before incrementing tail */
+Also adding the right mailing lists, see MAINTAINERS.
 
-I'd rather you didn't remove these comments (assuming they're correct) as
-they're pointing out the point of the example.
-
-David
+Thanks, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
