@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab3KPAoA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:44:00 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:53632 "EHLO
+	id S1755157Ab3KPAoH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:44:07 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:53634 "EHLO
 	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848Ab3KPAk2 (ORCPT
+	with ESMTP id S1754850Ab3KPAk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Nov 2013 19:40:28 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -14,156 +14,65 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 14/14] rcu: Add an RCU_INITIALIZER for global RCU-protected pointers
-Date: Fri, 15 Nov 2013 16:40:17 -0800
-Message-Id: <1384562417-817-14-git-send-email-paulmck@linux.vnet.ibm.com>
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: [PATCH tip/core/rcu 12/14] bonding/bond_alb.c: Apply ACCESS_ONCE() to avoid sparse false positive
+Date: Fri, 15 Nov 2013 16:40:15 -0800
+Message-Id: <1384562417-817-12-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1384562417-817-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20131116003946.GA316@linux.vnet.ibm.com>
  <1384562417-817-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111600-8236-0000-0000-000003D81BA1
+x-cbid: 13111600-8236-0000-0000-000003D81B93
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-There is currently no way to initialize a global RCU-protected pointer
-without either putting up with sparse complaints or open-coding an
-obscure cast.  This commit therefore creates RCU_INITIALIZER(), which
-is intended to be used as follows:
+The sparse checking for rcu_assign_pointer() was recently upgraded
+to reject non-__kernel address spaces.  This also rejects __rcu,
+which is almost always the right thing to do.  However, the use in
+bond_alb_handle_active_change() is legitimate: It is assigning a pointer
+to an element from an RCU-protected list, and all elements of this list
+are already visible to caller.
 
-	struct foo __rcu *p = RCU_INITIALIZER(&my_rcu_structure);
+This commit therefore silences this false positive by laundering the
+pointer using ACCESS_ONCE() as suggested by Eric Dumazet and Josh
+Triplett.
 
-This commit also applies RCU_INITIALIZER() to eliminate repeated
-open-coded obscure casts in __rcu_assign_pointer(), RCU_INIT_POINTER(),
-and RCU_POINTER_INITIALIZER().  This commit also inlines
-__rcu_assign_pointer() into its only caller, rcu_assign_pointer().
-
-Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org
 ---
- include/linux/rcupdate.h | 80 +++++++++++++++++++++++++-----------------------
- 1 file changed, 42 insertions(+), 38 deletions(-)
+ drivers/net/bonding/bond_alb.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 08c961fa7699..cebe555c06ce 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -557,11 +557,49 @@ static inline void rcu_preempt_sleep_check(void)
- 		smp_read_barrier_depends(); \
- 		(_________p1); \
- 	})
--#define __rcu_assign_pointer(p, v, space) \
-+
-+/**
-+ * RCU_INITIALIZER() - statically initialize an RCU-protected global variable
-+ * @v: The value to statically initialize with.
-+ */
-+#define RCU_INITIALIZER(v) (typeof(*(v)) __force __rcu *)(v)
-+
-+/**
-+ * rcu_assign_pointer() - assign to RCU-protected pointer
-+ * @p: pointer to assign to
-+ * @v: value to assign (publish)
-+ *
-+ * Assigns the specified value to the specified RCU-protected
-+ * pointer, ensuring that any concurrent RCU readers will see
-+ * any prior initialization.
-+ *
-+ * Inserts memory barriers on architectures that require them
-+ * (which is most of them), and also prevents the compiler from
-+ * reordering the code that initializes the structure after the pointer
-+ * assignment.  More importantly, this call documents which pointers
-+ * will be dereferenced by RCU read-side code.
-+ *
-+ * In some special cases, you may use RCU_INIT_POINTER() instead
-+ * of rcu_assign_pointer().  RCU_INIT_POINTER() is a bit faster due
-+ * to the fact that it does not constrain either the CPU or the compiler.
-+ * That said, using RCU_INIT_POINTER() when you should have used
-+ * rcu_assign_pointer() is a very bad thing that results in
-+ * impossible-to-diagnose memory corruption.  So please be careful.
-+ * See the RCU_INIT_POINTER() comment header for details.
-+ *
-+ * Note that rcu_assign_pointer() evaluates each of its arguments only
-+ * once, appearances notwithstanding.  One of the "extra" evaluations
-+ * is in typeof() and the other visible only to sparse (__CHECKER__),
-+ * neither of which actually execute the argument.  As with most cpp
-+ * macros, this execute-arguments-only-once property is important, so
-+ * please be careful when making changes to rcu_assign_pointer() and the
-+ * other macros that it invokes.
-+ */
-+#define rcu_assign_pointer(p, v) \
- 	do { \
- 		smp_wmb(); \
- 		__rcu_assign_pointer_check_kernel(v); \
--		ACCESS_ONCE(p) = (typeof(*(v)) __force space *)(v); \
-+		ACCESS_ONCE(p) = RCU_INITIALIZER(v); \
- 	} while (0)
+diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+index 91f179d5135c..67d3b2893aa3 100644
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -1667,7 +1667,8 @@ void bond_alb_handle_active_change(struct bonding *bond, struct slave *new_slave
+ 	}
  
+ 	swap_slave = bond->curr_active_slave;
+-	rcu_assign_pointer(bond->curr_active_slave, new_slave);
++	/* Both --rcu and visible, so ACCESS_ONCE() is OK. */
++	ACCESS_ONCE(bond->curr_active_slave) = new_slave;
  
-@@ -900,40 +938,6 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
- }
- 
- /**
-- * rcu_assign_pointer() - assign to RCU-protected pointer
-- * @p: pointer to assign to
-- * @v: value to assign (publish)
-- *
-- * Assigns the specified value to the specified RCU-protected
-- * pointer, ensuring that any concurrent RCU readers will see
-- * any prior initialization.
-- *
-- * Inserts memory barriers on architectures that require them
-- * (which is most of them), and also prevents the compiler from
-- * reordering the code that initializes the structure after the pointer
-- * assignment.  More importantly, this call documents which pointers
-- * will be dereferenced by RCU read-side code.
-- *
-- * In some special cases, you may use RCU_INIT_POINTER() instead
-- * of rcu_assign_pointer().  RCU_INIT_POINTER() is a bit faster due
-- * to the fact that it does not constrain either the CPU or the compiler.
-- * That said, using RCU_INIT_POINTER() when you should have used
-- * rcu_assign_pointer() is a very bad thing that results in
-- * impossible-to-diagnose memory corruption.  So please be careful.
-- * See the RCU_INIT_POINTER() comment header for details.
-- *
-- * Note that rcu_assign_pointer() evaluates each of its arguments only
-- * once, appearances notwithstanding.  One of the "extra" evaluations
-- * is in typeof() and the other visible only to sparse (__CHECKER__),
-- * neither of which actually execute the argument.  As with most cpp
-- * macros, this execute-arguments-only-once property is important, so
-- * please be careful when making changes to rcu_assign_pointer() and the
-- * other macros that it invokes.
-- */
--#define rcu_assign_pointer(p, v) \
--	__rcu_assign_pointer((p), (v), __rcu)
--
--/**
-  * RCU_INIT_POINTER() - initialize an RCU protected pointer
-  *
-  * Initialize an RCU-protected pointer in special cases where readers
-@@ -967,7 +971,7 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
-  */
- #define RCU_INIT_POINTER(p, v) \
- 	do { \
--		p = (typeof(*v) __force __rcu *)(v); \
-+		p = RCU_INITIALIZER(v); \
- 	} while (0)
- 
- /**
-@@ -976,7 +980,7 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
-  * GCC-style initialization for an RCU-protected pointer in a structure field.
-  */
- #define RCU_POINTER_INITIALIZER(p, v) \
--		.p = (typeof(*v) __force __rcu *)(v)
-+		.p = RCU_INITIALIZER(v)
- 
- /*
-  * Does the specified offset indicate that the corresponding rcu_head
+ 	if (!new_slave || list_empty(&bond->slave_list))
+ 		return;
 -- 
 1.8.1.5
 
