@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483Ab3KPA0Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:26:16 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:43663 "EHLO
+	id S1754509Ab3KPA00 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:26:26 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:43661 "EHLO
 	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780Ab3KPAXr (ORCPT
+	with ESMTP id S1753732Ab3KPAXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Nov 2013 19:23:47 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -14,69 +14,218 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 04/16] rcu: Allow task-level idle entry/exit nesting
-Date: Fri, 15 Nov 2013 16:23:26 -0800
-Message-Id: <1384561418-30575-4-git-send-email-paulmck@linux.vnet.ibm.com>
+        sbw@mit.edu, Chen Gang <gang.chen@asianux.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 14/16] rcu/torture: Dynamically allocate SRCU output buffer to avoid overflow
+Date: Fri, 15 Nov 2013 16:23:36 -0800
+Message-Id: <1384561418-30575-14-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1384561418-30575-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20131116002316.GA29049@linux.vnet.ibm.com>
  <1384561418-30575-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111600-8236-0000-0000-000003D80E2A
+x-cbid: 13111600-8236-0000-0000-000003D80E33
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Chen Gang <gang.chen@asianux.com>
 
-The current task-level idle entry/exit code forces an entry/exit on
-each call, regardless of the nesting level.  This commit therefore
-properly accounts for nesting.
+If the rcutorture SRCU output exceeds 4096 bytes, for example, if you
+have more than about 75 CPUs, it will overflow the current statically
+allocated buffer.  This commit therefore replaces this static buffer
+with a dynamically buffer whose size is based on the number of CPUs.
 
+Benefits:
+
+ - Avoids both buffer overflow and output truncation.
+ - Handles an arbitrarily large number of CPUs.
+ - Straightforward implementation.
+
+Shortcomings:
+
+ - Some memory is wasted:
+
+   1 cpu now comsumes 50 - 60 bytes, and this patch provides 200 bytes.
+   Therefore, for 1K CPUs, roughly 100KB of memory will be wasted.
+   However, the memory is freed immediately after printing, so this
+   wastage should not be a problem in practice.
+
+Testing (Fedora16 2 CPUs, 2GB RAM x86_64):
+
+ - as module, with/without "torture_type=srcu".
+ - build-in not boot runnable, with/without "torture_type=srcu".
+ - build-in let boot runnable, with/without "torture_type=srcu".
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/rcu/tree.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ kernel/rcu/torture.c | 67 ++++++++++++++++++++++++++--------------------------
+ 1 file changed, 34 insertions(+), 33 deletions(-)
 
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index c01213b19dee..acbfead2eb82 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -418,11 +418,12 @@ static void rcu_eqs_enter(bool user)
- 	rdtp = this_cpu_ptr(&rcu_dynticks);
- 	oldval = rdtp->dynticks_nesting;
- 	WARN_ON_ONCE((oldval & DYNTICK_TASK_NEST_MASK) == 0);
--	if ((oldval & DYNTICK_TASK_NEST_MASK) == DYNTICK_TASK_NEST_VALUE)
-+	if ((oldval & DYNTICK_TASK_NEST_MASK) == DYNTICK_TASK_NEST_VALUE) {
- 		rdtp->dynticks_nesting = 0;
--	else
-+		rcu_eqs_enter_common(rdtp, oldval, user);
-+	} else {
- 		rdtp->dynticks_nesting -= DYNTICK_TASK_NEST_VALUE;
--	rcu_eqs_enter_common(rdtp, oldval, user);
-+	}
+diff --git a/kernel/rcu/torture.c b/kernel/rcu/torture.c
+index 69a4ec80a788..732f8ae3086a 100644
+--- a/kernel/rcu/torture.c
++++ b/kernel/rcu/torture.c
+@@ -139,8 +139,6 @@ MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
+ #define VERBOSE_PRINTK_ERRSTRING(s) \
+ 	do { if (verbose) pr_alert("%s" TORTURE_FLAG "!!! " s "\n", torture_type); } while (0)
+ 
+-static char printk_buf[4096];
+-
+ static int nrealreaders;
+ static struct task_struct *writer_task;
+ static struct task_struct **fakewriter_tasks;
+@@ -376,7 +374,7 @@ struct rcu_torture_ops {
+ 	void (*call)(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
+ 	void (*cb_barrier)(void);
+ 	void (*fqs)(void);
+-	int (*stats)(char *page);
++	void (*stats)(char *page);
+ 	int irq_capable;
+ 	int can_boost;
+ 	const char *name;
+@@ -578,21 +576,19 @@ static void srcu_torture_barrier(void)
+ 	srcu_barrier(&srcu_ctl);
  }
  
- /**
-@@ -540,11 +541,12 @@ static void rcu_eqs_exit(bool user)
- 	rdtp = this_cpu_ptr(&rcu_dynticks);
- 	oldval = rdtp->dynticks_nesting;
- 	WARN_ON_ONCE(oldval < 0);
--	if (oldval & DYNTICK_TASK_NEST_MASK)
-+	if (oldval & DYNTICK_TASK_NEST_MASK) {
- 		rdtp->dynticks_nesting += DYNTICK_TASK_NEST_VALUE;
--	else
-+	} else {
- 		rdtp->dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
--	rcu_eqs_exit_common(rdtp, oldval, user);
-+		rcu_eqs_exit_common(rdtp, oldval, user);
-+	}
+-static int srcu_torture_stats(char *page)
++static void srcu_torture_stats(char *page)
+ {
+-	int cnt = 0;
+ 	int cpu;
+ 	int idx = srcu_ctl.completed & 0x1;
+ 
+-	cnt += sprintf(&page[cnt], "%s%s per-CPU(idx=%d):",
++	page += sprintf(page, "%s%s per-CPU(idx=%d):",
+ 		       torture_type, TORTURE_FLAG, idx);
+ 	for_each_possible_cpu(cpu) {
+-		cnt += sprintf(&page[cnt], " %d(%lu,%lu)", cpu,
++		page += sprintf(page, " %d(%lu,%lu)", cpu,
+ 			       per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[!idx],
+ 			       per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[idx]);
+ 	}
+-	cnt += sprintf(&page[cnt], "\n");
+-	return cnt;
++	sprintf(page, "\n");
  }
  
- /**
+ static void srcu_torture_synchronize_expedited(void)
+@@ -1052,10 +1048,9 @@ rcu_torture_reader(void *arg)
+ /*
+  * Create an RCU-torture statistics message in the specified buffer.
+  */
+-static int
++static void
+ rcu_torture_printk(char *page)
+ {
+-	int cnt = 0;
+ 	int cpu;
+ 	int i;
+ 	long pipesummary[RCU_TORTURE_PIPE_LEN + 1] = { 0 };
+@@ -1071,8 +1066,8 @@ rcu_torture_printk(char *page)
+ 		if (pipesummary[i] != 0)
+ 			break;
+ 	}
+-	cnt += sprintf(&page[cnt], "%s%s ", torture_type, TORTURE_FLAG);
+-	cnt += sprintf(&page[cnt],
++	page += sprintf(page, "%s%s ", torture_type, TORTURE_FLAG);
++	page += sprintf(page,
+ 		       "rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
+ 		       rcu_torture_current,
+ 		       rcu_torture_current_version,
+@@ -1080,53 +1075,52 @@ rcu_torture_printk(char *page)
+ 		       atomic_read(&n_rcu_torture_alloc),
+ 		       atomic_read(&n_rcu_torture_alloc_fail),
+ 		       atomic_read(&n_rcu_torture_free));
+-	cnt += sprintf(&page[cnt], "rtmbe: %d rtbke: %ld rtbre: %ld ",
++	page += sprintf(page, "rtmbe: %d rtbke: %ld rtbre: %ld ",
+ 		       atomic_read(&n_rcu_torture_mberror),
+ 		       n_rcu_torture_boost_ktrerror,
+ 		       n_rcu_torture_boost_rterror);
+-	cnt += sprintf(&page[cnt], "rtbf: %ld rtb: %ld nt: %ld ",
++	page += sprintf(page, "rtbf: %ld rtb: %ld nt: %ld ",
+ 		       n_rcu_torture_boost_failure,
+ 		       n_rcu_torture_boosts,
+ 		       n_rcu_torture_timers);
+-	cnt += sprintf(&page[cnt],
++	page += sprintf(page,
+ 		       "onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
+ 		       n_online_successes, n_online_attempts,
+ 		       n_offline_successes, n_offline_attempts,
+ 		       min_online, max_online,
+ 		       min_offline, max_offline,
+ 		       sum_online, sum_offline, HZ);
+-	cnt += sprintf(&page[cnt], "barrier: %ld/%ld:%ld",
++	page += sprintf(page, "barrier: %ld/%ld:%ld",
+ 		       n_barrier_successes,
+ 		       n_barrier_attempts,
+ 		       n_rcu_torture_barrier_error);
+-	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
++	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
+ 	if (atomic_read(&n_rcu_torture_mberror) != 0 ||
+ 	    n_rcu_torture_barrier_error != 0 ||
+ 	    n_rcu_torture_boost_ktrerror != 0 ||
+ 	    n_rcu_torture_boost_rterror != 0 ||
+ 	    n_rcu_torture_boost_failure != 0 ||
+ 	    i > 1) {
+-		cnt += sprintf(&page[cnt], "!!! ");
++		page += sprintf(page, "!!! ");
+ 		atomic_inc(&n_rcu_torture_error);
+ 		WARN_ON_ONCE(1);
+ 	}
+-	cnt += sprintf(&page[cnt], "Reader Pipe: ");
++	page += sprintf(page, "Reader Pipe: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
+-		cnt += sprintf(&page[cnt], " %ld", pipesummary[i]);
+-	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
+-	cnt += sprintf(&page[cnt], "Reader Batch: ");
++		page += sprintf(page, " %ld", pipesummary[i]);
++	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
++	page += sprintf(page, "Reader Batch: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
+-		cnt += sprintf(&page[cnt], " %ld", batchsummary[i]);
+-	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
+-	cnt += sprintf(&page[cnt], "Free-Block Circulation: ");
++		page += sprintf(page, " %ld", batchsummary[i]);
++	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
++	page += sprintf(page, "Free-Block Circulation: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++) {
+-		cnt += sprintf(&page[cnt], " %d",
++		page += sprintf(page, " %d",
+ 			       atomic_read(&rcu_torture_wcount[i]));
+ 	}
+-	cnt += sprintf(&page[cnt], "\n");
++	page += sprintf(page, "\n");
+ 	if (cur_ops->stats)
+-		cnt += cur_ops->stats(&page[cnt]);
+-	return cnt;
++		cur_ops->stats(page);
+ }
+ 
+ /*
+@@ -1140,10 +1134,17 @@ rcu_torture_printk(char *page)
+ static void
+ rcu_torture_stats_print(void)
+ {
+-	int cnt;
++	int size = nr_cpu_ids * 200 + 8192;
++	char *buf;
+ 
+-	cnt = rcu_torture_printk(printk_buf);
+-	pr_alert("%s", printk_buf);
++	buf = kmalloc(size, GFP_KERNEL);
++	if (!buf) {
++		pr_err("rcu-torture: Out of memory, need: %d", size);
++		return;
++	}
++	rcu_torture_printk(buf);
++	pr_alert("%s", buf);
++	kfree(buf);
+ }
+ 
+ /*
 -- 
 1.8.1.5
 
