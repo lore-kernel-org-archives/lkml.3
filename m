@@ -1,118 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab3KPVKG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 16:10:06 -0500
-Received: from mx12.netapp.com ([216.240.18.77]:6439 "EHLO mx12.netapp.com"
+	id S1753559Ab3KPVd0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 16:33:26 -0500
+Received: from imp03.mtu.ru ([62.5.255.20]:41094 "EHLO imp03.mtu.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752622Ab3KPVKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 16:10:01 -0500
-X-IronPort-AV: E=Sophos;i="4.93,714,1378882800"; 
-   d="asc'?scan'208";a="116338476"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Please pull NFS client bugfixes
-Thread-Topic: [GIT PULL] Please pull NFS client bugfixes
-Thread-Index: AQHO4xA0HxOJcweXrUaUnbfIN9GQVA==
-Date: Sat, 16 Nov 2013 21:09:57 +0000
-Message-ID: <1384636196.5080.1.camel@leira.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-HViyGKp+Wz80BcrajNY/"
+	id S1753068Ab3KPVdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Nov 2013 16:33:21 -0500
+X-Greylist: delayed 311 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Nov 2013 16:33:21 EST
+X-Spam-Flag: NO
+Message-ID: <5287E2E8.7080004@pavlinux.ru>
+Date: Sun, 17 Nov 2013 01:26:00 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.12.0-rt2
+References: <20131116194633.GD11518@linutronix.de>
+In-Reply-To: <20131116194633.GD11518@linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="gHxIcxijanlmTM24xCj77srtg1sirToqV"
+X-DCC-STREAM-Metrics: ss27-so02.mtu.ru 10001; Body=6 Fuz1=6 Fuz2=6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-HViyGKp+Wz80BcrajNY/
-Content-Type: text/plain; charset="UTF-7"
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--gHxIcxijanlmTM24xCj77srtg1sirToqV
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-Hi Linus
-
-The following changes since commit fab99ebe39fe7d11fbd9b5fb84f07432af9ba36f=
+16.11.2013 23:46, Sebastian Andrzej Siewior =D0=BF=D0=B8=D1=88=D0=B5=D1=82=
 :
+> Dear RT folks!
+>=20
+> I'm pleased to announce the v3.12.0-rt2 patch set.
 
-  NFSv4.2: Remove redundant checks in nfs+AF8-setsecurity+-nfs4+AF8-label+A=
-F8-init+AF8-security (2013-11-04 16:42:52 -0500)
+I cat't still to mount filesystems!
+bash not start!
 
-are available in the git repository at:
+1. pull git kernel 3.12
+2. wget rt-patch
+3. patch'em all
+4. make oldconfig && make && make install
+5 In cmdline type init=3D/bin/bash
+=2E...
+And....  see screenshot:
+http://i59.fastpic.ru/big/2013/1117/85/61c0a35e5a456263910ce4cf3152d085.j=
+pg
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.13-=
-2
+system not response, SysRQ+B - work
 
-for you to fetch changes up to 8c2fabc6542d9d0f8b16bd1045c2eda59bdcde13:
 
-  nfs: fix pnfs Kconfig defaults (2013-11-15 13:41:43 -0500)
+3.2.52-rt72 - work
+3.10.18-rt14 - work
+3.12-rt2 - NO!
 
-----------------------------------------------------------------
-NFS client bugfixes:
 
-- Stable fix for data corruption when retransmitting O+AF8-DIRECT writes
-- Stable fix for a deep recursion/stack overflow bug in rpc+AF8-release+AF8=
--client
-- Stable fix for infinite looping when mounting a NFSv4.x volume
-- Fix a typo in the nfs mount option parser
-- Allow pNFS layouts to be compiled into the kernel when NFSv4.1 is
 
-----------------------------------------------------------------
-Christoph Hellwig (1):
-      nfs: fix pnfs Kconfig defaults
 
-Jeff Layton (1):
-      nfs: don't retry detect+AF8-trunking with RPC+AF8-AUTH+AF8-UNIX more =
-than once
-
-NeilBrown (1):
-      NFS: correctly report misuse of +ACI-migration+ACI mount option.
-
-Trond Myklebust (2):
-      SUNRPC: Fix a data corruption issue when retransmitting RPC calls
-      SUNRPC: Avoid deep recursion in rpc+AF8-release+AF8-client
-
- fs/nfs/Kconfig        +AHw  6 +-+-+----
- fs/nfs/nfs4state.c    +AHw  7 +-+-+-+-+-+--
- fs/nfs/super.c        +AHw  2 +--
- net/sunrpc/clnt.c     +AHw 29 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-----------=
---
- net/sunrpc/xprtsock.c +AHw 28 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+---=
------
- 5 files changed, 48 insertions(+-), 24 deletions(-)
 
 --=20
-Trond Myklebust
-Linux NFS client maintainer
 
-NetApp
-Trond.Myklebust+AEA-netapp.com
-www.netapp.com
+                                                         Pavel.
 
---=-HViyGKp+Wz80BcrajNY/
+
+--gHxIcxijanlmTM24xCj77srtg1sirToqV
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAABAgAGBQJSh98kAAoJEGcL54qWCgDyYVQP/i0uI/ul1H0rblNNahDNnSXR
-kILqPdlKJkIx+JqF7zK+YaY9vHB17BnLsCNVwM9K6zQZmzDl8wzEQp8uO0ZNzkVX
-DVpDEn2j6i2vDti9L7BI8uFa9OVW438DEi8CU6ceYNqjpg3bQ35v9tOKV1qRB5kv
-uLnokTs+86TCc/FhZj0iJHdXfuYqyZGvMZQHQlCnHa6Q6/wl5Qk8AfuVy+U9rd9/
-U+uV5ZlcavDJl2ZpIy5UZOpMJwUVwQRbwfuxV0gEQW5bE2yOs/9LxdvAtndDUN4Q
-Of4PlU2kroAyv8CTh9bNnHDc3dXygTznPlD4qmlV0JGU/iWs490L31DobVEFmJ7A
-9RgwZIBTFHABb4pEvtoIf7btIyiGCuNsNRb7HGHd3KRwEc33Q+Ws9Xj1OrgHxP/V
-u/8ghU/ZqAwssmNzVQtUq7qzZPL7Dl6WzRsReD6CcnGWNpYbFd3s6iKX4jLyh6WP
-7khPzZwfiTRC6rTU7W8nmJuCLDxKd+uqLZMjLiiVs28G9Us1r9nM7/1L+byEwEE4
-8O7NyVrXFeJPgc2T0SJ3OPMzSnY4g41IWUKnHoE5MKP3Gjrxid4Av/xMrO2aezHm
-W+QRHp/mY306nW6/IDlx5tnJpSWCKFovu3YAxPDaFBQmknRdXXvULbfpWi6gJYsf
-Zbsj+FoQJDMGhypm/Nbk
-=SwEk
+iQIcBAEBCgAGBQJSh+LoAAoJEPtok08Dny2hM4UQAJVS0CqiAFOjqs92+rY3WBrA
+BRHWQctJiQ6ns7BhciXgU3/A4uERLV6wk+iGETcPM1uB0JXLvggC7TxQh2yY9nT0
+sQGtKzoEeBI51OU5PG/8SOQ1dOVQARCxZ0fYUdNIOY2bsnaMtsQKCCXS0ledrQuU
+nB8ReYXBP7ml1MpyLN+MFvLqselODmj0FqyjmhKD8xePt54J+ErxborkR+WtwLzS
+W4C+BsnNh+feLdJsYDKba5Z5xmi73UaLU2lxE1C1Hsui5SgqpQMlKcbu+SSNo7/2
+t9piiXFMy5W4sT4+fBk5m4S7FcFLqxyNNe2kpWFhqJjilBtlJusuLL5sokNe9mvf
+M3ZaEc2SVTHM3SofUxpk+t+7YLE7ClOFGhj7/RArEZDGyTaGZXFwnkmU7eJZ8b3z
+n3Xbtl2q+V/xk34cCgRVZnXD/1FuyQUDnqB55DWow4BstnbLEfUnmZ3btG/bDF5b
+jJS9hL30jS9YQqPNRx5kHRKkyaxsJuNJdS2b8zpdJ+QJEOh+/JfFMJVzI+gc9b7C
+S+02s8Rooad1ORM6LOOmCjhj48nPMIBRdEz3CeLZiNjOql8NWl2m8pm/pBJ7gYST
+WSwAr6vQHf7HTTCXWJ5C6pmQLQJN7iezClCXqrlNJnpUsihDeeAEqSuzYhK9ybYs
+rHQJSIp0vrj4eBunONT5
+=8Mjw
 -----END PGP SIGNATURE-----
 
---=-HViyGKp+Wz80BcrajNY/--
+--gHxIcxijanlmTM24xCj77srtg1sirToqV--
