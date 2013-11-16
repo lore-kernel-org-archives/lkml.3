@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab3KPBma (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 20:42:30 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:60955 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab3KPBmZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 20:42:25 -0500
-Date: Fri, 15 Nov 2013 20:42:24 -0500 (EST)
-Message-Id: <20131115.204224.1984987969340090384.davem@davemloft.net>
-To: petkan@nucleusys.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: Update Pegasus and RTL8150 driver
- repositories;
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20131115102344.GA8544@bender.nucleusys.com>
-References: <20131115102344.GA8544@bender.nucleusys.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1753701Ab3KPBrj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 20:47:39 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:15247 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752476Ab3KPBrb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 20:47:31 -0500
+Date: Fri, 15 Nov 2013 20:47:27 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 01/28] rcutorture: Add KVM-based test
+ framework
+Message-ID: <20131115204727.4b7b130d@gandalf.local.home>
+In-Reply-To: <20131116012116.GZ4138@linux.vnet.ibm.com>
+References: <20131116003517.GA31563@linux.vnet.ibm.com>
+	<1384562141-32446-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	<20131116010528.GA9112@kroah.com>
+	<20131116012116.GZ4138@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 15 Nov 2013 17:42:25 -0800 (PST)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Petko Manolov <petkan@nucleusys.com>
-Date: Fri, 15 Nov 2013 12:23:44 +0200
+On Fri, 15 Nov 2013 17:21:16 -0800
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-> From: Petko Manolov <petkan@nucleusys.com>
-> Date: Fri, 15 Nov 2013 11:51:54 +0200
-> Subject: [PATCH] Update Pegasus and RTL8150 repositories;
 
-Do not include this metadata in your patch postings, it duplicates
-the commit header line when people try to apply it using "git am"
-
-> Update Pegasus and RTL8150 driver repositories;
+> > Oh, one very minor comment on the patches, you should delete the address
+> > of the FSF from your file headers, unless you want to track the office
+> > movements of them for the next 40+ years.  We've been removing them from
+> > kernel code where we notice them, as half of them are wrong, and I don't
+> > want to have to go back and fix them again when they move again.
 > 
-> The diff is against latest 'net' repository;
-> 
-> Signed-off-by: Petko Manolov <petkan@nucleusys.com>
+> I had no idea that they tend to move!  Thank you, I will remove them.
 
-Please submit networking patches to netdev@vger.kernel.org in the
-future, I happened to catch this and applied it this time.
+>From what I've been told, you should replace:
 
-Thanks.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
+USA.
+
+With:
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see  <http://www.gnu.org/licenses>
+
+
+-- Steve
