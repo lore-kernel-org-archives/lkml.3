@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab3KPEnW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 23:43:22 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:63956 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244Ab3KPEnQ (ORCPT
+	id S1752064Ab3KPEyK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 23:54:10 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:38519 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab3KPEyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 23:43:16 -0500
-Message-ID: <5286F550.10900@gmail.com>
-Date: Sat, 16 Nov 2013 12:32:16 +0800
-From: Ding Tianhong <dthxman@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 15 Nov 2013 23:54:03 -0500
+Date: Sat, 16 Nov 2013 13:53:56 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Hugh Dickins <hughd@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Li Zefan <lizefan@huawei.com>,
+        Markus Blank-Burian <burian@muenster.de>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, cgroups@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: Possible regression with cgroups in 3.11
+Message-ID: <20131116045356.GA5618@mtj.dyndns.org>
+References: <525CB337.8050105@huawei.com>
+ <CA+SBX_Ogo8HP81o+vrJ8ozSBN6gPwzc8WNOV3Uya=4AYv+CCyQ@mail.gmail.com>
+ <CA+SBX_OJBbYzrNX5Mi4rmM2SANShXMmAvuPGczAyBdx8F2hBDQ@mail.gmail.com>
+ <5270BFE7.4000602@huawei.com>
+ <alpine.LNX.2.00.1310301606080.2333@eggly.anvils>
+ <20131031130647.0ff6f2c7@gandalf.local.home>
+ <alpine.LNX.2.00.1310311442030.2633@eggly.anvils>
+ <20131113032804.GB19394@mtj.dyndns.org>
+ <20131113073806.GA23244@mtj.dyndns.org>
+ <20131116002820.GA31073@google.com>
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH tip/core/rcu 11/14] bonding/bond_main: Apply ACCESS_ONCE()
- to avoid sparse false positive
-References: <20131116003946.GA316@linux.vnet.ibm.com> <1384562417-817-1-git-send-email-paulmck@linux.vnet.ibm.com> <1384562417-817-11-git-send-email-paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1384562417-817-11-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131116002820.GA31073@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ÓÚ 2013/11/16 8:40, Paul E. McKenney Ð´µÀ:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->
-> The sparse checking for rcu_assign_pointer() was recently upgraded
-> to reject non-__kernel address spaces.  This also rejects __rcu,
-> which is almost always the right thing to do.  However, the uses in
-> bond_change_active_slave() and __bond_release_one() are legitimate:
-> They are assigning a pointer to an element from an RCU-protected list
-> (or a NULL pointer), and all elements of this list are already visible
-> to caller.
->
-> This commit therefore silences these false positives either by laundering
-> the pointers using ACCESS_ONCE() as suggested by Eric Dumazet and Josh
-> Triplett, or by using RCU_INIT_POINTER() for NULL pointer assignments.
-I think it is fit for net-next.
+Hello, Bjorn.
 
+On Fri, Nov 15, 2013 at 05:28:20PM -0700, Bjorn Helgaas wrote:
+> It would be better to fix PCI so we don't call VF driver .probe() methods
+> from inside a PF driver .probe() method, but that's a bigger project.
 
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Stephen Hemminger <stephen@networkplumber.org>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: bridge@lists.linux-foundation.org
-> Cc: netdev@vger.kernel.org
-> ---
->  drivers/net/bonding/bond_main.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-> index 72df399c4ab3..bbd7fd3e46fe 100644
-> --- a/drivers/net/bonding/bond_main.c
-> +++ b/drivers/net/bonding/bond_main.c
-> @@ -890,7 +890,8 @@ void bond_change_active_slave(struct bonding *bond, struct slave *new_active)
->  		if (new_active)
->  			bond_set_slave_active_flags(new_active);
->  	} else {
-> -		rcu_assign_pointer(bond->curr_active_slave, new_active);
-> +		/* Both --rcu and visible, so ACCESS_ONCE() is OK. */
-> +		ACCESS_ONCE(bond->curr_active_slave) = new_active;
->  	}
->  
->  	if (bond->params.mode == BOND_MODE_ACTIVEBACKUP) {
-> @@ -1801,7 +1802,7 @@ static int __bond_release_one(struct net_device *bond_dev,
->  	}
->  
->  	if (all) {
-> -		rcu_assign_pointer(bond->curr_active_slave, NULL);
-> +		RCU_INIT_POINTER(bond->curr_active_slave, NULL);
->  	} else if (oldcurrent == slave) {
->  		/*
->  		 * Note that we hold RTNL over this sequence, so there
+Yeah, if pci doesn't need the recursion, we can simply revert restore
+the lockdep annoation on work_on_cpu().
 
+> @@ -293,7 +293,9 @@ static int pci_call_probe(struct pci_driver *drv, struct pci_dev *dev,
+>  	   its local memory on the right node without any need to
+>  	   change it. */
+>  	node = dev_to_node(&dev->dev);
+> -	if (node >= 0) {
+> +	preempt_disable();
+> +
+> +	if (node >= 0 && node != numa_node_id()) {
+
+A bit of comment here would be nice but yeah I think this should work.
+Can you please also queue the revert of c2fda509667b ("workqueue:
+allow work_on_cpu() to be called recursively") after this patch?
+Please feel free to add my acked-by.
+
+Thanks.
+
+-- 
+tejun
