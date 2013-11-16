@@ -1,99 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791Ab3KPMXU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 07:23:20 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41555 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab3KPMXQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 07:23:16 -0500
-Date: Sat, 16 Nov 2013 12:22:44 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
-        Florian Meier <florian.meier@koalo.de>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine <dmaengine@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Message-ID: <20131116122244.GV15393@sirena.org.uk>
-References: <52864BBC.7000506@koalo.de>
- <1384537403.14845.131.camel@smile>
- <20131115175155.GQ16735@n2100.arm.linux.org.uk>
- <CAHp75Vf3CJNgSiSjoZ6dYjRRHWN4bTpMxRTLG37+wwtEsQbq4g@mail.gmail.com>
- <20131116112754.GT15393@sirena.org.uk>
- <20131116114134.GU16735@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XAEV7zm15O60d1Zf"
-Content-Disposition: inline
-In-Reply-To: <20131116114134.GU16735@n2100.arm.linux.org.uk>
-X-Cookie: Reply hazy, ask again later.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 31.99.68.145
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv5] dmaengine: Add support for BCM2835
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1752245Ab3KPMXx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 07:23:53 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:54567 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751922Ab3KPMXY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Nov 2013 07:23:24 -0500
+Subject: Re: [PATCH 5/5] OF: Introduce utility helper functions
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20131115062729.09E4FC4073F@trevor.secretlab.ca>
+Date: Sat, 16 Nov 2013 14:23:15 +0200
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1F43215E-B68C-4926-832D-CB8DC3533CB2@antoniou-consulting.com>
+References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com > <1383673816-29293-6-git-send-email-panto@antoniou-consulting.com> < 20131111163743.D136CC42330@trevor.secretlab.ca> < 89491720-464B-47EC-A888-9CDE29B035F5@antoniou-consulting.com> < 20131113013459.D3886C40F49@trevor.secretlab.ca> < F88335D9-6515-4E48-A21F-25039F16754A@antoniou-consulting.com> < 20131114014420.E871CC4054D@trevor.secretlab.ca> < F61B515B-7024-4C4A-8E78-CEF8E032DF59@antoniou-consulting.com> <20131115062729.09E4FC4073F@trevor.secretlab.ca>
+To: Grant Likely <grant.likely@secretlab.ca>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Grant,
 
---XAEV7zm15O60d1Zf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Nov 15, 2013, at 8:27 AM, Grant Likely wrote:
 
-On Sat, Nov 16, 2013 at 11:41:34AM +0000, Russell King - ARM Linux wrote:
-> On Sat, Nov 16, 2013 at 11:27:54AM +0000, Mark Brown wrote:
+> On Thu, 14 Nov 2013 10:51:05 +0100, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+>> Hi Grant,
+>> 
+>> On Nov 14, 2013, at 2:44 AM, Grant Likely wrote:
+>> 
+>>> On Wed, 13 Nov 2013 10:03:37 +0100, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+>>>> On Nov 13, 2013, at 2:34 AM, Grant Likely wrote:
+>>>>> On Tue, 12 Nov 2013 11:39:08 +0100, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+>>>>>>> On Tue,  5 Nov 2013 19:50:16 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+>>>>>>>> +	} else {
+>>>>>>>> +		pr_warn("%s: node %p cannot be freed; memory is gone\n",
+>>>>>>>> +				__func__, node);
+>>>>>>>> +	}
+>>>>>>>> +}
+>>>>>>> 
+>>>>>>> All of the above is potentially dangerous. There is no way to determine
+>>>>>>> if anything still holds a reference to a node. The proper way to handle
+>>>>>>> removal of properties is to have a release method when the last
+>>>>>>> of_node_put is called.
+>>>>>>> 
+>>>>>> 
+>>>>>> This is safe, and expected to be called only on a dynamically created tree,
+>>>>>> that's what all the checks against OF_DYNAMIC guard against.
+>>>>>> 
+>>>>>> It is not ever meant to be called on an arbitrary tree, created by unflattening
+>>>>>> a blob.
+>>>>> 
+>>>>> I am talking about when being used on a dynamic tree. The problem is
+>>>>> when a driver or other code holds a reference to a dynamic nodes, but
+>>>>> doesn't release it correctly. The memory must not be freed until all of
+>>>>> the references are relased. OF_DYNAMIC doesn't actually help in that
+>>>>> case, and it is the reason for of_node_get()/of_node_put()
+>>>>> 
+>>>> 
+>>>> I know, but even that is not enough. of_node_get()/of_node_put() handles the
+>>>> case of references to the nodes, but not what happens with references to
+>>>> properties. deadprops is mitigating the problem somewhat, but if we're going
+>>>> to go to all the trouble of kobjectification let's do the props as well.
+>>>> 
+>>>> of_get_property could be modified to return a devm_kmalloced copy of the real
+>>>> property and that would deal with most of the callers. Of course for
+>>>> the small sized scalar data we can avoid the copy.
+>>>> 
+>>>> By using the devm_* interface we also avoid having to mess too much with the callers.
+>>>> 
+>>>> I.e. what about something like devm_of_get_property()?
+>>> 
+>>> Reference counting is already a horrible pain to keep correct. I don't
+>>> see a better way to handle it in the dynamic case, so we're stuck with
+>>> it, but I don't want to make it any harder. Adding ref counting to
+>>> properties will make it harder than it already is to get the code right.
+>>> I'm absolutely fine with a little bit of wasted memory in the form of
+>>> deadprops when the alternative is so horrible. References at the node
+>>> level is enough granularity.
+>>> 
+>>> I don't think kduping the property is the solution either. I strongly
+>>> suspect that will be far more expensive than the deadprop solution.
+>>> 
+>> 
+>> As long as we can live with deadprops all is fine. Perhaps a devm_of_get_property()
+>> makes sense for new drivers though? What do you think? Perhaps copying to a
+>> user supplied buffer as well?
+> 
+> I still don't think it is necessary. The device lifetime should always
+> be shorter than the node lifetime.
+> 
+>> It's a kind of drag. That means you get handed a device_node pointer you are not
+>> able to free it without having the blob along with the container/accessor of it.
+>> I.e. For the normal case where the blob comes from a request_firmware() call
+>> You have to keep the firmware structure around.
+>> 
+>> Depending on what other method you're going to use tends to make the code a little
+>> bit messier. 
+> 
+> Understood. Stick with keeping the blob around for now. It can be
+> reworkd in the future if necessary since there are no associated
+> userspace ABI issues.
+> 
+> g.
 
-> > We should in general be moving in that direction however it does need a
-> > bit of care to make sure that there aren't any dependencies which do
-> > things like discard error codes, fail to check errors or treat errors as
-> > hard failures.
+OK, will do.
 
-> I don't agree: on platforms which have done this, it's very difficult to
-> tell from reading the kernel message log whether things came up correctly
-> because there's soo much spew from deferred probing it's virtually
-> impossible to tell whether component X initialised or whether that error
-> about resource Y missing was ever resolved.
+Regards
 
-I do agree that deferred programming is far too chatty - there's a
-usability issue there.  This bites me a lot on some of my systems too, I
-tend to read my logs with grep a lot which isn't awesome.
-
-> If we want kernel boot logs to be useful, we really need to shut up *all*
-> the drivers and subsystems whinging about being deferred probing, and only
-> have the driver model core reporting this status - maybe only allow
-> output about why at debug level or similar.
-
-Yes, some sort of standardisation of how this stuff gets reported would
-give us much better control of these things.
-
---XAEV7zm15O60d1Zf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSh2ORAAoJELSic+t+oim93QMP/0Qjk6/RJpBDydqp3w3H8C97
-7tfDVulAYjI8vhhhvIH0nuicpuYG+hJ/6ZN2t3C+m83HuUJaNJG4Q557zIURROQS
-IJ2tM0jMt+z7NbceO/nsj0CU9YBNwoTAP9p9lYarBzJqX1KmZQ/lR1MLMKRfMzPq
-19nyZGrjKUHT/oLyLa6SveQS+0I4huSBaQo4hN4nF+xQfq3z3gmXopG5zxvEGCA4
-HxYlobn+xhjBf+VrYTp9FkuVL8NMo7KJ7oYma3d8/CD+r55iZIBmVyRNJQYASPhY
-lLQ1UXjfFCf/HgBQJBCCwXisdG5QBtrg5aAHXfGm2+Lv7SU8rNXJqiRRLA8TiuSv
-bNCySFk/xL/EXwOq5oSk6/pdn4E+/ZCrPPDu2AZ31jJI9IdR1KnxU1RKcpjXtDxZ
-7+Y1bmDK64SJMY3xpQhK6vflEV2eAUMvIbA9WSjFC4n2AXXs/TQ4QWxnyJZCw9Qa
-xYYwLelrnncXUH//clp+2f2cBy1hflbkLAe+zdVguVNFlOU1oX4UsnMN+NPtoIdn
-Va4r+yiCE6XY6VEMXX8ICwFp6pG3qZqL/gDC/sM95874PM7iVFDd0aVKonFMjfN7
-kGtQBK/9nxeMA4DqWKZZBqS+XYtDFRroO8/73d7QXT07TwTRPFP0yH+PJrSQ7ZsY
-idZGXQ5X03IdPTlvhHxj
-=NCeP
------END PGP SIGNATURE-----
-
---XAEV7zm15O60d1Zf--
+-- Pantelis
