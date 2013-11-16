@@ -1,110 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab3KPCKE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 21:10:04 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:63087 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab3KPCJ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Nov 2013 21:09:56 -0500
+	id S1754002Ab3KPCWc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 21:22:32 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:58544 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753623Ab3KPCWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Nov 2013 21:22:23 -0500
+From: Nishanth Menon <nm@ti.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <ceh@ti.com>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when booting with a mismatched bootloader configuration
+Date: Fri, 15 Nov 2013 20:22:15 -0600
+Message-ID: <1384568535-26611-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUV2cmFgfX78GYbcbuVvpefnteqv-1_eMujjOBZx7_f+A@mail.gmail.com>
-References: <1383749353-3510-1-git-send-email-ethan.kernel@gmail.com>
-	<CABawtvOXCOhLDy5nQ2OOQGCqkoi2fwa3tPwEYjwBkRa0ZrHNzQ@mail.gmail.com>
-	<CAE9FiQUV2cmFgfX78GYbcbuVvpefnteqv-1_eMujjOBZx7_f+A@mail.gmail.com>
-Date: Sat, 16 Nov 2013 10:09:55 +0800
-Message-ID: <CABawtvPf3dCnRy2rcXKTbuXD6LzWHx9WE33mGqaUvjotS48NkQ@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Init NumVFs register to zero in sriov_init()
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Yu Zhao <yu.zhao@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 2:59 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Nov 13, 2013 at 5:57 PM, Ethan Zhao <ethan.kernel@gmail.com> wrote:
->> On Wed, Nov 6, 2013 at 10:49 PM, ethan.zhao <ethan.kernel@gmail.com> wrote:
->>> Though no specification about NumVFs register initial value after POST, to void the confusion
->>> lspci output as following before VF was enabled, we should clear the NumVFs value left by BIOS
->>> to zero:
->
-> Does BIOS need to clear it?
+On many development platforms, at boot, the bootloader configured
+frequency maynot match the valid frequencies that are stated to be
+supported in OPP table. This may occur due to various reasons:
+a) older or default bootloader in development platform without latest
+updates
+b) SoC documentation update that may have occurred in kernel
+c) kernel definitions are out of date Vs bootloader which is updated
+etc..
 
-No, don't think BIOS need to clear it, according to the SR-IOV and PCI
-specification, BIOS hasn't the responsibility to clear NumVFs register
- or not.  "The initial value of NumVFs is undefined." (SINGLE ROOT I/O
-VIRTUALIZATION AND SHARING SPECIFICATION, REV. 1.1 chapter 3.3.7 ).
-In fact, Linux doesn't trust the PCI_SRIOV_XX registers initial value
-left by BIOS, exactly, it did in iov.c , Linux will re-initialize the
-PCI_SRIOV_XX registers' value whatever their original value left by
-BIOS.
+In these cases, we should assume from a kernel perspective, the only
+safe frequency that the system can be on is the ones available in the
+OPP table. This may not handle case (c), but, that is a different
+kernel bug of it's own.
 
-static int sriov_init(struct pci_dev *dev, int pos)
-{
-  ... ...
-  pci_read_config_word(dev, pos + PCI_SRIOV_CTRL, &ctrl);
-  if (ctrl & PCI_SRIOV_CTRL_VFE) {
-  pci_write_config_word(dev, pos + PCI_SRIOV_CTRL, 0);
-  ssleep(1);
-  }
+Considering that in many existing or development platforms, (a) or
+(b) is common, enforce a sanity check and reprogram to a conservative
+start configuration at probe to allow sane operation independent of
+bootloader.
 
-... ...
-ctrl = 0;
-... ...
-found:
-pci_write_config_word(dev, pos + PCI_SRIOV_CTRL, ctrl);
-... ...
-}
+Reported-by: Carlos Hernandez <ceh@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
 
-If so, why leave  value of NumVFs register un-initialized, till be
-exposed to user via lspci etc.
+based on v3.12 tag - however, a rebase with opp function name change
+is needed for v3.13-rc1 if folks are ok, I can repost with updates.
 
->
->
->>>
->>> $lspci -vvv -s 03:00.0
->>> Ethernet controller: Intel Corporation 82599EB 10-Gigabit SFI/SFP+ Network Connection (rev 01)
->>> ~
->>> Capabilities: [160 v1] Single Root I/O Virtualization (SR-IOV)
->>>                 IOVCap: Migration-, Interrupt Message Number: 000
->>>                 IOVCtl: Enable+ Migration- Interrupt- MSE+ ARIHierarchy+
->>>                 IOVSta: Migration-
->>>                 Initial VFs: 64, Total VFs: 64, Number of VFs: 64, Function Dependency Link: 00
->>>                                                                            ^dazed !
->>> ~
->
-> just display problem?
+Identified when during debug of https://patchwork.kernel.org/patch/3191411/
+on TI vendor kernel based on v3.12 tag.
 
-So far, only catch the issue via lspci, "seems' only confuses user,
-the VFs are enabled to 64. in fact, they are disabled. but it is not
-bug of lspci, binary dump of lspci could prove it.
+In the case discussed, bootloader booted OMAP5uEVM at 1.1GHz when the available
+frequencies were 500MHz, 1GHz, 1.5GHz.
 
+To prevent system from functioning at this invalid configuration (and hence
+trigger the bug seen in stats), we should remove the dependence of the kernel
+from bootloader configuration.
+With this patch, in the mentioned boot scenario, we get the following log:
+[   25.649736] cpufreq_cpu0: bootloader freq 1100000000 no match to table, Using 1000000000
 
-Thanks,
-Ethan
->
->>> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
->>> ---
->>>  drivers/pci/iov.c | 2 ++
->>>  1 file changed, 2 insertions(+)
->>>
->>> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
->>> index de8ffac..a4941ad 100644
->>> --- a/drivers/pci/iov.c
->>> +++ b/drivers/pci/iov.c
->>> @@ -439,6 +439,8 @@ static int sriov_init(struct pci_dev *dev, int pos)
->>>
->>>  found:
->>>         pci_write_config_word(dev, pos + PCI_SRIOV_CTRL, ctrl);
->>> +       /* VF Enable is cleared, so we could init the NumVFs register to 0 */
->>> +       pci_write_config_word(dev, pos + PCI_SRIOV_NUM_VF, 0);
->>>         pci_read_config_word(dev, pos + PCI_SRIOV_VF_OFFSET, &offset);
->>>         pci_read_config_word(dev, pos + PCI_SRIOV_VF_STRIDE, &stride);
->>>         if (!offset || (total > 1 && !stride))
->
-> Thanks
->
-> Yinghai
+Artificially modifying the bootloader to create other boundary conditions:
+(lower bound check)
+[   25.633535] cpufreq_cpu0: bootloader freq 300000000Hz no match to table, Using 500000000Hz
+(upper bound check)
+[   27.355837] cpufreq_cpu0: bootloader freq 1600000000Hz no match to table, Using 1500000000Hz
+
+The other alternative(to reduce code churn) would be to just report a
+mismatch and continue to function at the potentially risky OPP - but
+in the cases such as using userspace governor, the system could be in
+unstable state resulting in hard to debug behavior.
+
+The last alternative is to always expect bootloader to be in sync with proper
+OPP configuration, which rarely happens correctly.
+
+ drivers/cpufreq/cpufreq-cpu0.c |   84 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 82 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+index c522a95..9765050 100644
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@ -176,7 +176,8 @@ static struct cpufreq_driver cpu0_cpufreq_driver = {
+ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np;
+-	int ret;
++	int ret, i;
++	long boot_freq;
+ 
+ 	cpu_dev = get_cpu_device(0);
+ 	if (!cpu_dev) {
+@@ -232,7 +233,6 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+ 	if (!IS_ERR(cpu_reg)) {
+ 		struct opp *opp;
+ 		unsigned long min_uV, max_uV;
+-		int i;
+ 
+ 		/*
+ 		 * OPP is maintained in order of increasing frequency, and
+@@ -254,6 +254,86 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+ 			transition_latency += ret * 1000;
+ 	}
+ 
++	boot_freq = clk_get_rate(cpu_clk);
++
++	/* See if we have a perfect match */
++	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
++		if (boot_freq == freq_table[i].frequency * 1000)
++			break;
++
++	/* If we have a bad bootloader config, try recovery */
++	if (freq_table[i].frequency == CPUFREQ_TABLE_END) {
++		struct opp *opp;
++		long new_freq = boot_freq, freq_exact;
++		unsigned long volt = 0, tol = 0;
++
++		ret = 0;
++		rcu_read_lock();
++
++		/* Try a conservative match */
++		opp = opp_find_freq_floor(cpu_dev, &new_freq);
++
++		/* If we did not get a floor match, try least available freq */
++		if (IS_ERR(opp)) {
++			new_freq = freq_table[0].frequency * 1000;
++			opp = opp_find_freq_exact(cpu_dev, new_freq, true);
++		}
++		if (IS_ERR(opp))
++			ret = -ERANGE;
++		if (!IS_ERR(opp) && !IS_ERR(cpu_reg)) {
++			volt = opp_get_voltage(opp);
++			tol = volt * voltage_tolerance / 100;
++		}
++		rcu_read_unlock();
++		if (ret) {
++			pr_err("Fail to find match boot clock rate: %lu\n",
++			       boot_freq);
++			goto out_free_table;
++		}
++
++		/* We dont expect to endup with same result */
++		WARN_ON(boot_freq == new_freq);
++
++		freq_exact = clk_round_rate(cpu_clk, new_freq);
++		if (freq_exact < 0) {
++			pr_err("Fail to find valid boot clock rate: %lu\n",
++			       freq_exact);
++			goto out_free_table;
++		}
++
++		/* Warn to get developer to fix bootloader */
++		pr_err("Bootloader freq %luHz no match to table, Using %luHz\n",
++		       boot_freq, new_freq);
++
++		/*
++		 * For voltage sequencing we *assume* that bootloader has at
++		 * least set the voltage appropriate for the boot_frequency
++		 */
++		if (!IS_ERR(cpu_reg) && boot_freq < new_freq) {
++			ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
++			if (ret) {
++				pr_err("Fail to scale boot voltage up: %d\n",
++				       ret);
++				goto out_free_table;
++			}
++		}
++
++		ret = clk_set_rate(cpu_clk, freq_exact);
++		if (ret) {
++			pr_err("Fail to set boot clock rate: %d\n", ret);
++			goto out_free_table;
++		}
++
++		if (!IS_ERR(cpu_reg) && boot_freq > new_freq) {
++			ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
++			if (ret) {
++				pr_err("Fail to scale boot voltage down: %d\n",
++				       ret);
++				goto out_free_table;
++			}
++		}
++	}
++
+ 	ret = cpufreq_register_driver(&cpu0_cpufreq_driver);
+ 	if (ret) {
+ 		pr_err("failed register driver: %d\n", ret);
+-- 
+1.7.9.5
+
