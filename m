@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab3KPRkE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 12:40:04 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:46233 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354Ab3KPRjj (ORCPT
+	id S1753301Ab3KPRkP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 12:40:15 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:33445 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab3KPRjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 12:39:39 -0500
+	Sat, 16 Nov 2013 12:39:40 -0500
 From: Felipe Contreras <felipe.contreras@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
@@ -14,9 +14,9 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
         Levente Kurusa <levex@linux.com>,
         Felipe Contreras <felipe.contreras@gmail.com>
-Subject: [PATCH 2/5] cmdline: fix style issues
-Date: Sat, 16 Nov 2013 11:32:28 -0600
-Message-Id: <1384623151-31302-3-git-send-email-felipe.contreras@gmail.com>
+Subject: [PATCH 3/5] cmdline: declare exported symbols immediately
+Date: Sat, 16 Nov 2013 11:32:29 -0600
+Message-Id: <1384623151-31302-4-git-send-email-felipe.contreras@gmail.com>
 X-Mailer: git-send-email 1.8.4.2+fc1
 In-Reply-To: <1384623151-31302-1-git-send-email-felipe.contreras@gmail.com>
 References: <1384623151-31302-1-git-send-email-felipe.contreras@gmail.com>
@@ -24,70 +24,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: space prohibited between function name and open parenthesis '('
-+int get_option (char **str, int *pint)
+WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
++EXPORT_SYMBOL(memparse);
 
-WARNING: space prohibited between function name and open parenthesis '('
-+	*pint = simple_strtol (cur, str, 0);
+WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
++EXPORT_SYMBOL(get_option);
 
-ERROR: trailing whitespace
-+ $
-
-WARNING: please, no spaces at the start of a line
-+ $
-
-WARNING: space prohibited between function name and open parenthesis '('
-+		res = get_option ((char **)&str, ints + i);
+WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
++EXPORT_SYMBOL(get_options);
 
 Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
 ---
- lib/cmdline.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ lib/cmdline.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
 diff --git a/lib/cmdline.c b/lib/cmdline.c
-index eb67911..5466333 100644
+index 5466333..d4932f7 100644
 --- a/lib/cmdline.c
 +++ b/lib/cmdline.c
-@@ -49,13 +49,13 @@ static int get_range(char **str, int *pint)
-  *	3 - hyphen found to denote a range
-  */
+@@ -67,6 +67,7 @@ int get_option(char **str, int *pint)
  
--int get_option (char **str, int *pint)
-+int get_option(char **str, int *pint)
- {
- 	char *cur = *str;
+ 	return 1;
+ }
++EXPORT_SYMBOL(get_option);
  
- 	if (!cur || !(*cur))
- 		return 0;
--	*pint = simple_strtol (cur, str, 0);
-+	*pint = simple_strtol(cur, str, 0);
- 	if (cur == *str)
- 		return 0;
- 	if (**str == ',') {
-@@ -84,13 +84,13 @@ int get_option (char **str, int *pint)
-  *	the parse to end (typically a null terminator, if @str is
-  *	completely parseable).
-  */
-- 
-+
- char *get_options(const char *str, int nints, int *ints)
- {
- 	int res, i = 1;
+ /**
+  *	get_options - Parse a string into a list of integers
+@@ -112,6 +113,7 @@ char *get_options(const char *str, int nints, int *ints)
+ 	ints[0] = i - 1;
+ 	return (char *)str;
+ }
++EXPORT_SYMBOL(get_options);
  
- 	while (i < nints) {
--		res = get_option ((char **)&str, ints + i);
-+		res = get_option((char **)&str, ints + i);
- 		if (res == 0)
- 			break;
- 		if (res == 3) {
-@@ -153,7 +153,6 @@ unsigned long long memparse(const char *ptr, char **retptr)
+ /**
+  *	memparse - parse a string with mem suffixes into a number
+@@ -152,7 +154,4 @@ unsigned long long memparse(const char *ptr, char **retptr)
+ 
  	return ret;
  }
- 
 -
  EXPORT_SYMBOL(memparse);
- EXPORT_SYMBOL(get_option);
- EXPORT_SYMBOL(get_options);
+-EXPORT_SYMBOL(get_option);
+-EXPORT_SYMBOL(get_options);
 -- 
 1.8.4.2+fc1
 
