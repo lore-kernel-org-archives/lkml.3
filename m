@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340Ab3KPAhH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:37:07 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:59634 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab3KPAfy (ORCPT
+	id S1754409Ab3KPAhR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:37:17 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:58293 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805Ab3KPAfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Nov 2013 19:35:54 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -16,57 +16,66 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH tip/core/rcu 25/28] rcutorture: Test summary at end of run with less chattiness
-Date: Fri, 15 Nov 2013 16:35:38 -0800
-Message-Id: <1384562141-32446-25-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 23/28] rcutorture: Add tracing-enabled version of TREE08
+Date: Fri, 15 Nov 2013 16:35:36 -0800
+Message-Id: <1384562141-32446-23-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1384562141-32446-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20131116003517.GA31563@linux.vnet.ibm.com>
  <1384562141-32446-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111600-1542-0000-0000-0000035637C4
+x-cbid: 13111600-6688-0000-0000-0000038DDF43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The commit causes kvm.sh to invoke kvm-recheck.sh at the end of each
-run, and causes kvm-recheck.sh to print only the name of the test, not
-the full path to the corresponding Kconfig file.
+The TREE08 Kconfig fragment does not enable tracing, which is appropriate
+for its test case.  However, this can be inconvenient in cases where
+TREE08 locates RCU bugs.  This commit therefore adds a TREE08-T that
+differs from TREE08 only in enabling CONFIG_RCU_TRACE.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Greg KH <gregkh@linuxfoundation.org>
 ---
- tools/testing/selftests/rcutorture/bin/kvm-recheck.sh | 2 +-
- tools/testing/selftests/rcutorture/bin/kvm.sh         | 3 +++
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ .../testing/selftests/rcutorture/configs/TREE08-T  | 26 ++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+ create mode 100644 tools/testing/selftests/rcutorture/configs/TREE08-T
 
-diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-index 26e82b5d67f8..874cd32d0486 100755
---- a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-+++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
-@@ -31,7 +31,7 @@ do
- 	for i in $dirs
- 	do
- 		configfile=`echo $i | sed -e 's/^.*\///'`
--		echo $i
-+		echo $configfile
- 		configcheck.sh $i/.config $i/ConfigFragment
- 		parse-build.sh $i/Make.out $configfile
- 		parse-rcutorture.sh $i/console.log $configfile
-diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-index 02ac41e6d10e..b8d278904dee 100644
---- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-+++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-@@ -210,3 +210,6 @@ do
- 	kvm-test-1-rcu.sh $CONFIGFRAG/$kversion/$CF $builddir $rd $dur "-nographic $RCU_QEMU_ARG" "rcutorture.test_no_idle_hz=1 rcutorture.verbose=1 $RCU_BOOTARGS"
- done
- # Tracing: trace_event=rcu:rcu_grace_period,rcu:rcu_future_grace_period,rcu:rcu_grace_period_init,rcu:rcu_nocb_wake,rcu:rcu_preempt_task,rcu:rcu_unlock_preempted_task,rcu:rcu_quiescent_state_report,rcu:rcu_fqs,rcu:rcu_callback,rcu:rcu_kfree_callback,rcu:rcu_batch_start,rcu:rcu_invoke_callback,rcu:rcu_invoke_kfree_callback,rcu:rcu_batch_end,rcu:rcu_torture_read,rcu:rcu_barrier
-+
-+echo " --- `date` Test summary:"
-+kvm-recheck.sh $resdir/$ds
+diff --git a/tools/testing/selftests/rcutorture/configs/TREE08-T b/tools/testing/selftests/rcutorture/configs/TREE08-T
+new file mode 100644
+index 000000000000..442c4e450ab3
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/TREE08-T
+@@ -0,0 +1,26 @@
++CONFIG_SMP=y
++CONFIG_NR_CPUS=16
++CONFIG_PREEMPT_NONE=n
++CONFIG_PREEMPT_VOLUNTARY=n
++CONFIG_PREEMPT=y
++#CHECK#CONFIG_TREE_PREEMPT_RCU=y
++CONFIG_HZ_PERIODIC=n
++CONFIG_NO_HZ_IDLE=y
++CONFIG_NO_HZ_FULL=n
++CONFIG_RCU_FAST_NO_HZ=n
++CONFIG_RCU_TRACE=y
++CONFIG_HOTPLUG_CPU=n
++CONFIG_SUSPEND=n
++CONFIG_HIBERNATION=n
++CONFIG_RCU_FANOUT=3
++CONFIG_RCU_FANOUT_EXACT=y
++CONFIG_RCU_FANOUT_LEAF=2
++CONFIG_RCU_NOCB_CPU=y
++CONFIG_RCU_NOCB_CPU_ALL=y
++CONFIG_DEBUG_LOCK_ALLOC=n
++CONFIG_PROVE_RCU_DELAY=n
++CONFIG_RCU_CPU_STALL_INFO=n
++CONFIG_RCU_CPU_STALL_VERBOSE=n
++CONFIG_RCU_BOOST=n
++CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
++CONFIG_PRINTK_TIME=y
 -- 
 1.8.1.5
 
