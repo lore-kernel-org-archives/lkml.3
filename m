@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab3KPAjb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Nov 2013 19:39:31 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:38207 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798Ab3KPAfx (ORCPT
+	id S1754721Ab3KPAje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Nov 2013 19:39:34 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:58285 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab3KPAfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Nov 2013 19:35:53 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -16,44 +16,38 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH tip/core/rcu 13/28] rcutorture: Remove decorative qemu argument
-Date: Fri, 15 Nov 2013 16:35:26 -0800
-Message-Id: <1384562141-32446-13-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 24/28] rcutorture: Update comment in kvm.sh listing typical RCU trace events
+Date: Fri, 15 Nov 2013 16:35:37 -0800
+Message-Id: <1384562141-32446-24-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1384562141-32446-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20131116003517.GA31563@linux.vnet.ibm.com>
  <1384562141-32446-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111600-0928-0000-0000-0000037AA9F3
+x-cbid: 13111600-6688-0000-0000-0000038DDF42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The qemu -name argument doesn't seem to be useful in this environment,
-so this commit removes it.
-
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Greg KH <gregkh@linuxfoundation.org>
 ---
- tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh | 2 +-
+ tools/testing/selftests/rcutorture/bin/kvm.sh | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh
-index ddf3bd6eaf19..5e2e79b5eaba 100755
---- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh
-+++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-rcu.sh
-@@ -137,7 +137,7 @@ boot_args="`rcutorture_param_n_barrier_cbs "$boot_args"`"
- # Pull in Kconfig-fragment boot parameters
- boot_args="`configfrag_boot_params "$boot_args" "$config_template"`"
- 
--echo $QEMU -name rcu-test -serial file:$builddir/console.log $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append \"noapic selinux=0 console=ttyS0 initcall_debug debug rcutorture.stat_interval=15 rcutorture.shutdown_secs=$seconds rcutorture.rcutorture_runnable=1 $boot_args\" > $resdir/qemu-cmd
-+echo $QEMU -serial file:$builddir/console.log $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append \"noapic selinux=0 console=ttyS0 initcall_debug debug rcutorture.stat_interval=15 rcutorture.shutdown_secs=$seconds rcutorture.rcutorture_runnable=1 $boot_args\" > $resdir/qemu-cmd
- $QEMU -name rcu-test -serial file:$builddir/console.log $qemu_args -m 512 -kernel $builddir/arch/x86/boot/bzImage -append "noapic selinux=0 console=ttyS0 initcall_debug debug rcutorture.stat_interval=15 rcutorture.shutdown_secs=$seconds rcutorture.rcutorture_runnable=1 $boot_args" &
- qemu_pid=$!
- commandcompleted=0
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
+index 69b6523bb854..02ac41e6d10e 100644
+--- a/tools/testing/selftests/rcutorture/bin/kvm.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
+@@ -209,4 +209,4 @@ do
+ 	echo Results directory: $rd
+ 	kvm-test-1-rcu.sh $CONFIGFRAG/$kversion/$CF $builddir $rd $dur "-nographic $RCU_QEMU_ARG" "rcutorture.test_no_idle_hz=1 rcutorture.verbose=1 $RCU_BOOTARGS"
+ done
+-# Tracing: trace_event=rcu:rcu_nocb_grace_period,rcu:rcu_grace_period,rcu:rcu_grace_period_init,rcu:rcu_quiescent_state_report,rcu:rcu_fqs,rcu:rcu_callback,rcu:rcu_torture_read,rcu:rcu_invoke_callback,rcu:rcu_fqs,rcu:rcu_dyntick,rcu:rcu_unlock_preempted_task
++# Tracing: trace_event=rcu:rcu_grace_period,rcu:rcu_future_grace_period,rcu:rcu_grace_period_init,rcu:rcu_nocb_wake,rcu:rcu_preempt_task,rcu:rcu_unlock_preempted_task,rcu:rcu_quiescent_state_report,rcu:rcu_fqs,rcu:rcu_callback,rcu:rcu_kfree_callback,rcu:rcu_batch_start,rcu:rcu_invoke_callback,rcu:rcu_invoke_kfree_callback,rcu:rcu_batch_end,rcu:rcu_torture_read,rcu:rcu_barrier
 -- 
 1.8.1.5
 
