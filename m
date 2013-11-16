@@ -1,27 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab3KPRXs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 12:23:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52526 "EHLO mx2.suse.de"
+	id S1752743Ab3KPRZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 12:25:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52577 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab3KPRXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 12:23:42 -0500
-Date: Sat, 16 Nov 2013 18:23:39 +0100
-Message-ID: <s5h1u2gw99g.wl%tiwai@suse.de>
+	id S1751222Ab3KPRZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Nov 2013 12:25:53 -0500
+Date: Sat, 16 Nov 2013 18:25:51 +0100
+Message-ID: <s5hy54ouulc.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Jarkko Nikula <jarkko.nikula@bitmer.com>
-Cc: Taras Kondratiuk <taras.kondratiuk@linaro.org>, linux-omap@vger.kernel.org,
-        linaro-networking@linaro.org,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC 16/23] ASoC: omap: mcbsp, mcpdm, dmic: raw read and write endian fix
-In-Reply-To: <528798CF.4060609@bitmer.com>
-References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
-	<1384560086-11994-17-git-send-email-taras.kondratiuk@linaro.org>
-	<528798CF.4060609@bitmer.com>
+Subject: [GIT PULL] sound fixes for 3.13-rc1
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -31,44 +22,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sat, 16 Nov 2013 18:09:51 +0200,
-Jarkko Nikula wrote:
-> 
-> On 11/16/2013 02:01 AM, Taras Kondratiuk wrote:
-> > From: Victor Kamensky <victor.kamensky@linaro.org>
-> > 
-> > All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
-> > Need to use endian neutral functions to read/write h/w registers.
-> > I.e instead of __raw_read[lw] and __raw_write[lw] functions code
-> > need to use read[lw]_relaxed and write[lw]_relaxed functions.
-> > If the first simply reads/writes register, the second will byteswap
-> > it if host operates in BE mode.
-> > 
-> > Changes are trivial sed like replacement of __raw_xxx functions
-> > with xxx_relaxed variant.
-> > 
-> > Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-> > Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-> > ---
-> >  sound/soc/omap/mcbsp.c      |   12 ++++++------
-> >  sound/soc/omap/omap-dmic.c  |    4 ++--
-> >  sound/soc/omap/omap-mcpdm.c |    4 ++--
-> >  3 files changed, 10 insertions(+), 10 deletions(-)
-> > 
-> Looks ok to me by looking at the _relaxed definitions in
-> arch/arm/include/asm/io.h.
-> 
-> Acked-by: Jarkko Nikula <jarkko.nikula@bitmer.com>
-> 
+Linus,
 
-What's the reason to use _relaxed version in all places?
+please pull sound fixes for v3.13-rc1 from:
 
-I understand this patch is to fix the endianess, so this can be
-applied as is, as long as the original code works.  But, still in
-general, I wonder how the concurrency is guaranteed by this driver
-code...
+  git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git tags/sound-fix-3.13-rc1
 
+The topmost commit is abfe69dd2e313d0c8226ca4a12329e3d829cfd7c
 
-thanks,
+----------------------------------------------------------------
 
-Takashi
+sound fixes for 3.13-rc1
+
+Two peaks in diffstat are for the audio EQ init of IDT codecs and the
+EMU2004 usb mixer addition, both of which are pretty device-specific,
+so safe to apply.  The rest are a bunch of small fixes, most of them
+are regression fixes.
+
+----------------------------------------------------------------
+
+Anssi Hannula (5):
+      ALSA: hda - hdmi: Use TFx channel positions instead of FxH
+      ALSA: usb: Fix wrong mapping of RLC and RRC channels
+      ALSA: hda - hdmi: Add error-checking to some codec reads
+      ALSA: hda - hdmi: Skip out-of-range latency values in AMD ELD generator
+      ALSA: hda - hdmi: Fix wrong baseline length in ATI/AMD generated ELD
+
+Brian Austin (1):
+      ASoC: cs42l52: Correct MIC CTL mask
+
+Charles Keepax (1):
+      ASoC: wm8997: Correct typo in ISRC mux routes
+
+Dan Carpenter (2):
+      ALSA: snd-aoa: two copy and paste bugs
+      ALSA: isa: not allocating enough space
+
+David Henningsson (1):
+      ALSA: hda - Fix Line Out automute on Realtek multifunction jacks
+
+Nicolin Chen (1):
+      ASoC: wm8962: Turn on regcache_cache_only before disabling regulator
+
+Oskar Schirmer (1):
+      ASoC: fsl: imx-pcm-fiq: omit fiq counter to avoid harm in unbalanced situations
+
+Richard Fitzgerald (2):
+      ALSA: compress_core: don't return -EBADFD from poll if paused
+      ASoC: arizona: Fix typo in name of EQ coefficient controls
+
+Takashi Iwai (9):
+      ALSA: hda - Control SPDIF out pin on MacBookPro 11,2
+      ALSA: msnd: Avoid duplicated driver name
+      ALSA: hda - Check keep_eapd_on before inv_eapd
+      ALSA: hda - Don't turn off EAPD for headphone on Lenovo N100
+      ALSA: hda - Control EAPD for Master volume on Lenovo N100
+      ALSA: hda - Don't clear the power state at snd_hda_codec_reset()
+      ASoC: blackfin: Fix missing break
+      ALSA: pcsp: Fix the order of input device unregistration
+      ALSA: jack: Unregister input device at disconnection
+
+Vasily Khoruzhick (1):
+      ALSA: usb-audio: add front jack channel selector for EMU0204
+
+Vitaliy Kulikov (1):
+      ALSA: hda - load EQ params into IDT codec on HP bNB13 systems
+
+Wei Yongjun (1):
+      ALSA: sparc: fix missing unlock on error in snd_cs4231_playback_prepare()
+
+---
+ sound/aoa/fabrics/layout.c            |   4 +-
+ sound/core/compress_offload.c         |   3 +-
+ sound/core/jack.c                     |  19 +-
+ sound/drivers/pcsp/pcsp.c             |   2 +-
+ sound/isa/msnd/msnd_pinnacle.c        |   4 +-
+ sound/isa/wavefront/wavefront_synth.c |   2 +-
+ sound/pci/hda/hda_codec.c             |   3 -
+ sound/pci/hda/hda_eld.c               |  37 ++-
+ sound/pci/hda/hda_generic.c           |   4 +-
+ sound/pci/hda/patch_analog.c          |  33 ++-
+ sound/pci/hda/patch_cirrus.c          |  56 +++-
+ sound/pci/hda/patch_hdmi.c            |  11 +-
+ sound/pci/hda/patch_realtek.c         |   4 +-
+ sound/pci/hda/patch_sigmatel.c        | 532 +++++++++++++++++++++++++++++++++-
+ sound/soc/blackfin/bf5xx-i2s.c        |   1 +
+ sound/soc/codecs/cs42l52.h            |   2 +-
+ sound/soc/codecs/wm5102.c             |   8 +-
+ sound/soc/codecs/wm5110.c             |   8 +-
+ sound/soc/codecs/wm8962.c             |   2 +
+ sound/soc/codecs/wm8997.c             |  10 +-
+ sound/soc/fsl/imx-pcm-fiq.c           |  29 +-
+ sound/sparc/cs4231.c                  |  11 +-
+ sound/usb/mixer_quirks.c              |  90 ++++++
+ sound/usb/stream.c                    |   4 +-
+ 24 files changed, 803 insertions(+), 76 deletions(-)
+
