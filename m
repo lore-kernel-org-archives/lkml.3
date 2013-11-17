@@ -1,187 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab3KQOqF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 09:46:05 -0500
-Received: from nebula.mojo.cc ([46.4.89.19]:33009 "EHLO nebula.mojo.cc"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753482Ab3KQOp4 convert rfc822-to-8bit (ORCPT
+	id S1754071Ab3KQO5M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 09:57:12 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:54466 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752891Ab3KQO5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 09:45:56 -0500
-From: "MPhil. Emanoil Kotsev" <Emanoil.Kotsev@fincom.at>
-Organization: FinCom Consulting
-To: Borislav Petkov <bp@alien8.de>
-Subject: Re: [Intel-gfx] kernel 3.11.6 general protection fault
-Date: Sun, 17 Nov 2013 15:45:34 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>
-References: <201311132058.30310.Emanoil.Kotsev@fincom.at> <201311171235.17602.Emanoil.Kotsev@fincom.at> <20131117120734.GE27323@pd.tnic>
-In-Reply-To: <20131117120734.GE27323@pd.tnic>
-X-KMail-QuotePrefix: > 
+	Sun, 17 Nov 2013 09:57:04 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
+        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
+Date: Sun, 17 Nov 2013 16:09:40 +0100
+Message-ID: <5974906.WAPp3f3eVY@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <52887CB7.4000108@linaro.org>
+References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org> <6050176.zVNbf5pomE@vostro.rjw.lan> <52887CB7.4000108@linaro.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201311171545.35217.Emanoil.Kotsev@fincom.at>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sunday, November 17, 2013 01:52:15 PM viresh kumar wrote:
+> On Sunday 17 November 2013 06:38 AM, Rafael J. Wysocki wrote:
+> > On Saturday, November 16, 2013 08:47:24 PM Viresh Kumar wrote:
+> >> Well that is pretty much doable.
+> > 
+> > Not necessarily on all CPU models.
+> 
+> Okay.. Just for my understanding, why?
 
-On Sunday 17 November 2013 13:07:34 Borislav Petkov wrote:
-> On Sun, Nov 17, 2013 at 12:35:16PM +0100, MPhil. Emanoil Kotsev wrote:
-> > After doing all of this I was able to reproduce the issue by
-> > overloading the system with following simple steps:
-> > 1. start a compilation of something (ex. kernel)
-> > 2. run another process hungry application (flashplayer in firefox)
-> > => system locks in about 3-5mins
->
-> Ha, so we're getting somewhere :)
+If the graphics and processor are in one chip, the CPU may ignore your
+perf bump up request for power balancing reasons.
 
-yes looks like :)
+> >> So PM_POST_HIBERNATION is called just before shutting off the system? And
+> >> PM_POST_RESTORE is called after system is resumed from saved image?
+> > 
+> > PM_POST_HIBERNATION is only called if there's an error during hibernation.
+> > PM_POST_RESTORE is called as you said.
+> 
+> Ahh I see. Thanks.
+> 
+> > Also you have to remember that the _PREPARE PM notifiers are called before the
+> > freezing of tasks when user space is still running, so disabling governors at
+> > that point may lead to some weird behavior.
+> 
+> Actually good point. I haven't thought about it earlier.
+> 
+> And when I see what bad can happen, I couldn't find much. The worst is that we
+> wouldn't go to a frequency requested by userspace daemon. But we wouldn't send
+> an error then. But I feel we can let that happen. Not servicing a request after
+> we have started system suspend doesn't look that odd..
+> 
+> Sysfs infrastructure is still preserved and so all that information would still
+> be available.
+> 
+> Do you see anything extra that might stop working?
 
->
-> > I also noticed that the board gets pretty hot, so in my opinion it
-> > locks because of thermal issue.
->
-> The symptoms we're seeing so far are very much consistent with a thermal
-> issue.
+Well, the code would be racy with the patch as is.  User space might manipulate
+the sysfs knobs in parallel with your PM notifiers, for example, and I'm not
+entirely sure what can happen then.  And the lock in there is pointless,
+because it doesn't prevent any races from happening.
 
-this is also true - which makes me sad as the notebook was working great in 
-the past 7y
+> >>> Actually, we use CPU offline/online during system suspend/resume to avoid
+> >>> having to do stuff like this from PM notifiers.
+> >>
+> >> I didn't get the logic behind this one..
+> > 
+> > If we have to do special stuff from PM notifiers for CPU "suspend", we will be
+> > better off by doing something entirely special instead of CPU offline down the
+> > road.  Which we may end up doing given the problems with frozen/not frozen in
+> > the cpufreq core.
+> 
+> A unrelated question here. Why are we offlining CPUs after suspending all the
+> devices? Because the problem Nishanth mentioned was that he required few
+> devices, i2c, to be available when CPUs are getting down. And there might be
+> similar requirements at other places too. Was there any specific bottleneck due
+> to which it is implemented this way?
 
->
-> > I think this also would explain why I see errors at different
-> > processes (mostly Xorg), but with 3.12 I do not get any trace message
-> > in the log files. Could you advise which option should be enabled in
-> > the kernel or how I could log/trace if system locks.
->
-> Try enabling CONFIG_LOCKUP_DETECTOR, that could tell us where we're
-> hanging.
->
-> But, make sure to be on a console and not in X in order to get a chance
-> to see the message. What I do is reroute all log messages to /dev/tty8,
-> i.e. have
->
-> *.*		|/dev/tty8
->
-> in syslog.conf and switch to it with Ctrl-Alt-F8.
+No, this is because the ACPI spec mandates powering down devices before CPUs
+during system suspend.  The way it is done today, however, I think we don't
+need to keep that ordering so strictly any more.  We definitely don't need to
+do that on non-ACPI systems.
 
-thanks for the advise. I'll do so
+So while I hate the PM notifiers idea (sorry, but that's how it goes), I think
+it would be OK to suspend *some* devices after disabling CPUs (not all of them,
+of course).
 
->
-> > How can I make sure that the cooling/temp works properly?
-> >
-> > Perhaps after upgrading in september the system is working under
->
-> What kind of upgrade exactly did you do to a laptop?
+And as I said, I think it would be OK to introduce suspend/resume callbacks for
+CPU devices and use those callbacks to work around the ordering issues, when
+necessary.  The main point is that the changes made for this purpose should
+only affect systems where they are necessary and not everyone.  I don't want
+to change the way things work today in general in cpufreq too much unless they
+are plain bugs that affect everyone.
 
-I was using debian squeeze with trinity desktop (KDE 3.5.10) and upgraded to 
-debian wheeze with TDE (3.5.13)
+> > We may introduce suspend_noirq and resume_noirq for cpu_subsys, for example,
+> > and handle things from there.  Or something similar.  But slapping PM notifiers
+> > on top of the existing code just because it appears to be easy (and making that
+> > code even more overdesigned than it already is this way) doesn't seem quite
+> > right.
+> > 
+> > Now, the Tianyu's patch extends the Srivatsa's approach to governors, which
+> > actually should have been done from the outset, so it is within the scope of
+> > what we have already.  It may not solve all of the problems, but it still makes
+> > some progress and has a little chance to introduce *new* problems at the same
+> > time.
+> 
+> I understand your point here. But this is what I feel:
+> 
+> - I don't have any special affection for using PM notifiers :) .. Its just that
+> I need some way for cpufreq core to know that Suspend has started. Maybe after
+> freezing of tasks and before removal of devices.
+> 
+> - I thought of adding something like a suspend-prepare for syscore_ops (You are
+> owner of all these frameworks and so our life is easy as we can discuss stuff
+> with you directly :)).. But then thought maybe we can use PM notifiers.. But it
+> looks that we better do that now ?
+> 
+> - I have concerns with Tianyu's patch as policies should be better taken care of
+> in cpufreq core instead of passing them over to governors.
 
->
-> > heavier load and therefore I started having the issue, or something
-> > broke in software or hardware and it can not cool down properly. I
-> > don't think the kernel is the issue, because I had the same with older
-> > kernels that were working fine before.
-> >
-> > The fan looks clean and there is no dust or whatever in the cooling
-> > area, that would prevent colling. The physical position of the
-> > notebook (docking station) also did not change.
->
-> Does the issue happen if the laptop is not in the docking station?
+Well, this is all too tangled anyway, but quite frankly I'm not sure if it is
+worth untangling at this point.  We're deprecating cpufreq anyway.
 
-I wanted to test this, but as I have to replug a lot, didn't do it so far, 
-also because it was working with this docking station for the past 2y
+> And with the alternative solution I had, code is getting more and more dirty.
+> And so I thought of doing something else.
+> 
+> - Not all platforms have problem with changing frequency during suspend/resume
+> and so we may not require disabling of governors for all of them. Probably can
+> add another field based on which we may/may-not disable governors from PM or
+> syscore notifiers.
 
->
-> In any case, you need to follow your steps back of the upgrade to have
-> at least a clue what causes the overheating.
->
-> Can you revert the upgrade and see whether it still happens?
-This would be hard - no impossible as I have a backup but it will be time 
-consuming
->
-> Also, do you have sensors support for your hardware? IOW, can you
-> monitor the temperature of some hardware elements by running
->
-> $ sensors
+What exactly is wrong with adding suspend/resume callbacks to cpu_subsys?
 
-$ sensors
-acpitz-virtual-0
-Adapter: Virtual device
-temp1:        +47.5°C  (crit = +126.0°C)
-
-
->
-> ?
->
-> For example, I see this on my box here:
->
-> $ sensors
-> fam15h_power-pci-00c4
-> Adapter: PCI adapter
-> power1:       45.64 W  (crit = 125.19 W)
->
-> k10temp-pci-00c3
-> Adapter: PCI adapter
-> temp1:        +19.2°C  (high = +70.0°C)
->                        (crit = +90.0°C, hyst = +87.0°C)
->
-> radeon-pci-0100
-> Adapter: PCI adapter
-> temp1:        +80.0°C
->
-> so when something overheats, running "watch -n 1 sensors" could give
-> some hints.
->
-> Also, what does
->
-> $ grep . -EriIn /sys/devices/system/cpu/cpu0/cpufreq
->
-> give?
-
-grep . -EriIn /sys/devices/system/cpu/cpu0/cpufreq
-/sys/devices/system/cpu/cpu0/cpufreq/bios_limit:1:2000000
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor:1:ondemand
-/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_transition_latency:1:10000
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies:1:2000000 
-1667000 1333000 1000000
-/sys/devices/system/cpu/cpu0/cpufreq/freqdomain_cpus:1:0 1
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver:1:acpi-cpufreq
-/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq:1:1000000
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors:1:ondemand 
-powersave performance conservative userspace
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq:1:1000000
-/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq:1:2000000
-/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq:1:1000000
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq:1:2000000
-/sys/devices/system/cpu/cpu0/cpufreq/affected_cpus:1:0
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq:1:1000000
-/sys/devices/system/cpu/cpu0/cpufreq/related_cpus:1:0
-/sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed:1:<unsupported>
-
-
->
-> Also, can you connect your laptop to a serial or netconsole to collect
-> dmesg before and while the lockup happens?
-
-I could try this. I guess this assumes I have to have another machine running 
-in paralell, but this can be arranged with a little effort
-
->
-> Basically, we're looking for a hint about which part of the hw causes
-> the overheating...
->
-> HTH.
-
-Thanks for the hints. As I never had to do with overheating or similar issues, 
-your help is very precious to me. Unfortunately we have a little child on 
-board and time is limitted :) to a couple of hours daily, where I can work at 
-home which means even less time for debugging. But I never give up. I just 
-want to be sure that it is not a hardware issue
-
-Thanks again and kind regards. I'll post when I have some useful input
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
