@@ -1,96 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab3KQObx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 09:31:53 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:62990 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752639Ab3KQObt (ORCPT
+	id S1754049Ab3KQOqF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 09:46:05 -0500
+Received: from nebula.mojo.cc ([46.4.89.19]:33009 "EHLO nebula.mojo.cc"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753482Ab3KQOp4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 09:31:49 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] Cpufreq: Make governor data on nonboot cpus across system suspend/resume
-Date: Sun, 17 Nov 2013 15:44:24 +0100
-Message-ID: <3555392.CLJaBWE9DL@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <5288425A.6000501@linaro.org>
-References: <9847309.KdKOG5y1Zx@vostro.rjw.lan> <1384616184-6197-1-git-send-email-tianyu.lan@intel.com> <5288425A.6000501@linaro.org>
+	Sun, 17 Nov 2013 09:45:56 -0500
+From: "MPhil. Emanoil Kotsev" <Emanoil.Kotsev@fincom.at>
+Organization: FinCom Consulting
+To: Borislav Petkov <bp@alien8.de>
+Subject: Re: [Intel-gfx] kernel 3.11.6 general protection fault
+Date: Sun, 17 Nov 2013 15:45:34 +0100
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>
+References: <201311132058.30310.Emanoil.Kotsev@fincom.at> <201311171235.17602.Emanoil.Kotsev@fincom.at> <20131117120734.GE27323@pd.tnic>
+In-Reply-To: <20131117120734.GE27323@pd.tnic>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Message-Id: <201311171545.35217.Emanoil.Kotsev@fincom.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 17, 2013 09:43:14 AM viresh kumar wrote:
-> On 16 November 2013 21:06, Lan Tianyu <tianyu.lan@intel.com> wrote:
-> > diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> > @@ -1818,9 +1818,13 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
-> >                 mutex_unlock(&cpufreq_governor_lock);
-> >         }
+Hi,
+
+On Sunday 17 November 2013 13:07:34 Borislav Petkov wrote:
+> On Sun, Nov 17, 2013 at 12:35:16PM +0100, MPhil. Emanoil Kotsev wrote:
+> > After doing all of this I was able to reproduce the issue by
+> > overloading the system with following simple steps:
+> > 1. start a compilation of something (ex. kernel)
+> > 2. run another process hungry application (flashplayer in firefox)
+> > => system locks in about 3-5mins
+>
+> Ha, so we're getting somewhere :)
+
+yes looks like :)
+
+>
+> > I also noticed that the board gets pretty hot, so in my opinion it
+> > locks because of thermal issue.
+>
+> The symptoms we're seeing so far are very much consistent with a thermal
+> issue.
+
+this is also true - which makes me sad as the notebook was working great in 
+the past 7y
+
+>
+> > I think this also would explain why I see errors at different
+> > processes (mostly Xorg), but with 3.12 I do not get any trace message
+> > in the log files. Could you advise which option should be enabled in
+> > the kernel or how I could log/trace if system locks.
+>
+> Try enabling CONFIG_LOCKUP_DETECTOR, that could tell us where we're
+> hanging.
+>
+> But, make sure to be on a console and not in X in order to get a chance
+> to see the message. What I do is reroute all log messages to /dev/tty8,
+> i.e. have
+>
+> *.*		|/dev/tty8
+>
+> in syslog.conf and switch to it with Ctrl-Alt-F8.
+
+thanks for the advise. I'll do so
+
+>
+> > How can I make sure that the cooling/temp works properly?
 > >
-> > -       if (((event == CPUFREQ_GOV_POLICY_INIT) && ret) ||
-> > -                       ((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
-> > +       if ((event == CPUFREQ_GOV_POLICY_INIT) && ret) {
-> > +               module_put(policy->governor->owner);
-> > +               if (ret == -EALREADY)
-> > +                       return 0;
-> > +       } else if ((event == CPUFREQ_GOV_POLICY_EXIT) && !ret) {
-> >                 module_put(policy->governor->owner);
-> > +       }
-> 
-> This can still be written more efficiently I believe:
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 138ebe9..54e28e1 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1866,10 +1866,12 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
->         ret = policy->governor->governor(policy, event);
-> 
->         if (!ret) {
-> -               if (event == CPUFREQ_GOV_POLICY_INIT)
-> +               if (event == CPUFREQ_GOV_POLICY_INIT) {
->                         policy->governor->initialized++;
-> -               else if (event == CPUFREQ_GOV_POLICY_EXIT)
-> +               } else if (event == CPUFREQ_GOV_POLICY_EXIT) {
->                         policy->governor->initialized--;
-> +                       module_put(policy->governor->owner);
-> +               }
->         } else {
->                 /* Restore original values */
->                 mutex_lock(&cpufreq_governor_lock);
-> @@ -1877,13 +1879,14 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
->                         policy->governor_enabled = true;
->                 else if (event == CPUFREQ_GOV_START)
->                         policy->governor_enabled = false;
-> +               else if (event == CPUFREQ_GOV_POLICY_INIT)
-> +                       if (ret == -EALREADY) {
+> > Perhaps after upgrading in september the system is working under
+>
+> What kind of upgrade exactly did you do to a laptop?
 
-You can write this as
+I was using debian squeeze with trinity desktop (KDE 3.5.10) and upgraded to 
+debian wheeze with TDE (3.5.13)
 
-               else if (event == CPUFREQ_GOV_POLICY_INIT && ret == -EALREADY) {
+>
+> > heavier load and therefore I started having the issue, or something
+> > broke in software or hardware and it can not cool down properly. I
+> > don't think the kernel is the issue, because I had the same with older
+> > kernels that were working fine before.
+> >
+> > The fan looks clean and there is no dust or whatever in the cooling
+> > area, that would prevent colling. The physical position of the
+> > notebook (docking station) also did not change.
+>
+> Does the issue happen if the laptop is not in the docking station?
 
-> +                               module_put(policy->governor->owner);
-> +                               ret = 0;
-> +                       }
->                 mutex_unlock(&cpufreq_governor_lock);
->         }
-> 
-> -       if (((event == CPUFREQ_GOV_POLICY_INIT) && ret) ||
-> -                       ((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
-> -               module_put(policy->governor->owner);
-> -
->         return ret;
+I wanted to test this, but as I have to replug a lot, didn't do it so far, 
+also because it was working with this docking station for the past 2y
 
-Apart from the above I agree.
+>
+> In any case, you need to follow your steps back of the upgrade to have
+> at least a clue what causes the overheating.
+>
+> Can you revert the upgrade and see whether it still happens?
+This would be hard - no impossible as I have a backup but it will be time 
+consuming
+>
+> Also, do you have sensors support for your hardware? IOW, can you
+> monitor the temperature of some hardware elements by running
+>
+> $ sensors
 
-Thanks!
+$ sensors
+acpitz-virtual-0
+Adapter: Virtual device
+temp1:        +47.5°C  (crit = +126.0°C)
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
+>
+> ?
+>
+> For example, I see this on my box here:
+>
+> $ sensors
+> fam15h_power-pci-00c4
+> Adapter: PCI adapter
+> power1:       45.64 W  (crit = 125.19 W)
+>
+> k10temp-pci-00c3
+> Adapter: PCI adapter
+> temp1:        +19.2°C  (high = +70.0°C)
+>                        (crit = +90.0°C, hyst = +87.0°C)
+>
+> radeon-pci-0100
+> Adapter: PCI adapter
+> temp1:        +80.0°C
+>
+> so when something overheats, running "watch -n 1 sensors" could give
+> some hints.
+>
+> Also, what does
+>
+> $ grep . -EriIn /sys/devices/system/cpu/cpu0/cpufreq
+>
+> give?
+
+grep . -EriIn /sys/devices/system/cpu/cpu0/cpufreq
+/sys/devices/system/cpu/cpu0/cpufreq/bios_limit:1:2000000
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor:1:ondemand
+/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_transition_latency:1:10000
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies:1:2000000 
+1667000 1333000 1000000
+/sys/devices/system/cpu/cpu0/cpufreq/freqdomain_cpus:1:0 1
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver:1:acpi-cpufreq
+/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq:1:1000000
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors:1:ondemand 
+powersave performance conservative userspace
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq:1:1000000
+/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq:1:2000000
+/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq:1:1000000
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq:1:2000000
+/sys/devices/system/cpu/cpu0/cpufreq/affected_cpus:1:0
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq:1:1000000
+/sys/devices/system/cpu/cpu0/cpufreq/related_cpus:1:0
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed:1:<unsupported>
+
+
+>
+> Also, can you connect your laptop to a serial or netconsole to collect
+> dmesg before and while the lockup happens?
+
+I could try this. I guess this assumes I have to have another machine running 
+in paralell, but this can be arranged with a little effort
+
+>
+> Basically, we're looking for a hint about which part of the hw causes
+> the overheating...
+>
+> HTH.
+
+Thanks for the hints. As I never had to do with overheating or similar issues, 
+your help is very precious to me. Unfortunately we have a little child on 
+board and time is limitted :) to a couple of hours daily, where I can work at 
+home which means even less time for debugging. But I never give up. I just 
+want to be sure that it is not a hardware issue
+
+Thanks again and kind regards. I'll post when I have some useful input
+
