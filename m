@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab3KQLhu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 06:37:50 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:47612 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab3KQLhl (ORCPT
+	id S1754010Ab3KQLiE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 06:38:04 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:63970 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753809Ab3KQLhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 06:37:41 -0500
+	Sun, 17 Nov 2013 06:37:52 -0500
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: [PATCH v2 0/5] fat: additions to support fat_fallocate
-Date: Sun, 17 Nov 2013 20:37:04 +0900
-Message-Id: <1384688224-2832-1-git-send-email-linkinjeon@gmail.com>
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH v2 1/5] fat: add i_disksize to represent uninitialized size
+Date: Sun, 17 Nov 2013 20:37:45 +0900
+Message-Id: <1384688265-2866-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,21 +23,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-This patch set provides support for doing fallocate operation
-on FAT filesystem.
-After series of review for the the feature
-The complete functionality is broken down into smaller subsets.
+Add i_disksize to represent uninitialized allocated size.
+And mmu_private represent initialized allocated size.
 
-v2:
- - remove a stary unlock(from Dan Carpenter)
- - check ->mmu_private and ->i_disksize to truncate uninitialized data.
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+---
+ fs/fat/cache.c |    6 +++---
+ fs/fat/fat.h   |    3 ++-
+ fs/fat/file.c  |    4 +++-
+ fs/fat/inode.c |    4 ++++
+ 4 files changed, 12 insertions(+), 5 deletions(-)
 
-Namjae Jeon (5):
- fat: add i_disksize to represent uninitialized size
- fat: add fat_fallocate operation
- fat: zero out seek range on _fat_get_block
- fat: fallback to buffered write in case of fallocatded region on direct IO
- fat: permit to return phy block number by fibmap in fallocated region
+diff --git a/fs/fat/cache.c b/fs/fat/cache.c
+index 91ad9e1..a132666 100644
+--- a/fs/fat/cache.c
++++ b/fs/fat/cache.c
+@@ -329,10 +329,10 @@ int fat_bmap(struct inode *inode, sector_t sector, sector_t *phys,
+ 			return 0;
+ 
+ 		/*
+-		 * ->mmu_private can access on only allocation path.
+-		 * (caller must hold ->i_mutex)
++		 * Both ->mmu_private and ->i_disksize can access
++		 * on only allocation path. (caller must hold ->i_mutex)
+ 		 */
+-		last_block = (MSDOS_I(inode)->mmu_private + (blocksize - 1))
++		last_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
+ 			>> blocksize_bits;
+ 		if (sector >= last_block)
+ 			return 0;
+diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+index 7c31f4b..a3df2ad 100644
+--- a/fs/fat/fat.h
++++ b/fs/fat/fat.h
+@@ -118,7 +118,8 @@ struct msdos_inode_info {
+ 	unsigned int cache_valid_id;
+ 
+ 	/* NOTE: mmu_private is 64bits, so must hold ->i_mutex to access */
+-	loff_t mmu_private;	/* physically allocated size */
++	loff_t mmu_private;	/* physically allocated size (uninitialized) */
++	loff_t i_disksize;	/* physically allocated size (initialized) */
+ 
+ 	int i_start;		/* first cluster or 0 */
+ 	int i_logstart;		/* logical first cluster */
+diff --git a/fs/fat/file.c b/fs/fat/file.c
+index 33711ff..82db0d8 100644
+--- a/fs/fat/file.c
++++ b/fs/fat/file.c
+@@ -300,8 +300,10 @@ void fat_truncate_blocks(struct inode *inode, loff_t offset)
+ 	 * This protects against truncating a file bigger than it was then
+ 	 * trying to write into the hole.
+ 	 */
+-	if (MSDOS_I(inode)->mmu_private > offset)
++	if (MSDOS_I(inode)->i_disksize > offset) {
+ 		MSDOS_I(inode)->mmu_private = offset;
++		MSDOS_I(inode)->i_disksize = offset;
++	}
+ 
+ 	nr_clusters = (offset + (cluster_size - 1)) >> sbi->cluster_bits;
+ 
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 06d0a93..825d9a3 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -93,6 +93,7 @@ static inline int __fat_get_block(struct inode *inode, sector_t iblock,
+ 
+ 	*max_blocks = min(mapped_blocks, *max_blocks);
+ 	MSDOS_I(inode)->mmu_private += *max_blocks << sb->s_blocksize_bits;
++	MSDOS_I(inode)->i_disksize = MSDOS_I(inode)->mmu_private;
+ 
+ 	err = fat_bmap(inode, iblock, &phys, &mapped_blocks, create);
+ 	if (err)
+@@ -406,6 +407,7 @@ int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
+ 		if (error < 0)
+ 			return error;
+ 		MSDOS_I(inode)->mmu_private = inode->i_size;
++		MSDOS_I(inode)->i_disksize = inode->i_size;
+ 
+ 		set_nlink(inode, fat_subdirs(inode));
+ 	} else { /* not a directory */
+@@ -421,6 +423,7 @@ int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
+ 		inode->i_fop = &fat_file_operations;
+ 		inode->i_mapping->a_ops = &fat_aops;
+ 		MSDOS_I(inode)->mmu_private = inode->i_size;
++		MSDOS_I(inode)->i_disksize = inode->i_size;
+ 	}
+ 	if (de->attr & ATTR_SYS) {
+ 		if (sbi->options.sys_immutable)
+@@ -1221,6 +1224,7 @@ static int fat_read_root(struct inode *inode)
+ 			   & ~((loff_t)sbi->cluster_size - 1)) >> 9;
+ 	MSDOS_I(inode)->i_logstart = 0;
+ 	MSDOS_I(inode)->mmu_private = inode->i_size;
++	MSDOS_I(inode)->i_disksize = inode->i_size;
+ 
+ 	fat_save_attrs(inode, ATTR_DIR);
+ 	inode->i_mtime.tv_sec = inode->i_atime.tv_sec = inode->i_ctime.tv_sec = 0;
 -- 
 1.7.9.5
 
