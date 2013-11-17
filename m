@@ -1,69 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420Ab3KQRbU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 12:31:20 -0500
-Received: from sauhun.de ([89.238.76.85]:58285 "EHLO pokefinder.org"
+	id S1752995Ab3KQRqi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 12:46:38 -0500
+Received: from mout.gmx.net ([212.227.15.19]:65452 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751591Ab3KQRbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 12:31:12 -0500
-Date: Sun, 17 Nov 2013 18:31:08 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Andreas Werner <wernerandy@gmx.de>
-Cc: khali@linux-fr.org, jacmet@sunsite.dk, hskinnemoen@gmail.com,
-        dianders@chromium.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] I2C: busses: i2c-eg20t Do not print error message in
- syslog if no ACK received
-Message-ID: <20131117173108.GB8577@katana>
-References: <1384678731-10399-1-git-send-email-wernerandy@gmx.de>
- <20131117110846.GA3093@katana>
- <20131117123902.GA3834@awedesk.fritz.box>
- <20131117121809.GC3093@katana>
- <20131117165329.GA1562@thinkpad.fritz.box>
- <20131117170838.GA8577@katana>
- <20131117171623.GA3947@thinkpad.fritz.box>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z6Eq5LdranGa6ru8"
-Content-Disposition: inline
-In-Reply-To: <20131117171623.GA3947@thinkpad.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751864Ab3KQRqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 12:46:30 -0500
+From: Andreas Werner <wernerandy@gmx.de>
+To: wsa@the-dreams.de
+Cc: jacmet@sunsite.dk, khali@linux-fr.org, dianders@chromium.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wernerandy@gmx.de
+Subject: [PATCH v3] I2C: busses: i2c-eg20t Do not print error message in syslog if no ACK received
+Date: Sun, 17 Nov 2013 18:46:20 +0100
+Message-Id: <1384710380-5976-1-git-send-email-wernerandy@gmx.de>
+X-Mailer: git-send-email 1.8.4.2
+X-Provags-ID: V03:K0:5jWWqGPxJGgLHtcTwfKJnDnEH0lCOVF/pN33CqqVWtWhog4CVjt
+ tJcQsNrDmixtiwJkuUmjutfiTgligJv5HJJRw1r9QYHtEhqKGtWP6RyAEwJOfJrOK/gJd3P
+ wH7jB9BCltGS7XD5ws4AZC6UYLvqeAmmEvhBYQwvl8h8DpKdfpFMZ6+NBFfcDA0JxjTm24M
+ iYo6j6AaRyhwgiGrwKfvg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Using the i2c-eg20t driver and call i2cdetect or probe on the bus,
+the driver will print a lot of error messages if there was no ACK
+received.
 
---z6Eq5LdranGa6ru8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+i2cdetect normally print a table with all the available devices. If there
+is no device on the address, the table will be empty.
+Currently with the i2c-eg20t driver, the table is not visible because
+the error messages destroy the table.
 
+Error message: pch_i2c_getack return -71
 
-> Sometimes its really usfull to look closely :-)
+This patch prevent the driver to print the messages to syslog.
+The pch_i2c_wait_for_check_xfer function is the only one who is
+calling pch_i2c_getack, so we can delete the function and add the
+read to pch_i2c_wait_for_check_xfer.
+If no ACK is received, the Message will be printed as a dbg
+message.
 
-I can't do this for every patch right from the beginning since my time
-is limited. I usually start with letting people sort it out themselves.
+Fixed print message to be a one liner so we can grep for the
+error message.
 
+Tested on Intel Atom E6xx and Eg20t Chipset.
 
---z6Eq5LdranGa6ru8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Andreas Werner <wernerandy@gmx.de>
+---
+Revision 2:
+        - delete the pch_err completly instead of changing to pch_dbg
+          because there is already a pch_dbg at the function who calls
+          pch_i2c_getack.
+        - Fixed message line issue
+Revision 3:
+        - delete the pch_i2c_getack function and add the ACK read to
+          pch_i2c_wait_for_check_xfer.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+ drivers/i2c/busses/i2c-eg20t.c | 26 ++++----------------------
+ 1 file changed, 4 insertions(+), 22 deletions(-)
 
-iQIcBAEBAgAGBQJSiP1cAAoJEBQN5MwUoCm21pwP/2g/nMK3ZJDShIdo10EUrCgj
-pGmLnD9DGjNQhnh1rc82OpRtpSB1FNFB7x1IYewyfMWfaCwrGAz48cmKWVzUSJNH
-WVPQrlTvbDVaIklyj3G3GDqxrK9MI265yEDEqP6vD+wF5B37mgRQk2jPHftZ/h4W
-FKecllutSkbIftN3QLOJddtDyyi/6D2Xfkn4PtDbMhCeHTgQsrBjzegK8zlBPplq
-8SkEfjTaPq8WJvOf8t0293DrlP4xwsK4Z4ZCAtFXPf12mblB5xWsgn5zgf2xIWsv
-KBMQ17VSKbyM9sRNxDykkAQth9PO+KvTaonSBwbeMEOy7/UrGOt0teyBwJmtTCTL
-2g5OAz/cP7ZmXf2GwFvOzfI1Uxb9VHbdxpEDfy6euGI70GdFdgtgMYd62QbIwIHw
-lMMcxZbBee9IakEmnMeUk3sc/qBq3lhvdQhZBtC6UPRVb/hqqpfqFJuwPHZ9q24Q
-Cf0SoCCjxinfSsHiAHshd3veS7uBi6dh6zAB7D0CXm9MjS+rJ7vy4UGnJb3GvLBx
-mS89uwizgpr8iiFV7z0Ht1+C23NSMiiWQyJjEfI5ZvAq1y97x4i6SZWvp9o61jm9
-4f+T8WD0wP25xQ2x8I6Wb6Q7ZSSrUH6LmKYkW6Qy68VyCZsXLjrkYA379015Q8UR
-DeVVCe/waixFsNGUFSZW
-=iOEH
------END PGP SIGNATURE-----
+diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
+index 0f37529..ff15ae9 100644
+--- a/drivers/i2c/busses/i2c-eg20t.c
++++ b/drivers/i2c/busses/i2c-eg20t.c
+@@ -312,24 +312,6 @@ static void pch_i2c_start(struct i2c_algo_pch_data *adap)
+ }
+ 
+ /**
+- * pch_i2c_getack() - to confirm ACK/NACK
+- * @adap:	Pointer to struct i2c_algo_pch_data.
+- */
+-static s32 pch_i2c_getack(struct i2c_algo_pch_data *adap)
+-{
+-	u32 reg_val;
+-	void __iomem *p = adap->pch_base_address;
+-	reg_val = ioread32(p + PCH_I2CSR) & PCH_GETACK;
+-
+-	if (reg_val != 0) {
+-		pch_err(adap, "return%d\n", -EPROTO);
+-		return -EPROTO;
+-	}
+-
+-	return 0;
+-}
+-
+-/**
+  * pch_i2c_stop() - generate stop condition in normal mode.
+  * @adap:	Pointer to struct i2c_algo_pch_data.
+  */
+@@ -344,6 +326,7 @@ static void pch_i2c_stop(struct i2c_algo_pch_data *adap)
+ static int pch_i2c_wait_for_check_xfer(struct i2c_algo_pch_data *adap)
+ {
+ 	long ret;
++	void __iomem *p = adap->pch_base_address;
+ 
+ 	ret = wait_event_timeout(pch_event,
+ 			(adap->pch_event_flag != 0), msecs_to_jiffies(1000));
+@@ -366,10 +349,9 @@ static int pch_i2c_wait_for_check_xfer(struct i2c_algo_pch_data *adap)
+ 
+ 	adap->pch_event_flag = 0;
+ 
+-	if (pch_i2c_getack(adap)) {
+-		pch_dbg(adap, "Receive NACK for slave address"
+-			"setting\n");
+-		return -EIO;
++	if (ioread32(p + PCH_I2CSR) & PCH_GETACK) {
++		pch_dbg(adap, "Receive NACK for slave address setting\n");
++		return -ENXIO;
+ 	}
+ 
+ 	return 0;
+-- 
+1.8.4.2
 
---z6Eq5LdranGa6ru8--
