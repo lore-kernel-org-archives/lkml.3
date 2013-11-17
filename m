@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab3KQHVt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 02:21:49 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:42202 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab3KQHVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 02:21:31 -0500
-Message-ID: <52886E77.1000707@hitachi.com>
-Date: Sun, 17 Nov 2013 16:21:27 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1751917Ab3KQHsY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 02:48:24 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:48769 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377Ab3KQHsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 02:48:18 -0500
+Date: Sun, 17 Nov 2013 08:47:46 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Frank Becker <fb@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-edac@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] A minor amd64_edac fix for 3.13
+Message-ID: <20131117074746.GC27323@pd.tnic>
+References: <20131110122638.GA17775@pd.tnic>
+ <CAADWXX_FdW4vGn8N4TA_GcNBrwuqeH_=qxmK2J7K7kfAWztxPA@mail.gmail.com>
+ <20131116100649.GB18306@pd.tnic>
+ <CA+55aFxHO9035t=CiNTRX1XK5KSxzh8HfZ3Kaspsm6yfs2O=8Q@mail.gmail.com>
+ <20131116111227.GD18306@pd.tnic>
+ <CA+55aFw_gOLXdmEZsmD0Mu0x-sRt5-EOeogDAsyJHbkhzjxrmA@mail.gmail.com>
+ <20131116182328.GJ18306@pd.tnic>
+ <20131116233451.GA12189@alien8.de>
+ <CA+55aFxZcNfOEadD7EixNf5YZJVLTJ=2T4TOybWfwTP71KnuRg@mail.gmail.com>
+ <20131117012215.GA10439@alien8.de>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        virtualization@lists.linux-foundation.org,
-        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: Re: [PATCH -tip RFC v2 01/22] kprobes: Prohibit probing on
- .entry.text code
-References: <20131115045312.27580.95902.stgit@kbuild-fedora.novalocal> <20131115045318.27580.69554.stgit@kbuild-fedora.novalocal> <20131115114306.5d14db66@gandalf.local.home> <CAMuHMdXw+WGKiQuquQL7XOkbRLNOC_SPddY1irRGQwpvDHLMwA@mail.gmail.com>
-In-Reply-To: <CAMuHMdXw+WGKiQuquQL7XOkbRLNOC_SPddY1irRGQwpvDHLMwA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131117012215.GA10439@alien8.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/16 2:46), Geert Uytterhoeven wrote:
-> On Fri, Nov 15, 2013 at 5:43 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> On Fri, 15 Nov 2013 04:53:18 +0000
->> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>
->>> .entry.text is a code area which is used for interrupt/syscall
->>> entries, and there are many sensitive codes.
->>> Thus, it is better to prohibit probing on all of such codes
->>> instead of a part of that.
->>> Since some symbols are already registered on kprobe blacklist,
->>> this also removes them from the blacklist.
->>
->> This change only works with x86. On other archs, I get this:
->>
->> kernel/built-in.o: In function `register_kprobe':
->> (.kprobes.text+0x9f4): undefined reference to `__entry_text_start'
->> kernel/built-in.o: In function `register_kprobe':
->> (.kprobes.text+0x9f8): undefined reference to `__entry_text_end'
->> make[1]: *** [vmlinux] Error 1
->> make: *** [sub-make] Error 2
-> 
-> X86 is the sole architecture that has ENTRY_TEXT in its
-> arch/*/kernel/vmlinux.lds.S.
+On Sun, Nov 17, 2013 at 02:22:15AM +0100, Frank Becker wrote:
+> Still, Google made a mistake by tagging Boris mail as SPAM. As you
+> already wrote it probably was triggered by the content filter. They
+> don't tell. To get those filters right is probably impossible. BTW, I
+> liked your idea to tag propaganda you mentioned in some interview.
 
-Ah, thanks! I'll fix that.
-BTW, should I add CONFIG_HAVE_ENTRY_TEXT for x86 and use it
-or just use CONFIG_X86 to detect it?
+Btw, this reminds me:
 
-Thank you,
+I used to have lkml subscribed to gmail and had to go into the spam
+folder and regularly fish out legit lkml messages.
+
+The culmination of this activity was me finding a @google.com employee
+mail addressed to a discussion on lkml!!! And he was sending from their
+own range, of course.
+
+So yes, while hetzner possibly doesn't take care of spammers or doesn't
+do so in timely manner (if I'd have to guess, they're on that money
+saving trip *every* fucking company is on right now) I can't help but
+wonder at the arrogance of gmail's decision to mark certain messages as
+spam without saying why so as to senders be able to fix that.
+
+And they even manage to shoot their own foot in the process.
+
+So Linus, get Linux Foundation to write a nice search interface for mail
+so that you can move back to community servers. Better yet, write one
+yourself - I know you're good at writing your own stuff. We'll gladly
+help out if you need people.
+
+:-) :-)
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
