@@ -1,111 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab3KQPGq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 10:06:46 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55881 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752410Ab3KQPGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 10:06:39 -0500
-Date: Sun, 17 Nov 2013 16:06:07 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "MPhil. Emanoil Kotsev" <Emanoil.Kotsev@fincom.at>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>
-Subject: Re: [Intel-gfx] kernel 3.11.6 general protection fault
-Message-ID: <20131117150607.GF27323@pd.tnic>
-References: <201311132058.30310.Emanoil.Kotsev@fincom.at>
- <201311171235.17602.Emanoil.Kotsev@fincom.at>
- <20131117120734.GE27323@pd.tnic>
- <201311171545.35217.Emanoil.Kotsev@fincom.at>
+	id S1754088Ab3KQPHD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 10:07:03 -0500
+Received: from server19320154104.serverpool.info ([193.201.54.104]:37742 "EHLO
+	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752352Ab3KQPG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 10:06:56 -0500
+Message-ID: <5288DB85.8060105@hauke-m.de>
+Date: Sun, 17 Nov 2013 16:06:45 +0100
+From: Hauke Mehrtens <hauke@hauke-m.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201311171545.35217.Emanoil.Kotsev@fincom.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: broonie@kernel.org, lgirdwood@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: build error with CONFIG_REGMAP=m and CONFIG_REGULATOR=y
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 17, 2013 at 03:45:34PM +0100, MPhil. Emanoil Kotsev wrote:
-> this is also true - which makes me sad as the notebook was working
-> thgreat in e past 7y
+Hi,
 
-Hmm, maybe it is heading slowly for the eternal hunting fields... :-)
+In OpenWrt we are seeing some build errors when CONFIG_REGMAP=m and
+CONFIG_REGULATOR=y are set.
 
-> > What kind of upgrade exactly did you do to a laptop?
-> 
-> I was using debian squeeze with trinity desktop (KDE 3.5.10) and upgraded to 
-> debian wheeze with TDE (3.5.13)
+/drivers/regulator/core.c accesses some regmap functions, but they are
+compiled into a module and not into a kernel. When CONFIG_REGMAP is not
+set the header file replaces the functions with empty static inline
+functions.
 
-Oh ok, so I thought you were talking about a hw upgrade, like adding
-more RAM, hew hdd, etc.
+With kernel 3.10.18 I see the following build error:
 
-Ok, can you try this: boot without X and try overloading the machine on
-the console, i.e. do
+drivers/built-in.o: In function `regulator_get_bypass_regmap':
+/drivers/regulator/core.c:2989: undefined reference to `regmap_read'
+drivers/built-in.o: In function `regulator_get_voltage_sel_regmap':
+/drivers/regulator/core.c:2199: undefined reference to `regmap_read'
+drivers/built-in.o: In function `regulator_is_enabled_regmap':
+/drivers/regulator/core.c:1916: undefined reference to `regmap_read'
+drivers/built-in.o: In function `regulator_set_bypass_regmap':
+/drivers/regulator/core.c:2973: undefined reference to `regmap_update_bits'
+drivers/built-in.o: In function `regulator_set_voltage_sel_regmap':
+/drivers/regulator/core.c:2226: undefined reference to `regmap_update_bits'
+/drivers/regulator/core.c:2232: undefined reference to `regmap_update_bits'
+drivers/built-in.o: In function `regulator_disable_regmap':
+/drivers/regulator/core.c:1968: undefined reference to `regmap_update_bits'
+drivers/built-in.o: In function `regulator_enable_regmap':
+/drivers/regulator/core.c:1945: undefined reference to `regmap_update_bits'
+drivers/built-in.o: In function `regulator_register':
+/drivers/regulator/core.c:3581: undefined reference to `dev_get_regmap'
+/drivers/regulator/core.c:3582: undefined reference to `dev_get_regmap'
+/drivers/regulator/core.c:3584: undefined reference to `dev_get_regmap'
+make[4]: *** [vmlinux] Error 1
 
-while true; do make clean && make -j64; done
 
-or similar in your kernel repository. Does it trigger then?
+The following patch would be a solution, but it causes a recursive
+dependency:
 
-Although I can't imagine how a software upgrade would cause the
-overheating... :-\.
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -1,5 +1,6 @@
+ menuconfig REGULATOR
+ 	bool "Voltage and Current Regulator Support"
++	depends on REGMAP || REGMAP = n
+ 	help
+ 	  Generic Voltage and Current Regulator support.
 
-> > Can you revert the upgrade and see whether it still happens?
-> This would be hard - no impossible as I have a backup but it will be
-> time consuming
 
-You could try booting a distro from a livecd and see any change there...
+drivers/regulator/Kconfig:1:error: recursive dependency detected!
+drivers/regulator/Kconfig:1:	symbol REGULATOR depends on REGMAP
+drivers/base/regmap/Kconfig:5:	symbol REGMAP is selected by REGMAP_I2C
+drivers/base/regmap/Kconfig:11:	symbol REGMAP_I2C is selected by
+REGULATOR_FAN53555
+drivers/regulator/Kconfig:124:	symbol REGULATOR_FAN53555 depends on
+REGULATOR
 
-> $ sensors
-> acpitz-virtual-0
-> Adapter: Virtual device
-> temp1:        +47.5°C  (crit = +126.0°C)
+I am not familiar with the regmap and the regulator framework, but I
+would suggest to make REGULATOR depend on REGMAP.
 
-That's some ACPI timezone thing. So what happens if you do
-
-$ watch -n 1 sensors
-
-and you incur the load? Do you hit the critical temperature?
-
-> grep . -EriIn /sys/devices/system/cpu/cpu0/cpufreq
-> /sys/devices/system/cpu/cpu0/cpufreq/bios_limit:1:2000000
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor:1:ondemand
-> /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_transition_latency:1:10000
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies:1:2000000 1667000 1333000 1000000
-> /sys/devices/system/cpu/cpu0/cpufreq/freqdomain_cpus:1:0 1
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver:1:acpi-cpufreq
-> /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq:1:1000000
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors:1:ondemand powersave performance conservative userspace
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq:1:1000000
-> /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq:1:2000000
-> /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq:1:1000000
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq:1:2000000
-> /sys/devices/system/cpu/cpu0/cpufreq/affected_cpus:1:0
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq:1:1000000
-> /sys/devices/system/cpu/cpu0/cpufreq/related_cpus:1:0
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed:1:<unsupported>
-
-Yeah, I don't see anything wrong with that output.
-
-> I could try this. I guess this assumes I have to have another machine
-> running in paralell, but this can be arranged with a little effort
-
-Yep.
-
-> Thanks for the hints. As I never had to do with overheating or
-> similar issues, your help is very precious to me. Unfortunately we
-> have a little child on board and time is limitted :) to a couple of
-> hours daily, where I can work at home which means even less time for
-> debugging. But I never give up. I just want to be sure that it is not
-> a hardware issue
-
-No worries, take care of the child first - the laptop and everyone else
-can wait :-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Hauke
