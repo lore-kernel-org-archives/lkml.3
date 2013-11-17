@@ -1,130 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab3KQELl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 23:11:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33976 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753603Ab3KQELb (ORCPT
+	id S1753948Ab3KQEN2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 23:13:28 -0500
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:50066 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab3KQENV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 23:11:31 -0500
-Message-ID: <1384661479.19290.9.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.4 11/26] md: Fix skipping recovery for read-only
- arrays.
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Pawel Baldysiak <pawel.baldysiak@intel.com>,
-        Lukasz Dorau <lukasz.dorau@intel.com>, NeilBrown <neilb@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Sun, 17 Nov 2013 04:11:19 +0000
-In-Reply-To: <20131109065051.007223561@linuxfoundation.org>
-References: <20131109065050.089866597@linuxfoundation.org>
-	 <20131109065051.007223561@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-vdsscNEJagU2EXDjzgNV"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.209
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 16 Nov 2013 23:13:21 -0500
+Message-ID: <5288425A.6000501@linaro.org>
+Date: Sun, 17 Nov 2013 09:43:14 +0530
+From: viresh kumar <viresh.kumar@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Lan Tianyu <tianyu.lan@intel.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] Cpufreq: Make governor data on nonboot cpus across
+ system suspend/resume
+References: <9847309.KdKOG5y1Zx@vostro.rjw.lan> <1384616184-6197-1-git-send-email-tianyu.lan@intel.com>
+In-Reply-To: <1384616184-6197-1-git-send-email-tianyu.lan@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 16 November 2013 21:06, Lan Tianyu <tianyu.lan@intel.com> wrote:
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> @@ -1818,9 +1818,13 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>                 mutex_unlock(&cpufreq_governor_lock);
+>         }
+>
+> -       if (((event == CPUFREQ_GOV_POLICY_INIT) && ret) ||
+> -                       ((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
+> +       if ((event == CPUFREQ_GOV_POLICY_INIT) && ret) {
+> +               module_put(policy->governor->owner);
+> +               if (ret == -EALREADY)
+> +                       return 0;
+> +       } else if ((event == CPUFREQ_GOV_POLICY_EXIT) && !ret) {
+>                 module_put(policy->governor->owner);
+> +       }
 
---=-vdsscNEJagU2EXDjzgNV
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This can still be written more efficiently I believe:
 
-On Fri, 2013-11-08 at 22:51 -0800, Greg Kroah-Hartman wrote:
-> 3.4-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> From: Lukasz Dorau <lukasz.dorau@intel.com>
->=20
-> commit 61e4947c99c4494336254ec540c50186d186150b upstream.
->=20
-> Since:
->         commit 7ceb17e87bde79d285a8b988cfed9eaeebe60b86
->         md: Allow devices to be re-added to a read-only array.
->=20
-> spares are activated on a read-only array. In case of raid1 and raid10
-> personalities it causes that not-in-sync devices are marked in-sync
-> without checking if recovery has been finished.
->=20
-> If a read-only array is degraded and one of its devices is not in-sync
-> (because the array has been only partially recovered) recovery will be sk=
-ipped.
->=20
-> This patch adds checking if recovery has been finished before marking a d=
-evice
-> in-sync for raid1 and raid10 personalities. In case of raid5 personality
-> such condition is already present (at raid5.c:6029).
->=20
-> Bug was introduced in 3.10 and causes data corruption.
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 138ebe9..54e28e1 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1866,10 +1866,12 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+        ret = policy->governor->governor(policy, event);
 
-So this fix was not needed for 3.4.  Is it harmful if applied to this
-version?
+        if (!ret) {
+-               if (event == CPUFREQ_GOV_POLICY_INIT)
++               if (event == CPUFREQ_GOV_POLICY_INIT) {
+                        policy->governor->initialized++;
+-               else if (event == CPUFREQ_GOV_POLICY_EXIT)
++               } else if (event == CPUFREQ_GOV_POLICY_EXIT) {
+                        policy->governor->initialized--;
++                       module_put(policy->governor->owner);
++               }
+        } else {
+                /* Restore original values */
+                mutex_lock(&cpufreq_governor_lock);
+@@ -1877,13 +1879,14 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+                        policy->governor_enabled = true;
+                else if (event == CPUFREQ_GOV_START)
+                        policy->governor_enabled = false;
++               else if (event == CPUFREQ_GOV_POLICY_INIT)
++                       if (ret == -EALREADY) {
++                               module_put(policy->governor->owner);
++                               ret = 0;
++                       }
+                mutex_unlock(&cpufreq_governor_lock);
+        }
 
-Ben.
+-       if (((event == CPUFREQ_GOV_POLICY_INIT) && ret) ||
+-                       ((event == CPUFREQ_GOV_POLICY_EXIT) && !ret))
+-               module_put(policy->governor->owner);
+-
+        return ret;
 
-> Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
-> Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->=20
-> ---
->  drivers/md/raid1.c  |    1 +
->  drivers/md/raid10.c |    1 +
->  2 files changed, 2 insertions(+)
->=20
-> --- a/drivers/md/raid1.c
-> +++ b/drivers/md/raid1.c
-> @@ -1357,6 +1357,7 @@ static int raid1_spare_active(struct mdd
->  			}
->  		}
->  		if (rdev
-> +		    && rdev->recovery_offset =3D=3D MaxSector
->  		    && !test_bit(Faulty, &rdev->flags)
->  		    && !test_and_set_bit(In_sync, &rdev->flags)) {
->  			count++;
-> --- a/drivers/md/raid10.c
-> +++ b/drivers/md/raid10.c
-> @@ -1534,6 +1534,7 @@ static int raid10_spare_active(struct md
->  			}
->  			sysfs_notify_dirent_safe(tmp->replacement->sysfs_state);
->  		} else if (tmp->rdev
-> +			   && tmp->rdev->recovery_offset =3D=3D MaxSector
->  			   && !test_bit(Faulty, &tmp->rdev->flags)
->  			   && !test_and_set_bit(In_sync, &tmp->rdev->flags)) {
->  			count++;
 
---=20
-Ben Hutchings
-Beware of bugs in the above code;
-I have only proved it correct, not tried it. - Donald Knuth
+>         return ret;
+>  }
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index 0806c31..ddb93af 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -204,9 +204,20 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>
+>         switch (event) {
+>         case CPUFREQ_GOV_POLICY_INIT:
+> +               /*
+> +                * In order to keep governor data across suspend/resume,
+> +                * Governor doesn't exit when suspend and will be
+> +                * reinitialized when resume. Here check policy governor
+> +                * data to determine whether the governor has been exited.
+> +                * If not, return EALREADY.
+> +                */
+>                 if (have_governor_per_policy()) {
+> -                       WARN_ON(dbs_data);
+> +                       if (dbs_data)
+> +                               return -EALREADY;
+>                 } else if (dbs_data) {
+> +                       if (policy->governor_data == dbs_data)
+> +                               return -EALREADY;
+> +
+>                         dbs_data->usage_count++;
+>                         policy->governor_data = dbs_data;
+>                         return 0;
 
---=-vdsscNEJagU2EXDjzgNV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+But I don't really like the solution here. You are handling frozen for EXIT in
+cpufreq-core and for INIT in governor. That doesn't look like the right
+approach. There are out of tree governors too (I know we don't care about them
+:)), and those also need to adapt with some policy made at cpufreq-core level.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+I told you that I had another solution for this problem, pretty similar to
+yours. It looked like this:
 
-iQIVAwUAUohB5+e/yOyVhhEJAQp1UhAA0lFhf4bQhN6OqBW4Jh/AvYzUfNncmubE
-oq+RTrx0NUqsqTJ0gNgKNg32aYKjyWVos8u+3zNfX1KqReQn4jV5r4D2Us3Bbetc
-Gehc+77S7xizZqS+6Sn7Fkj3wEphFUcgr/oEpc3MCO6ABbH0NTIrf1ZhgcIQphG7
-8HfdDJjImeGu2sBow0SFJupPLFrewwxZ+YutUgjS5/4G4JoJehwdgkdCPaVEaZmJ
-PdlDGLKdwtDcAWoacvl8AZWDIc2ZIJFI/vIFpC6rObMrDHr39f7hKfREkJono6Y7
-VaM3lH2ox3rhWjURfNiOCslqYMYXaa2CstGkJUCiEUY7U/vM5v1bjXn5JoLygkCf
-gp2tT2f8T9g4am9FqKWds/eSkJXGPVYLCYPsS4+vMwcG1mS1hJ4DA/74oMMl7ycC
-qf5z83xmQgQXwtFA0oOctidnxyQpz7oY/ouPFiCimG1jtzZTOQtGPti6byO9uDGC
-M7gLwHkIxmA8+7nQWdriw7rHs2MQQJE9BBj6rSHiT6BzS/nFRjL1gS881LN7SnS2
-XC9eXuvMEtHJCwjhdyeqgeRebXq7KlFtSgU4mdFDq/VT+cWjXeW8R2aMMRT6P+w+
-oDi6xbVbAwTaXgJkYpGA2D6o2F9GyFkzm/r8Mw3wdUQZJxBF/at+pE0mC+LOK+W7
-SAR687EY/g4=
-=R9NH
------END PGP SIGNATURE-----
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 4fa06de..e70e906 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -408,7 +408,8 @@ show_one(scaling_max_freq, max);
+ show_one(scaling_cur_freq, cur);
 
---=-vdsscNEJagU2EXDjzgNV--
+ static int cpufreq_set_policy(struct cpufreq_policy *policy,
+-				struct cpufreq_policy *new_policy);
++				struct cpufreq_policy *new_policy,
++				bool frozen);
+
+ /**
+  * cpufreq_per_cpu_attr_write() / store_##file_name() - sysfs write access
+@@ -428,7 +429,7 @@ static ssize_t store_##file_name					\
+ 	if (ret != 1)							\
+ 		return -EINVAL;						\
+ 									\
+-	ret = cpufreq_set_policy(policy, &new_policy);		\
++	ret = cpufreq_set_policy(policy, &new_policy, false);		\
+ 	policy->user_policy.object = policy->object;			\
+ 									\
+ 	return ret ? ret : count;					\
+@@ -486,7 +487,7 @@ static ssize_t store_scaling_governor(struct cpufreq_policy
+*policy,
+ 						&new_policy.governor))
+ 		return -EINVAL;
+
+-	ret = cpufreq_set_policy(policy, &new_policy);
++	ret = cpufreq_set_policy(policy, &new_policy, false);
+
+ 	policy->user_policy.policy = policy->policy;
+ 	policy->user_policy.governor = policy->governor;
+@@ -822,7 +823,7 @@ err_out_kobj_put:
+ 	return ret;
+ }
+
+-static void cpufreq_init_policy(struct cpufreq_policy *policy)
++static void cpufreq_init_policy(struct cpufreq_policy *policy, bool frozen)
+ {
+ 	struct cpufreq_policy new_policy;
+ 	int ret = 0;
+@@ -832,7 +833,7 @@ static void cpufreq_init_policy(struct cpufreq_policy *policy)
+ 	policy->governor = NULL;
+
+ 	/* set default policy */
+-	ret = cpufreq_set_policy(policy, &new_policy);
++	ret = cpufreq_set_policy(policy, &new_policy, frozen);
+ 	policy->user_policy.policy = policy->policy;
+ 	policy->user_policy.governor = policy->governor;
+
+@@ -1077,7 +1078,7 @@ static int __cpufreq_add_dev(struct device *dev, struct
+subsys_interface *sif,
+ 	list_add(&policy->policy_list, &cpufreq_policy_list);
+ 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+
+-	cpufreq_init_policy(policy);
++	cpufreq_init_policy(policy, frozen);
+
+ 	kobject_uevent(&policy->kobj, KOBJ_ADD);
+ 	up_read(&cpufreq_rwsem);
+@@ -1239,17 +1240,17 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
+
+ 	/* If cpu is last user of policy, free policy */
+ 	if (cpus == 1) {
+-		if (has_target()) {
+-			ret = __cpufreq_governor(policy,
+-					CPUFREQ_GOV_POLICY_EXIT);
+-			if (ret) {
+-				pr_err("%s: Failed to exit governor\n",
+-						__func__);
+-				return ret;
++		if (!frozen) {
++			if (has_target()) {
++				ret = __cpufreq_governor(policy,
++						CPUFREQ_GOV_POLICY_EXIT);
++				if (ret) {
++					pr_err("%s: Failed to exit governor\n",
++							__func__);
++					return ret;
++				}
+ 			}
+-		}
+
+-		if (!frozen) {
+ 			down_read(&policy->rwsem);
+ 			kobj = &policy->kobj;
+ 			cmp = &policy->kobj_unregister;
+@@ -1920,7 +1921,7 @@ EXPORT_SYMBOL(cpufreq_get_policy);
+  * new_policy: policy to be set.
+  */
+ static int cpufreq_set_policy(struct cpufreq_policy *policy,
+-				struct cpufreq_policy *new_policy)
++				struct cpufreq_policy *new_policy, bool frozen)
+ {
+ 	int ret = 0, failed = 1;
+
+@@ -1987,7 +1988,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
+
+ 			/* start new governor */
+ 			policy->governor = new_policy->governor;
+-			if (!__cpufreq_governor(policy, CPUFREQ_GOV_POLICY_INIT)) {
++			if (frozen || !__cpufreq_governor(policy, CPUFREQ_GOV_POLICY_INIT)) {
+ 				if (!__cpufreq_governor(policy, CPUFREQ_GOV_START)) {
+ 					failed = 0;
+ 				} else {
+@@ -2065,7 +2066,7 @@ int cpufreq_update_policy(unsigned int cpu)
+ 		}
+ 	}
+
+-	ret = cpufreq_set_policy(policy, &new_policy);
++	ret = cpufreq_set_policy(policy, &new_policy, false);
+
+ 	up_write(&policy->rwsem);
+
+-------------------------------
+
+But after the PM notifiers patch I even don't want this to go.. I will make sure
+that that patch goes in, in one form or another :)
+
+So, just wait for sometime before posting a new version :) (I know you did it
+because Rafael suggested a change)..
