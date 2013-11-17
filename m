@@ -1,50 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab3KQPuf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 10:50:35 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:47049 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab3KQPu2 (ORCPT
+	id S1753984Ab3KQP7f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 10:59:35 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:54391 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101Ab3KQP7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 10:50:28 -0500
-Message-ID: <5288E5BF.2020608@gmail.com>
-Date: Sun, 17 Nov 2013 16:50:23 +0100
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sun, 17 Nov 2013 10:59:25 -0500
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <52888F6D.6000802@gmail.com> <20131117132531.GB27696@pd.tnic>
-In-Reply-To: <20131117132531.GB27696@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1384678169-28228-1-git-send-email-acourbot@nvidia.com>
+References: <1384678169-28228-1-git-send-email-acourbot@nvidia.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Sun, 17 Nov 2013 15:59:04 +0000
+X-Google-Sender-Auth: aUgvThBbfNWuwjdqaYpz5IUuzHA
+Message-ID: <CAHkRjk5LBOFx3ir49RgEsaFwvp5UCpTjYFWto+URXebAsOP0RA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: move firmware_ops to drivers/firmware
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        linux-samsung-soc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 17/11/2013 14:25, Borislav Petkov a écrit :
-> On Sun, Nov 17, 2013 at 10:42:05AM +0100, Francis Moreau wrote:
->> Today I got a different behaviour, after resuming I got a
->> kernel panic. I could take a picture of the laptop screen:
->> http://imgur.com/f5uWFTY
-> 
-> Does archlinux ship the upstream kernel or do they have patches ontop?
-> If "yes" to the last one, try reproducing this panic with the upstream
-> kernel 3.12.
+On 17 November 2013 08:49, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> The ARM tree includes a firmware_ops interface that is designed to
+> implement support for simple, TrustZone-based firmwares but could
+> also cover other use-cases. It has been suggested that this
+> interface might be useful to other architectures (e.g. arm64) and
+> that it should be moved out of arch/arm.
 
-AFAIK, the kernel has 2 simple patches on top of the vanilla one.
-They're both are trivial and can't be related to this issue.
+NAK. I'm for code sharing with arm via common locations but this API
+goes against the ARMv8 firmware standardisation efforts like PSCI,
+encouraging each platform to define there own non-standard interface.
 
-You can have look to them here:
-https://wiki.archlinux.org/index.php/Kernels#Official_packages
+> --- /dev/null
+> +++ b/include/linux/platform_firmware.h
+> @@ -0,0 +1,69 @@
+> +/*
+> + * Copyright (C) 2012 Samsung Electronics.
+> + * Kyungmin Park <kyungmin.park@samsung.com>
+> + * Tomasz Figa <t.figa@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#ifndef _PLATFORM_FIRMWARE_H
+> +#define _PLATFORM_FIRMWARE_H
+> +
+> +#include <linux/bug.h>
+> +
+> +/*
+> + * struct platform_firmware_ops
+> + *
+> + * A structure to specify available firmware operations.
+> + *
+> + * A filled up structure can be registered with
+> + * register_platform_firmware_ops().
+> + */
+> +struct platform_firmware_ops {
+> +       /*
+> +        * Enters CPU idle mode
+> +        */
+> +       int (*do_idle)(void);
 
-> 
-> In general, how reliably can you reproduce the kernel panic with the
-> upstream 3.12 kernel?
-> 
+Covered by PSCI already.
 
-Assuming that I'm running an upstream kernel, it's almost 100%
-reproductible.
+> +       /*
+> +        * Sets boot address of specified physical CPU
+> +        */
+> +       int (*set_cpu_boot_addr)(int cpu, unsigned long boot_addr);
 
-Thanks.
+Covered either by PSCI or spin-table release method (PSCI if firmware
+call is required).
+
+> +       /*
+> +        * Boots specified physical CPU
+> +        */
+> +       int (*cpu_boot)(int cpu);
+
+PSCI.
+
+> +       /*
+> +        * Initializes L2 cache
+> +        */
+> +       int (*l2x0_init)(void);
+
+No L2x0 (L210, L220, PL310) cache on ARMv8. And here I strongly
+recommend the hardware people to make proper external caches which can
+be flushed by standard CPU instructions, not MMIO. Any such caches
+must be enabled by firmware before Linux starts.
+
+The above firmware API is 32-bit ARM only. Form 64-bit ARM, you have
+the choice of PSCI so far but as I said in a long thread to Nico, I'm
+open to other standard interfaces if there are good reasons PSCI
+cannot be used. Note the _standard_ part, I don't want every SoC with
+their own firmware API for standard things like secondary CPU
+booting/hotplug/idle.
+
+-- 
+Catalin
