@@ -1,108 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752280Ab3KQWGw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 17:06:52 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:56301 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368Ab3KQWGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 17:06:45 -0500
-Date: Sun, 17 Nov 2013 23:06:12 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-Message-ID: <20131117220611.GQ27323@pd.tnic>
-References: <52888F6D.6000802@gmail.com>
- <20131117132531.GB27696@pd.tnic>
- <5288E5BF.2020608@gmail.com>
- <20131117160126.GG27323@pd.tnic>
- <CAC9WiBikz8kTAmKs1HVBmeb2Wu6hfHCh2d=w1sQC03EVHa1QOQ@mail.gmail.com>
- <20131117195358.GO27323@pd.tnic>
- <CAC9WiBggfssh+31_MqVCT-hDf2E8zTuc81q-DhLYQuVF053mEA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAC9WiBggfssh+31_MqVCT-hDf2E8zTuc81q-DhLYQuVF053mEA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752473Ab3KQWOJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 17:14:09 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51574 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791Ab3KQWOE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 17:14:04 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v5 2/3] of/selftest: Add self tests for manipulation of properties
+To: Rob Herring <robherring2@gmail.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <CAL_JsqK-ejMmc36OzSLi=odHkVPv_717b4sZyuJkj=UFVxsx0g@mail.gmail.com>
+References: <1384537604-5032-1-git-send-email-grant.likely@linaro.org> < 1384537604-5032-3-git-send-email-grant.likely@linaro.org> < CAL_JsqK-ejMmc36OzSLi=odHkVPv_717b4sZyuJkj=UFVxsx0g@mail.gmail.com>
+Date: Sun, 17 Nov 2013 22:13:59 +0000
+Message-Id: <20131117221359.C39EAC406A5@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 17, 2013 at 09:49:40PM +0100, Francis Moreau wrote:
-> On Sun, Nov 17, 2013 at 8:53 PM, Borislav Petkov <bp@alien8.de> wrote:
-> > On Sun, Nov 17, 2013 at 07:02:21PM +0100, Francis Moreau wrote:
-> >> Sorry I haven't taken the original picture large enough, and getting
-> >> this kernel panic is pretty hard since the kernel usually displays the
-> >> black screen.
+On Sat, 16 Nov 2013 13:09:13 -0600, Rob Herring <robherring2@gmail.com> wrote:
+> On Fri, Nov 15, 2013 at 11:46 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> > Adds a few simple test cases to ensure that addition, update and removal
+> > of device tree node properties works correctly.
 > >
-> > Ok, just try to make a readable picture of the whole line, next time you
-> > trigger it.
-> >
-> >> I can't find any traces of this function in the dump...
-> >
-> > Hmm, strange. Can you upload the whole vmlinux somewhere? Or is this the
-> > official archlinux kernel? If so, where can I get it from?
+> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> > Cc: Rob Herring <rob.herring@calxeda.com>
+> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > Cc: David S. Miller <davem@davemloft.net>
+> > Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+> > Cc: Pantelis Antoniou <panto@antoniou-consulting.com>
+> > ---
+> >  drivers/of/selftest.c | 62 +++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 62 insertions(+)
 > 
-> Yes, you can download the bin package from :
-> https://www.archlinux.org/packages/core/x86_64/linux/
-> 
-> The bin package is a tar archive, so it pretty straightforward to
-> unpack the vmlinux file  (actual is filename vmlinuz-linux).
+> Does this need to depend on or select OF_DYNAMIC?
 
-Ok, here's what I was able to see: rIP points to call_timer_fn+0x33
-which is this:
+It shouldn't. The property manipulation does not depend on OF_DYNAMIC.
+Only the node manipulation does. When I do more testing next week I'll
+verify.
 
-ffffffff8106f590 <call_timer_fn>:
-ffffffff8106f590:       e8 2b b2 48 00          callq  ffffffff814fa7c0 <__fentry__>
-ffffffff8106f595:       55                      push   %rbp
-ffffffff8106f596:       65 48 8b 04 25 70 c7    mov    %gs:0xc770,%rax
-ffffffff8106f59d:       00 00 
-ffffffff8106f59f:       48 89 e5                mov    %rsp,%rbp
-ffffffff8106f5a2:       41 57                   push   %r15
-ffffffff8106f5a4:       49 89 d7                mov    %rdx,%r15
-ffffffff8106f5a7:       41 56                   push   %r14
-ffffffff8106f5a9:       49 89 f6                mov    %rsi,%r14
-ffffffff8106f5ac:       41 55                   push   %r13
-ffffffff8106f5ae:       41 54                   push   %r12
-ffffffff8106f5b0:       49 89 fc                mov    %rdi,%r12
-ffffffff8106f5b3:       53                      push   %rbx
-ffffffff8106f5b4:       44 8b a8 44 e0 ff ff    mov    -0x1fbc(%rax),%r13d
-ffffffff8106f5bb:       0f 1f 44 00 00          nopl   0x0(%rax,%rax,1)
-ffffffff8106f5c0:       4c 89 ff                mov    %r15,%rdi
-ffffffff8106f5c3:       41 ff d6                callq  *%r14			<--- faulting insn
-ffffffff8106f5c6:       0f 1f 44 00 00          nopl   0x0(%rax,%rax,1)
-ffffffff8106f5cb:       65 48 8b 04 25 70 c7    mov    %gs:0xc770,%rax
-ffffffff8106f5d2:       00 00 
-ffffffff8106f5d4:       44 39 a8 44 e0 ff ff    cmp    %r13d,-0x1fbc(%rax)
-
-and the virtual address in rIP is ffffffff8106f5c3, i.e. the same one
-as in the photo. Thus, the CALL instruction tries to call the timer
-function 'fn' which we pass as an argument to call_timer_fn.
-
-However, the address we're trying to call in %r14 is garbage:
-0x455300323d504544 and not in canonical form, causing the #GP.
-
-So basically what happens is suspend to RAM corrupts something
-containing one or more timer functions and we end up calling crap after
-resume.
-
-If you want to debug this further, you could try playing through
-Documentation/power/basic-pm-debugging.txt and see whether suspend to
-disk works. There's also a section 2 which talks about testing suspend
-to RAM which could be of help.
-
-But let me add Rafael and Thomas - they should have much better ideas
-than me.
-
-Guys, thread starts here:
-http://marc.info/?l=linux-kernel&m=138468134321335
-
-HTH.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+g.
