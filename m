@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab3KQPHD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 10:07:03 -0500
-Received: from server19320154104.serverpool.info ([193.201.54.104]:37742 "EHLO
-	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752352Ab3KQPG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 10:06:56 -0500
-Message-ID: <5288DB85.8060105@hauke-m.de>
-Date: Sun, 17 Nov 2013 16:06:45 +0100
-From: Hauke Mehrtens <hauke@hauke-m.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752563Ab3KQPUA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 10:20:00 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:61182 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab3KQPTy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 10:19:54 -0500
 MIME-Version: 1.0
-To: broonie@kernel.org, lgirdwood@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: build error with CONFIG_REGMAP=m and CONFIG_REGULATOR=y
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131117092731.75b091bd@gandalf.local.home>
+References: <20131115093645.6dc03918@gandalf.local.home>
+	<CAMuHMdXSBSOkfd2MGbn=rpXQRZYw5TKLsR=3SoeSyrcD2CzunA@mail.gmail.com>
+	<20131117092731.75b091bd@gandalf.local.home>
+Date: Sun, 17 Nov 2013 16:19:53 +0100
+X-Google-Sender-Auth: L4YXeup2ayr2IQBwoVHvoGBYMKU
+Message-ID: <CAMuHMdWNh2L56FhDbKfC7TtdHp8=EY2ms_T+=9Xyczz3D-PF=w@mail.gmail.com>
+Subject: Re: [PATCH] scripts: Have make TAGS not include structure members
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Yang Bai <hamo.by@gmail.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Nov 17, 2013 at 3:27 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> On Fri, Nov 15, 2013 at 3:36 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> > It is really annoying when I use emacs TAGS to search for something
+>> > like "dev_name" and have to go through 12 iterations before I find the
+>> > function "dev_name". I really do not care about structures that include
+>> > "dev_name" as one of its fields, and I'm sure pretty much all other
+>> > developers do not care either.
+>>
+>> While I'm also annoyed by this (although with vim/tags), I regularly do search
+>> for struct members, so losing this ability would hurt, too.
+>>
+>> Is there a solution, without throwing out the baby with the bath water?
+>>
+>
+> Or perhaps make it only do it for TAGS. vim gives you a list of
+> locations that you can go to, and even marks if it is a member of a
+> structure or a function or whatever. With emacs, you have to iterate
+> over each location. That is, with my devname example, I had to hit M^.
+> then Ctrl^U M^. another 12 times before I got to the function name.
+> It makes it absolutely worthless, that after two or three misses, I
+> give up and just grep for it.
 
-In OpenWrt we are seeing some build errors when CONFIG_REGMAP=m and
-CONFIG_REGULATOR=y are set.
+Thanks! Now I have to look into my vim setup, why it doesn't do the
+above...
 
-/drivers/regulator/core.c accesses some regmap functions, but they are
-compiled into a module and not into a kernel. When CONFIG_REGMAP is not
-set the header file replaces the functions with empty static inline
-functions.
+Gr{oetje,eeting}s,
 
-With kernel 3.10.18 I see the following build error:
+                        Geert
 
-drivers/built-in.o: In function `regulator_get_bypass_regmap':
-/drivers/regulator/core.c:2989: undefined reference to `regmap_read'
-drivers/built-in.o: In function `regulator_get_voltage_sel_regmap':
-/drivers/regulator/core.c:2199: undefined reference to `regmap_read'
-drivers/built-in.o: In function `regulator_is_enabled_regmap':
-/drivers/regulator/core.c:1916: undefined reference to `regmap_read'
-drivers/built-in.o: In function `regulator_set_bypass_regmap':
-/drivers/regulator/core.c:2973: undefined reference to `regmap_update_bits'
-drivers/built-in.o: In function `regulator_set_voltage_sel_regmap':
-/drivers/regulator/core.c:2226: undefined reference to `regmap_update_bits'
-/drivers/regulator/core.c:2232: undefined reference to `regmap_update_bits'
-drivers/built-in.o: In function `regulator_disable_regmap':
-/drivers/regulator/core.c:1968: undefined reference to `regmap_update_bits'
-drivers/built-in.o: In function `regulator_enable_regmap':
-/drivers/regulator/core.c:1945: undefined reference to `regmap_update_bits'
-drivers/built-in.o: In function `regulator_register':
-/drivers/regulator/core.c:3581: undefined reference to `dev_get_regmap'
-/drivers/regulator/core.c:3582: undefined reference to `dev_get_regmap'
-/drivers/regulator/core.c:3584: undefined reference to `dev_get_regmap'
-make[4]: *** [vmlinux] Error 1
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
-The following patch would be a solution, but it causes a recursive
-dependency:
-
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -1,5 +1,6 @@
- menuconfig REGULATOR
- 	bool "Voltage and Current Regulator Support"
-+	depends on REGMAP || REGMAP = n
- 	help
- 	  Generic Voltage and Current Regulator support.
-
-
-drivers/regulator/Kconfig:1:error: recursive dependency detected!
-drivers/regulator/Kconfig:1:	symbol REGULATOR depends on REGMAP
-drivers/base/regmap/Kconfig:5:	symbol REGMAP is selected by REGMAP_I2C
-drivers/base/regmap/Kconfig:11:	symbol REGMAP_I2C is selected by
-REGULATOR_FAN53555
-drivers/regulator/Kconfig:124:	symbol REGULATOR_FAN53555 depends on
-REGULATOR
-
-I am not familiar with the regmap and the regulator framework, but I
-would suggest to make REGULATOR depend on REGMAP.
-
-Hauke
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
