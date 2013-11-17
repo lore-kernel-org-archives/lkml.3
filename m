@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab3KPXxg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Nov 2013 18:53:36 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:59897 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab3KPXx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Nov 2013 18:53:27 -0500
-Message-ID: <1384645999.7518.46.camel@fishsauce>
-Subject: Re: [tpmdd-devel] [PATCH 2/5 v2] tpm: Pull everything related to
- sysfs into tpm-sysfs.c
-From: Ashley Lai <adlai@linux.vnet.ibm.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+	id S1753512Ab3KQAMz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Nov 2013 19:12:55 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:58370 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752743Ab3KQAMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Nov 2013 19:12:46 -0500
+Date: Sat, 16 Nov 2013 17:12:36 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Ashley Lai <adlai@linux.vnet.ibm.com>
 Cc: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>,
         linux-kernel@vger.kernel.org
-Date: Sat, 16 Nov 2013 17:53:19 -0600
-In-Reply-To: <1383536326-28772-3-git-send-email-jgunthorpe@obsidianresearch.com>
+Subject: Re: [tpmdd-devel] [PATCH 1/5 v2] tpm: Pull everything related to
+ /dev/tpmX into tpm-dev.c
+Message-ID: <20131117001236.GA22861@obsidianresearch.com>
 References: <1383536326-28772-1-git-send-email-jgunthorpe@obsidianresearch.com>
-	 <1383536326-28772-3-git-send-email-jgunthorpe@obsidianresearch.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111623-7164-0000-0000-00000361BAA3
+ <1383536326-28772-2-git-send-email-jgunthorpe@obsidianresearch.com>
+ <1384640335.7518.12.camel@fishsauce>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384640335.7518.12.camel@fishsauce>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Nov 16, 2013 at 04:18:55PM -0600, Ashley Lai wrote:
+> Nice clean up!!! The code looks much more clean after removing the
+> duplicated code in all drivers.  Thanks.
 
-> diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
-> new file mode 100644
-> index 0000000..3bcfed0
-> --- /dev/null
-> +++ b/drivers/char/tpm/tpm-sysfs.c
-> @@ -0,0 +1,318 @@
-> + * Copyright (C) 2013 Obsidian Reearch Corp
-Typo Research?
-> + * Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> + *
+> > +++ b/drivers/char/tpm/tpm-dev.c
+> > + * Copyright (C) 2013 Obsidian Reearch Corp
+> 
+> Typo Research?
 
-> +#include "tpm.h"
-> +
-> +/* XXX for now this helper is duplicated in tpm.c */
+Yes, thanks :)
+ 
+> > + * Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> > + *
+> 
+> > +
+> > +int tpm_dev_add_device(struct tpm_chip *chip)
+> > +{
+> 
+> > +	rc = misc_register(&chip->vendor.miscdev);
+> > +	if (rc) {
+> > +		chip->vendor.miscdev.name = NULL;
+> > +		dev_warn(chip->dev,
+> 
+> Any reason why we use dev_warn here instead of dev_err?
 
-I think you mean this is duplicated in tpm-interface.c.  Is there a
-reason why we cannot add this to tpm.h to avoid this duplication?
+Indeed, it was dev_err before I moved it. 
 
-> +static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
-> +			    int len, const char *desc)
-> +{
+Hmm, it has been so long.. I think an earlier draft had
+tpm_dev_add_device return void (like in other subsystems), so warn
+made more sense. However I eventually changed it to propogate errors,
+and didn't catch the flip.
 
+Lets put it back.
 
-> +static ssize_t pubek_show(struct device *dev, struct device_attribute *attr,
-> +			  char *buf)
-
-Most of the functions in this file are moved from tpm-interface.c
-without any modification to the code.  Why do we need to change the
-function names in this file?  Unless there is a good reason for it
-otherwise I would prefer to keep the same function names.  This is for
-easy maintaining (for me at least :)) in case there are issues in the
-future and we need to go back we can easily find out where they came
-from.
-
-Thanks,
---Ashley Lai
-
+Thanks!
+Jason
