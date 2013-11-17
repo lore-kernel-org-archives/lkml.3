@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab3KQS0X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 13:26:23 -0500
-Received: from mail-gg0-f178.google.com ([209.85.161.178]:53276 "EHLO
-	mail-gg0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372Ab3KQS0R (ORCPT
+	id S1754130Ab3KQS3G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 13:29:06 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50288 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006Ab3KQS24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 13:26:17 -0500
-From: "Geyslan G. Bem" <geyslan@gmail.com>
-To: geyslan@gmail.com
-Cc: Viresh Kumar <viresh.linux@gmail.com>, Chris Ball <cjb@laptop.org>,
-        spear-devel@list.st.com (open list:SECURE DIGITAL HO...),
-        linux-mmc@vger.kernel.org (open list:SECURE DIGITAL HO...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] mmc: sdhci-spear: fix possible null dereference
-Date: Sun, 17 Nov 2013 15:20:19 -0300
-Message-Id: <1384712421-10632-1-git-send-email-geyslan@gmail.com>
-X-Mailer: git-send-email 1.8.4.2
+	Sun, 17 Nov 2013 13:28:56 -0500
+Date: Sun, 17 Nov 2013 19:28:40 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, linux-input@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 1/2] Input: twl4030-keypad - add device tree support
+Message-ID: <20131117182840.GA30012@xo-6d-61-c0.localdomain>
+References: <1383948866-32672-1-git-send-email-sre@debian.org>
+ <1383948866-32672-2-git-send-email-sre@debian.org>
+ <20131111221941.GB23331@amd.pavel.ucw.cz>
+ <20131112032506.GA30028@earth.universe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131112032506.GA30028@earth.universe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Put the 'pdata->card_int_gpio' assignment in inner scope, avoiding
-explicit null dereference.
+Hi!
 
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
----
- drivers/mmc/host/sdhci-spear.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> On Mon, Nov 11, 2013 at 11:19:41PM +0100, Pavel Machek wrote:
+> > > +	if (of_get_property(np, "linux,input-no-autorepeat", NULL))
+> > > +		keypad_data->no_autorepeat = true;
+> > 
+> > From 2/2:
+> > 
+> > +Optional Properties specific to linux:
+> > +- linux,keypad-no-autorepeat: do not enable autorepeat feature.
+> > 
+> > I'm confused now.
+> 
+> good catch! That happens when one tries to mimic other drivers :/
+> 
+> I just checked all DT input drivers for autorepeat keyword:
+> 
+> DRIVER              CODE                        DOCUMENTATION
+> twl4030-keypad      linux,input-no-autorepeat   linux,keypad-no-autorepeat
+> omap4-keypad        linux,input-no-autorepeat   linux,keypad-no-autorepeat
+> samsung-keypad      linux,input-no-autorepeat   linux,keypad-no-autorepeat
+> stmpe-keypad        st,no-autorepeat            st,no-autorepeat
+> spear-keyboard      autorepeat                  autorepeat
+> tca8418-keypad      keypad,autorepeat           --- not documented ---
+> gpio-matrix-keypad  linux,no-autorepeat         linux,no-autorepeat
+> gpio-keys-polled    autorepeat                  autorepeat
+> gpio-keys           autorepeat                  --- no documentation ---
+> 
+> Any suggestions how to continue fixing this mess? I guess first of
+> all the documentation of omap4-keypad, samsung-keypad and of course
+> the new twl4030-keypad driver should be fixed.
+> 
+> Next it would be nice to choose one standard property name for this
+> and use it for twl4030-keypad. I suggest to use "linux,input-no-autorepeat".
 
-diff --git a/drivers/mmc/host/sdhci-spear.c b/drivers/mmc/host/sdhci-spear.c
-index 2dba9f8..c6e5d16 100644
---- a/drivers/mmc/host/sdhci-spear.c
-+++ b/drivers/mmc/host/sdhci-spear.c
-@@ -88,10 +88,9 @@ static struct sdhci_plat_data *sdhci_probe_config_dt(struct platform_device *pde
- 			dev_err(&pdev->dev, "DT: kzalloc failed\n");
- 			return ERR_PTR(-ENOMEM);
- 		}
-+		pdata->card_int_gpio = cd_gpio;
- 	}
- 
--	pdata->card_int_gpio = cd_gpio;
--
- 	return pdata;
- }
- #else
+I'd suggest just simple "autorepeat", so that we get rid of ugly double-negation.
+
+But I guess this is not too important as long as it is consistent... And I'm not
+even sure consistency is huge issue.
+								Pavel	
+
 -- 
-1.8.4.2
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
