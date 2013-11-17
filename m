@@ -1,138 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab3KQWOv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 17:14:51 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58430 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936Ab3KQWOo (ORCPT
+	id S1752664Ab3KQWVx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 17:21:53 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:54066 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751893Ab3KQWVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 17:14:44 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v5 2/3] of/selftest: Add self tests for manipulation of properties
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>
-In-Reply-To: <902D15D9-439C-43BC-BD27-94785DA2F486@antoniou-consulting.com>
-References: <1384537604-5032-1-git-send-email-grant.likely@linaro.org> < 1384537604-5032-3-git-send-email-grant.likely@linaro.org> < 902D15D9-439C-43BC-BD27-94785DA2F486@antoniou-consulting.com>
-Date: Sun, 17 Nov 2013 22:14:39 +0000
-Message-Id: <20131117221439.D09A2C406A5@trevor.secretlab.ca>
+	Sun, 17 Nov 2013 17:21:45 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Borislav Petkov <bp@alien8.de>, Francis Moreau <francis.moro@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
+Date: Sun, 17 Nov 2013 23:34:20 +0100
+Message-ID: <4636530.OR894YNbbr@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20131117220611.GQ27323@pd.tnic>
+References: <52888F6D.6000802@gmail.com> <CAC9WiBggfssh+31_MqVCT-hDf2E8zTuc81q-DhLYQuVF053mEA@mail.gmail.com> <20131117220611.GQ27323@pd.tnic>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 16 Nov 2013 19:50:37 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> Hi Grant,
+On Sunday, November 17, 2013 11:06:12 PM Borislav Petkov wrote:
+> On Sun, Nov 17, 2013 at 09:49:40PM +0100, Francis Moreau wrote:
+> > On Sun, Nov 17, 2013 at 8:53 PM, Borislav Petkov <bp@alien8.de> wrote:
+> > > On Sun, Nov 17, 2013 at 07:02:21PM +0100, Francis Moreau wrote:
+> > >> Sorry I haven't taken the original picture large enough, and getting
+> > >> this kernel panic is pretty hard since the kernel usually displays the
+> > >> black screen.
+> > >
+> > > Ok, just try to make a readable picture of the whole line, next time you
+> > > trigger it.
+> > >
+> > >> I can't find any traces of this function in the dump...
+> > >
+> > > Hmm, strange. Can you upload the whole vmlinux somewhere? Or is this the
+> > > official archlinux kernel? If so, where can I get it from?
+> > 
+> > Yes, you can download the bin package from :
+> > https://www.archlinux.org/packages/core/x86_64/linux/
+> > 
+> > The bin package is a tar archive, so it pretty straightforward to
+> > unpack the vmlinux file  (actual is filename vmlinuz-linux).
 > 
-> On Nov 15, 2013, at 7:46 PM, Grant Likely wrote:
+> Ok, here's what I was able to see: rIP points to call_timer_fn+0x33
+> which is this:
 > 
-> > Adds a few simple test cases to ensure that addition, update and removal
-> > of device tree node properties works correctly.
-> > 
-> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> > Cc: Rob Herring <rob.herring@calxeda.com>
-> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > Cc: David S. Miller <davem@davemloft.net>
-> > Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-> > Cc: Pantelis Antoniou <panto@antoniou-consulting.com>
-> > ---
-> > drivers/of/selftest.c | 62 +++++++++++++++++++++++++++++++++++++++++++++++++++
-> > 1 file changed, 62 insertions(+)
-> > 
-> > diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
-> > index e21012bde639..cb8d3e722f76 100644
-> > --- a/drivers/of/selftest.c
-> > +++ b/drivers/of/selftest.c
-> > @@ -30,6 +30,67 @@ static struct selftest_results {
-> > 	} \
-> > }
-> > 
-> > +static void __init of_selftest_dynamic(void)
-> > +{
-> > +	struct device_node *np;
-> > +	struct property *prop;
-> > +
-> > +	np = of_find_node_by_path("/testcase-data");
-> > +	if (!np) {
-> > +		pr_err("missing testcase data\n");
-> > +		return;
-> > +	}
-> > +
-> > +	/* Array of 4 properties for the purpose of testing */
-> > +	prop = kzalloc(sizeof(*prop) * 4, GFP_KERNEL);
-> > +	if (!prop) {
-> > +		selftest(0, "kzalloc() failed\n");
-> > +		return;
-> > +	}
-> > +
-> > +	/* Add a new property - should pass*/
-> > +	prop->name = "new-property";
-> > +	prop->value = "new-property-data";
-> > +	prop->length = strlen(prop->value);
-> > +	selftest(of_add_property(np, prop) == 0, "Adding a new property failed\n");
-> > +
-> > +	/* Try to add an existing property - should fail */
-> > +	prop++;
-> > +	prop->name = "new-property";
-> > +	prop->value = "new-property-data-should-fail";
-> > +	prop->length = strlen(prop->value);
-> > +	selftest(of_add_property(np, prop) != 0,
-> > +		 "Adding an existing property should have failed\n");
-> > +
-> > +	/* Try to modify an existing property - should pass */
-> > +	prop->value = "modify-property-data-should-pass";
-> > +	prop->length = strlen(prop->value);
-> > +	selftest(of_update_property(np, prop) == 0,
-> > +		 "Updating an existing property should have passed\n");
-> > +
-> > +	/* Try to modify non-existent property - should pass*/
-> > +	prop++;
-> > +	prop->name = "modify-property";
-> > +	prop->value = "modify-missing-property-data-should-pass";
-> > +	prop->length = strlen(prop->value);
-> > +	selftest(of_update_property(np, prop) == 0,
-> > +		 "Updating a missing property should have passed\n");
-> > +
-> > +	/* Remove property - should pass */
-> > +	selftest(of_remove_property(np, prop) == 0,
-> > +		 "Removing a property should have passed\n");
-> > +
-> > +	/* Adding very large property - should pass */
-> > +	prop++;
-> > +	prop->name = "large-property-PAGE_SIZEx8";
-> > +	prop->length = PAGE_SIZE * 8;
-> > +	prop->value = kzalloc(prop->length, GFP_KERNEL);
-> > +	selftest(prop->value != NULL, "Unable to allocate large buffer\n");
-> > +	if (prop->value)
-> > +		selftest(of_add_property(np, prop) == 0,
-> > +			 "Adding a large property should have passed\n");
-> > +}
-> > +
-> > static void __init of_selftest_parse_phandle_with_args(void)
-> > {
-> > 	struct device_node *np;
-> > @@ -312,6 +373,7 @@ static int __init of_selftest(void)
-> > 	of_node_put(np);
-> > 
-> > 	pr_info("start of selftest - you will see error messages\n");
-> > +	of_selftest_dynamic();
-> > 	of_selftest_parse_phandle_with_args();
-> > 	of_selftest_property_match_string();
-> > 	of_selftest_parse_interrupts();
-> > -- 
-> > 1.8.3.2
-> > 
+> ffffffff8106f590 <call_timer_fn>:
+> ffffffff8106f590:       e8 2b b2 48 00          callq  ffffffff814fa7c0 <__fentry__>
+> ffffffff8106f595:       55                      push   %rbp
+> ffffffff8106f596:       65 48 8b 04 25 70 c7    mov    %gs:0xc770,%rax
+> ffffffff8106f59d:       00 00 
+> ffffffff8106f59f:       48 89 e5                mov    %rsp,%rbp
+> ffffffff8106f5a2:       41 57                   push   %r15
+> ffffffff8106f5a4:       49 89 d7                mov    %rdx,%r15
+> ffffffff8106f5a7:       41 56                   push   %r14
+> ffffffff8106f5a9:       49 89 f6                mov    %rsi,%r14
+> ffffffff8106f5ac:       41 55                   push   %r13
+> ffffffff8106f5ae:       41 54                   push   %r12
+> ffffffff8106f5b0:       49 89 fc                mov    %rdi,%r12
+> ffffffff8106f5b3:       53                      push   %rbx
+> ffffffff8106f5b4:       44 8b a8 44 e0 ff ff    mov    -0x1fbc(%rax),%r13d
+> ffffffff8106f5bb:       0f 1f 44 00 00          nopl   0x0(%rax,%rax,1)
+> ffffffff8106f5c0:       4c 89 ff                mov    %r15,%rdi
+> ffffffff8106f5c3:       41 ff d6                callq  *%r14			<--- faulting insn
+> ffffffff8106f5c6:       0f 1f 44 00 00          nopl   0x0(%rax,%rax,1)
+> ffffffff8106f5cb:       65 48 8b 04 25 70 c7    mov    %gs:0xc770,%rax
+> ffffffff8106f5d2:       00 00 
+> ffffffff8106f5d4:       44 39 a8 44 e0 ff ff    cmp    %r13d,-0x1fbc(%rax)
 > 
-> I like this. I'll add my overlay test cases somewhere around here.
+> and the virtual address in rIP is ffffffff8106f5c3, i.e. the same one
+> as in the photo. Thus, the CALL instruction tries to call the timer
+> function 'fn' which we pass as an argument to call_timer_fn.
 > 
-> I might need to introduce some new helper functions in order to generate
-> the overlay completely programmatically.
+> However, the address we're trying to call in %r14 is garbage:
+> 0x455300323d504544 and not in canonical form, causing the #GP.
+> 
+> So basically what happens is suspend to RAM corrupts something
+> containing one or more timer functions and we end up calling crap after
+> resume.
+> 
+> If you want to debug this further, you could try playing through
+> Documentation/power/basic-pm-debugging.txt and see whether suspend to
+> disk works. There's also a section 2 which talks about testing suspend
+> to RAM which could be of help.
+> 
+> But let me add Rafael and Thomas - they should have much better ideas
+> than me.
+> 
+> Guys, thread starts here:
+> http://marc.info/?l=linux-kernel&m=138468134321335
 
-That would be good. I also really want to get the overlay code working
-so I can use it for loading the testcase data on any running system.
-:-)
+This looks like a softirq bug to me (and related to cpuidle).
 
-g.
+I'm wondering if that happens with any of the older kernels or just 3.12?
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
