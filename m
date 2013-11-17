@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab3KQViX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 16:38:23 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:52495 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab3KQViO (ORCPT
+	id S1752584Ab3KQVjU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 16:39:20 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54799 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751348Ab3KQVjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 16:38:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131117182906.GE30012@xo-6d-61-c0.localdomain>
-References: <CAP+fKSpvJqeh8JCHisByDBsGWPOWOcDN4qeVYJOn1tgg8HR0eg@mail.gmail.com>
-	<CAP+fKSp5ze3-qWHY_D_e3AXxnFM-AB9FBfRLjy0yOFnOp6bp4w@mail.gmail.com>
-	<201309030717.57866.a.miskiewicz@gmail.com>
-	<201310241800.18490.a.miskiewicz@gmail.com>
-	<20131029135036.GA30992@gnuservers.com.ar>
-	<5270EBA9.6070302@hurleysoftware.com>
-	<20131117182906.GE30012@xo-6d-61-c0.localdomain>
-Date: Sun, 17 Nov 2013 22:38:13 +0100
-Message-ID: <CAP+fKSp0rk7Y=zeKwcqNnQj2td521VL_PqW63ZXNwrZURorb2A@mail.gmail.com>
-Subject: Re: Large pastes into readline enabled programs causes breakage from
- v2.6.31 onwards
-From: Margarita Manterola <margamanterola@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Maximiliano Curia <maxy@gnuservers.com.ar>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
-        Linux kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, bug-readline@gnu.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 17 Nov 2013 16:39:10 -0500
+Message-ID: <1384724339.2050.6.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] scsi: be_iscsi: fix possible memory leak and refactor
+ code
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Geyslan =?ISO-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
+Cc: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
+        "open list:SERVER ENGINES 10..." <linux-scsi@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Sun, 17 Nov 2013 13:38:59 -0800
+In-Reply-To: <CAGG-pURSnEeNvmHhQ-GvrnyuMHPrTRMoCKt3P=bB23OD9Vmkpg@mail.gmail.com>
+References: <1384714284-13712-1-git-send-email-geyslan@gmail.com>
+	 <1384717371.2050.2.camel@dabdike.int.hansenpartnership.com>
+	 <CAGG-pURSnEeNvmHhQ-GvrnyuMHPrTRMoCKt3P=bB23OD9Vmkpg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI,
+On Sun, 2013-11-17 at 19:09 -0200, Geyslan Gregório Bem wrote:
+> 2013/11/17 James Bottomley <James.Bottomley@hansenpartnership.com>:
+> > On Sun, 2013-11-17 at 15:51 -0300, Geyslan G. Bem wrote:
+> >> This patch fix memory leakage in cases 'ISCSI_NET_PARAM_VLAN_ID' and
+> >> 'ISCSI_NET_PARAM_VLAN_PRIORITY' and refactors code 'going out' when
+> >> necessary.
+> >
+> > You pointlessly renamed a variable, which makes the diff hard to read.
+> > Please don't do that.
+> 
+> Ok, I can agree. 'len' means length? What is returned in case of non
+> error?
 
-On Sun, Nov 17, 2013 at 7:29 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> Any news?
+it returns the length of buf written to or negative error.
 
-I'm also not capable of doing the analysis requested, but I want to
-add a link for the the fact that Canonical has applied the patch to
-the kernels shipped in Ubuntu, and up to now there have been no
-reports of problems:
+> > You missed the fact that the passed in pointer is unmodified if
+> > mgmt_get_if_info() returns non zero, so the kfree frees junk and would
+> > oops.
+> >
+> > There's no need for a goto; len = -EINVAL; does everything that's
+> > needed.
+> 
+> Well, that is a coverity catch. CID 1128954. Check it.
 
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1208740
+I didn't say coverity was wrong, I said your patch was (well not wrong,
+just over complex and incomplete).  This is the way to fix both
+problems.
 
-It was applied in Saucy on Sept. 11th. Ported to the previous Ubuntu
-versions on Oct. 24th through the "proposed" mechanism (only reaches a
-portion of the users).  Released in the official kernels on Nov. 8th.
+James
 
-Since a few days, then, everyone running an updated Ubuntu system,
-regardless of the specific version, should have this patch.
+---
 
--- 
-Besos,
-Marga
+diff --git a/drivers/scsi/be2iscsi/be_iscsi.c b/drivers/scsi/be2iscsi/be_iscsi.c
+index ffadbee..9dcbdfa 100644
+--- a/drivers/scsi/be2iscsi/be_iscsi.c
++++ b/drivers/scsi/be2iscsi/be_iscsi.c
+@@ -541,10 +541,8 @@ static int be2iscsi_get_if_param(struct beiscsi_hba *phba,
+ 		ip_type = BE2_IPV6;
+ 
+ 	len = mgmt_get_if_info(phba, ip_type, &if_info);
+-	if (len) {
+-		kfree(if_info);
++	if (len)
+ 		return len;
+-	}
+ 
+ 	switch (param) {
+ 	case ISCSI_NET_PARAM_IPV4_ADDR:
+@@ -569,7 +567,7 @@ static int be2iscsi_get_if_param(struct beiscsi_hba *phba,
+ 		break;
+ 	case ISCSI_NET_PARAM_VLAN_ID:
+ 		if (if_info->vlan_priority == BEISCSI_VLAN_DISABLE)
+-			return -EINVAL;
++			len = -EINVAL;
+ 		else
+ 			len = sprintf(buf, "%d\n",
+ 				     (if_info->vlan_priority &
+
+
