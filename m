@@ -1,419 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360Ab3KQTNE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 14:13:04 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:42103 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751446Ab3KQTMy (ORCPT
+	id S1752802Ab3KQTnG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 14:43:06 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54561 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751936Ab3KQTmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 14:12:54 -0500
-Date: Sun, 17 Nov 2013 20:12:52 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] watchdog: w83627hf: Convert to watchdog infrastructure
-Message-ID: <20131117191252.GA20636@spo001.leaseweb.com>
-References: <1376773126-2717-1-git-send-email-linux@roeck-us.net> <1376773126-2717-2-git-send-email-linux@roeck-us.net> <20131028215755.GA13226@spo001.leaseweb.com> <20131029024357.GA27070@roeck-us.net>
+	Sun, 17 Nov 2013 14:42:55 -0500
+Message-ID: <1384717371.2050.2.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] scsi: be_iscsi: fix possible memory leak and refactor
+ code
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Geyslan G. Bem" <geyslan@gmail.com>
+Cc: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
+        "open list:SERVER ENGINES 10..." <linux-scsi@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Sun, 17 Nov 2013 11:42:51 -0800
+In-Reply-To: <1384714284-13712-1-git-send-email-geyslan@gmail.com>
+References: <1384714284-13712-1-git-send-email-geyslan@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131029024357.GA27070@roeck-us.net>
-User-Agent: Mutt/1.4.1i
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+On Sun, 2013-11-17 at 15:51 -0300, Geyslan G. Bem wrote:
+> This patch fix memory leakage in cases 'ISCSI_NET_PARAM_VLAN_ID' and
+> 'ISCSI_NET_PARAM_VLAN_PRIORITY' and refactors code 'going out' when
+> necessary.
 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> v4: Restore 'nowayout' module parameter
-> 
-> The changes cause a trivial conflict with 'watchdog: w83627hf: Auto-detect
-> IO address and supported chips'. Please let me know if I should re-send
-> the entire series.
-> 
->  drivers/watchdog/Kconfig        |    1 +
->  drivers/watchdog/w83627hf_wdt.c |  218 +++++++++------------------------------
->  2 files changed, 50 insertions(+), 169 deletions(-)
-> 
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index d1d53f3..dcaecd0 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -868,6 +868,7 @@ config VIA_WDT
->  config W83627HF_WDT
->  	tristate "W83627HF/W83627DHG Watchdog Timer"
->  	depends on X86
-> +	select WATCHDOG_CORE
->  	---help---
->  	  This is the driver for the hardware watchdog on the W83627HF chipset
->  	  as used in Advantech PC-9578 and Tyan S2721-533 motherboards
-> diff --git a/drivers/watchdog/w83627hf_wdt.c b/drivers/watchdog/w83627hf_wdt.c
-> index 92f1326..e204c2b 100644
-> --- a/drivers/watchdog/w83627hf_wdt.c
-> +++ b/drivers/watchdog/w83627hf_wdt.c
-> @@ -1,6 +1,9 @@
->  /*
->   *	w83627hf/thf WDT driver
->   *
-> + *	(c) Copyright 2013 Guenter Roeck
-> + *		converted to watchdog infrastructure
-> + *
->   *	(c) Copyright 2007 Vlad Drukker <vlad@storewiz.com>
->   *		added support for W83627THF.
->   *
-> @@ -31,31 +34,22 @@
->  #include <linux/module.h>
->  #include <linux/moduleparam.h>
->  #include <linux/types.h>
-> -#include <linux/miscdevice.h>
->  #include <linux/watchdog.h>
-> -#include <linux/fs.h>
->  #include <linux/ioport.h>
->  #include <linux/notifier.h>
->  #include <linux/reboot.h>
->  #include <linux/init.h>
-> -#include <linux/spinlock.h>
->  #include <linux/io.h>
-> -#include <linux/uaccess.h>
-> -
->  
->  #define WATCHDOG_NAME "w83627hf/thf/hg/dhg WDT"
->  #define WATCHDOG_TIMEOUT 60		/* 60 sec default timeout */
->  
-> -static unsigned long wdt_is_open;
-> -static char expect_close;
-> -static DEFINE_SPINLOCK(io_lock);
-> -
->  /* You must set this - there is no sane way to probe for this board. */
->  static int wdt_io = 0x2E;
->  module_param(wdt_io, int, 0);
->  MODULE_PARM_DESC(wdt_io, "w83627hf/thf WDT io port (default 0x2E)");
->  
-> -static int timeout = WATCHDOG_TIMEOUT;	/* in seconds */
-> +static int timeout;			/* in seconds */
->  module_param(timeout, int, 0);
->  MODULE_PARM_DESC(timeout,
->  		"Watchdog timeout in seconds. 1 <= timeout <= 255, default="
-> @@ -110,7 +104,7 @@ static void w83627hf_unselect_wd_register(void)
->  /* tyan motherboards seem to set F5 to 0x4C ?
->   * So explicitly init to appropriate value. */
->  
-> -static void w83627hf_init(void)
-> +static void w83627hf_init(struct watchdog_device *wdog)
->  {
->  	unsigned char t;
->  
-> @@ -120,8 +114,8 @@ static void w83627hf_init(void)
->  	t = inb_p(WDT_EFDR);      /* read CRF6 */
->  	if (t != 0) {
->  		pr_info("Watchdog already running. Resetting timeout to %d sec\n",
-> -			timeout);
-> -		outb_p(timeout, WDT_EFDR);    /* Write back to CRF6 */
-> +			wdog->timeout);
-> +		outb_p(wdog->timeout, WDT_EFDR);	/* Write back to CRF6 */
->  	}
->  
->  	outb_p(0xF5, WDT_EFER); /* Select CRF5 */
-> @@ -141,10 +135,8 @@ static void w83627hf_init(void)
->  	w83627hf_unselect_wd_register();
->  }
->  
-> -static void wdt_set_time(int timeout)
-> +static int wdt_set_time(unsigned int timeout)
->  {
-> -	spin_lock(&io_lock);
-> -
->  	w83627hf_select_wd_register();
->  
->  	outb_p(0xF6, WDT_EFER);    /* Select CRF6 */
-> @@ -152,34 +144,30 @@ static void wdt_set_time(int timeout)
->  
->  	w83627hf_unselect_wd_register();
->  
-> -	spin_unlock(&io_lock);
-> +	return 0;
->  }
->  
-> -static int wdt_ping(void)
-> +static int wdt_start(struct watchdog_device *wdog)
->  {
-> -	wdt_set_time(timeout);
-> -	return 0;
-> +	return wdt_set_time(wdog->timeout);
->  }
->  
-> -static int wdt_disable(void)
-> +static int wdt_stop(struct watchdog_device *wdog)
->  {
-> -	wdt_set_time(0);
-> -	return 0;
-> +	return wdt_set_time(0);
->  }
->  
-> -static int wdt_set_heartbeat(int t)
-> +static int wdt_set_timeout(struct watchdog_device *wdog, unsigned int timeout)
->  {
-> -	if (t < 1 || t > 255)
-> -		return -EINVAL;
-> -	timeout = t;
-> +	wdt_set_time(timeout);
+You pointlessly renamed a variable, which makes the diff hard to read.
+Please don't do that.
 
-Since the core code does a "ping()" after calling the wdt_set_timeout operation
-you don't need the above line.
+You missed the fact that the passed in pointer is unmodified if
+mgmt_get_if_info() returns non zero, so the kfree frees junk and would
+oops.
 
-> +	wdog->timeout = timeout;
-> +
->  	return 0;
->  }
->  
-> -static int wdt_get_time(void)
-> +static unsigned int wdt_get_time(struct watchdog_device *wdog)
->  {
-> -	int timeleft;
-> -
-> -	spin_lock(&io_lock);
-> +	unsigned int timeleft;
->  
->  	w83627hf_select_wd_register();
->  
-> @@ -188,124 +176,17 @@ static int wdt_get_time(void)
->  
->  	w83627hf_unselect_wd_register();
->  
-> -	spin_unlock(&io_lock);
-> -
->  	return timeleft;
->  }
->  
-> -static ssize_t wdt_write(struct file *file, const char __user *buf,
-> -						size_t count, loff_t *ppos)
-> -{
-> -	if (count) {
-> -		if (!nowayout) {
-> -			size_t i;
-> -
-> -			expect_close = 0;
-> -
-> -			for (i = 0; i != count; i++) {
-> -				char c;
-> -				if (get_user(c, buf + i))
-> -					return -EFAULT;
-> -				if (c == 'V')
-> -					expect_close = 42;
-> -			}
-> -		}
-> -		wdt_ping();
-> -	}
-> -	return count;
-> -}
-> -
-> -static long wdt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-> -{
-> -	void __user *argp = (void __user *)arg;
-> -	int __user *p = argp;
-> -	int timeval;
-> -	static const struct watchdog_info ident = {
-> -		.options = WDIOF_KEEPALIVEPING | WDIOF_SETTIMEOUT |
-> -							WDIOF_MAGICCLOSE,
-> -		.firmware_version = 1,
-> -		.identity = "W83627HF WDT",
-> -	};
-> -
-> -	switch (cmd) {
-> -	case WDIOC_GETSUPPORT:
-> -		if (copy_to_user(argp, &ident, sizeof(ident)))
-> -			return -EFAULT;
-> -		break;
-> -	case WDIOC_GETSTATUS:
-> -	case WDIOC_GETBOOTSTATUS:
-> -		return put_user(0, p);
-> -	case WDIOC_SETOPTIONS:
-> -	{
-> -		int options, retval = -EINVAL;
-> -
-> -		if (get_user(options, p))
-> -			return -EFAULT;
-> -		if (options & WDIOS_DISABLECARD) {
-> -			wdt_disable();
-> -			retval = 0;
-> -		}
-> -		if (options & WDIOS_ENABLECARD) {
-> -			wdt_ping();
-> -			retval = 0;
-> -		}
-> -		return retval;
-> -	}
-> -	case WDIOC_KEEPALIVE:
-> -		wdt_ping();
-> -		break;
-> -	case WDIOC_SETTIMEOUT:
-> -		if (get_user(timeval, p))
-> -			return -EFAULT;
-> -		if (wdt_set_heartbeat(timeval))
-> -			return -EINVAL;
-> -		wdt_ping();
-> -		/* Fall */
-> -	case WDIOC_GETTIMEOUT:
-> -		return put_user(timeout, p);
-> -	case WDIOC_GETTIMELEFT:
-> -		timeval = wdt_get_time();
-> -		return put_user(timeval, p);
-> -	default:
-> -		return -ENOTTY;
-> -	}
-> -	return 0;
-> -}
-> -
-> -static int wdt_open(struct inode *inode, struct file *file)
-> -{
-> -	if (test_and_set_bit(0, &wdt_is_open))
-> -		return -EBUSY;
-> -	/*
-> -	 *	Activate
-> -	 */
-> -
-> -	wdt_ping();
-> -	return nonseekable_open(inode, file);
-> -}
-> -
-> -static int wdt_close(struct inode *inode, struct file *file)
-> -{
-> -	if (expect_close == 42)
-> -		wdt_disable();
-> -	else {
-> -		pr_crit("Unexpected close, not stopping watchdog!\n");
-> -		wdt_ping();
-> -	}
-> -	expect_close = 0;
-> -	clear_bit(0, &wdt_is_open);
-> -	return 0;
-> -}
-> -
->  /*
->   *	Notifier for system down
->   */
-> -
->  static int wdt_notify_sys(struct notifier_block *this, unsigned long code,
->  	void *unused)
->  {
->  	if (code == SYS_DOWN || code == SYS_HALT)
-> -		wdt_disable();	/* Turn the WDT off */
-> +		wdt_set_time(0);	/* Turn the WDT off */
->  
->  	return NOTIFY_DONE;
->  }
-> @@ -314,19 +195,26 @@ static int wdt_notify_sys(struct notifier_block *this, unsigned long code,
->   *	Kernel Interfaces
->   */
->  
-> -static const struct file_operations wdt_fops = {
-> -	.owner		= THIS_MODULE,
-> -	.llseek		= no_llseek,
-> -	.write		= wdt_write,
-> -	.unlocked_ioctl	= wdt_ioctl,
-> -	.open		= wdt_open,
-> -	.release	= wdt_close,
-> +static struct watchdog_info wdt_info = {
-> +	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
-> +	.identity = "W83627HF Watchdog",
-> +};
-> +
-> +static struct watchdog_ops wdt_ops = {
-> +	.owner = THIS_MODULE,
-> +	.start = wdt_start,
-> +	.stop = wdt_stop,
-> +	.ping = wdt_start,
+There's no need for a goto; len = -EINVAL; does everything that's
+needed.
 
-This one is not needed since it's the same as start.
+James
 
-> +	.set_timeout = wdt_set_timeout,
-> +	.get_timeleft = wdt_get_time,
->  };
->  
-> -static struct miscdevice wdt_miscdev = {
-> -	.minor = WATCHDOG_MINOR,
-> -	.name = "watchdog",
-> -	.fops = &wdt_fops,
-> +static struct watchdog_device wdt_dev = {
-> +	.info = &wdt_info,
-> +	.ops = &wdt_ops,
-> +	.timeout = WATCHDOG_TIMEOUT,
-> +	.min_timeout = 1,
-> +	.max_timeout = 255,
->  };
->  
->  /*
-> @@ -344,19 +232,15 @@ static int __init wdt_init(void)
->  
->  	pr_info("WDT driver for the Winbond(TM) W83627HF/THF/HG/DHG Super I/O chip initialising\n");
->  
-> -	if (wdt_set_heartbeat(timeout)) {
-> -		wdt_set_heartbeat(WATCHDOG_TIMEOUT);
-> -		pr_info("timeout value must be 1 <= timeout <= 255, using %d\n",
-> -			WATCHDOG_TIMEOUT);
-> -	}
-> -
->  	if (!request_region(wdt_io, 1, WATCHDOG_NAME)) {
->  		pr_err("I/O address 0x%04x already in use\n", wdt_io);
-> -		ret = -EIO;
-> -		goto out;
-> +		return -EIO;
->  	}
->  
-> -	w83627hf_init();
-> +	watchdog_init_timeout(&wdt_dev, timeout, NULL);
-> +	watchdog_set_nowayout(&wdt_dev, nowayout);
-> +
-> +	w83627hf_init(&wdt_dev);
->  
->  	ret = register_reboot_notifier(&wdt_notifier);
->  	if (ret != 0) {
-> @@ -364,28 +248,25 @@ static int __init wdt_init(void)
->  		goto unreg_regions;
->  	}
->  
-> -	ret = misc_register(&wdt_miscdev);
-> -	if (ret != 0) {
-> -		pr_err("cannot register miscdev on minor=%d (err=%d)\n",
-> -		       WATCHDOG_MINOR, ret);
-> +	ret = watchdog_register_device(&wdt_dev);
-> +	if (ret)
->  		goto unreg_reboot;
-> -	}
->  
->  	pr_info("initialized. timeout=%d sec (nowayout=%d)\n",
-> -		timeout, nowayout);
-> +		wdt_dev.timeout, nowayout);
->  
-> -out:
->  	return ret;
-> +
->  unreg_reboot:
->  	unregister_reboot_notifier(&wdt_notifier);
->  unreg_regions:
->  	release_region(wdt_io, 1);
-> -	goto out;
-> +	return ret;
->  }
->  
->  static void __exit wdt_exit(void)
->  {
-> -	misc_deregister(&wdt_miscdev);
-> +	watchdog_unregister_device(&wdt_dev);
->  	unregister_reboot_notifier(&wdt_notifier);
->  	release_region(wdt_io, 1);
->  }
-> @@ -396,4 +277,3 @@ module_exit(wdt_exit);
->  MODULE_LICENSE("GPL");
->  MODULE_AUTHOR("Pádraig  Brady <P@draigBrady.com>");
->  MODULE_DESCRIPTION("w83627hf/thf WDT driver");
-> -MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-
-I will add this patch with above two small corrections to linux-watchdog-next.
-
-Kind regards,
-Wim.
 
