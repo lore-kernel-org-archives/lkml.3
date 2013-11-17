@@ -1,131 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554Ab3KQX3h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 18:29:37 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:42045 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936Ab3KQX32 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 18:29:28 -0500
-Date: Mon, 18 Nov 2013 10:29:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tim Kryger <tim.kryger@linaro.org>
-Subject: linux-next: build failure after merge of the i2c tree
-Message-Id: <20131118102916.2a81b09818d07a6863f6b003@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__18_Nov_2013_10_29_16_+1100_ONHIZq0Kn8_dWabs"
+	id S1752423Ab3KQXrW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 18:47:22 -0500
+Received: from mout.gmx.net ([212.227.17.21]:64157 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751546Ab3KQXrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 18:47:12 -0500
+Date: Mon, 18 Nov 2013 00:47:07 +0100
+From: Helge Deller <deller@gmx.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-parisc@vger.kernel.org
+Cc: Helge Deller <deller@gmx.de>, Benjamin LaHaise <bcrl@kvack.org>,
+        Simon Baatz <gmbnomis@gmail.com>, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org, John David Anglin <dave.anglin@bell.net>
+Subject: Re: [PATCH] aio: fix D-cache aliasing issues
+Message-ID: <20131117234707.GA25545@p100.box>
+References: <20131115220529.GA3160@ls3530.box>
+ <1384555325.2003.39.camel@dabdike.int.hansenpartnership.com>
+ <20131116200717.GA18939@schnuecks.de>
+ <20131116200959.GA14098@kvack.org>
+ <528933BC.50806@gmx.de>
+ <1384724973.2050.14.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384724973.2050.14.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V03:K0:q+WtMtVbtmgmqLh9cYavEELo2eOdL/kRFY1oG3a4z5p2ORyKQI3
+ FnEHsGz+V4rjoVkOLp4ltJE0EoE+Esk4G/Q47jSNKbxwJiW7zGzb1btHLXjNeY583Nsg600
+ +9fWc6I3z83Qp7QFPmg+ljty8lQ4g6nO9O92xq4NVDSSHPrtEEEPNjuS9c7cDs15Tfj+67Z
+ gge1C7hYiH5bZJTIAfqDg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Nov_2013_10_29_16_+1100_ONHIZq0Kn8_dWabs
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* James Bottomley <James.Bottomley@HansenPartnership.com>:
+> On Sun, 2013-11-17 at 22:23 +0100, Helge Deller wrote:
+> > On 11/16/2013 09:09 PM, Benjamin LaHaise wrote:
+> > > On Sat, Nov 16, 2013 at 09:07:18PM +0100, Simon Baatz wrote:
+> > >> On Fri, Nov 15, 2013 at 02:42:05PM -0800, James Bottomley wrote:
+> > >>> On Fri, 2013-11-15 at 23:05 +0100, Helge Deller wrote:
+> > >>>> When a user page mapping is released via kunmap*() functions, the D-cache needs
+> > >>>> to be flushed via flush_dcache_page() to avoid D-cache aliasing issues.
+> > >>>>
+> > >>>> This patch fixes aio on the parisc platform (and probably others).
+> > >>>
+> > >>> This should be flush_kernel_dcache_page().  flush_dcache_page() is for
+> > >>> full coherency but for unmap, we know the page was coherent going in and
+> > >>> may have been modified by the kernel, so only the kernel view needs to
+> > >>> be sync'd.  Technically, by the kernel API, the flush should be done
+> > >>> *before* unmapping.  This would have mattered on parisc until we did
+> > >>> flush via tmpalias which means we no-longer care if the mapping for the
+> > >>> flush exists or not because we always recreate it via the tmpalias
+> > >>> pages.
+> > >>
+> > >> On ARM, flush_kernel_dcache_page() actually assumes that the page is
+> > >> mapped.  It avoids double flushing of highmem pages by not flushing
+> > >> in those cases where kunmap_atomic() already takes care of flushing.
+> > > 
+> > > Helge -- are you going to resubmit a version of this patch that makes the 
+> > > recommended change?
+> > 
+> > Sure, I'll do. May need some time for testing the various machine types though.
+> > Maybe in the end you can drop my patch since we might be able to fix it in the 
+> > parisc arch code.
+> > 
+> > @James, Dave: The patch I sent here was not used on the C8000. The C8000 (PA8800)
+> > works out of the box (and it uses the flush_kernel_dcache_page() function which
+> > is provided by kunmap()). It seems we require the flush_kernel_dcache_page() on
+> > the other machines too?
+> 
+> Well, this is why I think our in-kernel API (not the parisc one) for
+> kmap/kunmap is faulty.  I can't see any valid use of kmap/kunmap where
+> you don't need to flush. 
 
-Hi Wolfram,
+Maybe adding a flag to kmap(), e.g. READ_ONLY, WRITE_ONLY or similiar? 
 
-After merging the i2c tree, today's linux-next build (arm
-multi_v7_defconfig) failed like this:
+> Either you kmapped for reading, in which case
+> you need to flush user space before the kernel access, or you kmapped
+> for writing, in which case you need to flush user space just before
+> mapping (eliminate any dirty user line) and the kernel cache before
+> unmap (so the modification becomes visible in main memory).
 
-drivers/i2c/busses/i2c-bcm-kona.c: In function 'bcm_kona_send_i2c_cmd':
-drivers/i2c/busses/i2c-bcm-kona.c:268:2: error: implicit declaration of fun=
-ction 'INIT_COMPLETION' [-Werror=3Dimplicit-function-declaration]
+That's exactly what Dave told me in a private mail earlier.
 
-Caused by commit 93d17247118c ("i2c: bcm-kona: Introduce Broadcom I2C
-Driver") interacting with commit 62026aedaace ("sched: remove
-INIT_COMPLETION") from Linus` tree.
+Below is a patch to the parisc arch code which is originally from Dave.
+I only changed kunmap_parisc() to always call
+flush_kernel_dcache_page_addr(addr) - independend if we are on a PA8800/8900
+CPU or not - which is what you proposed in your original mail.
+And yes, this flush_kernel_dcache_page() fixes the aio problems
+on all my machines (32- and 64bit kernels, PA7300LC, PA8700, ...).
 
-I have applied the following merge fix patch and can carry it as
-necessary (please inform Linus of this when you ask him to merge your
-tree).
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 18 Nov 2013 10:26:37 +1100
-Subject: [PATCH] i2c: bcm-kona: fix for INIT_COMPLETION -> reinit_completion
- API change
+>  I could see
+> an argument that flushing all the user mappings is expensive so only do
+> it if necessary, but I think it looks to be always necessary: even if
+> you're writing only, which means purging the lines above the user
+> mappings, most hardware will panic (HPMC) if it sees inequivalent
+> aliases with clashing dirty lines.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/i2c/busses/i2c-bcm-kona.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-bcm-kona.c b/drivers/i2c/busses/i2c-bcm=
--kona.c
-index 7b7b7622b0d1..865e5dd9e655 100644
---- a/drivers/i2c/busses/i2c-bcm-kona.c
-+++ b/drivers/i2c/busses/i2c-bcm-kona.c
-@@ -265,7 +265,7 @@ static int bcm_kona_send_i2c_cmd(struct bcm_kona_i2c_de=
-v *dev,
- 	writel(IER_I2C_INT_EN_MASK, dev->base + IER_OFFSET);
-=20
- 	/* Mark as incomplete before sending the command */
--	INIT_COMPLETION(dev->done);
-+	reinit_completion(&dev->done);
-=20
- 	/* Send the command */
- 	bcm_kona_i2c_send_cmd_to_ctrl(dev, cmd);
-@@ -295,7 +295,7 @@ static int bcm_kona_i2c_read_fifo_single(struct bcm_kon=
-a_i2c_dev *dev,
- 	unsigned long time_left =3D msecs_to_jiffies(I2C_TIMEOUT);
-=20
- 	/* Mark as incomplete before starting the RX FIFO */
--	INIT_COMPLETION(dev->done);
-+	reinit_completion(&dev->done);
-=20
- 	/* Unmask the read complete interrupt */
- 	writel(IER_READ_COMPLETE_INT_MASK, dev->base + IER_OFFSET);
-@@ -372,7 +372,7 @@ static int bcm_kona_i2c_write_byte(struct bcm_kona_i2c_=
-dev *dev, uint8_t data,
- 	writel(IER_I2C_INT_EN_MASK, dev->base + IER_OFFSET);
-=20
- 	/* Mark as incomplete before sending the data */
--	INIT_COMPLETION(dev->done);
-+	reinit_completion(&dev->done);
-=20
- 	/* Send one byte of data */
- 	writel(data, dev->base + DAT_OFFSET);
-@@ -407,7 +407,7 @@ static int bcm_kona_i2c_write_fifo_single(struct bcm_ko=
-na_i2c_dev *dev,
- 	unsigned int fifo_status;
-=20
- 	/* Mark as incomplete before sending data to the TX FIFO */
--	INIT_COMPLETION(dev->done);
-+	reinit_completion(&dev->done);
-=20
- 	/* Unmask the fifo empty and nak interrupt */
- 	writel(IER_FIFO_INT_EN_MASK | IER_NOACK_EN_MASK,
---=20
-1.8.4.3
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__18_Nov_2013_10_29_16_+1100_ONHIZq0Kn8_dWabs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSiVFQAAoJEMDTa8Ir7ZwVZ2oP/3tGn4VeAoWJksfDla2GFOzn
-edx+Xw/3icafATyArsHpYWlUDWPFKX/jQPORD3h3sI/w2YXeKCDWHe2gsX30bcZN
-Z0l+rLSGWsDAfWS6bvyApgouoMNVPqe4Cj1pg+OzYO1218IKhZ6gZ+zQpUalysTz
-7rrjg5u1hKNBNuL364X7YOZK2S8YvVjMlAinEpT68XC+mXPDZvLQc5QqTiT8oKE8
-0pUonkNm3pILcOd8Y6hIYL+U4C7zDo2IYo3iN2YDAIcZ3KHG7SpyWdKwZuxWG3MB
-dHuLeKi2v5WW14SaT4nXA2CWAgXINxdNSyhs/6nO7x60qXB8lpP2R/GKyQCJRSzR
-pmqFMLpuiQ3WO2GfLChOivA0b6m7wjB/M+X7xvRZeX5r1J9VpJGwYMpNSs2ZD3vp
-ruYJm2iMIqNvYyEfQk08rYppl6IeiONVmqv3NgYOZaGeUS4hnDA4qKl4igi1+SUQ
-e3OKte0p9mP+DGOlbYyeF1TXSVZJUmcV7XY/1sqqV5t3Bu5bXIE3Fflq1GhP26uu
-EttMWE1xLgrQFcy3jkEV9qOeaDNo6yVVPVKZRJZlsrgxes4RM8temhx2wPWiA2oY
-N44mO0bfVamXO+zREBAbEwpkVjJRSU5uL5VILTdzuNKRky35DHLSD1KCjvB9Zmz2
-VcrXAKWJubjVsoJZ4BDf
-=ZBPe
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Nov_2013_10_29_16_+1100_ONHIZq0Kn8_dWabs--
+diff --git a/arch/parisc/include/asm/cacheflush.h b/arch/parisc/include/asm/cacheflush.h
+index f0e2784..ce6d605 100644
+--- a/arch/parisc/include/asm/cacheflush.h
++++ b/arch/parisc/include/asm/cacheflush.h
+@@ -43,6 +43,8 @@ static inline void flush_kernel_dcache_page(struct page *page)
+ 	flush_kernel_dcache_page_addr(page_address(page));
+ }
+ 
++void flush_user_dcache_page(struct page *page);
++
+ #define flush_kernel_dcache_range(start,size) \
+ 	flush_kernel_dcache_range_asm((start), (start)+(size));
+ /* vmap range flushes and invalidates.  Architecturally, we don't need
+@@ -125,18 +127,27 @@ flush_anon_page(struct vm_area_struct *vma, struct page *page, unsigned long vma
+ void mark_rodata_ro(void);
+ #endif
+ 
+-#ifdef CONFIG_PA8X00
+-/* Only pa8800, pa8900 needs this */
+-
+ #include <asm/kmap_types.h>
+ 
+ #define ARCH_HAS_KMAP
+ 
+-void kunmap_parisc(void *addr);
++static inline void kmap_parisc(struct page *page)
++{
++	if (parisc_requires_coherency())
++		flush_user_dcache_page(page);
++}
++
++static inline void kunmap_parisc(void *addr)
++{
++	/* always flush kernel dcache, independed of
++	 * parisc_requires_coherency(). Needed on CPUs < PA8800/PA8900 */
++	flush_kernel_dcache_page_addr(addr);
++}
+ 
+ static inline void *kmap(struct page *page)
+ {
+ 	might_sleep();
++	kmap_parisc(page);
+ 	return page_address(page);
+ }
+ 
+@@ -148,6 +159,7 @@ static inline void kunmap(struct page *page)
+ static inline void *kmap_atomic(struct page *page)
+ {
+ 	pagefault_disable();
++	kmap_parisc(page);
+ 	return page_address(page);
+ }
+ 
+@@ -160,7 +172,6 @@ static inline void __kunmap_atomic(void *addr)
+ #define kmap_atomic_prot(page, prot)	kmap_atomic(page)
+ #define kmap_atomic_pfn(pfn)	kmap_atomic(pfn_to_page(pfn))
+ #define kmap_atomic_to_page(ptr)	virt_to_page(ptr)
+-#endif
+ 
+ #endif /* _PARISC_CACHEFLUSH_H */
+ 
+diff --git a/arch/parisc/kernel/cache.c b/arch/parisc/kernel/cache.c
+index c035673..a7ee7b7 100644
+--- a/arch/parisc/kernel/cache.c
++++ b/arch/parisc/kernel/cache.c
+@@ -283,7 +283,7 @@ __flush_cache_page(struct vm_area_struct *vma, unsigned long vmaddr,
+ 	preempt_enable();
+ }
+ 
+-void flush_dcache_page(struct page *page)
++void flush_user_dcache_page(struct page *page)
+ {
+ 	struct address_space *mapping = page_mapping(page);
+ 	struct vm_area_struct *mpnt;
+@@ -291,13 +291,6 @@ void flush_dcache_page(struct page *page)
+ 	unsigned long addr, old_addr = 0;
+ 	pgoff_t pgoff;
+ 
+-	if (mapping && !mapping_mapped(mapping)) {
+-		set_bit(PG_dcache_dirty, &page->flags);
+-		return;
+-	}
+-
+-	flush_kernel_dcache_page(page);
+-
+ 	if (!mapping)
+ 		return;
+ 
+@@ -332,6 +325,20 @@ void flush_dcache_page(struct page *page)
+ 	}
+ 	flush_dcache_mmap_unlock(mapping);
+ }
++EXPORT_SYMBOL(flush_user_dcache_page);
++
++void flush_dcache_page(struct page *page)
++{
++	struct address_space *mapping = page_mapping(page);
++
++	if (mapping && !mapping_mapped(mapping)) {
++		set_bit(PG_dcache_dirty, &page->flags);
++		return;
++	}
++
++	flush_kernel_dcache_page(page);
++	flush_user_dcache_page(page);
++}
+ EXPORT_SYMBOL(flush_dcache_page);
+ 
+ /* Defined in arch/parisc/kernel/pacache.S */
+@@ -413,16 +420,6 @@ void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
+ }
+ EXPORT_SYMBOL(copy_user_page);
+ 
+-#ifdef CONFIG_PA8X00
+-
+-void kunmap_parisc(void *addr)
+-{
+-	if (parisc_requires_coherency())
+-		flush_kernel_dcache_page_addr(addr);
+-}
+-EXPORT_SYMBOL(kunmap_parisc);
+-#endif
+-
+ void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
+ {
+ 	unsigned long flags;
