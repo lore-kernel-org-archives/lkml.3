@@ -1,133 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab3KQKaf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 05:30:35 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:53395 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab3KQKac (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 05:30:32 -0500
-Message-ID: <52889AC5.9000806@gmail.com>
-Date: Sun, 17 Nov 2013 18:30:29 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752566Ab3KQLJB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 06:09:01 -0500
+Received: from sauhun.de ([89.238.76.85]:46775 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751453Ab3KQLIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 06:08:54 -0500
+Date: Sun, 17 Nov 2013 12:08:46 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Andreas Werner <wernerandy@gmx.de>
+Cc: khali@linux-fr.org, jacmet@sunsite.dk, hskinnemoen@gmail.com,
+        dianders@chromium.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] I2C: busses: i2c-eg20t Do not print error message in
+ syslog if no ACK received
+Message-ID: <20131117110846.GA3093@katana>
+References: <1384678731-10399-1-git-send-email-wernerandy@gmx.de>
 MIME-Version: 1.0
-To: msalter@redhat.com, a-jacquiot@ti.com, viro@zeniv.linux.org.uk
-CC: linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: c6x: uapi: be sure of "_UAPI" prefix for all guard
- macros
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
+Content-Disposition: inline
+In-Reply-To: <1384678731-10399-1-git-send-email-wernerandy@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For all uapi headers, need use "_UAPI" prefix for its guard macro
-(which will be stripped by "scripts/headers_installer.sh").
 
-Also be sure that all files have their guard macros.
+--0F1p//8PRICkK4MW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Also be sure that all "#endif" are followed with correct comments.
+On Sun, Nov 17, 2013 at 09:58:51AM +0100, Andreas Werner wrote:
+> Revision 2:
+> 	- delete the pch_err completly instead of changing to pch_dbg
+> 	  because there is already a pch_dbg at the function who calls
+> 	  pch_i2c_getack.
+> 	- Fixed message line issue
+
+I prefer this below "---" after Signed-off.
+
+>=20
+> diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20=
+t.c
+> index 0f37529..5c39f90 100644
+> --- a/drivers/i2c/busses/i2c-eg20t.c
+> +++ b/drivers/i2c/busses/i2c-eg20t.c
+> @@ -321,10 +321,8 @@ static s32 pch_i2c_getack(struct i2c_algo_pch_data *=
+adap)
+>  	void __iomem *p =3D adap->pch_base_address;
+>  	reg_val =3D ioread32(p + PCH_I2CSR) & PCH_GETACK;
+> =20
+> -	if (reg_val !=3D 0) {
+> -		pch_err(adap, "return%d\n", -EPROTO);
+> +	if (reg_val !=3D 0)
+>  		return -EPROTO;
+
+That could be fixed to -ENXIO according to
+Documentation/i2c/fault-codes.
+
+> @@ -367,8 +365,7 @@ static int pch_i2c_wait_for_check_xfer(struct i2c_alg=
+o_pch_data *adap)
+>  	adap->pch_event_flag =3D 0;
+> =20
+>  	if (pch_i2c_getack(adap)) {
+> -		pch_dbg(adap, "Receive NACK for slave address"
+> -			"setting\n");
+> +		pch_dbg(adap, "Receive NACK for slave address setting\n");
+>  		return -EIO;
+
+What about returning the value we got from pch_i2c_getack?
+
+Regards,
+
+   Wolfram
 
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- arch/c6x/include/uapi/asm/byteorder.h  | 6 +++---
- arch/c6x/include/uapi/asm/ptrace.h     | 1 +
- arch/c6x/include/uapi/asm/sigcontext.h | 7 +++----
- arch/c6x/include/uapi/asm/swab.h       | 6 +++---
- arch/c6x/include/uapi/asm/unistd.h     | 4 ++++
- 5 files changed, 14 insertions(+), 10 deletions(-)
+--0F1p//8PRICkK4MW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/arch/c6x/include/uapi/asm/byteorder.h b/arch/c6x/include/uapi/asm/byteorder.h
-index 166038d..43f98aa 100644
---- a/arch/c6x/include/uapi/asm/byteorder.h
-+++ b/arch/c6x/include/uapi/asm/byteorder.h
-@@ -1,5 +1,5 @@
--#ifndef _ASM_C6X_BYTEORDER_H
--#define _ASM_C6X_BYTEORDER_H
-+#ifndef _UAPI_ASM_C6X_BYTEORDER_H
-+#define _UAPI_ASM_C6X_BYTEORDER_H
- 
- #include <asm/types.h>
- 
-@@ -9,4 +9,4 @@
- #include <linux/byteorder/little_endian.h>
- #endif /* _BIG_ENDIAN */
- 
--#endif /* _ASM_BYTEORDER_H */
-+#endif /* _UAPI_ASM_C6X_BYTEORDER_H */
-diff --git a/arch/c6x/include/uapi/asm/ptrace.h b/arch/c6x/include/uapi/asm/ptrace.h
-index cc0a4d9..e4bbe62 100644
---- a/arch/c6x/include/uapi/asm/ptrace.h
-+++ b/arch/c6x/include/uapi/asm/ptrace.h
-@@ -160,4 +160,5 @@ struct pt_regs {
- };
- 
- #endif /* __ASSEMBLY__ */
-+
- #endif /* _UAPI_ASM_C6X_PTRACE_H */
-diff --git a/arch/c6x/include/uapi/asm/sigcontext.h b/arch/c6x/include/uapi/asm/sigcontext.h
-index eb702f3..1fb30e9 100644
---- a/arch/c6x/include/uapi/asm/sigcontext.h
-+++ b/arch/c6x/include/uapi/asm/sigcontext.h
-@@ -8,9 +8,8 @@
-  *  it under the terms of the GNU General Public License version 2 as
-  *  published by the Free Software Foundation.
-  */
--#ifndef _ASM_C6X_SIGCONTEXT_H
--#define _ASM_C6X_SIGCONTEXT_H
--
-+#ifndef _UAPI_ASM_C6X_SIGCONTEXT_H
-+#define _UAPI_ASM_C6X_SIGCONTEXT_H
- 
- struct sigcontext {
- 	unsigned long  sc_mask;		/* old sigmask */
-@@ -77,4 +76,4 @@ struct sigcontext {
- 	unsigned long  sc_pc;
- };
- 
--#endif /* _ASM_C6X_SIGCONTEXT_H */
-+#endif /* _UAPI_ASM_C6X_SIGCONTEXT_H */
-diff --git a/arch/c6x/include/uapi/asm/swab.h b/arch/c6x/include/uapi/asm/swab.h
-index fd4bb05..58b738b 100644
---- a/arch/c6x/include/uapi/asm/swab.h
-+++ b/arch/c6x/include/uapi/asm/swab.h
-@@ -6,8 +6,8 @@
-  *  it under the terms of the GNU General Public License version 2 as
-  *  published by the Free Software Foundation.
-  */
--#ifndef _ASM_C6X_SWAB_H
--#define _ASM_C6X_SWAB_H
-+#ifndef _UAPI_ASM_C6X_SWAB_H
-+#define _UAPI_ASM_C6X_SWAB_H
- 
- static inline __attribute_const__ __u16 __c6x_swab16(__u16 val)
- {
-@@ -51,4 +51,4 @@ static inline __attribute_const__ __u32 __c6x_swahb32(__u32 val)
- #define __arch_swahw32 __c6x_swahw32
- #define __arch_swahb32 __c6x_swahb32
- 
--#endif /* _ASM_C6X_SWAB_H */
-+#endif /* _UAPI_ASM_C6X_SWAB_H */
-diff --git a/arch/c6x/include/uapi/asm/unistd.h b/arch/c6x/include/uapi/asm/unistd.h
-index e7d09a6..ec6aebb 100644
---- a/arch/c6x/include/uapi/asm/unistd.h
-+++ b/arch/c6x/include/uapi/asm/unistd.h
-@@ -13,6 +13,8 @@
-  *   NON INFRINGEMENT.	See the GNU General Public License for
-  *   more details.
-  */
-+#ifndef _UAPI_ASM_C6X_UNISTD_H
-+#define _UAPI_ASM_C6X_UNISTD_H
- 
- #define __ARCH_WANT_SYS_CLONE
- 
-@@ -22,3 +24,5 @@
- /* C6X-specific syscalls. */
- #define __NR_cache_sync	(__NR_arch_specific_syscall + 0)
- __SYSCALL(__NR_cache_sync, sys_cache_sync)
-+
-+#endif /* _UAPI_ASM_C6X_UNISTD_H */
--- 
-1.7.11.7
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSiKO+AAoJEBQN5MwUoCm2XhwP/ioZyoAz5j0SOm+8DnvKAFQc
+hdEl5bAuFx7adXCtCZVEfOHhZS9V+D17bgqj6S/PWbBHepwIZu4hYLvrvl0HgeRN
+59fcJpi7U0pgvi7fQCSk2OdNRX177m64kkm+xZe0D2XaA5CwdvEjOpHuamIcBUSj
+sVK2RkxgZxRYq4FpltVZll3/7nd/SMPzDvXw0nn05hDKgZsyz061yH/x0zendRtH
+3Vp1qUC7dT7asFwSQf+5Zo9T9xAU5iKo5ddpht/i3yhFx2BrfhlpytEHzcF38eJW
+rFNky3bP81b+P/w8yKTk83N5XC3LW2a3FEle6xtF9WD9bs/MSROPECRNRJFIwgVT
+XnSozvXOq/QTewJMjiRbEnFgPXtO6CQWTgfMkSrRS/m4raKOoaDDa9032UtH9Oas
+oZhLP0HtPIaLYQOHMlrgJVzLzA2qHFuwj+Lgh0DSmBSrQqPHWtAEWzD4EJ5jaUVz
+HTddnmM8abNGlxNGiJir1cyHyZCs0GYjaOUsI2Sy1b8eQuhG4htCqw212k0RODfW
+z83WPX8bYXxxsTMJmZrDuDrBEpLylDWE3KFQ0hg4GgWvsq2RA5Jax9hWtQOmfvxO
+OT2oUhFb0tv8achFcnKUUflB+5eLYDQf5HE7gVap5MEl5Et83RjuQgCRUDSm1p//
+IPP4jdOMctMnp4QV0niE
+=ayKs
+-----END PGP SIGNATURE-----
+
+--0F1p//8PRICkK4MW--
