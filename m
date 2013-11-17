@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab3KQU1v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 15:27:51 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:54959 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab3KQU1n (ORCPT
+	id S1751599Ab3KQUtb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 15:49:31 -0500
+Received: from mail-gg0-f180.google.com ([209.85.161.180]:49305 "EHLO
+	mail-gg0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab3KQUtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 15:27:43 -0500
+	Sun, 17 Nov 2013 15:49:24 -0500
+X-Greylist: delayed 1164 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Nov 2013 15:49:23 EST
+From: Erico Nunes <nunes.erico@gmail.com>
+To: dwmw2@infradead.org
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Erico Nunes <nunes.erico@gmail.com>
+Subject: [PATCH] jffs2: fix sparse errors: directive in argument list
+Date: Sun, 17 Nov 2013 18:18:33 -0200
+Message-Id: <1384719513-27386-1-git-send-email-nunes.erico@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
 MIME-Version: 1.0
-In-Reply-To: <1384558303-10731-1-git-send-email-sboyd@codeaurora.org>
-References: <1384558303-10731-1-git-send-email-sboyd@codeaurora.org>
-Date: Mon, 18 Nov 2013 00:27:42 +0400
-Message-ID: <CAMo8Bf+kQi7-7FfteB-DpdauSYJn4Ztjuy6oTOnVXk9aVBzUbQ@mail.gmail.com>
-Subject: Re: [PATCH] xtensa: Switch to sched_clock_register()
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Chris Zankel <chris@zankel.net>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 16, 2013 at 3:31 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> The 32 bit sched_clock interface now supports 64 bits. Upgrade
-> to the 64 bit function to allow us to remove the 32 bit
-> registration interface.
->
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->
-> Patch is based on Linus' tip. Not event compile tested.
->
->  arch/xtensa/kernel/time.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+This patch fixes the following errors reported when running sparse:
+fs/jffs2/super.c:378:1: error: directive in argument list
+fs/jffs2/super.c:380:1: error: directive in argument list
+fs/jffs2/super.c:381:1: error: directive in argument list
+fs/jffs2/super.c:383:1: error: directive in argument list
+---
+ fs/jffs2/super.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-Build and run-tested, appears to work.
-Acked-by: Max Filippov <jcmvbkbc@gmail.com>
-
-Should it go through xtensa tree, or through some other tree as a part
-of a bigger conversion series?
-
-> diff --git a/arch/xtensa/kernel/time.c b/arch/xtensa/kernel/time.c
-> index 9af3dd8..415c3f6 100644
-> --- a/arch/xtensa/kernel/time.c
-> +++ b/arch/xtensa/kernel/time.c
-> @@ -36,7 +36,7 @@ static cycle_t ccount_read(struct clocksource *cs)
->         return (cycle_t)get_ccount();
->  }
->
-> -static u32 notrace ccount_sched_clock_read(void)
-> +static u64 notrace ccount_sched_clock_read(void)
->  {
->         return get_ccount();
->  }
-> @@ -141,7 +141,7 @@ void __init time_init(void)
->         setup_irq(ccount_timer.evt.irq, &timer_irqaction);
->         ccount_timer.irq_enabled = 1;
->
-> -       setup_sched_clock(ccount_sched_clock_read, 32, ccount_freq);
-> +       sched_clock_register(ccount_sched_clock_read, 32, ccount_freq);
->  }
->
->  /*
-> --
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
->
-
-
-
+diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
+index 0defb1c..ec9e16f 100644
+--- a/fs/jffs2/super.c
++++ b/fs/jffs2/super.c
+@@ -361,6 +361,14 @@ MODULE_ALIAS_FS("jffs2");
+ static int __init init_jffs2_fs(void)
+ {
+ 	int ret;
++	const char desc[] = "version 2.2."
++#ifdef CONFIG_JFFS2_FS_WRITEBUFFER
++		" (NAND)"
++#endif
++#ifdef CONFIG_JFFS2_SUMMARY
++		" (SUMMARY) "
++#endif
++		" © 2001-2006 Red Hat, Inc.";
+ 
+ 	/* Paranoia checks for on-medium structures. If we ask GCC
+ 	   to pack them with __attribute__((packed)) then it _also_
+@@ -374,14 +382,7 @@ static int __init init_jffs2_fs(void)
+ 	BUILD_BUG_ON(sizeof(struct jffs2_raw_inode) != 68);
+ 	BUILD_BUG_ON(sizeof(struct jffs2_raw_summary) != 32);
+ 
+-	pr_info("version 2.2."
+-#ifdef CONFIG_JFFS2_FS_WRITEBUFFER
+-	       " (NAND)"
+-#endif
+-#ifdef CONFIG_JFFS2_SUMMARY
+-	       " (SUMMARY) "
+-#endif
+-	       " © 2001-2006 Red Hat, Inc.\n");
++	pr_info("%s\n", desc);
+ 
+ 	jffs2_inode_cachep = kmem_cache_create("jffs2_i",
+ 					     sizeof(struct jffs2_inode_info),
 -- 
-Thanks.
--- Max
+1.8.4.2
+
