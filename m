@@ -1,147 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab3KQO5M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 09:57:12 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54466 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752891Ab3KQO5E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 09:57:04 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
-        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
-Date: Sun, 17 Nov 2013 16:09:40 +0100
-Message-ID: <5974906.WAPp3f3eVY@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <52887CB7.4000108@linaro.org>
-References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org> <6050176.zVNbf5pomE@vostro.rjw.lan> <52887CB7.4000108@linaro.org>
+	id S1752223Ab3KQPDz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 10:03:55 -0500
+Received: from mout.gmx.net ([212.227.17.21]:62804 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751324Ab3KQPDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 10:03:48 -0500
+Message-ID: <5288DAD0.5020306@gmx.de>
+Date: Sun, 17 Nov 2013 16:03:44 +0100
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Richard Weinberger <richard@nod.at>
+CC: Konstantin Khlebnikov <koct9i@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>
+Subject: Re: [uml-devel] fuzz tested 32 bit user mode linux image hangs in
+ radix_tree_next_chunk()
+References: <526696BF.6050909@gmx.de>	<CAFLxGvy3NeRKu+KQCCm0j4LS60PYhH0bC8WWjfiPvpstPBjAkA@mail.gmail.com>	<5266A698.10400@gmx.de>	<5266B60A.1000005@nod.at>	<52715AD1.7000703@gmx.de> <CALYGNiPvJF1u8gXNcX1AZR5-VkGqJnaose84KBbdaoBAq8aoGQ@mail.gmail.com> <527AB23D.2060305@gmx.de> <527AB51B.1020005@nod.at>
+In-Reply-To: <527AB51B.1020005@nod.at>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:NbvAl88gg7om7E54ghi9PnrBv2/phwy9GiiOyoyhPRJ765CXA2e
+ VfTRA1oUfv6Tahdx5Ho2jq6X4Szb/JRRdltmZCboy3IhtwnRWNuOxZgBLGUrGR49hFfb6si
+ 3EeQCRqIU41eDMbW0paF0NfmFVlHWm5Z13q9h57628EuP75FlpEhm0AxNB/GrMHhCAFuUCn
+ 9jBSOWPMwdGxy7MbCutsw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 17, 2013 01:52:15 PM viresh kumar wrote:
-> On Sunday 17 November 2013 06:38 AM, Rafael J. Wysocki wrote:
-> > On Saturday, November 16, 2013 08:47:24 PM Viresh Kumar wrote:
-> >> Well that is pretty much doable.
-> > 
-> > Not necessarily on all CPU models.
+On 11/06/2013 10:31 PM, Richard Weinberger wrote:
+> Am 06.11.2013 22:18, schrieb Toralf Förster:
+>> On 11/06/2013 05:06 PM, Konstantin Khlebnikov wrote:
+>>> In this case it must stop after scanning whole tree in line:
+>>> /* Overflow after ~0UL */
+>>> if (!index)
+>>>   return NULL;
+>>>
+>>
+>> A fresh current example with latest git tree shows that lines 769 and 770 do alternate :
 > 
-> Okay.. Just for my understanding, why?
+> Can you please ask gdb for the value of offset?
+> 
+> Thanks,
+> //richard
+> 
 
-If the graphics and processor are in one chip, the CPU may ignore your
-perf bump up request for power balancing reasons.
+In the mean while I think that it is not the radix-tree itself where the hang is related to. With this patch :
 
-> >> So PM_POST_HIBERNATION is called just before shutting off the system? And
-> >> PM_POST_RESTORE is called after system is resumed from saved image?
-> > 
-> > PM_POST_HIBERNATION is only called if there's an error during hibernation.
-> > PM_POST_RESTORE is called as you said.
-> 
-> Ahh I see. Thanks.
-> 
-> > Also you have to remember that the _PREPARE PM notifiers are called before the
-> > freezing of tasks when user space is still running, so disabling governors at
-> > that point may lead to some weird behavior.
-> 
-> Actually good point. I haven't thought about it earlier.
-> 
-> And when I see what bad can happen, I couldn't find much. The worst is that we
-> wouldn't go to a frequency requested by userspace daemon. But we wouldn't send
-> an error then. But I feel we can let that happen. Not servicing a request after
-> we have started system suspend doesn't look that odd..
-> 
-> Sysfs infrastructure is still preserved and so all that information would still
-> be available.
-> 
-> Do you see anything extra that might stop working?
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 353b683..22a5926 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -355,6 +355,8 @@ EXPORT_SYMBOL(truncate_inode_pages_range);
+  */
+ void truncate_inode_pages(struct address_space *mapping, loff_t lstart)
+ {
++       if (lstart > 0)
++               printk ("lstart=%lld\n", lstart);
+        truncate_inode_pages_range(mapping, lstart, (loff_t)-1);
+ }
+ EXPORT_SYMBOL(truncate_inode_pages);
 
-Well, the code would be racy with the patch as is.  User space might manipulate
-the sysfs knobs in parallel with your PM notifiers, for example, and I'm not
-entirely sure what can happen then.  And the lock in there is pointless,
-because it doesn't prevent any races from happening.
 
-> >>> Actually, we use CPU offline/online during system suspend/resume to avoid
-> >>> having to do stuff like this from PM notifiers.
-> >>
-> >> I didn't get the logic behind this one..
-> > 
-> > If we have to do special stuff from PM notifiers for CPU "suspend", we will be
-> > better off by doing something entirely special instead of CPU offline down the
-> > road.  Which we may end up doing given the problems with frozen/not frozen in
-> > the cpufreq core.
+against v3.12-10087-g1213959 I get in the syslog entires like :
+
+
+Nov 17 14:07:12 trinity tfoerste: M=/mnt/nfsv4
+Nov 17 14:07:27 trinity kernel: lstart=2147418111
+Nov 17 14:07:30 trinity kernel: lstart=14531581
+Nov 17 14:07:30 trinity kernel: lstart=8388607
+Nov 17 14:07:30 trinity kernel: lstart=187
+Nov 17 14:07:32 trinity kernel: lstart=2048
+Nov 17 14:08:00 trinity kernel: lstart=11264
+Nov 17 14:08:00 trinity kernel: lstart=44297
+Nov 17 14:08:05 trinity kernel: lstart=31
+Nov 17 14:08:34 trinity kernel: lstart=1542
+Nov 17 14:08:35 trinity kernel: lstart=30
+Nov 17 14:08:35 trinity kernel: lstart=2088809
+Nov 17 14:08:37 trinity kernel: lstart=208
+Nov 17 14:08:37 trinity kernel: lstart=7276806
+Nov 17 14:08:37 trinity kernel: lstart=191
+...
+Nov 17 14:11:22 trinity tfoerste: M=/mnt/nfsv4
+Nov 17 14:11:36 trinity kernel: lstart=255
+Nov 17 14:11:36 trinity kernel: lstart=500676444
+Nov 17 14:11:37 trinity kernel: lstart=1024
+Nov 17 14:11:37 trinity kernel: lstart=12786775
+Nov 17 14:11:37 trinity kernel: lstart=16728385
+Nov 17 14:11:37 trinity kernel: lstart=44
+Nov 17 14:11:37 trinity kernel: lstart=516
+Nov 17 14:11:38 trinity kernel: lstart=17407
+Nov 17 14:11:38 trinity kernel: lstart=31
+Nov 17 14:11:38 trinity kernel: lstart=65534
+Nov 17 14:11:39 trinity kernel: lstart=4302304271
+Nov 17 14:11:40 trinity kernel: lstart=65536
+Nov 17 14:11:40 trinity kernel: lstart=678625087
+Nov 17 14:11:40 trinity kernel: lstart=190464262
+Nov 17 14:11:41 trinity kernel: lstart=268435343
+Nov 17 14:11:42 trinity kernel: lstart=109
+Nov 17 14:11:42 trinity kernel: lstart=2088960
+Nov 17 14:11:42 trinity kernel: lstart=989582838
+Nov 17 14:11:42 trinity kernel: lstart=3838
+Nov 17 14:11:42 trinity kernel: lstart=327
+Nov 17 14:11:43 trinity kernel: lstart=119
+Nov 17 14:12:14 trinity kernel: lstart=9949
+Nov 17 14:12:14 trinity kernel: lstart=4096
+Nov 17 14:12:15 trinity kernel: lstart=3
+Nov 17 14:12:18 trinity sshd[9636]: pam_unix(sshd:session): session closed for user tfoerste
+...
+
+Does this helps ?
+
+>>
+>> tfoerste@n22 ~/devel/linux $ sudo gdb /usr/local/bin/linux-v3.12-48-gbe408cd 16619 -n -batch -ex bt
+>> 0x08296a8c in radix_tree_next_chunk (root=0x25, iter=0x462e7c64, flags=12) at lib/radix-tree.c:770
+>> 770                                             if (node->slots[offset])
+>> #0  0x08296a8c in radix_tree_next_chunk (root=0x25, iter=0x462e7c64, flags=12) at lib/radix-tree.c:770
+>> #1  0x080cc1fe in find_get_pages (mapping=0x462ad470, start=0, nr_pages=14, pages=0xc) at mm/filemap.c:844
+>> #2  0x080d5d6a in pagevec_lookup (pvec=0x462e7cc8, mapping=0x25, start=37, nr_pages=37) at mm/swap.c:914
+>> #3  0x080d615a in truncate_inode_pages_range (mapping=0x462ad470, lstart=0, lend=-1) at mm/truncate.c:241
+>> #4  0x080d64ff in truncate_inode_pages (mapping=0x25, lstart=51539607589) at mm/truncate.c:358
+>>
+>>
+>>
+>>
+>> tfoerste@n22 ~/devel/linux $ sudo gdb /usr/local/bin/linux-v3.12-48-gbe408cd 16619 -n -batch -ex bt
+>> radix_tree_next_chunk (root=0x28, iter=0x462e7c64, flags=18) at lib/radix-tree.c:769
+>> 769                                     while (++offset < RADIX_TREE_MAP_SIZE) {
+>> #0  radix_tree_next_chunk (root=0x28, iter=0x462e7c64, flags=18) at lib/radix-tree.c:769
+>> #1  0x080cc1fe in find_get_pages (mapping=0x462ad470, start=0, nr_pages=14, pages=0x12) at mm/filemap.c:844
+>> #2  0x080d5d6a in pagevec_lookup (pvec=0x462e7cc8, mapping=0x28, start=40, nr_pages=40) at mm/swap.c:914
+>> #3  0x080d615a in truncate_inode_pages_range (mapping=0x462ad470, lstart=0, lend=-1) at mm/truncate.c:241
+>> #4  0x080d64ff in truncate_inode_pages (mapping=0x28, lstart=77309411368) at mm/truncate.c:358
+>> #5  0x0825e388 in hostfs_evict_inode (inode=0x462ad3b8) at fs/hostfs/hostfs_kern.c:242
+>> #6  0x0811a8df in evict (inode=0x462ad3b8) at fs/inode.c:549
+>>
+>>
 > 
-> A unrelated question here. Why are we offlining CPUs after suspending all the
-> devices? Because the problem Nishanth mentioned was that he required few
-> devices, i2c, to be available when CPUs are getting down. And there might be
-> similar requirements at other places too. Was there any specific bottleneck due
-> to which it is implemented this way?
-
-No, this is because the ACPI spec mandates powering down devices before CPUs
-during system suspend.  The way it is done today, however, I think we don't
-need to keep that ordering so strictly any more.  We definitely don't need to
-do that on non-ACPI systems.
-
-So while I hate the PM notifiers idea (sorry, but that's how it goes), I think
-it would be OK to suspend *some* devices after disabling CPUs (not all of them,
-of course).
-
-And as I said, I think it would be OK to introduce suspend/resume callbacks for
-CPU devices and use those callbacks to work around the ordering issues, when
-necessary.  The main point is that the changes made for this purpose should
-only affect systems where they are necessary and not everyone.  I don't want
-to change the way things work today in general in cpufreq too much unless they
-are plain bugs that affect everyone.
-
-> > We may introduce suspend_noirq and resume_noirq for cpu_subsys, for example,
-> > and handle things from there.  Or something similar.  But slapping PM notifiers
-> > on top of the existing code just because it appears to be easy (and making that
-> > code even more overdesigned than it already is this way) doesn't seem quite
-> > right.
-> > 
-> > Now, the Tianyu's patch extends the Srivatsa's approach to governors, which
-> > actually should have been done from the outset, so it is within the scope of
-> > what we have already.  It may not solve all of the problems, but it still makes
-> > some progress and has a little chance to introduce *new* problems at the same
-> > time.
 > 
-> I understand your point here. But this is what I feel:
-> 
-> - I don't have any special affection for using PM notifiers :) .. Its just that
-> I need some way for cpufreq core to know that Suspend has started. Maybe after
-> freezing of tasks and before removal of devices.
-> 
-> - I thought of adding something like a suspend-prepare for syscore_ops (You are
-> owner of all these frameworks and so our life is easy as we can discuss stuff
-> with you directly :)).. But then thought maybe we can use PM notifiers.. But it
-> looks that we better do that now ?
-> 
-> - I have concerns with Tianyu's patch as policies should be better taken care of
-> in cpufreq core instead of passing them over to governors.
 
-Well, this is all too tangled anyway, but quite frankly I'm not sure if it is
-worth untangling at this point.  We're deprecating cpufreq anyway.
-
-> And with the alternative solution I had, code is getting more and more dirty.
-> And so I thought of doing something else.
-> 
-> - Not all platforms have problem with changing frequency during suspend/resume
-> and so we may not require disabling of governors for all of them. Probably can
-> add another field based on which we may/may-not disable governors from PM or
-> syscore notifiers.
-
-What exactly is wrong with adding suspend/resume callbacks to cpu_subsys?
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
