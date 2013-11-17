@@ -1,116 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab3KQQ5v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 11:57:51 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:54165 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702Ab3KQQ5n (ORCPT
+	id S1752270Ab3KQRIX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 12:08:23 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:33166 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751591Ab3KQRIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 11:57:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <5974906.WAPp3f3eVY@vostro.rjw.lan>
-References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org>
-	<6050176.zVNbf5pomE@vostro.rjw.lan>
-	<52887CB7.4000108@linaro.org>
-	<5974906.WAPp3f3eVY@vostro.rjw.lan>
-Date: Sun, 17 Nov 2013 22:27:43 +0530
-Message-ID: <CAKohpo=PoAaYgLNEVkkTC6tzAH=5hKw4VWTsrjt2jQnr7+6Q_w@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
-        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 17 Nov 2013 12:08:18 -0500
+Date: Sun, 17 Nov 2013 12:08:16 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Yang Bai <hamo.by@gmail.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] scripts: Have make TAGS not include structure members
+Message-ID: <20131117120816.41fe2528@gandalf.local.home>
+In-Reply-To: <CAMuHMdWNh2L56FhDbKfC7TtdHp8=EY2ms_T+=9Xyczz3D-PF=w@mail.gmail.com>
+References: <20131115093645.6dc03918@gandalf.local.home>
+	<CAMuHMdXSBSOkfd2MGbn=rpXQRZYw5TKLsR=3SoeSyrcD2CzunA@mail.gmail.com>
+	<20131117092731.75b091bd@gandalf.local.home>
+	<CAMuHMdWNh2L56FhDbKfC7TtdHp8=EY2ms_T+=9Xyczz3D-PF=w@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 November 2013 20:39, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Sunday, November 17, 2013 01:52:15 PM viresh kumar wrote:
+On Sun, 17 Nov 2013 16:19:53 +0100
+Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
->> Do you see anything extra that might stop working?
->
-> Well, the code would be racy with the patch as is.  User space might manipulate
-> the sysfs knobs in parallel with your PM notifiers, for example, and I'm not
-> entirely sure what can happen then.  And the lock in there is pointless,
-> because it doesn't prevent any races from happening.
+ 
+> Thanks! Now I have to look into my vim setup, why it doesn't do the
+> above...
+> 
 
-Hmm..
+$ vim --version
+VIM - Vi IMproved 7.4 (2013 Aug 10, compiled Sep 11 2013 12:28:07)
 
->> A unrelated question here. Why are we offlining CPUs after suspending all the
->> devices? Because the problem Nishanth mentioned was that he required few
->> devices, i2c, to be available when CPUs are getting down. And there might be
->> similar requirements at other places too. Was there any specific bottleneck due
->> to which it is implemented this way?
->
-> No, this is because the ACPI spec mandates powering down devices before CPUs
-> during system suspend.  The way it is done today, however, I think we don't
-> need to keep that ordering so strictly any more.  We definitely don't need to
-> do that on non-ACPI systems.
+And from the ctags man pages, I did:
 
-Okay.. But different behavior for acpi and non-acpi at such core code doesn't
-look great to me.. Lets see if we can work with existing code
+:ta dev_name
 
-> So while I hate the PM notifiers idea (sorry, but that's how it goes), I think
-> it would be OK to suspend *some* devices after disabling CPUs (not all of them,
-> of course).
+and it gave me a list of tags.
 
-Hmm...
+  # pri kind tag               file
+  1 F   m    dev_name          drivers/clk/samsung/clk.h
+               struct:samsung_clock_alias
+               const char  *dev_name;
+  2 F   m    dev_name          drivers/clk/samsung/clk.h
+               struct:samsung_div_clock
+               const char  *dev_name;
+  3 F   m    dev_name          drivers/clk/samsung/clk.h
+               struct:samsung_gate_clock
+               const char  *dev_name;
+  4 F   m    dev_name          drivers/clk/samsung/clk.h
+               struct:samsung_mux_clock
+               const char  *dev_name;
+  5 F   m    dev_name          drivers/clk/samsung/clk.h
+               struct:samsung_pll_clock
+               const char  *dev_name;
+  6 F   m    dev_name          drivers/edac/edac_core.h
+               struct:edac_device_ctl_info
+               const char *dev_name; /* pci/platform/etc... name */
+  7 F   m    dev_name          drivers/edac/edac_core.h
+               struct:edac_pci_ctl_info
+               const char *dev_name; /* pci/platform/etc... name */
+  8 F   m    dev_name          drivers/infiniband/hw/cxgb3/cxio_hal.h
+               struct:cxio_rdev
+               char dev_name[T3_MAX_DEV_NAME_LEN];
+  9 F   m    dev_name          drivers/pinctrl/core.h
+               struct:pinctrl_setting
+               const char *dev_name;
+ 10 F   m    dev_name          drivers/scsi/dpt/dpti_i2o.h
+               struct:i2o_device
+               char dev_name[8];  /* linux /dev name if available */
+ 11 F   v    dev_name          drivers/target/target_core_stat.c
+               DEV_STAT_SCSI_TRANSPORT_ATTR_RO(dev_name);
+ 12 F   m    dev_name          drivers/video/cyber2000fb.h
+               struct:cyberpro_info
+               char  dev_name[32];
+ 13 F   m    dev_name          drivers/video/sticore.h
+               struct:sti_conf_outptr
+               u8 dev_name[STI_DEV_NAME_LENGTH]; /* null terminated product name */
+ 14 F   m    dev_name          include/linux/device.h
+               struct:bus_type
+               const char  *dev_name;
+ 15 F   f    dev_name          include/linux/device.h
+               static inline const char *dev_name(const struct device *dev)
+ 16 F   m    dev_name          include/linux/edac.h
+               struct:mem_ctl_info
+               const char *dev_name;
+ 17 F   m    dev_name          include/linux/mfd/ti_ssp.h
+               struct:ti_ssp_dev_data
+               const char *dev_name;
+ 18 F   m    dev_name          include/linux/netpoll.h
+               struct:netpoll
+               char dev_name[IFNAMSIZ];
+ 19 F   m    dev_name          include/linux/omap-dma.h
+               struct:omap_dma_lch
+               const char *dev_name;
+ 20 F   m    dev_name          include/linux/phy/phy.h
+               struct:phy_consumer
+               const char *dev_name;
+ 21 F   m    dev_name          include/linux/pinctrl/machine.h
+               struct:pinctrl_map
+               const char *dev_name;
+ 22 F   m    dev_name          include/linux/regulator/machine.h
+               struct:regulator_consumer_supply
+-- More --
 
-> And as I said, I think it would be OK to introduce suspend/resume callbacks for
-> CPU devices and use those callbacks to work around the ordering issues, when
-> necessary.  The main point is that the changes made for this purpose should
-> only affect systems where they are necessary and not everyone.  I don't want
-> to change the way things work today in general in cpufreq too much unless they
-> are plain bugs that affect everyone.
->
->> > We may introduce suspend_noirq and resume_noirq for cpu_subsys, for example,
->> > and handle things from there.  Or something similar.  But slapping PM notifiers
->> > on top of the existing code just because it appears to be easy (and making that
->> > code even more overdesigned than it already is this way) doesn't seem quite
->> > right.
 
-Okay.. Even these notifiers would be fine for me. To make things more clear
-before I start implementing them:
-- What about implementing syscore's suspend_prepare and post_suspend?
-- Or you want to extend only CPU subsystems notifiers? What notifiers exactly?
-And at which places we want to issue them from?
 
->> - I have concerns with Tianyu's patch as policies should be better taken care of
->> in cpufreq core instead of passing them over to governors.
->
-> Well, this is all too tangled anyway, but quite frankly I'm not sure if it is
-> worth untangling at this point.  We're deprecating cpufreq anyway.
+-- Steve
 
-I don't really think cpufreq is going anywhere even after we move bits
-into scheduler. All the backend CPUFreq stuff will probably stay as is,
-as they can't go anywhere.
-
-One thing that will surely go away is the governor's layer, which would
-be directly embedded into scheduler.
-
-Lets see how that goes..
-
->> - Not all platforms have problem with changing frequency during suspend/resume
->> and so we may not require disabling of governors for all of them. Probably can
->> add another field based on which we may/may-not disable governors from PM or
->> syscore notifiers.
->
-> What exactly is wrong with adding suspend/resume callbacks to cpu_subsys?
-
-Okay, so you were asking about extending following list: CPU_ONLINE,
-CPU_UP_PREPARE, CPU_UP_CANCELED, CPU_DOWN_PREPARE, etc.. to
-include suspend/resume ones as well?
-
-Logically speaking, all existing ones does look correct as they are more or
-less cpu related. But suspend/resume doesn't look any similar, Atleast to me.
-
-Suspend/resume are system's state rather than CPU's.. We aren't suspending
-or resuming CPUs, we are shutting them off.. So I thought maybe syscore ops
-is a better place (which is already used by cpufreq)..
