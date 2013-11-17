@@ -1,110 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab3KQP7f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 10:59:35 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:54391 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab3KQP7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 10:59:25 -0500
+	id S1754105Ab3KQQAv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 11:00:51 -0500
+Received: from server19320154104.serverpool.info ([193.201.54.104]:37979 "EHLO
+	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752101Ab3KQQAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 11:00:46 -0500
+Message-ID: <5288E826.7050204@hauke-m.de>
+Date: Sun, 17 Nov 2013 17:00:38 +0100
+From: Hauke Mehrtens <hauke@hauke-m.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1384678169-28228-1-git-send-email-acourbot@nvidia.com>
-References: <1384678169-28228-1-git-send-email-acourbot@nvidia.com>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Sun, 17 Nov 2013 15:59:04 +0000
-X-Google-Sender-Auth: aUgvThBbfNWuwjdqaYpz5IUuzHA
-Message-ID: <CAHkRjk5LBOFx3ir49RgEsaFwvp5UCpTjYFWto+URXebAsOP0RA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: move firmware_ops to drivers/firmware
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        linux-samsung-soc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+To: Mark Brown <broonie@kernel.org>
+CC: lgirdwood@gmail.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: build error with CONFIG_REGMAP=m and CONFIG_REGULATOR=y
+References: <5288DB85.8060105@hauke-m.de> <20131117152721.GA20266@sirena.org.uk>
+In-Reply-To: <20131117152721.GA20266@sirena.org.uk>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 November 2013 08:49, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> The ARM tree includes a firmware_ops interface that is designed to
-> implement support for simple, TrustZone-based firmwares but could
-> also cover other use-cases. It has been suggested that this
-> interface might be useful to other architectures (e.g. arm64) and
-> that it should be moved out of arch/arm.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-NAK. I'm for code sharing with arm via common locations but this API
-goes against the ARMv8 firmware standardisation efforts like PSCI,
-encouraging each platform to define there own non-standard interface.
+On 11/17/2013 04:27 PM, Mark Brown wrote:
+> On Sun, Nov 17, 2013 at 04:06:45PM +0100, Hauke Mehrtens wrote:
+> 
+>> In OpenWrt we are seeing some build errors when CONFIG_REGMAP=m
+>> and CONFIG_REGULATOR=y are set.
+> 
+> REGMAP is a bool config option, it should not be possible to set it
+> to m. How have you managed to do that?
+> 
+Sorry, I you are right, I just saw we have a patch applied on top of
+the mainline kernel which makes it possible to build REGMAP as module.
 
-> --- /dev/null
-> +++ b/include/linux/platform_firmware.h
-> @@ -0,0 +1,69 @@
-> +/*
-> + * Copyright (C) 2012 Samsung Electronics.
-> + * Kyungmin Park <kyungmin.park@samsung.com>
-> + * Tomasz Figa <t.figa@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#ifndef _PLATFORM_FIRMWARE_H
-> +#define _PLATFORM_FIRMWARE_H
-> +
-> +#include <linux/bug.h>
-> +
-> +/*
-> + * struct platform_firmware_ops
-> + *
-> + * A structure to specify available firmware operations.
-> + *
-> + * A filled up structure can be registered with
-> + * register_platform_firmware_ops().
-> + */
-> +struct platform_firmware_ops {
-> +       /*
-> +        * Enters CPU idle mode
-> +        */
-> +       int (*do_idle)(void);
+Hauke
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-Covered by PSCI already.
-
-> +       /*
-> +        * Sets boot address of specified physical CPU
-> +        */
-> +       int (*set_cpu_boot_addr)(int cpu, unsigned long boot_addr);
-
-Covered either by PSCI or spin-table release method (PSCI if firmware
-call is required).
-
-> +       /*
-> +        * Boots specified physical CPU
-> +        */
-> +       int (*cpu_boot)(int cpu);
-
-PSCI.
-
-> +       /*
-> +        * Initializes L2 cache
-> +        */
-> +       int (*l2x0_init)(void);
-
-No L2x0 (L210, L220, PL310) cache on ARMv8. And here I strongly
-recommend the hardware people to make proper external caches which can
-be flushed by standard CPU instructions, not MMIO. Any such caches
-must be enabled by firmware before Linux starts.
-
-The above firmware API is 32-bit ARM only. Form 64-bit ARM, you have
-the choice of PSCI so far but as I said in a long thread to Nico, I'm
-open to other standard interfaces if there are good reasons PSCI
-cannot be used. Note the _standard_ part, I don't want every SoC with
-their own firmware API for standard things like secondary CPU
-booting/hotplug/idle.
-
--- 
-Catalin
+iQIcBAEBAgAGBQJSiOgfAAoJEIZ0px9YPRMygR4P/inb+qZKSSA7qloN2ipKasbC
+mDKV/LivY6l3Je+rWTRCESkGOw0jO09rO1AizCoUN47u6yYuC6/IGIPioDXTciFf
+iDl46Lhfirv3rlWyrQTC6ZAAxcQUzFJNgXD0hb+ehw3MBC9okB5NQgq9QATtpW9L
+Bbu7vCgqG7bxCXXq0DW/ygPMR5axKWQwbQdDCfz+06wYqWQqj2okWtHvhXCe7Skb
+ROZ8FvOcnXKKjoGOEJRtbcfUt44dIM8RGJtKj5vjXtnSm+eJQhL1OzqUxOY7OODW
+Fxqs97N7rrsPVwXNRYSrHjtmul3feLUaxALXQiSskjS8zJsJBgR9jGJjMp2auN5B
+4ffxa0+thFsSNSXQd2bfDPnZzZKZf2EWr3h0BqWZPjN60pIji/WUXMSecVd+9zNH
+axONP2lKOp0hPxsSi0hvLUGHAyAsOTzShPKjV+vIosb9aFn5/3GeQqOrY6abmF/1
+HPoIds00q2B9VVV83PQeLvMFhjcW++1HDhP7QJ+QiUByN9I96M1Awd27ypsf5PT/
+fKqIgumJk2Jy3rKmpOwMHlpONBhD39qW3tb9lmiXeWgAdvaSH/kuR5Lwsbe3vhvg
+p+hTwmubGTwFHaIKUD7APJk7daYUwR8VEP3fbwsYc3bCGMtN61FNyl5HymYteJMg
+0g4dQrXMaPTZJcMTp4nz
+=LoHr
+-----END PGP SIGNATURE-----
