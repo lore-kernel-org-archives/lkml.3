@@ -1,74 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab3KQJ7J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 04:59:09 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:55548 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934Ab3KQJ7F (ORCPT
+	id S1752392Ab3KQKaf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 05:30:35 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:53395 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab3KQKac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 04:59:05 -0500
-From: Peter Wu <lekensteyn@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION] coredumps truncated after "new helper: dump_align()"
-Date: Sun, 17 Nov 2013 01:59:02 -0800 (PST)
-Message-ID: <1963454.uznGuju1ix@al>
-User-Agent: KMail/4.11.3 (Linux/3.12.0-custom-09579-g049ffa8; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20131117061907.GL13318@ZenIV.linux.org.uk>
-References: <11835033.kIc1RH0rS1@al> <20131116000408.GK13318@ZenIV.linux.org.uk> <20131117061907.GL13318@ZenIV.linux.org.uk>
+	Sun, 17 Nov 2013 05:30:32 -0500
+Message-ID: <52889AC5.9000806@gmail.com>
+Date: Sun, 17 Nov 2013 18:30:29 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: msalter@redhat.com, a-jacquiot@ti.com, viro@zeniv.linux.org.uk
+CC: linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arch: c6x: uapi: be sure of "_UAPI" prefix for all guard
+ macros
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 17 November 2013 06:19:07 Al Viro wrote:
-> On Sat, Nov 16, 2013 at 12:04:08AM +0000, Al Viro wrote:
-> > On Fri, Nov 15, 2013 at 10:34:43PM +0100, Peter Wu wrote:
-> > 
-> >
-> > > Unfortunately, this patch still does not fix the issue. I rm'd the
-> > > output 
-> > > directory just to be sure, but the bug is still there. What does this
-> > > commit  do anyway? The commit message is quite vague.
-> >
-> > 
-> >
-> > Introduces a helper that used to be open-coded in a bunch of places -
-> > pads the coredump to given alignment.  And switches those places
-> > to that new helper...
-> >
-> > 
-> >
-> > FWIW, I haven't tried that on your config yet, but here (with the patch
-> > in my previous mail) I'm seeing a sane-looking coredump -
-> > -rw------- 1 root root 315392 Nov 15 17:48 core
-> > Different userland, presumably, since that static binary is 684349
-> > bytes long.
-> >
-> > 
-> >
-> > I'll try to reproduce with your config...
-> 
-> ... and on your config I'm seeing
-> Inited
-> Segmentation fault (core dumped)
-> [    0.123351] Core size: 315392
-> in the log.  Same size, same apparently sane coredump.  Can you check what
-> you get on mainline + diff below (combination of dump_align() and locking
-> fix)?
+For all uapi headers, need use "_UAPI" prefix for its guard macro
+(which will be stripped by "scripts/headers_installer.sh").
 
-Hmm, I cannot reproduce the bug with the two-liner patch you provided before. 
-I must have made a mistake with the previous test as the environment is still 
-the same.
+Also be sure that all files have their guard macros.
 
-The bug is fixed with both your two-liner patch and the __kernel_write one.
-In addition, the __kernel_write patch removes the lockdep warning reported by 
-Dave Jones[1].
+Also be sure that all "#endif" are followed with correct comments.
 
-Thanks,
-Peter
 
- [1]: http://lkml.org/lkml/2013/11/13/450
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ arch/c6x/include/uapi/asm/byteorder.h  | 6 +++---
+ arch/c6x/include/uapi/asm/ptrace.h     | 1 +
+ arch/c6x/include/uapi/asm/sigcontext.h | 7 +++----
+ arch/c6x/include/uapi/asm/swab.h       | 6 +++---
+ arch/c6x/include/uapi/asm/unistd.h     | 4 ++++
+ 5 files changed, 14 insertions(+), 10 deletions(-)
 
+diff --git a/arch/c6x/include/uapi/asm/byteorder.h b/arch/c6x/include/uapi/asm/byteorder.h
+index 166038d..43f98aa 100644
+--- a/arch/c6x/include/uapi/asm/byteorder.h
++++ b/arch/c6x/include/uapi/asm/byteorder.h
+@@ -1,5 +1,5 @@
+-#ifndef _ASM_C6X_BYTEORDER_H
+-#define _ASM_C6X_BYTEORDER_H
++#ifndef _UAPI_ASM_C6X_BYTEORDER_H
++#define _UAPI_ASM_C6X_BYTEORDER_H
+ 
+ #include <asm/types.h>
+ 
+@@ -9,4 +9,4 @@
+ #include <linux/byteorder/little_endian.h>
+ #endif /* _BIG_ENDIAN */
+ 
+-#endif /* _ASM_BYTEORDER_H */
++#endif /* _UAPI_ASM_C6X_BYTEORDER_H */
+diff --git a/arch/c6x/include/uapi/asm/ptrace.h b/arch/c6x/include/uapi/asm/ptrace.h
+index cc0a4d9..e4bbe62 100644
+--- a/arch/c6x/include/uapi/asm/ptrace.h
++++ b/arch/c6x/include/uapi/asm/ptrace.h
+@@ -160,4 +160,5 @@ struct pt_regs {
+ };
+ 
+ #endif /* __ASSEMBLY__ */
++
+ #endif /* _UAPI_ASM_C6X_PTRACE_H */
+diff --git a/arch/c6x/include/uapi/asm/sigcontext.h b/arch/c6x/include/uapi/asm/sigcontext.h
+index eb702f3..1fb30e9 100644
+--- a/arch/c6x/include/uapi/asm/sigcontext.h
++++ b/arch/c6x/include/uapi/asm/sigcontext.h
+@@ -8,9 +8,8 @@
+  *  it under the terms of the GNU General Public License version 2 as
+  *  published by the Free Software Foundation.
+  */
+-#ifndef _ASM_C6X_SIGCONTEXT_H
+-#define _ASM_C6X_SIGCONTEXT_H
+-
++#ifndef _UAPI_ASM_C6X_SIGCONTEXT_H
++#define _UAPI_ASM_C6X_SIGCONTEXT_H
+ 
+ struct sigcontext {
+ 	unsigned long  sc_mask;		/* old sigmask */
+@@ -77,4 +76,4 @@ struct sigcontext {
+ 	unsigned long  sc_pc;
+ };
+ 
+-#endif /* _ASM_C6X_SIGCONTEXT_H */
++#endif /* _UAPI_ASM_C6X_SIGCONTEXT_H */
+diff --git a/arch/c6x/include/uapi/asm/swab.h b/arch/c6x/include/uapi/asm/swab.h
+index fd4bb05..58b738b 100644
+--- a/arch/c6x/include/uapi/asm/swab.h
++++ b/arch/c6x/include/uapi/asm/swab.h
+@@ -6,8 +6,8 @@
+  *  it under the terms of the GNU General Public License version 2 as
+  *  published by the Free Software Foundation.
+  */
+-#ifndef _ASM_C6X_SWAB_H
+-#define _ASM_C6X_SWAB_H
++#ifndef _UAPI_ASM_C6X_SWAB_H
++#define _UAPI_ASM_C6X_SWAB_H
+ 
+ static inline __attribute_const__ __u16 __c6x_swab16(__u16 val)
+ {
+@@ -51,4 +51,4 @@ static inline __attribute_const__ __u32 __c6x_swahb32(__u32 val)
+ #define __arch_swahw32 __c6x_swahw32
+ #define __arch_swahb32 __c6x_swahb32
+ 
+-#endif /* _ASM_C6X_SWAB_H */
++#endif /* _UAPI_ASM_C6X_SWAB_H */
+diff --git a/arch/c6x/include/uapi/asm/unistd.h b/arch/c6x/include/uapi/asm/unistd.h
+index e7d09a6..ec6aebb 100644
+--- a/arch/c6x/include/uapi/asm/unistd.h
++++ b/arch/c6x/include/uapi/asm/unistd.h
+@@ -13,6 +13,8 @@
+  *   NON INFRINGEMENT.	See the GNU General Public License for
+  *   more details.
+  */
++#ifndef _UAPI_ASM_C6X_UNISTD_H
++#define _UAPI_ASM_C6X_UNISTD_H
+ 
+ #define __ARCH_WANT_SYS_CLONE
+ 
+@@ -22,3 +24,5 @@
+ /* C6X-specific syscalls. */
+ #define __NR_cache_sync	(__NR_arch_specific_syscall + 0)
+ __SYSCALL(__NR_cache_sync, sys_cache_sync)
++
++#endif /* _UAPI_ASM_C6X_UNISTD_H */
+-- 
+1.7.11.7
