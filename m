@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab3KQTyk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 14:54:40 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40347 "EHLO mail.skyhub.de"
+	id S1752483Ab3KQUGa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 15:06:30 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:60491 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752048Ab3KQTyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 14:54:31 -0500
-Date: Sun, 17 Nov 2013 20:53:58 +0100
+	id S1751906Ab3KQUGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 15:06:19 -0500
+Date: Sun, 17 Nov 2013 21:05:46 +0100
 From: Borislav Petkov <bp@alien8.de>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-Message-ID: <20131117195358.GO27323@pd.tnic>
-References: <52888F6D.6000802@gmail.com>
- <20131117132531.GB27696@pd.tnic>
- <5288E5BF.2020608@gmail.com>
- <20131117160126.GG27323@pd.tnic>
- <CAC9WiBikz8kTAmKs1HVBmeb2Wu6hfHCh2d=w1sQC03EVHa1QOQ@mail.gmail.com>
+To: "MPhil. Emanoil Kotsev" <Emanoil.Kotsev@fincom.at>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>
+Subject: Re: [Intel-gfx] kernel 3.11.6 general protection fault
+Message-ID: <20131117200546.GP27323@pd.tnic>
+References: <201311132058.30310.Emanoil.Kotsev@fincom.at>
+ <201311171545.35217.Emanoil.Kotsev@fincom.at>
+ <20131117150607.GF27323@pd.tnic>
+ <201311171745.19339.Emanoil.Kotsev@fincom.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAC9WiBikz8kTAmKs1HVBmeb2Wu6hfHCh2d=w1sQC03EVHa1QOQ@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201311171745.19339.Emanoil.Kotsev@fincom.at>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 17, 2013 at 07:02:21PM +0100, Francis Moreau wrote:
-> Sorry I haven't taken the original picture large enough, and getting
-> this kernel panic is pretty hard since the kernel usually displays the
-> black screen.
+On Sun, Nov 17, 2013 at 05:45:18PM +0100, MPhil. Emanoil Kotsev wrote:
+> How - new libraries - more exhaustive algorythms - higher cpu usage
+> etc. Some of the things M$ is doing on purpose to force you upgrade
+> your hardware every 2-3years
 
-Ok, just try to make a readable picture of the whole line, next time you
-trigger it.
+That would be too easy and machines would be dying left and right of
+overheating. Actually, sane hardware is much more robust than that and
+it throttles itself in case of critical temperature levels. And, IMHO
+your Dell Latitude D520 should be fine, in that respect. But we'll see.
+:-)
 
-> I can't find any traces of this function in the dump...
+> I wanted to first compile the kernel with the debug option you
+> mentioned, but while compiling it went to about 75°C.
 
-Hmm, strange. Can you upload the whole vmlinux somewhere? Or is this the
-official archlinux kernel? If so, where can I get it from?
+Yeah, that's still ok if we trust the output saying that 126°C is the
+critical temp.
+
+It would be interesting to see what this sensor says right before the
+machine locks up.
+
+HTH.
 
 -- 
 Regards/Gruss,
