@@ -1,86 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab3KQI7O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 03:59:14 -0500
-Received: from mout.gmx.net ([212.227.17.22]:56599 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917Ab3KQI7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 03:59:00 -0500
-From: Andreas Werner <wernerandy@gmx.de>
-To: wsa@the-dreams.de
-Cc: khali@linux-fr.org, jacmet@sunsite.dk, hskinnemoen@gmail.com,
-        dianders@chromium.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wernerandy@gmx.de
-Subject: [PATCH v2] I2C: busses: i2c-eg20t Do not print error message in syslog if no ACK received
-Date: Sun, 17 Nov 2013 09:58:51 +0100
-Message-Id: <1384678731-10399-1-git-send-email-wernerandy@gmx.de>
-X-Mailer: git-send-email 1.8.4.2
-X-Provags-ID: V03:K0:P5VCAwtHYmfav9VONhwdxSxM3hphsSxCJdn6YPvLPg9Hek9RDq+
- 3eUzUkJUPXSRAdk/i6PhwdWYcxTNmEUpYU9g0yVES+OgWe+BhcBFHuCJDCVU151zvHhnwh3
- DoVkVxi4AJTxIxQYtkWlZECt/A8S2HFrDP97nuGd4ZkiceOCk7gnYHayx5rS8htvBZt8Zzg
- J1BlQf7mtyFKV6S92LHvQ==
+	id S1752891Ab3KQJEP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 04:04:15 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:62911 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab3KQJD6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 04:03:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <52842553.2080807@nvidia.com>
+References: <1383819106-1400-1-git-send-email-acourbot@nvidia.com>
+ <52828EF5.6090909@wwwdotorg.org> <CAOesGMhatp9ZQr=eTCtQ_9a_E9LXKdTCzJd+P7Sy9Ut9wtvnsA@mail.gmail.com>
+ <5282E068.1070608@nvidia.com> <CAOesGMgcvTFD4u9b7T5HNhuJe_PQyV25Ei++v8hG8AsY_rOdyw@mail.gmail.com>
+ <52842553.2080807@nvidia.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Sun, 17 Nov 2013 18:03:37 +0900
+Message-ID: <CAAVeFu+Uh9fi_kGv-g-0fH=p4758sCRONexZN25weS0s3PrvxA@mail.gmail.com>
+Subject: Re: [PATCH v10 0/7] ARM: support for Trusted Foundations secure monitor
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>, Pawel Moll <pawel.moll@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Dave Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Revision 2:
-	- delete the pch_err completly instead of changing to pch_dbg
-	  because there is already a pch_dbg at the function who calls
-	  pch_i2c_getack.
-	- Fixed message line issue
+On Thu, Nov 14, 2013 at 10:20 AM, Alex Courbot <acourbot@nvidia.com> wrote:
+> On 11/14/2013 02:57 AM, Olof Johansson wrote:
+>>
+>> On Tue, Nov 12, 2013 at 6:14 PM, Alex Courbot <acourbot@nvidia.com> wrote:
+>>>
+>>> On 11/13/2013 05:38 AM, Olof Johansson wrote:
+>>>>
+>>>>
+>>>> On Tue, Nov 12, 2013 at 12:26 PM, Stephen Warren <swarren@wwwdotorg.org>
+>>>> wrote:
+>>>>>
+>>>>>
+>>>>> On 11/07/2013 03:11 AM, Alexandre Courbot wrote:
+>>>>>>
+>>>>>>
+>>>>>> Just a set of small fixes to address the concerns expressed on v9 with
+>>>>>> the
+>>>>>> non-prefixed version DT properties. I hope there won't be a need for
+>>>>>> an
+>>>>>> eleventh (!) version. :P
+>>>>>
+>>>>>
+>>>>>
+>>>>> BTW, this version looks fine to me. On IRC, Olof said it looked OK to
+>>>>> him. I'm just waiting to hear back from Olof/Russell whether I should
+>>>>> merge this through the Tegra tree, or whether the first 1-3 patches
+>>>>> should go through Russell's tree.
+>>>>
+>>>>
+>>>>
+>>>> I pinged Russell, and he brought up the fact that there were earlier
+>>>> requests to move it to drivers/firmware. It would make sense to try to
+>>>> get that done before merging, especially if you anticipate someone
+>>>> using TF on 64-bit platforms.
+>>>
+>>>
+>>>
+>>> IIRC when we discussed this point your last comment was as follows:
+>>
+>>
+>> Touche. :) Thanks for the reminder.
+>>
+>>> On Tue, Oct 29, 2013 at 6:55 AM, Olof Johansson <olof@lixom.net> wrote:
+>>>>
+>>>> I think we can probably merge this under arch/arm now, and when we
+>>>> figure out what needs to be common with ARM64 we can move it out to a
+>>>> good location. It might be that mostly just a header file with ABI
+>>>> conventions needs to be shared, not actual implementation, for
+>>>> example.
+>>>
+>>>
+>>> So I thought we agreed on that. If in the end we prefer to move the ARM
+>>> firmware interface into drivers/firmware, I'm fine with that too (Tomasz
+>>> also confirmed he would be ok with it) but I wonder if that would not be
+>>> somehow premature.
+>>>
+>>> Another worry of mine is that this might delay this patchset some more.
+>>> Support for TF is one of the last remaining step towards making NVIDIA
+>>> branded Tegra retail devices (SHIELD and TegraNote at the moment) run
+>>> upstream directly. I missed 3.13, I'd like to make sure I won't miss
+>>> 3.14.
+>>> Would it be acceptable if we move the ARM firmware interface to a common
+>>> place after this patchset is merged?
+>>
+>>
+>> Well, as I already said I'm ok with things going into arch/arm to
+>> start with, as long as Russell is. Once we see 64-bit needs for the
+>> same we'll move it out -- it's not like it's a whole lot of code to
+>> start with. But Russell has veto on the topic. :-)
+>
+>
+> Thanks Olof. Russell, are you ok with the patchset in its current form? I
+> can start moving the firmware interface out of arch/arm if that's what you
+> want (there is no user outside of ARM at the moment, but as Olof pointed out
+> that's not too much code) but I'd really like to see this series secured for
+> 3.14.
 
-Using the i2c-eg20t driver and call i2cdetect or probe on the bus,
-the driver will print a lot of error messages if there was no ACK
-received.
+Never mind, I have submitted a patch that moves firmware_ops to
+drivers/firmware, that will hopefully settle this issue. Then maybe we
+can finally flush this series as well (I will need to resubmit a new
+version though).
 
-i2cdetect normally print a table with all the available devices. If there
-is no device on the address, the table will be empty.
-Currently with the i2c-eg20t driver, the table is not visible because
-the error messages destroy the table.
-
-Error message: pch_i2c_getack return -71
-
-This patch prevent the driver to print the messages to syslog.
-The pch_i2c_wait_for_check_xfer function is the only one who is
-calling pch_i2c_getack, and there is already a dbg print if it fails,
-so we can delete the pch_err in pch_i2c_getack completly.
-
-Fixed print message to be a one liner so we can grep for the
-error message.
-
-Tested on Intel Atom E6xx and Eg20t Chipset.
-
-Signed-off-by: Andreas Werner <wernerandy@gmx.de>
----
- drivers/i2c/busses/i2c-eg20t.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
-index 0f37529..5c39f90 100644
---- a/drivers/i2c/busses/i2c-eg20t.c
-+++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -321,10 +321,8 @@ static s32 pch_i2c_getack(struct i2c_algo_pch_data *adap)
- 	void __iomem *p = adap->pch_base_address;
- 	reg_val = ioread32(p + PCH_I2CSR) & PCH_GETACK;
- 
--	if (reg_val != 0) {
--		pch_err(adap, "return%d\n", -EPROTO);
-+	if (reg_val != 0)
- 		return -EPROTO;
--	}
- 
- 	return 0;
- }
-@@ -367,8 +365,7 @@ static int pch_i2c_wait_for_check_xfer(struct i2c_algo_pch_data *adap)
- 	adap->pch_event_flag = 0;
- 
- 	if (pch_i2c_getack(adap)) {
--		pch_dbg(adap, "Receive NACK for slave address"
--			"setting\n");
-+		pch_dbg(adap, "Receive NACK for slave address setting\n");
- 		return -EIO;
- 	}
- 
--- 
-1.8.4
-
+Alex.
