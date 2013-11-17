@@ -1,103 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab3KQWVx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 17:21:53 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54066 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751893Ab3KQWVp (ORCPT
+	id S1752387Ab3KQWel (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 17:34:41 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:38529 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab3KQWei convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 17:21:45 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Borislav Petkov <bp@alien8.de>, Francis Moreau <francis.moro@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-Date: Sun, 17 Nov 2013 23:34:20 +0100
-Message-ID: <4636530.OR894YNbbr@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131117220611.GQ27323@pd.tnic>
-References: <52888F6D.6000802@gmail.com> <CAC9WiBggfssh+31_MqVCT-hDf2E8zTuc81q-DhLYQuVF053mEA@mail.gmail.com> <20131117220611.GQ27323@pd.tnic>
+	Sun, 17 Nov 2013 17:34:38 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1384724403.2727.22.camel@joe-AO722>
+References: <1384719513-27386-1-git-send-email-nunes.erico@gmail.com>
+	<1384724403.2727.22.camel@joe-AO722>
+Date: Sun, 17 Nov 2013 20:34:37 -0200
+Message-ID: <CAK4VdL2nKEE+xb=HtMGNsMGNR_ivUn_WnLi7X-rrXT0fpGbSTw@mail.gmail.com>
+Subject: Re: [PATCH] jffs2: fix sparse errors: directive in argument list
+From: Erico Nunes <nunes.erico@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-sparse@vger.kernel.org, dwmw2 <dwmw2@infradead.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 17, 2013 11:06:12 PM Borislav Petkov wrote:
-> On Sun, Nov 17, 2013 at 09:49:40PM +0100, Francis Moreau wrote:
-> > On Sun, Nov 17, 2013 at 8:53 PM, Borislav Petkov <bp@alien8.de> wrote:
-> > > On Sun, Nov 17, 2013 at 07:02:21PM +0100, Francis Moreau wrote:
-> > >> Sorry I haven't taken the original picture large enough, and getting
-> > >> this kernel panic is pretty hard since the kernel usually displays the
-> > >> black screen.
-> > >
-> > > Ok, just try to make a readable picture of the whole line, next time you
-> > > trigger it.
-> > >
-> > >> I can't find any traces of this function in the dump...
-> > >
-> > > Hmm, strange. Can you upload the whole vmlinux somewhere? Or is this the
-> > > official archlinux kernel? If so, where can I get it from?
-> > 
-> > Yes, you can download the bin package from :
-> > https://www.archlinux.org/packages/core/x86_64/linux/
-> > 
-> > The bin package is a tar archive, so it pretty straightforward to
-> > unpack the vmlinux file  (actual is filename vmlinuz-linux).
-> 
-> Ok, here's what I was able to see: rIP points to call_timer_fn+0x33
-> which is this:
-> 
-> ffffffff8106f590 <call_timer_fn>:
-> ffffffff8106f590:       e8 2b b2 48 00          callq  ffffffff814fa7c0 <__fentry__>
-> ffffffff8106f595:       55                      push   %rbp
-> ffffffff8106f596:       65 48 8b 04 25 70 c7    mov    %gs:0xc770,%rax
-> ffffffff8106f59d:       00 00 
-> ffffffff8106f59f:       48 89 e5                mov    %rsp,%rbp
-> ffffffff8106f5a2:       41 57                   push   %r15
-> ffffffff8106f5a4:       49 89 d7                mov    %rdx,%r15
-> ffffffff8106f5a7:       41 56                   push   %r14
-> ffffffff8106f5a9:       49 89 f6                mov    %rsi,%r14
-> ffffffff8106f5ac:       41 55                   push   %r13
-> ffffffff8106f5ae:       41 54                   push   %r12
-> ffffffff8106f5b0:       49 89 fc                mov    %rdi,%r12
-> ffffffff8106f5b3:       53                      push   %rbx
-> ffffffff8106f5b4:       44 8b a8 44 e0 ff ff    mov    -0x1fbc(%rax),%r13d
-> ffffffff8106f5bb:       0f 1f 44 00 00          nopl   0x0(%rax,%rax,1)
-> ffffffff8106f5c0:       4c 89 ff                mov    %r15,%rdi
-> ffffffff8106f5c3:       41 ff d6                callq  *%r14			<--- faulting insn
-> ffffffff8106f5c6:       0f 1f 44 00 00          nopl   0x0(%rax,%rax,1)
-> ffffffff8106f5cb:       65 48 8b 04 25 70 c7    mov    %gs:0xc770,%rax
-> ffffffff8106f5d2:       00 00 
-> ffffffff8106f5d4:       44 39 a8 44 e0 ff ff    cmp    %r13d,-0x1fbc(%rax)
-> 
-> and the virtual address in rIP is ffffffff8106f5c3, i.e. the same one
-> as in the photo. Thus, the CALL instruction tries to call the timer
-> function 'fn' which we pass as an argument to call_timer_fn.
-> 
-> However, the address we're trying to call in %r14 is garbage:
-> 0x455300323d504544 and not in canonical form, causing the #GP.
-> 
-> So basically what happens is suspend to RAM corrupts something
-> containing one or more timer functions and we end up calling crap after
-> resume.
-> 
-> If you want to debug this further, you could try playing through
-> Documentation/power/basic-pm-debugging.txt and see whether suspend to
-> disk works. There's also a section 2 which talks about testing suspend
-> to RAM which could be of help.
-> 
-> But let me add Rafael and Thomas - they should have much better ideas
-> than me.
-> 
-> Guys, thread starts here:
-> http://marc.info/?l=linux-kernel&m=138468134321335
+Thanks for your reply.
 
-This looks like a softirq bug to me (and related to cpuidle).
+I'll resubmit shortly.
 
-I'm wondering if that happens with any of the older kernels or just 3.12?
+Do you mean it as an error in the sparse tool?
+I don't think so, I took a look and it seems to be designed to output
+an error for that case.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
+On Sun, Nov 17, 2013 at 7:40 PM, Joe Perches <joe@perches.com> wrote:
+> On Sun, 2013-11-17 at 18:18 -0200, Erico Nunes wrote:
+>> This patch fixes the following errors reported when running sparse:
+>> fs/jffs2/super.c:378:1: error: directive in argument list
+>> fs/jffs2/super.c:380:1: error: directive in argument list
+>> fs/jffs2/super.c:381:1: error: directive in argument list
+>> fs/jffs2/super.c:383:1: error: directive in argument list
+>
+> Seems like a sparse error more than anything else.
+> (adding sparse mailing list)
+>
+> Also you need to add a "Signed-off-by:" line
+> with your email address.
+>
+> see: Documentation/SubmittingPatches
+>
+>> ---
+>>  fs/jffs2/super.c | 17 +++++++++--------
+>>  1 file changed, 9 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
+>> index 0defb1c..ec9e16f 100644
+>> --- a/fs/jffs2/super.c
+>> +++ b/fs/jffs2/super.c
+>> @@ -361,6 +361,14 @@ MODULE_ALIAS_FS("jffs2");
+>>  static int __init init_jffs2_fs(void)
+>>  {
+>>       int ret;
+>> +     const char desc[] = "version 2.2."
+>> +#ifdef CONFIG_JFFS2_FS_WRITEBUFFER
+>> +             " (NAND)"
+>> +#endif
+>> +#ifdef CONFIG_JFFS2_SUMMARY
+>> +             " (SUMMARY) "
+>> +#endif
+>> +             " © 2001-2006 Red Hat, Inc.";
+>>
+>>       /* Paranoia checks for on-medium structures. If we ask GCC
+>>          to pack them with __attribute__((packed)) then it _also_
+>> @@ -374,14 +382,7 @@ static int __init init_jffs2_fs(void)
+>>       BUILD_BUG_ON(sizeof(struct jffs2_raw_inode) != 68);
+>>       BUILD_BUG_ON(sizeof(struct jffs2_raw_summary) != 32);
+>>
+>> -     pr_info("version 2.2."
+>> -#ifdef CONFIG_JFFS2_FS_WRITEBUFFER
+>> -            " (NAND)"
+>> -#endif
+>> -#ifdef CONFIG_JFFS2_SUMMARY
+>> -            " (SUMMARY) "
+>> -#endif
+>> -            " © 2001-2006 Red Hat, Inc.\n");
+>> +     pr_info("%s\n", desc);
+>>
+>>       jffs2_inode_cachep = kmem_cache_create("jffs2_i",
+>>                                            sizeof(struct jffs2_inode_info),
+>
+>
+>
