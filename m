@@ -1,127 +1,614 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442Ab3KQIoz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 03:44:55 -0500
-Received: from mail.southpole.se ([37.247.8.11]:48062 "EHLO mail.southpole.se"
+	id S1752566Ab3KQIuz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 03:50:55 -0500
+Received: from gnurou.org ([207.192.72.5]:53755 "EHLO mail.gnurou.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751751Ab3KQIot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 03:44:49 -0500
-Message-ID: <528881F6.3090902@southpole.se>
-Date: Sun, 17 Nov 2013 09:44:38 +0100
-From: Jonas Bonn <jonas@southpole.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Olof Kindgren <olof.kindgren@gmail.com>,
-        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Mehall <contact@kevinmehall.net>, linux <linux@openrisc.net>
-Subject: Re: [ORLinux] [PATCH] openrisc: Add DTS and defconfig for DE0-Nano
-References: <1384029451-16555-1-git-send-email-geert@linux-m68k.org>	<5285EE5A.1070202@southpole.se>	<20131116084505.GA26233@chokladfabriken.org> <CAKaYPCNOLbX09Pqx7Zn=ivO++iBZMbBpu-pMjNgayVDBrBX1yQ@mail.gmail.com>
-In-Reply-To: <CAKaYPCNOLbX09Pqx7Zn=ivO++iBZMbBpu-pMjNgayVDBrBX1yQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Assp-Version: 2.3.3(13276) on assp.southpole.se
-X-Assp-ID: assp.southpole.se 77879-02061
-X-Assp-Session: 7F739B66CA00 (mail 1)
-X-Assp-Client-SSL: yes
-X-Assp-Server-TLS: yes
+	id S1751786Ab3KQIus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 03:50:48 -0500
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Olof Johansson <olof@lixom.net>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, gnurou@gmail.com,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH] ARM: move firmware_ops to drivers/firmware
+Date: Sun, 17 Nov 2013 17:49:29 +0900
+Message-Id: <1384678169-28228-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olof,
+The ARM tree includes a firmware_ops interface that is designed to
+implement support for simple, TrustZone-based firmwares but could
+also cover other use-cases. It has been suggested that this
+interface might be useful to other architectures (e.g. arm64) and
+that it should be moved out of arch/arm.
 
-I think this discussion is veering away from what's relevant for the 
-linux-kernel and devicetree lists and did consider dropping them at this 
-point... but let's leave them in the discussion a bit longer in case 
-there's some sage guidance to be found there on the topic of doing sane 
-versioning of open source hardware.
+This patch takes care of this by performing the following:
+* Move the ARM firmware interface into drivers/firmware/ and rename
+  it to platform_firmware,
+* Update its documentation accordingly,
+* Update the only user of the API to date (Exynos secure firmware
+  support) to use the new API.
 
-On 11/16/13 12:01, Olof Kindgren wrote:
-> 2013/11/16 Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
->> On Fri, Nov 15, 2013 at 10:50:18AM +0100, Jonas Bonn wrote:
->>>> +
->>>> +    i2c0: ocores@a0000000 {
->>>> +            #address-cells = <1>;
->>>> +            #size-cells = <0>;
->>>> +            compatible = "opencores,i2c-ocores";
->>> Version number needed.  OpenCores wanted "projectname-rtlsvn###"
->>> where ### is the SVN commit number of the RTL directory in the
->>> project's source repository.
->>>
->> That will also require a change to the driver.
-The drivers in question aren't upstream so it's not a big deal. Making a 
-change to get sane revisioning would be worth it anyway.
+The ARM architecture's Kconfig now needs to include the Kconfig of
+drivers/firmware, which will result in an empty menu for most platforms
+that don't make use of any firmware. To avoid this, a new invisible
+ARCH_SUPPORTS_FIRMWARE configuration variable is also defined for ARM,
+that should explicitly be set by platforms that support firmware so that
+the firmware menu is included.
 
->>
->> Using svn commit ids as version info seems a bit too fine grained to me,
->> but if that's what's agreed on, then it should be the commit id from the
->> projects official repository at opencores.org I think.
-The DTS version tells the driver what feature set it can expect to find 
-in the HW core and thus how to go about driving it.  Normally, the core 
-won't change features much, but if you add something new you'd want the 
-driver to see a new 'compatible' tag so that it knows which features it 
-can/should enable.  New features will always entail driver changes; and 
-a driver can always be compatible with both the old and new HW versions 
-by just enabling the feature set appropriate to the HW in question.
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ Documentation/arm/firmware.txt               | 88 ---------------------------
+ Documentation/firmware/platform_firmware.txt | 89 ++++++++++++++++++++++++++++
+ arch/arm/Kconfig                             |  9 +++
+ arch/arm/common/Makefile                     |  2 -
+ arch/arm/common/firmware.c                   | 18 ------
+ arch/arm/include/asm/firmware.h              | 66 ---------------------
+ arch/arm/mach-exynos/Makefile                |  2 +-
+ arch/arm/mach-exynos/firmware.c              |  7 +--
+ arch/arm/mach-exynos/platsmp.c               | 10 ++--
+ drivers/firmware/Kconfig                     |  8 +++
+ drivers/firmware/Makefile                    |  1 +
+ drivers/firmware/platform_firmware.c         | 17 ++++++
+ include/linux/platform_firmware.h            | 69 +++++++++++++++++++++
+ 13 files changed, 203 insertions(+), 183 deletions(-)
+ delete mode 100644 Documentation/arm/firmware.txt
+ create mode 100644 Documentation/firmware/platform_firmware.txt
+ delete mode 100644 arch/arm/common/firmware.c
+ delete mode 100644 arch/arm/include/asm/firmware.h
+ create mode 100644 drivers/firmware/platform_firmware.c
+ create mode 100644 include/linux/platform_firmware.h
 
->>
->> Stefan
->> _______________________________________________
->> Linux mailing list
->> Linux@lists.openrisc.net
->> http://lists.openrisc.net/listinfo/linux
->
-> I agree. I don't like doing versioning with revision numbers. It's too
-> closely tied to the currently used VCS. The problem is that no one has
-> bothered to do proper releases of the cores for the last ten years or
-> so.
->
-> But since we are talking about a relatively small amount of cores
-> here, I think it could be worth to take a quick glance to see if the
-> latest SVN version is compatible with the latest tagged release. I
-> would suspect that is the case for the majority of the cores and the
-> we can just use the latest tag as version. For the other cores we
-> could
-> 1. Use latest tag + 1 (a bit ugly if the maintainer wants to do a proper release
-> 2. Take over maintainership/fork and just release what's in the trunk
-> (taking over maintenance is preferrable here to avoid  more repo
-> confusion)
-> 3. Use SVN revisions
->
-> option 2 would be my preferred choice here, given that we get someone
-> to do the actual work. I could probably help out with a few of the
-> cores
+diff --git a/Documentation/arm/firmware.txt b/Documentation/arm/firmware.txt
+deleted file mode 100644
+index c2e468f..0000000
+--- a/Documentation/arm/firmware.txt
++++ /dev/null
+@@ -1,88 +0,0 @@
+-Interface for registering and calling firmware-specific operations for ARM.
+-----
+-Written by Tomasz Figa <t.figa@samsung.com>
+-
+-Some boards are running with secure firmware running in TrustZone secure
+-world, which changes the way some things have to be initialized. This makes
+-a need to provide an interface for such platforms to specify available firmware
+-operations and call them when needed.
+-
+-Firmware operations can be specified using struct firmware_ops
+-
+-	struct firmware_ops {
+-		/*
+-		* Enters CPU idle mode
+-		*/
+-		int (*do_idle)(void);
+-		/*
+-		* Sets boot address of specified physical CPU
+-		*/
+-		int (*set_cpu_boot_addr)(int cpu, unsigned long boot_addr);
+-		/*
+-		* Boots specified physical CPU
+-		*/
+-		int (*cpu_boot)(int cpu);
+-		/*
+-		* Initializes L2 cache
+-		*/
+-		int (*l2x0_init)(void);
+-	};
+-
+-and then registered with register_firmware_ops function
+-
+-	void register_firmware_ops(const struct firmware_ops *ops)
+-
+-the ops pointer must be non-NULL.
+-
+-There is a default, empty set of operations provided, so there is no need to
+-set anything if platform does not require firmware operations.
+-
+-To call a firmware operation, a helper macro is provided
+-
+-	#define call_firmware_op(op, ...)				\
+-		((firmware_ops->op) ? firmware_ops->op(__VA_ARGS__) : (-ENOSYS))
+-
+-the macro checks if the operation is provided and calls it or otherwise returns
+--ENOSYS to signal that given operation is not available (for example, to allow
+-fallback to legacy operation).
+-
+-Example of registering firmware operations:
+-
+-	/* board file */
+-
+-	static int platformX_do_idle(void)
+-	{
+-		/* tell platformX firmware to enter idle */
+-		return 0;
+-	}
+-
+-	static int platformX_cpu_boot(int i)
+-	{
+-		/* tell platformX firmware to boot CPU i */
+-		return 0;
+-	}
+-
+-	static const struct firmware_ops platformX_firmware_ops = {
+-		.do_idle        = exynos_do_idle,
+-		.cpu_boot       = exynos_cpu_boot,
+-		/* other operations not available on platformX */
+-	};
+-
+-	/* init_early callback of machine descriptor */
+-	static void __init board_init_early(void)
+-	{
+-		register_firmware_ops(&platformX_firmware_ops);
+-	}
+-
+-Example of using a firmware operation:
+-
+-	/* some platform code, e.g. SMP initialization */
+-
+-	__raw_writel(virt_to_phys(exynos4_secondary_startup),
+-		CPU1_BOOT_REG);
+-
+-	/* Call Exynos specific smc call */
+-	if (call_firmware_op(cpu_boot, cpu) == -ENOSYS)
+-		cpu_boot_legacy(...); /* Try legacy way */
+-
+-	gic_raise_softirq(cpumask_of(cpu), 1);
+diff --git a/Documentation/firmware/platform_firmware.txt b/Documentation/firmware/platform_firmware.txt
+new file mode 100644
+index 0000000..db2a3e7
+--- /dev/null
++++ b/Documentation/firmware/platform_firmware.txt
+@@ -0,0 +1,89 @@
++Interface for registering and calling firmware-specific operations.
++----
++Written by Tomasz Figa <t.figa@samsung.com>
++
++Some boards are running with secure firmware running in secure world, which
++changes the way some things have to be initialized. This makes a need to provide
++an interface for such platforms to specify available firmware operations and
++call them when needed.
++
++Firmware operations can be specified using struct platform_firmware_ops
++
++	struct platform_firmware_ops {
++		/*
++		* Enters CPU idle mode
++		*/
++		int (*do_idle)(void);
++		/*
++		* Sets boot address of specified physical CPU
++		*/
++		int (*set_cpu_boot_addr)(int cpu, unsigned long boot_addr);
++		/*
++		* Boots specified physical CPU
++		*/
++		int (*cpu_boot)(int cpu);
++		/*
++		* Initializes L2 cache
++		*/
++		int (*l2x0_init)(void);
++	};
++
++and then registered with register_platform_firmware_ops function
++
++void register_platform_firmware_ops(const struct platform_firmware_ops *ops)
++
++the ops pointer must be non-NULL.
++
++There is a default, empty set of operations provided, so there is no need to
++set anything if platform does not require firmware operations.
++
++To call a firmware operation, a helper macro is provided
++
++	#define call_platform_firmware_op(op, ...)				\
++		((platform_firmware_ops->op) ?
++		platform_firmware_ops->op(__VA_ARGS__) : (-ENOSYS))
++
++the macro checks if the operation is provided and calls it or otherwise returns
++-ENOSYS to signal that given operation is not available (for example, to allow
++fallback to legacy operation).
++
++Example of registering firmware operations:
++
++	/* board file */
++
++	static int platformX_do_idle(void)
++	{
++		/* tell platformX firmware to enter idle */
++		return 0;
++	}
++
++	static int platformX_cpu_boot(int i)
++	{
++		/* tell platformX firmware to boot CPU i */
++		return 0;
++	}
++
++	static const struct platform_firmware_ops platformX_firmware_ops = {
++		.do_idle        = exynos_do_idle,
++		.cpu_boot       = exynos_cpu_boot,
++		/* other operations not available on platformX */
++	};
++
++	/* init_early callback of machine descriptor */
++	static void __init board_init_early(void)
++	{
++		register_platform_firmware_ops(&platformX_firmware_ops);
++	}
++
++Example of using a firmware operation:
++
++	/* some platform code, e.g. SMP initialization */
++
++	__raw_writel(virt_to_phys(exynos4_secondary_startup),
++		CPU1_BOOT_REG);
++
++	/* Call Exynos specific smc call */
++	if (call_platform_firmware_op(cpu_boot, cpu) == -ENOSYS)
++		cpu_boot_legacy(...); /* Try legacy way */
++
++	gic_raise_softirq(cpumask_of(cpu), 1);
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index cc68e6d..9026af0 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -218,6 +218,9 @@ config NEED_RET_TO_USER
+ config ARCH_MTD_XIP
+ 	bool
+ 
++config ARCH_SUPPORTS_FIRMWARE
++	bool
++
+ config VECTORS_BASE
+ 	hex
+ 	default 0xffff0000 if MMU || CPU_HIGH_VECTOR
+@@ -806,6 +809,8 @@ config ARCH_EXYNOS
+ 	select ARCH_HAS_HOLES_MEMORYMODEL
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARCH_SPARSEMEM_ENABLE
++	select ARCH_SUPPORTS_FIRMWARE
++	select EXYNOS_FIRMWARE
+ 	select ARM_GIC
+ 	select COMMON_CLK
+ 	select CPU_V7
+@@ -2256,6 +2261,10 @@ source "net/Kconfig"
+ 
+ source "drivers/Kconfig"
+ 
++if ARCH_SUPPORTS_FIRMWARE
++source "drivers/firmware/Kconfig"
++endif
++
+ source "fs/Kconfig"
+ 
+ source "arch/arm/Kconfig.debug"
+diff --git a/arch/arm/common/Makefile b/arch/arm/common/Makefile
+index 4bdc416..f98a991 100644
+--- a/arch/arm/common/Makefile
++++ b/arch/arm/common/Makefile
+@@ -2,8 +2,6 @@
+ # Makefile for the linux kernel.
+ #
+ 
+-obj-y				+= firmware.o
+-
+ obj-$(CONFIG_ICST)		+= icst.o
+ obj-$(CONFIG_SA1111)		+= sa1111.o
+ obj-$(CONFIG_DMABOUNCE)		+= dmabounce.o
+diff --git a/arch/arm/common/firmware.c b/arch/arm/common/firmware.c
+deleted file mode 100644
+index 27ddccb..0000000
+--- a/arch/arm/common/firmware.c
++++ /dev/null
+@@ -1,18 +0,0 @@
+-/*
+- * Copyright (C) 2012 Samsung Electronics.
+- * Kyungmin Park <kyungmin.park@samsung.com>
+- * Tomasz Figa <t.figa@samsung.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/suspend.h>
+-
+-#include <asm/firmware.h>
+-
+-static const struct firmware_ops default_firmware_ops;
+-
+-const struct firmware_ops *firmware_ops = &default_firmware_ops;
+diff --git a/arch/arm/include/asm/firmware.h b/arch/arm/include/asm/firmware.h
+deleted file mode 100644
+index 1563130..0000000
+--- a/arch/arm/include/asm/firmware.h
++++ /dev/null
+@@ -1,66 +0,0 @@
+-/*
+- * Copyright (C) 2012 Samsung Electronics.
+- * Kyungmin Park <kyungmin.park@samsung.com>
+- * Tomasz Figa <t.figa@samsung.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#ifndef __ASM_ARM_FIRMWARE_H
+-#define __ASM_ARM_FIRMWARE_H
+-
+-#include <linux/bug.h>
+-
+-/*
+- * struct firmware_ops
+- *
+- * A structure to specify available firmware operations.
+- *
+- * A filled up structure can be registered with register_firmware_ops().
+- */
+-struct firmware_ops {
+-	/*
+-	 * Enters CPU idle mode
+-	 */
+-	int (*do_idle)(void);
+-	/*
+-	 * Sets boot address of specified physical CPU
+-	 */
+-	int (*set_cpu_boot_addr)(int cpu, unsigned long boot_addr);
+-	/*
+-	 * Boots specified physical CPU
+-	 */
+-	int (*cpu_boot)(int cpu);
+-	/*
+-	 * Initializes L2 cache
+-	 */
+-	int (*l2x0_init)(void);
+-};
+-
+-/* Global pointer for current firmware_ops structure, can't be NULL. */
+-extern const struct firmware_ops *firmware_ops;
+-
+-/*
+- * call_firmware_op(op, ...)
+- *
+- * Checks if firmware operation is present and calls it,
+- * otherwise returns -ENOSYS
+- */
+-#define call_firmware_op(op, ...)					\
+-	((firmware_ops->op) ? firmware_ops->op(__VA_ARGS__) : (-ENOSYS))
+-
+-/*
+- * register_firmware_ops(ops)
+- *
+- * A function to register platform firmware_ops struct.
+- */
+-static inline void register_firmware_ops(const struct firmware_ops *ops)
+-{
+-	BUG_ON(!ops);
+-
+-	firmware_ops = ops;
+-}
+-
+-#endif
+diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
+index 8930b66..7132d03 100644
+--- a/arch/arm/mach-exynos/Makefile
++++ b/arch/arm/mach-exynos/Makefile
+@@ -25,7 +25,7 @@ obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
+ obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
+ 
+ obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-smc.o
+-obj-$(CONFIG_ARCH_EXYNOS)	+= firmware.o
++obj-$(CONFIG_EXYNOS_FIRMWARE)	+= firmware.o
+ 
+ plus_sec := $(call as-instr,.arch_extension sec,+sec)
+ AFLAGS_exynos-smc.o		:=-Wa,-march=armv7-a$(plus_sec)
+diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
+index 932129e..6dc4938 100644
+--- a/arch/arm/mach-exynos/firmware.c
++++ b/arch/arm/mach-exynos/firmware.c
+@@ -13,8 +13,7 @@
+ #include <linux/init.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+-
+-#include <asm/firmware.h>
++#include <linux/platform_firmware.h>
+ 
+ #include <mach/map.h>
+ 
+@@ -40,7 +39,7 @@ static int exynos_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
+ 	return 0;
+ }
+ 
+-static const struct firmware_ops exynos_firmware_ops = {
++static const struct platform_firmware_ops exynos_firmware_ops = {
+ 	.do_idle		= exynos_do_idle,
+ 	.set_cpu_boot_addr	= exynos_set_cpu_boot_addr,
+ 	.cpu_boot		= exynos_cpu_boot,
+@@ -64,5 +63,5 @@ void __init exynos_firmware_init(void)
+ 
+ 	pr_info("Running under secure firmware.\n");
+ 
+-	register_firmware_ops(&exynos_firmware_ops);
++	register_platform_firmware_ops(&exynos_firmware_ops);
+ }
+diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+index 58b43e6..132d21c 100644
+--- a/arch/arm/mach-exynos/platsmp.c
++++ b/arch/arm/mach-exynos/platsmp.c
+@@ -20,11 +20,11 @@
+ #include <linux/jiffies.h>
+ #include <linux/smp.h>
+ #include <linux/io.h>
++#include <linux/platform_firmware.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/smp_plat.h>
+ #include <asm/smp_scu.h>
+-#include <asm/firmware.h>
+ 
+ #include <mach/hardware.h>
+ #include <mach/regs-clock.h>
+@@ -150,10 +150,11 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
+ 		 * Try to set boot address using firmware first
+ 		 * and fall back to boot register if it fails.
+ 		 */
+-		if (call_firmware_op(set_cpu_boot_addr, phys_cpu, boot_addr))
++		if (call_platform_firmware_op(set_cpu_boot_addr, phys_cpu,
++					      boot_addr))
+ 			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
+ 
+-		call_firmware_op(cpu_boot, phys_cpu);
++		call_platform_firmware_op(cpu_boot, phys_cpu);
+ 
+ 		arch_send_wakeup_ipi_mask(cpumask_of(cpu));
+ 
+@@ -225,7 +226,8 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
+ 		phys_cpu = cpu_logical_map(i);
+ 		boot_addr = virt_to_phys(exynos4_secondary_startup);
+ 
+-		if (call_firmware_op(set_cpu_boot_addr, phys_cpu, boot_addr))
++		if (call_platform_firmware_op(set_cpu_boot_addr, phys_cpu,
++					      boot_addr))
+ 			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
+ 	}
+ }
+diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
+index 0747872..1fb9da6 100644
+--- a/drivers/firmware/Kconfig
++++ b/drivers/firmware/Kconfig
+@@ -129,6 +129,14 @@ config ISCSI_IBFT
+ 	  detect iSCSI boot parameters dynamically during system boot, say Y.
+ 	  Otherwise, say N.
+ 
++config PLATFORM_FIRMWARE
++	bool
++
++config EXYNOS_FIRMWARE
++	bool "Support for Exynos secure firmware"
++	select PLATFORM_FIRMWARE
++	depends on ARM && ARCH_EXYNOS
++
+ source "drivers/firmware/google/Kconfig"
+ source "drivers/firmware/efi/Kconfig"
+ 
+diff --git a/drivers/firmware/Makefile b/drivers/firmware/Makefile
+index 299fad6..9cd2231 100644
+--- a/drivers/firmware/Makefile
++++ b/drivers/firmware/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_DMIID)		+= dmi-id.o
+ obj-$(CONFIG_ISCSI_IBFT_FIND)	+= iscsi_ibft_find.o
+ obj-$(CONFIG_ISCSI_IBFT)	+= iscsi_ibft.o
+ obj-$(CONFIG_FIRMWARE_MEMMAP)	+= memmap.o
++obj-$(CONFIG_PLATFORM_FIRMWARE) += platform_firmware.o
+ 
+ obj-$(CONFIG_GOOGLE_FIRMWARE)	+= google/
+ obj-$(CONFIG_EFI)		+= efi/
+diff --git a/drivers/firmware/platform_firmware.c b/drivers/firmware/platform_firmware.c
+new file mode 100644
+index 0000000..1644df2
+--- /dev/null
++++ b/drivers/firmware/platform_firmware.c
+@@ -0,0 +1,17 @@
++/*
++ * Copyright (C) 2012 Samsung Electronics.
++ * Kyungmin Park <kyungmin.park@samsung.com>
++ * Tomasz Figa <t.figa@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/suspend.h>
++#include <linux/platform_firmware.h>
++
++static const struct platform_firmware_ops default_ops;
++
++const struct platform_firmware_ops *platform_firmware_ops = &default_ops;
+diff --git a/include/linux/platform_firmware.h b/include/linux/platform_firmware.h
+new file mode 100644
+index 0000000..601e3fd
+--- /dev/null
++++ b/include/linux/platform_firmware.h
+@@ -0,0 +1,69 @@
++/*
++ * Copyright (C) 2012 Samsung Electronics.
++ * Kyungmin Park <kyungmin.park@samsung.com>
++ * Tomasz Figa <t.figa@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _PLATFORM_FIRMWARE_H
++#define _PLATFORM_FIRMWARE_H
++
++#include <linux/bug.h>
++
++/*
++ * struct platform_firmware_ops
++ *
++ * A structure to specify available firmware operations.
++ *
++ * A filled up structure can be registered with
++ * register_platform_firmware_ops().
++ */
++struct platform_firmware_ops {
++	/*
++	 * Enters CPU idle mode
++	 */
++	int (*do_idle)(void);
++	/*
++	 * Sets boot address of specified physical CPU
++	 */
++	int (*set_cpu_boot_addr)(int cpu, unsigned long boot_addr);
++	/*
++	 * Boots specified physical CPU
++	 */
++	int (*cpu_boot)(int cpu);
++	/*
++	 * Initializes L2 cache
++	 */
++	int (*l2x0_init)(void);
++};
++
++/* Global pointer for current firmware_ops structure, can't be NULL. */
++extern const struct platform_firmware_ops *platform_firmware_ops;
++
++/*
++ * call_platform_firmware_op(op, ...)
++ *
++ * Checks if firmware operation is present and calls it,
++ * otherwise returns -ENOSYS
++ */
++#define call_platform_firmware_op(op, ...)				\
++	((platform_firmware_ops->op) ?					\
++	platform_firmware_ops->op(__VA_ARGS__) : (-ENOSYS))
++
++/*
++ * register_platform_firmware_ops(ops)
++ *
++ * A function to register platform firmware_ops struct.
++ */
++static inline
++void register_platform_firmware_ops(const struct platform_firmware_ops *ops)
++{
++	BUG_ON(!ops);
++
++	platform_firmware_ops = ops;
++}
++
++#endif
+-- 
+1.8.4.2
 
-My suggestion:
-i)  Move the primary source of these cores to git (doesn't matter 
-where... github is fine)
-ii)  Use a shortened git commit ID (6 chars) as the version number
-
-Why?
-
-i)  The commit ID is independent of the repository; whether the repo is 
-opencores, github, or olof's computer, the commit ID is constant
-ii)  Tag names are arbitrary labels; they don't contain any more 
-information than the commit ID
-iii)  The commit ID,  being a hash of the source and repository history 
-itself, contains information that makes it effectively impossible for 
-someone to attach the same label to an incompatible core
-iv)  I think everyone actively working on these cores today are doing so 
-via git already... via orpsocv2/3, presumably
-
-NB: you might do named releases of a core, from versions 1.2 to 2.5, but 
-if the underlying feature set remains the same and the same driver 
-applies then the DTS 'compatible' tag would remain constant across all 
-these releases.  This means that the HW feature set is decoupled from 
-the arbitrary version numbers that people like to use when doing releases.
-
-> Jonas, you said that opencores wanted projectname-svnversion. Do you
-> know where that comes from? My proposal here would conflict with that
-It came out of a private conversion I had with Marcus Erlandsson (who 
-spoke for OpenCores at the time).  The OpenRISC project hadn't really 
-moved on to git back then (as it has today) so it was the best we could 
-come up with.
-
-/Jonas
