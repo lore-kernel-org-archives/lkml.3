@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265Ab3KQGTQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 01:19:16 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59382 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab3KQGTK (ORCPT
+	id S1751520Ab3KQGTq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 01:19:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47376 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab3KQGTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 01:19:10 -0500
-Date: Sun, 17 Nov 2013 06:19:07 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Peter Wu <lekensteyn@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION] coredumps truncated after "new helper: dump_align()"
-Message-ID: <20131117061907.GL13318@ZenIV.linux.org.uk>
-References: <11835033.kIc1RH0rS1@al>
- <20131115203838.GJ13318@ZenIV.linux.org.uk>
- <8708646.IsEyNQP0iB@al>
- <20131116000408.GK13318@ZenIV.linux.org.uk>
+	Sun, 17 Nov 2013 01:19:21 -0500
+Date: Sat, 16 Nov 2013 22:18:52 -0800
+From: tip-bot for Fenghua Yu <tipbot@zytor.com>
+Message-ID: <tip-f4cb1cc18f364d761d5614eb6293cccc6647f259@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, fenghua.yu@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, fenghua.yu@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1384634221-6006-1-git-send-email-fenghua.yu@intel.com>
+References: <1384634221-6006-1-git-send-email-fenghua.yu@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86-64, copy_user:
+  Remove zero byte check before copy user buffer.
+Git-Commit-ID: f4cb1cc18f364d761d5614eb6293cccc6647f259
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20131116000408.GK13318@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sat, 16 Nov 2013 22:18:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 16, 2013 at 12:04:08AM +0000, Al Viro wrote:
-> On Fri, Nov 15, 2013 at 10:34:43PM +0100, Peter Wu wrote:
-> 
-> > Unfortunately, this patch still does not fix the issue. I rm'd the output 
-> > directory just to be sure, but the bug is still there. What does this commit 
-> > do anyway? The commit message is quite vague.
-> 
-> Introduces a helper that used to be open-coded in a bunch of places -
-> pads the coredump to given alignment.  And switches those places
-> to that new helper...
-> 
-> FWIW, I haven't tried that on your config yet, but here (with the patch
-> in my previous mail) I'm seeing a sane-looking coredump -
-> -rw------- 1 root root 315392 Nov 15 17:48 core
-> Different userland, presumably, since that static binary is 684349
-> bytes long.
-> 
-> I'll try to reproduce with your config...
+Commit-ID:  f4cb1cc18f364d761d5614eb6293cccc6647f259
+Gitweb:     http://git.kernel.org/tip/f4cb1cc18f364d761d5614eb6293cccc6647f259
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Sat, 16 Nov 2013 12:37:01 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 16 Nov 2013 18:00:58 -0800
 
-... and on your config I'm seeing
-Inited
-Segmentation fault (core dumped)
-[    0.123351] Core size: 315392
-in the log.  Same size, same apparently sane coredump.  Can you check what you
-get on mainline + diff below (combination of dump_align() and locking fix)?
+x86-64, copy_user: Remove zero byte check before copy user buffer.
 
-diff --git a/fs/coredump.c b/fs/coredump.c
-index 62406b6..bc3fbcd 100644
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -695,7 +695,7 @@ int dump_emit(struct coredump_params *cprm, const void *addr, int nr)
- 	while (nr) {
- 		if (dump_interrupted())
- 			return 0;
--		n = vfs_write(file, addr, nr, &pos);
-+		n = __kernel_write(file, addr, nr, &pos);
- 		if (n <= 0)
- 			return 0;
- 		file->f_pos = pos;
-@@ -733,7 +733,7 @@ int dump_align(struct coredump_params *cprm, int align)
- {
- 	unsigned mod = cprm->written & (align - 1);
- 	if (align & (align - 1))
--		return -EINVAL;
--	return mod ? dump_skip(cprm, align - mod) : 0;
-+		return 0;
-+	return mod ? dump_skip(cprm, align - mod) : 1;
- }
- EXPORT_SYMBOL(dump_align);
+Operation of rep movsb instruction handles zero byte copy. As pointed out by
+Linus, there is no need to check zero size in kernel. Removing this redundant
+check saves a few cycles in copy user functions.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1384634221-6006-1-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/lib/copy_user_64.S | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/lib/copy_user_64.S b/arch/x86/lib/copy_user_64.S
+index a30ca15..ffe4eb9 100644
+--- a/arch/x86/lib/copy_user_64.S
++++ b/arch/x86/lib/copy_user_64.S
+@@ -236,8 +236,6 @@ ENDPROC(copy_user_generic_unrolled)
+ ENTRY(copy_user_generic_string)
+ 	CFI_STARTPROC
+ 	ASM_STAC
+-	andl %edx,%edx
+-	jz 4f
+ 	cmpl $8,%edx
+ 	jb 2f		/* less than 8 bytes, go to byte copy loop */
+ 	ALIGN_DESTINATION
+@@ -249,7 +247,7 @@ ENTRY(copy_user_generic_string)
+ 2:	movl %edx,%ecx
+ 3:	rep
+ 	movsb
+-4:	xorl %eax,%eax
++	xorl %eax,%eax
+ 	ASM_CLAC
+ 	ret
+ 
+@@ -279,12 +277,10 @@ ENDPROC(copy_user_generic_string)
+ ENTRY(copy_user_enhanced_fast_string)
+ 	CFI_STARTPROC
+ 	ASM_STAC
+-	andl %edx,%edx
+-	jz 2f
+ 	movl %edx,%ecx
+ 1:	rep
+ 	movsb
+-2:	xorl %eax,%eax
++	xorl %eax,%eax
+ 	ASM_CLAC
+ 	ret
+ 
