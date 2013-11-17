@@ -1,301 +1,882 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab3KQPd6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 10:33:58 -0500
-Received: from 19.mo6.mail-out.ovh.net ([188.165.56.177]:52389 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751922Ab3KQPds (ORCPT
+	id S1754049Ab3KQPjk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 10:39:40 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:55804 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208Ab3KQPj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 10:33:48 -0500
-Message-ID: <5288E1B6.5090704@overkiz.com>
-Date: Sun, 17 Nov 2013 16:33:10 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Sun, 17 Nov 2013 10:39:29 -0500
+Message-ID: <5288E327.8050809@koalo.de>
+Date: Sun, 17 Nov 2013 16:39:19 +0100
+From: Florian Meier <florian.meier@koalo.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>, Rob Landley <rob@landley.net>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>
-CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH RESEND 1/2] clk: add clk accuracy retrieval support
-References: <1381684631-10835-1-git-send-email-b.brezillon@overkiz.com> <1381684631-10835-2-git-send-email-b.brezillon@overkiz.com> <20131108005147.19193.42349@quantum> <527CA6D5.9070807@overkiz.com> <20131116005031.19193.32668@quantum>
-In-Reply-To: <20131116005031.19193.32668@quantum>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Stephen Warren <swarren@wwwdotorg.org>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: devicetree <devicetree@vger.kernel.org>, alsa-devel@alsa-project.org,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        dmaengine <dmaengine@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCHv7] dmaengine: Add support for BCM2835
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 16261372355138648092
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrieekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mike,
+Add support for DMA controller of BCM2835 as used in the Raspberry Pi.
+Currently it only supports cyclic DMA.
 
-On 16/11/2013 01:50, Mike Turquette wrote:
-> Quoting boris brezillon (2013-11-08 00:54:45)
->> Hello Mike,
->>
->> On 08/11/2013 01:51, Mike Turquette wrote:
->>> Quoting Boris BREZILLON (2013-10-13 10:17:10)
->>>> +/**
->>>> + * clk_get_accuracy - return the accuracy of clk
->>>> + * @clk: the clk whose accuracy is being returned
->>>> + *
->>>> + * Simply returns the cached accuracy of the clk, unless
->>>> + * CLK_GET_ACCURACY_NOCACHE flag is set, which means a recalc_rate will be
->>>> + * issued.
->>>> + * If clk is NULL then returns 0.
->>>> + */
->>>> +unsigned long clk_get_accuracy(struct clk *clk)
->>>> +{
->>>> +       unsigned long accuracy;
->>>> +       clk_prepare_lock();
->>>> +
->>>> +       if (clk && (clk->flags & CLK_GET_ACCURACY_NOCACHE))
->>>> +               __clk_recalc_accuracies(clk);
->>> I think that there is some overlap between recalculating the accuracy
->>> here and simply getting it. You only provide clk_get_accuracy and it
->>> serves both purposes. It would be better if clk_recalc_accuracy walked
->>> the subtree of children and if clk_get_accuracy simply returned a cached
->>> value.
->> I'm not sure I get your point.
->>
->> I used exactly the same model as for clk rate retrieval.
-> Not exactly the same model. For rates we support public clk_recalc_rate
-> and clk_get_rate functions.
+Signed-off-by: Florian Meier <florian.meier@koalo.de>
+---
 
-I didn't find any clk_recalc_rate function in the CCF.
-Could you point me out where it is defined ?
+This version includes some more style improvements
+suggested in the previous thread.
 
->
->> Actually there's one flag (CLK_GET_ACCURACY_NOCACHE) which is
->> checked to decide wether the accuracy should be recalculated each
->> time the get_accuracy is called or not.
->>
->> This means most of the time the clk_get_accuracy will return the cached
->> value unless the clk provider explicitely ask for accuracy recalculation
->> (e.g. a clk with dynamic accuracy according to temperature range ?).
->>
->> Are you suggesting to expose 2 functions to clk users (clk_get_accuracy
->> and clk_recalc_accuracy) ?
->> Or is clk_recalc_accuracy an internal/private function used by the CCF ?
-> I was suggesting that in my previous email. However I've thought on it a
-> bit and I'm not sure there is any value to having a public
-> clk_recalc_accuracy right now.
->
-> The only reason to do so would be if the accuracy can change in such a
-> way that the clock framework is never aware of it.  This would mean that
-> somehow the accuracy changed "behind our back".
->
-> One hypothetical example is a PLL which Linux knows about, but perhaps
-> is controlled by some other co-processor (not Linux). In this case the
-> co-processor may reprogram/relock the PLL in a way that affects it's
-> accuracy, and a Linux driver that knows this may want to update the CCF
-> book-keeping with a call to clk_recalc_accuracy.
->
-> That's all hypothetical though and it can be added in later. Looking
-> over your change again I think that it is sufficient for now.
+ .../devicetree/bindings/dma/bcm2835-dma.txt        |   56 ++
+ drivers/dma/Kconfig                                |    6 +
+ drivers/dma/Makefile                               |    1 +
+ drivers/dma/bcm2835-dma.c                          |  736 ++++++++++++++++++++
+ 4 files changed, 799 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/bcm2835-dma.txt
+ create mode 100644 drivers/dma/bcm2835-dma.c
 
-This looks reasonable.
-I'll propose a new patch to provide a public clk_recalc_rate function 
-after this
-series is merged.
-
->
-> Can you respin this patch with fixes for the two nitpicks I outlined in
-> my previous mail and rebase it onto -rc1 when it drops? That should be
-> any day now.
-
-I've rebased this series (with the proposed fixes) onto linux-next.
-I guess there won't be a lot of changes between the current tag ( 
-next-20131115 
-<https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tag/?id=next-20131115>)
-and -rc1, but I'll wait till -rc1 is released ;-).
-
-
-Thanks for your review.
-
-Best Regards,
-
-Boris
-
-> Thanks!
-> Mike
->
->>>> +
->>>> +       accuracy = __clk_get_accuracy(clk);
->>>> +       clk_prepare_unlock();
->>>> +
->>>> +       return accuracy;
->>>> +}
->>>> +EXPORT_SYMBOL_GPL(clk_get_accuracy);
->>>> +
->>>> +/**
->>>>     * __clk_recalc_rates
->>>>     * @clk: first clk in the subtree
->>>>     * @msg: notification type (see include/linux/clk.h)
->>>> @@ -1545,6 +1610,7 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
->>>>    {
->>>>           clk_reparent(clk, new_parent);
->>>>           clk_debug_reparent(clk, new_parent);
->>>> +       __clk_recalc_accuracies(clk);
->>> Similar to the above statement. Why do this here? We do this for rates
->>> since calls to clk_get_rate will return the cached rate (unless the
->>> NOCACHE flag is set). But since a call to clk_get_accuracy will always
->>> recalculate it then there is no benefit to doing that here.
->> This is the same for clk_get_accuracies (it returns the cached
->> accuracy unless CLK_GET_ACCURACY_NOCACHE is defined).
->>
->> And changing parent of a clk will indirectly change the clk
->> accuracy (clk accuracies are cumulative).
->>
->>>>           __clk_recalc_rates(clk, POST_RATE_CHANGE);
->>>>    }
->>>>    
->>>> @@ -1615,6 +1681,9 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
->>>>           /* do the re-parent */
->>>>           ret = __clk_set_parent(clk, parent, p_index);
->>>>    
->>>> +       /* propagate accuracy recalculation */
->>>> +       __clk_recalc_accuracies(clk);
->>> Ditto.
->> Ditto. :)
->>
->>
->> Please tell me if I misunderstood your requests.
->>
->> Best Regards,
->>
->> Boris
->>
->>> Regards,
->>> Mike
->>>
->>>> +
->>>>           /* propagate rate recalculation accordingly */
->>>>           if (ret)
->>>>                   __clk_recalc_rates(clk, ABORT_RATE_CHANGE);
->>>> @@ -1724,6 +1793,21 @@ int __clk_init(struct device *dev, struct clk *clk)
->>>>                   hlist_add_head(&clk->child_node, &clk_orphan_list);
->>>>    
->>>>           /*
->>>> +        * Set clk's accuracy.  The preferred method is to use
->>>> +        * .recalc_accuracy. For simple clocks and lazy developers the default
->>>> +        * fallback is to use the parent's accuracy.  If a clock doesn't have a
->>>> +        * parent (or is orphaned) then accuracy is set to zero (perfect
->>>> +        * clock).
->>>> +        */
->>>> +       if (clk->ops->recalc_accuracy)
->>>> +               clk->accuracy = clk->ops->recalc_accuracy(clk->hw,
->>>> +                                       __clk_get_accuracy(clk->parent));
->>>> +       else if (clk->parent)
->>>> +               clk->accuracy = clk->parent->accuracy;
->>>> +       else
->>>> +               clk->accuracy = 0;
->>>> +
->>>> +       /*
->>>>            * Set clk's rate.  The preferred method is to use .recalc_rate.  For
->>>>            * simple clocks and lazy developers the default fallback is to use the
->>>>            * parent's rate.  If a clock doesn't have a parent (or is orphaned)
->>>> diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
->>>> index 8138c94..accb517 100644
->>>> --- a/include/linux/clk-private.h
->>>> +++ b/include/linux/clk-private.h
->>>> @@ -41,6 +41,7 @@ struct clk {
->>>>           unsigned long           flags;
->>>>           unsigned int            enable_count;
->>>>           unsigned int            prepare_count;
->>>> +       unsigned long           accuracy;
->>>>           struct hlist_head       children;
->>>>           struct hlist_node       child_node;
->>>>           unsigned int            notifier_count;
->>>> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
->>>> index 73bdb69..942811d 100644
->>>> --- a/include/linux/clk-provider.h
->>>> +++ b/include/linux/clk-provider.h
->>>> @@ -29,6 +29,7 @@
->>>>    #define CLK_IS_BASIC           BIT(5) /* Basic clk, can't do a to_clk_foo() */
->>>>    #define CLK_GET_RATE_NOCACHE   BIT(6) /* do not use the cached clk rate */
->>>>    #define CLK_SET_RATE_NO_REPARENT BIT(7) /* don't re-parent on rate change */
->>>> +#define CLK_GET_ACCURACY_NOCACHE BIT(8) /* do not use the cached clk accuracy */
->>>>    
->>>>    struct clk_hw;
->>>>    
->>>> @@ -108,6 +109,13 @@ struct clk_hw;
->>>>     *             which is likely helpful for most .set_rate implementation.
->>>>     *             Returns 0 on success, -EERROR otherwise.
->>>>     *
->>>> + * @recalc_accuracy: Recalculate the accuracy of this clock. The clock accuracy
->>>> + *             is expressed in ppb (parts per billion). The parent accuracy is
->>>> + *             an input parameter.
->>>> + *             Returns the calculated accuracy.  Optional - if this op is not
->>>> + *             set then clock accuracy will be initialized to parent accuracy
->>>> + *             or 0 (perfect clock) if clock has no parent.
->>>> + *
->>>>     * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
->>>>     * implementations to split any work between atomic (enable) and sleepable
->>>>     * (prepare) contexts.  If enabling a clock requires code that might sleep,
->>>> @@ -139,6 +147,8 @@ struct clk_ops {
->>>>           u8              (*get_parent)(struct clk_hw *hw);
->>>>           int             (*set_rate)(struct clk_hw *hw, unsigned long,
->>>>                                       unsigned long);
->>>> +       unsigned long   (*recalc_accuracy)(struct clk_hw *hw,
->>>> +                                          unsigned long parent_accuracy);
->>>>           void            (*init)(struct clk_hw *hw);
->>>>    };
->>>>    
->>>> @@ -194,6 +204,7 @@ struct clk_hw {
->>>>    struct clk_fixed_rate {
->>>>           struct          clk_hw hw;
->>>>           unsigned long   fixed_rate;
->>>> +       unsigned long   fixed_accuracy;
->>>>           u8              flags;
->>>>    };
->>>>    
->>>> diff --git a/include/linux/clk.h b/include/linux/clk.h
->>>> index 9a6d045..2fe3b54 100644
->>>> --- a/include/linux/clk.h
->>>> +++ b/include/linux/clk.h
->>>> @@ -85,6 +85,23 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
->>>>    #endif
->>>>    
->>>>    /**
->>>> + * clk_get_accuracy - obtain the clock accuracy in ppb (parts per billion)
->>>> + *                   for a clock source.
->>>> + * @clk: clock source
->>>> + *
->>>> + * This gets the clock source accuracy expressed in ppb.
->>>> + * A perfect clock returns 0.
->>>> + */
->>>> +#ifdef CONFIG_HAVE_CLK_GET_ACCURACY
->>>> +unsigned long clk_get_accuracy(struct clk *clk);
->>>> +#else
->>>> +static inline unsigned long clk_get_accuracy(struct clk *clk)
->>>> +{
->>>> +       return 0;
->>>> +}
->>>> +#endif
->>>> +
->>>> +/**
->>>>     * clk_prepare - prepare a clock source
->>>>     * @clk: clock source
->>>>     *
->>>> -- 
->>>> 1.7.9.5
->>>>
->>>>
->>>> _______________________________________________
->>>> linux-arm-kernel mailing list
->>>> linux-arm-kernel@lists.infradead.org
->>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
+diff --git a/Documentation/devicetree/bindings/dma/bcm2835-dma.txt b/Documentation/devicetree/bindings/dma/bcm2835-dma.txt
+new file mode 100644
+index 0000000..7d91019
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/bcm2835-dma.txt
+@@ -0,0 +1,56 @@
++* BCM2835 DMA controller
++
++Required properties:
++- compatible: Should be "brcm,bcm2835-dma".
++- reg: Should contain DMA registers location and length.
++- interrupts: Should contain the DMA interrupts associated
++		to the DMA channels in ascending order.
++		First cell is the IRQ bank.
++		Second cell is the IRQ number.
++- #dma-cells: Must be <1>, used to represent the number of integer cells in
++		the dmas property of client devices.
++- brcm,dma-channel-mask: Bit mask representing the channels
++			 not used by the firmware.
++
++Example:
++
++dma: dma@7e007000 {
++	compatible = "brcm,bcm2835-dma";
++	reg = <0x7e007000 0xf00>;
++	interrupts = <1 16
++		      1 17
++		      1 18
++		      1 19
++		      1 20
++		      1 21
++		      1 22
++		      1 23
++		      1 24
++		      1 25
++		      1 26
++		      1 27
++		      1 28>;
++
++	#dma-cells = <1>;
++	brcm,dma-channel-mask = <0x7f35>;
++};
++
++DMA clients connected to the BCM2835 DMA controller must use the format
++described in the dma.txt file, using a two-cell specifier for each channel:
++a phandle plus one integer cells.
++The two cells in order are:
++
++1. A phandle pointing to the DMA controller.
++2. The DREQ number.
++
++Example:
++
++bcm2835_i2s: i2s@7e203000 {
++	compatible = "brcm,bcm2835-i2s";
++	reg = <	0x7e203000 0x20
++		0x7e101098 0x02>;
++
++	dmas = <&dma 2
++		&dma 3>;
++	dma-names = "tx", "rx";
++};
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index c61a6ec..880e723 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -300,6 +300,12 @@ config DMA_OMAP
+ 	select DMA_ENGINE
+ 	select DMA_VIRTUAL_CHANNELS
+ 
++config DMA_BCM2835
++	tristate "BCM2835 DMA engine support"
++	depends on (ARCH_BCM2835 || MACH_BCM2708)
++	select DMA_ENGINE
++	select DMA_VIRTUAL_CHANNELS
++
+ config TI_CPPI41
+ 	tristate "AM33xx CPPI41 DMA support"
+ 	depends on ARCH_OMAP
+diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
+index 0ce2da9..0a6f08e 100644
+--- a/drivers/dma/Makefile
++++ b/drivers/dma/Makefile
+@@ -38,6 +38,7 @@ obj-$(CONFIG_EP93XX_DMA) += ep93xx_dma.o
+ obj-$(CONFIG_DMA_SA11X0) += sa11x0-dma.o
+ obj-$(CONFIG_MMP_TDMA) += mmp_tdma.o
+ obj-$(CONFIG_DMA_OMAP) += omap-dma.o
++obj-$(CONFIG_DMA_BCM2835) += bcm2835-dma.o
+ obj-$(CONFIG_MMP_PDMA) += mmp_pdma.o
+ obj-$(CONFIG_DMA_JZ4740) += dma-jz4740.o
+ obj-$(CONFIG_TI_CPPI41) += cppi41.o
+diff --git a/drivers/dma/bcm2835-dma.c b/drivers/dma/bcm2835-dma.c
+new file mode 100644
+index 0000000..4b4c673
+--- /dev/null
++++ b/drivers/dma/bcm2835-dma.c
+@@ -0,0 +1,736 @@
++/*
++ * BCM2835 DMA engine support
++ *
++ * This driver only supports cyclic DMA transfers
++ * as needed for the I2S module.
++ *
++ * Author:      Florian Meier <florian.meier@koalo.de>
++ *              Copyright 2013
++ *
++ * Based on
++ *	OMAP DMAengine support by Russell King
++ *
++ *	BCM2708 DMA Driver
++ *	Copyright (C) 2010 Broadcom
++ *
++ *	Raspberry Pi PCM I2S ALSA Driver
++ *	Copyright (c) by Phil Poole 2013
++ *
++ *	MARVELL MMP Peripheral DMA Driver
++ *	Copyright 2012 Marvell International Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/dmaengine.h>
++#include <linux/dma-mapping.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/list.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/io.h>
++#include <linux/spinlock.h>
++#include <linux/of.h>
++#include <linux/of_dma.h>
++
++#include "virt-dma.h"
++
++struct bcm2835_dmadev {
++	struct dma_device ddev;
++	spinlock_t lock;
++	void __iomem *base;
++	struct device_dma_parameters dma_parms;
++};
++
++struct bcm2835_dma_cb {
++	uint32_t info;
++	uint32_t src;
++	uint32_t dst;
++	uint32_t length;
++	uint32_t stride;
++	uint32_t next;
++	uint32_t pad[2];
++};
++
++struct bcm2835_chan {
++	struct virt_dma_chan vc;
++	struct list_head node;
++
++	struct dma_slave_config	cfg;
++	bool cyclic;
++	unsigned dreq;
++
++	int ch;
++	struct bcm2835_desc *desc;
++
++	void __iomem *chan_base;
++	int irq_number;
++};
++
++struct bcm2835_desc {
++	struct virt_dma_desc vd;
++	enum dma_transfer_direction dir;
++
++	unsigned int control_block_size;
++	struct bcm2835_dma_cb *control_block_base;
++	dma_addr_t control_block_base_phys;
++
++	unsigned frames;
++	size_t size;
++};
++
++#define BCM2835_DMA_CS		0x00
++#define BCM2835_DMA_ADDR	0x04
++#define BCM2835_DMA_SOURCE_AD	0x0c
++#define BCM2835_DMA_DEST_AD	0x10
++#define BCM2835_DMA_NEXTCB	0x1C
++
++/* DMA CS Control and Status bits */
++#define BCM2835_DMA_ACTIVE	BIT(0)
++#define BCM2835_DMA_INT	BIT(2)
++#define BCM2835_DMA_ISPAUSED	BIT(4)  /* Pause requested or not active */
++#define BCM2835_DMA_ISHELD	BIT(5)  /* Is held by DREQ flow control */
++#define BCM2835_DMA_ERR	BIT(8)
++#define BCM2835_DMA_ABORT	BIT(30) /* Stop current CB, go to next, WO */
++#define BCM2835_DMA_RESET	BIT(31) /* WO, self clearing */
++
++#define BCM2835_DMA_INT_EN	BIT(0)
++#define BCM2835_DMA_D_INC	BIT(4)
++#define BCM2835_DMA_D_DREQ	BIT(6)
++#define BCM2835_DMA_S_INC	BIT(8)
++#define BCM2835_DMA_S_DREQ	BIT(10)
++
++#define BCM2835_DMA_PER_MAP(x)	((x) << 16)
++
++#define BCM2835_DMA_DATA_TYPE_S8	1
++#define BCM2835_DMA_DATA_TYPE_S16	2
++#define BCM2835_DMA_DATA_TYPE_S32	4
++#define BCM2835_DMA_DATA_TYPE_S128	16
++
++/* Valid only for channels 0 - 14, 15 has its own base address */
++#define BCM2835_DMA_CHAN(n)	((n) << 8) /* Base address */
++#define BCM2835_DMA_CHANIO(base, n) ((base) + BCM2835_DMA_CHAN(n))
++
++static inline struct bcm2835_dmadev *to_bcm2835_dma_dev(struct dma_device *d)
++{
++	return container_of(d, struct bcm2835_dmadev, ddev);
++}
++
++static inline struct bcm2835_chan *to_bcm2835_dma_chan(struct dma_chan *c)
++{
++	return container_of(c, struct bcm2835_chan, vc.chan);
++}
++
++static inline struct bcm2835_desc *to_bcm2835_dma_desc(
++		struct dma_async_tx_descriptor *t)
++{
++	return container_of(t, struct bcm2835_desc, vd.tx);
++}
++
++static void bcm2835_dma_desc_free(struct virt_dma_desc *vd)
++{
++	struct bcm2835_desc *desc = container_of(vd, struct bcm2835_desc, vd);
++	dma_free_coherent(desc->vd.tx.chan->device->dev,
++			desc->control_block_size,
++			desc->control_block_base,
++			desc->control_block_base_phys);
++	kfree(desc);
++}
++
++static int bcm2835_dma_abort(void __iomem *chan_base)
++{
++	unsigned long int cs;
++	long int timeout = 10000;
++
++	cs = readl(chan_base + BCM2835_DMA_CS);
++	if (!(cs & BCM2835_DMA_ACTIVE))
++		return 0;
++
++	/* Write 0 to the active bit - Pause the DMA */
++	writel(0, chan_base + BCM2835_DMA_CS);
++
++	/* Wait for any current AXI transfer to complete */
++	while ((cs & BCM2835_DMA_ISPAUSED) && --timeout >= 0)
++		cs = readl(chan_base + BCM2835_DMA_CS);
++
++	/* We'll un-pause when we set of our next DMA */
++	if (cs & BCM2835_DMA_ISPAUSED)
++		return -ETIMEDOUT;
++
++	if (!(cs & BCM2835_DMA_ACTIVE))
++		return 0;
++
++	/* Terminate the control block chain */
++	writel(0, chan_base + BCM2835_DMA_NEXTCB);
++
++	/* Abort the whole DMA */
++	writel(BCM2835_DMA_ABORT | BCM2835_DMA_ACTIVE,
++	       chan_base + BCM2835_DMA_CS);
++
++	return 0;
++}
++
++static void bcm2835_dma_start_desc(struct bcm2835_chan *c)
++{
++	struct virt_dma_desc *vd = vchan_next_desc(&c->vc);
++	struct bcm2835_desc *d;
++
++	if (!vd) {
++		c->desc = NULL;
++		return;
++	}
++
++	list_del(&vd->node);
++
++	c->desc = d = to_bcm2835_dma_desc(&vd->tx);
++
++	dsb();	/* ARM data synchronization (push) operation */
++
++	writel(d->control_block_base_phys, c->chan_base + BCM2835_DMA_ADDR);
++	writel(BCM2835_DMA_ACTIVE, c->chan_base + BCM2835_DMA_CS);
++}
++
++static irqreturn_t bcm2835_dma_callback(int irq, void *data)
++{
++	struct bcm2835_chan *c = data;
++	struct bcm2835_desc *d;
++	unsigned long flags;
++
++	spin_lock_irqsave(&c->vc.lock, flags);
++
++	/* Acknowledge interrupt */
++	writel(BCM2835_DMA_INT, c->chan_base + BCM2835_DMA_CS);
++
++	d = c->desc;
++
++	if (d) {
++		/* TODO Only works for cyclic DMA */
++		vchan_cyclic_callback(&d->vd);
++	}
++
++	/* Keep the DMA engine running */
++	dsb(); /* ARM synchronization barrier */
++	writel(BCM2835_DMA_ACTIVE, c->chan_base + BCM2835_DMA_CS);
++
++	spin_unlock_irqrestore(&c->vc.lock, flags);
++
++	return IRQ_HANDLED;
++}
++
++static int bcm2835_dma_alloc_chan_resources(struct dma_chan *chan)
++{
++	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
++
++	dev_dbg(c->vc.chan.device->dev,
++			"Allocating DMA channel %i\n", c->ch);
++
++	return request_irq(c->irq_number,
++			bcm2835_dma_callback, 0, "DMA IRQ", c);
++}
++
++static void bcm2835_dma_free_chan_resources(struct dma_chan *chan)
++{
++	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
++
++	vchan_free_chan_resources(&c->vc);
++	free_irq(c->irq_number, c);
++
++	dev_dbg(c->vc.chan.device->dev, "Freeing DMA channel %u\n", c->ch);
++}
++
++static size_t bcm2835_dma_desc_size(struct bcm2835_desc *d)
++{
++	return d->size;
++}
++
++static size_t bcm2835_dma_desc_size_pos(struct bcm2835_desc *d, dma_addr_t addr)
++{
++	unsigned i;
++	size_t size;
++
++	for (size = i = 0; i < d->frames; i++) {
++		struct bcm2835_dma_cb *control_block =
++			&d->control_block_base[i];
++		size_t this_size = control_block->length;
++		dma_addr_t dma;
++
++		if (d->dir == DMA_DEV_TO_MEM)
++			dma = control_block->dst;
++		else
++			dma = control_block->src;
++
++		if (size)
++			size += this_size;
++		else if (addr >= dma && addr < dma + this_size)
++			size += dma + this_size - addr;
++	}
++
++	return size;
++}
++
++static enum dma_status bcm2835_dma_tx_status(struct dma_chan *chan,
++	dma_cookie_t cookie, struct dma_tx_state *txstate)
++{
++	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
++	struct virt_dma_desc *vd;
++	enum dma_status ret;
++	unsigned long flags;
++
++	ret = dma_cookie_status(chan, cookie, txstate);
++	if (ret == DMA_SUCCESS || !txstate)
++		return ret;
++
++	spin_lock_irqsave(&c->vc.lock, flags);
++	vd = vchan_find_desc(&c->vc, cookie);
++	if (vd) {
++		txstate->residue =
++			bcm2835_dma_desc_size(to_bcm2835_dma_desc(&vd->tx));
++	} else if (c->desc && c->desc->vd.tx.cookie == cookie) {
++		struct bcm2835_desc *d = c->desc;
++		dma_addr_t pos;
++
++		if (d->dir == DMA_MEM_TO_DEV)
++			pos = readl(c->chan_base + BCM2835_DMA_SOURCE_AD);
++		else if (d->dir == DMA_DEV_TO_MEM)
++			pos = readl(c->chan_base + BCM2835_DMA_DEST_AD);
++		else
++			pos = 0;
++
++		txstate->residue = bcm2835_dma_desc_size_pos(d, pos);
++	} else {
++		txstate->residue = 0;
++	}
++
++	spin_unlock_irqrestore(&c->vc.lock, flags);
++
++	return ret;
++}
++
++static void bcm2835_dma_issue_pending(struct dma_chan *chan)
++{
++	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
++	unsigned long flags;
++
++	c->cyclic = true; /* Nothing else is implemented */
++
++	spin_lock_irqsave(&c->vc.lock, flags);
++	if (vchan_issue_pending(&c->vc) && !c->desc)
++		bcm2835_dma_start_desc(c);
++
++	spin_unlock_irqrestore(&c->vc.lock, flags);
++}
++
++static struct dma_async_tx_descriptor *bcm2835_dma_prep_dma_cyclic(
++	struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
++	size_t period_len, enum dma_transfer_direction direction,
++	unsigned long flags, void *context)
++{
++	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
++	enum dma_slave_buswidth dev_width;
++	struct bcm2835_desc *d;
++	dma_addr_t dev_addr;
++	unsigned es, sync_type;
++	unsigned frame;
++
++	/* Grab configuration */
++	if (direction == DMA_DEV_TO_MEM) {
++		dev_addr = c->cfg.src_addr;
++		dev_width = c->cfg.src_addr_width;
++		sync_type = BCM2835_DMA_S_DREQ;
++	} else if (direction == DMA_MEM_TO_DEV) {
++		dev_addr = c->cfg.dst_addr;
++		dev_width = c->cfg.dst_addr_width;
++		sync_type = BCM2835_DMA_D_DREQ;
++	} else {
++		dev_err(chan->device->dev, "%s: bad direction?\n", __func__);
++		return NULL;
++	}
++
++	/* Bus width translates to the element size (ES) */
++	switch (dev_width) {
++	case DMA_SLAVE_BUSWIDTH_4_BYTES:
++		es = BCM2835_DMA_DATA_TYPE_S32;
++		break;
++	default:
++		return NULL;
++	}
++
++	/* Now allocate and setup the descriptor. */
++	d = kzalloc(sizeof(*d), GFP_NOWAIT);
++	if (!d)
++		return NULL;
++
++	d->dir = direction;
++	d->frames = buf_len / period_len;
++
++	/* Allocate memory for control blocks */
++	d->control_block_size = d->frames * sizeof(struct bcm2835_dma_cb);
++	d->control_block_base = dma_zalloc_coherent(chan->device->dev,
++			d->control_block_size, &d->control_block_base_phys,
++			GFP_NOWAIT);
++
++	if (!d->control_block_base) {
++		kfree(d);
++		return NULL;
++	}
++
++	/*
++	 * Iterate over all frames, create a control block
++	 * for each frame and link them together.
++	 */
++	for (frame = 0; frame < d->frames; frame++) {
++		struct bcm2835_dma_cb *control_block =
++			&d->control_block_base[frame];
++
++		/* Setup adresses */
++		if (d->dir == DMA_DEV_TO_MEM) {
++			control_block->info = BCM2835_DMA_D_INC;
++			control_block->src = dev_addr;
++			control_block->dst = buf_addr + frame * period_len;
++		} else {
++			control_block->info = BCM2835_DMA_S_INC;
++			control_block->src = buf_addr + frame * period_len;
++			control_block->dst = dev_addr;
++		}
++
++		/* Enable interrupt */
++		control_block->info |= BCM2835_DMA_INT_EN;
++
++		/* Setup synchronization */
++		if (sync_type != 0)
++			control_block->info |= sync_type;
++
++		/* Setup DREQ channel */
++		if (c->dreq != 0)
++			control_block->info |=
++				BCM2835_DMA_PER_MAP(c->dreq);
++
++		/* Length of a frame */
++		control_block->length = period_len;
++		d->size += control_block->length;
++
++		/*
++		 * Next block is the next frame.
++		 * This DMA engine driver currently only supports cyclic DMA.
++		 * Therefore, wrap around at number of frames.
++		 */
++		control_block->next = d->control_block_base_phys +
++			sizeof(struct bcm2835_dma_cb)
++			* ((frame + 1) % d->frames);
++	}
++
++	return vchan_tx_prep(&c->vc, &d->vd, flags);
++}
++
++static int bcm2835_dma_slave_config(struct bcm2835_chan *c,
++		struct dma_slave_config *cfg)
++{
++	if ((cfg->direction == DMA_DEV_TO_MEM &&
++	     cfg->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES) ||
++	    (cfg->direction == DMA_MEM_TO_DEV &&
++	     cfg->dst_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES) ||
++	    !is_slave_direction(cfg->direction)) {
++		return -EINVAL;
++	}
++
++	c->cfg = *cfg;
++
++	return 0;
++}
++
++static int bcm2835_dma_terminate_all(struct bcm2835_chan *c)
++{
++	struct bcm2835_dmadev *d = to_bcm2835_dma_dev(c->vc.chan.device);
++	unsigned long flags;
++	int timeout = 1000;
++	LIST_HEAD(head);
++
++	spin_lock_irqsave(&c->vc.lock, flags);
++
++	/* Prevent this channel being scheduled */
++	spin_lock(&d->lock);
++	list_del_init(&c->node);
++	spin_unlock(&d->lock);
++
++	/*
++	 * Stop DMA activity: we assume the callback will not be called
++	 * after bcm_dma_abort() returns (even if it does, it will see
++	 * c->desc is NULL and exit.)
++	 */
++	if (c->desc) {
++		c->desc = NULL;
++		bcm2835_dma_abort(c->chan_base);
++
++		/* Wait for stopping */
++		while (timeout > 0) {
++			timeout--;
++			if (!(readl(c->chan_base + BCM2835_DMA_CS) &
++						BCM2835_DMA_ACTIVE))
++				break;
++
++			cpu_relax();
++		}
++
++		if (timeout <= 0)
++			dev_err(d->ddev.dev, "DMA transfer could not be terminated\n");
++	}
++
++	vchan_get_all_descriptors(&c->vc, &head);
++	spin_unlock_irqrestore(&c->vc.lock, flags);
++	vchan_dma_desc_free_list(&c->vc, &head);
++
++	return 0;
++}
++
++static int bcm2835_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
++	unsigned long arg)
++{
++	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
++	int ret;
++
++	switch (cmd) {
++	case DMA_SLAVE_CONFIG:
++		return bcm2835_dma_slave_config(c,
++				(struct dma_slave_config *)arg);
++
++	case DMA_TERMINATE_ALL:
++		bcm2835_dma_terminate_all(c);
++		break;
++
++	default:
++		ret = -ENXIO;
++		break;
++	}
++
++	return ret;
++}
++
++static int bcm2835_dma_chan_init(struct bcm2835_dmadev *d, int chan_id, int irq)
++{
++	struct bcm2835_chan *c;
++
++	c = devm_kzalloc(d->ddev.dev, sizeof(*c), GFP_KERNEL);
++	if (!c)
++		return -ENOMEM;
++
++	c->vc.desc_free = bcm2835_dma_desc_free;
++	vchan_init(&c->vc, &d->ddev);
++	INIT_LIST_HEAD(&c->node);
++
++	d->ddev.chancnt++;
++
++	c->chan_base = BCM2835_DMA_CHANIO(d->base, chan_id);
++	c->ch = chan_id;
++	c->irq_number = irq;
++
++	return 0;
++}
++
++static void bcm2835_dma_free(struct bcm2835_dmadev *od)
++{
++	while (!list_empty(&od->ddev.channels)) {
++		struct bcm2835_chan *c = list_first_entry(&od->ddev.channels,
++			struct bcm2835_chan, vc.chan.device_node);
++
++		list_del(&c->vc.chan.device_node);
++		tasklet_kill(&c->vc.task);
++	}
++}
++
++#if defined(CONFIG_OF)
++static const struct of_device_id bcm2835_dma_of_match[] = {
++	{ .compatible = "brcm,bcm2835-dma", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, bcm2835_dma_of_match);
++#endif
++
++static struct dma_chan *bcm2835_dma_xlate(struct of_phandle_args *spec,
++					   struct of_dma *ofdma)
++{
++	struct bcm2835_dmadev *d = ofdma->of_dma_data;
++	struct dma_chan *chan, *candidate;
++
++retry:
++	candidate = NULL;
++
++	/* Walk the list of channels registered with the current instance and
++	 * find one that is currently unused */
++	list_for_each_entry(chan, &d->ddev.channels, device_node)
++		if (chan->client_count == 0) {
++			candidate = chan;
++			break;
++		}
++
++	if (!candidate)
++		return NULL;
++
++	/* dma_get_slave_channel will return NULL if we lost a race between
++	 * the lookup and the reservation */
++	chan = dma_get_slave_channel(candidate);
++
++	if (chan) {
++		struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
++
++		/* Set DREQ from param */
++		c->dreq = spec->args[0];
++
++		return chan;
++	}
++
++	goto retry;
++}
++
++static int bcm2835_dma_device_slave_caps(struct dma_chan *dchan,
++	struct dma_slave_caps *caps)
++{
++	caps->src_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
++	caps->dstn_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
++	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
++	caps->cmd_pause = false;
++	caps->cmd_terminate = true;
++
++	return 0;
++}
++
++static int bcm2835_dma_probe(struct platform_device *pdev)
++{
++	struct bcm2835_dmadev *od;
++	struct resource *res;
++	void __iomem *base;
++	int rc;
++	int i;
++	int irq;
++	uint32_t chans_available;
++
++	if (!pdev->dev.dma_mask)
++		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
++
++	rc = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
++	if (rc)
++		return rc;
++	dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
++
++	od = devm_kzalloc(&pdev->dev, sizeof(*od), GFP_KERNEL);
++	if (!od)
++		return -ENOMEM;
++
++	pdev->dev.dma_parms = &od->dma_parms;
++	dma_set_max_seg_size(&pdev->dev, 0x3FFFFFFF);
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	od->base = base;
++
++	dma_cap_set(DMA_SLAVE, od->ddev.cap_mask);
++	dma_cap_set(DMA_CYCLIC, od->ddev.cap_mask);
++	od->ddev.device_alloc_chan_resources = bcm2835_dma_alloc_chan_resources;
++	od->ddev.device_free_chan_resources = bcm2835_dma_free_chan_resources;
++	od->ddev.device_tx_status = bcm2835_dma_tx_status;
++	od->ddev.device_issue_pending = bcm2835_dma_issue_pending;
++	od->ddev.device_slave_caps = bcm2835_dma_device_slave_caps;
++	od->ddev.device_prep_dma_cyclic = bcm2835_dma_prep_dma_cyclic;
++	od->ddev.device_control = bcm2835_dma_control;
++	od->ddev.dev = &pdev->dev;
++	INIT_LIST_HEAD(&od->ddev.channels);
++	spin_lock_init(&od->lock);
++
++	platform_set_drvdata(pdev, od);
++
++	if (pdev->dev.of_node) {
++		/* Request DMA channel mask from device tree */
++		if (of_property_read_u32(pdev->dev.of_node,
++				"brcm,dma-channel-mask",
++				&chans_available)) {
++			dev_err(&pdev->dev, "Failed to get channel mask\n");
++			bcm2835_dma_free(od);
++			return -EINVAL;
++		}
++	} else {
++		dev_err(&pdev->dev, "Failed to get channel mask. No device tree.\n");
++		bcm2835_dma_free(od);
++		return -EINVAL;
++	}
++
++	/* Do not use the FIQ and BULK channels */
++	chans_available &= ~0xD;
++
++	for (i = 0; i < pdev->num_resources; i++) {
++		irq = platform_get_irq(pdev, i);
++		if (irq < 0)
++			break;
++
++		if (chans_available & (1 << i)) {
++			rc = bcm2835_dma_chan_init(od, i, irq);
++			if (rc) {
++				bcm2835_dma_free(od);
++				return rc;
++			}
++		}
++	}
++
++	dev_dbg(&pdev->dev, "Initialized %i DMA channels\n", i);
++
++	if (pdev->dev.of_node) {
++		/* Device-tree DMA controller registration */
++		rc = of_dma_controller_register(pdev->dev.of_node,
++				bcm2835_dma_xlate, od);
++		if (rc) {
++			dev_err(&pdev->dev, "Failed to register DMA controller\n");
++			bcm2835_dma_free(od);
++			return rc;
++		}
++	}
++
++	rc = dma_async_device_register(&od->ddev);
++	if (rc) {
++		dev_err(&pdev->dev,
++			"Failed to register slave DMA engine device: %d\n", rc);
++		bcm2835_dma_free(od);
++		return rc;
++	}
++
++	dev_dbg(&pdev->dev, "Load BCM2835 DMA engine driver\n");
++
++	return rc;
++}
++
++static int bcm2835_dma_remove(struct platform_device *pdev)
++{
++	struct bcm2835_dmadev *od = platform_get_drvdata(pdev);
++
++	dma_async_device_unregister(&od->ddev);
++	bcm2835_dma_free(od);
++
++	return 0;
++}
++
++static struct platform_driver bcm2835_dma_driver = {
++	.probe	= bcm2835_dma_probe,
++	.remove	= bcm2835_dma_remove,
++	.driver = {
++		.name = "bcm2835-dma",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(bcm2835_dma_of_match),
++	},
++};
++
++module_platform_driver(bcm2835_dma_driver);
++
++MODULE_ALIAS("platform:bcm2835-dma");
++MODULE_DESCRIPTION("BCM2835 DMA engine driver");
++MODULE_AUTHOR("Florian Meier <florian.meier@koalo.de>");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.9.5
