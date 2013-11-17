@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599Ab3KQUtb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 15:49:31 -0500
-Received: from mail-gg0-f180.google.com ([209.85.161.180]:49305 "EHLO
-	mail-gg0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab3KQUtY (ORCPT
+	id S1752213Ab3KQUtw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 15:49:52 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:59904 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929Ab3KQUtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 15:49:24 -0500
-X-Greylist: delayed 1164 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Nov 2013 15:49:23 EST
-From: Erico Nunes <nunes.erico@gmail.com>
-To: dwmw2@infradead.org
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Erico Nunes <nunes.erico@gmail.com>
-Subject: [PATCH] jffs2: fix sparse errors: directive in argument list
-Date: Sun, 17 Nov 2013 18:18:33 -0200
-Message-Id: <1384719513-27386-1-git-send-email-nunes.erico@gmail.com>
-X-Mailer: git-send-email 1.8.4.2
+	Sun, 17 Nov 2013 15:49:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131117195358.GO27323@pd.tnic>
+References: <52888F6D.6000802@gmail.com>
+	<20131117132531.GB27696@pd.tnic>
+	<5288E5BF.2020608@gmail.com>
+	<20131117160126.GG27323@pd.tnic>
+	<CAC9WiBikz8kTAmKs1HVBmeb2Wu6hfHCh2d=w1sQC03EVHa1QOQ@mail.gmail.com>
+	<20131117195358.GO27323@pd.tnic>
+Date: Sun, 17 Nov 2013 21:49:40 +0100
+Message-ID: <CAC9WiBggfssh+31_MqVCT-hDf2E8zTuc81q-DhLYQuVF053mEA@mail.gmail.com>
+Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
+From: Francis Moreau <francis.moro@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following errors reported when running sparse:
-fs/jffs2/super.c:378:1: error: directive in argument list
-fs/jffs2/super.c:380:1: error: directive in argument list
-fs/jffs2/super.c:381:1: error: directive in argument list
-fs/jffs2/super.c:383:1: error: directive in argument list
----
- fs/jffs2/super.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+On Sun, Nov 17, 2013 at 8:53 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Sun, Nov 17, 2013 at 07:02:21PM +0100, Francis Moreau wrote:
+>> Sorry I haven't taken the original picture large enough, and getting
+>> this kernel panic is pretty hard since the kernel usually displays the
+>> black screen.
+>
+> Ok, just try to make a readable picture of the whole line, next time you
+> trigger it.
+>
+>> I can't find any traces of this function in the dump...
+>
+> Hmm, strange. Can you upload the whole vmlinux somewhere? Or is this the
+> official archlinux kernel? If so, where can I get it from?
 
-diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
-index 0defb1c..ec9e16f 100644
---- a/fs/jffs2/super.c
-+++ b/fs/jffs2/super.c
-@@ -361,6 +361,14 @@ MODULE_ALIAS_FS("jffs2");
- static int __init init_jffs2_fs(void)
- {
- 	int ret;
-+	const char desc[] = "version 2.2."
-+#ifdef CONFIG_JFFS2_FS_WRITEBUFFER
-+		" (NAND)"
-+#endif
-+#ifdef CONFIG_JFFS2_SUMMARY
-+		" (SUMMARY) "
-+#endif
-+		" © 2001-2006 Red Hat, Inc.";
- 
- 	/* Paranoia checks for on-medium structures. If we ask GCC
- 	   to pack them with __attribute__((packed)) then it _also_
-@@ -374,14 +382,7 @@ static int __init init_jffs2_fs(void)
- 	BUILD_BUG_ON(sizeof(struct jffs2_raw_inode) != 68);
- 	BUILD_BUG_ON(sizeof(struct jffs2_raw_summary) != 32);
- 
--	pr_info("version 2.2."
--#ifdef CONFIG_JFFS2_FS_WRITEBUFFER
--	       " (NAND)"
--#endif
--#ifdef CONFIG_JFFS2_SUMMARY
--	       " (SUMMARY) "
--#endif
--	       " © 2001-2006 Red Hat, Inc.\n");
-+	pr_info("%s\n", desc);
- 
- 	jffs2_inode_cachep = kmem_cache_create("jffs2_i",
- 					     sizeof(struct jffs2_inode_info),
+Yes, you can download the bin package from :
+https://www.archlinux.org/packages/core/x86_64/linux/
+
+The bin package is a tar archive, so it pretty straightforward to
+unpack the vmlinux file  (actual is filename vmlinuz-linux).
+
+Thanks for you help.
 -- 
-1.8.4.2
-
+Francis
