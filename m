@@ -1,133 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520Ab3KQHVQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 02:21:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39685 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768Ab3KQHVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 02:21:13 -0500
-Date: Sun, 17 Nov 2013 18:20:54 +1100
-From: NeilBrown <neilb@suse.de>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Pawel Baldysiak <pawel.baldysiak@intel.com>,
-        Lukasz Dorau <lukasz.dorau@intel.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 3.4 11/26] md: Fix skipping recovery for read-only
- arrays.
-Message-ID: <20131117182054.1b57fd20@notabene.brown>
-In-Reply-To: <1384661479.19290.9.camel@deadeye.wl.decadent.org.uk>
-References: <20131109065050.089866597@linuxfoundation.org>
-	<20131109065051.007223561@linuxfoundation.org>
-	<1384661479.19290.9.camel@deadeye.wl.decadent.org.uk>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/Qgl=lXOqqDx.4w4A7IZO9Pd"; protocol="application/pgp-signature"
+	id S1751998Ab3KQHVt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 02:21:49 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:42202 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab3KQHVb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 02:21:31 -0500
+Message-ID: <52886E77.1000707@hitachi.com>
+Date: Sun, 17 Nov 2013 16:21:27 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        virtualization@lists.linux-foundation.org,
+        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: [PATCH -tip RFC v2 01/22] kprobes: Prohibit probing on
+ .entry.text code
+References: <20131115045312.27580.95902.stgit@kbuild-fedora.novalocal> <20131115045318.27580.69554.stgit@kbuild-fedora.novalocal> <20131115114306.5d14db66@gandalf.local.home> <CAMuHMdXw+WGKiQuquQL7XOkbRLNOC_SPddY1irRGQwpvDHLMwA@mail.gmail.com>
+In-Reply-To: <CAMuHMdXw+WGKiQuquQL7XOkbRLNOC_SPddY1irRGQwpvDHLMwA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Qgl=lXOqqDx.4w4A7IZO9Pd
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+(2013/11/16 2:46), Geert Uytterhoeven wrote:
+> On Fri, Nov 15, 2013 at 5:43 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> On Fri, 15 Nov 2013 04:53:18 +0000
+>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>>
+>>> .entry.text is a code area which is used for interrupt/syscall
+>>> entries, and there are many sensitive codes.
+>>> Thus, it is better to prohibit probing on all of such codes
+>>> instead of a part of that.
+>>> Since some symbols are already registered on kprobe blacklist,
+>>> this also removes them from the blacklist.
+>>
+>> This change only works with x86. On other archs, I get this:
+>>
+>> kernel/built-in.o: In function `register_kprobe':
+>> (.kprobes.text+0x9f4): undefined reference to `__entry_text_start'
+>> kernel/built-in.o: In function `register_kprobe':
+>> (.kprobes.text+0x9f8): undefined reference to `__entry_text_end'
+>> make[1]: *** [vmlinux] Error 1
+>> make: *** [sub-make] Error 2
+> 
+> X86 is the sole architecture that has ENTRY_TEXT in its
+> arch/*/kernel/vmlinux.lds.S.
 
-On Sun, 17 Nov 2013 04:11:19 +0000 Ben Hutchings <ben@decadent.org.uk> wrot=
-e:
+Ah, thanks! I'll fix that.
+BTW, should I add CONFIG_HAVE_ENTRY_TEXT for x86 and use it
+or just use CONFIG_X86 to detect it?
 
-> On Fri, 2013-11-08 at 22:51 -0800, Greg Kroah-Hartman wrote:
-> > 3.4-stable review patch.  If anyone has any objections, please let me k=
-now.
-> >=20
-> > ------------------
-> >=20
-> > From: Lukasz Dorau <lukasz.dorau@intel.com>
-> >=20
-> > commit 61e4947c99c4494336254ec540c50186d186150b upstream.
-> >=20
-> > Since:
-> >         commit 7ceb17e87bde79d285a8b988cfed9eaeebe60b86
-> >         md: Allow devices to be re-added to a read-only array.
-> >=20
-> > spares are activated on a read-only array. In case of raid1 and raid10
-> > personalities it causes that not-in-sync devices are marked in-sync
-> > without checking if recovery has been finished.
-> >=20
-> > If a read-only array is degraded and one of its devices is not in-sync
-> > (because the array has been only partially recovered) recovery will be =
-skipped.
-> >=20
-> > This patch adds checking if recovery has been finished before marking a=
- device
-> > in-sync for raid1 and raid10 personalities. In case of raid5 personality
-> > such condition is already present (at raid5.c:6029).
-> >=20
-> > Bug was introduced in 3.10 and causes data corruption.
->=20
-> So this fix was not needed for 3.4.  Is it harmful if applied to this
-> version?
+Thank you,
 
-It is not needed, but it is also not harmful.
-
-NeilBrown
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
->=20
-> Ben.
->=20
-> > Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
-> > Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >=20
-> > ---
-> >  drivers/md/raid1.c  |    1 +
-> >  drivers/md/raid10.c |    1 +
-> >  2 files changed, 2 insertions(+)
-> >=20
-> > --- a/drivers/md/raid1.c
-> > +++ b/drivers/md/raid1.c
-> > @@ -1357,6 +1357,7 @@ static int raid1_spare_active(struct mdd
-> >  			}
-> >  		}
-> >  		if (rdev
-> > +		    && rdev->recovery_offset =3D=3D MaxSector
-> >  		    && !test_bit(Faulty, &rdev->flags)
-> >  		    && !test_and_set_bit(In_sync, &rdev->flags)) {
-> >  			count++;
-> > --- a/drivers/md/raid10.c
-> > +++ b/drivers/md/raid10.c
-> > @@ -1534,6 +1534,7 @@ static int raid10_spare_active(struct md
-> >  			}
-> >  			sysfs_notify_dirent_safe(tmp->replacement->sysfs_state);
-> >  		} else if (tmp->rdev
-> > +			   && tmp->rdev->recovery_offset =3D=3D MaxSector
-> >  			   && !test_bit(Faulty, &tmp->rdev->flags)
-> >  			   && !test_and_set_bit(In_sync, &tmp->rdev->flags)) {
-> >  			count++;
->=20
-
-
---Sig_/Qgl=lXOqqDx.4w4A7IZO9Pd
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUohuVjnsnt1WYoG5AQIPfg/9E6J9Gs9fksiKz/WIdrYWj9WTc04T79fD
-29D+sTWPnnTZkzGurZwycwHyO2gDgrU/z+ArfrAHAqebCvwZ5EgG9+X5cH+3cggr
-XVdiVWpH58YOlFU3IIqVAr1ikcisvB4jGm0f0JXoY0WI8wvLrFDAxSIaca3lOL8T
-w5IzuyxjnYYvEmL3YkOHUQcF0EIZWjG50HP/cwhqXS5br1TfjQrZbukwUI32D2S0
-uWSJlsdZlUSQGaG63HSeiLZ092eGVM0ELsblzsO/bXwDFxstDahJfq09UHDWHCp+
-uorworihN/nJ5sThwAihLoDl28VW52BjmWilyejXGcCYMTA/7BeyR6JCg/hlJPHg
-8xPEfLgQrQXFUiECEUzn46aDNS+uvRVyDai3E+5GzzGqlDEUJDH+Y3RS/IJ1zF9K
-QpaWE7AFzEW7HMHTpgfwP+ybkP+xTk+FS4SzTGBsjiZeqU771u9MzTcHdHgLLv/w
-RWNUQTUNZAL/NdVLW6Z6TtlOqX9cpO1vWkjwvw6yum7Y6jW7fCm4RC00PBEG4rxp
-V2Fpw3zW//vdsEDI4cFBxyo07dtxC6A8i/pP0PsPzKl1HNFpVPjme8hB4x6gJX1l
-kamlkCJw+EF1OQv++heHHpSto9GCO5OkwhiLOJmQ3XLOJAzbccdggFYJSM0HsMUb
-184puoxiAnY=
-=98Dq
------END PGP SIGNATURE-----
-
---Sig_/Qgl=lXOqqDx.4w4A7IZO9Pd--
