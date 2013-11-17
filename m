@@ -1,85 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab3KQHyO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 02:54:14 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:42989 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab3KQHyB (ORCPT
+	id S1752525Ab3KQIWf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 03:22:35 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:65285 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786Ab3KQIWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 02:54:01 -0500
-Message-ID: <52887617.7050302@hitachi.com>
-Date: Sun, 17 Nov 2013 16:53:59 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sun, 17 Nov 2013 03:22:25 -0500
+Message-ID: <52887CB7.4000108@linaro.org>
+Date: Sun, 17 Nov 2013 13:52:15 +0530
+From: viresh kumar <viresh.kumar@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: perf/tracepoint: another fuzzer generated lockup
-References: <alpine.DEB.2.10.1311081515210.16519@vincent-weaver-1.um.maine.edu> <20131108204839.GD14606@localhost.localdomain> <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu> <20131108223657.GF14606@localhost.localdomain> <20131109151014.GN16117@laptop.programming.kicks-ass.net> <20131114152304.GC5364@laptop.programming.kicks-ass.net> <20131114153301.GD5364@laptop.programming.kicks-ass.net> <528575E2.4000700@hitachi.com> <20131115122833.GE10456@twins.programming.kicks-ass.net> <20131115091521.3ad917fe@gandalf.local.home> <20131115142851.GA17498@localhost.localdomain>
-In-Reply-To: <20131115142851.GA17498@localhost.localdomain>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
+        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
+References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org> <2235672.LLJc6e6dny@vostro.rjw.lan> <CAKohpok_zjdRVz5-ZGRmZtwysC7jORm2mgRbLWDUzo1ucYVKZg@mail.gmail.com> <6050176.zVNbf5pomE@vostro.rjw.lan>
+In-Reply-To: <6050176.zVNbf5pomE@vostro.rjw.lan>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/15 23:28), Frederic Weisbecker wrote:
-> On Fri, Nov 15, 2013 at 09:15:21AM -0500, Steven Rostedt wrote:
->> On Fri, 15 Nov 2013 13:28:33 +0100
->> Peter Zijlstra <peterz@infradead.org> wrote:
+On Sunday 17 November 2013 06:38 AM, Rafael J. Wysocki wrote:
+> On Saturday, November 16, 2013 08:47:24 PM Viresh Kumar wrote:
+>> Well that is pretty much doable.
+> 
+> Not necessarily on all CPU models.
+
+Okay.. Just for my understanding, why?
+
+>> So PM_POST_HIBERNATION is called just before shutting off the system? And
+>> PM_POST_RESTORE is called after system is resumed from saved image?
+> 
+> PM_POST_HIBERNATION is only called if there's an error during hibernation.
+> PM_POST_RESTORE is called as you said.
+
+Ahh I see. Thanks.
+
+> Also you have to remember that the _PREPARE PM notifiers are called before the
+> freezing of tasks when user space is still running, so disabling governors at
+> that point may lead to some weird behavior.
+
+Actually good point. I haven't thought about it earlier.
+
+And when I see what bad can happen, I couldn't find much. The worst is that we
+wouldn't go to a frequency requested by userspace daemon. But we wouldn't send
+an error then. But I feel we can let that happen. Not servicing a request after
+we have started system suspend doesn't look that odd..
+
+Sysfs infrastructure is still preserved and so all that information would still
+be available.
+
+Do you see anything extra that might stop working?
+
+>>> Actually, we use CPU offline/online during system suspend/resume to avoid
+>>> having to do stuff like this from PM notifiers.
 >>
->>> On Fri, Nov 15, 2013 at 10:16:18AM +0900, Masami Hiramatsu wrote:
->>>> Kprobes itself can detect nested call by using per-cpu current-running
->>>> kprobe pointer. And if it is nested, it just skips calling handlers.
->>>> Anyway, I don't recommend to probe inside the handlers, but yes,
->>>> you can trace perf-handler by ftrace B). I actually traced a kprobe-bug
->>>> by kprobe-tracer last night, that was amazing :)
->>>
->>> Ah, ok, so that would avoid the worst problems. Good. Should we still
->>> mark the entire perf swevent path as __kprobes just to be sure?
->>
->> I wouldn't unless we can prove that it breaks. It's sometimes nice to
->> be able to debug the debugging facilities with the debugging
->> facilities ;-)
+>> I didn't get the logic behind this one..
 > 
-> Even with the existing __kprobes annotations, I'm sure we can find many ways to
-> break the kernel.
+> If we have to do special stuff from PM notifiers for CPU "suspend", we will be
+> better off by doing something entirely special instead of CPU offline down the
+> road.  Which we may end up doing given the problems with frozen/not frozen in
+> the cpufreq core.
+
+A unrelated question here. Why are we offlining CPUs after suspending all the
+devices? Because the problem Nishanth mentioned was that he required few
+devices, i2c, to be available when CPUs are getting down. And there might be
+similar requirements at other places too. Was there any specific bottleneck due
+to which it is implemented this way?
+
+> We may introduce suspend_noirq and resume_noirq for cpu_subsys, for example,
+> and handle things from there.  Or something similar.  But slapping PM notifiers
+> on top of the existing code just because it appears to be easy (and making that
+> code even more overdesigned than it already is this way) doesn't seem quite
+> right.
 > 
-> We can reproduce that bug with irq_work recursion with setting a kprobe in
-> the end of the irq_work() arch low level handler for example. Or simply
-> somewhere in irq_exit().
->
-> I think we could do dangerous things with breakpoints as well. Setting breakpoints
-> in do_debug() or stuffs like that.
-> 
-> So keeping up with __kprobes annotations to every potential dangerous site
-> is not viable IMHO. It's important to maintain basic sanity with tagging sites
-> that are used by kprobes itself but we can't really prevent from any issue.
-> 
-> At some point it's up to the user to know what he's doing and avoid recursion.
-> As long as kprobes can be set only by root.
+> Now, the Tianyu's patch extends the Srivatsa's approach to governors, which
+> actually should have been done from the outset, so it is within the scope of
+> what we have already.  It may not solve all of the problems, but it still makes
+> some progress and has a little chance to introduce *new* problems at the same
+> time.
 
-Hmm, it would be better to add some documentation how users can avoid
-such thing.
+I understand your point here. But this is what I feel:
 
-> OTOH it would be nice to detect these kind of behaviour (thinking about irq_work for
-> example) and warn when something wrong is suspected.
+- I don't have any special affection for using PM notifiers :) .. Its just that
+I need some way for cpufreq core to know that Suspend has started. Maybe after
+freezing of tasks and before removal of devices.
 
-Agreed.
-FYI, kprobes has a recursion detection counter and it is reported via
-debugfs/tracing/kprobe_profile :)
+- I thought of adding something like a suspend-prepare for syscore_ops (You are
+owner of all these frameworks and so our life is easy as we can discuss stuff
+with you directly :)).. But then thought maybe we can use PM notifiers.. But it
+looks that we better do that now ?
 
-Thank you,
+- I have concerns with Tianyu's patch as policies should be better taken care of
+in cpufreq core instead of passing them over to governors. And with the
+alternative solution I had, code is getting more and more dirty. And so I
+thought of doing something else.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+- Not all platforms have problem with changing frequency during suspend/resume
+and so we may not require disabling of governors for all of them. Probably can
+add another field based on which we may/may-not disable governors from PM or
+syscore notifiers.
 
-
+--
+viresh
