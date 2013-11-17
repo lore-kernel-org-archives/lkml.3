@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279Ab3KQVb2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 16:31:28 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:4265 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751324Ab3KQVbU convert rfc822-to-8bit (ORCPT
+	id S1752352Ab3KQViX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 16:38:23 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:52495 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab3KQViO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 16:31:20 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <5289359B.8090506@broadcom.com>
-Date: Sun, 17 Nov 2013 22:31:07 +0100
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US;
- rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	Sun, 17 Nov 2013 16:38:14 -0500
 MIME-Version: 1.0
-To: "Borislav Petkov" <bp@alien8.de>
-cc: lkml <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        linux-wireless@vger.kernel.org
-Subject: Re: [PATCH] brcmsmac: Fix build dep on LEDS_CLASS
-References: <20131117133702.GA30840@pd.tnic>
-In-Reply-To: <20131117133702.GA30840@pd.tnic>
-X-WSS-ID: 7E97EA051508964248-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20131117182906.GE30012@xo-6d-61-c0.localdomain>
+References: <CAP+fKSpvJqeh8JCHisByDBsGWPOWOcDN4qeVYJOn1tgg8HR0eg@mail.gmail.com>
+	<CAP+fKSp5ze3-qWHY_D_e3AXxnFM-AB9FBfRLjy0yOFnOp6bp4w@mail.gmail.com>
+	<201309030717.57866.a.miskiewicz@gmail.com>
+	<201310241800.18490.a.miskiewicz@gmail.com>
+	<20131029135036.GA30992@gnuservers.com.ar>
+	<5270EBA9.6070302@hurleysoftware.com>
+	<20131117182906.GE30012@xo-6d-61-c0.localdomain>
+Date: Sun, 17 Nov 2013 22:38:13 +0100
+Message-ID: <CAP+fKSp0rk7Y=zeKwcqNnQj2td521VL_PqW63ZXNwrZURorb2A@mail.gmail.com>
+Subject: Re: Large pastes into readline enabled programs causes breakage from
+ v2.6.31 onwards
+From: Margarita Manterola <margamanterola@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Maximiliano Curia <maxy@gnuservers.com.ar>,
+        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
+        Linux kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, bug-readline@gnu.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/13 14:37, Borislav Petkov wrote:
-> From: Borislav Petkov<bp@suse.de>
->
-> When building randconfigs with CONFIG_BCMA_DRIVER_GPIO=y, I get
->
-> drivers/built-in.o: In function `brcms_led_unregister':
-> (.text+0x351aca): undefined reference to `led_classdev_unregister'
-> drivers/built-in.o: In function `brcms_led_register':
-> (.text+0x351c65): undefined reference to `led_classdev_register'
->
-> during the final linking stage because brcmsmac/led.c needs LEDS_CLASS
-> for reg/dereg. Fix that.
+HI,
 
-Wouldn't it be better to fix it in brcmsmac.
+On Sun, Nov 17, 2013 at 7:29 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> Any news?
 
-Gr AvS
+I'm also not capable of doing the analysis requested, but I want to
+add a link for the the fact that Canonical has applied the patch to
+the kernels shipped in Ubuntu, and up to now there have been no
+reports of problems:
 
-> Cc: "Rafał Miłecki"<zajec5@gmail.com>
-> Cc: linux-wireless@vger.kernel.org
-> Signed-off-by: Borislav Petkov<bp@suse.de>
-> ---
->
-> I'm attaching the .config in question.
->
->   drivers/bcma/Kconfig | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/bcma/Kconfig b/drivers/bcma/Kconfig
-> index 7c081b38ef3e..74dba9ca1413 100644
-> --- a/drivers/bcma/Kconfig
-> +++ b/drivers/bcma/Kconfig
-> @@ -74,7 +74,7 @@ config BCMA_DRIVER_GMAC_CMN
->
->   config BCMA_DRIVER_GPIO
->   	bool "BCMA GPIO driver"
-> -	depends on BCMA&&  GPIOLIB
-> +	depends on BCMA&&  GPIOLIB&&  LEDS_CLASS
->   	help
->   	  Driver to provide access to the GPIO pins of the bcma bus.
->
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1208740
 
+It was applied in Saucy on Sept. 11th. Ported to the previous Ubuntu
+versions on Oct. 24th through the "proposed" mechanism (only reaches a
+portion of the users).  Released in the official kernels on Nov. 8th.
 
+Since a few days, then, everyone running an updated Ubuntu system,
+regardless of the specific version, should have this patch.
+
+-- 
+Besos,
+Marga
