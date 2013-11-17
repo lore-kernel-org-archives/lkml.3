@@ -1,116 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab3KQRqi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 12:46:38 -0500
-Received: from mout.gmx.net ([212.227.15.19]:65452 "EHLO mout.gmx.net"
+	id S1753919Ab3KQRuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 12:50:09 -0500
+Received: from plane.gmane.org ([80.91.229.3]:45371 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864Ab3KQRqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 12:46:30 -0500
-From: Andreas Werner <wernerandy@gmx.de>
-To: wsa@the-dreams.de
-Cc: jacmet@sunsite.dk, khali@linux-fr.org, dianders@chromium.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wernerandy@gmx.de
-Subject: [PATCH v3] I2C: busses: i2c-eg20t Do not print error message in syslog if no ACK received
-Date: Sun, 17 Nov 2013 18:46:20 +0100
-Message-Id: <1384710380-5976-1-git-send-email-wernerandy@gmx.de>
-X-Mailer: git-send-email 1.8.4.2
-X-Provags-ID: V03:K0:5jWWqGPxJGgLHtcTwfKJnDnEH0lCOVF/pN33CqqVWtWhog4CVjt
- tJcQsNrDmixtiwJkuUmjutfiTgligJv5HJJRw1r9QYHtEhqKGtWP6RyAEwJOfJrOK/gJd3P
- wH7jB9BCltGS7XD5ws4AZC6UYLvqeAmmEvhBYQwvl8h8DpKdfpFMZ6+NBFfcDA0JxjTm24M
- iYo6j6AaRyhwgiGrwKfvg==
+	id S1752161Ab3KQRuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 12:50:04 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Heorhi Valakhanovich <valahanovich@tut.by>
+Subject: Re: [PATCH] tty: Only hangup once
+Date: Sun, 17 Nov 2013 20:38:50 +0300
+Message-ID: <20131117203850.46df2124@tormoz-pc>
+References: <1375293945-4087-1-git-send-email-peter@hurleysoftware.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+Cc: linux-serial@vger.kernel.org
+X-Gmane-NNTP-Posting-Host: 80.249.84.136
+In-Reply-To: <1375293945-4087-1-git-send-email-peter@hurleysoftware.com>
+X-Newsreader: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Cc: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the i2c-eg20t driver and call i2cdetect or probe on the bus,
-the driver will print a lot of error messages if there was no ACK
-received.
+On Wed, 31 Jul 2013 14:05:45 -0400
+Peter Hurley <peter@hurleysoftware.com> wrote:
 
-i2cdetect normally print a table with all the available devices. If there
-is no device on the address, the table will be empty.
-Currently with the i2c-eg20t driver, the table is not visible because
-the error messages destroy the table.
+> Instrumented testing shows a tty can be hungup multiple times [1].
+> Although concurrent hangups are properly serialized, multiple
+> hangups for the same tty should be prevented.
+> 
+> If tty has already been HUPPED, abort hangup. Note it is not
+> necessary to cleanup file *redirect on subsequent hangups,
+> as only TIOCCONS can set that value and ioctls are disabled
+> after hangup.
+> 
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> 
+> [1]
+> Test performed by simulating a concurrent async hangup via
+> tty_hangup() with a sync hangup via tty_vhangup(), while
+> __tty_hangup() was instrumented with:
+> 
+> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> index 26bb78c..fe8b061 100644
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -629,6 +629,8 @@ static void __tty_hangup(struct tty_struct *tty,
+> int exit_session)
+> 
+>  	tty_lock(tty);
+> 
+> +	WARN_ON(test_bit(TTY_HUPPED, &tty->flags));
+> +
+>  	/* some functions below drop BTM, so we need this bit */
+>  	set_bit(TTY_HUPPING, &tty->flags);
+> 
+> Test result:
+> 
+> WARNING: at /home/peter/src/kernels/mainline/drivers/tty/tty_io.c:632
+> __tty_hangup+0x459/0x460() Modules linked in: ip6table_filter
+> ip6_tables ebtable_nat <...snip...> CPU: 6 PID: 1197 Comm:
+> kworker/6:2 Not tainted 3.10.0-0+rfcomm-xeon #0+rfcomm Hardware name:
+> Dell Inc. Precision WorkStation T5400  /0RW203, BIOS A11 04/30/2012
+> Workqueue: events do_tty_hangup 0000000000000009 ffff8802b16d7d18
+> ffffffff816b553e ffff8802b16d7d58 ffffffff810407e0 ffff880254f95c00
+> ffff880254f95c00 ffff8802bfd92b00 ffff8802bfd96b00 ffff880254f95e40
+> 0000000000000180 ffff8802b16d7d68 Call Trace:
+>  [<ffffffff816b553e>] dump_stack+0x19/0x1b
+>  [<ffffffff810407e0>] warn_slowpath_common+0x70/0xa0
+>  [<ffffffff8104082a>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffff813fb279>] __tty_hangup+0x459/0x460
+>  [<ffffffff8107409c>] ? finish_task_switch+0xbc/0xe0
+>  [<ffffffff813fb297>] do_tty_hangup+0x17/0x20
+>  [<ffffffff8105fd6f>] process_one_work+0x16f/0x450
+>  [<ffffffff8106007c>] process_scheduled_works+0x2c/0x40
+>  [<ffffffff8106060a>] worker_thread+0x26a/0x380
+>  [<ffffffff810603a0>] ? rescuer_thread+0x310/0x310
+>  [<ffffffff810698a0>] kthread+0xc0/0xd0
+>  [<ffffffff816b0000>] ? destroy_compound_page+0x65/0x92
+>  [<ffffffff810697e0>] ? kthread_create_on_node+0x130/0x130
+>  [<ffffffff816c495c>] ret_from_fork+0x7c/0xb0
+>  [<ffffffff810697e0>] ? kthread_create_on_node+0x130/0x130
+> ---[ end trace 98d9f01536cf411e ]---
+> ---
+>  drivers/tty/tty_io.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> index 26bb78c..a9355ce 100644
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -629,6 +629,11 @@ static void __tty_hangup(struct tty_struct *tty,
+> int exit_session) 
+>  	tty_lock(tty);
+>  
+> +	if (test_bit(TTY_HUPPED, &tty->flags)) {
+> +		tty_unlock(tty);
+> +		return;
+> +	}
+> +
+>  	/* some functions below drop BTM, so we need this bit */
+>  	set_bit(TTY_HUPPING, &tty->flags);
+>  
 
-Error message: pch_i2c_getack return -71
+After upgrading to kernel 3.12 I noticed one issue with tmux software.
+The easiest way to reproduce will be:
+1. Start tmux session as root.
+2. Connect via ssh and use "tmux attach" to attach to the running
+session.
+3. Kill ssh client.
 
-This patch prevent the driver to print the messages to syslog.
-The pch_i2c_wait_for_check_xfer function is the only one who is
-calling pch_i2c_getack, so we can delete the function and add the
-read to pch_i2c_wait_for_check_xfer.
-If no ACK is received, the Message will be printed as a dbg
-message.
-
-Fixed print message to be a one liner so we can grep for the
-error message.
-
-Tested on Intel Atom E6xx and Eg20t Chipset.
-
-Signed-off-by: Andreas Werner <wernerandy@gmx.de>
----
-Revision 2:
-        - delete the pch_err completly instead of changing to pch_dbg
-          because there is already a pch_dbg at the function who calls
-          pch_i2c_getack.
-        - Fixed message line issue
-Revision 3:
-        - delete the pch_i2c_getack function and add the ACK read to
-          pch_i2c_wait_for_check_xfer.
-
- drivers/i2c/busses/i2c-eg20t.c | 26 ++++----------------------
- 1 file changed, 4 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
-index 0f37529..ff15ae9 100644
---- a/drivers/i2c/busses/i2c-eg20t.c
-+++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -312,24 +312,6 @@ static void pch_i2c_start(struct i2c_algo_pch_data *adap)
- }
- 
- /**
-- * pch_i2c_getack() - to confirm ACK/NACK
-- * @adap:	Pointer to struct i2c_algo_pch_data.
-- */
--static s32 pch_i2c_getack(struct i2c_algo_pch_data *adap)
--{
--	u32 reg_val;
--	void __iomem *p = adap->pch_base_address;
--	reg_val = ioread32(p + PCH_I2CSR) & PCH_GETACK;
--
--	if (reg_val != 0) {
--		pch_err(adap, "return%d\n", -EPROTO);
--		return -EPROTO;
--	}
--
--	return 0;
--}
--
--/**
-  * pch_i2c_stop() - generate stop condition in normal mode.
-  * @adap:	Pointer to struct i2c_algo_pch_data.
-  */
-@@ -344,6 +326,7 @@ static void pch_i2c_stop(struct i2c_algo_pch_data *adap)
- static int pch_i2c_wait_for_check_xfer(struct i2c_algo_pch_data *adap)
- {
- 	long ret;
-+	void __iomem *p = adap->pch_base_address;
- 
- 	ret = wait_event_timeout(pch_event,
- 			(adap->pch_event_flag != 0), msecs_to_jiffies(1000));
-@@ -366,10 +349,9 @@ static int pch_i2c_wait_for_check_xfer(struct i2c_algo_pch_data *adap)
- 
- 	adap->pch_event_flag = 0;
- 
--	if (pch_i2c_getack(adap)) {
--		pch_dbg(adap, "Receive NACK for slave address"
--			"setting\n");
--		return -EIO;
-+	if (ioread32(p + PCH_I2CSR) & PCH_GETACK) {
-+		pch_dbg(adap, "Receive NACK for slave address setting\n");
-+		return -ENXIO;
- 	}
- 
- 	return 0;
--- 
-1.8.4.2
+You can notice that shell (zsh in my case) and "tmux attach" are still
+remains in process' list. That didn't happen in previous kernels.
+I've tried to bisect this in kernel sources and found commit
+cb50e5235b8ae5aa0fe422eaaa8e444024c5bd98 which contains this exact
+patch. I have not enough experience to investigate more so most likely
+I will not find anything more. But it will be good if someone more
+experienced will have a look at it.
 
