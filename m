@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab3KQQAv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 11:00:51 -0500
-Received: from server19320154104.serverpool.info ([193.201.54.104]:37979 "EHLO
-	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752101Ab3KQQAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 11:00:46 -0500
-Message-ID: <5288E826.7050204@hauke-m.de>
-Date: Sun, 17 Nov 2013 17:00:38 +0100
-From: Hauke Mehrtens <hauke@hauke-m.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754162Ab3KQQCG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 11:02:06 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56150 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754107Ab3KQQB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 11:01:58 -0500
+Date: Sun, 17 Nov 2013 17:01:26 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Francis Moreau <francis.moro@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
+Message-ID: <20131117160126.GG27323@pd.tnic>
+References: <52888F6D.6000802@gmail.com>
+ <20131117132531.GB27696@pd.tnic>
+ <5288E5BF.2020608@gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: lgirdwood@gmail.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: build error with CONFIG_REGMAP=m and CONFIG_REGULATOR=y
-References: <5288DB85.8060105@hauke-m.de> <20131117152721.GA20266@sirena.org.uk>
-In-Reply-To: <20131117152721.GA20266@sirena.org.uk>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5288E5BF.2020608@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 11/17/2013 04:27 PM, Mark Brown wrote:
-> On Sun, Nov 17, 2013 at 04:06:45PM +0100, Hauke Mehrtens wrote:
+On Sun, Nov 17, 2013 at 04:50:23PM +0100, Francis Moreau wrote:
+> AFAIK, the kernel has 2 simple patches on top of the vanilla one.
+> They're both are trivial and can't be related to this issue.
 > 
->> In OpenWrt we are seeing some build errors when CONFIG_REGMAP=m
->> and CONFIG_REGULATOR=y are set.
-> 
-> REGMAP is a bool config option, it should not be possible to set it
-> to m. How have you managed to do that?
-> 
-Sorry, I you are right, I just saw we have a patch applied on top of
-the mainline kernel which makes it possible to build REGMAP as module.
+> You can have look to them here:
+> https://wiki.archlinux.org/index.php/Kernels#Official_packages
 
-Hauke
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Ok.
 
-iQIcBAEBAgAGBQJSiOgfAAoJEIZ0px9YPRMygR4P/inb+qZKSSA7qloN2ipKasbC
-mDKV/LivY6l3Je+rWTRCESkGOw0jO09rO1AizCoUN47u6yYuC6/IGIPioDXTciFf
-iDl46Lhfirv3rlWyrQTC6ZAAxcQUzFJNgXD0hb+ehw3MBC9okB5NQgq9QATtpW9L
-Bbu7vCgqG7bxCXXq0DW/ygPMR5axKWQwbQdDCfz+06wYqWQqj2okWtHvhXCe7Skb
-ROZ8FvOcnXKKjoGOEJRtbcfUt44dIM8RGJtKj5vjXtnSm+eJQhL1OzqUxOY7OODW
-Fxqs97N7rrsPVwXNRYSrHjtmul3feLUaxALXQiSskjS8zJsJBgR9jGJjMp2auN5B
-4ffxa0+thFsSNSXQd2bfDPnZzZKZf2EWr3h0BqWZPjN60pIji/WUXMSecVd+9zNH
-axONP2lKOp0hPxsSi0hvLUGHAyAsOTzShPKjV+vIosb9aFn5/3GeQqOrY6abmF/1
-HPoIds00q2B9VVV83PQeLvMFhjcW++1HDhP7QJ+QiUByN9I96M1Awd27ypsf5PT/
-fKqIgumJk2Jy3rKmpOwMHlpONBhD39qW3tb9lmiXeWgAdvaSH/kuR5Lwsbe3vhvg
-p+hTwmubGTwFHaIKUD7APJk7daYUwR8VEP3fbwsYc3bCGMtN61FNyl5HymYteJMg
-0g4dQrXMaPTZJcMTp4nz
-=LoHr
------END PGP SIGNATURE-----
+> Assuming that I'm running an upstream kernel, it's almost 100%
+> reproductible.
+
+Is there any chance you can catch the whole oops, esp. keep the Code:
+line complete?
+
+Also, can you do:
+
+$ objdump -d vmlinux | less
+
+then search for 'call_timer_fn' and paste the whole function somewhere.
+
+Also, can you catch a full dmesg and upload that somewhere too?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
