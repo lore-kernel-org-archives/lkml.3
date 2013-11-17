@@ -1,69 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208Ab3KQSyF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 13:54:05 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:38265 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab3KQSx7 (ORCPT
+	id S1753043Ab3KQS5A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 13:57:00 -0500
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:54173 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab3KQS4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 13:53:59 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Cyril Chemparathy <cyril@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] mfd: ti-ssp: Fix build
-Date: Sun, 17 Nov 2013 19:53:55 +0100
-Message-Id: <1384714435-30474-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 17 Nov 2013 13:56:51 -0500
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: geyslan@gmail.com
+Cc: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org (open list:SERVER ENGINES 10...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] scsi: be_iscsi: fix possible memory leak and refactor code
+Date: Sun, 17 Nov 2013 15:51:24 -0300
+Message-Id: <1384714284-13712-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    drivers/mfd/ti-ssp.c: In function 'ti_ssp_run':
-    drivers/mfd/ti-ssp.c:286:2: error: implicit declaration of function 'set_current_state' [-Werror=implicit-function-declaration]
-    drivers/mfd/ti-ssp.c:286:381: error: 'TASK_INTERRUPTIBLE' undeclared (first use in this function)
-    drivers/mfd/ti-ssp.c:286:381: note: each undeclared identifier is reported only once for each function it appears in
-    drivers/mfd/ti-ssp.c:286:2: error: implicit declaration of function 'signal_pending' [-Werror=implicit-function-declaration]
-    drivers/mfd/ti-ssp.c:286:2: error: implicit declaration of function 'schedule' [-Werror=implicit-function-declaration]
-    drivers/mfd/ti-ssp.c:286:2: error: implicit declaration of function '__set_current_state' [-Werror=implicit-function-declaration]
-    drivers/mfd/ti-ssp.c:286:742: error: 'TASK_RUNNING' undeclared (first use in this function)
-    drivers/mfd/ti-ssp.c: In function 'ti_ssp_interrupt':
-    drivers/mfd/ti-ssp.c:311:32: error: 'TASK_NORMAL' undeclared (first use in this function)
+This patch fix memory leakage in cases 'ISCSI_NET_PARAM_VLAN_ID' and
+'ISCSI_NET_PARAM_VLAN_PRIORITY' and refactors code 'going out' when
+necessary.
 
-Add missing #include <linux/sched.h>.
-
-    drivers/mfd/ti-ssp.c: In function 'ti_ssp_probe':
-    drivers/mfd/ti-ssp.c:412:12: error: 'struct mfd_cell' has no member named 'data_size'
-
-data_size became unused in commit 40e03f571b2e63827f2afb90ea9aa459612c29e3
-("mfd: Drop data_size from mfd_cell struct"), hence remove its
-initialization.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
 ---
- drivers/mfd/ti-ssp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/be2iscsi/be_iscsi.c | 41 +++++++++++++++++++++-------------------
+ 1 file changed, 22 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/mfd/ti-ssp.c b/drivers/mfd/ti-ssp.c
-index 71e3e0c5bf73..a5424579679c 100644
---- a/drivers/mfd/ti-ssp.c
-+++ b/drivers/mfd/ti-ssp.c
-@@ -32,6 +32,7 @@
- #include <linux/platform_device.h>
- #include <linux/delay.h>
- #include <linux/io.h>
-+#include <linux/sched.h>
- #include <linux/mfd/core.h>
- #include <linux/mfd/ti_ssp.h>
+diff --git a/drivers/scsi/be2iscsi/be_iscsi.c b/drivers/scsi/be2iscsi/be_iscsi.c
+index ffadbee..7e909dc 100644
+--- a/drivers/scsi/be2iscsi/be_iscsi.c
++++ b/drivers/scsi/be2iscsi/be_iscsi.c
+@@ -535,51 +535,53 @@ static int be2iscsi_get_if_param(struct beiscsi_hba *phba,
+ 		char *buf)
+ {
+ 	struct be_cmd_get_if_info_resp *if_info;
+-	int len, ip_type = BE2_IPV4;
++	int ret, ip_type = BE2_IPV4;
  
-@@ -409,7 +410,6 @@ static int ti_ssp_probe(struct platform_device *pdev)
- 		cells[id].id		= id;
- 		cells[id].name		= data->dev_name;
- 		cells[id].platform_data	= data->pdata;
--		cells[id].data_size	= data->pdata_size;
+ 	if (iface->iface_type == ISCSI_IFACE_TYPE_IPV6)
+ 		ip_type = BE2_IPV6;
+ 
+-	len = mgmt_get_if_info(phba, ip_type, &if_info);
+-	if (len) {
+-		kfree(if_info);
+-		return len;
+-	}
++	ret = mgmt_get_if_info(phba, ip_type, &if_info);
++	if (ret)
++		goto out;
+ 
+ 	switch (param) {
+ 	case ISCSI_NET_PARAM_IPV4_ADDR:
+-		len = sprintf(buf, "%pI4\n", if_info->ip_addr.addr);
++		ret = sprintf(buf, "%pI4\n", if_info->ip_addr.addr);
+ 		break;
+ 	case ISCSI_NET_PARAM_IPV6_ADDR:
+-		len = sprintf(buf, "%pI6\n", if_info->ip_addr.addr);
++		ret = sprintf(buf, "%pI6\n", if_info->ip_addr.addr);
+ 		break;
+ 	case ISCSI_NET_PARAM_IPV4_BOOTPROTO:
+ 		if (!if_info->dhcp_state)
+-			len = sprintf(buf, "static\n");
++			ret = sprintf(buf, "static\n");
+ 		else
+-			len = sprintf(buf, "dhcp\n");
++			ret = sprintf(buf, "dhcp\n");
+ 		break;
+ 	case ISCSI_NET_PARAM_IPV4_SUBNET:
+-		len = sprintf(buf, "%pI4\n", if_info->ip_addr.subnet_mask);
++		ret = sprintf(buf, "%pI4\n", if_info->ip_addr.subnet_mask);
+ 		break;
+ 	case ISCSI_NET_PARAM_VLAN_ENABLED:
+-		len = sprintf(buf, "%s\n",
++		ret = sprintf(buf, "%s\n",
+ 			     (if_info->vlan_priority == BEISCSI_VLAN_DISABLE)
+ 			     ? "Disabled\n" : "Enabled\n");
+ 		break;
+ 	case ISCSI_NET_PARAM_VLAN_ID:
+-		if (if_info->vlan_priority == BEISCSI_VLAN_DISABLE)
+-			return -EINVAL;
++		if (if_info->vlan_priority == BEISCSI_VLAN_DISABLE) {
++			ret = -EINVAL;
++			goto out;
++		}
+ 		else
+-			len = sprintf(buf, "%d\n",
++			ret = sprintf(buf, "%d\n",
+ 				     (if_info->vlan_priority &
+ 				     ISCSI_MAX_VLAN_ID));
+ 		break;
+ 	case ISCSI_NET_PARAM_VLAN_PRIORITY:
+-		if (if_info->vlan_priority == BEISCSI_VLAN_DISABLE)
+-			return -EINVAL;
++		if (if_info->vlan_priority == BEISCSI_VLAN_DISABLE) {
++			ret = -EINVAL;
++			goto out;
++		}
+ 		else
+-			len = sprintf(buf, "%d\n",
++			ret = sprintf(buf, "%d\n",
+ 				     ((if_info->vlan_priority >> 13) &
+ 				     ISCSI_MAX_VLAN_PRIORITY));
+ 		break;
+@@ -587,8 +589,9 @@ static int be2iscsi_get_if_param(struct beiscsi_hba *phba,
+ 		WARN_ON(1);
  	}
  
- 	error = mfd_add_devices(dev, 0, cells, 2, NULL, 0, NULL);
++out:
+ 	kfree(if_info);
+-	return len;
++	return ret;
+ }
+ 
+ int be2iscsi_iface_get_param(struct iscsi_iface *iface,
 -- 
-1.7.9.5
+1.8.4.2
 
