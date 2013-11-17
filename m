@@ -1,130 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab3KQQps (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 11:45:48 -0500
-Received: from nebula.mojo.cc ([46.4.89.19]:33146 "EHLO nebula.mojo.cc"
+	id S1752349Ab3KQQxj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 11:53:39 -0500
+Received: from mout.gmx.net ([212.227.17.22]:49666 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751234Ab3KQQpk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 11:45:40 -0500
-From: "MPhil. Emanoil Kotsev" <Emanoil.Kotsev@fincom.at>
-Organization: FinCom Consulting
-To: Borislav Petkov <bp@alien8.de>
-Subject: Re: [Intel-gfx] kernel 3.11.6 general protection fault
-Date: Sun, 17 Nov 2013 17:45:18 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>
-References: <201311132058.30310.Emanoil.Kotsev@fincom.at> <201311171545.35217.Emanoil.Kotsev@fincom.at> <20131117150607.GF27323@pd.tnic>
-In-Reply-To: <20131117150607.GF27323@pd.tnic>
-X-KMail-QuotePrefix: > 
+	id S1750832Ab3KQQxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 11:53:33 -0500
+Date: Sun, 17 Nov 2013 17:53:29 +0100
+From: Andreas Werner <wernerandy@gmx.de>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: khali@linux-fr.org, jacmet@sunsite.dk, hskinnemoen@gmail.com,
+        dianders@chromium.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] I2C: busses: i2c-eg20t Do not print error message in
+ syslog if no ACK received
+Message-ID: <20131117165329.GA1562@thinkpad.fritz.box>
+References: <1384678731-10399-1-git-send-email-wernerandy@gmx.de>
+ <20131117110846.GA3093@katana>
+ <20131117123902.GA3834@awedesk.fritz.box>
+ <20131117121809.GC3093@katana>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201311171745.19339.Emanoil.Kotsev@fincom.at>
+In-Reply-To: <20131117121809.GC3093@katana>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-Provags-ID: V03:K0:X8R6+4NvA09JE9zC/hZ6DaeGtR3xPCha6bmp6fdsIOXXcSHK8Li
+ GO8FRpazAQsWZblP04dZ7dLxqoQ7KAvyUlb88Hsefjud+h1RmDI8FZMSYxtm9li8pFYD3KW
+ SE9FZEMrJi+eka35HTsewjZras6MoDBlUMYvUopGxDqz6m9WW9UT7k90x+0z9aw383PH8ia
+ +2/QBKYTiyMllmPIGhjmw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Nov 17, 2013 at 01:18:09PM +0100, Wolfram Sang wrote:
+> 
+> > Is there another reason why pch_i2c_getack returned EPROTO?
+> > May be ENXIO was introduced later?
+> 
+> Imperfect review :)
+> 
+> > I think we can just replace the -EIO with -ENXIO or do you want to pick up the return
+> > vale of pch_i2c_getack and return that ?
+> 
+> The latter. As a rule of thumb, it is usually more sustainable to pass
+> through error codes. Overloading them should only be done when really
+> necessary IMO.
+> 
+Ok, if that will be ok in pch_i2c_wait_for_check_xfer i will resend 
+the patch.
 
-Hi
+        ret = pch_i2c_getack(adap);
 
-On Sunday 17 November 2013 16:06:07 you wrote:
-> On Sun, Nov 17, 2013 at 03:45:34PM +0100, MPhil. Emanoil Kotsev wrote:
-> > this is also true - which makes me sad as the notebook was working
-> > thgreat in e past 7y
->
-> Hmm, maybe it is heading slowly for the eternal hunting fields... :-)
-may be, but I am a bit of academic so until 100% prove - I doubt, which does 
-not mean that I can not purchaise a new one :)
->
-> > > What kind of upgrade exactly did you do to a laptop?
-> >
-> > I was using debian squeeze with trinity desktop (KDE 3.5.10) and upgraded
-> > to debian wheeze with TDE (3.5.13)
->
-> Oh ok, so I thought you were talking about a hw upgrade, like adding
-> more RAM, hew hdd, etc.
->
-> Ok, can you try this: boot without X and try overloading the machine on
-> the console, i.e. do
->
-> while true; do make clean && make -j64; done
->
-> or similar in your kernel repository. Does it trigger then?
-I'll try - I'm also curious what will happen!
->
-> Although I can't imagine how a software upgrade would cause the
-> overheating... :-\.
-How - new libraries - more exhaustive algorythms - higher cpu usage etc. Some 
-of the things M$ is doing on purpose to force you upgrade your hardware every 
-2-3years
+        if (ret)
+                pch_dbg(adap, "Receive NACK for slave address setting\n");
 
->
-> > > Can you revert the upgrade and see whether it still happens?
-> >
-> > This would be hard - no impossible as I have a backup but it will be
-> > time consuming
->
-> You could try booting a distro from a livecd and see any change there...
->
-> > $ sensors
-> > acpitz-virtual-0
-> > Adapter: Virtual device
-> > temp1:        +47.5°C  (crit = +126.0°C)
->
-> That's some ACPI timezone thing. So what happens if you do
->
-> $ watch -n 1 sensors
->
-> and you incur the load? Do you hit the critical temperature?
+        return (int)ret;
 
-I wanted to first compile the kernel with the debug option you mentioned, but 
-while compiling it went to about 75°C.
-
->
-> > grep . -EriIn /sys/devices/system/cpu/cpu0/cpufreq
-> > /sys/devices/system/cpu/cpu0/cpufreq/bios_limit:1:2000000
-> > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor:1:ondemand
-> > /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_transition_latency:1:10000
-> > /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies:1:2000
-> >000 1667000 1333000 1000000
-> > /sys/devices/system/cpu/cpu0/cpufreq/freqdomain_cpus:1:0 1
-> > /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver:1:acpi-cpufreq
-> > /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq:1:1000000
-> > /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors:1:ondema
-> >nd powersave performance conservative userspace
-> > /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq:1:1000000
-> > /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq:1:2000000
-> > /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq:1:1000000
-> > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq:1:2000000
-> > /sys/devices/system/cpu/cpu0/cpufreq/affected_cpus:1:0
-> > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq:1:1000000
-> > /sys/devices/system/cpu/cpu0/cpufreq/related_cpus:1:0
-> > /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed:1:<unsupported>
->
-> Yeah, I don't see anything wrong with that output.
-yes looks nice
->
-> > I could try this. I guess this assumes I have to have another machine
-> > running in paralell, but this can be arranged with a little effort
->
-> Yep.
->
-> > Thanks for the hints. As I never had to do with overheating or
-> > similar issues, your help is very precious to me. Unfortunately we
-> > have a little child on board and time is limitted :) to a couple of
-> > hours daily, where I can work at home which means even less time for
-> > debugging. But I never give up. I just want to be sure that it is not
-> > a hardware issue
->
-> No worries, take care of the child first - the laptop and everyone else
-> can wait :-)
-
-yes - we do load balancing with my wife :)
-
-I'll post back with some data (I hope)
-
-regards
+Regards 
+Andy
