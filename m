@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab3KQJnn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 04:43:43 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50772 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab3KQJni (ORCPT
+	id S1753003Ab3KQJzT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 04:55:19 -0500
+Received: from smtprelay0192.hostedemail.com ([216.40.44.192]:60974 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751850Ab3KQJzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 04:43:38 -0500
-Date: Sun, 17 Nov 2013 10:43:20 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: perf/tracepoint: another fuzzer generated lockup
-Message-ID: <20131117094320.GN16796@laptop.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1311081612190.16519@vincent-weaver-1.um.maine.edu>
- <20131108223657.GF14606@localhost.localdomain>
- <20131109151014.GN16117@laptop.programming.kicks-ass.net>
- <20131114152304.GC5364@laptop.programming.kicks-ass.net>
- <20131114153301.GD5364@laptop.programming.kicks-ass.net>
- <528575E2.4000700@hitachi.com>
- <20131115122833.GE10456@twins.programming.kicks-ass.net>
- <20131115091521.3ad917fe@gandalf.local.home>
- <20131115142851.GA17498@localhost.localdomain>
- <52887617.7050302@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52887617.7050302@hitachi.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Sun, 17 Nov 2013 04:55:16 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:960:988:989:1260:1345:1534:1538:1561:1711:1714:1730:1747:1777:1792:2393:2559:2562:2904:3138:3139:3140:3141:3142:3865:3867:3870:3872:4605:5007:6119:6261:7903:10004:10026:10848:11026:11658:11914:12043:12291:12517:12519:12679:12683:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fruit93_10a8851c5961b
+X-Filterd-Recvd-Size: 1030
+From: Joe Perches <joe@perches.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] softirq: possible speedup and neatenings
+Date: Sun, 17 Nov 2013 01:55:09 -0800
+Message-Id: <cover.1384656563.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 17, 2013 at 04:53:59PM +0900, Masami Hiramatsu wrote:
-> Agreed.
-> FYI, kprobes has a recursion detection counter and it is reported via
-> debugfs/tracing/kprobe_profile :)
+The first one boots, but it's barely tested.
 
-Perf also has a recursion counter (4 actually, not reported to
-userspace), but the problem with the irq_work_exit thing is that its a
-non-recursive event loop, so recursion checks don't actually work to
-catch it.
+Joe Perches (3):
+  softirq: Use ffs in __do_softirq
+  softirq: Convert printks to pr_<level>
+  softirq: Use const char * const for softirq_to_name, whitespace neatening
+
+ include/linux/interrupt.h |  2 +-
+ kernel/softirq.c          | 75 +++++++++++++++++++++--------------------------
+ 2 files changed, 35 insertions(+), 42 deletions(-)
+
+-- 
+1.8.1.2.459.gbcd45b4.dirty
+
