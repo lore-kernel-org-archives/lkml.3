@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832Ab3KQTJP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 14:09:15 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:42095 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751360Ab3KQTJH (ORCPT
+	id S1754088Ab3KQTKf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 14:10:35 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:41993 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab3KQTK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 14:09:07 -0500
-Date: Sun, 17 Nov 2013 20:09:05 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Cc: linux-omap@vger.kernel.org, linaro-networking@linaro.org,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 02/23] watchdog: omap_wdt: raw read and write endian fix
-Message-ID: <20131117190905.GI10136@spo001.leaseweb.com>
-References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org> <1384560086-11994-3-git-send-email-taras.kondratiuk@linaro.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384560086-11994-3-git-send-email-taras.kondratiuk@linaro.org>
-User-Agent: Mutt/1.4.1i
+	Sun, 17 Nov 2013 14:10:28 -0500
+MIME-Version: 1.0
+Date: Sun, 17 Nov 2013 17:10:27 -0200
+Message-ID: <CAGG-pUTye8ovBDvryN7GNPPCUmPJf9VhQ_hCbxJ9ABmz787H8A@mail.gmail.com>
+Subject: [RFC] possible null dereference in 'pm121_create_sys_fans()'
+From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Victor, Taras,
+Hello Benjamin,
 
-> From: Victor Kamensky <victor.kamensky@linaro.org>
-> 
-> All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
-> Need to use endian neutral functions to read/write h/w registers.
-> I.e instead of __raw_read[lw] and __raw_write[lw] functions code
-> need to use read[lw]_relaxed and write[lw]_relaxed functions.
-> If the first simply reads/writes register, the second will byteswap
-> it if host operates in BE mode.
-> 
-> Changes are trivial sed like replacement of __raw_xxx functions
-> with xxx_relaxed variant.
-> 
-> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+In file 'windfarm_pm121'.c:
 
-This was added to linux-watchdog-next.
+If this branch is true:
 
-Kind regards,
-Wim.
+    if (param == NULL) {
+        printk(KERN_WARNING "pm121: %s fan config not found "
+               " for this machine model\n",
+               loop_names[loop_id]);
+        goto fail;
+    }
 
+control that is NULL will suffer a dereference attempt:
+
+fail:
+    /* note that this is not optimal since another loop may still
+       control the same control */
+    printk(KERN_WARNING "pm121: failed to set up %s loop "
+           "setting \"%s\" to max speed.\n",
+           loop_names[loop_id], control->name);
+
+
+Reported-by: Geyslan G. Bem <geyslan@gmail.com>
+
+-- 
+Regards,
+
+Geyslan G. Bem
+hackingbits.com
