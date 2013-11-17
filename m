@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab3KQQ0H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 11:26:07 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58548 "HELO
+	id S1754494Ab3KQQ0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 11:26:16 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56967 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751996Ab3KQQZs (ORCPT
+	with SMTP id S1754130Ab3KQQZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 11:25:48 -0500
+	Sun, 17 Nov 2013 11:25:49 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -17,9 +17,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Zhang Rui <rui.zhang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>
-Subject: [PATCH 9/10] ACPI / hotplug: Drop unfinished global notification handling routines
-Date: Sun, 17 Nov 2013 17:37:21 +0100
-Message-ID: <1784391.AAAKirYogC@vostro.rjw.lan>
+Subject: [PATCH 7/10] ACPI / hotplug: Move container-specific code out of the core
+Date: Sun, 17 Nov 2013 17:36 +0100
+Message-ID: <2547688.l8Q1XKb3Ol@vostro.rjw.lan>
 User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
 In-Reply-To: <1421028.Rsfpmhnym3@vostro.rjw.lan>
 References: <1421028.Rsfpmhnym3@vostro.rjw.lan>
@@ -32,98 +32,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-There are two global hotplug notification handling routines in bus.c,
-acpi_bus_check_device() and acpi_bus_check_scope(), that have never
-been finished and don't do anything useful, so drop them.
+Move container-specific uevents from the core hotplug code to the
+container scan handler's .attach() and .detach() callbacks.
+
+This way the core will not have to special-case containers and
+the uevents will be guaranteed to happen every time a container
+is either scanned or trimmed as appropriate.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/bus.c |   64 +----------------------------------------------------
- 1 file changed, 2 insertions(+), 62 deletions(-)
+ drivers/acpi/container.c |   11 ++++++++---
+ drivers/acpi/scan.c      |    8 +-------
+ include/acpi/acpi_bus.h  |    7 -------
+ 3 files changed, 9 insertions(+), 17 deletions(-)
 
-Index: linux-pm/drivers/acpi/bus.c
+Index: linux-pm/drivers/acpi/container.c
 ===================================================================
---- linux-pm.orig/drivers/acpi/bus.c
-+++ linux-pm/drivers/acpi/bus.c
-@@ -329,58 +329,6 @@ static void acpi_bus_osc_support(void)
-                              Notification Handling
-    -------------------------------------------------------------------------- */
+--- linux-pm.orig/drivers/acpi/container.c
++++ linux-pm/drivers/acpi/container.c
+@@ -44,19 +44,24 @@ static const struct acpi_device_id conta
+ 	{"", 0},
+ };
  
--static void acpi_bus_check_device(acpi_handle handle)
--{
--	struct acpi_device *device;
--	acpi_status status;
--	struct acpi_device_status old_status;
--
--	if (acpi_bus_get_device(handle, &device))
--		return;
--	if (!device)
--		return;
--
--	old_status = device->status;
--
--	/*
--	 * Make sure this device's parent is present before we go about
--	 * messing with the device.
--	 */
--	if (device->parent && !device->parent->status.present) {
--		device->status = device->parent->status;
--		return;
--	}
--
--	status = acpi_bus_get_status(device);
--	if (ACPI_FAILURE(status))
--		return;
--
--	if (STRUCT_TO_INT(old_status) == STRUCT_TO_INT(device->status))
--		return;
--
--	/*
--	 * Device Insertion/Removal
--	 */
--	if ((device->status.present) && !(old_status.present)) {
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device insertion detected\n"));
--		/* TBD: Handle device insertion */
--	} else if (!(device->status.present) && (old_status.present)) {
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device removal detected\n"));
--		/* TBD: Handle device removal */
--	}
--}
--
--static void acpi_bus_check_scope(acpi_handle handle)
--{
--	/* Status Change? */
--	acpi_bus_check_device(handle);
--
--	/*
--	 * TBD: Enumerate child devices within this device's scope and
--	 *       run acpi_bus_check_device()'s on them.
--	 */
--}
--
- /**
-  * acpi_bus_notify
-  * ---------------
-@@ -397,19 +345,11 @@ static void acpi_bus_notify(acpi_handle
- 	switch (type) {
+-static int container_device_attach(struct acpi_device *device,
++static int container_device_attach(struct acpi_device *adev,
+ 				   const struct acpi_device_id *not_used)
+ {
+-	/* This is necessary for container hotplug to work. */
++	kobject_uevent(&adev->dev.kobj, KOBJ_ONLINE);
+ 	return 1;
+ }
  
- 	case ACPI_NOTIFY_BUS_CHECK:
--		acpi_bus_check_scope(handle);
--		/*
--		 * TBD: We'll need to outsource certain events to non-ACPI
--		 *      drivers via the device manager (device.c).
--		 */
-+		/* TBD */
- 		break;
++static void container_device_detach(struct acpi_device *adev)
++{
++	kobject_uevent(&adev->dev.kobj, KOBJ_OFFLINE);
++}
++
+ static struct acpi_scan_handler container_handler = {
+ 	.ids = container_device_ids,
+ 	.attach = container_device_attach,
++	.detach = container_device_detach,
+ 	.hotplug = {
+ 		.enabled = true,
+-		.mode = AHM_CONTAINER,
+ 	},
+ };
  
- 	case ACPI_NOTIFY_DEVICE_CHECK:
--		acpi_bus_check_device(handle);
--		/*
--		 * TBD: We'll need to outsource certain events to non-ACPI
--		 *      drivers via the device manager (device.c).
--		 */
-+		/* TBD */
- 		break;
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -206,9 +206,6 @@ static int acpi_scan_hot_remove(struct a
+ 	acpi_status status;
+ 	unsigned long long sta;
  
- 	case ACPI_NOTIFY_DEVICE_WAKE:
+-	if (device->handler && device->handler->hotplug.mode == AHM_CONTAINER)
+-		kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+-
+ 	/*
+ 	 * Carry out two passes here and ignore errors in the first pass,
+ 	 * because if the devices in question are memory blocks and
+@@ -288,10 +285,7 @@ static int acpi_scan_device_check(struct
+ 		dev_warn(&adev->dev, "Namespace scan failure\n");
+ 		return error;
+ 	}
+-	if (adev->handler) {
+-		if (adev->handler->hotplug.mode == AHM_CONTAINER)
+-			kobject_uevent(&adev->dev.kobj, KOBJ_ONLINE);
+-	} else {
++	if (!adev->handler) {
+ 		dev_warn(&adev->dev, "Enumeration failure\n");
+ 		return -ENODEV;
+ 	}
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -91,16 +91,9 @@ struct acpi_device;
+  * -----------------
+  */
+ 
+-enum acpi_hotplug_mode {
+-	AHM_GENERIC = 0,
+-	AHM_CONTAINER,
+-	AHM_COUNT
+-};
+-
+ struct acpi_hotplug_profile {
+ 	struct kobject kobj;
+ 	bool enabled:1;
+-	enum acpi_hotplug_mode mode;
+ 	int (*scan_dependent)(struct acpi_device *adev);
+ };
+ 
 
