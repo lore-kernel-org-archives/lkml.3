@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab3KRSso (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:48:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57605 "EHLO
+	id S1752951Ab3KRSl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:41:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57449 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016Ab3KRSm3 (ORCPT
+	with ESMTP id S1752646Ab3KRSkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:42:29 -0500
+	Mon, 18 Nov 2013 13:40:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        Paul Durrant <paul.durrant@citrix.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 10/24] xen-netback: transition to CLOSED when removing a VIF
-Date: Mon, 18 Nov 2013 10:42:20 -0800
-Message-Id: <20131118184222.766362590@linuxfoundation.org>
+Subject: [PATCH 3.11 07/25] tcp: gso: fix truesize tracking
+Date: Mon, 18 Nov 2013 10:40:36 -0800
+Message-Id: <20131118184034.456589004@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
-In-Reply-To: <20131118184222.017393843@linuxfoundation.org>
-References: <20131118184222.017393843@linuxfoundation.org>
+In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
+References: <20131118184032.248465920@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit dc62ccaccfb139d9b04bbc5a2688a4402adbfab3 ]
+[ Upstream commit 0d08c42cf9a71530fef5ebcfe368f38f2dd0476f ]
 
-If a guest is destroyed without transitioning its frontend to CLOSED,
-the domain becomes a zombie as netback was not grant unmapping the
-shared rings.
+commit 6ff50cd55545 ("tcp: gso: do not generate out of order packets")
+had an heuristic that can trigger a warning in skb_try_coalesce(),
+because skb->truesize of the gso segments were exactly set to mss.
 
-When removing a VIF, transition the backend to CLOSED so the VIF is
-disconnected if necessary (which will unmap the shared rings etc).
+This breaks the requirement that
 
-This fixes a regression introduced by
-279f438e36c0a70b23b86d2090aeec50155034a9 (xen-netback: Don't destroy
-the netdev until the vif is shut down).
+skb->truesize >= skb->len + truesizeof(struct sk_buff);
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>
-Cc: Paul Durrant <Paul.Durrant@citrix.com>
-Acked-by: Wei Liu <wei.liu2@citrix.com>
-Reviewed-by:  Paul Durrant <paul.durrant@citrix.com>
+It can trivially be reproduced by :
+
+ifconfig lo mtu 1500
+ethtool -K lo tso off
+netperf
+
+As the skbs are looped into the TCP networking stack, skb_try_coalesce()
+warns us of these skb under-estimating their truesize.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Alexei Starovoitov <ast@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netback/xenbus.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/ipv4/tcp_offload.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
---- a/drivers/net/xen-netback/xenbus.c
-+++ b/drivers/net/xen-netback/xenbus.c
-@@ -39,11 +39,15 @@ static int connect_rings(struct backend_
- static void connect(struct backend_info *);
- static void backend_create_xenvif(struct backend_info *be);
- static void unregister_hotplug_status_watch(struct backend_info *be);
-+static void set_backend_state(struct backend_info *be,
-+			      enum xenbus_state state);
- 
- static int netback_remove(struct xenbus_device *dev)
+--- a/net/ipv4/tcp_offload.c
++++ b/net/ipv4/tcp_offload.c
+@@ -18,6 +18,7 @@ struct sk_buff *tcp_tso_segment(struct s
+ 				netdev_features_t features)
  {
- 	struct backend_info *be = dev_get_drvdata(&dev->dev);
+ 	struct sk_buff *segs = ERR_PTR(-EINVAL);
++	unsigned int sum_truesize = 0;
+ 	struct tcphdr *th;
+ 	unsigned int thlen;
+ 	unsigned int seq;
+@@ -102,13 +103,7 @@ struct sk_buff *tcp_tso_segment(struct s
+ 		if (copy_destructor) {
+ 			skb->destructor = gso_skb->destructor;
+ 			skb->sk = gso_skb->sk;
+-			/* {tcp|sock}_wfree() use exact truesize accounting :
+-			 * sum(skb->truesize) MUST be exactly be gso_skb->truesize
+-			 * So we account mss bytes of 'true size' for each segment.
+-			 * The last segment will contain the remaining.
+-			 */
+-			skb->truesize = mss;
+-			gso_skb->truesize -= mss;
++			sum_truesize += skb->truesize;
+ 		}
+ 		skb = skb->next;
+ 		th = tcp_hdr(skb);
+@@ -125,7 +120,9 @@ struct sk_buff *tcp_tso_segment(struct s
+ 	if (copy_destructor) {
+ 		swap(gso_skb->sk, skb->sk);
+ 		swap(gso_skb->destructor, skb->destructor);
+-		swap(gso_skb->truesize, skb->truesize);
++		sum_truesize += skb->truesize;
++		atomic_add(sum_truesize - gso_skb->truesize,
++			   &skb->sk->sk_wmem_alloc);
+ 	}
  
-+	set_backend_state(be, XenbusStateClosed);
-+
- 	unregister_hotplug_status_watch(be);
- 	if (be->vif) {
- 		kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
+ 	delta = htonl(oldlen + (skb_tail_pointer(skb) -
 
 
