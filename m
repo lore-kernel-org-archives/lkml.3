@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab3KRSl5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:41:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57449 "EHLO
+	id S1752929Ab3KRSlu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:41:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57428 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646Ab3KRSkp (ORCPT
+	with ESMTP id S1752120Ab3KRSkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:40:45 -0500
+	Mon, 18 Nov 2013 13:40:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
+        Mark Thomas <Mark.Thomas@metaswitch.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 07/25] tcp: gso: fix truesize tracking
-Date: Mon, 18 Nov 2013 10:40:36 -0800
-Message-Id: <20131118184034.456589004@linuxfoundation.org>
+Subject: [PATCH 3.11 02/25] net: sctp: do not trigger BUG_ON in sctp_cmd_delete_tcb
+Date: Mon, 18 Nov 2013 10:40:31 -0800
+Message-Id: <20131118184032.865440440@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
 References: <20131118184032.248465920@linuxfoundation.org>
@@ -28,70 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 0d08c42cf9a71530fef5ebcfe368f38f2dd0476f ]
+[ Upstream commit 7926c1d5be0b7cbe5b8d5c788d7d39237e7b212c ]
 
-commit 6ff50cd55545 ("tcp: gso: do not generate out of order packets")
-had an heuristic that can trigger a warning in skb_try_coalesce(),
-because skb->truesize of the gso segments were exactly set to mss.
+Introduced in f9e42b853523 ("net: sctp: sideeffect: throw BUG if
+primary_path is NULL"), we intended to find a buggy assoc that's
+part of the assoc hash table with a primary_path that is NULL.
+However, we better remove the BUG_ON for now and find a more
+suitable place to assert for these things as Mark reports that
+this also triggers the bug when duplication cookie processing
+happens, and the assoc is not part of the hash table (so all
+good in this case). Such a situation can for example easily be
+reproduced by:
 
-This breaks the requirement that
+  tc qdisc add dev eth0 root handle 1: prio bands 2 priomap 1 1 1 1 1 1
+  tc qdisc add dev eth0 parent 1:2 handle 20: netem loss 20%
+  tc filter add dev eth0 protocol ip parent 1: prio 2 u32 match ip \
+            protocol 132 0xff match u8 0x0b 0xff at 32 flowid 1:2
 
-skb->truesize >= skb->len + truesizeof(struct sk_buff);
+This drops 20% of COOKIE-ACK packets. After some follow-up
+discussion with Vlad we came to the conclusion that for now we
+should still better remove this BUG_ON() assertion, and come up
+with two follow-ups later on, that is, i) find a more suitable
+place for this assertion, and possibly ii) have a special
+allocator/initializer for such kind of temporary assocs.
 
-It can trivially be reproduced by :
-
-ifconfig lo mtu 1500
-ethtool -K lo tso off
-netperf
-
-As the skbs are looped into the TCP networking stack, skb_try_coalesce()
-warns us of these skb under-estimating their truesize.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Alexei Starovoitov <ast@plumgrid.com>
+Reported-by: Mark Thomas <Mark.Thomas@metaswitch.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_offload.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ net/sctp/sm_sideeffect.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/net/ipv4/tcp_offload.c
-+++ b/net/ipv4/tcp_offload.c
-@@ -18,6 +18,7 @@ struct sk_buff *tcp_tso_segment(struct s
- 				netdev_features_t features)
- {
- 	struct sk_buff *segs = ERR_PTR(-EINVAL);
-+	unsigned int sum_truesize = 0;
- 	struct tcphdr *th;
- 	unsigned int thlen;
- 	unsigned int seq;
-@@ -102,13 +103,7 @@ struct sk_buff *tcp_tso_segment(struct s
- 		if (copy_destructor) {
- 			skb->destructor = gso_skb->destructor;
- 			skb->sk = gso_skb->sk;
--			/* {tcp|sock}_wfree() use exact truesize accounting :
--			 * sum(skb->truesize) MUST be exactly be gso_skb->truesize
--			 * So we account mss bytes of 'true size' for each segment.
--			 * The last segment will contain the remaining.
--			 */
--			skb->truesize = mss;
--			gso_skb->truesize -= mss;
-+			sum_truesize += skb->truesize;
- 		}
- 		skb = skb->next;
- 		th = tcp_hdr(skb);
-@@ -125,7 +120,9 @@ struct sk_buff *tcp_tso_segment(struct s
- 	if (copy_destructor) {
- 		swap(gso_skb->sk, skb->sk);
- 		swap(gso_skb->destructor, skb->destructor);
--		swap(gso_skb->truesize, skb->truesize);
-+		sum_truesize += skb->truesize;
-+		atomic_add(sum_truesize - gso_skb->truesize,
-+			   &skb->sk->sk_wmem_alloc);
- 	}
+--- a/net/sctp/sm_sideeffect.c
++++ b/net/sctp/sm_sideeffect.c
+@@ -866,7 +866,6 @@ static void sctp_cmd_delete_tcb(sctp_cmd
+ 	    (!asoc->temp) && (sk->sk_shutdown != SHUTDOWN_MASK))
+ 		return;
  
- 	delta = htonl(oldlen + (skb_tail_pointer(skb) -
+-	BUG_ON(asoc->peer.primary_path == NULL);
+ 	sctp_unhash_established(asoc);
+ 	sctp_association_free(asoc);
+ }
 
 
