@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab3KRQci (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 11:32:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56318 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079Ab3KRQca (ORCPT
+	id S1751763Ab3KRQdS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 11:33:18 -0500
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:36784 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab3KRQdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 11:32:30 -0500
-Date: Mon, 18 Nov 2013 08:32:43 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Bruce Fields <bfields@fieldses.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, stable@vger.kernel.org
-Subject: Re: [git pull] fixes for 3.12-final
-Message-ID: <20131118163243.GA30944@kroah.com>
-References: <20131103015803.GK13318@ZenIV.linux.org.uk>
- <CA+55aFy3tAeLYL3_+PbeD15p6PGS-P7bs8fMUaRVSC0OCzvq6w@mail.gmail.com>
- <20131103195452.GL13318@ZenIV.linux.org.uk>
- <CA+55aFwW9s3GCa+zNTMg7m44-cj2RdJp7wRpCnPUvQHm9xYnFg@mail.gmail.com>
- <20131104005300.GM13318@ZenIV.linux.org.uk>
- <20131106151003.GA21425@ZenIV.linux.org.uk>
- <20131113144353.GE28033@fieldses.org>
- <20131113151655.GG28033@fieldses.org>
+	Mon, 18 Nov 2013 11:33:05 -0500
+Date: Mon, 18 Nov 2013 11:41:22 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, tytso@mit.edu,
+        adilger.kernel@dilger.ca
+Subject: Re: perf bug: bad page map
+In-Reply-To: <20131118151746.GC10022@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1311181138390.18020@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1311151300120.12594@vincent-weaver-1.um.maine.edu> <20131118151746.GC10022@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131113151655.GG28033@fieldses.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 10:16:55AM -0500, Bruce Fields wrote:
-> (Argh, sorry, with the right stable address cc'd this time I hope.)
-> 
-> On Wed, Nov 06, 2013 at 03:10:04PM +0000, Al Viro wrote:
-> > FWIW, not taking ->i_lock there definitely looks like a good thing.  As for
-> > 64bit ->i_ino itself...  Looks like the main problem is the shitload of
-> > printks - the actual uses of ->i_ino are fine, but these suckers create
-> > a lot of noise.  So for now I'm going with Bruce's variant; 64bit i_ino
-> > doesn't look too bad (even on i386, actually), but it'll have to wait
-> > until 3.14.  Too noisy and late in this cycle...
-> 
-> I believe we also want that in stable?
-> 
-> 950ee9566a5b6cc45d15f5fe044bab4f1e8b62cb "exportfs: fix 32-bit nfsd
-> handling of 64-bit inode numbers"
+On Mon, 18 Nov 2013, Peter Zijlstra wrote:
 
-It breaks the build in 3.12 and others so if it is needed, please
-provide a backport that works properly to stable@vger.kernel.org.
+> On Fri, Nov 15, 2013 at 01:04:23PM -0500, Vince Weaver wrote:
+> > 
+> > (figured out the minicom issue).
+> > 
+> > Anyway while trying to reproduce the last bug I instead got this with
+> > the perf_fuzzer.
+> > 
+> > Is it worth continuing to run and report these issues?  I'm losing track 
+> > of all the open bugs.
+> 
+> This is looks like ext4. Not entirely sure how perf ties into this.
 
-thanks,
+It's believable the filesystem could have issues (it's a fuzzer machine, 
+so it's had 100+ unclean shutdowns on an SSD drive in the past few months)
+but as far as I know there shouldn't have been any filesystem accesses 
+happening at all when the bug triggered.
 
-greg k-h
+I thought it might be perf related due to the perf references in the 
+backtrace (and since it was being perf-fuzzed at the time).
+
+> Anyway, yes, I do think its useful to keep running these tests, we do
+> fix various issues -- although probably not at the rate you seem to be
+> finding them.
+> 
+> > [ 1618.118179] BUG: Bad page map in process perf_fuzzer  pte:ffff8800c4d60040 pmd:bd86a067
+> > [ 1618.142177] addr:0000000000409000 vm_flags:00000875 anon_vma:          (null) mapping:ffff8800cb74adf0 index:9
+> > [ 1618.172142] vma->vm_ops->fault: filemap_fault+0x0/0x358
+> > [ 1618.187783] vma->vm_file->f_op->mmap: ext4_file_mmap+0x0/0x48
+> > [ 1618.204981] CPU: 1 PID: 24819 Comm: perf_fuzzer Not tainted 3.12.0 #4
+> > [ 1618.224256] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
+> > [ 1618.250825]  0000000000409000 ffff8800bf6dfaa8 ffffffff8151d8ec 0000000000000000
+> > [ 1618.273081]  ffff8800c89ac928 ffff8800bf6dfaf8 ffffffff810ed692 dead000000200200
+> > [ 1618.295345]  00000000c03df067 ffff8800bf6dfbe8 0000000000409000 ffffea0002bc2fe8
+> > [ 1618.317603] Call Trace:
+> > [ 1618.324951]  [<ffffffff8151d8ec>] dump_stack+0x49/0x5d
+> > [ 1618.340355]  [<ffffffff810ed692>] print_bad_pte+0x1f5/0x213
+> > [ 1618.357059]  [<ffffffff810ef43c>] unmap_single_vma+0x511/0x666
+> > [ 1618.374540]  [<ffffffff810ef5c3>] unmap_vmas+0x32/0x49
+> > [ 1618.389934]  [<ffffffff810f3804>] exit_mmap+0x84/0x10d
+> > [ 1618.405343]  [<ffffffff8105bb15>] ? hrtimer_try_to_cancel+0x41/0x4b
+> > [ 1618.424129]  [<ffffffff8103ac43>] mmput+0x4b/0xd1
+> > [ 1618.438227]  [<ffffffff8103ec76>] do_exit+0x36c/0x936
+> > [ 1618.453366]  [<ffffffff810c7312>] ? update_context_time+0x11/0x34
+> > [ 1618.471628]  [<ffffffff8100951b>] ? native_sched_clock+0x3b/0x3d
+> > [ 1618.489635]  [<ffffffff8106730d>] ? sched_clock_local+0x1c/0x82
+> > [ 1618.507376]  [<ffffffff8103f2b8>] do_group_exit+0x78/0xa0
+> > [ 1618.523563]  [<ffffffff8104c898>] get_signal_to_deliver+0x46d/0x48a
+> > [ 1618.542347]  [<ffffffff810c8ac7>] ? ctx_sched_in+0x35/0x185
+> > [ 1618.559051]  [<ffffffff810c8c80>] ? perf_event_sched_in+0x69/0x72
+> > [ 1618.577318]  [<ffffffff81002513>] do_signal+0x46/0x5f5
+> > [ 1618.592724]  [<ffffffff810c8ffe>] ? __perf_event_task_sched_in+0x3a/0x10e
+> > [ 1618.613071]  [<ffffffff8106699f>] ? finish_task_switch+0x46/0x98
+> > [ 1618.631075]  [<ffffffff8151f832>] ? __schedule+0x51c/0x54b
+> > [ 1618.647516]  [<ffffffff81002aee>] do_notify_resume+0x2c/0x64
+> > [ 1618.664486]  [<ffffffff81520ef5>] retint_signal+0x3d/0x78
+> > [ 1618.680661] Disabling lock debugging due to kernel taint
