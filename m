@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623Ab3KRO43 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 09:56:29 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:52738 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab3KRO4V (ORCPT
+	id S1751743Ab3KRO6l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 09:58:41 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56700 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751243Ab3KRO6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 09:56:21 -0500
-Date: Mon, 18 Nov 2013 14:56:14 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        angus.clark@st.com
-Subject: Re: [PATCH 02/10] mtd: st_spi_fsm: Supply all register address and
- bit logic defines
-Message-ID: <20131118145614.GM13640@lee--X1>
-References: <1384438956-31153-1-git-send-email-lee.jones@linaro.org>
- <1384438956-31153-3-git-send-email-lee.jones@linaro.org>
- <CACRpkdaccxcTfKc-y7rPEH1H3yua3ubLvuvTzWnMs1rOwjiVNw@mail.gmail.com>
- <20131118093229.GB13640@lee--X1>
- <20131118133940.GC14306@sirena.org.uk>
- <20131118142447.GJ13640@lee--X1>
- <20131118144512.GB24408@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	Mon, 18 Nov 2013 09:58:33 -0500
+Message-ID: <1384786707.2001.6.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] scsi: be_iscsi: fix possible memory leak and refactor
+ code
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Geyslan =?ISO-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
+Cc: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
+        "open list:SERVER ENGINES 10..." <linux-scsi@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Mon, 18 Nov 2013 06:58:27 -0800
+In-Reply-To: <CAGG-pUT_h1eNnHDpxRvMPWeN5zi6L2mckHMPsV92Qf3hqtf7EQ@mail.gmail.com>
+References: <1384714284-13712-1-git-send-email-geyslan@gmail.com>
+	 <1384717371.2050.2.camel@dabdike.int.hansenpartnership.com>
+	 <CAGG-pURSnEeNvmHhQ-GvrnyuMHPrTRMoCKt3P=bB23OD9Vmkpg@mail.gmail.com>
+	 <1384724339.2050.6.camel@dabdike.int.hansenpartnership.com>
+	 <CAGG-pUT_h1eNnHDpxRvMPWeN5zi6L2mckHMPsV92Qf3hqtf7EQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131118144512.GB24408@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013, Mark Brown wrote:
-
-> On Mon, Nov 18, 2013 at 02:24:47PM +0000, Lee Jones wrote:
+On Sun, 2013-11-17 at 23:12 -0200, Geyslan Gregório Bem wrote:
+> 2013/11/17 James Bottomley <James.Bottomley@hansenpartnership.com>:
+> > On Sun, 2013-11-17 at 19:09 -0200, Geyslan Gregório Bem wrote:
+> >> 2013/11/17 James Bottomley <James.Bottomley@hansenpartnership.com>:
+> >> > On Sun, 2013-11-17 at 15:51 -0300, Geyslan G. Bem wrote:
+> >> >> This patch fix memory leakage in cases 'ISCSI_NET_PARAM_VLAN_ID' and
+> >> >> 'ISCSI_NET_PARAM_VLAN_PRIORITY' and refactors code 'going out' when
+> >> >> necessary.
+> >> >
+> >> > You pointlessly renamed a variable, which makes the diff hard to read.
+> >> > Please don't do that.
+> >>
+> >> Ok, I can agree. 'len' means length? What is returned in case of non
+> >> error?
+> >
+> > it returns the length of buf written to or negative error.
+> >
+> >> > You missed the fact that the passed in pointer is unmodified if
+> >> > mgmt_get_if_info() returns non zero, so the kfree frees junk and would
+> >> > oops.
+> >> >
+> >> > There's no need for a goto; len = -EINVAL; does everything that's
+> >> > needed.
+> >>
+> >> Well, that is a coverity catch. CID 1128954. Check it.
+> >
+> > I didn't say coverity was wrong, I said your patch was (well not wrong,
+> > just over complex and incomplete).  This is the way to fix both
+> > problems.
+> >
+> > James
+> >
+> > ---
+> >
+> > diff --git a/drivers/scsi/be2iscsi/be_iscsi.c b/drivers/scsi/be2iscsi/be_iscsi.c
+> > index ffadbee..9dcbdfa 100644
+> > --- a/drivers/scsi/be2iscsi/be_iscsi.c
+> > +++ b/drivers/scsi/be2iscsi/be_iscsi.c
+> > @@ -541,10 +541,8 @@ static int be2iscsi_get_if_param(struct beiscsi_hba *phba,
+> >                 ip_type = BE2_IPV6;
 > 
-> > For example, we have thought about inserting a layer which handles the
-> > type of communication that'll be utilised i.e. true SPI, or our
-> > bespoke FSM implementation for instance. This would enable us to issue
-> > serial_flash_write(), serial_flash_write_then_read(), ... in the m25p80
-> > driver and not care which protocol is used. However, in reality this
-> > won't really save a great deal of code - not in our case at least.
-> 
-> Right, that's what I'm suggesting.  It's not so much for the code saving
-> as for the data saving, allowing device trees that just say "flash chip
-> X is connected" rather than requiring either the flash chip information
-> in multiple places in the kernel or (worse) have the commands added to
-> the DTs of individual boards using the flash chip.
+> James, this approach will not prevent the leakage.
 
-I think it's a good idea for people using the m25p80, but still
-doesn't effect us. All of our chips are dynamically probable. We are
-moving completely away from saying anything is connected using DT or
-platform data. The FSM will be registered and will dynamically add
-devices based on what it can find. We have no plans to use any of the
-m25p80 functionality, as it's almost completely different.
+I don't see why not.  The -EINVAL case goes through the kfree() now too,
+no?
 
-I'm keen on the reuse of frameworks and abstracting common code, but
-there just isn't any in our case.
+>  We can initialize the if_info with NULL and always kfree it without
+> to care about junk.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Why?  Error return means no allocation.
+
+James
+
+
