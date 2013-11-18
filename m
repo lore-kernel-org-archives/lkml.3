@@ -1,80 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929Ab3KRSlu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:41:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57428 "EHLO
+	id S1753511Ab3KRStn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:49:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab3KRSkm (ORCPT
+	with ESMTP id S1752876Ab3KRSll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:40:42 -0500
+	Mon, 18 Nov 2013 13:41:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Thomas <Mark.Thomas@metaswitch.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 02/25] net: sctp: do not trigger BUG_ON in sctp_cmd_delete_tcb
-Date: Mon, 18 Nov 2013 10:40:31 -0800
-Message-Id: <20131118184032.865440440@linuxfoundation.org>
+        Ivan Djelic <ivan.djelic@parrot.com>, Nicolas Pitre <nico@linaro.org>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
+Subject: [PATCH 3.4 09/12] ARM: 7668/1: fix memset-related crashes caused by recent GCC (4.7.2) optimizations
+Date: Mon, 18 Nov 2013 10:41:42 -0800
+Message-Id: <20131118184132.731608501@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
-In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
-References: <20131118184032.248465920@linuxfoundation.org>
+In-Reply-To: <20131118184130.257996039@linuxfoundation.org>
+References: <20131118184130.257996039@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Ivan Djelic <ivan.djelic@parrot.com>
 
-[ Upstream commit 7926c1d5be0b7cbe5b8d5c788d7d39237e7b212c ]
+commit 455bd4c430b0c0a361f38e8658a0d6cb469942b5 upstream.
 
-Introduced in f9e42b853523 ("net: sctp: sideeffect: throw BUG if
-primary_path is NULL"), we intended to find a buggy assoc that's
-part of the assoc hash table with a primary_path that is NULL.
-However, we better remove the BUG_ON for now and find a more
-suitable place to assert for these things as Mark reports that
-this also triggers the bug when duplication cookie processing
-happens, and the assoc is not part of the hash table (so all
-good in this case). Such a situation can for example easily be
-reproduced by:
+Recent GCC versions (e.g. GCC-4.7.2) perform optimizations based on
+assumptions about the implementation of memset and similar functions.
+The current ARM optimized memset code does not return the value of
+its first argument, as is usually expected from standard implementations.
 
-  tc qdisc add dev eth0 root handle 1: prio bands 2 priomap 1 1 1 1 1 1
-  tc qdisc add dev eth0 parent 1:2 handle 20: netem loss 20%
-  tc filter add dev eth0 protocol ip parent 1: prio 2 u32 match ip \
-            protocol 132 0xff match u8 0x0b 0xff at 32 flowid 1:2
+For instance in the following function:
 
-This drops 20% of COOKIE-ACK packets. After some follow-up
-discussion with Vlad we came to the conclusion that for now we
-should still better remove this BUG_ON() assertion, and come up
-with two follow-ups later on, that is, i) find a more suitable
-place for this assertion, and possibly ii) have a special
-allocator/initializer for such kind of temporary assocs.
+void debug_mutex_lock_common(struct mutex *lock, struct mutex_waiter *waiter)
+{
+	memset(waiter, MUTEX_DEBUG_INIT, sizeof(*waiter));
+	waiter->magic = waiter;
+	INIT_LIST_HEAD(&waiter->list);
+}
 
-Reported-by: Mark Thomas <Mark.Thomas@metaswitch.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+compiled as:
+
+800554d0 <debug_mutex_lock_common>:
+800554d0:       e92d4008        push    {r3, lr}
+800554d4:       e1a00001        mov     r0, r1
+800554d8:       e3a02010        mov     r2, #16 ; 0x10
+800554dc:       e3a01011        mov     r1, #17 ; 0x11
+800554e0:       eb04426e        bl      80165ea0 <memset>
+800554e4:       e1a03000        mov     r3, r0
+800554e8:       e583000c        str     r0, [r3, #12]
+800554ec:       e5830000        str     r0, [r3]
+800554f0:       e5830004        str     r0, [r3, #4]
+800554f4:       e8bd8008        pop     {r3, pc}
+
+GCC assumes memset returns the value of pointer 'waiter' in register r0; causing
+register/memory corruptions.
+
+This patch fixes the return value of the assembly version of memset.
+It adds a 'mov' instruction and merges an additional load+store into
+existing load/store instructions.
+For ease of review, here is a breakdown of the patch into 4 simple steps:
+
+Step 1
+======
+Perform the following substitutions:
+ip -> r8, then
+r0 -> ip,
+and insert 'mov ip, r0' as the first statement of the function.
+At this point, we have a memset() implementation returning the proper result,
+but corrupting r8 on some paths (the ones that were using ip).
+
+Step 2
+======
+Make sure r8 is saved and restored when (! CALGN(1)+0) == 1:
+
+save r8:
+-       str     lr, [sp, #-4]!
++       stmfd   sp!, {r8, lr}
+
+and restore r8 on both exit paths:
+-       ldmeqfd sp!, {pc}               @ Now <64 bytes to go.
++       ldmeqfd sp!, {r8, pc}           @ Now <64 bytes to go.
+(...)
+        tst     r2, #16
+        stmneia ip!, {r1, r3, r8, lr}
+-       ldr     lr, [sp], #4
++       ldmfd   sp!, {r8, lr}
+
+Step 3
+======
+Make sure r8 is saved and restored when (! CALGN(1)+0) == 0:
+
+save r8:
+-       stmfd   sp!, {r4-r7, lr}
++       stmfd   sp!, {r4-r8, lr}
+
+and restore r8 on both exit paths:
+        bgt     3b
+-       ldmeqfd sp!, {r4-r7, pc}
++       ldmeqfd sp!, {r4-r8, pc}
+(...)
+        tst     r2, #16
+        stmneia ip!, {r4-r7}
+-       ldmfd   sp!, {r4-r7, lr}
++       ldmfd   sp!, {r4-r8, lr}
+
+Step 4
+======
+Rewrite register list "r4-r7, r8" as "r4-r8".
+
+Signed-off-by: Ivan Djelic <ivan.djelic@parrot.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Dirk Behme <dirk.behme@gmail.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Eric Bénard <eric@eukrea.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/sm_sideeffect.c |    1 -
- 1 file changed, 1 deletion(-)
 
---- a/net/sctp/sm_sideeffect.c
-+++ b/net/sctp/sm_sideeffect.c
-@@ -866,7 +866,6 @@ static void sctp_cmd_delete_tcb(sctp_cmd
- 	    (!asoc->temp) && (sk->sk_shutdown != SHUTDOWN_MASK))
- 		return;
+---
+ arch/arm/lib/memset.S |   85 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 44 insertions(+), 41 deletions(-)
+
+--- a/arch/arm/lib/memset.S
++++ b/arch/arm/lib/memset.S
+@@ -19,9 +19,9 @@
+ 1:	subs	r2, r2, #4		@ 1 do we have enough
+ 	blt	5f			@ 1 bytes to align with?
+ 	cmp	r3, #2			@ 1
+-	strltb	r1, [r0], #1		@ 1
+-	strleb	r1, [r0], #1		@ 1
+-	strb	r1, [r0], #1		@ 1
++	strltb	r1, [ip], #1		@ 1
++	strleb	r1, [ip], #1		@ 1
++	strb	r1, [ip], #1		@ 1
+ 	add	r2, r2, r3		@ 1 (r2 = r2 - (4 - r3))
+ /*
+  * The pointer is now aligned and the length is adjusted.  Try doing the
+@@ -29,10 +29,14 @@
+  */
  
--	BUG_ON(asoc->peer.primary_path == NULL);
- 	sctp_unhash_established(asoc);
- 	sctp_association_free(asoc);
- }
+ ENTRY(memset)
+-	ands	r3, r0, #3		@ 1 unaligned?
++/*
++ * Preserve the contents of r0 for the return value.
++ */
++	mov	ip, r0
++	ands	r3, ip, #3		@ 1 unaligned?
+ 	bne	1b			@ 1
+ /*
+- * we know that the pointer in r0 is aligned to a word boundary.
++ * we know that the pointer in ip is aligned to a word boundary.
+  */
+ 	orr	r1, r1, r1, lsl #8
+ 	orr	r1, r1, r1, lsl #16
+@@ -43,29 +47,28 @@ ENTRY(memset)
+ #if ! CALGN(1)+0
+ 
+ /*
+- * We need an extra register for this loop - save the return address and
+- * use the LR
++ * We need 2 extra registers for this loop - use r8 and the LR
+  */
+-	str	lr, [sp, #-4]!
+-	mov	ip, r1
++	stmfd	sp!, {r8, lr}
++	mov	r8, r1
+ 	mov	lr, r1
+ 
+ 2:	subs	r2, r2, #64
+-	stmgeia	r0!, {r1, r3, ip, lr}	@ 64 bytes at a time.
+-	stmgeia	r0!, {r1, r3, ip, lr}
+-	stmgeia	r0!, {r1, r3, ip, lr}
+-	stmgeia	r0!, {r1, r3, ip, lr}
++	stmgeia	ip!, {r1, r3, r8, lr}	@ 64 bytes at a time.
++	stmgeia	ip!, {r1, r3, r8, lr}
++	stmgeia	ip!, {r1, r3, r8, lr}
++	stmgeia	ip!, {r1, r3, r8, lr}
+ 	bgt	2b
+-	ldmeqfd	sp!, {pc}		@ Now <64 bytes to go.
++	ldmeqfd	sp!, {r8, pc}		@ Now <64 bytes to go.
+ /*
+  * No need to correct the count; we're only testing bits from now on
+  */
+ 	tst	r2, #32
+-	stmneia	r0!, {r1, r3, ip, lr}
+-	stmneia	r0!, {r1, r3, ip, lr}
++	stmneia	ip!, {r1, r3, r8, lr}
++	stmneia	ip!, {r1, r3, r8, lr}
+ 	tst	r2, #16
+-	stmneia	r0!, {r1, r3, ip, lr}
+-	ldr	lr, [sp], #4
++	stmneia	ip!, {r1, r3, r8, lr}
++	ldmfd	sp!, {r8, lr}
+ 
+ #else
+ 
+@@ -74,54 +77,54 @@ ENTRY(memset)
+  * whole cache lines at once.
+  */
+ 
+-	stmfd	sp!, {r4-r7, lr}
++	stmfd	sp!, {r4-r8, lr}
+ 	mov	r4, r1
+ 	mov	r5, r1
+ 	mov	r6, r1
+ 	mov	r7, r1
+-	mov	ip, r1
++	mov	r8, r1
+ 	mov	lr, r1
+ 
+ 	cmp	r2, #96
+-	tstgt	r0, #31
++	tstgt	ip, #31
+ 	ble	3f
+ 
+-	and	ip, r0, #31
+-	rsb	ip, ip, #32
+-	sub	r2, r2, ip
+-	movs	ip, ip, lsl #(32 - 4)
+-	stmcsia	r0!, {r4, r5, r6, r7}
+-	stmmiia	r0!, {r4, r5}
+-	tst	ip, #(1 << 30)
+-	mov	ip, r1
+-	strne	r1, [r0], #4
++	and	r8, ip, #31
++	rsb	r8, r8, #32
++	sub	r2, r2, r8
++	movs	r8, r8, lsl #(32 - 4)
++	stmcsia	ip!, {r4, r5, r6, r7}
++	stmmiia	ip!, {r4, r5}
++	tst	r8, #(1 << 30)
++	mov	r8, r1
++	strne	r1, [ip], #4
+ 
+ 3:	subs	r2, r2, #64
+-	stmgeia	r0!, {r1, r3-r7, ip, lr}
+-	stmgeia	r0!, {r1, r3-r7, ip, lr}
++	stmgeia	ip!, {r1, r3-r8, lr}
++	stmgeia	ip!, {r1, r3-r8, lr}
+ 	bgt	3b
+-	ldmeqfd	sp!, {r4-r7, pc}
++	ldmeqfd	sp!, {r4-r8, pc}
+ 
+ 	tst	r2, #32
+-	stmneia	r0!, {r1, r3-r7, ip, lr}
++	stmneia	ip!, {r1, r3-r8, lr}
+ 	tst	r2, #16
+-	stmneia	r0!, {r4-r7}
+-	ldmfd	sp!, {r4-r7, lr}
++	stmneia	ip!, {r4-r7}
++	ldmfd	sp!, {r4-r8, lr}
+ 
+ #endif
+ 
+ 4:	tst	r2, #8
+-	stmneia	r0!, {r1, r3}
++	stmneia	ip!, {r1, r3}
+ 	tst	r2, #4
+-	strne	r1, [r0], #4
++	strne	r1, [ip], #4
+ /*
+  * When we get here, we've got less than 4 bytes to zero.  We
+  * may have an unaligned pointer as well.
+  */
+ 5:	tst	r2, #2
+-	strneb	r1, [r0], #1
+-	strneb	r1, [r0], #1
++	strneb	r1, [ip], #1
++	strneb	r1, [ip], #1
+ 	tst	r2, #1
+-	strneb	r1, [r0], #1
++	strneb	r1, [ip], #1
+ 	mov	pc, lr
+ ENDPROC(memset)
 
 
