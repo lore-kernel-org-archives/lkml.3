@@ -1,542 +1,738 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347Ab3KRD35 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 22:29:57 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:34427 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab3KRD3q (ORCPT
+	id S1751333Ab3KRDr5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 22:47:57 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:49987 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3KRDru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 22:29:46 -0500
-Date: Mon, 18 Nov 2013 14:29:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for Nov 18
-Message-Id: <20131118142938.37c3d7d1d1c8c27ba378fbeb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__18_Nov_2013_14_29_38_+1100_VZ1ejv6S3OS3QNHR"
+	Sun, 17 Nov 2013 22:47:50 -0500
+Message-ID: <52898E58.1060205@gmail.com>
+Date: Mon, 18 Nov 2013 11:49:44 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+CC: starvik@axis.com, jesper.nilsson@axis.com, dhowells@redhat.com,
+        paulmck@linux.vnet.ibm.com, mattst88@gmail.com, mcree@orcon.net.nz,
+        geert@linux-m68k.org, eliezer.tamir@linux.intel.com,
+        edumazet@google.com, bernat@luffy.cx, therbert@google.com,
+        akpm@linux-foundation.org, davem@davemloft.net,
+        linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch: cris: uapi: be sure of "_UAPI" prefix for all guard
+ macros
+References: <5288A9E9.9040305@gmail.com>
+In-Reply-To: <5288A9E9.9040305@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Nov_2013_14_29_38_+1100_VZ1ejv6S3OS3QNHR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/17/2013 07:35 PM, Chen Gang wrote:
+> For all uapi headers, need use "_UAPI" prefix for its guard macro
+> (which will be stripped by "scripts/headers_installer.sh").
+> 
+> Also be sure that all standard header files have their guard macros.
+> 
 
-Hi all,
+I removed all files which only includes related "asm-generic" header
+file in its real contents, and did not care about whether it has guard
+macro or not (e.g. "errno.h"), can it cause issue?
 
-Please do *not* add any v3.14 material to linux-next until after
-v3.13-rc1 is released.
+BTW: I also changed my Signed-off-by mail address (now I am a real
+'free' guy which has no 'jobs').
 
-Changes since 20131115:
 
-Linus' tree gained 2 build failures for which I reverted a commit and
-applied a merge fix patch.
+Thanks.
 
-The nfs tree gained a build failure for which I reverted a commit.
+> Also be sure that all "#endif" are followed with correct comments, and
+> single empty line after "#ifndef" and/or before "#endif", and no empty
+> lines after "#endif".
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  arch/cris/include/uapi/arch-v10/arch/sv_addr_ag.h |  9 +++------
+>  arch/cris/include/uapi/arch-v10/arch/svinto.h     |  6 +++---
+>  arch/cris/include/uapi/arch-v10/arch/user.h       |  6 +++---
+>  arch/cris/include/uapi/arch-v32/arch/cryptocop.h  |  3 ---
+>  arch/cris/include/uapi/arch-v32/arch/user.h       |  6 +++---
+>  arch/cris/include/uapi/asm/Kbuild                 | 22 ++++++++++++----------
+>  arch/cris/include/uapi/asm/auxvec.h               |  6 +++---
+>  arch/cris/include/uapi/asm/bitsperlong.h          |  1 -
+>  arch/cris/include/uapi/asm/byteorder.h            |  8 +++-----
+>  arch/cris/include/uapi/asm/errno.h                |  6 ------
+>  arch/cris/include/uapi/asm/ethernet.h             |  8 +++++---
+>  arch/cris/include/uapi/asm/etraxgpio.h            |  6 +++---
+>  arch/cris/include/uapi/asm/fcntl.h                |  1 -
+>  arch/cris/include/uapi/asm/ioctl.h                |  1 -
+>  arch/cris/include/uapi/asm/ioctls.h               |  6 +++---
+>  arch/cris/include/uapi/asm/ipcbuf.h               |  1 -
+>  arch/cris/include/uapi/asm/kvm_para.h             |  1 -
+>  arch/cris/include/uapi/asm/mman.h                 |  1 -
+>  arch/cris/include/uapi/asm/msgbuf.h               |  6 +++---
+>  arch/cris/include/uapi/asm/param.h                |  6 +++---
+>  arch/cris/include/uapi/asm/poll.h                 |  1 -
+>  arch/cris/include/uapi/asm/posix_types.h          |  6 +++---
+>  arch/cris/include/uapi/asm/ptrace.h               |  5 +++++
+>  arch/cris/include/uapi/asm/resource.h             |  6 ------
+>  arch/cris/include/uapi/asm/rs485.h                |  4 ++++
+>  arch/cris/include/uapi/asm/sembuf.h               |  6 +++---
+>  arch/cris/include/uapi/asm/setup.h                |  6 +++---
+>  arch/cris/include/uapi/asm/shmbuf.h               |  6 +++---
+>  arch/cris/include/uapi/asm/sigcontext.h           |  7 +++----
+>  arch/cris/include/uapi/asm/siginfo.h              |  6 ------
+>  arch/cris/include/uapi/asm/signal.h               |  1 -
+>  arch/cris/include/uapi/asm/socket.h               |  8 +++-----
+>  arch/cris/include/uapi/asm/sockios.h              |  6 +++---
+>  arch/cris/include/uapi/asm/stat.h                 |  6 +++---
+>  arch/cris/include/uapi/asm/statfs.h               |  6 ------
+>  arch/cris/include/uapi/asm/swab.h                 |  4 ++++
+>  arch/cris/include/uapi/asm/sync_serial.h          |  6 +++---
+>  arch/cris/include/uapi/asm/termbits.h             |  6 +++---
+>  arch/cris/include/uapi/asm/termios.h              |  1 -
+>  arch/cris/include/uapi/asm/types.h                |  5 +++++
+>  40 files changed, 95 insertions(+), 117 deletions(-)
+>  delete mode 100644 arch/cris/include/uapi/asm/bitsperlong.h
+>  delete mode 100644 arch/cris/include/uapi/asm/errno.h
+>  delete mode 100644 arch/cris/include/uapi/asm/fcntl.h
+>  delete mode 100644 arch/cris/include/uapi/asm/ioctl.h
+>  delete mode 100644 arch/cris/include/uapi/asm/ipcbuf.h
+>  delete mode 100644 arch/cris/include/uapi/asm/kvm_para.h
+>  delete mode 100644 arch/cris/include/uapi/asm/mman.h
+>  delete mode 100644 arch/cris/include/uapi/asm/poll.h
+>  delete mode 100644 arch/cris/include/uapi/asm/resource.h
+>  delete mode 100644 arch/cris/include/uapi/asm/siginfo.h
+>  delete mode 100644 arch/cris/include/uapi/asm/statfs.h
+> 
+> diff --git a/arch/cris/include/uapi/arch-v10/arch/sv_addr_ag.h b/arch/cris/include/uapi/arch-v10/arch/sv_addr_ag.h
+> index 5517f04..de850ff 100644
+> --- a/arch/cris/include/uapi/arch-v10/arch/sv_addr_ag.h
+> +++ b/arch/cris/include/uapi/arch-v10/arch/sv_addr_ag.h
+> @@ -13,9 +13,8 @@
+>  *!
+>  *!**************************************************************************/
+>  
+> -#ifndef __sv_addr_ag_h__
+> -#define __sv_addr_ag_h__
+> -
+> +#ifndef _UAPI__sv_addr_ag_h__
+> +#define _UAPI__sv_addr_ag_h__
+>  
+>  #define __test_sv_addr__ 0
+>  
+> @@ -134,6 +133,4 @@ IO_RD(R_EXT_DMA_0_STAT) & IO_MASK( R_EXT_DMA_0_STAT, S )
+>     == IO_STATE( R_EXT_DMA_0_STAT, S, STARTED )
+>  #endif
+>  
+> -
+> -#endif  /* ifndef __sv_addr_ag_h__ */
+> -
+> +#endif  /* _UAPI__sv_addr_ag_h__ */
+> diff --git a/arch/cris/include/uapi/arch-v10/arch/svinto.h b/arch/cris/include/uapi/arch-v10/arch/svinto.h
+> index da5c152..9327d3b 100644
+> --- a/arch/cris/include/uapi/arch-v10/arch/svinto.h
+> +++ b/arch/cris/include/uapi/arch-v10/arch/svinto.h
+> @@ -1,5 +1,5 @@
+> -#ifndef _ASM_CRIS_SVINTO_H
+> -#define _ASM_CRIS_SVINTO_H
+> +#ifndef _UAPI_ASM_CRIS_SVINTO_H
+> +#define _UAPI_ASM_CRIS_SVINTO_H
+>  
+>  #include <arch/sv_addr_ag.h>
+>  
+> @@ -61,4 +61,4 @@ typedef struct etrax_dma_descr {
+>  extern void prepare_rx_descriptor(struct etrax_dma_descr *desc);
+>  extern void flush_etrax_cache(void);
+>  
+> -#endif
+> +#endif /* _UAPI_ASM_CRIS_SVINTO_H */
+> diff --git a/arch/cris/include/uapi/arch-v10/arch/user.h b/arch/cris/include/uapi/arch-v10/arch/user.h
+> index 9303ea7..2ccd4ea 100644
+> --- a/arch/cris/include/uapi/arch-v10/arch/user.h
+> +++ b/arch/cris/include/uapi/arch-v10/arch/user.h
+> @@ -1,5 +1,5 @@
+> -#ifndef __ASM_CRIS_ARCH_USER_H
+> -#define __ASM_CRIS_ARCH_USER_H
+> +#ifndef _UAPI__ASM_CRIS_ARCH_USER_H
+> +#define _UAPI__ASM_CRIS_ARCH_USER_H
+>  
+>  /* User mode registers, used for core dumps. In order to keep ELF_NGREG
+>     sensible we let all registers be 32 bits. The csr registers are included
+> @@ -43,4 +43,4 @@ struct user_regs_struct {
+>          unsigned long csrdata;
+>  };
+>  
+> -#endif
+> +#endif /* _UAPI__ASM_CRIS_ARCH_USER_H */
+> diff --git a/arch/cris/include/uapi/arch-v32/arch/cryptocop.h b/arch/cris/include/uapi/arch-v32/arch/cryptocop.h
+> index 694fd13..e3f729a 100644
+> --- a/arch/cris/include/uapi/arch-v32/arch/cryptocop.h
+> +++ b/arch/cris/include/uapi/arch-v32/arch/cryptocop.h
+> @@ -116,7 +116,4 @@ struct strcop_crypto_op{
+>  	unsigned char            csum[CRYPTOCOP_CSUM_LENGTH];
+>  };
+>  
+> -
+> -
+> -
+>  #endif /* _UAPICRYPTOCOP_H */
+> diff --git a/arch/cris/include/uapi/arch-v32/arch/user.h b/arch/cris/include/uapi/arch-v32/arch/user.h
+> index 03fa1f3..4652d1d 100644
+> --- a/arch/cris/include/uapi/arch-v32/arch/user.h
+> +++ b/arch/cris/include/uapi/arch-v32/arch/user.h
+> @@ -1,5 +1,5 @@
+> -#ifndef _ASM_CRIS_ARCH_USER_H
+> -#define _ASM_CRIS_ARCH_USER_H
+> +#ifndef _UAPI_ASM_CRIS_ARCH_USER_H
+> +#define _UAPI_ASM_CRIS_ARCH_USER_H
+>  
+>  /* User-mode register used for core dumps. */
+>  
+> @@ -38,4 +38,4 @@ struct user_regs_struct {
+>  	unsigned long spc;	/* P15, Single step PC. */
+>  };
+>  
+> -#endif /* _ASM_CRIS_ARCH_USER_H */
+> +#endif /* _UAPI_ASM_CRIS_ARCH_USER_H */
+> diff --git a/arch/cris/include/uapi/asm/Kbuild b/arch/cris/include/uapi/asm/Kbuild
+> index 7d47b36..c7ccec3 100644
+> --- a/arch/cris/include/uapi/asm/Kbuild
+> +++ b/arch/cris/include/uapi/asm/Kbuild
+> @@ -1,36 +1,38 @@
+>  # UAPI Header export list
+>  include include/uapi/asm-generic/Kbuild.asm
+>  
+> +generic-y += bitsperlong.h
+> +generic-y += errno.h
+> +generic-y += fcntl.h
+> +generic-y += ioctl.h
+> +generic-y += ipcbuf.h
+> +generic-y += kvm_para.h
+> +generic-y += mman.h
+> +generic-y += poll.h
+> +generic-y += resource.h
+> +generic-y += siginfo.h
+> +generic-y += statfs.h
+> +
+>  header-y += arch-v10/
+>  header-y += arch-v32/
+>  header-y += auxvec.h
+> -header-y += bitsperlong.h
+>  header-y += byteorder.h
+> -header-y += errno.h
+>  header-y += ethernet.h
+>  header-y += etraxgpio.h
+> -header-y += fcntl.h
+> -header-y += ioctl.h
+>  header-y += ioctls.h
+> -header-y += ipcbuf.h
+> -header-y += mman.h
+>  header-y += msgbuf.h
+>  header-y += param.h
+> -header-y += poll.h
+>  header-y += posix_types.h
+>  header-y += ptrace.h
+> -header-y += resource.h
+>  header-y += rs485.h
+>  header-y += sembuf.h
+>  header-y += setup.h
+>  header-y += shmbuf.h
+>  header-y += sigcontext.h
+> -header-y += siginfo.h
+>  header-y += signal.h
+>  header-y += socket.h
+>  header-y += sockios.h
+>  header-y += stat.h
+> -header-y += statfs.h
+>  header-y += swab.h
+>  header-y += sync_serial.h
+>  header-y += termbits.h
+> diff --git a/arch/cris/include/uapi/asm/auxvec.h b/arch/cris/include/uapi/asm/auxvec.h
+> index cb30b01..762b740 100644
+> --- a/arch/cris/include/uapi/asm/auxvec.h
+> +++ b/arch/cris/include/uapi/asm/auxvec.h
+> @@ -1,4 +1,4 @@
+> -#ifndef __ASMCRIS_AUXVEC_H
+> -#define __ASMCRIS_AUXVEC_H
+> +#ifndef _UAPI__ASMCRIS_AUXVEC_H
+> +#define _UAPI__ASMCRIS_AUXVEC_H
+>  
+> -#endif
+> +#endif /* _UAPI__ASMCRIS_AUXVEC_H */
+> diff --git a/arch/cris/include/uapi/asm/bitsperlong.h b/arch/cris/include/uapi/asm/bitsperlong.h
+> deleted file mode 100644
+> index 6dc0bb0..0000000
+> --- a/arch/cris/include/uapi/asm/bitsperlong.h
+> +++ /dev/null
+> @@ -1 +0,0 @@
+> -#include <asm-generic/bitsperlong.h>
+> diff --git a/arch/cris/include/uapi/asm/byteorder.h b/arch/cris/include/uapi/asm/byteorder.h
+> index bcd1897..ed6f57b 100644
+> --- a/arch/cris/include/uapi/asm/byteorder.h
+> +++ b/arch/cris/include/uapi/asm/byteorder.h
+> @@ -1,8 +1,6 @@
+> -#ifndef _CRIS_BYTEORDER_H
+> -#define _CRIS_BYTEORDER_H
+> +#ifndef _UAPI_CRIS_BYTEORDER_H
+> +#define _UAPI_CRIS_BYTEORDER_H
+>  
+>  #include <linux/byteorder/little_endian.h>
+>  
+> -#endif
+> -
+> -
+> +#endif /* _UAPI_CRIS_BYTEORDER_H */
+> diff --git a/arch/cris/include/uapi/asm/errno.h b/arch/cris/include/uapi/asm/errno.h
+> deleted file mode 100644
+> index 2bf5eb5..0000000
+> --- a/arch/cris/include/uapi/asm/errno.h
+> +++ /dev/null
+> @@ -1,6 +0,0 @@
+> -#ifndef _CRIS_ERRNO_H
+> -#define _CRIS_ERRNO_H
+> -
+> -#include <asm-generic/errno.h>
+> -
+> -#endif
+> diff --git a/arch/cris/include/uapi/asm/ethernet.h b/arch/cris/include/uapi/asm/ethernet.h
+> index 4d58652..c530e83 100644
+> --- a/arch/cris/include/uapi/asm/ethernet.h
+> +++ b/arch/cris/include/uapi/asm/ethernet.h
+> @@ -7,8 +7,9 @@
+>   *
+>   */
+>  
+> -#ifndef _CRIS_ETHERNET_H
+> -#define _CRIS_ETHERNET_H
+> +#ifndef _UAPI_CRIS_ETHERNET_H
+> +#define _UAPI_CRIS_ETHERNET_H
+> +
+>  #define SET_ETH_SPEED_AUTO      SIOCDEVPRIVATE          /* Auto neg speed */
+>  #define SET_ETH_SPEED_10        SIOCDEVPRIVATE+1        /* 10 Mbps */
+>  #define SET_ETH_SPEED_100       SIOCDEVPRIVATE+2        /* 100 Mbps. */
+> @@ -18,4 +19,5 @@
+>  #define SET_ETH_ENABLE_LEDS     SIOCDEVPRIVATE+6        /* Enable net LEDs */
+>  #define SET_ETH_DISABLE_LEDS    SIOCDEVPRIVATE+7        /* Disable net LEDs */
+>  #define SET_ETH_AUTONEG         SIOCDEVPRIVATE+8
+> -#endif /* _CRIS_ETHERNET_H */
+> +
+> +#endif /* _UAPI_CRIS_ETHERNET_H */
+> diff --git a/arch/cris/include/uapi/asm/etraxgpio.h b/arch/cris/include/uapi/asm/etraxgpio.h
+> index 461c089..d45a41b 100644
+> --- a/arch/cris/include/uapi/asm/etraxgpio.h
+> +++ b/arch/cris/include/uapi/asm/etraxgpio.h
+> @@ -32,8 +32,8 @@
+>   * /dev/ppwm   minor 19, PPWM channel
+>   *
+>   */
+> -#ifndef _ASM_ETRAXGPIO_H
+> -#define _ASM_ETRAXGPIO_H
+> +#ifndef _UAPI_ASM_ETRAXGPIO_H
+> +#define _UAPI_ASM_ETRAXGPIO_H
+>  
+>  #define GPIO_MINOR_FIRST 0
+>  
+> @@ -236,4 +236,4 @@ struct gpio_pwmclk_conf {
+>   * baseclk = 0, low = 0, high = 0, the values will be updated by driver.
+>   */
+>  
+> -#endif
+> +#endif /* _UAPI_ASM_ETRAXGPIO_H */
+> diff --git a/arch/cris/include/uapi/asm/fcntl.h b/arch/cris/include/uapi/asm/fcntl.h
+> deleted file mode 100644
+> index 46ab12d..0000000
+> --- a/arch/cris/include/uapi/asm/fcntl.h
+> +++ /dev/null
+> @@ -1 +0,0 @@
+> -#include <asm-generic/fcntl.h>
+> diff --git a/arch/cris/include/uapi/asm/ioctl.h b/arch/cris/include/uapi/asm/ioctl.h
+> deleted file mode 100644
+> index b279fe0..0000000
+> --- a/arch/cris/include/uapi/asm/ioctl.h
+> +++ /dev/null
+> @@ -1 +0,0 @@
+> -#include <asm-generic/ioctl.h>
+> diff --git a/arch/cris/include/uapi/asm/ioctls.h b/arch/cris/include/uapi/asm/ioctls.h
+> index 488fbb3..8eb483d 100644
+> --- a/arch/cris/include/uapi/asm/ioctls.h
+> +++ b/arch/cris/include/uapi/asm/ioctls.h
+> @@ -1,5 +1,5 @@
+> -#ifndef __ARCH_CRIS_IOCTLS_H__
+> -#define __ARCH_CRIS_IOCTLS_H__
+> +#ifndef _UAPI__ARCH_CRIS_IOCTLS_H__
+> +#define _UAPI__ARCH_CRIS_IOCTLS_H__
+>  
+>  #define TIOCSERGSTRUCT	0x5458 /* For debugging only */
+>  #define TIOCSERSETRS485	0x5461  /* enable rs-485 (deprecated) */
+> @@ -8,4 +8,4 @@
+>  
+>  #include <asm-generic/ioctls.h>
+>  
+> -#endif
+> +#endif /* _UAPI__ARCH_CRIS_IOCTLS_H__ */
+> diff --git a/arch/cris/include/uapi/asm/ipcbuf.h b/arch/cris/include/uapi/asm/ipcbuf.h
+> deleted file mode 100644
+> index 84c7e51..0000000
+> --- a/arch/cris/include/uapi/asm/ipcbuf.h
+> +++ /dev/null
+> @@ -1 +0,0 @@
+> -#include <asm-generic/ipcbuf.h>
+> diff --git a/arch/cris/include/uapi/asm/kvm_para.h b/arch/cris/include/uapi/asm/kvm_para.h
+> deleted file mode 100644
+> index 14fab8f..0000000
+> --- a/arch/cris/include/uapi/asm/kvm_para.h
+> +++ /dev/null
+> @@ -1 +0,0 @@
+> -#include <asm-generic/kvm_para.h>
+> diff --git a/arch/cris/include/uapi/asm/mman.h b/arch/cris/include/uapi/asm/mman.h
+> deleted file mode 100644
+> index 8eebf89..0000000
+> --- a/arch/cris/include/uapi/asm/mman.h
+> +++ /dev/null
+> @@ -1 +0,0 @@
+> -#include <asm-generic/mman.h>
+> diff --git a/arch/cris/include/uapi/asm/msgbuf.h b/arch/cris/include/uapi/asm/msgbuf.h
+> index ada63df..f955bdc 100644
+> --- a/arch/cris/include/uapi/asm/msgbuf.h
+> +++ b/arch/cris/include/uapi/asm/msgbuf.h
+> @@ -1,5 +1,5 @@
+> -#ifndef _CRIS_MSGBUF_H
+> -#define _CRIS_MSGBUF_H
+> +#ifndef _UAPI_CRIS_MSGBUF_H
+> +#define _UAPI_CRIS_MSGBUF_H
+>  
+>  /* verbatim copy of asm-i386 version */
+>  
+> @@ -30,4 +30,4 @@ struct msqid64_ds {
+>  	unsigned long  __unused5;
+>  };
+>  
+> -#endif /* _CRIS_MSGBUF_H */
+> +#endif /* _UAPI_CRIS_MSGBUF_H */
+> diff --git a/arch/cris/include/uapi/asm/param.h b/arch/cris/include/uapi/asm/param.h
+> index 484fcf8..fdcdede 100644
+> --- a/arch/cris/include/uapi/asm/param.h
+> +++ b/arch/cris/include/uapi/asm/param.h
+> @@ -1,5 +1,5 @@
+> -#ifndef _ASMCRIS_PARAM_H
+> -#define _ASMCRIS_PARAM_H
+> +#ifndef _UAPI_ASMCRIS_PARAM_H
+> +#define _UAPI_ASMCRIS_PARAM_H
+>  
+>  /* Currently we assume that HZ=100 is good for CRIS. */
+>  
+> @@ -7,4 +7,4 @@
+>  
+>  #include <asm-generic/param.h>
+>  
+> -#endif /* _ASMCRIS_PARAM_H */
+> +#endif /* _UAPI_ASMCRIS_PARAM_H */
+> diff --git a/arch/cris/include/uapi/asm/poll.h b/arch/cris/include/uapi/asm/poll.h
+> deleted file mode 100644
+> index c98509d..0000000
+> --- a/arch/cris/include/uapi/asm/poll.h
+> +++ /dev/null
+> @@ -1 +0,0 @@
+> -#include <asm-generic/poll.h>
+> diff --git a/arch/cris/include/uapi/asm/posix_types.h b/arch/cris/include/uapi/asm/posix_types.h
+> index 0f22e6a..fd2b044 100644
+> --- a/arch/cris/include/uapi/asm/posix_types.h
+> +++ b/arch/cris/include/uapi/asm/posix_types.h
+> @@ -3,8 +3,8 @@
+>  /* We cheat a bit and use our C-coded bitops functions from asm/bitops.h */
+>  /* I guess we should write these in assembler because they are used often. */
+>  
+> -#ifndef __ARCH_CRIS_POSIX_TYPES_H
+> -#define __ARCH_CRIS_POSIX_TYPES_H
+> +#ifndef _UAPI__ARCH_CRIS_POSIX_TYPES_H
+> +#define _UAPI__ARCH_CRIS_POSIX_TYPES_H
+>  
+>  /*
+>   * This file is generally used by user-level software, so you need to
+> @@ -27,4 +27,4 @@ typedef unsigned short	__kernel_old_dev_t;
+>  
+>  #include <asm-generic/posix_types.h>
+>  
+> -#endif /* __ARCH_CRIS_POSIX_TYPES_H */
+> +#endif /* _UAPI__ARCH_CRIS_POSIX_TYPES_H */
+> diff --git a/arch/cris/include/uapi/asm/ptrace.h b/arch/cris/include/uapi/asm/ptrace.h
+> index c689c9b..1cbdd07 100644
+> --- a/arch/cris/include/uapi/asm/ptrace.h
+> +++ b/arch/cris/include/uapi/asm/ptrace.h
+> @@ -1 +1,6 @@
+> +#ifndef _UAPI_ASM_CRIS_PTRACE_H
+> +#define _UAPI_ASM_CRIS_PTRACE_H
+> +
+>  #include <arch/ptrace.h>
+> +
+> +#endif /* _UAPI_ASM_CRIS_PTRACE_H */
+> diff --git a/arch/cris/include/uapi/asm/resource.h b/arch/cris/include/uapi/asm/resource.h
+> deleted file mode 100644
+> index b5d2944..0000000
+> --- a/arch/cris/include/uapi/asm/resource.h
+> +++ /dev/null
+> @@ -1,6 +0,0 @@
+> -#ifndef _CRIS_RESOURCE_H
+> -#define _CRIS_RESOURCE_H
+> -
+> -#include <asm-generic/resource.h>
+> -
+> -#endif
+> diff --git a/arch/cris/include/uapi/asm/rs485.h b/arch/cris/include/uapi/asm/rs485.h
+> index ad40f9f..e1ba07f 100644
+> --- a/arch/cris/include/uapi/asm/rs485.h
+> +++ b/arch/cris/include/uapi/asm/rs485.h
+> @@ -1,3 +1,6 @@
+> +#ifndef _UAPI_ASM_CRIS_RS485_H
+> +#define _UAPI_ASM_CRIS_RS485_H
+> +
+>  /* RS-485 structures */
+>  
+>  /* Used with ioctl() TIOCSERSETRS485 for backward compatibility!
+> @@ -16,3 +19,4 @@ struct rs485_write {
+>          unsigned char *outc;
+>  };
+>  
+> +#endif /* _UAPI_ASM_CRIS_RS485_H */
+> diff --git a/arch/cris/include/uapi/asm/sembuf.h b/arch/cris/include/uapi/asm/sembuf.h
+> index 7fed984..b957c7d 100644
+> --- a/arch/cris/include/uapi/asm/sembuf.h
+> +++ b/arch/cris/include/uapi/asm/sembuf.h
+> @@ -1,5 +1,5 @@
+> -#ifndef _CRIS_SEMBUF_H
+> -#define _CRIS_SEMBUF_H
+> +#ifndef _UAPI_CRIS_SEMBUF_H
+> +#define _UAPI_CRIS_SEMBUF_H
+>  
+>  /* 
+>   * The semid64_ds structure for CRIS architecture.
+> @@ -22,4 +22,4 @@ struct semid64_ds {
+>  	unsigned long	__unused4;
+>  };
+>  
+> -#endif /* _CRIS_SEMBUF_H */
+> +#endif /* _UAPI_CRIS_SEMBUF_H */
+> diff --git a/arch/cris/include/uapi/asm/setup.h b/arch/cris/include/uapi/asm/setup.h
+> index b907286..bb1e5d1 100644
+> --- a/arch/cris/include/uapi/asm/setup.h
+> +++ b/arch/cris/include/uapi/asm/setup.h
+> @@ -1,6 +1,6 @@
+> -#ifndef _CRIS_SETUP_H
+> -#define _CRIS_SETUP_H
+> +#ifndef _UAPI_CRIS_SETUP_H
+> +#define _UAPI_CRIS_SETUP_H
+>  
+>  #define COMMAND_LINE_SIZE	256
+>  
+> -#endif
+> +#endif /* _UAPI_CRIS_SETUP_H */
+> diff --git a/arch/cris/include/uapi/asm/shmbuf.h b/arch/cris/include/uapi/asm/shmbuf.h
+> index 3239e3f..cf39143 100644
+> --- a/arch/cris/include/uapi/asm/shmbuf.h
+> +++ b/arch/cris/include/uapi/asm/shmbuf.h
+> @@ -1,5 +1,5 @@
+> -#ifndef _CRIS_SHMBUF_H
+> -#define _CRIS_SHMBUF_H
+> +#ifndef _UAPI_CRIS_SHMBUF_H
+> +#define _UAPI_CRIS_SHMBUF_H
+>  
+>  /* 
+>   * The shmid64_ds structure for CRIS architecture (same as for i386)
+> @@ -39,4 +39,4 @@ struct shminfo64 {
+>  	unsigned long	__unused4;
+>  };
+>  
+> -#endif /* _CRIS_SHMBUF_H */
+> +#endif /* _UAPI_CRIS_SHMBUF_H */
+> diff --git a/arch/cris/include/uapi/asm/sigcontext.h b/arch/cris/include/uapi/asm/sigcontext.h
+> index a1d634e..21094a9 100644
+> --- a/arch/cris/include/uapi/asm/sigcontext.h
+> +++ b/arch/cris/include/uapi/asm/sigcontext.h
+> @@ -1,7 +1,7 @@
+>  /* $Id: sigcontext.h,v 1.1 2000/07/10 16:32:31 bjornw Exp $ */
+>  
+> -#ifndef _ASM_CRIS_SIGCONTEXT_H
+> -#define _ASM_CRIS_SIGCONTEXT_H
+> +#ifndef _UAPI_ASM_CRIS_SIGCONTEXT_H
+> +#define _UAPI_ASM_CRIS_SIGCONTEXT_H
+>  
+>  #include <asm/ptrace.h>
+>  
+> @@ -20,5 +20,4 @@ struct sigcontext {
+>  	unsigned long usp;    /* usp before stacking this gunk on it */
+>  };
+>  
+> -#endif
+> -
+> +#endif /* _UAPI_ASM_CRIS_SIGCONTEXT_H */
+> diff --git a/arch/cris/include/uapi/asm/siginfo.h b/arch/cris/include/uapi/asm/siginfo.h
+> deleted file mode 100644
+> index c1cd6d1..0000000
+> --- a/arch/cris/include/uapi/asm/siginfo.h
+> +++ /dev/null
+> @@ -1,6 +0,0 @@
+> -#ifndef _CRIS_SIGINFO_H
+> -#define _CRIS_SIGINFO_H
+> -
+> -#include <asm-generic/siginfo.h>
+> -
+> -#endif
+> diff --git a/arch/cris/include/uapi/asm/signal.h b/arch/cris/include/uapi/asm/signal.h
+> index ce42fa7..316226e 100644
+> --- a/arch/cris/include/uapi/asm/signal.h
+> +++ b/arch/cris/include/uapi/asm/signal.h
+> @@ -112,5 +112,4 @@ typedef struct sigaltstack {
+>  	size_t ss_size;
+>  } stack_t;
+>  
+> -
+>  #endif /* _UAPI_ASM_CRIS_SIGNAL_H */
+> diff --git a/arch/cris/include/uapi/asm/socket.h b/arch/cris/include/uapi/asm/socket.h
+> index 13829aa..b5072c4 100644
+> --- a/arch/cris/include/uapi/asm/socket.h
+> +++ b/arch/cris/include/uapi/asm/socket.h
+> @@ -1,5 +1,5 @@
+> -#ifndef _ASM_SOCKET_H
+> -#define _ASM_SOCKET_H
+> +#ifndef _UAPI_ASM_SOCKET_H
+> +#define _UAPI_ASM_SOCKET_H
+>  
+>  /* almost the same as asm-i386/socket.h */
+>  
+> @@ -80,6 +80,4 @@
+>  
+>  #define SO_MAX_PACING_RATE	47
+>  
+> -#endif /* _ASM_SOCKET_H */
+> -
+> -
+> +#endif /* _UAPI_ASM_SOCKET_H */
+> diff --git a/arch/cris/include/uapi/asm/sockios.h b/arch/cris/include/uapi/asm/sockios.h
+> index cfe7bfe..492379f 100644
+> --- a/arch/cris/include/uapi/asm/sockios.h
+> +++ b/arch/cris/include/uapi/asm/sockios.h
+> @@ -1,5 +1,5 @@
+> -#ifndef __ARCH_CRIS_SOCKIOS__
+> -#define __ARCH_CRIS_SOCKIOS__
+> +#ifndef _UAPI__ARCH_CRIS_SOCKIOS__
+> +#define _UAPI__ARCH_CRIS_SOCKIOS__
+>  
+>  /* Socket-level I/O control calls. */
+>  #define FIOSETOWN 	0x8901
+> @@ -10,4 +10,4 @@
+>  #define SIOCGSTAMP	0x8906		/* Get stamp (timeval) */
+>  #define SIOCGSTAMPNS	0x8907		/* Get stamp (timespec) */
+>  
+> -#endif
+> +#endif /* _UAPI__ARCH_CRIS_SOCKIOS__ */
+> diff --git a/arch/cris/include/uapi/asm/stat.h b/arch/cris/include/uapi/asm/stat.h
+> index 9e558cc..a9a5e92 100644
+> --- a/arch/cris/include/uapi/asm/stat.h
+> +++ b/arch/cris/include/uapi/asm/stat.h
+> @@ -1,5 +1,5 @@
+> -#ifndef _CRIS_STAT_H
+> -#define _CRIS_STAT_H
+> +#ifndef _UAPI_CRIS_STAT_H
+> +#define _UAPI_CRIS_STAT_H
+>  
+>  /* Keep this a verbatim copy of i386 version; tweak CRIS-specific bits in
+>     the kernel if necessary.  */
+> @@ -78,4 +78,4 @@ struct stat64 {
+>  	unsigned long long	st_ino;
+>  };
+>  
+> -#endif
+> +#endif /* _UAPI_CRIS_STAT_H */
+> diff --git a/arch/cris/include/uapi/asm/statfs.h b/arch/cris/include/uapi/asm/statfs.h
+> deleted file mode 100644
+> index fdaf921..0000000
+> --- a/arch/cris/include/uapi/asm/statfs.h
+> +++ /dev/null
+> @@ -1,6 +0,0 @@
+> -#ifndef _CRIS_STATFS_H
+> -#define _CRIS_STATFS_H
+> -
+> -#include <asm-generic/statfs.h>
+> -
+> -#endif
+> diff --git a/arch/cris/include/uapi/asm/swab.h b/arch/cris/include/uapi/asm/swab.h
+> index 4adf1e9..dc529dc 100644
+> --- a/arch/cris/include/uapi/asm/swab.h
+> +++ b/arch/cris/include/uapi/asm/swab.h
+> @@ -1,3 +1,7 @@
+>  /*
+>   * CRIS byte swapping.
+>   */
+> +#ifndef _UAPI_ASM_CRIS_SWAB_H
+> +#define _UAPI_ASM_CRIS_SWAB_H
+> +
+> +#endif /* _UAPI_ASM_CRIS_SWAB_H */
+> diff --git a/arch/cris/include/uapi/asm/sync_serial.h b/arch/cris/include/uapi/asm/sync_serial.h
+> index 7f827fe..1dbb407 100644
+> --- a/arch/cris/include/uapi/asm/sync_serial.h
+> +++ b/arch/cris/include/uapi/asm/sync_serial.h
+> @@ -7,8 +7,8 @@
+>   *
+>   */
+>  
+> -#ifndef SYNC_SERIAL_H
+> -#define SYNC_SERIAL_H
+> +#ifndef _UAPISYNC_SERIAL_H
+> +#define _UAPISYNC_SERIAL_H
+>  
+>  #include <linux/ioctl.h>
+>  
+> @@ -129,4 +129,4 @@ struct ssp_request {
+>  	struct timespec ts;	/* The time the data was sampled. */
+>  };
+>  
+> -#endif
+> +#endif /* _UAPISYNC_SERIAL_H */
+> diff --git a/arch/cris/include/uapi/asm/termbits.h b/arch/cris/include/uapi/asm/termbits.h
+> index 1c43bc8..75de680 100644
+> --- a/arch/cris/include/uapi/asm/termbits.h
+> +++ b/arch/cris/include/uapi/asm/termbits.h
+> @@ -1,7 +1,7 @@
+>  /* $Id: termbits.h,v 1.1 2000/07/10 16:32:31 bjornw Exp $ */
+>  
+> -#ifndef __ARCH_ETRAX100_TERMBITS_H__
+> -#define __ARCH_ETRAX100_TERMBITS_H__
+> +#ifndef _UAPI__ARCH_ETRAX100_TERMBITS_H__
+> +#define _UAPI__ARCH_ETRAX100_TERMBITS_H__
+>  
+>  #include <linux/posix_types.h>
+>  
+> @@ -232,4 +232,4 @@ struct ktermios {
+>  #define	TCSADRAIN	1
+>  #define	TCSAFLUSH	2
+>  
+> -#endif
+> +#endif /* _UAPI__ARCH_ETRAX100_TERMBITS_H__ */
+> diff --git a/arch/cris/include/uapi/asm/termios.h b/arch/cris/include/uapi/asm/termios.h
+> index 0a0386a..8e50dd7 100644
+> --- a/arch/cris/include/uapi/asm/termios.h
+> +++ b/arch/cris/include/uapi/asm/termios.h
+> @@ -41,5 +41,4 @@ struct termio {
+>  
+>  /* ioctl (fd, TIOCSERGETLSR, &result) where result may be as below */
+>  
+> -
+>  #endif /* _UAPI_CRIS_TERMIOS_H */
+> diff --git a/arch/cris/include/uapi/asm/types.h b/arch/cris/include/uapi/asm/types.h
+> index 9ec9d4c..602514d 100644
+> --- a/arch/cris/include/uapi/asm/types.h
+> +++ b/arch/cris/include/uapi/asm/types.h
+> @@ -1 +1,6 @@
+> +#ifndef _UAPI_ASM_CRIS_TYPES_H
+> +#define _UAPI_ASM_CRIS_TYPES_H
+> +
+>  #include <asm-generic/int-ll64.h>
+> +
+> +#endif /* _UAPI_ASM_CRIS_TYPES_H */
+> 
 
-The i2c tree gained a build failure for which I applied a merge fix patch.
 
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
-multi_v7_defconfig for arm. After the final fixups (if any), it is also
-built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
-allyesconfig (minus CONFIG_PROFILE_ALL_BRANCHES - this fails its final
-link) and i386, sparc, sparc64 and arm defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-I am currently merging 210 trees (counting Linus' and 29 trees of patches
-pending for Linus' tree), more are welcome (even if they are currently
-empty). Thanks to those who have contributed, and to those who haven't,
-please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-Gortmaker for triage and bug fixes.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master (2d3c627502f2 Revert "init/Kconfig: add option to dis=
-able kernel compression")
-Merging fixes/master (fa8218def1b1 Merge tag 'regmap-v3.11-rc7' of git://gi=
-t.kernel.org/pub/scm/linux/kernel/git/broonie/regmap)
-Merging kbuild-current/rc-fixes (19514fc665ff arm, kbuild: make "make insta=
-ll" not depend on vmlinux)
-Merging arc-current/for-curr (737d5b980be8 ARC: [plat-arcfpga] defconfig up=
-date)
-Merging arm-current/fixes (9170217510cd ARM: 7888/1: seccomp: not compatibl=
-e with ARM OABI)
-Merging m68k-current/for-linus (77a42796786c m68k: Remove deprecated IRQF_D=
-ISABLED)
-Merging metag-fixes/fixes (3b2f64d00c46 Linux 3.11-rc2)
-Merging powerpc-merge/merge (8b5ede69d24d powerpc/irq: Don't switch to irq =
-stack from softirq stack)
-Merging sparc/master (049ffa8ab33a Merge branch 'drm-next' of git://people.=
-freedesktop.org/~airlied/linux)
-Merging net/master (018c5bba052b net: Handle CHECKSUM_COMPLETE more adequat=
-ely in pskb_trim_rcsum().)
-Merging ipsec/master (be408cd3e1fe Merge git://git.kernel.org/pub/scm/linux=
-/kernel/git/davem/net)
-Merging sound-current/for-linus (abfe69dd2e31 Merge tag 'asoc-v3.13-4' of g=
-it://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound into for-linus)
-Merging pci-current/for-linus (f7625980f582 PCI: Fix whitespace, capitaliza=
-tion, and spelling errors)
-Merging wireless/master (eafbdde9c562 rtlwifi: rtl8192cu: Fix more pointer =
-arithmetic errors)
-Merging driver-core.current/driver-core-linus (31d141e3a666 Linux 3.12-rc6)
-Merging tty.current/tty-linus (6e757ad2c92c tty/serial: at91: fix uart/usar=
-t selection for older products)
-Merging usb.current/usb-linus (e1466ad5b1ae USB: serial: ftdi_sio: add id f=
-or Z3X Box device)
-Merging staging.current/staging-linus (31d141e3a666 Linux 3.12-rc6)
-Merging char-misc.current/char-misc-linus (31d141e3a666 Linux 3.12-rc6)
-Merging input-current/for-linus (42249094f794 Merge branch 'next' into for-=
-linus)
-Merging md-current/for-linus (d47648fcf061 raid5: avoid finding "discard" s=
-tripe)
-Merging crypto-current/master (f262f0f5cad0 crypto: s390 - Fix aes-cbc IV c=
-orruption)
-CONFLICT (content): Merge conflict in drivers/crypto/caam/jr.c
-Merging ide/master (c2f7d1e103ef ide: pmac: remove unnecessary pci_set_drvd=
-ata())
-Merging dwmw2/master (5950f0803ca9 pcmcia: remove RPX board stuff)
-Merging sh-current/sh-fixes-for-linus (44033109e99c SH: Convert out[bwl] ma=
-cros to inline functions)
-Merging devicetree-current/devicetree/merge (1931ee143b0a Revert "drivers: =
-of: add initialization code for dma reserved memory")
-Merging rr-fixes/fixes (f6537f2f0eba scripts/kallsyms: filter symbols not i=
-n kernel address space)
-Merging mfd-fixes/master (d0e639c9e06d Linux 3.12-rc4)
-Merging vfio-fixes/for-linus (d93b3ac0edb8 VFIO: vfio_iommu_type1: fix bug =
-caused by break in nested loop)
-Merging drm-intel-fixes/for-linux-next-fixes (1fbc0d789d12 drm/i915: Fix th=
-e PPT fdi lane bifurcate state handling on ivb)
-Merging asm-generic/master (fb9de7ebc3a2 xtensa: Use generic asm/mmu.h for =
-nommu)
-Merging arc/for-next (cd5dfd0e1685 ARC: [plat-arcfpga] Add defconfig withou=
-t initramfs location)
-Merging arm/for-next (9170217510cd ARM: 7888/1: seccomp: not compatible wit=
-h ARM OABI)
-Merging arm-perf/for-next/perf (15c03dd4859a Linux 3.12-rc3)
-Merging arm-soc/for-next (0e79aa83737b Merge branch 'fixes' into for-next)
-Merging bcm2835/for-next (7d132055814e Linux 3.10-rc6)
-Merging cortex-m/for-next (9c031a483646 ARM: v7-M: drop using mach/entry-ma=
-cro.S)
-Merging ep93xx/ep93xx-for-next (bfb0709fd17b Merge branch 'ep93xx-fixes' in=
-to ep93xx-for-next)
-Merging imx-mxs/for-next (dd3046792f8a Merge branches 'imx/soc' and 'imx/dt=
-' into for-next)
-CONFLICT (content): Merge conflict in arch/arm/mach-imx/mach-imx6q.c
-CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/ven=
-dor-prefixes.txt
-Merging ixp4xx/next (19f949f52599 Linux 3.8)
-Merging msm/for-next (81cf1e061d00 ARM: msm: Rename msm devicetrees to have=
- standard 'qcom' prefix)
-Merging mvebu/for-next (b91cf40516e0 Merge branch 'mvebu/dt' into for-next)
-Merging renesas/next (597472bb771b Merge branch 'heads/clock' into next)
-CONFLICT (content): Merge conflict in drivers/clk/Makefile
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/board-bockw.c
-Merging samsung/for-next (d2287944920d Merge branch 'v3.13-next/samsung' in=
-to for-next)
-Merging tegra/for-next (1ebd0d6a0589 Merge branch for-3.13/maintainers into=
- for-next)
-CONFLICT (content): Merge conflict in MAINTAINERS
-Merging arm64/upstream (67317c268956 ARM64: /proc/interrupts: display IPIs =
-of online CPUs only)
-Merging blackfin/for-linus (36855dcfc980 blackfin: fix build warning for un=
-used variable)
-Merging c6x/for-linux-next (546153d75a48 c6x: fix build failure caused by c=
-ache.h)
-Merging cris/for-next (be8cb7f42ab9 CRIS: drop unused Kconfig symbols)
-Merging h8300-remove/h8300-remove (b400126add8f CREDITS: Add Yoshinori Sato=
- for h8300)
-Merging hexagon/linux-next (de44443a45e3 HEXAGON: Remove non existent refer=
-ence to GENERIC_KERNEL_EXECVE & GENERIC_KERNEL_THREAD)
-Merging ia64/next (959f58544b7f Linux 3.12-rc7)
-Merging m68k/for-next (77a42796786c m68k: Remove deprecated IRQF_DISABLED)
-Merging m68knommu/for-next (959f58544b7f Linux 3.12-rc7)
-Merging metag/for-next (51387306b5c2 metag: off by one in setup_bootmem_nod=
-e())
-Merging microblaze/next (a1dd107fcafa microblaze: Remove duplicate declarat=
-ions of _stext[] and _etext[])
-Merging mips/mips-for-linux-next (6ca0bf323c14 Merge branch '3.13-fixes' in=
-to mips-for-linux-next)
-Merging openrisc/for-upstream (60a9dd5a10a1 openrisc: Use get_signal() sign=
-al_setup_done())
-Merging parisc/for-next (6c700d71f7fa [PARISC] hpux: Remove obsolete regs p=
-arameter from do_execve() in hpux_execve())
-Merging parisc-hd/for-next (f6b4c8ca8a36 parisc: do not inline pa_memcpy())
-Merging powerpc/next (0c4888ef1d8a powerpc: Fix fatal SLB miss when restori=
-ng PPR)
-Merging mpc5xxx/next (7e198197ec87 powerpc/mpc512x: remove unnecessary #if)
-Merging galak/next (9e2ecdbba3b0 powerpc/fsl-booke: add the reg prop for pc=
-i bridge device node for T4/B4)
-Merging s390/features (d795ddad36cb s390/pci: implement hotplug notificatio=
-ns)
-Merging sh/sh-latest (37284bd93103 Merge branches 'sh/hw-breakpoints' and '=
-sh/serial-of' into sh-latest)
-CONFLICT (content): Merge conflict in include/linux/serial_sci.h
-CONFLICT (content): Merge conflict in drivers/tty/serial/sh-sci.c
-CONFLICT (content): Merge conflict in arch/sh/kernel/cpu/sh2a/Makefile
-Merging sparc-next/master (049ffa8ab33a Merge branch 'drm-next' of git://pe=
-ople.freedesktop.org/~airlied/linux)
-Merging tile/master (9248053f80fd tile: Remove tile-specific _sinitdata and=
- _einitdata)
-Merging unicore32/unicore32 (c284464658ac arch/unicore32: remove CONFIG_EXP=
-ERIMENTAL)
-Merging xtensa/for_next (8872366df396 xtensa: Fix broken allmodconfig build)
-Merging btrfs/next (91aef86f3b8a Btrfs: rename btrfs_start_all_delalloc_ino=
-des)
-Merging ceph/master (53d028160f1a ceph: implement readv/preadv for sync ope=
-ration)
-Merging cifs/for-next (6474d967fc82 CIFS: SMB2/SMB3 Copy offload support (r=
-efcopy) finish up)
-Merging configfs/linux-next (b930c26416c4 Merge branch 'for-linus' of git:/=
-/git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
-Merging ecryptfs/next (2000f5beabc9 eCryptfs: file->private_data is always =
-valid)
-Merging ext3/for_next (7ba3ec5749dd ext2: Fix fs corruption in ext2_get_xip=
-_mem())
-Merging ext4/dev (3f61c0cc706d ext4: add prototypes for macro-generated fun=
-ctions)
-Merging f2fs/dev (29e59c14ae5c f2fs: issue more large discard command)
-Merging fscache/fscache (7c604e5d6e56 FS-Cache: Fix handling of an attempt =
-to store a page that is now beyond EOF)
-Merging fuse/for-next (ce128de6260f fuse: writepages: protect secondary req=
-uests from fuse file release)
-Merging gfs2/master (2147dbfd059e GFS2: Use generic list_lru for quota)
-Merging jfs/jfs-next (8660998608cf jfs: fix error path in ialloc)
-Merging logfs/master (339466142b3f Fix the call to BUG() caused by no free =
-segment found)
-Merging nfs/linux-next (4b45df7999f9 NFS: Enabling v4.2 should not recompil=
-e nfsd and lockd)
-Merging nfsd/nfsd-next (aea240f4162d nfsd: export proper maximum file size =
-to the client)
-Merging omfs/for-next (976d167615b6 Linux 3.1-rc9)
-Merging squashfs/master (e8a3a0fc13fe Squashfs: Check stream is not NULL in=
- decompressor_multi.c)
-Merging v9fs/for-next (3b1288170cfe net/9p: remove virtio default hack and =
-set appropriate bits instead)
-CONFLICT (content): Merge conflict in fs/9p/vfs_inode_dotl.c
-CONFLICT (content): Merge conflict in fs/9p/vfs_inode.c
-CONFLICT (content): Merge conflict in fs/9p/vfs_file.c
-Merging ubifs/linux-next (58a4e23703b2 UBIFS: correct data corruption range)
-Merging xfs/for-next (ec715cacd53f xfs: update maintainers)
-Merging vfs/for-next (27ac0ffeac80 locks: break delegations on any attribut=
-e modification)
-Merging pci/next (eaaeb1cb3331 Merge branch 'pci/misc' into next)
-Merging hid/for-next (bceac5d94bbe Merge branch 'for-3.13/upstream' into fo=
-r-next)
-Merging i2c/i2c/for-next (5e47eec00425 i2c: i2c-eg20t: do not print error m=
-essage in syslog if no ACK received)
-CONFLICT (content): Merge conflict in drivers/i2c/i2c-core.c
-Applying: i2c: bcm-kona: fix for INIT_COMPLETION -> reinit_completion API c=
-hange
-Merging jdelvare-hwmon/master (f63c4824aa1b Don't try to compile shmobile-i=
-ommu outside of ARM)
-Merging hwmon-staging/hwmon-next (308c91dd83a2 hwmon: (nct6775) NCT6791 sup=
-ports weight control only for CPUFAN)
-Merging v4l-dvb/master (52eca34d5e35 Merge branch 'patchwork' into to_next)
-Merging kbuild/for-next (44a6ba71de03 Merge branches 'kbuild/kbuild' and 'k=
-build/misc' into kbuild/for-next)
-Merging kconfig/for-next (4eae518d4b01 localmodconfig: Fix localyesconfig t=
-o set to 'y' not 'm')
-Merging libata/for-next (1ca953d5f992 Merge branch 'for-3.13' into for-next)
-Merging pstore/master (bd08ec33b5c2 pstore/ram: Restore ecc information blo=
-ck)
-Merging pm/linux-next (7072d0aa29ce Merge branch 'pm-sleep')
-Merging idle/next (8de8187d167c Merge branches 'acpi-blacklist-year' and 'a=
-vn-upstream' into release)
-CONFLICT (content): Merge conflict in drivers/idle/intel_idle.c
-Merging apm/for-next (fb9d78aca709 Merge branch 'for-linus' of git://git.ke=
-rnel.org/pub/scm/linux/kernel/git/jikos/apm)
-Merging cpupowerutils/master (f16603386b38 cpupower tools: add install targ=
-et to the debug tools' makefiles)
-Merging thermal/next (86e0a0bdf81c Merge branches 'intel_powerclamp', 'tmon=
-' and 'misc' of .git into next)
-Merging ieee1394/for-next (db9ae8fec7b1 firewire: ohci: Fix deadlock at bus=
- reset)
-Merging ubi/linux-next (ae0d14695566 UBI: Add some asserts to ubi_attach_fa=
-stmap())
-Merging dlm/next (a97f4a66d8ee dlm: Avoid that dlm_release_lockspace() inco=
-rrectly returns -EBUSY)
-Merging swiotlb/linux-next (af51a9f1848f swiotlb: Do not export swiotlb_bou=
-nce since there are no external consumers)
-Merging slave-dma/next (df12a3178d34 Merge commit 'dmaengine-3.13-v2' of gi=
-t://git.kernel.org/pub/scm/linux/kernel/git/djbw/dmaengine)
-Merging dmaengine/next (82a1402eaee5 dma: mv_xor: Fix mis-usage of mmio 'ba=
-se' and 'high_base' registers)
-Merging net-next/master (42a2d923cc34 Merge git://git.kernel.org/pub/scm/li=
-nux/kernel/git/davem/net-next)
-Merging ipsec-next/master (9bb8ca86075f virtio-net: switch to use XPS to ch=
-oose txq)
-Merging wireless-next/master (3c57e865cfb2 ath9k: enable DFS for IBSS mode)
-Merging bluetooth/master (11af3838c853 Bluetooth: Enable autosuspend for In=
-tel Bluetooth device)
-Merging infiniband/for-next (b4fdf52b3fc8 Merge branches 'cma', 'cxgb4', 'f=
-lowsteer', 'ipoib', 'misc', 'mlx4', 'mlx5', 'nes', 'ocrdma', 'qib' and 'srp=
-' into for-next)
-Merging mtd/master (82cb6acea4d1 Merge tag 'for-linus-20131112' of git://gi=
-t.infradead.org/linux-mtd)
-Merging l2-mtd/master (82cb6acea4d1 Merge tag 'for-linus-20131112' of git:/=
-/git.infradead.org/linux-mtd)
-Merging crypto/master (f262f0f5cad0 crypto: s390 - Fix aes-cbc IV corruptio=
-n)
-Merging drm/drm-next (a3483353ca4e drm: check for !kdev in drm_unplug_minor=
-())
-Merging drm-intel/for-linux-next (ef46e0d247da drm/i915: restore the early =
-forcewake cleanup)
-Merging drm-tegra/drm/for-next (977386a04bae drm/tegra: Reserve syncpoint b=
-ase for gr3d)
-Merging sound/for-next (abfe69dd2e31 Merge tag 'asoc-v3.13-4' of git://git.=
-kernel.org/pub/scm/linux/kernel/git/broonie/sound into for-linus)
-Merging sound-asoc/for-next (a190f7867e18 Merge remote-tracking branch 'aso=
-c/fix/wm8962' into asoc-linus)
-Merging modules/modules-next (b6568b1a19ad modpost: fix bogus 'exported twi=
-ce' warnings.)
-Merging virtio/virtio-next (cdd77e87eae5 x86, asmlinkage, lguest: Pass in g=
-lobals into assembler statement)
-Merging input/next (87c542daf6c9 Input: add sur40 driver for Samsung SUR40 =
-(aka MS Surface 2.0/Pixelsense))
-Merging input-mt/for-next (5e01dc7b26d9 Linux 3.12)
-Merging cgroup/for-next (0d60e6cd793e Merge branch 'for-3.13' into for-next)
-Merging block/for-next (6decb5fa33f8 Merge branch 'for-3.13/drivers' into f=
-or-next)
-Merging aio-direct/for-next (bb6f7be48318 tmpfs: add support for read_iter =
-and write_iter)
-CONFLICT (content): Merge conflict in mm/filemap.c
-CONFLICT (content): Merge conflict in include/linux/blk_types.h
-CONFLICT (content): Merge conflict in fs/read_write.c
-CONFLICT (content): Merge conflict in fs/nfs/file.c
-CONFLICT (content): Merge conflict in fs/nfs/direct.c
-CONFLICT (content): Merge conflict in fs/btrfs/inode.c
-CONFLICT (content): Merge conflict in drivers/mtd/nand/nandsim.c
-Applying: ceph: Fix up for iov_iter changes
-Merging device-mapper/for-next (7b6b2bc98c03 dm cache: resolve small nits a=
-nd improve Documentation)
-Merging embedded/master (4744b43431e8 embedded: fix vc_translate operator p=
-recedence)
-Merging firmware/master (6e03a201bbe8 firmware: speed up request_firmware()=
-, v3)
-Merging pcmcia/master (80af9e6d7ae6 pcmcia at91_cf: fix raw gpio number usa=
-ge)
-Merging mmc/mmc-next (e395c4387c74 mmc: wbsd: Silence compiler warning)
-CONFLICT (content): Merge conflict in drivers/mmc/host/mvsdio.c
-Merging kgdb/kgdb-next (6bedf31c25dd kdb: Remove unhandled ssb command)
-CONFLICT (content): Merge conflict in kernel/debug/debug_core.h
-Merging slab/for-next (a8c0b0837359 Merge branch 'slab/next' into for-next)
-Merging uclinux/for-next (6dbe51c251a3 Linux 3.9-rc1)
-Merging md/for-next (00c1c37c1c75 md/raid5: Before freeing old multi-thread=
- worker, it should flush them.)
-Merging mfd/master (90b128ed1557 Merge tag 'mfd-lee-3.13-3' of git://git.li=
-naro.org/people/ljones/mfd)
-Merging mfd-lj/for-mfd-next (3ae635388528 mfd: wm5110: Correct default for =
-register LDO2 Control 1)
-Merging battery/master (c8024234c20e pm2301-charger: Remove unneeded NULL c=
-hecks)
-Merging fbdev/for-next (718b90ac4c21 video: xilinxfb: Simplify error path)
-Merging viafb/viafb-next (838ac785d521 viafb: avoid refresh and mode lookup=
- in set_par)
-Merging omap_dss2/for-next (3a41c5dbe8bc fb: reorder the lock sequence to f=
-ix potential dead lock)
-Merging regulator/for-next (eebb1457e2fc Merge remote-tracking branch 'regu=
-lator/fix/pfuze100' into regulator-linus)
-Merging security/next (217091dd7a7a ima: define '_ima' as a builtin 'truste=
-d' keyring)
-CONFLICT (content): Merge conflict in crypto/Makefile
-Merging selinux/master (94851b18d4eb Merge tag 'v3.12')
-Merging lblnet/master (07bc9dc1b01b Merge branch 'merge' of git://git.kerne=
-l.org/pub/scm/linux/kernel/git/benh/powerpc)
-Merging watchdog/master (cb81b125733d watchdog: w83627hf: Use helper functi=
-ons to access superio registers)
-Merging dwmw2-iommu/master (e5d0c874391a Merge tag 'iommu-updates-v3.12' of=
- git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu)
-Merging iommu/next (e6ca48d995e4 Merge branches 'iommu/fixes', 'tracing', '=
-core', 'arm/tegra' and 'x86/vt-d' into next)
-Merging vfio/next (15c03dd4859a Linux 3.12-rc3)
-Merging osd/linux-next (861d66601acd exofs: don't leak io_state and pages o=
-n read error)
-Merging jc_docs/docs-next (5c050fb96380 docs: update the development proces=
-s document)
-Merging trivial/for-next (2bb9936beac2 doc: usb: Fix typo in Documentation/=
-usb/gadget_configs.txt)
-Merging audit/master (9175c9d2aed5 audit: fix type of sessionid in audit_se=
-t_loginuid())
-CONFLICT (content): Merge conflict in fs/exec.c
-Merging fsnotify/for-next (1ca39ab9d21a inotify: automatically restart sysc=
-alls)
-Merging devicetree/devicetree/next (355e62f5ad12 of/irq: Fix potential buff=
-er overflow)
-Merging dt-rh/for-next (c11eede69b6a powerpc: add missing explicit OF inclu=
-des for ppc)
-Merging spi/for-next (aaeef765f79f Merge remote-tracking branch 'spi/fix/tx=
-x9' into spi-linus)
-Merging tip/auto-latest (04e387210855 Merge branch 'x86/uaccess')
-CONFLICT (content): Merge conflict in arch/x86/kernel/reboot.c
-Merging edac/linux_next (3e45588825c1 cell_edac: fix missing of_node_put)
-Merging edac-amd/for-next (c3e511e4c4d9 amd64_edac: Remove superfluous cond=
-ition check.)
-Merging ftrace/for-next (20b72e76c42b Merge branch 'trace/ftrace/core' into=
- trace/for-next)
-Merging rcu/rcu/next (4102adab9189 rcu: Move RCU-related source code to ker=
-nel/rcu directory)
-Merging uprobes/for-next (0326f5a94dde uprobes/core: Handle breakpoint and =
-singlestep exceptions)
-Merging kvm/linux-next (f08048048802 Merge tag 'for-linus' of git://git.ker=
-nel.org/pub/scm/virt/kvm/kvm)
-Merging kvm-arm/kvm-arm-next (ede582224231 Merge tag 'kvm-arm64/for-3.13-1'=
- of git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms into kv=
-m-next)
-Merging kvm-ppc/kvm-ppc-next (a78b55d1c021 kvm: powerpc: book3s: drop is_hv=
-_enabled)
-Merging oprofile/for-next (8884754b2534 Merge branch 'edac' into for-next)
-Merging fw-nohz/nohz/next (74876a98a87a printk: Wake up klogd using irq_wor=
-k)
-Merging xen-tip/linux-next (99df053439f5 Merge branch 'xentip-3.13-2' into =
-linux-next-2)
-Merging percpu/for-next (90f2492cf9c8 x86: remove this_cpu_xor() implementa=
-tion)
-Merging workqueues/for-next (016564d41b35 workqueue: fix pool ID allocation=
- leakage and remove BUILD_BUG_ON() in init_workqueues)
-Merging drivers-x86/linux-next (5c07eae979df platform/x86: panasonic-laptop=
-: reuse module_acpi_driver)
-Merging sysctl/master (4e474a00d7ff sysctl: protect poll() in entries that =
-may go away)
-Merging regmap/for-next (04bc9ac163a2 Merge remote-tracking branch 'regmap/=
-topic/spmi' into regmap-next)
-Merging hsi/for-next (43139a61fc68 HSI: hsi_char: Update ioctl-number.txt)
-Merging leds/for-next (30dae2f98612 leds: lp55xx: handle enable pin in driv=
-er)
-Merging driver-core/driver-core-next (0cae60f91494 sysfs: rename sysfs_asso=
-c_lock and explain what it's about)
-Merging tty/tty-next (80d8611dd076 serial: omap: fix missing comma)
-Merging usb/usb-next (7d49f0bac41e USB: Maintainers change for usb serial d=
-rivers)
-Merging usb-gadget/next (80d7d8a768cd usb: phy: twl6030-usb: Include linux/=
-of.h header)
-Merging staging/staging-next (ed5d6ca0038f staging: drm/imx: fix return val=
-ue check in ipu_add_subdevice_pdata())
-Merging char-misc/char-misc-next (425792266a40 misc: mic: Fixes for randcon=
-fig build errors and warnings.)
-Merging scsi/for-next (2aee240c68ed Merge branch 'misc' into for-next)
-Merging target-updates/for-next (3e07395441c8 iscsi-target: Convert iscsi_s=
-ession statistics to atomic_long_t)
-CONFLICT (content): Merge conflict in lib/percpu-refcount.c
-Merging target-merge/for-next-merge (15c03dd4859a Linux 3.12-rc3)
-Merging writeback/writeback-for-next (a8855990e382 writeback: Do not sort b=
-_io list only because of block device inode)
-Merging hwspinlock/linux-next (8b37fcfc9b34 hwspinlock: add MAINTAINERS ent=
-ries)
-Merging pinctrl/for-next (9da8312048ed pinctrl: imx50: add pinctrl support =
-code for the IMX50 SoC)
-Merging vhost/linux-next (d3d665a654a3 vhost-scsi: whitespace tweak)
-Merging remoteproc/for-next (b9777859ec01 remoteproc: fix kconfig dependenc=
-ies for VIRTIO)
-Merging rpmsg/for-next (397944df3290 rpmsg: fix kconfig dependencies for VI=
-RTIO)
-Merging gpio/for-next (993571273275 gpio: gpio-mxs: Remove unneeded dt chec=
-ks)
-Merging dma-mapping/dma-mapping-next (0df651a0740c Merge branch 'parisc-3.1=
-2' of git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux)
-Merging pwm/for-next (1b3f25ce991d Documentation/pwm: Update supported SoC =
-name for pwm-samsung)
-Merging dma-buf/for-next (19e8697ba45e dma-buf: Expose buffer size to users=
-pace (v2))
-Merging userns/for-next (40216baa0101 vfs: Lazily remove mounts on unlinked=
- files and directories. v2)
-CONFLICT (content): Merge conflict in fs/namespace.c
-CONFLICT (content): Merge conflict in fs/namei.c
-CONFLICT (content): Merge conflict in fs/mount.h
-CONFLICT (content): Merge conflict in fs/fuse/dir.c
-CONFLICT (content): Merge conflict in fs/dcache.c
-Applying: vfs: merge fixup for __lookup_mnt() API change
-Applying: vfs: fixup for vfsmount_lock change
-Merging ktest/for-next (df5f7c66013c ktest: Reset grub menu cache with diff=
-erent machines)
-Merging signal/for-next (20b4fb485227 Merge branch 'for-linus' of git://git=
-.kernel.org/pub/scm/linux/kernel/git/viro/vfs)
-Merging clk/clk-next (9ed9c07d9b7d clk: new driver for efm32 SoC)
-Merging random/dev (392a546dc836 random: add debugging code to detect early=
- use of get_random_bytes())
-Merging lzo-update/lzo-update (42b775abafaf lib/lzo: huge LZO decompression=
- speedup on ARM by using unaligned access)
-Merging arm64-hugepages/for-next/hugepages (af07484863e0 ARM64: mm: THP sup=
-port.)
-Merging aio/master (13fd8a5dc3cf Merge branch 'aio-fix' of http://evilpiepi=
-rate.org/git/linux-bcache)
-Merging akpm-current/current (7c5598d4c874 scripts/bloat-o-meter: use .star=
-tswith rather than fragile slicing)
-CONFLICT (content): Merge conflict in scripts/bloat-o-meter
-CONFLICT (content): Merge conflict in mm/swapfile.c
-CONFLICT (content): Merge conflict in mm/huge_memory.c
-CONFLICT (add/add): Merge conflict in lib/percpu_test.c
-CONFLICT (content): Merge conflict in kernel/Makefile
-CONFLICT (content): Merge conflict in include/linux/lglock.h
-CONFLICT (content): Merge conflict in fs/hfsplus/xattr.c
-CONFLICT (content): Merge conflict in fs/cramfs/Kconfig
-CONFLICT (content): Merge conflict in fs/autofs4/inode.c
-CONFLICT (content): Merge conflict in fs/anon_inodes.c
-CONFLICT (content): Merge conflict in drivers/memstick/core/ms_block.c
-CONFLICT (content): Merge conflict in arch/x86/mm/init.c
-Applying: lglock: fixup for code movement
-Applying: mm: fix bad merge of mmap.c
-$ git checkout -b akpm remotes/origin/akpm/master
-Merging akpm/master (e5e6fad65df1 Merge branch 'akpm-current/current')
-[master 4a584affbf97] Revert "NFS: Enabling v4.2 should not recompile nfsd =
-and lockd"
-[master 4e7690caeeef] Revert "mm: create a separate slab for page->ptl allo=
-cation"
-Applying: sparc64: merge fix
-
---Signature=_Mon__18_Nov_2013_14_29_38_+1100_VZ1ejv6S3OS3QNHR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSiYmmAAoJEMDTa8Ir7ZwVwKgP/RvX9lKrisFUYegsNA3AFzbW
-vApcfrlvdPT8Oz18m02gxtggNJKbokRggz63OYYEDYTnnQDYvsfsNEhJSKb/E9c5
-cH50oKEMB87IgthWXstxTNjCGWKUh3CXx1sC8E5CZ0c1XYGJ0qTSoi5lipzokraQ
-hbj8yFuKeDKaEFl1BeT0CfIUvYEAuW7qAY5/jP8yHbCt3v7jU/JmCLDdbitv1TaP
-COQEdMzWlxAwNSdPR1lS8kzKO6H8R+IPfTvLJ0ivnO8nGDBKaPDjY8M0+8UT2sFZ
-tYxMrXxDorGkLnyRQ6bACz1qDlx2GGIwAe7NqnbEn03DJ8r2cnmB7T/FM2PU0GiW
-9EndnzQAMZ8cf+tLKaiZJTbnfn4Jt5TdIIPNx8SvjOQSJhw7LEkMC4zT2lIGfDKx
-PA3Lo+pkLYe+koPl71pXox4MoVgVti9v6b4BoTFcP3APhztTM6ML25IKgLO30itV
-DEAve6m3naIpHWXmQ+DnbsLWZbLsK3/oGuhKeLF+QOT5hFUyjYk5pAXu4NdFPEPU
-U3LHR2VcrksIytVYtLFnYU6vOEx1ihOYXVjOeGbIhSOGjhQ4/+lfDkobmTsBFRcs
-tanRggX7FhllmkRAFvrKTU7r4pkud1LyAOjBMQfIS3I1EobCKcThifXCyjGV2MTu
-3LC1G+qW8wM4r89tFhBS
-=gHjE
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Nov_2013_14_29_38_+1100_VZ1ejv6S3OS3QNHR--
+-- 
+Chen Gang
