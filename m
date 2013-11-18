@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab3KRBMp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 20:12:45 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:54216 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab3KRBMj convert rfc822-to-8bit (ORCPT
+	id S1753405Ab3KRBPd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 20:15:33 -0500
+Received: from blu0-omc4-s13.blu0.hotmail.com ([65.55.111.152]:58125 "EHLO
+	blu0-omc4-s13.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752004Ab3KRBPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 20:12:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <1384724339.2050.6.camel@dabdike.int.hansenpartnership.com>
-References: <1384714284-13712-1-git-send-email-geyslan@gmail.com>
-	<1384717371.2050.2.camel@dabdike.int.hansenpartnership.com>
-	<CAGG-pURSnEeNvmHhQ-GvrnyuMHPrTRMoCKt3P=bB23OD9Vmkpg@mail.gmail.com>
-	<1384724339.2050.6.camel@dabdike.int.hansenpartnership.com>
-Date: Sun, 17 Nov 2013 23:12:38 -0200
-Message-ID: <CAGG-pUT_h1eNnHDpxRvMPWeN5zi6L2mckHMPsV92Qf3hqtf7EQ@mail.gmail.com>
-Subject: Re: [PATCH] scsi: be_iscsi: fix possible memory leak and refactor code
-From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
-        "open list:SERVER ENGINES 10..." <linux-scsi@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 17 Nov 2013 20:15:25 -0500
+X-TMN: [S28UfvRjtzQdX804Up8eZ70HWswlPzXv]
+X-Originating-Email: [dave.anglin@bell.net]
+Message-ID: <BLU0-SMTP3886F78E435CD570327E2797E40@phx.gbl>
+From: John David Anglin <dave.anglin@bell.net>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+In-Reply-To: <1384735922.2050.21.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] aio: fix D-cache aliasing issues
+References: <20131115220529.GA3160@ls3530.box> <1384555325.2003.39.camel@dabdike.int.hansenpartnership.com> <20131116200717.GA18939@schnuecks.de> <20131116200959.GA14098@kvack.org> <528933BC.50806@gmx.de> <1384724973.2050.14.camel@dabdike.int.hansenpartnership.com> <20131117234707.GA25545@p100.box> <1384735922.2050.21.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset="US-ASCII"; format=flowed; delsp=yes
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0 (Apple Message framework v936)
+Date: Sun, 17 Nov 2013 20:15:14 -0500
+CC: Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        Benjamin LaHaise <bcrl@kvack.org>, Simon Baatz <gmbnomis@gmail.com>,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+X-Mailer: Apple Mail (2.936)
+X-OriginalArrivalTime: 18 Nov 2013 01:15:24.0274 (UTC) FILETIME=[A8732D20:01CEE3FB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/17 James Bottomley <James.Bottomley@hansenpartnership.com>:
-> On Sun, 2013-11-17 at 19:09 -0200, Geyslan Gregório Bem wrote:
->> 2013/11/17 James Bottomley <James.Bottomley@hansenpartnership.com>:
->> > On Sun, 2013-11-17 at 15:51 -0300, Geyslan G. Bem wrote:
->> >> This patch fix memory leakage in cases 'ISCSI_NET_PARAM_VLAN_ID' and
->> >> 'ISCSI_NET_PARAM_VLAN_PRIORITY' and refactors code 'going out' when
->> >> necessary.
->> >
->> > You pointlessly renamed a variable, which makes the diff hard to read.
->> > Please don't do that.
+
+On 17-Nov-13, at 7:52 PM, James Bottomley wrote:
+
+>> +void flush_user_dcache_page(struct page *page);
+>> +
+>
+> The split into flush_kernel.. and flush_user.. is pointless.  We  
+> have no
+> use for a flush_user_.. API because it's not part of the standard  
+> linux
+> one.  Plus it's going to confuse those who come after us no end  
+> because
+> now we're different from every other architecture.
+
+I introduced it because it seemed to be what was needed on parisc when
+we map a kernel page on PA8800/PA8900.  We need this to ensure what the
+kernel sees is up to date and also to ensure that we don't create  
+inequivalent
+aliases between the user and kernel mappings.
+
+>
+>> #define flush_kernel_dcache_range(start,size) \
+>> 	flush_kernel_dcache_range_asm((start), (start)+(size));
+>> /* vmap range flushes and invalidates.  Architecturally, we don't  
+>> need
+>> @@ -125,18 +127,27 @@ flush_anon_page(struct vm_area_struct *vma,  
+>> struct page *page, unsigned long vma
+>> void mark_rodata_ro(void);
+>> #endif
 >>
->> Ok, I can agree. 'len' means length? What is returned in case of non
->> error?
->
-> it returns the length of buf written to or negative error.
->
->> > You missed the fact that the passed in pointer is unmodified if
->> > mgmt_get_if_info() returns non zero, so the kfree frees junk and would
->> > oops.
->> >
->> > There's no need for a goto; len = -EINVAL; does everything that's
->> > needed.
+>> -#ifdef CONFIG_PA8X00
+>> -/* Only pa8800, pa8900 needs this */
+>> -
+>> #include <asm/kmap_types.h>
 >>
->> Well, that is a coverity catch. CID 1128954. Check it.
+>> #define ARCH_HAS_KMAP
+>>
+>> -void kunmap_parisc(void *addr);
+>> +static inline void kmap_parisc(struct page *page)
+>> +{
+>> +	if (parisc_requires_coherency())
+>> +		flush_user_dcache_page(page);
+>> +}
 >
-> I didn't say coverity was wrong, I said your patch was (well not wrong,
-> just over complex and incomplete).  This is the way to fix both
-> problems.
+> No ... if we're genuinely moving coherency into kmap/kunmap, this  
+> has to
+> become
 >
-> James
+> 	flush_dcache_page(page);
 >
-> ---
->
-> diff --git a/drivers/scsi/be2iscsi/be_iscsi.c b/drivers/scsi/be2iscsi/be_iscsi.c
-> index ffadbee..9dcbdfa 100644
-> --- a/drivers/scsi/be2iscsi/be_iscsi.c
-> +++ b/drivers/scsi/be2iscsi/be_iscsi.c
-> @@ -541,10 +541,8 @@ static int be2iscsi_get_if_param(struct beiscsi_hba *phba,
->                 ip_type = BE2_IPV6;
+> unconditionally.
 
-James, this approach will not prevent the leakage. We can initialize
-the if_info with NULL and always kfree it without to care about junk.
+There are two things about flush_dcache_page(page):
 
->
->         len = mgmt_get_if_info(phba, ip_type, &if_info);
-> -       if (len) {
-> -               kfree(if_info);
-> +       if (len)
->                 return len;
-> -       }
->
->         switch (param) {
->         case ISCSI_NET_PARAM_IPV4_ADDR:
-> @@ -569,7 +567,7 @@ static int be2iscsi_get_if_param(struct beiscsi_hba *phba,
->                 break;
->         case ISCSI_NET_PARAM_VLAN_ID:
->                 if (if_info->vlan_priority == BEISCSI_VLAN_DISABLE)
-> -                       return -EINVAL;
-> +                       len = -EINVAL;
->                 else
->                         len = sprintf(buf, "%d\n",
->                                      (if_info->vlan_priority &
->
->
+1) The flush could be deferred.  I don't think we want that.
+2) It seems to unnecessarily call flush_kernel_dcache_page().
+
+Dave
+--
+John David Anglin	dave.anglin@bell.net
 
 
 
--- 
-Regards,
-
-Geyslan G. Bem
-hackingbits.com
