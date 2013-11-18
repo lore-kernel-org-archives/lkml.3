@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab3KRUGB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:06:01 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:46957 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab3KRUF6 (ORCPT
+	id S1752486Ab3KRUJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:09:17 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:2515 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751640Ab3KRUJO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:05:58 -0500
-Message-ID: <1384805151.5181.82.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 5/6] ima: do not include field length in template digest
- calc for ima template
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Roberto Sassu <roberto.sassu@polito.it>,
-        linux-security-module@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-ima-devel@lists.sourceforge.net, Mimi Zohar <zohar@us.ibm.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>, james.l.morris@oracle.com
-Date: Mon, 18 Nov 2013 15:05:51 -0500
-In-Reply-To: <CACE9dm8n2fyOuMcgVM7NGpptP-G9WhHnh-NR0bsTQO4bG3XCuQ@mail.gmail.com>
-References: <1384523146-9290-1-git-send-email-roberto.sassu@polito.it>
-	 <1384523146-9290-6-git-send-email-roberto.sassu@polito.it>
-	 <CACE9dm9CjjLkv4oh7vpm=AiHSRfuouEkOrMaRpv3EA_c1_LO=A@mail.gmail.com>
-	 <1384789840.5181.76.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <CACE9dm8n2fyOuMcgVM7NGpptP-G9WhHnh-NR0bsTQO4bG3XCuQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111820-9332-0000-0000-0000023251ED
+	Mon, 18 Nov 2013 15:09:14 -0500
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+From: "Stephen Hurd" <shurd@broadcom.com>
+To: "Olof Johansson" <olof@lixom.net>,
+        "Grant Grundler" <grundler@chromium.org>
+cc: "Chris Ball" <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "Olof Johansson" <olofj@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] mmc: disable UHS on broadcom sdhci
+Thread-Topic: [PATCH] mmc: disable UHS on broadcom sdhci
+Thread-Index: AQHO4l5oMQkNsOKWnk+3wJRcigt0mpon/g4AgANu4bA=
+Date: Mon, 18 Nov 2013 20:09:10 +0000
+Message-ID: <156984479488CD49A184F5CAB4AF93460709F237@IRVEXCHMB14.corp.ad.broadcom.com>
+References: <1384559782-7614-1-git-send-email-grundler@chromium.org>
+ <20131116073454.GA20132@quad.lixom.net>
+In-Reply-To: <20131116073454.GA20132@quad.lixom.net>
+Accept-Language: en-CA, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.208.64]
+MIME-Version: 1.0
+X-WSS-ID: 7E94AC434RS9155825-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-18 at 21:40 +0200, Dmitry Kasatkin wrote:
-> On Mon, Nov 18, 2013 at 5:50 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > On Mon, 2013-11-18 at 17:30 +0200, Dmitry Kasatkin wrote:
-> >> On Fri, Nov 15, 2013 at 3:45 PM, Roberto Sassu <roberto.sassu@polito.it> wrote:
-> >
-> >> > @@ -160,12 +161,13 @@ static int ima_calc_field_array_hash_tfm(struct ima_field_data *field_data,
-> >> >                 return rc;
-> >> >
-> >> >         for (i = 0; i < num_fields; i++) {
-> >> > -               rc = crypto_shash_update(&desc.shash,
-> >> > -                                        (const u8 *) &field_data[i].len,
-> >> > -                                        sizeof(field_data[i].len));
-> >> > -               if (rc)
-> >> > -                       break;
-> >> > -
-> >> > +               if (strcmp(td->name, IMA_TEMPLATE_IMA_NAME) != 0) {
-> >> > +                       rc = crypto_shash_update(&desc.shash,
-> >> > +                                               (const u8 *) &field_data[i].len,
-> >> > +                                               sizeof(field_data[i].len));
-> >> > +                       if (rc)
-> >> > +                               break;
-> >> > +               }
-> >>
-> >> What was actually the point in including field length in the hash calculation?
-> >> Does it really make it cryptographically stronger?
-> >> If not then remove it at all...
-> >
-> > We should be able to walk the measurement list without needing to
-> > understand template specific data.  All of the template data, including
-> > the field lengths, needs to be included in the template hash.
-> >
-> 
-> Sorry, how adding field length helps walking measurement list?
-> It makes it even more tricky...
+> > SDHCI_QUIRK2_BCM57785_CR:
+> >     Bit twiddles some Broadcom-specific registers and supresses an error
+> >     about the 64k bar0.
 
-The new template architecture adds sending the field length.
+> I think this can be done without spending a global SDHCI quirk bit. This
+> is just a one-time setup that needs to be done, isn't it? It's hard
+> to tell since there's no official errata described, but if it is, then
+> overriding the probe function is the way to go instead, flipping these
+> bits there and then call the regular probe.
 
-> Previously, I could calculate the hash over the whole template data
-> from binary_measurement_list to get template hash.
+My initial recollection is that this bit twiddling needs to be done any time the clock is touched, so it's not just one-time setup.  I'll ask the guys about it and get back to you.
 
-> Now every field must be processed separately to get template hash...
+The 64k bar0 suppression is just cosmetic, but I don't see anything in the public specs suggesting that there is a max limit on the size of the bar... not sure that it's appropriate to give a warning on it for *any* device, but it's absolutely incorrect for this device.
 
-You still calculate the template hash based on the entire template data,
-including the lengths.  Without including the lengths in the hash
-calculation, you would need to parse the individual template field
-data. 
-
-Mimi
 
