@@ -1,128 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab3KRRlU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 12:41:20 -0500
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:42613 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab3KRRlM (ORCPT
+	id S1751717Ab3KRRpm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 12:45:42 -0500
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:32582 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab3KRRpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 12:41:12 -0500
-Date: Mon, 18 Nov 2013 18:41:07 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: sclark46@earthlink.net
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-Subject: Re: i915 driver gpu hung kernel 3.11
-Message-ID: <20131118184107.67d6c875@neptune.home>
-In-Reply-To: <52896862.5000300@earthlink.net>
-References: <52896862.5000300@earthlink.net>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Nov 2013 12:45:33 -0500
+X-AuditID: cbfec37a-b7fb76d000006e93-71-528a523b4a97
+Message-id: <528A5233.4040306@samsung.com>
+Date: Mon, 18 Nov 2013 10:45:23 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.0
+MIME-version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, anton@enomsg.org,
+        dwmw2@infradead.org
+Cc: len.brown@intel.com, pavel@ucw.cz, gregkh@linuxfoundation.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH] power: Change device_wakeup_enable() to check for null
+ dev_name(dev)
+References: <1384560238-10708-1-git-send-email-shuah.kh@samsung.com>
+ <4035469.UfR6Rto3I2@vostro.rjw.lan> <5286B95F.4040306@samsung.com>
+ <3366600.jMpqPVojcG@vostro.rjw.lan>
+In-reply-to: <3366600.jMpqPVojcG@vostro.rjw.lan>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42I5/e+wn65NUFeQwZFeJouDWzUtJq6czGzR
+	vHg9m8WsKXuZLC7vmsNm8bn3CKPF3VNH2SzOnL7EavH1p4PFgo2PGB24PCb0f2L02DnrLrvH
+	5hVaHov3vGTy2D93DbvHlqvtLB4rVn9n9/i8SS6AI4rLJiU1J7MstUjfLoErY8ecJywFk0Uq
+	Fkx9wNrAuFigi5GTQ0LAROLVrsuMELaYxIV769m6GLk4hASWMUrM3HKEBSQhJNDLJHHilhBE
+	YhOjxM2rs1i7GDk4eAW0JF6vVgSpYRFQleja3sMEYrMJqEt8fr2DHaJXTqJpyWpmEFtUIELi
+	6OpnrCA2r4CgxI/J98DmiwiESOw4vJUFZD6zwFlGiQ1/ZoE1CAtES/ye/ZwdYvF6RoldTztY
+	QBZzChhIXG+tBalhFjCTeNSyjhnClpfYvOYtM8RiZYk/l08xgZRLCChKbF9tNYFRZBaS1bOQ
+	dM9C0r2AkXkVo1hpcXJBcVJ6aoWhXnFibnFpXrpecn7uJkZI9FXtYLzz1eYQowAHoxIP7wT3
+	riAh1sSy4srcQ4wSHMxKIrzfnIFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGIWPflwWFCU3y6/V
+	ZuuyJ6mm/zKfRsU+X/o5/nJJMn9uV6bAv+QtV1S9/rce0H7+5YX6GbUNwudO9DSX26r6rf/W
+	ee9bqtAsm/+LLv6d08wRcojDyCs11DTNaov03D8752gIaLss7CzQvcfmdLzKK/reY5+Oni0T
+	+/V3HpgueuyNgWxT1D0FIyWW4oxEQy3mouJEACyEVIucAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On 11/15/2013 05:32 PM, Rafael J. Wysocki wrote:
+> On Friday, November 15, 2013 05:16:31 PM Shuah Khan wrote:
+>> On 11/15/2013 05:21 PM, Rafael J. Wysocki wrote:
+>>> On Friday, November 15, 2013 05:03:57 PM Shuah Khan wrote:
+>>>> device_wakeup_enable() uses dev_name(dev) as the wakeup source name.
+>>>> When it gets called with a device with its name not yet set, ws structure
+>>>> with ws->name = NULL gets created.
+>>>>
+>>>> When kernel is booted with wakeup_source_activate enabled, it will panic
+>>>> when the trace point code tries to derefernces ws->name.
+>>>>
+>>>> Change device_wakeup_enable() to check for dev_name(dev) null condition
+>>>> and return -EINVAL to avoid panics when device_wakeup_enable() gets called
+>>>> before device is fully initialized with its name.
+>>    		return -EINVAL;
+>>>
+>>> Can you please use WARN_ON(!dev_name(dev)) here?  While I agree that it is a
+>>> bad idea to crash the kernel because dev has no name, that indicates a driver
+>>> bug that shouldn't be too easy to ignore.
+>>>
+>>> Thanks!
+>>>
+>>
+>> Right. ok I will re-cut the patch with WARN_ON and send it. fyi I did
+>> send fix for the driver (power_supply) as well.
+>>
+>> http://www.kernelhub.org/?msg=362354&p=2
+>
+> That's OK (thanks for taking care of this), but there may be more brilliant
+> stuff like that in the future and people should see right away that something's
+> wrong in those cases.
+>
 
-You may want to CC intel-gfx@lists.freedesktop.org  for i915 issues (even
-if you are not subscribed and you mail will wait for a moderator to let
-it go through).
+Rafael/Anton/David,
 
-In case of intel GPU hangs you should at least include
-/sys/kernel/debug/dri/0/i915_error_state, probably submitting as a
-bug report on bugs.freedesktop.org due to its size.
+I added WARN_ON and testing the patch. We have two instance of 
+device_wakeup_enable() calls with null dev_name during boot. Both are 
+from power_supply_register(). One when AC Adapter [ADP1] is added and 
+the second when device: 'BAT1' gets added.
 
-If you have any indication on what triggers the hang, please add!
+[    4.412959] device_wakeup_enable() called with null device nme
+[    4.412967] device: 'ADP1': device_add
 
-Bruno
+[    4.460190] device_wakeup_enable() called with null device nme
+[    4.460197] device: 'BAT1': device_add
 
-On Sun, 17 November 2013 Stephen Clark <sclark46@earthlink.net> wrote:
-> Hi List,
-> 
-> I am getting this in kernel 3.11 x86_64
-> 
-> Nov 17 18:56:19 joker4 kernel: [drm:i915_hangcheck_elapsed] *ERROR* stuck on 
-> render ring
-> Nov 17 18:56:19 joker4 kernel: [drm] capturing error event; look for more 
-> information in /sys/kernel/debug/dri/0/i915_error_state
-> Nov 17 18:56:19 joker4 kernel: swapper/1: page allocation failure: order:6, 
-> mode:0x200020
-> Nov 17 18:56:19 joker4 kernel: CPU: 1 PID: 0 Comm: swapper/1 Not tainted 
-> 3.11.6-1.el6.elrepo.x86_64 #1
-> Nov 17 18:56:19 joker4 kernel: Hardware name: To Be Filled By O.E.M. Z96F/Z96F, 
-> BIOS 080012  08/29/2006
-> Nov 17 18:56:19 joker4 kernel: 0000000000000006 ffff8800b73038e0 
-> ffffffff815f7f89 0000000000000010
-> Nov 17 18:56:19 joker4 kernel: 0000000000200020 ffff8800b7303970 
-> ffffffff8114243d ffff8800b778ab28
-> Nov 17 18:56:19 joker4 kernel: 0000003000000001 ffff8800b7789000 
-> 0000000000000000 0000000600000002
-> Nov 17 18:56:19 joker4 kernel: Call Trace:
-> Nov 17 18:56:19 joker4 kernel: <IRQ>  [<ffffffff815f7f89>] dump_stack+0x49/0x60
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8114243d>] warn_alloc_failed+0xfd/0x160
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8114e98c>] ? wakeup_kswapd+0x10c/0x140
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff811455ae>] 
-> __alloc_pages_slowpath+0x4ae/0x7c0
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff81142d9d>] ? 
-> get_page_from_freelist+0x2dd/0x710
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff81145bce>] 
-> __alloc_pages_nodemask+0x30e/0x330
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118c437>] kmem_getpages+0x67/0x1e0
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118dea9>] fallback_alloc+0x189/0x270
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118dc55>] ____cache_alloc_node+0x95/0x160
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118e9b7>] __kmalloc+0x177/0x2c0
-> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044a29>] ? 
-> i915_capture_error_state+0x379/0x720 [i915]
-> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044a29>] 
-> i915_capture_error_state+0x379/0x720 [i915]
-> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044dfb>] i915_handle_error+0x2b/0x80 
-> [i915]
-> Nov 17 18:56:19 joker4 kernel: [<ffffffffa004511e>] 
-> i915_hangcheck_elapsed+0x2ce/0x350 [i915]
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8101b019>] ? sched_clock+0x9/0x10
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8109d905>] ? sched_clock_local+0x25/0x90
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff814711f0>] ? usb_add_hcd+0x3d0/0x3d0
-> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044e50>] ? 
-> i915_handle_error+0x80/0x80 [i915]
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff81073b19>] call_timer_fn+0x49/0x120
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8107470b>] run_timer_softirq+0x23b/0x2a0
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff812b2660>] ? timerqueue_add+0x60/0xb0
-> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044e50>] ? 
-> i915_handle_error+0x80/0x80 [i915]
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8106c147>] __do_softirq+0xf7/0x270
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8108e0c3>] ? hrtimer_interrupt+0x163/0x260
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff81606adc>] call_softirq+0x1c/0x30
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff81015885>] do_softirq+0x65/0xa0
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8106be75>] irq_exit+0xc5/0xd0
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff8160757a>] 
-> smp_apic_timer_interrupt+0x4a/0x5a
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff81605e1d>] apic_timer_interrupt+0x6d/0x80
-> Nov 17 18:56:19 joker4 kernel: <EOI>  [<ffffffff810bb1aa>] ? 
-> cpu_idle_loop+0x10a/0x210
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff810bb17c>] ? cpu_idle_loop+0xdc/0x210
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff810bb320>] cpu_startup_entry+0x70/0x80
-> Nov 17 18:56:19 joker4 kernel: [<ffffffff810437bd>] start_secondary+0xcd/0xd0
-> Nov 17 18:56:19 joker4 kernel: SLAB: Unable to allocate memory on node 0 (gfp=0x20)
-> Nov 17 18:56:19 joker4 kernel:  cache: kmalloc-262144, object size: 262144, order: 6
-> Nov 17 18:56:19 joker4 kernel:  node 0: slabs: 0/0, objs: 0/0, free: 0
-> Nov 17 18:56:19 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring 
-> hung inside bo (0x85c000 ctx 0) at 0x85c97c
-> 
-> is this fixed in 3.12?
-> 
-> Just checked get the same thing in 3.12 but no trace back.
-> 
-> 
-> Nov 17 19:41:33 joker4 kernel: [drm] stuck on render ring
-> Nov 17 19:41:33 joker4 kernel: [drm] capturing error event; look for more 
-> information in /sys/class/drm/card0/error
-> Nov 17 19:41:33 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring 
-> hung inside bo (0x7214000 ctx 0) at 0x72142e0
-> Nov 17 19:41:33 joker4 kernel: [drm:i915_reset] *ERROR* Failed to reset chip.
-> 
-> 
-> 
-> 
-> Thanks,
-> Steve
+
+I think adding WARN_ON to device_wakeup_enable() and fix to 
+power_supply_register() should go in as a dependent patch series, to 
+avoid panics during boot. As soon as the device_wakeup_enable() WARN_ON 
+goes in, I suspect most laptops will panic during boot, similar to what 
+  I am seeing in my testing. Thoughts?
+
+I will send these fixes, maybe these two can be funneled through PM tree 
+with power_supply maintainers ACK for the power_supply_register() fix.
+
+thanks,
+-- Shuah
+
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
