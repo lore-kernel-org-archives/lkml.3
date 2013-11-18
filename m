@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680Ab3KRJmR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 04:42:17 -0500
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:56792 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751157Ab3KRJmJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 04:42:09 -0500
-Message-ID: <1384767727.1251.13.camel@x220.thuisdomein>
-Subject: Re: FADT errors reported by Lenovo T61
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: robert.moore@intel.com, rafael.j.wysocki@intel.com,
-        linux-kernel@vger.kernel.org
-Date: Mon, 18 Nov 2013 10:42:07 +0100
-In-Reply-To: <5289DC61.7030106@redhat.com>
-References: <5289DC61.7030106@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Nov 2013 09:42:07.0223 (UTC) FILETIME=[72050870:01CEE442]
-X-RcptDomain: vger.kernel.org
+	id S1751476Ab3KRJo2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 04:44:28 -0500
+Received: from mga01.intel.com ([192.55.52.88]:28591 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751163Ab3KRJoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 04:44:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,722,1378882800"; 
+   d="scan'208";a="429500970"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH] sparc64: fix build regession
+Date: Mon, 18 Nov 2013 11:44:09 +0200
+Message-Id: <1384767850-2574-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-18 at 10:22 +0100, Zdenek Kabelac wrote:
-> I've noticed strange errors in the log - while my wifi seems to work ok,
-> the surrounding errors do not seem normal.
-> 
-> Is there anything I could do to fix them ?
-> Or it will remain broken or there could workaround ?
-> 
-> I'm attaching my boot log - with:
-> 
-> "ACPI BIOS Warning (bug): 32/64X length mismatch in FADT/Gpe1Block: 0/32 
-> (20130725/tbfadt-572)"
-> 
-> which probably leads to -
-> 
-> "ACPI FADT declares the system doesn't support PCIe ASPM, so disable it"
-> 
-> and
-> 
-> "acpi PNP0A08:00: Disabling ASPM (FADT indicates it is unsupported)"
-> 
-> and at the end after my networking is started I get this:
-> 
-> iwl3945: Intel(R) PRO/Wireless 3945ABG/BG Network Connection driver for Linux, 
-> in-tree:ds
-> iwl3945: Copyright(c) 2003-2011 Intel Corporation
-> iwl3945 0000:03:00.0: can't disable ASPM; OS doesn't have ASPM control
+Commit ea1e7ed33708 triggers build regression on sparc64.
 
-The ASPM stuff need not be related to that "ACPI BIOS Warning (bug)"
-line you saw.
+include/linux/mm.h:1391:2: error: implicit declaration of function 'pgtable_cache_init' [-Werror=implicit-function-declaration]
+arch/sparc/include/asm/pgtable_64.h:978:13: error: conflicting types for 'pgtable_cache_init' [-Werror]
 
-I noticed similar ASPM messages on a ThinkPad X220 (I'm not sure whether
-they are new, as I only recently acquired that X220):
-    $ sudo grep -e ASPM -e FADT $(ls -1tr /var/log/messages*)
-    [...]
-    [...] kernel: [    0.080253] ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
-    [...] kernel: [    0.126158] acpi PNP0A08:00: ACPI _OSC control for PCIe not granted, disabling ASPM
-    [...] kernel: [    4.448730] iwlwifi 0000:03:00.0: can't disable ASPM; OS doesn't have ASPM control
+It happens due headers include loop:
 
-I remember looking at the code that generates these messages and
-thinking they were confusing. It seems "disabling ASPM" means something
-subtly different than "disable ASPM". But I can't remember exactly.
-Anyhow, I haven't yet tried suggesting alternatives for these messages.
-Perhaps I'll do that one of these days.
+<linux/mm.h> -> <asm/pgtable.h> -> <asm/pgtable_64.h> ->
+	<asm/tlbflush.h> -> <asm/tlbflush_64.h> -> <linux/mm.h>
 
+Let's drop <linux/mm.h> include from asm/tlbflush_64.h.
+Build tested with allmodconfig.
 
-Paul Bolle
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/sparc/include/asm/tlbflush_64.h | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/sparc/include/asm/tlbflush_64.h b/arch/sparc/include/asm/tlbflush_64.h
+index f0d6a9700f4c..3c3c89f52643 100644
+--- a/arch/sparc/include/asm/tlbflush_64.h
++++ b/arch/sparc/include/asm/tlbflush_64.h
+@@ -1,7 +1,6 @@
+ #ifndef _SPARC64_TLBFLUSH_H
+ #define _SPARC64_TLBFLUSH_H
+ 
+-#include <linux/mm.h>
+ #include <asm/mmu_context.h>
+ 
+ /* TSB flush operations. */
+-- 
+1.8.4.3
 
