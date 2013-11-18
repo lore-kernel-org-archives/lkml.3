@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640Ab3KRSmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:42:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57558 "EHLO
+	id S1751450Ab3KRSmI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:42:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57551 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369Ab3KRSle (ORCPT
+	with ESMTP id S1752008Ab3KRSle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 13:41:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>, Eric Dumazet <edumazet@google.com>,
-        Petr Matousek <pmatouse@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
+        Jan Beulich <jbeulich@suse.com>, Wei Liu <wei.liu2@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Jason Luan <jianhai.luan@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 03/12] net: flow_dissector: fail on evil iph->ihl
-Date: Mon, 18 Nov 2013 10:41:36 -0800
-Message-Id: <20131118184131.198903818@linuxfoundation.org>
+Subject: [PATCH 3.4 02/12] xen-netback: use jiffies_64 value to calculate credit timeout
+Date: Mon, 18 Nov 2013 10:41:35 -0800
+Message-Id: <20131118184130.752022258@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184130.257996039@linuxfoundation.org>
 References: <20131118184130.257996039@linuxfoundation.org>
@@ -30,39 +30,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Wei Liu <wei.liu2@citrix.com>
 
-[ Upstream commit 6f092343855a71e03b8d209815d8c45bf3a27fcd ]
+[ Upstream commit 059dfa6a93b779516321e5112db9d7621b1367ba ]
 
-We don't validate iph->ihl which may lead a dead loop if we meet a IPIP
-skb whose iph->ihl is zero. Fix this by failing immediately when iph->ihl
-is evil (less than 5).
+time_after_eq() only works if the delta is < MAX_ULONG/2.
 
-This issue were introduced by commit ec5efe7946280d1e84603389a1030ccec0a767ae
-(rps: support IPIP encapsulation).
+For a 32bit Dom0, if netfront sends packets at a very low rate, the time
+between subsequent calls to tx_credit_exceeded() may exceed MAX_ULONG/2
+and the test for timer_after_eq() will be incorrect. Credit will not be
+replenished and the guest may become unable to send packets (e.g., if
+prior to the long gap, all credit was exhausted).
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Use jiffies_64 variant to mitigate this problem for 32bit Dom0.
+
+Suggested-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Jason Luan <jianhai.luan@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/flow_dissector.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/xen-netback/common.h    |    1 +
+ drivers/net/xen-netback/interface.c |    3 +--
+ drivers/net/xen-netback/netback.c   |   10 +++++-----
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/net/core/flow_dissector.c
-+++ b/net/core/flow_dissector.c
-@@ -35,7 +35,7 @@ again:
- 		struct iphdr _iph;
- ip:
- 		iph = skb_header_pointer(skb, nhoff, sizeof(_iph), &_iph);
--		if (!iph)
-+		if (!iph || iph->ihl < 5)
- 			return false;
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -88,6 +88,7 @@ struct xenvif {
+ 	unsigned long   credit_usec;
+ 	unsigned long   remaining_credit;
+ 	struct timer_list credit_timeout;
++	u64 credit_window_start;
  
- 		if (ip_is_fragment(iph))
+ 	/* Statistics */
+ 	unsigned long rx_gso_checksum_fixup;
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -273,8 +273,7 @@ struct xenvif *xenvif_alloc(struct devic
+ 	vif->credit_bytes = vif->remaining_credit = ~0UL;
+ 	vif->credit_usec  = 0UL;
+ 	init_timer(&vif->credit_timeout);
+-	/* Initialize 'expires' now: it's used to track the credit window. */
+-	vif->credit_timeout.expires = jiffies;
++	vif->credit_window_start = get_jiffies_64();
+ 
+ 	dev->netdev_ops	= &xenvif_netdev_ops;
+ 	dev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO;
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1197,9 +1197,8 @@ out:
+ 
+ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
+ {
+-	unsigned long now = jiffies;
+-	unsigned long next_credit =
+-		vif->credit_timeout.expires +
++	u64 now = get_jiffies_64();
++	u64 next_credit = vif->credit_window_start +
+ 		msecs_to_jiffies(vif->credit_usec / 1000);
+ 
+ 	/* Timer could already be pending in rare cases. */
+@@ -1207,8 +1206,8 @@ static bool tx_credit_exceeded(struct xe
+ 		return true;
+ 
+ 	/* Passed the point where we can replenish credit? */
+-	if (time_after_eq(now, next_credit)) {
+-		vif->credit_timeout.expires = now;
++	if (time_after_eq64(now, next_credit)) {
++		vif->credit_window_start = now;
+ 		tx_add_credit(vif);
+ 	}
+ 
+@@ -1220,6 +1219,7 @@ static bool tx_credit_exceeded(struct xe
+ 			tx_credit_callback;
+ 		mod_timer(&vif->credit_timeout,
+ 			  next_credit);
++		vif->credit_window_start = next_credit;
+ 
+ 		return true;
+ 	}
 
 
