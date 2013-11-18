@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab3KRNS2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 08:18:28 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57065 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750779Ab3KRNSV (ORCPT
+	id S1751964Ab3KRNS4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 08:18:56 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45024 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab3KRNSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 08:18:21 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH] ACPI / scan: Set flags.match_driver in acpi_bus_scan_fixed()
-Date: Mon, 18 Nov 2013 14:30:56 +0100
-Message-ID: <12372702.nqQ0u36ADq@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 18 Nov 2013 08:18:47 -0500
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: netdev@vger.kernel.org
+Cc: mst@redhat.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] vhost: remove the dead branch
+Date: Mon, 18 Nov 2013 21:18:35 +0800
+Message-Id: <1384780716-25433-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111813-9332-0000-0000-000002311789
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Before commit 6931007cc90b (ACPI / scan: Start matching drivers
-after trying scan handlers) the match_driver flag for all devices
-was set in acpi_add_single_object(), but now it is set by
-acpi_bus_device_attach() which is not called for the "fixed"
-devices added by acpi_bus_scan_fixed().  This means that
-flags.match_driver is never set for those devices now, so make
-acpi_bus_scan_fixed() set it before calling device_attach().
+Since vhost_dev_init() forever return 0, some branches are never run,
+therefore need to be removed.
 
-Fixes: 6931007cc90b (ACPI / scan: Start matching drivers after trying scan handlers)
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/acpi/scan.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/vhost/net.c  |    5 -----
+ drivers/vhost/scsi.c |    5 -----
+ drivers/vhost/test.c |    5 -----
+ 3 files changed, 0 insertions(+), 15 deletions(-)
 
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -2023,6 +2023,7 @@ static int acpi_bus_scan_fixed(void)
- 		if (result)
- 			return result;
- 
-+		device->flags.match_driver = true;
- 		result = device_attach(&device->dev);
- 		if (result < 0)
- 			return result;
-@@ -2039,6 +2040,7 @@ static int acpi_bus_scan_fixed(void)
- 		if (result)
- 			return result;
- 
-+		device->flags.match_driver = true;
- 		result = device_attach(&device->dev);
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 831eb4f..0554785 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -707,11 +707,6 @@ static int vhost_net_open(struct inode *inode, struct file *f)
+ 		n->vqs[i].sock_hlen = 0;
  	}
+ 	r = vhost_dev_init(dev, vqs, VHOST_NET_VQ_MAX);
+-	if (r < 0) {
+-		kfree(n);
+-		kfree(vqs);
+-		return r;
+-	}
  
+ 	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
+ 	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
+diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+index e663921..9d5e18d 100644
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -1421,14 +1421,9 @@ static int vhost_scsi_open(struct inode *inode, struct file *f)
+ 
+ 	tcm_vhost_init_inflight(vs, NULL);
+ 
+-	if (r < 0)
+-		goto err_init;
+-
+ 	f->private_data = vs;
+ 	return 0;
+ 
+-err_init:
+-	kfree(vqs);
+ err_vqs:
+ 	vhost_scsi_free(vs);
+ err_vs:
+diff --git a/drivers/vhost/test.c b/drivers/vhost/test.c
+index 339eae8..99cb960 100644
+--- a/drivers/vhost/test.c
++++ b/drivers/vhost/test.c
+@@ -118,11 +118,6 @@ static int vhost_test_open(struct inode *inode, struct file *f)
+ 	vqs[VHOST_TEST_VQ] = &n->vqs[VHOST_TEST_VQ];
+ 	n->vqs[VHOST_TEST_VQ].handle_kick = handle_vq_kick;
+ 	r = vhost_dev_init(dev, vqs, VHOST_TEST_VQ_MAX);
+-	if (r < 0) {
+-		kfree(vqs);
+-		kfree(n);
+-		return r;
+-	}
+ 
+ 	f->private_data = n;
+ 
+-- 
+1.7.6.5
 
