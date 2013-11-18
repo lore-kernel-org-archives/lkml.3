@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120Ab3KRWEO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 17:04:14 -0500
-Received: from mail-qe0-f47.google.com ([209.85.128.47]:47407 "EHLO
-	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab3KRWEI (ORCPT
+	id S1751797Ab3KRWNR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 17:13:17 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:1674 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751358Ab3KRWNP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 17:04:08 -0500
-From: Elena Ufimtseva <ufimtseva@gmail.com>
-To: xen-devel@lists.xenproject.org
-Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, akpm@linux-foundation.org,
-        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com, ian.campbell@citrix.com,
-        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
-        linux-kernel@vger.kernel.org, Elena Ufimtseva <ufimtseva@gmail.com>
-Subject: [PATCH RESEND v2 2/2] xen: enable vnuma for PV guest
-Date: Mon, 18 Nov 2013 16:58:42 -0500
-Message-Id: <1384811922-14642-3-git-send-email-ufimtseva@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1384811922-14642-1-git-send-email-ufimtseva@gmail.com>
-References: <1384811922-14642-1-git-send-email-ufimtseva@gmail.com>
+	Mon, 18 Nov 2013 17:13:15 -0500
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+From: "Stephen Hurd" <shurd@broadcom.com>
+To: "Olof Johansson" <olof@lixom.net>,
+        "Grant Grundler" <grundler@chromium.org>
+cc: "Chris Ball" <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "Olof Johansson" <olofj@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] mmc: disable UHS on broadcom sdhci
+Thread-Topic: [PATCH] mmc: disable UHS on broadcom sdhci
+Thread-Index: AQHO4l5oMQkNsOKWnk+3wJRcigt0mpon/g4AgAOTJtA=
+Date: Mon, 18 Nov 2013 22:13:05 +0000
+Message-ID: <156984479488CD49A184F5CAB4AF9346070A12A6@IRVEXCHMB14.corp.ad.broadcom.com>
+References: <1384559782-7614-1-git-send-email-grundler@chromium.org>
+ <20131116073454.GA20132@quad.lixom.net>
+In-Reply-To: <20131116073454.GA20132@quad.lixom.net>
+Accept-Language: en-CA, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.208.64]
+MIME-Version: 1.0
+X-WSS-ID: 7E944F691509240043-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enables numa if vnuma topology hypercall is supported and it is domU.
+> SDHCI_QUIRK2_BCM57785_CR:
+>     Bit twiddles some Broadcom-specific registers and supresses an error
+>     about the 64k bar0.
 
-Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
----
- arch/x86/xen/setup.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+> I think this can be done without spending a global SDHCI quirk bit. This
+> is just a one-time setup that needs to be done, isn't it? It's hard
+> to tell since there's no official errata described, but if it is, then
+> overriding the probe function is the way to go instead, flipping these
+> bits there and then call the regular probe.
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 68c054f..0aab799 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -20,6 +20,7 @@
- #include <asm/numa.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
-+#include <asm/xen/vnuma.h>
- 
- #include <xen/xen.h>
- #include <xen/page.h>
-@@ -598,6 +599,9 @@ void __init xen_arch_setup(void)
- 	WARN_ON(xen_set_default_idle());
- 	fiddle_vdso();
- #ifdef CONFIG_NUMA
--	numa_off = 1;
-+	if (!xen_initial_domain() && xen_vnuma_supported())
-+		numa_off = 0;
-+	else
-+		numa_off = 1;
- #endif
- }
--- 
-1.7.10.4
+Yeah, I have confirmed that these bits need  to be twiddled during every clock setting (ie: for each card enumeration) not one time when the chip is enabled.
 
