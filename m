@@ -1,142 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751368Ab3KRKbC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 05:31:02 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50163 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab3KRKax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 05:30:53 -0500
-Message-ID: <5289EC52.2060803@ti.com>
-Date: Mon, 18 Nov 2013 12:30:42 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751469Ab3KRKbV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 05:31:21 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:17949 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751319Ab3KRKa7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 05:30:59 -0500
+X-IronPort-AV: E=Sophos;i="4.93,722,1378828800"; 
+   d="scan'208";a="9064860"
+Message-ID: <5289E796.1030506@cn.fujitsu.com>
+Date: Mon, 18 Nov 2013 18:10:30 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        <linux-omap@vger.kernel.org>
-CC: <linaro-networking@linaro.org>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 16/23] ASoC: omap: mcbsp, mcpdm, dmic: raw read and write
- endian fix
-References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org> <1384560086-11994-17-git-send-email-taras.kondratiuk@linaro.org>
-In-Reply-To: <1384560086-11994-17-git-send-email-taras.kondratiuk@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+To: jaegeuk.kim@samsung.com
+CC: Chao Yu <chao2.yu@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        =?UTF-8?B?J+iwreWnnSc=?= <shu.tan@samsung.com>
+Subject: Re: [f2fs-dev] [PATCH V2 1/2] f2fs: add a new function to support
+ for merging contiguous read
+References: <000001cee293$3b6e3030$b24a9090$@samsung.com> <1384734560.26319.10.camel@kjgkr> <000901cee3fe$edfa8660$c9ef9320$@samsung.com> <1384765870.26319.16.camel@kjgkr>
+In-Reply-To: <1384765870.26319.16.camel@kjgkr>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/18 18:14:56,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/18 18:15:08
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2013 02:01 AM, Taras Kondratiuk wrote:
-> From: Victor Kamensky <victor.kamensky@linaro.org>
-> 
-> All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
-> Need to use endian neutral functions to read/write h/w registers.
-> I.e instead of __raw_read[lw] and __raw_write[lw] functions code
-> need to use read[lw]_relaxed and write[lw]_relaxed functions.
-> If the first simply reads/writes register, the second will byteswap
-> it if host operates in BE mode.
-> 
-> Changes are trivial sed like replacement of __raw_xxx functions
-> with xxx_relaxed variant.
-> 
-> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+On 11/18/2013 05:11 PM, Jaegeuk Kim wrote:
 
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-
-> ---
->  sound/soc/omap/mcbsp.c      |   12 ++++++------
->  sound/soc/omap/omap-dmic.c  |    4 ++--
->  sound/soc/omap/omap-mcpdm.c |    4 ++--
->  3 files changed, 10 insertions(+), 10 deletions(-)
+> Hi,
 > 
-> diff --git a/sound/soc/omap/mcbsp.c b/sound/soc/omap/mcbsp.c
-> index 83433fd..86c7538 100644
-> --- a/sound/soc/omap/mcbsp.c
-> +++ b/sound/soc/omap/mcbsp.c
-> @@ -36,10 +36,10 @@ static void omap_mcbsp_write(struct omap_mcbsp *mcbsp, u16 reg, u32 val)
->  
->  	if (mcbsp->pdata->reg_size == 2) {
->  		((u16 *)mcbsp->reg_cache)[reg] = (u16)val;
-> -		__raw_writew((u16)val, addr);
-> +		writew_relaxed((u16)val, addr);
->  	} else {
->  		((u32 *)mcbsp->reg_cache)[reg] = val;
-> -		__raw_writel(val, addr);
-> +		writel_relaxed(val, addr);
->  	}
->  }
->  
-> @@ -48,22 +48,22 @@ static int omap_mcbsp_read(struct omap_mcbsp *mcbsp, u16 reg, bool from_cache)
->  	void __iomem *addr = mcbsp->io_base + reg * mcbsp->pdata->reg_step;
->  
->  	if (mcbsp->pdata->reg_size == 2) {
-> -		return !from_cache ? __raw_readw(addr) :
-> +		return !from_cache ? readw_relaxed(addr) :
->  				     ((u16 *)mcbsp->reg_cache)[reg];
->  	} else {
-> -		return !from_cache ? __raw_readl(addr) :
-> +		return !from_cache ? readl_relaxed(addr) :
->  				     ((u32 *)mcbsp->reg_cache)[reg];
->  	}
->  }
->  
->  static void omap_mcbsp_st_write(struct omap_mcbsp *mcbsp, u16 reg, u32 val)
->  {
-> -	__raw_writel(val, mcbsp->st_data->io_base_st + reg);
-> +	writel_relaxed(val, mcbsp->st_data->io_base_st + reg);
->  }
->  
->  static int omap_mcbsp_st_read(struct omap_mcbsp *mcbsp, u16 reg)
->  {
-> -	return __raw_readl(mcbsp->st_data->io_base_st + reg);
-> +	return readl_relaxed(mcbsp->st_data->io_base_st + reg);
->  }
->  
->  #define MCBSP_READ(mcbsp, reg) \
-> diff --git a/sound/soc/omap/omap-dmic.c b/sound/soc/omap/omap-dmic.c
-> index 12e566b..1bd531d 100644
-> --- a/sound/soc/omap/omap-dmic.c
-> +++ b/sound/soc/omap/omap-dmic.c
-> @@ -61,12 +61,12 @@ struct omap_dmic {
->  
->  static inline void omap_dmic_write(struct omap_dmic *dmic, u16 reg, u32 val)
->  {
-> -	__raw_writel(val, dmic->io_base + reg);
-> +	writel_relaxed(val, dmic->io_base + reg);
->  }
->  
->  static inline int omap_dmic_read(struct omap_dmic *dmic, u16 reg)
->  {
-> -	return __raw_readl(dmic->io_base + reg);
-> +	return readl_relaxed(dmic->io_base + reg);
->  }
->  
->  static inline void omap_dmic_start(struct omap_dmic *dmic)
-> diff --git a/sound/soc/omap/omap-mcpdm.c b/sound/soc/omap/omap-mcpdm.c
-> index 90d2a7c..653ba1c 100644
-> --- a/sound/soc/omap/omap-mcpdm.c
-> +++ b/sound/soc/omap/omap-mcpdm.c
-> @@ -74,12 +74,12 @@ struct omap_mcpdm {
->  
->  static inline void omap_mcpdm_write(struct omap_mcpdm *mcpdm, u16 reg, u32 val)
->  {
-> -	__raw_writel(val, mcpdm->io_base + reg);
-> +	writel_relaxed(val, mcpdm->io_base + reg);
->  }
->  
->  static inline int omap_mcpdm_read(struct omap_mcpdm *mcpdm, u16 reg)
->  {
-> -	return __raw_readl(mcpdm->io_base + reg);
-> +	return readl_relaxed(mcpdm->io_base + reg);
->  }
->  
->  #ifdef DEBUG
+> 2013-11-18 (월), 09:37 +0800, Chao Yu:
+>> Hi Kim,
+>>
+>>> -----Original Message-----
+>>> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+>>> Sent: Monday, November 18, 2013 8:29 AM
+>>> To: Chao Yu
+>>> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; 谭姝
+>>> Subject: Re: [f2fs-dev] [PATCH V2 1/2] f2fs: add a new function to support for merging contiguous read
+>>>
+>>> Hi Chao,
+>>>
+>>> 2013-11-16 (토), 14:14 +0800, Chao Yu:
+>>>> For better read performance, we add a new function to support for merging contiguous read as the one for write.
+>>>
+>>> Please consider 80 columns for the description.
+>>> I cannot fix this at every time though. :(
+>>
+>> Got it, sorry about my carelessness in previous patch.
+>>
+>>>
+>>>>
+>>>> v1-->v2:
+>>>>  o add declarations here as Gu Zheng suggested.
+>>>>
+>>>> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+>>>> Acked-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>>>> ---
+>>>>  fs/f2fs/data.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
+>>>>  fs/f2fs/f2fs.h |    4 ++++
+>>>>  2 files changed, 49 insertions(+)
+>>>>
+>>>> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+>>>> index aa3438c..18107cb 100644
+>>>> --- a/fs/f2fs/data.c
+>>>> +++ b/fs/f2fs/data.c
+>>>> @@ -404,6 +404,51 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct page *page,
+>>>>  	return 0;
+>>>>  }
+>>>>
+>>>> +void f2fs_submit_read_bio(struct f2fs_sb_info *sbi, int rw)
+>>>> +{
+>>>> +	down_read(&sbi->bio_sem);
+>>>
+>>> Is there any reason to use down_read()?
+>>
+>> Isn't that we use bio_sem to let w/r or w/w submitting be mutex?
+> 
+> As I examined the bio_sem, I think we don't need to use a semaphore for
+> read and write IOs.
+> Just it is enough to use a mutex for writes only.
+
+Agree. Mutex is more suitable here, we just want to protect the write bio
+related fields in the write patch, no relations to read.
+
+> 
+>>
+>>> It seems that we need to declare sbi->bio_read and sbi->bio_write
+>>> instead of sbi->bio_sem.
+>>> In addition to that, we need to use down_write(&sbi->bio_read) here.
+>>
+>> If so, it looks similar between (struct rw_semaphore) sbi->bio_read 
+>> and (struct bio *) sbi->read_bio.
+>> How about using read_bio_sem/rbio_sem to differentiate 
+>> from sbi->read_bio?
+> 
+> I think sbi->write_mutex and sbi->read_mutex are much better.
+
+It's more reasonable and readable.
+
+Thanks,
+Gu
+
+> 
+> Could you refer the following patches?
+> Thanks,
 > 
 
 
--- 
-P�ter
