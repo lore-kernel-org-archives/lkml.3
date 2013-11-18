@@ -1,92 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713Ab3KRNG1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 08:06:27 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:38840 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab3KRNGY (ORCPT
+	id S1751790Ab3KRNLj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 08:11:39 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36209 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab3KRNLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 08:06:24 -0500
-Date: Mon, 18 Nov 2013 13:06:16 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: Constify struct mfd_cell where possible
-Message-ID: <20131118130616.GI13640@lee--X1>
-References: <1384779449-1888-1-git-send-email-geert@linux-m68k.org>
+	Mon, 18 Nov 2013 08:11:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1384779449-1888-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1383905510-31760-4-git-send-email-prabhakar.csengg@gmail.com>
+References: <1383905510-31760-1-git-send-email-prabhakar.csengg@gmail.com>
+	<1383905510-31760-4-git-send-email-prabhakar.csengg@gmail.com>
+Date: Mon, 18 Nov 2013 14:11:32 +0100
+Message-ID: <CACRpkdaJg4wqtD5xhPVrHJHxFoVwau6jidbOuQ9xFSK_6drxPQ@mail.gmail.com>
+Subject: Re: [PATCH v5 3/7] gpio: davinci: use irqdomain
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Sekhar Nori <nsekhar@ti.com>, Grygorii Strashko <grygorii.strashko@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013, Geert Uytterhoeven wrote:
+On Fri, Nov 8, 2013 at 11:11 AM, Prabhakar Lad
+<prabhakar.csengg@gmail.com> wrote:
 
-> As of commit 03e361b25ee8dfb1fd9b890072c23c4aae01c6c7 ("mfd: Stop setting
-> refcounting pointers in original mfd_cell arrays"), the "cell" parameter of
-> mfd_add_devices() is "const" again. Hence make all cell data passed to
-> mfd_add_devices() const where possible.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
-> Compile tested:
->   - cs5535-mfd, intel_msic, and sta2x11-mfd for x86,
->   - all other drivers for arm.
-> 
->  drivers/mfd/88pm800.c             |    4 ++--
->  drivers/mfd/88pm805.c             |    2 +-
->  drivers/mfd/ab8500-core.c         |   14 +++++++-------
->  drivers/mfd/arizona-core.c        |    8 ++++----
->  drivers/mfd/as3722.c              |    2 +-
->  drivers/mfd/asic3.c               |    4 ++--
->  drivers/mfd/cros_ec.c             |    2 +-
->  drivers/mfd/da9052-core.c         |    2 +-
->  drivers/mfd/da9055-core.c         |    2 +-
->  drivers/mfd/da9063-core.c         |    2 +-
->  drivers/mfd/db8500-prcmu.c        |    4 ++--
->  drivers/mfd/htc-pasic3.c          |    2 +-
->  drivers/mfd/intel_msic.c          |    2 +-
->  drivers/mfd/jz4740-adc.c          |    2 +-
->  drivers/mfd/lp8788.c              |    2 +-
->  drivers/mfd/max77686.c            |    2 +-
->  drivers/mfd/max77693.c            |    2 +-
->  drivers/mfd/max8907.c             |    2 +-
->  drivers/mfd/max8925-core.c        |    8 ++++----
->  drivers/mfd/max8997.c             |    2 +-
->  drivers/mfd/max8998.c             |    4 ++--
->  drivers/mfd/rc5t583.c             |    2 +-
->  drivers/mfd/rdc321x-southbridge.c |    2 +-
->  drivers/mfd/retu-mfd.c            |    6 +++---
->  drivers/mfd/sec-core.c            |    8 ++++----
->  drivers/mfd/stmpe.c               |   10 +++++-----
->  drivers/mfd/stmpe.h               |    2 +-
->  drivers/mfd/tc3589x.c             |    4 ++--
->  drivers/mfd/tc6387xb.c            |    2 +-
->  drivers/mfd/timberdale.c          |   12 ++++++------
->  drivers/mfd/tps6507x.c            |    2 +-
->  drivers/mfd/tps65090.c            |    2 +-
->  drivers/mfd/tps65217.c            |    2 +-
->  drivers/mfd/tps6586x.c            |    2 +-
->  drivers/mfd/tps65910.c            |    2 +-
->  drivers/mfd/tps65912-core.c       |    2 +-
->  drivers/mfd/tps80031.c            |    2 +-
->  drivers/mfd/viperboard.c          |    2 +-
->  drivers/mfd/vx855.c               |    2 +-
->  drivers/mfd/wm831x-core.c         |   14 +++++++-------
->  drivers/mfd/wm8994-core.c         |    4 ++--
->  drivers/staging/nvec/nvec.c       |    2 +-
->  42 files changed, 80 insertions(+), 80 deletions(-)
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>
+> This patch converts the davinci gpio driver to use irqdomain
+> support.
+>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-In the interests of bisectability and revertability, I'd prefer one
-patch per file-change where possible please. Or at the very least in
-groups of files, so one for tps*, another one for max*, etc.
+(...)
+> @@ -282,8 +283,7 @@ gpio_irq_handler(unsigned irq, struct irq_desc *desc)
+>         desc->irq_data.chip->irq_ack(&desc->irq_data);
+>         while (1) {
+>                 u32             status;
+> -               int             n;
+> -               int             res;
+> +               int             bit;
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Why is this an int? I think u8 would suffice.
+
+>                 /* now demux them to the right lowlevel handler */
+> -               n = d->irq_base;
+> -               if (irq & 1) {
+> -                       n += 16;
+> -                       status >>= 16;
+> -               }
+> -
+>                 while (status) {
+> -                       res = ffs(status);
+> -                       n += res;
+> -                       generic_handle_irq(n - 1);
+> -                       status >>= res;
+> +                       bit = __ffs(status);
+> +                       status &= ~(1 << bit);
+> +                       generic_handle_irq(irq_find_mapping(d->irq_domain,
+> +                                                           bit));
+
+This is a nice hunk of the patch.
+
+I would use <linux/bitops.h> and do:
+status &= ~BIT(bit);
+
+
+> @@ -313,10 +307,7 @@ static int gpio_to_irq_banked(struct gpio_chip *chip, unsigned offset)
+>  {
+>         struct davinci_gpio_controller *d = chip2controller(chip);
+>
+> -       if (d->irq_base >= 0)
+> -               return d->irq_base + offset;
+> -       else
+> -               return -ENODEV;
+> +       return irq_create_mapping(d->irq_domain, offset);
+>  }
+
+I think we recently established that map creating cannot be done
+in gpio_to_irq* functions as that will not work properly if you request
+an IRQ from device tree without first obtaining the IRQ from the GPIO
+number with this function.
+
+Instead call irq_create_mapping() on *all* used IRQ lines in the
+probe function and use irq_find_mapping() here too.
+
+> +       for (gpio = 0, bank = 0; gpio < ngpio; bank++, bank_irq++, gpio += 16) {
+>                 /* disabled by default, enabled only as needed */
+>                 g = gpio2regs(gpio);
+>                 writel(~0, &g->clr_falling);
+> @@ -467,14 +483,6 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
+>                  */
+>                 irq_set_handler_data(bank_irq, &chips[gpio / 32]);
+
+So for example here you could call iurq_create_mapping();
+
+Also: please write a patch that marks the IRQ lines.
+Call gpio_lock_as_irq(*gpio_chip, offset); in the
+irqchip startup/shutdown functions. (Can be a separate
+patch.)
+
+Yours,
+Linus Walleij
