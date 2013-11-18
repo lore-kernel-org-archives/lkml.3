@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840Ab3KRJtG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 04:49:06 -0500
+	id S1751884Ab3KRJtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 04:49:10 -0500
 Received: from mga11.intel.com ([192.55.52.93]:49734 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751784Ab3KRJs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 04:48:59 -0500
+	id S1751753Ab3KRJsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 04:48:55 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,722,1378882800"; 
-   d="scan'208";a="435266954"
+   d="scan'208";a="435266936"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 4/4] perf record: Default -t option to no inheritance
-Date: Mon, 18 Nov 2013 11:55:57 +0200
-Message-Id: <1384768557-23331-5-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 3/4] perf tools: Add option macro OPT_BOOLEAN_SET
+Date: Mon, 18 Nov 2013 11:55:56 +0200
+Message-Id: <1384768557-23331-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1384768557-23331-1-git-send-email-adrian.hunter@intel.com>
 References: <1384768557-23331-1-git-send-email-adrian.hunter@intel.com>
@@ -28,70 +28,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The change to per-cpu mmaps causes the -p, -t
-and -u options now to have inheritance enabled
-by default.  Change that back to no inheritance
-but for the -t option only.
+OPT_BOOLEAN_SET records whether a boolean
+option was set by the user.  That information
+can be used to change the default value
+for the option after the options have been
+parsed.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Requested-by: Peter Zijlstra <peterz@infradead.org>
 ---
- tools/perf/Documentation/perf-record.txt | 2 ++
- tools/perf/builtin-record.c              | 8 ++++++--
- tools/perf/perf.h                        | 1 +
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ tools/perf/util/parse-options.c | 2 ++
+ tools/perf/util/parse-options.h | 8 ++++++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 6ac867e..c407897 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -57,6 +57,8 @@ OPTIONS
- -t::
- --tid=::
-         Record events on existing thread ID (comma separated list).
-+        This option also disables inheritance by default.  Enable it by adding
-+        --inherit.
+diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
+index b6b39ff..d22e3f8 100644
+--- a/tools/perf/util/parse-options.c
++++ b/tools/perf/util/parse-options.c
+@@ -78,6 +78,8 @@ static int get_value(struct parse_opt_ctx_t *p,
  
- -u::
- --uid=::
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f5b18b8..65615a8 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -843,8 +843,9 @@ const struct option record_options[] = {
- 	OPT_U64('c', "count", &record.opts.user_interval, "event period to sample"),
- 	OPT_STRING('o', "output", &record.file.path, "file",
- 		    "output file name"),
--	OPT_BOOLEAN('i', "no-inherit", &record.opts.no_inherit,
--		    "child tasks do not inherit counters"),
-+	OPT_BOOLEAN_SET('i', "no-inherit", &record.opts.no_inherit,
-+			&record.opts.no_inherit_set,
-+			"child tasks do not inherit counters"),
- 	OPT_UINTEGER('F', "freq", &record.opts.user_freq, "profile at this frequency"),
- 	OPT_CALLBACK('m', "mmap-pages", &record.opts.mmap_pages, "pages",
- 		     "number of mmap data pages",
-@@ -939,6 +940,9 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
- 		goto out_symbol_exit;
- 	}
+ 	case OPTION_BOOLEAN:
+ 		*(bool *)opt->value = unset ? false : true;
++		if (opt->set)
++			*(bool *)opt->set = true;
+ 		return 0;
  
-+	if (rec->opts.target.tid && !rec->opts.no_inherit_set)
-+		rec->opts.no_inherit = true;
-+
- 	err = target__validate(&rec->opts.target);
- 	if (err) {
- 		target__strerror(&rec->opts.target, err, errbuf, BUFSIZ);
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index b079304..b23fed5 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -254,6 +254,7 @@ struct perf_record_opts {
- 	bool	     inherit_stat;
- 	bool	     no_delay;
- 	bool	     no_inherit;
-+	bool	     no_inherit_set;
- 	bool	     no_samples;
- 	bool	     raw_samples;
- 	bool	     sample_address;
+ 	case OPTION_INCR:
+diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
+index b0241e2..cbf0149 100644
+--- a/tools/perf/util/parse-options.h
++++ b/tools/perf/util/parse-options.h
+@@ -82,6 +82,9 @@ typedef int parse_opt_cb(const struct option *, const char *arg, int unset);
+  *   OPTION_{BIT,SET_UINT,SET_PTR} store the {mask,integer,pointer} to put in
+  *   the value when met.
+  *   CALLBACKS can use it like they want.
++ *
++ * `set`::
++ *   whether an option was set by the user
+  */
+ struct option {
+ 	enum parse_opt_type type;
+@@ -94,6 +97,7 @@ struct option {
+ 	int flags;
+ 	parse_opt_cb *callback;
+ 	intptr_t defval;
++	bool *set;
+ };
+ 
+ #define check_vtype(v, type) ( BUILD_BUG_ON_ZERO(!__builtin_types_compatible_p(typeof(v), type)) + v )
+@@ -103,6 +107,10 @@ struct option {
+ #define OPT_GROUP(h)                { .type = OPTION_GROUP, .help = (h) }
+ #define OPT_BIT(s, l, v, h, b)      { .type = OPTION_BIT, .short_name = (s), .long_name = (l), .value = check_vtype(v, int *), .help = (h), .defval = (b) }
+ #define OPT_BOOLEAN(s, l, v, h)     { .type = OPTION_BOOLEAN, .short_name = (s), .long_name = (l), .value = check_vtype(v, bool *), .help = (h) }
++#define OPT_BOOLEAN_SET(s, l, v, os, h) \
++	{ .type = OPTION_BOOLEAN, .short_name = (s), .long_name = (l), \
++	.value = check_vtype(v, bool *), .help = (h), \
++	.set = check_vtype(os, bool *)}
+ #define OPT_INCR(s, l, v, h)        { .type = OPTION_INCR, .short_name = (s), .long_name = (l), .value = check_vtype(v, int *), .help = (h) }
+ #define OPT_SET_UINT(s, l, v, h, i)  { .type = OPTION_SET_UINT, .short_name = (s), .long_name = (l), .value = check_vtype(v, unsigned int *), .help = (h), .defval = (i) }
+ #define OPT_SET_PTR(s, l, v, h, p)  { .type = OPTION_SET_PTR, .short_name = (s), .long_name = (l), .value = (v), .help = (h), .defval = (p) }
 -- 
 1.7.11.7
 
