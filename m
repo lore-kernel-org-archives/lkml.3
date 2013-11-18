@@ -1,78 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544Ab3KRP1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 10:27:45 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:33026 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751167Ab3KRP1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 10:27:37 -0500
-Message-ID: <528A318E.1090209@ti.com>
-Date: Mon, 18 Nov 2013 17:26:06 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751719Ab3KRP2Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 10:28:24 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:38564 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab3KRP2S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 10:28:18 -0500
+Date: Mon, 18 Nov 2013 07:28:06 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: mingo@kernel.org, hch@infradead.org, hpa@zytor.com, tglx@linutronix.de,
+        x86@kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org
+Subject: Re: [PATCH v1.1] x86: intel-mid: add test module for sfi_device()
+Message-ID: <20131118152806.GB19649@infradead.org>
+References: <1384370961-30847-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1384560558-10462-1-git-send-email-david.a.cohen@linux.intel.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, <wim@iguana.be>,
-        <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <galak@kernel.crashing.org>, <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: Fwd: [PATCH 7/8] watchdog: davinci: add "clocks" property
-References: <1383680783-12114-8-git-send-email-ivan.khoronzhuk@ti.com> <527A28E8.4010204@ti.com> <528829DB.7020003@roeck-us.net>
-In-Reply-To: <528829DB.7020003@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384560558-10462-1-git-send-email-david.a.cohen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2013 04:28 AM, Guenter Roeck wrote:
-> On 11/06/2013 03:32 AM, ivan.khoronzhuk wrote:
->> The Keystone arch is using clocks in DT and source clock for watchdog
->> has to be specified, so add this to binding.
->>
->> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->> ---
->>   .../devicetree/bindings/watchdog/davinci-wdt.txt   |    5 +++++
->>   1 file changed, 5 insertions(+)
->>
->> diff --git
->> a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
->> b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
->> index fddced9..4db4d0e 100644
->> --- a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
->> +++ b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
->> @@ -7,6 +7,10 @@ Required properties:
->>
->>   - reg : Should contain WDT registers location and length
->>
->> +- clocks: phandle reference to the controller clock.
->> +      Required only for Keystone arch.
->> +      See clock-bindings.txt
->> +
->
-> Yet another form of formatting. Also, wonder if it makes sense to merge
-> this with the patch adding keystone support.
->
+On Fri, Nov 15, 2013 at 04:09:18PM -0800, David Cohen wrote:
+> This patch adds a test module to validate sfi_device() when used from a
+> driver module.
 
-Ok, I'll squash them.
+I don't think this is all that useful.  How about you prepeare a few
+of the more useful drivers from your tree for submission instead?
 
->>   Optional properties:
->>
->>   - timeout-sec:        Contains the watchdog timeout in seconds
->> @@ -21,4 +25,5 @@ wdt: wdt@2320000 {
->>       compatible = "ti,davinci-wdt";
->>       reg = <0x02320000 0x80>;
->>       timeout-sec = <30>;
->> +    clocks = <&clkwdtimer0>;
->>   };
->>
->
-
--- 
-Regards,
-Ivan Khoronzhuk
