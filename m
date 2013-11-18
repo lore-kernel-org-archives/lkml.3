@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720Ab3KRU3Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:29:24 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50616 "EHLO
+	id S1752528Ab3KRU2S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:28:18 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50540 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560Ab3KRU2U (ORCPT
+	with ESMTP id S1752453Ab3KRU2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:28:20 -0500
+	Mon, 18 Nov 2013 15:28:13 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
+Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 15/16] perf record: Default -t option to no inheritance
-Date: Mon, 18 Nov 2013 17:28:03 -0300
-Message-Id: <1384806484-29869-16-git-send-email-acme@infradead.org>
+Subject: [PATCH 04/16] perf completion: introduce a layer of indirection
+Date: Mon, 18 Nov 2013 17:27:52 -0300
+Message-Id: <1384806484-29869-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384806484-29869-1-git-send-email-acme@infradead.org>
 References: <1384806484-29869-1-git-send-email-acme@infradead.org>
@@ -30,82 +23,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
 
-The change to per-cpu mmaps causes the -p, -t and -u options now to have
-inheritance enabled by default.  Change that back to no inheritance but
-for the -t option only.
+Define the variables cur, words, cword, and prev outside the main
+completion function so that we have a chance to override it when we
+introduce zsh support.
 
-Requested-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1384768557-23331-5-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/1384704807-15779-2-git-send-email-artagnon@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-record.txt | 2 ++
- tools/perf/builtin-record.c              | 8 ++++++--
- tools/perf/perf.h                        | 1 +
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ tools/perf/bash_completion | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 6ac867e7667f..c407897f0435 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -57,6 +57,8 @@ OPTIONS
- -t::
- --tid=::
-         Record events on existing thread ID (comma separated list).
-+        This option also disables inheritance by default.  Enable it by adding
-+        --inherit.
+diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
+index 62e157db2e2b..3efdc84f112c 100644
+--- a/tools/perf/bash_completion
++++ b/tools/perf/bash_completion
+@@ -89,15 +89,12 @@ __ltrim_colon_completions()
+ 	fi
+ }
  
- -u::
- --uid=::
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f5b18b8fe8c9..65615a8bc25e 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -843,8 +843,9 @@ const struct option record_options[] = {
- 	OPT_U64('c', "count", &record.opts.user_interval, "event period to sample"),
- 	OPT_STRING('o', "output", &record.file.path, "file",
- 		    "output file name"),
--	OPT_BOOLEAN('i', "no-inherit", &record.opts.no_inherit,
--		    "child tasks do not inherit counters"),
-+	OPT_BOOLEAN_SET('i', "no-inherit", &record.opts.no_inherit,
-+			&record.opts.no_inherit_set,
-+			"child tasks do not inherit counters"),
- 	OPT_UINTEGER('F', "freq", &record.opts.user_freq, "profile at this frequency"),
- 	OPT_CALLBACK('m', "mmap-pages", &record.opts.mmap_pages, "pages",
- 		     "number of mmap data pages",
-@@ -939,6 +940,9 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
- 		goto out_symbol_exit;
- 	}
+-type perf &>/dev/null &&
+-_perf()
++__perf_main ()
+ {
+-	local cur words cword prev cmd
+-
+-	COMPREPLY=()
+-	_get_comp_words_by_ref -n =: cur words cword prev
++	local cmd
  
-+	if (rec->opts.target.tid && !rec->opts.no_inherit_set)
-+		rec->opts.no_inherit = true;
+ 	cmd=${words[0]}
++	COMPREPLY=()
+ 
+ 	# List perf subcommands or long options
+ 	if [ $cword -eq 1 ]; then
+@@ -120,6 +117,14 @@ _perf()
+ 		opts=$($cmd $subcmd --list-opts)
+ 		COMPREPLY=( $( compgen -W '$opts' -- "$cur" ) )
+ 	fi
++}
 +
- 	err = target__validate(&rec->opts.target);
- 	if (err) {
- 		target__strerror(&rec->opts.target, err, errbuf, BUFSIZ);
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index b079304bd53d..b23fed527514 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -254,6 +254,7 @@ struct perf_record_opts {
- 	bool	     inherit_stat;
- 	bool	     no_delay;
- 	bool	     no_inherit;
-+	bool	     no_inherit_set;
- 	bool	     no_samples;
- 	bool	     raw_samples;
- 	bool	     sample_address;
++type perf &>/dev/null &&
++_perf()
++{
++	local cur words cword prev
++	_get_comp_words_by_ref -n =: cur words cword prev
++	__perf_main
+ } &&
+ 
+ complete -o bashdefault -o default -o nospace -F _perf perf 2>/dev/null \
 -- 
 1.8.1.4
 
