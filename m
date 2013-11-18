@@ -1,134 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751215Ab3KRFjk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 00:39:40 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:48962 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab3KRFjb (ORCPT
+	id S1751319Ab3KRFl2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 00:41:28 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:32204 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab3KRFlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 00:39:31 -0500
-Message-ID: <5289A80B.7080808@linaro.org>
-Date: Mon, 18 Nov 2013 11:09:23 +0530
-From: viresh kumar <viresh.kumar@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 18 Nov 2013 00:41:22 -0500
+Message-ID: <5289A89E.2050105@oracle.com>
+Date: Mon, 18 Nov 2013 13:41:50 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
-        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
-References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org> <5974906.WAPp3f3eVY@vostro.rjw.lan> <CAKohpo=PoAaYgLNEVkkTC6tzAH=5hKw4VWTsrjt2jQnr7+6Q_w@mail.gmail.com> <5229929.5JRiWnF6CT@vostro.rjw.lan>
-In-Reply-To: <5229929.5JRiWnF6CT@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
+To: Oleg Nesterov <oleg@redhat.com>
+CC: jfs-discussion@lists.sourceforge.net, jiri@resnulli.us,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>, cluster-devel@redhat.com,
+        linux-mtd@lists.infradead.org, akpm@linux-foundation.org
+Subject: Re: introduce list_get_first/last (Was: [PATCH 3/6] gfs2: simplify
+ current_tail() via list_last_entry_or_null())
+References: <5285A3F4.4040000@oracle.com> <20131115163957.GA28467@redhat.com> <20131115171259.GA10687@redhat.com>
+In-Reply-To: <20131115171259.GA10687@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 November 2013 03:07, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Sunday, November 17, 2013 10:27:43 PM Viresh Kumar wrote:
+Hi Oleg,
 
->> Okay.. Even these notifiers would be fine for me. To make things more clear
->> before I start implementing them:
->> - What about implementing syscore's suspend_prepare and post_suspend?
->
-> I'm not sure how useful that would be.  When would you like to execute those
-> things?
+Sorry for my late response!
 
-Maybe after freezing userspace. So I was actually looking to move the existing
-code I wrote in PM notifiers to those..
+On 11/16/2013 01:12 AM, Oleg Nesterov wrote:
 
-Because in our usecase, we just want to know when suspend has started or
-resume has finished. And so we really don't need a per cpu callback.
-
-And so I felt probably it would be better to implement those instead of
-cpu_subsys callbacks.
-
->> - Or you want to extend only CPU subsystems notifiers? What notifiers exactly?
->> And at which places we want to issue them from?
->
-> Why do we need to use notifiers?  What about PM callbacks?
-
-Yeah, we don't need notifiers but callbacks.
-
->> Okay, so you were asking about extending following list: CPU_ONLINE,
->> CPU_UP_PREPARE, CPU_UP_CANCELED, CPU_DOWN_PREPARE, etc.. to
->> include suspend/resume ones as well?
->
-> No.  Bus types (among other things) may provide suspend/resume callbacks for
-> handling devices.  We have a bus type for CPUs, which is called cpu_subsys
-> and currently doesn't define any PM callbacks, although it could do that in
-> principle.  Have you investigated that possibility?
-
-I did it now and got really confused. :)
-
-This is what my understanding is:
-- bus can register PM hooks, like suspend/resume/prepare, etc..
-- devices under that bus would register themselves to that bus and eventually
-can get their _driver's_ callbacks called via bus hooks.. For example and I2C
-controller driver's callbacks will get called via i2c core bus..
-
-- In case of cpu subsystem, even if cpu_subsys adds those hooks in
-drivers/base/cpu.c, then those hooks will get called for each cpu. CPU's don't
-have a driver and so the only callbacks called are the ones of cpu_subsys.
-- How will we bind/use them with cpufreq?
-
-Our sole requirement here is to get notify cpufreq core that system
-suspend/resume/hibernation/restore has started/finished. How will that get
-fulfilled with cpu_subsys callbacks?
-
->> Logically speaking, all existing ones does look correct as they are more or
->> less cpu related. But suspend/resume doesn't look any similar, Atleast to me.
+> On 11/15, Oleg Nesterov wrote:
 >>
->> Suspend/resume are system's state rather than CPU's.. We aren't suspending
->> or resuming CPUs, we are shutting them off.. So I thought maybe syscore ops
->> is a better place (which is already used by cpufreq)..
->
-> cpufreq uses syscore_ops for the boot CPU only and that admittedly is a hack.
+>> But probably list_last_entry() makes sense in the "else" branch,
+>> athough this is minor.
+>>
+>>
+>> Off-topic. Not sure this really makes sense, but I was thinking about
+>>
+>> 	list_get_first(pos, head, member)	\
+>> 		((pos) = list_first_entry(head, typeof(*pos), member))
+>>
+>> and list_get_first() last of course. The obvious advantage is that
+>> compared to
+>>
+>> 	tr = list_last_entry(sdp->sd_ail1_list, struct gfs2_trans, tr_list);
+>>
+>> above you do not need to type "struct gfs2_trans",
+>>
+>> 	list_get_last(tr, sdp->sd_ail1_list, tr_list);
+>>
+>> looks a bit better.
+> 
+> And list.h can use it too.
+> 
+> So how about the patch below? I can't decide whether it cleanups or
+> uglfies the code, I do not trust my taste ;) But to me it looks a
+> bit better this way.
 
-Why do you call it a hack?
+I personally think this is better for GFS2 case if I understood correctly,
+and it can make the existing list helper a bit neat per my taste :)
 
-> syscore_ops is specifically for things that have to be suspended with only one
-> CPU online and with interrupts off.  I'm not sure how that applies to cpufreq.
+The current list_first_entry() works fine consider a common pattern below:
+while (!list_empty(ptr)) {
+	struct dummy *p = list_first_entry(ptr, struct dummy, member);
 
-Currently syscore_ops only implements suspend/resume/shutdown callbacks and
-those precisely happen the way you mentioned. i.e. after removing all non-boot
-CPUs and disabling interrupts (And before bringing back all CPUs and enabling
-interrupts on resume side).. So, yes we have limitation currently..
+	....
+}
 
-Honestly speaking I have looked at syscore ops for the first time now, when we
-got to this problem.. I couldn't find much information about it anywhere,
-leaving the commit itself: 40dc16
+But I'm not sure if we can find out more external use cases can get
+benefits with list_get_first/last...
 
-And by that, this is the definition of this framework: "PM / Core: Introduce
-struct syscore_ops for core subsystems PM"
+Thanks,
+-Jeff
 
-I can see that you mentioned the limitations like single cpu and disabled
-interrupts even in the log, but I think we can enhance this framework a little bit.
+> 
+> Oleg.
+> --
+> 
+> diff --git a/include/linux/list.h b/include/linux/list.h
+> index ef95941..f52aba8 100644
+> --- a/include/linux/list.h
+> +++ b/include/linux/list.h
+> @@ -372,6 +372,12 @@ static inline void list_splice_tail_init(struct list_head *list,
+>  #define list_last_entry(ptr, type, member) \
+>  	list_entry((ptr)->prev, type, member)
+>  
+> +#define list_get_first(pos, head, member)	\
+> +	((pos) = list_first_entry(head, typeof(*(pos)), member))
+> +
+> +#define list_get_last(pos, head, member)	\
+> +	((pos) = list_last_entry(head, typeof(*(pos)), member))
+> +
+>  /**
+>   * list_first_entry_or_null - get the first element from a list
+>   * @ptr:	the list head to take the element from.
+> @@ -443,7 +449,7 @@ static inline void list_splice_tail_init(struct list_head *list,
+>   * @member:	the name of the list_struct within the struct.
+>   */
+>  #define list_for_each_entry(pos, head, member)				\
+> -	for (pos = list_first_entry(head, typeof(*pos), member);	\
+> +	for (list_get_first(pos, head, member);				\
+>  	     &pos->member != (head);					\
+>  	     pos = list_next_entry(pos, member))
+>  
+> @@ -454,7 +460,7 @@ static inline void list_splice_tail_init(struct list_head *list,
+>   * @member:	the name of the list_struct within the struct.
+>   */
+>  #define list_for_each_entry_reverse(pos, head, member)			\
+> -	for (pos = list_last_entry(head, typeof(*pos), member);		\
+> +	for (list_get_last(pos, head, member);				\
+>  	     &pos->member != (head); 					\
+>  	     pos = list_prev_entry(pos, member))
+>  
+> @@ -517,7 +523,7 @@ static inline void list_splice_tail_init(struct list_head *list,
+>   * @member:	the name of the list_struct within the struct.
+>   */
+>  #define list_for_each_entry_safe(pos, n, head, member)			\
+> -	for (pos = list_first_entry(head, typeof(*pos), member),	\
+> +	for (list_get_first(pos, head, member),				\
+>  		n = list_next_entry(pos, member);			\
+>  	     &pos->member != (head); 					\
+>  	     pos = n, n = list_next_entry(n, member))
+> @@ -564,7 +570,7 @@ static inline void list_splice_tail_init(struct list_head *list,
+>   * of list entry.
+>   */
+>  #define list_for_each_entry_safe_reverse(pos, n, head, member)		\
+> -	for (pos = list_last_entry(head, typeof(*pos), member),		\
+> +	for (list_get_last(pos, head, member),				\
+>  		n = list_prev_entry(pos, member);			\
+>  	     &pos->member != (head); 					\
+>  	     pos = n, n = list_prev_entry(n, member))
+> 
+> _______________________________________________
+> xfs mailing list
+> xfs@oss.sgi.com
+> http://oss.sgi.com/mailman/listinfo/xfs
 
-Also I can see that there are many users of this framework which aren't core
-frameworks but simply drivers. I don't think that was the intention behind this
-framework, but that's how others went to use it.
 
-So, this framework exists to service core frameworks for their requirements
-about PM stages. Currently that is only limited to late suspend and early resume
-but I feel there is space for more..
-
-For example, our current problem.. A core framework wants to prepare before
-suspend starts and after everything has resumed. Obviously that would violate
-one of the basic rules with which this was designed, but still this feature lies
-in scope of syscore. And so we can keep the limitations as is for
-suspend/resume/shutdown but not for prepare and resume_late.
-
-And I really feel even if we would be able to use cpu callbacks for
-suspend/resume, that would be a real *Hack*, because our framework doesn't want
-to get a callback for each of its devices (i.e. cpu) but a single callback at
-certain instances.. And syscore suits very well to this scenario..
-
---
-viresh
