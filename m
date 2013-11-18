@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563Ab3KRSL6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:11:58 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:57642 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab3KRSLv (ORCPT
+	id S1751766Ab3KRSOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:14:52 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:31737 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab3KRSOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:11:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <1384267735-43213-5-git-send-email-Waiman.Long@hp.com>
-References: <1384267735-43213-1-git-send-email-Waiman.Long@hp.com>
-	<1384267735-43213-5-git-send-email-Waiman.Long@hp.com>
-Date: Mon, 18 Nov 2013 10:11:48 -0800
-X-Google-Sender-Auth: FZOHwIAf-Z7VcACTU8Zk3OgB30A
-Message-ID: <CA+55aFxXu7eC1WGfZ=_JQbLLJHM5HYRkJPjm3jBDC51SL66Ecw@mail.gmail.com>
-Subject: Re: [PATCH v6 3/5] qrwlock: Enable fair queue read/write lock
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 18 Nov 2013 13:14:44 -0500
+Message-ID: <1384798205.1791.14.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/3] ACPI / hotplug: Fix PCI host bridge hot removal
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Date: Mon, 18 Nov 2013 11:10:05 -0700
+In-Reply-To: <3206422.AfXMUDqMXZ@vostro.rjw.lan>
+References: <2434673.zhjYZOTQ4A@vostro.rjw.lan>
+	 <3206422.AfXMUDqMXZ@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 6:48 AM, Waiman Long <Waiman.Long@hp.com> wrote:
-> By default, queue rwlock is fair among writers and gives preference
-> to readers allowing them to steal lock even if a writer is
-> waiting. However, there is a desire to have a fair variant of
-> rwlock that is more deterministic. To enable this [..]
+On Thu, 2013-11-14 at 00:16 +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Since the PCI host bridge scan handler does not set hotplug.enabled,
+> the check of it in acpi_bus_device_eject() effectively prevents the
+> root bridge hot removal from working after commit a3b1b1ef78cd
+> (ACPI / hotplug: Merge device hot-removal routines).  However, that
+> check is not necessary, because the other acpi_bus_device_eject()
+> users, acpi_hotplug_notify_cb and acpi_eject_store(), do the same
+> check by themselves before executing that function.
+> 
+> For this reason, remove the scan handler check from
+> acpi_bus_device_eject() to make PCI hot bridge hot removal work
+> again.
 
-Is there really any point in having the option for unfair at all?
+I am curious why the PCI host bridge scan handler does not set
+hotplug.enabled.  Is this how it disables hotplug via sysfs eject but
+enables via ACPI notification?  
 
->From your timings, it looks like the unfair locks are more expensive
-for the writer side, but since pretty much the whole point of rwlocks
-is when readers are the common case, I don't think we care.
+Thanks,
+-Toshi
 
-And I'm not at all convinced we want the complexity of two different
-kinds of rwlocks with different semantics and extra code for said
-semantics..
 
-Your *original* fair rwlocks were unusable, since they didn't allow
-for the irq semantics that most users need, but afaik your current
-version always makes an irq/bh-context reader work even when the lock
-is otherwise trying to be fair, so this whole dual behavior seems to
-be largely pointless.
-
-No?
-
-                        Linus
