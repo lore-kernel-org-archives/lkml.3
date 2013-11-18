@@ -1,98 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281Ab3KREfK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 23:35:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50565 "EHLO
+	id S1751333Ab3KREjg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 23:39:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50570 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab3KREfE (ORCPT
+	with ESMTP id S1751048Ab3KREja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 23:35:04 -0500
-Date: Sun, 17 Nov 2013 20:35:15 -0800
+	Sun, 17 Nov 2013 23:39:30 -0500
+Date: Sun, 17 Nov 2013 20:39:42 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Peng Tao <bergwolf@gmail.com>
 Cc: "Dilger, Andreas" <andreas.dilger@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hammond, John" <john.hammond@intel.com>
-Subject: Re: [PATCH 05/40] staging/lustre: validate open handle cookies
-Message-ID: <20131118043515.GA3971@kroah.com>
-References: <20131115041324.GA28088@kroah.com>
- <CEAC98F3.818F1%andreas.dilger@intel.com>
- <20131116195001.GA9308@kroah.com>
- <CA+a=Yy7SSKHM7O8DLnZfQQEQH5uUYH_gfWrg+Sc9eotQGdOsww@mail.gmail.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/40] staging/lustre/llite: Access to released file
+ trigs a restore
+Message-ID: <20131118043942.GB3971@kroah.com>
+References: <20131115040944.GA28070@kroah.com>
+ <CEAC7771.817BF%andreas.dilger@intel.com>
+ <20131116195947.GB9308@kroah.com>
+ <CA+a=Yy7LrEREU+9BbDy6cOpEFSdcNoYjsWnhBF1tv-OcHfKMpQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+a=Yy7SSKHM7O8DLnZfQQEQH5uUYH_gfWrg+Sc9eotQGdOsww@mail.gmail.com>
+In-Reply-To: <CA+a=Yy7LrEREU+9BbDy6cOpEFSdcNoYjsWnhBF1tv-OcHfKMpQ@mail.gmail.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 10:36:26AM +0800, Peng Tao wrote:
-> On Sun, Nov 17, 2013 at 3:50 AM, Greg Kroah-Hartman
+On Mon, Nov 18, 2013 at 11:07:12AM +0800, Peng Tao wrote:
+> On Sun, Nov 17, 2013 at 3:59 AM, Greg Kroah-Hartman
 > <gregkh@linuxfoundation.org> wrote:
-> > On Sat, Nov 16, 2013 at 11:20:37AM +0000, Dilger, Andreas wrote:
-> >> On 2013/11/14 9:13 PM, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-> >> wrote:
-> >>
-> >> >On Fri, Nov 15, 2013 at 12:13:07AM +0800, Peng Tao wrote:
-> >> >> From: "John L. Hammond" <john.hammond@intel.com>
-> >> >>
-> >> >> Add a const void *h_owner member to struct portals_handle. Add a const
-> >> >> void *owner parameter to class_handle2object() which must be matched
-> >> >> by the h_owner member of the handle in addition to the cookie.
+> > On Sat, Nov 16, 2013 at 10:36:18AM +0000, Dilger, Andreas wrote:
+> >> >So, sorry, I have to stop here at this series.  I've applied the first 3
+> >> >to the opw-next branch of staging.git so they can live somewhere until
+> >> >3.13-rc1 is out.
 > >> >
-> >> >Ick ick ick.
-> >> >
-> >> >NEVER use a void pointer if you can help it, and for a "handle", never.
-> >> >This isn't other operating systems, sorry.  We know what types our
-> >> >pointers to structures are, use them, so that the compiler can catch our
-> >> >problems, and don't try to cheat by using void *.
+> >> >I know you spent a lot of time making these 120 patches to send me, but
+> >> >that too is crazy.  You shouldn't wait that long to get feedback and
+> >> >send patches to me at all.  Please send them in smaller series, with
+> >> >less time between patch submissions.
 > >>
-> >> The portals_handle is used as a generic type for objects referenced over
-> >> the network, like a file handle.  The "owner" parameter is just used as
-> >> an extra check that the cookie passed from the client is actually a
-> >> valid value for the code in which it is being used (e.g. metadata or
-> >> data object).  It isn't actually dereferenced by anything, it is just
-> >> like a magic value.
+> >> The reason that there are so many patches in a burst is that we are also
+> >> developing new features and fixing bugs in parallel with the kernel, but
+> >> they also need to be tested a lot before they are released.  It's not any
+> >> different from kernel patches testing on -next or -mm for a few months
+> >> before they are pushed to the mainline kernel in a batch.
 > >
-> > Then make it an explicit type, not a void *.
+> > It's very different in that you are expecting me to suddenly accept this
+> > huge burst of patches all at once, and I can't review them properly.  As
+> > this patch series shows, there was a problem in the 4rd patch in a 100+
+> > series, which means that I couldn't take them all.  So you wasted a
+> > bunch of work preparing those other 96 patches.
 > >
-> >> >> Adjust
-> >> >> the callers of class_handle2object() accordingly, using NULL as the
-> >> >> argument to the owner parameter, except in the case of
-> >> >> mdt_handle2mfd() where we add an explicit mdt_export_data parameter
-> >> >> which we use as the owner when searching for a MFD. When allocating a
-> >> >> new MFD, pass a pointer to the mdt_export_data into mdt_mfd_new() and
-> >> >> store it in h_owner. This allows the MDT to validate that the client
-> >> >> has not sent the wrong open handle cookie, or sent the right cookie to
-> >> >> the wrong MDT.
-> >> >
-> >> >This changelog entry doesn't even match up with the code below.  ALl
-> >> >callers of class_handle2object are passing NULL here, which makes this
-> >> >patch pretty pointless, right?
-> >>
-> >> As Tao wrote, this is the patch summary that matches what was committed
-> >> in our own tree and in this case mostly describes the changes made on the
-> >> server.  Keeping the same commits and comments in both trees makes it
-> >> easier to keep the code in sync.
+> > Send them to me in short chunks, that way you don't waste time, and you
+> > don't take so long between patch acceptance.
 > >
-> > Ok, but as it is, this patch does nothing to the client code, so how can
-> > I accept it?  A function that is only ever called with NULL as an option
-> > is ripe for cleanup in my eyes.
+> working on it. sorry for the noise.
+> 
+> >> The out-of-tree development can't really stop for a year while the kernel
+> >> client code is cleaned up.  If the feature patches don't land into the
+> >> kernel client for a year (or however long it takes to do all the cleanup),
+> >> then it will become outdated and the whole reason for adding the client
+> >> into the kernel is lost.
 > >
-> How about adding a comment above the function to note that this extra
-> argument is used by server code and please don't remove it?
+> > But you understand my hesitation at taking any new features when there
+> > really has not been any attempt by your team to do much cleanup and
+> > fixes of the code at all, right?  It feels like I have done more cleanup
+> > personally than anyone on your teams, is this not true?
+> >
+> > So, why would I believe that you all are really going to start doing the
+> > major cleanup work on this code that is so obviously needed?  Why would
+> > I take new features that you are spending your time on instead?
+> >
+> My apologize. I was distracted by other projects for some time and I
+> am trying to make it up. I thought you agreed that I can first close
+> the patch gap between in-kernel client and external tree, and then add
+> cleanup patches, no?
 
-How about adding the server code to the kernel to keep problems like
-this (which will continue to crop up, it's not just this one function,
-right?) from happening in the future?
+What exactly is "the gap"?  Are we talking 200 patches?  10?  100?  I
+have no idea what you are referring to, but realize I can't review 100
+patches at a single time easily.
 
-In-kernel code does not depend on out-of-kernel code, it's that simple,
-and has been a rule for kernel code for forever.  Either deal with the
-fact that you will have to keep the apis and functions working for your
-out-of-tree code, or put all the code into the kernel.  Don't force
-in-kernel code to deal with out-of-tree code as there is NO way that
-anyone other than the very few of you, can deal with that at all.
+And what happens when I accep these "gap" patches?  Will development in
+this external tree suddenly stop?  It sure doesn't seem like this is
+happening as I thought it would have already since the code has been in
+the kernel for over 6 months now.
+
+> >> >> There are many users of the external tree so we cannot just abandon
+> >> >> it, especially that the upstream client is not shipped in any
+> >> >> distribution yet. Thanks for your understanding.
+> >> >
+> >> >What is keeping people using that tree?  Support for older/distro
+> >> >kernels?
+> >> >
+> >>
+> >> Support for distro kernels is a big part of it.  Most HPC sites use vendor
+> >> kernels of various vintages, and we need to keep the code working for those
+> >> sites.  We also need to continue developing features needed by ever-larger
+> >> clusters, fixing bugs, etc.  Eventually, when Lustre is in the kernel
+> >> proper,
+> >> it will also be available in future distro kernels and we can eventually
+> >> stop supporting the out-of-tree code.  I expect that to be 3+ years away.
+> >
+> > So, originally you said it would take about a year to get this out of
+> > staging.  It's been 6 months already with no real progress made with the
+> > exception of having interns do cleanup and me doing some basic wrapper
+> > function removals.  What's the plan for the next 6 months?  Based on
+> > these 100+ patches, I don't see any major changes that are happening to
+> > get this cleaned up properly (or did I miss those patches in this huge
+> > patchbomb?)
+> >
+> sorry for sending you these patch bombs. I wanted to first sync with
+> external tree because otherwise the gap will be increasingly large and
+> eventually we end up with two different code base.
+
+You already have 2 different code bases :(
+
+> >> >Is it the fact that the server code isn't in the kernel?
+> >>
+> >> Not really.  Lustre servers are on separate servers with vendor kernels
+> >> (ancient by your standards), and there isn't really any demand for
+> >> using newer kernels on those nodes.  Most importantly, the out-of-tree
+> >> branch is where all of the new feature development is being done.  That
+> >> also means if feature patches don't land into the kernel it just makes
+> >> the kernel version less attractive for users.
+> >>
+> >> >  Should that be added now too so that we can get a proper view of what
+> >> > can and can not be changed?  Some of your patches are showing that things
+> >> > are shared by the two chunks of code, so does that mean if I delete
+> >> >things in the client code that don't look to be used by anything, you
+> >> > will have problems because the server now breaks?
+> >>
+> >> Adding the server code to staging would mean another 150kLOC in staging.
+> >> We also haven't cleaned that code up even nearly as much as the client
+> >> code, so it isn't really even ready to go into staging either.  I don't
+> >> think you or anyone else would be happy to see that code yet, so I don't
+> >> think there is a real advantage to do so.
+> >>
+> >> Deleting unused code in the kernel client isn't fatal, since we'll
+> >> still have the out-of-tree version, but we're trying to keep the code in
+> >> sync as much as possible so that it is easier to port patches in both
+> >> directions.  If code is deleted it means more that needs to be added
+> >> back later when the server eventually does get merged, and more effort
+> >> to resolve patch conflicts.
+> >
+> > But look at the function that caused this original question to be asked.
+> > You want an api change that I would never accept as it doesn't do
+> > anything to the client code at all.  How do I "know" this is acceptable
+> > and needed if I can't see the server side?  How would I "know" not to
+> > take a cleanup patch that reverted this change if I can't see the server
+> > side at the same time?
+> >
+> How about CCing Andreas and me for patches changing
+> drivers/staging/lustre?
+
+I have been trying to do that, but not all developers follow that.
+Also, not all developers in the overall kernel do that either, for good
+reasons (i.e. api changes.)
+
+> If such reverting patch appears, we can send NACKs, right?
+
+Not always, no.  Being a maintainer doesn't mean that you have to have
+final approval on every change to your codebase, this is a long-time
+thing you all should know quite well.
+
+> Andreas reviews most of patches landed in both in kernel client and in
+> the external tree. He for sure knows if a cleanup patch drops
+> something that server needs. Also I'll try to add comments on things
+> that are used only by server but client also needs. Does it sound
+> working?
+
+Does the current way of working seem to work for you?
+
+> > 150k of code is not a big deal to me, I can easily take it.  If it means
+> > that we have a real chance at getting this all fixed up properly, I say
+> > to do it, otherwise I really don't think this project will ever succeed,
+> > sorry.
+> >
+> The issue with server code is that it is not even updated to support
+> latest kernel.
+
+Then how are you even testing this stuff?
 
 greg k-h
