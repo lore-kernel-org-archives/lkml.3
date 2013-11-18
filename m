@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619Ab3KRKbg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 05:31:36 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46899 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751319Ab3KRKbX (ORCPT
+	id S1751737Ab3KRKcK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 05:32:10 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:62143 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416Ab3KRKbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 05:31:23 -0500
-Date: Mon, 18 Nov 2013 10:30:55 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Mark Brown <broonie@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [GIT PULL] Btrfs
-Message-ID: <20131118103055.GA22763@mudshark.cambridge.arm.com>
-References: <20131114171952.3802.93244@localhost.localdomain>
- <20131115113216.GA7777@osiris>
- <20131115122131.3802.25439@localhost.localdomain>
- <20131115134019.3802.51473@localhost.localdomain>
- <CAMuHMdWsEaDKoPy7JhKUGqUrkg_8JrVH7fc8JePt=9MXzcSrgQ@mail.gmail.com>
- <20131115145723.GB7777@osiris>
- <20131117093604.GT2008@redhat.com>
- <20131118093555.GA4192@osiris>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131118093555.GA4192@osiris>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 18 Nov 2013 05:31:18 -0500
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] mfd: cros ec: spi: Fix debug output
+Date: Mon, 18 Nov 2013 11:30:49 +0100
+Message-Id: <1384770649-8593-3-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1384770649-8593-1-git-send-email-treding@nvidia.com>
+References: <1384770649-8593-1-git-send-email-treding@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 09:35:55AM +0000, Heiko Carstens wrote:
-> From b19687bad7e878aaed6edb786a22c6b05e886b97 Mon Sep 17 00:00:00 2001
-> From: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Date: Mon, 18 Nov 2013 10:05:57 +0100
-> Subject: [PATCH] kvm: kvm_clear_guest_page(): fix empty_zero_page usage
-> 
-> Using the address of 'empty_zero_page' as source address in order to clear
-> a page is wrong. On some architectures empty_zero_page is only the pointer
-> to the struct page of the empty_zero_page.
-> Therefore the clear page operation would copy the contents of a couple of
-> struct pages instead of clearing a page.
-> For kvm only arm64 is affected by this bug.
+The dev_cont() symbol doesn't exist, so replace it with pr_cont(). While
+at it, also append a newline to the debug output to make it look nicer.
 
-In theory ARM is affected too, but this code doesn't seem to be invoked by
-any architecture other than x86 afaict. It looks like there's a similar
-issue in drivers/spi/spi-fsl-cpm.c where empty_zero_page is used as a dummy
-dma buffer, but that code is basically powerpc only, so again, unlikely to
-cause a problem in practice.
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/mfd/cros_ec_spi.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Will
+diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+index af5c2f6601cf..e3690fcb86ae 100644
+--- a/drivers/mfd/cros_ec_spi.c
++++ b/drivers/mfd/cros_ec_spi.c
+@@ -80,7 +80,9 @@ static void debug_packet(struct device *dev, const char *name, u8 *ptr,
+ 
+ 	dev_dbg(dev, "%s: ", name);
+ 	for (i = 0; i < len; i++)
+-		dev_cont(dev, " %02x", ptr[i]);
++		pr_cont(" %02x", ptr[i]);
++
++	pr_cont("\n");
+ #endif
+ }
+ 
+-- 
+1.8.4.2
 
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index 662f34c3287e..a0aa84b5941a 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -1615,8 +1615,9 @@ EXPORT_SYMBOL_GPL(kvm_read_guest_cached);
->  
->  int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len)
->  {
-> -	return kvm_write_guest_page(kvm, gfn, (const void *) empty_zero_page,
-> -				    offset, len);
-> +	const void *zero_page = (const void *) __va(page_to_phys(ZERO_PAGE(0)));
-> +
-> +	return kvm_write_guest_page(kvm, gfn, zero_page, offset, len);
->  }
->  EXPORT_SYMBOL_GPL(kvm_clear_guest_page);
