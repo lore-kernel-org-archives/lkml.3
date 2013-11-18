@@ -1,135 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701Ab3KRQmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 11:42:43 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:58946 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab3KRQmd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 11:42:33 -0500
+	id S1751784Ab3KRQnD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 11:43:03 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34102 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751499Ab3KRQmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 11:42:54 -0500
+Message-ID: <528A4315.8050706@ti.com>
+Date: Mon, 18 Nov 2013 12:40:53 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1384791864.2001.19.camel@dabdike.int.hansenpartnership.com>
-References: <1384714284-13712-1-git-send-email-geyslan@gmail.com>
-	<1384717371.2050.2.camel@dabdike.int.hansenpartnership.com>
-	<CAGG-pURSnEeNvmHhQ-GvrnyuMHPrTRMoCKt3P=bB23OD9Vmkpg@mail.gmail.com>
-	<1384724339.2050.6.camel@dabdike.int.hansenpartnership.com>
-	<CAGG-pUT_h1eNnHDpxRvMPWeN5zi6L2mckHMPsV92Qf3hqtf7EQ@mail.gmail.com>
-	<1384786707.2001.6.camel@dabdike.int.hansenpartnership.com>
-	<CAGG-pURDPHOGuSt7a1G=CpdgvyiUvW0ugKq0K_o7-ThCS39F-A@mail.gmail.com>
-	<1384791864.2001.19.camel@dabdike.int.hansenpartnership.com>
-Date: Mon, 18 Nov 2013 14:42:33 -0200
-Message-ID: <CAGG-pUSOa-kP7-NfyX6gizSrASc8_hAjN=Knn3cmfO2CK=txZw@mail.gmail.com>
-Subject: Re: [PATCH] scsi: be_iscsi: fix possible memory leak and refactor code
-From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
-        "open list:SERVER ENGINES 10..." <linux-scsi@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Jean Delvare <khali@linux-fr.org>, <swarren@wwwdotorg.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <rui.zhang@intel.com>, <wni@nvidia.com>, <grant.likely@linaro.org>,
+        <durgadoss.r@intel.com>, <linux-pm@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv5 06/20] hwmon: lm75: expose to thermal fw via DT nodes
+References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com> <1384285582-16933-7-git-send-email-eduardo.valentin@ti.com> <20131115084354.656452b9@endymion.delvare> <528A23DD.2070406@ti.com> <20131118162532.GB15610@roeck-us.net>
+In-Reply-To: <20131118162532.GB15610@roeck-us.net>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="enTlcPb90etLHFHuWqlPc41VStoaDm7qT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/18 James Bottomley <James.Bottomley@hansenpartnership.com>:
-> On Mon, 2013-11-18 at 14:18 -0200, Geyslan Gregório Bem wrote:
->> 2013/11/18 James Bottomley <James.Bottomley@hansenpartnership.com>:
->> > On Sun, 2013-11-17 at 23:12 -0200, Geyslan Gregório Bem wrote:
->> >> 2013/11/17 James Bottomley <James.Bottomley@hansenpartnership.com>:
->> >> > On Sun, 2013-11-17 at 19:09 -0200, Geyslan Gregório Bem wrote:
->> >> >> 2013/11/17 James Bottomley <James.Bottomley@hansenpartnership.com>:
->> >> >> > On Sun, 2013-11-17 at 15:51 -0300, Geyslan G. Bem wrote:
->> >> >> >> This patch fix memory leakage in cases 'ISCSI_NET_PARAM_VLAN_ID' and
->> >> >> >> 'ISCSI_NET_PARAM_VLAN_PRIORITY' and refactors code 'going out' when
->> >> >> >> necessary.
->> >> >> >
->> >> >> > You pointlessly renamed a variable, which makes the diff hard to read.
->> >> >> > Please don't do that.
->> >> >>
->> >> >> Ok, I can agree. 'len' means length? What is returned in case of non
->> >> >> error?
->> >> >
->> >> > it returns the length of buf written to or negative error.
->> >> >
->> >> >> > You missed the fact that the passed in pointer is unmodified if
->> >> >> > mgmt_get_if_info() returns non zero, so the kfree frees junk and would
->> >> >> > oops.
->> >> >> >
->> >> >> > There's no need for a goto; len = -EINVAL; does everything that's
->> >> >> > needed.
->> >> >>
->> >> >> Well, that is a coverity catch. CID 1128954. Check it.
->> >> >
->> >> > I didn't say coverity was wrong, I said your patch was (well not wrong,
->> >> > just over complex and incomplete).  This is the way to fix both
->> >> > problems.
->> >> >
->> >> > James
->> >> >
->> >> > ---
->> >> >
->> >> > diff --git a/drivers/scsi/be2iscsi/be_iscsi.c b/drivers/scsi/be2iscsi/be_iscsi.c
->> >> > index ffadbee..9dcbdfa 100644
->> >> > --- a/drivers/scsi/be2iscsi/be_iscsi.c
->> >> > +++ b/drivers/scsi/be2iscsi/be_iscsi.c
->> >> > @@ -541,10 +541,8 @@ static int be2iscsi_get_if_param(struct beiscsi_hba *phba,
->> >> >                 ip_type = BE2_IPV6;
->> >>
->> >> James, this approach will not prevent the leakage.
->> >
->> > I don't see why not.  The -EINVAL case goes through the kfree() now too,
->> > no?
->>
->> I'm refering to the removal of kfree in your suggestion.
->
-> That's the second bug I pointed out via code inspection.  If the
-> function returns an error (any non zero return) then the pointer isn't
-> altered, so we return without the free.  It's a standard error pattern.
+--enTlcPb90etLHFHuWqlPc41VStoaDm7qT
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Ok. So kfree is useless until the code go to the function bail. Right?
+On 18-11-2013 12:25, Guenter Roeck wrote:
+> On Mon, Nov 18, 2013 at 10:27:41AM -0400, Eduardo Valentin wrote:
+>> On 15-11-2013 03:43, Jean Delvare wrote:
+>>> Hi Eduardo,
+>>>
+>>
+>> Hello Jean!
+>>
+>>> Sorry for joining the discussion a little late, I could never find th=
+e
+>>> time to look into this patch series so far.
+>>
+>> Well, better late than never, that's what it is said, isn't it? :-)
+>> Thanks for arranging the time to look at these patches.
+>>
+>> The patch series have been looked and contributed by several people an=
+d
+>> a couple o maintainers now. Starts to be way better than the original
+>> RFC. The core idea still holds though.
+>>
+>>>
+>>> On Tue, 12 Nov 2013 15:46:08 -0400, Eduardo Valentin wrote:
+>>>> This patch adds to lm75 temperature sensor the possibility
+>>>> to expose itself as thermal zone device, registered on the
+>>>> thermal framework.
+>>>>
+>>>> The thermal zone is built only if a device tree node
+>>>> describing a thermal zone for this sensor is present
+>>>> inside the lm75 DT node. Otherwise, the driver behavior
+>>>> will be the same.
+>>>>
+>>>> Cc: Jean Delvare <khali@linux-fr.org>
+>>>> Cc: lm-sensors@lm-sensors.org
+>>>> Cc: linux-kernel@vger.kernel.org
+>>>> Acked-by: Guenter Roeck <linux@roeck-us.net>
+>>
+>> On HWMON side, I got Guenter's solid contributions, as you can see.
+>>
+> Not an argument. I am not perfect, and Jean has a number of valid point=
+s.
+>=20
 
->
->> >
->> >>  We can initialize the if_info with NULL and always kfree it without
->> >> to care about junk.
->> >
->> > Why?  Error return means no allocation.
->> Setting if_info to NULL allow to kfree without concerns.
->>
->> Eg.:
->>
->> - struct be_cmd_get_if_info_resp *if_info;
->> + struct be_cmd_get_if_info_resp *if_info = NULL;
->>
->> ...
->>
->> +       if (len)
->> +               goto out;
->>
->> ...
->>
->> -               if (if_info->vlan_priority == BEISCSI_VLAN_DISABLE)
->> -                       return -EINVAL;
->> +               if (if_info->vlan_priority == BEISCSI_VLAN_DISABLE) {
->> +                       len = -EINVAL;
->> +                       goto out;
->> +               }
->
-> What's the point of that?  Just removing the goto out; has the code
-> going to the same place because of the break below.
->
-> James
->
->
+In fact, this is not an argument, at least not on what Jean is bringing
+now. The point here was just to mention that, even though he joined
+late, you have already contributed on this patch series. ;-)
 
-I agree whit you that the code goes to same place with or without goto
-out. It's just a pattern to simplify future changes in the function.
-
-But I can remove it if you want.
+> Guenter
+>=20
+>=20
 
 
--- 
-Regards,
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
 
-Geyslan G. Bem
-hackingbits.com
+Eduardo Valentin
+
+
+--enTlcPb90etLHFHuWqlPc41VStoaDm7qT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlKKQxUACgkQCXcVR3XQvP0VhwD9Ha6wMEij49UTBQR52C4NQZ2B
+YtyILpxCdEKd3R4eN4UBAOXjV+lwp+sc2N9Czo6cjMmGitZLyA4ch2kkvYa5tWrg
+=I64P
+-----END PGP SIGNATURE-----
+
+--enTlcPb90etLHFHuWqlPc41VStoaDm7qT--
