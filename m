@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679Ab3KRXPm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 18:15:42 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34288 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab3KRXPj (ORCPT
+	id S1751754Ab3KRXSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 18:18:09 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:43437 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab3KRXSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 18:15:39 -0500
-Date: Mon, 18 Nov 2013 23:15:06 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add memory.oom_control notification for
- system oom
-Message-ID: <20131118231506.32ec2467@alan.etchedpixels.co.uk>
-In-Reply-To: <20131118155450.GB3556@cmpxchg.org>
-References: <alpine.DEB.2.02.1310301838300.13556@chino.kir.corp.google.com>
-	<20131031054942.GA26301@cmpxchg.org>
-	<alpine.DEB.2.02.1311131416460.23211@chino.kir.corp.google.com>
-	<20131113233419.GJ707@cmpxchg.org>
-	<alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
-	<20131114032508.GL707@cmpxchg.org>
-	<alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com>
-	<20131118155450.GB3556@cmpxchg.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Mon, 18 Nov 2013 18:18:07 -0500
+Message-ID: <1384816407.1791.19.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/3] ACPI / hotplug: Fix PCI host bridge hot removal
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Date: Mon, 18 Nov 2013 16:13:27 -0700
+In-Reply-To: <11362197.FWMPl6Gp0A@vostro.rjw.lan>
+References: <2434673.zhjYZOTQ4A@vostro.rjw.lan>
+	 <3206422.AfXMUDqMXZ@vostro.rjw.lan>
+	 <1384798205.1791.14.camel@misato.fc.hp.com>
+	 <11362197.FWMPl6Gp0A@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And accessing the emergency reserves means we are definitely no longer
-> A-OK, this is not comparable to the first direct reclaim invocation.
+On Mon, 2013-11-18 at 22:39 +0100, Rafael J. Wysocki wrote:
+> On Monday, November 18, 2013 11:10:05 AM Toshi Kani wrote:
+> > On Thu, 2013-11-14 at 00:16 +0100, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > Since the PCI host bridge scan handler does not set hotplug.enabled,
+> > > the check of it in acpi_bus_device_eject() effectively prevents the
+> > > root bridge hot removal from working after commit a3b1b1ef78cd
+> > > (ACPI / hotplug: Merge device hot-removal routines).  However, that
+> > > check is not necessary, because the other acpi_bus_device_eject()
+> > > users, acpi_hotplug_notify_cb and acpi_eject_store(), do the same
+> > > check by themselves before executing that function.
+> > > 
+> > > For this reason, remove the scan handler check from
+> > > acpi_bus_device_eject() to make PCI hot bridge hot removal work
+> > > again.
+> > 
+> > I am curious why the PCI host bridge scan handler does not set
+> > hotplug.enabled.  Is this how it disables hotplug via sysfs eject but
+> > enables via ACPI notification? 
 > 
-> We exhausted our options and we got really lucky.  It should not be
-> considered the baseline and a user listening for "OOM conditions"
-> should be informed about this.
+> It just doesn't register for hotplug at all.  I guess it could set that
+> bit alone, but then it would be quite confusing and the check is not
+> necessary anyway.
 
-Definitely concur - there are loading tuning cases where you want to
-drive the box to the point it starts whining and then scale back a touch.
+I see.  Given how the PCI host bridge scan handler is integrated today,
+the change looks reasonable to me.
 
-It's an API change in effect, and while I can believe there are good
-arguments for both any API change ought to be a new API for listening
-only to serious OOM cases.
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+
+Thanks,
+-Toshi
+
