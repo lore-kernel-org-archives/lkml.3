@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769Ab3KRUsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:48:38 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:55219 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751512Ab3KRUsf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:48:35 -0500
-Date: Thu, 14 Nov 2013 23:08:11 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org
-Subject: [PATCH] ext4: Use trace condition for ext4_mballoc tracepoints
-Message-ID: <20131114230811.257ad6cc@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752125Ab3KRUtv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:49:51 -0500
+Received: from www.sr71.net ([198.145.64.142]:36337 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752004Ab3KRUtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 15:49:49 -0500
+Message-ID: <528A7D36.5020500@sr71.net>
+Date: Mon, 18 Nov 2013 12:48:54 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, dave.jiang@intel.com,
+        akpm@linux-foundation.org, dhillf@gmail.com,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH] mm: call cond_resched() per MAX_ORDER_NR_PAGES pages
+ copy
+References: <20131115225550.737E5C33@viggo.jf.intel.com> <20131115225553.B0E9DFFB@viggo.jf.intel.com> <1384800714-y653r3ch-mutt-n-horiguchi@ah.jp.nec.com> <1384800841-314l1f3e-mutt-n-horiguchi@ah.jp.nec.com> <528A6448.3080907@sr71.net> <1384806022-4718p9lh-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1384806022-4718p9lh-mutt-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doing an if statement to test some condition to know if we should
-trigger a tracepoint is pointless when tracing is disabled. This just
-adds overhead and wastes a branch prediction. This is why the
-TRACE_EVENT_CONDITION() was created. It places the check inside the jump
-label so that the branch does not happen unless tracing is enabled.
+On 11/18/2013 12:20 PM, Naoya Horiguchi wrote:
+>> > Really, though, a lot of things seem to have MAX_ORDER set up so that
+>> > it's at 256MB or 512MB.  That's an awful lot to do between rescheds.
+> Yes.
+> 
+> BTW, I found that we have the same problem for other functions like
+> copy_user_gigantic_page, copy_user_huge_page, and maybe clear_gigantic_page.
+> So we had better handle them too.
 
-That is, instead of doing:
+Is there a problem you're trying to solve here?  The common case of the
+cond_resched() call boils down to a read of a percpu variable which will
+surely be in the L1 cache after the first run around the loop.  In other
+words, it's about as cheap of an operation as we're going to get.
 
-	if (em)
-		trace_btrfs_get_extent(root, em);
-
-Which is basically this:
-
-	if (em)
-		if (static_key(trace_btrfs_get_extent)) {
-
-
-Using a TRACE_EVENT_CONDITION() we can just do:
-
-	trace_btrfs_get_extent(root, em);
-
-And the condition trace event will do:
-
-	if (static_key(trace_btrfs_get_extent)) {
-		if (em) {
-			...
-
-The static key is a non conditional jump (or nop) that is faster than
-having to check if em is NULL or not.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Why bother trying to "optimize" it?
