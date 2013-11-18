@@ -1,91 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab3KRWDE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 17:03:04 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:38637 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab3KRWDA (ORCPT
+	id S1752058Ab3KRWEI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 17:04:08 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:58576 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3KRWEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 17:03:00 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 3/3] Optimize RCU_FAST_NO_HZ for RCU_NOCB_CPU_ALL
-Date: Mon, 18 Nov 2013 14:02:51 -0800
-Message-Id: <1384812171-23935-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1384812171-23935-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20131118220220.GA23353@linux.vnet.ibm.com>
- <1384812171-23935-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111822-1344-0000-0000-0000035A7FF9
+	Mon, 18 Nov 2013 17:04:05 -0500
+From: Elena Ufimtseva <ufimtseva@gmail.com>
+To: xen-devel@lists.xenproject.org
+Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, akpm@linux-foundation.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com, ian.campbell@citrix.com,
+        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
+        linux-kernel@vger.kernel.org, Elena Ufimtseva <ufimtseva@gmail.com>
+Subject: [PATCH RESEND v2 0/2] xen: vnuma introduction for pv guest
+Date: Mon, 18 Nov 2013 16:58:40 -0500
+Message-Id: <1384811922-14642-1-git-send-email-ufimtseva@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Xen vnuma introduction.
 
-If CONFIG_RCU_NOCB_CPU_ALL=y, then no CPU will ever have RCU callbacks
-because these callbacks will instead be handled by the rcuo kthreads.
-However, the current version of RCU_FAST_NO_HZ nevertheless checks for RCU
-callbacks.  This commit therefore creates static inline implementations
-of rcu_prepare_for_idle() and rcu_cleanup_after_idle() that are no-ops
-when CONFIG_RCU_NOCB_CPU_ALL=y.
+The patchset introduces vnuma to paravirtualized Xen guests
+runnning as domU.
+Xen subop hypercall is used to retreive vnuma topology information.
+Bases on the retreived topology from Xen, NUMA number of nodes,
+memory ranges, distance table and cpumask is being set.
+If initialization is incorrect, sets 'dummy' node and unsets
+nodemask. vNUMA topology is constructed by Xen toolstack.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcu/tree_plugin.h | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Example of vnuma enabled pv domain dmesg:
 
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 57d98aa2bd21..d87493bf66e3 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -1647,7 +1647,7 @@ extern int tick_nohz_enabled;
-  * only if it has been awhile since the last time we did so.  Afterwards,
-  * if there are any callbacks ready for immediate invocation, return true.
-  */
--static bool rcu_try_advance_all_cbs(void)
-+static bool __maybe_unused rcu_try_advance_all_cbs(void)
- {
- 	bool cbs_ready = false;
- 	struct rcu_data *rdp;
-@@ -1732,6 +1732,7 @@ int rcu_needs_cpu(int cpu, unsigned long *dj)
-  */
- static void rcu_prepare_for_idle(int cpu)
- {
-+#ifndef CONFIG_RCU_NOCB_CPU_ALL
- 	struct rcu_data *rdp;
- 	struct rcu_dynticks *rdtp = &per_cpu(rcu_dynticks, cpu);
- 	struct rcu_node *rnp;
-@@ -1782,6 +1783,7 @@ static void rcu_prepare_for_idle(int cpu)
- 		rcu_accelerate_cbs(rsp, rnp, rdp);
- 		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
- 	}
-+#endif /* #ifndef CONFIG_RCU_NOCB_CPU_ALL */
- }
- 
- /*
-@@ -1791,11 +1793,12 @@ static void rcu_prepare_for_idle(int cpu)
-  */
- static void rcu_cleanup_after_idle(int cpu)
- {
--
-+#ifndef CONFIG_RCU_NOCB_CPU_ALL
- 	if (rcu_is_nocb_cpu(cpu))
- 		return;
- 	if (rcu_try_advance_all_cbs())
- 		invoke_rcu_core();
-+#endif /* #ifndef CONFIG_RCU_NOCB_CPU_ALL */
- }
- 
- /*
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x00001000-0x0009ffff]
+[    0.000000]   node   0: [mem 0x00100000-0xffffffff]
+[    0.000000]   node   1: [mem 0x100000000-0x1ffffffff]
+[    0.000000]   node   2: [mem 0x200000000-0x2ffffffff]
+[    0.000000]   node   3: [mem 0x300000000-0x3ffffffff]
+[    0.000000] On node 0 totalpages: 1048479
+[    0.000000]   DMA zone: 56 pages used for memmap
+[    0.000000]   DMA zone: 21 pages reserved
+[    0.000000]   DMA zone: 3999 pages, LIFO batch:0
+[    0.000000]   DMA32 zone: 14280 pages used for memmap
+[    0.000000]   DMA32 zone: 1044480 pages, LIFO batch:31
+[    0.000000] On node 1 totalpages: 1048576
+[    0.000000]   Normal zone: 14336 pages used for memmap
+[    0.000000]   Normal zone: 1048576 pages, LIFO batch:31
+[    0.000000] On node 2 totalpages: 1048576
+[    0.000000]   Normal zone: 14336 pages used for memmap
+[    0.000000]   Normal zone: 1048576 pages, LIFO batch:31
+[    0.000000] On node 3 totalpages: 1048576
+[    0.000000]   Normal zone: 14336 pages used for memmap
+[    0.000000]   Normal zone: 1048576 pages, LIFO batch:31
+[    0.000000] SFI: Simple Firmware Interface v0.81 http://simplefirmware.org
+[    0.000000] smpboot: Allowing 4 CPUs, 0 hotplug CPUs
+[    0.000000] No local APIC present
+[    0.000000] APIC: disable apic facility
+[    0.000000] APIC: switched to apic NOOP
+[    0.000000] nr_irqs_gsi: 16
+[    0.000000] PM: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+[    0.000000] e820: cannot find a gap in the 32bit address range
+[    0.000000] e820: PCI devices with unassigned 32bit BARs may break!
+[    0.000000] e820: [mem 0x400100000-0x4004fffff] available for PCI devices
+[    0.000000] Booting paravirtualized kernel on Xen
+[    0.000000] Xen version: 4.4-unstable (preserve-AD)
+[    0.000000] setup_percpu: NR_CPUS:512 nr_cpumask_bits:512 nr_cpu_ids:4 nr_node_ids:4
+[    0.000000] PERCPU: Embedded 28 pages/cpu @ffff8800ffc00000 s85376 r8192 d21120 u2097152
+[    0.000000] pcpu-alloc: s85376 r8192 d21120 u2097152 alloc=1*2097152
+
+
+numactl output:
+root@heatpipe:~# numactl --hardware
+available: 4 nodes (0-3)
+node 0 cpus: 0
+node 0 size: 4031 MB
+node 0 free: 3997 MB
+node 1 cpus: 1
+node 1 size: 4039 MB
+node 1 free: 4022 MB
+node 2 cpus: 2
+node 2 size: 4039 MB
+node 2 free: 4023 MB
+node 3 cpus: 3
+node 3 size: 3975 MB
+node 3 free: 3963 MB
+node distances:
+node   0   1   2   3
+  0:  10  20  20  20
+  1:  20  10  20  20
+  2:  20  20  10  20
+  3:  20  20  20  10
+
+Current patchset is available at https://git.gitorious.org/xenvnuma/linuxvnuma.git:v4
+				 git@gitorious.org:xenvnuma/linuxvnuma.git:v4
+Xen patchset is available at: https://git.gitorious.org/xenvnuma/xenvnuma.git:v3
+
+TODO
+*       dom0, pvh and hvm vnuma support;
+*       multiple memory ranges per node support;
+*       benchmarking;
+
+Elena Ufimtseva (2):
+  xen: vnuma support for PV guests running as domU
+  Subject: [PATCH RESEND v2 2/2] xen: enable vnuma for PV guest
+
+ arch/x86/include/asm/xen/vnuma.h |   12 ++++
+ arch/x86/mm/numa.c               |    3 +
+ arch/x86/xen/Makefile            |    2 +-
+ arch/x86/xen/setup.c             |    6 +-
+ arch/x86/xen/vnuma.c             |  127 ++++++++++++++++++++++++++++++++++++++
+ include/xen/interface/memory.h   |   43 +++++++++++++
+ 6 files changed, 191 insertions(+), 2 deletions(-)
+ create mode 100644 arch/x86/include/asm/xen/vnuma.h
+ create mode 100644 arch/x86/xen/vnuma.c
+
 -- 
-1.8.1.5
+1.7.10.4
 
