@@ -1,64 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab3KRCRn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 21:17:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23203 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751377Ab3KRCRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 21:17:36 -0500
-Date: Mon, 18 Nov 2013 10:16:41 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de
-Subject: Re: [patch 5/7 v2] export efi runtime memory mapping to sysfs
-Message-ID: <20131118021641.GC4025@dhcp-16-126.nay.redhat.com>
-References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com>
- <20131105082718.185728964@dhcp-16-126.nay.redhat.com>
- <20131113155027.GC17248@console-pimps.org>
- <20131114015047.GD4081@dhcp-16-126.nay.redhat.com>
+	id S1753554Ab3KRCRz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 21:17:55 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:50776 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864Ab3KRCRi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 21:17:38 -0500
+Date: Sun, 17 Nov 2013 18:17:17 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Tejun Heo <tj@kernel.org>
+cc: Shawn Bohrer <shawn.bohrer@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Markus Blank-Burian <burian@muenster.de>
+Subject: Re: 3.10.16 cgroup_mutex deadlock
+In-Reply-To: <20131115075401.GB9755@mtj.dyndns.org>
+Message-ID: <alpine.LNX.2.00.1311171746160.15789@eggly.anvils>
+References: <20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com> <52820030.6000806@huawei.com> <20131112143147.GB6049@dhcp22.suse.cz> <20131112155530.GA2860@sbohrermbp13-local.rgmadvisors.com> <20131112165504.GF6049@dhcp22.suse.cz>
+ <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com> <20131115062458.GA9755@mtj.dyndns.org> <20131115075401.GB9755@mtj.dyndns.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131114015047.GD4081@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > +/*
-> > > + * These are default attributes that are added for every memmap entry.
-> > > + */
-> > > +static struct attribute *def_attrs[] = {
-> > > +	&map_type_attr.attr,
-> > > +	&map_phys_addr_attr.attr,
-> > > +	&map_virt_addr_attr.attr,
-> > > +	&map_num_pages_attr.attr,
-> > > +	&map_attribute_attr.attr,
-> > > +	NULL
-> > > +};
-> > 
-> > If the UEFI spec ever releases an update for the memory descriptor
-> > structure, and bumps 'memmap.desc_version', how are we going to signal
-> > the incompatibility to legacy versions of kexec tools?
+On Fri, 15 Nov 2013, Tejun Heo wrote:
+
+> Hello,
 > 
-> Hmm, that is a problem. I will consider to export memmap according to
-> what firmware provided with extra desc_version instead of using attrs from kernel
-> data structure efi_memory_desc_t
+> Shawn, Hugh, can you please verify whether the attached patch makes
+> the deadlock go away?
+
+Thanks a lot, Tejun: report below.
+
 > 
+> Thanks.
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index e0839bc..dc9dc06 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -90,6 +90,14 @@ static DEFINE_MUTEX(cgroup_mutex);
+>  static DEFINE_MUTEX(cgroup_root_mutex);
+>  
+>  /*
+> + * cgroup destruction makes heavy use of work items and there can be a lot
+> + * of concurrent destructions.  Use a separate workqueue so that cgroup
+> + * destruction work items don't end up filling up max_active of system_wq
+> + * which may lead to deadlock.
+> + */
+> +static struct workqueue_struct *cgroup_destroy_wq;
+> +
+> +/*
+>   * Generate an array of cgroup subsystem pointers. At boot time, this is
+>   * populated with the built in subsystems, and modular subsystems are
+>   * registered after that. The mutable section of this array is protected by
+> @@ -871,7 +879,7 @@ static void cgroup_free_rcu(struct rcu_head *head)
+>  	struct cgroup *cgrp = container_of(head, struct cgroup, rcu_head);
+>  
+>  	INIT_WORK(&cgrp->destroy_work, cgroup_free_fn);
+> -	schedule_work(&cgrp->destroy_work);
+> +	queue_work(cgroup_destroy_wq, &cgrp->destroy_work);
+>  }
+>  
+>  static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+> @@ -4254,7 +4262,7 @@ static void css_free_rcu_fn(struct rcu_head *rcu_head)
+>  	 * css_put().  dput() requires process context which we don't have.
+>  	 */
+>  	INIT_WORK(&css->destroy_work, css_free_work_fn);
+> -	schedule_work(&css->destroy_work);
+> +	queue_work(cgroup_destroy_wq, &css->destroy_work);
+>  }
+>  
+>  static void css_release(struct percpu_ref *ref)
+> @@ -4544,7 +4552,7 @@ static void css_killed_ref_fn(struct percpu_ref *ref)
+>  		container_of(ref, struct cgroup_subsys_state, refcnt);
+>  
+>  	INIT_WORK(&css->destroy_work, css_killed_work_fn);
+> -	schedule_work(&css->destroy_work);
+> +	queue_work(cgroup_destroy_wq, &css->destroy_work);
+>  }
+>  
+>  /**
+> @@ -5025,6 +5033,17 @@ int __init cgroup_init(void)
+>  	if (err)
+>  		return err;
+>  
+> +	/*
+> +	 * There isn't much point in executing destruction path in
+> +	 * parallel.  Good chunk is serialized with cgroup_mutex anyway.
+> +	 * Use 1 for @max_active.
+> +	 */
+> +	cgroup_destroy_wq = alloc_workqueue("cgroup_destroy", 0, 1);
+> +	if (!cgroup_destroy_wq) {
+> +		err = -ENOMEM;
+> +		goto out;
+> +	}
+> +
+>  	for_each_builtin_subsys(ss, i) {
+>  		if (!ss->early_init)
+>  			cgroup_init_subsys(ss);
+> @@ -5062,9 +5081,11 @@ int __init cgroup_init(void)
+>  	proc_create("cgroups", 0, NULL, &proc_cgroupstats_operations);
+>  
+>  out:
+> -	if (err)
+> +	if (err) {
+> +		if (cgroup_destroy_wq)
+> +			destroy_workqueue(cgroup_destroy_wq);
+>  		bdi_destroy(&cgroup_backing_dev_info);
+> -
+> +	}
+>  	return err;
+>  }
+>  
 
-Matt, desc_version is already in boot_params.efi_info, so kexec-tools can get
-the version from there. I do not need to export it as another file.
+Sorry for the delay: I was on the point of reporting success last
+night, when I tried a debug kernel: and that didn't work so well
+(got spinlock bad magic report in pwd_adjust_max_active(), and
+tests wouldn't run at all).
 
-I think for now we do not need worry much about the compatibility issue, do you
-think I need add version checking in kexec-tools currently? like below?
+Even the non-early cgroup_init() is called well before the
+early_initcall init_workqueues(): though only the debug (lockdep
+and spinlock debug) kernel appeared to have a problem with that.
 
-if (desc_version != 1) /* current version is 1? */
-	error out it is not supported
+Here's the patch I ended up with successfully on a 3.11.7-based
+kernel (though below I've rediffed it against 3.11.8): the
+schedule_work->queue_work hunks are slightly different on 3.11
+than in your patch against current, and I did alloc_workqueue()
+from a separate core_initcall.
 
---
-Thanks
-Dave
+The interval between cgroup_init and that is a bit of a worry;
+but we don't seem to have suffered from the interval between
+cgroup_init and init_workqueues before (when system_wq is NULL)
+- though you may have more courage than I to reorder them!
+
+Initially I backed out my system_highpri_wq workaround, and
+verified that it was still easy to reproduce the problem with
+one of our cgroup stresstests.  Yes it was, then your modified
+patch below convincingly fixed it.
+
+I ran with Johannes's patch adding extra mem_cgroup_reparent_charges:
+as I'd expected, that didn't solve this issue (though it's worth
+our keeping it in to rule out another source of problems).  And I
+checked back on dumps of failures: they indeed show the tell-tale
+256 kworkers doing cgroup_offline_fn, just as you predicted.
+
+Thanks!
+Hugh
+
+---
+ kernel/cgroup.c | 30 +++++++++++++++++++++++++++---
+ 1 file changed, 27 insertions(+), 3 deletions(-)
+
+--- 3.11.8/kernel/cgroup.c	2013-11-17 17:40:54.200640692 -0800
++++ linux/kernel/cgroup.c	2013-11-17 17:43:10.876643941 -0800
+@@ -89,6 +89,14 @@ static DEFINE_MUTEX(cgroup_mutex);
+ static DEFINE_MUTEX(cgroup_root_mutex);
+ 
+ /*
++ * cgroup destruction makes heavy use of work items and there can be a lot
++ * of concurrent destructions.  Use a separate workqueue so that cgroup
++ * destruction work items don't end up filling up max_active of system_wq
++ * which may lead to deadlock.
++ */
++static struct workqueue_struct *cgroup_destroy_wq;
++
++/*
+  * Generate an array of cgroup subsystem pointers. At boot time, this is
+  * populated with the built in subsystems, and modular subsystems are
+  * registered after that. The mutable section of this array is protected by
+@@ -890,7 +898,7 @@ static void cgroup_free_rcu(struct rcu_h
+ 	struct cgroup *cgrp = container_of(head, struct cgroup, rcu_head);
+ 
+ 	INIT_WORK(&cgrp->destroy_work, cgroup_free_fn);
+-	schedule_work(&cgrp->destroy_work);
++	queue_work(cgroup_destroy_wq, &cgrp->destroy_work);
+ }
+ 
+ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+@@ -4205,7 +4213,7 @@ static void css_release(struct percpu_re
+ 	struct cgroup_subsys_state *css =
+ 		container_of(ref, struct cgroup_subsys_state, refcnt);
+ 
+-	schedule_work(&css->dput_work);
++	queue_work(cgroup_destroy_wq, &css->dput_work);
+ }
+ 
+ static void init_cgroup_css(struct cgroup_subsys_state *css,
+@@ -4439,7 +4447,7 @@ static void cgroup_css_killed(struct cgr
+ 
+ 	/* percpu ref's of all css's are killed, kick off the next step */
+ 	INIT_WORK(&cgrp->destroy_work, cgroup_offline_fn);
+-	schedule_work(&cgrp->destroy_work);
++	queue_work(cgroup_destroy_wq, &cgrp->destroy_work);
+ }
+ 
+ static void css_ref_killed_fn(struct percpu_ref *ref)
+@@ -4967,6 +4975,22 @@ out:
+ 	return err;
+ }
+ 
++static int __init cgroup_destroy_wq_init(void)
++{
++	/*
++	 * There isn't much point in executing destruction path in
++	 * parallel.  Good chunk is serialized with cgroup_mutex anyway.
++	 * Use 1 for @max_active.
++	 *
++	 * We would prefer to do this in cgroup_init() above, but that
++	 * is called before init_workqueues(): so leave this until after.
++	 */
++	cgroup_destroy_wq = alloc_workqueue("cgroup_destroy", 0, 1);
++	BUG_ON(!cgroup_destroy_wq);
++	return 0;
++}
++core_initcall(cgroup_destroy_wq_init);
++
+ /*
+  * proc_cgroup_show()
+  *  - Print task's cgroup paths into seq_file, one line for each hierarchy
