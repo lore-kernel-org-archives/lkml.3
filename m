@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab3KRSu7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:50:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57572 "EHLO
+	id S1753647Ab3KRSvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:51:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57558 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab3KRSlh (ORCPT
+	with ESMTP id S1752153Ab3KRSlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 13:41:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        William Roberts <bill.c.roberts@gmail.com>
-Subject: [PATCH 3.4 07/12] netfilter: nf_ct_sip: dont drop packets with offsets pointing outside the packet
-Date: Mon, 18 Nov 2013 10:41:40 -0800
-Message-Id: <20131118184132.288810521@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>,
+        David Henningsson <david.henningsson@canonical.com>
+Subject: [PATCH 3.4 06/12] ALSA: hda - Move one-time init codes from generic_hdmi_init()
+Date: Mon, 18 Nov 2013 10:41:39 -0800
+Message-Id: <20131118184131.835581280@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184130.257996039@linuxfoundation.org>
 References: <20131118184130.257996039@linuxfoundation.org>
@@ -28,35 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrick McHardy <kaber@trash.net>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 3a7b21eaf4fb3c971bdb47a98f570550ddfe4471 upstream.
+commit 8b8d654b55648561287bd8baca0f75f964a17038 upstream.
 
-Some Cisco phones create huge messages that are spread over multiple packets.
-After calculating the offset of the SIP body, it is validated to be within
-the packet and the packet is dropped otherwise. This breaks operation of
-these phones. Since connection tracking is supposed to be passive, just let
-those packets pass unmodified and untracked.
+The codes to initialize work struct or create a proc interface should
+be called only once and never although it's called many times through
+the init callback.  Move that stuff into patch_generic_hdmi() so that
+it's called only once.
 
-Signed-off-by: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: William Roberts <bill.c.roberts@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+BugLink: https://bugs.launchpad.net/bugs/1212160
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nf_conntrack_sip.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_hdmi.c |   22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
 
---- a/net/netfilter/nf_conntrack_sip.c
-+++ b/net/netfilter/nf_conntrack_sip.c
-@@ -1468,7 +1468,7 @@ static int sip_help_tcp(struct sk_buff *
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1282,23 +1282,34 @@ static int generic_hdmi_build_controls(s
+ 	return 0;
+ }
  
- 		msglen = origlen = end - dptr;
- 		if (msglen > datalen)
--			return NF_DROP;
-+			return NF_ACCEPT;
+-static int generic_hdmi_init(struct hda_codec *codec)
++static int generic_hdmi_init_per_pins(struct hda_codec *codec)
+ {
+ 	struct hdmi_spec *spec = codec->spec;
+ 	int pin_idx;
  
- 		ret = process_sip_msg(skb, ct, dataoff, &dptr, &msglen);
- 		if (ret != NF_ACCEPT)
+ 	for (pin_idx = 0; pin_idx < spec->num_pins; pin_idx++) {
+ 		struct hdmi_spec_per_pin *per_pin = &spec->pins[pin_idx];
+-		hda_nid_t pin_nid = per_pin->pin_nid;
+ 		struct hdmi_eld *eld = &per_pin->sink_eld;
+ 
+-		hdmi_init_pin(codec, pin_nid);
+-		snd_hda_jack_detect_enable(codec, pin_nid, pin_nid);
+-
+ 		per_pin->codec = codec;
+ 		INIT_DELAYED_WORK(&per_pin->work, hdmi_repoll_eld);
+ 		snd_hda_eld_proc_new(codec, eld, pin_idx);
+ 	}
++	return 0;
++}
++
++static int generic_hdmi_init(struct hda_codec *codec)
++{
++	struct hdmi_spec *spec = codec->spec;
++	int pin_idx;
++
++	for (pin_idx = 0; pin_idx < spec->num_pins; pin_idx++) {
++		struct hdmi_spec_per_pin *per_pin = &spec->pins[pin_idx];
++		hda_nid_t pin_nid = per_pin->pin_nid;
++
++		hdmi_init_pin(codec, pin_nid);
++		snd_hda_jack_detect_enable(codec, pin_nid, pin_nid);
++	}
+ 	snd_hda_jack_report_sync(codec);
+ 	return 0;
+ }
+@@ -1343,6 +1354,7 @@ static int patch_generic_hdmi(struct hda
+ 		return -EINVAL;
+ 	}
+ 	codec->patch_ops = generic_hdmi_patch_ops;
++	generic_hdmi_init_per_pins(codec);
+ 
+ 	init_channel_allocations();
+ 
 
 
