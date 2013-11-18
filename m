@@ -1,138 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561Ab3KRKb3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 05:31:29 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:53744 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab3KRKbO (ORCPT
+	id S1751619Ab3KRKbg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 05:31:36 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46899 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751319Ab3KRKbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 05:31:14 -0500
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rhyland Klein <rklein@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: [PATCH 1/3] mfd: cros ec: spi: Add delay for raising CS
-Date: Mon, 18 Nov 2013 11:30:47 +0100
-Message-Id: <1384770649-8593-1-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4.2
+	Mon, 18 Nov 2013 05:31:23 -0500
+Date: Mon, 18 Nov 2013 10:30:55 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Mark Brown <broonie@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [GIT PULL] Btrfs
+Message-ID: <20131118103055.GA22763@mudshark.cambridge.arm.com>
+References: <20131114171952.3802.93244@localhost.localdomain>
+ <20131115113216.GA7777@osiris>
+ <20131115122131.3802.25439@localhost.localdomain>
+ <20131115134019.3802.51473@localhost.localdomain>
+ <CAMuHMdWsEaDKoPy7JhKUGqUrkg_8JrVH7fc8JePt=9MXzcSrgQ@mail.gmail.com>
+ <20131115145723.GB7777@osiris>
+ <20131117093604.GT2008@redhat.com>
+ <20131118093555.GA4192@osiris>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131118093555.GA4192@osiris>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rhyland Klein <rklein@nvidia.com>
+On Mon, Nov 18, 2013 at 09:35:55AM +0000, Heiko Carstens wrote:
+> From b19687bad7e878aaed6edb786a22c6b05e886b97 Mon Sep 17 00:00:00 2001
+> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Date: Mon, 18 Nov 2013 10:05:57 +0100
+> Subject: [PATCH] kvm: kvm_clear_guest_page(): fix empty_zero_page usage
+> 
+> Using the address of 'empty_zero_page' as source address in order to clear
+> a page is wrong. On some architectures empty_zero_page is only the pointer
+> to the struct page of the empty_zero_page.
+> Therefore the clear page operation would copy the contents of a couple of
+> struct pages instead of clearing a page.
+> For kvm only arm64 is affected by this bug.
 
-The EC has specific timing it requires. Add support for an optional delay
-after raising CS to fix timing issues. This is configurable based on
-a DT property "google,cros-ec-spi-msg-delay".
+In theory ARM is affected too, but this code doesn't seem to be invoked by
+any architecture other than x86 afaict. It looks like there's a similar
+issue in drivers/spi/spi-fsl-cpm.c where empty_zero_page is used as a dummy
+dma buffer, but that code is basically powerpc only, so again, unlikely to
+cause a problem in practice.
 
-If this property isn't set, then no delay will be added. However, if set
-it will cause a delay equal to the value passed to it to be inserted at
-the end of a transaction.
+Will
 
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
-Reviewed-by: Bernie Thompson <bhthompson@chromium.org>
-Reviewed-by: Andrew Bresticker <abrestic@chromium.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- Documentation/devicetree/bindings/mfd/cros-ec.txt |  4 +++
- drivers/mfd/cros_ec_spi.c                         | 30 +++++++++++++++++++++++
- 2 files changed, 34 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/mfd/cros-ec.txt b/Documentation/devicetree/bindings/mfd/cros-ec.txt
-index 5f229c5f6da9..fb3034a87ae0 100644
---- a/Documentation/devicetree/bindings/mfd/cros-ec.txt
-+++ b/Documentation/devicetree/bindings/mfd/cros-ec.txt
-@@ -17,6 +17,10 @@ Required properties (SPI):
- - compatible: "google,cros-ec-spi"
- - reg: SPI chip select
- 
-+Optional properties (SPI):
-+- google,cros-ec-spi-msg-delay: This property is how long of a delay, in usecs,
-+  to use on the last transfer of a message, to force time between transactions.
-+
- Required properties (LPC):
- - compatible: "google,cros-ec-lpc"
- - reg: List of (IO address, size) pairs defining the interface uses
-diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-index 367ccb58ecb1..d05349a7381e 100644
---- a/drivers/mfd/cros_ec_spi.c
-+++ b/drivers/mfd/cros_ec_spi.c
-@@ -18,6 +18,7 @@
- #include <linux/module.h>
- #include <linux/mfd/cros_ec.h>
- #include <linux/mfd/cros_ec_commands.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/spi/spi.h>
-@@ -61,10 +62,13 @@
-  * @spi: SPI device we are connected to
-  * @last_transfer_ns: time that we last finished a transfer, or 0 if there
-  *	if no record
-+ * @end_of_msg_delay: used to set the delay_usecs on the spi_transfer that
-+ *      is sent when we want to turn off CS at the end of a transaction.
-  */
- struct cros_ec_spi {
- 	struct spi_device *spi;
- 	s64 last_transfer_ns;
-+	unsigned int end_of_msg_delay;
- };
- 
- static void debug_packet(struct device *dev, const char *name, u8 *ptr,
-@@ -235,6 +239,17 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
- 
- 	/* turn off CS */
- 	spi_message_init(&msg);
-+
-+	if (ec_spi->end_of_msg_delay) {
-+		/*
-+		 * Add delay for last transaction, to ensure the rising edge
-+		 * doesn't come too soon after the end of the data.
-+		 */
-+		memset(&trans, '\0', sizeof(trans));
-+		trans.delay_usecs = ec_spi->end_of_msg_delay;
-+		spi_message_add_tail(&trans, &msg);
-+	}
-+
- 	final_ret = spi_sync(ec_spi->spi, &msg);
- 	ktime_get_ts(&ts);
- 	ec_spi->last_transfer_ns = timespec_to_ns(&ts);
-@@ -281,6 +296,17 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
- 	return 0;
- }
- 
-+static void cros_ec_probe_spi_dt(struct cros_ec_spi *ec_spi, struct device *dev)
-+{
-+	struct device_node *np = dev->of_node;
-+	u32 val;
-+	int ret;
-+
-+	ret = of_property_read_u32(np, "google,cros-ec-spi-msg-delay", &val);
-+	if (!ret)
-+		ec_spi->end_of_msg_delay = val;
-+}
-+
- static int cros_ec_probe_spi(struct spi_device *spi)
- {
- 	struct device *dev = &spi->dev;
-@@ -302,6 +328,10 @@ static int cros_ec_probe_spi(struct spi_device *spi)
- 	if (!ec_dev)
- 		return -ENOMEM;
- 
-+	/* Check for any DT properties */
-+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-+		cros_ec_probe_spi_dt(ec_spi, dev);
-+
- 	spi_set_drvdata(spi, ec_dev);
- 	ec_dev->name = "SPI";
- 	ec_dev->dev = dev;
--- 
-1.8.4.2
-
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 662f34c3287e..a0aa84b5941a 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1615,8 +1615,9 @@ EXPORT_SYMBOL_GPL(kvm_read_guest_cached);
+>  
+>  int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len)
+>  {
+> -	return kvm_write_guest_page(kvm, gfn, (const void *) empty_zero_page,
+> -				    offset, len);
+> +	const void *zero_page = (const void *) __va(page_to_phys(ZERO_PAGE(0)));
+> +
+> +	return kvm_write_guest_page(kvm, gfn, zero_page, offset, len);
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_clear_guest_page);
