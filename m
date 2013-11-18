@@ -1,52 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766Ab3KRSOw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:14:52 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:31737 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab3KRSOo (ORCPT
+	id S1751883Ab3KRSPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:15:06 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:41947 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461Ab3KRSOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 13:14:44 -0500
-Message-ID: <1384798205.1791.14.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/3] ACPI / hotplug: Fix PCI host bridge hot removal
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Date: Mon, 18 Nov 2013 11:10:05 -0700
-In-Reply-To: <3206422.AfXMUDqMXZ@vostro.rjw.lan>
-References: <2434673.zhjYZOTQ4A@vostro.rjw.lan>
-	 <3206422.AfXMUDqMXZ@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Date: Mon, 18 Nov 2013 11:14:40 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Hugh Dickins <hughd@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Li Zefan <lizefan@huawei.com>,
+        Markus Blank-Burian <burian@muenster.de>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, cgroups@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: Possible regression with cgroups in 3.11
+Message-ID: <20131118181440.GA2996@google.com>
+References: <CA+SBX_Ogo8HP81o+vrJ8ozSBN6gPwzc8WNOV3Uya=4AYv+CCyQ@mail.gmail.com>
+ <CA+SBX_OJBbYzrNX5Mi4rmM2SANShXMmAvuPGczAyBdx8F2hBDQ@mail.gmail.com>
+ <5270BFE7.4000602@huawei.com>
+ <alpine.LNX.2.00.1310301606080.2333@eggly.anvils>
+ <20131031130647.0ff6f2c7@gandalf.local.home>
+ <alpine.LNX.2.00.1310311442030.2633@eggly.anvils>
+ <20131113032804.GB19394@mtj.dyndns.org>
+ <20131113073806.GA23244@mtj.dyndns.org>
+ <20131116002820.GA31073@google.com>
+ <20131116045356.GA5618@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131116045356.GA5618@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-14 at 00:16 +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Sat, Nov 16, 2013 at 01:53:56PM +0900, Tejun Heo wrote:
+> Hello, Bjorn.
 > 
-> Since the PCI host bridge scan handler does not set hotplug.enabled,
-> the check of it in acpi_bus_device_eject() effectively prevents the
-> root bridge hot removal from working after commit a3b1b1ef78cd
-> (ACPI / hotplug: Merge device hot-removal routines).  However, that
-> check is not necessary, because the other acpi_bus_device_eject()
-> users, acpi_hotplug_notify_cb and acpi_eject_store(), do the same
-> check by themselves before executing that function.
+> On Fri, Nov 15, 2013 at 05:28:20PM -0700, Bjorn Helgaas wrote:
+> > It would be better to fix PCI so we don't call VF driver .probe() methods
+> > from inside a PF driver .probe() method, but that's a bigger project.
 > 
-> For this reason, remove the scan handler check from
-> acpi_bus_device_eject() to make PCI hot bridge hot removal work
-> again.
+> Yeah, if pci doesn't need the recursion, we can simply revert restore
+> the lockdep annoation on work_on_cpu().
+> 
+> > @@ -293,7 +293,9 @@ static int pci_call_probe(struct pci_driver *drv, struct pci_dev *dev,
+> >  	   its local memory on the right node without any need to
+> >  	   change it. */
+> >  	node = dev_to_node(&dev->dev);
+> > -	if (node >= 0) {
+> > +	preempt_disable();
+> > +
+> > +	if (node >= 0 && node != numa_node_id()) {
+> 
+> A bit of comment here would be nice but yeah I think this should work.
+> Can you please also queue the revert of c2fda509667b ("workqueue:
+> allow work_on_cpu() to be called recursively") after this patch?
+> Please feel free to add my acked-by.
 
-I am curious why the PCI host bridge scan handler does not set
-hotplug.enabled.  Is this how it disables hotplug via sysfs eject but
-enables via ACPI notification?  
+OK, below are the two patches (Alex's fix + the revert) I propose to
+merge.  Unless there are objections, I'll ask Linus to pull these
+before v3.13-rc1.
 
-Thanks,
--Toshi
+Bjorn
 
 
+
+commit 84f23f99b507c2c9247f47d3db0f71a3fd65e3a3
+Author: Alexander Duyck <alexander.h.duyck@intel.com>
+Date:   Mon Nov 18 10:59:59 2013 -0700
+
+    PCI: Avoid unnecessary CPU switch when calling driver .probe() method
+    
+    If we are already on a CPU local to the device, call the driver .probe()
+    method directly without using work_on_cpu().
+    
+    This is a workaround for a lockdep warning in the following scenario:
+    
+      pci_call_probe
+        work_on_cpu(cpu, local_pci_probe, ...)
+          driver .probe
+            pci_enable_sriov
+              ...
+                pci_bus_add_device
+                  ...
+                    pci_call_probe
+                      work_on_cpu(cpu, local_pci_probe, ...)
+    
+    It would be better to fix PCI so we don't call VF driver .probe() methods
+    from inside a PF driver .probe() method, but that's a bigger project.
+    
+    [bhelgaas: disable preemption, open bugzilla, rework comments & changelog]
+    Link: https://bugzilla.kernel.org/show_bug.cgi?id=65071
+    Link: http://lkml.kernel.org/r/CAE9FiQXYQEAZ=0sG6+2OdffBqfLS9MpoN1xviRR9aDbxPxcKxQ@mail.gmail.com
+    Link: http://lkml.kernel.org/r/20130624195942.40795.27292.stgit@ahduyck-cp1.jf.intel.com
+    Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+    Acked-by: Tejun Heo <tj@kernel.org>
+
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 9042fdbd7244..add04e70ac2a 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -288,12 +288,24 @@ static int pci_call_probe(struct pci_driver *drv, struct pci_dev *dev,
+ 	int error, node;
+ 	struct drv_dev_and_id ddi = { drv, dev, id };
+ 
+-	/* Execute driver initialization on node where the device's
+-	   bus is attached to.  This way the driver likely allocates
+-	   its local memory on the right node without any need to
+-	   change it. */
++	/*
++	 * Execute driver initialization on node where the device is
++	 * attached.  This way the driver likely allocates its local memory
++	 * on the right node.
++	 */
+ 	node = dev_to_node(&dev->dev);
+-	if (node >= 0) {
++	preempt_disable();
++
++	/*
++	 * On NUMA systems, we are likely to call a PF probe function using
++	 * work_on_cpu().  If that probe calls pci_enable_sriov() (which
++	 * adds the VF devices via pci_bus_add_device()), we may re-enter
++	 * this function to call the VF probe function.  Calling
++	 * work_on_cpu() again will cause a lockdep warning.  Since VFs are
++	 * always on the same node as the PF, we can work around this by
++	 * avoiding work_on_cpu() when we're already on the correct node.
++	 */
++	if (node >= 0 && node != numa_node_id()) {
+ 		int cpu;
+ 
+ 		get_online_cpus();
+@@ -305,6 +317,8 @@ static int pci_call_probe(struct pci_driver *drv, struct pci_dev *dev,
+ 		put_online_cpus();
+ 	} else
+ 		error = local_pci_probe(&ddi);
++
++	preempt_enable();
+ 	return error;
+ }
+ 
+commit 2dde5285d06370b2004613ee4fd253e95622af20
+Author: Bjorn Helgaas <bhelgaas@google.com>
+Date:   Mon Nov 18 11:00:29 2013 -0700
+
+    Revert "workqueue: allow work_on_cpu() to be called recursively"
+    
+    This reverts commit c2fda509667b0fda4372a237f5a59ea4570b1627.
+    
+    c2fda509667b removed lockdep annotation from work_on_cpu() to work around
+    the PCI path that calls work_on_cpu() from within a work_on_cpu() work item
+    (PF driver .probe() method -> pci_enable_sriov() -> add VFs -> VF driver
+    .probe method).
+    
+    84f23f99b507 ("PCI: Avoid unnecessary CPU switch when calling driver
+    .probe() method) avoids that recursive work_on_cpu() use in a different
+    way, so this revert restores the work_on_cpu() lockdep annotation.
+    
+    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+    Acked-by: Tejun Heo <tj@kernel.org>
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 987293d03ebc..5690b8eabfbc 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2840,19 +2840,6 @@ already_gone:
+ 	return false;
+ }
+ 
+-static bool __flush_work(struct work_struct *work)
+-{
+-	struct wq_barrier barr;
+-
+-	if (start_flush_work(work, &barr)) {
+-		wait_for_completion(&barr.done);
+-		destroy_work_on_stack(&barr.work);
+-		return true;
+-	} else {
+-		return false;
+-	}
+-}
+-
+ /**
+  * flush_work - wait for a work to finish executing the last queueing instance
+  * @work: the work to flush
+@@ -2866,10 +2853,18 @@ static bool __flush_work(struct work_struct *work)
+  */
+ bool flush_work(struct work_struct *work)
+ {
++	struct wq_barrier barr;
++
+ 	lock_map_acquire(&work->lockdep_map);
+ 	lock_map_release(&work->lockdep_map);
+ 
+-	return __flush_work(work);
++	if (start_flush_work(work, &barr)) {
++		wait_for_completion(&barr.done);
++		destroy_work_on_stack(&barr.work);
++		return true;
++	} else {
++		return false;
++	}
+ }
+ EXPORT_SYMBOL_GPL(flush_work);
+ 
+@@ -4814,14 +4809,7 @@ long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
+ 
+ 	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
+ 	schedule_work_on(cpu, &wfc.work);
+-
+-	/*
+-	 * The work item is on-stack and can't lead to deadlock through
+-	 * flushing.  Use __flush_work() to avoid spurious lockdep warnings
+-	 * when work_on_cpu()s are nested.
+-	 */
+-	__flush_work(&wfc.work);
+-
++	flush_work(&wfc.work);
+ 	return wfc.ret;
+ }
+ EXPORT_SYMBOL_GPL(work_on_cpu);
