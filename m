@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab3KROTw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 09:19:52 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:55149 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171Ab3KROTq (ORCPT
+	id S1751605Ab3KROUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 09:20:10 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40587 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab3KROUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 09:19:46 -0500
-Message-ID: <528A21FA.1050309@gmail.com>
-Date: Mon, 18 Nov 2013 07:19:38 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 18 Nov 2013 09:20:04 -0500
+Date: Mon, 18 Nov 2013 15:19:56 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Christian Engelmayer <cengelma@gmx.at>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PROBLEM] possible divide by 0 in kernel/sched/cputime.c
+ scale_stime()
+Message-ID: <20131118141956.GB10022@twins.programming.kicks-ass.net>
+References: <20131116223740.3cd579cb@spike>
+ <20131118140224.GA3330@redhat.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Namhyung Kim <namhyung@kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH v2 2/3] perf script: Print comm, fork and exit events
- also
-References: <1384752894-10974-1-git-send-email-namhyung@kernel.org> <1384752894-10974-2-git-send-email-namhyung@kernel.org> <20131118135700.GB3669@ghostprotocols.net>
-In-Reply-To: <20131118135700.GB3669@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131118140224.GA3330@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/13, 6:57 AM, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Nov 18, 2013 at 02:34:53PM +0900, Namhyung Kim escreveu:
->> If --show-task option is given, also print internal COMM, FORK and
->> EXIT events.  It would be helpful for debugging.
->
-> Humm, --show-task-events is clearer albeit long :-\ With shell
-> completion shouldn't be an issue tho.
->
-> Also, can't we use: perf_event__fprintf_{mmap,comm,task}?
+On Mon, Nov 18, 2013 at 03:02:24PM +0100, Stanislaw Gruszka wrote:
+> > The x86 init check whether all booted CPUs have their TSC's synchronized, never
+> > failed so far, however, the tsc clocksource is sporadically marked unstable.
+> > 
+> >    Clocksource tsc unstable (delta = -74994678 ns)
 
-Good point. Those can be used to dump data after perf-script's 
-sample_start. From a quick review it looks like perf_event__fprintf can 
-be used rather than the lower fprintf_mmap functions.
+> >    Version 00020652:
+> >    Type 0 - Original OEM
+> >    Family 6 - Pentium Pro
+> >    Model 5 - Pentium II Model 5/Xeon/Celeron
+> >    Extended brand string: "Intel(R) Core(TM) i5 CPU         650  @ 3.20GHz"
 
-David
+I'm not sure what tool you used to generate that, but its broken, that's
+model 0x25 (37), it somehow truncates the upper model bits.
+
+That said, its a westmere core and I've seen wsm-ep (dual socket)
+machines loose their TSC sync quite regularly, but this would be the
+first case a single socket wsm would loose its TSC sync.
+
+That leads me to believe your BIOS is screwing you over with SMIs or the
+like.
+
+I would be tempted to say you should simply mark the tsc unstable on
+boot and live with that -- we fully assume the sched_clock stuff is not
+going backwards in an 'observable' way.
+
+That said, it might be nice to not crash either.. 
+
