@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab3KRUcX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:32:23 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50543 "EHLO
+	id S1752978Ab3KRUcl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:32:41 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50542 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab3KRU2N (ORCPT
+	with ESMTP id S1751648Ab3KRU2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 15:28:13 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/16] perf tools: Tag thread comm as overriden
-Date: Mon, 18 Nov 2013 17:27:51 -0300
-Message-Id: <1384806484-29869-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/16] perf trace: Remove thread summary coloring
+Date: Mon, 18 Nov 2013 17:27:49 -0300
+Message-Id: <1384806484-29869-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384806484-29869-1-git-send-email-acme@infradead.org>
 References: <1384806484-29869-1-git-send-email-acme@infradead.org>
@@ -24,48 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Pekka Enberg <penberg@kernel.org>
 
-The problem is that when a thread overrides its default ":%pid" comm, we
-forget to tag the thread comm as overriden. Hence, this overriden comm
-is not inherited on future forks. Fix it.
+Thread summary line coloring looks ugly.  It doesn't add much value so
+remove coloring completely.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Tested-by: David Ahern <dsahern@gmail.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/20131116010207.GA18855@localhost.localdomain
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Acked-by: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1384447410-1771-1-git-send-email-penberg@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/thread.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ tools/perf/builtin-trace.c | 13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index cd8e2f592719..49eaf1d7d89d 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -70,14 +70,13 @@ int thread__set_comm(struct thread *thread, const char *str, u64 timestamp)
- 	/* Override latest entry if it had no specific time coverage */
- 	if (!curr->start) {
- 		comm__override(curr, str, timestamp);
--		return 0;
-+	} else {
-+		new = comm__new(str, timestamp);
-+		if (!new)
-+			return -ENOMEM;
-+		list_add(&new->list, &thread->comm_list);
- 	}
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 8be17fc462ba..e9f345e2551a 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2158,7 +2158,6 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
+ 	size_t printed = data->printed;
+ 	struct trace *trace = data->trace;
+ 	struct thread_trace *ttrace = thread->priv;
+-	const char *color;
+ 	double ratio;
  
--	new = comm__new(str, timestamp);
--	if (!new)
--		return -ENOMEM;
+ 	if (ttrace == NULL)
+@@ -2166,17 +2165,9 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
+ 
+ 	ratio = (double)ttrace->nr_events / trace->nr_events * 100.0;
+ 
+-	color = PERF_COLOR_NORMAL;
+-	if (ratio > 50.0)
+-		color = PERF_COLOR_RED;
+-	else if (ratio > 25.0)
+-		color = PERF_COLOR_GREEN;
+-	else if (ratio > 5.0)
+-		color = PERF_COLOR_YELLOW;
 -
--	list_add(&new->list, &thread->comm_list);
- 	thread->comm_set = true;
+-	printed += color_fprintf(fp, color, " %s (%d), ", thread__comm_str(thread), thread->tid);
++	printed += fprintf(fp, " %s (%d), ", thread__comm_str(thread), thread->tid);
+ 	printed += fprintf(fp, "%lu events, ", ttrace->nr_events);
+-	printed += color_fprintf(fp, color, "%.1f%%", ratio);
++	printed += fprintf(fp, "%.1f%%", ratio);
+ 	printed += fprintf(fp, ", %.3f msec\n", ttrace->runtime_ms);
+ 	printed += thread__dump_stats(ttrace, trace, fp);
  
- 	return 0;
 -- 
 1.8.1.4
 
