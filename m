@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab3KRS61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:58:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57456 "EHLO
+	id S1753286Ab3KRS6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:58:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57517 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab3KRSkz (ORCPT
+	with ESMTP id S1752712Ab3KRSkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 13:40:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ulf Winkelvos <ulf@winkelvos.de>, jkp <jkp@iki.fi>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.11 17/25] drm/i915/dp: workaround BIOS eDP bpp clamping issue
-Date: Mon, 18 Nov 2013 10:40:46 -0800
-Message-Id: <20131118184037.414769228@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.11 20/25] misc: atmel_pwm: add deferred-probing support
+Date: Mon, 18 Nov 2013 10:40:49 -0800
+Message-Id: <20131118184038.358255694@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
 References: <20131118184032.248465920@linuxfoundation.org>
@@ -28,87 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit c6cd2ee2d59111a07cd9199564c9bdcb2d11e5cf upstream.
+commit 5c6d6fd1564138ad048564e48639f842714a90c6 upstream.
 
-This isn't a real fix to the problem, but rather a stopgap measure while
-trying to find a proper solution.
+Two drivers (atmel-pwm-bl and leds-atmel-pwm) currently depend on the
+atmel_pwm driver to have bound to any pwm-device before their devices
+are probed.
 
-There are several laptops out there that fail to light up the eDP panel
-in UEFI boot mode. They seem to be mostly IVB machines, including but
-apparently not limited to Dell XPS 13, Asus TX300, Asus UX31A, Asus
-UX32VD, Acer Aspire S7. They seem to work in CSM or legacy boot.
+Support deferred probing of such devices by making sure to return
+-EPROBE_DEFER from pwm_channel_alloc when no pwm-device has yet been
+bound.
 
-The difference between UEFI and CSM is that the BIOS provides a
-different VBT to the kernel. The UEFI VBT typically specifies 18 bpp and
-1.62 GHz link for eDP, while CSM VBT has 24 bpp and 2.7 GHz link. We end
-up clamping to 18 bpp in UEFI mode, which we can fit in the 1.62 Ghz
-link, and for reasons yet unknown fail to light up the panel.
-
-Dithering from 24 to 18 bpp itself seems to work; if we use 18 bpp with
-2.7 GHz link, the eDP panel lights up. So essentially this is a link
-speed issue, and *not* a bpp clamping issue.
-
-The bug raised its head since
-commit 657445fe8660100ad174600ebfa61536392b7624
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Sat May 4 10:09:18 2013 +0200
-
-    Revert "drm/i915: revert eDP bpp clamping code changes"
-
-which started clamping bpp *before* computing the link requirements, and
-thus affecting the required bandwidth. Clamping after the computations
-kept the link at 2.7 GHz.
-
-Even though the BIOS tells us to use 18 bpp through the VBT, it happily
-boots up at 24 bpp and 2.7 GHz itself! Use this information to
-selectively ignore the VBT provided value.
-
-We can't ignore the VBT eDP bpp altogether, as there are other laptops
-that do require the clamping to be used due to EDID reporting higher bpp
-than the panel can support.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=59841
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=67950
-Tested-by: Ulf Winkelvos <ulf@winkelvos.de>
-Tested-by: jkp <jkp@iki.fi>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[Jani: stable 3.11 backport]
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/gpu/drm/i915/intel_dp.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -1389,6 +1389,26 @@ static void intel_dp_get_config(struct i
- 	}
+---
+ drivers/misc/atmel_pwm.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/misc/atmel_pwm.c
++++ b/drivers/misc/atmel_pwm.c
+@@ -90,8 +90,10 @@ int pwm_channel_alloc(int index, struct
+ 	unsigned long	flags;
+ 	int		status = 0;
  
- 	pipe_config->adjusted_mode.flags |= flags;
+-	/* insist on PWM init, with this signal pinned out */
+-	if (!pwm || !(pwm->mask & 1 << index))
++	if (!pwm)
++		return -EPROBE_DEFER;
 +
-+	if (is_edp(intel_dp) && dev_priv->vbt.edp_bpp &&
-+	    pipe_config->pipe_bpp > dev_priv->vbt.edp_bpp) {
-+		/*
-+		 * This is a big fat ugly hack.
-+		 *
-+		 * Some machines in UEFI boot mode provide us a VBT that has 18
-+		 * bpp and 1.62 GHz link bandwidth for eDP, which for reasons
-+		 * unknown we fail to light up. Yet the same BIOS boots up with
-+		 * 24 bpp and 2.7 GHz link. Use the same bpp as the BIOS uses as
-+		 * max, not what it tells us to use.
-+		 *
-+		 * Note: This will still be broken if the eDP panel is not lit
-+		 * up by the BIOS, and thus we can't get the mode at module
-+		 * load.
-+		 */
-+		DRM_DEBUG_KMS("pipe has %d bpp for eDP panel, overriding BIOS-provided max %d bpp\n",
-+			      pipe_config->pipe_bpp, dev_priv->vbt.edp_bpp);
-+		dev_priv->vbt.edp_bpp = pipe_config->pipe_bpp;
-+	}
- }
++	if (!(pwm->mask & 1 << index))
+ 		return -ENODEV;
  
- static void intel_disable_dp(struct intel_encoder *encoder)
+ 	if (index < 0 || index >= PWM_NCHAN || !ch)
 
 
