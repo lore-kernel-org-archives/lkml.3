@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468Ab3KROfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 09:35:18 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:40024 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3KROfN (ORCPT
+	id S1751557Ab3KROhK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 09:37:10 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:51932 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab3KROhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 09:35:13 -0500
-From: ivan.lam2014@gmail.com
-To: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, ivan.lam2014@gmail.com
-Subject: [PATCH RESEND] arm: add save_stack_trace_regs() support
-Date: Mon, 18 Nov 2013 22:35:00 +0800
-Message-Id: <528a25a0.c48e420a.3884.ffffba1e@mx.google.com>
-X-Mailer: git-send-email 1.7.9.5
-Content-Type: text/plain; charset="utf-8"
+	Mon, 18 Nov 2013 09:37:04 -0500
+Message-ID: <528A260D.7090807@koalo.de>
+Date: Mon, 18 Nov 2013 15:37:01 +0100
+From: Florian Meier <florian.meier@koalo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree <devicetree@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        dmaengine <dmaengine@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv7] dmaengine: Add support for BCM2835
+References: <5288E327.8050809@koalo.de> <1384768816.14845.186.camel@smile>	 <528A051A.7000703@koalo.de> <1384785017.14845.214.camel@smile>
+In-Reply-To: <1384785017.14845.214.camel@smile>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ivan lam <ivan.lam2014@gmail.com>
+>>>> +static enum dma_status bcm2835_dma_tx_status(struct dma_chan *chan,
+>>>> +	dma_cookie_t cookie, struct dma_tx_state *txstate)
+>>>> +{
+>>>
+>>> []
+>>>
+>>>> +	} else {
+>>>> +		txstate->residue = 0;
+>>>
+>>> Useless assignment since dmaengine will do this for you in
+>>> dma_cookie_status.
+>>
+>> I agree that it is useless, but I think otherwise it might be concealed
+>> that there is a third case left that uses a residue of 0. Do you think a
+>> comment is better? E.g.:
+>>
+>> +	} else {
+>> +		/* residue = 0 per default */
+> 
+> I think like in many other DMA drivers either you have separate function
+> to get residue, which returns 0, or just not include this case.
 
-When configure kprobe events of ftrace with stacktrace option enabled
-in arm, not stacktrace was recorded after the kprobe was triggered.
+You mean like in the omap-dma.c? ;-P
 
-Implement the save_stack_trace_regs() function in arm.
+>>>> +static int bcm2835_dma_probe(struct platform_device *pdev)
+>>>> +{
+> 
+>>>> +	uint32_t chans_available;
+>>>
+>>> Why uint32_t?
+>>
+>> Because it is a bit mask of fixed length that directly comes from the
+>> firmware.
+> 
+> Like one already told you in your i2s patch, please, change that to
+> corresponding u* value, namely u32.
 
-After this fix, stacktrace can be recorded, for example:
-
-# mount -t debugfs nodev /sys/kernel/debug
-# echo "p:netrx net_rx_action" >> /sys/kernel/debug/tracing/kprobe_events
-# echo 1 > /sys/kernel/debug/tracing/events/kprobes/netrx/enable
-# echo 1 > /sys/kernel/debug/tracing/options/stacktrace
-# echo 1 > /sys/kernel/debug/tracing/tracing_on
-# ping 127.0.0.1 -c 1
-# echo 0 > /sys/kernel/debug/tracing/tracing_on
-
-# cat /sys/kernel/debug/tracing/trace
-# tracer: nop
-#
-# entries-in-buffer/entries-written: 12/12   #P:1
-#
-#                              _-----=> irqs-off
-#                             / _----=> need-resched
-#                            | / _---=> hardirq/softirq
-#                            || / _--=> preempt-depth
-#                            ||| /     delay
-#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-#              | |       |   ||||       |         |
-            ping-1200  [000] dNs1   667.603250: netrx: (net_rx_action+0x0/0x1f8)
-            ping-1200  [000] dNs1   667.604738: <stack trace>
- => net_rx_action
- => do_softirq
- => local_bh_enable
- => ip_finish_output
- => ip_output
- => ip_local_out
- => ip_send_skb
- => ip_push_pending_frames
- => raw_sendmsg
- => inet_sendmsg
- => sock_sendmsg
- => SyS_sendto
- => ret_fast_syscall
-
-Signed-off-by: ivan lam <ivan.lam2014@gmail.com>
----
- arch/arm/kernel/stacktrace.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
-diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
-index 00f79e5..2b52fac0 100644
---- a/arch/arm/kernel/stacktrace.c
-+++ b/arch/arm/kernel/stacktrace.c
-@@ -123,6 +123,25 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
- 
-+void save_stack_trace_regs(struct pt_regs *regs, struct stack_trace *trace)
-+{
-+	struct stack_trace_data data;
-+	struct stackframe frame;
-+
-+	data.trace = trace;
-+	data.skip = trace->skip;
-+	data.no_sched_functions = 1;
-+
-+	frame.fp = regs->ARM_fp;
-+	frame.sp = regs->ARM_sp;
-+	frame.lr = regs->ARM_lr;
-+	frame.pc = regs->ARM_pc;
-+
-+	walk_stackframe(&frame, save_trace, &data);
-+	if (trace->nr_entries < trace->max_entries)
-+		trace->entries[trace->nr_entries++] = ULONG_MAX;
-+}
-+
- void save_stack_trace(struct stack_trace *trace)
- {
- 	save_stack_trace_tsk(current, trace);
--- 
-1.7.9.5
+I have no problem with changing that, but why?
 
