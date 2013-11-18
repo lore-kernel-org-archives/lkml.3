@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724Ab3KRKnz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 05:43:55 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:46571 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300Ab3KRKnr (ORCPT
+	id S1751375Ab3KRKs1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 05:48:27 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:50974 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab3KRKsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 05:43:47 -0500
-Date: Mon, 18 Nov 2013 10:43:43 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Derek Basehore <dbasehore@chromium.org>
-Subject: Re: [PATCH 2/3] mfd: cros ec: spi: Increase EC transaction delay
-Message-ID: <20131118104343.GG13640@lee--X1>
-References: <1384770649-8593-1-git-send-email-treding@nvidia.com>
- <1384770649-8593-2-git-send-email-treding@nvidia.com>
+	Mon, 18 Nov 2013 05:48:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1384770649-8593-2-git-send-email-treding@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5281C82B.9090402@ti.com>
+References: <1383893156-28010-1-git-send-email-prabhakar.csengg@gmail.com>
+	<1383893156-28010-2-git-send-email-prabhakar.csengg@gmail.com>
+	<5281C82B.9090402@ti.com>
+Date: Mon, 18 Nov 2013 11:48:19 +0100
+Message-ID: <CACRpkdbeWa76n1yrLxLJUEaz116k+48EbRtPO2iz=y=WLYoR_Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio: davinci: Fix a check for unbanked gpio
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013, Thierry Reding wrote:
+On Tue, Nov 12, 2013 at 7:18 AM, Sekhar Nori <nsekhar@ti.com> wrote:
+> On Friday 08 November 2013 12:15 PM, Prabhakar Lad wrote:
+>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>>
+>> This patch fixes a check for offset in gpio_to_irq_unbanked()
+>> and also assigns gpio_irq, gpio_unbanked of chips[0] to
+>> appropriate values which is used in gpio_to_irq_unbanked()
+>> function.
+>>
+>> Reported-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>
+> You should note explicitly that this patch fixes broken unbanked IRQ
+> support. You mostly just described what you are doing.
+>
+> I will fixup while committing.
 
-> From: Derek Basehore <dbasehore@chromium.org>
-> 
-> 50 us is not a long enough delay between EC transactions. At least 70 us
-> are needed for the 16 MHz STM32L part. Increase the delay to 200 us for
-> an extra safety margin.
-> 
-> Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-> Reviewed-by: Randall Spangler <rspangler@chromium.org>
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->  drivers/mfd/cros_ec_spi.c | 7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
+So you're carrying this patch Sekhar?
 
-As I'm sure you've tested this and you didn't notice any new undue
-latency, I'll apply the patch, thanks.
+Thanks:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yours,
+Linus Walleij
