@@ -1,50 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab3KRTXI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 14:23:08 -0500
-Received: from mga02.intel.com ([134.134.136.20]:56188 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751666Ab3KRTXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 14:23:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="410734901"
-From: "Jiang, Dave" <dave.jiang@intel.com>
-To: Dave Hansen <dave@sr71.net>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "dhillf@gmail.com" <dhillf@gmail.com>,
-        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [v3][PATCH 0/2] v3: fix hugetlb vs. anon-thp copy page
-Thread-Topic: [v3][PATCH 0/2] v3: fix hugetlb vs. anon-thp copy page
-Thread-Index: AQHO4lduiyigOBgxfkeUrVKgzunzi5or6J6A
-Date: Mon, 18 Nov 2013 19:23:01 +0000
-Message-ID: <1384802581.72241.7.camel@djiang5-linux2.ch.intel.com>
-References: <20131115225550.737E5C33@viggo.jf.intel.com>
-In-Reply-To: <20131115225550.737E5C33@viggo.jf.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.2.105.54]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <BA603B6EF9F7DB48B446D24202C376D2@intel.com>
-MIME-Version: 1.0
+	id S1752448Ab3KRTXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 14:23:21 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:51008 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752354Ab3KRTXS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 14:23:18 -0500
+Date: Mon, 18 Nov 2013 14:23:14 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH] tools lib traceevent: Fix use of multiple options in
+ processing field
+Message-ID: <20131118142314.27ca334b@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAIJNKr3030323
 
-On Fri, 2013-11-15 at 14:55 -0800, Dave Hansen wrote:
-> This took some of Mel's comments in to consideration.  Dave
-> Jiang, could you retest this if you get a chance?  These have
-> only been lightly compile-tested.
-> 
+Jiri Olsa reported that the scsi_dispatch_cmd_done event failed to
+parse with:
 
-Everything looks good. 
+  Error: expected type 5 but read 4
+  Error: expected type 5 but read 4
 
-Tested-by: Dave Jiang <dave.jiang@intel.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+The problem is with this part of the print_fmt:
+
+  __print_symbolic(((REC->result) >> 24) & 0xff, ...
+
+The __print_symbolic() helper function's first parameter is the field
+to use to determine what symbol to print based on the value of the
+result. The parser can handle one operation, but it can not handle
+multiple operations ('>>' and '&').
+
+Add code to process all operations for the field argument for
+__print_symbolic() as well as __print_flags().
+
+Reported-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 57fe3ba..dcd0e21 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -1606,6 +1606,24 @@ process_arg(struct event_format *event, struct print_arg *arg, char **tok)
+ static enum event_type
+ process_op(struct event_format *event, struct print_arg *arg, char **tok);
+ 
++/*
++ * For __print_symbolic() and __print_flags, we need to completely
++ * evaluate the first argument, which defines what to print next.
++ */
++static enum event_type
++process_field_arg(struct event_format *event, struct print_arg *arg, char **tok)
++{
++	enum event_type type;
++
++	type = process_arg(event, arg, tok);
++
++	while (type == EVENT_OP) {
++		type = process_op(event, arg, tok);
++	}
++
++	return type;
++}
++
+ static enum event_type
+ process_cond(struct event_format *event, struct print_arg *top, char **tok)
+ {
+@@ -2371,7 +2389,7 @@ process_flags(struct event_format *event, struct print_arg *arg, char **tok)
+ 		goto out_free;
+ 	}
+ 
+-	type = process_arg(event, field, &token);
++	type = process_field_arg(event, field, &token);
+ 
+ 	/* Handle operations in the first argument */
+ 	while (type == EVENT_OP)
+@@ -2424,7 +2442,8 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
+ 		goto out_free;
+ 	}
+ 
+-	type = process_arg(event, field, &token);
++	type = process_field_arg(event, field, &token);
++
+ 	if (test_type_token(type, token, EVENT_DELIM, ","))
+ 		goto out_free_field;
+ 
