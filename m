@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab3KRPcn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 10:32:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35683 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751766Ab3KRPca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 10:32:30 -0500
-Date: Mon, 18 Nov 2013 10:32:11 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
-        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-Message-ID: <20131118153211.GB32168@redhat.com>
-References: <20131114180455.GA32212@anatevka.fc.hp.com>
- <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
- <20131115005049.GJ5116@anatevka.fc.hp.com>
- <20131115062417.GB9237@gmail.com>
- <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
- <5285C639.5040203@zytor.com>
- <20131115140738.GB6637@redhat.com>
- <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
- <20131115180324.GD6637@redhat.com>
- <CAE9FiQU_OstEq3VWwBB879O4EY0DE+zVWVens+w0MLFUQmr3sw@mail.gmail.com>
+	id S1752040Ab3KRPcw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 10:32:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42843 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab3KRPc1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 10:32:27 -0500
+Date: Mon, 18 Nov 2013 16:32:19 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf sw_event related lockup
+Message-ID: <20131118153219.GH3866@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1311131739560.5706@vincent-weaver-1.um.maine.edu>
+ <20131115145944.GA3694@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1311151223040.11932@vincent-weaver-1.um.maine.edu>
+ <20131118085439.GD3866@twins.programming.kicks-ass.net>
+ <CABPqkBRe0xK_mf4JE+0e-UDs92Os_3dreHfh-wnG78fquTCRHQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQU_OstEq3VWwBB879O4EY0DE+zVWVens+w0MLFUQmr3sw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBRe0xK_mf4JE+0e-UDs92Os_3dreHfh-wnG78fquTCRHQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 02:24:25PM -0800, Yinghai Lu wrote:
-> On Fri, Nov 15, 2013 at 10:03 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Fri, Nov 15, 2013 at 09:33:41AM -0800, Yinghai Lu wrote:
+On Mon, Nov 18, 2013 at 04:18:34PM +0100, Stephane Eranian wrote:
+> Peter,
 > 
-> >> I have one system with 6TiB memory, kdump does not work even
-> >> crashkernel=512M in legacy mode. ( it only work on system with
-> >> 4.5TiB).
-> >
-> > Recently I tested one system with 6TB of memory and dumped successfully
-> > with 512MB reserved under 896MB. Also I have heard reports of successful
-> > dump of 12TB system with 512MB reserved below 896MB (due to cyclic
-> > mode of makedumpfile).
-> >
-> > So with newer releases only reason one might want to reserve more
-> > memory is that it might provide speed benefits. We need more testing
-> > to quantify this.
-> 
-> You may need bunch of PCIe cards installed.
-> 
-> The system with 6TiB + 16 PCIe cards, second kernel OOM.
-> The system with 4.5TiB + 16 PCIe cards, second kernel works with vmcore dumped.
+> I missed the beginning of this thread somehow.
+> What's the initial problem?
 
-What's the distro you are testing with? Do you have latest bits of
-makeudmpfile where we use cyclic mode by default and one does not need
-more reserved memory because of more physical memory present in the
-box. I suspect that might be the problem in your testing environment
-and old makedumpfile wil try to allocate larger memory on large
-RAM machines and OOM.
+lkml.kernel.org/r/alpine.DEB.2.10.1311141412060.8746@vincent-weaver-1.um.maine.edu
+lkml.kernel.org/r/alpine.DEB.2.10.1311151223040.11932@vincent-weaver-1.um.maine.edu
 
-[..]
-> > So issue remains that crashkernel=X,high is not a good default choice
-> > because it consumes extra 72M which we don't have to.
-> 
-> then if it falls into 896~4G, user may still need to update kexec-tools ?
+Vince managed to make the intel constraints code go *bang*.
 
-Yep. But distributions control the version of kexec-tools and version
-of kernel and can ship updated kexec-tools by default.
-
-Thanks
-Vivek
+---
+[  573.054155] BUG: unable to handle kernel NULL pointer dereference at        )
+[  573.057564] IP: [<ffffffff81520a44>] _raw_spin_lock_irqsave+0x11/0x2d
+[  573.057564] PGD c814b067 PUD cb183067 PMD 0
+[  573.057564] Oops: 0002 [#1] SMP
+[  573.057564] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powern
+[  573.057564] CPU: 1 PID: 3926 Comm: perf_fuzzer Tainted: G        W    3.12.04
+[  573.057564] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BI2
+[  573.057564] task: ffff880037cfd0c0 ti: ffff8800ca4ae000 task.ti: ffff8800ca40
+[  573.057564] RIP: 0010:[<ffffffff81520a44>]  [<ffffffff81520a44>] _raw_spin_ld
+[  573.057564] RSP: 0018:ffff8800ca4afa08  EFLAGS: 00010046
+[  573.057564] RAX: 0000000000000046 RBX: ffff8800c813e800 RCX: 0000000000000000
+[  573.057564] RDX: 0000000000010000 RSI: ffff8800c813e800 RDI: 0000000000000000
+[  573.057564] RBP: ffff8800ca4afa08 R08: ffff8800c813e800 R09: ffff8800ca4afdf8
+[  573.057564] R10: ffff88011a2261c0 R11: 0000000000000246 R12: ffff88011fc8b940
+[  573.057564] R13: 0000000000000000 R14: ffff8800c813e948 R15: 0000000000000000
+[  573.057564] FS:  00007fc238e92700(0000) GS:ffff88011fc80000(0000) knlGS:00000
+[  573.057564] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  573.057564] CR2: 0000000000000000 CR3: 00000000c88c4000 CR4: 00000000000407e0
+[  573.057564] DR0: 0000000000033c20 DR1: 0000000000000000 DR2: 0000000000000000
+[  573.057564] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[  573.057564] Stack:
+[  573.057564]  ffff8800ca4afa58 ffffffff810190b0 0000000000000000 0000000000000
+[  573.057564]  ffff88011fff8680 0000000000000000 ffff8800c813e800 ffff88011fc80
+[  573.057564]  0000000000000040 0000000000000000 ffff8800ca4afa88 ffffffff81013
+[  573.057564] Call Trace:
+[  573.057564]  [<ffffffff810190b0>] __intel_shared_reg_get_constraints+0x5e/0xc
+[  573.057564]  [<ffffffff81019273>] intel_get_event_constraints+0x85/0x154
+[  573.057564]  [<ffffffff81013bcc>] x86_schedule_events+0x54/0x185
+[  573.057564]  [<ffffffff8101284f>] ? x86_pmu_add+0xf8/0x110
+[  573.057564]  [<ffffffff810126ee>] x86_pmu_commit_txn+0x51/0x9a
+[  573.057564]  [<ffffffff810d6fef>] ? __alloc_pages_nodemask+0x173/0x718
+[  573.057564]  [<ffffffff810c88bc>] ? event_sched_in+0x7a/0x109
+[  573.057564]  [<ffffffff810c89e3>] group_sched_in+0x98/0x147
+[  573.057564]  [<ffffffff81067436>] ? sched_clock_cpu+0xc3/0xd1
+[  573.057564]  [<ffffffff810c8bf0>] ctx_sched_in+0x15e/0x185
+[  573.057564]  [<ffffffff810c8c80>] perf_event_sched_in+0x69/0x72
+[  573.057564]  [<ffffffff810c8d51>] __perf_install_in_context+0xc8/0xf1
+[  573.057564]  [<ffffffff810c956f>] ? perf_event_task_output+0x13d/0x13d
+[  573.057564]  [<ffffffff810c95ab>] remote_function+0x3c/0x43
+[  573.057564]  [<ffffffff8108c655>] smp_call_function_single+0x8a/0x101
+[  573.057564]  [<ffffffff810c95f6>] task_function_call+0x44/0x4e
+[  573.057564]  [<ffffffff810c8c89>] ? perf_event_sched_in+0x72/0x72
+[  573.057564]  [<ffffffff810c9a0c>] perf_install_in_context+0x81/0xbc
+[  573.057564]  [<ffffffff8151dddc>] ? mutex_lock+0x16/0x37
+[  573.057564]  [<ffffffff810cd56b>] SYSC_perf_event_open+0x634/0x7e9
+[  573.057564]  [<ffffffff810cd729>] SyS_perf_event_open+0x9/0xb
+[  573.057564]  [<ffffffff81527b56>] system_call_fastpath+0x1a/0x1f
+[  573.057564] Code: c1 07 89 c2 c1 ea 10 66 39 c2 74 0c 66 8b 07 66 39 d0 74 0
+[  573.057564] RIP  [<ffffffff81520a44>] _raw_spin_lock_irqsave+0x11/0x2d
+[  573.057564]  RSP <ffff8800ca4afa08>
+[  573.057564] CR2: 0000000000000000
+[  573.057564] ---[ end trace ee0dc4a441b301c0 ]---
