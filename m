@@ -1,101 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607Ab3KRDEh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 22:04:37 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:56648 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286Ab3KRDEb (ORCPT
+	id S1751724Ab3KRDEy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 22:04:54 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42678 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751612Ab3KRDEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 22:04:31 -0500
-Date: Mon, 18 Nov 2013 14:04:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/2] mm: create a separate slab for page->ptl allocation
-Message-Id: <20131118140417.9e8aee3f72a006ec3c6c6000@canb.auug.org.au>
-In-Reply-To: <CAMuHMdV33zBfsztXGsSv5YO+r4c2Fxh+0tH7togtS7EjdhDXeA@mail.gmail.com>
-References: <1383833644-27091-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1383833644-27091-2-git-send-email-kirill.shutemov@linux.intel.com>
-	<CAMuHMdV33zBfsztXGsSv5YO+r4c2Fxh+0tH7togtS7EjdhDXeA@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	Sun, 17 Nov 2013 22:04:48 -0500
+X-Sasl-enc: 4m2D9+xzzg1SWS1I3OV/OdpDnS5mWo6/IX49iS63zMqr 1384743886
+Message-ID: <1384743883.2380.23.camel@perseus.fritz.box>
+Subject: Re: [patch 1/2] autofs4: allow autofs to work outside the initial
+ PID namespace
+From: Ian Kent <raven@themaw.net>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: akpm@linux-foundation.org, sukadev@us.ibm.com, ebiederm@xmission.com,
+        mszeredi@suse.cz, serge.hallyn@canonical.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 18 Nov 2013 11:04:43 +0800
+In-Reply-To: <20131116160334.GA19309@redhat.com>
+References: <20131115222222.6F70A1CA1A1@corp2gmr1-1.eem.corp.google.com>
+	 <20131116160334.GA19309@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__18_Nov_2013_14_04_17_+1100_SgXCLQNUyQi/GN2z"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Nov_2013_14_04_17_+1100_SgXCLQNUyQi/GN2z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 2013-11-16 at 17:03 +0100, Oleg Nesterov wrote:
+> On 11/15, Andrew Morton wrote:
+> >
+> > Enable autofs4 to work in a "container".  oz_pgrp is converted from pid_t
+> > to struct pid and this is stored at mount time based on the "pgrp=" option
+> > or if the option is missing then the current pgrp.
+> 
+> I don't understand this code, so I am probably wrong. And this is minor
+> anyway, but...
 
-Hi Geert,
+And I don't understand the namespace code myself but I think you are
+correct about the raceand I'm not sure what to do about it either just
+yet.
 
-On Sat, 16 Nov 2013 21:43:32 +0100 Geert Uytterhoeven <geert@linux-m68k.org=
-> wrote:
->
-> On Thu, Nov 7, 2013 at 3:14 PM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> > --- a/include/linux/mm.h
-> > +++ b/include/linux/mm.h
->=20
-> > +static inline void pgtable_init(void)
-> > +{
-> > +       ptlock_cache_init();
-> > +       pgtable_cache_init();
-> > +}
->=20
-> sparc64defconfig:
->=20
-> include/linux/mm.h:1391:2: error: implicit declaration of function
-> 'pgtable_cache_init' [-Werror=3Dimplicit-function-declaration]
-> arch/sparc/include/asm/pgtable_64.h:978:13: error: conflicting types
-> for 'pgtable_cache_init' [-Werror]
->=20
-> http://kisskb.ellerman.id.au/kisskb/buildresult/10040274/
->=20
-> Has this been in -next?
+The sbi->wq_mutex will prevent user space daemon notifications and wait
+releases but it won't prevent lookups or umounts, the sbi->fs_lock would
+be needed for that.
 
-No, it hasn't :-(
+I'm not sure that matters though since there can be only one user space
+daemon handling an automount point and the case below here requires
+there is no current process owner of the mount the pipe fd is to be set
+for (ie. the "if (!sbi->catatonic) { ... }"). That just means a new
+process is attempting to "reconnect" to the mount, so umount shouldn't
+be a problem. I guess there is a chance that the root user or an errant
+pre-existing process might try and umount the mount ...
 
-> Probably it needs <asm/pgtable.h>.
+It might be sufficient to surround the contents of show_options() with a
+lock on wq_mutex and update the check at the top to
 
-Actually it is because on sparc64, asm/tlbflush_64.h includes linux/mm.h
-(and asm/pgtable.h -> asm/pgtable_64.h -> asm/tlbflush.h ->
-asm/tlbflush_64.h)
+"lock; if (!sbi || sbi->catatonic) {unlock, return 0; } ..."
 
-(see my other error report and I have reverted that commit from
-linux-next today.)
+but it might be necessary to use the sbi->fs_lock in both locations,
+since a catatonic automount has no outstanding waits and can't create
+new waits (and hence there can't be any valid wait release ioctls).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I'll think a bit more about the potential umount issue before offering a
+patch.
 
---Signature=_Mon__18_Nov_2013_14_04_17_+1100_SgXCLQNUyQi/GN2z
-Content-Type: application/pgp-signature
+> 
+> > @@ -357,7 +358,17 @@ static int autofs_dev_ioctl_setpipefd(st
+> >  		mutex_unlock(&sbi->wq_mutex);
+> >  		return -EBUSY;
+> >  	} else {
+> > -		struct file *pipe = fget(pipefd);
+> > +		struct file *pipe;
+> > +
+> > +		new_pid = get_task_pid(current, PIDTYPE_PGID);
+> > +
+> > +		if (ns_of_pid(new_pid) != ns_of_pid(sbi->oz_pgrp)) {
+> > +			AUTOFS_WARN("Not allowed to change PID namespace");
+> > +			err = -EINVAL;
+> > +			goto out;
+> > +		}
+> > +
+> > +		pipe = fget(pipefd);
+> >  		if (!pipe) {
+> >  			err = -EBADF;
+> >  			goto out;
+> > @@ -367,12 +378,13 @@ static int autofs_dev_ioctl_setpipefd(st
+> >  			fput(pipe);
+> >  			goto out;
+> >  		}
+> > -		sbi->oz_pgrp = task_pgrp_nr(current);
+> > +		swap(sbi->oz_pgrp, new_pid);
+> >  		sbi->pipefd = pipefd;
+> >  		sbi->pipe = pipe;
+> >  		sbi->catatonic = 0;
+> >  	}
+> >  out:
+> > +	put_pid(new_pid);
+> 
+> This looks suspicious, put_pid() can actually kfree the old sbi->oz_pgrp
+> swapped above. IOW, this assumes we can't race with any user of ->oz_pgrp.
+> 
+> For example,
+> 
+> > @@ -80,7 +83,7 @@ static int autofs4_show_options(struct s
+> >  	if (!gid_eq(root_inode->i_gid, GLOBAL_ROOT_GID))
+> >  		seq_printf(m, ",gid=%u",
+> >  			from_kgid_munged(&init_user_ns, root_inode->i_gid));
+> > -	seq_printf(m, ",pgrp=%d", sbi->oz_pgrp);
+> > +	seq_printf(m, ",pgrp=%d", pid_vnr(sbi->oz_pgrp));
+> 
+> Can't this race with autofs_dev_ioctl_setpipefd() above?
+> 
+> Oleg.
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJSiYO2AAoJEMDTa8Ir7ZwV278P/1p+/c1iOiRhWrrIlqWtunMk
-hSeZT44IbzfXm9QBx822E/AzmBFiEIhb1tq4f0Ngi1BVFkUr3bSPBrRGxf3LMrrd
-cnLdN4KEj4jb4fEl6scy9GA9NjsLiEBPEf+olgwNFXfTjprtq2TQriS1iuN8Hvde
-IBT8hns8FbRyaH2e9+uR7Os3MCNUa8cGvIsvIlqOj1xDx/Ro9yW8Si24k5Pn38tm
-3Rr4zEQVZgvqcT3slX3B54ADcL2unvKf51liXIcgyhRi9qtHocIMnDHjxQg12n16
-JcNVNv7hVz4NWuIvHMxznX8NOUDBjQoiXyC/bIuNfmJuCFJ+OcvrmVEifIbAmU9h
-475bYVy0qzBCqz1V5HPzL0UIlE8MJ7dlSbiK3fmHgKJ2hkFKV4lYHbenxIq1Mz4/
-S5DxTKXIRdH0vUmuJgAgx44p0yvZGezbTcVXmjL4BXtsRUXDKjmBu88bUbpBgCtj
-ipZJE/LhgLRsvSrPmYn/wilMiuLOa70xoulO2bB5T0AqluF80/7R7AoYOvuqj5uJ
-SGcyWkgbCvHNc0AFSq0blR+dRTD5XWdeqGmkDx30vP6LoDXrEHZXyPdYBmJg5fRN
-zp+JmfcIKBqflCjksWtytgW+VtMP5Ndt4KhH4Z6Rm8sfKGA3stJm+w+bloC7K96i
-5aWE1/l9CqUYV/2gTy5O
-=Pqjh
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Nov_2013_14_04_17_+1100_SgXCLQNUyQi/GN2z--
