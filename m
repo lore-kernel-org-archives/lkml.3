@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab3KRQ6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 11:58:55 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:64577 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079Ab3KRQ6q (ORCPT
+	id S1751480Ab3KRRAp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 12:00:45 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41425 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079Ab3KRRAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 11:58:46 -0500
+	Mon, 18 Nov 2013 12:00:37 -0500
+Message-ID: <528A47B0.1090800@wwwdotorg.org>
+Date: Mon, 18 Nov 2013 10:00:32 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1311181142380.18020@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1311131739560.5706@vincent-weaver-1.um.maine.edu>
-	<20131115145944.GA3694@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1311151223040.11932@vincent-weaver-1.um.maine.edu>
-	<20131118085439.GD3866@twins.programming.kicks-ass.net>
-	<CABPqkBRe0xK_mf4JE+0e-UDs92Os_3dreHfh-wnG78fquTCRHQ@mail.gmail.com>
-	<20131118153219.GH3866@twins.programming.kicks-ass.net>
-	<CABPqkBQqa_foaozcHkHBU+VFTcVKrkgVcidUQNzWayB53yBa8g@mail.gmail.com>
-	<alpine.DEB.2.10.1311181142380.18020@vincent-weaver-1.um.maine.edu>
-Date: Mon, 18 Nov 2013 17:58:45 +0100
-Message-ID: <CABPqkBSLZAFeJ8t_57eJe8Yuxi-jSJSVF60BPjZwS_gj3zS7VA@mail.gmail.com>
-Subject: Re: perf sw_event related lockup
-From: Stephane Eranian <eranian@google.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Alexandre Courbot <acourbot@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        linux-samsung-soc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: move firmware_ops to drivers/firmware
+References: <1384678169-28228-1-git-send-email-acourbot@nvidia.com> <CAHkRjk5LBOFx3ir49RgEsaFwvp5UCpTjYFWto+URXebAsOP0RA@mail.gmail.com>
+In-Reply-To: <CAHkRjk5LBOFx3ir49RgEsaFwvp5UCpTjYFWto+URXebAsOP0RA@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 5:44 PM, Vince Weaver <vincent.weaver@maine.edu> wrote:
-> On Mon, 18 Nov 2013, Stephane Eranian wrote:
->
->> What's the config for this test?
->> Need to host CPU type and the event config.
->> Otherwise there is not much I can do with the crash dump.
->
-> It's 3.12, on a core2 machine.
->
-On core2, there is no offcore-response event, therefore you should not
-get to the shared_reg_*() code OR it should return immediately. Looks
-like here, it calls into it and finds some pointers NULL:
-cpuc->shared_regs, I bet.
+On 11/17/2013 08:59 AM, Catalin Marinas wrote:
+> On 17 November 2013 08:49, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> The ARM tree includes a firmware_ops interface that is designed to
+>> implement support for simple, TrustZone-based firmwares but could
+>> also cover other use-cases. It has been suggested that this
+>> interface might be useful to other architectures (e.g. arm64) and
+>> that it should be moved out of arch/arm.
+> 
+> NAK. I'm for code sharing with arm via common locations but this API
+> goes against the ARMv8 firmware standardisation efforts like PSCI,
+> encouraging each platform to define there own non-standard interface.
 
-Now, I am trying to understand how we got there:
+Surely PSCI is *an* implementation of firmware_ops?
 
-        xreg = &event->hw.extra_reg;
-        if (xreg->idx != EXTRA_REG_NONE) {
-                c = __intel_shared_reg_get_constraints(cpuc, event, xreg);
+Couldn't firmware_ops be relevant to non-ARM architectures too? If so,
+that would support my previous point; we're presumably not requiring
+non-ARM architectures to implement PSCI?
 
-        }
-
-        breg = &event->hw.branch_reg;
-        if (breg->idx != EXTRA_REG_NONE) {
-                d = __intel_shared_reg_get_constraints(cpuc, event, breg);
-        }
-
-So one of those tests is true.
-
-That means breg->idx is pointing to a LBR_SELECT MSR but that does
-not exist on Core2, or xreg->idx is pointing to a shared resource
-which does not exist either.
-For the former, it would mean it thinks there is hw LBR filtering, but
-that's wrong. For the latter, it means it thinks that Core 2 has a
-x86_pmu.extra_regs. I would check those two cases. Don't know
-how this could happen.
-
-I could debug this but I don't have a Core 2 machine that I can
-easily crash. But maybe I can fake this on a IVB laptop. Just
-would need the perf_event_attr struct.
-
-
-ly I don't have the event config.  To reproduce I start my perf_fuzzer
-> running and typically it will hit the error/lockup within an hour or so
-> of fuzzing assuming it doesn't hit one of the other outstanding bugs
-> first.
->
-> I can probably narrow it down but that involves a lot of luck as well as a
-> lot of time and I might not get a chance to do so until next month at the
-> earliest.
->
-> Vince
+On a practical note, unless ARM mandates by ARM architecture licensing
+condition that mechanisms other than PSCI are not allowed, then they're
+going to exist even if the upstream Linux community doesn't like it.
+History has certainly shown that.
