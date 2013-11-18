@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab3KRU3q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:29:46 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50611 "EHLO
+	id S1752756Ab3KRU3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:29:50 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50605 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538Ab3KRU2T (ORCPT
+	with ESMTP id S1752533Ab3KRU2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:28:19 -0500
+	Mon, 18 Nov 2013 15:28:18 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
+Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/16] perf tools: Add option macro OPT_BOOLEAN_SET
-Date: Mon, 18 Nov 2013 17:28:02 -0300
-Message-Id: <1384806484-29869-15-git-send-email-acme@infradead.org>
+Subject: [PATCH 05/16] perf completion: factor out compgen stuff
+Date: Mon, 18 Nov 2013 17:27:53 -0300
+Message-Id: <1384806484-29869-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384806484-29869-1-git-send-email-acme@infradead.org>
 References: <1384806484-29869-1-git-send-email-acme@infradead.org>
@@ -30,76 +23,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
 
-OPT_BOOLEAN_SET records whether a boolean option was set by the user.
+compgen is a bash-builtin; factor out the invocations into a separate
+function to give us a chance to override it with a zsh equivalent in
+future patches.
 
-That information can be used to change the default value for the option
-after the options have been parsed.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1384768557-23331-4-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/1384704807-15779-3-git-send-email-artagnon@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-options.c | 2 ++
- tools/perf/util/parse-options.h | 8 ++++++++
- 2 files changed, 10 insertions(+)
+ tools/perf/bash_completion | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index b6b39ff14fbb..d22e3f8017dc 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -78,6 +78,8 @@ static int get_value(struct parse_opt_ctx_t *p,
+diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
+index 3efdc84f112c..824312681601 100644
+--- a/tools/perf/bash_completion
++++ b/tools/perf/bash_completion
+@@ -89,6 +89,11 @@ __ltrim_colon_completions()
+ 	fi
+ }
  
- 	case OPTION_BOOLEAN:
- 		*(bool *)opt->value = unset ? false : true;
-+		if (opt->set)
-+			*(bool *)opt->set = true;
- 		return 0;
++__perfcomp ()
++{
++	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
++}
++
+ __perf_main ()
+ {
+ 	local cmd
+@@ -99,23 +104,23 @@ __perf_main ()
+ 	# List perf subcommands or long options
+ 	if [ $cword -eq 1 ]; then
+ 		if [[ $cur == --* ]]; then
+-			COMPREPLY=( $( compgen -W '--help --version \
++			__perfcomp '--help --version \
+ 			--exec-path --html-path --paginate --no-pager \
+-			--perf-dir --work-tree --debugfs-dir' -- "$cur" ) )
++			--perf-dir --work-tree --debugfs-dir' -- "$cur"
+ 		else
+ 			cmds=$($cmd --list-cmds)
+-			COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
++			__perfcomp "$cmds" "$cur"
+ 		fi
+ 	# List possible events for -e option
+ 	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
+ 		evts=$($cmd list --raw-dump)
+-		COMPREPLY=( $( compgen -W '$evts' -- "$cur" ) )
++		__perfcomp "$evts" "$cur"
+ 		__ltrim_colon_completions $cur
+ 	# List long option names
+ 	elif [[ $cur == --* ]];  then
+ 		subcmd=${words[1]}
+ 		opts=$($cmd $subcmd --list-opts)
+-		COMPREPLY=( $( compgen -W '$opts' -- "$cur" ) )
++		__perfcomp "$opts" "$cur"
+ 	fi
+ }
  
- 	case OPTION_INCR:
-diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
-index b0241e28eaf7..cbf0149cf221 100644
---- a/tools/perf/util/parse-options.h
-+++ b/tools/perf/util/parse-options.h
-@@ -82,6 +82,9 @@ typedef int parse_opt_cb(const struct option *, const char *arg, int unset);
-  *   OPTION_{BIT,SET_UINT,SET_PTR} store the {mask,integer,pointer} to put in
-  *   the value when met.
-  *   CALLBACKS can use it like they want.
-+ *
-+ * `set`::
-+ *   whether an option was set by the user
-  */
- struct option {
- 	enum parse_opt_type type;
-@@ -94,6 +97,7 @@ struct option {
- 	int flags;
- 	parse_opt_cb *callback;
- 	intptr_t defval;
-+	bool *set;
- };
- 
- #define check_vtype(v, type) ( BUILD_BUG_ON_ZERO(!__builtin_types_compatible_p(typeof(v), type)) + v )
-@@ -103,6 +107,10 @@ struct option {
- #define OPT_GROUP(h)                { .type = OPTION_GROUP, .help = (h) }
- #define OPT_BIT(s, l, v, h, b)      { .type = OPTION_BIT, .short_name = (s), .long_name = (l), .value = check_vtype(v, int *), .help = (h), .defval = (b) }
- #define OPT_BOOLEAN(s, l, v, h)     { .type = OPTION_BOOLEAN, .short_name = (s), .long_name = (l), .value = check_vtype(v, bool *), .help = (h) }
-+#define OPT_BOOLEAN_SET(s, l, v, os, h) \
-+	{ .type = OPTION_BOOLEAN, .short_name = (s), .long_name = (l), \
-+	.value = check_vtype(v, bool *), .help = (h), \
-+	.set = check_vtype(os, bool *)}
- #define OPT_INCR(s, l, v, h)        { .type = OPTION_INCR, .short_name = (s), .long_name = (l), .value = check_vtype(v, int *), .help = (h) }
- #define OPT_SET_UINT(s, l, v, h, i)  { .type = OPTION_SET_UINT, .short_name = (s), .long_name = (l), .value = check_vtype(v, unsigned int *), .help = (h), .defval = (i) }
- #define OPT_SET_PTR(s, l, v, h, p)  { .type = OPTION_SET_PTR, .short_name = (s), .long_name = (l), .value = (v), .help = (h), .defval = (p) }
 -- 
 1.8.1.4
 
