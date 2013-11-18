@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896Ab3KRKdb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 05:33:31 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:5858 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab3KRKdX (ORCPT
+	id S1751406Ab3KRKfu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 05:35:50 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:64774 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab3KRKfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 05:33:23 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 18 Nov 2013 02:27:29 -0800
-Message-ID: <5289ECEE.4070505@nvidia.com>
-Date: Mon, 18 Nov 2013 19:33:18 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 18 Nov 2013 05:35:41 -0500
+Date: Mon, 18 Nov 2013 10:35:35 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Cc: linux-omap@vger.kernel.org, linaro-networking@linaro.org,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 11/23] mfd: omap-usb-host: raw read and write endian fix
+Message-ID: <20131118103535.GD13640@lee--X1>
+References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
+ <1384560086-11994-12-git-send-email-taras.kondratiuk@linaro.org>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Rob Landley <rob@landley.net>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCH v2] Documentation: gpiolib: document new interface
-References: <1384605261-8682-1-git-send-email-acourbot@nvidia.com> <CACRpkdZc0DWHe6AmawYp=SY=5==SUuJUHDETUTDw-6PbhR3tUg@mail.gmail.com>
-In-Reply-To: <CACRpkdZc0DWHe6AmawYp=SY=5==SUuJUHDETUTDw-6PbhR3tUg@mail.gmail.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1384560086-11994-12-git-send-email-taras.kondratiuk@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2013 06:34 PM, Linus Walleij wrote:
-> On Sat, Nov 16, 2013 at 1:34 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->
->> The first version received zero feedback, hopefully this one will get more
->> attention. :) Not much changes, just some more proofreading and the fixes
->> and improvements that came from it. It looks ok as far as I am concerned.
->
-> Sorry I was swamped with other stuff...
->
->> Linus, I hope this can be merged during the -rc cycle of 3.13, since the
->> gpiod_ interface is going to be introduced there. It would not make much
->> sense for it to come without its documentation.
->
-> You're right of course. I'll read through it and apply fixes on top
-> (or squash into your patch.)
+On Sat, 16 Nov 2013, Taras Kondratiuk wrote:
 
-Great, thanks!
+> From: Victor Kamensky <victor.kamensky@linaro.org>
+> 
+> All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
+> Need to use endian neutral functions to read/write h/w registers.
+> I.e instead of __raw_read[lw] and __raw_write[lw] functions code
+> need to use read[lw]_relaxed and write[lw]_relaxed functions.
+> If the first simply reads/writes register, the second will byteswap
+> it if host operates in BE mode.
+> 
+> Changes are trivial sed like replacement of __raw_xxx functions
+> with xxx_relaxed variant.
+> 
+> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
+> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+> ---
+>  drivers/mfd/omap-usb-host.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
 
-> Formal stuff:
-> Don't we need an 00-INDEX file?
-> (Maybe Rob can tell whether this is desirable.)
+Applied, thanks.
 
-Good idea. gpio.txt somehow fulfills that role, but it might be better 
-if we split it. Would you like me to submit a new revision?
-
-> I don't like double spaces after periods. I will just go and remove
-> all of them from the new documentation unless you convince me
-> otherwise. Reference:
-> https://en.wikipedia.org/wiki/Sentence_spacing
-
-Please do - actually I started doing it (they come from the old 
-documentation, not the bits I have written myself) but have obviously 
-missed at least a few of them. :)
-
-Thanks,
-Alex.
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
