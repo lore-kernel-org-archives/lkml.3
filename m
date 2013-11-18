@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab3KRXXK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 18:23:10 -0500
-Received: from smtprelay0219.hostedemail.com ([216.40.44.219]:52998 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751730Ab3KRXXG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 18:23:06 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3866:4605:5007:7652:10004:10400:10848:11026:11473:11658:11914:12043:12438:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crush38_8f3d89e04f516
-X-Filterd-Recvd-Size: 2014
-Message-ID: <1384816981.17783.10.camel@joe-AO722>
-Subject: [PATCH] checkpatch.pl: Check for function declarations without
- arguments
-From: Joe Perches <joe@perches.com>
-To: Richard Weinberger <richard@nod.at>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, apw@canonical.com,
-        bp@alien8.de
-Date: Mon, 18 Nov 2013 15:23:01 -0800
-In-Reply-To: <1823702.CebDozRkek@sandpuppy>
-References: <1384813914-11491-1-git-send-email-richard@nod.at>
-	 <1384814182.17783.5.camel@joe-AO722> <1823702.CebDozRkek@sandpuppy>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751981Ab3KRXX1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 18:23:27 -0500
+Received: from tundra.namei.org ([65.99.196.166]:47037 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751374Ab3KRXXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 18:23:25 -0500
+Date: Tue, 19 Nov 2013 10:30:19 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [GIT] Security subsystem updates for 3.13
+In-Reply-To: <CA+5PVA7C-SSg5TyQ14kUN2SbLi-=bk6isi05xgtR5j8MC7-Uhg@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1311191029050.20131@tundra.namei.org>
+References: <alpine.LRH.2.02.1311071146450.31522@tundra.namei.org> <CA+5PVA7C-SSg5TyQ14kUN2SbLi-=bk6isi05xgtR5j8MC7-Uhg@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Functions like this one are evil:
+On Mon, 18 Nov 2013, Josh Boyer wrote:
 
-void foo()
-{
-	...
-}
+> On Wed, Nov 6, 2013 at 7:51 PM, James Morris <jmorris@namei.org> wrote:
+> > In this patchset, we finally get an SELinux update, with Paul Moore taking
+> > over as maintainer of that code.
+> >
+> > Also a significant update for the Keys subsystem, as well as maintenance
+> > updates to Smack, IMA, TPM, and Apparmor.
+> >
+> > Please pull.
+> >
+> > The following changes since commit be408cd3e1fef73e9408b196a79b9934697fe3b1:
+> >
+> >   Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2013-11-04 06:40:55 -0800)
+> >
+> > are available in the git repository at:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+> 
+> Unless I'm missing something, I don't think this has landed in Linus'
+> tree yet.  Linus, did this pull request get NAKed or fall through the
+> cracks?
 
-Because these functions allow variadic arguments without
-checking the arguments at all.
- 
-Original-patch-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 61090e0..2e1ff0c 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2634,6 +2634,15 @@ sub process {
- 				$herecurr);
-                }
- 
-+# check for function declarations without arguments like "int foo()"
-+		if ($line =~ /(\b$Type\s+$Ident)\s*\(\s*\)/) {
-+			if (ERROR("FUNCTION_WITHOUT_ARGS",
-+				  "Bad function definition - $1() should probably be $1(void)\n" . $herecurr) &&
-+			    $fix) {
-+				$fixed[$linenr - 1] =~ s/(\b($Type)\s+($Ident))\s*\(\s*\)/$2 $3(void)/;
-+			}
-+		}
-+
- # check for declarations of struct pci_device_id
- 		if ($line =~ /\bstruct\s+pci_device_id\s+\w+\s*\[\s*\]\s*\=\s*\{/) {
- 			WARN("DEFINE_PCI_DEVICE_TABLE",
+I think Linus is on vacation and merging only sporadically at the moment.
 
 
+
+-- 
+James Morris
+<jmorris@namei.org>
