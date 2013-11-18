@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751743Ab3KRO6l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 09:58:41 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56700 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751243Ab3KRO6d (ORCPT
+	id S1751467Ab3KRPEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 10:04:38 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53301 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751171Ab3KRPEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 09:58:33 -0500
-Message-ID: <1384786707.2001.6.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] scsi: be_iscsi: fix possible memory leak and refactor
- code
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Geyslan =?ISO-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
-Cc: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
-        "open list:SERVER ENGINES 10..." <linux-scsi@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Mon, 18 Nov 2013 06:58:27 -0800
-In-Reply-To: <CAGG-pUT_h1eNnHDpxRvMPWeN5zi6L2mckHMPsV92Qf3hqtf7EQ@mail.gmail.com>
-References: <1384714284-13712-1-git-send-email-geyslan@gmail.com>
-	 <1384717371.2050.2.camel@dabdike.int.hansenpartnership.com>
-	 <CAGG-pURSnEeNvmHhQ-GvrnyuMHPrTRMoCKt3P=bB23OD9Vmkpg@mail.gmail.com>
-	 <1384724339.2050.6.camel@dabdike.int.hansenpartnership.com>
-	 <CAGG-pUT_h1eNnHDpxRvMPWeN5zi6L2mckHMPsV92Qf3hqtf7EQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Mon, 18 Nov 2013 10:04:31 -0500
+Date: Mon, 18 Nov 2013 15:04:28 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Florian Meier <florian.meier@koalo.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        dmaengine <dmaengine@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv7] dmaengine: Add support for BCM2835
+Message-ID: <20131118150428.GK30853@e106331-lin.cambridge.arm.com>
+References: <5288E327.8050809@koalo.de>
+ <1384768816.14845.186.camel@smile>
+ <528A051A.7000703@koalo.de>
+ <1384785017.14845.214.camel@smile>
+ <20131118145400.GE16735@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131118145400.GE16735@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-11-17 at 23:12 -0200, Geyslan Gregório Bem wrote:
-> 2013/11/17 James Bottomley <James.Bottomley@hansenpartnership.com>:
-> > On Sun, 2013-11-17 at 19:09 -0200, Geyslan Gregório Bem wrote:
-> >> 2013/11/17 James Bottomley <James.Bottomley@hansenpartnership.com>:
-> >> > On Sun, 2013-11-17 at 15:51 -0300, Geyslan G. Bem wrote:
-> >> >> This patch fix memory leakage in cases 'ISCSI_NET_PARAM_VLAN_ID' and
-> >> >> 'ISCSI_NET_PARAM_VLAN_PRIORITY' and refactors code 'going out' when
-> >> >> necessary.
-> >> >
-> >> > You pointlessly renamed a variable, which makes the diff hard to read.
-> >> > Please don't do that.
-> >>
-> >> Ok, I can agree. 'len' means length? What is returned in case of non
-> >> error?
-> >
-> > it returns the length of buf written to or negative error.
-> >
-> >> > You missed the fact that the passed in pointer is unmodified if
-> >> > mgmt_get_if_info() returns non zero, so the kfree frees junk and would
-> >> > oops.
-> >> >
-> >> > There's no need for a goto; len = -EINVAL; does everything that's
-> >> > needed.
-> >>
-> >> Well, that is a coverity catch. CID 1128954. Check it.
-> >
-> > I didn't say coverity was wrong, I said your patch was (well not wrong,
-> > just over complex and incomplete).  This is the way to fix both
-> > problems.
-> >
-> > James
-> >
-> > ---
-> >
-> > diff --git a/drivers/scsi/be2iscsi/be_iscsi.c b/drivers/scsi/be2iscsi/be_iscsi.c
-> > index ffadbee..9dcbdfa 100644
-> > --- a/drivers/scsi/be2iscsi/be_iscsi.c
-> > +++ b/drivers/scsi/be2iscsi/be_iscsi.c
-> > @@ -541,10 +541,8 @@ static int be2iscsi_get_if_param(struct beiscsi_hba *phba,
-> >                 ip_type = BE2_IPV6;
+On Mon, Nov 18, 2013 at 02:54:00PM +0000, Russell King - ARM Linux wrote:
+> On Mon, Nov 18, 2013 at 04:30:17PM +0200, Andy Shevchenko wrote:
+> > On Mon, 2013-11-18 at 13:16 +0100, Florian Meier wrote:
+> > > >> +	uint32_t chans_available;
+> > > > 
+> > > > Why uint32_t?
+> > > 
+> > > Because it is a bit mask of fixed length that directly comes from the
+> > > firmware.
+> > 
+> > Like one already told you in your i2s patch, please, change that to
+> > corresponding u* value, namely u32.
 > 
-> James, this approach will not prevent the leakage.
+> There's no problem with uint32_t vs u32 - either will do.  u32 is the
+> pre-stdint.h Linux definition of a 32-bit unsigned integer.  There's
+> no reason why uint32_t isn't perfectly acceptable.  It's a matter of
+> author taste which gets used.  (Except where modifications are to an
+> existing chunk of code using one or the other - where consistency then
+> matters more.)
 
-I don't see why not.  The -EINVAL case goes through the kfree() now too,
-no?
+Sorry for being a source of confusion here. I won't push this point in
+future.
 
->  We can initialize the if_info with NULL and always kfree it without
-> to care about junk.
-
-Why?  Error return means no allocation.
-
-James
-
-
+Thanks,
+Mark.
