@@ -1,177 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab3KRNXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 08:23:20 -0500
-Received: from exprod5og110.obsmtp.com ([64.18.0.20]:57700 "HELO
-	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752267Ab3KRNWy (ORCPT
+	id S1752422Ab3KRNYX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 08:24:23 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:42887 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656Ab3KRNYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 08:22:54 -0500
-From: Vinayak Kale <vkale@apm.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: tglx@linutronix.de, will.deacon@arm.com, patches@apm.com, jcm@redhat.com,
-        Vinayak Kale <vkale@apm.com>, Tuan Phan <tphan@apm.com>
-Subject: [PATCH V3 2/2] arm64: perf: add support for percpu pmu interrupt
-Date: Mon, 18 Nov 2013 18:52:29 +0530
-Message-Id: <1384780949-10922-3-git-send-email-vkale@apm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1384780949-10922-1-git-send-email-vkale@apm.com>
-References: <1384780949-10922-1-git-send-email-vkale@apm.com>
+	Mon, 18 Nov 2013 08:24:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <C3050A4DBA34F345975765E43127F10F254A8BE3@szxeml512-mbs.china.huawei.com>
+References: <C3050A4DBA34F345975765E43127F10F254A8BE3@szxeml512-mbs.china.huawei.com>
+Date: Mon, 18 Nov 2013 11:24:15 -0200
+Message-ID: <CAGG-pURhG7P-dT1r-LhGijdiNH=HArajwYX3qOsvmzyeeEJk+Q@mail.gmail.com>
+Subject: Re: [PATCH] regmap: Fix 'ret' would return an uninitialized value
+From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+To: Caizhiyong <caizhiyong@hisilicon.com>
+Cc: Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
+        Levente Kurusa <ilevex.linux@gmail.com>,
+        "levex@linux.com" <levex@linux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for irq registration when pmu interrupt is percpu.
+2013/11/18 Caizhiyong <caizhiyong@hisilicon.com>:
+> From: Cai Zhiyong <caizhiyong@huawei.com>
+> Date: Mon, 18 Nov 2013 20:21:49 +0800
+> Subject: [PATCH] regmap: Fix 'ret' would return an uninitialized value
+>
+> This patch give a warning when calling regmap_register_patch with
+> parameter num_regs <= 0.
+>
+> When the num_regs parameter is zero and krealloc doesn't fail,
+> then the code would return an uninitialized value. However,
+> calling this function with num_regs == 0, would be a waste as it
+> essentially does nothing.
+>
+> Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
 
-Signed-off-by: Vinayak Kale <vkale@apm.com>
-Signed-off-by: Tuan Phan <tphan@apm.com>
----
- arch/arm64/kernel/perf_event.c |  102 +++++++++++++++++++++++++++++-----------
- 1 file changed, 74 insertions(+), 28 deletions(-)
-
-diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
-index cea1594..23475f6 100644
---- a/arch/arm64/kernel/perf_event.c
-+++ b/arch/arm64/kernel/perf_event.c
-@@ -22,6 +22,7 @@
- 
- #include <linux/bitmap.h>
- #include <linux/interrupt.h>
-+#include <linux/irq.h>
- #include <linux/kernel.h>
- #include <linux/export.h>
- #include <linux/perf_event.h>
-@@ -363,22 +364,51 @@ validate_group(struct perf_event *event)
- }
- 
- static void
-+armpmu_disable_percpu_irq(void *data)
-+{
-+	struct arm_pmu *armpmu = data;
-+	struct platform_device *pmu_device = armpmu->plat_device;
-+	int irq = platform_get_irq(pmu_device, 0);
-+
-+	cpumask_test_and_clear_cpu(smp_processor_id(), &armpmu->active_irqs);
-+	disable_percpu_irq(irq);
-+}
-+
-+static void
- armpmu_release_hardware(struct arm_pmu *armpmu)
- {
- 	int i, irq, irqs;
- 	struct platform_device *pmu_device = armpmu->plat_device;
- 
--	irqs = min(pmu_device->num_resources, num_possible_cpus());
-+	irq = platform_get_irq(pmu_device, 0);
- 
--	for (i = 0; i < irqs; ++i) {
--		if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
--			continue;
--		irq = platform_get_irq(pmu_device, i);
--		if (irq >= 0)
--			free_irq(irq, armpmu);
-+	if (irq_to_desc(irq) && irq_is_percpu(irq)) {
-+		on_each_cpu(armpmu_disable_percpu_irq, armpmu, 1);
-+		free_percpu_irq(irq, &cpu_hw_events);
-+	} else {
-+		irqs = min(pmu_device->num_resources, num_possible_cpus());
-+
-+		for (i = 0; i < irqs; ++i) {
-+			if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
-+				continue;
-+			irq = platform_get_irq(pmu_device, i);
-+			if (irq >= 0)
-+				free_irq(irq, armpmu);
-+		}
- 	}
- }
- 
-+static void
-+armpmu_enable_percpu_irq(void *data)
-+{
-+	struct arm_pmu *armpmu = data;
-+	struct platform_device *pmu_device = armpmu->plat_device;
-+	int irq = platform_get_irq(pmu_device, 0);
-+
-+	enable_percpu_irq(irq, 0);
-+	cpumask_set_cpu(smp_processor_id(), &armpmu->active_irqs);
-+}
-+
- static int
- armpmu_reserve_hardware(struct arm_pmu *armpmu)
- {
-@@ -396,34 +426,50 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
- 		return -ENODEV;
- 	}
- 
--	for (i = 0; i < irqs; ++i) {
--		err = 0;
--		irq = platform_get_irq(pmu_device, i);
--		if (irq < 0)
--			continue;
-+	irq = platform_get_irq(pmu_device, 0);
- 
--		/*
--		 * If we have a single PMU interrupt that we can't shift,
--		 * assume that we're running on a uniprocessor machine and
--		 * continue. Otherwise, continue without this interrupt.
--		 */
--		if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
--			pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
--				    irq, i);
--			continue;
--		}
-+	if (irq_to_desc(irq) && irq_is_percpu(irq)) {
-+		err = request_percpu_irq(irq, armpmu->handle_irq,
-+				"arm-pmu", &cpu_hw_events);
- 
--		err = request_irq(irq, armpmu->handle_irq,
--				  IRQF_NOBALANCING,
--				  "arm-pmu", armpmu);
- 		if (err) {
--			pr_err("unable to request IRQ%d for ARM PMU counters\n",
--				irq);
-+			pr_err("unable to request percpu IRQ%d for ARM PMU counters\n",
-+					irq);
- 			armpmu_release_hardware(armpmu);
- 			return err;
- 		}
- 
--		cpumask_set_cpu(i, &armpmu->active_irqs);
-+		on_each_cpu(armpmu_enable_percpu_irq, armpmu, 1);
-+	} else {
-+		for (i = 0; i < irqs; ++i) {
-+			err = 0;
-+			irq = platform_get_irq(pmu_device, i);
-+			if (irq < 0)
-+				continue;
-+
-+			/*
-+			 * If we have a single PMU interrupt that we can't shift,
-+			 * assume that we're running on a uniprocessor machine and
-+			 * continue. Otherwise, continue without this interrupt.
-+			 */
-+			if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
-+				pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
-+						irq, i);
-+				continue;
-+			}
-+
-+			err = request_irq(irq, armpmu->handle_irq,
-+					IRQF_NOBALANCING,
-+					"arm-pmu", armpmu);
-+			if (err) {
-+				pr_err("unable to request IRQ%d for ARM PMU counters\n",
-+						irq);
-+				armpmu_release_hardware(armpmu);
-+				return err;
-+			}
-+
-+			cpumask_set_cpu(i, &armpmu->active_irqs);
-+		}
- 	}
- 
- 	return 0;
--- 
-1.7.9.5
-
+Reviewed-by: Geyslan G. Bem <geyslan@gmail.com>
