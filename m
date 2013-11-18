@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab3KRVp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 16:45:56 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:47304 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751562Ab3KRVpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 16:45:55 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        Dan Williams <dcbw@redhat.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] libertas sdio: claim device before calling sdio_disable_func()
-Date: Tue, 19 Nov 2013 01:45:08 +0400
-Message-Id: <1384811108-28807-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751606Ab3KRVvn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 16:51:43 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:42628 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab3KRVvj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 16:51:39 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH v2 2/3] hwrng: OMAP3 ROM Random Number Generator support
+Date: Mon, 18 Nov 2013 22:51:30 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.2; x86_64; ; )
+Cc: Tony Lindgren <tony@atomide.com>, Matt Mackall <mpm@selenic.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1379534757-20870-1-git-send-email-pali.rohar@gmail.com> <20131008190408.GM8313@atomide.com> <20131016125734.GA10906@gondor.apana.org.au>
+In-Reply-To: <20131016125734.GA10906@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201311182251.35704@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a failure path in if_sdio_power_on(), where
-sdio_disable_func() is called without claiming the device.
+On Wednesday 16 October 2013 14:57:34 Herbert Xu wrote:
+> On Tue, Oct 08, 2013 at 12:04:09PM -0700, Tony Lindgren wrote:
+> > * Pali Rohár <pali.rohar@gmail.com> [130920 06:33]:
+> > > This driver provides kernel-side support for the Random
+> > > Number Generator hardware found on OMAP34xx processors.
+> > > 
+> > > This driver comes from Maemo 2.6.28 kernel and was tested
+> > > on Nokia RX-51. It is platform device because it needs
+> > > board specific function for smc calls.
+> > 
+> > This one is should be merged via the hw_random patches
+> > seprately:
+> > 
+> > Acked-by: Tony Lindgren <tony@atomide.com>
+> 
+> Patch applied.  Thanks!
 
-Found by Linux Driver Verification project (linuxtesting.org).
+Hello, I still do not see this patch (2/3) in linus tree. But 
+patch 1/3 and 3/3 are already merged. So is there any problem?
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/net/wireless/libertas/if_sdio.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
-index 991238afd1b6..19c4477eb4c6 100644
---- a/drivers/net/wireless/libertas/if_sdio.c
-+++ b/drivers/net/wireless/libertas/if_sdio.c
-@@ -907,8 +907,8 @@ static int if_sdio_power_on(struct if_sdio_card *card)
- 	sdio_release_host(func);
- 	ret = if_sdio_prog_firmware(card);
- 	if (ret) {
--		sdio_disable_func(func);
--		return ret;
-+		sdio_claim_host(func);
-+		goto disable;
- 	}
- 
- 	return 0;
 -- 
-1.8.1.2
-
+Pali Rohár
+pali.rohar@gmail.com
