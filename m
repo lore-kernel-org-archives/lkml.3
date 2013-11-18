@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab3KRUad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:30:33 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50596 "EHLO
+	id S1752813Ab3KRUbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:31:08 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50589 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518Ab3KRU2R (ORCPT
+	with ESMTP id S1752501Ab3KRU2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:28:17 -0500
+	Mon, 18 Nov 2013 15:28:16 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 16/16] tools lib traceevent: Fix use of multiple options in processing field
-Date: Mon, 18 Nov 2013 17:28:04 -0300
-Message-Id: <1384806484-29869-17-git-send-email-acme@infradead.org>
+Subject: [PATCH 10/16] perf header: Fix possible memory leaks in process_group_desc()
+Date: Mon, 18 Nov 2013 17:27:58 -0300
+Message-Id: <1384806484-29869-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384806484-29869-1-git-send-email-acme@infradead.org>
 References: <1384806484-29869-1-git-send-email-acme@infradead.org>
@@ -25,85 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Jiri Olsa reported that the scsi_dispatch_cmd_done event failed to parse
-with:
+After processing all group descriptors or encountering an error, it
+frees all descriptors.  However, current logic can leak memory since it
+might not traverse all descriptors.
 
-  Error: expected type 5 but read 4
-  Error: expected type 5 but read 4
+Note that the 'i' can have different value than nr_groups when an error
+occurred and it's safe to call free(desc[i].name) for every desc since
+we already make it NULL when it's reused for group names.
 
-The problem is with this part of the print_fmt:
-
-  __print_symbolic(((REC->result) >> 24) & 0xff, ...
-
-The __print_symbolic() helper function's first parameter is the field to
-use to determine what symbol to print based on the value of the result.
-The parser can handle one operation, but it can not handle multiple
-operations ('>>' and '&').
-
-Add code to process all operations for the field argument for
-__print_symbolic() as well as __print_flags().
-
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/20131118142314.27ca334b@gandalf.local.home
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1384741244-7271-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c | 23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ tools/perf/util/header.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 0362d575de7d..8a5b65df6efb 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -1606,6 +1606,24 @@ process_arg(struct event_format *event, struct print_arg *arg, char **tok)
- static enum event_type
- process_op(struct event_format *event, struct print_arg *arg, char **tok);
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 559c516f1cec..1cd035708931 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2107,7 +2107,7 @@ static int process_group_desc(struct perf_file_section *section __maybe_unused,
  
-+/*
-+ * For __print_symbolic() and __print_flags, we need to completely
-+ * evaluate the first argument, which defines what to print next.
-+ */
-+static enum event_type
-+process_field_arg(struct event_format *event, struct print_arg *arg, char **tok)
-+{
-+	enum event_type type;
-+
-+	type = process_arg(event, arg, tok);
-+
-+	while (type == EVENT_OP) {
-+		type = process_op(event, arg, tok);
-+	}
-+
-+	return type;
-+}
-+
- static enum event_type
- process_cond(struct event_format *event, struct print_arg *top, char **tok)
- {
-@@ -2371,7 +2389,7 @@ process_flags(struct event_format *event, struct print_arg *arg, char **tok)
- 		goto out_free;
- 	}
- 
--	type = process_arg(event, field, &token);
-+	type = process_field_arg(event, field, &token);
- 
- 	/* Handle operations in the first argument */
- 	while (type == EVENT_OP)
-@@ -2424,7 +2442,8 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
- 		goto out_free;
- 	}
- 
--	type = process_arg(event, field, &token);
-+	type = process_field_arg(event, field, &token);
-+
- 	if (test_type_token(type, token, EVENT_DELIM, ","))
- 		goto out_free_field;
+ 	ret = 0;
+ out_free:
+-	while ((int) --i >= 0)
++	for (i = 0; i < nr_groups; i++)
+ 		free(desc[i].name);
+ 	free(desc);
  
 -- 
 1.8.1.4
