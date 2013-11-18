@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754Ab3KRM0i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 07:26:38 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:36017 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab3KRM0a (ORCPT
+	id S1751713Ab3KRM3Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 07:29:25 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:12676 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab3KRM3U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 07:26:30 -0500
+	Mon, 18 Nov 2013 07:29:20 -0500
+From: Caizhiyong <caizhiyong@hisilicon.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
+        Levente Kurusa <ilevex.linux@gmail.com>,
+        =?iso-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>,
+        "levex@linux.com" <levex@linux.com>
+Subject: [PATCH] regmap: Fix 'ret' would return an uninitialized value
+Thread-Topic: [PATCH] regmap: Fix 'ret' would return an uninitialized value
+Thread-Index: Ac7kWcL5xgLbWHL4Tn20TZiQZqZlqA==
+Date: Mon, 18 Nov 2013 12:29:02 +0000
+Message-ID: <C3050A4DBA34F345975765E43127F10F254A8BE3@szxeml512-mbs.china.huawei.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.67.223.19]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <20131118101517.GA3559@redhat.com>
-References: <1384764380-16832-1-git-send-email-zwu.kernel@gmail.com>
-	<20131118095043.GA3470@redhat.com>
-	<CAEH94Ljbu-gJ3SCHYErNEPucV=rR9PHz5COrOp3B-iw+db=LDQ@mail.gmail.com>
-	<20131118101517.GA3559@redhat.com>
-Date: Mon, 18 Nov 2013 20:26:29 +0800
-Message-ID: <CAEH94Lj4hCtcxvibO9RCB1+sbn=+xR2bO7CbCkRyx9BCJFGaOA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] net, virtio_net: replace the magic value
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: netdev@vger.kernel.org, QEMU Developers <qemu-devel@nongnu.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 6:15 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Mon, Nov 18, 2013 at 06:07:45PM +0800, Zhi Yong Wu wrote:
->> On Mon, Nov 18, 2013 at 5:50 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
->> > On Mon, Nov 18, 2013 at 04:46:20PM +0800, Zhi Yong Wu wrote:
->> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> >>
->> >> It is more appropriate to use # of queue pairs currently used by
->> >> the driver instead of a magic value.
->> >>
->> >> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> >
->> > I don't mind, but driver should be submitted separately
->> > from qemu patches. As it is only patch 4/4 made it to netdev.
->> ok, i will sent v2. By the way, can you help take a look at the
->> following patches?
->
-> Will do.
->
->> Maybe i can send their v2 together.
->
-> Please don't, these seem to be completely unrelated.
-OK, i will send it separately.
->
->> [PATCH 1/3] vhost: remove the dead branch
->> [PATCH 2/3] vhost: adjust vhost_dev_init() to be void
->> [PATCH 3/3] vhost: fix the wrong log descriptions
->>
->>
->> >
->> >> ---
->> >>  drivers/net/virtio_net.c |    4 ++--
->> >>  1 files changed, 2 insertions(+), 2 deletions(-)
->> >>
->> >> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->> >> index cdc7c90..e0cb2d1 100644
->> >> --- a/drivers/net/virtio_net.c
->> >> +++ b/drivers/net/virtio_net.c
->> >> @@ -1619,8 +1619,8 @@ static int virtnet_probe(struct virtio_device *vdev)
->> >>       if (err)
->> >>               goto free_stats;
->> >>
->> >> -     netif_set_real_num_tx_queues(dev, 1);
->> >> -     netif_set_real_num_rx_queues(dev, 1);
->> >> +     netif_set_real_num_tx_queues(dev, vi->curr_queue_pairs);
->> >> +     netif_set_real_num_rx_queues(dev, vi->curr_queue_pairs);
->> >>
->> >>       err = register_netdev(dev);
->> >>       if (err) {
->> >> --
->> >> 1.7.6.5
->> >>
->>
->>
->>
->> --
->> Regards,
->>
->> Zhi Yong Wu
+From: Cai Zhiyong <caizhiyong@huawei.com>
+Date: Mon, 18 Nov 2013 20:21:49 +0800
+Subject: [PATCH] regmap: Fix 'ret' would return an uninitialized value
 
+This patch give a warning when calling regmap_register_patch with
+parameter num_regs <= 0.
 
+When the num_regs parameter is zero and krealloc doesn't fail,
+then the code would return an uninitialized value. However,
+calling this function with num_regs == 0, would be a waste as it
+essentially does nothing.
 
+Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
+---
+ drivers/base/regmap/regmap.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 9c021d9..9a36ac1 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -2173,6 +2173,10 @@ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
+ 	int i, ret;
+ 	bool bypass;
+ 
++	if (WARN_ONCE(num_regs <= 0, "invalid registers number (%d)\n",
++	    num_regs))
++		return 0;
++
+ 	map->lock(map->lock_arg);
+ 
+ 	bypass = map->cache_bypass;
 -- 
-Regards,
+1.8.1.5
 
-Zhi Yong Wu
