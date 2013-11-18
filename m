@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab3KRBH4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 20:07:56 -0500
-Received: from elasmtp-spurfowl.atl.sa.earthlink.net ([209.86.89.66]:36490
-	"EHLO elasmtp-spurfowl.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752864Ab3KRBHs (ORCPT
+	id S1753400Ab3KRBIS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 20:08:18 -0500
+Received: from elasmtp-kukur.atl.sa.earthlink.net ([209.86.89.65]:51742 "EHLO
+	elasmtp-kukur.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752421Ab3KRBIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 20:07:48 -0500
-X-Greylist: delayed 2851 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Nov 2013 20:07:48 EST
+	Sun, 17 Nov 2013 20:08:09 -0500
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
   s=dk20050327; d=earthlink.net;
-  b=Hg2MOyxXjAuk6m0LbcVu1J4vwlSpr04gREw81fn9Oc4/PKMp1Y/4hOTyuAgwkS5m;
+  b=jhM8kyXHBskQ8imr6kAKWxh8cz5X/UYvXs5EuT0rMIBQ2uum84eB9nk4huP3Kz+D;
   h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:Subject:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <52896862.5000300@earthlink.net>
-Date: Sun, 17 Nov 2013 20:07:46 -0500
+Message-ID: <52895D3F.2030706@earthlink.net>
+Date: Sun, 17 Nov 2013 19:20:15 -0500
 From: Stephen Clark <sclark46@earthlink.net>
 Reply-To: sclark46@earthlink.net
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
@@ -22,13 +21,11 @@ To: linux-kernel <linux-kernel@vger.kernel.org>
 Subject: i915 driver gpu hung kernel 3.11
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79e67bfa5f53e8f545fd70c045c1b24d10350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79c9c48ff46f965ea705bb6cd83725356c350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
 X-Originating-IP: 24.144.93.126
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-
 
 Hi List,
 
@@ -101,25 +98,18 @@ Nov 17 18:56:19 joker4 kernel:  node 0: slabs: 0/0, objs: 0/0, free: 0
 Nov 17 18:56:19 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring 
 hung inside bo (0x85c000 ctx 0) at 0x85c97c
 
-is this fixed in 3.12?
-
-Just checked get the same thing in 3.12 but no trace back.
-
-
-Nov 17 19:41:33 joker4 kernel: [drm] stuck on render ring
-Nov 17 19:41:33 joker4 kernel: [drm] capturing error event; look for more 
-information in /sys/class/drm/card0/error
-Nov 17 19:41:33 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring 
-hung inside bo (0x7214000 ctx 0) at 0x72142e0
-Nov 17 19:41:33 joker4 kernel: [drm:i915_reset] *ERROR* Failed to reset chip.
-
-
-
+is this fixed in 3.12
 
 Thanks,
 Steve
 
--
+-- 
+
+"They that give up essential liberty to obtain temporary safety,
+deserve neither liberty nor safety."  (Ben Franklin)
+
+"The course of history shows that as a government grows, liberty
+decreases."  (Thomas Jefferson)
 
 
 
