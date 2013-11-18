@@ -1,162 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461Ab3KROKi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 09:10:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40371 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab3KROKb (ORCPT
+	id S1751372Ab3KRORV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 09:17:21 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52345 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750779Ab3KRORM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 09:10:31 -0500
-Date: Mon, 18 Nov 2013 15:10:21 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] rtmutex: take the waiter lock with irqs off
-Message-ID: <20131118141021.GA10022@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>
- <1383794799.5441.16.camel@marge.simpson.net>
- <1383798668.5441.25.camel@marge.simpson.net>
- <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
- <20131107125923.GB24644@localhost.localdomain>
- <alpine.DEB.2.02.1311071402380.23353@ionos.tec.linutronix.de>
- <1384243595.15180.63.camel@marge.simpson.net>
- <alpine.DEB.2.02.1311121024590.30673@ionos.tec.linutronix.de>
- <20131115163008.GB12164@linutronix.de>
- <20131115201436.GC12164@linutronix.de>
+	Mon, 18 Nov 2013 09:17:12 -0500
+Date: Mon, 18 Nov 2013 14:16:37 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Florian Meier <florian.meier@koalo.de>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        dmaengine <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv3] ASoC: Add support for BCM2835
+Message-ID: <20131118141637.GI30853@e106331-lin.cambridge.arm.com>
+References: <5289F9DF.8060406@koalo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131115201436.GC12164@linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <5289F9DF.8060406@koalo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 09:14:36PM +0100, Sebastian Andrzej Siewior wrote:
-> Mike Galbraith captered the following:
-> | >#11 [ffff88017b243e90] _raw_spin_lock at ffffffff815d2596
-> | >#12 [ffff88017b243e90] rt_mutex_trylock at ffffffff815d15be
-> | >#13 [ffff88017b243eb0] get_next_timer_interrupt at ffffffff81063b42
-> | >#14 [ffff88017b243f00] tick_nohz_stop_sched_tick at ffffffff810bd1fd
-> | >#15 [ffff88017b243f70] tick_nohz_irq_exit at ffffffff810bd7d2
-> | >#16 [ffff88017b243f90] irq_exit at ffffffff8105b02d
-> | >#17 [ffff88017b243fb0] reschedule_interrupt at ffffffff815db3dd
-> | >--- <IRQ stack> ---
-> | >#18 [ffff88017a2a9bc8] reschedule_interrupt at ffffffff815db3dd
-> | >    [exception RIP: task_blocks_on_rt_mutex+51]
-> | >#19 [ffff88017a2a9ce0] rt_spin_lock_slowlock at ffffffff815d183c
-> | >#20 [ffff88017a2a9da0] lock_timer_base.isra.35 at ffffffff81061cbf
-> | >#21 [ffff88017a2a9dd0] schedule_timeout at ffffffff815cf1ce
-> | >#22 [ffff88017a2a9e50] rcu_gp_kthread at ffffffff810f9bbb
-> | >#23 [ffff88017a2a9ed0] kthread at ffffffff810796d5
-> | >#24 [ffff88017a2a9f50] ret_from_fork at ffffffff815da04c
+On Mon, Nov 18, 2013 at 11:28:31AM +0000, Florian Meier wrote:
+> This driver adds support for digital audio (I2S)
+> for the BCM2835 SoC that is used by the
+> Raspberry Pi. External audio codecs can be
+> connected to the Raspberry Pi via P5 header.
 > 
-> lock_timer_base() does a try_lock() which deadlocks on the waiter lock
-> not the lock itself.
-> This patch makes sure all users of the waiter_lock take the lock with
-> interrupts off so a try_lock from irq context is possible.
+> It relies on cyclic DMA engine support for BCM2835.
+> 
+> Signed-off-by: Florian Meier <florian.meier@koalo.de>
+> ---
+> 
+> This successor of RFCv2 is no longer dependent on the dmaengine
+> patch (of course you need it for running it). Therefore, it
+> should cleanly apply.
+> 
+> Furthermore, some minor enhancements were applied. For example
+> - Removal of bcm2835-pcm.c and .h
+> - Adding bindings documentation
+> - Adding possibility for setting bclk_ratio
+> 
+>  .../devicetree/bindings/sound/bcm2835-i2s.txt      |   22 +
+>  sound/soc/Kconfig                                  |    1 +
+>  sound/soc/Makefile                                 |    1 +
+>  sound/soc/bcm/Kconfig                              |   10 +
+>  sound/soc/bcm/Makefile                             |    5 +
+>  sound/soc/bcm/bcm2835-i2s.c                        |  904 ++++++++++++++++++++
+>  6 files changed, 943 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/sound/bcm2835-i2s.txt
+>  create mode 100644 sound/soc/bcm/Kconfig
+>  create mode 100644 sound/soc/bcm/Makefile
+>  create mode 100644 sound/soc/bcm/bcm2835-i2s.c
+> 
+> diff --git a/Documentation/devicetree/bindings/sound/bcm2835-i2s.txt b/Documentation/devicetree/bindings/sound/bcm2835-i2s.txt
+> new file mode 100644
+> index 0000000..7bf1d04
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/sound/bcm2835-i2s.txt
+> @@ -0,0 +1,22 @@
+> +* Broadcom BCM2835 SoC I2S/PCM module
+> +
+> +Required properties:
+> +- compatible: "brcm,bcm2835-i2s"
+> +- reg: Register location and size
+> +       <PCM base address, size
+> +        PCM clock base address, size>;
 
-Its get_next_timer_interrupt() that does a trylock() and only for
-PREEMPT_RT_FULL.
+I'd prefer something like:
 
-Also; on IRC you said:
+- reg: A list of base address and size entries:
+  * The first entry should cover the PCM registers
+  * The second entry should cover the PCM clock registers
 
-  "<bigeasy> I'm currently not sure if we should do
-the _irq() lock or a trylock for the wait_lock in
-rt_mutex_slowtrylock()"
+Are the clocks actually a sub-block, or are they actually a separate
+unit that just happens to feed this one?
 
-Which I misread and dismissed -- but yes that might actually work too
-and would be a much smaller patch. You'd only need trylock and unlock.
+> +- dmas: List of DMA controller phandle and DMA request line ordered pairs.
+> +- dma-names: Identifier string for each DMA request line in the dmas property.
+> +  These strings correspond 1:1 with the ordered pairs in dmas.
 
-That said, allowing such usage from actual IRQ context is iffy; suppose
-the trylock succeeds, who then is the lock owner?
+It should be pointed out that "tx" and "rx" are expected.
 
-I suppose it would be whatever task we interrupted and boosting will
-'work' because we're non-preemptable, but still *YUCK*.
+> +
+> +Example:
+> +
+> +bcm2835_i2s: i2s@7e203000 {
+> +       compatible = "brcm,bcm2835-i2s";
+> +       reg = < 0x7e203000 0x20
+> +               0x7e101098 0x02>;
 
+Please bracket entries individually:
 
-That said; the reason I looked at this is that lockdep didn't catch it.
-This turns out to be because in irq_exit():
+reg = <0x7e203000 0x20>,
+      <0x7e101098 0x02>;
 
-	void irq_exit(void)
-	{
-	#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
-		local_irq_disable();
-	#else
-		WARN_ON_ONCE(!irqs_disabled());
-	#endif
+> +
+> +       dmas = <&dma 2
+> +               &dma 3>;
 
-		account_irq_exit_time(current);
-		trace_hardirq_exit();
-		sub_preempt_count(HARDIRQ_OFFSET);
-		if (!in_interrupt() && local_softirq_pending())
-			invoke_softirq();
+Similarly:
 
-		tick_irq_exit();
-		rcu_irq_exit();
-	}
+dmas = <&dma 2>,
+       <&dma 3>;
 
-We call trace_hardirq_exit() before tick_irq_exit(), so lockdep doesn't
-see the offending raw_spin_lock(&->wait_lock) as happening from IRQ
-context.
+[...]
 
-So I tried the little hack below to try and catch it; but no luck so
-far. I suppose with regular NOHZ the tick_irq_exit() condition:
+> +static void bcm2835_i2s_stop_clock(struct bcm2835_i2s_dev *dev)
+> +{
+> +       uint32_t clkreg;
 
-	static inline void tick_irq_exit(void)
-	{
-	#ifdef CONFIG_NO_HZ_COMMON
-		int cpu = smp_processor_id();
+s/uint32_t/u32/ (and elsewhere...)
 
-		/* Make sure that timer wheel updates are propagated */
-		if ((idle_cpu(cpu) && !need_resched()) || tick_nohz_full_cpu(cpu)) {
-			if (!in_interrupt())
-				tick_nohz_irq_exit();
-		}
-	#endif
-	}
+[...]
 
-Is rather uncommon; maybe I should let the box run for a bit; see if it
-triggers.
+> +       target_frequency = sampling_rate*bclk_ratio;
 
-Ugleh problem allround.
+It would be nicer if there were space around binary operators here and
+elsewhere.
 
-Also, I'm not sure if this patch was supposed to be an 'upstream' patch
--- $SUBJECT seems to suggest so, but note that it will not apply to
-anything recent.
+> +       clk_src = BCM2835_CLK_SRC_OSC;
+> +       mash = BCM2835_CLK_MASH_0;
+> +
+> +       if (bcm2835_clk_freq[clk_src] % target_frequency == 0
+> +                       && bit_master && frame_master) {
+> +               divi = bcm2835_clk_freq[clk_src]/target_frequency;
+> +               divf = 0;
+> +       } else {
+> +               uint64_t dividend;
 
----
+s/uint64_t/u64/
 
+[...]
 
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -746,13 +746,23 @@ void irq_exit(void)
- #endif
- 
- 	account_irq_exit_time(current);
--	trace_hardirq_exit();
- 	sub_preempt_count(HARDIRQ_OFFSET);
--	if (!in_interrupt() && local_softirq_pending())
-+	if (!in_interrupt() && local_softirq_pending()) {
-+		/*
-+		 * Temp. disable hardirq context so as not to confuse lockdep;
-+		 * otherwise it might think we're running softirq handler from
-+		 * hardirq context.
-+		 *
-+		 * Should probably sort this someplace else..
-+		 */
-+		trace_hardirq_exit();
- 		invoke_softirq();
-+		trace_hardirq_enter();
-+	}
- 
- 	tick_irq_exit();
- 	rcu_irq_exit();
-+	trace_hardirq_exit();
- }
- 
- void raise_softirq(unsigned int nr)
+> +       ch2pos = bclk_ratio/2+data_delay;
+
+Spacing would make this far nicer...
+
+Thanks,
+Mark.
