@@ -1,63 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab3KRBd7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 20:33:59 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:32835 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008Ab3KRBdv (ORCPT
+	id S1753274Ab3KRBi7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 20:38:59 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:11231 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab3KRBi4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 20:33:51 -0500
-Date: Mon, 18 Nov 2013 01:33:49 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Erico Nunes <nunes.erico@gmail.com>, linux-sparse@vger.kernel.org,
-        dwmw2 <dwmw2@infradead.org>, linux-mtd <linux-mtd@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] jffs2: fix sparse errors: directive in argument list
-Message-ID: <20131118013349.GM13318@ZenIV.linux.org.uk>
-References: <1384719513-27386-1-git-send-email-nunes.erico@gmail.com>
- <1384724403.2727.22.camel@joe-AO722>
- <CAK4VdL2nKEE+xb=HtMGNsMGNR_ivUn_WnLi7X-rrXT0fpGbSTw@mail.gmail.com>
- <1384728305.14335.4.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384728305.14335.4.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 17 Nov 2013 20:38:56 -0500
+X-AuditID: cbfee61b-b7fd56d000001fc6-65-52896fa97239
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?UTF-8?B?J+iwreWnnSc=?= <shu.tan@samsung.com>
+References: <000001cee293$3b6e3030$b24a9090$@samsung.com>
+ <1384734560.26319.10.camel@kjgkr>
+In-reply-to: <1384734560.26319.10.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH V2 1/2] f2fs: add a new function to support for
+ merging contiguous read
+Date: Mon, 18 Nov 2013 09:37:45 +0800
+Message-id: <000901cee3fe$edfa8660$c9ef9320$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQEjOp1BQ4p72/eUWik9AupolSecHAFKR9WBm3cqVPA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t9jQd2V+Z1BBoumKVhc3/WXyeLSIneL
+	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxuRXm9gK
+	2lQqJl6dytLAeFWmi5GTQ0LARGL1jAcsELaYxIV769m6GLk4hASmM0qsmTKRFcL5wSgx6cZ0
+	ZpAqNgEVieUd/5lAbBEBaYlZn+aBdTMLzGaU2DzbEcQWEoiVWHF3O1g9p4CexJIJL8BsYYEM
+	icapk1hBbBYBVYnLR2eD2bwClhIrmi6zQ9iCEj8m34OaqS4xad4iZghbW+LJuwusEJcqSOw4
+	+5oR4gYriXNHt7NC1IhLbDxyi2UCo9AsJKNmIRk1C8moWUhaFjCyrGIUTS1ILihOSs810itO
+	zC0uzUvXS87P3cQIjoJn0jsYVzVYHGIU4GBU4uHVCOsMEmJNLCuuzD3EKMHBrCTCa+IPFOJN
+	SaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cDYzMn+9UjYsVnF
+	4ZblwZKKxpq7jmwWMZ/Kf/zZhaS8pdOqFV72Kr6LqVRvtK05qhS3Y/ENzSSH6RaXvjBOnLr7
+	tNdbVfuJWaoNbHpTbr36rO2idKB+j9O2Y2cWH5LYcDPBySFUiXOz2e1N0bwRi9L+fNump1rz
+	8+9M81yGTO93Z3oeJYnPU1NXYinOSDTUYi4qTgQAWjGS4n4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 17, 2013 at 02:45:05PM -0800, Joe Perches wrote:
-> On Sun, 2013-11-17 at 20:34 -0200, Erico Nunes wrote:
-> > Do you mean it as an error in the sparse tool?
-> 
-> Yes.  I think it's a defect in how sparse
-> treats string concatenation.
-> 
-> That style:
-> 
-> 	printk("%s\n",
-> #ifdef FOO
-> 	"foo"
-> #endif
-> #ifdef BAR
-> 	"bar"
-> #endif
-> 	"string");
-> 
-> is pretty common in the kernel sources.
+Hi Kim,
 
-... and it's perfectly fine, until somebody starts playing in nasal
-daemon country and do that in *macro* arguments.  And a nasal daemon
-country it is - it's an undefined behaviour.  See 6.10.3p11 in C99.
-And trying to define a semantics for that gets real ugly real fast.
-sparse matches gcc behaviour (I hope), but it warns about such abuses.
-It's a defect, all right - one being reported by sparse.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Monday, November 18, 2013 8:29 AM
+> To: Chao Yu
+> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; 谭姝
+> Subject: Re: [f2fs-dev] [PATCH V2 1/2] f2fs: add a new function to support for merging contiguous read
+> 
+> Hi Chao,
+> 
+> 2013-11-16 (토), 14:14 +0800, Chao Yu:
+> > For better read performance, we add a new function to support for merging contiguous read as the one for write.
+> 
+> Please consider 80 columns for the description.
+> I cannot fix this at every time though. :(
 
-Folks, please, RTFStandard if you decide to play clever games with
-preprocessing.  Chapter 6.10 is not particulary long or complicated.
-C99 has improved the preprocessor semantics a whole lot compared to
-the earlier horrible mess (mostly by defining it in terms of token
-stream transformations rather then text ones), but it's still very
-easy to abuse...
+Got it, sorry about my carelessness in previous patch.
+
+> 
+> >
+> > v1-->v2:
+> >  o add declarations here as Gu Zheng suggested.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > Acked-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> > ---
+> >  fs/f2fs/data.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
+> >  fs/f2fs/f2fs.h |    4 ++++
+> >  2 files changed, 49 insertions(+)
+> >
+> > diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+> > index aa3438c..18107cb 100644
+> > --- a/fs/f2fs/data.c
+> > +++ b/fs/f2fs/data.c
+> > @@ -404,6 +404,51 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct page *page,
+> >  	return 0;
+> >  }
+> >
+> > +void f2fs_submit_read_bio(struct f2fs_sb_info *sbi, int rw)
+> > +{
+> > +	down_read(&sbi->bio_sem);
+> 
+> Is there any reason to use down_read()?
+
+Isn't that we use bio_sem to let w/r or w/w submitting be mutex?
+
+> It seems that we need to declare sbi->bio_read and sbi->bio_write
+> instead of sbi->bio_sem.
+> In addition to that, we need to use down_write(&sbi->bio_read) here.
+
+If so, it looks similar between (struct rw_semaphore) sbi->bio_read 
+and (struct bio *) sbi->read_bio.
+How about using read_bio_sem/rbio_sem to differentiate 
+from sbi->read_bio?
+
+> 
+> > +	if (sbi->read_bio) {
+> > +		submit_bio(rw, sbi->read_bio);
+> > +		sbi->read_bio = NULL;
+> > +	}
+> > +	up_read(&sbi->bio_sem);
+> 
+> up_write(&sbi->bio_read);
+> 
+> > +}
+> > +
+> > +void submit_read_page(struct f2fs_sb_info *sbi, struct page *page,
+> > +					block_t blk_addr, int rw)
+> > +{
+> > +	struct block_device *bdev = sbi->sb->s_bdev;
+> > +	int bio_blocks;
+> > +
+> > +	verify_block_addr(sbi, blk_addr);
+> > +
+> > +	down_read(&sbi->bio_sem);
+> 
+> down_write(&sbi->bio_read);
+> 
+> > +
+> > +	if (sbi->read_bio && sbi->last_read_block != blk_addr - 1) {
+> > +		submit_bio(rw, sbi->read_bio);
+> > +		sbi->read_bio = NULL;
+> > +	}
+> > +
+> > +alloc_new:
+> > +	if (sbi->read_bio == NULL) {
+> > +		bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
+> > +		sbi->read_bio = f2fs_bio_alloc(bdev, bio_blocks);
+> > +		sbi->read_bio->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
+> > +		sbi->read_bio->bi_end_io = read_end_io;
+> > +	}
+> > +
+> > +	if (bio_add_page(sbi->read_bio, page, PAGE_CACHE_SIZE, 0) <
+> > +							PAGE_CACHE_SIZE) {
+> > +		submit_bio(rw, sbi->read_bio);
+> > +		sbi->read_bio = NULL;
+> > +		goto alloc_new;
+> > +	}
+> > +
+> > +	sbi->last_read_block = blk_addr;
+> > +
+> > +	up_read(&sbi->bio_sem);
+> 
+> up_write(&sbi->bio_read);
+> 
+> > +}
+> > +
+> >  /*
+> >   * This function should be used by the data read flow only where it
+> >   * does not check the "create" flag that indicates block allocation.
+> > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> > index 89dc750..bfe9d87 100644
+> > --- a/fs/f2fs/f2fs.h
+> > +++ b/fs/f2fs/f2fs.h
+> > @@ -359,6 +359,8 @@ struct f2fs_sb_info {
+> >
+> >  	/* for segment-related operations */
+> >  	struct f2fs_sm_info *sm_info;		/* segment manager */
+> > +	struct bio *read_bio;			/* read bios to merge */
+> > +	sector_t last_read_block;		/* last read block number */
+> >  	struct bio *bio[NR_PAGE_TYPE];		/* bios to merge */
+> >  	sector_t last_block_in_bio[NR_PAGE_TYPE];	/* last block number */
+> >  	struct rw_semaphore bio_sem;		/* IO semaphore */
+> > @@ -1111,6 +1113,8 @@ struct page *find_data_page(struct inode *, pgoff_t, bool);
+> >  struct page *get_lock_data_page(struct inode *, pgoff_t);
+> >  struct page *get_new_data_page(struct inode *, struct page *, pgoff_t, bool);
+> >  int f2fs_readpage(struct f2fs_sb_info *, struct page *, block_t, int);
+> > +void f2fs_submit_read_bio(struct f2fs_sb_info *, int);
+> > +void submit_read_page(struct f2fs_sb_info *, struct page *, block_t, int);
+> >  int do_write_data_page(struct page *);
+> >
+> >  /*
+> 
+> --
+> Jaegeuk Kim
+> Samsung
+
