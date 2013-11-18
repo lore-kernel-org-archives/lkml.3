@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607Ab3KRQgG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 11:36:06 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:57638 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab3KRQf6 (ORCPT
+	id S1751768Ab3KRQg5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 11:36:57 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:36685 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab3KRQgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 11:35:58 -0500
-Date: Mon, 18 Nov 2013 11:44:25 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Stephane Eranian <eranian@google.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: perf sw_event related lockup
-In-Reply-To: <CABPqkBQqa_foaozcHkHBU+VFTcVKrkgVcidUQNzWayB53yBa8g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1311181142380.18020@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1311131739560.5706@vincent-weaver-1.um.maine.edu> <20131115145944.GA3694@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1311151223040.11932@vincent-weaver-1.um.maine.edu> <20131118085439.GD3866@twins.programming.kicks-ass.net>
- <CABPqkBRe0xK_mf4JE+0e-UDs92Os_3dreHfh-wnG78fquTCRHQ@mail.gmail.com> <20131118153219.GH3866@twins.programming.kicks-ass.net> <CABPqkBQqa_foaozcHkHBU+VFTcVKrkgVcidUQNzWayB53yBa8g@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 18 Nov 2013 11:36:48 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20131116190121.GB22666@redhat.com>
+References: <20131101232521.GA23119@www.outflux.net>
+	<20131114170337.GA11068@redhat.com>
+	<CAGXu5jLXpLqjCAMFwKp7t7GpMq4+WBqNzSFC=up+CBvgGDuFCw@mail.gmail.com>
+	<20131115203652.GA13476@redhat.com>
+	<CAGXu5j+=LZYAczLVawGPAxd=9VX1FupWZq+2858GsrD1YprL3w@mail.gmail.com>
+	<20131116190057.GA22666@redhat.com>
+	<20131116190121.GB22666@redhat.com>
+Date: Mon, 18 Nov 2013 08:36:48 -0800
+X-Google-Sender-Auth: vsSGJzPe1ExM4rb4yT6cGQaLVnM
+Message-ID: <CAGXu5jK1mqQzrHodkMNqQD5jMs164=nMB27KKpUyWePnjo5pSw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] set_dumpable: fix the theoretical race with itself
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "security@kernel.org" <security@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasily Kulikov <segoon@openwall.com>,
+        Petr Matousek <pmatouse@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Alex Kelly <alex.page.kelly@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013, Stephane Eranian wrote:
+On Sat, Nov 16, 2013 at 11:01 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> set_dumpable() updates MMF_DUMPABLE_MASK in a non-trivial way to
+> ensure that get_dumpable() can't observe the intermediate state,
+> but this all can't help if multiple threads call set_dumpable()
+> at the same time.
+>
+> And in theory commit_creds()->set_dumpable(SUID_DUMP_ROOT) racing
+> with sys_prctl()->set_dumpable(SUID_DUMP_DISABLE) can result in
+> SUID_DUMP_USER.
+>
+> Change this code to update both bits atomically via cmpxchg().
+>
+> Note: this assumes that it is safe to mix bitops and cmpxchg. IOW,
+> if, say, an architecture implements cmpxchg() using the locking
+> (like arch/parisc/lib/bitops.c does), then it should use the same
+> locks for set_bit/etc.
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-> What's the config for this test?
-> Need to host CPU type and the event config.
-> Otherwise there is not much I can do with the crash dump.
+I can't speak to the bitops/cmpxchg, but the rest looks fine to me.
 
-It's 3.12, on a core2 machine.
+Acked-by: Kees Cook <keescook@chromium.org>
 
-Sadly I don't have the event config.  To reproduce I start my perf_fuzzer 
-running and typically it will hit the error/lockup within an hour or so 
-of fuzzing assuming it doesn't hit one of the other outstanding bugs 
-first.
+Thanks!
 
-I can probably narrow it down but that involves a lot of luck as well as a 
-lot of time and I might not get a chance to do so until next month at the 
-earliest.
+-Kees
 
-Vince
+-- 
+Kees Cook
+Chrome OS Security
