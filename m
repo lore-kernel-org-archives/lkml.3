@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab3KRV4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 16:56:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2820 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751350Ab3KRV4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 16:56:32 -0500
-Date: Mon, 18 Nov 2013 16:56:18 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, dave.jiang@intel.com,
-        akpm@linux-foundation.org, dhillf@gmail.com,
-        Mel Gorman <mgorman@suse.de>
-Message-ID: <1384811778-7euptzgp-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <528A7D36.5020500@sr71.net>
-References: <20131115225550.737E5C33@viggo.jf.intel.com>
- <20131115225553.B0E9DFFB@viggo.jf.intel.com>
- <1384800714-y653r3ch-mutt-n-horiguchi@ah.jp.nec.com>
- <1384800841-314l1f3e-mutt-n-horiguchi@ah.jp.nec.com>
- <528A6448.3080907@sr71.net>
- <1384806022-4718p9lh-mutt-n-horiguchi@ah.jp.nec.com>
- <528A7D36.5020500@sr71.net>
-Subject: Re: [PATCH] mm: call cond_resched() per MAX_ORDER_NR_PAGES pages copy
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S1751563Ab3KRWCa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 17:02:30 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:47639 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab3KRWC0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 17:02:26 -0500
+Date: Mon, 18 Nov 2013 14:02:20 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: [PATCH RFC tip/core/rcu 0/3] RT latency optimizations
+Message-ID: <20131118220220.GA23353@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-References: <528A7D36.5020500@sr71.net>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111822-3532-0000-0000-0000032208E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 12:48:54PM -0800, Dave Hansen wrote:
-> On 11/18/2013 12:20 PM, Naoya Horiguchi wrote:
-> >> > Really, though, a lot of things seem to have MAX_ORDER set up so that
-> >> > it's at 256MB or 512MB.  That's an awful lot to do between rescheds.
-> > Yes.
-> > 
-> > BTW, I found that we have the same problem for other functions like
-> > copy_user_gigantic_page, copy_user_huge_page, and maybe clear_gigantic_page.
-> > So we had better handle them too.
-> 
-> Is there a problem you're trying to solve here?  The common case of the
-> cond_resched() call boils down to a read of a percpu variable which will
-> surely be in the L1 cache after the first run around the loop.  In other
-> words, it's about as cheap of an operation as we're going to get.
+Hello!
 
-Yes, cond_resched() is cheap if should_resched() is false (and it is in
-common case).
+This series provides some minor latency optimizations for kernels that
+build with CONFIG_RCU_NOCB_CPU_ALL=y:
 
-> Why bother trying to "optimize" it?
+1.	Create a static inline implementation of rcu_is_nocb_cpu() that
+	unconditionally returns true when CONFIG_RCU_NOCB_CPU_ALL=y.
 
-I thought that if we call cond_resched() too often, the copying thread can
-take too long in a heavy load system, because the copying thread always
-yields the CPU in every loop.
+2.	Create a static inline implementation of rcu_needs_cpu() that
+	unconditionally returns false when CONFIG_RCU_NOCB_CPU_ALL=y.
 
-But it seems to be an extreme case, so I can't push it strongly.
+3.	Create static inline implementations of rcu_prepare_for_idle()
+	and rcu_cleanup_after_idle() that are no-ops when
+	CONFIG_RCU_NOCB_CPU_ALL=y.
 
-Thanks,
-Naoya
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/include/linux/rcupdate.h |   13 +++++++++++++
+ b/include/linux/rcutiny.h  |    6 ------
+ b/include/linux/rcutree.h  |    2 ++
+ b/kernel/rcu/tree.c        |    2 +-
+ b/kernel/rcu/tree_plugin.h |   13 +++++++++++--
+ 5 files changed, 27 insertions(+), 9 deletions(-)
+
