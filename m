@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751441Ab3KRQvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 11:51:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37254 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751199Ab3KRQvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 11:51:11 -0500
-Date: Mon, 18 Nov 2013 17:51:10 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-Message-ID: <20131118165110.GE32623@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1310301838300.13556@chino.kir.corp.google.com>
- <20131031054942.GA26301@cmpxchg.org>
- <alpine.DEB.2.02.1311131416460.23211@chino.kir.corp.google.com>
- <20131113233419.GJ707@cmpxchg.org>
- <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
- <20131114032508.GL707@cmpxchg.org>
- <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com>
- <20131118154115.GA3556@cmpxchg.org>
+	id S1751374Ab3KRQ6z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 11:58:55 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:64577 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079Ab3KRQ6q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 11:58:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131118154115.GA3556@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.10.1311181142380.18020@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1311131739560.5706@vincent-weaver-1.um.maine.edu>
+	<20131115145944.GA3694@twins.programming.kicks-ass.net>
+	<alpine.DEB.2.10.1311151223040.11932@vincent-weaver-1.um.maine.edu>
+	<20131118085439.GD3866@twins.programming.kicks-ass.net>
+	<CABPqkBRe0xK_mf4JE+0e-UDs92Os_3dreHfh-wnG78fquTCRHQ@mail.gmail.com>
+	<20131118153219.GH3866@twins.programming.kicks-ass.net>
+	<CABPqkBQqa_foaozcHkHBU+VFTcVKrkgVcidUQNzWayB53yBa8g@mail.gmail.com>
+	<alpine.DEB.2.10.1311181142380.18020@vincent-weaver-1.um.maine.edu>
+Date: Mon, 18 Nov 2013 17:58:45 +0100
+Message-ID: <CABPqkBSLZAFeJ8t_57eJe8Yuxi-jSJSVF60BPjZwS_gj3zS7VA@mail.gmail.com>
+Subject: Re: perf sw_event related lockup
+From: Stephane Eranian <eranian@google.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 18-11-13 10:41:15, Johannes Weiner wrote:
-> On Thu, Nov 14, 2013 at 03:26:51PM -0800, David Rientjes wrote:
-> > When current has a pending SIGKILL or is already in the exit path, it
-> > only needs access to memory reserves to fully exit.  In that sense, the
-> > memcg is not actually oom for current, it simply needs to bypass memory
-> > charges to exit and free its memory, which is guarantee itself that
-> > memory will be freed.
-> > 
-> > We only want to notify userspace for actionable oom conditions where
-> > something needs to be done (and all oom handling can already be deferred
-> > to userspace through this method by disabling the memcg oom killer with
-> > memory.oom_control), not simply when a memcg has reached its limit, which
-> > would actually have to happen before memcg reclaim actually frees memory
-> > for charges.
-> 
-> Even though the situation may not require a kill, the user still wants
-> to know that the memory hard limit was breached and the isolation
-> broken in order to prevent a kill.  We just came really close and the
+On Mon, Nov 18, 2013 at 5:44 PM, Vince Weaver <vincent.weaver@maine.edu> wrote:
+> On Mon, 18 Nov 2013, Stephane Eranian wrote:
+>
+>> What's the config for this test?
+>> Need to host CPU type and the event config.
+>> Otherwise there is not much I can do with the crash dump.
+>
+> It's 3.12, on a core2 machine.
+>
+On core2, there is no offcore-response event, therefore you should not
+get to the shared_reg_*() code OR it should return immediately. Looks
+like here, it calls into it and finds some pointers NULL:
+cpuc->shared_regs, I bet.
 
-You can observe that you are getting into troubles from fail counter
-already. The usability without more reclaim statistics is a bit
-questionable but you get a rough impression that something is wrong at
-least.
+Now, I am trying to understand how we got there:
 
-> fact that current is exiting is coincidental.  Not everybody is having
-> OOM situations on a frequent basis and they might want to know when
-> they are redlining the system and that the same workload might blow up
-> the next time it's run.
+        xreg = &event->hw.extra_reg;
+        if (xreg->idx != EXTRA_REG_NONE) {
+                c = __intel_shared_reg_get_constraints(cpuc, event, xreg);
 
-I am just concerned that signaling temporal OOM conditions which do not
-require any OOM killer action (user or kernel space) might be confusing.
-Userspace would have harder times to tell whether any action is required
-or not.
+        }
 
-> The emergency reserves are there to prevent the system from
-> deadlocking.  We only dip into them to avert a more imminent disaster
-> but we are no longer in good shape at this point.  But by not even
-> announcing this situation to userspace anymore you are making this the
-> new baseline and declaring that everything is fine when the system is
-> already clutching at straws.
-> 
-> I maintain that we should signal OOM when our healthy and
-> always-available options are exhausted.
+        breg = &event->hw.branch_reg;
+        if (breg->idx != EXTRA_REG_NONE) {
+                d = __intel_shared_reg_get_constraints(cpuc, event, breg);
+        }
 
--- 
-Michal Hocko
-SUSE Labs
+So one of those tests is true.
+
+That means breg->idx is pointing to a LBR_SELECT MSR but that does
+not exist on Core2, or xreg->idx is pointing to a shared resource
+which does not exist either.
+For the former, it would mean it thinks there is hw LBR filtering, but
+that's wrong. For the latter, it means it thinks that Core 2 has a
+x86_pmu.extra_regs. I would check those two cases. Don't know
+how this could happen.
+
+I could debug this but I don't have a Core 2 machine that I can
+easily crash. But maybe I can fake this on a IVB laptop. Just
+would need the perf_event_attr struct.
+
+
+ly I don't have the event config.  To reproduce I start my perf_fuzzer
+> running and typically it will hit the error/lockup within an hour or so
+> of fuzzing assuming it doesn't hit one of the other outstanding bugs
+> first.
+>
+> I can probably narrow it down but that involves a lot of luck as well as a
+> lot of time and I might not get a chance to do so until next month at the
+> earliest.
+>
+> Vince
