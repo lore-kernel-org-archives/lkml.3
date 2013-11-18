@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab3KRSy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:54:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25692 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752311Ab3KRSyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:54:12 -0500
-Date: Mon, 18 Nov 2013 13:54:01 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, dave.jiang@intel.com,
-        akpm@linux-foundation.org, dhillf@gmail.com,
-        Mel Gorman <mgorman@suse.de>
-Message-ID: <1384800841-314l1f3e-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1384800714-y653r3ch-mutt-n-horiguchi@ah.jp.nec.com>
-References: <20131115225550.737E5C33@viggo.jf.intel.com>
- <20131115225553.B0E9DFFB@viggo.jf.intel.com>
- <1384800714-y653r3ch-mutt-n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH] mm: call cond_resched() per MAX_ORDER_NR_PAGES pages copy
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <1384800714-y653r3ch-mutt-n-horiguchi@ah.jp.nec.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1753886Ab3KRSyz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:54:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57527 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab3KRSk5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 13:40:57 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Krzysztof Mazur <krzysiek@podlesie.net>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.11 23/25] usb: fail on usb_hub_create_port_device() errors
+Date: Mon, 18 Nov 2013 10:40:52 -0800
+Message-Id: <20131118184039.408334088@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc0.dirty
+In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
+References: <20131118184032.248465920@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In copy_huge_page() we call cond_resched() before every single page copy.
-This is an overkill because single page copy is not a heavy operation.
-This patch changes this to call cond_resched() per MAX_ORDER_NR_PAGES pages.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+------------------
+
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+
+commit e58547eb9561a8a72d46e2d411090a614d33ac0e upstream.
+
+Ignoring usb_hub_create_port_device() errors cause later NULL pointer
+deference when uninitialized hub->ports[i] entries are dereferenced
+after port memory allocation error.
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- mm/migrate.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/core/hub.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index cb5d152b58bc..661ff5f66591 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -454,7 +454,8 @@ static void __copy_gigantic_page(struct page *dst, struct page *src,
- 	struct page *src_base = src;
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1557,10 +1557,15 @@ static int hub_configure(struct usb_hub
+ 	if (hub->has_indicators && blinkenlights)
+ 		hub->indicator [0] = INDICATOR_CYCLE;
  
- 	for (i = 0; i < nr_pages; ) {
--		cond_resched();
-+		if (i % MAX_ORDER_NR_PAGES == 0)
-+			cond_resched();
- 		copy_highpage(dst, src);
+-	for (i = 0; i < hdev->maxchild; i++)
+-		if (usb_hub_create_port_device(hub, i + 1) < 0)
++	for (i = 0; i < hdev->maxchild; i++) {
++		ret = usb_hub_create_port_device(hub, i + 1);
++		if (ret < 0) {
+ 			dev_err(hub->intfdev,
+ 				"couldn't create port%d device.\n", i + 1);
++			hdev->maxchild = i;
++			goto fail_keep_maxchild;
++		}
++	}
  
- 		i++;
-@@ -483,10 +484,9 @@ static void copy_huge_page(struct page *dst, struct page *src)
- 		nr_pages = hpage_nr_pages(src);
- 	}
+ 	usb_hub_adjust_deviceremovable(hdev, hub->descriptor);
  
--	for (i = 0; i < nr_pages; i++ ) {
--		cond_resched();
-+	cond_resched();
-+	for (i = 0; i < nr_pages; i++)
- 		copy_highpage(dst + i, src + i);
--	}
- }
+@@ -1569,6 +1574,7 @@ static int hub_configure(struct usb_hub
  
- /*
--- 
-1.8.3.1
+ fail:
+ 	hdev->maxchild = 0;
++fail_keep_maxchild:
+ 	dev_err (hub_dev, "config failed, %s (err %d)\n",
+ 			message, ret);
+ 	/* hub_disconnect() frees urb and descriptor */
+
 
