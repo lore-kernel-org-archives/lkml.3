@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406Ab3KRKfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 05:35:50 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:64774 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3KRKfl (ORCPT
+	id S1751598Ab3KRKgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 05:36:08 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:44903 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab3KRKgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 05:35:41 -0500
-Date: Mon, 18 Nov 2013 10:35:35 +0000
+	Mon, 18 Nov 2013 05:36:04 -0500
+Date: Mon, 18 Nov 2013 10:35:59 +0000
 From: Lee Jones <lee.jones@linaro.org>
 To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 Cc: linux-omap@vger.kernel.org, linaro-networking@linaro.org,
         Victor Kamensky <victor.kamensky@linaro.org>,
         Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 11/23] mfd: omap-usb-host: raw read and write endian fix
-Message-ID: <20131118103535.GD13640@lee--X1>
+Subject: Re: [RFC 12/23] mfd: omap-usb-tll: raw read and write endian fix
+Message-ID: <20131118103559.GE13640@lee--X1>
 References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
- <1384560086-11994-12-git-send-email-taras.kondratiuk@linaro.org>
+ <1384560086-11994-13-git-send-email-taras.kondratiuk@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1384560086-11994-12-git-send-email-taras.kondratiuk@linaro.org>
+In-Reply-To: <1384560086-11994-13-git-send-email-taras.kondratiuk@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -44,7 +44,7 @@ On Sat, 16 Nov 2013, Taras Kondratiuk wrote:
 > Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
 > Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 > ---
->  drivers/mfd/omap-usb-host.c |    8 ++++----
+>  drivers/mfd/omap-usb-tll.c |    8 ++++----
 >  1 file changed, 4 insertions(+), 4 deletions(-)
 
 Applied, thanks.
