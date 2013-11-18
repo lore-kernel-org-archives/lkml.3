@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab3KRTeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 14:34:09 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:41481 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964Ab3KRTeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 14:34:04 -0500
+	id S1752292Ab3KRTeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 14:34:24 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41657 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752053Ab3KRTeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 14:34:21 -0500
+Message-ID: <528A6B54.3080609@ti.com>
+Date: Mon, 18 Nov 2013 21:32:36 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131118153211.GB32168@redhat.com>
-References: <20131114180455.GA32212@anatevka.fc.hp.com>
-	<CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
-	<20131115005049.GJ5116@anatevka.fc.hp.com>
-	<20131115062417.GB9237@gmail.com>
-	<CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
-	<5285C639.5040203@zytor.com>
-	<20131115140738.GB6637@redhat.com>
-	<CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
-	<20131115180324.GD6637@redhat.com>
-	<CAE9FiQU_OstEq3VWwBB879O4EY0DE+zVWVens+w0MLFUQmr3sw@mail.gmail.com>
-	<20131118153211.GB32168@redhat.com>
-Date: Mon, 18 Nov 2013 11:34:04 -0800
-X-Google-Sender-Auth: fUhAuV3AWtkOGCHn5KxmJkUZ7rE
-Message-ID: <CAE9FiQWue3rBVTmXAMoBpWCTgFQ1VP+bkm-k_v1wx4U94ctPBA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-From: Yinghai Lu <yinghai@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
-        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 10/12] mtd: nand: davinci: don't set timings if AEMIF
+ is used
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>,<1384187188-5776-11-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D53@DNCE04.ent.ti.com> <528253B7.2060408@ti.com> <5289FB9C.6060204@ti.com> <528A1F4D.6050404@ti.com>
+In-Reply-To: <528A1F4D.6050404@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 7:32 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> You may need bunch of PCIe cards installed.
+On 11/18/2013 04:08 PM, Santosh Shilimkar wrote:
+> On Monday 18 November 2013 06:35 AM, Grygorii Strashko wrote:
+>> On 11/12/2013 06:13 PM, Santosh Shilimkar wrote:
+>>> On Monday 11 November 2013 12:10 PM, Khoronzhuk, Ivan wrote:
+>>>> If Davinci AEMIF is used we don't need to set timings and bus width.
+>>>> It is done by AEMIF driver (drivers/memory/davinci-aemfi.c).
+>>>>
+>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>>> ---
+>>>>    drivers/mtd/nand/davinci_nand.c |   22 +++++++++++++++-------
+>>>>    1 file changed, 15 insertions(+), 7 deletions(-)
+>>>>
+>>>> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+>>>> index 4705214..879e915 100644
+>>>> --- a/drivers/mtd/nand/davinci_nand.c
+>>>> +++ b/drivers/mtd/nand/davinci_nand.c
+>>>> @@ -742,27 +742,35 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+>>>>                   goto err_clk_enable;
+>>>>           }
+>>>>
+>>>> +#if !IS_ENABLED(CONFIG_TI_DAVINCI_AEMIF)
+>>>>
+>>> Instead above #if, just use a variable.
+>>>      bool aemif = IS_ENABLED(CONFIG_TI_DAVINCI_AEMIF) and then skip
+>>> the below code. #if block in the middle of the code looks ugly.
 >>
->> The system with 6TiB + 16 PCIe cards, second kernel OOM.
->> The system with 4.5TiB + 16 PCIe cards, second kernel works with vmcore dumped.
+>> Yes, this is the hack.
+>> The problem is that this part of code contains the call of Davinci platform function davinci_aemif_setup_timing() which is not accessible if Kernel is built for Keystone only.
+>> That's why "#if" has been used.
+>>
+>> This part of code has to be removed together with Davinci aemif platform code (aemif.c), once Davinci will be converted to DT and use
+>> new driver.
+>>
+>> The corresponding comment can be added here. Is it ok?
+>>
+> Thats more or less what I proposed in another reply. Lets clearly
+> document it on why such a check was added.
 >
-> What's the distro you are testing with? Do you have latest bits of
-> makeudmpfile where we use cyclic mode by default and one does not need
-> more reserved memory because of more physical memory present in the
-> box. I suspect that might be the problem in your testing environment
-> and old makedumpfile wil try to allocate larger memory on large
-> RAM machines and OOM.
+> Regards,
+> Santosh
+>
 
-Default RHEL 6.4.
+Ok, I'll add more explanation on it.
 
-Will check if i can enable cyclic mode.
-
-Thanks
-
-Yinghai
+-- 
+Regards,
+Ivan Khoronzhuk
