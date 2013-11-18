@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754Ab3KRXSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 18:18:09 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:43437 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab3KRXSH (ORCPT
+	id S1751841Ab3KRXTq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 18:19:46 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42191 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab3KRXTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 18:18:07 -0500
-Message-ID: <1384816407.1791.19.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/3] ACPI / hotplug: Fix PCI host bridge hot removal
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Date: Mon, 18 Nov 2013 16:13:27 -0700
-In-Reply-To: <11362197.FWMPl6Gp0A@vostro.rjw.lan>
-References: <2434673.zhjYZOTQ4A@vostro.rjw.lan>
-	 <3206422.AfXMUDqMXZ@vostro.rjw.lan>
-	 <1384798205.1791.14.camel@misato.fc.hp.com>
-	 <11362197.FWMPl6Gp0A@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	Mon, 18 Nov 2013 18:19:45 -0500
+Message-ID: <528AA08C.6080608@wwwdotorg.org>
+Date: Mon, 18 Nov 2013 16:19:41 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Michal Marek <mmarek@suse.cz>, sameo@linux.intel.com, lee.jones@linaro.org
+CC: ldewangan@nvidia.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: Make MFD_AS3722 depend on I2C=y
+References: <1384795559-2116-1-git-send-email-mmarek@suse.cz>
+In-Reply-To: <1384795559-2116-1-git-send-email-mmarek@suse.cz>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-18 at 22:39 +0100, Rafael J. Wysocki wrote:
-> On Monday, November 18, 2013 11:10:05 AM Toshi Kani wrote:
-> > On Thu, 2013-11-14 at 00:16 +0100, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > 
-> > > Since the PCI host bridge scan handler does not set hotplug.enabled,
-> > > the check of it in acpi_bus_device_eject() effectively prevents the
-> > > root bridge hot removal from working after commit a3b1b1ef78cd
-> > > (ACPI / hotplug: Merge device hot-removal routines).  However, that
-> > > check is not necessary, because the other acpi_bus_device_eject()
-> > > users, acpi_hotplug_notify_cb and acpi_eject_store(), do the same
-> > > check by themselves before executing that function.
-> > > 
-> > > For this reason, remove the scan handler check from
-> > > acpi_bus_device_eject() to make PCI hot bridge hot removal work
-> > > again.
-> > 
-> > I am curious why the PCI host bridge scan handler does not set
-> > hotplug.enabled.  Is this how it disables hotplug via sysfs eject but
-> > enables via ACPI notification? 
+On 11/18/2013 10:25 AM, Michal Marek wrote:
+> MFD_AS3722 can only be builtin, so it needs I2C builtin as well.
+> With I2C=m, we get:
 > 
-> It just doesn't register for hotplug at all.  I guess it could set that
-> bit alone, but then it would be quite confusing and the check is not
-> necessary anyway.
+> drivers/mfd/as3722.c:372: undefined reference to `devm_regmap_init_i2c'
+> drivers/built-in.o: In function `as3722_i2c_driver_init':
+> drivers/mfd/as3722.c:444: undefined reference to `i2c_register_driver'
+> drivers/built-in.o: In function `as3722_i2c_driver_exit':
+> drivers/mfd/as3722.c:444: undefined reference to `i2c_del_driver'
 
-I see.  Given how the PCI host bridge scan handler is integrated today,
-the change looks reasonable to me.
-
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-
-Thanks,
--Toshi
-
+Shouldn't Kconfig handle this; if a Boolean config option depends on a
+tri-state config option, shouldn't it automatically validate that the
+tri-state is "y" not "m"?
