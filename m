@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855Ab3KRPJB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 10:09:01 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:46151 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750779Ab3KRPIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 10:08:54 -0500
-Date: Mon, 18 Nov 2013 10:08:53 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Vishal Annapurve <vannapurve@nvidia.com>
-cc: Ming Lei <tom.leiming@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>
-Subject: RE: [PATCH] usb-storage: scsiglue: Changing the command result
-In-Reply-To: <113ACA888B71994BB56E5CF3704953486D664FCD42@BGMAIL02.nvidia.com>
-Message-ID: <Pine.LNX.4.44L0.1311181008330.1421-100000@iolanthe.rowland.org>
+	id S1751372Ab3KRPQu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 10:16:50 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60744 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171Ab3KRPQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 10:16:41 -0500
+Message-ID: <528A2F00.7090302@ti.com>
+Date: Mon, 18 Nov 2013 17:15:12 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Guenter Roeck <linux@roeck-us.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, <wim@iguana.be>,
+        <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <galak@kernel.crashing.org>, <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Fwd: [PATCH 1/8] watchdog: davinci: change driver to use WDT
+ core
+References: <1383680783-12114-2-git-send-email-ivan.khoronzhuk@ti.com> <527A287C.2090401@ti.com> <5287D5A7.7060702@roeck-us.net> <5289FE60.2040207@ti.com> <528A24DE.1010507@roeck-us.net>
+In-Reply-To: <528A24DE.1010507@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 16 Nov 2013, Vishal Annapurve wrote:
+On 11/18/2013 04:31 PM, Guenter Roeck wrote:
+> On 11/18/2013 03:47 AM, ivan.khoronzhuk wrote:
+>
+>>>>    MODULE_LICENSE("GPL");
+>>>> -MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
+>>>>    MODULE_ALIAS("platform:watchdog");
+>>>>
+>>> You might want to rename the platform driver to something like
+>>> davinci-wdt and change the MODULE_ALIAS
+>>> accordingly.
+>>>
+>>
+>> Yes, it could be changed but not in this patch.
+>>
+> Seems to me this would be the perfect time to change it, as you switch
+> to use
+> the watchdog core which permits more than one active watchdog in the
+> system.
+>
+> Guenter
+>
 
-> Hi,
-> 
-> Here are the updated patches:	
-> 
-> [PATCH 1/3] usb: storage: Proper cmd result assignment
-> 
-> This change replaces DID_ABORT with DID_TIMEOUT as a command result
-> whenever US_FLIDX_TIMED_OUT bit is set.
-> 
-> This change is made to bring USB storage inline with a recent change:
-> 
-> commit    18a4d0a22ed6c54b67af7718c305cd010f09ddf8
-> 
-> [SCSI] Handle disk devices which can not process medium access commands
-> We have experienced several devices which fail in a fashion we do not
-> currently handle gracefully in SCSI. After a failure these devices will
-> respond to the SCSI primary command set (INQUIRY, TEST UNIT READY, etc.)
-> but any command accessing the storage medium will time out.
-> 
-> As the USB storage was setting command result as aborted rather than
-> timed out, SCSI layer was not recognizing the above mentioned failure
-> pattern.
-> 
-> Signed-off-by: Vishal Annapurve <vannapurve@nvidia.com>
-
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
+... Yes, you are right. I'll rename it.
+-- 
+Regards,
+Ivan Khoronzhuk
