@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798Ab3KRKcY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 05:32:24 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:63907 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab3KRKbQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 05:31:16 -0500
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Derek Basehore <dbasehore@chromium.org>
-Subject: [PATCH 2/3] mfd: cros ec: spi: Increase EC transaction delay
-Date: Mon, 18 Nov 2013 11:30:48 +0100
-Message-Id: <1384770649-8593-2-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1384770649-8593-1-git-send-email-treding@nvidia.com>
-References: <1384770649-8593-1-git-send-email-treding@nvidia.com>
+	id S1751848Ab3KRKdD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 05:33:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49223 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750754Ab3KRKcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 05:32:55 -0500
+Date: Mon, 18 Nov 2013 10:32:47 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, dave.jiang@intel.com,
+        akpm@linux-foundation.org, dhillf@gmail.com,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: Re: [v3][PATCH 2/2] mm: thp: give transparent hugepage code a
+ separate copy_page
+Message-ID: <20131118103247.GF26002@suse.de>
+References: <20131115225550.737E5C33@viggo.jf.intel.com>
+ <20131115225553.B0E9DFFB@viggo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131115225553.B0E9DFFB@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Derek Basehore <dbasehore@chromium.org>
+On Fri, Nov 15, 2013 at 02:55:53PM -0800, Dave Hansen wrote:
+> 
+> Changes from v2:
+>  * 
+> Changes from v1:
+>  * removed explicit might_sleep() in favor of the one that we
+>    get from the cond_resched();
+> 
+> --
+> 
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> Right now, the migration code in migrate_page_copy() uses
+> copy_huge_page() for hugetlbfs and thp pages:
+> 
+>        if (PageHuge(page) || PageTransHuge(page))
+>                 copy_huge_page(newpage, page);
+> 
+> So, yay for code reuse.  But:
+> 
+> void copy_huge_page(struct page *dst, struct page *src)
+> {
+>         struct hstate *h = page_hstate(src);
+> 
+> and a non-hugetlbfs page has no page_hstate().  This works 99% of
+> the time because page_hstate() determines the hstate from the
+> page order alone.  Since the page order of a THP page matches the
+> default hugetlbfs page order, it works.
+> 
+> But, if you change the default huge page size on the boot
+> command-line (say default_hugepagesz=1G), then we might not even
+> *have* a 2MB hstate so page_hstate() returns null and
+> copy_huge_page() oopses pretty fast since copy_huge_page()
+> dereferences the hstate:
+> 
+> void copy_huge_page(struct page *dst, struct page *src)
+> {
+>         struct hstate *h = page_hstate(src);
+>         if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
+> ...
+> 
+> Mel noticed that the migration code is really the only user of
+> these functions.  This moves all the copy code over to migrate.c
+> and makes copy_huge_page() work for THP by checking for it
+> explicitly.
+> 
+> I believe the bug was introduced in b32967ff101:
+> Author: Mel Gorman <mgorman@suse.de>
+> Date:   Mon Nov 19 12:35:47 2012 +0000
+> mm: numa: Add THP migration for the NUMA working set scanning fault case.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-50 us is not a long enough delay between EC transactions. At least 70 us
-are needed for the 16 MHz STM32L part. Increase the delay to 200 us for
-an extra safety margin.
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-Reviewed-by: Randall Spangler <rspangler@chromium.org>
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- drivers/mfd/cros_ec_spi.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-index d05349a7381e..af5c2f6601cf 100644
---- a/drivers/mfd/cros_ec_spi.c
-+++ b/drivers/mfd/cros_ec_spi.c
-@@ -51,10 +51,11 @@
- /*
-   * Time between raising the SPI chip select (for the end of a
-   * transaction) and dropping it again (for the next transaction).
--  * If we go too fast, the EC will miss the transaction. It seems
--  * that 50us is enough with the 16MHz STM32 EC.
-+  * If we go too fast, the EC will miss the transaction. We know that we
-+  * need at least 70 us with the 16 MHz STM32 EC, so go with 200 us to be
-+  * safe.
-   */
--#define EC_SPI_RECOVERY_TIME_NS	(50 * 1000)
-+#define EC_SPI_RECOVERY_TIME_NS	(200 * 1000)
- 
- /**
-  * struct cros_ec_spi - information about a SPI-connected EC
 -- 
-1.8.4.2
-
+Mel Gorman
+SUSE Labs
