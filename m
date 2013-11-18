@@ -1,110 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406Ab3KRQlT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 11:41:19 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:38015 "EHLO zene.cmpxchg.org"
+	id S1751535Ab3KRQls (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 11:41:48 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:57688 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779Ab3KRQlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 11:41:13 -0500
-Date: Mon, 18 Nov 2013 11:41:07 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom killed
-Message-ID: <20131118164107.GC3556@cmpxchg.org>
-References: <alpine.DEB.2.02.1311121801200.18803@chino.kir.corp.google.com>
- <20131113152412.GH707@cmpxchg.org>
- <alpine.DEB.2.02.1311131400300.23211@chino.kir.corp.google.com>
- <20131114000043.GK707@cmpxchg.org>
- <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
+	id S1750779Ab3KRQll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 11:41:41 -0500
+Message-ID: <528A4340.3020508@ti.com>
+Date: Mon, 18 Nov 2013 10:41:36 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Carlos Hernandez <ceh@ti.com>
+Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when
+ booting with a mismatched bootloader configuration
+References: <1384568535-26611-1-git-send-email-nm@ti.com> <20131116134445.GI11014@S2101-09.ap.freescale.net> <CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com> <528A27F8.3070402@ti.com> <20131118155753.GU11014@S2101-09.ap.freescale.net>
+In-Reply-To: <20131118155753.GU11014@S2101-09.ap.freescale.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 04:48:32PM -0800, David Rientjes wrote:
-> On Wed, 13 Nov 2013, Johannes Weiner wrote:
+On 11/18/2013 09:57 AM, Shawn Guo wrote:
+> On Mon, Nov 18, 2013 at 08:45:12AM -0600, Nishanth Menon wrote:
+> <snip>
+>> I do not agree about this stance - device tree describes hardware
+>> capabilities to kernel -> I agree with that statement. Kernel should
+>> not care if that is provided by bootloader/firmware/fused into
+>> flash/ROM etc.
 > 
-> > > The reclaim will fail, the only reason current has TIF_MEMDIE set is 
-> > > because reclaim has completely failed.
-> > 
-> > ...for somebody else.
-> > 
+> Yea, ideally kernel should just believe that the device tree is always
+> the correct one.  But the following text in your commit log suggests
+> that might not be always the case.
 > 
-> That process is in the same allocating context as current, otherwise 
-> current would not have been selected as a victim.  The oom killer tries to 
-> only kill processes that will lead to future memory freeing where reclaim 
-> has failed.
+> | a) older or default bootloader in development platform without latest
+> | updates
+> | b) SoC documentation update that may have occurred in kernel
+> | c) kernel definitions are out of date Vs bootloader which is updated
+> | etc..
+> | 
+> | In these cases, we should assume from a kernel perspective, the only
+> | safe frequency that the system can be on is the ones available in the
+> | OPP table. This may not handle case (c), but, that is a different
+> | kernel bug of it's own.
 > 
-> > > I don't know of any other "random places" other than when the oom killed 
-> > > process is sitting in reclaim before it is selected as the victim.  Once 
-> > > it returns to the page allocator, it will immediately allocate and then be 
-> > > able to handle its pending SIGKILL.  The one spot identified where it is 
-> > > absolutely pointless to spin is in reclaim since it is virtually 
-> > > guaranteed to fail.  This patch fixes that issue.
-> > 
-> > No, this applies to every other operation that does not immediately
-> > lead to the task exiting or which creates more system load.  Readahead
-> > would be another example.  They're all pointless and you could do
-> > without all of them at this point, but I'm not okay with putting these
-> > checks in random places that happen to bother you right now.  It's not
-> > a proper solution to the problem.
-> > 
-> 
-> If you have an alternative solution, please feel free to propose it and 
-> I'll try it out.
-> 
-> This isn't only about the cond_resched() in shrink_slab(), the reclaim is 
-> going to fail.  There should be no instances where an oom killed process 
-> can go and start magically reclaiming memory that would have prevented it 
-> from becoming oom in the first place.  I have seen the oom killer trigger 
-> and the victim stall for several seconds before actually allocating memory 
-> and that stall is pointless, especially when we're not touching a hotpath 
-> here, we're in direct reclaim already.
-> 
-> > Is it a good idea to let ~700 processes simultaneously go into direct
-> > global reclaim?
-> > 
-> > The victim aborting reclaim still leaves you with ~699 processes
-> > spinning in reclaim that should instead just retry the allocation as
-> > well.  What about them?
-> > 
-> 
-> Um, no, those processes are going through a repeated loop of direct 
-> reclaim, calling the oom killer, iterating the tasklist, finding an 
-> existing oom killed process that has yet to exit, and looping.  They 
-> wouldn't loop for too long if we can reduce the amount of time that it 
-> takes for that oom killed process to exit.
+> It says that the device tree might be wrong as well.  That's why I
+> think the best/safest thing that kernel can do when seeing a mismatch
+> is to throw out an error message and fail out.
 
-I'm not talking about the big loop in the page allocator.  The victim
-is going through the same loop.  This patch is about the victim being
-in a pointless direct reclaim cycle when it could be exiting, all I'm
-saying is that the other tasks doing direct reclaim at that moment
-should also be quitting and retrying the allocation.
+In the case of mismatch, to consider that device tree may be wrong in
+driver is also to assume that hardware was always configured correctly
+and we assume description is the flawed data. That is just plain
+wrong. we need to assume device tree is the correct description of the
+hardware and any mismatch must be assumed as bad configuration - and
+this is what the patch does.
 
-Because the victim exiting will put memory on the allocator free
-lists, not the LRU lists, it will not allow the other direct
-reclaimers to make progress any faster.
+Now, if the description is wrong, that is a dts bug of it's own.
 
-> > The situation your setups seem to get in frequently is bananas, don't
-> > micro optimize this.
-> > 
+If the suggestion is to improve my commit message, I am more than
+happy to do so - please suggest how I could improve the same.
+
 > 
-> Unless you propose an alternative solution, this is the patch that fixes 
-> the problem when an oom killed process gets killed and then stalls for 
-> seconds before it actually retries allocating memory.
+> Shawn
+> 
+>>
+>> If we agree with that statement, the moment kernel sees device
+>> operating in a configuration that is not hardware capability, it is
+>> our job to switch to the right configuration if it is possible for us
+>> to do so (which in this case, we can). to give a comparison - if i2c
+>> bus was configured for 3.4MHz and device tree describes the bus to
+>> operate at 100KHz, do we ignore device tree recommended configuration?
+>> No. we would switch to 100KHz. as far as kernel is concerned, it can
+>> detect invalid configuration and switch back to a valid configuration
+>> based on hardware description provided by device tree.
+>>
+>>
+>>
+>> -- 
+>> Regards,
+>> Nishanth Menon
+> 
 
-If we have multi-second stalls in direct reclaim then it should be
-fixed for all direct reclaimers.  The problem is not only OOM kill
-victims getting stuck, it's every direct reclaimer being stuck trying
-to do way too much work before retrying the allocation.
 
-Kswapd checks the system state after every priority cycle.  Direct
-reclaim should probably do the same and retry the allocation after
-every priority cycle or every X pages scanned, where X is something
-reasonable and not "up to every LRU page in the system".
+-- 
+Regards,
+Nishanth Menon
