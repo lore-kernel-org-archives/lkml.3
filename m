@@ -1,35 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820Ab3KRMVm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 07:21:42 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:36210 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab3KRMVg (ORCPT
+	id S1751754Ab3KRM0i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 07:26:38 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:36017 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab3KRM0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 07:21:36 -0500
-Message-ID: <528A064D.5020807@gmail.com>
-Date: Mon, 18 Nov 2013 13:21:33 +0100
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 18 Nov 2013 07:26:30 -0500
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <52888F6D.6000802@gmail.com> <CAC9WiBggfssh+31_MqVCT-hDf2E8zTuc81q-DhLYQuVF053mEA@mail.gmail.com> <20131117220611.GQ27323@pd.tnic> <4636530.OR894YNbbr@vostro.rjw.lan> <20131117224621.GR27323@pd.tnic>
-In-Reply-To: <20131117224621.GR27323@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131118101517.GA3559@redhat.com>
+References: <1384764380-16832-1-git-send-email-zwu.kernel@gmail.com>
+	<20131118095043.GA3470@redhat.com>
+	<CAEH94Ljbu-gJ3SCHYErNEPucV=rR9PHz5COrOp3B-iw+db=LDQ@mail.gmail.com>
+	<20131118101517.GA3559@redhat.com>
+Date: Mon, 18 Nov 2013 20:26:29 +0800
+Message-ID: <CAEH94Lj4hCtcxvibO9RCB1+sbn=+xR2bO7CbCkRyx9BCJFGaOA@mail.gmail.com>
+Subject: Re: [PATCH 4/4] net, virtio_net: replace the magic value
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: netdev@vger.kernel.org, QEMU Developers <qemu-devel@nongnu.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 17/11/2013 23:46, Borislav Petkov a écrit :
-> On Sun, Nov 17, 2013 at 11:34:20PM +0100, Rafael J. Wysocki wrote:
->> This looks like a softirq bug to me (and related to cpuidle).
-> 
-> Reportedly, it happens right after resume from RAM. Francis, is that
-> correct?
+On Mon, Nov 18, 2013 at 6:15 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> On Mon, Nov 18, 2013 at 06:07:45PM +0800, Zhi Yong Wu wrote:
+>> On Mon, Nov 18, 2013 at 5:50 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>> > On Mon, Nov 18, 2013 at 04:46:20PM +0800, Zhi Yong Wu wrote:
+>> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> >>
+>> >> It is more appropriate to use # of queue pairs currently used by
+>> >> the driver instead of a magic value.
+>> >>
+>> >> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> >
+>> > I don't mind, but driver should be submitted separately
+>> > from qemu patches. As it is only patch 4/4 made it to netdev.
+>> ok, i will sent v2. By the way, can you help take a look at the
+>> following patches?
+>
+> Will do.
+>
+>> Maybe i can send their v2 together.
+>
+> Please don't, these seem to be completely unrelated.
+OK, i will send it separately.
+>
+>> [PATCH 1/3] vhost: remove the dead branch
+>> [PATCH 2/3] vhost: adjust vhost_dev_init() to be void
+>> [PATCH 3/3] vhost: fix the wrong log descriptions
+>>
+>>
+>> >
+>> >> ---
+>> >>  drivers/net/virtio_net.c |    4 ++--
+>> >>  1 files changed, 2 insertions(+), 2 deletions(-)
+>> >>
+>> >> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>> >> index cdc7c90..e0cb2d1 100644
+>> >> --- a/drivers/net/virtio_net.c
+>> >> +++ b/drivers/net/virtio_net.c
+>> >> @@ -1619,8 +1619,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+>> >>       if (err)
+>> >>               goto free_stats;
+>> >>
+>> >> -     netif_set_real_num_tx_queues(dev, 1);
+>> >> -     netif_set_real_num_rx_queues(dev, 1);
+>> >> +     netif_set_real_num_tx_queues(dev, vi->curr_queue_pairs);
+>> >> +     netif_set_real_num_rx_queues(dev, vi->curr_queue_pairs);
+>> >>
+>> >>       err = register_netdev(dev);
+>> >>       if (err) {
+>> >> --
+>> >> 1.7.6.5
+>> >>
+>>
+>>
+>>
+>> --
+>> Regards,
+>>
+>> Zhi Yong Wu
 
-yes that's correct. I haven't been hit by this issue otherwise.
 
+
+-- 
+Regards,
+
+Zhi Yong Wu
