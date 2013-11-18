@@ -1,101 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab3KRCIE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 21:08:04 -0500
-Received: from dmz-mailsec-scanner-3.mit.edu ([18.9.25.14]:42099 "EHLO
-	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751546Ab3KRCHy (ORCPT
+	id S1753186Ab3KRCI6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 21:08:58 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:51946 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632Ab3KRCIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 21:07:54 -0500
-X-AuditID: 1209190e-b7efb6d000000bb9-81-528976795aa5
-Date: Sun, 17 Nov 2013 21:07:46 -0500
-From: Greg Price <price@MIT.EDU>
-To: Al Viro <viro@ZenIV.linux.org.uk>, Christopher Li <sparse@chrisli.org>
-Cc: Joe Perches <joe@perches.com>, Erico Nunes <nunes.erico@gmail.com>,
-        linux-sparse@vger.kernel.org, dwmw2 <dwmw2@infradead.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Clarify error on directive in macro arguments (Re: [PATCH]
- jffs2: fix sparse errors: directive in argument list)
-Message-ID: <20131118020746.GX16018@ringworld.MIT.EDU>
+	Sun, 17 Nov 2013 21:08:51 -0500
+Date: Sun, 17 Nov 2013 18:08:47 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] battery-2.6.git
+Message-ID: <20131118020847.GA13578@teo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131118013349.GM13318@ZenIV.linux.org.uk>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsUixG6noltZ1hlkcPiRnsXElZOZLWbff8xi
-	cXnXHDaL3U3L2C3u3d7PYtHSu4TRomvNIVaL83+PszpweKxYdYXFY+esu+wem1doeWxeUu/x
-	ZdU1Zo/Pm+Q8Nj15yxTAHsVlk5Kak1mWWqRvl8CVcWn3VraCmQIVM/5eY29g/MDTxcjJISFg
-	IrG04QALhC0mceHeerYuRi4OIYHZTBLvZr5gBEkICWxklJj6WAzC/sUo0XBHrYuRg4NFQFXi
-	eZ8qSJhNQEHix/x1zCBhEQEviQPXNUHGMAt8YZR4dL+TCcQRFmhmlGhvbmYGaeAVMJN49eo6
-	lC0ocXLmE7AjmAW0JG78e8kEMohZQFpi+T8OkDCngIVEZ+chsHNEBVQkppzcxjaBUWAWku5Z
-	SLpnIXQvYGRexSibklulm5uYmVOcmqxbnJyYl5dapGusl5tZopeaUrqJERQLnJJ8Oxi/HlQ6
-	xCjAwajEw6sR1hkkxJpYVlyZe4hRkoNJSZTXsgQoxJeUn1KZkVicEV9UmpNafIhRgoNZSYTX
-	xB8ox5uSWFmVWpQPk5LmYFES573JYR8kJJCeWJKanZpakFoEk5Xh4FCS4C0pBWoULEpNT61I
-	y8wpQUgzcXCCDOcBGt4PUsNbXJCYW5yZDpE/xagoJc4rBJIQAElklObB9cJS1StGcaBXhHmn
-	glTxANMcXPcroMFMQIOPP28DGVySiJCSamDU+f5tl97FgGX32XpNxAvnJ5nWnKyvNnwcm/ni
-	bEj5XL4FfJOtC/zDD3skP2ixYohmY4rlP5H9ce39N0cctmxvqP7x9Uukk+AvpSufEtwPGxil
-	W0spMIbfZ57xiOGM2mv2n4kF7/Jn193g7L8RnCt89rIql97qHF0+dyab3+/uCsbGfi/8+kiJ
-	pTgj0VCLuag4EQDGV9rGMAMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+linux-sparse and Chris]
+Hello Linus,
 
-On Mon, Nov 18, 2013 at 01:33:49AM +0000, Al Viro wrote:
-> On Sun, Nov 17, 2013 at 02:45:05PM -0800, Joe Perches wrote:
-> > Yes.  I think it's a defect in how sparse
-> > treats string concatenation.
-> > 
-> > That style [... with printk ...] is pretty common in the kernel sources.
-> 
-> ... and it's perfectly fine, until somebody starts playing in nasal
-> daemon country and do that in *macro* arguments.  And a nasal daemon
-> country it is - it's an undefined behaviour.  See 6.10.3p11 in C99.
-> And trying to define a semantics for that gets real ugly real fast.
-> sparse matches gcc behaviour (I hope), but it warns about such abuses.
-> It's a defect, all right - one being reported by sparse.
+Please pull battery-2.6 git tree to receive changes prepared for the v3.13
+release. Highlights:
 
-Perhaps the following tweak to the error message would make this
-subtlety clearer?
+- A new driver for TI BQ24735 Battery Chargers, courtesy of NVidia.
 
-Cheers,
-Greg
+- Device tree bindings for TWL4030 chips.
+
+- Random fixes and cleanups.
+
+Thank you,
+
+Anton
 
 
-From: Greg Price <price@mit.edu>
-Date: Sun, 17 Nov 2013 17:57:41 -0800
-Subject: [PATCH] Clarify error on directive in macro arguments
+The following changes since commit 61e6cfa80de5760bbe406f4e815b7739205754d2:
 
-Preprocessor directives in the arguments of a real function
-are innocuous and in some contexts common.  If a developer
-doesn't realize that a "function" is implemented as a macro,
-they may mistake this error for a false alarm.
+  Linux 3.12-rc5 (2013-10-13 15:41:28 -0700)
 
-See http://www.spinics.net/lists/kernel/msg1636974.html
-and http://www.spinics.net/lists/kernel/msg1636976.html
-for an example.
+are available in the git repository at:
 
-Easy enough to clarify that this is a macro, so do it.
+  git://git.infradead.org/battery-2.6.git tags/for-v3.13
 
-Signed-off-by: Greg Price <price@mit.edu>
----
- pre-process.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+for you to fetch changes up to c8024234c20eaf7b163cc4dbd963cb9cd03a4ff1:
 
-diff --git a/pre-process.c b/pre-process.c
-index d521318..db58a97 100644
---- a/pre-process.c
-+++ b/pre-process.c
-@@ -204,7 +204,7 @@ static struct token *collect_arg(struct token *prev, int vararg, struct position
- 		if (next->pos.newline && match_op(next, '#')) {
- 			if (!next->pos.noexpand) {
- 				sparse_error(next->pos,
--					     "directive in argument list");
-+					     "directive in macro argument list");
- 				preprocessor_line(stream, p);
- 				__free_token(next);	/* Free the '#' token */
- 				continue;
--- 
-1.8.3.2
+  pm2301-charger: Remove unneeded NULL checks (2013-11-12 22:36:34 -0800)
+
+----------------------------------------------------------------
+Alexandre Belloni (1):
+      bq2415x_charger: Fix max battery regulation voltage
+
+Anton Vorontsov (1):
+      power_supply: Fix documentation for TEMP_*ALERT* properties
+
+Dan Carpenter (1):
+      pm2301-charger: Remove unneeded NULL checks
+
+Darbha Sriharsha (1):
+      power_supply: Add support for bq24735 charger
+
+Jonghwa Lee (2):
+      charger-manager : Replace kzalloc to devm_kzalloc and remove uneccessary code
+      max17042_battery: Support regmap to access device's registers
+
+Manish Badarkhe (2):
+      tps65090-charger: Use "IS_ENABLED(CONFIG_OF)" for DT code
+      max17042_battery: Use SIMPLE_DEV_PM_OPS
+
+NeilBrown (1):
+      twl4030_charger: Add devicetree support
+
+Pali Rohár (1):
+      isp1704_charger: Fix driver to work with changes introduced in v3.5
+
+Sachin Kamat (4):
+      ab8500-charger: Check return value of regulator_enable
+      ab8500-charger: Remove redundant break
+      pm2301-charger: Check return value of regulator_enable
+      pm2301-charger: Staticize pm2xxx_charger_die_therm_mngt
+
+Wei Yongjun (1):
+      tps65090-charger: Drop devm_free_irq of devm_ allocated irq
+
+ .../devicetree/bindings/power/twl-charger.txt      |  20 +
+ .../bindings/power_supply/ti,bq24735.txt           |  32 ++
+ Documentation/power/power_supply_class.txt         |   8 +-
+ arch/arm/boot/dts/twl4030.dtsi                     |   6 +
+ drivers/power/Kconfig                              |   6 +
+ drivers/power/Makefile                             |   1 +
+ drivers/power/ab8500_charger.c                     |  17 +-
+ drivers/power/bq2415x_charger.c                    |   6 +-
+ drivers/power/bq24735-charger.c                    | 419 +++++++++++++++++++++
+ drivers/power/charger-manager.c                    |  85 ++---
+ drivers/power/isp1704_charger.c                    |  91 ++---
+ drivers/power/max17042_battery.c                   | 373 +++++++++---------
+ drivers/power/pm2301_charger.c                     |  27 +-
+ drivers/power/tps65090-charger.c                   |  30 +-
+ drivers/power/twl4030_charger.c                    |  47 ++-
+ include/linux/power/bq24735-charger.h              |  39 ++
+ 16 files changed, 852 insertions(+), 355 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power/twl-charger.txt
+ create mode 100644 Documentation/devicetree/bindings/power_supply/ti,bq24735.txt
+ create mode 100644 drivers/power/bq24735-charger.c
+ create mode 100644 include/linux/power/bq24735-charger.h
