@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418Ab3KREk5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 23:40:57 -0500
+	id S1751546Ab3KRElM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 23:41:12 -0500
 Received: from lgeamrelo01.lge.com ([156.147.1.125]:58897 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab3KREkv (ORCPT
+	with ESMTP id S1751051Ab3KREkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 23:40:51 -0500
-X-AuditID: 9c93017d-b7b15ae000000e52-63-52899a5232cf
+	Sun, 17 Nov 2013 23:40:52 -0500
+X-AuditID: 9c93017d-b7b15ae000000e52-65-52899a521d9c
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
@@ -18,10 +18,12 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Oleg Nesterov <oleg@redhat.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 1/2] tracing/uprobes: Fix documentation of uprobe registration syntax
-Date: Mon, 18 Nov 2013 13:40:48 +0900
-Message-Id: <1384749649-31447-1-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 2/2] tracing/probes: Fix basic print type functions
+Date: Mon, 18 Nov 2013 13:40:49 +0900
+Message-Id: <1384749649-31447-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1384749649-31447-1-git-send-email-namhyung@kernel.org>
+References: <1384749649-31447-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,57 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The uprobe syntax requires an offset after a file path not a symbol.
+The print format of s32 type was "ld" and it's casted to "long".  So
+it turned out to print 4294967295 for "-1" on 64-bit systems.  Not
+sure whether it worked well on 32-bit systems.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Anyway, it'd be better if we have exact format and type cast for each
+types on both of 32- and 64-bit systems.  In fact, the only difference
+is on s64/u64 types.
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- Documentation/trace/uprobetracer.txt | 10 +++++-----
- kernel/trace/trace_uprobe.c          |  2 +-
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ kernel/trace/trace_probe.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
-index d9c3e682312c..8f1a8b8956fc 100644
---- a/Documentation/trace/uprobetracer.txt
-+++ b/Documentation/trace/uprobetracer.txt
-@@ -19,15 +19,15 @@ user to calculate the offset of the probepoint in the object.
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index 412e959709b4..b571e4de0769 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -49,14 +49,19 @@ static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
+ }									\
+ static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
  
- Synopsis of uprobe_tracer
- -------------------------
--  p[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS] : Set a uprobe
--  r[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS] : Set a return uprobe (uretprobe)
--  -:[GRP/]EVENT                                  : Clear uprobe or uretprobe event
-+  p[:[GRP/]EVENT] PATH:OFFSET [FETCHARGS] : Set a uprobe
-+  r[:[GRP/]EVENT] PATH:OFFSET [FETCHARGS] : Set a return uprobe (uretprobe)
-+  -:[GRP/]EVENT                           : Clear uprobe or uretprobe event
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "%x", unsigned char)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned short)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%x", unsigned int)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s8,  "%d", signed char)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", short)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d", int)
++#if BITS_PER_LONG == 32
+ DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
+ DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
++#else /* BITS_PER_LONG == 64 */
++DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%lx", unsigned long)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%ld", long)
++#endif
  
-   GRP           : Group name. If omitted, "uprobes" is the default value.
-   EVENT         : Event name. If omitted, the event name is generated based
--                  on SYMBOL+offs.
-+                  on PATH+OFFSET.
-   PATH          : Path to an executable or a library.
--  SYMBOL[+offs] : Symbol+offset where the probe is inserted.
-+  OFFSET        : Offset where the probe is inserted.
- 
-   FETCHARGS     : Arguments. Each probe can have up to 128 args.
-    %REG         : Fetch register REG
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 272261b5f94f..a415c5867ec5 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -210,7 +210,7 @@ end:
- 
- /*
-  * Argument syntax:
-- *  - Add uprobe: p|r[:[GRP/]EVENT] PATH:SYMBOL [FETCHARGS]
-+ *  - Add uprobe: p|r[:[GRP/]EVENT] PATH:OFFSET [FETCHARGS]
-  *
-  *  - Remove uprobe: -:[GRP/]EVENT
-  */
+ static inline void *get_rloc_data(u32 *dl)
+ {
 -- 
 1.7.11.7
 
