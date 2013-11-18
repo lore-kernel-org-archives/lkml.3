@@ -1,67 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768Ab3KRQg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 11:36:57 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:36685 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab3KRQgs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 11:36:48 -0500
+	id S1751406Ab3KRQlT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 11:41:19 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:38015 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750779Ab3KRQlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 11:41:13 -0500
+Date: Mon, 18 Nov 2013 11:41:07 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom killed
+Message-ID: <20131118164107.GC3556@cmpxchg.org>
+References: <alpine.DEB.2.02.1311121801200.18803@chino.kir.corp.google.com>
+ <20131113152412.GH707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131400300.23211@chino.kir.corp.google.com>
+ <20131114000043.GK707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <20131116190121.GB22666@redhat.com>
-References: <20131101232521.GA23119@www.outflux.net>
-	<20131114170337.GA11068@redhat.com>
-	<CAGXu5jLXpLqjCAMFwKp7t7GpMq4+WBqNzSFC=up+CBvgGDuFCw@mail.gmail.com>
-	<20131115203652.GA13476@redhat.com>
-	<CAGXu5j+=LZYAczLVawGPAxd=9VX1FupWZq+2858GsrD1YprL3w@mail.gmail.com>
-	<20131116190057.GA22666@redhat.com>
-	<20131116190121.GB22666@redhat.com>
-Date: Mon, 18 Nov 2013 08:36:48 -0800
-X-Google-Sender-Auth: vsSGJzPe1ExM4rb4yT6cGQaLVnM
-Message-ID: <CAGXu5jK1mqQzrHodkMNqQD5jMs164=nMB27KKpUyWePnjo5pSw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] set_dumpable: fix the theoretical race with itself
-From: Kees Cook <keescook@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vasily Kulikov <segoon@openwall.com>,
-        Petr Matousek <pmatouse@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Alex Kelly <alex.page.kelly@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 16, 2013 at 11:01 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> set_dumpable() updates MMF_DUMPABLE_MASK in a non-trivial way to
-> ensure that get_dumpable() can't observe the intermediate state,
-> but this all can't help if multiple threads call set_dumpable()
-> at the same time.
->
-> And in theory commit_creds()->set_dumpable(SUID_DUMP_ROOT) racing
-> with sys_prctl()->set_dumpable(SUID_DUMP_DISABLE) can result in
-> SUID_DUMP_USER.
->
-> Change this code to update both bits atomically via cmpxchg().
->
-> Note: this assumes that it is safe to mix bitops and cmpxchg. IOW,
-> if, say, an architecture implements cmpxchg() using the locking
-> (like arch/parisc/lib/bitops.c does), then it should use the same
-> locks for set_bit/etc.
->
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+On Wed, Nov 13, 2013 at 04:48:32PM -0800, David Rientjes wrote:
+> On Wed, 13 Nov 2013, Johannes Weiner wrote:
+> 
+> > > The reclaim will fail, the only reason current has TIF_MEMDIE set is 
+> > > because reclaim has completely failed.
+> > 
+> > ...for somebody else.
+> > 
+> 
+> That process is in the same allocating context as current, otherwise 
+> current would not have been selected as a victim.  The oom killer tries to 
+> only kill processes that will lead to future memory freeing where reclaim 
+> has failed.
+> 
+> > > I don't know of any other "random places" other than when the oom killed 
+> > > process is sitting in reclaim before it is selected as the victim.  Once 
+> > > it returns to the page allocator, it will immediately allocate and then be 
+> > > able to handle its pending SIGKILL.  The one spot identified where it is 
+> > > absolutely pointless to spin is in reclaim since it is virtually 
+> > > guaranteed to fail.  This patch fixes that issue.
+> > 
+> > No, this applies to every other operation that does not immediately
+> > lead to the task exiting or which creates more system load.  Readahead
+> > would be another example.  They're all pointless and you could do
+> > without all of them at this point, but I'm not okay with putting these
+> > checks in random places that happen to bother you right now.  It's not
+> > a proper solution to the problem.
+> > 
+> 
+> If you have an alternative solution, please feel free to propose it and 
+> I'll try it out.
+> 
+> This isn't only about the cond_resched() in shrink_slab(), the reclaim is 
+> going to fail.  There should be no instances where an oom killed process 
+> can go and start magically reclaiming memory that would have prevented it 
+> from becoming oom in the first place.  I have seen the oom killer trigger 
+> and the victim stall for several seconds before actually allocating memory 
+> and that stall is pointless, especially when we're not touching a hotpath 
+> here, we're in direct reclaim already.
+> 
+> > Is it a good idea to let ~700 processes simultaneously go into direct
+> > global reclaim?
+> > 
+> > The victim aborting reclaim still leaves you with ~699 processes
+> > spinning in reclaim that should instead just retry the allocation as
+> > well.  What about them?
+> > 
+> 
+> Um, no, those processes are going through a repeated loop of direct 
+> reclaim, calling the oom killer, iterating the tasklist, finding an 
+> existing oom killed process that has yet to exit, and looping.  They 
+> wouldn't loop for too long if we can reduce the amount of time that it 
+> takes for that oom killed process to exit.
 
-I can't speak to the bitops/cmpxchg, but the rest looks fine to me.
+I'm not talking about the big loop in the page allocator.  The victim
+is going through the same loop.  This patch is about the victim being
+in a pointless direct reclaim cycle when it could be exiting, all I'm
+saying is that the other tasks doing direct reclaim at that moment
+should also be quitting and retrying the allocation.
 
-Acked-by: Kees Cook <keescook@chromium.org>
+Because the victim exiting will put memory on the allocator free
+lists, not the LRU lists, it will not allow the other direct
+reclaimers to make progress any faster.
 
-Thanks!
+> > The situation your setups seem to get in frequently is bananas, don't
+> > micro optimize this.
+> > 
+> 
+> Unless you propose an alternative solution, this is the patch that fixes 
+> the problem when an oom killed process gets killed and then stalls for 
+> seconds before it actually retries allocating memory.
 
--Kees
+If we have multi-second stalls in direct reclaim then it should be
+fixed for all direct reclaimers.  The problem is not only OOM kill
+victims getting stuck, it's every direct reclaimer being stuck trying
+to do way too much work before retrying the allocation.
 
--- 
-Kees Cook
-Chrome OS Security
+Kswapd checks the system state after every priority cycle.  Direct
+reclaim should probably do the same and retry the allocation after
+every priority cycle or every X pages scanned, where X is something
+reasonable and not "up to every LRU page in the system".
