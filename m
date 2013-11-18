@@ -1,123 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab3KRUb0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:31:26 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50557 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab3KRU2N (ORCPT
+	id S1752863Ab3KRUbb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:31:31 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:50008 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752834Ab3KRUb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:28:13 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/16] perf completion: introduce zsh support
-Date: Mon, 18 Nov 2013 17:27:55 -0300
-Message-Id: <1384806484-29869-8-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1384806484-29869-1-git-send-email-acme@infradead.org>
-References: <1384806484-29869-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 18 Nov 2013 15:31:26 -0500
+From: Elena Ufimtseva <ufimtseva@gmail.com>
+To: xen-devel@lists.xenproject.org
+Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, akpm@linux-foundation.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com, ian.campbell@citrix.com,
+        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
+        linux-kernel@vger.kernel.org, Elena Ufimtseva <ufimtseva@gmail.com>
+Subject: [PATCH v2 2/2] xen: enable vnuma for PV guest
+Date: Mon, 18 Nov 2013 15:25:50 -0500
+Message-Id: <1384806350-12651-3-git-send-email-ufimtseva@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
+References: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+Enables numa if vnuma topology hypercall is supported and it is domU.
 
-__perfcomp(), __perfcomp_colon(), and _perf() have to be overridden.
-Inspired by the way the git.git completion system is structured.
-
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1384704807-15779-5-git-send-email-artagnon@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
 ---
- tools/perf/bash_completion | 63 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 62 insertions(+), 1 deletion(-)
+ arch/x86/xen/setup.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 573599b42be2..49494882d9bb 100644
---- a/tools/perf/bash_completion
-+++ b/tools/perf/bash_completion
-@@ -1,4 +1,4 @@
--# perf completion
-+# perf bash and zsh completion
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 68c054f..0aab799 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -20,6 +20,7 @@
+ #include <asm/numa.h>
+ #include <asm/xen/hypervisor.h>
+ #include <asm/xen/hypercall.h>
++#include <asm/xen/vnuma.h>
  
- # Taken from git.git's completion script.
- __my_reassemble_comp_words_by_ref()
-@@ -129,6 +129,67 @@ __perf_main ()
- 	fi
+ #include <xen/xen.h>
+ #include <xen/page.h>
+@@ -598,6 +599,9 @@ void __init xen_arch_setup(void)
+ 	WARN_ON(xen_set_default_idle());
+ 	fiddle_vdso();
+ #ifdef CONFIG_NUMA
+-	numa_off = 1;
++	if (!xen_initial_domain() && xen_vnuma_supported())
++		numa_off = 0;
++	else
++		numa_off = 1;
+ #endif
  }
- 
-+if [[ -n ${ZSH_VERSION-} ]]; then
-+	autoload -U +X compinit && compinit
-+
-+	__perfcomp ()
-+	{
-+		emulate -L zsh
-+
-+		local c IFS=$' \t\n'
-+		local -a array
-+
-+		for c in ${=1}; do
-+			case $c in
-+			--*=*|*.) ;;
-+			*) c="$c " ;;
-+			esac
-+			array[${#array[@]}+1]="$c"
-+		done
-+
-+		compset -P '*[=:]'
-+		compadd -Q -S '' -a -- array && _ret=0
-+	}
-+
-+	__perfcomp_colon ()
-+	{
-+		emulate -L zsh
-+
-+		local cur_="${2-$cur}"
-+		local c IFS=$' \t\n'
-+		local -a array
-+
-+		if [[ "$cur_" == *:* ]]; then
-+			local colon_word=${cur_%"${cur_##*:}"}
-+		fi
-+
-+		for c in ${=1}; do
-+			case $c in
-+			--*=*|*.) ;;
-+			*) c="$c " ;;
-+			esac
-+			array[$#array+1]=${c#"$colon_word"}
-+		done
-+
-+		compset -P '*[=:]'
-+		compadd -Q -S '' -a -- array && _ret=0
-+	}
-+
-+	_perf ()
-+	{
-+		local _ret=1 cur cword prev
-+		cur=${words[CURRENT]}
-+		prev=${words[CURRENT-1]}
-+		let cword=CURRENT-1
-+		emulate ksh -c __perf_main
-+		let _ret && _default && _ret=0
-+		return _ret
-+	}
-+
-+	compdef _perf perf
-+	return
-+fi
-+
- type perf &>/dev/null &&
- _perf()
- {
 -- 
-1.8.1.4
+1.7.10.4
 
