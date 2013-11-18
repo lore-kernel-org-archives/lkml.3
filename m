@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab3KRSnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:43:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57717 "EHLO
+	id S1753331Ab3KRSpF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:45:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57669 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab3KRSmq (ORCPT
+	with ESMTP id S1753071Ab3KRSmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:42:46 -0500
+	Mon, 18 Nov 2013 13:42:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Mazur <krzysiek@podlesie.net>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.10 22/24] usb: fail on usb_hub_create_port_device() errors
-Date: Mon, 18 Nov 2013 10:42:32 -0800
-Message-Id: <20131118184223.612493334@linuxfoundation.org>
+        "Steinar H. Gunderson" <sgunderson@bigfoot.com>,
+        Valentijn Sessink <valentyn@blub.net>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 02/24] ipv6: ip6_dst_check needs to check for expired dst_entries
+Date: Mon, 18 Nov 2013 10:42:12 -0800
+Message-Id: <20131118184222.227000070@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184222.017393843@linuxfoundation.org>
 References: <20131118184222.017393843@linuxfoundation.org>
@@ -27,49 +31,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Mazur <krzysiek@podlesie.net>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit e58547eb9561a8a72d46e2d411090a614d33ac0e upstream.
+[ Upstream commit e3bc10bd95d7fcc3f2ac690c6ff22833ea6781d6 ]
 
-Ignoring usb_hub_create_port_device() errors cause later NULL pointer
-deference when uninitialized hub->ports[i] entries are dereferenced
-after port memory allocation error.
+On receiving a packet too big icmp error we check if our current cached
+dst_entry in the socket is still valid. This validation check did not
+care about the expiration of the (cached) route.
 
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+The error path I traced down:
+The socket receives a packet too big mtu notification. It still has a
+valid dst_entry and thus issues the ip6_rt_pmtu_update on this dst_entry,
+setting RTF_EXPIRE and updates the dst.expiration value (which could
+fail because of not up-to-date expiration values, see previous patch).
+
+In some seldom cases we race with a) the ip6_fib gc or b) another routing
+lookup which would result in a recreation of the cached rt6_info from its
+parent non-cached rt6_info. While copying the rt6_info we reinitialize the
+metrics store by copying it over from the parent thus invalidating the
+just installed pmtu update (both dsts use the same key to the inetpeer
+storage). The dst_entry with the just invalidated metrics data would
+just get its RTF_EXPIRES flag cleared and would continue to stay valid
+for the socket.
+
+We should have not issued the pmtu update on the already expired dst_entry
+in the first placed. By checking the expiration on the dst entry and
+doing a relookup in case it is out of date we close the race because
+we would install a new rt6_info into the fib before we issue the pmtu
+update, thus closing this race.
+
+Not reliably updating the dst.expire value was fixed by the patch "ipv6:
+reset dst.expires value when clearing expire flag".
+
+Reported-by: Steinar H. Gunderson <sgunderson@bigfoot.com>
+Reported-by: Valentijn Sessink <valentyn@blub.net>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Valentijn Sessink <valentyn@blub.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/core/hub.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ net/ipv6/route.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1557,10 +1557,15 @@ static int hub_configure(struct usb_hub
- 	if (hub->has_indicators && blinkenlights)
- 		hub->indicator [0] = INDICATOR_CYCLE;
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1084,10 +1084,13 @@ static struct dst_entry *ip6_dst_check(s
+ 	if (rt->rt6i_genid != rt_genid(dev_net(rt->dst.dev)))
+ 		return NULL;
  
--	for (i = 0; i < hdev->maxchild; i++)
--		if (usb_hub_create_port_device(hub, i + 1) < 0)
-+	for (i = 0; i < hdev->maxchild; i++) {
-+		ret = usb_hub_create_port_device(hub, i + 1);
-+		if (ret < 0) {
- 			dev_err(hub->intfdev,
- 				"couldn't create port%d device.\n", i + 1);
-+			hdev->maxchild = i;
-+			goto fail_keep_maxchild;
-+		}
-+	}
+-	if (rt->rt6i_node && (rt->rt6i_node->fn_sernum == cookie))
+-		return dst;
++	if (!rt->rt6i_node || (rt->rt6i_node->fn_sernum != cookie))
++		return NULL;
++
++	if (rt6_check_expired(rt))
++		return NULL;
  
- 	usb_hub_adjust_deviceremovable(hdev, hub->descriptor);
+-	return NULL;
++	return dst;
+ }
  
-@@ -1569,6 +1574,7 @@ static int hub_configure(struct usb_hub
- 
- fail:
- 	hdev->maxchild = 0;
-+fail_keep_maxchild:
- 	dev_err (hub_dev, "config failed, %s (err %d)\n",
- 			message, ret);
- 	/* hub_disconnect() frees urb and descriptor */
+ static struct dst_entry *ip6_negative_advice(struct dst_entry *dst)
 
 
