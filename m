@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab3KRSkp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:40:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57387 "EHLO
+	id S1752729Ab3KRSlB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:41:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57342 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab3KRShh (ORCPT
+	with ESMTP id S1752023Ab3KRShd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:37:37 -0500
+	Mon, 18 Nov 2013 13:37:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerd Hoffmann <kraxel@redhat.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.12 13/19] hyperv-fb: add pci stub
-Date: Mon, 18 Nov 2013 10:37:26 -0800
-Message-Id: <20131118183647.871718116@linuxfoundation.org>
+        Mark Thomas <Mark.Thomas@metaswitch.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 02/19] net: sctp: do not trigger BUG_ON in sctp_cmd_delete_tcb
+Date: Mon, 18 Nov 2013 10:37:15 -0800
+Message-Id: <20131118183644.791664449@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118183644.030738675@linuxfoundation.org>
 References: <20131118183644.030738675@linuxfoundation.org>
@@ -28,104 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerd Hoffmann <kraxel@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 7ad9684721606efbfb9b347346816e1e6baff8bb upstream.
+[ Upstream commit 7926c1d5be0b7cbe5b8d5c788d7d39237e7b212c ]
 
-This patch adds a pci stub driver to hyper-fb.  The hyperv framebuffer
-driver will bind to the pci device then, so linux kernel and userspace
-know there is a proper kernel driver for the device active.  lspci shows
-this for example:
+Introduced in f9e42b853523 ("net: sctp: sideeffect: throw BUG if
+primary_path is NULL"), we intended to find a buggy assoc that's
+part of the assoc hash table with a primary_path that is NULL.
+However, we better remove the BUG_ON for now and find a more
+suitable place to assert for these things as Mark reports that
+this also triggers the bug when duplication cookie processing
+happens, and the assoc is not part of the hash table (so all
+good in this case). Such a situation can for example easily be
+reproduced by:
 
-[root@dhcp231 ~]# lspci -vs8
-00:08.0 VGA compatible controller: Microsoft Corporation Hyper-V virtual
-VGA (prog-if 00 [VGA controller])
-        Flags: bus master, fast devsel, latency 0, IRQ 11
-        Memory at f8000000 (32-bit, non-prefetchable) [size=64M]
-        Expansion ROM at <unassigned> [disabled]
-        Kernel driver in use: hyperv_fb
+  tc qdisc add dev eth0 root handle 1: prio bands 2 priomap 1 1 1 1 1 1
+  tc qdisc add dev eth0 parent 1:2 handle 20: netem loss 20%
+  tc filter add dev eth0 protocol ip parent 1: prio 2 u32 match ip \
+            protocol 132 0xff match u8 0x0b 0xff at 32 flowid 1:2
 
-Another effect is that the xorg vesa driver will not attach to the
-device and thus the Xorg server will automatically use the fbdev
-driver instead.
+This drops 20% of COOKIE-ACK packets. After some follow-up
+discussion with Vlad we came to the conclusion that for now we
+should still better remove this BUG_ON() assertion, and come up
+with two follow-ups later on, that is, i) find a more suitable
+place for this assertion, and possibly ii) have a special
+allocator/initializer for such kind of temporary assocs.
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
-Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Reported-by: Mark Thomas <Mark.Thomas@metaswitch.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/video/hyperv_fb.c |   40 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 39 insertions(+), 1 deletion(-)
+ net/sctp/sm_sideeffect.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/video/hyperv_fb.c
-+++ b/drivers/video/hyperv_fb.c
-@@ -795,12 +795,21 @@ static int hvfb_remove(struct hv_device
+--- a/net/sctp/sm_sideeffect.c
++++ b/net/sctp/sm_sideeffect.c
+@@ -860,7 +860,6 @@ static void sctp_cmd_delete_tcb(sctp_cmd
+ 	    (!asoc->temp) && (sk->sk_shutdown != SHUTDOWN_MASK))
+ 		return;
+ 
+-	BUG_ON(asoc->peer.primary_path == NULL);
+ 	sctp_unhash_established(asoc);
+ 	sctp_association_free(asoc);
  }
- 
- 
-+static DEFINE_PCI_DEVICE_TABLE(pci_stub_id_table) = {
-+	{
-+		.vendor      = PCI_VENDOR_ID_MICROSOFT,
-+		.device      = PCI_DEVICE_ID_HYPERV_VIDEO,
-+	},
-+	{ /* end of list */ }
-+};
-+
- static const struct hv_vmbus_device_id id_table[] = {
- 	/* Synthetic Video Device GUID */
- 	{HV_SYNTHVID_GUID},
- 	{}
- };
- 
-+MODULE_DEVICE_TABLE(pci, pci_stub_id_table);
- MODULE_DEVICE_TABLE(vmbus, id_table);
- 
- static struct hv_driver hvfb_drv = {
-@@ -810,14 +819,43 @@ static struct hv_driver hvfb_drv = {
- 	.remove = hvfb_remove,
- };
- 
-+static int hvfb_pci_stub_probe(struct pci_dev *pdev,
-+			       const struct pci_device_id *ent)
-+{
-+	return 0;
-+}
-+
-+static void hvfb_pci_stub_remove(struct pci_dev *pdev)
-+{
-+}
-+
-+static struct pci_driver hvfb_pci_stub_driver = {
-+	.name =		KBUILD_MODNAME,
-+	.id_table =	pci_stub_id_table,
-+	.probe =	hvfb_pci_stub_probe,
-+	.remove =	hvfb_pci_stub_remove,
-+};
- 
- static int __init hvfb_drv_init(void)
- {
--	return vmbus_driver_register(&hvfb_drv);
-+	int ret;
-+
-+	ret = vmbus_driver_register(&hvfb_drv);
-+	if (ret != 0)
-+		return ret;
-+
-+	ret = pci_register_driver(&hvfb_pci_stub_driver);
-+	if (ret != 0) {
-+		vmbus_driver_unregister(&hvfb_drv);
-+		return ret;
-+	}
-+
-+	return 0;
- }
- 
- static void __exit hvfb_drv_exit(void)
- {
-+	pci_unregister_driver(&hvfb_pci_stub_driver);
- 	vmbus_driver_unregister(&hvfb_drv);
- }
- 
 
 
