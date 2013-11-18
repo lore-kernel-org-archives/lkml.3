@@ -1,60 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab3KRQMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 11:12:52 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:40754 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab3KRQMp (ORCPT
+	id S1751510Ab3KRQQs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 11:16:48 -0500
+Received: from fm2nodo5.polito.it ([130.192.180.14]:34829 "EHLO
+	fm2nodo5.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab3KRQQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 11:12:45 -0500
+	Mon, 18 Nov 2013 11:16:41 -0500
+X-Greylist: delayed 1666 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Nov 2013 11:16:41 EST
+X-ExtScanner: Niversoft's FindAttachments (free)
+Message-ID: <528A3675.8040207@polito.it>
+Date: Mon, 18 Nov 2013 16:47:01 +0100
+From: Roberto Sassu <roberto.sassu@polito.it>
+Organization: Politecnico di Torino
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <CAAYSxhrk6qgfy3TUdme3ge98d8Db7e=aW3LG8VfsJgjfuHAS3A@mail.gmail.com>
-References: <1384462936-7906-1-git-send-email-tim.kryger@linaro.org>
-	<20131115225234.GC2672@katana>
-	<CAAYSxhrk6qgfy3TUdme3ge98d8Db7e=aW3LG8VfsJgjfuHAS3A@mail.gmail.com>
-Date: Mon, 18 Nov 2013 08:12:44 -0800
-Message-ID: <CAEPRUYqHj3LJtsxxD0psuLHtQPxAybUpme5hYKRrVNyuWFGg7Q@mail.gmail.com>
-Subject: Re: [PATCH v2 0/5] Add-Broadcom-Kona-I2C-Support
-From: Christian Daudt <bcm@fixthebug.org>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux Doc List <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux I2C List <linux-i2c@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linaro Patches List <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+CC: linux-security-module@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-ima-devel@lists.sourceforge.net, Mimi Zohar <zohar@us.ibm.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>, james.l.morris@oracle.com
+Subject: Re: [RFC][PATCH 4/4] ima: added support for new kernel cmdline parameter
+ ima_template_fmt
+References: <1383832849-17125-1-git-send-email-roberto.sassu@polito.it>	<1383832849-17125-5-git-send-email-roberto.sassu@polito.it> <CACE9dm94Uu98rviFCvTapXwo+OF3mYaBHB6H6CGiZ9tfZu=Zow@mail.gmail.com>
+In-Reply-To: <CACE9dm94Uu98rviFCvTapXwo+OF3mYaBHB6H6CGiZ9tfZu=Zow@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-FEAS-SYSTEM-WL: 130.192.180.41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 3:30 PM, Tim Kryger <tim.kryger@linaro.org> wrote:
-> On Fri, Nov 15, 2013 at 2:52 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+On 11/18/2013 04:35 PM, Dmitry Kasatkin wrote:
+> On Thu, Nov 7, 2013 at 4:00 PM, Roberto Sassu <roberto.sassu@polito.it> wrote:
+>> This patch allows users to provide a custom template format through the
+>> new kernel command line parameter 'ima_template_fmt'. If the supplied
+>> format is not valid, IMA uses the default template descriptor.
+>>
 >
->> Fixed Kconfig sorting, squashed broken out patches 1-3 into one and
->> applied to for-next, thanks! Let me know if I should take patches 4-5
->> also, but usually they go via arm-soc. Also, please provide a "Changes
->> since V1" log which will speed up reviewing.
 >
-> Thanks.  It appears that when I updated the dependencies, I
-> accidentally removed the change list I had planned to send.  This is
-> what should have appeared in my cover letter:
+> Hi,
 >
-> Changes in v2:
->   - Binding documentation is in its own patch
->   - Minor cosmetic changes
->   - Fixed bug related to improper signedness
->   - Removed superflous mutex
->   - Simplified probe function
+> Why existing formats are not enough?
+> Why is it needed?
 >
-> I think it would be best for the DTS changes (patches 4 and 5) to go
-> through Christian's tree.
 
-I'll pick up 4 and 5.
- thanks
-   csd
+Hi Dmitry
+
+the reason is that the number of supported fields
+will be larger than the number of registered templates.
+So, instead of creating a new template descriptor
+for each possible combination of template fields,
+I would like to leave to users the choice.
+
+For example, supposing that there are fields for displaying
+the process UID, GID and LSM label, some users may want
+only the first two, others the last and others all those fields.
+
+Roberto Sassu
+
+
+> - Dmitry
+>
+>> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+>> ---
+>>   Documentation/kernel-parameters.txt      |  4 +++
+>>   Documentation/security/IMA-templates.txt | 29 +++++++++---------
+>>   security/integrity/ima/ima_template.c    | 50 ++++++++++++++++++++++++++++++++
+>>   3 files changed, 68 insertions(+), 15 deletions(-)
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index 1e8761c..27b14b2 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -1199,6 +1199,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>                          Formats: { "ima" | "ima-ng" }
+>>                          Default: "ima-ng"
+>>
+>> +       ima_template_fmt=
+>> +                       [IMA] Define a custom template format.
+>> +                       Format: { "field1|...|fieldN" }
+>> +
+>>          init=           [KNL]
+>>                          Format: <full_path>
+>>                          Run specified binary instead of /sbin/init as init
+>> diff --git a/Documentation/security/IMA-templates.txt b/Documentation/security/IMA-templates.txt
+>> index a777e5f..08ea2da 100644
+>> --- a/Documentation/security/IMA-templates.txt
+>> +++ b/Documentation/security/IMA-templates.txt
+>> @@ -27,25 +27,22 @@ Managing templates with these structures is very simple. To support
+>>   a new data type, developers define the field identifier and implement
+>>   two functions, init() and show(), respectively to generate and display
+>>   measurement entries. Defining a new template descriptor requires
+>> -specifying the template format, a string of field identifiers separated
+>> -by the '|' character. While in the current implementation it is possible
+>> -to define new template descriptors only by adding their definition in the
+>> -template specific code (ima_template.c), in a future version it will be
+>> -possible to register a new template on a running kernel by supplying to IMA
+>> -the desired format string. In this version, IMA initializes at boot time
+>> -all defined template descriptors by translating the format into an array
+>> -of template fields structures taken from the set of the supported ones.
+>> +specifying the template format (a string of field identifiers separated
+>> +by the '|' character) through the 'ima_template_fmt' kernel command line
+>> +parameter. At boot time, IMA initializes all defined template descriptors
+>> +by translating the format into an array of template fields structures taken
+>> +from the set of the supported ones.
+>>
+>>   After the initialization step, IMA will call ima_alloc_init_template()
+>>   (new function defined within the patches for the new template management
+>>   mechanism) to generate a new measurement entry by using the template
+>>   descriptor chosen through the kernel configuration or through the newly
+>> -introduced 'ima_template=' kernel command line parameter. It is during this
+>> -phase that the advantages of the new architecture are clearly shown:
+>> -the latter function will not contain specific code to handle a given template
+>> -but, instead, it simply calls the init() method of the template fields
+>> -associated to the chosen template descriptor and store the result (pointer
+>> -to allocated data and data length) in the measurement entry structure.
+>> +introduced 'ima_template' and 'ima_template_fmt' kernel command line parameters.
+>> +It is during this phase that the advantages of the new architecture are
+>> +clearly shown: the latter function will not contain specific code to handle
+>> +a given template but, instead, it simply calls the init() method of the template
+>> +fields associated to the chosen template descriptor and store the result
+>> +(pointer to allocated data and data length) in the measurement entry structure.
+>>
+>>   The same mechanism is employed to display measurements entries.
+>>   The functions ima[_ascii]_measurements_show() retrieve, for each entry,
+>> @@ -84,4 +81,6 @@ currently the following methods are supported:
+>>    - select a template descriptor among those supported in the kernel
+>>      configuration ('ima-ng' is the default choice);
+>>    - specify a template descriptor name from the kernel command line through
+>> -   the 'ima_template=' parameter.
+>> +   the 'ima_template=' parameter;
+>> + - register a new template descriptor with custom format through the kernel
+>> +   command line parameter 'ima_template_fmt='.
+>> diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+>> index bb33576..5a95d06 100644
+>> --- a/security/integrity/ima/ima_template.c
+>> +++ b/security/integrity/ima/ima_template.c
+>> @@ -21,6 +21,7 @@ static struct ima_template_desc defined_templates[] = {
+>>          {.name = IMA_TEMPLATE_IMA_NAME, .fmt = IMA_TEMPLATE_IMA_FMT},
+>>          {.name = "ima-ng",.fmt = "d-ng|n-ng"},
+>>          {.name = "ima-sig",.fmt = "d-ng|n-ng|sig"},
+>> +       {.name = "",.fmt = ""}, /* placeholder for a custom format */
+>>   };
+>>
+>>   static struct ima_template_field supported_fields[] = {
+>> @@ -38,12 +39,16 @@ static struct ima_template_field supported_fields[] = {
+>>
+>>   static struct ima_template_desc *ima_template;
+>>   static struct ima_template_desc *lookup_template_desc(const char *name);
+>> +static struct ima_template_field *lookup_template_field(const char *field_id);
+>>
+>>   static int __init ima_template_setup(char *str)
+>>   {
+>>          struct ima_template_desc *template_desc;
+>>          int template_len = strlen(str);
+>>
+>> +       if (ima_template)
+>> +               return 1;
+>> +
+>>          /*
+>>           * Verify that a template with the supplied name exists.
+>>           * If not, use CONFIG_IMA_DEFAULT_TEMPLATE.
+>> @@ -70,6 +75,48 @@ static int __init ima_template_setup(char *str)
+>>   }
+>>   __setup("ima_template=", ima_template_setup);
+>>
+>> +static int __init ima_template_fmt_setup(char *str)
+>> +{
+>> +       int num_templates = ARRAY_SIZE(defined_templates);
+>> +       char *str_ptr_start = str;
+>> +       char *str_ptr_end = str_ptr_start;
+>> +
+>> +       if (ima_template)
+>> +               return 1;
+>> +
+>> +       while (str_ptr_start != NULL) {
+>> +               char field_id[IMA_TEMPLATE_FIELD_ID_MAX_LEN];
+>> +               int len;
+>> +
+>> +               str_ptr_end = strpbrk(str_ptr_start, "|");
+>> +               if (str_ptr_end == NULL)
+>> +                       len = str + strlen(str) - str_ptr_start;
+>> +               else
+>> +                       len = str_ptr_end++ - str_ptr_start;
+>> +
+>> +               if (len >= IMA_TEMPLATE_FIELD_ID_MAX_LEN) {
+>> +                       pr_err("IMA: field too long, using template %s\n",
+>> +                              CONFIG_IMA_DEFAULT_TEMPLATE);
+>> +                       return 1;
+>> +               }
+>> +
+>> +               memcpy(field_id, str_ptr_start, len);
+>> +               field_id[len] = '\0';
+>> +               if (lookup_template_field(field_id) == NULL) {
+>> +                       pr_err("IMA: field '%s' not found, using template %s\n",
+>> +                              field_id, CONFIG_IMA_DEFAULT_TEMPLATE);
+>> +                       return 1;
+>> +               }
+>> +
+>> +               str_ptr_start = str_ptr_end;
+>> +       }
+>> +
+>> +       defined_templates[num_templates - 1].fmt = str;
+>> +       ima_template = defined_templates + num_templates - 1;
+>> +       return 1;
+>> +}
+>> +__setup("ima_template_fmt=", ima_template_fmt_setup);
+>> +
+>>   static struct ima_template_desc *lookup_template_desc(const char *name)
+>>   {
+>>          int i;
+>> @@ -160,6 +207,9 @@ static int init_defined_templates(void)
+>>          for (i = 0; i < ARRAY_SIZE(defined_templates); i++) {
+>>                  struct ima_template_desc *template = &defined_templates[i];
+>>
+>> +               if (strlen(template->fmt) == 0)
+>> +                       continue;
+>> +
+>>                  result = template_desc_init_fields(template->fmt,
+>>                                                     &(template->fields),
+>>                                                     &(template->num_fields));
+>> --
+>> 1.8.1.4
+>>
+>
+>
+>
+
