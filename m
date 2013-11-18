@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab3KRW6q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 17:58:46 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:53638 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab3KRW6p (ORCPT
+	id S1751771Ab3KRXD4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 18:03:56 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34251 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab3KRXDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 17:58:45 -0500
-Date: Mon, 18 Nov 2013 14:58:41 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: anish singh <anish198519851985@gmail.com>
-Cc: =?utf-8?B?6Z+p56OK?= <bonben1989@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: list_head and lock?
-Message-ID: <20131118225841.GI4138@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAK2Ky6zUfngvgKAaqNzTN9KPY2zgir3Yevj-r_=wWq=1RN3yAw@mail.gmail.com>
- <CAK7N6vpL+zXrb+2uoT3=kggAin34k+FkB-bt1_Sgw17uC5MkLQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAK7N6vpL+zXrb+2uoT3=kggAin34k+FkB-bt1_Sgw17uC5MkLQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111822-8236-0000-0000-000003EECDA1
+	Mon, 18 Nov 2013 18:03:54 -0500
+Date: Mon, 18 Nov 2013 23:03:39 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Heorhi Valakhanovich <valahanovich@tut.by>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] tty: Only hangup once
+Message-ID: <20131118230339.5402fac4@alan.etchedpixels.co.uk>
+In-Reply-To: <528A5043.6030901@hurleysoftware.com>
+References: <1375293945-4087-1-git-send-email-peter@hurleysoftware.com>
+	<20131117203850.46df2124@tormoz-pc>
+	<20131118134211.17861db3@alan.etchedpixels.co.uk>
+	<528A5043.6030901@hurleysoftware.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 17, 2013 at 05:48:14PM -0800, anish singh wrote:
-> On Sun, Nov 17, 2013 at 5:19 PM, 韩磊 <bonben1989@gmail.com> wrote:
-> > when we delete,add,search,amend the list_head,should we use spinlock
-> > or rcu in case of conflicit to list_head???
-> There is no implicit locking when we use 'list' api's.You should explicitly
-> do that AFAIK.
+> I doubt this is caused by a race condition; the first hangup would do most
+> of the destruction regardless, and a second hangup can't really race with
+> the first because of the tty_lock() held for most of the hangup.
+> 
+> In any event, it's worth discovering what state a subsequent hangup can
+> effect that the first hangup left incomplete. I'll look into it.
+> 
+> Regards,
+> Peter Hurley
 
-See Documentation/RCU/listRCU.txt for a summary of how to use RCU-protected
-linked lists.  But yes, readers need to explicitly do rcu_read_lock()
-and rcu_read_unlock(), and updaters must coordinate with each others
-somehow, for example, explicitly using spinlocks.
+disassociate_ctty races with tty_hangup.
 
-The list_head macros are about list manipulation and not so much about
-synchronization.
+tty->pgrp is only protected by ctrl_lock
 
-							Thanx, Paul
+See no_tty and the FIXME note. Sorry the FIXME wasn't clearer.
 
+
+Alan
