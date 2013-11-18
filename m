@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab3KRNvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 08:51:18 -0500
-Received: from smtprelay0254.hostedemail.com ([216.40.44.254]:46361 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750880Ab3KRNvI (ORCPT
+	id S1752114Ab3KRNwI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 08:52:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54441 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab3KRNv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 08:51:08 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 64,4,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2332:2393:2559:2562:2828:3138:3139:3140:3141:3142:3653:3868:3871:4321:5007:7652:10004:10400:10848:11658:11914:12043:12438:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: teeth60_60e6fa5dab74b
-X-Filterd-Recvd-Size: 1517
-Message-ID: <1384782664.5814.17.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Fix "Use of uninitialized value" warnings
-From: Joe Perches <joe@perches.com>
-To: Gerhard Sittig <gsi@denx.de>, Andy Whitcroft <apw@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 18 Nov 2013 05:51:04 -0800
-In-Reply-To: <20131118114528.GJ17929@book.gsilab.sittig.org>
-References: <20131118114528.GJ17929@book.gsilab.sittig.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Nov 2013 08:51:57 -0500
+Date: Mon, 18 Nov 2013 05:52:10 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: "Dilger, Andreas" <andreas.dilger@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "faibish, sorin" <faibish_sorin@emc.com>
+Subject: Re: [PATCH 04/40] staging/lustre/llite: Access to released file
+ trigs a restore
+Message-ID: <20131118135210.GB12931@kroah.com>
+References: <20131115040944.GA28070@kroah.com>
+ <CEAC7771.817BF%andreas.dilger@intel.com>
+ <20131116195947.GB9308@kroah.com>
+ <CA+a=Yy7LrEREU+9BbDy6cOpEFSdcNoYjsWnhBF1tv-OcHfKMpQ@mail.gmail.com>
+ <20131118043942.GB3971@kroah.com>
+ <CA+a=Yy7=Yq3-+fi9nVemoKk=FPaHiqot8d5KvJj1nDvA9+QU0A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+a=Yy7=Yq3-+fi9nVemoKk=FPaHiqot8d5KvJj1nDvA9+QU0A@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkpatch is currently confused about some complex macros
-and references undefined variables $stat and $cond.
+On Mon, Nov 18, 2013 at 02:07:02PM +0800, Peng Tao wrote:
+> >> > So, why would I believe that you all are really going to start doing the
+> >> > major cleanup work on this code that is so obviously needed?  Why would
+> >> > I take new features that you are spending your time on instead?
+> >> >
+> >> My apologize. I was distracted by other projects for some time and I
+> >> am trying to make it up. I thought you agreed that I can first close
+> >> the patch gap between in-kernel client and external tree, and then add
+> >> cleanup patches, no?
+> >
+> > What exactly is "the gap"?  Are we talking 200 patches?  10?  100?  I
+> > have no idea what you are referring to, but realize I can't review 100
+> > patches at a single time easily.
+> >
+> Right now, I think it is about 150 patches. I will split them into
+> smaller chunks (10 patches or in each patchset) and send them
+> incrementally.
 
-Make sure these are defined before using them.
+Good.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 1 +
- 1 file changed, 1 insertion(+)
+> > And what happens when I accep these "gap" patches?  Will development in
+> > this external tree suddenly stop?  It sure doesn't seem like this is
+> > happening as I thought it would have already since the code has been in
+> > the kernel for over 6 months now.
+> >
+> No, it won't stop. The biggest feature coming in this time is HSM. In
+> future, I think there will be less features and more bug fixes.
+> Porting patches from external tree isn't just to make the two tree in
+> sync. External tree contains many bug fix patches that in kernel
+> client wants as well. If we stop porting, as time goes by, the in tree
+> client will be less featured, and more buggy than external tree. When
+> we get it out of staging like that, it will be very hard to persuade
+> people to use it.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 61090e0..9c981003 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3289,6 +3289,7 @@ sub process {
- 			}
- 		}
- 		if (!defined $suppress_whiletrailers{$linenr} &&
-+		    defined($stat) && defined($cond) &&
- 		    $line =~ /\b(?:if|while|for)\s*\(/ && $line !~ /^.\s*#/) {
- 			my ($s, $c) = ($stat, $cond);
- 
+So, who is going to take the time to do the cleanup and work involved in
+getting this into mergable state, if developers are off adding new
+features to your out-of-tree kernel code?
 
+I _really_ hate taking new features for staging drivers, as that shows
+that the developers are using staging as just a dumping ground to get
+stuff merged, without taking the time to get it cleaned up properly.
 
+If this continues, and no major work is done to clean things up within
+the next 6 months (i.e. the same thing as the past 6 months.) this code
+will be deleted from the tree.  You have been warned.
+
+> > You already have 2 different code bases :(
+> we still want to make the difference as small as possible. So it won't
+> cost too much effort to port patches between them.
+
+That is your problem, not ours, sorry.
+
+Best of luck,
+
+greg k-h
