@@ -1,226 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab3KRCRz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 21:17:55 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:50776 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab3KRCRi (ORCPT
+	id S1751051Ab3KRCUc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 21:20:32 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:52355 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab3KRCUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 21:17:38 -0500
-Date: Sun, 17 Nov 2013 18:17:17 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Tejun Heo <tj@kernel.org>
-cc: Shawn Bohrer <shawn.bohrer@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Markus Blank-Burian <burian@muenster.de>
-Subject: Re: 3.10.16 cgroup_mutex deadlock
-In-Reply-To: <20131115075401.GB9755@mtj.dyndns.org>
-Message-ID: <alpine.LNX.2.00.1311171746160.15789@eggly.anvils>
-References: <20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com> <52820030.6000806@huawei.com> <20131112143147.GB6049@dhcp22.suse.cz> <20131112155530.GA2860@sbohrermbp13-local.rgmadvisors.com> <20131112165504.GF6049@dhcp22.suse.cz>
- <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com> <20131115062458.GA9755@mtj.dyndns.org> <20131115075401.GB9755@mtj.dyndns.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 17 Nov 2013 21:20:24 -0500
+Date: Mon, 18 Nov 2013 13:20:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anna Schumaker <bjschuma@netapp.com>
+Subject: linux-next: build failure after merge of the final tree (nfs tree
+ related)
+Message-Id: <20131118132014.e574f520e4000d797bd5b3ba@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__18_Nov_2013_13_20_14_+1100_HtIdVr1VvAH8AQfE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Nov 2013, Tejun Heo wrote:
+--Signature=_Mon__18_Nov_2013_13_20_14_+1100_HtIdVr1VvAH8AQfE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hello,
-> 
-> Shawn, Hugh, can you please verify whether the attached patch makes
-> the deadlock go away?
+Hi all,
 
-Thanks a lot, Tejun: report below.
+After merging the final tree, today's linux-next build (powerpc
+ppc44x_defconfig) failed like this:
 
-> 
-> Thanks.
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index e0839bc..dc9dc06 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -90,6 +90,14 @@ static DEFINE_MUTEX(cgroup_mutex);
->  static DEFINE_MUTEX(cgroup_root_mutex);
->  
->  /*
-> + * cgroup destruction makes heavy use of work items and there can be a lot
-> + * of concurrent destructions.  Use a separate workqueue so that cgroup
-> + * destruction work items don't end up filling up max_active of system_wq
-> + * which may lead to deadlock.
-> + */
-> +static struct workqueue_struct *cgroup_destroy_wq;
-> +
-> +/*
->   * Generate an array of cgroup subsystem pointers. At boot time, this is
->   * populated with the built in subsystems, and modular subsystems are
->   * registered after that. The mutable section of this array is protected by
-> @@ -871,7 +879,7 @@ static void cgroup_free_rcu(struct rcu_head *head)
->  	struct cgroup *cgrp = container_of(head, struct cgroup, rcu_head);
->  
->  	INIT_WORK(&cgrp->destroy_work, cgroup_free_fn);
-> -	schedule_work(&cgrp->destroy_work);
-> +	queue_work(cgroup_destroy_wq, &cgrp->destroy_work);
->  }
->  
->  static void cgroup_diput(struct dentry *dentry, struct inode *inode)
-> @@ -4254,7 +4262,7 @@ static void css_free_rcu_fn(struct rcu_head *rcu_head)
->  	 * css_put().  dput() requires process context which we don't have.
->  	 */
->  	INIT_WORK(&css->destroy_work, css_free_work_fn);
-> -	schedule_work(&css->destroy_work);
-> +	queue_work(cgroup_destroy_wq, &css->destroy_work);
->  }
->  
->  static void css_release(struct percpu_ref *ref)
-> @@ -4544,7 +4552,7 @@ static void css_killed_ref_fn(struct percpu_ref *ref)
->  		container_of(ref, struct cgroup_subsys_state, refcnt);
->  
->  	INIT_WORK(&css->destroy_work, css_killed_work_fn);
-> -	schedule_work(&css->destroy_work);
-> +	queue_work(cgroup_destroy_wq, &css->destroy_work);
->  }
->  
->  /**
-> @@ -5025,6 +5033,17 @@ int __init cgroup_init(void)
->  	if (err)
->  		return err;
->  
-> +	/*
-> +	 * There isn't much point in executing destruction path in
-> +	 * parallel.  Good chunk is serialized with cgroup_mutex anyway.
-> +	 * Use 1 for @max_active.
-> +	 */
-> +	cgroup_destroy_wq = alloc_workqueue("cgroup_destroy", 0, 1);
-> +	if (!cgroup_destroy_wq) {
-> +		err = -ENOMEM;
-> +		goto out;
-> +	}
-> +
->  	for_each_builtin_subsys(ss, i) {
->  		if (!ss->early_init)
->  			cgroup_init_subsys(ss);
-> @@ -5062,9 +5081,11 @@ int __init cgroup_init(void)
->  	proc_create("cgroups", 0, NULL, &proc_cgroupstats_operations);
->  
->  out:
-> -	if (err)
-> +	if (err) {
-> +		if (cgroup_destroy_wq)
-> +			destroy_workqueue(cgroup_destroy_wq);
->  		bdi_destroy(&cgroup_backing_dev_info);
-> -
-> +	}
->  	return err;
->  }
->  
+fs/nfs/dir.c: In function 'nfs_readdir_xdr_to_array':
+fs/nfs/dir.c:593:2: error: implicit declaration of function 'nfs4_label_all=
+oc' [-Werror=3Dimplicit-function-declaration]
+fs/nfs/dir.c:593:14: warning: assignment makes pointer from integer without=
+ a cast [enabled by default]
+fs/nfs/dir.c:629:2: error: implicit declaration of function 'nfs4_label_fre=
+e' [-Werror=3Dimplicit-function-declaration]
+fs/nfs/dir.c: In function 'nfs_lookup_revalidate':
+fs/nfs/dir.c:1088:8: warning: assignment makes pointer from integer without=
+ a cast [enabled by default]
+fs/nfs/dir.c: In function 'nfs_lookup':
+fs/nfs/dir.c:1296:8: warning: assignment makes pointer from integer without=
+ a cast [enabled by default]
+fs/nfs/inode.c: In function '__nfs_revalidate_inode':
+fs/nfs/inode.c:890:2: error: implicit declaration of function 'nfs4_label_a=
+lloc' [-Werror=3Dimplicit-function-declaration]
+fs/nfs/inode.c:890:8: warning: assignment makes pointer from integer withou=
+t a cast [enabled by default]
+fs/nfs/inode.c:927:2: error: implicit declaration of function 'nfs4_label_f=
+ree' [-Werror=3Dimplicit-function-declaration]
+fs/nfs/super.c: In function 'nfs_parse_mount_options':
+fs/nfs/super.c:1406:17: error: 'NFS4_MAX_MINOR_VERSION' undeclared (first u=
+se in this function)
+fs/nfs/super.c:1406:17: note: each undeclared identifier is reported only o=
+nce for each function it appears in
 
-Sorry for the delay: I was on the point of reporting success last
-night, when I tried a debug kernel: and that didn't work so well
-(got spinlock bad magic report in pwd_adjust_max_active(), and
-tests wouldn't run at all).
+Presumably caused by commit 4b45df7999f9 ("NFS: Enabling v4.2 should not
+recompile nfsd and lockd").
 
-Even the non-early cgroup_init() is called well before the
-early_initcall init_workqueues(): though only the debug (lockdep
-and spinlock debug) kernel appeared to have a problem with that.
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Here's the patch I ended up with successfully on a 3.11.7-based
-kernel (though below I've rediffed it against 3.11.8): the
-schedule_work->queue_work hunks are slightly different on 3.11
-than in your patch against current, and I did alloc_workqueue()
-from a separate core_initcall.
+--Signature=_Mon__18_Nov_2013_13_20_14_+1100_HtIdVr1VvAH8AQfE
+Content-Type: application/pgp-signature
 
-The interval between cgroup_init and that is a bit of a worry;
-but we don't seem to have suffered from the interval between
-cgroup_init and init_workqueues before (when system_wq is NULL)
-- though you may have more courage than I to reorder them!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Initially I backed out my system_highpri_wq workaround, and
-verified that it was still easy to reproduce the problem with
-one of our cgroup stresstests.  Yes it was, then your modified
-patch below convincingly fixed it.
+iQIcBAEBCAAGBQJSiXliAAoJEMDTa8Ir7ZwVtU0QAIn5Cft+OU72h81sQjEt6n8j
+b4OgVgClNCBtq1yhLEh5Hjcc3Pe4d9ycVS2PQINtL/qxSVk4Hnzhgm7c0w3s3lZK
+wFH8pEwmUO5bmGlmIeg4L+h6FTazr3aMnFTjSgQdoQqV68X2w3e+oTB2G0115r/J
+YqYIXJio2q1LpDh5PTigQOjEw4oo4b3JWPC0KixPlifpNhG9LiegyxcHh+3BjdPB
+H6Y3OKfhXu/fO3QQ+c7TeihVUqzN/gkGUYJBnDATvP1d+FJo+vRBQ9x8e2R7MWuo
+SwKoCtpPKZP1Kt1fCQ5xfid80GaPc5jkKYF97wOwX9F+lVPcK3mmxSPLOVIJuhW8
+TvmPGpWjIZhcfQls9lZy0gAJUeLKLUGo2oyn2mEGP6I7i8wfA+fjRyPZIBmMQL1V
+bXmLRN5BX2hlWbO5m8VAF97Fce8rqxaaJxKVm3yXv1irzskzeTbJ2E6meZ7AkOHT
+UO6NvdtTedeNK32qqLle4sTDs+WAS0YHC3CTjTsx+LKZvmv1I3hpS8bgpv35LUHc
+4I6bp24PpflAxtm3KKiHifDFHpsVmbrvCBqhYZWDEPoWDtPrMDXTy1GQ0+5VHxuu
+z4acUzXji91l8htaC2jzaL+ikX5pyTvY5IY6iFfMqaLTQsG+J7+TcVBd9st1IKR6
+Gw0n8MIg+ZqjIW230K3R
+=cZMM
+-----END PGP SIGNATURE-----
 
-I ran with Johannes's patch adding extra mem_cgroup_reparent_charges:
-as I'd expected, that didn't solve this issue (though it's worth
-our keeping it in to rule out another source of problems).  And I
-checked back on dumps of failures: they indeed show the tell-tale
-256 kworkers doing cgroup_offline_fn, just as you predicted.
-
-Thanks!
-Hugh
-
----
- kernel/cgroup.c | 30 +++++++++++++++++++++++++++---
- 1 file changed, 27 insertions(+), 3 deletions(-)
-
---- 3.11.8/kernel/cgroup.c	2013-11-17 17:40:54.200640692 -0800
-+++ linux/kernel/cgroup.c	2013-11-17 17:43:10.876643941 -0800
-@@ -89,6 +89,14 @@ static DEFINE_MUTEX(cgroup_mutex);
- static DEFINE_MUTEX(cgroup_root_mutex);
- 
- /*
-+ * cgroup destruction makes heavy use of work items and there can be a lot
-+ * of concurrent destructions.  Use a separate workqueue so that cgroup
-+ * destruction work items don't end up filling up max_active of system_wq
-+ * which may lead to deadlock.
-+ */
-+static struct workqueue_struct *cgroup_destroy_wq;
-+
-+/*
-  * Generate an array of cgroup subsystem pointers. At boot time, this is
-  * populated with the built in subsystems, and modular subsystems are
-  * registered after that. The mutable section of this array is protected by
-@@ -890,7 +898,7 @@ static void cgroup_free_rcu(struct rcu_h
- 	struct cgroup *cgrp = container_of(head, struct cgroup, rcu_head);
- 
- 	INIT_WORK(&cgrp->destroy_work, cgroup_free_fn);
--	schedule_work(&cgrp->destroy_work);
-+	queue_work(cgroup_destroy_wq, &cgrp->destroy_work);
- }
- 
- static void cgroup_diput(struct dentry *dentry, struct inode *inode)
-@@ -4205,7 +4213,7 @@ static void css_release(struct percpu_re
- 	struct cgroup_subsys_state *css =
- 		container_of(ref, struct cgroup_subsys_state, refcnt);
- 
--	schedule_work(&css->dput_work);
-+	queue_work(cgroup_destroy_wq, &css->dput_work);
- }
- 
- static void init_cgroup_css(struct cgroup_subsys_state *css,
-@@ -4439,7 +4447,7 @@ static void cgroup_css_killed(struct cgr
- 
- 	/* percpu ref's of all css's are killed, kick off the next step */
- 	INIT_WORK(&cgrp->destroy_work, cgroup_offline_fn);
--	schedule_work(&cgrp->destroy_work);
-+	queue_work(cgroup_destroy_wq, &cgrp->destroy_work);
- }
- 
- static void css_ref_killed_fn(struct percpu_ref *ref)
-@@ -4967,6 +4975,22 @@ out:
- 	return err;
- }
- 
-+static int __init cgroup_destroy_wq_init(void)
-+{
-+	/*
-+	 * There isn't much point in executing destruction path in
-+	 * parallel.  Good chunk is serialized with cgroup_mutex anyway.
-+	 * Use 1 for @max_active.
-+	 *
-+	 * We would prefer to do this in cgroup_init() above, but that
-+	 * is called before init_workqueues(): so leave this until after.
-+	 */
-+	cgroup_destroy_wq = alloc_workqueue("cgroup_destroy", 0, 1);
-+	BUG_ON(!cgroup_destroy_wq);
-+	return 0;
-+}
-+core_initcall(cgroup_destroy_wq_init);
-+
- /*
-  * proc_cgroup_show()
-  *  - Print task's cgroup paths into seq_file, one line for each hierarchy
+--Signature=_Mon__18_Nov_2013_13_20_14_+1100_HtIdVr1VvAH8AQfE--
