@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab3KROpU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 09:45:20 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:51265 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751189Ab3KROpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 09:45:17 -0500
-Message-ID: <528A27F8.3070402@ti.com>
-Date: Mon, 18 Nov 2013 08:45:12 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751648Ab3KROpr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 09:45:47 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:47074 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420Ab3KROpj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 09:45:39 -0500
+Date: Mon, 18 Nov 2013 14:45:12 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        angus.clark@st.com
+Message-ID: <20131118144512.GB24408@sirena.org.uk>
+References: <1384438956-31153-1-git-send-email-lee.jones@linaro.org>
+ <1384438956-31153-3-git-send-email-lee.jones@linaro.org>
+ <CACRpkdaccxcTfKc-y7rPEH1H3yua3ubLvuvTzWnMs1rOwjiVNw@mail.gmail.com>
+ <20131118093229.GB13640@lee--X1>
+ <20131118133940.GC14306@sirena.org.uk>
+ <20131118142447.GJ13640@lee--X1>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>, Shawn Guo <shawn.guo@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Carlos Hernandez <ceh@ti.com>
-Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when
- booting with a mismatched bootloader configuration
-References: <1384568535-26611-1-git-send-email-nm@ti.com>	<20131116134445.GI11014@S2101-09.ap.freescale.net> <CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com>
-In-Reply-To: <CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i0/AhcQY5QxfSsSZ"
+Content-Disposition: inline
+In-Reply-To: <20131118142447.GJ13640@lee--X1>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 31.115.204.151
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 02/10] mtd: st_spi_fsm: Supply all register address and
+ bit logic defines
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2013 10:02 PM, Viresh Kumar wrote:
-> On 16 November 2013 19:14, Shawn Guo <shawn.guo@linaro.org> wrote:
->> No, it's not a kernel bug.
->>
->> OPP is not a definition that belongs to kernel.  Instead, it's
->> characteristics of hardware, and that's why we can naturally put the
->> definition into device tree.  Bear it in mind that device tree is a
->> hardware description and should be OS agnostic.  So it shouldn't be
->> treated as part of Linux kernel in any case, even though the device
->> tree source is currently maintained in kernel tree.
->>
->> Device tree is designed as a way for firmware/bootloader to describe
->> hardware to kernel.  That said, device tree is more part of bootloader
->> than kernel.  If bootloader runs at a frequency that does not match the
->> OPP in device tree, the one should be fixed is either bootloader or
->> device tree but never kernel.
-> 
-> I agree for all that..
 
-I do not agree about this stance - device tree describes hardware
-capabilities to kernel -> I agree with that statement. Kernel should
-not care if that is provided by bootloader/firmware/fused into
-flash/ROM etc.
+--i0/AhcQY5QxfSsSZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If we agree with that statement, the moment kernel sees device
-operating in a configuration that is not hardware capability, it is
-our job to switch to the right configuration if it is possible for us
-to do so (which in this case, we can). to give a comparison - if i2c
-bus was configured for 3.4MHz and device tree describes the bus to
-operate at 100KHz, do we ignore device tree recommended configuration?
-No. we would switch to 100KHz. as far as kernel is concerned, it can
-detect invalid configuration and switch back to a valid configuration
-based on hardware description provided by device tree.
+On Mon, Nov 18, 2013 at 02:24:47PM +0000, Lee Jones wrote:
 
+> For example, we have thought about inserting a layer which handles the
+> type of communication that'll be utilised i.e. true SPI, or our
+> bespoke FSM implementation for instance. This would enable us to issue
+> serial_flash_write(), serial_flash_write_then_read(), ... in the m25p80
+> driver and not care which protocol is used. However, in reality this
+> won't really save a great deal of code - not in our case at least.
 
+Right, that's what I'm suggesting.  It's not so much for the code saving
+as for the data saving, allowing device trees that just say "flash chip
+X is connected" rather than requiring either the flash chip information
+in multiple places in the kernel or (worse) have the commands added to
+the DTs of individual boards using the flash chip.
 
--- 
-Regards,
-Nishanth Menon
+--i0/AhcQY5QxfSsSZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSiif1AAoJELSic+t+oim9rDoQAIbAbsNKHx14dyb/T2i2LVrs
+eQ1b9mFwUmWmUcg4I0S5NTdcO5SEcrTZ+kLArFWeDQbEj6WFhjJJ2dTc3KGkOOjT
+5wcIRoh3xGUQWpGlqxi6vvyNiemA24TyRSPQzYyNhZkwT0cJky31Tmrku/ile4jT
+eOpC1op4lkTCp+EqkkYUaFgq0xLODRLVLq8FL9VU5826HDfBVKkMaH3V6olzH7he
+1wIBm7idgpMigfRlCDhnS9AyOJPkLVRakegjrXjef2miI1rOwNOxF4xp3FxJRF8B
+f+Z9rVENkcKu/4K7ZFLXYeGd1eJLeJ4tzNhyCOQkaXZza2eYcK9P2ZmAuZfrY+N3
+YIlg7ovPrjBLtZsmLtP8KySTc/Lf84dTJgvrBx6v8497tG1Hq+k1VPwfz3jZsHkP
+srouLcmPBbCnxILC5dWhqxl7BhdYAJHIdxPG5tXVhSJ5LbAu44eIQMeHWg8qnz7l
+sumpaTh1gZ8Z1L4B4XnylU0bm+GRYwCbk98lwDxyZ6RpUSscmdsGPFYMzQHDI8TL
+e3yweENhcdFZkXVKK2mK5HxIwnX+3XHlDaUjVP+yVLnuHWvE/eVfJm4j+sYGFyJq
+nUpNzLugcbdVbeuX2ARIDpraxvWCxeWi8rkYoVLP2hKWWWBG7S+wx5SDEyap6q6t
+MW/RNylYArb41VKY0HdG
+=v5D8
+-----END PGP SIGNATURE-----
+
+--i0/AhcQY5QxfSsSZ--
