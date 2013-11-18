@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab3KRSkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:40:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57410 "EHLO
+	id S1752541Ab3KRSkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:40:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57354 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058Ab3KRSho (ORCPT
+	with ESMTP id S1752056Ab3KRSho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 13:37:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.12 18/19] backlight: atmel-pwm-bl: fix deferred probe from __init
-Date: Mon, 18 Nov 2013 10:37:31 -0800
-Message-Id: <20131118183649.518070802@linuxfoundation.org>
+Subject: [PATCH 3.12 17/19] misc: atmel_pwm: add deferred-probing support
+Date: Mon, 18 Nov 2013 10:37:30 -0800
+Message-Id: <20131118183649.095026402@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118183644.030738675@linuxfoundation.org>
 References: <20131118183644.030738675@linuxfoundation.org>
@@ -30,57 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 9d3fde86b15303decea632c929fbf1f3ae4501f2 upstream.
+commit 5c6d6fd1564138ad048564e48639f842714a90c6 upstream.
 
-Move probe out of __init section and don't use platform_driver_probe
-which cannot be used with deferred probing.
+Two drivers (atmel-pwm-bl and leds-atmel-pwm) currently depend on the
+atmel_pwm driver to have bound to any pwm-device before their devices
+are probed.
 
-Since commit e9354576 ("gpiolib: Defer failed gpio requests by default")
-this driver might return -EPROBE_DEFER if a gpio_request fails.
+Support deferred probing of such devices by making sure to return
+-EPROBE_DEFER from pwm_channel_alloc when no pwm-device has yet been
+bound.
 
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/backlight/atmel-pwm-bl.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/misc/atmel_pwm.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/video/backlight/atmel-pwm-bl.c
-+++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -118,7 +118,7 @@ static const struct backlight_ops atmel_
- 	.update_status  = atmel_pwm_bl_set_intensity,
- };
+--- a/drivers/misc/atmel_pwm.c
++++ b/drivers/misc/atmel_pwm.c
+@@ -90,8 +90,10 @@ int pwm_channel_alloc(int index, struct
+ 	unsigned long	flags;
+ 	int		status = 0;
  
--static int __init atmel_pwm_bl_probe(struct platform_device *pdev)
-+static int atmel_pwm_bl_probe(struct platform_device *pdev)
- {
- 	struct backlight_properties props;
- 	const struct atmel_pwm_bl_platform_data *pdata;
-@@ -202,7 +202,7 @@ err_free_mem:
- 	return retval;
- }
+-	/* insist on PWM init, with this signal pinned out */
+-	if (!pwm || !(pwm->mask & 1 << index))
++	if (!pwm)
++		return -EPROBE_DEFER;
++
++	if (!(pwm->mask & 1 << index))
+ 		return -ENODEV;
  
--static int __exit atmel_pwm_bl_remove(struct platform_device *pdev)
-+static int atmel_pwm_bl_remove(struct platform_device *pdev)
- {
- 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
- 
-@@ -220,10 +220,11 @@ static struct platform_driver atmel_pwm_
- 		.name = "atmel-pwm-bl",
- 	},
- 	/* REVISIT add suspend() and resume() */
--	.remove = __exit_p(atmel_pwm_bl_remove),
-+	.probe = atmel_pwm_bl_probe,
-+	.remove = atmel_pwm_bl_remove,
- };
- 
--module_platform_driver_probe(atmel_pwm_bl_driver, atmel_pwm_bl_probe);
-+module_platform_driver(atmel_pwm_bl_driver);
- 
- MODULE_AUTHOR("Hans-Christian egtvedt <hans-christian.egtvedt@atmel.com>");
- MODULE_DESCRIPTION("Atmel PWM backlight driver");
+ 	if (index < 0 || index >= PWM_NCHAN || !ch)
 
 
