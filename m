@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab3KRSlB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:41:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57342 "EHLO
+	id S1752758Ab3KRSlJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:41:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57368 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab3KRShd (ORCPT
+	with ESMTP id S1752021Ab3KRShc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:37:33 -0500
+	Mon, 18 Nov 2013 13:37:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Thomas <Mark.Thomas@metaswitch.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
+        "Steinar H. Gunderson" <sgunderson@bigfoot.com>,
+        Valentijn Sessink <valentyn@blub.net>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 02/19] net: sctp: do not trigger BUG_ON in sctp_cmd_delete_tcb
-Date: Mon, 18 Nov 2013 10:37:15 -0800
-Message-Id: <20131118183644.791664449@linuxfoundation.org>
+Subject: [PATCH 3.12 11/19] ipv6: ip6_dst_check needs to check for expired dst_entries
+Date: Mon, 18 Nov 2013 10:37:24 -0800
+Message-Id: <20131118183647.402237441@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118183644.030738675@linuxfoundation.org>
 References: <20131118183644.030738675@linuxfoundation.org>
@@ -30,51 +31,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 7926c1d5be0b7cbe5b8d5c788d7d39237e7b212c ]
+[ Upstream commit e3bc10bd95d7fcc3f2ac690c6ff22833ea6781d6 ]
 
-Introduced in f9e42b853523 ("net: sctp: sideeffect: throw BUG if
-primary_path is NULL"), we intended to find a buggy assoc that's
-part of the assoc hash table with a primary_path that is NULL.
-However, we better remove the BUG_ON for now and find a more
-suitable place to assert for these things as Mark reports that
-this also triggers the bug when duplication cookie processing
-happens, and the assoc is not part of the hash table (so all
-good in this case). Such a situation can for example easily be
-reproduced by:
+On receiving a packet too big icmp error we check if our current cached
+dst_entry in the socket is still valid. This validation check did not
+care about the expiration of the (cached) route.
 
-  tc qdisc add dev eth0 root handle 1: prio bands 2 priomap 1 1 1 1 1 1
-  tc qdisc add dev eth0 parent 1:2 handle 20: netem loss 20%
-  tc filter add dev eth0 protocol ip parent 1: prio 2 u32 match ip \
-            protocol 132 0xff match u8 0x0b 0xff at 32 flowid 1:2
+The error path I traced down:
+The socket receives a packet too big mtu notification. It still has a
+valid dst_entry and thus issues the ip6_rt_pmtu_update on this dst_entry,
+setting RTF_EXPIRE and updates the dst.expiration value (which could
+fail because of not up-to-date expiration values, see previous patch).
 
-This drops 20% of COOKIE-ACK packets. After some follow-up
-discussion with Vlad we came to the conclusion that for now we
-should still better remove this BUG_ON() assertion, and come up
-with two follow-ups later on, that is, i) find a more suitable
-place for this assertion, and possibly ii) have a special
-allocator/initializer for such kind of temporary assocs.
+In some seldom cases we race with a) the ip6_fib gc or b) another routing
+lookup which would result in a recreation of the cached rt6_info from its
+parent non-cached rt6_info. While copying the rt6_info we reinitialize the
+metrics store by copying it over from the parent thus invalidating the
+just installed pmtu update (both dsts use the same key to the inetpeer
+storage). The dst_entry with the just invalidated metrics data would
+just get its RTF_EXPIRES flag cleared and would continue to stay valid
+for the socket.
 
-Reported-by: Mark Thomas <Mark.Thomas@metaswitch.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+We should have not issued the pmtu update on the already expired dst_entry
+in the first placed. By checking the expiration on the dst entry and
+doing a relookup in case it is out of date we close the race because
+we would install a new rt6_info into the fib before we issue the pmtu
+update, thus closing this race.
+
+Not reliably updating the dst.expire value was fixed by the patch "ipv6:
+reset dst.expires value when clearing expire flag".
+
+Reported-by: Steinar H. Gunderson <sgunderson@bigfoot.com>
+Reported-by: Valentijn Sessink <valentyn@blub.net>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Valentijn Sessink <valentyn@blub.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/sm_sideeffect.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/ipv6/route.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/net/sctp/sm_sideeffect.c
-+++ b/net/sctp/sm_sideeffect.c
-@@ -860,7 +860,6 @@ static void sctp_cmd_delete_tcb(sctp_cmd
- 	    (!asoc->temp) && (sk->sk_shutdown != SHUTDOWN_MASK))
- 		return;
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1087,10 +1087,13 @@ static struct dst_entry *ip6_dst_check(s
+ 	if (rt->rt6i_genid != rt_genid_ipv6(dev_net(rt->dst.dev)))
+ 		return NULL;
  
--	BUG_ON(asoc->peer.primary_path == NULL);
- 	sctp_unhash_established(asoc);
- 	sctp_association_free(asoc);
+-	if (rt->rt6i_node && (rt->rt6i_node->fn_sernum == cookie))
+-		return dst;
++	if (!rt->rt6i_node || (rt->rt6i_node->fn_sernum != cookie))
++		return NULL;
++
++	if (rt6_check_expired(rt))
++		return NULL;
+ 
+-	return NULL;
++	return dst;
  }
+ 
+ static struct dst_entry *ip6_negative_advice(struct dst_entry *dst)
 
 
