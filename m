@@ -1,120 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820Ab3KRMzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 07:55:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54890 "EHLO mx2.suse.de"
+	id S1751940Ab3KRM4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 07:56:24 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:41218 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751057Ab3KRMzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 07:55:08 -0500
-Date: Mon, 18 Nov 2013 13:55:07 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-Message-ID: <20131118125507.GD32623@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1310301838300.13556@chino.kir.corp.google.com>
- <20131031054942.GA26301@cmpxchg.org>
- <alpine.DEB.2.02.1311131416460.23211@chino.kir.corp.google.com>
- <20131113233419.GJ707@cmpxchg.org>
- <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
- <20131114032508.GL707@cmpxchg.org>
- <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com>
- <20131118125240.GC32623@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131118125240.GC32623@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751734Ab3KRM4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 07:56:16 -0500
+Message-ID: <1384779277.13631.13.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH v4 10/15] usb: phy: msm: Add device tree support and
+ binding information
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "davidb@codeaurora.org" <davidb@codeaurora.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Date: Mon, 18 Nov 2013 14:54:37 +0200
+In-Reply-To: <20131115163818.GH24831@e106331-lin.cambridge.arm.com>
+References: <1384267910-32066-1-git-send-email-iivanov@mm-sol.com>
+	 <1384267910-32066-11-git-send-email-iivanov@mm-sol.com>
+	 <20131115163818.GH24831@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 18-11-13 13:52:40, Michal Hocko wrote:
-> [Adding Eric to CC]
-> 
-> On Thu 14-11-13 15:26:51, David Rientjes wrote:
-> > When current has a pending SIGKILL or is already in the exit path, it
-> > only needs access to memory reserves to fully exit.  In that sense, the
-> > memcg is not actually oom for current, it simply needs to bypass memory
-> > charges to exit and free its memory, which is guarantee itself that
-> > memory will be freed.
+Hi Mark, 
+
+On Fri, 2013-11-15 at 16:38 +0000, Mark Rutland wrote: 
+> On Tue, Nov 12, 2013 at 02:51:45PM +0000, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 > > 
-> > We only want to notify userspace for actionable oom conditions where
-> > something needs to be done (and all oom handling can already be deferred
-> > to userspace through this method by disabling the memcg oom killer with
-> > memory.oom_control), not simply when a memcg has reached its limit, which
-> > would actually have to happen before memcg reclaim actually frees memory
-> > for charges.
-> 
-> I believe this also fixes the issue reported by Eric
-> (https://lkml.org/lkml/2013/7/28/74). I had a patch for this
-> https://lkml.org/lkml/2013/7/31/94 but the code changed since then and
-> this should be equivalent.
->  
-> > Reported-by: Johannes Weiner <hannes@cmpxchg.org>
-> > Signed-off-by: David Rientjes <rientjes@google.com>
-
-Anyway, the patch looks good to me but please mention the above bug in
-the changelog.
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
+> > Allows MSM OTG controller to be specified via device tree.
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > Cc: devicetree@vger.kernel.org
 > > ---
-> >  mm/memcontrol.c | 20 ++++++++++----------
-> >  1 file changed, 10 insertions(+), 10 deletions(-)
+> >  .../devicetree/bindings/usb/msm-hsusb.txt          |   57 +++++++++++++-
+> >  drivers/usb/phy/phy-msm-usb.c                      |   79 +++++++++++++++++---
+> >  2 files changed, 124 insertions(+), 12 deletions(-)
 > > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -1783,16 +1783,6 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
-> >  	unsigned int points = 0;
-> >  	struct task_struct *chosen = NULL;
-> >  
-> > -	/*
-> > -	 * If current has a pending SIGKILL or is exiting, then automatically
-> > -	 * select it.  The goal is to allow it to allocate so that it may
-> > -	 * quickly exit and free its memory.
-> > -	 */
-> > -	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
-> > -		set_thread_flag(TIF_MEMDIE);
-> > -		return;
-> > -	}
-> > -
-> >  	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, order, NULL);
-> >  	totalpages = mem_cgroup_get_limit(memcg) >> PAGE_SHIFT ? : 1;
-> >  	for_each_mem_cgroup_tree(iter, memcg) {
-> > @@ -2243,6 +2233,16 @@ bool mem_cgroup_oom_synchronize(bool handle)
-> >  	if (!handle)
-> >  		goto cleanup;
-> >  
-> > +	/*
-> > +	 * If current has a pending SIGKILL or is exiting, then automatically
-> > +	 * select it.  The goal is to allow it to allocate so that it may
-> > +	 * quickly exit and free its memory.
-> > +	 */
-> > +	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
-> > +		set_thread_flag(TIF_MEMDIE);
-> > +		goto cleanup;
-> > +	}
+> > diff --git a/Documentation/devicetree/bindings/usb/msm-hsusb.txt b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+> > index 0a85eba..f1045e3 100644
+> > --- a/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+> > +++ b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+> > @@ -30,4 +30,59 @@ Required properties:
+> >  		dr_mode = "peripheral";
+> >  		interrupts = <0 134 0>;
+> >  		usb-phy = <&usb_otg>;
+> > -	};
+> > \ No newline at end of file
+> > +	};
 > > +
-> >  	owait.memcg = memcg;
-> >  	owait.wait.flags = 0;
-> >  	owait.wait.func = memcg_oom_wake_function;
+> > +USB PHY with optional OTG:
+> > +
+> > +Required properties:
+> > +- compatible:	should contain "qcom,usb-otg-ci" for chipsets with
+> > +				Chipidea 45nm PHY or "qcom,usb-otg-snps" for chipsets
+> > +				with Synopsys 28nm PHY
 > 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> To make this easier to read and extend in future, I'd reorganise this
+> like so:
+> 
+> compatible: should contain:
+>  * "qcom,usb-otg-ci" for chipsets with Chipidea 45nm PHY
+>  * "qcom,usb-otg-snps" for chipsets with Synopsys 28nm PHY
 
--- 
-Michal Hocko
-SUSE Labs
+
+Ok.
+
+> 
+> > +- regs:			offset and length of the register set in the memory map
+> > +- interrupts:	interrupt-specifier for the OTG interrupt.
+> > +
+> > +- clocks:		A list of phandle + clock-specifier pairs for the
+> > +				clocks listed in clock-names
+> > +- clock-names:	Should contain the following:
+> > +  "phy"			USB PHY reference clock
+> > +  "core"		Protocol engine clock
+> > +  "iface"		Interface bus clock
+> > +  "alt_core"	Optional: Protocol engine clock for targets with asynchronous
+> > +				reset methodology.
+> 
+> I'd rearrange that last entry:
+> 
+> "alt_core": Protocol engine clock for targets with asynchronous
+>             reset methodology. (optional)
+
+ok.
+
+> 
+> > +
+> > +- dr_mode:		One of "host", "peripheral" or "otg". Defaults to "otg"
+> 
+> If this has a default and thus isn't required, it should be listed as
+> optional.
+
+This is part of the standard USB bindings, Perhaps I could just
+refer to:  Documentation/devicetree/bindings/usb/generic.txt
+
+
+> 
+> > +
+> > +- vdccx-supply:	phandle to the regulator for the vdd supply for
+> > +				digital circuit operation.
+> > +- v1p8-supply:	phandle to the regulator for the 1.8V supply
+> > +- v3p3-supply:	phandle to the regulator for the 3.3V supply
+> > +
+> > +- qcom,otg-control: OTG control (VBUS and ID notifications) can be one of
+> > +				1 - PHY control
+> > +				2 - PMIC control
+> > +				3 - User control (via debugfs)
+> 
+> NAK. This does not seem like a description of the hardware, and given
+> the debugfs comment is fundamentally tied to the way Linux functions
+> today.
+
+I will remove option 3, but rest are really property of the chipset. 
+
+> 
+> > +
+> > +Optional properties:
+> > +- qcom,phy-init-sequence: PHY configuration sequence. val, reg pairs
+> > +				terminate with -1
+> 
+> What is this? I'm really not keen on having arbitrary register/memory
+> poking sequences in the dt.
+
+This is related Device Mode Eye Diagram test and values used could be
+different between chipsets.
+
+> 
+> Why does it need to be terminated? Surely the size of the property tells
+> you that it's terminated.
+
+Yes. -1 termination could be done in driver.
+
+> 
+> > +
+> > +Example HSUSB OTG controller device node:
+> > +
+> > +	usb@f9a55000 {
+> > +		compatible = "qcom,usb-otg-snps";
+> > +		reg = <0xf9a55000 0x400>;
+> > +		interrupts = <0 134 0>;;
+> 
+> s/;;/;/
+
+thanks
+
+> 
+> > +		dr_mode = "peripheral";
+> > +
+> > +		clocks = <&gcc GCC_XO_CLK>, <&gcc GCC_USB_HS_SYSTEM_CLK>,
+> > +				<&gcc GCC_USB_HS_AHB_CLK>;
+> > +
+> > +		clock-names = "phy", "core", "iface";
+> > +
+> > +		vddcx-supply = <&pm8841_s2_corner>;
+> > +		v1p8-supply = <&pm8941_l6>;
+> > +		v3p3-supply = <&pm8941_l24>;
+> > +
+> > +		qcom,otg-control = <1>;
+> > +		qcom,phy-init-sequence = <0x01 0x90 0xffffffff>;
+> 
+> I believe modern dtc versions can handle negative numbers directly.
+> 
+> [...]
+> 
+> > +static int msm_otg_read_dt(struct platform_device *pdev, struct msm_otg *motg)
+> > +{
+> > +	struct msm_otg_platform_data *pdata;
+> > +	const struct of_device_id *id;
+> > +	struct device_node *node = pdev->dev.of_node;
+> > +	int len = 0;
+> > +	u32 val;
+> > +
+> > +	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+> > +	if (!pdata)
+> > +		return -ENOMEM;
+> > +
+> > +	motg->pdata = pdata;
+> > +
+> > +	id = of_match_device(msm_otg_dt_match, &pdev->dev);
+> > +	pdata->phy_type = (int) id->data;
+> > +
+> > +	pdata->mode = of_usb_get_dr_mode(node);
+> > +	if (pdata->mode == USB_DR_MODE_UNKNOWN)
+> > +		pdata->mode = USB_DR_MODE_OTG;
+> > +
+> > +	pdata->otg_control = OTG_PHY_CONTROL;
+> > +	if (!of_property_read_u32(node, "qcom,otg-control", &val))
+> > +		pdata->otg_control = val;
+> 
+> Is this validated elsewhere?
+
+No. I will add check.
+
+Thanks.
+Ivan
+
+> 
+> Thanks,
+> Mark.
+
+
