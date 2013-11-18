@@ -1,67 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751467Ab3KRPEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 10:04:38 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53301 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751171Ab3KRPEb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 10:04:31 -0500
-Date: Mon, 18 Nov 2013 15:04:28 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Florian Meier <florian.meier@koalo.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
-        dmaengine <dmaengine@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv7] dmaengine: Add support for BCM2835
-Message-ID: <20131118150428.GK30853@e106331-lin.cambridge.arm.com>
-References: <5288E327.8050809@koalo.de>
- <1384768816.14845.186.camel@smile>
- <528A051A.7000703@koalo.de>
- <1384785017.14845.214.camel@smile>
- <20131118145400.GE16735@n2100.arm.linux.org.uk>
+	id S1751612Ab3KRPF1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 10:05:27 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:52338 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171Ab3KRPFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 10:05:21 -0500
+Message-ID: <528A2C49.4040709@ti.com>
+Date: Mon, 18 Nov 2013 17:03:37 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131118145400.GE16735@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Guenter Roeck <linux@roeck-us.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, <wim@iguana.be>,
+        <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <galak@kernel.crashing.org>, <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Fwd: [PATCH 6/8] watchdog: davinci: reuse driver for keystone
+ arch
+References: <1383680783-12114-7-git-send-email-ivan.khoronzhuk@ti.com> <527A28DE.4030906@ti.com> <5288298B.1010602@roeck-us.net>
+In-Reply-To: <5288298B.1010602@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 02:54:00PM +0000, Russell King - ARM Linux wrote:
-> On Mon, Nov 18, 2013 at 04:30:17PM +0200, Andy Shevchenko wrote:
-> > On Mon, 2013-11-18 at 13:16 +0100, Florian Meier wrote:
-> > > >> +	uint32_t chans_available;
-> > > > 
-> > > > Why uint32_t?
-> > > 
-> > > Because it is a bit mask of fixed length that directly comes from the
-> > > firmware.
-> > 
-> > Like one already told you in your i2s patch, please, change that to
-> > corresponding u* value, namely u32.
-> 
-> There's no problem with uint32_t vs u32 - either will do.  u32 is the
-> pre-stdint.h Linux definition of a 32-bit unsigned integer.  There's
-> no reason why uint32_t isn't perfectly acceptable.  It's a matter of
-> author taste which gets used.  (Except where modifications are to an
-> existing chunk of code using one or the other - where consistency then
-> matters more.)
+On 11/17/2013 04:27 AM, Guenter Roeck wrote:
+> On 11/06/2013 03:32 AM, ivan.khoronzhuk wrote:
+>> The keystone arch use the same IP watchdog, so add "ti,keystone-wdt"
+>> compatible and correct identity.
+>>
+>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>> ---
+>>   .../devicetree/bindings/watchdog/davinci-wdt.txt   |   11 +++++++++--
+>>   drivers/watchdog/Kconfig                           |    4 ++--
+>>   drivers/watchdog/davinci_wdt.c                     |    3 ++-
+>>   3 files changed, 13 insertions(+), 5 deletions(-)
+>>
+>> diff --git
+>> a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+>> b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+>> index 1668b6e..fddced9 100644
+>> --- a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+>> +++ b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+>> @@ -1,13 +1,20 @@
+>> -DaVinci Watchdog Timer (WDT) Controller
+>> +Texas Instruments DaVinci/Keystone Watchdog Timer (WDT) Controller
+>>
+>>   Required properties:
+>> -- compatible : Should be "ti,davinci-wdt"
+>> +
+>> +- compatible:        "ti,davinci-wdt"
+>> +            "ti,keystone-wdt"
+>> +
+>>   - reg : Should contain WDT registers location and length
+>>
+> Please use consistent formatting. If you change it, at least change it
+> to be consistent.
+>
 
-Sorry for being a source of confusion here. I won't push this point in
-future.
+Thanks, I will
 
-Thanks,
-Mark.
+>>   Optional properties:
+>>
+>>   - timeout-sec:        Contains the watchdog timeout in seconds
+>>
+>> +Documentation:
+>> +Davinci DM646x - http://www.ti.com/lit/ug/spruer5b/spruer5b.pdf
+>> +Keystone - http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
+>> +
+>>   Examples:
+>>
+>>   wdt: wdt@2320000 {
+>> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+>> index 2c954b5..a4fe130 100644
+>> --- a/drivers/watchdog/Kconfig
+>> +++ b/drivers/watchdog/Kconfig
+>> @@ -270,11 +270,11 @@ config IOP_WATCHDOG
+>>
+>>   config DAVINCI_WATCHDOG
+>>       tristate "DaVinci watchdog"
+>> -    depends on ARCH_DAVINCI
+>> +    depends on ARCH_DAVINCI || ARCH_KEYSTONE
+>>       select WATCHDOG_CORE
+>>       help
+>>         Say Y here if to include support for the watchdog timer
+>> -      in the DaVinci DM644x/DM646x processors.
+>> +      in the DaVinci DM644x/DM646x or Keystone processors.
+>>         To compile this driver as a module, choose M here: the
+>>         module will be called davinci_wdt.
+>>
+>> diff --git a/drivers/watchdog/davinci_wdt.c
+>> b/drivers/watchdog/davinci_wdt.c
+>> index a371b2d..e51fd2e 100644
+>> --- a/drivers/watchdog/davinci_wdt.c
+>> +++ b/drivers/watchdog/davinci_wdt.c
+>> @@ -158,7 +158,7 @@ static unsigned int davinci_wdt_status(struct
+>> watchdog_device *wdd)
+>>
+>>   static const struct watchdog_info davinci_wdt_info = {
+>>       .options = WDIOF_KEEPALIVEPING,
+>> -    .identity = "DaVinci Watchdog",
+>> +    .identity = "DaVinci/Keystone Watchdog",
+>>   };
+>>
+>>   static const struct watchdog_ops davinci_wdt_ops = {
+>> @@ -229,6 +229,7 @@ static int davinci_wdt_remove(struct
+>> platform_device *pdev)
+>>
+>>   static const struct of_device_id davinci_wdt_of_match[] = {
+>>       { .compatible = "ti,davinci-wdt", },
+>> +    { .compatible = "ti,keystone-wdt", },
+>>       {},
+>>   };
+>>   MODULE_DEVICE_TABLE(of, davinci_wdt_of_match);
+>>
+>
+
+
+-- 
+Regards,
+Ivan Khoronzhuk
