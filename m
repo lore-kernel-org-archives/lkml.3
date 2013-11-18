@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab3KRSlJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:41:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57368 "EHLO
+	id S1752776Ab3KRSlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:41:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57362 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab3KRShc (ORCPT
+	with ESMTP id S1752016Ab3KRShc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 13:37:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Steinar H. Gunderson" <sgunderson@bigfoot.com>,
-        Valentijn Sessink <valentyn@blub.net>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Larry Brakmo <brakmo@google.com>, Yuchung Cheng <ycheng@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
         Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 11/19] ipv6: ip6_dst_check needs to check for expired dst_entries
-Date: Mon, 18 Nov 2013 10:37:24 -0800
-Message-Id: <20131118183647.402237441@linuxfoundation.org>
+Subject: [PATCH 3.12 10/19] tcp: do not rearm RTO when future data are sacked
+Date: Mon, 18 Nov 2013 10:37:23 -0800
+Message-Id: <20131118183646.906067393@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118183644.030738675@linuxfoundation.org>
 References: <20131118183644.030738675@linuxfoundation.org>
@@ -31,68 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Yuchung Cheng <ycheng@google.com>
 
-[ Upstream commit e3bc10bd95d7fcc3f2ac690c6ff22833ea6781d6 ]
+[ Upstream commit 2f715c1dde6e1760f3101358dc26f8c9489be0bf ]
 
-On receiving a packet too big icmp error we check if our current cached
-dst_entry in the socket is still valid. This validation check did not
-care about the expiration of the (cached) route.
+Patch ed08495c3 "tcp: use RTT from SACK for RTO" always re-arms RTO upon
+obtaining a RTT sample from newly sacked data.
 
-The error path I traced down:
-The socket receives a packet too big mtu notification. It still has a
-valid dst_entry and thus issues the ip6_rt_pmtu_update on this dst_entry,
-setting RTF_EXPIRE and updates the dst.expiration value (which could
-fail because of not up-to-date expiration values, see previous patch).
+But technically RTO should only be re-armed when the data sent before
+the last (re)transmission of write queue head are (s)acked. Otherwise
+the RTO may continue to extend during loss recovery on data sent
+in the future.
 
-In some seldom cases we race with a) the ip6_fib gc or b) another routing
-lookup which would result in a recreation of the cached rt6_info from its
-parent non-cached rt6_info. While copying the rt6_info we reinitialize the
-metrics store by copying it over from the parent thus invalidating the
-just installed pmtu update (both dsts use the same key to the inetpeer
-storage). The dst_entry with the just invalidated metrics data would
-just get its RTF_EXPIRES flag cleared and would continue to stay valid
-for the socket.
+Note that RTTs from ACK or timestamps do not have this problem, as the RTT
+source must be from data sent before.
 
-We should have not issued the pmtu update on the already expired dst_entry
-in the first placed. By checking the expiration on the dst entry and
-doing a relookup in case it is out of date we close the race because
-we would install a new rt6_info into the fib before we issue the pmtu
-update, thus closing this race.
+The new RTO re-arm policy is
+1) Always re-arm RTO if SND.UNA is advanced
+2) Re-arm RTO if sack RTT is available, provided the sacked data was
+   sent before the last time write_queue_head was sent.
 
-Not reliably updating the dst.expire value was fixed by the patch "ipv6:
-reset dst.expires value when clearing expire flag".
-
-Reported-by: Steinar H. Gunderson <sgunderson@bigfoot.com>
-Reported-by: Valentijn Sessink <valentyn@blub.net>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reviewed-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Valentijn Sessink <valentyn@blub.net>
+Signed-off-by: Larry Brakmo <brakmo@google.com>
+Signed-off-by: Yuchung Cheng <ycheng@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/route.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ net/ipv4/tcp_input.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1087,10 +1087,13 @@ static struct dst_entry *ip6_dst_check(s
- 	if (rt->rt6i_genid != rt_genid_ipv6(dev_net(rt->dst.dev)))
- 		return NULL;
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -2987,6 +2987,7 @@ static int tcp_clean_rtx_queue(struct so
+ 	s32 seq_rtt = -1;
+ 	s32 ca_seq_rtt = -1;
+ 	ktime_t last_ackt = net_invalid_timestamp();
++	bool rtt_update;
  
--	if (rt->rt6i_node && (rt->rt6i_node->fn_sernum == cookie))
--		return dst;
-+	if (!rt->rt6i_node || (rt->rt6i_node->fn_sernum != cookie))
-+		return NULL;
-+
-+	if (rt6_check_expired(rt))
-+		return NULL;
+ 	while ((skb = tcp_write_queue_head(sk)) && skb != tcp_send_head(sk)) {
+ 		struct tcp_skb_cb *scb = TCP_SKB_CB(skb);
+@@ -3063,14 +3064,13 @@ static int tcp_clean_rtx_queue(struct so
+ 	if (skb && (TCP_SKB_CB(skb)->sacked & TCPCB_SACKED_ACKED))
+ 		flag |= FLAG_SACK_RENEGING;
  
--	return NULL;
-+	return dst;
- }
+-	if (tcp_ack_update_rtt(sk, flag, seq_rtt, sack_rtt) ||
+-	    (flag & FLAG_ACKED))
+-		tcp_rearm_rto(sk);
++	rtt_update = tcp_ack_update_rtt(sk, flag, seq_rtt, sack_rtt);
  
- static struct dst_entry *ip6_negative_advice(struct dst_entry *dst)
+ 	if (flag & FLAG_ACKED) {
+ 		const struct tcp_congestion_ops *ca_ops
+ 			= inet_csk(sk)->icsk_ca_ops;
+ 
++		tcp_rearm_rto(sk);
+ 		if (unlikely(icsk->icsk_mtup.probe_size &&
+ 			     !after(tp->mtu_probe.probe_seq_end, tp->snd_una))) {
+ 			tcp_mtup_probe_success(sk);
+@@ -3109,6 +3109,13 @@ static int tcp_clean_rtx_queue(struct so
+ 
+ 			ca_ops->pkts_acked(sk, pkts_acked, rtt_us);
+ 		}
++	} else if (skb && rtt_update && sack_rtt >= 0 &&
++		   sack_rtt > (s32)(now - TCP_SKB_CB(skb)->when)) {
++		/* Do not re-arm RTO if the sack RTT is measured from data sent
++		 * after when the head was last (re)transmitted. Otherwise the
++		 * timeout may continue to extend in loss recovery.
++		 */
++		tcp_rearm_rto(sk);
+ 	}
+ 
+ #if FASTRETRANS_DEBUG > 0
 
 
