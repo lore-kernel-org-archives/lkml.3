@@ -1,51 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab3KRTgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 14:36:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57159 "EHLO mx1.redhat.com"
+	id S1752219Ab3KRTg5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 14:36:57 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:37789 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751558Ab3KRTgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 14:36:50 -0500
-Date: Mon, 18 Nov 2013 20:37:52 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vasily Kulikov <segoon@openwall.com>,
-        Petr Matousek <pmatouse@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Alex Kelly <alex.page.kelly@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCH 2/3] kill MMF_DUMPABLE and MMF_DUMP_SECURELY
-Message-ID: <20131118193752.GA15948@redhat.com>
-References: <20131101232521.GA23119@www.outflux.net> <20131114170337.GA11068@redhat.com> <CAGXu5jLXpLqjCAMFwKp7t7GpMq4+WBqNzSFC=up+CBvgGDuFCw@mail.gmail.com> <20131115203652.GA13476@redhat.com> <CAGXu5j+=LZYAczLVawGPAxd=9VX1FupWZq+2858GsrD1YprL3w@mail.gmail.com> <20131116190057.GA22666@redhat.com> <20131116190141.GC22666@redhat.com> <CAGXu5jK4sJ6zwi+rPqP-FjwY4C+6gsOVUOBfN7ztu9wNQYnk4g@mail.gmail.com> <20131118191600.GA14679@redhat.com> <CAGXu5jKRvLqWkOF=3qoQ1ZdaKNLai_kai4Png5Ls3X1WAtdzJA@mail.gmail.com>
+	id S1751558Ab3KRTgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 14:36:53 -0500
+Message-ID: <528A6BFA.3030007@ti.com>
+Date: Mon, 18 Nov 2013 21:35:22 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jKRvLqWkOF=3qoQ1ZdaKNLai_kai4Png5Ls3X1WAtdzJA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>
+CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 10/12] mtd: nand: davinci: don't set timings if AEMIF
+ is used
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>, <1384187188-5776-11-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D53@DNCE04.ent.ti.com> <528307F0.6000805@ti.com> <52838941.4060207@ti.com> <5284ABB9.70608@ti.com> <5284DFE7.70308@ti.com>
+In-Reply-To: <5284DFE7.70308@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18, Kees Cook wrote:
+On 11/14/2013 04:36 PM, Santosh Shilimkar wrote:
+> On Thursday 14 November 2013 05:53 AM, Nori, Sekhar wrote:
+>> On Wednesday 13 November 2013 07:44 PM, Santosh Shilimkar wrote:
+>>> On Wednesday 13 November 2013 12:02 AM, Sekhar Nori wrote:
+>>>> On Monday 11 November 2013 10:40 PM, Khoronzhuk, Ivan wrote:
+>>>>> If Davinci AEMIF is used we don't need to set timings and bus width.
+>>>>> It is done by AEMIF driver (drivers/memory/davinci-aemfi.c).
+>>>>>
+>>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>>>> ---
+>>>>>   drivers/mtd/nand/davinci_nand.c |   22 +++++++++++++++-------
+>>>>>   1 file changed, 15 insertions(+), 7 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+>>>>> index 4705214..879e915 100644
+>>>>> --- a/drivers/mtd/nand/davinci_nand.c
+>>>>> +++ b/drivers/mtd/nand/davinci_nand.c
+>>>>> @@ -742,27 +742,35 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+>>>>>                  goto err_clk_enable;
+>>>>>          }
+>>>>>
+>>>>> +#if !IS_ENABLED(CONFIG_TI_DAVINCI_AEMIF)
+>>>>
+>>>> This is a hack! Just because AEMIF driver is enabled, it does not
+>>>> guarantee that the timings have been setup by it. Instead of configuring
+>>>> timings in two drivers, why not just convert everyone over to use the
+>>>> new driver. Dont worry about breaking old platforms, I will help test
+>>>> and ack them.
+>>>>
+>>> How about you take a stab at and convert the DaVinci code over to make
+>>> use of new driver. We are trying to re-use as much as possible from the
+>>> common drivers and also making an option so that the DaVinci arch can
+>>> move over to these drivers if they want to.
+>>
+>> Sure I could.
+>>
+> Thanks
 >
-> On Mon, Nov 18, 2013 at 11:16 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > And I don't really like the "silently ignore" logic, so perhaps
-> >
-> >                 if (WARN_ON(value > SUID_DUMP_ROOT))
-> >                         return;
+>> Ivan,
+>>
+>> The AEMIF driver does not use platfrom_data currently. Is that something
+>> you can add or you want me to take a stab at that as well?
+>>
+> The AEMIF new driver is device tree only and thats the direction. So the
+> better thing would be to convert Davinci to DT and then make use of this
+> new driver. Thats how most of the new drivers used on arm socs are
+> moving. Adding platform data to new driver is a step in backward
+> direction so I would want to avoid that.
 >
-> Ah, good point about == 4. Yeah, I like the WARN_ON. No reason not to
-> be defensive as long as this code is getting changed.
+> Once you start using new driver the $subject patch code skipping
+> is trivial. Till then I would like to proceed with current approach
+> which allows Nand support for Keystone.
+>
+> Regards,
+> Santosh
+>
 
-OK. I'll send v2 tomorrow.
+Agree with Santosh
 
-
-And I just noticed I forgot to remove security@kernel.org, sorry for
-unnecessary noise.
-
-Oleg.
-
+-- 
+Regards,
+Ivan Khoronzhuk
