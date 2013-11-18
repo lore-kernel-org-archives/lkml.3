@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab3KRPIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 10:08:30 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:60238 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779Ab3KRPIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 10:08:22 -0500
-Message-ID: <528A2D59.3080001@ti.com>
-Date: Mon, 18 Nov 2013 09:08:09 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751855Ab3KRPJB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 10:09:01 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:46151 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750779Ab3KRPIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 10:08:54 -0500
+Date: Mon, 18 Nov 2013 10:08:53 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Vishal Annapurve <vannapurve@nvidia.com>
+cc: Ming Lei <tom.leiming@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH] usb-storage: scsiglue: Changing the command result
+In-Reply-To: <113ACA888B71994BB56E5CF3704953486D664FCD42@BGMAIL02.nvidia.com>
+Message-ID: <Pine.LNX.4.44L0.1311181008330.1421-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: viresh kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <ceh@ti.com>,
-        Tobias Diedrich <ranma+xen@tdiedrich.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH] cpufreq: stats: Do not populate stats when policy->cur
- has no exact match
-References: <1384561243-30391-1-git-send-email-nm@ti.com> <1423628.uM8DtnYzDe@vostro.rjw.lan> <5287010F.9000508@linaro.org>
-In-Reply-To: <5287010F.9000508@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 11:22 PM, viresh kumar wrote:
-> On Saturday 16 November 2013 06:40 AM, Rafael J. Wysocki wrote:
->> On Friday, November 15, 2013 06:20:43 PM Nishanth Menon wrote:
-> 
->>> So, instead of having a statistics information that never ever
->>> reflects valid data in the mentioned case and scratching our heads, we
->>> instead, refuse to populate any of the statistics entries and note in
->>> kernel log the error condition for developers to fix. The only useable
-> 
-> s/useable/usable
-> 
->>> information are the available frequencies which is already available
->>> in other cpufreq sysfs entries.
-> 
->> I like this one.  Any objections from anyone?
-> 
-> Well nothing against the patch but I have other thoughts. There are platforms
-> which might have no choice of fixing this issue as their bootloaders might be
-> setting boot freq to any value outside of our freq table.
-> 
-> And those might not have a chance to fix that in driver as well in case they are
-> using something like cpufreq-cpu0..
-> 
-> So, eventually this patch wouldn't do anything except giving a boot time error
-> and not initializing any stats at all..
-> 
-> Wouldn't it be better to create another frequency in all these tables, which
-> will be an *Invalid* frequency.. With a value of -1 (i.e. largest value of an
-> unsigned int) ??
-> 
-> And so nobody will ever miss stats again, even if they are running on invalid
-> frequencies. We will capture that information too:
-> - we have moved from/to invalid frequency to/from a valid/invalid frequency this
-> much times.
-> - We have stayed at valid/invalid frequencies for this much time.
-> 
-> I have a untested patch for this. If this looks okay, Nishant can you please try
-> below patch? With some fixups from your side :)
+On Sat, 16 Nov 2013, Vishal Annapurve wrote:
 
-http://pastebin.mozilla.org/3628975
-
-I agree that it does show something, but would we not rather prefer to
-stick with the entries available in freq_table than have to deal with
-invalid frequencies that may be provided by the driver? for example:
-how do we in stat know that there will only be one invalid frequency
-request?
-
-
+> Hi,
 > 
-
-[..]
-> (@Rafael: Finally I have moved to thunderbird, found a way out, so no more
-> crappy attachments from me :))
+> Here are the updated patches:	
 > 
-there are some patch wrapping that thunderbird tends to do - I prefer
-mutt that way, when I need to send inline patches :).
+> [PATCH 1/3] usb: storage: Proper cmd result assignment
+> 
+> This change replaces DID_ABORT with DID_TIMEOUT as a command result
+> whenever US_FLIDX_TIMED_OUT bit is set.
+> 
+> This change is made to bring USB storage inline with a recent change:
+> 
+> commit    18a4d0a22ed6c54b67af7718c305cd010f09ddf8
+> 
+> [SCSI] Handle disk devices which can not process medium access commands
+> We have experienced several devices which fail in a fashion we do not
+> currently handle gracefully in SCSI. After a failure these devices will
+> respond to the SCSI primary command set (INQUIRY, TEST UNIT READY, etc.)
+> but any command accessing the storage medium will time out.
+> 
+> As the USB storage was setting command result as aborted rather than
+> timed out, SCSI layer was not recognizing the above mentioned failure
+> pattern.
+> 
+> Signed-off-by: Vishal Annapurve <vannapurve@nvidia.com>
 
--- 
-Regards,
-Nishanth Menon
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
