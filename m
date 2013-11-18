@@ -1,31 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751125Ab3KRG0t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 01:26:49 -0500
-Received: from mail.mda.gov.br ([200.198.212.51]:33133 "EHLO meg.mda.gov.br"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750714Ab3KRG0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 01:26:44 -0500
-Date: Mon, 18 Nov 2013 04:15:00 -0200 (BRST)
-From: NAUKRI ADMINISTRATOR <raquel.santori@mda.gov.br>
-Message-ID: <2134704726.1017957.1384755300958.JavaMail.root@mda.gov.br>
-Subject: Naukri Portal User
+	id S1751290Ab3KRG22 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 01:28:28 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:15688 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab3KRG2V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 01:28:21 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 17 Nov 2013 22:22:27 -0800
+Message-ID: <5289B37E.2030208@nvidia.com>
+Date: Mon, 18 Nov 2013 15:28:14 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Alexandre Courbot <gnurou@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>, Pawel Moll <pawel.moll@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Tomasz Figa <t.figa@samsung.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Dave Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v10 0/7] ARM: support for Trusted Foundations secure monitor
+References: <1383819106-1400-1-git-send-email-acourbot@nvidia.com> <52828EF5.6090909@wwwdotorg.org> <CAOesGMhatp9ZQr=eTCtQ_9a_E9LXKdTCzJd+P7Sy9Ut9wtvnsA@mail.gmail.com> <5282E068.1070608@nvidia.com> <CAOesGMgcvTFD4u9b7T5HNhuJe_PQyV25Ei++v8hG8AsY_rOdyw@mail.gmail.com> <52842553.2080807@nvidia.com> <CAAVeFu+Uh9fi_kGv-g-0fH=p4758sCRONexZN25weS0s3PrvxA@mail.gmail.com>
+In-Reply-To: <CAAVeFu+Uh9fi_kGv-g-0fH=p4758sCRONexZN25weS0s3PrvxA@mail.gmail.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.1.0.131]
-X-Mailer: Zimbra 8.0.2_GA_5569 (zclient/8.0.2_GA_5569)
-Thread-Topic: Naukri Portal User
-Thread-Index: +eBmwCF4Xjzs4aIJdUn/B0t0h+znUA==
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message is from Naukri Job Portal and to all registered Naukri account owners. We are currently facing phishers on our Data Base due to Spam. We want to exercise an improve secure service quality in our Admin System to reduce the spam in every job/users portal. Please Confirm your Naukri Login account. click the blow link, fill your detail of Naukri login.
-http://naukriresdexportalindia.webs.com/  
+On 11/17/2013 06:03 PM, Alexandre Courbot wrote:
+> On Thu, Nov 14, 2013 at 10:20 AM, Alex Courbot <acourbot@nvidia.com> wrote:
+>> On 11/14/2013 02:57 AM, Olof Johansson wrote:
+>>>
+>>> On Tue, Nov 12, 2013 at 6:14 PM, Alex Courbot <acourbot@nvidia.com> wrote:
+>>>>
+>>>> On 11/13/2013 05:38 AM, Olof Johansson wrote:
+>>>>>
+>>>>>
+>>>>> On Tue, Nov 12, 2013 at 12:26 PM, Stephen Warren <swarren@wwwdotorg.org>
+>>>>> wrote:
+>>>>>>
+>>>>>>
+>>>>>> On 11/07/2013 03:11 AM, Alexandre Courbot wrote:
+>>>>>>>
+>>>>>>>
+>>>>>>> Just a set of small fixes to address the concerns expressed on v9 with
+>>>>>>> the
+>>>>>>> non-prefixed version DT properties. I hope there won't be a need for
+>>>>>>> an
+>>>>>>> eleventh (!) version. :P
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>> BTW, this version looks fine to me. On IRC, Olof said it looked OK to
+>>>>>> him. I'm just waiting to hear back from Olof/Russell whether I should
+>>>>>> merge this through the Tegra tree, or whether the first 1-3 patches
+>>>>>> should go through Russell's tree.
+>>>>>
+>>>>>
+>>>>>
+>>>>> I pinged Russell, and he brought up the fact that there were earlier
+>>>>> requests to move it to drivers/firmware. It would make sense to try to
+>>>>> get that done before merging, especially if you anticipate someone
+>>>>> using TF on 64-bit platforms.
+>>>>
+>>>>
+>>>>
+>>>> IIRC when we discussed this point your last comment was as follows:
+>>>
+>>>
+>>> Touche. :) Thanks for the reminder.
+>>>
+>>>> On Tue, Oct 29, 2013 at 6:55 AM, Olof Johansson <olof@lixom.net> wrote:
+>>>>>
+>>>>> I think we can probably merge this under arch/arm now, and when we
+>>>>> figure out what needs to be common with ARM64 we can move it out to a
+>>>>> good location. It might be that mostly just a header file with ABI
+>>>>> conventions needs to be shared, not actual implementation, for
+>>>>> example.
+>>>>
+>>>>
+>>>> So I thought we agreed on that. If in the end we prefer to move the ARM
+>>>> firmware interface into drivers/firmware, I'm fine with that too (Tomasz
+>>>> also confirmed he would be ok with it) but I wonder if that would not be
+>>>> somehow premature.
+>>>>
+>>>> Another worry of mine is that this might delay this patchset some more.
+>>>> Support for TF is one of the last remaining step towards making NVIDIA
+>>>> branded Tegra retail devices (SHIELD and TegraNote at the moment) run
+>>>> upstream directly. I missed 3.13, I'd like to make sure I won't miss
+>>>> 3.14.
+>>>> Would it be acceptable if we move the ARM firmware interface to a common
+>>>> place after this patchset is merged?
+>>>
+>>>
+>>> Well, as I already said I'm ok with things going into arch/arm to
+>>> start with, as long as Russell is. Once we see 64-bit needs for the
+>>> same we'll move it out -- it's not like it's a whole lot of code to
+>>> start with. But Russell has veto on the topic. :-)
+>>
+>>
+>> Thanks Olof. Russell, are you ok with the patchset in its current form? I
+>> can start moving the firmware interface out of arch/arm if that's what you
+>> want (there is no user outside of ARM at the moment, but as Olof pointed out
+>> that's not too much code) but I'd really like to see this series secured for
+>> 3.14.
+>
+> Never mind, I have submitted a patch that moves firmware_ops to
+> drivers/firmware, that will hopefully settle this issue. Then maybe we
+> can finally flush this series as well (I will need to resubmit a new
+> version though).
 
-Confirmation of your Naukri account will help to stop spaming.
-
-Warning!!!
-Naukri Team
+... and that patch is very likely to not make it, for (I think) valid 
+reasons. Thus I'm not quite sure where we are with this series now.
