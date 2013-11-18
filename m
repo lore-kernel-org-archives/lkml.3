@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834Ab3KRX7m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 18:59:42 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54824 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab3KRX7j (ORCPT
+	id S1751939Ab3KSAAF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 19:00:05 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:48502 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab3KSAAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 18:59:39 -0500
-Message-ID: <528AA9E0.5010807@jp.fujitsu.com>
-Date: Mon, 18 Nov 2013 18:59:28 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 18 Nov 2013 19:00:03 -0500
+Date: Tue, 19 Nov 2013 00:59:59 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <bitbucket@online.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] rtmutex: take the waiter lock with irqs off
+Message-ID: <20131118235956.GA1810@localhost.localdomain>
+References: <1383794799.5441.16.camel@marge.simpson.net>
+ <1383798668.5441.25.camel@marge.simpson.net>
+ <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
+ <20131107125923.GB24644@localhost.localdomain>
+ <alpine.DEB.2.02.1311071402380.23353@ionos.tec.linutronix.de>
+ <1384243595.15180.63.camel@marge.simpson.net>
+ <alpine.DEB.2.02.1311121024590.30673@ionos.tec.linutronix.de>
+ <20131115163008.GB12164@linutronix.de>
+ <20131115201436.GC12164@linutronix.de>
+ <20131118141021.GA10022@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, pjt@google.com,
-        akpm@linux-foundation.org, tglx@linutronix.de, lwoodman@redhat.com,
-        linux-tip-commits@vger.kernel.org
-CC: kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [tip:sched/urgent] sched: Optimize task_sched_runtime()
-References: <20131111172925.GG26898@twins.programming.kicks-ass.net> <tip-911b2898b3c9fe0048e9485ad1629ed4fce330fd@git.kernel.org>
-In-Reply-To: <tip-911b2898b3c9fe0048e9485ad1629ed4fce330fd@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-TM-AS-Product-Ver: IMSS-7.1.0.1403-6.8.0.1017-20300.003
-X-TM-AS-User-Approved-Sender: Yes
-X-TMASE-MatchedRID: U43YD7H1LvyxiVrMUp+cq+5i6weAmSDKjLOy13Cgb4/adW4iYSMjUel5
-	wWtrjgOt5KMcIo9TvZGWApYP9QuGdoCgLBJXz91XxvVtA+vAWcxu95mt47DzNoKwF4K/wIz9MXw
-	w+T4dG2dOZTK8HIK769CIyqyxIIAq/cIyPrsuMWqEryjhqiyzyqILs34F37sThmBHPk++FRL6vi
-	SyhRDzBXrkKP2xArsvnaqIT85KADJYe6RsTDPSfTl/1fD/GopdWQy9YC5qGvyLvqs87Ydq5s40q
-	Flt0NYjC24oEZ6SpSk+Mqg+CyrtwA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131118141021.GA10022@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2013 12:25 PM, tip-bot for Peter Zijlstra wrote:
-> Commit-ID:  911b2898b3c9fe0048e9485ad1629ed4fce330fd
-> Gitweb:     http://git.kernel.org/tip/911b2898b3c9fe0048e9485ad1629ed4fce330fd
-> Author:     Peter Zijlstra <peterz@infradead.org>
-> AuthorDate: Mon, 11 Nov 2013 18:21:56 +0100
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Wed, 13 Nov 2013 13:33:54 +0100
-> 
-> sched: Optimize task_sched_runtime()
-> 
-> Large multi-threaded apps like to hit this using do_sys_times() and
-> then queue up on the rq->lock.
-> 
-> Avoid when possible.
-> 
-> Larry reported ~20% performance increase his test case.
-> 
-> Reported-by: Larry Woodman <lwoodman@redhat.com>
-> Suggested-by: Paul Turner <pjt@google.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Link: http://lkml.kernel.org/r/20131111172925.GG26898@twins.programming.kicks-ass.net
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+On Mon, Nov 18, 2013 at 03:10:21PM +0100, Peter Zijlstra wrote:
+> --- a/kernel/softirq.c
+> +++ b/kernel/softirq.c
+> @@ -746,13 +746,23 @@ void irq_exit(void)
+>  #endif
+>  
+>  	account_irq_exit_time(current);
+> -	trace_hardirq_exit();
+>  	sub_preempt_count(HARDIRQ_OFFSET);
+> -	if (!in_interrupt() && local_softirq_pending())
+> +	if (!in_interrupt() && local_softirq_pending()) {
+> +		/*
+> +		 * Temp. disable hardirq context so as not to confuse lockdep;
+> +		 * otherwise it might think we're running softirq handler from
+> +		 * hardirq context.
+> +		 *
+> +		 * Should probably sort this someplace else..
+> +		 */
+> +		trace_hardirq_exit();
+>  		invoke_softirq();
+> +		trace_hardirq_enter();
+> +	}
+>  
+>  	tick_irq_exit();
+>  	rcu_irq_exit();
+> +	trace_hardirq_exit();
 
-Sorry for the delay. I took a vacation. As you know, this patch originally
-written me, then I already tested this. So, of course,
+Looks like a change we really want!
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Thanks!
 
-# S-O-B is better? dunno.
-
-
-
+>  }
+>  
+>  void raise_softirq(unsigned int nr)
