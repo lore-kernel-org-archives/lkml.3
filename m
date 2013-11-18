@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab3KRRWF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 12:22:05 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37298 "EHLO
+	id S1752109Ab3KRRWZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 12:22:25 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37291 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab3KRRVP (ORCPT
+	with ESMTP id S1751797Ab3KRRVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 12:21:15 -0500
+	Mon, 18 Nov 2013 12:21:05 -0500
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Wim Van Sebroeck <wim@iguana.be>, Sekhar Nori <nsekhar@ti.com>,
@@ -20,9 +20,9 @@ CC: Grant Likely <grant.likely@linaro.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Strashko Grygorii <grygorii.strashko@ti.com>,
         Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH 5/6] watchdog: davinci: reuse driver for keystone arch
-Date: Mon, 18 Nov 2013 19:18:58 +0200
-Message-ID: <1384795139-19466-6-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [PATCH 2/6] watchdog: davinci: use davinci_wdt_device structure to hold device data
+Date: Mon, 18 Nov 2013 19:18:55 +0200
+Message-ID: <1384795139-19466-3-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384795139-19466-1-git-send-email-ivan.khoronzhuk@ti.com>
 References: <1384795139-19466-1-git-send-email-ivan.khoronzhuk@ti.com>
@@ -32,90 +32,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The keystone arch use the same IP watchdog, so add "ti,keystone-wdt"
-compatible and correct identity.
-
-The Keystone arch is using clocks in DT and source clock for watchdog
-has to be specified, so add this to binding.
+Some SoCs, like Keystone 2, can support more than one WDT and each
+watchdog device has to use it's own base address, clock source,
+watchdog device, so add new davinci_wdt_device structure to hold
+device data.
 
 Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Reviewed-by: Guenter roeck <linux@roeck-us.net>
 ---
- .../devicetree/bindings/watchdog/davinci-wdt.txt   |   11 +++++++++--
- drivers/watchdog/Kconfig                           |    4 ++--
- drivers/watchdog/davinci_wdt.c                     |    3 ++-
- 3 files changed, 13 insertions(+), 5 deletions(-)
+ drivers/watchdog/davinci_wdt.c |   74 ++++++++++++++++++++++++++--------------
+ 1 file changed, 48 insertions(+), 26 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
-index e450134..0f1aa99 100644
---- a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
-+++ b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
-@@ -1,16 +1,23 @@
--DaVinci Watchdog Timer (WDT) Controller
-+Texas Instruments DaVinci/Keystone Watchdog Timer (WDT) Controller
- 
- Required properties:
--- compatible : Should be "ti,davinci-wdt"
-+- compatible : Should be "ti,davinci-wdt" or "ti,keystone-wdt"
- - reg : Should contain WDT registers location and length
-+- clocks : phandle reference to the controller clock.
-+	   Required only for Keystone arch. See clock-bindings.txt
- 
- Optional properties:
- - timeout-sec : Contains the watchdog timeout in seconds
- 
-+Documentation:
-+Davinci DM646x - http://www.ti.com/lit/ug/spruer5b/spruer5b.pdf
-+Keystone - http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
-+
- Examples:
- 
- wdt: wdt@2320000 {
- 	compatible = "ti,davinci-wdt";
- 	reg = <0x02320000 0x80>;
- 	timeout-sec = <30>;
-+	clocks = <&clkwdtimer0>;
- };
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index d7db13d..addfc2c 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -270,12 +270,12 @@ config IOP_WATCHDOG
- 
- config DAVINCI_WATCHDOG
- 	tristate "DaVinci watchdog"
--	depends on ARCH_DAVINCI
-+	depends on ARCH_DAVINCI || ARCH_KEYSTONE
- 	select WATCHDOG_CORE
- 	select WATCHDOG_NOWAYOUT
- 	help
- 	  Say Y here if to include support for the watchdog timer
--	  in the DaVinci DM644x/DM646x processors.
-+	  in the DaVinci DM644x/DM646x or Keystone processors.
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called davinci_wdt.
- 
 diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
-index 55deaf8..a6d365a 100644
+index cb9e8c5..b353df5 100644
 --- a/drivers/watchdog/davinci_wdt.c
 +++ b/drivers/watchdog/davinci_wdt.c
-@@ -143,7 +143,7 @@ static unsigned int davinci_wdt_get_timeleft(struct watchdog_device *wdd)
+@@ -56,51 +56,63 @@
+ #define WDKEY_SEQ1		(0xda7e << 16)
  
- static const struct watchdog_info davinci_wdt_info = {
- 	.options = WDIOF_KEEPALIVEPING,
--	.identity = "DaVinci Watchdog",
-+	.identity = "DaVinci/Keystone Watchdog",
- };
+ static int heartbeat;
+-static void __iomem	*wdt_base;
+-struct clk		*wdt_clk;
+-static struct watchdog_device	wdt_wdd;
++
++/*
++ * struct to hold data for each WDT device
++ * @base - base io address of WD device
++ * @clk - source clock of WDT
++ * @wdd - hold watchdog device as is in WDT core
++ */
++struct davinci_wdt_device {
++	void __iomem		*base;
++	struct clk		*clk;
++	struct watchdog_device	wdd;
++};
  
- static const struct watchdog_ops davinci_wdt_ops = {
-@@ -212,6 +212,7 @@ static int davinci_wdt_remove(struct platform_device *pdev)
+ static int davinci_wdt_start(struct watchdog_device *wdd)
+ {
+ 	u32 tgcr;
+ 	u32 timer_margin;
+ 	unsigned long wdt_freq;
++	struct davinci_wdt_device *davinci_wdt = watchdog_get_drvdata(wdd);
  
- static const struct of_device_id davinci_wdt_of_match[] = {
- 	{ .compatible = "ti,davinci-wdt", },
-+	{ .compatible = "ti,keystone-wdt", },
- 	{},
- };
- MODULE_DEVICE_TABLE(of, davinci_wdt_of_match);
+-	wdt_freq = clk_get_rate(wdt_clk);
++	wdt_freq = clk_get_rate(davinci_wdt->clk);
+ 
+ 	/* disable, internal clock source */
+-	iowrite32(0, wdt_base + TCR);
++	iowrite32(0, davinci_wdt->base + TCR);
+ 	/* reset timer, set mode to 64-bit watchdog, and unreset */
+-	iowrite32(0, wdt_base + TGCR);
++	iowrite32(0, davinci_wdt->base + TGCR);
+ 	tgcr = TIMMODE_64BIT_WDOG | TIM12RS_UNRESET | TIM34RS_UNRESET;
+-	iowrite32(tgcr, wdt_base + TGCR);
++	iowrite32(tgcr, davinci_wdt->base + TGCR);
+ 	/* clear counter regs */
+-	iowrite32(0, wdt_base + TIM12);
+-	iowrite32(0, wdt_base + TIM34);
++	iowrite32(0, davinci_wdt->base + TIM12);
++	iowrite32(0, davinci_wdt->base + TIM34);
+ 	/* set timeout period */
+ 	timer_margin = (((u64)wdd->timeout * wdt_freq) & 0xffffffff);
+-	iowrite32(timer_margin, wdt_base + PRD12);
++	iowrite32(timer_margin, davinci_wdt->base + PRD12);
+ 	timer_margin = (((u64)wdd->timeout * wdt_freq) >> 32);
+-	iowrite32(timer_margin, wdt_base + PRD34);
++	iowrite32(timer_margin, davinci_wdt->base + PRD34);
+ 	/* enable run continuously */
+-	iowrite32(ENAMODE12_PERIODIC, wdt_base + TCR);
++	iowrite32(ENAMODE12_PERIODIC, davinci_wdt->base + TCR);
+ 	/* Once the WDT is in pre-active state write to
+ 	 * TIM12, TIM34, PRD12, PRD34, TCR, TGCR, WDTCR are
+ 	 * write protected (except for the WDKEY field)
+ 	 */
+ 	/* put watchdog in pre-active state */
+-	iowrite32(WDKEY_SEQ0 | WDEN, wdt_base + WDTCR);
++	iowrite32(WDKEY_SEQ0 | WDEN, davinci_wdt->base + WDTCR);
+ 	/* put watchdog in active state */
+-	iowrite32(WDKEY_SEQ1 | WDEN, wdt_base + WDTCR);
++	iowrite32(WDKEY_SEQ1 | WDEN, davinci_wdt->base + WDTCR);
+ 	return 0;
+ }
+ 
+ static int davinci_wdt_ping(struct watchdog_device *wdd)
+ {
++	struct davinci_wdt_device *davinci_wdt = watchdog_get_drvdata(wdd);
++
+ 	/* put watchdog in service state */
+-	iowrite32(WDKEY_SEQ0, wdt_base + WDTCR);
++	iowrite32(WDKEY_SEQ0, davinci_wdt->base + WDTCR);
+ 	/* put watchdog in active state */
+-	iowrite32(WDKEY_SEQ1, wdt_base + WDTCR);
++	iowrite32(WDKEY_SEQ1, davinci_wdt->base + WDTCR);
+ 	return 0;
+ }
+ 
+@@ -122,14 +134,21 @@ static int davinci_wdt_probe(struct platform_device *pdev)
+ 	struct device *dev = &pdev->dev;
+ 	struct resource  *wdt_mem;
+ 	struct watchdog_device *wdd;
++	struct davinci_wdt_device *davinci_wdt;
++
++	davinci_wdt = devm_kzalloc(dev, sizeof(*davinci_wdt), GFP_KERNEL);
++	if (!davinci_wdt)
++		return -ENOMEM;
+ 
+-	wdt_clk = devm_clk_get(dev, NULL);
+-	if (WARN_ON(IS_ERR(wdt_clk)))
+-		return PTR_ERR(wdt_clk);
++	davinci_wdt->clk = devm_clk_get(dev, NULL);
++	if (WARN_ON(IS_ERR(davinci_wdt->clk)))
++		return PTR_ERR(davinci_wdt->clk);
+ 
+-	clk_prepare_enable(wdt_clk);
++	clk_prepare_enable(davinci_wdt->clk);
+ 
+-	wdd			= &wdt_wdd;
++	platform_set_drvdata(pdev, davinci_wdt);
++
++	wdd			= &davinci_wdt->wdd;
+ 	wdd->info		= &davinci_wdt_info;
+ 	wdd->ops		= &davinci_wdt_ops;
+ 	wdd->min_timeout 	= 1;
+@@ -140,12 +159,13 @@ static int davinci_wdt_probe(struct platform_device *pdev)
+ 
+ 	dev_info(dev, "heartbeat %d sec\n", wdd->timeout);
+ 
++	watchdog_set_drvdata(wdd, davinci_wdt);
+ 	watchdog_set_nowayout(wdd, WATCHDOG_NOWAYOUT);
+ 
+ 	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	wdt_base = devm_ioremap_resource(dev, wdt_mem);
+-	if (IS_ERR(wdt_base))
+-		return PTR_ERR(wdt_base);
++	davinci_wdt->base = devm_ioremap_resource(dev, wdt_mem);
++	if (IS_ERR(davinci_wdt->base))
++		return PTR_ERR(davinci_wdt->base);
+ 
+ 	ret = watchdog_register_device(wdd);
+ 	if (ret < 0)
+@@ -156,8 +176,10 @@ static int davinci_wdt_probe(struct platform_device *pdev)
+ 
+ static int davinci_wdt_remove(struct platform_device *pdev)
+ {
+-	watchdog_unregister_device(&wdt_wdd);
+-	clk_disable_unprepare(wdt_clk);
++	struct davinci_wdt_device *davinci_wdt = platform_get_drvdata(pdev);
++
++	watchdog_unregister_device(&davinci_wdt->wdd);
++	clk_disable_unprepare(davinci_wdt->clk);
+ 
+ 	return 0;
+ }
 -- 
 1.7.9.5
 
