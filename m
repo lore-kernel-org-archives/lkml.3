@@ -1,152 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab3KRNtb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 08:49:31 -0500
-Received: from mail.abilis.ch ([195.70.19.74]:25460 "EHLO mail.abilis.ch"
+	id S1752040Ab3KRNts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 08:49:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65318 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab3KRNtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 08:49:24 -0500
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Borislav Petkov <bp@alien8.de>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pavel Roskin <proski@gnu.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Sam Ravnborg <sam@ravnborg.org>,
-        Noam Camus <noamc@ezchip.com>, Joe Perches <joe@perches.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>
-Subject: [PATCH 2/2 v2] x86: Add support for uncompressed kernel images
-Date: Mon, 18 Nov 2013 14:48:30 +0100
-Message-Id: <1384782510-5097-1-git-send-email-christian.ruppert@abilis.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20131118112504.GA27541@pd.tnic>
-References: <20131118112504.GA27541@pd.tnic>
+	id S1750880Ab3KRNtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 08:49:42 -0500
+Date: Mon, 18 Nov 2013 08:48:07 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xenproject.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH] arm/xen: Export phys_to_mach to fix Xen module link errors
+Message-ID: <20131118134806.GA1908@hansolo.jdub.homelinux.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There seems to be some interest to enable uncompressed kernels also for x86
-in addition to (embedded) ARC platforms.
+Various xen drivers fail to link when built as modules with the following
+error:
 
-Add the code to support uncompressed kernels to lib/, select the respective
-Kconfig options for the x86 architecture and use this code in the x86 kernel
-self-decompressor.
+ERROR: "phys_to_mach" [drivers/xen/xen-gntalloc.ko] undefined!
+ERROR: "phys_to_mach" [drivers/net/xen-netfront.ko] undefined!
+ERROR: "phys_to_mach" [drivers/net/xen-netback/xen-netback.ko] undefined!
+ERROR: "phys_to_mach" [drivers/block/xen-blkfront.ko] undefined!
 
-Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+The mfn_to_pfn and pfn_to_mfn functions get inlined in these modules and
+those functions require phys_to_mach.  Export the symbol to fix the link
+errors.
+
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
 ---
- arch/x86/Kconfig                  |    1 +
- arch/x86/boot/compressed/Makefile |   14 ++++++------
- arch/x86/boot/compressed/misc.c   |    4 +++
- lib/decompress_copy.c             |   44 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 56 insertions(+), 7 deletions(-)
- create mode 100644 lib/decompress_copy.c
+ arch/arm/xen/p2m.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index e903c71..009349f 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -62,6 +62,7 @@ config X86
- 	select USER_STACKTRACE_SUPPORT
- 	select HAVE_REGS_AND_STACK_ACCESS_API
- 	select HAVE_DMA_API_DEBUG
-+	select HAVE_KERNEL_UNCOMPRESSED
- 	select HAVE_KERNEL_GZIP
- 	select HAVE_KERNEL_BZIP2
- 	select HAVE_KERNEL_LZMA
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index dcd90df..f65e444 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -67,16 +67,16 @@ $(obj)/vmlinux.bin.lzo: $(vmlinux.bin.all-y) FORCE
- $(obj)/vmlinux.bin.lz4: $(vmlinux.bin.all-y) FORCE
- 	$(call if_changed,lz4)
+diff --git a/arch/arm/xen/p2m.c b/arch/arm/xen/p2m.c
+index 23732cd..0f842e8 100644
+--- a/arch/arm/xen/p2m.c
++++ b/arch/arm/xen/p2m.c
+@@ -27,6 +27,7 @@ struct xen_p2m_entry {
  
--suffix-$(CONFIG_KERNEL_GZIP)	:= gz
--suffix-$(CONFIG_KERNEL_BZIP2)	:= bz2
--suffix-$(CONFIG_KERNEL_LZMA)	:= lzma
--suffix-$(CONFIG_KERNEL_XZ)	:= xz
--suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
--suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
-+suffix-$(CONFIG_KERNEL_GZIP)	:= .gz
-+suffix-$(CONFIG_KERNEL_BZIP2)	:= .bz2
-+suffix-$(CONFIG_KERNEL_LZMA)	:= .lzma
-+suffix-$(CONFIG_KERNEL_XZ)	:= .xz
-+suffix-$(CONFIG_KERNEL_LZO) 	:= .lzo
-+suffix-$(CONFIG_KERNEL_LZ4) 	:= .lz4
+ rwlock_t p2m_lock;
+ struct rb_root phys_to_mach = RB_ROOT;
++EXPORT_SYMBOL_GPL(phys_to_mach);
+ static struct rb_root mach_to_phys = RB_ROOT;
  
- quiet_cmd_mkpiggy = MKPIGGY $@
-       cmd_mkpiggy = $(obj)/mkpiggy $< > $@ || ( rm -f $@ ; false )
- 
- targets += piggy.S
--$(obj)/piggy.S: $(obj)/vmlinux.bin.$(suffix-y) $(obj)/mkpiggy FORCE
-+$(obj)/piggy.S: $(obj)/vmlinux.bin$(suffix-y) $(obj)/mkpiggy FORCE
- 	$(call if_changed,mkpiggy)
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 434f077..c210314 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -149,6 +149,10 @@ static int lines, cols;
- #include "../../../../lib/decompress_unlz4.c"
- #endif
- 
-+#ifdef CONFIG_KERNEL_UNCOMPRESSED
-+#include "../../../../lib/decompress_copy.c"
-+#endif
-+
- static void scroll(void)
- {
- 	int i;
-diff --git a/lib/decompress_copy.c b/lib/decompress_copy.c
-new file mode 100644
-index 0000000..109ef22
---- /dev/null
-+++ b/lib/decompress_copy.c
-@@ -0,0 +1,44 @@
-+#include <linux/decompress/mm.h>
-+
-+#define NOZIP_BUFSZ (16 * 1024)
-+STATIC int INIT nozip(unsigned char *buf, int len,
-+			int(*fill)(void*, unsigned int),
-+			int(*flush)(void*, unsigned int),
-+			unsigned char *outbuf,
-+			int *pos,
-+			void(*error)(char *x))
-+{
-+	char *b;
-+
-+	if (buf)
-+		b = buf;
-+	else
-+		b = malloc(NOZIP_BUFSZ);
-+
-+	if (!b) {
-+		error("Out of memory while allocating buffer");
-+		return -1;
-+	}
-+
-+	if (flush) {
-+		if (!len)
-+			len = fill(b, NOZIP_BUFSZ);
-+
-+		len = flush(b, len);
-+	} else {
-+		if (!len)
-+			len = fill(outbuf, NOZIP_BUFSZ);
-+		else
-+			memcpy(outbuf, b, len);
-+	}
-+
-+	if (pos)
-+		*pos = len;
-+
-+	if (!buf)
-+		free(b);
-+
-+	return 0;
-+}
-+
-+#define decompress nozip
+ static int xen_add_phys_to_mach_entry(struct xen_p2m_entry *new)
 -- 
-1.7.1
+1.8.3.1
 
