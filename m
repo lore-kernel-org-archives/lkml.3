@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab3KRSmj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:42:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57609 "EHLO
+	id S1753121Ab3KRSmt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:42:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57614 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027Ab3KRSma (ORCPT
+	with ESMTP id S1752094Ab3KRSmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:42:30 -0500
+	Mon, 18 Nov 2013 13:42:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthias Schiffer <mschiffer@universe-factory.net>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
-        Antonio Quartulli <antonio@meshcoding.com>,
-        David Miller <davem@davemloft.net>
-Subject: [PATCH 3.10 11/24] batman-adv: set up network coding packet handlers during module init
-Date: Mon, 18 Nov 2013 10:42:21 -0800
-Message-Id: <20131118184222.837549883@linuxfoundation.org>
+        Gerd Hoffmann <kraxel@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.10 12/24] hyperv-fb: add pci stub
+Date: Mon, 18 Nov 2013 10:42:22 -0800
+Message-Id: <20131118184222.919011143@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184222.017393843@linuxfoundation.org>
 References: <20131118184222.017393843@linuxfoundation.org>
@@ -29,158 +28,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthias Schiffer <mschiffer@universe-factory.net>
+From: Gerd Hoffmann <kraxel@redhat.com>
 
-commit 6c519bad7b19a2c14a075b400edabaa630330123 upstream.
+commit 7ad9684721606efbfb9b347346816e1e6baff8bb upstream.
 
-batman-adv saves its table of packet handlers as a global state, so handlers
-must be set up only once (and setting them up a second time will fail).
+This patch adds a pci stub driver to hyper-fb.  The hyperv framebuffer
+driver will bind to the pci device then, so linux kernel and userspace
+know there is a proper kernel driver for the device active.  lspci shows
+this for example:
 
-The recently-added network coding support tries to set up its handler each time
-a new softif is registered, which obviously fails when more that one softif is
-used (and in consequence, the softif creation fails).
+[root@dhcp231 ~]# lspci -vs8
+00:08.0 VGA compatible controller: Microsoft Corporation Hyper-V virtual
+VGA (prog-if 00 [VGA controller])
+        Flags: bus master, fast devsel, latency 0, IRQ 11
+        Memory at f8000000 (32-bit, non-prefetchable) [size=64M]
+        Expansion ROM at <unassigned> [disabled]
+        Kernel driver in use: hyperv_fb
 
-Fix this by splitting up batadv_nc_init into batadv_nc_init (which is called
-only once) and batadv_nc_mesh_init (which is called for each softif); in
-addition batadv_nc_free is renamed to batadv_nc_mesh_free to keep naming
-consistent.
+Another effect is that the xorg vesa driver will not attach to the
+device and thus the Xorg server will automatically use the fbdev
+driver instead.
 
-Signed-off-by: Matthias Schiffer <mschiffer@universe-factory.net>
-Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
-Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
-Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/batman-adv/main.c           |    5 +++--
- net/batman-adv/network-coding.c |   28 ++++++++++++++++++----------
- net/batman-adv/network-coding.h |   14 ++++++++++----
- 3 files changed, 31 insertions(+), 16 deletions(-)
+ drivers/video/hyperv_fb.c |   40 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 39 insertions(+), 1 deletion(-)
 
---- a/net/batman-adv/main.c
-+++ b/net/batman-adv/main.c
-@@ -61,6 +61,7 @@ static int __init batadv_init(void)
- 	batadv_recv_handler_init();
- 
- 	batadv_iv_init();
-+	batadv_nc_init();
- 
- 	batadv_event_workqueue = create_singlethread_workqueue("bat_events");
- 
-@@ -138,7 +139,7 @@ int batadv_mesh_init(struct net_device *
- 	if (ret < 0)
- 		goto err;
- 
--	ret = batadv_nc_init(bat_priv);
-+	ret = batadv_nc_mesh_init(bat_priv);
- 	if (ret < 0)
- 		goto err;
- 
-@@ -163,7 +164,7 @@ void batadv_mesh_free(struct net_device
- 	batadv_vis_quit(bat_priv);
- 
- 	batadv_gw_node_purge(bat_priv);
--	batadv_nc_free(bat_priv);
-+	batadv_nc_mesh_free(bat_priv);
- 	batadv_dat_free(bat_priv);
- 	batadv_bla_free(bat_priv);
- 
---- a/net/batman-adv/network-coding.c
-+++ b/net/batman-adv/network-coding.c
-@@ -35,6 +35,20 @@ static int batadv_nc_recv_coded_packet(s
- 				       struct batadv_hard_iface *recv_if);
- 
- /**
-+ * batadv_nc_init - one-time initialization for network coding
-+ */
-+int __init batadv_nc_init(void)
-+{
-+	int ret;
-+
-+	/* Register our packet type */
-+	ret = batadv_recv_handler_register(BATADV_CODED,
-+					   batadv_nc_recv_coded_packet);
-+
-+	return ret;
-+}
-+
-+/**
-  * batadv_nc_start_timer - initialise the nc periodic worker
-  * @bat_priv: the bat priv with all the soft interface information
-  */
-@@ -45,10 +59,10 @@ static void batadv_nc_start_timer(struct
+--- a/drivers/video/hyperv_fb.c
++++ b/drivers/video/hyperv_fb.c
+@@ -795,12 +795,21 @@ static int hvfb_remove(struct hv_device
  }
  
- /**
-- * batadv_nc_init - initialise coding hash table and start house keeping
-+ * batadv_nc_mesh_init - initialise coding hash table and start house keeping
-  * @bat_priv: the bat priv with all the soft interface information
-  */
--int batadv_nc_init(struct batadv_priv *bat_priv)
-+int batadv_nc_mesh_init(struct batadv_priv *bat_priv)
- {
- 	bat_priv->nc.timestamp_fwd_flush = jiffies;
- 	bat_priv->nc.timestamp_sniffed_purge = jiffies;
-@@ -70,11 +84,6 @@ int batadv_nc_init(struct batadv_priv *b
- 	batadv_hash_set_lock_class(bat_priv->nc.coding_hash,
- 				   &batadv_nc_decoding_hash_lock_class_key);
  
--	/* Register our packet type */
--	if (batadv_recv_handler_register(BATADV_CODED,
--					 batadv_nc_recv_coded_packet) < 0)
--		goto err;
--
- 	INIT_DELAYED_WORK(&bat_priv->nc.work, batadv_nc_worker);
- 	batadv_nc_start_timer(bat_priv);
++static DEFINE_PCI_DEVICE_TABLE(pci_stub_id_table) = {
++	{
++		.vendor      = PCI_VENDOR_ID_MICROSOFT,
++		.device      = PCI_DEVICE_ID_HYPERV_VIDEO,
++	},
++	{ /* end of list */ }
++};
++
+ static const struct hv_vmbus_device_id id_table[] = {
+ 	/* Synthetic Video Device GUID */
+ 	{HV_SYNTHVID_GUID},
+ 	{}
+ };
  
-@@ -1722,12 +1731,11 @@ free_nc_packet:
- }
++MODULE_DEVICE_TABLE(pci, pci_stub_id_table);
+ MODULE_DEVICE_TABLE(vmbus, id_table);
  
- /**
-- * batadv_nc_free - clean up network coding memory
-+ * batadv_nc_mesh_free - clean up network coding memory
-  * @bat_priv: the bat priv with all the soft interface information
-  */
--void batadv_nc_free(struct batadv_priv *bat_priv)
-+void batadv_nc_mesh_free(struct batadv_priv *bat_priv)
- {
--	batadv_recv_handler_unregister(BATADV_CODED);
- 	cancel_delayed_work_sync(&bat_priv->nc.work);
+ static struct hv_driver hvfb_drv = {
+@@ -810,14 +819,43 @@ static struct hv_driver hvfb_drv = {
+ 	.remove = hvfb_remove,
+ };
  
- 	batadv_nc_purge_paths(bat_priv, bat_priv->nc.coding_hash, NULL);
---- a/net/batman-adv/network-coding.h
-+++ b/net/batman-adv/network-coding.h
-@@ -22,8 +22,9 @@
- 
- #ifdef CONFIG_BATMAN_ADV_NC
- 
--int batadv_nc_init(struct batadv_priv *bat_priv);
--void batadv_nc_free(struct batadv_priv *bat_priv);
-+int batadv_nc_init(void);
-+int batadv_nc_mesh_init(struct batadv_priv *bat_priv);
-+void batadv_nc_mesh_free(struct batadv_priv *bat_priv);
- void batadv_nc_update_nc_node(struct batadv_priv *bat_priv,
- 			      struct batadv_orig_node *orig_node,
- 			      struct batadv_orig_node *orig_neigh_node,
-@@ -47,12 +48,17 @@ int batadv_nc_init_debugfs(struct batadv
- 
- #else /* ifdef CONFIG_BATMAN_ADV_NC */
- 
--static inline int batadv_nc_init(struct batadv_priv *bat_priv)
-+static inline int batadv_nc_init(void)
- {
- 	return 0;
- }
- 
--static inline void batadv_nc_free(struct batadv_priv *bat_priv)
-+static inline int batadv_nc_mesh_init(struct batadv_priv *bat_priv)
++static int hvfb_pci_stub_probe(struct pci_dev *pdev,
++			       const struct pci_device_id *ent)
 +{
 +	return 0;
 +}
 +
-+static inline void batadv_nc_mesh_free(struct batadv_priv *bat_priv)
++static void hvfb_pci_stub_remove(struct pci_dev *pdev)
++{
++}
++
++static struct pci_driver hvfb_pci_stub_driver = {
++	.name =		KBUILD_MODNAME,
++	.id_table =	pci_stub_id_table,
++	.probe =	hvfb_pci_stub_probe,
++	.remove =	hvfb_pci_stub_remove,
++};
+ 
+ static int __init hvfb_drv_init(void)
  {
- 	return;
+-	return vmbus_driver_register(&hvfb_drv);
++	int ret;
++
++	ret = vmbus_driver_register(&hvfb_drv);
++	if (ret != 0)
++		return ret;
++
++	ret = pci_register_driver(&hvfb_pci_stub_driver);
++	if (ret != 0) {
++		vmbus_driver_unregister(&hvfb_drv);
++		return ret;
++	}
++
++	return 0;
  }
+ 
+ static void __exit hvfb_drv_exit(void)
+ {
++	pci_unregister_driver(&hvfb_pci_stub_driver);
+ 	vmbus_driver_unregister(&hvfb_drv);
+ }
+ 
 
 
