@@ -1,487 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342Ab3KRU0T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:26:19 -0500
+	id S1752471Ab3KRU0o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:26:44 -0500
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:11455 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109Ab3KRU0O (ORCPT
+	with ESMTP id S1751719Ab3KRU0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:26:14 -0500
-X-AuditID: cbfec7f5-b7fe66d00000432e-63-528a77e20678
+	Mon, 18 Nov 2013 15:26:11 -0500
+X-AuditID: cbfec7f5-b7fe66d00000432e-62-528a77e1bce0
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         viro@zeniv.linux.org.uk, linux-security-module@vger.kernel.org,
         zohar@linux.vnet.ibm.com, jmorris@namei.org
 Cc: dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 2/2] ima: directory integrity protection implementation
-Date: Mon, 18 Nov 2013 22:24:59 +0200
-Message-id: <a53afc32a3ac10d265882e0573c15721e55b4d1d.1384806012.git.d.kasatkin@samsung.com>
+Subject: [PATCH 1/2] ima: hooks for directory integrity protection
+Date: Mon, 18 Nov 2013 22:24:58 +0200
+Message-id: <d9de3562c23e4ac8f59d6eb16c12e303f42c8855.1384806012.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.8.3.2
 In-reply-to: <cover.1384806012.git.d.kasatkin@samsung.com>
 References: <cover.1384806012.git.d.kasatkin@samsung.com>
 In-reply-to: <cover.1384806012.git.d.kasatkin@samsung.com>
 References: <cover.1384806012.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t/xy7qPyruCDC5M57e49Xcvs8WXpXUW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGLMWRmVeSWpSXmKPExsVy+t/xy7oPy7uCDM7NkrW49Xcvs8WXpXUW
 	69YvZrLYs/cki8XlXXPYLD70PGKzOP/3OKvFpxWTmB04PHbOusvu8eDQZhaPnu/JHn1bVjF6
-	fN4k57HpyVumALYoLpuU1JzMstQifbsErow5jzqYClamVDw9u5ClgXFGYBcjJ4eEgInEwVmH
-	2CFsMYkL99azdTFycQgJLGWUeDJ9HxOE080ksbxhBjNIFZuAnsSG5h/sIAkRgQ2MEt/2vmAE
-	STALuEts+HkHrEgYyL526wrYWBYBVYlJXV1sIDavQJzEi2PPmCDWKUgs+7IWrJ5TwEpi56wF
-	YDVCApYSUztusOMSn8DIv4CRYRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSGB+3cG49JjV
-	IUYBDkYlHt6J7l1BQqyJZcWVuYcYJTiYlUR4f5cChXhTEiurUovy44tKc1KLDzEycXBKNTCK
-	9K0S6tO0zA/nERPapnhvxayLK/QvMppN9Z0V2HOnb71IvMKL1XeC9nf7n1ULznLtnT2p4uZM
-	7+bXsR/lBBMstkxLlrI8OunzB6kNyb/XPth8LULW9a30w2lKe4KzrmW87+mXEcpiu/uxgCW3
-	ufX5nmlO9x1uXb0lzpazzvRQa97q3BdTn69RYinOSDTUYi4qTgQAzqdwYioCAAA=
+	fN4k57HpyVumALYoLpuU1JzMstQifbsEroy/B6+xFWy0qXjy9CVTA2OPYRcjJ4eEgInElKUv
+	WSFsMYkL99azdTFycQgJLGWUWNC/FMrpZpLY0/GUGaSKTUBPYkPzD3aQhIjABkaJb3tfMIIk
+	mAXcJTb8vANWJCzgJLFr7Xmgbg4OFgFVifuTnUHCvAJxEmc+vWSD2KYgsezLWrByTgEriZ2z
+	FoDFhQQsJaZ23GDHJT6BkX8BI8MqRtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjJCw/LqDcekx
+	q0OMAhyMSjy8E927goRYE8uKK3MPMUpwMCuJ8P4uBQrxpiRWVqUW5ccXleakFh9iZOLglGpg
+	XJ+/d23JFs75X1ZpP0g8uiXiZ9Yyd5On05ZIuHPtmb9mrRz7IzkG+Vlfn8b3bJliPHfm3qk1
+	Fc5/vwtmF7iuVTH/cLNT2VbrZ5i/zaKiJJWLiReE98wPvrkqW6fTXCX+89wAncO8ycr5t9s/
+	dG+XUBVfo+BeYbquIT2D77Exs6FDlpbl00hxJZbijERDLeai4kQAxySMWCkCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides implmentation of directory integrity protection hooks.
+Both IMA-appraisal and EVM protect the integrity of regular files.
+IMA protects file data integrity, while EVM protects the file meta-data
+integrity, such as file attributes and extended attributes. This patch
+set adds hooks for offline directory integrity protection.
 
-This patch implements ima_dir_check() and ima_dir_update() hooks.
+An inode itself does not have any file name associated with it.  The
+association of the file name to inode is done via directory entries.
+On a running system, mandatory and/or discretionary access control prevent
+unprivileged file deletion, file name change, or hardlink creation.
+In an offline attack, without these protections, the association between
+a file name and an inode is unprotected. Files can be deleted, renamed
+or moved from one directory to another one. In all of these cases,
+the integrity of the file data and metadata is good.
 
-ima_dir_check() verifies the directory integrity during the initial path
-lookup, when the dentry is just being created and may block. It allocates
-the needed data structures and performs the integrity verification.
-The results of which are cached. Subsequent calls mostly happen under
-RCU locking, when the code may not block, and returns immediately with
-the cached verification status. So ima_dir_check() does not interrupt
-RCU path walk.
+To prevent such attacks, it is necessary to protect integrity of directory
+content.
 
-Directory hash is a hash over the list of directory entries, that includes
-name, ino and d_type. ima_dir_check() caclculates a directory hash and compaires
-it against good reference value stored in 'security.ima' extended attribute.
+This patch adds 2 new hooks for directory integrity protection:
+  ima_dir_check() and ima_dir_update().
 
-ima_dir_update() is called when directory content is changing, and updates
-the directory hash.
+ima_dir_check() is called to verify integrity of the the directory during
+the initial path lookup.
+
+ima_dir_update() is called from several places in namei.c, when the directory
+content is changing, for updating the directory hash.
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
- security/integrity/ima/Kconfig      |  10 +
- security/integrity/ima/Makefile     |   1 +
- security/integrity/ima/ima.h        |   3 +-
- security/integrity/ima/ima_dir.c    | 358 ++++++++++++++++++++++++++++++++++++
- security/integrity/ima/ima_policy.c |   2 +
- 5 files changed, 373 insertions(+), 1 deletion(-)
- create mode 100644 security/integrity/ima/ima_dir.c
+ fs/namei.c                        | 42 ++++++++++++++++++++++++++++++++++++---
+ fs/open.c                         |  6 ++++++
+ include/linux/ima.h               | 23 +++++++++++++++++++++
+ net/unix/af_unix.c                |  2 ++
+ security/integrity/ima/ima_main.c |  3 +++
+ 5 files changed, 73 insertions(+), 3 deletions(-)
 
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index dad8d4c..ec4ef2a 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -131,3 +131,13 @@ config IMA_TRUSTED_KEYRING
- 	help
- 	   This option requires that all keys added to the _ima
- 	   keyring be signed by a key on the system trusted keyring.
-+
-+config IMA_APPRAISE_DIRECTORIES
-+	bool "Performs directory integrity appraisal"
-+	depends on IMA_APPRAISE
-+	default n
-+	help
-+	  This option enables directory integrity appraisal.
-+
-+	  If unsure, say N.
-+
-diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
-index d79263d..518450a 100644
---- a/security/integrity/ima/Makefile
-+++ b/security/integrity/ima/Makefile
-@@ -8,3 +8,4 @@ obj-$(CONFIG_IMA) += ima.o
- ima-y := ima_fs.o ima_queue.o ima_init.o ima_main.o ima_crypto.o ima_api.o \
- 	 ima_policy.o ima_template.o ima_template_lib.o
- ima-$(CONFIG_IMA_APPRAISE) += ima_appraise.o
-+ima-$(CONFIG_IMA_APPRAISE_DIRECTORIES) += ima_dir.o
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 6b326a2..fa2dd8b 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -160,7 +160,8 @@ struct integrity_iint_cache *integrity_iint_insert(struct inode *inode);
- struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
+diff --git a/fs/namei.c b/fs/namei.c
+index 645268f..d0e1821 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1469,16 +1469,33 @@ static int lookup_slow(struct nameidata *nd, struct path *path)
+ 	return 0;
+ }
  
- /* IMA policy related functions */
--enum ima_hooks { FILE_CHECK = 1, MMAP_CHECK, BPRM_CHECK, MODULE_CHECK, POST_SETATTR };
-+enum ima_hooks { FILE_CHECK = 1, MMAP_CHECK, BPRM_CHECK, MODULE_CHECK,
-+		 POST_SETATTR, DIR_CHECK };
++static inline int may_lookup_ima(struct nameidata *nd, int err)
++{
++	if (err)
++		return err;
++	err = ima_dir_check(&nd->path, MAY_EXEC|MAY_NOT_BLOCK);
++	if (err != -ECHILD)
++		return err;
++	if (unlazy_walk(nd, NULL))
++		return -ECHILD;
++	return ima_dir_check(&nd->path, MAY_EXEC);
++}
++
+ static inline int may_lookup(struct nameidata *nd)
+ {
++	int err = 0;
++
+ 	if (nd->flags & LOOKUP_RCU) {
+-		int err = inode_permission(nd->inode, MAY_EXEC|MAY_NOT_BLOCK);
++		err = inode_permission(nd->inode, MAY_EXEC|MAY_NOT_BLOCK);
+ 		if (err != -ECHILD)
+-			return err;
++			return may_lookup_ima(nd, err);
+ 		if (unlazy_walk(nd, NULL))
+ 			return -ECHILD;
+ 	}
+-	return inode_permission(nd->inode, MAY_EXEC);
++	err = inode_permission(nd->inode, MAY_EXEC);
++	if (err)
++		return err;
++	return ima_dir_check(&nd->path, MAY_EXEC);
+ }
  
- int ima_match_policy(struct dentry *dentry, enum ima_hooks func, int mask,
- 		     int flags);
-diff --git a/security/integrity/ima/ima_dir.c b/security/integrity/ima/ima_dir.c
-new file mode 100644
-index 0000000..8cc3589
---- /dev/null
-+++ b/security/integrity/ima/ima_dir.c
-@@ -0,0 +1,358 @@
-+/*
-+ * Copyright (C) 2011,2012 Intel Corporation
-+ *		 2013 Samsung Electronics
-+ *
-+ * Authors:
-+ * Dmitry Kasatkin <d.kasatkin@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ *
-+ * File: ima_dir.c
-+ *	implements the IMA directories hooks: ima_dir_check, ima_dir_update.
-+ */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": %s: " fmt, __func__
-+
-+#include <linux/module.h>
-+#include <linux/file.h>
-+#include <linux/mount.h>
-+#include <linux/xattr.h>
-+#include <linux/ima.h>
-+#include <linux/scatterlist.h>
-+#include <crypto/hash.h>
-+
-+#include "ima.h"
-+
-+static int ima_dir_enabled = 1;
-+
-+static int __init ima_dir_setup(char *str)
-+{
-+	if (strncmp(str, "off", 3) == 0)
-+		ima_dir_enabled = 0;
-+	return 1;
-+}
-+
-+__setup("ima_dir=", ima_dir_setup);
-+
-+struct readdir_callback {
-+	struct dir_context ctx;
-+	struct shash_desc *shash;
-+};
-+
-+static int ima_filldir(void *__buf, const char *name, int namelen,
-+		       loff_t offset, u64 ino, unsigned int d_type)
-+{
-+	struct readdir_callback *ctx = __buf;
-+	struct shash_desc *shash = ctx->shash;
-+	int rc;
-+
-+	rc = crypto_shash_update(shash, name, namelen);
-+	rc |= crypto_shash_update(shash, (const u8 *)&ino, sizeof(ino));
-+	rc |= crypto_shash_update(shash, (const u8 *)&d_type, sizeof(d_type));
-+
-+	return rc;
-+}
-+
-+static int ima_calc_dir_hash_tfm(struct path *path, struct file *file,
-+				 struct ima_digest_data *hash,
-+				 struct crypto_shash *tfm)
-+{
-+	struct inode *inode = path->dentry->d_inode;
-+	int rc = -ENOTDIR, opened = 0;
-+	struct {
-+		struct shash_desc shash;
-+		char ctx[crypto_shash_descsize(tfm)];
-+	} desc;
-+	struct readdir_callback buf = {
-+		.ctx.actor = ima_filldir,
-+		.shash = &desc.shash
-+	};
-+
-+	if (IS_DEADDIR(inode))
-+		return -ENOENT;
-+
-+	if (!file) {
-+		file = dentry_open(path, O_RDONLY, current->cred);
-+		if (IS_ERR(file))
-+			return PTR_ERR(file);
-+		opened = 1;
+ static inline int handle_dots(struct nameidata *nd, int type)
+@@ -2956,6 +2973,8 @@ retry_lookup:
+ 	}
+ 	mutex_lock(&dir->d_inode->i_mutex);
+ 	error = lookup_open(nd, path, file, op, got_write, opened);
++	if (error >= 0 && (*opened & FILE_CREATED))
++		ima_dir_update(&nd->path, NULL);
+ 	mutex_unlock(&dir->d_inode->i_mutex);
+ 
+ 	if (error <= 0) {
+@@ -3454,6 +3473,8 @@ retry:
+ 			error = vfs_mknod(path.dentry->d_inode,dentry,mode,0);
+ 			break;
+ 	}
++	if (!error)
++		ima_dir_update(&path, dentry);
+ out:
+ 	done_path_create(&path, dentry);
+ 	if (retry_estale(error, lookup_flags)) {
+@@ -3510,6 +3531,8 @@ retry:
+ 	error = security_path_mkdir(&path, dentry, mode);
+ 	if (!error)
+ 		error = vfs_mkdir(path.dentry->d_inode, dentry, mode);
++	if (!error)
++		ima_dir_update(&path, dentry);
+ 	done_path_create(&path, dentry);
+ 	if (retry_estale(error, lookup_flags)) {
+ 		lookup_flags |= LOOKUP_REVAL;
+@@ -3626,6 +3649,8 @@ retry:
+ 	if (error)
+ 		goto exit3;
+ 	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
++	if (!error)
++		ima_dir_update(&nd.path, NULL);
+ exit3:
+ 	dput(dentry);
+ exit2:
+@@ -3721,6 +3746,8 @@ retry:
+ 		if (error)
+ 			goto exit2;
+ 		error = vfs_unlink(nd.path.dentry->d_inode, dentry);
++		if (!error)
++			ima_dir_update(&nd.path, NULL);
+ exit2:
+ 		dput(dentry);
+ 	}
+@@ -3801,6 +3828,8 @@ retry:
+ 	error = security_path_symlink(&path, dentry, from->name);
+ 	if (!error)
+ 		error = vfs_symlink(path.dentry->d_inode, dentry, from->name);
++	if (!error)
++		ima_dir_update(&path, dentry);
+ 	done_path_create(&path, dentry);
+ 	if (retry_estale(error, lookup_flags)) {
+ 		lookup_flags |= LOOKUP_REVAL;
+@@ -3919,6 +3948,8 @@ retry:
+ 	if (error)
+ 		goto out_dput;
+ 	error = vfs_link(old_path.dentry, new_path.dentry->d_inode, new_dentry);
++	if (!error)
++		ima_dir_update(&new_path, NULL);
+ out_dput:
+ 	done_path_create(&new_path, new_dentry);
+ 	if (retry_estale(error, how)) {
+@@ -4171,6 +4202,11 @@ retry:
+ 		goto exit5;
+ 	error = vfs_rename(old_dir->d_inode, old_dentry,
+ 				   new_dir->d_inode, new_dentry);
++	if (!error) {
++		ima_dir_update(&oldnd.path, NULL);
++		if (!path_equal(&oldnd.path, &newnd.path))
++			ima_dir_update(&newnd.path, NULL);
 +	}
+ exit5:
+ 	dput(new_dentry);
+ exit4:
+diff --git a/fs/open.c b/fs/open.c
+index d420331..021e2c5 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -390,6 +390,9 @@ retry:
+ 	error = inode_permission(path.dentry->d_inode, MAY_EXEC | MAY_CHDIR);
+ 	if (error)
+ 		goto dput_and_out;
++	error = ima_dir_check(&path, MAY_EXEC);
++	if (error)
++		goto dput_and_out;
+ 
+ 	set_fs_pwd(current->fs, &path);
+ 
+@@ -420,6 +423,9 @@ SYSCALL_DEFINE1(fchdir, unsigned int, fd)
+ 		goto out_putf;
+ 
+ 	error = inode_permission(inode, MAY_EXEC | MAY_CHDIR);
++	if (error)
++		goto out_putf;
++	error = ima_dir_check(&f.file->f_path, MAY_EXEC);
+ 	if (!error)
+ 		set_fs_pwd(current->fs, &f.file->f_path);
+ out_putf:
+diff --git a/include/linux/ima.h b/include/linux/ima.h
+index 1b7f268..e33035e 100644
+--- a/include/linux/ima.h
++++ b/include/linux/ima.h
+@@ -73,4 +73,27 @@ static inline int ima_inode_removexattr(struct dentry *dentry,
+ 	return 0;
+ }
+ #endif /* CONFIG_IMA_APPRAISE */
 +
-+	if (!file->f_op || !file->f_op->iterate)
-+		goto out;
-+
-+	/* Directory can only be opened for reading? */
-+	WARN_ON(!(file->f_mode & FMODE_READ));
-+
-+	desc.shash.tfm = tfm;
-+	desc.shash.flags = 0;
-+
-+	rc = crypto_shash_init(&desc.shash);
-+	if (rc != 0)
-+		goto out;
-+
-+	/* we do not use iterate_dir() because it locks dir i_mutex,
-+	   which is already locked by our call path */
-+	WARN(buf.ctx.pos, "ctx.pos is not NULL");
-+	rc = file->f_op->iterate(file, &buf.ctx);
-+	if (rc)
-+		goto out;
-+
-+	hash->length = crypto_shash_digestsize(tfm);
-+	rc = crypto_shash_final(&desc.shash, hash->digest);
-+
-+out:
-+	if (opened)
-+		fput(file);
-+	return rc;
-+}
-+
-+int ima_calc_dir_hash(struct path *path, struct file *file,
-+		      struct ima_digest_data *hash)
++#ifdef CONFIG_IMA_APPRAISE_DIRECTORIES
++extern int ima_dir_check(struct path *dir, int mask);
++extern int ima_special_check(struct file *file, int mask);
++extern void ima_dir_update(struct path *dir, struct dentry *dentry);
++#else
++static inline int ima_dir_check(struct path *dir, int mask)
 +{
-+	struct crypto_shash *tfm;
-+	int rc;
-+
-+	tfm = ima_alloc_tfm(hash->algo);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
-+
-+	rc = ima_calc_dir_hash_tfm(path, file, hash, tfm);
-+
-+	ima_free_tfm(tfm);
-+
-+	return rc;
-+}
-+
-+
-+static int ima_dir_collect(struct integrity_iint_cache *iint,
-+			  struct path *path, struct file *file,
-+			  struct evm_ima_xattr_data **xattr_value,
-+			  int *xattr_len)
-+{
-+	struct dentry *dentry = path->dentry;
-+	struct inode *inode = dentry->d_inode;
-+	int rc = -EINVAL;
-+	struct {
-+		struct ima_digest_data hdr;
-+		char digest[IMA_MAX_DIGEST_SIZE];
-+	} hash;
-+
-+	if (xattr_value)
-+		*xattr_len = ima_read_xattr(dentry, xattr_value);
-+
-+	if (iint->flags & IMA_COLLECTED)
-+		return 0;
-+
-+	/* use default hash algorithm */
-+	hash.hdr.algo = ima_hash_algo;
-+
-+	if (xattr_value)
-+		ima_get_hash_algo(*xattr_value, *xattr_len, &hash.hdr);
-+
-+	switch (inode->i_mode & S_IFMT) {
-+	case S_IFDIR:
-+		rc = ima_calc_dir_hash(path, file, &hash.hdr);
-+		break;
-+	default:
-+		pr_debug("UKNOWN: dentry: %s, 0%o\n",
-+			 dentry->d_name.name, inode->i_mode & S_IFMT);
-+		break;
-+	}
-+
-+	if (!rc) {
-+		int length = sizeof(hash.hdr) + hash.hdr.length;
-+		void *tmpbuf = krealloc(iint->ima_hash, length, GFP_NOFS);
-+		if (tmpbuf) {
-+			iint->ima_hash = tmpbuf;
-+			memcpy(iint->ima_hash, &hash, length);
-+		} else
-+			rc = -ENOMEM;
-+	}
-+
-+	if (!rc)
-+		iint->flags |= IMA_COLLECTED;
-+	else
-+		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode,
-+				    dentry->d_name.name,
-+				    "collect_data", "failed", rc, 0);
-+	return rc;
-+}
-+
-+static int dir_measurement(struct path *path, struct file *file, int mask)
-+{
-+	struct dentry *dentry = path->dentry;
-+	struct inode *inode = dentry->d_inode;
-+	struct integrity_iint_cache *iint;
-+	char *pathbuf = NULL;
-+	const char *pathname;
-+	int rc = 0, action, xattr_len = 0, func = DIR_CHECK;
-+	struct evm_ima_xattr_data *xattr_value = NULL;
-+
-+	if (!ima_dir_enabled || !ima_initialized)
-+		return 0;
-+
-+	if (IS_IMA(inode)) {
-+		/* inode was already appraised or it is pending... */
-+		iint = integrity_iint_find(inode);
-+		BUG_ON(!iint);
-+
-+		action = iint->flags & IMA_DO_MASK;
-+		action &= ~((iint->flags & IMA_DONE_MASK) >> 1);
-+
-+		if (!action)
-+			goto out_unlocked;
-+
-+		if (mask & MAY_NOT_BLOCK)
-+			return -ECHILD;
-+
-+		mutex_lock(&inode->i_mutex);
-+	} else {
-+		/* Determine if in appraise/measurement policy,
-+		* returns IMA_MEASURE, IMA_APPRAISE bitmask.  */
-+		action = ima_must_appraise(dentry, mask, DIR_CHECK);
-+		if (!action)
-+			return 0;
-+
-+		if (mask & MAY_NOT_BLOCK)
-+			return -ECHILD;
-+		if (action < 0)
-+			return action;
-+
-+		mutex_lock(&inode->i_mutex);
-+
-+		iint = integrity_inode_get(inode);
-+		if (!iint) {
-+			rc = -ENOMEM;
-+			goto out_locked;
-+		}
-+
-+		iint->flags |= action;
-+		action &= IMA_DO_MASK;
-+	}
-+
-+	action &= ~((iint->flags & IMA_DONE_MASK) >> 1);
-+
-+	/* we only appraise, no other action bits */
-+	if (!action)
-+		goto out_locked;
-+
-+	rc = ima_dir_collect(iint, path, file, &xattr_value, &xattr_len);
-+	if (rc)
-+		goto out_locked;
-+
-+	pathname = ima_d_path(path, &pathbuf);
-+
-+	rc = ima_appraise_measurement(func, iint, dentry, pathname,
-+				      xattr_value, xattr_len);
-+	kfree(pathbuf);
-+out_locked:
-+	mutex_unlock(&inode->i_mutex);
-+out_unlocked:
-+	if (ima_appraise & IMA_APPRAISE_ENFORCE)
-+		return rc ? -EACCES : 0;
 +	return 0;
 +}
 +
-+/**
-+ * ima_dir_check: verifies directory integrity
-+ * @dir:	path to verify
-+ * @return:	error code if appraisal enforced, 0 otherwise
-+ *
-+ */
-+int ima_dir_check(struct path *dir, int mask)
++static inline int ima_special_check(struct file *file, int mask)
 +{
-+	BUG_ON(!S_ISDIR(dir->dentry->d_inode->i_mode));
-+
-+	return dir_measurement(dir, NULL, mask);
-+}
-+EXPORT_SYMBOL_GPL(ima_dir_check);
-+
-+int ima_special_check(struct file *file, int mask)
-+{
-+	if (!S_ISDIR(file->f_dentry->d_inode->i_mode))
-+		return 0;
-+	return dir_measurement(&file->f_path, file, mask);
++	return 0;
 +}
 +
-+static void ima_dir_update_xattr(struct integrity_iint_cache *iint,
-+				 struct path *path)
++static inline void ima_dir_update(struct path *dir, struct dentry *dentry)
 +{
-+	struct dentry *dentry = path->dentry;
-+	struct inode *inode = NULL;
-+	int rc;
-+
-+	if (!iint) {
-+		/* if iint is NULL, then we allocated iint for new directory */
-+		int action;
-+
-+		inode = dentry->d_inode;
-+
-+		/* Determine if in appraise/measurement policy */
-+		action = ima_must_appraise(dentry, MAY_READ, DIR_CHECK);
-+		if (action <= 0)
-+			return;
-+
-+		mutex_lock(&inode->i_mutex);
-+		iint = integrity_inode_get(inode);
-+		if (!iint)
-+			goto out;
-+
-+		/* set new inode as measured or/and appraised */
-+		action &= IMA_DO_MASK;
-+		iint->flags |= action | (action << 1);
-+		iint->ima_file_status = INTEGRITY_PASS;
-+	}
-+
-+	rc = ima_dir_collect(iint, path, NULL, NULL, NULL);
-+	if (!rc)
-+		ima_fix_xattr(dentry, iint);
-+out:
-+	if (inode)
-+		mutex_unlock(&inode->i_mutex);
++	return;
 +}
 +
-+/**
-+ * ima_dir_update - update directory integrity information
-+ * @dir:	path to update
-+ * newdir:	dir entry, which added
-+ *
-+ * It is called when directory content has changed,
-+ * and is used to re-calculate and update integrity data.
-+ * It is called with dir i_mutex locked.
-+ */
-+void ima_dir_update(struct path *dir, struct dentry *dentry)
-+{
-+	struct inode *inode = dir->dentry->d_inode;
-+	struct integrity_iint_cache *iint;
++#endif /* CONFIG_IMA_APPRAISE_DIRECTORIES */
 +
-+	if (!ima_dir_enabled || !ima_initialized)
-+		return;
+ #endif /* _LINUX_IMA_H */
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 86de99a..6230a50 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -115,6 +115,7 @@
+ #include <net/checksum.h>
+ #include <linux/security.h>
+ #include <linux/freezer.h>
++#include <linux/ima.h>
+ 
+ struct hlist_head unix_socket_table[2 * UNIX_HASH_SIZE];
+ EXPORT_SYMBOL_GPL(unix_socket_table);
+@@ -841,6 +842,7 @@ static int unix_mknod(const char *sun_path, umode_t mode, struct path *res)
+ 		if (!err) {
+ 			res->mnt = mntget(path.mnt);
+ 			res->dentry = dget(dentry);
++			ima_dir_update(&path, dentry);
+ 		}
+ 	}
+ 	done_path_create(&path, dentry);
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 6c12811..18d76d8 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -300,6 +300,9 @@ int ima_bprm_check(struct linux_binprm *bprm)
+  */
+ int ima_file_check(struct file *file, int mask)
+ {
++	if (!S_ISREG(file->f_dentry->d_inode->i_mode))
++		return ima_special_check(file, mask);
 +
-+	WARN(IS_PRIVATE(inode), "PRIVATE\n");
-+
-+	if (unlikely(IS_PRIVATE(inode)))
-+		return;
-+
-+	iint = integrity_iint_find(inode);
-+	if (!iint)
-+		return;
-+
-+	if (dentry) {
-+		/* new entry -> set initial security.ima value */
-+		struct path path = { .mnt = dir->mnt, .dentry = dentry };
-+		BUG_ON(!dentry->d_inode);
-+		ima_dir_update_xattr(NULL, &path);
-+	}
-+
-+	/* do not reset flags for directories, correct ?
-+	iint->flags &= ~(IMA_COLLECTED | IMA_APPRAISED | IMA_MEASURED);
-+	*/
-+	iint->flags &= ~IMA_COLLECTED;
-+	if (iint->flags & IMA_APPRAISE)
-+		ima_dir_update_xattr(iint, dir);
-+}
-+EXPORT_SYMBOL_GPL(ima_dir_update);
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 317826d..9051e3f 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -516,6 +516,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
- 				entry->func = MMAP_CHECK;
- 			else if (strcmp(args[0].from, "BPRM_CHECK") == 0)
- 				entry->func = BPRM_CHECK;
-+			else if (strcmp(args[0].from, "DIR_CHECK") == 0)
-+				entry->func = DIR_CHECK;
- 			else
- 				result = -EINVAL;
- 			if (!result)
+ 	ima_rdwr_violation_check(file);
+ 	return process_measurement(file, NULL,
+ 				   mask & (MAY_READ | MAY_WRITE | MAY_EXEC),
 -- 
 1.8.3.2
 
