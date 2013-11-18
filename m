@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab3KRS7U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:59:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57479 "EHLO
+	id S1753101Ab3KRS7R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:59:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57485 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693Ab3KRSku (ORCPT
+	with ESMTP id S1751787Ab3KRSku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 13:40:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Zhang Rui <rui.zhang@intel.com>, Jonghwan Choi <jhbird.choi@gmail.com>
-Subject: [PATCH 3.11 12/25] Thermal: x86_pkg_temp: change spin lock
-Date: Mon, 18 Nov 2013 10:40:41 -0800
-Message-Id: <20131118184035.991787661@linuxfoundation.org>
+        Gerd Hoffmann <kraxel@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.11 13/25] hyperv-fb: add pci stub
+Date: Mon, 18 Nov 2013 10:40:42 -0800
+Message-Id: <20131118184036.363134643@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
 References: <20131118184032.248465920@linuxfoundation.org>
@@ -27,87 +28,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+From: Gerd Hoffmann <kraxel@redhat.com>
 
-commit 7bed1b3caaedd5918f0820b29f3b7a2ddc812922 upstream.
+commit 7ad9684721606efbfb9b347346816e1e6baff8bb upstream.
 
-x86_pkg_temp receives thermal notifications via a callback from a
-therm_throt driver, where thermal interrupts are processed.
-This callback is pkg_temp_thermal_platform_thermal_notify. Here to
-avoid multiple interrupts from cores in a package, we disable the
-source and also set a variable to avoid scheduling delayed work function.
-This variable is protected via spin_lock_irqsave. On one buggy platform,
-we still receiving interrupts even if the source is disabled. This
-can cause deadlock/lockdep warning, when interrupt is generated while under
-spinlock in work function.
-Change spin_lock to spin_lock_irqsave and spin_unlock to
-spin_unlock_irqrestore as the data it is trying to protect can also
-be modified in a notification call called from interrupt handler.
+This patch adds a pci stub driver to hyper-fb.  The hyperv framebuffer
+driver will bind to the pci device then, so linux kernel and userspace
+know there is a proper kernel driver for the device active.  lspci shows
+this for example:
 
-Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Cc: Jonghwan Choi <jhbird.choi@gmail.com>
+[root@dhcp231 ~]# lspci -vs8
+00:08.0 VGA compatible controller: Microsoft Corporation Hyper-V virtual
+VGA (prog-if 00 [VGA controller])
+        Flags: bus master, fast devsel, latency 0, IRQ 11
+        Memory at f8000000 (32-bit, non-prefetchable) [size=64M]
+        Expansion ROM at <unassigned> [disabled]
+        Kernel driver in use: hyperv_fb
+
+Another effect is that the xorg vesa driver will not attach to the
+device and thus the Xorg server will automatically use the fbdev
+driver instead.
+
+Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/thermal/x86_pkg_temp_thermal.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/video/hyperv_fb.c |   40 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 39 insertions(+), 1 deletion(-)
 
---- a/drivers/thermal/x86_pkg_temp_thermal.c
-+++ b/drivers/thermal/x86_pkg_temp_thermal.c
-@@ -316,18 +316,19 @@ static void pkg_temp_thermal_threshold_w
- 	int phy_id = topology_physical_package_id(cpu);
- 	struct phy_dev_entry *phdev = pkg_temp_thermal_get_phy_entry(cpu);
- 	bool notify = false;
-+	unsigned long flags;
+--- a/drivers/video/hyperv_fb.c
++++ b/drivers/video/hyperv_fb.c
+@@ -795,12 +795,21 @@ static int hvfb_remove(struct hv_device
+ }
  
- 	if (!phdev)
- 		return;
  
--	spin_lock(&pkg_work_lock);
-+	spin_lock_irqsave(&pkg_work_lock, flags);
- 	++pkg_work_cnt;
- 	if (unlikely(phy_id > max_phy_id)) {
--		spin_unlock(&pkg_work_lock);
-+		spin_unlock_irqrestore(&pkg_work_lock, flags);
- 		return;
- 	}
- 	pkg_work_scheduled[phy_id] = 0;
--	spin_unlock(&pkg_work_lock);
-+	spin_unlock_irqrestore(&pkg_work_lock, flags);
++static DEFINE_PCI_DEVICE_TABLE(pci_stub_id_table) = {
++	{
++		.vendor      = PCI_VENDOR_ID_MICROSOFT,
++		.device      = PCI_DEVICE_ID_HYPERV_VIDEO,
++	},
++	{ /* end of list */ }
++};
++
+ static const struct hv_vmbus_device_id id_table[] = {
+ 	/* Synthetic Video Device GUID */
+ 	{HV_SYNTHVID_GUID},
+ 	{}
+ };
  
- 	enable_pkg_thres_interrupt();
- 	rdmsrl(MSR_IA32_PACKAGE_THERM_STATUS, msr_val);
-@@ -397,6 +398,7 @@ static int pkg_temp_thermal_device_add(u
- 	int thres_count;
- 	u32 eax, ebx, ecx, edx;
- 	u8 *temp;
-+	unsigned long flags;
++MODULE_DEVICE_TABLE(pci, pci_stub_id_table);
+ MODULE_DEVICE_TABLE(vmbus, id_table);
  
- 	cpuid(6, &eax, &ebx, &ecx, &edx);
- 	thres_count = ebx & 0x07;
-@@ -420,19 +422,19 @@ static int pkg_temp_thermal_device_add(u
- 		goto err_ret_unlock;
- 	}
+ static struct hv_driver hvfb_drv = {
+@@ -810,14 +819,43 @@ static struct hv_driver hvfb_drv = {
+ 	.remove = hvfb_remove,
+ };
  
--	spin_lock(&pkg_work_lock);
-+	spin_lock_irqsave(&pkg_work_lock, flags);
- 	if (topology_physical_package_id(cpu) > max_phy_id)
- 		max_phy_id = topology_physical_package_id(cpu);
- 	temp = krealloc(pkg_work_scheduled,
- 			(max_phy_id+1) * sizeof(u8), GFP_ATOMIC);
- 	if (!temp) {
--		spin_unlock(&pkg_work_lock);
-+		spin_unlock_irqrestore(&pkg_work_lock, flags);
- 		err = -ENOMEM;
- 		goto err_ret_free;
- 	}
- 	pkg_work_scheduled = temp;
- 	pkg_work_scheduled[topology_physical_package_id(cpu)] = 0;
--	spin_unlock(&pkg_work_lock);
-+	spin_unlock_irqrestore(&pkg_work_lock, flags);
++static int hvfb_pci_stub_probe(struct pci_dev *pdev,
++			       const struct pci_device_id *ent)
++{
++	return 0;
++}
++
++static void hvfb_pci_stub_remove(struct pci_dev *pdev)
++{
++}
++
++static struct pci_driver hvfb_pci_stub_driver = {
++	.name =		KBUILD_MODNAME,
++	.id_table =	pci_stub_id_table,
++	.probe =	hvfb_pci_stub_probe,
++	.remove =	hvfb_pci_stub_remove,
++};
  
- 	phy_dev_entry->phys_proc_id = topology_physical_package_id(cpu);
- 	phy_dev_entry->first_cpu = cpu;
+ static int __init hvfb_drv_init(void)
+ {
+-	return vmbus_driver_register(&hvfb_drv);
++	int ret;
++
++	ret = vmbus_driver_register(&hvfb_drv);
++	if (ret != 0)
++		return ret;
++
++	ret = pci_register_driver(&hvfb_pci_stub_driver);
++	if (ret != 0) {
++		vmbus_driver_unregister(&hvfb_drv);
++		return ret;
++	}
++
++	return 0;
+ }
+ 
+ static void __exit hvfb_drv_exit(void)
+ {
++	pci_unregister_driver(&hvfb_pci_stub_driver);
+ 	vmbus_driver_unregister(&hvfb_drv);
+ }
+ 
 
 
