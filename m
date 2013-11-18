@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab3KRSjF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:39:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
+	id S1752422Ab3KRSjN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:39:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57358 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092Ab3KRShq (ORCPT
+	with ESMTP id S1752083Ab3KRShq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 13:37:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xenia Ragiadakou <burzalodowa@gmail.com>,
-        Martin MOKREJS <mmokrejs@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.12 19/19] usbcore: set lpm_capable field for LPM capable root hubs
-Date: Mon, 18 Nov 2013 10:37:32 -0800
-Message-Id: <20131118183649.875869884@linuxfoundation.org>
+        "Steinar H. Gunderson" <sgunderson@bigfoot.com>,
+        Valentijn Sessink <valentyn@blub.net>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 12/19] ipv6: reset dst.expires value when clearing expire flag
+Date: Mon, 18 Nov 2013 10:37:25 -0800
+Message-Id: <20131118183647.634973769@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118183644.030738675@linuxfoundation.org>
 References: <20131118183644.030738675@linuxfoundation.org>
@@ -28,65 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xenia Ragiadakou <burzalodowa@gmail.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit 9df89d85b407690afa46ddfbccc80bec6869971d upstream.
+[ Upstream commit 01ba16d6ec85a1ec4669c75513a76b61ec53ee50 ]
 
-This patch sets the lpm_capable field for root hubs with LPM capabilities.
+On receiving a packet too big icmp error we update the expire value by
+calling rt6_update_expires. This function uses dst_set_expires which is
+implemented that it can only reduce the expiration value of the dst entry.
 
-Signed-off-by: Xenia Ragiadakou <burzalodowa@gmail.com>
-Reported-by: Martin MOKREJS <mmokrejs@gmail.com>
-Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+If we insert new routing non-expiry information into the ipv6 fib where
+we already have a matching rt6_info we only clear the RTF_EXPIRES flag
+in rt6i_flags and leave the dst.expires value as is.
+
+When new mtu information arrives for that cached dst_entry we again
+call dst_set_expires. This time it won't update the dst.expire value
+because we left the dst.expire value intact from the last update. So
+dst_set_expires won't touch dst.expires.
+
+Fix this by resetting dst.expires when clearing the RTF_EXPIRE flag.
+dst_set_expires checks for a zero expiration and updates the
+dst.expires.
+
+In the past this (not updating dst.expires) was necessary because
+dst.expire was placed in a union with the dst_entry *from reference
+and rt6_clean_expires did assign NULL to it. This split happend in
+ecd9883724b78cc72ed92c98bcb1a46c764fff21 ("ipv6: fix race condition
+regarding dst->expires and dst->from").
+
+Reported-by: Steinar H. Gunderson <sgunderson@bigfoot.com>
+Reported-by: Valentijn Sessink <valentyn@blub.net>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Valentijn Sessink <valentyn@blub.net>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/core/hcd.c |    1 +
- drivers/usb/core/hub.c |    7 ++++++-
- drivers/usb/core/usb.h |    1 +
- 3 files changed, 8 insertions(+), 1 deletion(-)
+ include/net/ip6_fib.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -1033,6 +1033,7 @@ static int register_root_hub(struct usb_
- 					dev_name(&usb_dev->dev), retval);
- 			return retval;
- 		}
-+		usb_dev->lpm_capable = usb_device_supports_lpm(usb_dev);
- 	}
- 
- 	retval = usb_new_device (usb_dev);
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -135,7 +135,7 @@ struct usb_hub *usb_hub_to_struct_hub(st
- 	return usb_get_intfdata(hdev->actconfig->interface[0]);
+--- a/include/net/ip6_fib.h
++++ b/include/net/ip6_fib.h
+@@ -165,6 +165,7 @@ static inline struct inet6_dev *ip6_dst_
+ static inline void rt6_clean_expires(struct rt6_info *rt)
+ {
+ 	rt->rt6i_flags &= ~RTF_EXPIRES;
++	rt->dst.expires = 0;
  }
  
--static int usb_device_supports_lpm(struct usb_device *udev)
-+int usb_device_supports_lpm(struct usb_device *udev)
- {
- 	/* USB 2.1 (and greater) devices indicate LPM support through
- 	 * their USB 2.0 Extended Capabilities BOS descriptor.
-@@ -156,6 +156,11 @@ static int usb_device_supports_lpm(struc
- 				"Power management will be impacted.\n");
- 		return 0;
- 	}
-+
-+	/* udev is root hub */
-+	if (!udev->parent)
-+		return 1;
-+
- 	if (udev->parent->lpm_capable)
- 		return 1;
- 
---- a/drivers/usb/core/usb.h
-+++ b/drivers/usb/core/usb.h
-@@ -35,6 +35,7 @@ extern int usb_get_device_descriptor(str
- 		unsigned int size);
- extern int usb_get_bos_descriptor(struct usb_device *dev);
- extern void usb_release_bos_descriptor(struct usb_device *dev);
-+extern int usb_device_supports_lpm(struct usb_device *udev);
- extern char *usb_cache_string(struct usb_device *udev, int index);
- extern int usb_set_configuration(struct usb_device *dev, int configuration);
- extern int usb_choose_configuration(struct usb_device *udev);
+ static inline void rt6_set_expires(struct rt6_info *rt, unsigned long expires)
 
 
