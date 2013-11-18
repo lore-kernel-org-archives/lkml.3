@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699Ab3KRKmQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 05:42:16 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:63668 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab3KRKmF (ORCPT
+	id S1751724Ab3KRKnz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 05:43:55 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:46571 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab3KRKnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 05:42:05 -0500
-Date: Mon, 18 Nov 2013 10:42:00 +0000
+	Mon, 18 Nov 2013 05:43:47 -0500
+Date: Mon, 18 Nov 2013 10:43:43 +0000
 From: Lee Jones <lee.jones@linaro.org>
 To: Thierry Reding <thierry.reding@gmail.com>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mfd: cros ec: spi: Fix debug output
-Message-ID: <20131118104200.GF13640@lee--X1>
+        linux-kernel@vger.kernel.org, Derek Basehore <dbasehore@chromium.org>
+Subject: Re: [PATCH 2/3] mfd: cros ec: spi: Increase EC transaction delay
+Message-ID: <20131118104343.GG13640@lee--X1>
 References: <1384770649-8593-1-git-send-email-treding@nvidia.com>
- <1384770649-8593-3-git-send-email-treding@nvidia.com>
+ <1384770649-8593-2-git-send-email-treding@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1384770649-8593-3-git-send-email-treding@nvidia.com>
+In-Reply-To: <1384770649-8593-2-git-send-email-treding@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,15 +28,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 18 Nov 2013, Thierry Reding wrote:
 
-> The dev_cont() symbol doesn't exist, so replace it with pr_cont(). While
-> at it, also append a newline to the debug output to make it look nicer.
+> From: Derek Basehore <dbasehore@chromium.org>
 > 
+> 50 us is not a long enough delay between EC transactions. At least 70 us
+> are needed for the 16 MHz STM32L part. Increase the delay to 200 us for
+> an extra safety margin.
+> 
+> Signed-off-by: Derek Basehore <dbasehore@chromium.org>
+> Reviewed-by: Randall Spangler <rspangler@chromium.org>
 > Signed-off-by: Thierry Reding <treding@nvidia.com>
 > ---
->  drivers/mfd/cros_ec_spi.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+>  drivers/mfd/cros_ec_spi.c | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
 
-Applied, thanks.
+As I'm sure you've tested this and you didn't notice any new undue
+latency, I'll apply the patch, thanks.
 
 -- 
 Lee Jones
