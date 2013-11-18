@@ -1,133 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341Ab3KRJMJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 04:12:09 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:42044 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab3KRJMB (ORCPT
+	id S1751441Ab3KRJNF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 04:13:05 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:36873 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab3KRJM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 04:12:01 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee691-b7f866d000001b8c-7c-5289d9dfd98d
-Content-transfer-encoding: 8BIT
-Message-id: <1384765870.26319.16.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH V2 1/2] f2fs: add a new function to support for
- merging contiguous read
+	Mon, 18 Nov 2013 04:12:56 -0500
+X-AuditID: cbfee690-b7f3d6d000001c4a-cb-5289da1776ec
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?UTF-8?Q?=27=E8=B0=AD=E5=A7=9D=27?= <shu.tan@samsung.com>
-Date: Mon, 18 Nov 2013 18:11:10 +0900
-In-reply-to: <000901cee3fe$edfa8660$c9ef9320$@samsung.com>
-References: <000001cee293$3b6e3030$b24a9090$@samsung.com>
- <1384734560.26319.10.camel@kjgkr> <000901cee3fe$edfa8660$c9ef9320$@samsung.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zfd37NzuDDHZsMbD43/SRzeLSIneL
-	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxpcrr1kL
-	VglV9P38w9rAuJGvi5GDQ0LARGLhc8EuRk4gU0ziwr31bF2MXBxCAssYJc7vXMoEkTCRmHdw
-	KpgtJLCIUaJ7RymIzSsgKPFj8j0WkDnMAvISRy5lg4SZBdQlJs1bxAwx5xWjRMunPjaIel2J
-	GzdbmEFsYYEMicapk1hBetkEtCU27zeAGK8o8Xb/XVYQW0RASeLX/EWsIHOYBZYzSjyffI4F
-	JMEioCox48UOsCJOASuJGSeOsUMs62aUOD73N1iCX0BU4vDC7cwQDyhJ7G7vBCuSELjELjHl
-	xjI2iEkCEt8mH2KBhISsxKYDUPWSEgdX3GCZwCgxC8mfsxD+nIXkzwWMzKsYRVMLkguKk9KL
-	TPWKE3OLS/PS9ZLzczcxQiJv4g7G+wesDzEmA22cyCwlmpwPjNy8knhDYzMjC1MTU2Mjc0sz
-	0oSVxHnTHyUFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBkXMvHk6NVrSQrv/1hfMTOcw72
-	63fnMyhelFGaa+navaDqb84yoYcS8q8k90lt+6rIUz65tcjy+eqezXuYL3vPn7tW0WNFdcYz
-	JevwF9Jzb/3Y0LlK/nJVjZJIi2NN+iSdX/+KvmrOCPDxczMJ/7fx1JV5S24eaOoPyhW/eFjG
-	+8LvsBYRSW4lluKMREMt5qLiRACHWYyT0gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd37NzuDDL5/1bb43/SRzeLSIneL
-	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqt
-	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
-	MI0Rur4hQXA9RgZoIGEdY8aXK69ZC1YJVfT9/MPawLiRr4uRk0NCwERi3sGpTBC2mMSFe+vZ
-	QGwhgUWMEt07SkFsXgFBiR+T77F0MXJwMAvISxy5lA0SZhZQl5g0bxFzFyMXUPkrRomWT31s
-	EPW6EjdutjCD2MICGRKNUyexgvSyCWhLbN5vADFeUeLt/rusILaIgJLEr/mLWEHmMAssZ5R4
-	PvkcC0iCRUBVYsaLHWBFnAJWEjNOHGOHWNbNKHF87m+wBL+AqMThhduZIR5Qktjd3sk+gVFo
-	FpK7ZyHcPQvJ3QsYmVcxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEf2M6kdjCsbLA4xCnAw
-	KvHwaoR1BgmxJpYVV+YeYpTgYFYS4V1xAyjEm5JYWZValB9fVJqTWnyIMRno8onMUqLJ+cCk
-	k1cSb2hsYmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjCdfNZRq2095
-	9KrocnOjZT1X+6XGk6nn5+0Tfbqw85mj/fxn26rZ/z14YO07qSHfS34r7/GnO1NF/uV0nPU+
-	rzb70PFp3ee3JEy7n+9hd/PQicMbHk56oPhmh6vEijP3T61QOpbst5356I6LNgVzC55vaM36
-	fcuwKYKj9XNgpiy38o2v8hPnZccosRRnJBpqMRcVJwIAYWeO2jADAAA=
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH 1/2] f2fs: clean up the do_submit_bio flow
+Date: Mon, 18 Nov 2013 18:12:01 +0900
+Message-id: <1384765922-24028-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsVy+t8zY13xW51BBj+uiVtc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXF9xRzmglbBilNX
+	77I2MB7j7WLk5JAQMJG4/HonG4QtJnHh3nogm4tDSGAZo0Tz9G9ADgdY0bTFRhDxRYwSH5ds
+	BGsQEmhmkjjWlg1SwyagLbF5vwFIWESAWWLB1POMIPXMAhMYJf4ves8CkhAWsJJY9eAHK4jN
+	IqAqMflZJyNIL6+Au8SUJ+EQN2hLbHs+EaxXQuAxm8THQ5fZIeoFJL5NPsQCcY+sxKYDzBD1
+	khIHV9xgmcAouICRYRWjaGpBckFxUnqRiV5xYm5xaV66XnJ+7iZGSPhN2MF474D1IcZkoHET
+	maVEk/OB4ZtXEm9obGZkYWpiamxkbmlGmrCSOK/ao6QgIYH0xJLU7NTUgtSi+KLSnNTiQ4xM
+	HJxSDYxF26xOv1c7yLBpaeSqovXT1brvL/4bPSXojadReZ2Yx1aBwyV28SeMUzRc72hbeU+P
+	E3L4t+ndi3l7Dj01nFVjdGVeXnm+uc+PItt5gvtD715cZxX8Zt5xwfLU1qtCRZ2i24I1/Zsm
+	381d3yni1GhcMeHctBSmVYw7t/968GhGe9y/W5Ibfk5VYinOSDTUYi4qTgQAaM3xXFUCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPIsWRmVeSWpSXmKPExsVy+t9jAV3xW51BBgv2Cltc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
+	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
+	SBBcj5EBGkhYx5hxfcUc5oJWwYpTV++yNjAe4+1i5OCQEDCRmLbYqIuRE8gUk7hwbz1bFyMX
+	h5DAIkaJj0s2soEkhASamSSOtWWD1LMJaEts3m8AEhYRYJZYMPU8I0g9s8AERon/i96zgCSE
+	BawkVj34wQpiswioSkx+1skI0ssr4C4x5Uk4xC5tiW3PJzJOYORewMiwilE0tSC5oDgpPddI
+	rzgxt7g0L10vOT93EyM4uJ9J72Bc1WBxiFGAg1GJh1cjrDNIiDWxrLgy9xCjBAezkgjvihtA
+	Id6UxMqq1KL8+KLSnNTiQ4zJQMsnMkuJJucDIy+vJN7Q2MTMyNLIzMLIxNycNGElcd6DrdaB
+	QgLpiSWp2ampBalFMFuYODilGhgDZjH9a1v2O8vvbUx3V5mPxG4Nea0uo3932vxTjSJr/JR/
+	bJKxq3dUUcrz3vmr5bP4Bq737+dleZ/j9XwxXfA4c7B15dkXH8JvLZt27cBdo4rsVNUFa5uS
+	nYOtnqlvCj10VfehyXH9SL3VJ+Ys4Dt27zcnv9tHvZn2faq+unEPNq/9fkT4RLwSS3FGoqEW
+	c1FxIgD3NOY5sgIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch introduces PAGE_TYPE_OF_BIO() and cleans up do_submit_bio() with it.
 
-2013-11-18 (월), 09:37 +0800, Chao Yu:
-> Hi Kim,
-> 
-> > -----Original Message-----
-> > From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> > Sent: Monday, November 18, 2013 8:29 AM
-> > To: Chao Yu
-> > Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; 谭姝
-> > Subject: Re: [f2fs-dev] [PATCH V2 1/2] f2fs: add a new function to support for merging contiguous read
-> > 
-> > Hi Chao,
-> > 
-> > 2013-11-16 (토), 14:14 +0800, Chao Yu:
-> > > For better read performance, we add a new function to support for merging contiguous read as the one for write.
-> > 
-> > Please consider 80 columns for the description.
-> > I cannot fix this at every time though. :(
-> 
-> Got it, sorry about my carelessness in previous patch.
-> 
-> > 
-> > >
-> > > v1-->v2:
-> > >  o add declarations here as Gu Zheng suggested.
-> > >
-> > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > Acked-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> > > ---
-> > >  fs/f2fs/data.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
-> > >  fs/f2fs/f2fs.h |    4 ++++
-> > >  2 files changed, 49 insertions(+)
-> > >
-> > > diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> > > index aa3438c..18107cb 100644
-> > > --- a/fs/f2fs/data.c
-> > > +++ b/fs/f2fs/data.c
-> > > @@ -404,6 +404,51 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct page *page,
-> > >  	return 0;
-> > >  }
-> > >
-> > > +void f2fs_submit_read_bio(struct f2fs_sb_info *sbi, int rw)
-> > > +{
-> > > +	down_read(&sbi->bio_sem);
-> > 
-> > Is there any reason to use down_read()?
-> 
-> Isn't that we use bio_sem to let w/r or w/w submitting be mutex?
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/f2fs.h    |  1 +
+ fs/f2fs/segment.c | 39 +++++++++++++++++++++------------------
+ 2 files changed, 22 insertions(+), 18 deletions(-)
 
-As I examined the bio_sem, I think we don't need to use a semaphore for
-read and write IOs.
-Just it is enough to use a mutex for writes only.
-
-> 
-> > It seems that we need to declare sbi->bio_read and sbi->bio_write
-> > instead of sbi->bio_sem.
-> > In addition to that, we need to use down_write(&sbi->bio_read) here.
-> 
-> If so, it looks similar between (struct rw_semaphore) sbi->bio_read 
-> and (struct bio *) sbi->read_bio.
-> How about using read_bio_sem/rbio_sem to differentiate 
-> from sbi->read_bio?
-
-I think sbi->write_mutex and sbi->read_mutex are much better.
-
-Could you refer the following patches?
-Thanks,
-
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index fe5c2fc..1c783fd 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -351,6 +351,7 @@ enum count_type {
+  *			with waiting the bio's completion
+  * ...			Only can be used with META.
+  */
++#define PAGE_TYPE_OF_BIO(type)	(type) > META ? META : (type)
+ enum page_type {
+ 	DATA,
+ 	NODE,
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 1f83999..dad5f1a 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -837,32 +837,35 @@ static void do_submit_bio(struct f2fs_sb_info *sbi,
+ 				enum page_type type, bool sync)
+ {
+ 	int rw = sync ? WRITE_SYNC : WRITE;
+-	enum page_type btype = type > META ? META : type;
++	enum page_type btype = PAGE_TYPE_OF_BIO(type);
++	struct bio *bio = sbi->bio[btype];
++	struct bio_private *p;
++
++	if (!bio)
++		return;
++
++	sbi->bio[btype] = NULL;
+ 
+ 	if (type >= META_FLUSH)
+ 		rw = WRITE_FLUSH_FUA;
+-
+ 	if (btype == META)
+ 		rw |= REQ_META;
+ 
+-	if (sbi->bio[btype]) {
+-		struct bio_private *p = sbi->bio[btype]->bi_private;
+-		p->sbi = sbi;
+-		sbi->bio[btype]->bi_end_io = f2fs_end_io_write;
++	p = bio->bi_private;
++	p->sbi = sbi;
++	bio->bi_end_io = f2fs_end_io_write;
+ 
+-		trace_f2fs_do_submit_bio(sbi->sb, btype, sync, sbi->bio[btype]);
++	trace_f2fs_do_submit_bio(sbi->sb, btype, sync, bio);
+ 
+-		if (type == META_FLUSH) {
+-			DECLARE_COMPLETION_ONSTACK(wait);
+-			p->is_sync = true;
+-			p->wait = &wait;
+-			submit_bio(rw, sbi->bio[btype]);
+-			wait_for_completion(&wait);
+-		} else {
+-			p->is_sync = false;
+-			submit_bio(rw, sbi->bio[btype]);
+-		}
+-		sbi->bio[btype] = NULL;
++	if (type == META_FLUSH) {
++		DECLARE_COMPLETION_ONSTACK(wait);
++		p->is_sync = true;
++		p->wait = &wait;
++		submit_bio(rw, bio);
++		wait_for_completion(&wait);
++	} else {
++		p->is_sync = false;
++		submit_bio(rw, bio);
+ 	}
+ }
+ 
 -- 
-Jaegeuk Kim
-Samsung
+1.8.4.474.g128a96c
 
