@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab3KRXcx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 18:32:53 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37957 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307Ab3KRXcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 18:32:50 -0500
-Date: Tue, 19 Nov 2013 00:32:47 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+	id S1751561Ab3KRXmd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 18:42:33 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53934 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab3KRXma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 18:42:30 -0500
+Date: Tue, 19 Nov 2013 00:42:09 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: NeilBrown <neilb@suse.de>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         lkml <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH] brcmsmac: Fix build dep on LEDS_CLASS
-Message-ID: <20131118233247.GM24851@pd.tnic>
-References: <20131117133702.GA30840@pd.tnic>
- <5289359B.8090506@broadcom.com>
- <CACna6ryNX1=8zdYe2bjCj7aj3S_O=LnrxdjBcESvJJ63+h729Q@mail.gmail.com>
- <20131118133250.GH24851@pd.tnic>
- <20131118204003.GK24851@pd.tnic>
- <528A925C.20602@broadcom.com>
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Marek Belisko <marek@goldelico.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH/RFC] wait_for_completion_timeout() considered harmful.
+Message-ID: <20131118234209.GO16796@laptop.programming.kicks-ass.net>
+References: <20131117080603.2a0d3b6d@notabene.brown>
+ <20131118152746.937b2b7971d7a4bba4ef996d@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <528A925C.20602@broadcom.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131118152746.937b2b7971d7a4bba4ef996d@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 11:19:08PM +0100, Arend van Spriel wrote:
-> what about:
+On Mon, Nov 18, 2013 at 03:27:46PM -0800, Andrew Morton wrote:
+> On Sun, 17 Nov 2013 08:06:03 +1100 NeilBrown <neilb@suse.de> wrote:
 > 
-> config BRCMSMAC
->         tristate "Broadcom IEEE802.11n PCIe SoftMAC WLAN driver"
->         depends on MAC80211
->         depends on BCMA_POSSIBLE
-> +	select LEDS_CLASS if BCMA_DRIVER_GPIO
-> 	select BCMA
+> > It would be reasonable to assume that
+> > 
+> >       wait_for_completion_timeout(&wm8350->auxadc_done, msecs_to_jiffies(5));
+> > 
+> > would wait at least 5 msecs for the auxadc_done to complete.  But it does not.
+> > With a HZ of 200 or less, msecs_to_jiffies(5) has value '1', and so this
+> > will only wait until the next "timer tick", which could happen immediately.
+> > 
+> > This can lead to incorrect results - and has done so in out-of-tree patches
+> > for drivers/misc/bmp085.c which uses a very similar construct to enable interrupt
+> > based result collection.
+> > 
+> > The documentation for several *_timeout* functions claim they will wait for
+> > "timeout jiffies" to have elapsed where this is not the case.  They will
+> > actually wait for "timeout" jiffies to have started implying an elapsed time
+> > between (timeout-1) and (timeout).
+> > 
+> > This patch corrects some of this documentation, and adds a collection of
+> >   wait_for_completion*_msecs()
+> > interfaces which wait at least the given number of milliseconds for the
+> > completion (or a signal).
+> 
+> Mutter.  wait_for_x(..., 5ms) should wait for a minimum of 5ms, no matter
+> what.
+> 
+> So I'd suggest we make that happen, rather than adding some new interfaces?
 
-I know, nice and short but too good to be true. LEDS_CLASS needs to pull
-in NEW_LEDS unfortunately:
+Yeah, also the completion interface is just one of many that's buggered
+this way.
 
-drivers/built-in.o: In function `set_brightness_delayed':
-led-class.c:(.text+0x4596e5): undefined reference to `led_stop_software_blink'
-drivers/built-in.o: In function `led_classdev_register':
-(.text+0x4598db): undefined reference to `leds_list_lock'
-drivers/built-in.o: In function `led_classdev_register':
-(.text+0x4598e7): undefined reference to `leds_list'
-drivers/built-in.o: In function `led_classdev_register':
-(.text+0x4598f3): undefined reference to `leds_list'
-drivers/built-in.o: In function `led_classdev_register':
-(.text+0x4598fa): undefined reference to `leds_list_lock'
-drivers/built-in.o: In function `led_classdev_register':
-(.text+0x459901): undefined reference to `leds_list'
-drivers/built-in.o: In function `led_classdev_unregister':
-(.text+0x4599a8): undefined reference to `led_stop_software_blink'
-drivers/built-in.o: In function `led_classdev_unregister':
-(.text+0x4599b2): undefined reference to `led_set_brightness'
-drivers/built-in.o: In function `led_classdev_unregister':
-(.text+0x4599c2): undefined reference to `leds_list_lock'
-drivers/built-in.o: In function `led_classdev_unregister':
-(.text+0x4599d6): undefined reference to `leds_list_lock'
-make: *** [vmlinux] Error 1
+I briefly talked to Thomas about this earlier today and we need to fix
+this at a lower level -- the quick 'n dirty solution is to add 1 jiffy
+down in the timer-wheel when we enqueue these things.
 
-What works, instead, is below. I think my "depends" solution from
-earlier takes care of this without you having to select other stuff
-explicitly but in the end of the day, I don't really care all that much
-which one you guys take.
-
---
-diff --git a/drivers/net/wireless/brcm80211/Kconfig b/drivers/net/wireless/brcm80211/Kconfig
-index b00a7e92225f..54e36fcb3954 100644
---- a/drivers/net/wireless/brcm80211/Kconfig
-+++ b/drivers/net/wireless/brcm80211/Kconfig
-@@ -5,6 +5,8 @@ config BRCMSMAC
-        tristate "Broadcom IEEE802.11n PCIe SoftMAC WLAN driver"
-        depends on MAC80211
-        depends on BCMA
-+       select NEW_LEDS if BCMA_DRIVER_GPIO
-+       select LEDS_CLASS if BCMA_DRIVER_GPIO
-        select BRCMUTIL
-        select FW_LOADER
-        select CRC_CCITT
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+And yes, we very much don't want to create new interfaces with similar
+but slightly different semantics, that's just asking for trouble.
