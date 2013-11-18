@@ -1,41 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863Ab3KRXqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 18:46:36 -0500
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:59504 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064Ab3KRXqf (ORCPT
+	id S1751894Ab3KRXsh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 18:48:37 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60847 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab3KRXsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 18:46:35 -0500
+	Mon, 18 Nov 2013 18:48:35 -0500
+Message-ID: <528AA750.3080201@wwwdotorg.org>
+Date: Mon, 18 Nov 2013 16:48:32 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131118193802.GA14925@katana>
-References: <20131118193802.GA14925@katana>
-Date: Mon, 18 Nov 2013 15:46:34 -0800
-X-Google-Sender-Auth: Phz3Jeozg1qNtHrhK_YgX-NRy-c
-Message-ID: <CA+55aFxZaC=beR+dN36Sv==6fjY7SdOdwXaSHU+wnk+-oDJp4g@mail.gmail.com>
-Subject: Re: [PULL REQUEST] i2c for 3.13
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>
+CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH] ARM: tegra: properly use FUSE clock
+References: <1384771247-16547-1-git-send-email-acourbot@nvidia.com> <20131118114330.GD8646@ulmo.nvidia.com>
+In-Reply-To: <20131118114330.GD8646@ulmo.nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 11:38 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
->
-> here is the pull request from the i2c subsystem for 3.13:
+On 11/18/2013 04:43 AM, Thierry Reding wrote:
+> On Mon, Nov 18, 2013 at 07:40:47PM +0900, Alexandre Courbot wrote:
+>> FUSE clock is enabled by most bootloaders, but we cannot expect
+>> it to be on in all contexts (e.g. kexec).
+>> 
+>> This patch adds a FUSE clkdev to all Tegra platforms and makes
+>> sure it is enabled before touching FUSE registers.
+>> tegra_init_fuse() is invoked during very early boot and thus
+>> cannot rely on the clock framework ; therefore the FUSE clock is
+>> forcibly enabled using a register write in that function, and
+>> remains that way until the clock framework can be used.
+>> 
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com> --- 
+>> arch/arm/mach-tegra/fuse.c       | 41
+>> +++++++++++++++++++++++++++++++++++++++- 
+>> drivers/clk/tegra/clk-tegra114.c |  1 + 
+>> drivers/clk/tegra/clk-tegra124.c |  1 + 
+>> drivers/clk/tegra/clk-tegra20.c  |  1 +
+> 
+> Isn't this missing the clock driver changes for Tegra30? Ah...
+> Tegra30 already has this clock defined. I wonder why only Tegra30
+> has it. grep says that fuse-tegra isn't used by any drivers, which
+> also indicates that perhaps we don't need the .dev_id in the first
+> place. We should be able to get by with just the .con_id = "fuse".
+> 
+> Also are there any reasons to keep this in one single patch? Since
+> none of the fuse clocks are used yet, I think the clock changes
+> could be a separate patch that can go in through the clock tree.
+> And there isn't even a hard runtime dependency, since if the Tegra
+> changes were to go in without the clock changes, then the fallback
+> code in this patch should still turn the clock on properly. It just
+> might not be turned off again, but isn't that something we can live
+> with for a short period of time? I think perhaps that could even be
+> improved, see further below.
+> 
+> I've added Mike on Cc, he'll need to either take the patch in
+> through his tree or Ack this one, so he needs to see it
+> eventually.
+> 
+>> 4 files changed, 43 insertions(+), 1 deletion(-)
+>> 
+>> diff --git a/arch/arm/mach-tegra/fuse.c
+>> b/arch/arm/mach-tegra/fuse.c index 9a4e910c3796..3b9191b930b5
+>> 100644 --- a/arch/arm/mach-tegra/fuse.c +++
+>> b/arch/arm/mach-tegra/fuse.c @@ -22,6 +22,7 @@ #include
+>> <linux/io.h> #include <linux/export.h> #include <linux/random.h> 
+>> +#include <linux/clk.h> #include <linux/tegra-soc.h>
+>> 
+>> #include "fuse.h" @@ -54,6 +55,7 @@ int tegra_cpu_speedo_id;		/*
+>> only exist in Tegra30 and later */ int tegra_soc_speedo_id; enum
+>> tegra_revision tegra_revision;
+>> 
+>> +static struct clk *fuse_clk; static int tegra_fuse_spare_bit; 
+>> static void (*tegra_init_speedo_data)(void);
+>> 
+>> @@ -77,6 +79,22 @@ static const char
+>> *tegra_revision_name[TEGRA_REVISION_MAX] = { [TEGRA_REVISION_A04]
+>> = "A04", };
+>> 
+>> +static void tegra_fuse_enable_clk(void) +{ +	if
+>> (IS_ERR(fuse_clk)) +		fuse_clk = clk_get_sys("fuse-tegra",
+>> "fuse"); +	if (IS_ERR(fuse_clk)) +		return;
+> 
+> Perhaps instead of just returning here, this should actually be
+> where the code to enable the clock should go.
+> 
+>> +	clk_prepare_enable(fuse_clk); +} + +static void
+>> tegra_fuse_disable_clk(void) +{ +	if (IS_ERR(fuse_clk)) +
+>> return;
+> 
+> And this is where we could disable it again. That way we should
+> get equal functionality in both cases.
 
-So while resolving some fairly trivial conflicts here, I noticed that
-commit a76e9bd89ae7 ("i2c: attach/detach I2C client device to the ACPI
-power domain") that I got earlier through the ACPI/PM tree calls
-acpi_dev_pm_detach() even when the device "->remove()" function fails.
-But it only sets clientdata to NULL if it succeeds.
+That would need a shared lock with the clock code; at some point, the
+clock will be registered, and the clock subsystem in control of the
+enable bit. I think having a very early tegra_init_fuse() come along
+and force the clock on, and then having the rest of the fuse code use
+the clock object as soon as it's available, is the safest approach.
 
-That looks a bit odd.
+Of course, I suppose there's still a window where the following might
+happen:
 
-I didn't try to fix it, though. I just thought I'd point out the oddity.
+cpu 0:
+- tegra_fuse_enable_clk entered
+- fails to clk_get
+				cpu 1
+				- tegra clk driver is registered
+				- clk subsystem initcall disables all
+				  unused clocks
+- access a fuse register
 
-                 Linus
+-> badness
+
+I'm not sure how to protect against that, unless we simply assume that
+all the fuse driver functions are guaranteed to happen early and
+before the clk subsystem's initcall, so that can't happen?
