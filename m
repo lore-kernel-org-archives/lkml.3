@@ -1,157 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3KRT00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 14:26:26 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:45235 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab3KRT0Y (ORCPT
+	id S1752686Ab3KRT1j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 14:27:39 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:58571 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098Ab3KRT1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 14:26:24 -0500
-Date: Tue, 19 Nov 2013 00:56:48 +0530 (IST)
-From: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-X-X-Sender: hydrogen@as-rtp-nw.cisco.com
-To: David Miller <davem@davemloft.net>
-cc: Govindarajulu Varadarajan <govindarajulu90@gmail.com>,
-        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
-        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, IvDoorn@gmail.com, sbhatewara@vmware.com,
-        samuel@sortiz.org, chas@cmf.nrl.navy.mil, roland@kernel.org,
-        isdn@linux-pingi.de, jcliburn@gmail.com,
-        "Christian Benvenuti (benve)" <benve@cisco.com>,
-        "Sujith Sankar (ssujith)" <ssujith@cisco.com>,
-        jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
-        shahed.shaikh@qlogic.com, joe@perches.com, apw@canonical.com
-Subject: Re: [PATCH net-next 02/13] driver: net: remove unnecessary skb NULL
- check before calling dev_kfree_skb_irq
-In-Reply-To: <alpine.LNX.2.03.1311111537020.2363@cisco.com>
-Message-ID: <alpine.LNX.2.03.1311190055150.10646@gmail.com>
-References: <1383400074-30555-1-git-send-email-govindarajulu90@gmail.com> <1383400074-30555-3-git-send-email-govindarajulu90@gmail.com> <20131104.151230.1978898006990867916.davem@davemloft.net> <alpine.LNX.2.03.1311111537020.2363@cisco.com>
-User-Agent: Alpine 2.03 (LNX 1266 2009-07-14)
+	Mon, 18 Nov 2013 14:27:37 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <20131118191600.GA14679@redhat.com>
+References: <20131101232521.GA23119@www.outflux.net>
+	<20131114170337.GA11068@redhat.com>
+	<CAGXu5jLXpLqjCAMFwKp7t7GpMq4+WBqNzSFC=up+CBvgGDuFCw@mail.gmail.com>
+	<20131115203652.GA13476@redhat.com>
+	<CAGXu5j+=LZYAczLVawGPAxd=9VX1FupWZq+2858GsrD1YprL3w@mail.gmail.com>
+	<20131116190057.GA22666@redhat.com>
+	<20131116190141.GC22666@redhat.com>
+	<CAGXu5jK4sJ6zwi+rPqP-FjwY4C+6gsOVUOBfN7ztu9wNQYnk4g@mail.gmail.com>
+	<20131118191600.GA14679@redhat.com>
+Date: Mon, 18 Nov 2013 11:27:36 -0800
+X-Google-Sender-Auth: kqoCoBy_Rv_aC9rYckVVjEuqM9w
+Message-ID: <CAGXu5jKRvLqWkOF=3qoQ1ZdaKNLai_kai4Png5Ls3X1WAtdzJA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] kill MMF_DUMPABLE and MMF_DUMP_SECURELY
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "security@kernel.org" <security@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasily Kulikov <segoon@openwall.com>,
+        Petr Matousek <pmatouse@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Alex Kelly <alex.page.kelly@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave
-
-Did you have a chance to look at this? Let me know how you want me to
-fix this.
-
-//govind
-
-On Mon, 11 Nov 2013, Govindarajulu Varadarajan wrote:
-
->
->
-> On Mon, 4 Nov 2013, David Miller wrote:
->
->> From: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
->> Date: Sat,  2 Nov 2013 19:17:43 +0530
->> 
->>> @@ -1030,10 +1030,8 @@ static void ni65_xmit_intr(struct net_device 
->>> *dev,int csr0)
->>>  		}
->>>
->>>  #ifdef XMT_VIA_SKB
->>> -		if(p->tmd_skb[p->tmdlast]) {
->>> -			 dev_kfree_skb_irq(p->tmd_skb[p->tmdlast]);
->>> -			 p->tmd_skb[p->tmdlast] = NULL;
->>> -		}
->>> +		 dev_kfree_skb_irq(p->tmd_skb[p->tmdlast]);
->>> +		 p->tmd_skb[p->tmdlast] = NULL;
->>>  #endif
->> 
->> I absolutely disagree with this kind of change.
->> 
->> There is a non-trivial cost for NULL'ing out that array entry
->> unconditionally.  It's a dirtied cache line and this is in the
->> fast path of TX SKB reclaim of this driver.
->> 
->> You've made several changes of this kind.
->> 
->> And it sort-of shows that the places that do check for NULL,
->> are getting something in return for that test, namely avoidance
->> of an unnecessary cpu store in the fast path of the driver.
->> 
->
-> True, in case of dev_kfree_skb_irq. If you look at patch 06-12, at many
-> places we do
->
-> if (s->skb) {
-> 	dev_kfree_skb_any(s->skb);
-> 	s->skb = NULL)
-> }
->
-> This is in fast path. If the code is not running in hardirq,
-> dev_kfree_skb_any calls dev_kfree_skb. Which again check if skb is NULL.
-> So we are checking if skb is null twice. That is what this patch is
-> trying to fix. (sorry I should have mentioned this in cover letter).
->
-> I am not sure if you have read my previous mail. I am pasting it below.
->
->>> On Sun, 3 Nov 2013, Brandeburg, Jesse wrote: Thanks for this work, I'm a 
->>> little concerned that there is a
->>> non-trivial overhead to this patch.
->>> 
->>> when doing (for example in the Intel drivers): if (s->skb) {
->>>      dev_kfree_skb(s->skb);
->>>      s->skb = NULL; }
->>> 
->> 
->> In current code, dev_kfree_skb is NULL safe. Which means skb is
->> checked for NULL inside dev_kfree_skb. dev_kfree_skb_any is also NULL safe
->> when the code is running in non-hardirq.
->> 
->> Lets consider two cases
->> 
->> 1. skb is not NULL:
->>      * Without my patch:
->>           In the code above, we check for skb!=NULL twice. (once
->>           before calling dev_kfree_skb, once by dev_kfree_skb). And
->>           then we do assignment.
->>       * With this patch:
->>           we check for skb!=NULL once, And then we do assignment.
+On Mon, Nov 18, 2013 at 11:16 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 11/18, Kees Cook wrote:
 >>
->>       To fix the twice NULL check, we either have to remove the check
->>       which is inside dev_kfree_skb (1). Or do whats done in this
->>       patch.
+>> On Sat, Nov 16, 2013 at 11:01 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> > @@ -1629,24 +1628,13 @@ void set_dumpable(struct mm_struct *mm, int value)
+>> >
+>> >         do {
+>> >                 old = ACCESS_ONCE(mm->flags);
+>> > -               new = old & ~MMF_DUMPABLE_MASK;
+>> > -
+>> > -               switch (value) {
+>> > -               case SUID_DUMP_ROOT:
+>> > -                       new |= (1 << MMF_DUMP_SECURELY);
+>> > -               case SUID_DUMP_USER:
+>> > -                       new |= (1<< MMF_DUMPABLE);
+>> > -               }
+>> > -
+>> > +               new = (old & ~MMF_DUMPABLE_MASK) | value;
 >>
->>       (1) is not an option because a lot of kernel code already
->>       assumes that dev_kfree_skb is NULL safe.
->> 
->> 2. skb is NULL:
->>       * Without this patch:
->>           One if statement is executed.
->>       * With this patch:
->>           One if statement and one assignment is executed.
->> 
->> From my observation most of the dev_kfree_skb calls are from
->> e1000_unmap_and_free_tx_resource, e1000_put_txbuf,
->> atl1_clean_tx_ring, alx_free_txbuf etc. in clean up functions.
->> 
->> Is is quite unlikely thats skb is NULL. So it comes down to one extra
->> if-branching statement or one extra assignment. I would prefer extra
->> assignment to branching statement. In my opinion extra assignment is
->> very little price we pay.
->> 
->> //govind
+>> Just to make this safe against insane callers, perhaps mask the value as well?
 >
-> Another way to solve the double NULL check is to define a new function
-> something like this
+> Well yes, before this patch set_dumpable() silently ignored the wrong
+> value, perhaps you are right but see below.
 >
-> dev_kfree_skb_NULL(struct sk_buff **skb)
-> {
-> 	if(*skb) {
-> 		free_skb(*skb);
-> 		*skb=NULL;
-> 	}
-> }
+>>     new = (old & ~MMF_DUMPABLE_MASK) | (value & MMF_DUMPABLE_MASK);
+>                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
 >
-> and use this if you want to free a skb and make it NULL.
-> Is this approach better?
+> this doesn't really help, with this patch "mm->flags & MMF_DUMPABLE_MASK"
+> has a room for yet another SUID_DUMP == 4 we do not have yet.
 >
-> //govind
+> And I don't really like the "silently ignore" logic, so perhaps
 >
->
+>                 if (WARN_ON(value > SUID_DUMP_ROOT))
+>                         return;
+
+Ah, good point about == 4. Yeah, I like the WARN_ON. No reason not to
+be defensive as long as this code is getting changed.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
