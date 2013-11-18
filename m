@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623Ab3KRDYi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 22:24:38 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:48662 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab3KRDY3 (ORCPT
+	id S1751715Ab3KRDZg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 22:25:36 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:48595 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab3KRDZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 22:24:29 -0500
+	Sun, 17 Nov 2013 22:25:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <1384238195-24592-1-git-send-email-ch.naveen@samsung.com>
-References: <1378268629-2886-2-git-send-email-ch.naveen@samsung.com> <1384238195-24592-1-git-send-email-ch.naveen@samsung.com>
+In-Reply-To: <1384238168-24561-1-git-send-email-ch.naveen@samsung.com>
+References: <1383803562-31752-1-git-send-email-ch.naveen@samsung.com> <1384238168-24561-1-git-send-email-ch.naveen@samsung.com>
 From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Mon, 18 Nov 2013 08:54:08 +0530
-Message-ID: <CAHfPSqDTcW38xoCa28bxXs=TuhpJC1nUU3m3ZW290kNZUyrOQg@mail.gmail.com>
-Subject: Re: [PATCH 2/4 v9] thermal: samsung: change base_common to more
- meaningful base_second
+Date: Mon, 18 Nov 2013 08:55:08 +0530
+Message-ID: <CAHfPSqDqZ3yq-Wv7Qyx7kbFtgoJUv_yGZGX2R_-wa7rA0xeZNQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4 v9] thermal: samsung: replace inten_ bit fields with intclr_
 To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 Cc: linux-pm@vger.kernel.org, rui.zhang@intel.com, eduardo.valentin@ti.com,
         "linux-samsung-soc@vger.kernel.org" 
@@ -31,141 +30,202 @@ Hello All,
 
 On 12 November 2013 12:06, Naveen Krishna Chatradhi
 <ch.naveen@samsung.com> wrote:
-> On Exynos5440 and Exynos5420 there are registers common
-> across the TMU channels.
+> This patch replaces the inten_rise_shift/mask and inten_fall_shift/mask
+> with intclr_rise_shift/mask and intclr_fall_shift/mask respectively.
+> Currently, inten_rise_shift/mask and inten_fall_shift/mask bits are only used
+> to configure intclr related registers.
 >
-> To support that, we introduced a ADDRESS_MULTIPLE flag in the
-> driver and the 2nd set of register base and size are provided
-> in the "reg" property of the node.
+> Description of H/W:
+> The offset for the bits in the CLEAR register are not consistent across TMU
+> modules in Exynso5250, 5420 and 5440.
 >
-> As per Amit's suggestion, this patch changes the base_common
-> to base_second and SHARED_MEMORY to ADDRESS_MULTIPLE.
+> On Exynos5250, the FALL interrupt related en, status and clear bits are
+> available at an offset of
+> 16 in INTEN, INTSTAT registers and at an offset of
+> 12 in INTCLEAR register.
+>
+> On Exynos5420, the FALL interrupt related en, status and clear bits are
+> available at an offset of
+> 16 in INTEN, INTSTAT and INTCLEAR registers.
+>
+> On Exynos5440,
+> the FALL_IRQEN bits are at an offset of 4
+> and the RISE_IRQEN bits are at an offset of 0
 >
 > Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 > ---
 > Changes since v8:
->  None
->  .../devicetree/bindings/thermal/exynos-thermal.txt       |    4 ++--
->  drivers/thermal/samsung/exynos_tmu.c                     |   14 +++++++-------
->  drivers/thermal/samsung/exynos_tmu.h                     |    4 ++--
->  drivers/thermal/samsung/exynos_tmu_data.c                |    2 +-
->  4 files changed, 12 insertions(+), 12 deletions(-)
+> 1. Modified the patch description,
+> 2. replaces the inten_rise/fall_shift/mask with intclr_rise/fall_shift/mask
 >
-> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> index 284f530..116cca0 100644
-> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> @@ -11,8 +11,8 @@
->  - reg : Address range of the thermal registers. For soc's which has multiple
->         instances of TMU and some registers are shared across all TMU's like
->         interrupt related then 2 set of register has to supplied. First set
-> -       belongs to each instance of TMU and second set belongs to common TMU
-> -       registers.
-> +       belongs to each instance of TMU and second set belongs to second set
-> +       of common TMU registers.
->  - interrupts : Should contain interrupt for thermal system
->  - clocks : The main clock for TMU device
->  - clock-names : Thermal system clock name
+>  drivers/thermal/samsung/exynos_tmu.c      |    6 +++---
+>  drivers/thermal/samsung/exynos_tmu.h      |   16 ++++++++--------
+>  drivers/thermal/samsung/exynos_tmu_data.c |   18 +++++++++---------
+>  drivers/thermal/samsung/exynos_tmu_data.h |    4 ++--
+>  4 files changed, 22 insertions(+), 22 deletions(-)
+>
 > diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-> index c493245..bbd0fc3 100644
+> index 32f38b9..c493245 100644
 > --- a/drivers/thermal/samsung/exynos_tmu.c
 > +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -41,7 +41,7 @@
->   * @id: identifier of the one instance of the TMU controller.
->   * @pdata: pointer to the tmu platform/configuration data
->   * @base: base address of the single instance of the TMU controller.
-> - * @base_common: base address of the common registers of the TMU controller.
-> + * @base_second: base address of the common registers of the TMU controller.
->   * @irq: irq number of the TMU controller.
->   * @soc: id of the SOC type.
->   * @irq_work: pointer to the irq work structure.
-> @@ -56,7 +56,7 @@ struct exynos_tmu_data {
->         int id;
->         struct exynos_tmu_platform_data *pdata;
->         void __iomem *base;
-> -       void __iomem *base_common;
-> +       void __iomem *base_second;
->         int irq;
->         enum soc_type soc;
->         struct work_struct irq_work;
-> @@ -297,7 +297,7 @@ skip_calib_data:
->         }
->         /*Clear the PMIN in the common TMU register*/
->         if (reg->tmu_pmin && !data->id)
-> -               writel(0, data->base_common + reg->tmu_pmin);
-> +               writel(0, data->base_second + reg->tmu_pmin);
->  out:
->         clk_disable(data->clk);
->         mutex_unlock(&data->lock);
-> @@ -454,7 +454,7 @@ static void exynos_tmu_work(struct work_struct *work)
+> @@ -237,7 +237,7 @@ skip_calib_data:
+>                         writeb(pdata->trigger_levels[i], data->base +
+>                         reg->threshold_th0 + i * sizeof(reg->threshold_th0));
 >
->         /* Find which sensor generated this interrupt */
->         if (reg->tmu_irqstatus) {
-> -               val_type = readl(data->base_common + reg->tmu_irqstatus);
-> +               val_type = readl(data->base_second + reg->tmu_irqstatus);
->                 if (!((val_type >> data->id) & 0x1))
->                         goto out;
->         }
-> @@ -579,7 +579,7 @@ static int exynos_map_dt_data(struct platform_device *pdev)
->          * Check if the TMU shares some registers and then try to map the
->          * memory of common registers.
->          */
-> -       if (!TMU_SUPPORTS(pdata, SHARED_MEMORY))
-> +       if (!TMU_SUPPORTS(pdata, ADDRESS_MULTIPLE))
->                 return 0;
+> -               writel(reg->inten_rise_mask, data->base + reg->tmu_intclear);
+> +               writel(reg->intclr_rise_mask, data->base + reg->tmu_intclear);
+>         } else {
+>                 /* Write temperature code for rising and falling threshold */
+>                 for (i = 0;
+> @@ -264,8 +264,8 @@ skip_calib_data:
+>                 writel(falling_threshold,
+>                                 data->base + reg->threshold_th1);
 >
->         if (of_address_to_resource(pdev->dev.of_node, 1, &res)) {
-> @@ -587,9 +587,9 @@ static int exynos_map_dt_data(struct platform_device *pdev)
->                 return -ENODEV;
->         }
+> -               writel((reg->inten_rise_mask << reg->inten_rise_shift) |
+> -                       (reg->inten_fall_mask << reg->inten_fall_shift),
+> +               writel((reg->intclr_rise_mask << reg->intclr_rise_shift) |
+> +                       (reg->intclr_fall_mask << reg->intclr_fall_shift),
+>                                 data->base + reg->tmu_intclear);
 >
-> -       data->base_common = devm_ioremap(&pdev->dev, res.start,
-> +       data->base_second = devm_ioremap(&pdev->dev, res.start,
->                                         resource_size(&res));
-> -       if (!data->base_common) {
-> +       if (!data->base_second) {
->                 dev_err(&pdev->dev, "Failed to ioremap memory\n");
->                 return -ENOMEM;
->         }
+>                 /* if last threshold limit is also present */
 > diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-> index 980859a..0d6b32f 100644
+> index 3fb6554..980859a 100644
 > --- a/drivers/thermal/samsung/exynos_tmu.h
 > +++ b/drivers/thermal/samsung/exynos_tmu.h
-> @@ -60,7 +60,7 @@ enum soc_type {
->   *                     state(active/idle) can be checked.
->   * TMU_SUPPORT_EMUL_TIME - This features allows to set next temp emulation
->   *                     sample time.
-> - * TMU_SUPPORT_SHARED_MEMORY - This feature tells that the different TMU
-> + * TMU_SUPPORT_ADDRESS_MULTIPLE - This feature tells that the different TMU
->   *                     sensors shares some common registers.
->   * TMU_SUPPORT - macro to compare the above features with the supplied.
->   */
-> @@ -70,7 +70,7 @@ enum soc_type {
->  #define TMU_SUPPORT_FALLING_TRIP               BIT(3)
->  #define TMU_SUPPORT_READY_STATUS               BIT(4)
->  #define TMU_SUPPORT_EMUL_TIME                  BIT(5)
-> -#define TMU_SUPPORT_SHARED_MEMORY              BIT(6)
-> +#define TMU_SUPPORT_ADDRESS_MULTIPLE           BIT(6)
+> @@ -122,10 +122,6 @@ enum soc_type {
+>   * @threshold_th3_l0_shift: shift bits of level0 threshold temperature.
+>   * @tmu_inten: register containing the different threshold interrupt
+>         enable bits.
+> - * @inten_rise_shift: shift bits of all rising interrupt bits.
+> - * @inten_rise_mask: mask bits of all rising interrupt bits.
+> - * @inten_fall_shift: shift bits of all rising interrupt bits.
+> - * @inten_fall_mask: mask bits of all rising interrupt bits.
+>   * @inten_rise0_shift: shift bits of rising 0 interrupt bits.
+>   * @inten_rise1_shift: shift bits of rising 1 interrupt bits.
+>   * @inten_rise2_shift: shift bits of rising 2 interrupt bits.
+> @@ -136,6 +132,10 @@ enum soc_type {
+>   * @inten_fall3_shift: shift bits of falling 3 interrupt bits.
+>   * @tmu_intstat: Register containing the interrupt status values.
+>   * @tmu_intclear: Register for clearing the raised interrupt status.
+> + * @intclr_fall_shift: shift bits for interrupt clear fall 0
+> + * @intclr_rise_shift: shift bits of all rising interrupt bits.
+> + * @intclr_rise_mask: mask bits of all rising interrupt bits.
+> + * @intclr_fall_mask: mask bits of all rising interrupt bits.
+>   * @emul_con: TMU emulation controller register.
+>   * @emul_temp_shift: shift bits of emulation temperature.
+>   * @emul_time_shift: shift bits of emulation time.
+> @@ -191,10 +191,6 @@ struct exynos_tmu_registers {
+>         u32     threshold_th3_l0_shift;
 >
->  #define TMU_SUPPORTS(a, b)     (a->features & TMU_SUPPORT_ ## b)
+>         u32     tmu_inten;
+> -       u32     inten_rise_shift;
+> -       u32     inten_rise_mask;
+> -       u32     inten_fall_shift;
+> -       u32     inten_fall_mask;
+>         u32     inten_rise0_shift;
+>         u32     inten_rise1_shift;
+>         u32     inten_rise2_shift;
+> @@ -207,6 +203,10 @@ struct exynos_tmu_registers {
+>         u32     tmu_intstat;
 >
+>         u32     tmu_intclear;
+> +       u32     intclr_fall_shift;
+> +       u32     intclr_rise_shift;
+> +       u32     intclr_fall_mask;
+> +       u32     intclr_rise_mask;
+>
+>         u32     emul_con;
+>         u32     emul_temp_shift;
 > diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-> index 7cdb04e..1d27069 100644
+> index 073c292..7cdb04e 100644
 > --- a/drivers/thermal/samsung/exynos_tmu_data.c
 > +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-> @@ -255,7 +255,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
->         .type = SOC_ARCH_EXYNOS5440, \
->         .registers = &exynos5440_tmu_registers, \
->         .features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
-> -                       TMU_SUPPORT_MULTI_INST | TMU_SUPPORT_SHARED_MEMORY),
-> +                       TMU_SUPPORT_MULTI_INST | TMU_SUPPORT_ADDRESS_MULTIPLE),
+> @@ -40,13 +40,13 @@ static const struct exynos_tmu_registers exynos4210_tmu_registers = {
+>         .threshold_temp = EXYNOS4210_TMU_REG_THRESHOLD_TEMP,
+>         .threshold_th0 = EXYNOS4210_TMU_REG_TRIG_LEVEL0,
+>         .tmu_inten = EXYNOS_TMU_REG_INTEN,
+> -       .inten_rise_mask = EXYNOS4210_TMU_TRIG_LEVEL_MASK,
+>         .inten_rise0_shift = EXYNOS_TMU_INTEN_RISE0_SHIFT,
+>         .inten_rise1_shift = EXYNOS_TMU_INTEN_RISE1_SHIFT,
+>         .inten_rise2_shift = EXYNOS_TMU_INTEN_RISE2_SHIFT,
+>         .inten_rise3_shift = EXYNOS_TMU_INTEN_RISE3_SHIFT,
+>         .tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
+>         .tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
+> +       .intclr_rise_mask = EXYNOS4210_TMU_TRIG_LEVEL_MASK,
+>  };
 >
->  struct exynos_tmu_init_data const exynos5440_default_tmu_data = {
->         .tmu_data = {
+>  struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
+> @@ -112,10 +112,6 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+>         .threshold_th0 = EXYNOS_THD_TEMP_RISE,
+>         .threshold_th1 = EXYNOS_THD_TEMP_FALL,
+>         .tmu_inten = EXYNOS_TMU_REG_INTEN,
+> -       .inten_rise_mask = EXYNOS_TMU_RISE_INT_MASK,
+> -       .inten_rise_shift = EXYNOS_TMU_RISE_INT_SHIFT,
+> -       .inten_fall_mask = EXYNOS_TMU_FALL_INT_MASK,
+> -       .inten_fall_shift = EXYNOS_TMU_FALL_INT_SHIFT,
+>         .inten_rise0_shift = EXYNOS_TMU_INTEN_RISE0_SHIFT,
+>         .inten_rise1_shift = EXYNOS_TMU_INTEN_RISE1_SHIFT,
+>         .inten_rise2_shift = EXYNOS_TMU_INTEN_RISE2_SHIFT,
+> @@ -123,6 +119,10 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+>         .inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
+>         .tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
+>         .tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
+> +       .intclr_fall_shift = EXYNOS_TMU_CLEAR_FALL_INT_SHIFT,
+> +       .intclr_rise_shift = EXYNOS_TMU_RISE_INT_SHIFT,
+> +       .intclr_rise_mask = EXYNOS_TMU_RISE_INT_MASK,
+> +       .intclr_fall_mask = EXYNOS_TMU_FALL_INT_MASK,
+>         .emul_con = EXYNOS_EMUL_CON,
+>         .emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
+>         .emul_time_shift = EXYNOS_EMUL_TIME_SHIFT,
+> @@ -217,10 +217,6 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+>         .threshold_th2 = EXYNOS5440_TMU_S0_7_TH2,
+>         .threshold_th3_l0_shift = EXYNOS5440_TMU_TH_RISE4_SHIFT,
+>         .tmu_inten = EXYNOS5440_TMU_S0_7_IRQEN,
+> -       .inten_rise_mask = EXYNOS5440_TMU_RISE_INT_MASK,
+> -       .inten_rise_shift = EXYNOS5440_TMU_RISE_INT_SHIFT,
+> -       .inten_fall_mask = EXYNOS5440_TMU_FALL_INT_MASK,
+> -       .inten_fall_shift = EXYNOS5440_TMU_FALL_INT_SHIFT,
+>         .inten_rise0_shift = EXYNOS5440_TMU_INTEN_RISE0_SHIFT,
+>         .inten_rise1_shift = EXYNOS5440_TMU_INTEN_RISE1_SHIFT,
+>         .inten_rise2_shift = EXYNOS5440_TMU_INTEN_RISE2_SHIFT,
+> @@ -228,6 +224,10 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+>         .inten_fall0_shift = EXYNOS5440_TMU_INTEN_FALL0_SHIFT,
+>         .tmu_intstat = EXYNOS5440_TMU_S0_7_IRQ,
+>         .tmu_intclear = EXYNOS5440_TMU_S0_7_IRQ,
+> +       .intclr_fall_shift = EXYNOS5440_TMU_CLEAR_FALL_INT_SHIFT,
+> +       .intclr_rise_shift = EXYNOS5440_TMU_RISE_INT_SHIFT,
+> +       .intclr_rise_mask = EXYNOS5440_TMU_RISE_INT_MASK,
+> +       .intclr_fall_mask = EXYNOS5440_TMU_FALL_INT_MASK,
+>         .tmu_irqstatus = EXYNOS5440_TMU_IRQ_STATUS,
+>         .emul_con = EXYNOS5440_TMU_S0_7_DEBUG,
+>         .emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+> index a1ea19d..d9495a4 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.h
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
+> @@ -69,9 +69,10 @@
+>  #define EXYNOS_TMU_RISE_INT_MASK       0x111
+>  #define EXYNOS_TMU_RISE_INT_SHIFT      0
+>  #define EXYNOS_TMU_FALL_INT_MASK       0x111
+> -#define EXYNOS_TMU_FALL_INT_SHIFT      12
+>  #define EXYNOS_TMU_CLEAR_RISE_INT      0x111
+>  #define EXYNOS_TMU_CLEAR_FALL_INT      (0x111 << 12)
+> +#define EXYNOS_TMU_CLEAR_FALL_INT_SHIFT        12
+> +#define EXYNOS5440_TMU_CLEAR_FALL_INT_SHIFT    4
+>  #define EXYNOS_TMU_TRIP_MODE_SHIFT     13
+>  #define EXYNOS_TMU_TRIP_MODE_MASK      0x7
+>  #define EXYNOS_TMU_THERM_TRIP_EN_SHIFT 12
+> @@ -119,7 +120,6 @@
+>  #define EXYNOS5440_TMU_RISE_INT_MASK           0xf
+>  #define EXYNOS5440_TMU_RISE_INT_SHIFT          0
+>  #define EXYNOS5440_TMU_FALL_INT_MASK           0xf
+> -#define EXYNOS5440_TMU_FALL_INT_SHIFT          4
+>  #define EXYNOS5440_TMU_INTEN_RISE0_SHIFT       0
+>  #define EXYNOS5440_TMU_INTEN_RISE1_SHIFT       1
+>  #define EXYNOS5440_TMU_INTEN_RISE2_SHIFT       2
 > --
 > 1.7.10.4
 Any comments on this patch
-
 >
 
 
