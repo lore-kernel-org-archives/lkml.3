@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab3KRTBE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 14:01:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57465 "EHLO
+	id S1754115Ab3KRTCj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 14:02:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57433 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab3KRSkq (ORCPT
+	with ESMTP id S1752633Ab3KRSkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:40:46 -0500
+	Mon, 18 Nov 2013 13:40:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Steinar H. Gunderson" <sgunderson@bigfoot.com>,
-        Valentijn Sessink <valentyn@blub.net>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Jason Wang <jasowang@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        Petr Matousek <pmatouse@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 09/25] ipv6: reset dst.expires value when clearing expire flag
-Date: Mon, 18 Nov 2013 10:40:38 -0800
-Message-Id: <20131118184035.168853423@linuxfoundation.org>
+Subject: [PATCH 3.11 03/25] net: flow_dissector: fail on evil iph->ihl
+Date: Mon, 18 Nov 2013 10:40:32 -0800
+Message-Id: <20131118184033.111666918@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
 References: <20131118184032.248465920@linuxfoundation.org>
@@ -31,54 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 01ba16d6ec85a1ec4669c75513a76b61ec53ee50 ]
+[ Upstream commit 6f092343855a71e03b8d209815d8c45bf3a27fcd ]
 
-On receiving a packet too big icmp error we update the expire value by
-calling rt6_update_expires. This function uses dst_set_expires which is
-implemented that it can only reduce the expiration value of the dst entry.
+We don't validate iph->ihl which may lead a dead loop if we meet a IPIP
+skb whose iph->ihl is zero. Fix this by failing immediately when iph->ihl
+is evil (less than 5).
 
-If we insert new routing non-expiry information into the ipv6 fib where
-we already have a matching rt6_info we only clear the RTF_EXPIRES flag
-in rt6i_flags and leave the dst.expires value as is.
+This issue were introduced by commit ec5efe7946280d1e84603389a1030ccec0a767ae
+(rps: support IPIP encapsulation).
 
-When new mtu information arrives for that cached dst_entry we again
-call dst_set_expires. This time it won't update the dst.expire value
-because we left the dst.expire value intact from the last update. So
-dst_set_expires won't touch dst.expires.
-
-Fix this by resetting dst.expires when clearing the RTF_EXPIRE flag.
-dst_set_expires checks for a zero expiration and updates the
-dst.expires.
-
-In the past this (not updating dst.expires) was necessary because
-dst.expire was placed in a union with the dst_entry *from reference
-and rt6_clean_expires did assign NULL to it. This split happend in
-ecd9883724b78cc72ed92c98bcb1a46c764fff21 ("ipv6: fix race condition
-regarding dst->expires and dst->from").
-
-Reported-by: Steinar H. Gunderson <sgunderson@bigfoot.com>
-Reported-by: Valentijn Sessink <valentyn@blub.net>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>
 Acked-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Valentijn Sessink <valentyn@blub.net>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/ip6_fib.h |    1 +
- 1 file changed, 1 insertion(+)
+ net/core/flow_dissector.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/ip6_fib.h
-+++ b/include/net/ip6_fib.h
-@@ -165,6 +165,7 @@ static inline struct inet6_dev *ip6_dst_
- static inline void rt6_clean_expires(struct rt6_info *rt)
- {
- 	rt->rt6i_flags &= ~RTF_EXPIRES;
-+	rt->dst.expires = 0;
- }
+--- a/net/core/flow_dissector.c
++++ b/net/core/flow_dissector.c
+@@ -40,7 +40,7 @@ again:
+ 		struct iphdr _iph;
+ ip:
+ 		iph = skb_header_pointer(skb, nhoff, sizeof(_iph), &_iph);
+-		if (!iph)
++		if (!iph || iph->ihl < 5)
+ 			return false;
  
- static inline void rt6_set_expires(struct rt6_info *rt, unsigned long expires)
+ 		if (ip_is_fragment(iph))
 
 
