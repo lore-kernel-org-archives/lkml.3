@@ -1,115 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab3KRBIS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 20:08:18 -0500
-Received: from elasmtp-kukur.atl.sa.earthlink.net ([209.86.89.65]:51742 "EHLO
-	elasmtp-kukur.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752421Ab3KRBIJ (ORCPT
+	id S1753431Ab3KRBIp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 20:08:45 -0500
+Received: from blu0-omc4-s10.blu0.hotmail.com ([65.55.111.149]:21357 "EHLO
+	blu0-omc4-s10.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751599Ab3KRBIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 20:08:09 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=jhM8kyXHBskQ8imr6kAKWxh8cz5X/UYvXs5EuT0rMIBQ2uum84eB9nk4huP3Kz+D;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:Subject:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <52895D3F.2030706@earthlink.net>
-Date: Sun, 17 Nov 2013 19:20:15 -0500
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
-MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: i915 driver gpu hung kernel 3.11
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 17 Nov 2013 20:08:38 -0500
+X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Nov 2013 20:08:38 EST
+X-TMN: [SiSCa89F49ww+YtcecAZCTWAPf6ulMmj]
+X-Originating-Email: [dave.anglin@bell.net]
+Message-ID: <BLU0-SMTP844E685A4399DA3621BB1097E40@phx.gbl>
+From: John David Anglin <dave.anglin@bell.net>
+To: Helge Deller <deller@gmx.de>
+In-Reply-To: <20131117234707.GA25545@p100.box>
+Subject: Re: [PATCH] aio: fix D-cache aliasing issues
+References: <20131115220529.GA3160@ls3530.box> <1384555325.2003.39.camel@dabdike.int.hansenpartnership.com> <20131116200717.GA18939@schnuecks.de> <20131116200959.GA14098@kvack.org> <528933BC.50806@gmx.de> <1384724973.2050.14.camel@dabdike.int.hansenpartnership.com> <20131117234707.GA25545@p100.box>
+Content-Type: text/plain; charset="US-ASCII"; format=flowed; delsp=yes
 Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79c9c48ff46f965ea705bb6cd83725356c350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 24.144.93.126
+MIME-Version: 1.0 (Apple Message framework v936)
+Date: Sun, 17 Nov 2013 20:03:13 -0500
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-parisc@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
+        Simon Baatz <gmbnomis@gmail.com>, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org
+X-Mailer: Apple Mail (2.936)
+X-OriginalArrivalTime: 18 Nov 2013 01:03:30.0817 (UTC) FILETIME=[FF324710:01CEE3F9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi List,
+On 17-Nov-13, at 6:47 PM, Helge Deller wrote:
 
-I am getting this in kernel 3.11 x86_64
+> I only changed kunmap_parisc() to always call
+> flush_kernel_dcache_page_addr(addr) - independend if we are on a  
+> PA8800/8900
+> CPU or not - which is what you proposed in your original mail.
 
-Nov 17 18:56:19 joker4 kernel: [drm:i915_hangcheck_elapsed] *ERROR* stuck on 
-render ring
-Nov 17 18:56:19 joker4 kernel: [drm] capturing error event; look for more 
-information in /sys/kernel/debug/dri/0/i915_error_state
-Nov 17 18:56:19 joker4 kernel: swapper/1: page allocation failure: order:6, 
-mode:0x200020
-Nov 17 18:56:19 joker4 kernel: CPU: 1 PID: 0 Comm: swapper/1 Not tainted 
-3.11.6-1.el6.elrepo.x86_64 #1
-Nov 17 18:56:19 joker4 kernel: Hardware name: To Be Filled By O.E.M. Z96F/Z96F, 
-BIOS 080012  08/29/2006
-Nov 17 18:56:19 joker4 kernel: 0000000000000006 ffff8800b73038e0 
-ffffffff815f7f89 0000000000000010
-Nov 17 18:56:19 joker4 kernel: 0000000000200020 ffff8800b7303970 
-ffffffff8114243d ffff8800b778ab28
-Nov 17 18:56:19 joker4 kernel: 0000003000000001 ffff8800b7789000 
-0000000000000000 0000000600000002
-Nov 17 18:56:19 joker4 kernel: Call Trace:
-Nov 17 18:56:19 joker4 kernel: <IRQ>  [<ffffffff815f7f89>] dump_stack+0x49/0x60
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8114243d>] warn_alloc_failed+0xfd/0x160
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8114e98c>] ? wakeup_kswapd+0x10c/0x140
-Nov 17 18:56:19 joker4 kernel: [<ffffffff811455ae>] 
-__alloc_pages_slowpath+0x4ae/0x7c0
-Nov 17 18:56:19 joker4 kernel: [<ffffffff81142d9d>] ? 
-get_page_from_freelist+0x2dd/0x710
-Nov 17 18:56:19 joker4 kernel: [<ffffffff81145bce>] 
-__alloc_pages_nodemask+0x30e/0x330
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8118c437>] kmem_getpages+0x67/0x1e0
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8118dea9>] fallback_alloc+0x189/0x270
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8118dc55>] ____cache_alloc_node+0x95/0x160
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8118e9b7>] __kmalloc+0x177/0x2c0
-Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044a29>] ? 
-i915_capture_error_state+0x379/0x720 [i915]
-Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044a29>] 
-i915_capture_error_state+0x379/0x720 [i915]
-Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044dfb>] i915_handle_error+0x2b/0x80 
-[i915]
-Nov 17 18:56:19 joker4 kernel: [<ffffffffa004511e>] 
-i915_hangcheck_elapsed+0x2ce/0x350 [i915]
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8101b019>] ? sched_clock+0x9/0x10
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8109d905>] ? sched_clock_local+0x25/0x90
-Nov 17 18:56:19 joker4 kernel: [<ffffffff814711f0>] ? usb_add_hcd+0x3d0/0x3d0
-Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044e50>] ? 
-i915_handle_error+0x80/0x80 [i915]
-Nov 17 18:56:19 joker4 kernel: [<ffffffff81073b19>] call_timer_fn+0x49/0x120
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8107470b>] run_timer_softirq+0x23b/0x2a0
-Nov 17 18:56:19 joker4 kernel: [<ffffffff812b2660>] ? timerqueue_add+0x60/0xb0
-Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044e50>] ? 
-i915_handle_error+0x80/0x80 [i915]
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8106c147>] __do_softirq+0xf7/0x270
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8108e0c3>] ? hrtimer_interrupt+0x163/0x260
-Nov 17 18:56:19 joker4 kernel: [<ffffffff81606adc>] call_softirq+0x1c/0x30
-Nov 17 18:56:19 joker4 kernel: [<ffffffff81015885>] do_softirq+0x65/0xa0
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8106be75>] irq_exit+0xc5/0xd0
-Nov 17 18:56:19 joker4 kernel: [<ffffffff8160757a>] 
-smp_apic_timer_interrupt+0x4a/0x5a
-Nov 17 18:56:19 joker4 kernel: [<ffffffff81605e1d>] apic_timer_interrupt+0x6d/0x80
-Nov 17 18:56:19 joker4 kernel: <EOI>  [<ffffffff810bb1aa>] ? 
-cpu_idle_loop+0x10a/0x210
-Nov 17 18:56:19 joker4 kernel: [<ffffffff810bb17c>] ? cpu_idle_loop+0xdc/0x210
-Nov 17 18:56:19 joker4 kernel: [<ffffffff810bb320>] cpu_startup_entry+0x70/0x80
-Nov 17 18:56:19 joker4 kernel: [<ffffffff810437bd>] start_secondary+0xcd/0xd0
-Nov 17 18:56:19 joker4 kernel: SLAB: Unable to allocate memory on node 0 (gfp=0x20)
-Nov 17 18:56:19 joker4 kernel:  cache: kmalloc-262144, object size: 262144, order: 6
-Nov 17 18:56:19 joker4 kernel:  node 0: slabs: 0/0, objs: 0/0, free: 0
-Nov 17 18:56:19 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring 
-hung inside bo (0x85c000 ctx 0) at 0x85c97c
+In which case the flushes in clear_user_page() and copy_user_page()  
+aren't needed.
 
-is this fixed in 3.12
-
-Thanks,
-Steve
-
--- 
-
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
-
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
+Dave
+--
+John David Anglin	dave.anglin@bell.net
 
 
 
