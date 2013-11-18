@@ -1,190 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab3KRRWZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 12:22:25 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37291 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab3KRRVF (ORCPT
+	id S1752117Ab3KRRXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 12:23:14 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43452 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab3KRRXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 12:21:05 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Wim Van Sebroeck <wim@iguana.be>, Sekhar Nori <nsekhar@ti.com>,
-        <linux-watchdog@vger.kernel.org>, <devicetree@vger.kernel.org>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Strashko Grygorii <grygorii.strashko@ti.com>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH 2/6] watchdog: davinci: use davinci_wdt_device structure to hold device data
-Date: Mon, 18 Nov 2013 19:18:55 +0200
-Message-ID: <1384795139-19466-3-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1384795139-19466-1-git-send-email-ivan.khoronzhuk@ti.com>
-References: <1384795139-19466-1-git-send-email-ivan.khoronzhuk@ti.com>
+	Mon, 18 Nov 2013 12:23:07 -0500
+Date: Mon, 18 Nov 2013 17:22:43 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        angus.clark@st.com
+Message-ID: <20131118172243.GO2674@sirena.org.uk>
+References: <CACRpkdaccxcTfKc-y7rPEH1H3yua3ubLvuvTzWnMs1rOwjiVNw@mail.gmail.com>
+ <20131118093229.GB13640@lee--X1>
+ <20131118133940.GC14306@sirena.org.uk>
+ <20131118142447.GJ13640@lee--X1>
+ <20131118144512.GB24408@sirena.org.uk>
+ <20131118145614.GM13640@lee--X1>
+ <20131118151651.GE24408@sirena.org.uk>
+ <20131118153110.GN13640@lee--X1>
+ <20131118154137.GA28334@sirena.org.uk>
+ <20131118160226.GO13640@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nljfjKcp9HDtPSOP"
+Content-Disposition: inline
+In-Reply-To: <20131118160226.GO13640@lee--X1>
+X-Cookie: Drive defensively.  Buy a tank.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 02/10] mtd: st_spi_fsm: Supply all register address and
+ bit logic defines
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some SoCs, like Keystone 2, can support more than one WDT and each
-watchdog device has to use it's own base address, clock source,
-watchdog device, so add new davinci_wdt_device structure to hold
-device data.
 
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Reviewed-by: Guenter roeck <linux@roeck-us.net>
----
- drivers/watchdog/davinci_wdt.c |   74 ++++++++++++++++++++++++++--------------
- 1 file changed, 48 insertions(+), 26 deletions(-)
+--nljfjKcp9HDtPSOP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
-index cb9e8c5..b353df5 100644
---- a/drivers/watchdog/davinci_wdt.c
-+++ b/drivers/watchdog/davinci_wdt.c
-@@ -56,51 +56,63 @@
- #define WDKEY_SEQ1		(0xda7e << 16)
- 
- static int heartbeat;
--static void __iomem	*wdt_base;
--struct clk		*wdt_clk;
--static struct watchdog_device	wdt_wdd;
-+
-+/*
-+ * struct to hold data for each WDT device
-+ * @base - base io address of WD device
-+ * @clk - source clock of WDT
-+ * @wdd - hold watchdog device as is in WDT core
-+ */
-+struct davinci_wdt_device {
-+	void __iomem		*base;
-+	struct clk		*clk;
-+	struct watchdog_device	wdd;
-+};
- 
- static int davinci_wdt_start(struct watchdog_device *wdd)
- {
- 	u32 tgcr;
- 	u32 timer_margin;
- 	unsigned long wdt_freq;
-+	struct davinci_wdt_device *davinci_wdt = watchdog_get_drvdata(wdd);
- 
--	wdt_freq = clk_get_rate(wdt_clk);
-+	wdt_freq = clk_get_rate(davinci_wdt->clk);
- 
- 	/* disable, internal clock source */
--	iowrite32(0, wdt_base + TCR);
-+	iowrite32(0, davinci_wdt->base + TCR);
- 	/* reset timer, set mode to 64-bit watchdog, and unreset */
--	iowrite32(0, wdt_base + TGCR);
-+	iowrite32(0, davinci_wdt->base + TGCR);
- 	tgcr = TIMMODE_64BIT_WDOG | TIM12RS_UNRESET | TIM34RS_UNRESET;
--	iowrite32(tgcr, wdt_base + TGCR);
-+	iowrite32(tgcr, davinci_wdt->base + TGCR);
- 	/* clear counter regs */
--	iowrite32(0, wdt_base + TIM12);
--	iowrite32(0, wdt_base + TIM34);
-+	iowrite32(0, davinci_wdt->base + TIM12);
-+	iowrite32(0, davinci_wdt->base + TIM34);
- 	/* set timeout period */
- 	timer_margin = (((u64)wdd->timeout * wdt_freq) & 0xffffffff);
--	iowrite32(timer_margin, wdt_base + PRD12);
-+	iowrite32(timer_margin, davinci_wdt->base + PRD12);
- 	timer_margin = (((u64)wdd->timeout * wdt_freq) >> 32);
--	iowrite32(timer_margin, wdt_base + PRD34);
-+	iowrite32(timer_margin, davinci_wdt->base + PRD34);
- 	/* enable run continuously */
--	iowrite32(ENAMODE12_PERIODIC, wdt_base + TCR);
-+	iowrite32(ENAMODE12_PERIODIC, davinci_wdt->base + TCR);
- 	/* Once the WDT is in pre-active state write to
- 	 * TIM12, TIM34, PRD12, PRD34, TCR, TGCR, WDTCR are
- 	 * write protected (except for the WDKEY field)
- 	 */
- 	/* put watchdog in pre-active state */
--	iowrite32(WDKEY_SEQ0 | WDEN, wdt_base + WDTCR);
-+	iowrite32(WDKEY_SEQ0 | WDEN, davinci_wdt->base + WDTCR);
- 	/* put watchdog in active state */
--	iowrite32(WDKEY_SEQ1 | WDEN, wdt_base + WDTCR);
-+	iowrite32(WDKEY_SEQ1 | WDEN, davinci_wdt->base + WDTCR);
- 	return 0;
- }
- 
- static int davinci_wdt_ping(struct watchdog_device *wdd)
- {
-+	struct davinci_wdt_device *davinci_wdt = watchdog_get_drvdata(wdd);
-+
- 	/* put watchdog in service state */
--	iowrite32(WDKEY_SEQ0, wdt_base + WDTCR);
-+	iowrite32(WDKEY_SEQ0, davinci_wdt->base + WDTCR);
- 	/* put watchdog in active state */
--	iowrite32(WDKEY_SEQ1, wdt_base + WDTCR);
-+	iowrite32(WDKEY_SEQ1, davinci_wdt->base + WDTCR);
- 	return 0;
- }
- 
-@@ -122,14 +134,21 @@ static int davinci_wdt_probe(struct platform_device *pdev)
- 	struct device *dev = &pdev->dev;
- 	struct resource  *wdt_mem;
- 	struct watchdog_device *wdd;
-+	struct davinci_wdt_device *davinci_wdt;
-+
-+	davinci_wdt = devm_kzalloc(dev, sizeof(*davinci_wdt), GFP_KERNEL);
-+	if (!davinci_wdt)
-+		return -ENOMEM;
- 
--	wdt_clk = devm_clk_get(dev, NULL);
--	if (WARN_ON(IS_ERR(wdt_clk)))
--		return PTR_ERR(wdt_clk);
-+	davinci_wdt->clk = devm_clk_get(dev, NULL);
-+	if (WARN_ON(IS_ERR(davinci_wdt->clk)))
-+		return PTR_ERR(davinci_wdt->clk);
- 
--	clk_prepare_enable(wdt_clk);
-+	clk_prepare_enable(davinci_wdt->clk);
- 
--	wdd			= &wdt_wdd;
-+	platform_set_drvdata(pdev, davinci_wdt);
-+
-+	wdd			= &davinci_wdt->wdd;
- 	wdd->info		= &davinci_wdt_info;
- 	wdd->ops		= &davinci_wdt_ops;
- 	wdd->min_timeout 	= 1;
-@@ -140,12 +159,13 @@ static int davinci_wdt_probe(struct platform_device *pdev)
- 
- 	dev_info(dev, "heartbeat %d sec\n", wdd->timeout);
- 
-+	watchdog_set_drvdata(wdd, davinci_wdt);
- 	watchdog_set_nowayout(wdd, WATCHDOG_NOWAYOUT);
- 
- 	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	wdt_base = devm_ioremap_resource(dev, wdt_mem);
--	if (IS_ERR(wdt_base))
--		return PTR_ERR(wdt_base);
-+	davinci_wdt->base = devm_ioremap_resource(dev, wdt_mem);
-+	if (IS_ERR(davinci_wdt->base))
-+		return PTR_ERR(davinci_wdt->base);
- 
- 	ret = watchdog_register_device(wdd);
- 	if (ret < 0)
-@@ -156,8 +176,10 @@ static int davinci_wdt_probe(struct platform_device *pdev)
- 
- static int davinci_wdt_remove(struct platform_device *pdev)
- {
--	watchdog_unregister_device(&wdt_wdd);
--	clk_disable_unprepare(wdt_clk);
-+	struct davinci_wdt_device *davinci_wdt = platform_get_drvdata(pdev);
-+
-+	watchdog_unregister_device(&davinci_wdt->wdd);
-+	clk_disable_unprepare(davinci_wdt->clk);
- 
- 	return 0;
- }
--- 
-1.7.9.5
+On Mon, Nov 18, 2013 at 04:02:26PM +0000, Lee Jones wrote:
+> On Mon, 18 Nov 2013, Mark Brown wrote:
 
+> > Like I say I'm suggesting that the bit of the code that understands the
+> > flash chip is separate to the bit of code that knows the mechanics of
+> > sending commands and data to the chip.
+
+> The issue is that almost the entire driver is controller side. The
+> only bits that are the same (and not in all cases) are the OPCODEs,
+> but they are one liners (21 lines out of 1153). Most of the
+> controllers which use this stuff could reuse quite a bit of the m25p80
+> driver as they just write the message containing the OPCODE as the
+> m25p80 driver sets it up, but that's simply not the case with our
+> controller. We would have to pull the OPCODE out and based on which
+> one it is, we'd have to build our own message.
+
+OK, so then perhaps the abstraction here is simply to export the table
+with the opcodes from the m25p80 driver so that when someone comes along
+and adds a new chip they can just add it there and other drivers will
+get the update too.
+
+> Put it this way, if we tried to use the m25p80 our controller driver
+> would most likely be twice as large and twice as complex as it is
+> currently, which is exactly the inverse of what we're trying to
+> achieve here.
+
+If we're having to add new flashes to multiple drivers I'd not say we're
+winning.
+
+--nljfjKcp9HDtPSOP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSikzaAAoJELSic+t+oim9MHQQAIKTAC+9uYGgq+OdTnA1Kle5
+CpNtaPgXA9yZk4SEygySrZVPpf4S/bkelGq5gzRcoF6pe62+AFxtJa5aZ420Tz8z
+F6mQQUY48I6i5JwtuFW8hO0qG65aFfMLJPqdYpMDTo0hZ+6fXsjvx/WZKwJNAjlw
+mRTmYa1MpcJGIMZMiDBmrKYBWE5lgWRZpbFIBteTMcPpo+lAFQ3ozvGefclKysyP
++PvjchIRNUdBUzVyRfsmc5rtmthjykLO5qiGFeXakY2mWlL3jUolvimVJB6x2s0h
+3wmGy3TODZovIyq+vmkpZ+wWQ0oM90Z9Ll2OfV1JYY8IIwU+cFHGtxlXnqtywDh6
+F1Gu5iDCmjqTEPmZ2FrmA4K2anSwNRWTfTFZH+9mXreGMAAWyFhm7UyNwpL8EwYv
+Ig1Warpc3Q6J2Fqc6TKsM/NQXTCWHDbhhNS0rFIj4tLzflHLXfE8icAvNN99uQpK
+glqVwRSLhyVSqWtPejZgEJ0TYauv7JNYb0TGT98O9ZAVdHhm5OXNxUVSBdLX7YXA
+BO1X85G6Re56orJVuJBdYlG2y4TOsNzCADkUevDJ6nGubUhrAHDzBQYXLKpK16Jf
+OqGANWC0zCPozl1Ensj5v1jIJZqq1C/oZNYhuB8eYD4ODDouBGQmVS27x6DOerid
+9n2+ojhGv8/TUcXhoqZY
+=nafG
+-----END PGP SIGNATURE-----
+
+--nljfjKcp9HDtPSOP--
