@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab3KRNW7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 08:22:59 -0500
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:35506 "HELO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751030Ab3KRNWt (ORCPT
+	id S1752354Ab3KRNXK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 08:23:10 -0500
+Received: from exprod5og111.obsmtp.com ([64.18.0.22]:59302 "HELO
+	exprod5og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752196Ab3KRNWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 08:22:49 -0500
+	Mon, 18 Nov 2013 08:22:51 -0500
 From: Vinayak Kale <vkale@apm.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: tglx@linutronix.de, will.deacon@arm.com, patches@apm.com, jcm@redhat.com,
         Vinayak Kale <vkale@apm.com>
-Subject: [PATCH V3 0/2] genirq: arm64: perf: support for percpu pmu interrupt
-Date: Mon, 18 Nov 2013 18:52:27 +0530
-Message-Id: <1384780949-10922-1-git-send-email-vkale@apm.com>
+Subject: [PATCH V3 1/2] genirq: Add an accessor for IRQ_PER_CPU flag
+Date: Mon, 18 Nov 2013 18:52:28 +0530
+Message-Id: <1384780949-10922-2-git-send-email-vkale@apm.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384780949-10922-1-git-send-email-vkale@apm.com>
+References: <1384780949-10922-1-git-send-email-vkale@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds support to handle interrupt registration/deregistration
-in arm64 pmu driver when pmu interrupt type is percpu.
+This patch adds an accessor function for IRQ_PER_CPU flag.
+The accessor function is useful to dertermine whether an IRQ is percpu or not.
 
-Changelog:
-V3:
-* Remove validity check for 'desc' from accessor function in irqdesc.h .
-  Instead, check the irq 'desc' validity in arm64 pmu driver.
+Signed-off-by: Vinayak Kale <vkale@apm.com>
+---
+ include/linux/irqdesc.h |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-V2:
-* To determine whether an IRQ is percpu or not, added an accessor function in
-  irqdesc.h . This approach was used by Chris Smith here[1] for similar changes
-  in arm pmu driver.
-* In arm64 pmu driver: Got rid of unnecessary pointer typecastings.
-
-[1] http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/02955.html
-
-Vinayak Kale (2):
-  genirq: Add an accessor for IRQ_PER_CPU flag
-  arm64: perf: add support for percpu pmu interrupt
-
- arch/arm64/kernel/perf_event.c |  102 +++++++++++++++++++++++++++++-----------
- include/linux/irqdesc.h        |    8 ++++
- 2 files changed, 82 insertions(+), 28 deletions(-)
-
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index 56fb646..26e2661 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -152,6 +152,14 @@ static inline int irq_balancing_disabled(unsigned int irq)
+ 	return desc->status_use_accessors & IRQ_NO_BALANCING_MASK;
+ }
+ 
++static inline int irq_is_percpu(unsigned int irq)
++{
++	struct irq_desc *desc;
++
++	desc = irq_to_desc(irq);
++	return desc->status_use_accessors & IRQ_PER_CPU;
++}
++
+ static inline void
+ irq_set_lockdep_class(unsigned int irq, struct lock_class_key *class)
+ {
 -- 
 1.7.9.5
 
