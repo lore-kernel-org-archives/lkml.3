@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751266Ab3KRCnV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 21:43:21 -0500
-Received: from chicago.guarana.org ([192.210.136.102]:54610 "EHLO
-	chicago.guarana.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab3KRCnQ (ORCPT
+	id S1751266Ab3KRDAw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 22:00:52 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:58902 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab3KRDAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 21:43:16 -0500
-Date: Mon, 18 Nov 2013 13:43:15 +1100
-From: Kevin Easton <kevin@guarana.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Francis Moreau <francis.moro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-Message-ID: <20131118024315.GA26395@chicago.guarana.org>
-References: <52888F6D.6000802@gmail.com>
- <20131117132531.GB27696@pd.tnic>
- <5288E5BF.2020608@gmail.com>
- <20131117160126.GG27323@pd.tnic>
- <CAC9WiBikz8kTAmKs1HVBmeb2Wu6hfHCh2d=w1sQC03EVHa1QOQ@mail.gmail.com>
- <20131117195358.GO27323@pd.tnic>
- <20131117220611.GQ27323@pd.tnic>
- <20131118003325.GA25843@chicago.guarana.org>
- <20131118010428.GT27323@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131118010428.GT27323@pd.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 17 Nov 2013 22:00:44 -0500
+X-AuditID: 9c93017d-b7b15ae000000e52-19-528982da34a3
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 1/3] perf script: Move evname print code to process_event()
+Date: Mon, 18 Nov 2013 12:00:40 +0900
+Message-Id: <1384743642-15120-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 02:04:28AM +0100, Borislav Petkov wrote:
-> On Mon, Nov 18, 2013 at 11:33:25AM +1100, Kevin Easton wrote:
-> > That's part of an ASCII string, "DEP=2\0SE", so if that looks familiar
-> > to anyone (part of a kernel command line?) it might give a clue to
-> > where the timer callback pointer is being overwritten.
-> 
-> Yeah, it could be anything, maybe even part of dmesg although nothing
-> matches "DEP" in there.
+The print_sample_start() will be reused by other printing routine for
+internal events like COMM, FORK and EXIT from next patch.  And because
+they're not tied to a specific event, move the evname print code to
+its caller.
 
-We actually have the following long as well, from the .data member.
-Pasting them together gives "DEP=2\0SEQNUM=223" which looks like udev.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-script.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-    - Kevin 
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index baf17989a216..b392770766dd 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -288,7 +288,6 @@ static void print_sample_start(struct perf_sample *sample,
+ 			       struct perf_evsel *evsel)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
+-	const char *evname = NULL;
+ 	unsigned long secs;
+ 	unsigned long usecs;
+ 	unsigned long long nsecs;
+@@ -323,11 +322,6 @@ static void print_sample_start(struct perf_sample *sample,
+ 		usecs = nsecs / NSECS_PER_USEC;
+ 		printf("%5lu.%06lu: ", secs, usecs);
+ 	}
+-
+-	if (PRINT_FIELD(EVNAME)) {
+-		evname = perf_evsel__name(evsel);
+-		printf("%s: ", evname ? evname : "[unknown]");
+-	}
+ }
+ 
+ static bool is_bts_event(struct perf_event_attr *attr)
+@@ -434,6 +428,11 @@ static void process_event(union perf_event *event, struct perf_sample *sample,
+ 
+ 	print_sample_start(sample, thread, evsel);
+ 
++	if (PRINT_FIELD(EVNAME)) {
++		const char *evname = perf_evsel__name(evsel);
++		printf("%s: ", evname ? evname : "[unknown]");
++	}
++
+ 	if (is_bts_event(attr)) {
+ 		print_sample_bts(event, sample, evsel, machine, thread);
+ 		return;
+-- 
+1.7.11.7
+
