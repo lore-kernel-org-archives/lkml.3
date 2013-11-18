@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab3KRSlS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:41:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57362 "EHLO
+	id S1752798Ab3KRSlZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:41:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57358 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab3KRShc (ORCPT
+	with ESMTP id S1752013Ab3KRShc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 13:37:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Brakmo <brakmo@google.com>, Yuchung Cheng <ycheng@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
         Neal Cardwell <ncardwell@google.com>,
         Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 10/19] tcp: do not rearm RTO when future data are sacked
-Date: Mon, 18 Nov 2013 10:37:23 -0800
-Message-Id: <20131118183646.906067393@linuxfoundation.org>
+Subject: [PATCH 3.12 09/19] tcp: only take RTT from timestamps if new data is acked
+Date: Mon, 18 Nov 2013 10:37:22 -0800
+Message-Id: <20131118183646.672614767@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118183644.030738675@linuxfoundation.org>
 References: <20131118183644.030738675@linuxfoundation.org>
@@ -31,74 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yuchung Cheng <ycheng@google.com>
 
-[ Upstream commit 2f715c1dde6e1760f3101358dc26f8c9489be0bf ]
+[ Upstream commit 2909d874f34eae157aecab0af27c6dc4a1751f8f ]
 
-Patch ed08495c3 "tcp: use RTT from SACK for RTO" always re-arms RTO upon
-obtaining a RTT sample from newly sacked data.
+Patch ed08495c3 "tcp: use RTT from SACK for RTO" has a bug that
+it does not check if the ACK acknowledge new data before taking
+the RTT sample from TCP timestamps. This patch adds the check
+back as required by the RFC.
 
-But technically RTO should only be re-armed when the data sent before
-the last (re)transmission of write queue head are (s)acked. Otherwise
-the RTO may continue to extend during loss recovery on data sent
-in the future.
-
-Note that RTTs from ACK or timestamps do not have this problem, as the RTT
-source must be from data sent before.
-
-The new RTO re-arm policy is
-1) Always re-arm RTO if SND.UNA is advanced
-2) Re-arm RTO if sack RTT is available, provided the sacked data was
-   sent before the last time write_queue_head was sent.
-
-Signed-off-by: Larry Brakmo <brakmo@google.com>
 Signed-off-by: Yuchung Cheng <ycheng@google.com>
 Acked-by: Neal Cardwell <ncardwell@google.com>
 Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ net/ipv4/tcp_input.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 --- a/net/ipv4/tcp_input.c
 +++ b/net/ipv4/tcp_input.c
-@@ -2987,6 +2987,7 @@ static int tcp_clean_rtx_queue(struct so
- 	s32 seq_rtt = -1;
- 	s32 ca_seq_rtt = -1;
- 	ktime_t last_ackt = net_invalid_timestamp();
-+	bool rtt_update;
+@@ -2856,7 +2856,8 @@ static inline bool tcp_ack_update_rtt(st
+ 	 * left edge of the send window.
+ 	 * See draft-ietf-tcplw-high-performance-00, section 3.3.
+ 	 */
+-	if (seq_rtt < 0 && tp->rx_opt.saw_tstamp && tp->rx_opt.rcv_tsecr)
++	if (seq_rtt < 0 && tp->rx_opt.saw_tstamp && tp->rx_opt.rcv_tsecr &&
++	    flag & FLAG_ACKED)
+ 		seq_rtt = tcp_time_stamp - tp->rx_opt.rcv_tsecr;
  
- 	while ((skb = tcp_write_queue_head(sk)) && skb != tcp_send_head(sk)) {
- 		struct tcp_skb_cb *scb = TCP_SKB_CB(skb);
-@@ -3063,14 +3064,13 @@ static int tcp_clean_rtx_queue(struct so
- 	if (skb && (TCP_SKB_CB(skb)->sacked & TCPCB_SACKED_ACKED))
- 		flag |= FLAG_SACK_RENEGING;
- 
--	if (tcp_ack_update_rtt(sk, flag, seq_rtt, sack_rtt) ||
--	    (flag & FLAG_ACKED))
--		tcp_rearm_rto(sk);
-+	rtt_update = tcp_ack_update_rtt(sk, flag, seq_rtt, sack_rtt);
- 
- 	if (flag & FLAG_ACKED) {
- 		const struct tcp_congestion_ops *ca_ops
- 			= inet_csk(sk)->icsk_ca_ops;
- 
-+		tcp_rearm_rto(sk);
- 		if (unlikely(icsk->icsk_mtup.probe_size &&
- 			     !after(tp->mtu_probe.probe_seq_end, tp->snd_una))) {
- 			tcp_mtup_probe_success(sk);
-@@ -3109,6 +3109,13 @@ static int tcp_clean_rtx_queue(struct so
- 
- 			ca_ops->pkts_acked(sk, pkts_acked, rtt_us);
- 		}
-+	} else if (skb && rtt_update && sack_rtt >= 0 &&
-+		   sack_rtt > (s32)(now - TCP_SKB_CB(skb)->when)) {
-+		/* Do not re-arm RTO if the sack RTT is measured from data sent
-+		 * after when the head was last (re)transmitted. Otherwise the
-+		 * timeout may continue to extend in loss recovery.
-+		 */
-+		tcp_rearm_rto(sk);
- 	}
- 
- #if FASTRETRANS_DEBUG > 0
+ 	if (seq_rtt < 0)
 
 
