@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511Ab3KRJhT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 04:37:19 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:53640 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab3KRJhJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 04:37:09 -0500
-Date: Mon, 18 Nov 2013 10:35:55 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Mark Brown <broonie@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [GIT PULL] Btrfs
-Message-ID: <20131118093555.GA4192@osiris>
-References: <20131114171952.3802.93244@localhost.localdomain>
- <20131115113216.GA7777@osiris>
- <20131115122131.3802.25439@localhost.localdomain>
- <20131115134019.3802.51473@localhost.localdomain>
- <CAMuHMdWsEaDKoPy7JhKUGqUrkg_8JrVH7fc8JePt=9MXzcSrgQ@mail.gmail.com>
- <20131115145723.GB7777@osiris>
- <20131117093604.GT2008@redhat.com>
+	id S1751558Ab3KRJi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 04:38:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33234 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751236Ab3KRJiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 04:38:52 -0500
+Date: Mon, 18 Nov 2013 17:37:49 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de
+Subject: Re: [patch 1/7 v2] Add function efi_remap_region for remapping to
+ saved virt address
+Message-ID: <20131118093749.GA16381@dhcp-16-126.nay.redhat.com>
+References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com>
+ <20131105082715.502723229@dhcp-16-126.nay.redhat.com>
+ <1384556525.1791.4.camel@misato.fc.hp.com>
+ <20131118020939.GB4025@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131117093604.GT2008@redhat.com>
+In-Reply-To: <20131118020939.GB4025@dhcp-16-126.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111809-3548-0000-0000-0000072D0DBE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 17, 2013 at 11:36:04AM +0200, Gleb Natapov wrote:
-> On Fri, Nov 15, 2013 at 03:57:23PM +0100, Heiko Carstens wrote:
-> > On Fri, Nov 15, 2013 at 02:42:08PM +0100, Geert Uytterhoeven wrote:
-> > > I was just going to comment that
+On 11/18/13 at 10:09am, Dave Young wrote:
+> On 11/15/13 at 04:02pm, Toshi Kani wrote:
+> > On Tue, 2013-11-05 at 16:20 +0800, dyoung@redhat.com wrote:
+> > > Kexec kernel will use saved runtime virtual mapping, so add a
+> > > new function efi_remap_region to remapping it directly without
+> > > calculate the virt addr from efi_va.
 > > > 
-> > > +       const void *zero_page = (const void *) page_to_phys(ZERO_PAGE(0));
-> > > 
-> > > won't fly. You can't just cast a physical address to "void *".
+> > > The md is passed in from 1st kernel, the virtual addr is
+> > > saved in md->virt_addr.
 > > 
-> > Ouch.. I think that only works on s390 because we have a 1:1 mapping for
-> > physical to virtual addresses in kernel space due to our split address spaces.
+> >  :
 > > 
-> > So for btrfs and kvm it should be page_to_virt(), and for the dma_map_single()
-> > case I have no idea. :)
-> Can you send updated patch for kvm please?
+> > > +/*
+> > > + * kexec kernel will use efi_map_region_fixed to map efi
+> > > + * runtime memory ranges. md->virt_addr is the original virtual
+> > > + * address which had been mapped in kexec 1st kernel.
+> > > + */
+> > > +void __init efi_map_region_fixed(efi_memory_desc_t *md)
+> > 
+> > Can you simply use __map_region() instead of creating this function?
+> > Both functions seem to do the same thing.  (In __map_region(), size and
+> > end are not used.)
+> 
+> Matt also suggest to reuse __map_region in another apply, will do.
 
-See below. page_to_virt() is only defined for a couple of architectures, so I
-used __va(page_to_phys()) instead.
-I tested the patch on s390 only...
+Will remove the unused variables in another patch.
 
->From b19687bad7e878aaed6edb786a22c6b05e886b97 Mon Sep 17 00:00:00 2001
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-Date: Mon, 18 Nov 2013 10:05:57 +0100
-Subject: [PATCH] kvm: kvm_clear_guest_page(): fix empty_zero_page usage
-
-Using the address of 'empty_zero_page' as source address in order to clear
-a page is wrong. On some architectures empty_zero_page is only the pointer
-to the struct page of the empty_zero_page.
-Therefore the clear page operation would copy the contents of a couple of
-struct pages instead of clearing a page.
-For kvm only arm64 is affected by this bug.
-
-To fix this use the ZERO_PAGE macro instead which will return the struct
-page address of the empty_zero_page on all architectures.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
- virt/kvm/kvm_main.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 662f34c3287e..a0aa84b5941a 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1615,8 +1615,9 @@ EXPORT_SYMBOL_GPL(kvm_read_guest_cached);
- 
- int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len)
- {
--	return kvm_write_guest_page(kvm, gfn, (const void *) empty_zero_page,
--				    offset, len);
-+	const void *zero_page = (const void *) __va(page_to_phys(ZERO_PAGE(0)));
-+
-+	return kvm_write_guest_page(kvm, gfn, zero_page, offset, len);
- }
- EXPORT_SYMBOL_GPL(kvm_clear_guest_page);
- 
--- 
-1.8.3.4
-
+--
+Thanks
+Dave
