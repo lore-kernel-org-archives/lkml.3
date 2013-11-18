@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab3KRJq2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 04:46:28 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:41626 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab3KRJqU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 04:46:20 -0500
+	id S1751569Ab3KRJrp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 04:47:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43594 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750836Ab3KRJrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 04:47:37 -0500
+Date: Mon, 18 Nov 2013 11:50:43 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: netdev@vger.kernel.org, qemu-devel@nongnu.org, rusty@rustcorp.com.au,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] net, virtio_net: replace the magic value
+Message-ID: <20131118095043.GA3470@redhat.com>
+References: <1384764380-16832-1-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1384605572-9811-1-git-send-email-acourbot@nvidia.com>
-References: <1384605572-9811-1-git-send-email-acourbot@nvidia.com>
-Date: Mon, 18 Nov 2013 10:46:19 +0100
-Message-ID: <CACRpkdYfdUEvs3D-+enB6sS+O_Ht9W+X=XTCty9ZtAfa+Wvm0Q@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib: fix find_chip_by_name()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384764380-16832-1-git-send-email-zwu.kernel@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 16, 2013 at 1:39 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+On Mon, Nov 18, 2013 at 04:46:20PM +0800, Zhi Yong Wu wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+> It is more appropriate to use # of queue pairs currently used by
+> the driver instead of a magic value.
+> 
+> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-> find_chip_by_name() was incorrectly implemented by using
-> gpio_lookup_list instead of gpiod_chips to iterate through all the
-> registered GPIO controllers. This patch reimplements it by using
-> gpiochip_find() with a custom search function, which simplifies the code
-> on top of fixing the mistake.
->
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+I don't mind, but driver should be submitted separately
+from qemu patches. As it is only patch 4/4 made it to netdev.
 
-Patch applied for fixes.
-
-Yours,
-Linus Walleij
+> ---
+>  drivers/net/virtio_net.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index cdc7c90..e0cb2d1 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -1619,8 +1619,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+>  	if (err)
+>  		goto free_stats;
+>  
+> -	netif_set_real_num_tx_queues(dev, 1);
+> -	netif_set_real_num_rx_queues(dev, 1);
+> +	netif_set_real_num_tx_queues(dev, vi->curr_queue_pairs);
+> +	netif_set_real_num_rx_queues(dev, vi->curr_queue_pairs);
+>  
+>  	err = register_netdev(dev);
+>  	if (err) {
+> -- 
+> 1.7.6.5
+> 
