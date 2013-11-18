@@ -1,108 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023Ab3KRWrQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 17:47:16 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50843 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab3KRWrN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 17:47:13 -0500
-Date: Mon, 18 Nov 2013 16:46:47 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-CC: <linux-omap@vger.kernel.org>, <linaro-networking@linaro.org>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 14/23] USB: ehci-omap: raw read and write endian fix
-Message-ID: <20131118224647.GE12294@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
- <1384560086-11994-15-git-send-email-taras.kondratiuk@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qz2CZ664xQdCRdPu"
-Content-Disposition: inline
-In-Reply-To: <1384560086-11994-15-git-send-email-taras.kondratiuk@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751626Ab3KRWuV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 17:50:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43729 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751301Ab3KRWuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 17:50:19 -0500
+Date: Tue, 19 Nov 2013 09:50:01 +1100
+From: NeilBrown <neilb@suse.de>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Belisko Marek <marek.belisko@gmail.com>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/2] LEDS: tca6502: add device-tree support for GPIO
+ configuration.
+Message-ID: <20131119095001.610e47c5@notabene.brown>
+In-Reply-To: <20131118115512.GF30853@e106331-lin.cambridge.arm.com>
+References: <20131101134120.13a44225@notabene.brown>
+	<20131118115512.GF30853@e106331-lin.cambridge.arm.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/pzni9iv9=k+.qudDBdJBewZ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Qz2CZ664xQdCRdPu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--Sig_/pzni9iv9=k+.qudDBdJBewZ
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Sat, Nov 16, 2013 at 02:01:17AM +0200, Taras Kondratiuk wrote:
-> From: Victor Kamensky <victor.kamensky@linaro.org>
->=20
-> All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
-> Need to use endian neutral functions to read/write h/w registers.
-> I.e instead of __raw_read[lw] and __raw_write[lw] functions code
-> need to use read[lw]_relaxed and write[lw]_relaxed functions.
-> If the first simply reads/writes register, the second will byteswap
-> it if host operates in BE mode.
->=20
-> Changes are trivial sed like replacement of __raw_xxx functions
-> with xxx_relaxed variant.
->=20
-> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+On Mon, 18 Nov 2013 11:55:12 +0000 Mark Rutland <mark.rutland@arm.com> wrot=
+e:
 
-Acked-by: Felipe Balbi <balbi@ti.com>
-
-> ---
->  drivers/usb/host/ehci-omap.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> On Fri, Nov 01, 2013 at 02:41:20AM +0000, NeilBrown wrote:
+> >=20
+> > The 7 lines driven by the TCA6507 can either drive LEDs or act as outpu=
+t-only
+> > GPIOs.
+> >=20
+> > To make this distinction in devicetree we use the "compatible" property.
+> >=20
+> > If the device attached to a line is "compatible" with "gpio", we treat =
+it
+> > like a GPIO.  If it is "compatible" with "led" (or if no "compatible" v=
+alue
+> > is set) we treat it like an LED.
 >=20
-> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-> index 6fa82d6..803e706 100644
-> --- a/drivers/usb/host/ehci-omap.c
-> +++ b/drivers/usb/host/ehci-omap.c
-> @@ -73,12 +73,12 @@ struct omap_hcd {
-> =20
->  static inline void ehci_write(void __iomem *base, u32 reg, u32 val)
->  {
-> -	__raw_writel(val, base + reg);
-> +	writel_relaxed(val, base + reg);
->  }
-> =20
->  static inline u32 ehci_read(void __iomem *base, u32 reg)
->  {
-> -	return __raw_readl(base + reg);
-> +	return readl_relaxed(base + reg);
->  }
-> =20
->  /* configure so an HC device and id are always provided */
-> --=20
-> 1.7.9.5
+> I'm nto sure I understand the purpose of this.
+>=20
+> Are these lines all GPIOs, some of which happen to by attached to LEDs?
+>=20
+> If so, why is handlnig the device as a gpio-controller and using the
+> gpio-leds binding not sufficient?
+
+No, all the lines are designed to drives LEDs but can happen to be wired up
+like GPIOs.  This configuration is explicitly described in the data sheets
+for the chip, and is actually used in my board.
+
+The 7 pins either float or sink current. They can switch between the two
+modes in various ways under hardware control with a PWM which can have a
+varying duty cycle.
+So they are very suitable for driving LEDs as the PWM can adjust the appare=
+nt
+brightness and the varying duty cycle can effect a 'blink' pattern.
+
+But the pins can also be fixed in one state of the other - either never on =
+or
+always on.  Floating or constantly sinking current.
+
+This mode combined with a pull-up resistor makes an effective output-only
+GPIO.  The same action that would turn the LED on, will pull the GPIO low.
+The action that would turn the LED off, will allow the GPIO to go high.
+
+So the device connected to each pin can be treated as an LED or as a GPIO.
+
+I hope that clarifies the situation.
+
+Thanks,
+NeilBrown
+
+
+>=20
+> THanksm
+> Mark.
+>=20
+> >=20
+> > Signed-off-by: NeilBrown <neilb@suse.de>
+> >=20
+> > diff --git a/Documentation/devicetree/bindings/leds/tca6507.txt b/Docum=
+entation/devicetree/bindings/leds/tca6507.txt
+> > index 80ff3dfb1f32..d7221b84987c 100644
+> > --- a/Documentation/devicetree/bindings/leds/tca6507.txt
+> > +++ b/Documentation/devicetree/bindings/leds/tca6507.txt
+> > @@ -2,6 +2,13 @@ LEDs connected to tca6507
+> > =20
+> >  Required properties:
+> >  - compatible : should be : "ti,tca6507".
+> > +- #address-cells: must be 1
+> > +- #size-cells: must be 0
+> > +- reg: typically 0x45.
+> > +
+> > +Optional properties:
+> > +- gpio-controller: allows lines to be used as output-only GPIOs.
+> > +- #gpio-cells: if present, must be 0.
+> > =20
+> >  Each led is represented as a sub-node of the ti,tca6507 device.
+> > =20
+> > @@ -10,6 +17,7 @@ LED sub-node properties:
+> >  - reg : number of LED line (could be from 0 to 6)
+> >  - linux,default-trigger : (optional)
+> >     see Documentation/devicetree/bindings/leds/common.txt
+> > +- compatible: either "led" (the default) or "gpio".
+> > =20
+> >  Examples:
+> > =20
+> > @@ -19,6 +27,9 @@ tca6507@45 {
+> >  	#size-cells =3D <0>;
+> >  	reg =3D <0x45>;
+> > =20
+> > +	gpio-controller;
+> > +	#gpio-cells =3D <2>;
+> > +
+> >  	led0: red-aux@0 {
+> >  		label =3D "red:aux";
+> >  		reg =3D <0x0>;
+> > @@ -29,5 +40,10 @@ tca6507@45 {
+> >  		reg =3D <0x5>;
+> >  		linux,default-trigger =3D "default-on";
+> >  	};
+> > +
+> > +	wifi-reset@6 {
+> > +		reg =3D <0x6>;
+> > +		compatible =3D "gpio";
+> > +	};
+> >  };
+> > =20
+> > diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
+> > index f5063f447463..93a2b1759054 100644
+> > --- a/drivers/leds/leds-tca6507.c
+> > +++ b/drivers/leds/leds-tca6507.c
+> > @@ -638,6 +638,9 @@ static int tca6507_probe_gpios(struct i2c_client *c=
+lient,
+> >  	tca->gpio.direction_output =3D tca6507_gpio_direction_output;
+> >  	tca->gpio.set =3D tca6507_gpio_set_value;
+> >  	tca->gpio.dev =3D &client->dev;
+> > +#ifdef CONFIG_OF_GPIO
+> > +	tca->gpio.of_node =3D of_node_get(client->dev.of_node);
+> > +#endif
+> >  	err =3D gpiochip_add(&tca->gpio);
+> >  	if (err) {
+> >  		tca->gpio.ngpio =3D 0;
+> > @@ -696,6 +699,8 @@ tca6507_led_dt_init(struct i2c_client *client)
+> >  		led.default_trigger =3D
+> >  			of_get_property(child, "linux,default-trigger", NULL);
+> >  		led.flags =3D 0;
+> > +		if (of_property_match_string(child, "compatible", "gpio") >=3D 0)
+> > +			led.flags |=3D TCA6507_MAKE_GPIO;
+> >  		ret =3D of_property_read_u32(child, "reg", &reg);
+> >  		if (ret !=3D 0 || reg < 0 || reg >=3D NUM_LEDS)
+> >  			continue;
+> > @@ -709,6 +714,7 @@ tca6507_led_dt_init(struct i2c_client *client)
+> > =20
+> >  	pdata->leds.leds =3D tca_leds;
+> >  	pdata->leds.num_leds =3D NUM_LEDS;
+> > +	pdata->gpio_base =3D -1;
+> > =20
+> >  	return pdata;
+> >  }
 >=20
 
---=20
-balbi
 
---Qz2CZ664xQdCRdPu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--Sig_/pzni9iv9=k+.qudDBdJBewZ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSipjXAAoJEIaOsuA1yqREA/MQAKab9xc4Y86C41FFYkoEGywX
-tE5cVe1EvBDbba6QZ6C5w+snckoitr8fXF/gMMQzsyQNXonhxMu5Gvak9X1J1iGN
-BZAiVrZTzo3WnbihqOpNsY9ZjBILXEW92ixYlck9pWx0kyWPwGrGwIJDcAV+Gh6s
-RO2x904QHJ9BvWBXHaeOPQhFxQm6eS3F01yhSwt9Bi7PhhPd04KjcKzaXjo3Hh09
-Qx0J3nk4b7LbUVIxkRk2+7vnV4x6bvGs0Oc9t2IaMtV8RNFa441ugzNPzKxKonEY
-KCjIOziYYnWgl2aozD+SsP32x4XtMR6i5aKI6CHhacoXTAXg1WZoSCS3PZDxvjff
-s2D7hwh/B3ePdFmXtzEXX0RsR75KPpUFTfMpCGVE0tSQC+3+/01lfvJ/YeA+zzza
-M3WfoaHAE82DRrwvxzXepmIKUoG3UE8ed46i2GKywCJL8PPxwBpepC85L7smaPRV
-weYVXTq2plD/E0Td4rs+0EZUFAL9La/q8wHCJ/EwfYXk7R7on//jV2ETehlINzTu
-pX+sfbgLOr9FzbtjQEIo/ZYHFKWLk+C7/7lZZjXw+ked5NCGMH0Z6qOVvznV27+u
-hfK7Y7V8GBYVgtDMtbkZaxjzfMAdAxt+FyWF/BRM2InxDiQoDUfWb+KB5Fdmb1r7
-wmBaOWqdxvtbyw4E8PTA
-=rzKl
+iQIVAwUBUoqZmTnsnt1WYoG5AQLoNQ/+N8ZWQ5hq/0azLK0wbZT7A7nvU3N3eMyR
+OfgsPU7yBoUEtYyHvZR2eepf94fmXyD4eyP586u6xPiybbU9ne12RzPCTao3h5rX
+3YYg0eo8o+DPkMHuPEw+x/P7wj3rRnaNIIT6iKfKqK29z1/cSJZ0Psp1kROHEjd4
+N7WJdQEIyAAq9J6dCcYkjRTCnbpQEpIVA/SaUuZApG05fLWaCoTgbQDwvgLzk9J7
+Yk+fBo0mUDu7D8J7FXJM8z6qV8VMBzfPlav02FPsL187H9uBkxInUFMsOCxiKgAY
+UNgI5oaZFZZUUHjS7KlGXCo2xjxn5+AFd1ZsGSEuO4LqZk+pqZZ+QZLYTJul2m86
+sz/peZO2pI5iJhEom46cxz35Sq7avJmLFu7WgYyFLSLMfTOixXAt/kEKf6B8cj5d
+JMeHTqdVm+SHmwiMSPv2kTICSnqpT01JpvqxUhu1dFpW7L3Kd/pnh8KjXXsqtmBF
+n6Zc3OynNrZeDiF9KH2S1ZVaHriWxxb/v6L2U/uh7MzJNzR2i36tgS//AusfBtXD
+M7M36Jb1jIx02j08gBM4MUpxbO04S3e80S3OxR+E5eXHEkohVpzbsWzXf61J9KQL
+EPNJhBTXFgamOr6cumFLmShvInknnsRNYof/TdbHIp5iSNJN9EmK3VpBuK42rnv2
+oBxgdF8c6zM=
+=drnJ
 -----END PGP SIGNATURE-----
 
---Qz2CZ664xQdCRdPu--
+--Sig_/pzni9iv9=k+.qudDBdJBewZ--
