@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723Ab3KRRcM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 12:32:12 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:55686 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab3KRRcH (ORCPT
+	id S1751527Ab3KRRhP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 12:37:15 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:54344 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751297Ab3KRRhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 12:32:07 -0500
-Date: Mon, 18 Nov 2013 17:32:01 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        angus.clark@st.com
-Subject: Re: [PATCH 02/10] mtd: st_spi_fsm: Supply all register address and
- bit logic defines
-Message-ID: <20131118173201.GP13640@lee--X1>
-References: <20131118093229.GB13640@lee--X1>
- <20131118133940.GC14306@sirena.org.uk>
- <20131118142447.GJ13640@lee--X1>
- <20131118144512.GB24408@sirena.org.uk>
- <20131118145614.GM13640@lee--X1>
- <20131118151651.GE24408@sirena.org.uk>
- <20131118153110.GN13640@lee--X1>
- <20131118154137.GA28334@sirena.org.uk>
- <20131118160226.GO13640@lee--X1>
- <20131118172243.GO2674@sirena.org.uk>
+	Mon, 18 Nov 2013 12:37:10 -0500
+Message-ID: <528A5043.6030901@hurleysoftware.com>
+Date: Mon, 18 Nov 2013 12:37:07 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131118172243.GO2674@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Heorhi Valakhanovich <valahanovich@tut.by>
+CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH] tty: Only hangup once
+References: <1375293945-4087-1-git-send-email-peter@hurleysoftware.com>	<20131117203850.46df2124@tormoz-pc> <20131118134211.17861db3@alan.etchedpixels.co.uk>
+In-Reply-To: <20131118134211.17861db3@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013, Mark Brown wrote:
+On 11/18/2013 08:42 AM, One Thousand Gnomes wrote:
+>> After upgrading to kernel 3.12 I noticed one issue with tmux software.
+>> The easiest way to reproduce will be:
+>> 1. Start tmux session as root.
+>> 2. Connect via ssh and use "tmux attach" to attach to the running
+>> session.
+>> 3. Kill ssh client.
 
-> On Mon, Nov 18, 2013 at 04:02:26PM +0000, Lee Jones wrote:
-> > On Mon, 18 Nov 2013, Mark Brown wrote:
-> 
-> > > Like I say I'm suggesting that the bit of the code that understands the
-> > > flash chip is separate to the bit of code that knows the mechanics of
-> > > sending commands and data to the chip.
-> 
-> > The issue is that almost the entire driver is controller side. The
-> > only bits that are the same (and not in all cases) are the OPCODEs,
-> > but they are one liners (21 lines out of 1153). Most of the
-> > controllers which use this stuff could reuse quite a bit of the m25p80
-> > driver as they just write the message containing the OPCODE as the
-> > m25p80 driver sets it up, but that's simply not the case with our
-> > controller. We would have to pull the OPCODE out and based on which
-> > one it is, we'd have to build our own message.
-> 
-> OK, so then perhaps the abstraction here is simply to export the table
-> with the opcodes from the m25p80 driver so that when someone comes along
-> and adds a new chip they can just add it there and other drivers will
-> get the update too.
+Heorhi,
 
-We could do that, although I'd have to insist on extending the current
-framework to add a configuration call-back, as it's the neatest way to
-configure chip specific attributes.
+Thanks for the report.
 
-I can get a patch out tomorrow if the MTD guys agree. Where are they
-by the way? I haven't seen hide nor hair of them since sending out the
-patch set.
+>> You can notice that shell (zsh in my case) and "tmux attach" are still
+>> remains in process' list. That didn't happen in previous kernels.
 
-> > Put it this way, if we tried to use the m25p80 our controller driver
-> > would most likely be twice as large and twice as complex as it is
-> > currently, which is exactly the inverse of what we're trying to
-> > achieve here.
-> 
-> If we're having to add new flashes to multiple drivers I'd not say we're
-> winning.
+This may have been a bug in previous kernels.
+The tmux(1) man page has this to say:
 
-I agree.
+      Each session is persistent and will survive accidental disconnection
+      (such as ssh(1) connection timeout) or intentional detaching (with the
+      `C-b d' key strokes).  tmux may be reattached using:
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+            $ tmux attach
+
+
+I'll confirm with tmux author(s) what the intended behavior is.
+
+>> I've tried to bisect this in kernel sources and found commit
+>> cb50e5235b8ae5aa0fe422eaaa8e444024c5bd98 which contains this exact
+>> patch. I have not enough experience to investigate more so most likely
+>> I will not find anything more. But it will be good if someone more
+>> experienced will have a look at it.
+>
+> The patch should be reverted. The submission gives no reason that the
+> patch was required - it just adds code and optimises a path that doesn't
+> need optimising anyway.
+
+Alan,
+
+This patch isn't about optimizing; it's about guaranteeing the line discipline
+and a tty driver that ops->hangup() will only occur once for any given tty.
+
+> It's theoretically true you only need one hangup, unfortunately however
+> I think it has to be the *last* hangup not the first or there are races
+> between the tty code and the process group handling.
+
+I doubt this is caused by a race condition; the first hangup would do most
+of the destruction regardless, and a second hangup can't really race with
+the first because of the tty_lock() held for most of the hangup.
+
+In any event, it's worth discovering what state a subsequent hangup can
+effect that the first hangup left incomplete. I'll look into it.
+
+Regards,
+Peter Hurley
