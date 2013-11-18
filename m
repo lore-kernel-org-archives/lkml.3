@@ -1,60 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866Ab3KRRj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 12:39:27 -0500
-Received: from mga14.intel.com ([143.182.124.37]:5126 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406Ab3KRRjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 12:39:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="389909186"
-Message-ID: <528A5058.40505@linux.intel.com>
-Date: Mon, 18 Nov 2013 09:37:28 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: mingo@kernel.org, hpa@zytor.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org, lenb@kernel.org
-Subject: Re: [PATCH v1.1] x86: intel-mid: add test module for sfi_device()
-References: <1384370961-30847-1-git-send-email-david.a.cohen@linux.intel.com> <1384560558-10462-1-git-send-email-david.a.cohen@linux.intel.com> <20131118152806.GB19649@infradead.org> <528A4FED.3030709@linux.intel.com>
-In-Reply-To: <528A4FED.3030709@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751498Ab3KRRlU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 12:41:20 -0500
+Received: from hygieia.santi-shop.eu ([78.46.175.2]:42613 "EHLO
+	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab3KRRlM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 12:41:12 -0500
+Date: Mon, 18 Nov 2013 18:41:07 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: sclark46@earthlink.net
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: Re: i915 driver gpu hung kernel 3.11
+Message-ID: <20131118184107.67d6c875@neptune.home>
+In-Reply-To: <52896862.5000300@earthlink.net>
+References: <52896862.5000300@earthlink.net>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2013 09:35 AM, David Cohen wrote:
-> On 11/18/2013 07:28 AM, Christoph Hellwig wrote:
->> On Fri, Nov 15, 2013 at 04:09:18PM -0800, David Cohen wrote:
->>> This patch adds a test module to validate sfi_device() when used from a
->>> driver module.
->>
->> I don't think this is all that useful.  How about you prepeare a few
->> of the more useful drivers from your tree for submission instead?
-> 
-> One of these drivers you can track here:
-> https://patchwork.kernel.org/patch/3109791/
-> This is necessary to enable serial console on Saltbay (Merrifield based
-> platform). But the driver is still being reworked to be upstreamed.
-> 
-> Anyway, upstream those drivers won't work to validate this patch set
-> we're discussion here. All platform codes are bool (can't be module).
+Hi Stephen,
 
-I meant: all upstreamed platform codes are bool.
+You may want to CC intel-gfx@lists.freedesktop.org  for i915 issues (even
+if you are not subscribed and you mail will wait for a moderator to let
+it go through).
 
-> The real purpose of these patches is to make my internal tree to be
-> equal to upstream. My intention is to upstream *all* internal patches
-> of Intel MID and temporarily move away from arch/x86/platform/intel-
-> mid/device_libs/ the platform code from still-on-staging-state drivers.
-> 
-> So, we need a dummy module on upstream to make this code testable.
-> 
-> In case this code is not accepted, I'll will have to maintain 2
-> official public branches: one with these patches and one without them.
-> 
-> Br, David
-> 
+In case of intel GPU hangs you should at least include
+/sys/kernel/debug/dri/0/i915_error_state, probably submitting as a
+bug report on bugs.freedesktop.org due to its size.
 
+If you have any indication on what triggers the hang, please add!
+
+Bruno
+
+On Sun, 17 November 2013 Stephen Clark <sclark46@earthlink.net> wrote:
+> Hi List,
+> 
+> I am getting this in kernel 3.11 x86_64
+> 
+> Nov 17 18:56:19 joker4 kernel: [drm:i915_hangcheck_elapsed] *ERROR* stuck on 
+> render ring
+> Nov 17 18:56:19 joker4 kernel: [drm] capturing error event; look for more 
+> information in /sys/kernel/debug/dri/0/i915_error_state
+> Nov 17 18:56:19 joker4 kernel: swapper/1: page allocation failure: order:6, 
+> mode:0x200020
+> Nov 17 18:56:19 joker4 kernel: CPU: 1 PID: 0 Comm: swapper/1 Not tainted 
+> 3.11.6-1.el6.elrepo.x86_64 #1
+> Nov 17 18:56:19 joker4 kernel: Hardware name: To Be Filled By O.E.M. Z96F/Z96F, 
+> BIOS 080012  08/29/2006
+> Nov 17 18:56:19 joker4 kernel: 0000000000000006 ffff8800b73038e0 
+> ffffffff815f7f89 0000000000000010
+> Nov 17 18:56:19 joker4 kernel: 0000000000200020 ffff8800b7303970 
+> ffffffff8114243d ffff8800b778ab28
+> Nov 17 18:56:19 joker4 kernel: 0000003000000001 ffff8800b7789000 
+> 0000000000000000 0000000600000002
+> Nov 17 18:56:19 joker4 kernel: Call Trace:
+> Nov 17 18:56:19 joker4 kernel: <IRQ>  [<ffffffff815f7f89>] dump_stack+0x49/0x60
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8114243d>] warn_alloc_failed+0xfd/0x160
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8114e98c>] ? wakeup_kswapd+0x10c/0x140
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff811455ae>] 
+> __alloc_pages_slowpath+0x4ae/0x7c0
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff81142d9d>] ? 
+> get_page_from_freelist+0x2dd/0x710
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff81145bce>] 
+> __alloc_pages_nodemask+0x30e/0x330
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118c437>] kmem_getpages+0x67/0x1e0
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118dea9>] fallback_alloc+0x189/0x270
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118dc55>] ____cache_alloc_node+0x95/0x160
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118e9b7>] __kmalloc+0x177/0x2c0
+> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044a29>] ? 
+> i915_capture_error_state+0x379/0x720 [i915]
+> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044a29>] 
+> i915_capture_error_state+0x379/0x720 [i915]
+> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044dfb>] i915_handle_error+0x2b/0x80 
+> [i915]
+> Nov 17 18:56:19 joker4 kernel: [<ffffffffa004511e>] 
+> i915_hangcheck_elapsed+0x2ce/0x350 [i915]
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8101b019>] ? sched_clock+0x9/0x10
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8109d905>] ? sched_clock_local+0x25/0x90
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff814711f0>] ? usb_add_hcd+0x3d0/0x3d0
+> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044e50>] ? 
+> i915_handle_error+0x80/0x80 [i915]
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff81073b19>] call_timer_fn+0x49/0x120
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8107470b>] run_timer_softirq+0x23b/0x2a0
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff812b2660>] ? timerqueue_add+0x60/0xb0
+> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044e50>] ? 
+> i915_handle_error+0x80/0x80 [i915]
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8106c147>] __do_softirq+0xf7/0x270
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8108e0c3>] ? hrtimer_interrupt+0x163/0x260
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff81606adc>] call_softirq+0x1c/0x30
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff81015885>] do_softirq+0x65/0xa0
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8106be75>] irq_exit+0xc5/0xd0
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff8160757a>] 
+> smp_apic_timer_interrupt+0x4a/0x5a
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff81605e1d>] apic_timer_interrupt+0x6d/0x80
+> Nov 17 18:56:19 joker4 kernel: <EOI>  [<ffffffff810bb1aa>] ? 
+> cpu_idle_loop+0x10a/0x210
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff810bb17c>] ? cpu_idle_loop+0xdc/0x210
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff810bb320>] cpu_startup_entry+0x70/0x80
+> Nov 17 18:56:19 joker4 kernel: [<ffffffff810437bd>] start_secondary+0xcd/0xd0
+> Nov 17 18:56:19 joker4 kernel: SLAB: Unable to allocate memory on node 0 (gfp=0x20)
+> Nov 17 18:56:19 joker4 kernel:  cache: kmalloc-262144, object size: 262144, order: 6
+> Nov 17 18:56:19 joker4 kernel:  node 0: slabs: 0/0, objs: 0/0, free: 0
+> Nov 17 18:56:19 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring 
+> hung inside bo (0x85c000 ctx 0) at 0x85c97c
+> 
+> is this fixed in 3.12?
+> 
+> Just checked get the same thing in 3.12 but no trace back.
+> 
+> 
+> Nov 17 19:41:33 joker4 kernel: [drm] stuck on render ring
+> Nov 17 19:41:33 joker4 kernel: [drm] capturing error event; look for more 
+> information in /sys/class/drm/card0/error
+> Nov 17 19:41:33 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring 
+> hung inside bo (0x7214000 ctx 0) at 0x72142e0
+> Nov 17 19:41:33 joker4 kernel: [drm:i915_reset] *ERROR* Failed to reset chip.
+> 
+> 
+> 
+> 
+> Thanks,
+> Steve
