@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3KRSzc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:55:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57468 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab3KRSk4 (ORCPT
+	id S1753927Ab3KRSzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:55:45 -0500
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:64119 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab3KRSzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:40:56 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.11 21/25] backlight: atmel-pwm-bl: fix deferred probe from __init
-Date: Mon, 18 Nov 2013 10:40:50 -0800
-Message-Id: <20131118184038.625121719@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc0.dirty
-In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
-References: <20131118184032.248465920@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Mon, 18 Nov 2013 13:55:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131118184644.GC29695@two.firstfloor.org>
+References: <1384267735-43213-1-git-send-email-Waiman.Long@hp.com>
+	<1384267735-43213-5-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFxXu7eC1WGfZ=_JQbLLJHM5HYRkJPjm3jBDC51SL66Ecw@mail.gmail.com>
+	<20131118183433.GB29695@two.firstfloor.org>
+	<CA+55aFyH_BUrrzft-1JGZ5zL=KxGrUESBBOZnzT=nQm6Ld0V+Q@mail.gmail.com>
+	<20131118184644.GC29695@two.firstfloor.org>
+Date: Mon, 18 Nov 2013 10:55:37 -0800
+X-Google-Sender-Auth: aiHIRUAD0iZ3cR4aL7oIypkhIMc
+Message-ID: <CA+55aFwhX-6DzxKMPk=NTmSGt1GNHE6XTHZcss+Q=hC-epC7cQ@mail.gmail.com>
+Subject: Re: [PATCH v6 3/5] qrwlock: Enable fair queue read/write lock
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Nov 18, 2013 at 10:46 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> Why would it make sense here?
+>
+> There may be cases were switching all read locks to unfair may make
+> concerete workloads slower.
 
-------------------
+Sorry, but I don't believe in "may be" as an excuse for complexity.
+Especially since the "may be" faster performance is often coupled with
+"known latency problems due to unfairness".
 
-From: Johan Hovold <jhovold@gmail.com>
+I'd want numbers for real loads if we really want the extra complexity.
 
-commit 9d3fde86b15303decea632c929fbf1f3ae4501f2 upstream.
+Right now, the real numbers I can point to is in the size of the
+patch, and the extra code complexity. Yes, I see the microbenchmark
+numbers, but those are pretty much irrelevant to real loads.
 
-Move probe out of __init section and don't use platform_driver_probe
-which cannot be used with deferred probing.
-
-Since commit e9354576 ("gpiolib: Defer failed gpio requests by default")
-this driver might return -EPROBE_DEFER if a gpio_request fails.
-
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/video/backlight/atmel-pwm-bl.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
---- a/drivers/video/backlight/atmel-pwm-bl.c
-+++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -118,7 +118,7 @@ static const struct backlight_ops atmel_
- 	.update_status  = atmel_pwm_bl_set_intensity,
- };
- 
--static int __init atmel_pwm_bl_probe(struct platform_device *pdev)
-+static int atmel_pwm_bl_probe(struct platform_device *pdev)
- {
- 	struct backlight_properties props;
- 	const struct atmel_pwm_bl_platform_data *pdata;
-@@ -202,7 +202,7 @@ err_free_mem:
- 	return retval;
- }
- 
--static int __exit atmel_pwm_bl_remove(struct platform_device *pdev)
-+static int atmel_pwm_bl_remove(struct platform_device *pdev)
- {
- 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
- 
-@@ -220,10 +220,11 @@ static struct platform_driver atmel_pwm_
- 		.name = "atmel-pwm-bl",
- 	},
- 	/* REVISIT add suspend() and resume() */
--	.remove = __exit_p(atmel_pwm_bl_remove),
-+	.probe = atmel_pwm_bl_probe,
-+	.remove = atmel_pwm_bl_remove,
- };
- 
--module_platform_driver_probe(atmel_pwm_bl_driver, atmel_pwm_bl_probe);
-+module_platform_driver(atmel_pwm_bl_driver);
- 
- MODULE_AUTHOR("Hans-Christian egtvedt <hans-christian.egtvedt@atmel.com>");
- MODULE_DESCRIPTION("Atmel PWM backlight driver");
-
-
+                    Linus
