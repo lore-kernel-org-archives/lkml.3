@@ -1,281 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab3KRU0o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:26:44 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:11455 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab3KRU0L (ORCPT
+	id S1752448Ab3KRU2N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:28:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50535 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab3KRU2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:26:11 -0500
-X-AuditID: cbfec7f5-b7fe66d00000432e-62-528a77e1bce0
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, linux-security-module@vger.kernel.org,
-        zohar@linux.vnet.ibm.com, jmorris@namei.org
-Cc: dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 1/2] ima: hooks for directory integrity protection
-Date: Mon, 18 Nov 2013 22:24:58 +0200
-Message-id: <d9de3562c23e4ac8f59d6eb16c12e303f42c8855.1384806012.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-In-reply-to: <cover.1384806012.git.d.kasatkin@samsung.com>
-References: <cover.1384806012.git.d.kasatkin@samsung.com>
-In-reply-to: <cover.1384806012.git.d.kasatkin@samsung.com>
-References: <cover.1384806012.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGLMWRmVeSWpSXmKPExsVy+t/xy7oPy7uCDM7NkrW49Xcvs8WXpXUW
-	69YvZrLYs/cki8XlXXPYLD70PGKzOP/3OKvFpxWTmB04PHbOusvu8eDQZhaPnu/JHn1bVjF6
-	fN4k57HpyVumALYoLpuU1JzMstQifbsEroy/B6+xFWy0qXjy9CVTA2OPYRcjJ4eEgInElKUv
-	WSFsMYkL99azdTFycQgJLGWUWNC/FMrpZpLY0/GUGaSKTUBPYkPzD3aQhIjABkaJb3tfMIIk
-	mAXcJTb8vANWJCzgJLFr7Xmgbg4OFgFVifuTnUHCvAJxEmc+vWSD2KYgsezLWrByTgEriZ2z
-	FoDFhQQsJaZ23GDHJT6BkX8BI8MqRtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjJCw/LqDcekx
-	q0OMAhyMSjy8E927goRYE8uKK3MPMUpwMCuJ8P4uBQrxpiRWVqUW5ccXleakFh9iZOLglGpg
-	XJ+/d23JFs75X1ZpP0g8uiXiZ9Yyd5On05ZIuHPtmb9mrRz7IzkG+Vlfn8b3bJliPHfm3qk1
-	Fc5/vwtmF7iuVTH/cLNT2VbrZ5i/zaKiJJWLiReE98wPvrkqW6fTXCX+89wAncO8ycr5t9s/
-	dG+XUBVfo+BeYbquIT2D77Exs6FDlpbl00hxJZbijERDLeai4kQAxySMWCkCAAA=
+	Mon, 18 Nov 2013 15:28:12 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 02/16] perf top: Make -g refer to callchains
+Date: Mon, 18 Nov 2013 17:27:50 -0300
+Message-Id: <1384806484-29869-3-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1384806484-29869-1-git-send-email-acme@infradead.org>
+References: <1384806484-29869-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both IMA-appraisal and EVM protect the integrity of regular files.
-IMA protects file data integrity, while EVM protects the file meta-data
-integrity, such as file attributes and extended attributes. This patch
-set adds hooks for offline directory integrity protection.
+From: David Ahern <dsahern@gmail.com>
 
-An inode itself does not have any file name associated with it.  The
-association of the file name to inode is done via directory entries.
-On a running system, mandatory and/or discretionary access control prevent
-unprivileged file deletion, file name change, or hardlink creation.
-In an offline attack, without these protections, the association between
-a file name and an inode is unprotected. Files can be deleted, renamed
-or moved from one directory to another one. In all of these cases,
-the integrity of the file data and metadata is good.
+In most commands -g is used for callchains. Make perf-top follow suit.
+Move group to just --group with no short cut making it similar to
+perf-record.
 
-To prevent such attacks, it is necessary to protect integrity of directory
-content.
-
-This patch adds 2 new hooks for directory integrity protection:
-  ima_dir_check() and ima_dir_update().
-
-ima_dir_check() is called to verify integrity of the the directory during
-the initial path lookup.
-
-ima_dir_update() is called from several places in namei.c, when the directory
-content is changing, for updating the directory hash.
-
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1384487490-6865-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- fs/namei.c                        | 42 ++++++++++++++++++++++++++++++++++++---
- fs/open.c                         |  6 ++++++
- include/linux/ima.h               | 23 +++++++++++++++++++++
- net/unix/af_unix.c                |  2 ++
- security/integrity/ima/ima_main.c |  3 +++
- 5 files changed, 73 insertions(+), 3 deletions(-)
+ tools/perf/Documentation/perf-top.txt | 5 ++---
+ tools/perf/builtin-top.c              | 4 ++--
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 645268f..d0e1821 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1469,16 +1469,33 @@ static int lookup_slow(struct nameidata *nd, struct path *path)
- 	return 0;
- }
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 7de01dd79688..cdd8d4946dba 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -50,7 +50,6 @@ Default is to monitor all CPUS.
+ --count-filter=<count>::
+ 	Only display functions with more events than this.
  
-+static inline int may_lookup_ima(struct nameidata *nd, int err)
-+{
-+	if (err)
-+		return err;
-+	err = ima_dir_check(&nd->path, MAY_EXEC|MAY_NOT_BLOCK);
-+	if (err != -ECHILD)
-+		return err;
-+	if (unlazy_walk(nd, NULL))
-+		return -ECHILD;
-+	return ima_dir_check(&nd->path, MAY_EXEC);
-+}
-+
- static inline int may_lookup(struct nameidata *nd)
- {
-+	int err = 0;
-+
- 	if (nd->flags & LOOKUP_RCU) {
--		int err = inode_permission(nd->inode, MAY_EXEC|MAY_NOT_BLOCK);
-+		err = inode_permission(nd->inode, MAY_EXEC|MAY_NOT_BLOCK);
- 		if (err != -ECHILD)
--			return err;
-+			return may_lookup_ima(nd, err);
- 		if (unlazy_walk(nd, NULL))
- 			return -ECHILD;
- 	}
--	return inode_permission(nd->inode, MAY_EXEC);
-+	err = inode_permission(nd->inode, MAY_EXEC);
-+	if (err)
-+		return err;
-+	return ima_dir_check(&nd->path, MAY_EXEC);
- }
+--g::
+ --group::
+         Put the counters into a counter group.
  
- static inline int handle_dots(struct nameidata *nd, int type)
-@@ -2956,6 +2973,8 @@ retry_lookup:
- 	}
- 	mutex_lock(&dir->d_inode->i_mutex);
- 	error = lookup_open(nd, path, file, op, got_write, opened);
-+	if (error >= 0 && (*opened & FILE_CREATED))
-+		ima_dir_update(&nd->path, NULL);
- 	mutex_unlock(&dir->d_inode->i_mutex);
+@@ -143,12 +142,12 @@ Default is to monitor all CPUS.
+ --asm-raw::
+ 	Show raw instruction encoding of assembly instructions.
  
- 	if (error <= 0) {
-@@ -3454,6 +3473,8 @@ retry:
- 			error = vfs_mknod(path.dentry->d_inode,dentry,mode,0);
- 			break;
- 	}
-+	if (!error)
-+		ima_dir_update(&path, dentry);
- out:
- 	done_path_create(&path, dentry);
- 	if (retry_estale(error, lookup_flags)) {
-@@ -3510,6 +3531,8 @@ retry:
- 	error = security_path_mkdir(&path, dentry, mode);
- 	if (!error)
- 		error = vfs_mkdir(path.dentry->d_inode, dentry, mode);
-+	if (!error)
-+		ima_dir_update(&path, dentry);
- 	done_path_create(&path, dentry);
- 	if (retry_estale(error, lookup_flags)) {
- 		lookup_flags |= LOOKUP_REVAL;
-@@ -3626,6 +3649,8 @@ retry:
- 	if (error)
- 		goto exit3;
- 	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
-+	if (!error)
-+		ima_dir_update(&nd.path, NULL);
- exit3:
- 	dput(dentry);
- exit2:
-@@ -3721,6 +3746,8 @@ retry:
- 		if (error)
- 			goto exit2;
- 		error = vfs_unlink(nd.path.dentry->d_inode, dentry);
-+		if (!error)
-+			ima_dir_update(&nd.path, NULL);
- exit2:
- 		dput(dentry);
- 	}
-@@ -3801,6 +3828,8 @@ retry:
- 	error = security_path_symlink(&path, dentry, from->name);
- 	if (!error)
- 		error = vfs_symlink(path.dentry->d_inode, dentry, from->name);
-+	if (!error)
-+		ima_dir_update(&path, dentry);
- 	done_path_create(&path, dentry);
- 	if (retry_estale(error, lookup_flags)) {
- 		lookup_flags |= LOOKUP_REVAL;
-@@ -3919,6 +3948,8 @@ retry:
- 	if (error)
- 		goto out_dput;
- 	error = vfs_link(old_path.dentry, new_path.dentry->d_inode, new_dentry);
-+	if (!error)
-+		ima_dir_update(&new_path, NULL);
- out_dput:
- 	done_path_create(&new_path, new_dentry);
- 	if (retry_estale(error, how)) {
-@@ -4171,6 +4202,11 @@ retry:
- 		goto exit5;
- 	error = vfs_rename(old_dir->d_inode, old_dentry,
- 				   new_dir->d_inode, new_dentry);
-+	if (!error) {
-+		ima_dir_update(&oldnd.path, NULL);
-+		if (!path_equal(&oldnd.path, &newnd.path))
-+			ima_dir_update(&newnd.path, NULL);
-+	}
- exit5:
- 	dput(new_dentry);
- exit4:
-diff --git a/fs/open.c b/fs/open.c
-index d420331..021e2c5 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -390,6 +390,9 @@ retry:
- 	error = inode_permission(path.dentry->d_inode, MAY_EXEC | MAY_CHDIR);
- 	if (error)
- 		goto dput_and_out;
-+	error = ima_dir_check(&path, MAY_EXEC);
-+	if (error)
-+		goto dput_and_out;
+--G::
++-g::
+ 	Enables call-graph (stack chain/backtrace) recording.
  
- 	set_fs_pwd(current->fs, &path);
+ --call-graph::
+ 	Setup and enable call-graph (stack chain/backtrace) recording,
+-	implies -G.
++	implies -g.
  
-@@ -420,6 +423,9 @@ SYSCALL_DEFINE1(fchdir, unsigned int, fd)
- 		goto out_putf;
- 
- 	error = inode_permission(inode, MAY_EXEC | MAY_CHDIR);
-+	if (error)
-+		goto out_putf;
-+	error = ima_dir_check(&f.file->f_path, MAY_EXEC);
- 	if (!error)
- 		set_fs_pwd(current->fs, &f.file->f_path);
- out_putf:
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index 1b7f268..e33035e 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -73,4 +73,27 @@ static inline int ima_inode_removexattr(struct dentry *dentry,
- 	return 0;
- }
- #endif /* CONFIG_IMA_APPRAISE */
-+
-+#ifdef CONFIG_IMA_APPRAISE_DIRECTORIES
-+extern int ima_dir_check(struct path *dir, int mask);
-+extern int ima_special_check(struct file *file, int mask);
-+extern void ima_dir_update(struct path *dir, struct dentry *dentry);
-+#else
-+static inline int ima_dir_check(struct path *dir, int mask)
-+{
-+	return 0;
-+}
-+
-+static inline int ima_special_check(struct file *file, int mask)
-+{
-+	return 0;
-+}
-+
-+static inline void ima_dir_update(struct path *dir, struct dentry *dentry)
-+{
-+	return;
-+}
-+
-+#endif /* CONFIG_IMA_APPRAISE_DIRECTORIES */
-+
- #endif /* _LINUX_IMA_H */
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 86de99a..6230a50 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -115,6 +115,7 @@
- #include <net/checksum.h>
- #include <linux/security.h>
- #include <linux/freezer.h>
-+#include <linux/ima.h>
- 
- struct hlist_head unix_socket_table[2 * UNIX_HASH_SIZE];
- EXPORT_SYMBOL_GPL(unix_socket_table);
-@@ -841,6 +842,7 @@ static int unix_mknod(const char *sun_path, umode_t mode, struct path *res)
- 		if (!err) {
- 			res->mnt = mntget(path.mnt);
- 			res->dentry = dget(dentry);
-+			ima_dir_update(&path, dentry);
- 		}
- 	}
- 	done_path_create(&path, dentry);
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 6c12811..18d76d8 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -300,6 +300,9 @@ int ima_bprm_check(struct linux_binprm *bprm)
-  */
- int ima_file_check(struct file *file, int mask)
- {
-+	if (!S_ISREG(file->f_dentry->d_inode->i_mode))
-+		return ima_special_check(file, mask);
-+
- 	ima_rdwr_violation_check(file);
- 	return process_measurement(file, NULL,
- 				   mask & (MAY_READ | MAY_WRITE | MAY_EXEC),
+ --max-stack::
+ 	Set the stack depth limit when parsing the callchain, anything
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 71e6402729a8..531522d3d97b 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1084,7 +1084,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			    "dump the symbol table used for profiling"),
+ 	OPT_INTEGER('f', "count-filter", &top.count_filter,
+ 		    "only display functions with more events than this"),
+-	OPT_BOOLEAN('g', "group", &opts->group,
++	OPT_BOOLEAN(0, "group", &opts->group,
+ 			    "put the counters into a counter group"),
+ 	OPT_BOOLEAN('i', "no-inherit", &opts->no_inherit,
+ 		    "child tasks do not inherit counters"),
+@@ -1105,7 +1105,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   " abort, in_tx, transaction"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+-	OPT_CALLBACK_NOOPT('G', NULL, &top.record_opts,
++	OPT_CALLBACK_NOOPT('g', NULL, &top.record_opts,
+ 			   NULL, "enables call-graph recording",
+ 			   &callchain_opt),
+ 	OPT_CALLBACK(0, "call-graph", &top.record_opts,
 -- 
-1.8.3.2
+1.8.1.4
 
