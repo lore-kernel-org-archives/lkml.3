@@ -1,246 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468Ab3KRLoF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 06:44:05 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:35248 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab3KRLn7 (ORCPT
+	id S1751521Ab3KRLpk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 06:45:40 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:34072 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab3KRLpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 06:43:59 -0500
-Date: Mon, 18 Nov 2013 12:43:31 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH] ARM: tegra: properly use FUSE clock
-Message-ID: <20131118114330.GD8646@ulmo.nvidia.com>
-References: <1384771247-16547-1-git-send-email-acourbot@nvidia.com>
+	Mon, 18 Nov 2013 06:45:34 -0500
+X-Auth-Info: 90WDVQ9kBSWOnyluMd3mJ6AENb9Oh2XZ3yDKrE/ejjk=
+Date: Mon, 18 Nov 2013 12:45:28 +0100
+From: Gerhard Sittig <gsi@denx.de>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>
+Subject: checkpatch.pl "Use of uninitialized value" warnings
+Message-ID: <20131118114528.GJ17929@book.gsilab.sittig.org>
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Joe Perches <joe@perches.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gE7i1rD7pdK0Ng3j"
+Content-Type: multipart/mixed; boundary="1SQmhf2mF2YjsYvc"
 Content-Disposition: inline
-In-Reply-To: <1384771247-16547-1-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Organization: DENX Software Engineering GmbH
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---gE7i1rD7pdK0Ng3j
+--1SQmhf2mF2YjsYvc
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 18, 2013 at 07:40:47PM +0900, Alexandre Courbot wrote:
-> FUSE clock is enabled by most bootloaders, but we cannot expect it to be
-> on in all contexts (e.g. kexec).
->=20
-> This patch adds a FUSE clkdev to all Tegra platforms and makes sure
-> it is enabled before touching FUSE registers. tegra_init_fuse() is
-> invoked during very early boot and thus cannot rely on the clock
-> framework ; therefore the FUSE clock is forcibly enabled using a
-> register write in that function, and remains that way until the
-> clock framework can be used.
->=20
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  arch/arm/mach-tegra/fuse.c       | 41 ++++++++++++++++++++++++++++++++++=
-+++++-
->  drivers/clk/tegra/clk-tegra114.c |  1 +
->  drivers/clk/tegra/clk-tegra124.c |  1 +
->  drivers/clk/tegra/clk-tegra20.c  |  1 +
+Please tell me when the Cc: list is inappropriate, it appears
+that get_maintainer.pl does not know of a maintainer for the
+checkpatch.pl script, but lists you as the most active
+committers.
 
-Isn't this missing the clock driver changes for Tegra30? Ah... Tegra30
-already has this clock defined. I wonder why only Tegra30 has it. grep
-says that fuse-tegra isn't used by any drivers, which also indicates
-that perhaps we don't need the .dev_id in the first place. We should be
-able to get by with just the .con_id =3D "fuse".
 
-Also are there any reasons to keep this in one single patch? Since none
-of the fuse clocks are used yet, I think the clock changes could be a
-separate patch that can go in through the clock tree. And there isn't
-even a hard runtime dependency, since if the Tegra changes were to go in
-without the clock changes, then the fallback code in this patch should
-still turn the clock on properly. It just might not be turned off again,
-but isn't that something we can live with for a short period of time? I
-think perhaps that could even be improved, see further below.
+Execution of the checkpatch.pl script (v3.12 kernel tree) emitted
+the following messages when fed with the attached patch.
 
-I've added Mike on Cc, he'll need to either take the patch in through
-his tree or Ack this one, so he needs to see it eventually.
+  Use of uninitialized value $c in pattern match (m//) at ./scripts/checkpatch.pl line 3280.
+  Use of uninitialized value in substr at ./scripts/checkpatch.pl line 3287.
+  Use of uninitialized value $s in substr at ./scripts/checkpatch.pl line 3287.
+  total: 0 errors, 0 warnings, 0 checks, 185 lines checked
 
->  4 files changed, 43 insertions(+), 1 deletion(-)
->=20
-> diff --git a/arch/arm/mach-tegra/fuse.c b/arch/arm/mach-tegra/fuse.c
-> index 9a4e910c3796..3b9191b930b5 100644
-> --- a/arch/arm/mach-tegra/fuse.c
-> +++ b/arch/arm/mach-tegra/fuse.c
-> @@ -22,6 +22,7 @@
->  #include <linux/io.h>
->  #include <linux/export.h>
->  #include <linux/random.h>
-> +#include <linux/clk.h>
->  #include <linux/tegra-soc.h>
-> =20
->  #include "fuse.h"
-> @@ -54,6 +55,7 @@ int tegra_cpu_speedo_id;		/* only exist in Tegra30 and =
-later */
->  int tegra_soc_speedo_id;
->  enum tegra_revision tegra_revision;
-> =20
-> +static struct clk *fuse_clk;
->  static int tegra_fuse_spare_bit;
->  static void (*tegra_init_speedo_data)(void);
-> =20
-> @@ -77,6 +79,22 @@ static const char *tegra_revision_name[TEGRA_REVISION_=
-MAX] =3D {
->  	[TEGRA_REVISION_A04]     =3D "A04",
->  };
-> =20
-> +static void tegra_fuse_enable_clk(void)
-> +{
-> +	if (IS_ERR(fuse_clk))
-> +		fuse_clk =3D clk_get_sys("fuse-tegra", "fuse");
-> +	if (IS_ERR(fuse_clk))
-> +		return;
+The patch is not inlined, to keep its formatting in verbatim
+form, and was sent to the linuxppc-dev@lists.ozlabs.org and
+linux-arm-kernel@lists.infradead.org mailing lists with
+Message-ID <1384729577-7336-6-git-send-email-gsi@denx.de> on
+Mon, 18 Nov 2013 00:06:05 +0100 if that's easier to lookup or in
+case the attachment won't pass email filters).
 
-Perhaps instead of just returning here, this should actually be where
-the code to enable the clock should go.
+The offending part of the code appears to be the NODE_CHK() macro
+spanning lines 68 to 82 of the patch, while the FOR_NODES() and
+PREP_NODE() macros don't have issues.
 
-> +	clk_prepare_enable(fuse_clk);
-> +}
-> +
-> +static void tegra_fuse_disable_clk(void)
-> +{
-> +	if (IS_ERR(fuse_clk))
-> +		return;
+What can I do to help diagnose and fix the warnings?
 
-And this is where we could disable it again. That way we should get
-equal functionality in both cases.
 
-Thierry
+virtually yours
+Gerhard Sittig
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
+Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
 
-> +	clk_disable_unprepare(fuse_clk);
-> +}
-> +
->  u32 tegra_fuse_readl(unsigned long offset)
->  {
->  	return tegra_apb_readl(TEGRA_FUSE_BASE + offset);
-> @@ -84,7 +102,15 @@ u32 tegra_fuse_readl(unsigned long offset)
-> =20
->  bool tegra_spare_fuse(int bit)
->  {
-> -	return tegra_fuse_readl(tegra_fuse_spare_bit + bit * 4);
-> +	bool ret;
-> +
-> +	tegra_fuse_enable_clk();
-> +
-> +	ret =3D tegra_fuse_readl(tegra_fuse_spare_bit + bit * 4);
-> +
-> +	tegra_fuse_disable_clk();
-> +
-> +	return ret;
->  }
-> =20
->  static enum tegra_revision tegra_get_revision(u32 id)
-> @@ -113,10 +139,14 @@ static void tegra_get_process_id(void)
->  {
->  	u32 reg;
-> =20
-> +	tegra_fuse_enable_clk();
-> +
->  	reg =3D tegra_fuse_readl(tegra_fuse_spare_bit);
->  	tegra_cpu_process_id =3D (reg >> 6) & 3;
->  	reg =3D tegra_fuse_readl(tegra_fuse_spare_bit);
->  	tegra_core_process_id =3D (reg >> 12) & 3;
-> +
-> +	tegra_fuse_disable_clk();
->  }
-> =20
->  u32 tegra_read_chipid(void)
-> @@ -159,6 +189,15 @@ void __init tegra_init_fuse(void)
->  	reg |=3D 1 << 28;
->  	writel(reg, IO_ADDRESS(TEGRA_CLK_RESET_BASE + 0x48));
-> =20
-> +	/*
-> +	 * Enable FUSE clock. This needs to be hardcoded because the clock
-> +	 * subsystem is not active during early boot.
-> +	 */
-> +	reg =3D readl(IO_ADDRESS(TEGRA_CLK_RESET_BASE + 0x14));
-> +	reg |=3D 1 << 7;
-> +	writel(reg, IO_ADDRESS(TEGRA_CLK_RESET_BASE + 0x14));
-> +	fuse_clk =3D ERR_PTR(-EINVAL);
-> +
->  	reg =3D tegra_fuse_readl(FUSE_SKU_INFO);
->  	randomness[0] =3D reg;
->  	tegra_sku_id =3D reg & 0xFF;
-> diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-teg=
-ra114.c
-> index dbab27f773b5..a83fdfd19bfc 100644
-> --- a/drivers/clk/tegra/clk-tegra114.c
-> +++ b/drivers/clk/tegra/clk-tegra114.c
-> @@ -925,6 +925,7 @@ static struct tegra_devclk devclks[] __initdata =3D {
->  	{ .con_id =3D "sclk", .dt_id =3D TEGRA114_CLK_SCLK },
->  	{ .con_id =3D "hclk", .dt_id =3D TEGRA114_CLK_HCLK },
->  	{ .con_id =3D "pclk", .dt_id =3D TEGRA114_CLK_PCLK },
-> +	{ .con_id =3D "fuse", .dev_id =3D "fuse-tegra", .dt_id =3D TEGRA114_CLK=
-_FUSE },
->  	{ .dev_id =3D "rtc-tegra", .dt_id =3D TEGRA114_CLK_RTC },
->  	{ .dev_id =3D "timer", .dt_id =3D TEGRA114_CLK_TIMER },
->  };
-> diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-teg=
-ra124.c
-> index 266e80b51d38..0a324a2d7309 100644
-> --- a/drivers/clk/tegra/clk-tegra124.c
-> +++ b/drivers/clk/tegra/clk-tegra124.c
-> @@ -1007,6 +1007,7 @@ static struct tegra_devclk devclks[] __initdata =3D=
+--1SQmhf2mF2YjsYvc
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="0005-clk-mpc512x-add-backwards-compat-to-the-CCF-code.patch"
+
+>From dcd03deec6ec87164f0d5114f6b3b705798c9e00 Mon Sep 17 00:00:00 2001
+From: Gerhard Sittig <gsi@denx.de>
+Date: Sat, 9 Nov 2013 21:40:05 +0100
+Subject: [PATCH v5 05/17] clk: mpc512x: add backwards compat to the CCF code
+
+extend the recently added COMMON_CLK platform support for MPC512x such
+that it works with incomplete device tree data which lacks clock specs
+
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Anatolij Gustschin <agust@denx.de>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Signed-off-by: Gerhard Sittig <gsi@denx.de>
+---
+ arch/powerpc/platforms/512x/clock-commonclk.c |  173 ++++++++++++++++++++++++-
+ 1 file changed, 172 insertions(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/platforms/512x/clock-commonclk.c b/arch/powerpc/platforms/512x/clock-commonclk.c
+index ddbeaec79246..c1faf3a9ea1f 100644
+--- a/arch/powerpc/platforms/512x/clock-commonclk.c
++++ b/arch/powerpc/platforms/512x/clock-commonclk.c
+@@ -11,6 +11,7 @@
+  * (at your option) any later version.
+  */
+ 
++#include <linux/bitops.h>
+ #include <linux/clk-provider.h>
+ #include <linux/clkdev.h>
+ #include <linux/device.h>
+@@ -744,7 +745,177 @@ static void mpc5121_clk_provide_migration_support(void)
+  */
+ static void mpc5121_clk_provide_backwards_compat(void)
  {
->  	{ .con_id =3D "sclk", .dt_id =3D TEGRA124_CLK_SCLK },
->  	{ .con_id =3D "hclk", .dt_id =3D TEGRA124_CLK_HCLK },
->  	{ .con_id =3D "pclk", .dt_id =3D TEGRA124_CLK_PCLK },
-> +	{ .con_id =3D "fuse", .dev_id =3D "fuse-tegra", .dt_id =3D TEGRA124_CLK=
-_FUSE },
->  	{ .dev_id =3D "rtc-tegra", .dt_id =3D TEGRA124_CLK_RTC },
->  	{ .dev_id =3D "timer", .dt_id =3D TEGRA124_CLK_TIMER },
->  };
-> diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegr=
-a20.c
-> index 58faac5f509e..48dca0f4762a 100644
-> --- a/drivers/clk/tegra/clk-tegra20.c
-> +++ b/drivers/clk/tegra/clk-tegra20.c
-> @@ -452,6 +452,7 @@ static struct tegra_devclk devclks[] __initdata =3D {
->  	{ .con_id =3D "sclk", .dt_id =3D TEGRA20_CLK_SCLK },
->  	{ .con_id =3D "hclk", .dt_id =3D TEGRA20_CLK_HCLK },
->  	{ .con_id =3D "pclk", .dt_id =3D TEGRA20_CLK_PCLK },
-> +	{ .con_id =3D "fuse", .dev_id =3D "fuse-tegra", .dt_id =3D TEGRA20_CLK_=
-FUSE },
->  	{ .con_id =3D "twd", .dt_id =3D TEGRA20_CLK_TWD },
->  	{ .con_id =3D "audio", .dt_id =3D TEGRA20_CLK_AUDIO },
->  	{ .con_id =3D "audio_2x", .dt_id =3D TEGRA20_CLK_AUDIO_2X },
-> --=20
-> 1.8.4.2
->=20
+-	/* TODO */
++	enum did_reg_flags {
++		DID_REG_PSC	= BIT(0),
++		DID_REG_PSCFIFO	= BIT(1),
++		DID_REG_NFC	= BIT(2),
++		DID_REG_CAN	= BIT(3),
++		DID_REG_I2C	= BIT(4),
++		DID_REG_DIU	= BIT(5),
++		DID_REG_VIU	= BIT(6),
++		DID_REG_FEC	= BIT(7),
++		DID_REG_USB	= BIT(8),
++		DID_REG_PATA	= BIT(9),
++	};
++
++	int did_register;
++	struct device_node *np;
++	struct resource res;
++	int idx;
++	char devname[32];
++
++	/*
++	 * those macros are not exactly pretty, but they encapsulate a lot
++	 * of copy'n'paste heavy code which is even more ugly, and reduce
++	 * the potential for inconsistencies in those many code copies
++	 */
++
++#define FOR_NODES(compatname) \
++	for_each_compatible_node(np, NULL, compatname)
++
++#define NODE_PREP do { \
++	of_address_to_resource(np, 0, &res); \
++	snprintf(devname, sizeof(devname), "%08x.%s", res.start, np->name); \
++} while (0)
++
++#define NODE_CHK(clkname, clkitem, regnode, regflag) do { \
++	struct clk *clk; \
++	clk = of_clk_get_by_name(np, clkname); \
++	if (IS_ERR(clk)) { \
++		clk = clkitem; \
++		clk_register_clkdev(clk, clkname, devname); \
++		if (regnode) \
++			clk_register_clkdev(clk, clkname, np->name); \
++		did_register |= DID_REG_ ## regflag; \
++		pr_debug("clock alias name '%s' for dev '%s' pointer %p\n", \
++			 clkname, devname, clk); \
++	} else { \
++		clk_put(clk); \
++	} \
++} while (0)
++
++	did_register = 0;
++
++	FOR_NODES(mpc512x_select_psc_compat()) {
++		NODE_PREP;
++		idx = (res.start >> 8) & 0xf;
++		NODE_CHK("ipg", clks[MPC512x_CLK_PSC0 + idx], 0, PSC);
++		NODE_CHK("mclk", clks[MPC512x_CLK_PSC0_MCLK + idx], 0, PSC);
++	}
++
++	FOR_NODES("fsl,mpc5121-psc-fifo") {
++		NODE_PREP;
++		NODE_CHK("ipg", clks[MPC512x_CLK_PSC_FIFO], 1, PSCFIFO);
++	}
++
++	FOR_NODES("fsl,mpc5121-nfc") {
++		NODE_PREP;
++		NODE_CHK("ipg", clks[MPC512x_CLK_NFC], 0, NFC);
++	}
++
++	FOR_NODES("fsl,mpc5121-mscan") {
++		NODE_PREP;
++		idx = 0;
++		idx += (res.start & 0x2000) ? 2 : 0;
++		idx += (res.start & 0x0080) ? 1 : 0;
++		NODE_CHK("ipg", clks[MPC512x_CLK_BDLC], 0, CAN);
++		NODE_CHK("mclk", clks[MPC512x_CLK_MSCAN0_MCLK + idx], 0, CAN);
++	}
++
++	/*
++	 * do register the 'ips', 'sys', and 'ref' names globally
++	 * instead of inside each individual CAN node, as there is no
++	 * potential for a name conflict (in contrast to 'ipg' and 'mclk')
++	 */
++	if (did_register & DID_REG_CAN) {
++		clk_register_clkdev(clks[MPC512x_CLK_IPS], "ips", NULL);
++		clk_register_clkdev(clks[MPC512x_CLK_SYS], "sys", NULL);
++		clk_register_clkdev(clks[MPC512x_CLK_REF], "ref", NULL);
++	}
++
++	FOR_NODES("fsl,mpc5121-i2c") {
++		NODE_PREP;
++		NODE_CHK("ipg", clks[MPC512x_CLK_I2C], 0, I2C);
++	}
++
++	/*
++	 * workaround for the fact that the I2C driver does an "anonymous"
++	 * lookup (NULL name spec, which yields the first clock spec) for
++	 * which we cannot register an alias -- a _global_ 'ipg' alias that
++	 * is not bound to any device name and returns the I2C clock item
++	 * is not a good idea
++	 *
++	 * so we have the lookup in the peripheral driver fail, which is
++	 * silent and non-fatal, and pre-enable the clock item here such
++	 * that register access is possible
++	 *
++	 * see commit b3bfce2b "i2c: mpc: cleanup clock API use" for
++	 * details, adjusting s/NULL/"ipg"/ in i2c-mpc.c would make this
++	 * workaround obsolete
++	 */
++	if (did_register & DID_REG_I2C)
++		clk_prepare_enable(clks[MPC512x_CLK_I2C]);
++
++	FOR_NODES("fsl,mpc5121-diu") {
++		NODE_PREP;
++		NODE_CHK("ipg", clks[MPC512x_CLK_DIU], 1, DIU);
++	}
++
++	FOR_NODES("fsl,mpc5121-viu") {
++		NODE_PREP;
++		NODE_CHK("ipg", clks[MPC512x_CLK_VIU], 0, VIU);
++	}
++
++	/*
++	 * note that 2771399a "fs_enet: cleanup clock API use" did use the
++	 * "per" string for the clock lookup in contrast to the "ipg" name
++	 * which most other nodes are using -- this is not a fatal thing
++	 * but just something to keep in mind when doing compatibility
++	 * registration, it's a non-issue with up-to-date device tree data
++	 */
++	FOR_NODES("fsl,mpc5121-fec") {
++		NODE_PREP;
++		NODE_CHK("per", clks[MPC512x_CLK_FEC], 0, FEC);
++	}
++	FOR_NODES("fsl,mpc5121-fec-mdio") {
++		NODE_PREP;
++		NODE_CHK("per", clks[MPC512x_CLK_FEC], 0, FEC);
++	}
++
++	FOR_NODES("fsl,mpc5121-usb2-dr") {
++		NODE_PREP;
++		idx = (res.start & 0x4000) ? 1 : 0;
++		NODE_CHK("ipg", clks[MPC512x_CLK_USB1 + idx], 0, USB);
++	}
++
++	FOR_NODES("fsl,mpc5121-pata") {
++		NODE_PREP;
++		NODE_CHK("ipg", clks[MPC512x_CLK_PATA], 0, PATA);
++	}
++
++	/*
++	 * try to collapse diagnostics into a single line of output yet
++	 * provide a full list of what is missing, to avoid noise in the
++	 * absence of up-to-date device tree data -- backwards
++	 * compatibility to old DTBs is a requirement, updates may be
++	 * desirable or preferrable but are not at all mandatory
++	 */
++	if (did_register) {
++		pr_notice("device tree lacks clock specs, adding fallbacks (0x%x,%s%s%s%s%s%s%s%s%s%s)\n",
++			  did_register,
++			  (did_register & DID_REG_PSC) ? " PSC" : "",
++			  (did_register & DID_REG_PSCFIFO) ? " PSCFIFO" : "",
++			  (did_register & DID_REG_NFC) ? " NFC" : "",
++			  (did_register & DID_REG_CAN) ? " CAN" : "",
++			  (did_register & DID_REG_I2C) ? " I2C" : "",
++			  (did_register & DID_REG_DIU) ? " DIU" : "",
++			  (did_register & DID_REG_VIU) ? " VIU" : "",
++			  (did_register & DID_REG_FEC) ? " FEC" : "",
++			  (did_register & DID_REG_USB) ? " USB" : "",
++			  (did_register & DID_REG_PATA) ? " PATA" : "");
++	} else {
++		pr_debug("device tree has clock specs, no fallbacks added\n");
++	}
+ }
+ 
+ int __init mpc5121_clk_init(void)
+-- 
+1.7.10.4
 
---gE7i1rD7pdK0Ng3j
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSif1iAAoJEN0jrNd/PrOhbYUP/2c+5upYtnd9lWq8wDRfkfUl
-arRMmus/+bg2nD4hhMc04VVI+idquWyzxCtUfqofUfVmEBzWQo2iYxbkNeIJlqLf
-/UVW5n2U55CpwijGG+ICJgTEYAW8ncy8UdXUmiOCgapiNM4ek7RI5XWSmSJcqUPa
-sXoHWWyuN9KerwhZlbv8N+/haFgGsUZxVv1zbWSFhnVlpghUfu3K+FlERl+NvHtP
-v5QJ5/OPec+ZQwdYEgguGu7wFUdr/UYWQWsciIrHPWo3Vsj6CoH4ht/vb86AFoFI
-rx/gEJVqMBgt2V+fozaUOyf3vqE7+N30rATArLIKHgOMPy1ZQuYWEXrzf9WqJr0w
-GSSCe9gaueF2ShZK1+BKzq8nKkyTbLbW3lHc6IHwG5rUGAi2Cy5oHjPHYQDUFhXg
-ljf/68rztixl/vMpwoSIS+ZIsPf8DgyMfz3L8tla9eyFw5B59rFg1Wyy2Z6mhPZ7
-7PDCoOTcVE4Z3edj8hZ7ZvByi0v1xPZFoFcdXuOt84dN8ed1f004JMy7+joCTPz4
-iyeKHEAsIGddVIXBiBMJDtkQM+sU183Y5txY0gpsWNodl2fcGjuNo+/k6ai6uQ/e
-Xfe0jvuwMSIrsdjKj6DWUpTAbmZz+8lXrgPKJJNQUZ1q6/9IJGkEP9z8DNe/r4C6
-SmRwcEUlyNnDrbC0nS/t
-=RivJ
------END PGP SIGNATURE-----
-
---gE7i1rD7pdK0Ng3j--
+--1SQmhf2mF2YjsYvc--
