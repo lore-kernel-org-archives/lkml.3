@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab3KRObA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 09:31:00 -0500
-Received: from mga01.intel.com ([192.55.52.88]:60885 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751236Ab3KROay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 09:30:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,724,1378882800"; 
-   d="scan'208";a="429648733"
-Message-ID: <1384785017.14845.214.camel@smile>
-Subject: Re: [PATCHv7] dmaengine: Add support for BCM2835
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Florian Meier <florian.meier@koalo.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree <devicetree@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
-        dmaengine <dmaengine@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Mon, 18 Nov 2013 16:30:17 +0200
-In-Reply-To: <528A051A.7000703@koalo.de>
-References: <5288E327.8050809@koalo.de> <1384768816.14845.186.camel@smile>
-	 <528A051A.7000703@koalo.de>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751360Ab3KRObr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 09:31:47 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:54170 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab3KRObi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 09:31:38 -0500
+Date: Mon, 18 Nov 2013 14:31:35 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Joe Perches <joe@perches.com>
+Cc: Gerhard Sittig <gsi@denx.de>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] checkpatch: Fix "Use of uninitialized value" warnings
+Message-ID: <20131118143135.GF3126@dm>
+References: <20131118114528.GJ17929@book.gsilab.sittig.org>
+ <1384782664.5814.17.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384782664.5814.17.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-18 at 13:16 +0100, Florian Meier wrote:
-> Thank you! Few comments below.
-
-See my answers below.
-
-> >> +static enum dma_status bcm2835_dma_tx_status(struct dma_chan *chan,
-> >> +	dma_cookie_t cookie, struct dma_tx_state *txstate)
-> >> +{
-> > 
-> > []
-> > 
-> >> +	} else {
-> >> +		txstate->residue = 0;
-> > 
-> > Useless assignment since dmaengine will do this for you in
-> > dma_cookie_status.
+On Mon, Nov 18, 2013 at 05:51:04AM -0800, Joe Perches wrote:
+> checkpatch is currently confused about some complex macros
+> and references undefined variables $stat and $cond.
 > 
-> I agree that it is useless, but I think otherwise it might be concealed
-> that there is a third case left that uses a residue of 0. Do you think a
-> comment is better? E.g.:
+> Make sure these are defined before using them.
 > 
-> +	} else {
-> +		/* residue = 0 per default */
-
-I think like in many other DMA drivers either you have separate function
-to get residue, which returns 0, or just not include this case.
-
-> >> +static int bcm2835_dma_probe(struct platform_device *pdev)
-> >> +{
-
-> >> +	uint32_t chans_available;
-> > 
-> > Why uint32_t?
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  scripts/checkpatch.pl | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> Because it is a bit mask of fixed length that directly comes from the
-> firmware.
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 61090e0..9c981003 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -3289,6 +3289,7 @@ sub process {
+>  			}
+>  		}
+>  		if (!defined $suppress_whiletrailers{$linenr} &&
+> +		    defined($stat) && defined($cond) &&
+>  		    $line =~ /\b(?:if|while|for)\s*\(/ && $line !~ /^.\s*#/) {
+>  			my ($s, $c) = ($stat, $cond);
 
-Like one already told you in your i2s patch, please, change that to
-corresponding u* value, namely u32.
+Seems reasonable indeed.
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Acked-by: Andy Whitcroft <apw@canonical.com>
 
+-apw
