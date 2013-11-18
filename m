@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab3KRUeT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:34:19 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:38137 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab3KRUdP (ORCPT
+	id S1753186Ab3KRUem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:34:42 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50296 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753044Ab3KRUdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:33:15 -0500
+	Mon, 18 Nov 2013 15:33:13 -0500
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
@@ -16,9 +16,9 @@ Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         Stephane Eranian <eranian@google.com>,
         Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 8/8] perf sched : Add documentation for timehist options
-Date: Mon, 18 Nov 2013 13:32:51 -0700
-Message-Id: <1384806771-2945-9-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 7/8] perf sched timehist: Add support for context-switch event
+Date: Mon, 18 Nov 2013 13:32:50 -0700
+Message-Id: <1384806771-2945-8-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 In-Reply-To: <1384806771-2945-1-git-send-email-dsahern@gmail.com>
 References: <1384806771-2945-1-git-send-email-dsahern@gmail.com>
@@ -26,8 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add entry to perf-sched documentation for timehist command and its
-options.
+Context switch events are 64 bytes; sched_switch events are 136 bytes.  Both
+indicate scheduling changes, so allow user to leverage the smaller event. If
+both events exist in a data file, then context-switch event is ignored.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -39,94 +40,91 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Pekka Enberg <penberg@kernel.org>
 ---
- tools/perf/Documentation/perf-sched.txt | 60 ++++++++++++++++++++++++++++++++-
- 1 file changed, 59 insertions(+), 1 deletion(-)
+ tools/perf/builtin-sched.c | 40 +++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 35 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-sched.txt b/tools/perf/Documentation/perf-sched.txt
-index 8ff4df956951..83fac8b86f52 100644
---- a/tools/perf/Documentation/perf-sched.txt
-+++ b/tools/perf/Documentation/perf-sched.txt
-@@ -8,7 +8,7 @@ perf-sched - Tool to trace/measure scheduler properties (latencies)
- SYNOPSIS
- --------
- [verse]
--'perf sched' {record|latency|map|replay|script}
-+'perf sched' {record|latency|map|replay|script|timehist}
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index ffe11067083c..79a94655d3ed 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -180,6 +180,7 @@ struct perf_sched {
+ 	unsigned int	max_stack;
+ 	bool		show_cpu_visual;
+ 	bool		show_wakeups;
++	bool		have_traces;
+ 	/* process and task id's of interest */
+ 	struct target target;
+ 	struct intlist  *pid, *tid;
+@@ -2070,6 +2071,15 @@ out:
+ 	return rc;
+ }
  
- DESCRIPTION
- -----------
-@@ -36,6 +36,11 @@ There are five variants of perf sched:
-   are running on a CPU. A '*' denotes the CPU that had the event, and
-   a dot signals an idle CPU.
++static int timehist_cs_event(struct perf_tool *tool __maybe_unused,
++			     union perf_event *event,
++			     struct perf_evsel *evsel,
++			     struct perf_sample *sample,
++			     struct machine *machine __maybe_unused)
++{
++	return timehist_sched_change_event(tool, event, evsel, sample, machine);
++}
++
+ static int timehist_sched_switch_event(struct perf_tool *tool,
+ 				       union perf_event *event,
+ 				       struct perf_evsel *evsel,
+@@ -2293,10 +2303,25 @@ static int parse_target_str(struct perf_sched *sched)
+ static int timehist_check_attr(struct perf_sched *sched,
+ 			       struct perf_evlist *evlist)
+ {
+-	struct perf_evsel *evsel;
++	struct perf_evsel *evsel, *cs_evsel = NULL;
+ 	struct evsel_runtime *er;
++	const char *evname;
++	bool have_cs_event = false, have_sched_event = false;
  
-+  'perf sched timehist' to show context-switching analysis with times
-+  between schedule-in, schedule delay, and run time. If callchains are
-+  present stack trace is dumped at the end of the line. A summary of
-+  run times can be shown as well.
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (evsel->attr.type == PERF_TYPE_TRACEPOINT)
++			sched->have_traces = true;
 +
- OPTIONS
- -------
- -i::
-@@ -50,6 +55,59 @@ OPTIONS
- --dump-raw-trace=::
-         Display verbose dump of the sched data.
++		evname = perf_evsel__name(evsel);
++		if (strcmp(evname, "cs") == 0 ||
++		    strcmp(evname, "context-switch") == 0) {
++			cs_evsel = evsel;
++			have_cs_event = true;
++		} else if (strcmp(evname, "sched:sched_switch") == 0) {
++			have_sched_event = true;
++		}
++
++
+ 		er = perf_evsel__get_runtime(evsel);
+ 		if (er == NULL) {
+ 			pr_err("Failed to allocate memory for evsel runtime data\n");
+@@ -2311,6 +2336,13 @@ static int timehist_check_attr(struct perf_sched *sched,
+ 		}
+ 	}
  
-+TIMEHIST OPTIONS
-+----------------
-+-k::
-+--vmlinux=<file>::
-+    vmlinux pathname
++	if (have_cs_event && have_sched_event) {
++		pr_debug("Both schedule change events exist. Ignoring context-switch event\n");
++	} else if (have_cs_event) {
++		pr_debug("Using context-switch events.\n");
++		cs_evsel->handler = timehist_cs_event;
++	}
 +
-+--kallsyms=<file>::
-+    kallsyms pathname
-+
-+-s::
-+--summary::
-+    Show only a summary of scheduling by thread with min, max, and average
-+    run times (in sec) and relative stddev.
-+
-+-S::
-+--with-summary::
-+    Show all scheduling events followed by a summary by thread with min,
-+    max, and average run times (in sec) and relative stddev.
-+
-+-w::
-+--wakeups::
-+    Show wakeup events.
-+
-+-c::
-+--comms=::
-+    Only show events for given comms (comma separated list)
-+
-+-p::
-+--pid=::
-+    Only show events for given process ID (comma separated list).
-+
-+-t::
-+--tid=::
-+    Only show events for given thread ID (comma separated list).
-+
-+--call-graph::
-+        Display call chains. Default is on. Use --no-call-graph to suppress
-+
-+--max-stack::
-+    Set the stack depth limit when showing the callchains. Default: 127
-+
-+-x::
-+--excl::
-+    Symbols to skip in backtrace. Useful to compact repetitive or
-+    uninteresting frames to pull more useful frames into view.
-+
-+--symfs=<directory>::
-+    Look for files with symbols relative to this directory.
-+
-+-V::
-+--cpu-visual::
-+    Add a visual for following events by cpu
-+
- SEE ALSO
- --------
- linkperf:perf-record[1]
+ 	return 0;
+ }
+ 
+@@ -2367,10 +2399,8 @@ static int perf_sched__timehist(struct perf_sched *sched)
+ 	setup_pager();
+ 
+ 	/* setup per-evsel handlers */
+-	if (perf_session__set_tracepoints_handlers(session, handlers))
+-		goto out;
+-
+-	if (!perf_session__has_traces(session, "record -R"))
++	if (sched->have_traces &&
++	    perf_session__set_tracepoints_handlers(session, handlers))
+ 		goto out;
+ 
+ 	/* pre-allocate struct for per-CPU idle stats */
 -- 
 1.8.3.4 (Apple Git-47)
 
