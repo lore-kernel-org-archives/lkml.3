@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab3KRUbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:31:31 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:50008 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834Ab3KRUb0 (ORCPT
+	id S1752915Ab3KRUb4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:31:56 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:48555 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416Ab3KRUbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:31:26 -0500
+	Mon, 18 Nov 2013 15:31:23 -0500
 From: Elena Ufimtseva <ufimtseva@gmail.com>
 To: xen-devel@lists.xenproject.org
 Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
@@ -15,46 +15,112 @@ Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
         tangchen@cn.fujitsu.com, wency@cn.fujitsu.com, ian.campbell@citrix.com,
         stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
         linux-kernel@vger.kernel.org, Elena Ufimtseva <ufimtseva@gmail.com>
-Subject: [PATCH v2 2/2] xen: enable vnuma for PV guest
-Date: Mon, 18 Nov 2013 15:25:50 -0500
-Message-Id: <1384806350-12651-3-git-send-email-ufimtseva@gmail.com>
+Subject: [PATCH v2 0/2] xen: vnuma introduction for pv guest
+Date: Mon, 18 Nov 2013 15:25:48 -0500
+Message-Id: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
-References: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enables numa if vnuma topology hypercall is supported and it is domU.
+Xen vnuma introduction.
 
-Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
----
- arch/x86/xen/setup.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+The patchset introduces vnuma to paravirtualized Xen guests
+runnning as domU.
+Xen subop hypercall is used to retreive vnuma topology information.
+Bases on the retreived topology from Xen, NUMA number of nodes,
+memory ranges, distance table and cpumask is being set.
+If initialization is incorrect, sets 'dummy' node and unsets
+nodemask.
+vNUMA topology is constructed by Xen toolstack. Xen patchset is
+available at https://git.gitorious.org/xenvnuma/xenvnuma.git:v3.
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 68c054f..0aab799 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -20,6 +20,7 @@
- #include <asm/numa.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
-+#include <asm/xen/vnuma.h>
- 
- #include <xen/xen.h>
- #include <xen/page.h>
-@@ -598,6 +599,9 @@ void __init xen_arch_setup(void)
- 	WARN_ON(xen_set_default_idle());
- 	fiddle_vdso();
- #ifdef CONFIG_NUMA
--	numa_off = 1;
-+	if (!xen_initial_domain() && xen_vnuma_supported())
-+		numa_off = 0;
-+	else
-+		numa_off = 1;
- #endif
- }
+Example of vnuma enabled pv domain dmesg:
+
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x00001000-0x0009ffff]
+[    0.000000]   node   0: [mem 0x00100000-0xffffffff]
+[    0.000000]   node   1: [mem 0x100000000-0x1ffffffff]
+[    0.000000]   node   2: [mem 0x200000000-0x2ffffffff]
+[    0.000000]   node   3: [mem 0x300000000-0x3ffffffff]
+[    0.000000] On node 0 totalpages: 1048479
+[    0.000000]   DMA zone: 56 pages used for memmap
+[    0.000000]   DMA zone: 21 pages reserved
+[    0.000000]   DMA zone: 3999 pages, LIFO batch:0
+[    0.000000]   DMA32 zone: 14280 pages used for memmap
+[    0.000000]   DMA32 zone: 1044480 pages, LIFO batch:31
+[    0.000000] On node 1 totalpages: 1048576
+[    0.000000]   Normal zone: 14336 pages used for memmap
+[    0.000000]   Normal zone: 1048576 pages, LIFO batch:31
+[    0.000000] On node 2 totalpages: 1048576
+[    0.000000]   Normal zone: 14336 pages used for memmap
+[    0.000000]   Normal zone: 1048576 pages, LIFO batch:31
+[    0.000000] On node 3 totalpages: 1048576
+[    0.000000]   Normal zone: 14336 pages used for memmap
+[    0.000000]   Normal zone: 1048576 pages, LIFO batch:31
+[    0.000000] SFI: Simple Firmware Interface v0.81 http://simplefirmware.org
+[    0.000000] smpboot: Allowing 4 CPUs, 0 hotplug CPUs
+[    0.000000] No local APIC present
+[    0.000000] APIC: disable apic facility
+[    0.000000] APIC: switched to apic NOOP
+[    0.000000] nr_irqs_gsi: 16
+[    0.000000] PM: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+[    0.000000] e820: cannot find a gap in the 32bit address range
+[    0.000000] e820: PCI devices with unassigned 32bit BARs may break!
+[    0.000000] e820: [mem 0x400100000-0x4004fffff] available for PCI devices
+[    0.000000] Booting paravirtualized kernel on Xen
+[    0.000000] Xen version: 4.4-unstable (preserve-AD)
+[    0.000000] setup_percpu: NR_CPUS:512 nr_cpumask_bits:512 nr_cpu_ids:4 nr_node_ids:4
+[    0.000000] PERCPU: Embedded 28 pages/cpu @ffff8800ffc00000 s85376 r8192 d21120 u2097152
+[    0.000000] pcpu-alloc: s85376 r8192 d21120 u2097152 alloc=1*2097152
+
+
+numactl output:
+root@heatpipe:~# numactl --hardware
+available: 4 nodes (0-3)
+node 0 cpus: 0
+node 0 size: 4031 MB
+node 0 free: 3997 MB
+node 1 cpus: 1
+node 1 size: 4039 MB
+node 1 free: 4022 MB
+node 2 cpus: 2
+node 2 size: 4039 MB
+node 2 free: 4023 MB
+node 3 cpus: 3
+node 3 size: 3975 MB
+node 3 free: 3963 MB
+node distances:
+node   0   1   2   3
+  0:  10  20  20  20
+  1:  20  10  20  20
+  2:  20  20  10  20
+  3:  20  20  20  10
+
+Current patchset is available at https://git.gitorious.org/xenvnuma/linuxvnuma.git:v3
+Xen patchset is available at: https://git.gitorious.org/xenvnuma/xenvnuma.git:v3
+
+TODO
+*       dom0, pvh and hvm vnuma support;
+*       multiple memory ranges per node support;
+*       benchmarking;
+
+
+Elena Ufimtseva (2):
+  xen: vnuma support for PV guests running as domU
+  xen: enable vnuma for PV guest
+
+ arch/x86/include/asm/xen/vnuma.h |   12 ++++
+ arch/x86/mm/numa.c               |    3 +
+ arch/x86/xen/Makefile            |    2 +-
+ arch/x86/xen/setup.c             |    6 +-
+ arch/x86/xen/vnuma.c             |  127 ++++++++++++++++++++++++++++++++++++++
+ include/xen/interface/memory.h   |   44 +++++++++++++
+ 6 files changed, 192 insertions(+), 2 deletions(-)
+ create mode 100644 arch/x86/include/asm/xen/vnuma.h
+ create mode 100644 arch/x86/xen/vnuma.c
+
 -- 
 1.7.10.4
 
