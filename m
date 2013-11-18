@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546Ab3KRElM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 23:41:12 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:58897 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3KREkw (ORCPT
+	id S1751341Ab3KREo6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 23:44:58 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:57711 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3KREow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 23:40:52 -0500
-X-AuditID: 9c93017d-b7b15ae000000e52-65-52899a521d9c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+	Sun, 17 Nov 2013 23:44:52 -0500
+Message-ID: <52899B3E.9050901@gmail.com>
+Date: Sun, 17 Nov 2013 21:44:46 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 2/2] tracing/probes: Fix basic print type functions
-Date: Mon, 18 Nov 2013 13:40:49 +0900
-Message-Id: <1384749649-31447-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1384749649-31447-1-git-send-email-namhyung@kernel.org>
-References: <1384749649-31447-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC/PATCH 2/3] perf script: Print comm, fork and exit events
+ also
+References: <1384743642-15120-1-git-send-email-namhyung@kernel.org> <1384743642-15120-2-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1384743642-15120-2-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 11/17/13, 8:00 PM, Namhyung Kim wrote:
+> @@ -578,6 +579,106 @@ static int process_attr(struct perf_tool *tool, union perf_event *event,
+>   	return perf_evsel__check_attr(evsel, scr->session);
+>   }
+>
+> +static int process_comm_event(struct perf_tool *tool,
+> +			      union perf_event *event,
+> +			      struct perf_sample *sample,
+> +			      struct machine *machine)
+> +{
+> +	struct thread *thread;
+> +	struct perf_script *script = container_of(tool, struct perf_script, tool);
+> +	struct perf_session *session = script->session;
+> +	struct perf_evsel *evsel = perf_evlist__first(session->evlist);
+> +	char *oldname;
+> +
+> +	thread = machine__findnew_thread(machine, event->comm.pid, event->comm.tid);
+> +	if (thread == NULL) {
+> +		pr_debug("problem processing COMM event, skipping it.\n");
+> +		return -1;
+> +	}
+> +
+> +	oldname = strdup(thread__comm_str(thread));
+> +	if (oldname == NULL) {
+> +		pr_debug("problem processing COMM event, skipping it.\n");
+> +		return -1;
+> +	}
+> +
+> +	if (perf_event__process_comm(tool, event, sample, machine) < 0)
+> +		return -1;
+> +
+> +	if (!evsel->attr.sample_id_all) {
+> +		sample->cpu = 0;
+> +		sample->time = 0;
+> +		sample->tid = event->comm.tid;
+> +		sample->pid = event->comm.pid;
+> +	}
+> +	print_sample_start(sample, thread, evsel);
+> +	printf("comm: %s --> %s\n", oldname, event->comm.comm);
 
-The print format of s32 type was "ld" and it's casted to "long".  So
-it turned out to print 4294967295 for "-1" on 64-bit systems.  Not
-sure whether it worked well on 32-bit systems.
+free(oldname)
 
-Anyway, it'd be better if we have exact format and type cast for each
-types on both of 32- and 64-bit systems.  In fact, the only difference
-is on s64/u64 types.
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/trace/trace_probe.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 412e959709b4..b571e4de0769 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -49,14 +49,19 @@ static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
- }									\
- static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
- 
--DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "%x", unsigned char)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned short)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%x", unsigned int)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s8,  "%d", signed char)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", short)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d", int)
-+#if BITS_PER_LONG == 32
- DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
- DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
-+#else /* BITS_PER_LONG == 64 */
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%lx", unsigned long)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%ld", long)
-+#endif
- 
- static inline void *get_rloc_data(u32 *dl)
- {
--- 
-1.7.11.7
-
+David
