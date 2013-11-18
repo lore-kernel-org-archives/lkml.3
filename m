@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297Ab3KRCg4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 21:36:56 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:43920 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab3KRCgr (ORCPT
+	id S1751266Ab3KRCnV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 21:43:21 -0500
+Received: from chicago.guarana.org ([192.210.136.102]:54610 "EHLO
+	chicago.guarana.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab3KRCnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 21:36:47 -0500
+	Sun, 17 Nov 2013 21:43:16 -0500
+Date: Mon, 18 Nov 2013 13:43:15 +1100
+From: Kevin Easton <kevin@guarana.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Francis Moreau <francis.moro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
+Message-ID: <20131118024315.GA26395@chicago.guarana.org>
+References: <52888F6D.6000802@gmail.com>
+ <20131117132531.GB27696@pd.tnic>
+ <5288E5BF.2020608@gmail.com>
+ <20131117160126.GG27323@pd.tnic>
+ <CAC9WiBikz8kTAmKs1HVBmeb2Wu6hfHCh2d=w1sQC03EVHa1QOQ@mail.gmail.com>
+ <20131117195358.GO27323@pd.tnic>
+ <20131117220611.GQ27323@pd.tnic>
+ <20131118003325.GA25843@chicago.guarana.org>
+ <20131118010428.GT27323@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <20131116195001.GA9308@kroah.com>
-References: <20131115041324.GA28088@kroah.com> <CEAC98F3.818F1%andreas.dilger@intel.com>
- <20131116195001.GA9308@kroah.com>
-From: Peng Tao <bergwolf@gmail.com>
-Date: Mon, 18 Nov 2013 10:36:26 +0800
-Message-ID: <CA+a=Yy7SSKHM7O8DLnZfQQEQH5uUYH_gfWrg+Sc9eotQGdOsww@mail.gmail.com>
-Subject: Re: [PATCH 05/40] staging/lustre: validate open handle cookies
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Dilger, Andreas" <andreas.dilger@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hammond, John" <john.hammond@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131118010428.GT27323@pd.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 17, 2013 at 3:50 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Sat, Nov 16, 2013 at 11:20:37AM +0000, Dilger, Andreas wrote:
->> On 2013/11/14 9:13 PM, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
->> wrote:
->>
->> >On Fri, Nov 15, 2013 at 12:13:07AM +0800, Peng Tao wrote:
->> >> From: "John L. Hammond" <john.hammond@intel.com>
->> >>
->> >> Add a const void *h_owner member to struct portals_handle. Add a const
->> >> void *owner parameter to class_handle2object() which must be matched
->> >> by the h_owner member of the handle in addition to the cookie.
->> >
->> >Ick ick ick.
->> >
->> >NEVER use a void pointer if you can help it, and for a "handle", never.
->> >This isn't other operating systems, sorry.  We know what types our
->> >pointers to structures are, use them, so that the compiler can catch our
->> >problems, and don't try to cheat by using void *.
->>
->> The portals_handle is used as a generic type for objects referenced over
->> the network, like a file handle.  The "owner" parameter is just used as
->> an extra check that the cookie passed from the client is actually a
->> valid value for the code in which it is being used (e.g. metadata or
->> data object).  It isn't actually dereferenced by anything, it is just
->> like a magic value.
->
-> Then make it an explicit type, not a void *.
->
->> >> Adjust
->> >> the callers of class_handle2object() accordingly, using NULL as the
->> >> argument to the owner parameter, except in the case of
->> >> mdt_handle2mfd() where we add an explicit mdt_export_data parameter
->> >> which we use as the owner when searching for a MFD. When allocating a
->> >> new MFD, pass a pointer to the mdt_export_data into mdt_mfd_new() and
->> >> store it in h_owner. This allows the MDT to validate that the client
->> >> has not sent the wrong open handle cookie, or sent the right cookie to
->> >> the wrong MDT.
->> >
->> >This changelog entry doesn't even match up with the code below.  ALl
->> >callers of class_handle2object are passing NULL here, which makes this
->> >patch pretty pointless, right?
->>
->> As Tao wrote, this is the patch summary that matches what was committed
->> in our own tree and in this case mostly describes the changes made on the
->> server.  Keeping the same commits and comments in both trees makes it
->> easier to keep the code in sync.
->
-> Ok, but as it is, this patch does nothing to the client code, so how can
-> I accept it?  A function that is only ever called with NULL as an option
-> is ripe for cleanup in my eyes.
->
-How about adding a comment above the function to note that this extra
-argument is used by server code and please don't remove it?
+On Mon, Nov 18, 2013 at 02:04:28AM +0100, Borislav Petkov wrote:
+> On Mon, Nov 18, 2013 at 11:33:25AM +1100, Kevin Easton wrote:
+> > That's part of an ASCII string, "DEP=2\0SE", so if that looks familiar
+> > to anyone (part of a kernel command line?) it might give a clue to
+> > where the timer callback pointer is being overwritten.
+> 
+> Yeah, it could be anything, maybe even part of dmesg although nothing
+> matches "DEP" in there.
 
-Thanks,
-Tao
+We actually have the following long as well, from the .data member.
+Pasting them together gives "DEP=2\0SEQNUM=223" which looks like udev.
+
+    - Kevin 
