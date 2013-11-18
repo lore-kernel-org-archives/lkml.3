@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab3KRSH6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:07:58 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:48553 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab3KRSHt (ORCPT
+	id S1751563Ab3KRSL6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:11:58 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:57642 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab3KRSLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:07:49 -0500
-Message-ID: <1384797790.1791.10.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/3] ACPI / hotplug: Fix acpi_bus_get_device() return
- value check
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Date: Mon, 18 Nov 2013 11:03:10 -0700
-In-Reply-To: <1785834.mvVFipiyRh@vostro.rjw.lan>
-References: <2434673.zhjYZOTQ4A@vostro.rjw.lan>
-	 <1785834.mvVFipiyRh@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Nov 2013 13:11:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <1384267735-43213-5-git-send-email-Waiman.Long@hp.com>
+References: <1384267735-43213-1-git-send-email-Waiman.Long@hp.com>
+	<1384267735-43213-5-git-send-email-Waiman.Long@hp.com>
+Date: Mon, 18 Nov 2013 10:11:48 -0800
+X-Google-Sender-Auth: FZOHwIAf-Z7VcACTU8Zk3OgB30A
+Message-ID: <CA+55aFxXu7eC1WGfZ=_JQbLLJHM5HYRkJPjm3jBDC51SL66Ecw@mail.gmail.com>
+Subject: Re: [PATCH v6 3/5] qrwlock: Enable fair queue read/write lock
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-14 at 00:15 +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Since acpi_bus_get_device() returns plain int and not acpi_status,
-> ACPI_FAILURE() should not be used for checking its return value.  Fix
-> that.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Tue, Nov 12, 2013 at 6:48 AM, Waiman Long <Waiman.Long@hp.com> wrote:
+> By default, queue rwlock is fair among writers and gives preference
+> to readers allowing them to steal lock even if a writer is
+> waiting. However, there is a desire to have a fair variant of
+> rwlock that is more deterministic. To enable this [..]
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
+Is there really any point in having the option for unfair at all?
 
-Thanks,
--Toshi
+>From your timings, it looks like the unfair locks are more expensive
+for the writer side, but since pretty much the whole point of rwlocks
+is when readers are the common case, I don't think we care.
 
+And I'm not at all convinced we want the complexity of two different
+kinds of rwlocks with different semantics and extra code for said
+semantics..
+
+Your *original* fair rwlocks were unusable, since they didn't allow
+for the irq semantics that most users need, but afaik your current
+version always makes an irq/bh-context reader work even when the lock
+is otherwise trying to be fair, so this whole dual behavior seems to
+be largely pointless.
+
+No?
+
+                        Linus
